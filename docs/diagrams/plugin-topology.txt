@@ -1,0 +1,9 @@
+Show a central RLHF Feedback API with five adapters around it.
+Adapter 1: ChatGPT via GPT Actions OpenAPI.
+Adapter 2: Claude via local MCP server and .mcp.json.
+Adapter 3: Codex via MCP server config.toml.
+Adapter 4: Gemini via function-calling tool declarations.
+Adapter 5: Amp via skills template.
+Include bidirectional arrows from each adapter to the API.
+Under the API place three internal modules: schema validation, prevention rules, and DPO export.
+Add a budget guard module enforcing a strict monthly cost cap of 10 USD.

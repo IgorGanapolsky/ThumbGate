@@ -15,11 +15,26 @@ const {
 } = require('./feedback-schema');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const FEEDBACK_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
-const FEEDBACK_LOG_PATH = path.join(FEEDBACK_DIR, 'feedback-log.jsonl');
-const MEMORY_LOG_PATH = path.join(FEEDBACK_DIR, 'memory-log.jsonl');
-const SUMMARY_PATH = path.join(FEEDBACK_DIR, 'feedback-summary.json');
-const PREVENTION_RULES_PATH = path.join(FEEDBACK_DIR, 'prevention-rules.md');
+const DEFAULT_FEEDBACK_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+
+function getFeedbackPaths() {
+  const feedbackDir = process.env.RLHF_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
+  return {
+    FEEDBACK_DIR: feedbackDir,
+    FEEDBACK_LOG_PATH: path.join(feedbackDir, 'feedback-log.jsonl'),
+    MEMORY_LOG_PATH: path.join(feedbackDir, 'memory-log.jsonl'),
+    SUMMARY_PATH: path.join(feedbackDir, 'feedback-summary.json'),
+    PREVENTION_RULES_PATH: path.join(feedbackDir, 'prevention-rules.md'),
+  };
+}
+
+function getContextFsModule() {
+  try {
+    return require('./contextfs');
+  } catch {
+    return null;
+  }
+}
 
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
@@ -58,6 +73,7 @@ function normalizeSignal(signal) {
 }
 
 function loadSummary() {
+  const { SUMMARY_PATH } = getFeedbackPaths();
   if (!fs.existsSync(SUMMARY_PATH)) {
     return {
       total: 0,
@@ -72,11 +88,13 @@ function loadSummary() {
 }
 
 function saveSummary(summary) {
+  const { SUMMARY_PATH } = getFeedbackPaths();
   ensureDir(path.dirname(SUMMARY_PATH));
   fs.writeFileSync(SUMMARY_PATH, `${JSON.stringify(summary, null, 2)}\n`);
 }
 
 function captureFeedback(params) {
+  const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH } = getFeedbackPaths();
   const signal = normalizeSignal(params.signal);
   if (!signal) {
     return {
@@ -159,6 +177,15 @@ function captureFeedback(params) {
   appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
   appendJSONL(MEMORY_LOG_PATH, memoryRecord);
 
+  const contextFs = getContextFsModule();
+  if (contextFs && typeof contextFs.registerFeedback === 'function') {
+    try {
+      contextFs.registerFeedback(feedbackEvent, memoryRecord);
+    } catch {
+      // Non-critical; feedback remains in primary logs
+    }
+  }
+
   summary.accepted += 1;
   summary.lastUpdated = now;
   saveSummary(summary);
@@ -171,6 +198,7 @@ function captureFeedback(params) {
 }
 
 function analyzeFeedback(logPath) {
+  const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
   const entries = readJSONL(logPath || FEEDBACK_LOG_PATH);
   const skills = {};
   const tags = {};
@@ -234,6 +262,7 @@ function analyzeFeedback(logPath) {
 }
 
 function buildPreventionRules(minOccurrences = 2) {
+  const { MEMORY_LOG_PATH } = getFeedbackPaths();
   const memories = readJSONL(MEMORY_LOG_PATH).filter((m) => m.category === 'error');
   if (memories.length === 0) {
     return '# Prevention Rules\n\nNo mistake memories recorded yet.';
@@ -270,14 +299,25 @@ function buildPreventionRules(minOccurrences = 2) {
 }
 
 function writePreventionRules(filePath, minOccurrences = 2) {
+  const { PREVENTION_RULES_PATH } = getFeedbackPaths();
   const outPath = filePath || PREVENTION_RULES_PATH;
   const markdown = buildPreventionRules(minOccurrences);
   ensureDir(path.dirname(outPath));
   fs.writeFileSync(outPath, `${markdown}\n`);
+
+  const contextFs = getContextFsModule();
+  if (contextFs && typeof contextFs.registerPreventionRules === 'function') {
+    try {
+      contextFs.registerPreventionRules(markdown, { minOccurrences, outputPath: outPath });
+    } catch {
+      // Non-critical
+    }
+  }
   return { path: outPath, markdown };
 }
 
 function feedbackSummary(recentN = 20) {
+  const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
   const entries = readJSONL(FEEDBACK_LOG_PATH);
   if (entries.length === 0) {
     return '## Feedback Summary\nNo feedback recorded yet.';
@@ -378,6 +418,7 @@ function runTests() {
 
   const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'rlhf-loop-test-'));
   const localFeedbackLog = path.join(tmpDir, 'feedback-log.jsonl');
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
 
   appendJSONL(localFeedbackLog, { signal: 'positive', tags: ['testing'], skill: 'verify' });
   appendJSONL(localFeedbackLog, { signal: 'negative', tags: ['testing'], skill: 'verify' });
@@ -408,6 +449,7 @@ function runTests() {
   assert(rules.markdown.includes('# Prevention Rules'), 'writePreventionRules writes markdown rules');
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
+  delete process.env.RLHF_FEEDBACK_DIR;
   console.log(`\nResults: ${passed} passed, ${failed} failed\n`);
   process.exit(failed > 0 ? 1 : 0);
 }
@@ -418,10 +460,20 @@ module.exports = {
   buildPreventionRules,
   writePreventionRules,
   feedbackSummary,
-  FEEDBACK_LOG_PATH,
-  MEMORY_LOG_PATH,
-  SUMMARY_PATH,
-  PREVENTION_RULES_PATH,
+  readJSONL,
+  getFeedbackPaths,
+  get FEEDBACK_LOG_PATH() {
+    return getFeedbackPaths().FEEDBACK_LOG_PATH;
+  },
+  get MEMORY_LOG_PATH() {
+    return getFeedbackPaths().MEMORY_LOG_PATH;
+  },
+  get SUMMARY_PATH() {
+    return getFeedbackPaths().SUMMARY_PATH;
+  },
+  get PREVENTION_RULES_PATH() {
+    return getFeedbackPaths().PREVENTION_RULES_PATH;
+  },
 };
 
 if (require.main === module) {

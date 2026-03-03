@@ -1,36 +1,60 @@
-# Offer This As A Plugin/Skill
+# Plugin and Runtime Distribution
 
-Yes. This repo is designed so the same RLHF loop can be offered in multiple agent ecosystems.
+## Core principle
 
-## Architecture
+Ship one core runtime and fan out to platform adapters:
 
-1. Capture layer: maps thumbs up/down signals into structured events.
-2. Schema layer: enforces typed memories and rejects vague feedback.
-3. Learning layer: stores `error` and `learning` memories.
-4. Prevention layer: generates rules from repeated mistakes.
-5. Distillation layer: exports DPO pairs (`prompt/chosen/rejected`).
+1. `src/api/server.js` (HTTP API)
+2. `adapters/mcp/server-stdio.js` (MCP tools)
+3. Adapter manifests/specs per ecosystem
 
-## Claude Skill
+This keeps maintenance low and supports a tight budget.
 
-- Ship `plugins/claude-skill/SKILL.md`.
-- Skill runs `.claude/scripts/feedback/capture-feedback.js` on thumbs feedback.
-- Session start can inject `npm run feedback:summary` and generated rules.
+## Commercial packaging model
 
-## Codex/OpenAI Agent Profile
+1. Ship OSS core first (this repo).
+2. Offer managed hosted API + analytics as paid SaaS.
+3. Sell enterprise controls (SSO, audit, retention policies, support SLA).
 
-- Ship `plugins/codex-profile/AGENTS.md` snippet.
-- Add rule: on positive/negative user signals, execute capture command.
-- Before edits, run summary/rules command and apply prevention guidance.
+This avoids platform-specific rewrite cost and keeps the product under a `$10/mo` bootstrap budget until paid demand exists.
 
-## Gemini Plugin/Skill
+## ChatGPT (GPT Actions)
 
-- Ship `plugins/gemini-extension/gemini_prompt.txt` and tool contract.
-- Gemini tool call passes signal/context/tags into the same capture script.
-- Use periodic `feedback:export:dpo` to produce training data.
+- Import: `adapters/chatgpt/openapi.yaml`
+- Auth: bearer token (`Authorization: Bearer <key>`)
+- Base URL: your deployed HTTPS API URL
 
-## Multi-tenant/SaaS Path
+## Claude (MCP)
 
-- Replace local JSONL with API-backed memory store.
-- Keep schema validation unchanged at the ingestion boundary.
-- Add workspace/project IDs to all records.
+- Use: `adapters/claude/.mcp.json`
+- Transport: local stdio MCP server (`node adapters/mcp/server-stdio.js`)
 
+## Codex (MCP)
+
+- Merge section from `adapters/codex/config.toml`
+- Transport: local stdio MCP server
+
+## Gemini (Function Calling)
+
+- Use: `adapters/gemini/function-declarations.json`
+- Map tool calls to API endpoints
+
+## Amp (Skills)
+
+- Use: `adapters/amp/skills/rlhf-feedback/SKILL.md`
+- Run same capture/summary/rules loop commands
+
+## Deployment notes
+
+1. Set `RLHF_API_KEY` in hosted deployments.
+2. Keep `RLHF_ALLOW_EXTERNAL_PATHS` unset in production.
+3. Keep monthly spend bounded with budget guard scripts (`npm run budget:status`).
+4. Enforce MCP least-privilege with `RLHF_MCP_PROFILE` (`default`, `readonly`, `locked`).
+
+## Sales-ready evidence checklist
+
+1. `npm test` output is green.
+2. `npm run prove:adapters` produces [proof/compatibility/report.md](../proof/compatibility/report.md) and [proof/compatibility/report.json](../proof/compatibility/report.json).
+3. README links to evidence + platform adapter files.
+4. GitHub About text calls out cross-agent RLHF loop + DPO export.
+5. Verification narrative is published in [docs/VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).

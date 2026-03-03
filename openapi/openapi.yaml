@@ -1,0 +1,203 @@
+openapi: 3.1.0
+info:
+  title: RLHF Feedback Loop API
+  version: 1.0.0
+  description: |
+    Production API for feedback capture, schema-validated memory promotion,
+    prevention rule generation, and DPO export.
+servers:
+  - url: http://localhost:8787
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API Key
+  schemas:
+    CaptureFeedbackRequest:
+      type: object
+      required: [signal, context]
+      properties:
+        signal:
+          type: string
+          enum: [up, down, positive, negative]
+        context:
+          type: string
+        whatWentWrong:
+          type: string
+        whatToChange:
+          type: string
+        whatWorked:
+          type: string
+        tags:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: string
+        skill:
+          type: string
+paths:
+  /healthz:
+    get:
+      operationId: healthz
+      responses:
+        '200':
+          description: Service health
+        '401':
+          description: Unauthorized
+  /v1/feedback/capture:
+    post:
+      operationId: captureFeedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaptureFeedbackRequest'
+      responses:
+        '200':
+          description: Feedback accepted and promoted to memory
+        '422':
+          description: Feedback recorded but rejected for memory promotion
+        '401':
+          description: Unauthorized
+  /v1/feedback/stats:
+    get:
+      operationId: getFeedbackStats
+      responses:
+        '200':
+          description: Aggregated feedback statistics
+        '401':
+          description: Unauthorized
+  /v1/feedback/summary:
+    get:
+      operationId: getFeedbackSummary
+      parameters:
+        - in: query
+          name: recent
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Feedback summary text
+        '401':
+          description: Unauthorized
+  /v1/feedback/rules:
+    post:
+      operationId: generatePreventionRules
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                minOccurrences:
+                  type: integer
+                  default: 2
+                outputPath:
+                  type: string
+      responses:
+        '200':
+          description: Prevention rules generated
+        '401':
+          description: Unauthorized
+  /v1/dpo/export:
+    post:
+      operationId: exportDpoPairs
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                inputPath:
+                  type: string
+                memoryLogPath:
+                  type: string
+                outputPath:
+                  type: string
+      responses:
+        '200':
+          description: DPO export completed
+        '401':
+          description: Unauthorized
+  /v1/context/construct:
+    post:
+      operationId: constructContextPack
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                maxItems:
+                  type: integer
+                  default: 8
+                maxChars:
+                  type: integer
+                  default: 6000
+                namespaces:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - raw_history
+                      - memory/error
+                      - memory/learning
+                      - rules
+                      - tools
+                      - provenance
+      responses:
+        '200':
+          description: Context pack created
+        '400':
+          description: Invalid namespace selection
+        '401':
+          description: Unauthorized
+  /v1/context/evaluate:
+    post:
+      operationId: evaluateContextPack
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [packId, outcome]
+              properties:
+                packId:
+                  type: string
+                outcome:
+                  type: string
+                signal:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Evaluation recorded
+        '401':
+          description: Unauthorized
+  /v1/context/provenance:
+    get:
+      operationId: getContextProvenance
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Recent provenance events
+        '401':
+          description: Unauthorized

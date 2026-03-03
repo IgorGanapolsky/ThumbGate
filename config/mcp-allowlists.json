@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "profiles": {
+    "default": [
+      "capture_feedback",
+      "feedback_summary",
+      "feedback_stats",
+      "prevention_rules",
+      "export_dpo_pairs",
+      "construct_context_pack",
+      "evaluate_context_pack",
+      "context_provenance"
+    ],
+    "readonly": [
+      "feedback_summary",
+      "feedback_stats",
+      "context_provenance"
+    ],
+    "locked": [
+      "feedback_summary"
+    ]
+  }
+}

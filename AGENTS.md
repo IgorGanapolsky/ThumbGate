@@ -10,6 +10,7 @@ On explicit user feedback signals (`thumbs up/down`, `that worked/failed`, `corr
 2. Enforce schema validation before memory storage.
 3. Reject vague signals (for example bare "thumbs down") from memory promotion.
 4. Regenerate prevention rules from accumulated mistakes.
+5. Do not mark work complete without test + proof artifacts.
 
 ## Required Commands
 
@@ -39,8 +40,22 @@ npm run feedback:rules
 
 Treat generated prevention rules as hard constraints for the current session.
 
+## Definition Of Done
+
+```bash
+npm test
+npm run prove:adapters
+```
+
+Required evidence artifacts:
+
+- `proof/compatibility/report.json`
+- `proof/compatibility/report.md`
+- `docs/VERIFICATION_EVIDENCE.md` updated when behavior or controls changed.
+
 ## Anti-patterns
 
 - Do not claim online fine-tuning happened when it did not.
 - Do not store low-signal feedback memories (too short, generic tags only, or missing context).
 - Do not bypass schema validation.
+- Do not bypass MCP allowlists (`config/mcp-allowlists.json`) in shared environments.

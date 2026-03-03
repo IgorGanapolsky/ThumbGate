@@ -1,0 +1,113 @@
+{
+  "generatedAt": "2026-03-03T19:18:59.972Z",
+  "checks": [
+    {
+      "name": "api.healthz",
+      "passed": true,
+      "details": {
+        "status": 200
+      }
+    },
+    {
+      "name": "api.auth.required",
+      "passed": true,
+      "details": {
+        "status": 401
+      }
+    },
+    {
+      "name": "api.capture_feedback",
+      "passed": true,
+      "details": {
+        "accepted": true
+      }
+    },
+    {
+      "name": "api.context.construct",
+      "passed": true,
+      "details": {
+        "packId": "pack_1772565540054_viuk6t",
+        "items": 5
+      }
+    },
+    {
+      "name": "api.context.evaluate",
+      "passed": true,
+      "details": {
+        "status": 200
+      }
+    },
+    {
+      "name": "mcp.initialize",
+      "passed": true,
+      "details": {
+        "server": "rlhf-feedback-loop-mcp"
+      }
+    },
+    {
+      "name": "mcp.tools.list",
+      "passed": true,
+      "details": {
+        "tools": 8
+      }
+    },
+    {
+      "name": "mcp.tools.call.feedback_summary",
+      "passed": true,
+      "details": {
+        "contentLength": 98
+      }
+    },
+    {
+      "name": "mcp.policy.locked_profile_denies_write_tool",
+      "passed": true,
+      "details": {
+        "denied": true
+      }
+    },
+    {
+      "name": "adapter.chatgpt.openapi.parity",
+      "passed": true,
+      "details": {
+        "byteEqual": true
+      }
+    },
+    {
+      "name": "adapter.gemini.declarations",
+      "passed": true,
+      "details": {
+        "tools": 3
+      }
+    },
+    {
+      "name": "adapter.files.present",
+      "passed": true,
+      "details": {
+        "files": 3
+      }
+    },
+    {
+      "name": "subagent.profiles.valid",
+      "passed": true,
+      "details": {
+        "profiles": [
+          "pr_workflow",
+          "review_workflow",
+          "secure_runtime"
+        ]
+      }
+    },
+    {
+      "name": "mcp.policy.profile_differentiation",
+      "passed": true,
+      "details": {
+        "defaultTools": 8,
+        "lockedTools": 1
+      }
+    }
+  ],
+  "summary": {
+    "passed": 14,
+    "failed": 0
+  }
+}

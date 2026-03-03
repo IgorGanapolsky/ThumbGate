@@ -10,7 +10,8 @@ Gemini should use this RLHF loop as a tool-backed skill.
 2. `feedback_summary`
 3. `prevention_rules`
 
-See `plugins/gemini-extension/tool_contract.json` for schema.
+Source of truth for Gemini declarations:
+`adapters/gemini/function-declarations.json`
 
 ## Required Behavior
 
@@ -18,6 +19,7 @@ See `plugins/gemini-extension/tool_contract.json` for schema.
 - Always include actionable context.
 - Map `up` to learning memory, `down` to mistake memory.
 - For low-context signals, preserve event but avoid memory promotion.
+- Keep tool calls within local safe paths unless `RLHF_ALLOW_EXTERNAL_PATHS=true`.
 
 ## Suggested Runtime Mapping
 
@@ -38,6 +40,8 @@ npm run feedback:summary
 ```bash
 npm run feedback:rules
 ```
+
+Context-pack endpoints (`/v1/context/*`) are available at the API/MCP layer but are not currently declared in the Gemini function declaration file.
 
 ## Objective
 

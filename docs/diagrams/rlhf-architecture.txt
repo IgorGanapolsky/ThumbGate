@@ -1,0 +1,8 @@
+The system starts when a user gives explicit thumbs up/down feedback. A capture layer enriches the signal with context and tags.
+An action resolver maps the signal to store-learning, store-mistake, or no-action.
+A schema validator enforces strict structure before memory promotion.
+Valid records are stored in a local memory log categorized as error or learning.
+An analytics layer computes quality trends and recurrence patterns.
+A prevention-rule engine converts repeated mistakes into hard guardrails.
+A DPO export layer pairs learning and error memories into prompt/chosen/rejected JSONL.
+All channels (ChatGPT Actions, Claude MCP, Codex MCP, Gemini tools, Amp skills) route through one shared API and policy core.

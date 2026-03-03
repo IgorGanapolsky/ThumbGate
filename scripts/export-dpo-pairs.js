@@ -9,7 +9,8 @@ const fs = require('fs');
 const path = require('path');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const DEFAULT_LOCAL_MEMORY_LOG = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback', 'memory-log.jsonl');
+const FEEDBACK_DIR = process.env.RLHF_FEEDBACK_DIR || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+const DEFAULT_LOCAL_MEMORY_LOG = path.join(FEEDBACK_DIR, 'memory-log.jsonl');
 
 function readJSONL(filePath) {
   if (!fs.existsSync(filePath)) return [];
@@ -120,6 +121,18 @@ function toJSONL(pairs) {
   return `${pairs.map((p) => JSON.stringify(p)).join('\n')}\n`;
 }
 
+function exportDpoFromMemories(memories) {
+  const errors = memories.filter((m) => m.category === 'error');
+  const learnings = memories.filter((m) => m.category === 'learning');
+  const result = buildDpoPairs(errors, learnings);
+  return {
+    ...result,
+    errors,
+    learnings,
+    jsonl: toJSONL(result.pairs),
+  };
+}
+
 function parseArgs(argv) {
   const args = {};
   argv.forEach((arg) => {
@@ -151,11 +164,8 @@ function runCli() {
     process.exit(1);
   }
 
-  const errors = memories.filter((m) => m.category === 'error');
-  const learnings = memories.filter((m) => m.category === 'learning');
-
-  const result = buildDpoPairs(errors, learnings);
-  const jsonl = toJSONL(result.pairs);
+  const result = exportDpoFromMemories(memories);
+  const jsonl = result.jsonl;
 
   if (args.output) {
     fs.writeFileSync(args.output, jsonl);
@@ -164,7 +174,7 @@ function runCli() {
     process.stdout.write(jsonl);
   }
 
-  console.error(`Errors=${errors.length} Learnings=${learnings.length} Pairs=${result.pairs.length}`);
+  console.error(`Errors=${result.errors.length} Learnings=${result.learnings.length} Pairs=${result.pairs.length}`);
   console.error(`Unpaired errors=${result.unpairedErrors.length} Unpaired learnings=${result.unpairedLearnings.length}`);
 }
 
@@ -227,11 +237,14 @@ function runTests() {
 }
 
 module.exports = {
+  readJSONL,
   extractDomainKeys,
   domainOverlap,
   inferPrompt,
   buildDpoPairs,
   toJSONL,
+  exportDpoFromMemories,
+  DEFAULT_LOCAL_MEMORY_LOG,
 };
 
 if (require.main === module) {

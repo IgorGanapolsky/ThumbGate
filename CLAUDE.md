@@ -2,44 +2,54 @@
 
 ## Purpose
 
-Use this repository to continuously learn from thumbs-up / thumbs-down feedback and prevent repeated mistakes.
+Run a complete RLHF operating loop for coding work:
+capture explicit feedback, convert valid memories, prevent repeated failures, and prove behavior with tests.
 
-## Operating Loop
+## Operating Contract
 
-1. Detect explicit user feedback signal.
-2. Run capture script with context and domain tags.
-3. Store validated `error` or `learning` memory.
-4. Refresh prevention rules from repeated mistake patterns.
-5. Before new work, apply summary + prevention rules.
+1. Capture explicit `up/down` feedback with actionable context.
+2. Enforce schema validation before memory promotion.
+3. Regenerate prevention rules from repeated mistakes.
+4. Use context packs to bound retrieval for active tasks.
+5. Publish verification evidence before claiming completion.
 
-## Commands
+## Core Commands
 
 ```bash
-# Capture feedback
-node .claude/scripts/feedback/capture-feedback.js --feedback=up --context="..." --tags="..."
-node .claude/scripts/feedback/capture-feedback.js --feedback=down --context="..." --tags="..."
+# feedback capture
+node .claude/scripts/feedback/capture-feedback.js --feedback=up --context="..." --what-worked="..." --tags="..."
+node .claude/scripts/feedback/capture-feedback.js --feedback=down --context="..." --what-went-wrong="..." --what-to-change="..." --tags="..."
 
-# Analyze and prevent repeats
+# analysis and prevention
 npm run feedback:stats
 npm run feedback:summary
 npm run feedback:rules
-
-# Export DPO training pairs
 npm run feedback:export:dpo
+
+# engineering proof gate
+npm test
+npm run prove:adapters
 ```
 
-## Behavioral Requirements
+## MCP Profile Safety
 
-- If signal is negative, provide `what-went-wrong` and `what-to-change` when available.
-- If signal is positive, provide `what-worked` when available.
-- If context is insufficient, record event but do not promote to memory.
-- Never report completion without verification evidence.
+- Default MCP profile is `default` (full local toolset).
+- Set `RLHF_MCP_PROFILE=readonly` for read-heavy review sessions.
+- Set `RLHF_MCP_PROFILE=locked` for highly constrained runtime mode.
+- Policy file: `config/mcp-allowlists.json`.
+
+## Required Completion Evidence
+
+- Test output from `npm test`.
+- Adapter compatibility report in `proof/compatibility/report.json` and `proof/compatibility/report.md`.
+- Updated `docs/VERIFICATION_EVIDENCE.md` for any behavior change.
 
 ## Data Location
 
-All feedback data is local and git-ignored:
+Feedback and context data are local and git-ignored:
 
 - `.claude/memory/feedback/feedback-log.jsonl`
 - `.claude/memory/feedback/memory-log.jsonl`
 - `.claude/memory/feedback/feedback-summary.json`
 - `.claude/memory/feedback/prevention-rules.md`
+- `.claude/memory/feedback/contextfs/`

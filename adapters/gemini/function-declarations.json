@@ -1,0 +1,56 @@
+{
+  "tools": [
+    {
+      "name": "capture_feedback",
+      "description": "Capture thumbs-up/down feedback and promote actionable memories",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "signal": { "type": "string", "enum": ["up", "down"] },
+          "context": { "type": "string" },
+          "whatWentWrong": { "type": "string" },
+          "whatToChange": { "type": "string" },
+          "whatWorked": { "type": "string" },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "skill": { "type": "string" }
+        },
+        "required": ["signal", "context"]
+      },
+      "http": {
+        "method": "POST",
+        "path": "/v1/feedback/capture"
+      }
+    },
+    {
+      "name": "feedback_summary",
+      "description": "Get a compact summary of recent feedback performance",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "recent": { "type": "integer" }
+        }
+      },
+      "http": {
+        "method": "GET",
+        "path": "/v1/feedback/summary"
+      }
+    },
+    {
+      "name": "prevention_rules",
+      "description": "Generate prevention rules from repeated mistakes",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "minOccurrences": { "type": "integer" }
+        }
+      },
+      "http": {
+        "method": "POST",
+        "path": "/v1/feedback/rules"
+      }
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "profiles": {
+    "pr_workflow": {
+      "description": "Prepare PR metadata and feedback evidence while keeping write operations constrained.",
+      "mcpProfile": "default",
+      "skills": ["change-report", "feedback-summary"],
+      "context": {
+        "maxItems": 8,
+        "maxChars": 6000
+      }
+    },
+    "review_workflow": {
+      "description": "Read-heavy code review and risk analysis profile.",
+      "mcpProfile": "readonly",
+      "skills": ["code-review", "verification"],
+      "context": {
+        "maxItems": 10,
+        "maxChars": 7000
+      }
+    },
+    "secure_runtime": {
+      "description": "Minimal profile for constrained environments.",
+      "mcpProfile": "locked",
+      "skills": ["feedback-summary"],
+      "context": {
+        "maxItems": 5,
+        "maxChars": 3000
+      }
+    }
+  }
+}

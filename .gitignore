@@ -1,7 +1,10 @@
 node_modules/
-.env
+.env*
+!.env.example
+!.env.paperbanana.example
 .DS_Store
 .claude/memory/feedback/*.json
 .claude/memory/feedback/*.jsonl
 .claude/memory/feedback/*.md
+.claude/memory/feedback/contextfs/
 !.claude/memory/feedback/.gitkeep
