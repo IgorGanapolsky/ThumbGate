@@ -24,7 +24,8 @@ jobs:
         startsWith(github.event.pull_request.head.ref, 'claude/') ||
         startsWith(github.event.pull_request.head.ref, 'codex/') ||
         startsWith(github.event.pull_request.head.ref, 'auto/') ||
-        startsWith(github.event.pull_request.head.ref, 'agent/')
+        startsWith(github.event.pull_request.head.ref, 'agent/') ||
+        contains(join(github.event.pull_request.labels.*.name, ','), 'automerge')
       )
     runs-on: ubuntu-latest
 
