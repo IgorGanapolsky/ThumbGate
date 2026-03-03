@@ -27,6 +27,7 @@ This project gives you a working loop:
 cp .env.example .env
 npm test
 npm run prove:adapters
+npm run prove:automation
 npm run start:api
 ```
 
@@ -123,6 +124,7 @@ npm run budget:status
 Docs: [docs/PAPERBANANA.md](docs/PAPERBANANA.md)
 Verification evidence: [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md)
 Compatibility proof artifacts: [proof/compatibility/report.md](proof/compatibility/report.md), [proof/compatibility/report.json](proof/compatibility/report.json)
+Automation proof artifacts: [proof/automation/report.md](proof/automation/report.md), [proof/automation/report.json](proof/automation/report.json)
 
 ## Budget Guardrail
 

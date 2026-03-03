@@ -1,0 +1,106 @@
+{
+  "generatedAt": "2026-03-03T20:01:04.596Z",
+  "checks": [
+    {
+      "name": "feedback.capture.rubric_pass",
+      "passed": true,
+      "details": {
+        "accepted": true,
+        "weightedScore": 0.6
+      }
+    },
+    {
+      "name": "feedback.capture.rubric_block",
+      "passed": true,
+      "details": {
+        "accepted": false,
+        "reason": "Rubric gate prevented promotion: failed_guardrails:testsPassed; judge_disagreement; missing_evidence:verification_evidence"
+      }
+    },
+    {
+      "name": "feedback.capture.negative_with_rubric",
+      "passed": true,
+      "details": {
+        "accepted": true,
+        "tags": [
+          "feedback",
+          "negative",
+          "verification",
+          "automation",
+          "rubric-correctness",
+          "rubric-verification_evidence"
+        ]
+      }
+    },
+    {
+      "name": "analytics.rubric_tracking",
+      "passed": true,
+      "details": {
+        "samples": 3,
+        "blockedPromotions": 1,
+        "failingCriteria": {
+          "correctness": {
+            "failures": 1
+          },
+          "verification_evidence": {
+            "failures": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "prevention_rules.rubric_dimensions",
+      "passed": true,
+      "details": {
+        "hasRubricSection": true
+      }
+    },
+    {
+      "name": "dpo_export.rubric_metadata",
+      "passed": true,
+      "details": {
+        "learningWeightedScore": 0.6,
+        "errorWeightedScore": 0.17,
+        "weightedDelta": 0.43,
+        "errorFailingCriteria": [
+          "correctness",
+          "verification_evidence"
+        ],
+        "learningFailingCriteria": []
+      }
+    },
+    {
+      "name": "api.rubric_gate",
+      "passed": true,
+      "details": {
+        "status": 422
+      }
+    },
+    {
+      "name": "mcp.rubric_gate",
+      "passed": true,
+      "details": {
+        "accepted": false
+      }
+    },
+    {
+      "name": "intent.checkpoint_enforcement",
+      "passed": true,
+      "details": {
+        "blocked": "checkpoint_required",
+        "approved": "ready"
+      }
+    },
+    {
+      "name": "context.evaluate.rubric",
+      "passed": true,
+      "details": {
+        "rubricId": "default-v1"
+      }
+    }
+  ],
+  "summary": {
+    "passed": 10,
+    "failed": 0
+  }
+}

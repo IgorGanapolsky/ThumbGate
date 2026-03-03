@@ -10,7 +10,7 @@
     "test:loop": "node scripts/feedback-loop.js --test",
     "test:dpo": "node scripts/export-dpo-pairs.js --test",
     "test:api": "node --test tests/api-server.test.js tests/api-auth-config.test.js tests/mcp-server.test.js tests/adapters.test.js tests/openapi-parity.test.js tests/budget-guard.test.js tests/contextfs.test.js tests/mcp-policy.test.js tests/subagent-profiles.test.js tests/intent-router.test.js tests/rubric-engine.test.js",
-    "test:proof": "node --test tests/prove-adapters.test.js",
+    "test:proof": "node --test tests/prove-adapters.test.js tests/prove-automation.test.js",
     "start:api": "node src/api/server.js",
     "start:mcp": "node adapters/mcp/server-stdio.js",
     "feedback:capture": "node .claude/scripts/feedback/capture-feedback.js",
@@ -21,6 +21,7 @@
     "budget:status": "node scripts/budget-guard.js --status",
     "diagrams:paperbanana": "bash scripts/generate-paperbanana-diagrams.sh",
     "prove:adapters": "node scripts/prove-adapters.js",
+    "prove:automation": "node scripts/prove-automation.js",
     "intents:list": "node scripts/intent-router.js",
     "intents:plan": "node scripts/intent-router.js --intent=publish_dpo_training_data"
   },

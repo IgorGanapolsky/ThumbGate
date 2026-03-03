@@ -7,6 +7,7 @@
 - Added rubric-aware memory promotion gates for positive feedback.
 - Added rubric-aware context evaluation, prevention-rule dimensions, and DPO export metadata.
 - Extended API/MCP/Gemini contracts for rubric scores and guardrails.
+- Added automated proof harness for rubric + intent + API/MCP end-to-end validation (`proof/automation/*`).
 
 ## 0.3.0 - 2026-03-03
 

@@ -14,7 +14,7 @@ Result summary:
 - `test:loop`: 10 passed, 0 failed
 - `test:dpo`: 6 passed, 0 failed
 - `test:api`: 45 passed, 0 failed
-- `test:proof`: 1 passed, 0 failed
+- `test:proof`: 2 passed, 0 failed
 
 ## Adapter compatibility proof harness
 
@@ -42,6 +42,29 @@ Observed result:
   - OpenAPI parity for ChatGPT adapter
   - Gemini declaration validity
   - Subagent profile and MCP policy consistency
+
+## Automation proof harness
+
+Command:
+
+```bash
+npm run prove:automation
+```
+
+Observed result:
+
+- Summary: `10 passed`, `0 failed`
+- Evidence artifacts:
+  - `proof/automation/report.json`
+  - `proof/automation/report.md`
+- Verified checks include:
+  - rubric-pass positive promotion
+  - rubric-gated positive rejection for guardrail/disagreement violations
+  - rubric failure dimensions in prevention rules
+  - rubric metadata in DPO output
+  - API + MCP rubric gate behavior
+  - intent checkpoint enforcement
+  - rubric-aware context evaluation
 
 ## API smoke verification
 
