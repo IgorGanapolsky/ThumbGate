@@ -9,7 +9,7 @@
     "test:schema": "node scripts/feedback-schema.js --test",
     "test:loop": "node scripts/feedback-loop.js --test",
     "test:dpo": "node scripts/export-dpo-pairs.js --test",
-    "test:api": "node --test tests/api-server.test.js tests/api-auth-config.test.js tests/mcp-server.test.js tests/adapters.test.js tests/openapi-parity.test.js tests/budget-guard.test.js tests/contextfs.test.js tests/mcp-policy.test.js tests/subagent-profiles.test.js",
+    "test:api": "node --test tests/api-server.test.js tests/api-auth-config.test.js tests/mcp-server.test.js tests/adapters.test.js tests/openapi-parity.test.js tests/budget-guard.test.js tests/contextfs.test.js tests/mcp-policy.test.js tests/subagent-profiles.test.js tests/intent-router.test.js",
     "test:proof": "node --test tests/prove-adapters.test.js",
     "start:api": "node src/api/server.js",
     "start:mcp": "node adapters/mcp/server-stdio.js",
@@ -20,7 +20,9 @@
     "feedback:export:dpo": "node scripts/export-dpo-pairs.js --from-local --output .claude/memory/feedback/dpo-pairs.jsonl",
     "budget:status": "node scripts/budget-guard.js --status",
     "diagrams:paperbanana": "bash scripts/generate-paperbanana-diagrams.sh",
-    "prove:adapters": "node scripts/prove-adapters.js"
+    "prove:adapters": "node scripts/prove-adapters.js",
+    "intents:list": "node scripts/intent-router.js",
+    "intents:plan": "node scripts/intent-router.js --intent=publish_dpo_training_data"
   },
   "keywords": [
     "rlhf",

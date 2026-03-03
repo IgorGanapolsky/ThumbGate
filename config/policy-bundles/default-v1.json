@@ -1,0 +1,80 @@
+{
+  "bundleId": "default-v1",
+  "version": 1,
+  "description": "Balanced autonomous execution bundle with human checkpoints on high-risk actions.",
+  "defaultMcpProfile": "default",
+  "approval": {
+    "requiredRisks": ["high", "critical"],
+    "profileOverrides": {
+      "default": ["high", "critical"],
+      "readonly": ["high", "critical"],
+      "locked": ["medium", "high", "critical"]
+    }
+  },
+  "intents": [
+    {
+      "id": "capture_feedback_loop",
+      "description": "Capture user outcome and update memory artifacts.",
+      "risk": "low",
+      "actions": [
+        {
+          "kind": "mcp_tool",
+          "name": "capture_feedback"
+        },
+        {
+          "kind": "mcp_tool",
+          "name": "feedback_summary"
+        }
+      ]
+    },
+    {
+      "id": "improve_response_quality",
+      "description": "Summarize recent failures and regenerate prevention rules.",
+      "risk": "medium",
+      "actions": [
+        {
+          "kind": "mcp_tool",
+          "name": "feedback_summary"
+        },
+        {
+          "kind": "mcp_tool",
+          "name": "prevention_rules"
+        },
+        {
+          "kind": "mcp_tool",
+          "name": "construct_context_pack"
+        }
+      ]
+    },
+    {
+      "id": "publish_dpo_training_data",
+      "description": "Export DPO preference pairs for model improvement pipelines.",
+      "risk": "high",
+      "actions": [
+        {
+          "kind": "mcp_tool",
+          "name": "export_dpo_pairs"
+        }
+      ]
+    },
+    {
+      "id": "incident_postmortem",
+      "description": "Construct evidence pack and record evaluation for incident review.",
+      "risk": "medium",
+      "actions": [
+        {
+          "kind": "mcp_tool",
+          "name": "construct_context_pack"
+        },
+        {
+          "kind": "mcp_tool",
+          "name": "context_provenance"
+        },
+        {
+          "kind": "mcp_tool",
+          "name": "evaluate_context_pack"
+        }
+      ]
+    }
+  ]
+}

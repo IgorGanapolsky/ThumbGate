@@ -1,0 +1,53 @@
+{
+  "bundleId": "constrained-v1",
+  "version": 1,
+  "description": "Conservative execution bundle for locked and review-heavy environments.",
+  "defaultMcpProfile": "locked",
+  "approval": {
+    "requiredRisks": ["medium", "high", "critical"],
+    "profileOverrides": {
+      "default": ["medium", "high", "critical"],
+      "readonly": ["medium", "high", "critical"],
+      "locked": ["low", "medium", "high", "critical"]
+    }
+  },
+  "intents": [
+    {
+      "id": "capture_feedback_loop",
+      "description": "Capture user outcome and update memory artifacts.",
+      "risk": "low",
+      "actions": [
+        {
+          "kind": "mcp_tool",
+          "name": "capture_feedback"
+        }
+      ]
+    },
+    {
+      "id": "improve_response_quality",
+      "description": "Summarize recent failures and regenerate prevention rules.",
+      "risk": "medium",
+      "actions": [
+        {
+          "kind": "mcp_tool",
+          "name": "feedback_summary"
+        },
+        {
+          "kind": "mcp_tool",
+          "name": "prevention_rules"
+        }
+      ]
+    },
+    {
+      "id": "publish_dpo_training_data",
+      "description": "Export DPO preference pairs for model improvement pipelines.",
+      "risk": "high",
+      "actions": [
+        {
+          "kind": "mcp_tool",
+          "name": "export_dpo_pairs"
+        }
+      ]
+    }
+  ]
+}

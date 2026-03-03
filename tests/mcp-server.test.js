@@ -39,6 +39,37 @@ test('capture_feedback tool can be called', async () => {
   assert.match(result.content[0].text, /accepted|Feedback/i);
 });
 
+test('intent tools list and plan enforce checkpoint flow', async () => {
+  const listResult = await handleRequest({
+    jsonrpc: '2.0',
+    id: 21,
+    method: 'tools/call',
+    params: {
+      name: 'list_intents',
+      arguments: { mcpProfile: 'default' },
+    },
+  });
+  const catalog = JSON.parse(listResult.content[0].text);
+  assert.ok(Array.isArray(catalog.intents));
+  assert.ok(catalog.intents.length >= 3);
+
+  const planResult = await handleRequest({
+    jsonrpc: '2.0',
+    id: 22,
+    method: 'tools/call',
+    params: {
+      name: 'plan_intent',
+      arguments: {
+        intentId: 'publish_dpo_training_data',
+        mcpProfile: 'default',
+      },
+    },
+  });
+  const plan = JSON.parse(planResult.content[0].text);
+  assert.equal(plan.status, 'checkpoint_required');
+  assert.equal(plan.requiresApproval, true);
+});
+
 test('prevention_rules blocks external output paths', async () => {
   await assert.rejects(async () => {
     await handleRequest({

@@ -20,6 +20,10 @@ const {
   getProvenance,
 } = require('../../scripts/contextfs');
 const {
+  listIntents,
+  planIntent,
+} = require('../../scripts/intent-router');
+const {
   getActiveMcpProfile,
   getAllowedTools,
   assertToolAllowed,
@@ -79,6 +83,32 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {},
+    },
+  },
+  {
+    name: 'list_intents',
+    description: 'List available intent plans and whether each requires human approval in the active profile',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mcpProfile: { type: 'string' },
+        bundleId: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'plan_intent',
+    description: 'Generate an intent execution plan with policy checkpoints',
+    inputSchema: {
+      type: 'object',
+      required: ['intentId'],
+      properties: {
+        intentId: { type: 'string' },
+        context: { type: 'string' },
+        mcpProfile: { type: 'string' },
+        bundleId: { type: 'string' },
+        approved: { type: 'boolean' },
+      },
     },
   },
   {
@@ -170,6 +200,25 @@ async function callTool(name, args = {}) {
 
   if (name === 'feedback_stats') {
     return { content: [{ type: 'text', text: toText(analyzeFeedback()) }] };
+  }
+
+  if (name === 'list_intents') {
+    const result = listIntents({
+      mcpProfile: args.mcpProfile,
+      bundleId: args.bundleId,
+    });
+    return { content: [{ type: 'text', text: toText(result) }] };
+  }
+
+  if (name === 'plan_intent') {
+    const result = planIntent({
+      intentId: args.intentId,
+      context: args.context || '',
+      mcpProfile: args.mcpProfile,
+      bundleId: args.bundleId,
+      approved: args.approved === true,
+    });
+    return { content: [{ type: 'text', text: toText(result) }] };
   }
 
   if (name === 'prevention_rules') {

@@ -9,6 +9,7 @@ Gemini should use this RLHF loop as a tool-backed skill.
 1. `capture_feedback`
 2. `feedback_summary`
 3. `prevention_rules`
+4. `plan_intent`
 
 Source of truth for Gemini declarations:
 `adapters/gemini/function-declarations.json`
@@ -41,7 +42,13 @@ npm run feedback:summary
 npm run feedback:rules
 ```
 
-Context-pack endpoints (`/v1/context/*`) are available at the API/MCP layer but are not currently declared in the Gemini function declaration file.
+`plan_intent` executes:
+
+```bash
+POST /v1/intents/plan
+```
+
+Context-pack endpoints (`/v1/context/*`) are available at the API/MCP layer and are not currently declared in the Gemini function declaration file.
 
 ## Objective
 

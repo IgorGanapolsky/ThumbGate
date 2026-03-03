@@ -71,6 +71,35 @@ async function runProof(options = {}) {
     }
 
     {
+      const res = await fetch(`http://localhost:${port}/v1/intents/catalog?mcpProfile=locked`, {
+        headers: { Authorization: 'Bearer proof-key' },
+      });
+      check(res.status === 200, `intents catalog expected 200, got ${res.status}`);
+      const body = await res.json();
+      check(Array.isArray(body.intents), 'intents catalog should return intents array');
+      addResult('api.intents.catalog', true, { intents: body.intents.length, profile: body.mcpProfile });
+    }
+
+    {
+      const res = await fetch(`http://localhost:${port}/v1/intents/plan`, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer proof-key',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          intentId: 'publish_dpo_training_data',
+          mcpProfile: 'default',
+          approved: false,
+        }),
+      });
+      check(res.status === 200, `intent plan expected 200, got ${res.status}`);
+      const body = await res.json();
+      check(body.status === 'checkpoint_required', 'intent plan should require checkpoint when not approved');
+      addResult('api.intents.plan', true, { status: body.status, risk: body.intent.risk });
+    }
+
+    {
       const res = await fetch(`http://localhost:${port}/v1/feedback/capture`, {
         method: 'POST',
         headers: {
@@ -144,6 +173,24 @@ async function runProof(options = {}) {
     }
 
     {
+      const call = await handleRequest({
+        jsonrpc: '2.0',
+        id: 31,
+        method: 'tools/call',
+        params: {
+          name: 'plan_intent',
+          arguments: {
+            intentId: 'publish_dpo_training_data',
+            mcpProfile: 'default',
+          },
+        },
+      });
+      const plan = JSON.parse(call.content[0].text);
+      check(plan.status === 'checkpoint_required', 'mcp plan_intent should return checkpoint_required by default');
+      addResult('mcp.tools.call.plan_intent', true, { status: plan.status });
+    }
+
+    {
       process.env.RLHF_MCP_PROFILE = 'locked';
       let denied = false;
       try {
@@ -170,7 +217,7 @@ async function runProof(options = {}) {
       const chatgpt = fs.readFileSync(path.join(ROOT, 'adapters/chatgpt/openapi.yaml'), 'utf-8');
       check(canonical === chatgpt, 'chatgpt openapi not in sync with canonical openapi');
 
-      ['/v1/feedback/capture', '/v1/dpo/export', '/v1/context/construct'].forEach((route) => {
+      ['/v1/feedback/capture', '/v1/dpo/export', '/v1/context/construct', '/v1/intents/plan'].forEach((route) => {
         check(new RegExp(escapeRegExp(route)).test(canonical), `route missing from openapi: ${route}`);
       });
       addResult('adapter.chatgpt.openapi.parity', true, { byteEqual: true });

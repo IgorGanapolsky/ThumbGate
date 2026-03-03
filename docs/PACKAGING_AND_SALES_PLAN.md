@@ -16,6 +16,7 @@
 - Team workspaces
 - Managed analytics dashboard
 - Webhooks for CI/incident tooling
+- Intent routing control plane (policy bundles + checkpoint approvals)
 
 ### Tier 3: Enterprise (Pricing: custom quote)
 

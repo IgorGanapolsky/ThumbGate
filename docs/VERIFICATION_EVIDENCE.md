@@ -13,7 +13,7 @@ Result summary:
 - `test:schema`: 6 passed, 0 failed
 - `test:loop`: 8 passed, 0 failed
 - `test:dpo`: 5 passed, 0 failed
-- `test:api`: 30 passed, 0 failed
+- `test:api`: 40 passed, 0 failed
 - `test:proof`: 1 passed, 0 failed
 
 ## Adapter compatibility proof harness
@@ -26,15 +26,16 @@ npm run prove:adapters
 
 Observed result:
 
-- Summary: `14 passed`, `0 failed`
+- Summary: `17 passed`, `0 failed`
 - Evidence artifacts:
   - `proof/compatibility/report.json`
   - `proof/compatibility/report.md`
 - Verified checks include:
-  - API auth and feedback/context routes
+  - API auth and feedback/context/intents routes
   - API auth config hardening (`RLHF_API_KEY` required unless insecure mode enabled)
   - Context namespace traversal rejection on API + MCP surfaces
-  - MCP initialize/list/call flow
+  - Intent router checkpoint flow (`checkpoint_required` for unapproved high-risk intents)
+  - MCP initialize/list/call flow (including `plan_intent`)
   - MCP locked-profile write denial
   - OpenAPI parity for ChatGPT adapter
   - Gemini declaration validity

@@ -48,6 +48,39 @@ test('feedback capture accepts valid payload', async () => {
   assert.ok(body.memoryRecord);
 });
 
+test('intent catalog endpoint returns configured intents', async () => {
+  const res = await fetch('http://localhost:8790/v1/intents/catalog?mcpProfile=locked', { headers: authHeader });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.mcpProfile, 'locked');
+  assert.ok(Array.isArray(body.intents));
+  assert.ok(body.intents.length >= 3);
+});
+
+test('intent catalog rejects invalid mcp profile', async () => {
+  const res = await fetch('http://localhost:8790/v1/intents/catalog?mcpProfile=bad-profile', {
+    headers: authHeader,
+  });
+  assert.equal(res.status, 400);
+});
+
+test('intent plan returns checkpoint for unapproved high-risk action', async () => {
+  const res = await fetch('http://localhost:8790/v1/intents/plan', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      intentId: 'publish_dpo_training_data',
+      mcpProfile: 'default',
+      approved: false,
+    }),
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.status, 'checkpoint_required');
+  assert.equal(body.requiresApproval, true);
+});
+
 test('summary endpoint returns markdown text payload', async () => {
   const res = await fetch('http://localhost:8790/v1/feedback/summary?recent=10', { headers: authHeader });
   assert.equal(res.status, 200);

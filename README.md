@@ -18,6 +18,7 @@ This project gives you a working loop:
 4. Export DPO-ready preference pairs.
 5. Construct bounded context packs (constructor/loader/evaluator).
 6. Reuse the same core through API + MCP wrappers.
+7. Route intents through policy bundles with human checkpoints on high-risk actions.
 
 ## Quick Start
 
@@ -53,6 +54,8 @@ node .claude/scripts/feedback/capture-feedback.js \
 
 - `POST /v1/feedback/capture`
 - `GET /v1/feedback/stats`
+- `GET /v1/intents/catalog`
+- `POST /v1/intents/plan`
 - `GET /v1/feedback/summary`
 - `POST /v1/feedback/rules`
 - `POST /v1/dpo/export`
@@ -86,6 +89,17 @@ Use least-privilege MCP profiles based on runtime risk:
 - `locked`: summary-only constrained mode
 
 Config: [config/mcp-allowlists.json](config/mcp-allowlists.json)
+
+## Intent Router
+
+Versioned orchestration bundles define intent-to-action plans and checkpoint policy:
+
+- Bundle configs: `config/policy-bundles/*.json`
+- CLI list: `npm run intents:list`
+- CLI plan: `npm run intents:plan`
+
+The router marks high-risk intents as `checkpoint_required` unless explicitly approved.
+Details: [docs/INTENT_ROUTER.md](docs/INTENT_ROUTER.md)
 
 ## PaperBanana Diagrams
 

@@ -22,6 +22,10 @@ const {
   evaluateContextPack,
   getProvenance,
 } = require('../../scripts/contextfs');
+const {
+  listIntents,
+  planIntent,
+} = require('../../scripts/intent-router');
 
 function getSafeDataDir() {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
@@ -150,6 +154,35 @@ function createApiServer() {
 
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
         sendJson(res, 200, analyzeFeedback());
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/intents/catalog') {
+        const mcpProfile = parsed.searchParams.get('mcpProfile') || undefined;
+        const bundleId = parsed.searchParams.get('bundleId') || undefined;
+        try {
+          const catalog = listIntents({ mcpProfile, bundleId });
+          sendJson(res, 200, catalog);
+        } catch (err) {
+          throw createHttpError(400, err.message || 'Invalid intent catalog request');
+        }
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/intents/plan') {
+        const body = await parseJsonBody(req);
+        try {
+          const plan = planIntent({
+            intentId: body.intentId,
+            context: body.context || '',
+            mcpProfile: body.mcpProfile,
+            bundleId: body.bundleId,
+            approved: body.approved === true,
+          });
+          sendJson(res, 200, plan);
+        } catch (err) {
+          throw createHttpError(400, err.message || 'Invalid intent plan request');
+        }
         return;
       }
 

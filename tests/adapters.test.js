@@ -25,4 +25,5 @@ test('gemini tool declarations are valid JSON with tools array', () => {
   const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
   assert.equal(Array.isArray(payload.tools), true);
   assert.ok(payload.tools.length >= 3);
+  assert.ok(payload.tools.some((tool) => tool.name === 'plan_intent'));
 });

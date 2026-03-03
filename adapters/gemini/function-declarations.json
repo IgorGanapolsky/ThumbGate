@@ -51,6 +51,25 @@
         "method": "POST",
         "path": "/v1/feedback/rules"
       }
+    },
+    {
+      "name": "plan_intent",
+      "description": "Generate a policy-aware execution plan with checkpoint requirements",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "intentId": { "type": "string" },
+          "context": { "type": "string" },
+          "mcpProfile": { "type": "string" },
+          "bundleId": { "type": "string" },
+          "approved": { "type": "boolean" }
+        },
+        "required": ["intentId"]
+      },
+      "http": {
+        "method": "POST",
+        "path": "/v1/intents/plan"
+      }
     }
   ]
 }

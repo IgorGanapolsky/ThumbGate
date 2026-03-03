@@ -44,6 +44,11 @@ This research was done on March 3, 2026 using official documentation or official
 - Amp release note indicates custom commands were removed in favor of skills.
   Source: https://ampcode.com/news/slashing-custom-commands
 
+### Autonomous agent marketplaces / orchestration
+
+- Agentplace positioning emphasizes intent-driven autonomous execution and human-in-the-loop oversight.
+  Source: https://venturebeat.com/business/agentplace-wants-to-replace-the-entire-web-with-autonomous-agents-and-anyone
+
 ### PaperBanana
 
 - PaperBanana project provides CLI-based diagram generation from captions.
@@ -55,4 +60,5 @@ This research was done on March 3, 2026 using official documentation or official
 
 - Core product: RLHF API + MCP server.
 - Distribution wrappers: ChatGPT Actions spec, Claude MCP config, Codex MCP config, Gemini tool definitions, Amp skill template.
+- Add policy-driven intent routing with checkpoint gates as the cross-platform orchestration layer.
 - Revenue path: OSS core + hosted control plane + enterprise support.

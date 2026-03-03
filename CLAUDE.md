@@ -25,6 +25,8 @@ npm run feedback:stats
 npm run feedback:summary
 npm run feedback:rules
 npm run feedback:export:dpo
+npm run intents:list
+npm run intents:plan
 
 # engineering proof gate
 npm test

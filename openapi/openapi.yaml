@@ -39,6 +39,20 @@ components:
             - type: string
         skill:
           type: string
+    IntentPlanRequest:
+      type: object
+      required: [intentId]
+      properties:
+        intentId:
+          type: string
+        context:
+          type: string
+        mcpProfile:
+          type: string
+        bundleId:
+          type: string
+        approved:
+          type: boolean
 paths:
   /healthz:
     get:
@@ -70,6 +84,39 @@ paths:
       responses:
         '200':
           description: Aggregated feedback statistics
+        '401':
+          description: Unauthorized
+  /v1/intents/catalog:
+    get:
+      operationId: listIntentCatalog
+      parameters:
+        - in: query
+          name: mcpProfile
+          schema:
+            type: string
+        - in: query
+          name: bundleId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Intent catalog with risk and checkpoint metadata
+        '401':
+          description: Unauthorized
+  /v1/intents/plan:
+    post:
+      operationId: planIntent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntentPlanRequest'
+      responses:
+        '200':
+          description: Policy-scoped intent execution plan
+        '400':
+          description: Invalid intent request
         '401':
           description: Unauthorized
   /v1/feedback/summary:

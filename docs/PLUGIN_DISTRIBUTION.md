@@ -10,6 +10,8 @@ Ship one core runtime and fan out to platform adapters:
 
 This keeps maintenance low and supports a tight budget.
 
+Intent routing and checkpoint policy are shared across platforms via versioned bundles in `config/policy-bundles/`.
+
 ## Commercial packaging model
 
 1. Ship OSS core first (this repo).
