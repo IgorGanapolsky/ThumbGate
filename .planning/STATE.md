@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Every synced feature has tests, passes CI, and produces verification evidence — no tech debt
-**Current focus:** Phase 4: LanceDB Vector Storage
+**Current focus:** Phase 5: RLAIF and DPO Optimization
 
 ## Current Position
 
-Phase: 3 of 5 — COMPLETE (Governance into Subway)
-Plan: Phase 3 all 4 plans complete
-Status: Phase 3 complete — 3-01, 3-02, 3-03, 3-04 done; GOV-01..GOV-06 all marked complete
-Last activity: 2026-03-04 — Plan 3-04 complete: Phase 3 proof report generated; all governance scripts operational in Subway with 43 Jest tests passing
+Phase: 4 of 5 — COMPLETE (LanceDB Vector Storage)
+Plan: Phase 4 all 4 plans complete
+Status: Phase 4 complete — 4-01, 4-02, 4-03, 4-04 done; VEC-01..VEC-05 all marked complete
+Last activity: 2026-03-04 — Plan 4-04 complete: prove-lancedb.js generated lancedb-report.md; all 5 VEC requirements pass; 93 node-runner tests green; Phase 4 complete
 
-Progress: [████░░░░░░] 36%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -49,6 +49,7 @@ Progress: [████░░░░░░] 36%
 | Phase 04-lancedb-vector-storage P4-01 | 1m 2s | 2 tasks | 3 files |
 | Phase 04-lancedb-vector-storage P4-02 | 54s | 1 tasks | 1 files |
 | Phase 04-lancedb-vector-storage P4-03 | 1m 23s | 2 tasks | 3 files |
+| Phase 04-lancedb-vector-storage P4-04 | 112s | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,7 @@ Progress: [████░░░░░░] 36%
 - [Phase 04-lancedb-vector-storage]: upsertFeedback() placed after primary JSONL write and all ML side-effects — fire-and-forget .catch() pattern, no await, vector index is optional enhancement
 - [Phase 04-lancedb-vector-storage]: RLHF_VECTOR_STUB_EMBED=true returns deterministic 384-dim unit vector in embed() to run vector-store tests fully offline without ONNX model
 - [Phase 04-lancedb-vector-storage]: Tests use it() (not test()) per node:test describe/it pattern matching thompson-sampling.test.js; require.cache invalidation isolates env per test
+- [Phase 04-lancedb-vector-storage]: prove-lancedb.js uses RLHF_VECTOR_STUB_EMBED=true for offline smoke test; VEC-05 self-referential via execSync node:test
 
 ### Pending Todos
 
@@ -97,5 +99,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Completed 04-lancedb-vector-storage/4-02-PLAN.md — vector store wired into captureFeedback(); getVectorStoreModule() + non-blocking upsertFeedback().catch(); 89 tests pass
+Stopped at: Completed 04-lancedb-vector-storage/4-04-PLAN.md — prove-lancedb.js generated lancedb-report.md; all 5 VEC requirements pass; 93 tests green; Phase 4 complete
 Resume file: None
