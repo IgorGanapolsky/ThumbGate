@@ -1,6 +1,6 @@
 # Contract Audit Report
 
-Generated: 2026-03-04T16:09:47.713Z
+Generated: 2026-03-04T16:36:33.661Z
 
 This report is machine-generated evidence for CNTR-01: export mapping audit confirming compatibility between rlhf-feedback-loop and Subway_RN_Demo shared scripts.
 
@@ -84,7 +84,7 @@ Notable divergences between repos requiring an alias or adapter in Phases 2/3:
 | Self-assessment | absent | `selfScore` | Subway-only — document for Phase 5 (RLAIF) |
 | Feedback summary | `feedbackSummary(recentN)` | `feedbackSummary(recentN, logPath)` | Signature divergence — compatible at export level, behavior differs |
 | Memory validation | absent | `validateMemoryStructure` | Subway-only — flag for Phase 2 planner |
-| Rubric evaluation | `resolveFeedbackAction` accepts `rubricEvaluation` | `resolveFeedbackAction` accepts `rubricEvaluation`, enforces `promotionEligible` gate | COMPATIBLE — CNTR-02 complete (plan 1-02) |
+| Rubric evaluation | `resolveFeedbackAction` accepts `rubricEvaluation` | `resolveFeedbackAction` accepts `rubricEvaluation` | COMPATIBLE — CNTR-02 resolved |
 
 ## Discrepancies vs Research Notes
 

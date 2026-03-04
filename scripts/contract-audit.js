@@ -145,7 +145,7 @@ function buildMarkdownReport(results) {
   lines.push('| Self-assessment | absent | `selfScore` | Subway-only — document for Phase 5 (RLAIF) |');
   lines.push('| Feedback summary | `feedbackSummary(recentN)` | `feedbackSummary(recentN, logPath)` | Signature divergence — compatible at export level, behavior differs |');
   lines.push('| Memory validation | absent | `validateMemoryStructure` | Subway-only — flag for Phase 2 planner |');
-  lines.push('| Rubric evaluation | `resolveFeedbackAction` accepts `rubricEvaluation` | `resolveFeedbackAction` silently ignores `rubricEvaluation` | Behavior diverges — CNTR-02 fix required |');
+  lines.push('| Rubric evaluation | `resolveFeedbackAction` accepts `rubricEvaluation` | `resolveFeedbackAction` accepts `rubricEvaluation` | COMPATIBLE — CNTR-02 resolved |');
   lines.push('');
   lines.push('## Discrepancies vs Research Notes');
   lines.push('');
