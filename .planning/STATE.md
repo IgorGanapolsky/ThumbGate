@@ -55,6 +55,8 @@ Progress: [░░░░░░░░░░] 0% (v2.0)
 | Phase 05-rlaif-and-dpo-optimization P5-02 | 2min | 1 tasks | 3 files |
 | Phase 05-rlaif-and-dpo-optimization P5-01 | 278s | 2 tasks | 8 files |
 | Phase 05-rlaif-and-dpo-optimization P5-03 | 15min | 2 tasks | 6 files |
+| Phase 06-feedback-attribution P06-02 | 135s | 1 tasks | 1 files |
+| Phase 06-feedback-attribution P06-01 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -63,7 +65,9 @@ Progress: [░░░░░░░░░░] 0% (v2.0)
 - [Init]: Cherry-pick best features from each repo — no full merge, library/prototype boundary preserved
 - [Init]: Both sync directions run simultaneously — ML into rlhf-feedback-loop, governance into Subway
 - [Init]: Phases 2 and 3 are independent and can run in parallel after Phase 1 clears
-- [Init]: $10/month budget cap enforced by budget-guard.js on all API calls
+- [Init]: ### Decisions
+
+0/month budget cap enforced by budget-guard.js on all API calls
 - [Phase 01-contract-alignment]: parseTimestamp() uses new Date(String(ts).trim()) returning null for invalid input — CNTR-03 rlhf side complete
 - [Phase 01-contract-alignment]: Baseline node-runner count is 60 (58 test:api + 2 test:proof) — authoritative Phase 2 and Phase 3 start gate in proof/baseline-test-count.md
 - [Phase 01-contract-alignment P02]: Subway feedback-schema.js is gitignored via .git/info/exclude (local-only) — verified in place with 44 inline tests passing; CNTR-02 complete
@@ -101,6 +105,8 @@ Progress: [░░░░░░░░░░] 0% (v2.0)
 - [v2.0 Roadmap]: Phase 11 (Subway Upgrades) is independent of all v2 rlhf phases — can parallel with 7-10
 - [v2.0 Roadmap]: Phase 12 is the final gate — depends on all prior phases; proof reports cover every v2 phase
 - [v2.0 Roadmap]: v1 final test count is 142 — Phase 12 success criterion requires strictly greater count
+- [Phase 06-feedback-attribution]: hybrid-feedback-context.js evaluatePretool: compiled artifact fast path trusts guard artifact, falls back to live state build — ATTR-03 no-false-positive via hasTwoKeywordHits + count>=2 filter
+- [Phase 06-feedback-attribution]: ROOT = path.join(__dirname, '..') in feedback-attribution.js — 1 level up from scripts/ to repo root (Subway used 2 levels from .claude/scripts/feedback/)
 
 ### Pending Todos
 
