@@ -39,6 +39,7 @@ Progress: [██░░░░░░░░] 20%
 |-------|-------|-------|----------|
 | 01-contract-alignment P03 | 15min | 2 tasks | 3 files |
 | 01-contract-alignment P02 | 20min | 2 tasks | 2 files |
+| Phase 02-ml-into-rlhf-feedback-loop P02-01 | 8 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -47,10 +48,14 @@ Progress: [██░░░░░░░░] 20%
 - [Init]: Cherry-pick best features from each repo — no full merge, library/prototype boundary preserved
 - [Init]: Both sync directions run simultaneously — ML into rlhf-feedback-loop, governance into Subway
 - [Init]: Phases 2 and 3 are independent and can run in parallel after Phase 1 clears
-- [Init]: $10/month budget cap enforced by budget-guard.js on all API calls
+- [Init]: ### Decisions
+
+0/month budget cap enforced by budget-guard.js on all API calls
 - [Phase 01-contract-alignment]: parseTimestamp() uses new Date(String(ts).trim()) returning null for invalid input — CNTR-03 rlhf side complete
 - [Phase 01-contract-alignment]: Baseline node-runner count is 60 (58 test:api + 2 test:proof) — authoritative Phase 2 and Phase 3 start gate in proof/baseline-test-count.md
 - [Phase 01-contract-alignment P02]: Subway feedback-schema.js is gitignored via .git/info/exclude (local-only) — verified in place with 44 inline tests passing; CNTR-02 complete
+- [Phase 02-ml-into-rlhf-feedback-loop]: Zero npm dependencies for Thompson Sampling: Marsaglia-Tsang gamma ratio (inline) replaces jStat library
+- [Phase 02-ml-into-rlhf-feedback-loop]: timeDecayWeight delegates to parseTimestamp from Phase 1 — no duplicate timestamp parsing
 
 ### Pending Todos
 

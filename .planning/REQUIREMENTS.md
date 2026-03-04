@@ -13,8 +13,8 @@
 
 ### ML into rlhf-feedback-loop
 
-- [ ] **ML-01**: Thompson Sampling Beta-Bernoulli posteriors compute per-category reliability estimates
-- [ ] **ML-02**: Exponential time-decay (half-life 7 days) weights recent feedback higher
+- [x] **ML-01**: Thompson Sampling Beta-Bernoulli posteriors compute per-category reliability estimates
+- [x] **ML-02**: Exponential time-decay (half-life 7 days) weights recent feedback higher
 - [ ] **ML-03**: LSTM/Transformer sequence tracking writes feedback-sequences.jsonl with sliding window of N=10
 - [ ] **ML-04**: Diversity tracking produces per-domain coverage scores and diversityScore metric
 - [ ] **ML-05**: All ML features have unit tests proving correct behavior
@@ -75,8 +75,8 @@
 | CNTR-01 | Phase 1: Contract Alignment | Complete |
 | CNTR-02 | Phase 1: Contract Alignment | Complete |
 | CNTR-03 | Phase 1: Contract Alignment | Complete |
-| ML-01 | Phase 2: ML into rlhf-feedback-loop | Pending |
-| ML-02 | Phase 2: ML into rlhf-feedback-loop | Pending |
+| ML-01 | Phase 2: ML into rlhf-feedback-loop | Complete |
+| ML-02 | Phase 2: ML into rlhf-feedback-loop | Complete |
 | ML-03 | Phase 2: ML into rlhf-feedback-loop | Pending |
 | ML-04 | Phase 2: ML into rlhf-feedback-loop | Pending |
 | ML-05 | Phase 2: ML into rlhf-feedback-loop | Pending |
