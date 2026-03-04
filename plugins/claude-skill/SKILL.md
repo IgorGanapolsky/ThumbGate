@@ -1,11 +1,20 @@
 ---
 name: rlhf-feedback
-description: Capture thumbs up/down feedback into structured memories and prevention rules
+description: >
+  Capture thumbs up/down feedback into structured memories and prevention rules.
+  Use when user gives explicit quality signals about agent work (e.g. "that worked",
+  "that failed", "thumbs up/down"). Do NOT use for general questions, code generation,
+  file operations, or any task that is not explicit feedback on prior agent output.
 triggers:
   - thumbs up
   - thumbs down
   - that worked
   - that failed
+negative_triggers:
+  - generate code
+  - search files
+  - explain this
+  - run tests
 ---
 
 # RLHF Feedback Skill
