@@ -47,6 +47,14 @@ function getContextFsModule() {
   }
 }
 
+function getVectorStoreModule() {
+  try {
+    return require('./vector-store');
+  } catch {
+    return null;
+  }
+}
+
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
@@ -368,6 +376,14 @@ function captureFeedback(params) {
     updateDiversityTracking(feedbackEvent, mlPaths);
   } catch (err) {
     // Diversity tracking failure is non-critical
+  }
+
+  // Vector storage side-effect (non-blocking — primary write already succeeded)
+  const vectorStore = getVectorStoreModule();
+  if (vectorStore) {
+    vectorStore.upsertFeedback(feedbackEvent).catch(() => {
+      // Non-critical; primary feedback log is the source of truth
+    });
   }
 
   summary.accepted += 1;
