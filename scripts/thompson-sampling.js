@@ -122,6 +122,24 @@ function loadModel(modelPath) {
   return createInitialModel();
 }
 
+/**
+ * Persist a model object to disk as formatted JSON.
+ *
+ * Creates parent directories if needed. Updates `model.updated` timestamp
+ * before writing so the file reflects the time of save.
+ *
+ * @param {Object} model - Model object to persist
+ * @param {string} modelPath - Absolute or relative path to write
+ */
+function saveModel(model, modelPath) {
+  model.updated = new Date().toISOString();
+  const dir = require('path').dirname(modelPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(modelPath, `${JSON.stringify(model, null, 2)}\n`);
+}
+
 // ---------------------------------------------------------------------------
 // Model Update
 // ---------------------------------------------------------------------------
@@ -302,6 +320,7 @@ function betaSample(alpha, beta) {
 module.exports = {
   timeDecayWeight,
   loadModel,
+  saveModel,
   createInitialModel,
   updateModel,
   getReliability,
