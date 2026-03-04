@@ -77,39 +77,39 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ATTR-01 | TBD | Pending |
-| ATTR-02 | TBD | Pending |
-| ATTR-03 | TBD | Pending |
-| QUAL-01 | TBD | Pending |
-| QUAL-02 | TBD | Pending |
-| QUAL-03 | TBD | Pending |
-| QUAL-04 | TBD | Pending |
-| LOOP-01 | TBD | Pending |
-| LOOP-02 | TBD | Pending |
-| LOOP-03 | TBD | Pending |
-| LOOP-04 | TBD | Pending |
-| LOOP-05 | TBD | Pending |
-| INTL-01 | TBD | Pending |
-| INTL-02 | TBD | Pending |
-| INTL-03 | TBD | Pending |
-| XPRT-01 | TBD | Pending |
-| XPRT-02 | TBD | Pending |
-| XPRT-03 | TBD | Pending |
-| XPRT-04 | TBD | Pending |
-| XPRT-05 | TBD | Pending |
-| SUBW-01 | TBD | Pending |
-| SUBW-02 | TBD | Pending |
-| SUBW-03 | TBD | Pending |
-| SUBW-04 | TBD | Pending |
-| SUBW-05 | TBD | Pending |
-| PROOF-01 | TBD | Pending |
-| PROOF-02 | TBD | Pending |
+| ATTR-01 | Phase 6 | Pending |
+| ATTR-02 | Phase 6 | Pending |
+| ATTR-03 | Phase 6 | Pending |
+| QUAL-01 | Phase 7 | Pending |
+| QUAL-02 | Phase 7 | Pending |
+| QUAL-03 | Phase 7 | Pending |
+| QUAL-04 | Phase 7 | Pending |
+| LOOP-01 | Phase 8 | Pending |
+| LOOP-02 | Phase 8 | Pending |
+| LOOP-03 | Phase 8 | Pending |
+| LOOP-04 | Phase 8 | Pending |
+| LOOP-05 | Phase 8 | Pending |
+| INTL-01 | Phase 9 | Pending |
+| INTL-02 | Phase 9 | Pending |
+| INTL-03 | Phase 9 | Pending |
+| XPRT-01 | Phase 10 | Pending |
+| XPRT-02 | Phase 10 | Pending |
+| XPRT-03 | Phase 10 | Pending |
+| XPRT-04 | Phase 10 | Pending |
+| XPRT-05 | Phase 10 | Pending |
+| SUBW-01 | Phase 11 | Pending |
+| SUBW-02 | Phase 11 | Pending |
+| SUBW-03 | Phase 11 | Pending |
+| SUBW-04 | Phase 11 | Pending |
+| SUBW-05 | Phase 11 | Pending |
+| PROOF-01 | Phase 12 | Pending |
+| PROOF-02 | Phase 12 | Pending |
 
 **Coverage:**
 - v2 requirements: 27 total
-- Mapped to phases: 0
-- Unmapped: 27 (pending roadmap)
+- Mapped to phases: 27
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-04*
-*Last updated: 2026-03-04 after v2.0 milestone start*
+*Last updated: 2026-03-04 — traceability complete after v2.0 roadmap (Phases 6-12)*

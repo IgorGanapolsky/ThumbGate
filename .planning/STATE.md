@@ -5,35 +5,37 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Every synced feature has tests, passes CI, and produces verification evidence — no tech debt
-**Current focus:** ALL PHASES COMPLETE — 2026-03-04
+**Current focus:** v2.0 milestone — Phase 6: Feedback Attribution (CRITICAL, starts first)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 6 — Feedback Attribution
 Plan: —
-Status: Defining requirements for v2.0 milestone
-Last activity: 2026-03-04 — Milestone v2.0 started
+Status: Not started — roadmap written, awaiting plan-phase
+Last activity: 2026-03-04 — v2.0 roadmap created (Phases 6-12)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [░░░░░░░░░░] 0% (v2.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
+- Total plans completed (v2.0): 0
 - Average duration: -
 - Total execution time: 0 hours
 
-**By Phase:**
+**By Phase (v2.0):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | - | - | - | - |
 
 **Recent Trend:**
-- Last 5 plans: none yet
+- Last 5 plans: none yet (v2.0)
 - Trend: -
 
 *Updated after each plan completion*
+
+**v1.0 Historical Metrics:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
@@ -61,9 +63,7 @@ Progress: [░░░░░░░░░░] 0%
 - [Init]: Cherry-pick best features from each repo — no full merge, library/prototype boundary preserved
 - [Init]: Both sync directions run simultaneously — ML into rlhf-feedback-loop, governance into Subway
 - [Init]: Phases 2 and 3 are independent and can run in parallel after Phase 1 clears
-- [Init]: ### Decisions
-
-0/month budget cap enforced by budget-guard.js on all API calls
+- [Init]: $10/month budget cap enforced by budget-guard.js on all API calls
 - [Phase 01-contract-alignment]: parseTimestamp() uses new Date(String(ts).trim()) returning null for invalid input — CNTR-03 rlhf side complete
 - [Phase 01-contract-alignment]: Baseline node-runner count is 60 (58 test:api + 2 test:proof) — authoritative Phase 2 and Phase 3 start gate in proof/baseline-test-count.md
 - [Phase 01-contract-alignment P02]: Subway feedback-schema.js is gitignored via .git/info/exclude (local-only) — verified in place with 44 inline tests passing; CNTR-02 complete
@@ -94,18 +94,26 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 05-rlaif-and-dpo-optimization]: saveModel() added to thompson-sampling.js — was absent; required by dpo-optimizer for Thompson posterior persistence
 - [Phase 05-rlaif-and-dpo-optimization]: test:rlaif wired into test aggregate; 24 new tests bring total from 93 to 142 (+49 from Phase 4 baseline)
 - [Phase 05-rlaif-and-dpo-optimization]: prove-rlaif.js mirrors prove-lancedb.js — mkdtempSync / env override / execSync pattern; DPO-04 self-validates via execSync node:test
+- [v2.0 Roadmap]: Phase 6 CRITICAL — must execute before 7, 8, 9, 10; attribution fields required by all downstream phases
+- [v2.0 Roadmap]: Phases 7 and 8 are independent of each other — can run in parallel after Phase 6
+- [v2.0 Roadmap]: Phase 9 depends on Phase 6 only — can parallel with 7, 8
+- [v2.0 Roadmap]: Phase 10 depends on Phase 6 and Phase 7 (needs quality-validated data)
+- [v2.0 Roadmap]: Phase 11 (Subway Upgrades) is independent of all v2 rlhf phases — can parallel with 7-10
+- [v2.0 Roadmap]: Phase 12 is the final gate — depends on all prior phases; proof reports cover every v2 phase
+- [v2.0 Roadmap]: v1 final test count is 142 — Phase 12 success criterion requires strictly greater count
 
 ### Pending Todos
 
-None yet.
+- Run `gsd:plan-phase 6` to decompose Phase 6 into executable plans
 
 ### Blockers/Concerns
 
-- [Phase 4]: Lance file format version compatibility (Python 0.27.1 vs Node.js 0.26.2) not definitively resolved — must verify before Phase 4 implementation
-- [Phase 3]: Subway lint:fix behavior under auto-import-sort not confirmed — must audit `.eslintrc.js` before enabling self-heal
+- [Phase 4]: Lance file format version compatibility (Python 0.27.1 vs Node.js 0.26.2) not definitively resolved — verify before any Phase 11 LanceDB Subway work
+- [Phase 3]: Subway lint:fix behavior under auto-import-sort not confirmed — audit `.eslintrc.js` before enabling self-heal in Phase 11
 
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Completed 05-rlaif-and-dpo-optimization/5-03-PLAN.md — prove-rlaif.js created; all 4 DPO requirements pass; Phase 5 COMPLETE; ALL PHASES COMPLETE
+Stopped at: v2.0 roadmap written — Phases 6-12 defined, all 27 requirements mapped, STATE.md and REQUIREMENTS.md updated
 Resume file: None
+Next action: `/gsd:plan-phase 6`
