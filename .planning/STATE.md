@@ -50,6 +50,7 @@ Progress: [████████░░] 80%
 | Phase 04-lancedb-vector-storage P4-02 | 54s | 1 tasks | 1 files |
 | Phase 04-lancedb-vector-storage P4-03 | 1m 23s | 2 tasks | 3 files |
 | Phase 04-lancedb-vector-storage P4-04 | 112s | 2 tasks | 4 files |
+| Phase 05-rlaif-and-dpo-optimization P5-02 | 2min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,8 @@ Progress: [████████░░] 80%
 - [Phase 04-lancedb-vector-storage]: RLHF_VECTOR_STUB_EMBED=true returns deterministic 384-dim unit vector in embed() to run vector-store tests fully offline without ONNX model
 - [Phase 04-lancedb-vector-storage]: Tests use it() (not test()) per node:test describe/it pattern matching thompson-sampling.test.js; require.cache invalidation isolates env per test
 - [Phase 04-lancedb-vector-storage]: prove-lancedb.js uses RLHF_VECTOR_STUB_EMBED=true for offline smoke test; VEC-05 self-referential via execSync node:test
+- [Phase 05-rlaif-and-dpo-optimization]: inferDomain exported from feedback-loop.js — was implemented but missing from module.exports; needed for meta-policy.js import
+- [Phase 05-rlaif-and-dpo-optimization]: meta-policy.js run() is synchronous — CLI uses try/catch not async .catch(); timeDecayWeight imported from thompson-sampling.js (not feedback-schema.js)
 
 ### Pending Todos
 

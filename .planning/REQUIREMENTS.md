@@ -41,7 +41,7 @@
 
 - [ ] **DPO-01**: RLAIF self-scoring grades feedback against CLAUDE.md constraints
 - [ ] **DPO-02**: DPO batch optimization builds preference pairs from Thompson Sampling posteriors
-- [ ] **DPO-03**: Meta-policy rule extraction produces actionable rules from feedback trends
+- [x] **DPO-03**: Meta-policy rule extraction produces actionable rules from feedback trends
 - [ ] **DPO-04**: All RLAIF features have tests and proof report
 
 ## v2 Requirements
@@ -94,7 +94,7 @@
 | VEC-05 | Phase 4: LanceDB Vector Storage | Complete |
 | DPO-01 | Phase 5: RLAIF and DPO Optimization | Pending |
 | DPO-02 | Phase 5: RLAIF and DPO Optimization | Pending |
-| DPO-03 | Phase 5: RLAIF and DPO Optimization | Pending |
+| DPO-03 | Phase 5: RLAIF and DPO Optimization | Complete |
 | DPO-04 | Phase 5: RLAIF and DPO Optimization | Pending |
 
 **Coverage:**

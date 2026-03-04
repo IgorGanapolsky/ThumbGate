@@ -124,4 +124,4 @@ Phase 1 → Phase 2 and Phase 3 (parallel) → Phase 4 → Phase 5
 | 2. ML into rlhf-feedback-loop | 5/5 | Complete    | 2026-03-04 |
 | 3. Governance into Subway | 4/4 | Complete    | 2026-03-04 |
 | 4. LanceDB Vector Storage | 4/4 | Complete    | 2026-03-04 |
-| 5. RLAIF and DPO Optimization | 0/3 | Not started | - |
+| 5. RLAIF and DPO Optimization | 1/3 | In Progress|  |
