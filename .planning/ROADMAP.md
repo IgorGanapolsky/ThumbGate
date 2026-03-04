@@ -63,9 +63,15 @@ Plans:
   1. Calling `budget-guard.js` in Subway with a simulated $10.01 spend rejects the operation and leaves the ledger intact
   2. `intent-router.js` in Subway classifies a test intent and returns a policy bundle with correct approval requirements
   3. `contextfs.js` in Subway stores and retrieves context across 5 namespaces, and a second lookup for a Jaccard-similar query (>=0.7) returns a cache hit without re-computation
-  4. Running `npm run self-heal:check` in Subway produces a health report; `npm run self-heal:run` executes fix plans without over-triggering on passing code
-  5. All governance features pass unit tests and `proof/gov-sync-report.md` exists with evidence
-**Plans**: TBD
+  4. Running `npm run test:governance` in Subway runs all governance Jest tests; `npm run self-heal:check` produces a health report
+  5. All governance features pass unit tests and `proof/governance-into-subway/gov-sync-report.md` exists with evidence
+**Plans**: 4 plans
+
+Plans:
+- [ ] 3-01-PLAN.md — Port budget-guard.js + contextfs.js to Subway with Jest tests (GOV-01, GOV-03, GOV-05 partial)
+- [ ] 3-02-PLAN.md — Port mcp-policy.js + config files + intent-router.js with Jest tests (GOV-02, GOV-05 partial)
+- [ ] 3-03-PLAN.md — Port self-heal.js + self-healing-check.js with Subway-adapted DEFAULT_CHECKS + Jest tests + test:governance npm script (GOV-04, GOV-05)
+- [ ] 3-04-PLAN.md — Generate proof report + mark GOV requirements complete (GOV-06)
 
 ### Phase 4: LanceDB Vector Storage
 **Goal**: rlhf-feedback-loop stores feedback vectors in an embedded LanceDB table with cross-language schema compatibility verified against Subway's Python stack
@@ -105,6 +111,6 @@ Phase 1 → Phase 2 and Phase 3 (parallel) → Phase 4 → Phase 5
 |-------|----------------|--------|-----------|
 | 1. Contract Alignment | 3/3 | Complete    | 2026-03-04 |
 | 2. ML into rlhf-feedback-loop | 0/5 | Not started | - |
-| 3. Governance into Subway | 0/TBD | Not started | - |
+| 3. Governance into Subway | 0/4 | Not started | - |
 | 4. LanceDB Vector Storage | 0/TBD | Not started | - |
 | 5. RLAIF and DPO Optimization | 0/TBD | Not started | - |
