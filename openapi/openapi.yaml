@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: RLHF Feedback Loop API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     Production API for feedback capture, schema-validated memory promotion,
     prevention rule generation, and DPO export.
@@ -16,6 +16,20 @@ components:
       scheme: bearer
       bearerFormat: API Key
   schemas:
+    RubricScore:
+      type: object
+      required: [criterion, score]
+      properties:
+        criterion:
+          type: string
+        score:
+          type: number
+          minimum: 1
+          maximum: 5
+        evidence:
+          type: string
+        judge:
+          type: string
     CaptureFeedbackRequest:
       type: object
       required: [signal, context]
@@ -31,6 +45,19 @@ components:
           type: string
         whatWorked:
           type: string
+        rubricScores:
+          type: array
+          items:
+            $ref: '#/components/schemas/RubricScore'
+        guardrails:
+          type: object
+          properties:
+            testsPassed:
+              type: boolean
+            pathSafety:
+              type: boolean
+            budgetCompliant:
+              type: boolean
         tags:
           oneOf:
             - type: array
@@ -39,6 +66,20 @@ components:
             - type: string
         skill:
           type: string
+    IntentPlanRequest:
+      type: object
+      required: [intentId]
+      properties:
+        intentId:
+          type: string
+        context:
+          type: string
+        mcpProfile:
+          type: string
+        bundleId:
+          type: string
+        approved:
+          type: boolean
 paths:
   /healthz:
     get:
@@ -70,6 +111,39 @@ paths:
       responses:
         '200':
           description: Aggregated feedback statistics
+        '401':
+          description: Unauthorized
+  /v1/intents/catalog:
+    get:
+      operationId: listIntentCatalog
+      parameters:
+        - in: query
+          name: mcpProfile
+          schema:
+            type: string
+        - in: query
+          name: bundleId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Intent catalog with risk and checkpoint metadata
+        '401':
+          description: Unauthorized
+  /v1/intents/plan:
+    post:
+      operationId: planIntent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntentPlanRequest'
+      responses:
+        '200':
+          description: Policy-scoped intent execution plan
+        '400':
+          description: Invalid intent request
         '401':
           description: Unauthorized
   /v1/feedback/summary:
@@ -182,9 +256,24 @@ paths:
                   type: string
                 notes:
                   type: string
+                rubricScores:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/RubricScore'
+                guardrails:
+                  type: object
+                  properties:
+                    testsPassed:
+                      type: boolean
+                    pathSafety:
+                      type: boolean
+                    budgetCompliant:
+                      type: boolean
       responses:
         '200':
           description: Evaluation recorded
+        '400':
+          description: Invalid rubric payload
         '401':
           description: Unauthorized
   /v1/context/provenance:

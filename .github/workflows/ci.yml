@@ -4,10 +4,20 @@ on:
   push:
     branches: [main, feat/**]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -16,9 +26,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install deps
         run: npm install
 
       - name: Run tests
         run: npm test
+
+      - name: Run adapter proof
+        run: npm run prove:adapters
+
+      - name: Run automation proof
+        run: npm run prove:automation
+
+      - name: Upload proof artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-artifacts
+          path: |
+            proof/compatibility/report.json
+            proof/compatibility/report.md
+            proof/automation/report.json
+            proof/automation/report.md

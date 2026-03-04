@@ -13,6 +13,9 @@ const {
   resolveFeedbackAction,
   prepareForStorage,
 } = require('./feedback-schema');
+const {
+  buildRubricEvaluation,
+} = require('./rubric-engine');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_FEEDBACK_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
@@ -72,6 +75,21 @@ function normalizeSignal(signal) {
   return null;
 }
 
+function parseOptionalObject(input, name) {
+  if (input == null) return {};
+  if (typeof input === 'object' && !Array.isArray(input)) return input;
+  if (typeof input === 'string') {
+    const trimmed = input.trim();
+    if (!trimmed) return {};
+    const parsed = JSON.parse(trimmed);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error(`${name} must be an object`);
+    }
+    return parsed;
+  }
+  throw new Error(`${name} must be object or JSON string`);
+}
+
 function loadSummary() {
   const { SUMMARY_PATH } = getFeedbackPaths();
   if (!fs.existsSync(SUMMARY_PATH)) {
@@ -110,6 +128,21 @@ function captureFeedback(params) {
         .map((t) => t.trim())
         .filter(Boolean);
 
+  let rubricEvaluation = null;
+  try {
+    if (params.rubricScores != null || params.guardrails != null) {
+      rubricEvaluation = buildRubricEvaluation({
+        rubricScores: params.rubricScores,
+        guardrails: parseOptionalObject(params.guardrails, 'guardrails'),
+      });
+    }
+  } catch (err) {
+    return {
+      accepted: false,
+      reason: `Invalid rubric payload: ${err.message}`,
+    };
+  }
+
   const action = resolveFeedbackAction({
     signal,
     context: params.context || '',
@@ -117,6 +150,7 @@ function captureFeedback(params) {
     whatToChange: params.whatToChange,
     whatWorked: params.whatWorked,
     tags,
+    rubricEvaluation,
   });
 
   const now = new Date().toISOString();
@@ -129,6 +163,16 @@ function captureFeedback(params) {
     whatWorked: params.whatWorked || null,
     tags,
     skill: params.skill || null,
+    rubric: rubricEvaluation
+      ? {
+        rubricId: rubricEvaluation.rubricId,
+        weightedScore: rubricEvaluation.weightedScore,
+        failingCriteria: rubricEvaluation.failingCriteria,
+        failingGuardrails: rubricEvaluation.failingGuardrails,
+        judgeDisagreements: rubricEvaluation.judgeDisagreements,
+        promotionEligible: rubricEvaluation.promotionEligible,
+      }
+      : null,
     actionType: action.type,
     actionReason: action.reason || null,
     timestamp: now,
@@ -202,6 +246,9 @@ function analyzeFeedback(logPath) {
   const entries = readJSONL(logPath || FEEDBACK_LOG_PATH);
   const skills = {};
   const tags = {};
+  const rubricCriteria = {};
+  let rubricSamples = 0;
+  let blockedPromotions = 0;
 
   let totalPositive = 0;
   let totalNegative = 0;
@@ -220,6 +267,21 @@ function analyzeFeedback(logPath) {
       if (!tags[tag]) tags[tag] = { positive: 0, negative: 0, total: 0 };
       tags[tag][entry.signal] += 1;
       tags[tag].total += 1;
+    }
+
+    if (entry.actionType === 'no-action' && typeof entry.actionReason === 'string' && entry.actionReason.includes('Rubric gate')) {
+      blockedPromotions += 1;
+    }
+
+    if (entry.rubric && entry.rubric.weightedScore != null) {
+      rubricSamples += 1;
+    }
+
+    if (entry.rubric && Array.isArray(entry.rubric.failingCriteria)) {
+      for (const criterion of entry.rubric.failingCriteria) {
+        if (!rubricCriteria[criterion]) rubricCriteria[criterion] = { failures: 0 };
+        rubricCriteria[criterion].failures += 1;
+      }
     }
   }
 
@@ -257,6 +319,11 @@ function analyzeFeedback(logPath) {
     recentRate,
     skills,
     tags,
+    rubric: {
+      samples: rubricSamples,
+      blockedPromotions,
+      failingCriteria: rubricCriteria,
+    },
     recommendations,
   };
 }
@@ -269,10 +336,19 @@ function buildPreventionRules(minOccurrences = 2) {
   }
 
   const buckets = {};
+  const rubricBuckets = {};
   for (const m of memories) {
     const key = (m.tags || []).find((t) => !['feedback', 'negative', 'positive'].includes(t)) || 'general';
     if (!buckets[key]) buckets[key] = [];
     buckets[key].push(m);
+
+    const failed = m.rubricSummary && Array.isArray(m.rubricSummary.failingCriteria)
+      ? m.rubricSummary.failingCriteria
+      : [];
+    failed.forEach((criterion) => {
+      if (!rubricBuckets[criterion]) rubricBuckets[criterion] = [];
+      rubricBuckets[criterion].push(m);
+    });
   }
 
   const lines = ['# Prevention Rules', '', 'Generated from negative feedback memories.'];
@@ -289,6 +365,16 @@ function buildPreventionRules(minOccurrences = 2) {
       lines.push(`- Rule: ${avoid.replace(/^How to avoid:\s*/i, '')}`);
       lines.push(`- Latest mistake: ${latest.title}`);
     });
+
+  const rubricEntries = Object.entries(rubricBuckets).sort((a, b) => b[1].length - a[1].length);
+  if (rubricEntries.length > 0) {
+    lines.push('');
+    lines.push('## Rubric Failure Dimensions');
+    rubricEntries.forEach(([criterion, items]) => {
+      if (items.length < minOccurrences) return;
+      lines.push(`- ${criterion}: ${items.length} failures`);
+    });
+  }
 
   if (lines.length === 3) {
     lines.push('');
@@ -371,6 +457,8 @@ function runCli() {
       whatWentWrong: args['what-went-wrong'],
       whatToChange: args['what-to-change'],
       whatWorked: args['what-worked'],
+      rubricScores: args['rubric-scores'],
+      guardrails: args.guardrails,
       tags: args.tags,
       skill: args.skill,
     });
@@ -396,6 +484,7 @@ function runCli() {
 
   console.log(`Usage:
   node scripts/feedback-loop.js --capture --signal=up --context="..." --tags="verification,fix"
+  node scripts/feedback-loop.js --capture --signal=up --context="..." --rubric-scores='[{\"criterion\":\"correctness\",\"score\":4}]' --guardrails='{\"testsPassed\":true}'
   node scripts/feedback-loop.js --analyze
   node scripts/feedback-loop.js --summary --recent=20
   node scripts/feedback-loop.js --rules [--min=2] [--output=path]
@@ -439,6 +528,23 @@ function runTests() {
   });
   assert(good.accepted, 'captureFeedback accepts valid positive feedback');
 
+  const blocked = captureFeedback({
+    signal: 'up',
+    context: 'Looks good',
+    whatWorked: 'Skipped proof',
+    tags: ['verification'],
+    rubricScores: JSON.stringify([
+      { criterion: 'verification_evidence', score: 5, judge: 'judge-a' },
+      { criterion: 'verification_evidence', score: 2, judge: 'judge-b', evidence: 'no test output present' },
+    ]),
+    guardrails: JSON.stringify({
+      testsPassed: false,
+      pathSafety: true,
+      budgetCompliant: true,
+    }),
+  });
+  assert(!blocked.accepted, 'captureFeedback blocks unsafe positive promotion via rubric gate');
+
   const bad = captureFeedback({ signal: 'down' });
   assert(!bad.accepted, 'captureFeedback rejects vague negative feedback');
 
@@ -447,6 +553,8 @@ function runTests() {
 
   const rules = writePreventionRules(path.join(tmpDir, 'rules.md'), 1);
   assert(rules.markdown.includes('# Prevention Rules'), 'writePreventionRules writes markdown rules');
+  const postStats = analyzeFeedback(path.join(tmpDir, 'feedback-log.jsonl'));
+  assert(postStats.rubric.blockedPromotions >= 1, 'analyzeFeedback tracks blocked rubric promotions');
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
   delete process.env.RLHF_FEEDBACK_DIR;

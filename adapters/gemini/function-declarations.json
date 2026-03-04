@@ -11,6 +11,26 @@
           "whatWentWrong": { "type": "string" },
           "whatToChange": { "type": "string" },
           "whatWorked": { "type": "string" },
+          "rubricScores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "criterion": { "type": "string" },
+                "score": { "type": "number" },
+                "evidence": { "type": "string" },
+                "judge": { "type": "string" }
+              }
+            }
+          },
+          "guardrails": {
+            "type": "object",
+            "properties": {
+              "testsPassed": { "type": "boolean" },
+              "pathSafety": { "type": "boolean" },
+              "budgetCompliant": { "type": "boolean" }
+            }
+          },
           "tags": {
             "type": "array",
             "items": { "type": "string" }
@@ -50,6 +70,25 @@
       "http": {
         "method": "POST",
         "path": "/v1/feedback/rules"
+      }
+    },
+    {
+      "name": "plan_intent",
+      "description": "Generate a policy-aware execution plan with checkpoint requirements",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "intentId": { "type": "string" },
+          "context": { "type": "string" },
+          "mcpProfile": { "type": "string" },
+          "bundleId": { "type": "string" },
+          "approved": { "type": "boolean" }
+        },
+        "required": ["intentId"]
+      },
+      "http": {
+        "method": "POST",
+        "path": "/v1/intents/plan"
       }
     }
   ]

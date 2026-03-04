@@ -1,0 +1,185 @@
+name: Self-Healing Monitor
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      heal:
+        description: 'Attempt self-heal and open remediation PR if unhealthy'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      status: ${{ steps.status.outputs.status }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm install
+
+      - name: Run health checks
+        run: node scripts/self-healing-check.js --json --no-fail > health_report.json
+
+      - name: Set health status output
+        id: status
+        run: |
+          STATUS=$(node -e "const fs=require('fs');const r=JSON.parse(fs.readFileSync('health_report.json','utf8'));process.stdout.write(r.overall_status);")
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Upload health report
+        uses: actions/upload-artifact@v4
+        with:
+          name: self-healing-health-report
+          path: health_report.json
+          retention-days: 14
+
+      - name: Create/update unhealthy issue
+        if: steps.status.outputs.status == 'unhealthy'
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('health_report.json', 'utf8'));
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              labels: 'self-healing',
+              per_page: 100,
+            });
+
+            const existing = issues.find((i) => i.title.includes('Self-Healing Alert'));
+            const failedChecks = report.checks
+              .filter((c) => c.status !== 'healthy')
+              .map((c) => `- ❌ **${c.name}** (exit ${c.exitCode})`)
+              .join('\n');
+
+            const body = `## Self-Healing Alert\n\n` +
+              `Status: **${report.overall_status.toUpperCase()}**\n` +
+              `Generated: ${report.generatedAt}\n\n` +
+              `### Failed checks\n${failedChecks || '- none'}\n\n` +
+              `### Action\n` +
+              `Run \\`Self-Healing Monitor\\` manually with \\`heal=true\\` or let scheduled auto-heal create a remediation PR.`;
+
+            if (existing) {
+              await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body });
+            } else {
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title: '🚨 Self-Healing Alert: system unhealthy',
+                body,
+                labels: ['self-healing', 'automated', 'urgent'],
+              });
+            }
+
+      - name: Close stale self-healing issues when healthy
+        if: steps.status.outputs.status == 'healthy'
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              labels: 'self-healing',
+              per_page: 100,
+            });
+
+            for (const issue of issues) {
+              if (!issue.title.includes('Self-Healing Alert')) continue;
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: '✅ Health checks are passing again. Closing alert.',
+              });
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+            }
+
+  auto-heal:
+    runs-on: ubuntu-latest
+    needs: health-check
+    if: >-
+      needs.health-check.outputs.status == 'unhealthy' &&
+      (github.event_name == 'schedule' || github.event.inputs.heal == 'true')
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm install
+
+      - name: Run self-heal
+        run: node scripts/self-heal.js --reason=scheduled-health-check > self_heal_report.json || true
+
+      - name: Create remediation PR if changes exist
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet; then
+            echo "No remediation changes generated."
+            exit 0
+          fi
+
+          BRANCH="auto/self-heal-${{ github.run_id }}-${{ github.run_attempt }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "fix(auto): self-healing remediation" || true
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "fix(auto): self-healing remediation" \
+            --body "## Summary\n- Run automated self-healing remediation\n- Capture resulting config/rule updates\n\n## Evidence\n- workflow: Self-Healing Monitor\n- artifact: self_heal_report.json" \
+            --label self-healing || true
+
+      - name: Upload remediation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: self-heal-report
+          path: self_heal_report.json
+          retention-days: 14

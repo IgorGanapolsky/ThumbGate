@@ -21,6 +21,21 @@ Override with `RLHF_CONTEXTFS_DIR`.
 1. Constructor: `constructContextPack()`
 2. Loader: bounded by `maxItems` and `maxChars`
 3. Evaluator: `evaluateContextPack()` writes outcome provenance
+4. Semantic cache: reuses similar query packs under bounded TTL + similarity threshold
+
+## Semantic Cache Controls
+
+- `RLHF_SEMANTIC_CACHE_ENABLED` (default `true`)
+- `RLHF_SEMANTIC_CACHE_THRESHOLD` (default `0.7`)
+- `RLHF_SEMANTIC_CACHE_TTL_SECONDS` (default `86400`)
+
+`constructContextPack()` now returns cache metadata:
+
+- `cache.hit` (`true|false`)
+- `cache.similarity` (when hit)
+- `cache.matchedQuery` and `cache.sourcePackId` (when hit)
+
+Provenance includes `context_pack_cache_hit` events.
 
 ## API Endpoints
 

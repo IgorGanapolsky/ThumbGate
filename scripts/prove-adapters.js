@@ -71,6 +71,35 @@ async function runProof(options = {}) {
     }
 
     {
+      const res = await fetch(`http://localhost:${port}/v1/intents/catalog?mcpProfile=locked`, {
+        headers: { Authorization: 'Bearer proof-key' },
+      });
+      check(res.status === 200, `intents catalog expected 200, got ${res.status}`);
+      const body = await res.json();
+      check(Array.isArray(body.intents), 'intents catalog should return intents array');
+      addResult('api.intents.catalog', true, { intents: body.intents.length, profile: body.mcpProfile });
+    }
+
+    {
+      const res = await fetch(`http://localhost:${port}/v1/intents/plan`, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer proof-key',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          intentId: 'publish_dpo_training_data',
+          mcpProfile: 'default',
+          approved: false,
+        }),
+      });
+      check(res.status === 200, `intent plan expected 200, got ${res.status}`);
+      const body = await res.json();
+      check(body.status === 'checkpoint_required', 'intent plan should require checkpoint when not approved');
+      addResult('api.intents.plan', true, { status: body.status, risk: body.intent.risk });
+    }
+
+    {
       const res = await fetch(`http://localhost:${port}/v1/feedback/capture`, {
         method: 'POST',
         headers: {
@@ -88,6 +117,31 @@ async function runProof(options = {}) {
       const body = await res.json();
       check(body.accepted === true, 'capture should be accepted');
       addResult('api.capture_feedback', true, { accepted: body.accepted });
+    }
+
+    {
+      const res = await fetch(`http://localhost:${port}/v1/feedback/capture`, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer proof-key',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          signal: 'up',
+          context: 'unsafe approval attempt',
+          whatWorked: 'claimed success',
+          rubricScores: [
+            { criterion: 'verification_evidence', score: 5, judge: 'judge-a' },
+            { criterion: 'verification_evidence', score: 2, judge: 'judge-b', evidence: 'missing logs' },
+          ],
+          guardrails: { testsPassed: false, pathSafety: true, budgetCompliant: true },
+          tags: ['verification'],
+        }),
+      });
+      check(res.status === 422, `rubric-gated capture expected 422, got ${res.status}`);
+      const body = await res.json();
+      check(body.accepted === false, 'rubric-gated capture should not be accepted');
+      addResult('api.capture_feedback.rubric_gate', true, { accepted: body.accepted });
     }
 
     {
@@ -110,10 +164,21 @@ async function runProof(options = {}) {
           Authorization: 'Bearer proof-key',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ packId: pack.packId, outcome: 'useful', signal: 'positive' }),
+        body: JSON.stringify({
+          packId: pack.packId,
+          outcome: 'useful',
+          signal: 'positive',
+          rubricScores: [
+            { criterion: 'correctness', score: 4, evidence: 'tests pass', judge: 'judge-a' },
+            { criterion: 'verification_evidence', score: 4, evidence: 'logs attached', judge: 'judge-a' },
+          ],
+          guardrails: { testsPassed: true, pathSafety: true, budgetCompliant: true },
+        }),
       });
       check(evaluate.status === 200, `context evaluate expected 200, got ${evaluate.status}`);
-      addResult('api.context.evaluate', true, { status: evaluate.status });
+      const evalBody = await evaluate.json();
+      check(Boolean(evalBody.rubricEvaluation), 'context evaluate should include rubricEvaluation');
+      addResult('api.context.evaluate', true, { status: evaluate.status, rubric: evalBody.rubricEvaluation.rubricId });
     }
 
     // MCP checks
@@ -144,6 +209,48 @@ async function runProof(options = {}) {
     }
 
     {
+      const call = await handleRequest({
+        jsonrpc: '2.0',
+        id: 31,
+        method: 'tools/call',
+        params: {
+          name: 'plan_intent',
+          arguments: {
+            intentId: 'publish_dpo_training_data',
+            mcpProfile: 'default',
+          },
+        },
+      });
+      const plan = JSON.parse(call.content[0].text);
+      check(plan.status === 'checkpoint_required', 'mcp plan_intent should return checkpoint_required by default');
+      addResult('mcp.tools.call.plan_intent', true, { status: plan.status });
+    }
+
+    {
+      const call = await handleRequest({
+        jsonrpc: '2.0',
+        id: 32,
+        method: 'tools/call',
+        params: {
+          name: 'capture_feedback',
+          arguments: {
+            signal: 'up',
+            context: 'unsafe approval attempt',
+            whatWorked: 'claimed success',
+            rubricScores: [
+              { criterion: 'verification_evidence', score: 5, judge: 'judge-a' },
+              { criterion: 'verification_evidence', score: 2, judge: 'judge-b', evidence: 'missing logs' },
+            ],
+            guardrails: { testsPassed: false, pathSafety: true, budgetCompliant: true },
+          },
+        },
+      });
+      const payload = JSON.parse(call.content[0].text);
+      check(payload.accepted === false, 'mcp capture_feedback should apply rubric gating');
+      addResult('mcp.tools.call.capture_feedback.rubric_gate', true, { accepted: payload.accepted });
+    }
+
+    {
       process.env.RLHF_MCP_PROFILE = 'locked';
       let denied = false;
       try {
@@ -170,7 +277,7 @@ async function runProof(options = {}) {
       const chatgpt = fs.readFileSync(path.join(ROOT, 'adapters/chatgpt/openapi.yaml'), 'utf-8');
       check(canonical === chatgpt, 'chatgpt openapi not in sync with canonical openapi');
 
-      ['/v1/feedback/capture', '/v1/dpo/export', '/v1/context/construct'].forEach((route) => {
+      ['/v1/feedback/capture', '/v1/dpo/export', '/v1/context/construct', '/v1/intents/plan'].forEach((route) => {
         check(new RegExp(escapeRegExp(route)).test(canonical), `route missing from openapi: ${route}`);
       });
       addResult('adapter.chatgpt.openapi.parity', true, { byteEqual: true });

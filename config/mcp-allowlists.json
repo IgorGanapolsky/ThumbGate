@@ -5,6 +5,8 @@
       "capture_feedback",
       "feedback_summary",
       "feedback_stats",
+      "list_intents",
+      "plan_intent",
       "prevention_rules",
       "export_dpo_pairs",
       "construct_context_pack",
@@ -14,10 +16,14 @@
     "readonly": [
       "feedback_summary",
       "feedback_stats",
+      "list_intents",
+      "plan_intent",
       "context_provenance"
     ],
     "locked": [
-      "feedback_summary"
+      "feedback_summary",
+      "list_intents",
+      "plan_intent"
     ]
   }
 }

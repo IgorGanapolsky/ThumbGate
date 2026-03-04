@@ -9,6 +9,7 @@ Gemini should use this RLHF loop as a tool-backed skill.
 1. `capture_feedback`
 2. `feedback_summary`
 3. `prevention_rules`
+4. `plan_intent`
 
 Source of truth for Gemini declarations:
 `adapters/gemini/function-declarations.json`
@@ -20,6 +21,8 @@ Source of truth for Gemini declarations:
 - Map `up` to learning memory, `down` to mistake memory.
 - For low-context signals, preserve event but avoid memory promotion.
 - Keep tool calls within local safe paths unless `RLHF_ALLOW_EXTERNAL_PATHS=true`.
+- Provide `rubricScores` + `guardrails` when available so reward-hacking checks can block unsafe positive promotion.
+- Use context-pack cache metadata (`cache.hit`, `cache.similarity`) to reduce repetitive retrieval work.
 
 ## Suggested Runtime Mapping
 
@@ -41,7 +44,21 @@ npm run feedback:summary
 npm run feedback:rules
 ```
 
-Context-pack endpoints (`/v1/context/*`) are available at the API/MCP layer but are not currently declared in the Gemini function declaration file.
+`plan_intent` executes:
+
+```bash
+POST /v1/intents/plan
+```
+
+Context-pack endpoints (`/v1/context/*`) are available at the API/MCP layer and are not currently declared in the Gemini function declaration file.
+
+## Optional Router Path (Tetrate)
+
+When external Gemini/LLM calls are routed through a gateway, keep this loop as the control layer and use routing only for:
+
+- provider/model fallback
+- spend governance under monthly budget
+- request/response observability
 
 ## Objective
 

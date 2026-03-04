@@ -20,6 +20,7 @@ test('profile allowlists differentiate permissions', () => {
   assert.ok(defaultTools.length > lockedTools.length);
   assert.ok(isToolAllowed('feedback_summary', 'locked'));
   assert.equal(isToolAllowed('capture_feedback', 'locked'), false);
+  assert.ok(isToolAllowed('plan_intent', 'locked'));
 });
 
 test('assertToolAllowed throws for denied tools', () => {

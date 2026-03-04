@@ -61,17 +61,55 @@ function validateFeedbackMemory(memory) {
     }
   }
 
+  if (memory.rubricSummary != null) {
+    if (typeof memory.rubricSummary !== 'object') {
+      issues.push('rubricSummary: must be an object when provided');
+    } else {
+      const weightedScore = Number(memory.rubricSummary.weightedScore);
+      if (!Number.isFinite(weightedScore) || weightedScore < 0 || weightedScore > 1) {
+        issues.push('rubricSummary.weightedScore: must be a number between 0 and 1');
+      }
+      if (!Array.isArray(memory.rubricSummary.failingCriteria)) {
+        issues.push('rubricSummary.failingCriteria: must be an array');
+      }
+      if (!Array.isArray(memory.rubricSummary.failingGuardrails)) {
+        issues.push('rubricSummary.failingGuardrails: must be an array');
+      }
+    }
+  }
+
   return { valid: issues.length === 0, issues };
 }
 
 function resolveFeedbackAction(params) {
-  const { signal, context, whatWentWrong, whatToChange, whatWorked, tags } = params;
+  const {
+    signal,
+    context,
+    whatWentWrong,
+    whatToChange,
+    whatWorked,
+    tags,
+    rubricEvaluation,
+  } = params;
 
   if (!context && !whatWentWrong && !whatWorked) {
     return { type: 'no-action', reason: 'No context provided — cannot create actionable memory' };
   }
 
   const domainTags = (tags || []).filter((t) => !GENERIC_TAGS.has(t));
+  const rubricSummary = rubricEvaluation
+    ? {
+      rubricId: rubricEvaluation.rubricId,
+      weightedScore: rubricEvaluation.weightedScore,
+      failingCriteria: rubricEvaluation.failingCriteria || [],
+      failingGuardrails: rubricEvaluation.failingGuardrails || [],
+      judgeDisagreements: rubricEvaluation.judgeDisagreements || [],
+      blockReasons: rubricEvaluation.blockReasons || [],
+    }
+    : null;
+  const rubricFailureTags = rubricSummary
+    ? (rubricSummary.failingCriteria || []).map((criterion) => `rubric-${criterion}`)
+    : [];
 
   if (signal === 'negative') {
     if (!whatWentWrong && !context) {
@@ -82,6 +120,19 @@ function resolveFeedbackAction(params) {
       whatWentWrong ? `What went wrong: ${whatWentWrong}` : `Context: ${context}`,
       whatToChange ? `How to avoid: ${whatToChange}` : 'Action needed: investigate and prevent recurrence',
     ].join('\n');
+    const rubricLines = [];
+    if (rubricSummary) {
+      rubricLines.push(`Rubric weighted score: ${rubricSummary.weightedScore}`);
+      if (rubricSummary.failingCriteria.length > 0) {
+        rubricLines.push(`Rubric failing criteria: ${rubricSummary.failingCriteria.join(', ')}`);
+      }
+      if (rubricSummary.failingGuardrails.length > 0) {
+        rubricLines.push(`Guardrails failed: ${rubricSummary.failingGuardrails.join(', ')}`);
+      }
+      if (rubricSummary.judgeDisagreements.length > 0) {
+        rubricLines.push('Judge disagreement detected; require manual review');
+      }
+    }
 
     const description = whatWentWrong ? whatWentWrong.slice(0, 60) : (context || '').slice(0, 60);
 
@@ -89,30 +140,44 @@ function resolveFeedbackAction(params) {
       type: 'store-mistake',
       memory: {
         title: `MISTAKE: ${description}`,
-        content,
+        content: rubricLines.length > 0 ? `${content}\n${rubricLines.join('\n')}` : content,
         category: 'error',
         importance: 'high',
-        tags: ['feedback', 'negative', ...domainTags],
+        tags: ['feedback', 'negative', ...domainTags, ...rubricFailureTags],
+        rubricSummary,
       },
     };
   }
 
   if (signal === 'positive') {
+    if (rubricEvaluation && !rubricEvaluation.promotionEligible) {
+      const reasons = rubricEvaluation.blockReasons && rubricEvaluation.blockReasons.length > 0
+        ? rubricEvaluation.blockReasons.join('; ')
+        : 'rubric gate did not pass';
+      return { type: 'no-action', reason: `Rubric gate prevented promotion: ${reasons}` };
+    }
+
     if (!whatWorked && !context) {
       return { type: 'no-action', reason: 'Positive feedback without context — cannot determine what worked' };
     }
 
     const content = whatWorked ? `What worked: ${whatWorked}` : `Approach: ${context}`;
+    const rubricLines = [];
+    if (rubricSummary) {
+      rubricLines.push(`Rubric weighted score: ${rubricSummary.weightedScore}`);
+      rubricLines.push(`Rubric criteria passed with no blocking guardrails.`);
+    }
     const description = whatWorked ? whatWorked.slice(0, 60) : (context || '').slice(0, 60);
 
     return {
       type: 'store-learning',
       memory: {
         title: `SUCCESS: ${description}`,
-        content,
+        content: rubricLines.length > 0 ? `${content}\n${rubricLines.join('\n')}` : content,
         category: 'learning',
         importance: 'normal',
         tags: ['feedback', 'positive', ...domainTags],
+        rubricSummary,
       },
     };
   }
@@ -181,6 +246,21 @@ function runTests() {
     tags: ['testing', 'verification'],
   });
   assert(fullPositive.type === 'store-learning', 'positive feedback creates store-learning action');
+
+  const blockedPositive = resolveFeedbackAction({
+    signal: 'positive',
+    whatWorked: 'Looked correct',
+    tags: ['testing'],
+    rubricEvaluation: {
+      promotionEligible: false,
+      blockReasons: ['failed_guardrails:testsPassed'],
+      failingCriteria: [],
+      failingGuardrails: ['testsPassed'],
+      weightedScore: 0.82,
+      rubricId: 'default-v1',
+    },
+  });
+  assert(blockedPositive.type === 'no-action', 'rubric gate blocks unsafe positive promotion');
 
   console.log(`\nResults: ${passed} passed, ${failed} failed\n`);
   process.exit(failed > 0 ? 1 : 0);

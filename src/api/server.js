@@ -22,6 +22,13 @@ const {
   evaluateContextPack,
   getProvenance,
 } = require('../../scripts/contextfs');
+const {
+  buildRubricEvaluation,
+} = require('../../scripts/rubric-engine');
+const {
+  listIntents,
+  planIntent,
+} = require('../../scripts/intent-router');
 
 function getSafeDataDir() {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
@@ -80,6 +87,21 @@ function parseJsonBody(req, maxBytes = 1024 * 1024) {
 
     req.on('error', reject);
   });
+}
+
+function parseOptionalObject(input, name) {
+  if (input == null) return {};
+  if (typeof input === 'object' && !Array.isArray(input)) return input;
+  if (typeof input === 'string') {
+    const trimmed = input.trim();
+    if (!trimmed) return {};
+    const parsed = JSON.parse(trimmed);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw createHttpError(400, `${name} must be an object`);
+    }
+    return parsed;
+  }
+  throw createHttpError(400, `${name} must be an object`);
 }
 
 function getExpectedApiKey() {
@@ -153,6 +175,35 @@ function createApiServer() {
         return;
       }
 
+      if (req.method === 'GET' && pathname === '/v1/intents/catalog') {
+        const mcpProfile = parsed.searchParams.get('mcpProfile') || undefined;
+        const bundleId = parsed.searchParams.get('bundleId') || undefined;
+        try {
+          const catalog = listIntents({ mcpProfile, bundleId });
+          sendJson(res, 200, catalog);
+        } catch (err) {
+          throw createHttpError(400, err.message || 'Invalid intent catalog request');
+        }
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/intents/plan') {
+        const body = await parseJsonBody(req);
+        try {
+          const plan = planIntent({
+            intentId: body.intentId,
+            context: body.context || '',
+            mcpProfile: body.mcpProfile,
+            bundleId: body.bundleId,
+            approved: body.approved === true,
+          });
+          sendJson(res, 200, plan);
+        } catch (err) {
+          throw createHttpError(400, err.message || 'Invalid intent plan request');
+        }
+        return;
+      }
+
       if (req.method === 'GET' && pathname === '/v1/feedback/summary') {
         const recent = Number(parsed.searchParams.get('recent') || 20);
         const summary = feedbackSummary(Number.isFinite(recent) ? recent : 20);
@@ -168,6 +219,8 @@ function createApiServer() {
           whatWentWrong: body.whatWentWrong,
           whatToChange: body.whatToChange,
           whatWorked: body.whatWorked,
+          rubricScores: body.rubricScores,
+          guardrails: body.guardrails,
           tags: extractTags(body.tags),
           skill: body.skill,
         });
@@ -246,11 +299,23 @@ function createApiServer() {
         if (!body.packId || !body.outcome) {
           throw createHttpError(400, 'packId and outcome are required');
         }
+        let rubricEvaluation = null;
+        if (body.rubricScores != null || body.guardrails != null) {
+          try {
+            rubricEvaluation = buildRubricEvaluation({
+              rubricScores: body.rubricScores,
+              guardrails: parseOptionalObject(body.guardrails, 'guardrails'),
+            });
+          } catch (err) {
+            throw createHttpError(400, `Invalid rubric payload: ${err.message}`);
+          }
+        }
         const evaluation = evaluateContextPack({
           packId: body.packId,
           outcome: body.outcome,
           signal: body.signal || null,
           notes: body.notes || '',
+          rubricEvaluation,
         });
         sendJson(res, 200, evaluation);
         return;

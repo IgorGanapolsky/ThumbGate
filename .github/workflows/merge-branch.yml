@@ -1,0 +1,66 @@
+name: Merge Branch to Main
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to merge into main (PR-based, policy compliant)'
+        required: true
+      auto_merge:
+        description: 'Enable auto-merge after PR creation'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate branch exists
+        id: branch
+        run: |
+          if git ls-remote --heads origin "${{ github.event.inputs.branch }}" | grep -q "${{ github.event.inputs.branch }}"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Branch not found: ${{ github.event.inputs.branch }}"
+            exit 1
+          fi
+
+      - name: Create or find PR
+        if: steps.branch.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: |
+          set -euo pipefail
+
+          EXISTING_PR=$(gh pr list \
+            --base main \
+            --head "${{ github.event.inputs.branch }}" \
+            --state open \
+            --json url \
+            --jq '.[0].url')
+
+          if [ -n "${EXISTING_PR:-}" ] && [ "$EXISTING_PR" != "null" ]; then
+            echo "Using existing PR: $EXISTING_PR"
+            PR_URL="$EXISTING_PR"
+          else
+            PR_URL=$(gh pr create \
+              --base main \
+              --head "${{ github.event.inputs.branch }}" \
+              --title "chore: merge ${{ github.event.inputs.branch }}" \
+              --body "Automated PR creation via merge-branch workflow.")
+            echo "Created PR: $PR_URL"
+          fi
+
+          if [ "${{ github.event.inputs.auto_merge }}" = "true" ]; then
+            gh pr merge --auto --squash --delete-branch "$PR_URL" || true
+          fi

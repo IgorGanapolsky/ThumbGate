@@ -63,6 +63,8 @@ function main() {
     whatWentWrong: args['what-went-wrong'],
     whatToChange: args['what-to-change'],
     whatWorked: args['what-worked'],
+    rubricScores: args['rubric-scores'],
+    guardrails: args.guardrails,
     tags: args.tags,
     skill: args.skill,
   });

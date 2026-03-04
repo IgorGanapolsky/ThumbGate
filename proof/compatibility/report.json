@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-03T19:18:59.972Z",
+  "generatedAt": "2026-03-03T20:25:11.759Z",
   "checks": [
     {
       "name": "api.healthz",
@@ -16,6 +16,22 @@
       }
     },
     {
+      "name": "api.intents.catalog",
+      "passed": true,
+      "details": {
+        "intents": 4,
+        "profile": "locked"
+      }
+    },
+    {
+      "name": "api.intents.plan",
+      "passed": true,
+      "details": {
+        "status": "checkpoint_required",
+        "risk": "high"
+      }
+    },
+    {
       "name": "api.capture_feedback",
       "passed": true,
       "details": {
@@ -23,10 +39,17 @@
       }
     },
     {
+      "name": "api.capture_feedback.rubric_gate",
+      "passed": true,
+      "details": {
+        "accepted": false
+      }
+    },
+    {
       "name": "api.context.construct",
       "passed": true,
       "details": {
-        "packId": "pack_1772565540054_viuk6t",
+        "packId": "pack_1772569511816_vnxc79",
         "items": 5
       }
     },
@@ -34,7 +57,8 @@
       "name": "api.context.evaluate",
       "passed": true,
       "details": {
-        "status": 200
+        "status": 200,
+        "rubric": "default-v1"
       }
     },
     {
@@ -48,7 +72,7 @@
       "name": "mcp.tools.list",
       "passed": true,
       "details": {
-        "tools": 8
+        "tools": 10
       }
     },
     {
@@ -56,6 +80,20 @@
       "passed": true,
       "details": {
         "contentLength": 98
+      }
+    },
+    {
+      "name": "mcp.tools.call.plan_intent",
+      "passed": true,
+      "details": {
+        "status": "checkpoint_required"
+      }
+    },
+    {
+      "name": "mcp.tools.call.capture_feedback.rubric_gate",
+      "passed": true,
+      "details": {
+        "accepted": false
       }
     },
     {
@@ -76,7 +114,7 @@
       "name": "adapter.gemini.declarations",
       "passed": true,
       "details": {
-        "tools": 3
+        "tools": 4
       }
     },
     {
@@ -101,13 +139,13 @@
       "name": "mcp.policy.profile_differentiation",
       "passed": true,
       "details": {
-        "defaultTools": 8,
-        "lockedTools": 1
+        "defaultTools": 10,
+        "lockedTools": 3
       }
     }
   ],
   "summary": {
-    "passed": 14,
+    "passed": 19,
     "failed": 0
   }
 }

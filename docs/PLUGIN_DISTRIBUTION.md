@@ -10,6 +10,9 @@ Ship one core runtime and fan out to platform adapters:
 
 This keeps maintenance low and supports a tight budget.
 
+Intent routing and checkpoint policy are shared across platforms via versioned bundles in `config/policy-bundles/`.
+Rubric scoring and anti-hacking guardrails are shared via `config/rubrics/default-v1.json`.
+
 ## Commercial packaging model
 
 1. Ship OSS core first (this repo).

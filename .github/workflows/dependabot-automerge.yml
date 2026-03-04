@@ -1,0 +1,98 @@
+name: Dependabot Auto-Merge
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  auto-merge:
+    if: ${{ github.actor == 'dependabot[bot]' && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Auto-approve update
+        continue-on-error: true
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const pr = context.payload.pull_request;
+
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+
+            const alreadyApproved = reviews.some(
+              (review) =>
+                review.user?.login === "github-actions[bot]" &&
+                review.state === "APPROVED"
+            );
+
+            if (alreadyApproved) {
+              core.info("Dependabot update already approved by github-actions[bot].");
+              return;
+            }
+
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              event: "APPROVE",
+              body: "Auto-approved Dependabot update.",
+            });
+
+      - name: Wait for checks and merge
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -euo pipefail
+
+          timeout_seconds=1800
+          interval_seconds=20
+          elapsed=0
+
+          while true; do
+            checks_json="$(gh pr checks "$PR_URL" --required --json state,conclusion --jq '.' || echo '[]')"
+
+            if jq -e 'length == 0' <<<"$checks_json" >/dev/null; then
+              echo "No required checks configured."
+              break
+            elif jq -e 'any(.[]; .state == "COMPLETED" and (.conclusion == "FAILURE" or .conclusion == "CANCELLED" or .conclusion == "TIMED_OUT" or .conclusion == "ACTION_REQUIRED" or .conclusion == "STARTUP_FAILURE"))' <<<"$checks_json" >/dev/null; then
+              echo "A required check failed. Skipping merge."
+              exit 1
+            elif jq -e 'all(.[]; .state == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED" or .conclusion == "NEUTRAL"))' <<<"$checks_json" >/dev/null; then
+              echo "All required checks completed successfully."
+              break
+            else
+              echo "Required checks are still running."
+            fi
+
+            sleep "$interval_seconds"
+            elapsed=$((elapsed + interval_seconds))
+
+            if [ "$elapsed" -ge "$timeout_seconds" ]; then
+              echo "Timed out waiting for required checks to complete."
+              exit 1
+            fi
+          done
+
+          if gh pr merge --auto --squash "$PR_URL"; then
+            echo "Auto-merge enabled."
+          else
+            echo "Auto-merge unavailable; merging directly."
+            gh pr merge --squash --delete-branch "$PR_URL"
+          fi

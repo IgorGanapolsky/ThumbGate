@@ -70,6 +70,29 @@ function inferPrompt(error, learning) {
   return 'How should the agent respond in this situation?';
 }
 
+function getRubricWeightedScore(memory) {
+  if (!memory || !memory.rubricSummary) return null;
+  const score = Number(memory.rubricSummary.weightedScore);
+  if (!Number.isFinite(score)) return null;
+  return score;
+}
+
+function buildRubricDelta(error, learning) {
+  const errorScore = getRubricWeightedScore(error);
+  const learningScore = getRubricWeightedScore(learning);
+  if (errorScore == null && learningScore == null) return null;
+  const delta = (learningScore != null && errorScore != null)
+    ? Math.round((learningScore - errorScore) * 1000) / 1000
+    : null;
+  return {
+    learningWeightedScore: learningScore,
+    errorWeightedScore: errorScore,
+    weightedDelta: delta,
+    errorFailingCriteria: error && error.rubricSummary ? error.rubricSummary.failingCriteria || [] : [],
+    learningFailingCriteria: learning && learning.rubricSummary ? learning.rubricSummary.failingCriteria || [] : [],
+  };
+}
+
 function buildDpoPairs(errors, learnings) {
   const pairs = [];
   const usedErrors = new Set();
@@ -81,17 +104,22 @@ function buildDpoPairs(errors, learnings) {
   for (const err of errorKeys) {
     let best = null;
     let bestScore = 0;
+    let bestOverlap = 0;
 
     for (const learn of learningKeys) {
       if (usedLearnings.has(learn.memory.id)) continue;
-      const score = domainOverlap(err.keys, learn.keys);
+      const overlap = domainOverlap(err.keys, learn.keys);
+      const rubric = buildRubricDelta(err.memory, learn.memory);
+      const rubricDelta = rubric && rubric.weightedDelta != null ? rubric.weightedDelta : 0;
+      const score = overlap + Math.max(0, rubricDelta);
       if (score > bestScore) {
         best = learn;
         bestScore = score;
+        bestOverlap = overlap;
       }
     }
 
-    if (best && bestScore > 0) {
+    if (best && bestScore > 0 && bestOverlap > 0) {
       pairs.push({
         prompt: inferPrompt(err.memory, best.memory),
         chosen: best.memory.content,
@@ -99,10 +127,12 @@ function buildDpoPairs(errors, learnings) {
         metadata: {
           errorId: err.memory.id,
           learningId: best.memory.id,
-          overlapScore: bestScore,
+          matchScore: bestScore,
+          overlapScore: domainOverlap(err.keys, best.keys),
           matchedKeys: err.keys.filter((k) => best.keys.includes(k)),
           errorTitle: err.memory.title,
           learningTitle: best.memory.title,
+          rubric: buildRubricDelta(err.memory, best.memory),
         },
       });
       usedErrors.add(err.memory.id);
@@ -201,6 +231,11 @@ function runTests() {
       content: 'Claimed completion without running tests.',
       category: 'error',
       tags: ['verification', 'feedback'],
+      rubricSummary: {
+        weightedScore: 0.32,
+        failingCriteria: ['verification_evidence'],
+        failingGuardrails: ['testsPassed'],
+      },
     },
     {
       id: 2,
@@ -218,6 +253,11 @@ function runTests() {
       content: 'Run tests and include output before saying complete.',
       category: 'learning',
       tags: ['verification', 'feedback'],
+      rubricSummary: {
+        weightedScore: 0.89,
+        failingCriteria: [],
+        failingGuardrails: [],
+      },
     },
   ];
 
@@ -231,6 +271,7 @@ function runTests() {
 
   const parsed = JSON.parse(jsonl.trim());
   assert(parsed.prompt.includes('verification'), 'inferred prompt includes shared domain');
+  assert(parsed.metadata.rubric.weightedDelta > 0, 'rubric delta metadata is attached');
 
   console.log(`\nResults: ${passed} passed, ${failed} failed\n`);
   process.exit(failed > 0 ? 1 : 0);

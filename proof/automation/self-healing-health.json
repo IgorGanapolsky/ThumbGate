@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-03-03T20:24:50.450Z",
+  "durationMs": 2805,
+  "overall_status": "healthy",
+  "summary": {
+    "total": 4,
+    "healthy": 4,
+    "unhealthy": 0
+  },
+  "checks": [
+    {
+      "name": "budget_status",
+      "command": "npm run budget:status",
+      "status": "healthy",
+      "exitCode": 0,
+      "durationMs": 192,
+      "error": null,
+      "outputTail": "> rlhf-feedback-loop@0.5.0 budget:status\n> node scripts/budget-guard.js --status\n\n{\n  \"month\": \"2026-03\",\n  \"totalUsd\": 0,\n  \"budgetUsd\": 10,\n  \"remainingUsd\": 10\n}"
+    },
+    {
+      "name": "tests",
+      "command": "npm test",
+      "status": "healthy",
+      "exitCode": 0,
+      "durationMs": 1763,
+      "error": null,
+      "outputTail": "intent becomes ready (0.474125ms)\n✔ unknown intent throws (0.581667ms)\n✔ invalid mcp profile is rejected (0.434375ms)\n✔ loads mcp policy and profiles (1.201ms)\n✔ profile allowlists differentiate permissions (1.26925ms)\n✔ assertToolAllowed throws for denied tools (0.778041ms)\n✔ subagent profile resolves mcp profile and conflicts are rejected (0.573ms)\n✔ tools/list returns all configured tools (1.566916ms)\n✔ capture_feedback tool can be called (11.38975ms)\n✔ capture_feedback applies rubric anti-hacking gate (2.088042ms)\n✔ intent tools list and plan enforce checkpoint flow (1.540917ms)\n✔ prevention_rules blocks external output paths (0.36325ms)\n✔ construct/evaluate context pack tools work (8.998542ms)\n✔ construct_context_pack rejects invalid namespaces (1.976292ms)\n✔ safe data dir resolves inside test feedback root (0.066542ms)\n✔ chatgpt openapi includes all core API routes (1.233666ms)\n✔ loads rubric config with expected criteria (0.906709ms)\n✔ normalizes rubric scores and validates criterion names (0.893125ms)\n✔ buildRubricEvaluation flags disagreement and failed guardrails (0.683167ms)\n✔ buildFixPlan selects known fix scripts in priority order (1.150458ms)\n✔ runFixPlan tracks successful and failed runs (0.144625ms)\n✔ collectHealthReport marks overall healthy when all checks pass (2.140167ms)\n✔ collectHealthReport marks overall unhealthy when one check fails (0.098042ms)\n✔ reportToText includes overall status and check names (0.129625ms)\n✔ lists and loads subagent profiles (0.940542ms)\n✔ subagent profiles validate against mcp policy (0.218708ms)\nℹ tests 52\nℹ suites 0\nℹ pass 52\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 257.561292\n\n> rlhf-feedback-loop@0.5.0 test:proof\n> node --test tests/prove-adapters.test.js tests/prove-automation.test.js\n\n✔ adapter proof harness passes all checks (51.729459ms)\n✔ automation proof harness passes all checks (344.659625ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 421.549583"
+    },
+    {
+      "name": "prove_adapters",
+      "command": "npm run prove:adapters",
+      "status": "healthy",
+      "exitCode": 0,
+      "durationMs": 269,
+      "error": null,
+      "outputTail": "> rlhf-feedback-loop@0.5.0 prove:adapters\n> node scripts/prove-adapters.js\n\n{\n  \"passed\": 19,\n  \"failed\": 0\n}"
+    },
+    {
+      "name": "prove_automation",
+      "command": "npm run prove:automation",
+      "status": "healthy",
+      "exitCode": 0,
+      "durationMs": 578,
+      "error": null,
+      "outputTail": "> rlhf-feedback-loop@0.5.0 prove:automation\n> node scripts/prove-automation.js\n\n{\n  \"passed\": 12,\n  \"failed\": 0\n}"
+    }
+  ]
+}

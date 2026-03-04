@@ -1,0 +1,95 @@
+name: Agent PR Auto-Merge
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - labeled
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  auto-merge:
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (
+        startsWith(github.event.pull_request.head.ref, 'claude/') ||
+        startsWith(github.event.pull_request.head.ref, 'codex/') ||
+        startsWith(github.event.pull_request.head.ref, 'auto/') ||
+        startsWith(github.event.pull_request.head.ref, 'agent/') ||
+        contains(join(github.event.pull_request.labels.*.name, ','), 'automerge')
+      )
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for required checks
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -euo pipefail
+
+          timeout_seconds=1800
+          interval_seconds=20
+          elapsed=0
+
+          while true; do
+            checks_json="$(gh pr checks "$PR_URL" --required --json state,conclusion --jq '.' || echo '[]')"
+
+            if jq -e 'length == 0' <<<"$checks_json" >/dev/null; then
+              echo "No required checks configured."
+              break
+            elif jq -e 'any(.[]; .state == "COMPLETED" and (.conclusion == "FAILURE" or .conclusion == "CANCELLED" or .conclusion == "TIMED_OUT" or .conclusion == "ACTION_REQUIRED" or .conclusion == "STARTUP_FAILURE"))' <<<"$checks_json" >/dev/null; then
+              echo "A required check failed. Auto-merge skipped."
+              exit 1
+            elif jq -e 'all(.[]; .state == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED" or .conclusion == "NEUTRAL"))' <<<"$checks_json" >/dev/null; then
+              echo "All required checks completed successfully."
+              break
+            else
+              echo "Required checks are still running."
+            fi
+
+            sleep "$interval_seconds"
+            elapsed=$((elapsed + interval_seconds))
+
+            if [ "$elapsed" -ge "$timeout_seconds" ]; then
+              echo "Timed out waiting for required checks to complete."
+              exit 1
+            fi
+          done
+
+      - name: Auto-approve PR
+        continue-on-error: true
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              event: "APPROVE",
+              body: "Auto-approved by agent automerge policy.",
+            });
+
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -euo pipefail
+
+          if gh pr merge --auto --squash --delete-branch "$PR_URL"; then
+            echo "Auto-merge enabled for $PR_URL"
+          else
+            echo "Auto-merge not available; trying direct squash merge"
+            gh pr merge --squash --delete-branch "$PR_URL"
+          fi

@@ -102,6 +102,92 @@ function listJsonFiles(dirPath) {
   return out;
 }
 
+function tokenizeQuery(query) {
+  return String(query || '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+}
+
+function uniqueTokens(tokens) {
+  return Array.from(new Set(tokens));
+}
+
+function querySimilarity(tokensA, tokensB) {
+  const setA = new Set(uniqueTokens(tokensA));
+  const setB = new Set(uniqueTokens(tokensB));
+  if (setA.size === 0 && setB.size === 0) return 1;
+  if (setA.size === 0 || setB.size === 0) return 0;
+
+  let intersection = 0;
+  for (const token of setA) {
+    if (setB.has(token)) intersection += 1;
+  }
+  const union = setA.size + setB.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+function buildSemanticCacheKey({ namespaces, maxItems, maxChars }) {
+  return JSON.stringify({
+    namespaces: normalizeNamespaces(namespaces),
+    maxItems,
+    maxChars,
+  });
+}
+
+function getSemanticCacheConfig() {
+  const enabled = process.env.RLHF_SEMANTIC_CACHE_ENABLED !== 'false';
+  const thresholdRaw = Number(process.env.RLHF_SEMANTIC_CACHE_THRESHOLD || '0.7');
+  const ttlSecondsRaw = Number(process.env.RLHF_SEMANTIC_CACHE_TTL_SECONDS || '86400');
+  const threshold = Number.isFinite(thresholdRaw) ? Math.min(1, Math.max(0, thresholdRaw)) : 0.7;
+  const ttlSeconds = Number.isFinite(ttlSecondsRaw) ? Math.max(60, ttlSecondsRaw) : 86400;
+  return { enabled, threshold, ttlSeconds };
+}
+
+function getSemanticCachePath() {
+  return path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'semantic-cache.jsonl');
+}
+
+function loadSemanticCacheEntries() {
+  return readJsonl(getSemanticCachePath());
+}
+
+function appendSemanticCacheEntry(entry) {
+  appendJsonl(getSemanticCachePath(), entry);
+}
+
+function findSemanticCacheHit({ query, namespaces, maxItems, maxChars }) {
+  const { enabled, threshold, ttlSeconds } = getSemanticCacheConfig();
+  if (!enabled) return null;
+
+  const entries = loadSemanticCacheEntries();
+  if (entries.length === 0) return null;
+
+  const now = Date.now();
+  const queryTokens = tokenizeQuery(query);
+  const key = buildSemanticCacheKey({ namespaces, maxItems, maxChars });
+
+  for (let i = entries.length - 1; i >= 0; i -= 1) {
+    const entry = entries[i];
+    if (!entry || entry.key !== key || !entry.pack) continue;
+
+    const createdMs = new Date(entry.timestamp || 0).getTime();
+    if (Number.isFinite(createdMs) && now - createdMs > ttlSeconds * 1000) {
+      continue;
+    }
+
+    const score = querySimilarity(queryTokens, Array.isArray(entry.tokens) ? entry.tokens : []);
+    if (score >= threshold) {
+      return {
+        score,
+        entry,
+      };
+    }
+  }
+
+  return null;
+}
+
 function recordProvenance(event) {
   ensureContextFs();
   const payload = {
@@ -270,12 +356,46 @@ function scoreDocument(doc, queryTokens) {
 }
 
 function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, namespaces = [] } = {}) {
-  const tokens = String(query || '')
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter(Boolean);
+  const normalizedNamespaces = normalizeNamespaces(namespaces);
+  const tokens = tokenizeQuery(query);
 
-  const candidates = loadCandidates(namespaces)
+  const cacheHit = findSemanticCacheHit({
+    query,
+    namespaces: normalizedNamespaces,
+    maxItems,
+    maxChars,
+  });
+
+  if (cacheHit) {
+    const packId = `pack_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const cachedPack = cacheHit.entry.pack;
+    const pack = {
+      ...cachedPack,
+      packId,
+      query,
+      createdAt: nowIso(),
+      cache: {
+        hit: true,
+        similarity: Number(cacheHit.score.toFixed(4)),
+        matchedQuery: cacheHit.entry.query,
+        sourcePackId: cachedPack.packId,
+      },
+    };
+
+    appendJsonl(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'packs.jsonl'), pack);
+    recordProvenance({
+      type: 'context_pack_cache_hit',
+      packId,
+      sourcePackId: cachedPack.packId,
+      query,
+      similarity: Number(cacheHit.score.toFixed(4)),
+      itemCount: Array.isArray(pack.items) ? pack.items.length : 0,
+    });
+
+    return pack;
+  }
+
+  const candidates = loadCandidates(normalizedNamespaces)
     .map((doc) => ({ doc, score: scoreDocument(doc, tokens) }))
     .sort((a, b) => b.score - a.score);
 
@@ -306,11 +426,27 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
     maxItems,
     maxChars,
     usedChars,
+    namespaces: normalizedNamespaces,
     createdAt: nowIso(),
     items: selected,
+    cache: {
+      hit: false,
+    },
   };
 
   appendJsonl(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'packs.jsonl'), pack);
+  appendSemanticCacheEntry({
+    id: `cache_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    timestamp: nowIso(),
+    key: buildSemanticCacheKey({
+      namespaces: normalizedNamespaces,
+      maxItems,
+      maxChars,
+    }),
+    query,
+    tokens,
+    pack,
+  });
   recordProvenance({
     type: 'context_pack_constructed',
     packId,
@@ -322,13 +458,14 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
   return pack;
 }
 
-function evaluateContextPack({ packId, outcome, signal = null, notes = '' }) {
+function evaluateContextPack({ packId, outcome, signal = null, notes = '', rubricEvaluation = null }) {
   const evaluation = {
     id: `eval_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     packId,
     outcome,
     signal,
     notes,
+    rubricEvaluation,
     timestamp: nowIso(),
   };
 
@@ -338,6 +475,7 @@ function evaluateContextPack({ packId, outcome, signal = null, notes = '' }) {
     packId,
     outcome,
     signal,
+    rubricPromotionEligible: rubricEvaluation ? rubricEvaluation.promotionEligible : null,
   });
 
   return evaluation;
@@ -363,6 +501,10 @@ module.exports = {
   getProvenance,
   readJsonl,
   DEFAULT_SEARCH_NAMESPACES,
+  tokenizeQuery,
+  querySimilarity,
+  findSemanticCacheHit,
+  getSemanticCacheConfig,
 };
 
 if (require.main === module) {

@@ -17,6 +17,7 @@ const {
   constructContextPack,
   evaluateContextPack,
   getProvenance,
+  querySimilarity,
 } = require('../scripts/contextfs');
 
 test.after(() => {
@@ -75,4 +76,27 @@ test('register feedback and construct pack', () => {
 
 test('normalizeNamespaces rejects path traversal attempts', () => {
   assert.throws(() => normalizeNamespaces(['../..']), /Unsupported namespace/);
+});
+
+test('constructContextPack returns semantic cache hit on similar query', () => {
+  const first = constructContextPack({
+    query: 'verification testing evidence',
+    maxItems: 4,
+    maxChars: 3000,
+  });
+
+  const second = constructContextPack({
+    query: 'testing verification evidence',
+    maxItems: 4,
+    maxChars: 3000,
+  });
+
+  assert.equal(first.cache.hit, false);
+  assert.equal(second.cache.hit, true);
+  assert.equal(second.cache.sourcePackId, first.packId);
+});
+
+test('querySimilarity computes jaccard overlap', () => {
+  const score = querySimilarity(['a', 'b', 'c'], ['a', 'b', 'd']);
+  assert.equal(score, 0.5);
 });

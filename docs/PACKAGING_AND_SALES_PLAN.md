@@ -16,6 +16,9 @@
 - Team workspaces
 - Managed analytics dashboard
 - Webhooks for CI/incident tooling
+- Intent routing control plane (policy bundles + checkpoint approvals)
+- Semantic cache analytics + cache policy tuning
+- Autonomous GitOps controls (self-healing + PR auto-merge policy)
 
 ### Tier 3: Enterprise (Pricing: custom quote)
 
@@ -49,6 +52,7 @@
 2. README conversion flow: pain -> value -> demo -> proof.
 3. Technical credibility: CI badge + verification report.
 4. Multi-runtime support called out as a differentiator.
+5. Cost story: semantic cache + budget guard + optional model gateway routing.
 
 ## Sales Motion
 
@@ -62,9 +66,12 @@
 2. Star to issue/discussion conversion.
 3. OSS user to paid workspace conversion.
 4. Reduction in repeated failure rate from baseline.
+5. LLM spend saved via semantic cache hit-rate.
 
 ## Proof Links
 
 1. Verification log: [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md)
 2. Compatibility proof (human): [../proof/compatibility/report.md](../proof/compatibility/report.md)
 3. Compatibility proof (machine): [../proof/compatibility/report.json](../proof/compatibility/report.json)
+4. Automation proof (human): [../proof/automation/report.md](../proof/automation/report.md)
+5. Automation proof (machine): [../proof/automation/report.json](../proof/automation/report.json)
