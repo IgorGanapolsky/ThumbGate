@@ -4,6 +4,12 @@
 
 A bidirectional feature sync between two RLHF systems: `rlhf-feedback-loop` (the multi-platform product with governance) and `Subway_RN_Demo` (the battle-tested prototype with advanced ML). The goal is to cherry-pick the best capabilities from each into both, creating two stronger systems that share a common RLHF core.
 
+## North Star
+
+**$100/day after-tax** — sustainable, recurring revenue from the RLHF platform.
+
+That's ~$3,000/month gross (~$3,650/month pre-tax assuming ~18% effective rate).
+
 ## Core Value
 
 Every synced feature must have tests, pass CI, and produce verification evidence — no tech debt, no placeholders, no unproven claims.
