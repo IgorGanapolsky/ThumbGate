@@ -7,7 +7,7 @@
 
 ### Feedback Attribution (Subway → rlhf) — CRITICAL
 
-- [ ] **ATTR-01**: Feedback attribution traces each feedback signal back to the specific agent action that caused it
+- [x] **ATTR-01**: Feedback attribution traces each feedback signal back to the specific agent action that caused it
 - [x] **ATTR-02**: Hybrid feedback context guards pre-tool execution based on attributed feedback signals
 - [ ] **ATTR-03**: Both modules have unit tests proving correct behavior
 
@@ -77,7 +77,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ATTR-01 | Phase 6 | Pending |
+| ATTR-01 | Phase 6 | Complete |
 | ATTR-02 | Phase 6 | Complete |
 | ATTR-03 | Phase 6 | Pending |
 | QUAL-01 | Phase 7 | Pending |

@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 ## Current Position
 
 Phase: 6 — Feedback Attribution
-Plan: —
-Status: Not started — roadmap written, awaiting plan-phase
-Last activity: 2026-03-04 — v2.0 roadmap created (Phases 6-12)
+Plan: 06-01 complete
+Status: In Progress — 06-01 complete; ATTR-01 satisfied
+Last activity: 2026-03-04 — 06-01 executed: feedback-attribution.js ported, attribution wired into captureFeedback()
 
-Progress: [░░░░░░░░░░] 0% (v2.0)
+Progress: [█░░░░░░░░░] ~5% (v2.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed (v2.0): 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed (v2.0): 1
+- Average duration: 4min
+- Total execution time: ~4min
 
 **By Phase (v2.0):**
 
@@ -107,6 +107,7 @@ Progress: [░░░░░░░░░░] 0% (v2.0)
 - [v2.0 Roadmap]: v1 final test count is 142 — Phase 12 success criterion requires strictly greater count
 - [Phase 06-feedback-attribution]: hybrid-feedback-context.js evaluatePretool: compiled artifact fast path trusts guard artifact, falls back to live state build — ATTR-03 no-false-positive via hasTwoKeywordHits + count>=2 filter
 - [Phase 06-feedback-attribution]: ROOT = path.join(__dirname, '..') in feedback-attribution.js — 1 level up from scripts/ to repo root (Subway used 2 levels from .claude/scripts/feedback/)
+- [Phase 06-feedback-attribution]: Attribution side-effects placed after RLAIF self-audit in captureFeedback() — fire-and-forget try/catch, feedbackEvent.signal already normalized to 'positive'/'negative'
 
 ### Pending Todos
 
