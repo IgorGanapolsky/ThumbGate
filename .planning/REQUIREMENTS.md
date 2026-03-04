@@ -9,7 +9,7 @@
 
 - [x] **ATTR-01**: Feedback attribution traces each feedback signal back to the specific agent action that caused it
 - [x] **ATTR-02**: Hybrid feedback context guards pre-tool execution based on attributed feedback signals
-- [ ] **ATTR-03**: Both modules have unit tests proving correct behavior
+- [x] **ATTR-03**: Both modules have unit tests proving correct behavior
 
 ### Data Quality (Subway → rlhf)
 
@@ -79,7 +79,7 @@
 |-------------|-------|--------|
 | ATTR-01 | Phase 6 | Complete |
 | ATTR-02 | Phase 6 | Complete |
-| ATTR-03 | Phase 6 | Pending |
+| ATTR-03 | Phase 6 | Complete |
 | QUAL-01 | Phase 7 | Pending |
 | QUAL-02 | Phase 7 | Pending |
 | QUAL-03 | Phase 7 | Pending |

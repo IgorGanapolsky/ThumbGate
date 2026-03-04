@@ -219,7 +219,7 @@ Phase 6 → Phases 7, 8 (parallel, both depend on 6) → Phase 9 (depends on 6) 
 | 3. Governance into Subway | 4/4 | Complete | 2026-03-04 |
 | 4. LanceDB Vector Storage | 4/4 | Complete | 2026-03-04 |
 | 5. RLAIF and DPO Optimization | 3/3 | Complete | 2026-03-04 |
-| 6. Feedback Attribution | 2/4 | In Progress|  |
+| 6. Feedback Attribution | 3/4 | In Progress|  |
 | 7. Data Quality | 0/TBD | Not started | - |
 | 8. Loop Closure | 0/TBD | Not started | - |
 | 9. Intelligence | 0/TBD | Not started | - |

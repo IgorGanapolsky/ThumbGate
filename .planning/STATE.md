@@ -57,6 +57,7 @@ Progress: [█░░░░░░░░░] ~5% (v2.0)
 | Phase 05-rlaif-and-dpo-optimization P5-03 | 15min | 2 tasks | 6 files |
 | Phase 06-feedback-attribution P06-02 | 135s | 1 tasks | 1 files |
 | Phase 06-feedback-attribution P06-01 | 4min | 2 tasks | 2 files |
+| Phase 06 P03 | 8min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,7 @@ Progress: [█░░░░░░░░░] ~5% (v2.0)
 - [Phase 06-feedback-attribution]: hybrid-feedback-context.js evaluatePretool: compiled artifact fast path trusts guard artifact, falls back to live state build — ATTR-03 no-false-positive via hasTwoKeywordHits + count>=2 filter
 - [Phase 06-feedback-attribution]: ROOT = path.join(__dirname, '..') in feedback-attribution.js — 1 level up from scripts/ to repo root (Subway used 2 levels from .claude/scripts/feedback/)
 - [Phase 06-feedback-attribution]: Attribution side-effects placed after RLAIF self-audit in captureFeedback() — fire-and-forget try/catch, feedbackEvent.signal already normalized to 'positive'/'negative'
+- [Phase 06]: Tests go GREEN immediately — modules fully implemented in 06-01/06-02; test:attribution wired into npm test chain
 
 ### Pending Todos
 
