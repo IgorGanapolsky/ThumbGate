@@ -1,5 +1,11 @@
 # Verification Evidence (March 4, 2026)
 
+## Phase 6: Feedback Attribution
+
+- Proof report: `proof/attribution-report.md`
+- Machine evidence: `proof/attribution-report.json`
+- Requirements: ATTR-01 (recordAction + attributeFeedback), ATTR-02 (pre-tool guard), ATTR-03 (test coverage)
+
 ## Phase 5 RLAIF and DPO Optimization proof
 
 Command:
