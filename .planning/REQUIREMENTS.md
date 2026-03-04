@@ -72,36 +72,36 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CNTR-01 | Phase 1 | Pending |
-| CNTR-02 | Phase 1 | Pending |
-| CNTR-03 | Phase 1 | Pending |
-| ML-01 | Phase 2 | Pending |
-| ML-02 | Phase 2 | Pending |
-| ML-03 | Phase 2 | Pending |
-| ML-04 | Phase 2 | Pending |
-| ML-05 | Phase 2 | Pending |
-| ML-06 | Phase 2 | Pending |
-| GOV-01 | Phase 3 | Pending |
-| GOV-02 | Phase 3 | Pending |
-| GOV-03 | Phase 3 | Pending |
-| GOV-04 | Phase 3 | Pending |
-| GOV-05 | Phase 3 | Pending |
-| GOV-06 | Phase 3 | Pending |
-| VEC-01 | Phase 4 | Pending |
-| VEC-02 | Phase 4 | Pending |
-| VEC-03 | Phase 4 | Pending |
-| VEC-04 | Phase 4 | Pending |
-| VEC-05 | Phase 4 | Pending |
-| DPO-01 | Phase 5 | Pending |
-| DPO-02 | Phase 5 | Pending |
-| DPO-03 | Phase 5 | Pending |
-| DPO-04 | Phase 5 | Pending |
+| CNTR-01 | Phase 1: Contract Alignment | Pending |
+| CNTR-02 | Phase 1: Contract Alignment | Pending |
+| CNTR-03 | Phase 1: Contract Alignment | Pending |
+| ML-01 | Phase 2: ML into rlhf-feedback-loop | Pending |
+| ML-02 | Phase 2: ML into rlhf-feedback-loop | Pending |
+| ML-03 | Phase 2: ML into rlhf-feedback-loop | Pending |
+| ML-04 | Phase 2: ML into rlhf-feedback-loop | Pending |
+| ML-05 | Phase 2: ML into rlhf-feedback-loop | Pending |
+| ML-06 | Phase 2: ML into rlhf-feedback-loop | Pending |
+| GOV-01 | Phase 3: Governance into Subway | Pending |
+| GOV-02 | Phase 3: Governance into Subway | Pending |
+| GOV-03 | Phase 3: Governance into Subway | Pending |
+| GOV-04 | Phase 3: Governance into Subway | Pending |
+| GOV-05 | Phase 3: Governance into Subway | Pending |
+| GOV-06 | Phase 3: Governance into Subway | Pending |
+| VEC-01 | Phase 4: LanceDB Vector Storage | Pending |
+| VEC-02 | Phase 4: LanceDB Vector Storage | Pending |
+| VEC-03 | Phase 4: LanceDB Vector Storage | Pending |
+| VEC-04 | Phase 4: LanceDB Vector Storage | Pending |
+| VEC-05 | Phase 4: LanceDB Vector Storage | Pending |
+| DPO-01 | Phase 5: RLAIF and DPO Optimization | Pending |
+| DPO-02 | Phase 5: RLAIF and DPO Optimization | Pending |
+| DPO-03 | Phase 5: RLAIF and DPO Optimization | Pending |
+| DPO-04 | Phase 5: RLAIF and DPO Optimization | Pending |
 
 **Coverage:**
 - v1 requirements: 24 total
 - Mapped to phases: 24
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-04*
-*Last updated: 2026-03-04 after initial definition*
+*Last updated: 2026-03-04 after roadmap creation*
