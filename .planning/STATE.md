@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Every synced feature has tests, passes CI, and produces verification evidence — no tech debt
-**Current focus:** v2.0 milestone — Phase 6: Feedback Attribution (CRITICAL, starts first)
+**Current focus:** v2.0 milestone — Phases 7, 8, 11 complete; ready for Phase 9
 
 ## Current Position
 
-Phase: 7 — Data Quality
-Plan: 07-01 (not started)
-Status: Phase 6 complete — ATTR-01, ATTR-02, ATTR-03 all satisfied; ready for Phase 7
-Last activity: 2026-03-04 — 06-04 executed: prove-attribution.js proof gate passing all 3 ATTR requirements; Phase 6 closed
+Phase: 9 — Intelligence
+Plan: 09-01 (not started)
+Status: Phases 7 (Data Quality), 8 (Loop Closure), 11 (Subway Upgrades) complete; QUAL-01..04, LOOP-01..05, SUBW-01..05 all satisfied
+Last activity: 2026-03-04 — Phases 7, 8, 11 executed: all proof gates passing; 230 tests, 0 failures; ready for Phase 9
 
-Progress: [██░░░░░░░░] ~14% (v2.0)
+Progress: [█████░░░░░] ~45% (v2.0)
 
 ## Performance Metrics
 
@@ -114,6 +114,15 @@ Progress: [██░░░░░░░░] ~14% (v2.0)
 - [Phase 06-feedback-attribution]: prove-attribution.js mirrors prove-rlaif.js — mkdtempSync/env override/execSync node --test; ATTR-03 self-validates via execSync; all 3 ATTR requirements pass (passed:3, failed:0)
 - [Phase 06-feedback-attribution]: Phase 6 total node-runner test count = 184 (v1 baseline was 142; test:api grew from 93 to 114 after attribution tests added)
 - [Phase 06-feedback-attribution]: test:api now includes tests/feedback-attribution.test.js + tests/hybrid-feedback-context.test.js (21 tests) alongside test:attribution — deliberate duplication for API-level visibility
+- [Phase 07-data-quality]: validate-feedback.js uses signal/id (not feedback/source) — rlhf schema; RLHF_FEEDBACK_DIR resolved at call time not module init
+- [Phase 07-data-quality]: after() hooks in validate-feedback.test.js use async + 200ms pause before rmSync — LanceDB fire-and-forget write races with cleanup
+- [Phase 07-data-quality]: inferOutcome + enrichFeedbackContext inline in feedback-loop.js (not separate module) — mirrors ML side-effects from Phase 2
+- [Phase 08-loop-closure]: feedback-to-rules.js classifySignal checks entry.signal first, then entry.feedback — backward compat with old Subway schema
+- [Phase 08-loop-closure]: feedback-inbox-read.js INBOX_PATH = .claude/feedback-loop/inbox.jsonl (not .claude/memory/feedback/) — dedicated inbox for reflexion-preflight
+- [Phase 08-loop-closure]: feedback-to-memory.js delegates to resolveFeedbackAction + prepareForStorage — reuses existing schema validation, no duplication
+- [Phase 11-subway-upgrades]: Subway vector-store tests require NODE_OPTIONS=--experimental-vm-modules — added to test:governance in Subway package.json
+- [Phase 11-subway-upgrades]: thompson-sampling.js in Subway has inline parseTimestamp — no shared feedback-schema.js in Subway
+- [Phase 11-subway-upgrades]: prove-subway-upgrades.js uses err.stdout + err.stderr pattern for Jest output capture (execSync throws on non-zero exit)
 
 ### Pending Todos
 
@@ -127,6 +136,6 @@ Progress: [██░░░░░░░░] ~14% (v2.0)
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Completed 06-04-PLAN.md — Phase 6 closed; prove-attribution.js passing all 3 ATTR requirements; ready for Phase 7
+Stopped at: Completed Phases 7, 8, 11 — all QUAL, LOOP, SUBW requirements passing; 230 tests, 0 failures; ready for Phase 9
 Resume file: None
-Next action: `/gsd:plan-phase 7`
+Next action: `/gsd:plan-phase 9`

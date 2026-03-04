@@ -18,11 +18,11 @@ Two live production systems — `rlhf-feedback-loop` (Node.js RLHF product libra
 - [x] **Phase 4: LanceDB Vector Storage** - Integrate LanceDB into rlhf-feedback-loop with cross-language verification (completed 2026-03-04)
 - [x] **Phase 5: RLAIF and DPO Optimization** - Self-scoring and preference pair optimization atop stable ML infrastructure (completed 2026-03-04)
 - [x] **Phase 6: Feedback Attribution** - Trace feedback signals to specific agent actions; pre-tool guard using attributed context (completed 2026-03-04)
-- [ ] **Phase 7: Data Quality** - Validate-feedback auditor, rich context enrichment, and inferOutcome granular classification
-- [ ] **Phase 8: Loop Closure** - Feedback-to-rules distillation, plan gate, inbox reader, and memory bridge
+- [x] **Phase 7: Data Quality** - Validate-feedback auditor, rich context enrichment, and inferOutcome granular classification (completed 2026-03-04)
+- [x] **Phase 8: Loop Closure** - Feedback-to-rules distillation, plan gate, inbox reader, and memory bridge (completed 2026-03-04)
 - [ ] **Phase 9: Intelligence** - Context engine routing and skill quality tracker correlating tool metrics to feedback
 - [ ] **Phase 10: Training Export** - PyTorch JSON, CSV, and action analysis export formats with DPO validation gate
-- [ ] **Phase 11: Subway Upgrades** - LanceDB, DPO optimizer, Thompson Sampling JS, and self-healing ported to Subway
+- [x] **Phase 11: Subway Upgrades** - LanceDB, DPO optimizer, Thompson Sampling JS, and self-healing ported to Subway (completed 2026-03-04)
 - [ ] **Phase 12: Proof Gate** - Full v2 proof reports generated; npm test passes with 0 failures
 
 ## Phase Details
@@ -142,9 +142,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Port validate-feedback.js to scripts/ with RLHF schema adaptations (QUAL-01)
-- [ ] 07-02-PLAN.md — Add inferOutcome() + richContext enrichment to captureFeedback() (QUAL-02, QUAL-03)
-- [ ] 07-03-PLAN.md — Test suite + prove-data-quality.js + npm scripts wiring (QUAL-04)
+- [x] 07-01-PLAN.md — Port validate-feedback.js to scripts/ with RLHF schema adaptations (QUAL-01)
+- [x] 07-02-PLAN.md — Add inferOutcome() + richContext enrichment to captureFeedback() (QUAL-02, QUAL-03)
+- [x] 07-03-PLAN.md — Test suite + prove-data-quality.js + npm scripts wiring (QUAL-04)
 
 ### Phase 8: Loop Closure
 **Goal**: Feedback patterns automatically distill into actionable behavior rules, plans are gated before execution, and feedback flows bidirectionally through inbox and memory bridge — closing the full RLHF loop
@@ -156,7 +156,13 @@ Plans:
   3. The feedback inbox reader returns entries in cursor order and resumes from a stored cursor position on the next call — no re-reads of already-processed entries
   4. The feedback-to-memory bridge accepts a JSON feedback entry on stdin and emits a valid MCP memory format object on stdout — verifiable with a round-trip test
   5. All loop closure features have unit tests; all pass with 0 failures
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [x] 08-01-PLAN.md — Port feedback-to-rules.js + analyze/toRules (LOOP-01)
+- [x] 08-02-PLAN.md — Port plan-gate.js + validatePlan/formatReport (LOOP-02)
+- [x] 08-03-PLAN.md — Port feedback-inbox-read.js + cursor-based reading (LOOP-03)
+- [x] 08-04-PLAN.md — Port feedback-to-memory.js + test suite + prove-loop-closure.js (LOOP-04, LOOP-05)
 
 ### Phase 9: Intelligence
 **Goal**: Queries route to pre-computed knowledge bundles for low-latency retrieval, and skill quality is tracked by correlating tool call metrics to nearby feedback signals — making the system self-aware of what works
@@ -191,7 +197,13 @@ Plans:
   3. Thompson Sampling JS module in Subway updates `alpha`/`beta` posteriors from Subway's feedback data and saves `feedback_model.json`
   4. Self-healing GH Action workflows run in Subway's CI and produce a health report — visible in GitHub Actions output
   5. All Subway upgrades have Jest tests and a `proof/subway-upgrades-report.md` with evidence; all tests pass with 0 failures
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [x] 11-01-PLAN.md — Port vector-store.js to Subway + Jest tests (SUBW-01)
+- [x] 11-02-PLAN.md — Port dpo-optimizer.js to Subway + Jest tests (SUBW-02)
+- [x] 11-03-PLAN.md — Port thompson-sampling.js to Subway + Jest tests (SUBW-03)
+- [x] 11-04-PLAN.md — Port self-healing workflows + test:governance + prove-subway-upgrades.js (SUBW-04, SUBW-05)
 
 ### Phase 12: Proof Gate
 **Goal**: All v2 features are provably complete — proof reports cover every phase, the full test suite passes with increased count and zero failures, and the project meets its production-readiness claim
@@ -225,9 +237,9 @@ Phase 6 → Phases 7, 8 (parallel, both depend on 6) → Phase 9 (depends on 6) 
 | 4. LanceDB Vector Storage | 4/4 | Complete | 2026-03-04 |
 | 5. RLAIF and DPO Optimization | 3/3 | Complete | 2026-03-04 |
 | 6. Feedback Attribution | 4/4 | Complete    | 2026-03-04 |
-| 7. Data Quality | 0/TBD | Not started | - |
-| 8. Loop Closure | 0/TBD | Not started | - |
+| 7. Data Quality | 3/3 | Complete    | 2026-03-04 |
+| 8. Loop Closure | 4/4 | Complete    | 2026-03-04 |
 | 9. Intelligence | 0/TBD | Not started | - |
 | 10. Training Export | 0/TBD | Not started | - |
-| 11. Subway Upgrades | 0/TBD | Not started | - |
+| 11. Subway Upgrades | 4/4 | Complete    | 2026-03-04 |
 | 12. Proof Gate | 0/TBD | Not started | - |
