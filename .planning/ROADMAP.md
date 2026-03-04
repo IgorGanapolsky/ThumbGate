@@ -118,5 +118,5 @@ Phase 1 → Phase 2 and Phase 3 (parallel) → Phase 4 → Phase 5
 | 1. Contract Alignment | 3/3 | Complete    | 2026-03-04 |
 | 2. ML into rlhf-feedback-loop | 5/5 | Complete    | 2026-03-04 |
 | 3. Governance into Subway | 4/4 | Complete    | 2026-03-04 |
-| 4. LanceDB Vector Storage | 0/4 | Not started | - |
+| 4. LanceDB Vector Storage | 1/4 | In Progress|  |
 | 5. RLAIF and DPO Optimization | 0/TBD | Not started | - |

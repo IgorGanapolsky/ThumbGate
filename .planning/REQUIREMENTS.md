@@ -31,9 +31,9 @@
 
 ### LanceDB Vector Storage
 
-- [ ] **VEC-01**: LanceDB embedded table stores feedback vectors in rlhf-feedback-loop
-- [ ] **VEC-02**: ESM/CJS compatibility resolved via dynamic import pattern
-- [ ] **VEC-03**: apache-arrow pinned to compatible version (<=18.1.0)
+- [x] **VEC-01**: LanceDB embedded table stores feedback vectors in rlhf-feedback-loop
+- [x] **VEC-02**: ESM/CJS compatibility resolved via dynamic import pattern
+- [x] **VEC-03**: apache-arrow pinned to compatible version (<=18.1.0)
 - [ ] **VEC-04**: Semantic similarity search returns relevant historical feedback
 - [ ] **VEC-05**: LanceDB integration has tests and proof report
 
@@ -87,9 +87,9 @@
 | GOV-04 | Phase 3: Governance into Subway | Complete |
 | GOV-05 | Phase 3: Governance into Subway | Complete |
 | GOV-06 | Phase 3: Governance into Subway | Complete |
-| VEC-01 | Phase 4: LanceDB Vector Storage | Pending |
-| VEC-02 | Phase 4: LanceDB Vector Storage | Pending |
-| VEC-03 | Phase 4: LanceDB Vector Storage | Pending |
+| VEC-01 | Phase 4: LanceDB Vector Storage | Complete |
+| VEC-02 | Phase 4: LanceDB Vector Storage | Complete |
+| VEC-03 | Phase 4: LanceDB Vector Storage | Complete |
 | VEC-04 | Phase 4: LanceDB Vector Storage | Pending |
 | VEC-05 | Phase 4: LanceDB Vector Storage | Pending |
 | DPO-01 | Phase 5: RLAIF and DPO Optimization | Pending |
