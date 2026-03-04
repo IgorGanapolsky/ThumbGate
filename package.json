@@ -5,7 +5,7 @@
   "main": "scripts/feedback-loop.js",
   "type": "commonjs",
   "scripts": {
-    "test": "npm run test:schema && npm run test:loop && npm run test:dpo && npm run test:api && npm run test:proof && npm run test:rlaif && npm run test:attribution && npm run test:quality && npm run test:intelligence && npm run test:training-export",
+    "test": "npm run test:schema && npm run test:loop && npm run test:dpo && npm run test:api && npm run test:proof && npm run test:rlaif && npm run test:attribution && npm run test:quality && npm run test:intelligence && npm run test:training-export && npm run test:deployment",
     "test:schema": "node scripts/feedback-schema.js --test",
     "test:loop": "node scripts/feedback-loop.js --test",
     "test:dpo": "node scripts/export-dpo-pairs.js --test",
@@ -16,6 +16,7 @@
     "test:quality": "node --test tests/validate-feedback.test.js",
     "test:intelligence": "node --test tests/intelligence.test.js",
     "test:training-export": "node --test tests/training-export.test.js",
+    "test:deployment": "node --test tests/deployment.test.js",
     "start:api": "node src/api/server.js",
     "start:mcp": "node adapters/mcp/server-stdio.js",
     "feedback:capture": "node .claude/scripts/feedback/capture-feedback.js",

@@ -2,6 +2,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const pkg = require('../../package.json');
 
 const {
   captureFeedback,
@@ -151,13 +152,23 @@ function createApiServer() {
   const expectedApiKey = getExpectedApiKey();
 
   return http.createServer(async (req, res) => {
+    const parsed = new URL(req.url, 'http://localhost');
+    const pathname = parsed.pathname;
+
+    // Health check is unauthenticated — required for Railway/load-balancer probes
+    if (req.method === 'GET' && pathname === '/health') {
+      sendJson(res, 200, {
+        status: 'ok',
+        version: pkg.version,
+        uptime: process.uptime(),
+      });
+      return;
+    }
+
     if (!isAuthorized(req, expectedApiKey)) {
       sendJson(res, 401, { error: 'Unauthorized' });
       return;
     }
-
-    const parsed = new URL(req.url, 'http://localhost');
-    const pathname = parsed.pathname;
 
     try {
       if (req.method === 'GET' && pathname === '/healthz') {
