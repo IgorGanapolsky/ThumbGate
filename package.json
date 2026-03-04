@@ -9,7 +9,7 @@
     "test:schema": "node scripts/feedback-schema.js --test",
     "test:loop": "node scripts/feedback-loop.js --test",
     "test:dpo": "node scripts/export-dpo-pairs.js --test",
-    "test:api": "node --test tests/api-server.test.js tests/api-auth-config.test.js tests/mcp-server.test.js tests/adapters.test.js tests/openapi-parity.test.js tests/budget-guard.test.js tests/contextfs.test.js tests/mcp-policy.test.js tests/subagent-profiles.test.js tests/intent-router.test.js tests/rubric-engine.test.js tests/self-healing-check.test.js tests/self-heal.test.js tests/feedback-schema.test.js",
+    "test:api": "node --test tests/api-server.test.js tests/api-auth-config.test.js tests/mcp-server.test.js tests/adapters.test.js tests/openapi-parity.test.js tests/budget-guard.test.js tests/contextfs.test.js tests/mcp-policy.test.js tests/subagent-profiles.test.js tests/intent-router.test.js tests/rubric-engine.test.js tests/self-healing-check.test.js tests/self-heal.test.js tests/feedback-schema.test.js tests/thompson-sampling.test.js tests/feedback-sequences.test.js tests/diversity-tracking.test.js",
     "test:proof": "node --test tests/prove-adapters.test.js tests/prove-automation.test.js",
     "start:api": "node src/api/server.js",
     "start:mcp": "node adapters/mcp/server-stdio.js",
