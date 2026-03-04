@@ -44,7 +44,7 @@ jobs:
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
 
       - name: Upload health report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: self-healing-health-report
           path: health_report.json
@@ -178,7 +178,7 @@ jobs:
 
       - name: Upload remediation report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: self-heal-report
           path: self_heal_report.json
