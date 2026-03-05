@@ -93,16 +93,37 @@ function main() {
   });
 
   if (result.accepted) {
-    console.log('Feedback captured and converted to actionable memory.');
-    console.log(`Feedback ID: ${result.feedbackEvent.id}`);
-    console.log(`Memory ID: ${result.memoryRecord.id}`);
-    console.log(`Title: ${result.memoryRecord.title}`);
+    const ev = result.feedbackEvent;
+    const mem = result.memoryRecord;
+    console.log('');
+    console.log(`RLHF Feedback Captured [${feedback.toUpperCase()}]`);
+    console.log('─'.repeat(50));
+    console.log(`  Feedback ID : ${ev.id}`);
+    console.log(`  Signal      : ${ev.signal} (${ev.actionType})`);
+    console.log(`  Context     : ${(ev.context || '').slice(0, 80)}${(ev.context || '').length > 80 ? '...' : ''}`);
+    console.log(`  Tags        : ${(ev.tags || []).join(', ') || '(none)'}`);
+    console.log(`  Timestamp   : ${ev.timestamp}`);
+    console.log('');
+    console.log(`  Memory ID   : ${mem.id}`);
+    console.log(`  Title       : ${mem.title}`);
+    console.log(`  Type        : ${mem.type || ev.actionType}`);
+    console.log(`  Storage     : JSONL log + LanceDB vector index`);
+    console.log('');
+    console.log(`  Action: promoted to memory. Prevention rules will auto-update.`);
+    console.log(`  DPO export: run \`npx rlhf-feedback-loop export-dpo\` to generate training pairs.`);
+    console.log('');
     return;
   }
 
-  console.log('Feedback recorded but not promoted to memory.');
-  console.log(`Reason: ${result.reason}`);
-  console.log(`Feedback ID: ${result.feedbackEvent ? result.feedbackEvent.id : 'n/a'}`);
+  console.log('');
+  console.log(`RLHF Feedback Recorded [${feedback.toUpperCase()}] — not promoted`);
+  console.log('─'.repeat(50));
+  console.log(`  Feedback ID : ${result.feedbackEvent ? result.feedbackEvent.id : 'n/a'}`);
+  console.log(`  Reason      : ${result.reason}`);
+  console.log('');
+  console.log(`  The rubric engine did not promote this to memory.`);
+  console.log(`  Common causes: missing tags, no test evidence, low rubric score.`);
+  console.log('');
   process.exit(2);
 }
 
