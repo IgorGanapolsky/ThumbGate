@@ -42,33 +42,7 @@ npm install rlhf-feedback-loop
 npx rlhf-feedback-loop init
 ```
 
-That's it. You get the full engine — feedback capture, DPO export, prevention rules, LanceDB vectors, rubric scoring, and an MCP server — all running from `node_modules`. No files copied into your project.
-
-```bash
-# Capture feedback
-npx rlhf-feedback-loop capture --feedback=up --context="tests pass"
-
-# Export training pairs
-npx rlhf-feedback-loop export-dpo
-
-# View analytics
-npx rlhf-feedback-loop stats
-
-# Stay up to date
-npm update rlhf-feedback-loop
-```
-
-Platform-specific adapter setup (optional):
-
-| Platform | One-liner |
-|----------|-----------|
-| **Claude Code** | `init` auto-configures `.mcp.json` |
-| **Codex** | `cat node_modules/rlhf-feedback-loop/adapters/codex/config.toml >> ~/.codex/config.toml` |
-| **Gemini** | `cp node_modules/rlhf-feedback-loop/adapters/gemini/function-declarations.json .gemini/rlhf-tools.json` |
-| **Amp** | `cp node_modules/rlhf-feedback-loop/plugins/amp-skill/SKILL.md .amp/skills/rlhf-feedback.md` |
-| **ChatGPT** | Import `node_modules/rlhf-feedback-loop/adapters/chatgpt/openapi.yaml` in GPT Builder |
-
-Detailed guides: [Claude](plugins/claude-skill/INSTALL.md) | [Codex](plugins/codex-profile/INSTALL.md) | [Gemini](plugins/gemini-extension/INSTALL.md) | [Amp](plugins/amp-skill/INSTALL.md) | [ChatGPT](adapters/chatgpt/INSTALL.md)
+That's it. Your agent now captures feedback, blocks repeated mistakes, and exports training data. Run `npx rlhf-feedback-loop help` for all commands.
 
 ## How It Works
 
