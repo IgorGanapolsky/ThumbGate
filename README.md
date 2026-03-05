@@ -46,17 +46,31 @@ That's it. Your agent now captures feedback, blocks repeated mistakes, and expor
 
 ## How It Works
 
-1. **Capture** — You (or your agent) gives thumbs up/down with context. Feedback is appended to a local **JSONL** log with tags, rubric scores, and timestamps.
+```
+Thumbs up/down
+      |
+      v
+  Capture → JSONL log
+      |
+      v
+  Rubric engine (block false positives)
+      |
+  +---+---+
+  |       |
+ Good    Bad
+  |       |
+  v       v
+Learn   Prevention rule
+  |       |
+  v       v
+LanceDB   ShieldCortex
+vectors   context packs
+  |
+  v
+DPO export → fine-tune your model
+```
 
-2. **Validate** — The rubric engine scores it and blocks false positives (e.g., agent says "done!" but no tests ran). Invalid entries are discarded before they pollute memory.
-
-3. **Remember** — Valid feedback is promoted to a **JSONL** memory log. **LanceDB** indexes every memory as a vector embedding so the system can find semantically similar past experiences.
-
-4. **Prevent** — Repeated mistakes automatically generate prevention rules — hard guardrails that block the agent from making the same error again.
-
-5. **Export** — Good/bad memory pairs export as **DPO training data** (prompt/chosen/rejected JSONL) for fine-tuning your model.
-
-6. **Context** — When your agent starts a new task, **ShieldCortex** assembles a context pack from relevant memories, prevention rules, and past feedback — so the agent starts informed, not blank.
+All data stored locally as **JSONL** files — fully transparent, fully portable, no vendor lock-in. **LanceDB** indexes memories as vector embeddings for semantic search. **ShieldCortex** assembles context packs so your agent starts each task informed.
 
 ### What gets saved
 
