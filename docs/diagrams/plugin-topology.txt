@@ -1,9 +1,19 @@
-Show a central RLHF Feedback API with five adapters around it.
-Adapter 1: ChatGPT via GPT Actions OpenAPI.
-Adapter 2: Claude via local MCP server and .mcp.json.
+Show a central RLHF Feedback API hub with five platform adapters radiating outward.
+
+Adapter 1: ChatGPT via GPT Actions OpenAPI spec.
+Adapter 2: Claude via local MCP server and .mcp.json config.
 Adapter 3: Codex via MCP server config.toml.
 Adapter 4: Gemini via function-calling tool declarations.
-Adapter 5: Amp via skills template.
-Include bidirectional arrows from each adapter to the API.
-Under the API place three internal modules: schema validation, prevention rules, and DPO export.
-Add a budget guard module enforcing a strict monthly cost cap of 10 USD.
+Adapter 5: Amp via skills template SKILL.md.
+
+Include bidirectional arrows from each adapter to the central API.
+
+Below the API, show the internal modules as a horizontal row:
+1. Schema Validation (JSON schema enforcement)
+2. Prevention Rules (auto-generated guardrails)
+3. DPO Export (JSONL training pairs)
+
+Below the modules, show the storage layer:
+- JSONL Files: feedback-log.jsonl, memory-log.jsonl, feedback-sequences.jsonl
+- LanceDB: vector embeddings for semantic search
+- ShieldCortex: context pack assembly from multiple sources
