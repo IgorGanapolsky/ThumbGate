@@ -58,6 +58,39 @@ That's it. Your agent now captures feedback, blocks repeated mistakes, and expor
 
 6. **Context** — When your agent starts a new task, **ShieldCortex** assembles a context pack from relevant memories, prevention rules, and past feedback — so the agent starts informed, not blank.
 
+### What gets saved
+
+**Thumbs up** — the system learns what worked:
+
+```json
+{
+  "id": "fb_1772740890067_769e5t",
+  "signal": "positive",
+  "actionType": "store-learning",
+  "context": "All tests pass, PR merged, CI green",
+  "whatWorked": "Wrote tests before implementation, used fuzzy matching",
+  "tags": ["testing", "ci"],
+  "timestamp": "2026-03-05T20:01:30.066Z"
+}
+```
+
+**Thumbs down** — the system remembers the mistake and generates a prevention rule:
+
+```json
+{
+  "id": "fb_1772739479894_e15wyx",
+  "signal": "negative",
+  "actionType": "store-mistake",
+  "context": "Claimed done without running tests",
+  "whatWentWrong": "No test evidence attached",
+  "whatToChange": "Always run npm test before claiming completion",
+  "tags": ["verification", "testing"],
+  "timestamp": "2026-03-05T19:51:19.893Z"
+}
+```
+
+Everything is stored locally in your project as plain JSONL files — fully transparent, fully portable, no vendor lock-in.
+
 ## Pricing
 
 | Plan | Price | What you get |
