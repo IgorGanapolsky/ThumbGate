@@ -1,7 +1,15 @@
 {
   "name": "rlhf-feedback-loop",
   "version": "0.5.0",
-  "description": "Production-grade RLHF feedback operations for coding agents: capture thumbs signals, enforce schema quality, prevent repeated mistakes, and export DPO pairs.",
+  "description": "Make your AI agent learn from mistakes. Capture thumbs up/down feedback, block repeated failures, export DPO training data. Works with ChatGPT, Claude, Codex, Gemini, Amp.",
+  "homepage": "https://github.com/IgorGanapolsky/rlhf-feedback-loop#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IgorGanapolsky/rlhf-feedback-loop.git"
+  },
+  "bugs": {
+    "url": "https://github.com/IgorGanapolsky/rlhf-feedback-loop/issues"
+  },
   "main": "scripts/feedback-loop.js",
   "bin": {
     "rlhf-feedback-loop": "./bin/cli.js"
@@ -79,8 +87,17 @@
     "claude",
     "codex",
     "gemini",
+    "chatgpt",
+    "amp",
+    "mcp",
+    "model-context-protocol",
     "agent-evaluation",
-    "prompt-engineering"
+    "prompt-engineering",
+    "context-engineering",
+    "ai-safety",
+    "machine-learning",
+    "openapi",
+    "developer-tools"
   ],
   "license": "MIT",
   "dependencies": {
