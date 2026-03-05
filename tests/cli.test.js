@@ -103,7 +103,7 @@ describe('bin/cli.js', () => {
     assert.ok(mcp.mcpServers['rlhf-feedback-loop'].args[0].includes('server-stdio.js'));
   });
 
-  test('init output includes initialized message', () => {
+  test('init output includes initialized message and platform detection', () => {
     const result = spawnSync(process.execPath, [CLI, 'init'], {
       encoding: 'utf8',
       cwd: tmpDir,
@@ -111,6 +111,10 @@ describe('bin/cli.js', () => {
     assert.ok(
       result.stdout.includes('initialized'),
       `Expected "initialized" in output:\n${result.stdout}`
+    );
+    assert.ok(
+      result.stdout.includes('Detecting platforms'),
+      `Expected platform detection in output:\n${result.stdout}`
     );
   });
 

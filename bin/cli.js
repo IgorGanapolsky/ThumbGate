@@ -38,10 +38,96 @@ function pkgVersion() {
   return pkg.version;
 }
 
+// --- Platform auto-detection helpers ---
+
+const HOME = process.env.HOME || process.env.USERPROFILE || '';
+const MCP_SERVER_ENTRY = {
+  command: 'node',
+  args: [path.relative(CWD, path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js'))],
+};
+
+function mergeMcpJson(filePath, label) {
+  if (!fs.existsSync(filePath)) {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify({ mcpServers: { 'rlhf-feedback-loop': MCP_SERVER_ENTRY } }, null, 2) + '\n');
+    console.log(`  ${label}: wrote ${path.relative(CWD, filePath)}`);
+    return true;
+  }
+  const existing = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  if (existing.mcpServers && existing.mcpServers['rlhf-feedback-loop']) return false;
+  existing.mcpServers = existing.mcpServers || {};
+  existing.mcpServers['rlhf-feedback-loop'] = MCP_SERVER_ENTRY;
+  fs.writeFileSync(filePath, JSON.stringify(existing, null, 2) + '\n');
+  console.log(`  ${label}: updated ${path.relative(CWD, filePath)}`);
+  return true;
+}
+
+function detectPlatform(name, checks) {
+  for (const check of checks) {
+    try { if (check()) return true; } catch (_) {}
+  }
+  return false;
+}
+
+function whichExists(cmd) {
+  try { execSync(`which ${cmd}`, { stdio: 'pipe' }); return true; } catch (_) { return false; }
+}
+
+function setupClaude() {
+  return mergeMcpJson(path.join(CWD, '.mcp.json'), 'Claude Code');
+}
+
+function setupCodex() {
+  const configPath = path.join(HOME, '.codex', 'config.toml');
+  const block = `\n[mcp_servers.rlhf_feedback_loop]\ncommand = "node"\nargs = ["${MCP_SERVER_ENTRY.args[0]}"]\n`;
+  if (!fs.existsSync(configPath)) {
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.writeFileSync(configPath, block);
+    console.log('  Codex: created ~/.codex/config.toml');
+    return true;
+  }
+  const content = fs.readFileSync(configPath, 'utf8');
+  if (content.includes('[mcp_servers.rlhf_feedback_loop]')) return false;
+  fs.appendFileSync(configPath, block);
+  console.log('  Codex: appended MCP server to ~/.codex/config.toml');
+  return true;
+}
+
+function setupGemini() {
+  const settingsPath = path.join(HOME, '.gemini', 'settings.json');
+  if (fs.existsSync(settingsPath)) {
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    if (settings.mcpServers && settings.mcpServers['rlhf-feedback-loop']) return false;
+    settings.mcpServers = settings.mcpServers || {};
+    settings.mcpServers['rlhf-feedback-loop'] = MCP_SERVER_ENTRY;
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+    console.log('  Gemini: updated ~/.gemini/settings.json');
+    return true;
+  }
+  // Fallback: project-level .gemini/settings.json
+  return mergeMcpJson(path.join(CWD, '.gemini', 'settings.json'), 'Gemini');
+}
+
+function setupAmp() {
+  const skillDir = path.join(CWD, '.amp', 'skills', 'rlhf-feedback');
+  const destPath = path.join(skillDir, 'SKILL.md');
+  if (fs.existsSync(destPath)) return false;
+  const srcPath = path.join(PKG_ROOT, 'plugins', 'amp-skill', 'SKILL.md');
+  if (!fs.existsSync(srcPath)) return false;
+  fs.mkdirSync(skillDir, { recursive: true });
+  fs.copyFileSync(srcPath, destPath);
+  console.log('  Amp: installed .amp/skills/rlhf-feedback/SKILL.md');
+  return true;
+}
+
+function setupCursor() {
+  return mergeMcpJson(path.join(CWD, '.cursor', 'mcp.json'), 'Cursor');
+}
+
 function init() {
   const rlhfDir = path.join(CWD, '.rlhf');
 
-  // Create directory
   if (!fs.existsSync(rlhfDir)) {
     fs.mkdirSync(rlhfDir, { recursive: true });
     console.log('Created .rlhf/');
@@ -49,7 +135,6 @@ function init() {
     console.log('.rlhf/ already exists — updating config');
   }
 
-  // Write config.json (minimal — engine lives in node_modules)
   const config = {
     version: pkgVersion(),
     apiUrl: process.env.RLHF_API_URL || 'http://localhost:3000',
@@ -58,41 +143,41 @@ function init() {
     createdAt: new Date().toISOString(),
   };
 
-  const configPath = path.join(rlhfDir, 'config.json');
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+  fs.writeFileSync(path.join(rlhfDir, 'config.json'), JSON.stringify(config, null, 2) + '\n');
   console.log('Wrote .rlhf/config.json');
 
-  // Detect platform and offer adapter setup
-  const mcpJsonPath = path.join(CWD, '.mcp.json');
-  const mcpServerPath = path.relative(CWD, path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js'));
+  // Always create .mcp.json (project-level MCP config used by Claude, Codex, Cursor)
+  mergeMcpJson(path.join(CWD, '.mcp.json'), 'MCP');
 
-  if (!fs.existsSync(mcpJsonPath)) {
-    const mcpConfig = {
-      mcpServers: {
-        'rlhf-feedback-loop': {
-          command: 'node',
-          args: [mcpServerPath],
-        },
-      },
-    };
-    fs.writeFileSync(mcpJsonPath, JSON.stringify(mcpConfig, null, 2) + '\n');
-    console.log('Wrote .mcp.json (MCP server for Claude/Codex)');
-  } else {
-    const existing = JSON.parse(fs.readFileSync(mcpJsonPath, 'utf8'));
-    if (!existing.mcpServers || !existing.mcpServers['rlhf-feedback-loop']) {
-      existing.mcpServers = existing.mcpServers || {};
-      existing.mcpServers['rlhf-feedback-loop'] = {
-        command: 'node',
-        args: [mcpServerPath],
-      };
-      fs.writeFileSync(mcpJsonPath, JSON.stringify(existing, null, 2) + '\n');
-      console.log('Updated .mcp.json with rlhf-feedback-loop server');
-    } else {
-      console.log('.mcp.json already has rlhf-feedback-loop server');
+  // Auto-detect and configure platform-specific locations
+  console.log('');
+  console.log('Detecting platforms...');
+  let configured = 0;
+
+  const platforms = [
+    { name: 'Codex', detect: [() => whichExists('codex'), () => fs.existsSync(path.join(HOME, '.codex'))], setup: setupCodex },
+    { name: 'Gemini', detect: [() => whichExists('gemini'), () => fs.existsSync(path.join(HOME, '.gemini'))], setup: setupGemini },
+    { name: 'Amp', detect: [() => whichExists('amp'), () => fs.existsSync(path.join(HOME, '.amp'))], setup: setupAmp },
+    { name: 'Cursor', detect: [() => fs.existsSync(path.join(HOME, '.cursor', 'mcp.json')), () => fs.existsSync(path.join(CWD, '.cursor'))], setup: setupCursor },
+  ];
+
+  for (const p of platforms) {
+    if (detectPlatform(p.name, p.detect)) {
+      const didSetup = p.setup();
+      if (didSetup) configured++;
+      else console.log(`  ${p.name}: already configured`);
     }
   }
 
-  // Add data paths to .gitignore
+  // ChatGPT — cannot be automated
+  const chatgptSpec = path.join(PKG_ROOT, 'adapters', 'chatgpt', 'openapi.yaml');
+  if (fs.existsSync(chatgptSpec)) {
+    console.log(`  ChatGPT: import ${path.relative(CWD, chatgptSpec)} in GPT Builder > Actions`);
+  }
+
+  if (configured === 0) console.log('  All detected platforms already configured.');
+
+  // .gitignore
   const gitignorePath = path.join(CWD, '.gitignore');
   if (fs.existsSync(gitignorePath)) {
     const gitignore = fs.readFileSync(gitignorePath, 'utf8');
@@ -100,20 +185,13 @@ function init() {
     const missing = entries.filter((e) => !gitignore.includes(e));
     if (missing.length > 0) {
       fs.appendFileSync(gitignorePath, '\n# RLHF local feedback data\n' + missing.join('\n') + '\n');
-      console.log('Updated .gitignore with RLHF data paths');
+      console.log('Updated .gitignore');
     }
   }
 
   console.log('');
   console.log(`rlhf-feedback-loop v${pkgVersion()} initialized.`);
-  console.log('');
-  console.log('Quick start:');
-  console.log('  npx rlhf-feedback-loop capture --feedback=up --context="tests pass"');
-  console.log('  npx rlhf-feedback-loop capture --feedback=down --context="missed edge case"');
-  console.log('  npx rlhf-feedback-loop stats');
-  console.log('  npx rlhf-feedback-loop export-dpo');
-  console.log('');
-  console.log('All commands: npx rlhf-feedback-loop help');
+  console.log('Run: npx rlhf-feedback-loop help');
 }
 
 function capture() {
