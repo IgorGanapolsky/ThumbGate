@@ -139,109 +139,15 @@ node .claude/scripts/feedback/capture-feedback.js \
 
 Spec: `openapi/openapi.yaml`
 
-## Versioning
+## Deep Dive
 
-- Package/runtime release version: `package.json`
-- API contract version: `openapi/openapi.yaml`
-- MCP server protocol version: `adapters/mcp/server-stdio.js` `serverInfo.version`
+For contributors and advanced configuration:
 
-## ContextFS
+- [Context Engine](docs/CONTEXTFS.md) — multi-agent memory orchestration
+- [Intent Router](docs/INTENT_ROUTER.md) — action planning with checkpoint policy
+- [Autonomous GitOps](docs/AUTONOMOUS_GITOPS.md) — self-healing CI/CD
+- [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) — proof reports
 
-The repo includes a file-system context substrate for multi-agent memory orchestration:
-- Constructor: relevance-ranked context pack assembly
-- Loader: strict `maxItems` + `maxChars` budgeting
-- Evaluator: outcome/provenance logging for improvement loops
+## License
 
-Docs: [docs/CONTEXTFS.md](docs/CONTEXTFS.md)
-
-## MCP Policy Profiles
-
-Use least-privilege MCP profiles based on runtime risk:
-
-- `default`: full local toolset
-- `readonly`: read-heavy operations
-- `locked`: summary-only constrained mode
-
-Config: [config/mcp-allowlists.json](config/mcp-allowlists.json)
-
-## Rubric Engine
-
-Rubric config: `config/rubrics/default-v1.json`
-
-- Weighted criteria scoring (`1-5`)
-- Multi-judge disagreement detection
-- Objective guardrail checks (`testsPassed`, `pathSafety`, `budgetCompliant`)
-- Promotion gate blocks positive memory writes on unsafe/high-disagreement signals
-
-## Intent Router
-
-Versioned orchestration bundles define intent-to-action plans and checkpoint policy:
-
-- Bundle configs: `config/policy-bundles/*.json`
-- CLI list: `npm run intents:list`
-- CLI plan: `npm run intents:plan`
-
-The router marks high-risk intents as `checkpoint_required` unless explicitly approved.
-Details: [docs/INTENT_ROUTER.md](docs/INTENT_ROUTER.md)
-
-## Autonomous GitOps
-
-The repo now ships with PR-gated autonomous operations:
-
-- `CI` (`.github/workflows/ci.yml`): required quality gate (`npm test`, adapter proof, automation proof)
-- `Agent PR Auto-Merge` (`.github/workflows/agent-automerge.yml`): auto-merges eligible agent branches (`claude/*`, `codex/*`, `auto/*`, `agent/*`) after required checks pass
-- `Dependabot Auto-Merge` (`.github/workflows/dependabot-automerge.yml`): auto-approves and merges safe dependency updates after required checks pass
-- `Self-Healing Monitor` (`.github/workflows/self-healing-monitor.yml`): scheduled health checks, auto-created alert issue on failure, remediation PR generation when fixable
-- `Self-Healing Auto-Fix` (`.github/workflows/self-healing-auto-fix.yml`): scheduled safe-fix attempts that open remediation PRs
-- `Merge Branch to Main` (`.github/workflows/merge-branch.yml`): manual fallback that still uses PR flow and branch protections
-
-Required repo settings:
-
-- `main` protected + required check(s)
-- auto-merge enabled
-- branch deletion on merge enabled
-
-Secrets:
-
-- Required: `GH_PAT` (or rely on `GITHUB_TOKEN` where permitted)
-- Optional: `SENTRY_AUTH_TOKEN`, `SENTRY_DSN`
-- Optional (LLM router): `LLM_GATEWAY_BASE_URL`, `LLM_GATEWAY_API_KEY`
-
-Sync helper:
-
-```bash
-bash scripts/sync-gh-secrets-from-env.sh IgorGanapolsky/rlhf-feedback-loop
-```
-
-Verification evidence: [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md)
-Compatibility proof: [proof/compatibility/report.md](proof/compatibility/report.md)
-Automation proof: [proof/automation/report.md](proof/automation/report.md)
-
-## Semantic Cache (Cost + Latency)
-
-Context pack construction now supports semantic cache reuse for similar queries:
-
-- token-overlap (Jaccard) similarity gate
-- TTL-bound cache entries
-- full provenance (`context_pack_cache_hit`)
-
-Environment toggles:
-
-- `RLHF_SEMANTIC_CACHE_ENABLED=true|false` (default `true`)
-- `RLHF_SEMANTIC_CACHE_THRESHOLD=0.7`
-- `RLHF_SEMANTIC_CACHE_TTL_SECONDS=86400`
-
-This directly reduces repeated retrieval/LLM context assembly work and improves response latency under budget constraints.
-
-## Commercialization
-
-- OSS core for adoption
-- Hosted control plane for teams
-- Enterprise support and compliance features
-
-See:
-
-- [docs/PACKAGING_AND_SALES_PLAN.md](docs/PACKAGING_AND_SALES_PLAN.md)
-- [docs/PLATFORM_RESEARCH_2026-03-03.md](docs/PLATFORM_RESEARCH_2026-03-03.md)
-- [docs/PLUGIN_DISTRIBUTION.md](docs/PLUGIN_DISTRIBUTION.md)
-- [docs/AUTONOMOUS_GITOPS.md](docs/AUTONOMOUS_GITOPS.md)
+MIT. See [LICENSE](LICENSE).
