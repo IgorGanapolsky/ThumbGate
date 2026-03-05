@@ -16,6 +16,16 @@ Your AI coding agent makes the same errors over and over. It claims things are d
 
 Works with **ChatGPT**, **Claude**, **Codex**, **Gemini**, and **Amp** — same core, different adapters.
 
+## Architecture at a Glance
+
+### RLHF Feedback Loop
+
+![RLHF Architecture](docs/diagrams/rlhf-architecture-pb.png)
+
+### Plugin Topology
+
+![Plugin Topology](docs/diagrams/plugin-topology-pb.png)
+
 ## Why This Exists
 
 | Problem | What this does |
@@ -24,7 +34,6 @@ Works with **ChatGPT**, **Claude**, **Codex**, **Gemini**, and **Amp** — same 
 | No proof agent tested before claiming "done" | Rubric engine blocks positive feedback without test evidence |
 | Feedback collected but never used | DPO pairs exported for actual model fine-tuning |
 | Different tools, different formats | One API + MCP server works across 5 platforms |
-| Costs spiral with LLM calls | Budget guard caps spend at $10/month by default |
 
 ## Install in 60 Seconds
 
@@ -196,7 +205,7 @@ Secrets:
 
 - Required: `GH_PAT` (or rely on `GITHUB_TOKEN` where permitted)
 - Optional: `SENTRY_AUTH_TOKEN`, `SENTRY_DSN`
-- Optional (LLM router): `LLM_GATEWAY_BASE_URL`, `LLM_GATEWAY_API_KEY`, `TETRATE_API_KEY`
+- Optional (LLM router): `LLM_GATEWAY_BASE_URL`, `LLM_GATEWAY_API_KEY`
 
 Sync helper:
 
@@ -204,24 +213,9 @@ Sync helper:
 bash scripts/sync-gh-secrets-from-env.sh IgorGanapolsky/rlhf-feedback-loop
 ```
 
-## Architecture
-
-### RLHF Feedback Loop
-
-![RLHF Architecture](docs/diagrams/rlhf-architecture.png)
-
-### Plugin Topology
-
-![Plugin Topology](docs/diagrams/plugin-topology.png)
-
 Verification evidence: [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md)
 Compatibility proof: [proof/compatibility/report.md](proof/compatibility/report.md)
 Automation proof: [proof/automation/report.md](proof/automation/report.md)
-
-## Budget Guardrail
-
-Default monthly cap is `$10` for paid external operations.
-The local budget ledger blocks additional spend if cap would be exceeded.
 
 ## Semantic Cache (Cost + Latency)
 
@@ -238,15 +232,6 @@ Environment toggles:
 - `RLHF_SEMANTIC_CACHE_TTL_SECONDS=86400`
 
 This directly reduces repeated retrieval/LLM context assembly work and improves response latency under budget constraints.
-
-## Optional Tetrate Router
-
-Not required for core local RLHF logic.
-Recommended only when routing paid LLM calls (PaperBanana, external judges, hosted control-plane features):
-
-- centralized provider routing
-- price/fallback control
-- unified usage observability
 
 ## Commercialization
 
