@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-05T14:05:18.822Z",
+  "generatedAt": "2026-03-06T22:14:54.249Z",
   "checks": [
     {
       "name": "feedback.capture.rubric_pass",
@@ -130,7 +130,7 @@
       "name": "code_reasoning.dpo_traces",
       "passed": true,
       "details": {
-        "traceId": "trace-767b02da421e",
+        "traceId": "trace-ee3e298b8218",
         "confidence": 1,
         "aggregateConfidence": 1
       }
@@ -162,8 +162,8 @@
   },
   "proofTraces": [
     {
-      "traceId": "trace-924e0365c33b",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-ba06c323ebe5",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "feedback.capture.rubric_pass",
       "steps": [
@@ -191,8 +191,8 @@
       }
     },
     {
-      "traceId": "trace-5e3020dfdc44",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-7406f193bde3",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "feedback.capture.rubric_block",
       "steps": [
@@ -220,8 +220,8 @@
       }
     },
     {
-      "traceId": "trace-048b05624336",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-d5514b24100f",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "feedback.capture.negative_with_rubric",
       "steps": [
@@ -249,8 +249,8 @@
       }
     },
     {
-      "traceId": "trace-2af177109173",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-388eb642fe2c",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "analytics.rubric_tracking",
       "steps": [
@@ -272,8 +272,8 @@
       }
     },
     {
-      "traceId": "trace-9e0a335e0342",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-854b5495147f",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "prevention_rules.rubric_dimensions",
       "steps": [
@@ -295,8 +295,8 @@
       }
     },
     {
-      "traceId": "trace-5d3e508aaab2",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-7b1a5e1f2226",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "dpo_export.rubric_metadata",
       "steps": [
@@ -318,8 +318,8 @@
       }
     },
     {
-      "traceId": "trace-7fe6fc53a6f4",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-d91b06addf06",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "api.rubric_gate",
       "steps": [
@@ -347,8 +347,8 @@
       }
     },
     {
-      "traceId": "trace-ee96c0362e23",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-aa4e9d795ebd",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "mcp.rubric_gate",
       "steps": [
@@ -376,8 +376,8 @@
       }
     },
     {
-      "traceId": "trace-f7678ead5ffc",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-c8f1c6ca4f6b",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "intent.checkpoint_enforcement",
       "steps": [
@@ -399,8 +399,8 @@
       }
     },
     {
-      "traceId": "trace-2bfc10070ed4",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-af592efd7cd2",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "context.evaluate.rubric",
       "steps": [
@@ -422,8 +422,8 @@
       }
     },
     {
-      "traceId": "trace-14535fda5260",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-9e2f1eba1870",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "context.semantic_cache.hit",
       "steps": [
@@ -445,8 +445,8 @@
       }
     },
     {
-      "traceId": "trace-48751363c24b",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-431a69dab3f8",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "self_healing.helpers",
       "steps": [
@@ -468,15 +468,15 @@
       }
     },
     {
-      "traceId": "trace-cdba718f9494",
-      "timestamp": "2026-03-05T14:05:19.487Z",
+      "traceId": "trace-38ba9e5102a5",
+      "timestamp": "2026-03-06T22:14:54.908Z",
       "type": "proof-gate",
       "subject": "code_reasoning.dpo_traces",
       "steps": [
         {
           "location": "check:code_reasoning.dpo_traces",
           "claim": "Proof check \"code_reasoning.dpo_traces\" passes",
-          "evidence": "Passed with details: {\"traceId\":\"trace-767b02da421e\",\"confidence\":1,\"aggregateConfidence\":1}",
+          "evidence": "Passed with details: {\"traceId\":\"trace-ee3e298b8218\",\"confidence\":1,\"aggregateConfidence\":1}",
           "verdict": "verified"
         }
       ],

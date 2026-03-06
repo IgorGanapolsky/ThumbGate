@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { spawn } = require('child_process');
 const { startServer } = require('../src/api/server');
 const { handleRequest } = require('../adapters/mcp/server-stdio');
 const { validateSubagentProfiles, listSubagentProfiles } = require('./subagent-profiles');
@@ -26,6 +27,114 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function parseLeadingJson(text) {
+  const raw = String(text || '');
+  const marker = '\n\n---';
+  const boundary = raw.indexOf(marker);
+  const jsonSegment = boundary === -1 ? raw : raw.slice(0, boundary);
+  return JSON.parse(jsonSegment.trim());
+}
+
+async function proveMcpStdioTransport({
+  root,
+  transport = 'ndjson',
+  timeoutMs = 5000,
+}) {
+  const serverPath = path.join(root, 'adapters', 'mcp', 'server-stdio.js');
+  const child = spawn(process.execPath, [serverPath], {
+    cwd: root,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    env: process.env,
+  });
+
+  let stdoutBuffer = Buffer.alloc(0);
+  let stderrBuffer = '';
+
+  function parseResponse() {
+    const headerEnd = stdoutBuffer.indexOf('\r\n\r\n');
+    if (headerEnd !== -1) {
+      const header = stdoutBuffer.slice(0, headerEnd).toString('utf8');
+      const match = header.match(/Content-Length:\s*(\d+)/i);
+      if (!match) return null;
+      const length = Number(match[1]);
+      const bodyStart = headerEnd + 4;
+      const bodyEnd = bodyStart + length;
+      if (stdoutBuffer.length < bodyEnd) return null;
+      return stdoutBuffer.slice(bodyStart, bodyEnd).toString('utf8');
+    }
+
+    const newlineIndex = stdoutBuffer.indexOf('\n');
+    if (newlineIndex === -1) return null;
+    const line = stdoutBuffer.slice(0, newlineIndex).toString('utf8').trim();
+    if (!line) return null;
+    return line;
+  }
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const done = (err, value) => {
+      if (settled) return;
+      settled = true;
+      try {
+        child.kill('SIGKILL');
+      } catch (_) {
+        // no-op
+      }
+      if (err) reject(err);
+      else resolve(value);
+    };
+
+    const timer = setTimeout(() => {
+      done(new Error(`stdio ${transport} initialize timeout; stderr=${stderrBuffer}`));
+    }, timeoutMs);
+
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      done(err);
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderrBuffer += String(chunk || '');
+    });
+
+    child.stdout.on('data', (chunk) => {
+      stdoutBuffer = Buffer.concat([stdoutBuffer, Buffer.from(chunk)]);
+      const body = parseResponse();
+      if (!body) return;
+
+      clearTimeout(timer);
+      try {
+        const parsed = JSON.parse(body);
+        done(null, parsed);
+      } catch (err) {
+        done(err);
+      }
+    });
+
+    const initialize = {
+      jsonrpc: '2.0',
+      id: 777,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: {
+          name: 'prove-adapters',
+          version: '1.0.0',
+        },
+      },
+    };
+
+    if (transport === 'framed') {
+      const body = JSON.stringify(initialize);
+      child.stdin.write(`Content-Length: ${Buffer.byteLength(body, 'utf8')}\r\n\r\n${body}`);
+      return;
+    }
+
+    child.stdin.write(`${JSON.stringify(initialize)}\n`);
+  });
+}
+
 async function runProof(options = {}) {
   const proofDir = options.proofDir || process.env.RLHF_PROOF_DIR || DEFAULT_PROOF_DIR;
   const writeArtifacts = options.writeArtifacts !== false;
@@ -36,6 +145,9 @@ async function runProof(options = {}) {
   }
 
   const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-proof-'));
+  const previousFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+  const previousApiKey = process.env.RLHF_API_KEY;
+  const previousMcpProfile = process.env.RLHF_MCP_PROFILE;
   process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
   process.env.RLHF_API_KEY = 'proof-key';
   process.env.RLHF_MCP_PROFILE = 'default';
@@ -189,6 +301,20 @@ async function runProof(options = {}) {
     }
 
     {
+      const framedResponse = await proveMcpStdioTransport({ root: ROOT, transport: 'framed' });
+      check(framedResponse.id === 777, 'stdio framed initialize returned wrong id');
+      check(Boolean(framedResponse.result && framedResponse.result.serverInfo), 'stdio framed initialize missing serverInfo');
+      addResult('mcp.stdio.framed.initialize', true, { server: framedResponse.result.serverInfo.name });
+    }
+
+    {
+      const ndjsonResponse = await proveMcpStdioTransport({ root: ROOT, transport: 'ndjson' });
+      check(ndjsonResponse.id === 777, 'stdio ndjson initialize returned wrong id');
+      check(Boolean(ndjsonResponse.result && ndjsonResponse.result.serverInfo), 'stdio ndjson initialize missing serverInfo');
+      addResult('mcp.stdio.ndjson.initialize', true, { server: ndjsonResponse.result.serverInfo.name });
+    }
+
+    {
       const list = await handleRequest({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
       check(Array.isArray(list.tools) && list.tools.length > 0, 'mcp tools/list empty');
       addResult('mcp.tools.list', true, { tools: list.tools.length });
@@ -245,7 +371,7 @@ async function runProof(options = {}) {
           },
         },
       });
-      const payload = JSON.parse(call.content[0].text);
+      const payload = parseLeadingJson(call.content[0].text);
       check(payload.accepted === false, 'mcp capture_feedback should apply rubric gating');
       addResult('mcp.tools.call.capture_feedback.rubric_gate', true, { accepted: payload.accepted });
     }
@@ -323,10 +449,14 @@ async function runProof(options = {}) {
   } catch (err) {
     addResult('fatal', false, { error: err.message });
   } finally {
-    if (server) await new Promise((resolve) => server.close(resolve));
-    try {
-      fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
-    } catch (e) {}
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+    if (previousFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
+    else process.env.RLHF_FEEDBACK_DIR = previousFeedbackDir;
+    if (previousApiKey === undefined) delete process.env.RLHF_API_KEY;
+    else process.env.RLHF_API_KEY = previousApiKey;
+    if (previousMcpProfile === undefined) delete process.env.RLHF_MCP_PROFILE;
+    else process.env.RLHF_MCP_PROFILE = previousMcpProfile;
   }
 
   if (writeArtifacts) {

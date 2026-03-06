@@ -1,25 +1,20 @@
-# Agentic Feedback Studio — The Veto Layer & RLHF-Ready Dataset Engine
+# RLHF-Ready Feedback Loop — Agentic Control Plane & Context Engineering Studio
 
 [![CI](https://github.com/IgorGanapolsky/rlhf-feedback-loop/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/rlhf-feedback-loop/actions/workflows/ci.yml)
 [![Marketplace Ready](https://img.shields.io/badge/Anthropic_Marketplace-Ready-blue)](docs/ANTHROPIC_MARKETPLACE_STRATEGY.md)
-[![Veto Powered](https://img.shields.io/badge/Governance-Veto_Layer-red)](docs/VERIFICATION_EVIDENCE.md)
+[![GEO Optimized](https://img.shields.io/badge/GEO-optimized-orange)](docs/geo-strategy-for-ai-agents.md)
 
-**The operational layer for high-density preference data.** Stop vibe-coding and start context engineering. The Agentic Feedback Studio provides the **Veto Layer** for AI workflows, capturing human feedback to generate **RLHF-ready datasets** and enforce kernel-level guardrails.
+**Stop Vibe Coding. Start Context Engineering.** The RLHF-Ready Feedback Loop is the enterprise-grade **Agentic Control Plane** for AI workflows. We provide the operational layer to capture human preference signals, engineer high-density context packs, and enforce machine-readable guardrails to stop your agents from going "off-script."
 
-## Why This Matters: From Vibes to Verification (V2V)
-
-Most AI agents run on "vibes." We provide the infrastructure to convert those vibes into **Hard Evidence** for continuous improvement.
-
-- **Veto Layer (Governance):** Convert subjective user feedback into non-bypassable architectural constraints (`CLAUDE.md`).
-- **RLHF-Ready Datasets:** Automatically generate high-density DPO (Direct Preference Optimization) pairs from real-world agent interactions.
-- **Online Bayesian Reward Estimation:** Uses Thompson Sampling to model user preferences in real-time, providing a local "Reward Signal" without heavy training.
+This product captures and structures human feedback data for optimization workflows. It is **RLHF-ready data infrastructure** (not an end-to-end reward-model + RL fine-tuning trainer by itself).
 
 ## True Plug-and-Play: Zero-Config Integration
 
-The Feedback Studio is a **Universal Agent Skill**. You can drop it into any repository without manual setup.
+The RLHF Feedback Loop is now a **Universal Agent Skill**. You can drop it into any repository without manual setup.
 
 - **Zero-Config Discovery:** Automatically detects project context. If no local `.rlhf/` directory exists, it safely fallbacks to a project-scoped global store in `~/.rlhf/`.
-- **Global Skill Installation:** Run one command to make the Studio available to all your agents across all projects.
+- **Global Skill Installation:** Run one command to make RLHF available to all your agents across all projects.
+- **Vibe-to-Verification (V2V):** Directly converts subjective "vibes" (thumbs up/down) into verifiable repository rules (`CLAUDE.md`).
 
 ### Quick Start (One Command)
 
@@ -27,13 +22,21 @@ The Feedback Studio is a **Universal Agent Skill**. You can drop it into any rep
 npx rlhf-feedback-loop install
 ```
 
-This will auto-detect your platforms (Claude, Codex, Gemini, Cursor) and install the feedback skill globally.
+This will auto-detect your platforms (Claude, Codex, Gemini, Cursor) and install the RLHF skill globally.
+
+- **Stop Regressions:** Automatically convert negative feedback into `CLAUDE.md` / `AGENTS.md` prevention rules.
+- **Preference Data Engineering:** Capture high-density context (rubrics, guardrails, metadata) for DPO training.
+- **Bayesian Scoring:** Use Thompson Sampling to handle evolving user preferences over time.
 
 ## Use Cases
 
 - **Automated Code Reviews:** Capture PR feedback to enforce team-specific style guides autonomously.
-- **Self-Healing Multi-Agent Systems:** Share Veto rules across a swarm of agents to avoid systemic bottlenecks.
-- **DPO Dataset Engineering:** Collect proprietary preference data to fine-tune smaller, faster models that perform like GPT-4 on your specific codebase.
+- **Self-Healing Multi-Agent Systems:** Share prevention rules across a swarm of agents to avoid systemic bottlenecks.
+- **Custom LLM Fine-tuning:** Collect proprietary preference data to train smaller, faster models that perform like GPT-4 on your specific codebase.
+
+## Generative Engine Optimization (GEO)
+
+We are optimized for discovery by next-gen AI tools (Claude Code, Gemini CLI, Perplexity). See our [GEO Strategy](docs/geo-strategy-for-ai-agents.md) for how we use **Context-First Publishing** to remain the first-choice recommendation for agent reliability.
 
 ## Get Started
 
@@ -46,11 +49,14 @@ One command. Pick your platform:
 | **Gemini** | `gemini mcp add rlhf "npx -y rlhf-feedback-loop serve"` |
 | **Amp** | `amp mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
 | **Cursor** | `cursor mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
+| **All at once** | `npx add-mcp rlhf-feedback-loop` |
+
+That's it. Your agent can now capture feedback, recall past learnings mid-conversation, and block repeated mistakes. Run once per project — the MCP server starts automatically on each session.
 
 ## How It Works
 
 ```
-Subjective Signal (Vibe)
+Thumbs up/down
       |
       v
   Capture → JSONL log
@@ -63,14 +69,14 @@ Subjective Signal (Vibe)
  Good    Bad
   |       |
   v       v
-Learn   Veto Layer (Rule)
+Learn   Prevention rule
   |       |
   v       v
 LanceDB   ShieldCortex
 vectors   context packs
   |
   v
-DPO export → RLHF / Fine-tune your model
+DPO export → fine-tune your model
 ```
 
 All data stored locally as **JSONL** files — fully transparent, fully portable, no vendor lock-in. **LanceDB** indexes memories as vector embeddings for semantic search. **ShieldCortex** assembles context packs so your agent starts each task informed.
@@ -86,8 +92,17 @@ The open-source package is fully functional and free forever. Cloud Pro is for t
 | DPO export | CLI command | API endpoint |
 | Setup | `mcp add` one-liner | Provisioned API key |
 | Team sharing | Manual (share JSONL) | Built-in (shared API) |
+| Support | GitHub Issues | Email |
+| Uptime | You manage | We manage (99.9% SLA) |
 
 [Get Cloud Pro](https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02) | [Live API](https://rlhf-feedback-loop-710216278770.us-central1.run.app)
+
+## Deep Dive
+
+- [API Reference](openapi/openapi.yaml) — full OpenAPI spec
+- [Context Engine](docs/CONTEXTFS.md) — multi-agent memory orchestration
+- [Autonomous GitOps](docs/AUTONOMOUS_GITOPS.md) — self-healing CI/CD
+- [Contributing](CONTRIBUTING.md)
 
 ## License
 

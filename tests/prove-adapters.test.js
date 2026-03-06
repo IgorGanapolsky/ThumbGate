@@ -23,8 +23,8 @@ test('adapter proof: zero failures', () => {
   assert.equal(report.summary.failed, 0);
 });
 
-test('adapter proof: at least 19 checks pass', () => {
-  assert.ok(report.summary.passed >= 19, `expected >= 19 passed, got ${report.summary.passed}`);
+test('adapter proof: at least 21 checks pass', () => {
+  assert.ok(report.summary.passed >= 21, `expected >= 21 passed, got ${report.summary.passed}`);
 });
 
 test('adapter proof: report.json written', () => {
@@ -46,6 +46,8 @@ const requiredChecks = [
   'api.context.construct',
   'api.context.evaluate',
   'mcp.initialize',
+  'mcp.stdio.framed.initialize',
+  'mcp.stdio.ndjson.initialize',
   'mcp.tools.list',
   'mcp.tools.call.feedback_summary',
   'mcp.tools.call.plan_intent',

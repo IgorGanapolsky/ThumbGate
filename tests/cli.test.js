@@ -13,7 +13,7 @@
  *   7. init is idempotent
  */
 
-const { spawnSync } = require('child_process');
+const { spawnSync, spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -24,6 +24,96 @@ const CLI = path.resolve(__dirname, '../bin/cli.js');
 
 function makeTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cli-test-'));
+}
+
+function frameMcpMessage(payload) {
+  const body = JSON.stringify(payload);
+  return `Content-Length: ${Buffer.byteLength(body, 'utf8')}\r\n\r\n${body}`;
+}
+
+function parseMcpMessage(buffer) {
+  const headerEnd = buffer.indexOf('\r\n\r\n');
+  if (headerEnd !== -1) {
+    const header = buffer.slice(0, headerEnd).toString('utf8');
+    const match = header.match(/Content-Length:\s*(\d+)/i);
+    if (!match) return null;
+    const length = Number(match[1]);
+    const bodyStart = headerEnd + 4;
+    const bodyEnd = bodyStart + length;
+    if (buffer.length < bodyEnd) return null;
+    return buffer.slice(bodyStart, bodyEnd).toString('utf8');
+  }
+
+  const newlineIndex = buffer.indexOf('\n');
+  if (newlineIndex === -1) return null;
+  const line = buffer.slice(0, newlineIndex).toString('utf8').trim();
+  if (!line) return null;
+  return line;
+}
+
+function runServeHandshake(sendRequest) {
+  const child = spawn(process.execPath, [CLI, 'serve'], {
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+
+  let stdoutBuffer = Buffer.alloc(0);
+  let stderrBuffer = '';
+  let settled = false;
+
+  return new Promise((resolve, reject) => {
+    const done = (err, value) => {
+      if (settled) return;
+      settled = true;
+      try {
+        child.kill('SIGKILL');
+      } catch (_) {
+        // no-op
+      }
+      if (err) reject(err);
+      else resolve(value);
+    };
+
+    const timer = setTimeout(() => {
+      done(new Error(`MCP initialize timeout; stderr=${stderrBuffer}`));
+    }, 5000);
+
+    child.on('exit', (code, signal) => {
+      clearTimeout(timer);
+      done(new Error(`serve exited early (code=${code}, signal=${signal}); stderr=${stderrBuffer}`));
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderrBuffer += String(chunk || '');
+    });
+
+    child.stdout.on('data', (chunk) => {
+      stdoutBuffer = Buffer.concat([stdoutBuffer, Buffer.from(chunk)]);
+      const body = parseMcpMessage(stdoutBuffer);
+      if (!body) return;
+      clearTimeout(timer);
+      try {
+          done(null, {
+            response: JSON.parse(body),
+            raw: stdoutBuffer.toString('utf8'),
+          });
+      } catch (err) {
+        done(err);
+      }
+    });
+
+    const init = {
+      jsonrpc: '2.0',
+      id: 99,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'cli-test', version: '1.0.0' },
+      },
+    };
+
+    sendRequest(child.stdin, init);
+  });
 }
 
 describe('bin/cli.js', () => {
@@ -135,6 +225,31 @@ describe('bin/cli.js', () => {
       { encoding: 'utf8', cwd: path.resolve(__dirname, '..') }
     );
     assert.notEqual(result.status, 1, `capture should not exit 1:\n${result.stderr}`);
+  });
+
+  test('serve responds to initialize over Content-Length framed transport', async () => {
+    const { response } = await runServeHandshake((stdin, payload) => {
+      stdin.write(frameMcpMessage(payload));
+    });
+    assert.equal(response.id, 99);
+    assert.equal(response.result.serverInfo.name, 'rlhf-feedback-loop-mcp');
+  });
+
+  test('serve responds to initialize over newline-delimited JSON transport', async () => {
+    const { response } = await runServeHandshake((stdin, payload) => {
+      stdin.write(`${JSON.stringify(payload)}\n`);
+    });
+    assert.equal(response.id, 99);
+    assert.equal(response.result.serverInfo.name, 'rlhf-feedback-loop-mcp');
+  });
+
+  test('serve returns ndjson error envelope for malformed ndjson input', async () => {
+    const { response, raw } = await runServeHandshake((stdin) => {
+      stdin.write('{"jsonrpc":"2.0","id":1,"method":\n');
+    });
+    assert.equal(response.id, null);
+    assert.equal(response.error.code, -32603);
+    assert.ok(!raw.startsWith('Content-Length:'), `Expected ndjson response, got: ${raw}`);
   });
 
   test('init is idempotent — running twice exits 0', () => {

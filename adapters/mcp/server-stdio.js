@@ -556,32 +556,70 @@ async function handleRequest(message) {
   throw new Error(`Unsupported method: ${message.method}`);
 }
 
-function writeMessage(payload) {
+function writeMessage(payload, transport = 'framed') {
   const json = JSON.stringify(payload);
+  if (transport === 'ndjson') {
+    process.stdout.write(`${json}\n`);
+    return;
+  }
   process.stdout.write(`Content-Length: ${Buffer.byteLength(json, 'utf8')}\r\n\r\n${json}`);
 }
 
+function parseWithTransport(raw, transport) {
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    err.transport = transport;
+    throw err;
+  }
+}
+
 let buffer = Buffer.alloc(0);
+let stdioStarted = false;
+
+function hasContentLengthPrefix() {
+  if (buffer.length === 0) return false;
+  const probe = buffer.slice(0, Math.min(buffer.length, 32)).toString('utf8').toLowerCase();
+  return 'content-length:'.startsWith(probe) || probe.startsWith('content-length:');
+}
 
 function tryReadMessage() {
-  const headerEnd = buffer.indexOf('\r\n\r\n');
-  if (headerEnd === -1) return null;
+  const headerEndCrLf = buffer.indexOf('\r\n\r\n');
+  const headerEndLf = buffer.indexOf('\n\n');
+  const hasFramedHeader = headerEndCrLf !== -1 || headerEndLf !== -1;
 
-  const headerRaw = buffer.slice(0, headerEnd).toString('utf8');
-  const match = headerRaw.match(/Content-Length:\s*(\d+)/i);
-  if (!match) {
-    buffer = buffer.slice(headerEnd + 4);
-    return null;
+  if (hasFramedHeader) {
+    const useCrLf = headerEndCrLf !== -1 && (headerEndLf === -1 || headerEndCrLf < headerEndLf);
+    const headerEnd = useCrLf ? headerEndCrLf : headerEndLf;
+    const separatorLength = useCrLf ? 4 : 2;
+    const headerRaw = buffer.slice(0, headerEnd).toString('utf8');
+    const match = headerRaw.match(/Content-Length:\s*(\d+)/i);
+    if (!match) {
+      buffer = buffer.slice(headerEnd + separatorLength);
+      return null;
+    }
+
+    const length = Number(match[1]);
+    const totalSize = headerEnd + separatorLength + length;
+    if (buffer.length < totalSize) return null;
+
+    const body = buffer.slice(headerEnd + separatorLength, totalSize).toString('utf8');
+    buffer = buffer.slice(totalSize);
+
+    return { message: parseWithTransport(body, 'framed'), transport: 'framed' };
   }
 
-  const length = Number(match[1]);
-  const totalSize = headerEnd + 4 + length;
-  if (buffer.length < totalSize) return null;
+  // Codex MCP client currently sends newline-delimited JSON during startup.
+  if (hasContentLengthPrefix()) return null;
 
-  const body = buffer.slice(headerEnd + 4, totalSize).toString('utf8');
-  buffer = buffer.slice(totalSize);
+  const newlineIndex = buffer.indexOf('\n');
+  if (newlineIndex === -1) return null;
 
-  return JSON.parse(body);
+  const line = buffer.slice(0, newlineIndex).toString('utf8').trim();
+  buffer = buffer.slice(newlineIndex + 1);
+  if (!line) return null;
+
+  return { message: parseWithTransport(line, 'ndjson'), transport: 'ndjson' };
 }
 
 async function onData(chunk) {
@@ -590,25 +628,39 @@ async function onData(chunk) {
   while (true) {
     const message = tryReadMessage();
     if (!message) return;
+    const envelope = message;
+    const request = envelope.message;
+    const transport = envelope.transport;
 
-    if (!Object.prototype.hasOwnProperty.call(message, 'id')) {
+    if (!Object.prototype.hasOwnProperty.call(request, 'id')) {
       continue;
     }
 
     try {
-      const result = await handleRequest(message);
-      writeMessage({ jsonrpc: '2.0', id: message.id, result });
+      const result = await handleRequest(request);
+      writeMessage({ jsonrpc: '2.0', id: request.id, result }, transport);
     } catch (err) {
       writeMessage({
         jsonrpc: '2.0',
-        id: message.id,
+        id: request.id,
         error: {
           code: -32603,
           message: err.message || 'Internal error',
         },
-      });
+      }, transport);
     }
   }
+}
+
+function startStdioServer() {
+  if (stdioStarted) return;
+  stdioStarted = true;
+  process.stdin.on('data', (chunk) => {
+    onData(chunk).catch((err) => {
+      const transport = err && err.transport === 'ndjson' ? 'ndjson' : 'framed';
+      writeMessage({ jsonrpc: '2.0', id: null, error: { code: -32603, message: err.message } }, transport);
+    });
+  });
 }
 
 module.exports = {
@@ -617,12 +669,9 @@ module.exports = {
   callTool,
   resolveSafePath,
   SAFE_DATA_DIR,
+  startStdioServer,
 };
 
 if (require.main === module) {
-  process.stdin.on('data', (chunk) => {
-    onData(chunk).catch((err) => {
-      writeMessage({ jsonrpc: '2.0', id: null, error: { code: -32603, message: err.message } });
-    });
-  });
+  startStdioServer();
 }

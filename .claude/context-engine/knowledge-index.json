@@ -36,7 +36,7 @@
         {
           "filename": "PITCH.md",
           "title": "One-Line Pitch",
-          "summary": "Turn every thumbs-up/down from your users into measurable agent improvement: fewer repeated mistakes, cleaner preference data, and faster model iteration. RLHF Feedback Loop is the operational layer between user feedback and model quality. - Input: real user outcome signals"
+          "summary": "The enterprise-grade **Agentic Feedback Studio** that turns user vibes into verifiable context and stops AI agents from repeating mistakes. The Studio is the operational layer between raw LLM output and production reliability. We provide a **Context Engineering Studio** that move beyond simple prompts to high-density semantic environments. - **Primary Goal:** Transform \"Vibe Coding\" into \"Context Engineering\" through the **Veto Layer**."
         },
         {
           "filename": "PLATFORM_RESEARCH_2026-03-03.md",
@@ -147,9 +147,9 @@
     }
   },
   "metadata": {
-    "builtAt": "2026-03-06T21:47:13.850Z",
+    "builtAt": "2026-03-06T22:14:51.216Z",
     "docCount": 13,
     "version": "1.0.0",
-    "checksum": "af6939cce3e1"
+    "checksum": "5acc2f2a71b9"
   }
 }
