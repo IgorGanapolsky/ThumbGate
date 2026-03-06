@@ -29,14 +29,43 @@ const DOMAIN_CATEGORIES = [
   'git-workflow', 'documentation', 'debugging', 'architecture', 'data-modeling',
 ];
 
+const HOME = process.env.HOME || process.env.USERPROFILE || '';
+
 function getFeedbackPaths() {
-  const feedbackDir = process.env.RLHF_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
+  if (process.env.RLHF_FEEDBACK_DIR) {
+    const d = process.env.RLHF_FEEDBACK_DIR;
+    return {
+      FEEDBACK_DIR: d,
+      FEEDBACK_LOG_PATH: path.join(d, 'feedback-log.jsonl'),
+      MEMORY_LOG_PATH: path.join(d, 'memory-log.jsonl'),
+      SUMMARY_PATH: path.join(d, 'feedback-summary.json'),
+      PREVENTION_RULES_PATH: path.join(d, 'prevention-rules.md'),
+    };
+  }
+
+  // Auto-discovery order:
+  // 1. .rlhf/ (Standard)
+  // 2. .claude/memory/feedback/ (Legacy Claude)
+  // 3. ~/.rlhf/projects/<cwd-basename>/ (Global fallback for true plug-and-play)
+
+  const localRlhf = path.join(process.cwd(), '.rlhf');
+  const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback');
+  
+  let baseDir = localRlhf;
+  if (!fs.existsSync(localRlhf) && fs.existsSync(localClaude)) {
+    baseDir = localClaude;
+  } else if (!fs.existsSync(localRlhf)) {
+    // Zero-Config Global Fallback
+    const projectName = path.basename(process.cwd()) || 'default';
+    baseDir = path.join(HOME, '.rlhf', 'projects', projectName);
+  }
+
   return {
-    FEEDBACK_DIR: feedbackDir,
-    FEEDBACK_LOG_PATH: path.join(feedbackDir, 'feedback-log.jsonl'),
-    MEMORY_LOG_PATH: path.join(feedbackDir, 'memory-log.jsonl'),
-    SUMMARY_PATH: path.join(feedbackDir, 'feedback-summary.json'),
-    PREVENTION_RULES_PATH: path.join(feedbackDir, 'prevention-rules.md'),
+    FEEDBACK_DIR: baseDir,
+    FEEDBACK_LOG_PATH: path.join(baseDir, 'feedback-log.jsonl'),
+    MEMORY_LOG_PATH: path.join(baseDir, 'memory-log.jsonl'),
+    SUMMARY_PATH: path.join(baseDir, 'feedback-summary.json'),
+    PREVENTION_RULES_PATH: path.join(baseDir, 'prevention-rules.md'),
   };
 }
 

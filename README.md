@@ -6,13 +6,21 @@
 
 **Stop Vibe Coding. Start Context Engineering.** The RLHF Feedback Loop is the enterprise-grade **Agentic Control Plane** for AI workflows. We provide the operational layer to capture human preference signals, engineer high-density context packs, and enforce machine-readable guardrails to stop your agents from going "off-script."
 
-## The Competitive Edge: Context Engineering
+## True Plug-and-Play: Zero-Config Integration
 
-In the age of commoditized models, **Context Engineering** is your durable advantage. This tool moves beyond simple prompt engineering by creating a **verifiable semantic environment** for your agents.
+The RLHF Feedback Loop is now a **Universal Agent Skill**. You can drop it into any repository without manual setup.
 
-- **Vibe-to-Verification (V2V):** Convert subjective user feedback (vibes) into hard architectural constraints (`CLAUDE.md` / `AGENTS.md`).
-- **Context Engineering Studio:** Build and deploy Semantic Context Packs that provide Claude with high-density, proprietary knowledge.
-- **Supply Chain Risk Mitigation:** Mitigate agentic "security debt" by enforcing automated prevention rules derived from real-world failure modes.
+- **Zero-Config Discovery:** Automatically detects project context. If no local `.rlhf/` directory exists, it safely fallbacks to a project-scoped global store in `~/.rlhf/`.
+- **Global Skill Installation:** Run one command to make RLHF available to all your agents across all projects.
+- **Vibe-to-Verification (V2V):** Directly converts subjective "vibes" (thumbs up/down) into verifiable repository rules (`CLAUDE.md`).
+
+### Quick Start (One Command)
+
+```bash
+npx rlhf-feedback-loop install
+```
+
+This will auto-detect your platforms (Claude, Codex, Gemini, Cursor) and install the RLHF skill globally.
 
 - **Stop Regressions:** Automatically convert negative feedback into `CLAUDE.md` / `AGENTS.md` prevention rules.
 - **Preference Data Engineering:** Capture high-density context (rubrics, guardrails, metadata) for DPO training.

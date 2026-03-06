@@ -307,9 +307,30 @@ function prove() {
 }
 
 function serve() {
-  // Start MCP server over stdio — used by `claude mcp add`, `codex mcp add`, `gemini mcp add`
+  const rlhfDir = path.join(CWD, '.rlhf');
+  if (!fs.existsSync(rlhfDir) && !fs.existsSync(path.join(CWD, '.claude', 'memory', 'feedback'))) {
+    // If not initialized, ensure global fallback exists
+    const projectName = path.basename(CWD) || 'default';
+    const globalDir = path.join(HOME, '.rlhf', 'projects', projectName);
+    if (!fs.existsSync(globalDir)) {
+      fs.mkdirSync(globalDir, { recursive: true });
+    }
+  }
+
+  // Start MCP server over stdio
   const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
   require(mcpServer);
+}
+
+function install() {
+  console.log('Installing RLHF Feedback Loop as a global MCP skill...');
+  const success = setupClaude() || setupCodex() || setupGemini() || setupCursor();
+  if (success) {
+    console.log('\nSuccess! RLHF Feedback Loop is now available to your agents.');
+    console.log('Try asking your agent: "Capture positive feedback for this task"');
+  } else {
+    console.log('\nRLHF Feedback Loop is already configured.');
+  }
 }
 
 function startApi() {
@@ -354,6 +375,9 @@ function help() {
 switch (COMMAND) {
   case 'init':
     init();
+    break;
+  case 'install':
+    install();
     break;
   case 'serve':
   case 'mcp':
