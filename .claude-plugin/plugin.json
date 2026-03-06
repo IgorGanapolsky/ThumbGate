@@ -1,0 +1,11 @@
+{
+  "name": "rlhf-feedback-loop",
+  "description": "RLHF feedback loop — capture feedback, block mistakes, export DPO training pairs",
+  "version": "0.6.6",
+  "author": {
+    "name": "Igor Ganapolsky"
+  },
+  "homepage": "https://github.com/IgorGanapolsky/rlhf-feedback-loop",
+  "repository": "https://github.com/IgorGanapolsky/rlhf-feedback-loop",
+  "license": "MIT"
+}
