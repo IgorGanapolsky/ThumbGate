@@ -1,8 +1,8 @@
 # Adapter Compatibility Proof
 
-Generated: 2026-03-05T14:05:18.240Z
+Generated: 2026-03-06T22:01:58.023Z
 
-Passed: 19
+Passed: 21
 Failed: 0
 
 ## Checks
@@ -15,6 +15,8 @@ Failed: 0
 - PASS api.context.construct
 - PASS api.context.evaluate
 - PASS mcp.initialize
+- PASS mcp.stdio.framed.initialize
+- PASS mcp.stdio.ndjson.initialize
 - PASS mcp.tools.list
 - PASS mcp.tools.call.feedback_summary
 - PASS mcp.tools.call.plan_intent

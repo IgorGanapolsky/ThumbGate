@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-05T14:05:18.240Z",
+  "generatedAt": "2026-03-06T22:01:58.023Z",
   "checks": [
     {
       "name": "api.healthz",
@@ -49,7 +49,7 @@
       "name": "api.context.construct",
       "passed": true,
       "details": {
-        "packId": "pack_1772719518434_sf5mg6",
+        "packId": "pack_1772834518167_kh5gdh",
         "items": 5
       }
     },
@@ -69,10 +69,24 @@
       }
     },
     {
+      "name": "mcp.stdio.framed.initialize",
+      "passed": true,
+      "details": {
+        "server": "rlhf-feedback-loop-mcp"
+      }
+    },
+    {
+      "name": "mcp.stdio.ndjson.initialize",
+      "passed": true,
+      "details": {
+        "server": "rlhf-feedback-loop-mcp"
+      }
+    },
+    {
       "name": "mcp.tools.list",
       "passed": true,
       "details": {
-        "tools": 10
+        "tools": 11
       }
     },
     {
@@ -139,13 +153,13 @@
       "name": "mcp.policy.profile_differentiation",
       "passed": true,
       "details": {
-        "defaultTools": 10,
+        "defaultTools": 11,
         "lockedTools": 3
       }
     }
   ],
   "summary": {
-    "passed": 19,
+    "passed": 21,
     "failed": 0
   }
 }

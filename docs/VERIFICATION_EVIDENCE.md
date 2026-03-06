@@ -196,4 +196,51 @@ Current status:
 - Diagram pipeline is implemented and budget-guarded.
 - Final diagram artifacts require a valid Gemini/Google API key.
 - Failed generation attempts do not increase budget ledger spend.
-## Strategic Repositioning Verification (2026-03-06)\n- Zero-Config Plug-and-Play: PASS (Verified in /tmp/zero-config-test)\n- V2V Logic: PASS (Captured subjective vibe and converted to rule)\n- Strategic Keyword Density: 13 occurrences (PASS)\n- Full Test Suite (329 tests): PASS
+
+## 2026-03-06 MCP startup hardening verification
+
+Scope:
+
+- Added MCP stdio transport compatibility for both `Content-Length` framed JSON-RPC and newline-delimited JSON requests.
+- Fixed CLI `serve` bootstrap to explicitly start the stdio listener when loaded via `require()`.
+- Removed duplicate/dead `serve` switch branch collision with `start-api`.
+- Hardened proof/test reliability for external Subway repo discovery and proof test determinism.
+
+Commands run:
+
+```bash
+node --test tests/cli.test.js tests/prove-adapters.test.js
+npm run test:proof
+npm test
+npm run prove:adapters
+npm run prove:automation
+```
+
+Observed results:
+
+- `tests/cli.test.js`: pass (includes framed + newline `initialize` handshake coverage)
+- `tests/prove-adapters.test.js`: pass with adapter proof checks increased to `>=21`
+- `npm run test:proof`: pass (`75` pass, `0` fail)
+- `npm test`: pass (all scripted test phases complete)
+- `npm run prove:adapters`: `{ "passed": 21, "failed": 0 }`
+- `npm run prove:automation`: `{ "passed": 14, "failed": 0 }`
+
+Artifacts updated:
+
+- `proof/compatibility/report.json`
+- `proof/compatibility/report.md`
+- `proof/automation/report.json`
+- `proof/automation/report.md`
+
+Cross-project Codex startup proof:
+
+```bash
+cd /Users/ganapolsky_i/workspace/git/igor/trading
+codex exec "Print OK only" --skip-git-repo-check
+```
+
+Observed result:
+
+- MCP startup reports `ready: rlhf, sentry, github, context7, playwright`
+- No `rlhf` timeout and no MCP handshake error
+- Command completed with output `OK`

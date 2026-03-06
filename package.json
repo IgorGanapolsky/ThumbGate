@@ -1,7 +1,7 @@
 {
   "name": "rlhf-feedback-loop",
-  "version": "0.6.7",
-  "description": "Production RLHF & DPO data pipeline for AI agents. Optimize agentic reliability with Feedback-Driven Development (FDD). Capture human preference signals, generate automated guardrails, and export DPO training pairs. Compatible with Claude, GPT-4, Gemini, and multi-agent systems.",
+  "version": "0.6.6",
+  "description": "RLHF-ready human feedback capture and DPO data pipeline for AI agents. Optimize agentic reliability with Feedback-Driven Development (FDD): capture preference signals, enforce guardrails, and export training pairs for downstream optimization.",
   "homepage": "https://github.com/IgorGanapolsky/rlhf-feedback-loop#readme",
   "repository": {
     "type": "git",
@@ -34,7 +34,7 @@
     "test:loop": "node scripts/feedback-loop.js --test",
     "test:dpo": "node scripts/export-dpo-pairs.js --test",
     "test:api": "node --test tests/api-server.test.js tests/api-auth-config.test.js tests/mcp-server.test.js tests/adapters.test.js tests/openapi-parity.test.js tests/budget-guard.test.js tests/contextfs.test.js tests/mcp-policy.test.js tests/subagent-profiles.test.js tests/intent-router.test.js tests/rubric-engine.test.js tests/self-healing-check.test.js tests/self-heal.test.js tests/feedback-schema.test.js tests/thompson-sampling.test.js tests/feedback-sequences.test.js tests/diversity-tracking.test.js tests/vector-store.test.js tests/feedback-attribution.test.js tests/hybrid-feedback-context.test.js tests/loop-closure.test.js tests/code-reasoning.test.js tests/feedback-loop.test.js tests/feedback-inbox-read.test.js tests/feedback-to-memory.test.js",
-    "test:proof": "node --test tests/prove-adapters.test.js tests/prove-automation.test.js tests/prove-attribution.test.js tests/prove-lancedb.test.js tests/prove-data-quality.test.js tests/prove-intelligence.test.js tests/prove-loop-closure.test.js tests/prove-subway-upgrades.test.js tests/prove-training-export.test.js",
+    "test:proof": "node --test --test-concurrency=1 tests/prove-adapters.test.js tests/prove-automation.test.js tests/prove-attribution.test.js tests/prove-lancedb.test.js tests/prove-data-quality.test.js tests/prove-intelligence.test.js tests/prove-loop-closure.test.js tests/prove-subway-upgrades.test.js tests/prove-training-export.test.js",
     "test:rlaif": "node --test tests/rlaif-self-audit.test.js tests/dpo-optimizer.test.js tests/meta-policy.test.js",
     "test:attribution": "node --test tests/feedback-attribution.test.js tests/hybrid-feedback-context.test.js",
     "test:quality": "node --test tests/validate-feedback.test.js",
@@ -108,12 +108,10 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
+    "@lancedb/lancedb": "^0.26.2",
     "apache-arrow": "^18.1.0",
     "stripe": "^20.4.0"
   },
-  "mcpName": "io.github.IgorGanapolsky/rlhf-feedback-loop",
-  "optionalDependencies": {
-    "@lancedb/lancedb": "^0.26.2",
-    "@huggingface/transformers": "^3.8.1"
-  }
+  "mcpName": "io.github.IgorGanapolsky/rlhf-feedback-loop"
 }

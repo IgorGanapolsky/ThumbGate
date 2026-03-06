@@ -1,6 +1,6 @@
 # Feedback Attribution — Proof Report
 
-Generated: 2026-03-06T21:47:10.511Z
+Generated: 2026-03-06T22:01:46.407Z
 Phase: 06-feedback-attribution
 
 **Passed: 2 | Failed: 1**
@@ -9,7 +9,7 @@ Phase: 06-feedback-attribution
 
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
-| ATTR-01 | PASS | recordAction('Bash', git push --force) returned ok=true, intent=git-risk. action-log.jsonl written to /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-attr01-eUsd8t. action_id=act_1772833630515_72a355e8, risk_score=8. attributeFeedback('negative', ...) returned ok=true, attributedCount=1. feedback-attributions.jsonl written. attribution_id=att_1772833630517_8f90bc9a, signal=negative. Module: scripts/feedback-attribution.js. Pure offline JSONL-based attribution. |
+| ATTR-01 | PASS | recordAction('Bash', git push --force) returned ok=true, intent=git-risk. action-log.jsonl written to /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-attr01-d7adsp. action_id=act_1772834506409_72a355e8, risk_score=8. attributeFeedback('negative', ...) returned ok=true, attributedCount=1. feedback-attributions.jsonl written. attribution_id=att_1772834506410_8f90bc9a, signal=negative. Module: scripts/feedback-attribution.js. Pure offline JSONL-based attribution. |
 | ATTR-02 | PASS | buildHybridState() detected 1 recurring pattern(s). Top pattern count=3 (>= 3 → critical). evaluatePretoolFromState('Bash', 'git push force main') → mode=block. evaluatePretoolFromState('Read', 'some-unrelated-file.md') → mode=allow. block + allow paths verified. No false positive for unrelated Read tool. Module: scripts/hybrid-feedback-context.js. hasTwoKeywordHits enforces no-false-positive invariant. |
 | ATTR-03 | FAIL | node --test attribution files: pass=0, fail=0. Expected >= 1 passing and 0 failures. Only 0 tests passing (need >= 1). |
 
@@ -17,7 +17,7 @@ Phase: 06-feedback-attribution
 
 ### ATTR-01 — PASS
 
-recordAction('Bash', git push --force) returned ok=true, intent=git-risk. action-log.jsonl written to /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-attr01-eUsd8t. action_id=act_1772833630515_72a355e8, risk_score=8. attributeFeedback('negative', ...) returned ok=true, attributedCount=1. feedback-attributions.jsonl written. attribution_id=att_1772833630517_8f90bc9a, signal=negative. Module: scripts/feedback-attribution.js. Pure offline JSONL-based attribution.
+recordAction('Bash', git push --force) returned ok=true, intent=git-risk. action-log.jsonl written to /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-attr01-d7adsp. action_id=act_1772834506409_72a355e8, risk_score=8. attributeFeedback('negative', ...) returned ok=true, attributedCount=1. feedback-attributions.jsonl written. attribution_id=att_1772834506410_8f90bc9a, signal=negative. Module: scripts/feedback-attribution.js. Pure offline JSONL-based attribution.
 
 ### ATTR-02 — PASS
 

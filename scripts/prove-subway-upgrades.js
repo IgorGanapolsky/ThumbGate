@@ -22,7 +22,34 @@ const PROOF_DIR = path.join(__dirname, '..', 'proof', 'subway-upgrades');
 const REPORT_JSON = path.join(PROOF_DIR, 'subway-upgrades-report.json');
 const REPORT_MD = path.join(PROOF_DIR, 'subway-upgrades-report.md');
 
-const SUBWAY_ROOT = path.join(__dirname, '..', '..', '..', 'Subway_RN_Demo');
+const REQUIRED_SUBWAY_ARTIFACTS = [
+  ['.claude', 'scripts', 'feedback', 'vector-store.js'],
+  ['.claude', 'scripts', 'feedback', 'dpo-optimizer.js'],
+  ['.claude', 'scripts', 'feedback', 'thompson-sampling.js'],
+  ['.github', 'workflows', 'self-healing-monitor.yml'],
+  ['.github', 'workflows', 'self-healing-auto-fix.yml'],
+];
+
+function hasRequiredSubwayArtifacts(root) {
+  if (!root || !fs.existsSync(root)) return false;
+  return REQUIRED_SUBWAY_ARTIFACTS.every((segments) => fs.existsSync(path.join(root, ...segments)));
+}
+
+function resolveSubwayRoot() {
+  const envRoot = process.env.SUBWAY_ROOT;
+  if (envRoot) return envRoot;
+
+  const candidates = [
+    path.join(__dirname, '..', '..', '..', 'Subway_RN_Demo'),
+    path.join(__dirname, '..', '..', '..', '..', 'Subway_RN_Demo'),
+    path.join(__dirname, '..', '..', 'Subway_RN_Demo'),
+  ];
+  const ready = candidates.find((candidate) => hasRequiredSubwayArtifacts(candidate));
+  if (ready) return ready;
+  return candidates[0];
+}
+
+const SUBWAY_ROOT = resolveSubwayRoot();
 
 function run() {
   const results = { passed: 0, failed: 0, requirements: {} };

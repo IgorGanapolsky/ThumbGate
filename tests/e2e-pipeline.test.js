@@ -4,13 +4,32 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function removeDirWithRetries(dirPath, attempts = 5, delayMs = 80) {
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      fs.rmSync(dirPath, { recursive: true, force: true });
+      return;
+    } catch (err) {
+      if (err.code !== 'ENOTEMPTY' && err.code !== 'EBUSY' && err.code !== 'EPERM') {
+        throw err;
+      }
+      if (i === attempts - 1) throw err;
+      await sleep(delayMs * (i + 1));
+    }
+  }
+}
+
 test('E2E: feedback capture -> memory -> DPO export -> prevention rules', async (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-e2e-'));
   const origFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
   process.env.RLHF_FEEDBACK_DIR = tmpDir;
 
-  t.after(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+  t.after(async () => {
+    await removeDirWithRetries(tmpDir);
     if (origFeedbackDir) process.env.RLHF_FEEDBACK_DIR = origFeedbackDir;
     else delete process.env.RLHF_FEEDBACK_DIR;
   });
@@ -191,9 +210,7 @@ test('E2E: API server feedback capture -> stats -> summary round-trip', async (t
 
   t.after(async () => {
     await new Promise((resolve) => server.close(resolve));
-    try {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch (err) {}
+    await removeDirWithRetries(tmpDir);
     if (origFeedbackDir) process.env.RLHF_FEEDBACK_DIR = origFeedbackDir;
     else delete process.env.RLHF_FEEDBACK_DIR;
     if (origApiKey) process.env.RLHF_API_KEY = origApiKey;

@@ -1,10 +1,10 @@
 {
   "phase": "06-feedback-attribution",
-  "generated": "2026-03-06T21:47:10.511Z",
+  "generated": "2026-03-06T22:01:46.407Z",
   "requirements": {
     "ATTR-01": {
       "status": "pass",
-      "evidence": "recordAction('Bash', git push --force) returned ok=true, intent=git-risk. action-log.jsonl written to /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-attr01-eUsd8t. action_id=act_1772833630515_72a355e8, risk_score=8. attributeFeedback('negative', ...) returned ok=true, attributedCount=1. feedback-attributions.jsonl written. attribution_id=att_1772833630517_8f90bc9a, signal=negative. Module: scripts/feedback-attribution.js. Pure offline JSONL-based attribution."
+      "evidence": "recordAction('Bash', git push --force) returned ok=true, intent=git-risk. action-log.jsonl written to /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-attr01-d7adsp. action_id=act_1772834506409_72a355e8, risk_score=8. attributeFeedback('negative', ...) returned ok=true, attributedCount=1. feedback-attributions.jsonl written. attribution_id=att_1772834506410_8f90bc9a, signal=negative. Module: scripts/feedback-attribution.js. Pure offline JSONL-based attribution."
     },
     "ATTR-02": {
       "status": "pass",

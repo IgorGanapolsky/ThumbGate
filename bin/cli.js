@@ -351,7 +351,8 @@ function serve() {
 
   // Start MCP server over stdio
   const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
-  require(mcpServer);
+  const { startStdioServer } = require(mcpServer);
+  startStdioServer();
 }
 
 function install() {
@@ -442,7 +443,6 @@ switch (COMMAND) {
     prove();
     break;
   case 'start-api':
-  case 'serve':
     startApi();
     break;
   case 'help':
