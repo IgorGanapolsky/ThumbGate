@@ -3,8 +3,54 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RLHF Feedback Loop — Stop Repeating Mistakes</title>
-  <meta name="description" content="Production-grade RLHF operations for AI coding agents. Capture feedback, prevent repeated failures, and export DPO-ready training data. Works on ChatGPT, Claude, Gemini, Codex, and Amp." />
+  <title>RLHF Feedback Loop — Autonomous Agent Reliability & LLM Preference Data</title>
+  <meta name="description" content="Production-grade RLHF operations for AI coding agents. Optimize agentic workflows, capture human preference data, and prevent repeated failures with feedback-driven development. Compatible with Claude, GPT-4, Gemini, and multi-agent systems." />
+  
+  <!-- JSON-LD Schema for AI Search & SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "RLHF Feedback Loop",
+    "operatingSystem": "Cross-platform",
+    "applicationCategory": "DeveloperApplication",
+    "description": "Operational layer for Reinforcement Learning from Human Feedback (RLHF) in AI agentic workflows. Captures feedback, generates prevention rules, and exports DPO-ready training data.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": [
+      "Feedback-Driven Development (FDD) for AI",
+      "Automated Prevention Rule Generation",
+      "Thompson Sampling for Preference Scoring",
+      "DPO Training Pair Export",
+      "Multi-platform Plugin Support (Claude, GPT, Gemini, Codex, Amp)"
+    ]
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [{
+      "@type": "Question",
+      "name": "How do I stop my AI agent from repeating mistakes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "By implementing a feedback loop that captures negative signals and automatically converts them into prevention rules (e.g., in CLAUDE.md or .geminiignore) that the agent must follow in future turns."
+      }
+    }, {
+      "@type": "Question",
+      "name": "What is Feedback-Driven Development (FDD) for AI?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "FDD is a methodology where agent behavior is continuously refined using real-world user feedback loops, scoring, and automated guardrail enforcement to reduce regressions."
+      }
+    }]
+  }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -376,39 +422,39 @@
 
 <!-- VALUE PROPS -->
 <section class="section" id="value">
-  <div class="section-label">Why it exists</div>
-  <h2 class="section-title">Everything you need for a production feedback loop</h2>
+  <div class="section-label">Semantic Advantage</div>
+  <h2 class="section-title">Closing the Agentic Feedback Loop</h2>
 
   <div class="props-grid">
     <div class="prop-card">
       <div class="prop-icon">&#x1f9e0;</div>
-      <h3>Capture &amp; Score</h3>
-      <p>Thumbs up/down with rubric scores, guardrails, and rich context — not just a raw sentiment bit.</p>
+      <h3>Capture Preference Data</h3>
+      <p>Score agentic outcomes with rubric-based guardrails. Capture rich context for DPO training, moving beyond simple binary feedback.</p>
     </div>
     <div class="prop-card">
       <div class="prop-icon">&#x1f6e1;&#xfe0f;</div>
-      <h3>Prevent Regressions</h3>
-      <p>Repeated failures auto-generate prevention rules in CLAUDE.md format. The loop closes itself.</p>
+      <h3>Workflow Reliability</h3>
+      <p>Repeated failures trigger automated prevention rule generation (e.g., CLAUDE.md/AGENTS.md). Enforce architectural guardrails across all turns.</p>
     </div>
     <div class="prop-card">
       <div class="prop-icon">&#x1f4ca;</div>
-      <h3>Thompson Sampling</h3>
-      <p>Per-category alpha/beta posteriors with exponential time-decay. Smarter than raw counts.</p>
+      <h3>Bayesian Preference Scoring</h3>
+      <p>Thompson Sampling with exponential time-decay handles preference shifts over time. Superior to raw counts for production AI.</p>
     </div>
     <div class="prop-card">
       <div class="prop-icon">&#x1f4e4;</div>
-      <h3>DPO Export</h3>
-      <p>One command produces PyTorch-ready preference pairs for offline fine-tuning.</p>
+      <h3>DPO Data Pipeline</h3>
+      <p>Export PyTorch-ready preference pairs (Positive/Negative) to fine-tune custom LLM adapters with direct human preference signals.</p>
     </div>
     <div class="prop-card">
       <div class="prop-icon">&#x1f50c;</div>
-      <h3>5 Platforms</h3>
-      <p>Native plugins for ChatGPT, Claude Code, Gemini, Codex, and Amp — one codebase.</p>
+      <h3>Universal Agent Adaptability</h3>
+      <p>Native plugins for ChatGPT, Claude 3.5, Gemini 1.5, Codex, and Amp — unified feedback schema across your entire stack.</p>
     </div>
     <div class="prop-card">
       <div class="prop-icon">&#x1f9ea;</div>
-      <h3>314+ Tests</h3>
-      <p>Every feature is proven. CI green before shipping. No placeholder results.</p>
+      <h3>Auditable RLHF Evidence</h3>
+      <p>314+ verified tests ensure every signal is captured and every rule is generated correctly. Machine-readable audit reports for enterprise compliance.</p>
     </div>
   </div>
 
@@ -428,6 +474,26 @@
     <div class="stat">
       <span class="stat-num">&lt;5min</span>
       <span class="stat-label">time-to-first-signal</span>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section class="section" style="background:var(--gray-50); border-top: 1px solid var(--gray-200); border-bottom: 1px solid var(--gray-200);">
+  <div class="section-label">Common Use Cases</div>
+  <h2 class="section-title">Feedback-Driven Development for Modern AI</h2>
+  <div class="props-grid">
+    <div>
+      <h4 style="margin-bottom:12px;">Automating Code Reviews</h4>
+      <p style="font-size: .9rem; color: var(--gray-600);">Capture PR feedback and feed it directly into the agent's memory to ensure future refactors follow team-specific style guides without manual instruction.</p>
+    </div>
+    <div>
+      <h4 style="margin-bottom:12px;">Self-Healing Multi-Agent Systems</h4>
+      <p style="font-size: .9rem; color: var(--gray-600);">When an agent fails a task, the feedback loop generates a "prevention rule" that other agents in the system can use to avoid the same bottleneck.</p>
+    </div>
+    <div>
+      <h4 style="margin-bottom:12px;">DPO for Domain-Specific LLMs</h4>
+      <p style="font-size: .9rem; color: var(--gray-600);">Collect high-quality human preference data on your company's proprietary codebase to fine-tune smaller, cheaper models to perform like GPT-4 on your stack.</p>
     </div>
   </div>
 </section>

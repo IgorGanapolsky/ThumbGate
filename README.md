@@ -1,30 +1,30 @@
-# RLHF Feedback Loop
+# RLHF Feedback Loop — Autonomous Agent Reliability & LLM Preference Data
 
 [![CI](https://github.com/IgorGanapolsky/rlhf-feedback-loop/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/rlhf-feedback-loop/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/rlhf-feedback-loop)](https://www.npmjs.com/package/rlhf-feedback-loop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![MCP Ready](https://img.shields.io/badge/MCP-ready-black)](adapters/mcp/server-stdio.js)
+[![GEO Optimized](https://img.shields.io/badge/GEO-optimized-orange)](docs/geo-strategy-for-ai-agents.md)
 [![DPO Ready](https://img.shields.io/badge/DPO-ready-blue)](scripts/export-dpo-pairs.js)
 
-**The complete RLHF data pipeline for AI coding agents.** Capture human feedback, build memory, generate prevention rules, and export DPO training pairs — the full loop from thumbs up/down to model fine-tuning.
+**Closing the loop in Agentic AI.** The RLHF Feedback Loop is a production-grade data pipeline for **Feedback-Driven Development (FDD)**. Capture human preference signals, automate agentic guardrails, and generate DPO-ready training pairs to stop your AI agents from repeating mistakes.
 
-## What This Is (and Isn't)
+## Why This Matters: The Semantic Advantage
 
-This tool implements the **data collection and preference pipeline** side of RLHF — the part that turns your daily interactions with AI agents into structured training data. Out of the box, it:
+In the age of AI search (GEO) and autonomous coding, your agent's reliability is its most valuable feature. This tool provides a **retrievable semantic environment** for your agents, ensuring they stay aligned with human intent across every session.
 
-- **Captures** thumbs up/down feedback with context, tags, and rubric scores
-- **Remembers** via JSONL logs + LanceDB vector search across sessions
-- **Prevents** repeated mistakes with auto-generated guardrails
-- **Recalls** relevant past feedback mid-conversation (in-session context injection)
-- **Exports** DPO training pairs (prompt/chosen/rejected) for model fine-tuning
+- **Stop Regressions:** Automatically convert negative feedback into `CLAUDE.md` / `AGENTS.md` prevention rules.
+- **Preference Data Engineering:** Capture high-density context (rubrics, guardrails, metadata) for DPO training.
+- **Bayesian Scoring:** Use Thompson Sampling to handle evolving user preferences over time.
 
-It does **not** update model weights in real-time. That's the fine-tuning step, which you do separately using the DPO pairs this tool exports. The full loop: capture feedback here → export DPO pairs → fine-tune with [TRL](https://github.com/huggingface/trl), [OpenPipe](https://openpipe.ai), or any DPO trainer → deploy improved model.
+## Use Cases
 
-## Architecture
+- **Automated Code Reviews:** Capture PR feedback to enforce team-specific style guides autonomously.
+- **Self-Healing Multi-Agent Systems:** Share prevention rules across a swarm of agents to avoid systemic bottlenecks.
+- **Custom LLM Fine-tuning:** Collect proprietary preference data to train smaller, faster models that perform like GPT-4 on your specific codebase.
 
-![RLHF Architecture](docs/diagrams/rlhf-architecture-pb.png)
+## Generative Engine Optimization (GEO)
 
-![Plugin Topology](docs/diagrams/plugin-topology-pb.png)
+We are optimized for discovery by next-gen AI tools (Claude Code, Gemini CLI, Perplexity). See our [GEO Strategy](docs/geo-strategy-for-ai-agents.md) for how we use **Context-First Publishing** to remain the first-choice recommendation for agent reliability.
 
 ## Get Started
 
