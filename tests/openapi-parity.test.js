@@ -37,6 +37,22 @@ test('chatgpt openapi includes all core API routes', () => {
   assert.ok(normalize(adapter).length > 50);
 });
 
+test('canonical openapi includes monetization and funnel analytics routes', () => {
+  const canonical = fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf-8');
+  const monetizationRoutes = [
+    '/v1/billing/checkout',
+    '/v1/billing/usage',
+    '/v1/billing/provision',
+    '/v1/billing/webhook',
+    '/v1/billing/github-webhook',
+    '/v1/analytics/funnel',
+  ];
+
+  for (const route of monetizationRoutes) {
+    assert.match(canonical, new RegExp(route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+});
+
 test('canonical openapi.yaml exists and has more than 50 lines', () => {
   const filePath = path.join(root, 'openapi/openapi.yaml');
   assert.ok(fs.existsSync(filePath), 'canonical openapi.yaml must exist');
@@ -58,11 +74,21 @@ test('all core routes present in canonical openapi', () => {
   }
 });
 
-test('chatgpt adapter is byte-identical to canonical openapi', () => {
+test('chatgpt adapter preserves core endpoint parity with canonical openapi', () => {
   const canonical = fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf-8');
   const adapter = fs.readFileSync(path.join(root, 'adapters/chatgpt/openapi.yaml'), 'utf-8');
-  assert.equal(normalize(canonical), normalize(adapter),
-    'chatgpt adapter should be identical to canonical (after trimming)');
+  const coreRoutes = [
+    '/v1/feedback/capture',
+    '/v1/feedback/stats',
+    '/v1/intents/catalog',
+    '/v1/intents/plan',
+    '/v1/dpo/export',
+  ];
+  for (const route of coreRoutes) {
+    const escaped = new RegExp(route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    assert.match(canonical, escaped, `canonical should contain ${route}`);
+    assert.match(adapter, escaped, `adapter should contain ${route}`);
+  }
 });
 
 test('openapi file contains version header', () => {

@@ -30,7 +30,7 @@ Stop your AI agent from repeating mistakes
 ## Full Description (max 300 characters)
 
 ```
-Capture thumbs-up/down feedback from AI coding agents, enforce schema quality, generate prevention rules, and export DPO training pairs. Works with Claude, Codex, Gemini, and Amp. Start locally for free or connect to the Cloud Pro API.
+Capture thumbs-up/down feedback from AI coding agents, enforce schema quality, generate prevention rules, and export DPO training pairs. Works with Claude, Codex, Gemini, and Amp. Start with stable MCP add commands or connect to the Cloud Pro API.
 ```
 
 ---
@@ -47,16 +47,16 @@ Your primary capabilities:
 4. Export DPO preference pairs for offline model fine-tuning.
 5. Route feedback to the correct context pack (code-review, refactoring, debugging, etc).
 
-When a user reports something that worked well, call POST /v1/feedback with feedback=up and the context they describe.
-When a user reports a mistake or failure, call POST /v1/feedback with feedback=down, extract what-went-wrong and what-to-change from the conversation.
+When a user reports something that worked well, call POST /v1/feedback/capture with signal=up and the context they describe.
+When a user reports a mistake or failure, call POST /v1/feedback/capture with signal=down, extract whatWentWrong and whatToChange from the conversation.
 
 Always confirm the feedback ID returned by the API so the user knows it was captured.
 
 If the user asks for a summary of recent feedback patterns, call GET /v1/feedback/summary.
-If the user asks for prevention rules, call GET /v1/feedback/rules.
-If the user asks for DPO export, call GET /v1/feedback/export/dpo.
+If the user asks for prevention rules, call POST /v1/feedback/rules.
+If the user asks for DPO export, call POST /v1/dpo/export.
 
-API base URL: https://rlhf-api.up.railway.app
+API base URL: https://rlhf-feedback-loop-710216278770.us-central1.run.app
 Authentication: Bearer token in the Authorization header (user must provide their API key).
 ```
 
@@ -81,7 +81,8 @@ To import into GPT Builder:
 1. Open GPT Builder → Actions → Add Action
 2. Paste the contents of `adapters/chatgpt/openapi.yaml`
 3. Set authentication to: **API Key** → Header name: `Authorization` → Format: `Bearer {key}`
-4. Server URL: `https://rlhf-api.up.railway.app`
+4. Server URL: `https://rlhf-feedback-loop-710216278770.us-central1.run.app`
+5. Verification evidence: `https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/docs/VERIFICATION_EVIDENCE.md`
 
 ### Inline Schema (minimal version for quick submission)
 
@@ -90,12 +91,12 @@ openapi: 3.1.0
 info:
   title: RLHF Feedback Loop API
   description: Capture feedback from AI coding agents, generate prevention rules, and export DPO training pairs.
-  version: 0.5.0
+  version: 1.2.0
 servers:
-  - url: https://rlhf-api.up.railway.app
+  - url: https://rlhf-feedback-loop-710216278770.us-central1.run.app
     description: Cloud Pro hosted API
 paths:
-  /v1/feedback:
+  /v1/feedback/capture:
     post:
       operationId: captureFeedback
       summary: Capture a feedback signal
@@ -107,22 +108,22 @@ paths:
           application/json:
             schema:
               type: object
-              required: [feedback, context]
+              required: [signal, context]
               properties:
-                feedback:
+                signal:
                   type: string
                   enum: [up, down]
                   description: Thumbs up or thumbs down
                 context:
                   type: string
                   description: What the agent was doing when feedback was given
-                what_worked:
+                whatWorked:
                   type: string
                   description: (up only) Specific action that succeeded
-                what_went_wrong:
+                whatWentWrong:
                   type: string
                   description: (down only) What the agent did wrong
-                what_to_change:
+                whatToChange:
                   type: string
                   description: (down only) How to fix it next time
                 tags:
@@ -153,7 +154,7 @@ paths:
         '200':
           description: Feedback summary
   /v1/feedback/rules:
-    get:
+    post:
       operationId: getPreventionRules
       summary: Get prevention rules generated from failure patterns
       security:
@@ -161,8 +162,8 @@ paths:
       responses:
         '200':
           description: Prevention rules in markdown format
-  /v1/feedback/export/dpo:
-    get:
+  /v1/dpo/export:
+    post:
       operationId: exportDpoPairs
       summary: Export DPO preference pairs for fine-tuning
       security:
@@ -170,7 +171,7 @@ paths:
       responses:
         '200':
           description: DPO pairs in JSON format
-  /health:
+  /healthz:
     get:
       operationId: healthCheck
       summary: Check API health
@@ -226,5 +227,5 @@ https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/SECURITY.md
 ## Notes
 
 - The GPT Store review process typically takes 1-5 business days.
-- Ensure the Railway deployment is live before submitting (the actions will be tested by reviewers).
+- Ensure the Cloud Run deployment is live before submitting (the actions will be tested by reviewers).
 - The API key for the GPT actions should be a dedicated key created via Stripe checkout.

@@ -18,7 +18,30 @@ const os = require('os');
 // ---------------------------------------------------------------------------
 
 let tmpDir;
-let originalEnv;
+const billingTestRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'billing-suite-'));
+const testApiKeysPath = path.join(billingTestRoot, 'api-keys.json');
+const testFunnelLedgerPath = path.join(billingTestRoot, 'funnel-events.jsonl');
+const savedApiKeysPath = process.env._TEST_API_KEYS_PATH;
+const savedFunnelPath = process.env._TEST_FUNNEL_LEDGER_PATH;
+
+process.env._TEST_API_KEYS_PATH = testApiKeysPath;
+process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
+
+after(() => {
+  if (savedApiKeysPath === undefined) {
+    delete process.env._TEST_API_KEYS_PATH;
+  } else {
+    process.env._TEST_API_KEYS_PATH = savedApiKeysPath;
+  }
+
+  if (savedFunnelPath === undefined) {
+    delete process.env._TEST_FUNNEL_LEDGER_PATH;
+  } else {
+    process.env._TEST_FUNNEL_LEDGER_PATH = savedFunnelPath;
+  }
+
+  fs.rmSync(billingTestRoot, { recursive: true, force: true });
+});
 
 function setupTempStore() {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'billing-test-'));
@@ -75,6 +98,25 @@ function requireFreshBilling(keyStorePath, stripeKey = '') {
   }
 
   return billing;
+}
+
+function clearBillingArtifacts() {
+  for (const target of [testApiKeysPath, testFunnelLedgerPath]) {
+    if (fs.existsSync(target)) {
+      fs.rmSync(target, { force: true });
+    }
+  }
+}
+
+function readLedgerEvents() {
+  if (!fs.existsSync(testFunnelLedgerPath)) {
+    return [];
+  }
+  return fs.readFileSync(testFunnelLedgerPath, 'utf-8')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
 }
 
 // ---------------------------------------------------------------------------
@@ -239,6 +281,76 @@ describe('billing.js — recordUsage', () => {
   test('returns recorded: false for empty key', () => {
     const result = billing.recordUsage('');
     assert.equal(result.recorded, false);
+  });
+});
+
+describe('billing.js — funnel ledger and correlation', () => {
+  let billing;
+
+  beforeEach(() => {
+    clearBillingArtifacts();
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
+  });
+
+  afterEach(() => {
+    clearBillingArtifacts();
+    delete require.cache[require.resolve('../scripts/billing')];
+  });
+
+  test('createCheckoutSession emits acquisition event with installId metadata', async () => {
+    const result = await billing.createCheckoutSession({
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+      installId: 'inst_checkout_001',
+      metadata: { source: 'cli' },
+    });
+
+    assert.ok(result.sessionId.startsWith('local_'));
+    assert.equal(result.metadata.installId, 'inst_checkout_001');
+
+    const events = readLedgerEvents();
+    const acquisition = events.find((entry) => entry.event === 'checkout_session_created');
+    assert.ok(acquisition, 'expected checkout_session_created acquisition event');
+    assert.equal(acquisition.stage, 'acquisition');
+    assert.equal(acquisition.installId, 'inst_checkout_001');
+  });
+
+  test('recordUsage emits activation only on first key usage transition 0->1', () => {
+    const provisioned = billing.provisionApiKey('cus_activation_001', { installId: 'inst_activation_001' });
+    billing.recordUsage(provisioned.key);
+    billing.recordUsage(provisioned.key);
+
+    const activationEvents = readLedgerEvents().filter((entry) => entry.event === 'api_key_first_usage');
+    assert.equal(activationEvents.length, 1);
+    assert.equal(activationEvents[0].stage, 'activation');
+    assert.equal(activationEvents[0].installId, 'inst_activation_001');
+  });
+
+  test('paid events are emitted for stripe checkout completion and github purchased', () => {
+    const stripeResult = billing.handleWebhook({
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_paid_001',
+          customer: 'cus_paid_001',
+          metadata: { installId: 'inst_paid_001' },
+        },
+      },
+    });
+    assert.equal(stripeResult.handled, true);
+
+    const githubResult = billing.handleGithubWebhook({
+      action: 'purchased',
+      marketplace_purchase: {
+        account: { id: 111, type: 'User' },
+      },
+    });
+    assert.equal(githubResult.handled, true);
+
+    const paidEvents = readLedgerEvents().filter((entry) => entry.stage === 'paid');
+    assert.ok(paidEvents.some((entry) => entry.event === 'stripe_checkout_session_completed'));
+    assert.ok(paidEvents.some((entry) => entry.event === 'github_marketplace_purchased'));
   });
 });
 
@@ -407,6 +519,7 @@ describe('API server — /v1/billing/* routes', () => {
   let realPath;
 
   before(async () => {
+    clearBillingArtifacts();
     delete require.cache[require.resolve('../scripts/billing')];
     delete require.cache[require.resolve('../src/api/server')];
 
@@ -630,5 +743,120 @@ describe('API server — /v1/billing/* routes', () => {
       delete store.keys[key];
       fs.writeFileSync(realPath, JSON.stringify(store, null, 2), 'utf-8');
     }
+  });
+
+  test('GET /v1/analytics/funnel returns counts and conversion rates', async () => {
+    const res = await apiRequest('GET', '/v1/analytics/funnel');
+    assert.equal(res.status, 200);
+    assert.ok(typeof res.body.totalEvents === 'number');
+    assert.ok(typeof res.body.stageCounts === 'object');
+    assert.ok(typeof res.body.eventCounts === 'object');
+    assert.ok(typeof res.body.conversionRates === 'object');
+    assert.ok(typeof res.body.conversionRates.acquisitionToActivation === 'number');
+    assert.ok(typeof res.body.conversionRates.activationToPaid === 'number');
+    assert.ok(typeof res.body.conversionRates.acquisitionToPaid === 'number');
+  });
+});
+
+describe('API server — admin provision boundary', () => {
+  let server;
+  let port;
+  let billingKey;
+  let savedApiKey;
+  let savedInsecure;
+
+  before(async () => {
+    clearBillingArtifacts();
+    delete require.cache[require.resolve('../scripts/billing')];
+    delete require.cache[require.resolve('../src/api/server')];
+
+    savedApiKey = process.env.RLHF_API_KEY;
+    savedInsecure = process.env.RLHF_ALLOW_INSECURE;
+
+    process.env.RLHF_API_KEY = 'admin-secret';
+    delete process.env.RLHF_ALLOW_INSECURE;
+    delete process.env.STRIPE_SECRET_KEY;
+    delete process.env.STRIPE_WEBHOOK_SECRET;
+
+    const { startServer } = require('../src/api/server');
+    const started = await startServer({ port: 0 });
+    server = started.server;
+    port = started.port;
+
+    const billing = require('../scripts/billing');
+    billingKey = billing.provisionApiKey('cus_admin_boundary_seed').key;
+  });
+
+  after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    clearBillingArtifacts();
+
+    if (savedApiKey === undefined) {
+      delete process.env.RLHF_API_KEY;
+    } else {
+      process.env.RLHF_API_KEY = savedApiKey;
+    }
+
+    if (savedInsecure === undefined) {
+      delete process.env.RLHF_ALLOW_INSECURE;
+    } else {
+      process.env.RLHF_ALLOW_INSECURE = savedInsecure;
+    }
+
+    delete require.cache[require.resolve('../scripts/billing')];
+    delete require.cache[require.resolve('../src/api/server')];
+  });
+
+  async function apiRequest(method, reqPath, body, headers = {}) {
+    const http = require('http');
+    return new Promise((resolve, reject) => {
+      const bodyStr = body ? JSON.stringify(body) : undefined;
+      const options = {
+        hostname: '127.0.0.1',
+        port,
+        path: reqPath,
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+          ...(bodyStr ? { 'Content-Length': Buffer.byteLength(bodyStr) } : {}),
+        },
+      };
+      const req = http.request(options, (res) => {
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const text = Buffer.concat(chunks).toString('utf-8');
+          resolve({ status: res.statusCode, body: JSON.parse(text) });
+        });
+      });
+      req.on('error', reject);
+      if (bodyStr) {
+        req.write(bodyStr);
+      }
+      req.end();
+    });
+  }
+
+  test('admin static token can call POST /v1/billing/provision', async () => {
+    const res = await apiRequest('POST', '/v1/billing/provision', {
+      customerId: 'cus_admin_ok_001',
+    }, {
+      Authorization: 'Bearer admin-secret',
+    });
+
+    assert.equal(res.status, 200);
+    assert.ok(res.body.key.startsWith('rlhf_'));
+  });
+
+  test('billing key is forbidden from POST /v1/billing/provision', async () => {
+    const res = await apiRequest('POST', '/v1/billing/provision', {
+      customerId: 'cus_admin_forbidden_001',
+    }, {
+      Authorization: `Bearer ${billingKey}`,
+    });
+
+    assert.equal(res.status, 403);
+    assert.match(res.body.error, /admin key required/);
   });
 });

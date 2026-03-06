@@ -1,12 +1,12 @@
 openapi: 3.1.0
 info:
   title: RLHF Feedback Loop API
-  version: 1.1.0
+  version: 1.2.0
   description: |
     Production API for feedback capture, schema-validated memory promotion,
     prevention rule generation, and DPO export.
 servers:
-  - url: http://localhost:8787
+  - url: https://rlhf-feedback-loop-710216278770.us-central1.run.app
 security:
   - bearerAuth: []
 components:
@@ -80,6 +80,59 @@ components:
           type: string
         approved:
           type: boolean
+    BillingCheckoutRequest:
+      type: object
+      properties:
+        successUrl:
+          type: string
+          format: uri
+        cancelUrl:
+          type: string
+          format: uri
+        customerEmail:
+          type: string
+          format: email
+        installId:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    BillingProvisionRequest:
+      type: object
+      required: [customerId]
+      properties:
+        customerId:
+          type: string
+        installId:
+          type: string
+    FunnelAnalyticsResponse:
+      type: object
+      properties:
+        totalEvents:
+          type: integer
+        stageCounts:
+          type: object
+          properties:
+            acquisition:
+              type: integer
+            activation:
+              type: integer
+            paid:
+              type: integer
+        eventCounts:
+          type: object
+          additionalProperties:
+            type: integer
+        conversionRates:
+          type: object
+          properties:
+            acquisitionToActivation:
+              type: number
+            activationToPaid:
+              type: number
+            acquisitionToPaid:
+              type: number
 paths:
   /healthz:
     get:
@@ -111,6 +164,18 @@ paths:
       responses:
         '200':
           description: Aggregated feedback statistics
+        '401':
+          description: Unauthorized
+  /v1/analytics/funnel:
+    get:
+      operationId: getFunnelAnalytics
+      responses:
+        '200':
+          description: Acquisition/activation/paid funnel metrics from append-only ledger
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FunnelAnalyticsResponse'
         '401':
           description: Unauthorized
   /v1/intents/catalog:
@@ -290,3 +355,60 @@ paths:
           description: Recent provenance events
         '401':
           description: Unauthorized
+  /v1/billing/checkout:
+    post:
+      operationId: createBillingCheckoutSession
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillingCheckoutRequest'
+      responses:
+        '200':
+          description: Stripe checkout session created
+  /v1/billing/usage:
+    get:
+      operationId: getBillingUsage
+      responses:
+        '200':
+          description: Usage count for authenticated billing key
+        '401':
+          description: Unauthorized
+  /v1/billing/provision:
+    post:
+      operationId: provisionBillingKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillingProvisionRequest'
+      responses:
+        '200':
+          description: API key provisioned
+        '400':
+          description: Missing required customerId
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - requires static RLHF_API_KEY admin token
+  /v1/billing/webhook:
+    post:
+      operationId: stripeBillingWebhook
+      security: []
+      responses:
+        '200':
+          description: Webhook accepted
+        '400':
+          description: Invalid webhook signature or payload
+  /v1/billing/github-webhook:
+    post:
+      operationId: githubMarketplaceWebhook
+      security: []
+      responses:
+        '200':
+          description: Webhook accepted
+        '400':
+          description: Invalid webhook signature or payload

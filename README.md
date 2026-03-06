@@ -13,16 +13,26 @@ This product captures and structures human feedback data for optimization workfl
 The RLHF Feedback Loop is now a **Universal Agent Skill**. You can drop it into any repository without manual setup.
 
 - **Zero-Config Discovery:** Automatically detects project context. If no local `.rlhf/` directory exists, it safely fallbacks to a project-scoped global store in `~/.rlhf/`.
-- **Global Skill Installation:** Run one command to make RLHF available to all your agents across all projects.
+- **Global Skill Installation (Optional):** One-command installer is available if you want auto-detection.
 - **Vibe-to-Verification (V2V):** Directly converts subjective "vibes" (thumbs up/down) into verifiable repository rules (`CLAUDE.md`).
 
-### Quick Start (One Command)
+### Quick Start (Stable MCP Commands)
+
+Add the MCP server directly in your client config:
+
+| Platform | Command |
+|----------|---------|
+| **Claude** | `claude mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
+| **Codex** | `codex mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
+| **Gemini** | `gemini mcp add rlhf "npx -y rlhf-feedback-loop serve"` |
+| **Amp** | `amp mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
+| **Cursor** | `cursor mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
+
+Optional auto-installer:
 
 ```bash
-npx rlhf-feedback-loop install
+npx add-mcp rlhf-feedback-loop
 ```
-
-This will auto-detect your platforms (Claude, Codex, Gemini, Cursor) and install the RLHF skill globally.
 
 - **Stop Regressions:** Automatically convert negative feedback into `CLAUDE.md` / `AGENTS.md` prevention rules.
 - **Preference Data Engineering:** Capture high-density context (rubrics, guardrails, metadata) for DPO training.
@@ -40,18 +50,7 @@ We are optimized for discovery by next-gen AI tools (Claude Code, Gemini CLI, Pe
 
 ## Get Started
 
-One command. Pick your platform:
-
-| Platform | Install |
-|----------|---------|
-| **Claude** | `claude mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
-| **Codex** | `codex mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
-| **Gemini** | `gemini mcp add rlhf "npx -y rlhf-feedback-loop serve"` |
-| **Amp** | `amp mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
-| **Cursor** | `cursor mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
-| **All at once** | `npx add-mcp rlhf-feedback-loop` |
-
-That's it. Your agent can now capture feedback, recall past learnings mid-conversation, and block repeated mistakes. Run once per project — the MCP server starts automatically on each session.
+Run one `mcp add` command for your client. The server starts on each session and can capture feedback, recall past learnings, and block repeated mistakes.
 
 ## How It Works
 
@@ -85,7 +84,7 @@ All data stored locally as **JSONL** files — fully transparent, fully portable
 
 The open-source package is fully functional and free forever. Cloud Pro is for teams that don't want to self-host.
 
-| | Open Source | Cloud Pro ($10/mo) |
+| | Open Source | Cloud Pro ($49/mo) |
 |---|---|---|
 | Feedback capture | Local MCP server | Hosted HTTPS API |
 | Storage | Your machine | Managed cloud |
@@ -95,7 +94,7 @@ The open-source package is fully functional and free forever. Cloud Pro is for t
 | Support | GitHub Issues | Email |
 | Uptime | You manage | We manage (99.9% SLA) |
 
-[Get Cloud Pro](https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02) | [Live API](https://rlhf-feedback-loop-710216278770.us-central1.run.app)
+[Get Cloud Pro](https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02) | [Live API](https://rlhf-feedback-loop-710216278770.us-central1.run.app) | [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
 
 ## Deep Dive
 

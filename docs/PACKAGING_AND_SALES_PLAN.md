@@ -10,7 +10,7 @@
 - DPO export
 - Local MCP server
 
-### Tier 2: Cloud Pro (Pricing: publish before GA)
+### Tier 2: Cloud Pro ($49/mo)
 
 - Hosted API endpoint
 - Team workspaces

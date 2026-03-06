@@ -7,8 +7,11 @@ const fs = require('node:fs');
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-api-test-'));
 process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.RLHF_API_KEY = 'test-api-key';
+process.env._TEST_API_KEYS_PATH = path.join(tmpFeedbackDir, 'api-keys.json');
+process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpFeedbackDir, 'funnel-events.jsonl');
 
 const { startServer } = require('../src/api/server');
+const { provisionApiKey } = require('../scripts/billing');
 
 let handle;
 const authHeader = { authorization: 'Bearer test-api-key' };
@@ -195,6 +198,34 @@ test('unauthorized without bearer token', async () => {
   assert.equal(res.status, 401);
 });
 
+test('billing checkout endpoint is public', async () => {
+  const res = await fetch('http://localhost:8790/v1/billing/checkout', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+      installId: 'inst_public_checkout_test',
+    }),
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.ok(typeof body.sessionId === 'string');
+});
+
+test('billing provision requires static admin key and rejects billing keys', async () => {
+  const billingKey = provisionApiKey('cus_non_admin').key;
+  const res = await fetch('http://localhost:8790/v1/billing/provision', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${billingKey}`,
+    },
+    body: JSON.stringify({ customerId: 'cus_should_fail' }),
+  });
+  assert.equal(res.status, 403);
+});
+
 test('rejects external output path by default', async () => {
   const externalPath = '/tmp/should-not-write-outside-safe-root.jsonl';
   const res = await fetch('http://localhost:8790/v1/dpo/export', {
@@ -203,4 +234,29 @@ test('rejects external output path by default', async () => {
     body: JSON.stringify({ outputPath: externalPath }),
   });
   assert.equal(res.status, 400);
+});
+
+test('funnel analytics returns counts and conversion rates', async () => {
+  const checkoutRes = await fetch('http://localhost:8790/v1/billing/checkout', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+      installId: 'inst_api_server_test',
+    }),
+  });
+  assert.equal(checkoutRes.status, 200);
+
+  const analyticsRes = await fetch('http://localhost:8790/v1/analytics/funnel', {
+    headers: authHeader,
+  });
+  assert.equal(analyticsRes.status, 200);
+
+  const body = await analyticsRes.json();
+  assert.ok(typeof body.totalEvents === 'number');
+  assert.ok(typeof body.stageCounts === 'object');
+  assert.ok(typeof body.conversionRates === 'object');
+  assert.ok(body.stageCounts.acquisition >= 1);
+  assert.ok(typeof body.conversionRates.acquisitionToActivation === 'number');
 });

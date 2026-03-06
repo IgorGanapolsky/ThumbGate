@@ -21,6 +21,7 @@ const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 
 const CLI = path.resolve(__dirname, '../bin/cli.js');
+const savedFunnelPath = process.env._TEST_FUNNEL_LEDGER_PATH;
 
 function makeTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cli-test-'));
@@ -118,13 +119,21 @@ function runServeHandshake(sendRequest) {
 
 describe('bin/cli.js', () => {
   let tmpDir;
+  let defaultLedgerPath;
 
   before(() => {
     tmpDir = makeTmpDir();
+    defaultLedgerPath = path.join(tmpDir, 'default-funnel-events.jsonl');
+    process.env._TEST_FUNNEL_LEDGER_PATH = defaultLedgerPath;
   });
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
+    if (savedFunnelPath === undefined) {
+      delete process.env._TEST_FUNNEL_LEDGER_PATH;
+    } else {
+      process.env._TEST_FUNNEL_LEDGER_PATH = savedFunnelPath;
+    }
   });
 
   test('CLI file exists and is executable', () => {
@@ -179,8 +188,38 @@ describe('bin/cli.js', () => {
     assert.ok(config.version, 'config.version should be set');
     assert.ok(config.apiUrl, 'config.apiUrl should be set');
     assert.ok(config.logPath, 'config.logPath should be set');
+    assert.ok(config.installId, 'config.installId should be set');
     assert.ok(config.createdAt, 'config.createdAt should be set');
     assert.ok(!isNaN(Date.parse(config.createdAt)), 'config.createdAt should be a valid ISO timestamp');
+  });
+
+  test('init emits acquisition funnel event correlated by installId', () => {
+    const isolatedDir = makeTmpDir();
+    const ledgerPath = path.join(isolatedDir, 'funnel-events.jsonl');
+
+    const result = spawnSync(process.execPath, [CLI, 'init'], {
+      encoding: 'utf8',
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        _TEST_FUNNEL_LEDGER_PATH: ledgerPath,
+      },
+    });
+    assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
+
+    const config = JSON.parse(fs.readFileSync(path.join(isolatedDir, '.rlhf', 'config.json'), 'utf8'));
+    const events = fs.readFileSync(ledgerPath, 'utf8')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+
+    const initEvent = events.find((entry) => entry.event === 'cli_init_completed');
+    assert.ok(initEvent, 'expected cli_init_completed event');
+    assert.equal(initEvent.stage, 'acquisition');
+    assert.equal(initEvent.installId, config.installId);
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
 
   test('init creates .mcp.json with server entry', () => {
