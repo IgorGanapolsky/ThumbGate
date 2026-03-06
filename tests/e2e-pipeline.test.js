@@ -191,7 +191,9 @@ test('E2E: API server feedback capture -> stats -> summary round-trip', async (t
 
   t.after(async () => {
     await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch (err) {}
     if (origFeedbackDir) process.env.RLHF_FEEDBACK_DIR = origFeedbackDir;
     else delete process.env.RLHF_FEEDBACK_DIR;
     if (origApiKey) process.env.RLHF_API_KEY = origApiKey;

@@ -1,6 +1,6 @@
 {
   "name": "rlhf-feedback-loop",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "Production RLHF & DPO data pipeline for AI agents. Optimize agentic reliability with Feedback-Driven Development (FDD). Capture human preference signals, generate automated guardrails, and export DPO training pairs. Compatible with Claude, GPT-4, Gemini, and multi-agent systems.",
   "homepage": "https://github.com/IgorGanapolsky/rlhf-feedback-loop#readme",
   "repository": {
@@ -108,10 +108,12 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@huggingface/transformers": "^3.8.1",
-    "@lancedb/lancedb": "^0.26.2",
     "apache-arrow": "^18.1.0",
     "stripe": "^20.4.0"
   },
-  "mcpName": "io.github.IgorGanapolsky/rlhf-feedback-loop"
+  "mcpName": "io.github.IgorGanapolsky/rlhf-feedback-loop",
+  "optionalDependencies": {
+    "@lancedb/lancedb": "^0.26.2",
+    "@huggingface/transformers": "^3.8.1"
+  }
 }

@@ -140,8 +140,8 @@ async function runProof() {
   let vec03Status = 'fail';
   let vec03Evidence = '';
   try {
-    const arrowSpec = PKG.dependencies['apache-arrow'] || '';
-    const lanceSpec = PKG.dependencies['@lancedb/lancedb'] || '';
+    const arrowSpec = PKG.dependencies['apache-arrow'] || PKG.optionalDependencies['apache-arrow'] || '';
+    const lanceSpec = PKG.dependencies['@lancedb/lancedb'] || PKG.optionalDependencies['@lancedb/lancedb'] || '';
 
     // Check if spec pins to <= 18.1.0 (either "18.1.0", "^18.1.0", or "~18.1.0")
     const arrowVersion = arrowSpec.replace(/[\^~>=<]*/g, '').split('.').map(Number);

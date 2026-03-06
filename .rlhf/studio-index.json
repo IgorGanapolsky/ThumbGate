@@ -1,0 +1,166 @@
+{
+  "bundles": {
+    "general": {
+      "category": "general",
+      "docs": [
+        {
+          "filename": "ANTHROPIC_MARKETPLACE_STRATEGY.md",
+          "title": "Anthropic Marketplace Strategy: The Reliability & Context Engineering Layer",
+          "summary": "RLHF Feedback Loop is the **Enterprise Control Plane** for Claude-based agentic workflows. We solve the \"Vibe Coding\" security crisis by providing a verifiable, context-engineered runtime. 1. **Context Engineering Moat:** Move beyond raw prompts. Use our Semantic Context Packs to give Claude high-density proprietary knowledge. 2. **Zero-Trust Agentic Guardrails:** Mitigate supply-chain risks (Pentagon-grade concerns) by enforcing machine-readable prevention rules auto-generated from human feedback."
+        },
+        {
+          "filename": "AUTONOMOUS_GITOPS.md",
+          "title": "Autonomous GitOps",
+          "summary": "This repo uses PR-gated autonomous automation. No direct merge-to-main shortcuts. - `.github/workflows/ci.yml` - Runs `npm test`, `npm run prove:adapters`, `npm run prove:automation`"
+        },
+        {
+          "filename": "CONTEXTFS.md",
+          "title": "ContextFS (Constructor/Loader/Evaluator)",
+          "summary": "This project implements a file-system-native context layer inspired by current context-engineering research. Root: - `contextfs/raw_history/`"
+        },
+        {
+          "filename": "GEMINI_MONETIZATION_PLAN.md",
+          "title": "Gemini Monetization Plan: The Developer Ecosystem Play",
+          "summary": "Instead of a generic \"AI assistant,\" we sell the **governance and reliability layer** for Gemini-powered development. - **Format:** GitHub App + Copilot Extension (using MCP). - **Monetization:** GitHub Marketplace Billing (Flat rate $49/mo or $10/user/mo)."
+        },
+        {
+          "filename": "INTENT_ROUTER.md",
+          "title": "Intent Router",
+          "summary": "The intent router adds an orchestration layer above individual tools. It converts free-form work goals into policy-aware plans: 1. Select a named intent."
+        },
+        {
+          "filename": "PACKAGING_AND_SALES_PLAN.md",
+          "title": "Packaging and Sales Plan",
+          "summary": "- Local RLHF feedback capture - Schema validation - Prevention rules"
+        },
+        {
+          "filename": "PAPERBANANA.md",
+          "title": "PaperBanana Diagrams",
+          "summary": "- Monthly cap enforced by `scripts/budget-guard.js`. - Default cap: `$10/month` (`RLHF_MONTHLY_BUDGET_USD=10`). - Diagram generation script blocks projected overspend before calls and logs spend only after successful generation."
+        },
+        {
+          "filename": "PITCH.md",
+          "title": "One-Line Pitch",
+          "summary": "The enterprise-grade **Agentic Control Plane** that turns user vibes into verifiable context and stops AI agents from repeating mistakes. RLHF Feedback Loop is the operational layer between raw LLM output and production reliability. We provide a **Context Engineering Studio** that move beyond simple prompts to high-density semantic environments. - **Primary Goal:** Transform \"Vibe Coding\" into \"Context Engineering\" through verifiable feedback loops."
+        },
+        {
+          "filename": "PLATFORM_RESEARCH_2026-03-03.md",
+          "title": "Platform Research (As Of March 3, 2026)",
+          "summary": "This research was done on March 3, 2026 using official documentation or official product pages. 1. ChatGPT distribution should prioritize Custom GPT + GPT Actions (OpenAPI), not legacy plugin flow. 2. Claude and Codex both support MCP workflows; shipping an MCP server is the fastest integration path."
+        },
+        {
+          "filename": "VERIFICATION_EVIDENCE.md",
+          "title": "Verification Evidence (March 4, 2026)",
+          "summary": "- Proof report: `proof/attribution-report.md` - Machine evidence: `proof/attribution-report.json` - Requirements: ATTR-01 (recordAction + attributeFeedback), ATTR-02 (pre-tool guard), ATTR-03 (test coverage)"
+        },
+        {
+          "filename": "gpt-store-submission.md",
+          "title": "GPT Store Submission: RLHF Feedback Loop",
+          "summary": "Copy-paste this content into the ChatGPT GPT Builder (https://chat.openai.com/gpts/editor). --- ```"
+        }
+      ],
+      "keywords": [
+        "anthropic",
+        "marketplace",
+        "strategy:",
+        "the",
+        "reliability",
+        "context",
+        "engineering",
+        "layer",
+        "strategy",
+        "autonomous",
+        "gitops",
+        "contextfs",
+        "(constructor/loader/evaluator)",
+        "gemini",
+        "monetization",
+        "plan:",
+        "developer",
+        "ecosystem",
+        "play",
+        "plan",
+        "intent",
+        "router",
+        "packaging",
+        "and",
+        "sales",
+        "paperbanana",
+        "diagrams",
+        "one-line",
+        "pitch",
+        "platform",
+        "research",
+        "(as",
+        "march",
+        "2026)",
+        "2026",
+        "verification",
+        "evidence",
+        "(march",
+        "gpt",
+        "store",
+        "submission:",
+        "rlhf",
+        "feedback",
+        "loop",
+        "submission"
+      ]
+    },
+    "architecture": {
+      "category": "architecture",
+      "docs": [
+        {
+          "filename": "PLUGIN_DISTRIBUTION.md",
+          "title": "Plugin and Runtime Distribution",
+          "summary": "Ship one core runtime and fan out to platform adapters: 1. `src/api/server.js` (HTTP API) 2. `adapters/mcp/server-stdio.js` (MCP tools)"
+        }
+      ],
+      "keywords": [
+        "plugin",
+        "and",
+        "runtime",
+        "distribution"
+      ]
+    },
+    "mcp-ai": {
+      "category": "mcp-ai",
+      "docs": [
+        {
+          "filename": "geo-strategy-for-ai-agents.md",
+          "title": "Generative Engine Optimization (GEO) Strategy for AI Agents",
+          "summary": "In the era of AI search and autonomous coding agents, visibility is no longer just about ranking #1 on Google. It's about being the **retrieved context** for the next generation of AI tools like Claude Code, Gemini CLI, and ChatGPT. This document outlines the GEO strategy for the RLHF Feedback Loop, ensuring our product is the \"first-choice\" recommendation for LLMs when developers ask about agent reliability. We move from keyword-centric documentation to **semantic-centric chunks**. Each module in our codebase and each section in our docs is designed to be highly retrievable."
+        },
+        {
+          "filename": "mcp-hub-submission.md",
+          "title": "Claude MCP Hub Submission: RLHF Feedback Loop",
+          "summary": "Submit to: https://github.com/modelcontextprotocol/servers (official MCP servers list) Also submit to: https://mcp.so (community MCP directory) ---"
+        }
+      ],
+      "keywords": [
+        "generative",
+        "engine",
+        "optimization",
+        "(geo)",
+        "strategy",
+        "for",
+        "agents",
+        "geo",
+        "claude",
+        "mcp",
+        "hub",
+        "submission:",
+        "rlhf",
+        "feedback",
+        "loop",
+        "submission"
+      ]
+    }
+  },
+  "metadata": {
+    "builtAt": "2026-03-06T21:25:23.009Z",
+    "docCount": 14,
+    "version": "1.0.0",
+    "checksum": "3be2bff22b06"
+  }
+}

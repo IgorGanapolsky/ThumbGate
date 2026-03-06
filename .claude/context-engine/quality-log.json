@@ -1,0 +1,9 @@
+{"query":"query","precision":0,"recall":0,"f1":0,"retrievedCount":0,"expectedCount":1,"timestamp":"2026-03-06T21:25:26.043Z"}
+{"query":"test query","precision":1,"recall":1,"f1":1,"retrievedCount":1,"expectedCount":1,"timestamp":"2026-03-06T21:25:26.043Z"}
+{"query":"test query","precision":1,"recall":0.333,"f1":0.5,"retrievedCount":1,"expectedCount":3,"timestamp":"2026-03-06T21:25:26.043Z"}
+{"query":"query","precision":0,"recall":0,"f1":0,"retrievedCount":0,"expectedCount":1,"timestamp":"2026-03-06T21:45:48.823Z"}
+{"query":"test query","precision":1,"recall":1,"f1":1,"retrievedCount":1,"expectedCount":1,"timestamp":"2026-03-06T21:45:48.824Z"}
+{"query":"test query","precision":1,"recall":0.333,"f1":0.5,"retrievedCount":1,"expectedCount":3,"timestamp":"2026-03-06T21:45:48.824Z"}
+{"query":"query","precision":0,"recall":0,"f1":0,"retrievedCount":0,"expectedCount":1,"timestamp":"2026-03-06T21:47:13.851Z"}
+{"query":"test query","precision":1,"recall":1,"f1":1,"retrievedCount":1,"expectedCount":1,"timestamp":"2026-03-06T21:47:13.852Z"}
+{"query":"test query","precision":1,"recall":0.333,"f1":0.5,"retrievedCount":1,"expectedCount":3,"timestamp":"2026-03-06T21:47:13.852Z"}

@@ -347,13 +347,17 @@ describe('billing.js — handleWebhook', () => {
 
 describe('billing.js — verifyWebhookSignature', () => {
   let billing;
+  let oldSecret;
 
   before(() => {
     delete require.cache[require.resolve('../scripts/billing')];
+    oldSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    delete process.env.STRIPE_WEBHOOK_SECRET;
     billing = require('../scripts/billing');
   });
 
   after(() => {
+    if (oldSecret !== undefined) process.env.STRIPE_WEBHOOK_SECRET = oldSecret;
     delete require.cache[require.resolve('../scripts/billing')];
   });
 
@@ -409,6 +413,7 @@ describe('API server — /v1/billing/* routes', () => {
     // Start server in insecure mode to test billing routes
     process.env.RLHF_ALLOW_INSECURE = 'true';
     delete process.env.STRIPE_SECRET_KEY;
+    delete process.env.STRIPE_WEBHOOK_SECRET;
 
     const { startServer } = require('../src/api/server');
     const started = await startServer({ port: 0 });

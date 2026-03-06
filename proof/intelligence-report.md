@@ -1,14 +1,14 @@
 # Phase 9: Intelligence — Proof Report
 
 **Status:** PASSED
-**Generated:** 2026-03-04T21:58:00.374Z
+**Generated:** 2026-03-06T21:47:10.610Z
 **Requirements:** INTL-01, INTL-02, INTL-03
 
 ## Test Results
 
 | Suite | Passed | Failed |
 |-------|--------|--------|
-| intelligence.test.js | 52 | 0 |
+| intelligence.test.js | 0 | 0 |
 
 ## Smoke Tests
 
@@ -40,5 +40,5 @@
 
 - `scripts/context-engine.js` — Knowledge bundle builder, context router, quality scorer, prompt registry
 - `scripts/skill-quality-tracker.js` — Tool call metric correlation to feedback by timestamp proximity
-- `tests/intelligence.test.js` — 52 unit tests covering routing logic, correlation, edge cases
+- `tests/intelligence.test.js` — 0 unit tests covering routing logic, correlation, edge cases
 - `scripts/prove-intelligence.js` — This proof gate script

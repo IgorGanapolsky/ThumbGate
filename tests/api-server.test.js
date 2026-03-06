@@ -19,7 +19,11 @@ test.before(async () => {
 
 test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
-  fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+  try {
+    fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+  } catch (err) {
+    // Ignore ENOTEMPTY errors during teardown
+  }
 });
 
 test('health endpoint returns ok', async () => {
