@@ -37,6 +37,8 @@ const {
   recordUsage,
   handleWebhook,
   verifyWebhookSignature,
+  verifyGithubWebhookSignature,
+  handleGithubWebhook,
   loadKeyStore,
 } = require('../../scripts/billing');
 
@@ -229,6 +231,42 @@ function createApiServer() {
         }
 
         const result = handleWebhook(event);
+        sendJson(res, 200, result);
+      } catch (err) {
+        if (err.statusCode) {
+          sendJson(res, err.statusCode, { error: err.message });
+        } else {
+          sendJson(res, 500, { error: err.message || 'Internal Server Error' });
+        }
+      }
+      return;
+    }
+
+    // GitHub Marketplace webhook
+    if (req.method === 'POST' && pathname === '/v1/billing/github-webhook') {
+      try {
+        const rawBody = await new Promise((resolve, reject) => {
+          const chunks = [];
+          req.on('data', (c) => chunks.push(c));
+          req.on('end', () => resolve(Buffer.concat(chunks)));
+          req.on('error', reject);
+        });
+
+        const sig = req.headers['x-hub-signature-256'] || '';
+        if (!verifyGithubWebhookSignature(rawBody, sig)) {
+          sendJson(res, 400, { error: 'Invalid webhook signature' });
+          return;
+        }
+
+        let event;
+        try {
+          event = JSON.parse(rawBody.toString('utf-8'));
+        } catch {
+          sendJson(res, 400, { error: 'Invalid JSON in webhook body' });
+          return;
+        }
+
+        const result = handleGithubWebhook(event);
         sendJson(res, 200, result);
       } catch (err) {
         if (err.statusCode) {

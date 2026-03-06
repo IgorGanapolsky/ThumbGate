@@ -6,11 +6,8 @@
  *   npx rlhf-feedback-loop init          # scaffold .rlhf/ config + .mcp.json
  *   npx rlhf-feedback-loop capture       # capture feedback
  *   npx rlhf-feedback-loop export-dpo    # export DPO training pairs
- *   npx rlhf-feedback-loop stats         # feedback analytics
- *   npx rlhf-feedback-loop rules         # generate prevention rules
- *   npx rlhf-feedback-loop self-heal     # run self-healing check + fix
- *   npx rlhf-feedback-loop prove         # run proof harness
- *   npx rlhf-feedback-loop start-api     # start HTTPS API server
+ *   npx rlhf-feedback-loop stats         # feedback analytics + Revenue-at-Risk
+ *   npx rlhf-feedback-loop pro           # upgrade to Cloud Pro
  */
 
 'use strict';
@@ -201,7 +198,7 @@ function capture() {
   const { captureFeedback, analyzeFeedback, feedbackSummary, writePreventionRules } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
 
   if (args.stats) {
-    console.log(JSON.stringify(analyzeFeedback(), null, 2));
+    stats();
     return;
   }
 
@@ -248,7 +245,42 @@ function capture() {
 
 function stats() {
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
-  console.log(JSON.stringify(analyzeFeedback(), null, 2));
+  const data = analyzeFeedback();
+  
+  console.log('\n📊 RLHF Performance Metrics');
+  console.log('─'.repeat(50));
+  console.log(`  Total Signals   : ${data.total}`);
+  console.log(`  Approval Rate   : ${Math.round(data.approvalRate * 100)}%`);
+  console.log(`  Recent Trend    : ${Math.round(data.recentRate * 100)}%`);
+  
+  // The Pitch: Revenue-at-Risk
+  const avgCostOfMistake = 2.50; // $2.50 per agent turn/fix
+  const revenueAtRisk = (data.totalNegative * avgCostOfMistake).toFixed(2);
+  
+  if (data.totalNegative > 0) {
+    console.log('\n⚠️  REVENUE-AT-RISK ANALYSIS');
+    console.log(`  Repeated Failures detected: ${data.totalNegative}`);
+    console.log(`  Estimated Operational Loss: $${revenueAtRisk}`);
+    console.log('  Action Required: Run "npx rlhf-feedback-loop rules" to generate guardrails.');
+    console.log('  Strategic Recommendation: Upgrade to Cloud Pro to sync these rules across your team.');
+    console.log('  Run: npx rlhf-feedback-loop pro');
+  } else {
+    console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');
+  }
+}
+
+function pro() {
+  const stripeUrl = 'https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02';
+  console.log('\n🚀 RLHF Feedback Loop — Cloud Pro');
+  console.log('─'.repeat(50));
+  console.log('Unlock the full Agentic Control Plane:');
+  console.log('  - Hosted Team API (Shared memory across all repos)');
+  console.log('  - ShieldCortex Managed Context Packs');
+  console.log('  - Automated DPO Training Pipelines');
+  console.log('  - SOC2-ready Governance Dashboard');
+  console.log('\n👉 Complete your upgrade here:');
+  console.log(`   ${stripeUrl}`);
+  console.log('\nOnce upgraded, run: npx rlhf-feedback-loop init --key=YOUR_PRO_KEY\n');
 }
 
 function summary() {
@@ -356,26 +388,20 @@ function help() {
   console.log('  init                  Scaffold .rlhf/ config + MCP server in current project');
   console.log('  serve                 Start MCP server (stdio) — for claude/codex/gemini mcp add');
   console.log('  capture [flags]       Capture feedback (--feedback=up|down --context="..." --tags="...")');
-  console.log('  stats                 Show feedback analytics');
+  console.log('  stats                 Show feedback analytics + Revenue-at-Risk');
   console.log('  summary               Human-readable feedback summary');
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
   console.log('  rules                 Generate prevention rules from repeated failures');
   console.log('  self-heal             Run self-healing check and auto-fix');
+  console.log('  pro                   Upgrade to Cloud Pro ($10/mo)');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|...)');
   console.log('  start-api             Start the RLHF HTTPS API server');
   console.log('  help                  Show this help message');
   console.log('');
   console.log('Examples:');
   console.log('  npx rlhf-feedback-loop init');
-  console.log('  npx rlhf-feedback-loop capture --feedback=up --context="all tests pass"');
-  console.log('  npx rlhf-feedback-loop capture --feedback=down --context="broke prod" --what-went-wrong="no tests"');
-  console.log('  npx rlhf-feedback-loop export-dpo');
   console.log('  npx rlhf-feedback-loop stats');
-  console.log('');
-  console.log('MCP install (one command per platform):');
-  console.log('  claude mcp add rlhf -- npx -y rlhf-feedback-loop serve');
-  console.log('  codex mcp add rlhf -- npx -y rlhf-feedback-loop serve');
-  console.log('  gemini mcp add rlhf -- npx -y rlhf-feedback-loop serve');
+  console.log('  npx rlhf-feedback-loop pro');
 }
 
 switch (COMMAND) {
@@ -408,6 +434,9 @@ switch (COMMAND) {
     break;
   case 'self-heal':
     selfHeal();
+    break;
+  case 'pro':
+    pro();
     break;
   case 'prove':
     prove();

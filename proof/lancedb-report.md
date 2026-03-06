@@ -1,25 +1,25 @@
 # LanceDB Vector Storage Proof Report
 
-Generated: 2026-03-04T20:08:06.796Z
+Generated: 2026-03-06T21:47:10.497Z
 Phase: 04-lancedb-vector-storage
 
-**Passed: 5 | Failed: 0 | Warned: 0**
+**Passed: 4 | Failed: 1 | Warned: 0**
 
 ## Requirements
 
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
-| VEC-01 | PASS | lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-xUYqZA/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: rlhf_memories. |
+| VEC-01 | PASS | lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-7j8kvm/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: rlhf_memories. |
 | VEC-02 | PASS | scripts/vector-store.js uses dynamic import() at line 16: `_lancedb = await import('@lancedb/lancedb');`; line 23: `const { pipeline } = await import('@huggingface/transformers');`. Total dynamic import() calls: 2. This is the only CJS-compatible approach for ESM-only @lancedb/lancedb and @huggingface/transformers. |
 | VEC-03 | PASS | package.json: apache-arrow="^18.1.0" (base: 18.1.0), @lancedb/lancedb="^0.26.2". LanceDB 0.26.2 peer dep is apache-arrow >=15.0.0 <=18.1.0. Arrow 19+ breaks binary compat. Pin confirmed safe: 18.1.0 <= 18.1.0 ceiling. |
 | VEC-04 | PASS | searchSimilar() returned 2 result(s). proof-vec01 present: true. proof-vec04-b present: true. API: searchSimilar(queryText, limit=10) returns vector-ranked rows from rlhf_memories table. Note: stub embed (RLHF_VECTOR_STUB_EMBED=true) returns identical 384-dim unit vectors — ranking is insertion-order with stub, cosine similarity with real ONNX model. |
-| VEC-05 | PASS | node --test tests/vector-store.test.js: pass=4, fail=0. Delta from Phase 3 baseline (89 tests): +4 vector-store tests. Meets VEC-05 requirement: >= 4 new tests above Phase 3 baseline. Test file: tests/vector-store.test.js (4 it() blocks using node:test describe/it pattern). Proof report: proof/lancedb-report.md (this file). |
+| VEC-05 | FAIL | node --test tests/vector-store.test.js: pass=0, fail=0. Expected >= 4 passing tests, got 0. |
 
 ## Requirement Details
 
 ### VEC-01 — PASS
 
-lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-xUYqZA/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: rlhf_memories.
+lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-7j8kvm/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: rlhf_memories.
 
 ### VEC-02 — PASS
 
@@ -33,9 +33,9 @@ package.json: apache-arrow="^18.1.0" (base: 18.1.0), @lancedb/lancedb="^0.26.2".
 
 searchSimilar() returned 2 result(s). proof-vec01 present: true. proof-vec04-b present: true. API: searchSimilar(queryText, limit=10) returns vector-ranked rows from rlhf_memories table. Note: stub embed (RLHF_VECTOR_STUB_EMBED=true) returns identical 384-dim unit vectors — ranking is insertion-order with stub, cosine similarity with real ONNX model.
 
-### VEC-05 — PASS
+### VEC-05 — FAIL
 
-node --test tests/vector-store.test.js: pass=4, fail=0. Delta from Phase 3 baseline (89 tests): +4 vector-store tests. Meets VEC-05 requirement: >= 4 new tests above Phase 3 baseline. Test file: tests/vector-store.test.js (4 it() blocks using node:test describe/it pattern). Proof report: proof/lancedb-report.md (this file).
+node --test tests/vector-store.test.js: pass=0, fail=0. Expected >= 4 passing tests, got 0.
 
 ## Test Count Delta
 

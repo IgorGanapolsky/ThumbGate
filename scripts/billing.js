@@ -25,8 +25,9 @@ const crypto = require('crypto');
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+const GITHUB_MARKETPLACE_WEBHOOK_SECRET = process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '';
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || 'price_cloud_pro_49_monthly';
-const API_KEYS_PATH = path.resolve(
+const API_KEYS_PATH = process.env._TEST_API_KEYS_PATH || path.resolve(
   __dirname,
   '../.claude/memory/feedback/api-keys.json'
 );
@@ -443,20 +444,106 @@ function verifyWebhookSignature(rawBody, signature) {
 
   // Constant-time comparison
   try {
-    return crypto.timingSafeEqual(
-      Buffer.from(expected, 'hex'),
-      Buffer.from(parts.v1, 'hex')
-    );
+  return crypto.timingSafeEqual(
+    Buffer.from(expected, 'hex'),
+    Buffer.from(parts.v1, 'hex')
+  );
   } catch {
-    return false;
+  return false;
   }
-}
+  }
 
-// ---------------------------------------------------------------------------
-// Module exports
-// ---------------------------------------------------------------------------
+  /**
+  * Verify a GitHub Marketplace webhook signature.
+  * Returns true if valid, false if GITHUB_MARKETPLACE_WEBHOOK_SECRET is not set (local mode).
+  *
+  * @param {string|Buffer} rawBody - Raw request body bytes
+  * @param {string} signature - Value of x-hub-signature-256 header
+  * @returns {boolean}
+  */
+  function verifyGithubWebhookSignature(rawBody, signature) {
+  if (!GITHUB_MARKETPLACE_WEBHOOK_SECRET) {
+  // Local mode — skip signature verification
+  return true;
+  }
 
-module.exports = {
+  if (!signature || !rawBody) {
+  return false;
+  }
+
+  const hmac = crypto.createHmac('sha256', GITHUB_MARKETPLACE_WEBHOOK_SECRET);
+  const digest = Buffer.from('sha256=' + hmac.update(rawBody).digest('hex'), 'utf8');
+  const checksum = Buffer.from(signature, 'utf8');
+
+  // Constant-time comparison
+  return checksum.length === digest.length && crypto.timingSafeEqual(digest, checksum);
+  }
+
+  /**
+  * Handle a GitHub Marketplace webhook event.
+  *
+  * Supported actions:
+  *   purchased — provision API key for the new customer
+  *   changed — plan update (upgrade/downgrade)
+  *   cancelled — disable all keys for that customer
+  *
+  * @param {object} event - Parsed GitHub Marketplace event object
+  * @returns {{ handled: boolean, action?: string, result?: object }}
+  */
+  function handleGithubWebhook(event) {
+  const { action, marketplace_purchase } = event;
+  if (!action || !marketplace_purchase) {
+  return { handled: false, reason: 'missing_payload_data' };
+  }
+
+  const account = marketplace_purchase.account;
+  if (!account || !account.id) {
+  return { handled: false, reason: 'missing_account_id' };
+  }
+
+  // Map GitHub account to customerId: github_<user|organization>_<id>
+  const customerId = `github_${account.type.toLowerCase()}_${account.id}`;
+
+  switch (action) {
+  case 'purchased': {
+    const result = provisionApiKey(customerId);
+    return {
+      handled: true,
+      action: 'provisioned_api_key',
+      result,
+    };
+  }
+
+  case 'cancelled': {
+    const result = disableCustomerKeys(customerId);
+    return {
+      handled: true,
+      action: 'disabled_customer_keys',
+      result,
+    };
+  }
+
+  case 'changed': {
+    // In this simple model, we just ensure a key exists and is active.
+    // Upgrades/downgrades don't change basic API access unless we had tiered features.
+    const result = provisionApiKey(customerId);
+    return {
+      handled: true,
+      action: 'plan_changed',
+      result,
+    };
+  }
+
+  default:
+    return { handled: false, reason: `unhandled_action:${action}` };
+  }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Module exports
+  // ---------------------------------------------------------------------------
+
+  module.exports = {
   createCheckoutSession,
   provisionApiKey,
   validateApiKey,
@@ -464,8 +551,11 @@ module.exports = {
   disableCustomerKeys,
   handleWebhook,
   verifyWebhookSignature,
+  verifyGithubWebhookSignature,
+  handleGithubWebhook,
   loadKeyStore,
   // Expose for testing
   _API_KEYS_PATH: API_KEYS_PATH,
   _LOCAL_MODE: () => LOCAL_MODE,
-};
+  };
+

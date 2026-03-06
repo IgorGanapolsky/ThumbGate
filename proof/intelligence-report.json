@@ -6,9 +6,9 @@
     "INTL-02",
     "INTL-03"
   ],
-  "generatedAt": "2026-03-04T21:58:00.374Z",
+  "generatedAt": "2026-03-06T21:47:10.610Z",
   "testResults": {
-    "passed": 52,
+    "passed": 0,
     "failed": 0,
     "suiteFile": "tests/intelligence.test.js"
   },

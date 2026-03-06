@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "rlhf-tools": {
+      "command": "node",
+      "args": ["./adapters/mcp/server-stdio.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

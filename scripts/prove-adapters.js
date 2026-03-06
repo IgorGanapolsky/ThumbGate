@@ -323,8 +323,10 @@ async function runProof(options = {}) {
   } catch (err) {
     addResult('fatal', false, { error: err.message });
   } finally {
-    await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+    if (server) await new Promise((resolve) => server.close(resolve));
+    try {
+      fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+    } catch (e) {}
   }
 
   if (writeArtifacts) {
