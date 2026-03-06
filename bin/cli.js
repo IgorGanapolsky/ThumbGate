@@ -258,9 +258,10 @@ function summary() {
 }
 
 function exportDpo() {
+  const extraArgs = process.argv.slice(3).join(' ');
   try {
     const output = execSync(
-      `node "${path.join(PKG_ROOT, 'scripts', 'export-dpo-pairs.js')}"`,
+      `node "${path.join(PKG_ROOT, 'scripts', 'export-dpo-pairs.js')}" --from-local ${extraArgs}`,
       { encoding: 'utf8', stdio: 'pipe', cwd: CWD }
     );
     process.stdout.write(output);
