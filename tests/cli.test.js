@@ -92,7 +92,10 @@ function runServeHandshake(sendRequest) {
       if (!body) return;
       clearTimeout(timer);
       try {
-        done(null, JSON.parse(body));
+          done(null, {
+            response: JSON.parse(body),
+            raw: stdoutBuffer.toString('utf8'),
+          });
       } catch (err) {
         done(err);
       }
@@ -225,7 +228,7 @@ describe('bin/cli.js', () => {
   });
 
   test('serve responds to initialize over Content-Length framed transport', async () => {
-    const response = await runServeHandshake((stdin, payload) => {
+    const { response } = await runServeHandshake((stdin, payload) => {
       stdin.write(frameMcpMessage(payload));
     });
     assert.equal(response.id, 99);
@@ -233,11 +236,20 @@ describe('bin/cli.js', () => {
   });
 
   test('serve responds to initialize over newline-delimited JSON transport', async () => {
-    const response = await runServeHandshake((stdin, payload) => {
+    const { response } = await runServeHandshake((stdin, payload) => {
       stdin.write(`${JSON.stringify(payload)}\n`);
     });
     assert.equal(response.id, 99);
     assert.equal(response.result.serverInfo.name, 'rlhf-feedback-loop-mcp');
+  });
+
+  test('serve returns ndjson error envelope for malformed ndjson input', async () => {
+    const { response, raw } = await runServeHandshake((stdin) => {
+      stdin.write('{"jsonrpc":"2.0","id":1,"method":\n');
+    });
+    assert.equal(response.id, null);
+    assert.equal(response.error.code, -32603);
+    assert.ok(!raw.startsWith('Content-Length:'), `Expected ndjson response, got: ${raw}`);
   });
 
   test('init is idempotent — running twice exits 0', () => {

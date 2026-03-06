@@ -565,6 +565,15 @@ function writeMessage(payload, transport = 'framed') {
   process.stdout.write(`Content-Length: ${Buffer.byteLength(json, 'utf8')}\r\n\r\n${json}`);
 }
 
+function parseWithTransport(raw, transport) {
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    err.transport = transport;
+    throw err;
+  }
+}
+
 let buffer = Buffer.alloc(0);
 let stdioStarted = false;
 
@@ -597,7 +606,7 @@ function tryReadMessage() {
     const body = buffer.slice(headerEnd + separatorLength, totalSize).toString('utf8');
     buffer = buffer.slice(totalSize);
 
-    return { message: JSON.parse(body), transport: 'framed' };
+    return { message: parseWithTransport(body, 'framed'), transport: 'framed' };
   }
 
   // Codex MCP client currently sends newline-delimited JSON during startup.
@@ -610,7 +619,7 @@ function tryReadMessage() {
   buffer = buffer.slice(newlineIndex + 1);
   if (!line) return null;
 
-  return { message: JSON.parse(line), transport: 'ndjson' };
+  return { message: parseWithTransport(line, 'ndjson'), transport: 'ndjson' };
 }
 
 async function onData(chunk) {
@@ -648,7 +657,8 @@ function startStdioServer() {
   stdioStarted = true;
   process.stdin.on('data', (chunk) => {
     onData(chunk).catch((err) => {
-      writeMessage({ jsonrpc: '2.0', id: null, error: { code: -32603, message: err.message } });
+      const transport = err && err.transport === 'ndjson' ? 'ndjson' : 'framed';
+      writeMessage({ jsonrpc: '2.0', id: null, error: { code: -32603, message: err.message } }, transport);
     });
   });
 }
