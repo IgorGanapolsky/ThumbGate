@@ -210,19 +210,39 @@ function capture() {
     return;
   }
 
-  // Normalize signal with fuzzy matching (uses the full engine's normalize)
-  const captureScript = require(path.join(PKG_ROOT, '.claude', 'scripts', 'feedback', 'capture-feedback.js'));
-  // The capture-feedback.js runs as main when required directly, so we call via subprocess
-  const scriptArgs = process.argv.slice(3).join(' ');
-  try {
-    const output = execSync(
-      `node "${path.join(PKG_ROOT, '.claude', 'scripts', 'feedback', 'capture-feedback.js')}" ${scriptArgs}`,
-      { encoding: 'utf8', stdio: 'pipe', cwd: CWD }
-    );
-    process.stdout.write(output);
-  } catch (err) {
-    process.stderr.write(err.stderr || err.stdout || err.message);
-    process.exit(err.status || 1);
+  const signal = (args.feedback || '').toLowerCase();
+  const normalized = ['up', 'thumbsup', 'thumbs_up', 'positive'].some(v => signal.includes(v)) ? 'up'
+    : ['down', 'thumbsdown', 'thumbs_down', 'negative'].some(v => signal.includes(v)) ? 'down'
+    : signal;
+
+  if (normalized !== 'up' && normalized !== 'down') {
+    console.error('Missing or unrecognized --feedback=up|down');
+    process.exit(1);
+  }
+
+  const result = captureFeedback({
+    signal: normalized,
+    context: args.context || '',
+    whatWentWrong: args['what-went-wrong'],
+    whatToChange: args['what-to-change'],
+    whatWorked: args['what-worked'],
+    tags: args.tags,
+  });
+
+  if (result.accepted) {
+    const ev = result.feedbackEvent;
+    const mem = result.memoryRecord;
+    console.log(`\nRLHF Feedback Captured [${normalized.toUpperCase()}]`);
+    console.log('─'.repeat(50));
+    console.log(`  Feedback ID : ${ev.id}`);
+    console.log(`  Signal      : ${ev.signal} (${ev.actionType})`);
+    console.log(`  Memory ID   : ${mem.id}`);
+    console.log(`  Storage     : JSONL log + LanceDB vector index\n`);
+  } else {
+    console.log(`\nRLHF Feedback Recorded [${normalized.toUpperCase()}] — not promoted`);
+    console.log('─'.repeat(50));
+    console.log(`  Reason      : ${result.reason}\n`);
+    process.exit(2);
   }
 }
 
