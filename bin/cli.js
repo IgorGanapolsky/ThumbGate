@@ -14,6 +14,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 const COMMAND = process.argv[2];
@@ -124,6 +125,7 @@ function setupCursor() {
 
 function init() {
   const rlhfDir = path.join(CWD, '.rlhf');
+  const configPath = path.join(rlhfDir, 'config.json');
 
   if (!fs.existsSync(rlhfDir)) {
     fs.mkdirSync(rlhfDir, { recursive: true });
@@ -132,15 +134,28 @@ function init() {
     console.log('.rlhf/ already exists — updating config');
   }
 
+  let existingInstallId = null;
+  if (fs.existsSync(configPath)) {
+    try {
+      const existingConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (existingConfig && typeof existingConfig.installId === 'string' && existingConfig.installId.trim()) {
+        existingInstallId = existingConfig.installId.trim();
+      }
+    } catch (_) {
+      // Ignore invalid existing config and write a fresh one below.
+    }
+  }
+
   const config = {
     version: pkgVersion(),
     apiUrl: process.env.RLHF_API_URL || 'http://localhost:3000',
     logPath: '.rlhf/feedback-log.jsonl',
     memoryPath: '.rlhf/memory-log.jsonl',
+    installId: existingInstallId || crypto.randomUUID(),
     createdAt: new Date().toISOString(),
   };
 
-  fs.writeFileSync(path.join(rlhfDir, 'config.json'), JSON.stringify(config, null, 2) + '\n');
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
   console.log('Wrote .rlhf/config.json');
 
   // Always create .mcp.json (project-level MCP config used by Claude, Codex, Cursor)
@@ -189,6 +204,22 @@ function init() {
   console.log('');
   console.log(`rlhf-feedback-loop v${pkgVersion()} initialized.`);
   console.log('Run: npx rlhf-feedback-loop help');
+
+  try {
+    const { appendFunnelEvent } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
+    appendFunnelEvent({
+      stage: 'acquisition',
+      event: 'cli_init_completed',
+      evidence: 'cli_init_completed',
+      installId: config.installId,
+      metadata: {
+        cwd: CWD,
+        version: config.version,
+      },
+    });
+  } catch (_) {
+    // Avoid failing init if telemetry write cannot be performed.
+  }
 }
 
 function capture() {

@@ -17,7 +17,7 @@
     "description": "Operational layer for Reinforcement Learning from Human Feedback (RLHF) in AI agentic workflows. Captures feedback, generates prevention rules, and exports DPO-ready training data.",
     "offers": {
       "@type": "Offer",
-      "price": "0",
+      "price": "49",
       "priceCurrency": "USD"
     },
     "featureList": [
@@ -395,7 +395,7 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-badge">
-    <span>&#x1f4e6;</span> v3.0 — Now with hosted API + billing
+    <span>&#x1f4e6;</span> v0.6.6 — Hosted API + billing
   </div>
   <h1>RLHF for AI Coding Agents —<br /><em>Stop Repeating Mistakes</em></h1>
   <p>
@@ -410,6 +410,12 @@
       &#x2605; Star on GitHub
     </a>
   </div>
+  <p style="margin-top:14px;font-size:.85rem;color:var(--gray-600);">
+    Verified proof:
+    <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank">Verification Evidence</a>
+    ·
+    <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/proof/automation/report.json" target="_blank">Automation Report (JSON)</a>
+  </p>
 
   <div style="margin-top:40px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
     <span class="platform-pill">ChatGPT</span>
@@ -502,7 +508,7 @@
 <section class="demo-section" id="demo">
   <div class="demo-inner">
     <div class="section-label">Quick start</div>
-    <h2 class="section-title">From zero to feedback in one command</h2>
+    <h2 class="section-title">From MCP add to first feedback in minutes</h2>
 
     <div class="terminal">
       <div class="terminal-bar">
@@ -512,28 +518,23 @@
         <span class="terminal-title">bash — your machine</span>
       </div>
       <div class="terminal-body">
-        <div><span class="comment"># 1. Scaffold local config (no account needed)</span></div>
-        <div><span class="prompt">$ </span><span class="cmd">npx rlhf-feedback-loop init</span></div>
-        <div><span class="out">Created .rlhf/</span></div>
-        <div><span class="out">Created .rlhf/config.json</span></div>
-        <div><span class="out">Created .rlhf/capture-feedback.js</span></div>
+        <div><span class="comment"># 1. Add MCP server (stable command)</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">claude mcp add rlhf -- npx -y rlhf-feedback-loop serve</span></div>
+        <div><span class="out">Added MCP server: rlhf</span></div>
         <div>&nbsp;</div>
-        <div><span class="comment"># 2. Capture feedback from your agent</span></div>
-        <div><span class="prompt">$ </span><span class="cmd">node .rlhf/capture-feedback.js \</span></div>
-        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">--feedback=up \</span></div>
-        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">--context="refactored auth middleware" \</span></div>
-        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">--what-worked="extracted token validation into pure fn"</span></div>
-        <div><span class="out">Feedback captured — id: fb_1772663401_up</span></div>
+        <div><span class="comment"># 2. Optional: auto-detect clients and install all</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">npx add-mcp rlhf-feedback-loop</span></div>
+        <div><span class="out">Installed across detected MCP clients</span></div>
         <div>&nbsp;</div>
         <div><span class="comment"># 3. Or hit the Cloud API with your key</span></div>
-        <div><span class="prompt">$ </span><span class="cmd">curl -X POST https://rlhf-api.up.railway.app/v1/feedback \</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">curl -X POST https://rlhf-feedback-loop-710216278770.us-central1.run.app/v1/feedback/capture \</span></div>
         <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">-H "Authorization: Bearer rlhf_YOUR_KEY" \</span></div>
         <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">-H "Content-Type: application/json" \</span></div>
-        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">-d '{"feedback":"up","context":"auth refactor","tags":["auth"]}'</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">-d '{"signal":"up","context":"auth refactor","tags":["auth"]}'</span></div>
         <div><span class="out">{</span></div>
         <div>&nbsp;&nbsp;<span class="key">"id"</span><span class="out">: </span><span class="val">"fb_1772663401_up"</span><span class="out">,</span></div>
         <div>&nbsp;&nbsp;<span class="key">"status"</span><span class="out">: </span><span class="val">"captured"</span><span class="out">,</span></div>
-        <div>&nbsp;&nbsp;<span class="key">"version"</span><span class="out">: </span><span class="val">"0.5.0"</span></div>
+        <div>&nbsp;&nbsp;<span class="key">"version"</span><span class="out">: </span><span class="val">"0.6.6"</span></div>
         <div><span class="out">}</span></div>
       </div>
     </div>
@@ -573,7 +574,7 @@
         <div class="plan-name">Cloud Pro</div>
         <div class="price-amount">$49</div>
         <div class="price-period">/month</div>
-        <div class="price-desc">Hosted API on Railway with HTTPS, metering, and managed key rotation.</div>
+        <div class="price-desc">Hosted API with HTTPS, metering, and managed key rotation.</div>
         <ul class="feature-list">
           <li>Everything in Open Source</li>
           <li>Hosted HTTPS API endpoint</li>
@@ -586,6 +587,9 @@
         <a href="https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02" class="btn-checkout" id="checkout-btn">
           Get Started — $49/mo
         </a>
+        <p style="margin-top:12px;font-size:.8rem;color:var(--gray-600);">
+          <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank">Verification evidence</a>
+        </p>
       </div>
     </div>
   </div>

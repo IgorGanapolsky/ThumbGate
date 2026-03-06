@@ -51,10 +51,10 @@ Works in local mode (zero config, no API key) or connected to the Cloud Pro host
 ### Option A: Local mode (OSS, no API key needed)
 
 ```bash
-npx rlhf-feedback-loop init
+claude mcp add rlhf -- npx -y rlhf-feedback-loop serve
 ```
 
-Then add to your Claude Code MCP config (`~/.claude/claude_desktop_config.json` or `.claude/settings.json`):
+Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/settings.json`):
 
 ```json
 {
@@ -63,7 +63,7 @@ Then add to your Claude Code MCP config (`~/.claude/claude_desktop_config.json` 
       "command": "node",
       "args": ["/path/to/rlhf-feedback-loop/adapters/mcp/server-stdio.js"],
       "env": {
-        "RLHF_BASE_URL": "http://localhost:3000"
+        "RLHF_BASE_URL": "http://localhost:8787"
       }
     }
   }
@@ -79,7 +79,7 @@ Then add to your Claude Code MCP config (`~/.claude/claude_desktop_config.json` 
       "command": "node",
       "args": ["/path/to/rlhf-feedback-loop/adapters/mcp/server-stdio.js"],
       "env": {
-        "RLHF_BASE_URL": "https://rlhf-api.up.railway.app",
+        "RLHF_BASE_URL": "https://rlhf-feedback-loop-710216278770.us-central1.run.app",
         "RLHF_API_KEY": "rlhf_YOUR_KEY_HERE"
       }
     }
@@ -87,7 +87,8 @@ Then add to your Claude Code MCP config (`~/.claude/claude_desktop_config.json` 
 }
 ```
 
-Get your API key at: https://rlhf-api.up.railway.app (Stripe Checkout, $49/mo Cloud Pro)
+Get your API key at: https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02 ($49/mo Cloud Pro)
+Verification evidence: https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ---
 
@@ -123,7 +124,7 @@ Get your API key at: https://rlhf-api.up.railway.app (Stripe Checkout, $49/mo Cl
 ## Transport
 
 - **stdio** (primary): `adapters/mcp/server-stdio.js` — works with Claude Code desktop and CLI
-- **HTTP** (secondary): `src/api/server.js` — REST API at `/v1/feedback`, compatible with HTTP transport
+- **HTTP** (secondary): `src/api/server.js` — REST API (`POST /v1/feedback/capture`, `GET /v1/feedback/summary`, `POST /v1/dpo/export`)
 
 ---
 
@@ -169,7 +170,7 @@ MIT
 
 ## Version
 
-0.5.0
+0.6.6
 
 ---
 

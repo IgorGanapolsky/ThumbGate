@@ -107,6 +107,13 @@
     "developer-tools"
   ],
   "license": "MIT",
+  "funding": {
+    "type": "individual",
+    "url": "https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
     "@lancedb/lancedb": "^0.26.2",

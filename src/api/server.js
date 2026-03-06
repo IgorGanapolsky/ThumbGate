@@ -39,7 +39,7 @@ const {
   verifyWebhookSignature,
   verifyGithubWebhookSignature,
   handleGithubWebhook,
-  loadKeyStore,
+  getFunnelAnalytics,
 } = require('../../scripts/billing');
 
 function getSafeDataDir() {
@@ -148,6 +148,15 @@ function isAuthorized(req, expected) {
 function extractBearerToken(req) {
   const auth = req.headers.authorization || '';
   return auth.startsWith('Bearer ') ? auth.slice(7) : '';
+}
+
+/**
+ * Admin-only guard for static RLHF_API_KEY.
+ * Billing keys are intentionally excluded from admin actions.
+ */
+function isStaticAdminAuthorized(req, expected) {
+  if (!expected) return true;
+  return extractBearerToken(req) === expected;
 }
 
 function extractTags(input) {
@@ -301,6 +310,28 @@ function createApiServer() {
         }
 
         const result = handleGithubWebhook(event);
+        sendJson(res, 200, result);
+      } catch (err) {
+        if (err.statusCode) {
+          sendJson(res, err.statusCode, { error: err.message });
+        } else {
+          sendJson(res, 500, { error: err.message || 'Internal Server Error' });
+        }
+      }
+      return;
+    }
+
+    // Public checkout session creation for top-of-funnel acquisition.
+    if (req.method === 'POST' && pathname === '/v1/billing/checkout') {
+      try {
+        const body = await parseJsonBody(req);
+        const result = await createCheckoutSession({
+          successUrl: body.successUrl,
+          cancelUrl: body.cancelUrl,
+          customerEmail: body.customerEmail,
+          installId: body.installId,
+          metadata: body.metadata,
+        });
         sendJson(res, 200, result);
       } catch (err) {
         if (err.statusCode) {
@@ -487,18 +518,6 @@ function createApiServer() {
       // Billing routes
       // ----------------------------------------------------------------
 
-      // POST /v1/billing/checkout — create Stripe Checkout session
-      if (req.method === 'POST' && pathname === '/v1/billing/checkout') {
-        const body = await parseJsonBody(req);
-        const result = await createCheckoutSession({
-          successUrl: body.successUrl,
-          cancelUrl: body.cancelUrl,
-          customerEmail: body.customerEmail,
-        });
-        sendJson(res, 200, result);
-        return;
-      }
-
       // GET /v1/billing/usage — usage for the authenticated key
       if (req.method === 'GET' && pathname === '/v1/billing/usage') {
         const token = extractBearerToken(req);
@@ -517,12 +536,27 @@ function createApiServer() {
 
       // POST /v1/billing/provision — manually provision key (admin)
       if (req.method === 'POST' && pathname === '/v1/billing/provision') {
+        if (!isStaticAdminAuthorized(req, expectedApiKey)) {
+          sendJson(res, 403, { error: 'Forbidden: admin key required' });
+          return;
+        }
+
         const body = await parseJsonBody(req);
         if (!body.customerId) {
           throw createHttpError(400, 'customerId is required');
         }
-        const result = provisionApiKey(body.customerId);
+        const result = provisionApiKey(body.customerId, {
+          installId: body.installId,
+          source: 'admin_provision',
+        });
         sendJson(res, 200, result);
+        return;
+      }
+
+      // GET /v1/analytics/funnel — aggregate acquisition/activation/paid funnel metrics
+      if (req.method === 'GET' && pathname === '/v1/analytics/funnel') {
+        const summary = getFunnelAnalytics();
+        sendJson(res, 200, summary);
         return;
       }
 

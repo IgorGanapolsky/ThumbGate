@@ -244,3 +244,50 @@ Observed result:
 - MCP startup reports `ready: rlhf, sentry, github, context7, playwright`
 - No `rlhf` timeout and no MCP handshake error
 - Command completed with output `OK`
+
+## 2026-03-06 Revenue Funnel + Billing Hardening Verification
+
+Scope:
+
+- Public top-of-funnel checkout endpoint (`POST /v1/billing/checkout`) with install correlation metadata.
+- Append-only funnel telemetry ledger with acquisition/activation/paid stages.
+- Admin boundary hardening: billing API keys cannot call admin provision endpoint.
+- Funnel analytics endpoint (`GET /v1/analytics/funnel`) for conversion evidence.
+- CLI install correlation (`installId`) persisted and linked to acquisition events.
+
+Commands run:
+
+```bash
+npm run feedback:summary
+npm run feedback:rules
+npm run self-heal:check
+npm test
+npm run prove:adapters
+npm run prove:automation
+```
+
+Observed results:
+
+- `self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `npm test`: all suites pass; key monetization checks verified in:
+  - `tests/api-server.test.js`
+  - `tests/billing.test.js`
+  - `tests/cli.test.js`
+  - `tests/openapi-parity.test.js`
+- `npm run prove:adapters`: `{ "passed": 21, "failed": 0 }`
+- `npm run prove:automation`: `{ "passed": 14, "failed": 0 }`
+
+Behavioral proof points:
+
+- Public checkout succeeds without bearer auth and emits acquisition event.
+- First authenticated billing-key usage emits exactly one activation event.
+- Stripe and GitHub billing flows emit paid-stage funnel events.
+- Static admin token is required for `POST /v1/billing/provision`; billing keys receive `403`.
+- OpenAPI canonical + ChatGPT adapter include billing and funnel analytics routes with parity checks.
+
+Artifacts updated:
+
+- `proof/compatibility/report.json`
+- `proof/compatibility/report.md`
+- `proof/automation/report.json`
+- `proof/automation/report.md`

@@ -3,7 +3,7 @@
  * billing.js — Stripe billing integration using raw fetch (no stripe npm package).
  *
  * Functions:
- *   createCheckoutSession()  — Creates Stripe Checkout session for $49/mo Cloud Pro
+ *   createCheckoutSession()  — Creates Stripe Checkout session for Cloud Pro
  *   provisionApiKey(customerId) — Generates unique API key, stores in api-keys.json
  *   validateApiKey(key) — Checks key exists and is active
  *   recordUsage(key) — Increments usage counter for the key
@@ -27,12 +27,156 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const GITHUB_MARKETPLACE_WEBHOOK_SECRET = process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '';
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || 'price_cloud_pro_49_monthly';
+
 const API_KEYS_PATH = process.env._TEST_API_KEYS_PATH || path.resolve(
   __dirname,
   '../.claude/memory/feedback/api-keys.json'
 );
 
+const FUNNEL_LEDGER_PATH = process.env._TEST_FUNNEL_LEDGER_PATH || process.env.RLHF_FUNNEL_LEDGER_PATH || path.resolve(
+  __dirname,
+  '../.claude/memory/feedback/funnel-events.jsonl'
+);
+
 const LOCAL_MODE = !STRIPE_SECRET_KEY;
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+function ensureParentDir(filePath) {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+function sanitizeMetadata(metadata) {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return {};
+  }
+
+  const normalized = {};
+  for (const [k, v] of Object.entries(metadata)) {
+    if (v == null) continue;
+    normalized[String(k)] = String(v);
+  }
+  return normalized;
+}
+
+function readInstallIdFromConfig({ cwd = process.cwd(), configPath } = {}) {
+  const resolvedPath = configPath || path.resolve(cwd, '.rlhf/config.json');
+  try {
+    if (!fs.existsSync(resolvedPath)) {
+      return null;
+    }
+    const parsed = JSON.parse(fs.readFileSync(resolvedPath, 'utf-8'));
+    if (!parsed || typeof parsed.installId !== 'string') {
+      return null;
+    }
+    const installId = parsed.installId.trim();
+    return installId || null;
+  } catch {
+    return null;
+  }
+}
+
+function appendFunnelEvent({ stage, event, installId = null, evidence, metadata = {} } = {}) {
+  if (!stage || !event) {
+    return { written: false, reason: 'missing_stage_or_event' };
+  }
+
+  const payload = {
+    timestamp: new Date().toISOString(),
+    stage,
+    event,
+    evidence: evidence || event,
+    installId: installId || null,
+    metadata: sanitizeMetadata(metadata),
+  };
+
+  try {
+    ensureParentDir(FUNNEL_LEDGER_PATH);
+    fs.appendFileSync(FUNNEL_LEDGER_PATH, `${JSON.stringify(payload)}\n`, 'utf-8');
+    return { written: true, payload };
+  } catch (err) {
+    return {
+      written: false,
+      reason: 'write_failed',
+      error: err && err.message ? err.message : 'unknown_error',
+    };
+  }
+}
+
+function loadFunnelLedger() {
+  try {
+    if (!fs.existsSync(FUNNEL_LEDGER_PATH)) {
+      return [];
+    }
+
+    const lines = fs
+      .readFileSync(FUNNEL_LEDGER_PATH, 'utf-8')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const events = [];
+    for (const line of lines) {
+      try {
+        const parsed = JSON.parse(line);
+        if (parsed && typeof parsed === 'object') {
+          events.push(parsed);
+        }
+      } catch {
+        // Ignore malformed lines to preserve append-only behavior.
+      }
+    }
+
+    return events;
+  } catch {
+    return [];
+  }
+}
+
+function safeRate(numerator, denominator) {
+  if (!denominator) {
+    return 0;
+  }
+  return Number((numerator / denominator).toFixed(4));
+}
+
+function getFunnelAnalytics() {
+  const events = loadFunnelLedger();
+  const stageCounts = {
+    acquisition: 0,
+    activation: 0,
+    paid: 0,
+  };
+  const eventCounts = {};
+
+  for (const entry of events) {
+    if (entry && typeof entry.stage === 'string') {
+      if (Object.prototype.hasOwnProperty.call(stageCounts, entry.stage)) {
+        stageCounts[entry.stage] += 1;
+      }
+
+      const eventName = typeof entry.event === 'string' ? entry.event : 'unknown';
+      const key = `${entry.stage}:${eventName}`;
+      eventCounts[key] = (eventCounts[key] || 0) + 1;
+    }
+  }
+
+  return {
+    totalEvents: events.length,
+    stageCounts,
+    eventCounts,
+    conversionRates: {
+      acquisitionToActivation: safeRate(stageCounts.activation, stageCounts.acquisition),
+      activationToPaid: safeRate(stageCounts.paid, stageCounts.activation),
+      acquisitionToPaid: safeRate(stageCounts.paid, stageCounts.acquisition),
+    },
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Key store helpers
@@ -62,10 +206,7 @@ function loadKeyStore() {
  * Persist the key store to disk. Creates parent directory if needed.
  */
 function saveKeyStore(store) {
-  const dir = path.dirname(API_KEYS_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+  ensureParentDir(API_KEYS_PATH);
   fs.writeFileSync(API_KEYS_PATH, JSON.stringify(store, null, 2), 'utf-8');
 }
 
@@ -189,21 +330,44 @@ function flattenParams(obj, prefix = '') {
 // ---------------------------------------------------------------------------
 
 /**
- * Create a Stripe Checkout Session for $49/mo Cloud Pro.
+ * Create a Stripe Checkout Session for Cloud Pro.
  *
  * @param {object} opts
  * @param {string} opts.successUrl - Redirect URL on payment success
  * @param {string} opts.cancelUrl  - Redirect URL on cancel
  * @param {string} [opts.customerEmail] - Pre-fill customer email
+ * @param {string} [opts.installId] - Correlation install id
+ * @param {object} [opts.metadata] - Additional checkout metadata
  * @returns {Promise<{sessionId: string, url: string}>} in live mode
  *          or {sessionId: 'local_<uuid>', url: null} in local mode
  */
-async function createCheckoutSession({ successUrl, cancelUrl, customerEmail } = {}) {
+async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, metadata } = {}) {
+  const resolvedInstallId = installId || readInstallIdFromConfig() || null;
+  const checkoutMetadata = sanitizeMetadata({
+    ...(metadata || {}),
+    ...(resolvedInstallId ? { installId: resolvedInstallId } : {}),
+  });
+
   if (LOCAL_MODE) {
+    const localSessionId = `local_${crypto.randomUUID()}`;
+    appendFunnelEvent({
+      stage: 'acquisition',
+      event: 'checkout_session_created',
+      evidence: 'checkout_session_created',
+      installId: resolvedInstallId,
+      metadata: {
+        provider: 'stripe',
+        mode: 'local',
+        sessionId: localSessionId,
+        customerEmail: customerEmail || '',
+      },
+    });
+
     return {
-      sessionId: `local_${crypto.randomUUID()}`,
+      sessionId: localSessionId,
       url: null,
       localMode: true,
+      metadata: checkoutMetadata,
     };
   }
 
@@ -220,24 +384,49 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail } = 
     params.customer_email = customerEmail;
   }
 
+  if (Object.keys(checkoutMetadata).length > 0) {
+    params.metadata = checkoutMetadata;
+  }
+
   const session = await stripeRequest('POST', '/checkout/sessions', params);
+
+  appendFunnelEvent({
+    stage: 'acquisition',
+    event: 'checkout_session_created',
+    evidence: 'checkout_session_created',
+    installId: resolvedInstallId,
+    metadata: {
+      provider: 'stripe',
+      mode: 'live',
+      sessionId: session.id,
+      customerEmail: customerEmail || '',
+    },
+  });
+
   return {
     sessionId: session.id,
     url: session.url,
+    metadata: checkoutMetadata,
   };
 }
 
 /**
- * Provision a unique API key for a Stripe customer.
+ * Provision a unique API key for a customer.
  * Stores { customerId, active: true, usageCount: 0, createdAt } in api-keys.json.
  *
  * @param {string} customerId - Stripe customer ID (e.g. cus_xxx)
+ * @param {object} [opts]
+ * @param {string} [opts.installId]
+ * @param {string} [opts.source]
  * @returns {{ key: string, customerId: string, createdAt: string }}
  */
-function provisionApiKey(customerId) {
+function provisionApiKey(customerId, opts = {}) {
   if (!customerId || typeof customerId !== 'string') {
     throw new Error('customerId is required');
   }
+
+  const installId = opts.installId || null;
+  const source = opts.source || 'provision';
 
   const store = loadKeyStore();
 
@@ -245,11 +434,18 @@ function provisionApiKey(customerId) {
   const existing = Object.entries(store.keys).find(
     ([, meta]) => meta.customerId === customerId && meta.active
   );
+
   if (existing) {
+    if (installId && !existing[1].installId) {
+      existing[1].installId = installId;
+      saveKeyStore(store);
+    }
+
     return {
       key: existing[0],
       customerId,
       createdAt: existing[1].createdAt,
+      installId: existing[1].installId || null,
       reused: true,
     };
   }
@@ -263,11 +459,13 @@ function provisionApiKey(customerId) {
     active: true,
     usageCount: 0,
     createdAt,
+    installId,
+    source,
   };
 
   saveKeyStore(store);
 
-  return { key, customerId, createdAt };
+  return { key, customerId, createdAt, installId };
 }
 
 /**
@@ -296,12 +494,14 @@ function validateApiKey(key) {
     valid: true,
     customerId: meta.customerId,
     usageCount: meta.usageCount,
+    installId: meta.installId || null,
   };
 }
 
 /**
  * Record one usage event for an API key.
  * Increments usageCount in the key store.
+ * Emits an activation event at first usage transition 0 -> 1.
  *
  * @param {string} key - API key to record usage for
  * @returns {{ recorded: boolean, usageCount?: number }}
@@ -318,8 +518,22 @@ function recordUsage(key) {
     return { recorded: false };
   }
 
-  meta.usageCount = (meta.usageCount || 0) + 1;
+  const previousUsage = Number(meta.usageCount || 0);
+  meta.usageCount = previousUsage + 1;
   saveKeyStore(store);
+
+  if (previousUsage === 0) {
+    appendFunnelEvent({
+      stage: 'activation',
+      event: 'api_key_first_usage',
+      evidence: 'api_key_first_usage',
+      installId: meta.installId || null,
+      metadata: {
+        customerId: meta.customerId,
+        usageCount: '1',
+      },
+    });
+  }
 
   return { recorded: true, usageCount: meta.usageCount };
 }
@@ -377,7 +591,28 @@ function handleWebhook(event) {
       if (!customerId) {
         return { handled: false, reason: 'missing_customer_id' };
       }
-      const result = provisionApiKey(customerId);
+
+      const installId = session.metadata && typeof session.metadata.installId === 'string'
+        ? session.metadata.installId
+        : null;
+
+      const result = provisionApiKey(customerId, {
+        installId,
+        source: 'stripe_checkout_session_completed',
+      });
+
+      appendFunnelEvent({
+        stage: 'paid',
+        event: 'stripe_checkout_session_completed',
+        evidence: 'stripe_checkout_session_completed',
+        installId,
+        metadata: {
+          provider: 'stripe',
+          customerId,
+          checkoutSessionId: session.id || '',
+        },
+      });
+
       return {
         handled: true,
         action: 'provisioned_api_key',
@@ -429,7 +664,9 @@ function verifyWebhookSignature(rawBody, signature) {
   const parts = {};
   for (const part of signature.split(',')) {
     const [k, v] = part.split('=');
-    if (k && v) parts[k] = v;
+    if (k && v) {
+      parts[k] = v;
+    }
   }
 
   if (!parts.t || !parts.v1) {
@@ -449,108 +686,120 @@ function verifyWebhookSignature(rawBody, signature) {
     .update(payload, 'utf-8')
     .digest('hex');
 
-  // Constant-time comparison
   try {
-  return crypto.timingSafeEqual(
-    Buffer.from(expected, 'hex'),
-    Buffer.from(parts.v1, 'hex')
-  );
+    return crypto.timingSafeEqual(
+      Buffer.from(expected, 'hex'),
+      Buffer.from(parts.v1, 'hex')
+    );
   } catch {
-  return false;
+    return false;
   }
-  }
+}
 
-  /**
-  * Verify a GitHub Marketplace webhook signature.
-  * Returns true if valid, false if GITHUB_MARKETPLACE_WEBHOOK_SECRET is not set (local mode).
-  *
-  * @param {string|Buffer} rawBody - Raw request body bytes
-  * @param {string} signature - Value of x-hub-signature-256 header
-  * @returns {boolean}
-  */
-  function verifyGithubWebhookSignature(rawBody, signature) {
+/**
+ * Verify a GitHub Marketplace webhook signature.
+ * Returns true if valid, false if GITHUB_MARKETPLACE_WEBHOOK_SECRET is not set (local mode).
+ *
+ * @param {string|Buffer} rawBody - Raw request body bytes
+ * @param {string} signature - Value of x-hub-signature-256 header
+ * @returns {boolean}
+ */
+function verifyGithubWebhookSignature(rawBody, signature) {
   if (!GITHUB_MARKETPLACE_WEBHOOK_SECRET) {
-  // Local mode — skip signature verification
-  return true;
+    // Local mode — skip signature verification
+    return true;
   }
 
   if (!signature || !rawBody) {
-  return false;
+    return false;
   }
 
   const hmac = crypto.createHmac('sha256', GITHUB_MARKETPLACE_WEBHOOK_SECRET);
-  const digest = Buffer.from('sha256=' + hmac.update(rawBody).digest('hex'), 'utf8');
+  const digest = Buffer.from(`sha256=${hmac.update(rawBody).digest('hex')}`, 'utf8');
   const checksum = Buffer.from(signature, 'utf8');
 
-  // Constant-time comparison
   return checksum.length === digest.length && crypto.timingSafeEqual(digest, checksum);
+}
+
+/**
+ * Handle a GitHub Marketplace webhook event.
+ *
+ * Supported actions:
+ *   purchased — provision API key for the new customer
+ *   changed — plan update (upgrade/downgrade)
+ *   cancelled — disable all keys for that customer
+ *
+ * @param {object} event - Parsed GitHub Marketplace event object
+ * @returns {{ handled: boolean, action?: string, result?: object }}
+ */
+function handleGithubWebhook(event) {
+  if (!event || typeof event !== 'object') {
+    return { handled: false, reason: 'missing_payload_data' };
   }
 
-  /**
-  * Handle a GitHub Marketplace webhook event.
-  *
-  * Supported actions:
-  *   purchased — provision API key for the new customer
-  *   changed — plan update (upgrade/downgrade)
-  *   cancelled — disable all keys for that customer
-  *
-  * @param {object} event - Parsed GitHub Marketplace event object
-  * @returns {{ handled: boolean, action?: string, result?: object }}
-  */
-  function handleGithubWebhook(event) {
-  const { action, marketplace_purchase } = event;
-  if (!action || !marketplace_purchase) {
-  return { handled: false, reason: 'missing_payload_data' };
+  const { action, marketplace_purchase: marketplacePurchase } = event;
+  if (!action || !marketplacePurchase) {
+    return { handled: false, reason: 'missing_payload_data' };
   }
 
-  const account = marketplace_purchase.account;
-  if (!account || !account.id) {
-  return { handled: false, reason: 'missing_account_id' };
+  const account = marketplacePurchase.account;
+  if (!account || !account.id || !account.type) {
+    return { handled: false, reason: 'missing_account_id' };
   }
 
   // Map GitHub account to customerId: github_<user|organization>_<id>
-  const customerId = `github_${account.type.toLowerCase()}_${account.id}`;
+  const customerId = `github_${String(account.type).toLowerCase()}_${account.id}`;
 
   switch (action) {
-  case 'purchased': {
-    const result = provisionApiKey(customerId);
-    return {
-      handled: true,
-      action: 'provisioned_api_key',
-      result,
-    };
-  }
+    case 'purchased': {
+      const result = provisionApiKey(customerId, { source: 'github_marketplace_purchased' });
+      appendFunnelEvent({
+        stage: 'paid',
+        event: 'github_marketplace_purchased',
+        evidence: 'github_marketplace_purchased',
+        metadata: {
+          provider: 'github',
+          customerId,
+          accountId: String(account.id),
+          accountType: String(account.type),
+        },
+      });
+      return {
+        handled: true,
+        action: 'provisioned_api_key',
+        result,
+      };
+    }
 
-  case 'cancelled': {
-    const result = disableCustomerKeys(customerId);
-    return {
-      handled: true,
-      action: 'disabled_customer_keys',
-      result,
-    };
-  }
+    case 'cancelled': {
+      const result = disableCustomerKeys(customerId);
+      return {
+        handled: true,
+        action: 'disabled_customer_keys',
+        result,
+      };
+    }
 
-  case 'changed': {
-    // In this simple model, we just ensure a key exists and is active.
-    // Upgrades/downgrades don't change basic API access unless we had tiered features.
-    const result = provisionApiKey(customerId);
-    return {
-      handled: true,
-      action: 'plan_changed',
-      result,
-    };
-  }
+    case 'changed': {
+      // Keep API access active on plan changes.
+      const result = provisionApiKey(customerId, { source: 'github_marketplace_changed' });
+      return {
+        handled: true,
+        action: 'plan_changed',
+        result,
+      };
+    }
 
-  default:
-    return { handled: false, reason: `unhandled_action:${action}` };
+    default:
+      return { handled: false, reason: `unhandled_action:${action}` };
   }
-  }
+}
 
-  // ---------------------------------------------------------------------------
-  // Module exports
-  // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Module exports
+// ---------------------------------------------------------------------------
 
-  module.exports = {
+module.exports = {
   createCheckoutSession,
   provisionApiKey,
   validateApiKey,
@@ -561,8 +810,12 @@ function verifyWebhookSignature(rawBody, signature) {
   verifyGithubWebhookSignature,
   handleGithubWebhook,
   loadKeyStore,
+  appendFunnelEvent,
+  loadFunnelLedger,
+  getFunnelAnalytics,
+  readInstallIdFromConfig,
   // Expose for testing
   _API_KEYS_PATH: API_KEYS_PATH,
+  _FUNNEL_LEDGER_PATH: FUNNEL_LEDGER_PATH,
   _LOCAL_MODE: () => LOCAL_MODE,
-  };
-
+};
