@@ -249,9 +249,73 @@ function parseOptionalObject(input, name) {
   throw new Error(`${name} must be an object`);
 }
 
+function detectFeedbackSignal(text) {
+  const lower = String(text || '').toLowerCase();
+  const UP = /\b(thumbs?\s*up|that worked|looks good|nice work|perfect|good job)\b/;
+  const DOWN = /\b(thumbs?\s*down|that failed|that was wrong|fix this)\b/;
+  if (UP.test(lower)) return 'up';
+  if (DOWN.test(lower)) return 'down';
+  return null;
+}
+
+function formatStats() {
+  const logPath = path.join(SAFE_DATA_DIR, 'feedback-log.jsonl');
+  const memPath = path.join(SAFE_DATA_DIR, 'memory-log.jsonl');
+  if (!fs.existsSync(logPath)) return 'No feedback captured yet.';
+  const lines = fs.readFileSync(logPath, 'utf8').trim().split('\n').filter(Boolean);
+  const entries = lines.map(l => { try { return JSON.parse(l); } catch (_) { return null; } }).filter(Boolean);
+  const pos = entries.filter(e => e.signal === 'positive').length;
+  const neg = entries.filter(e => e.signal === 'negative').length;
+  const memCount = fs.existsSync(memPath) ? fs.readFileSync(memPath, 'utf8').trim().split('\n').filter(Boolean).length : 0;
+  return [
+    '## Storage Proof',
+    `  Feedback log : ${logPath} (${entries.length} entries)`,
+    `  Memory log   : ${memPath} (${memCount} entries)`,
+    `  LanceDB      : ${path.join(SAFE_DATA_DIR, 'lancedb/')}`,
+    '',
+    '## Cumulative Stats',
+    `  Total feedback  : ${entries.length}`,
+    `  Positive (up)   : ${pos}`,
+    `  Negative (down) : ${neg}`,
+    `  Promoted to mem : ${memCount}`,
+    `  Ratio           : ${pos > 0 ? (pos / (pos + neg) * 100).toFixed(0) + '% positive' : 'n/a'}`,
+  ].join('\n');
+}
+
 async function callTool(name, args = {}) {
   assertToolAllowed(name, getActiveMcpProfile());
 
+  // Platform-agnostic auto-capture: detect feedback signals in any tool call
+  const textToCheck = args.query || args.context || '';
+  const autoSignal = detectFeedbackSignal(textToCheck);
+  if (autoSignal && name !== 'capture_feedback') {
+    const autoResult = captureFeedback({
+      signal: autoSignal,
+      context: textToCheck,
+      tags: ['auto-capture', 'mcp'],
+    });
+    const ev = autoResult.feedbackEvent || {};
+    const autoReport = [
+      '',
+      `## Auto-Captured Feedback [${autoSignal.toUpperCase()}]`,
+      `  Feedback ID : ${ev.id || 'n/a'}`,
+      `  Signal      : ${ev.signal || autoSignal} (${ev.actionType || 'unknown'})`,
+      `  Context     : ${(ev.context || textToCheck).slice(0, 80)}`,
+      `  Timestamp   : ${ev.timestamp || new Date().toISOString()}`,
+      `  Promoted    : ${autoResult.accepted ? 'yes (Memory ID: ' + (autoResult.memoryRecord || {}).id + ')' : 'no — ' + (autoResult.reason || '')}`,
+      '',
+      formatStats(),
+    ].join('\n');
+    // Prepend the auto-capture report to whatever the tool was going to return
+    const toolResult = await callToolInner(name, args);
+    toolResult.content[0].text = autoReport + '\n\n---\n\n' + toolResult.content[0].text;
+    return toolResult;
+  }
+
+  return callToolInner(name, args);
+}
+
+async function callToolInner(name, args = {}) {
   if (name === 'recall') {
     const query = args.query || '';
     const limit = Number(args.limit || 5);

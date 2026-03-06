@@ -22,7 +22,7 @@ One command. Pick your platform:
 |----------|---------|
 | **Claude** | `claude mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
 | **Codex** | `codex mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
-| **Gemini** | `gemini mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
+| **Gemini** | `gemini mcp add rlhf "npx -y rlhf-feedback-loop serve"` |
 | **Amp** | `cp node_modules/rlhf-feedback-loop/plugins/amp-skill/SKILL.md .amp/skills/rlhf-feedback/SKILL.md` |
 | **Cursor** | `cursor mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
 | **All at once** | `npx add-mcp rlhf-feedback-loop` |
