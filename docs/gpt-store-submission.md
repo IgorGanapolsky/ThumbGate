@@ -112,7 +112,7 @@ paths:
               properties:
                 signal:
                   type: string
-                  enum: [up, down]
+                  enum: [up, down, positive, negative]
                   description: Thumbs up or thumbs down
                 context:
                   type: string
@@ -155,7 +155,7 @@ paths:
           description: Feedback summary
   /v1/feedback/rules:
     post:
-      operationId: getPreventionRules
+      operationId: generatePreventionRules
       summary: Get prevention rules generated from failure patterns
       security:
         - bearerAuth: []
@@ -173,8 +173,10 @@ paths:
           description: DPO pairs in JSON format
   /healthz:
     get:
-      operationId: healthCheck
+      operationId: healthz
       summary: Check API health
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: API is healthy
