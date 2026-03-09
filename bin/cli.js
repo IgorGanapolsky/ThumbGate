@@ -428,6 +428,7 @@ function help() {
   console.log('  pro                   Upgrade to Cloud Pro ($10/mo)');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|...)');
   console.log('  start-api             Start the RLHF HTTPS API server');
+  console.log('  install-hooks         Install Claude Code PreToolUse hook for contextual bandit injection');
   console.log('  help                  Show this help message');
   console.log('');
   console.log('Examples:');
@@ -475,6 +476,9 @@ switch (COMMAND) {
     break;
   case 'start-api':
     startApi();
+    break;
+  case 'install-hooks':
+    require('../hooks/claude-code/install').install();
     break;
   case 'help':
   case '--help':
