@@ -1,626 +1,719 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RLHF Feedback Loop — Autonomous Agent Reliability & LLM Preference Data</title>
-  <meta name="description" content="Production-grade RLHF operations for AI coding agents. Optimize agentic workflows, capture human preference data, and prevent repeated failures with feedback-driven development. Compatible with Claude, GPT-4, Gemini, and multi-agent systems." />
-  
-  <!-- JSON-LD Schema for AI Search & SEO -->
-  <script type="application/ld+json">
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>RLHF Feedback Loop Cloud Pro | Hosted Guardrails for AI Workflow Teams</title>
+  <meta
+    name='description'
+    content='Hosted guardrails, shared memory, and proof-ready workflow runs for teams shipping Claude Code, Codex, and Gemini automations. Start with Cloud Pro for $10/mo.'
+  />
+  <script type='application/ld+json'>
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "RLHF Feedback Loop",
+    "name": "RLHF Feedback Loop Cloud Pro",
     "operatingSystem": "Cross-platform",
     "applicationCategory": "DeveloperApplication",
-    "description": "Operational layer for Reinforcement Learning from Human Feedback (RLHF) in AI agentic workflows. Captures feedback, generates prevention rules, and exports DPO-ready training data.",
+    "description": "Hosted guardrails, shared memory, and verification evidence for AI workflow teams shipping Claude Code, Codex, and Gemini automations.",
     "offers": {
       "@type": "Offer",
-      "price": "49",
+      "price": "10",
       "priceCurrency": "USD"
     },
     "featureList": [
-      "Feedback-Driven Development (FDD) for AI",
-      "Automated Prevention Rule Generation",
-      "Thompson Sampling for Preference Scoring",
-      "DPO Training Pair Export",
-      "Multi-platform Plugin Support (Claude, GPT, Gemini, Codex, Amp)"
+      "Hosted API keys for workflow runs",
+      "Shared audit trail and funnel analytics",
+      "Feedback capture and prevention rules",
+      "Machine-readable verification evidence",
+      "Works with Claude Code, Codex, Gemini, and custom workflow runners"
     ]
   }
   </script>
-
-  <script type="application/ld+json">
+  <script type='application/ld+json'>
   {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": [{
       "@type": "Question",
-      "name": "How do I stop my AI agent from repeating mistakes?",
+      "name": "Who should buy Cloud Pro?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "By implementing a feedback loop that captures negative signals and automatically converts them into prevention rules (e.g., in CLAUDE.md or .geminiignore) that the agent must follow in future turns."
+        "text": "Cloud Pro is for teams building agentic workflows who want hosted API keys, shared memory, billing hooks, and provable runs without self-hosting the feedback and guardrail layer."
       }
     }, {
       "@type": "Question",
-      "name": "What is Feedback-Driven Development (FDD) for AI?",
+      "name": "What is the best first use case?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "FDD is a methodology where agent behavior is continuously refined using real-world user feedback loops, scoring, and automated guardrail enforcement to reduce regressions."
+        "text": "The best first wedge is a lead-to-meeting workflow: intake, enrichment, drafting, approvals, CRM sync, and auditability. The same stack also fits onboarding and internal ops automation."
       }
     }]
   }
   </script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; }
 
     :root {
-      --black: #0a0a0a;
-      --white: #ffffff;
-      --gray-50: #f9fafb;
-      --gray-100: #f3f4f6;
-      --gray-200: #e5e7eb;
-      --gray-400: #9ca3af;
-      --gray-600: #4b5563;
-      --gray-800: #1f2937;
-      --accent: #6366f1;
-      --accent-dark: #4f46e5;
-      --accent-light: #e0e7ff;
-      --green: #10b981;
-      --radius: 8px;
-      --shadow: 0 1px 3px rgba(0,0,0,.12), 0 4px 16px rgba(0,0,0,.06);
-      --shadow-lg: 0 10px 40px rgba(0,0,0,.12);
+      --bg: #f6f1e8;
+      --bg-strong: #efe6d8;
+      --surface: #fffdf9;
+      --surface-strong: #fff8ee;
+      --ink: #191612;
+      --muted: #655c4f;
+      --line: #d8cfbf;
+      --accent: #b85c2d;
+      --accent-dark: #8f451f;
+      --accent-soft: #f2dfcf;
+      --success: #2f7d4b;
+      --shadow: 0 18px 50px rgba(25, 22, 18, 0.08);
+      --radius: 18px;
+    }
+
+    html {
+      scroll-behavior: smooth;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--white);
-      color: var(--gray-800);
+      margin: 0;
+      font-family: Georgia, 'Times New Roman', serif;
+      background:
+        radial-gradient(circle at top, #fff9ef 0%, rgba(255, 249, 239, 0.4) 20%, transparent 50%),
+        linear-gradient(180deg, #fbf7ef 0%, var(--bg) 100%);
+      color: var(--ink);
       line-height: 1.6;
     }
 
-    /* ─── NAV ─── */
     nav {
       position: sticky;
       top: 0;
-      background: rgba(255,255,255,.92);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--gray-200);
-      padding: 0 24px;
+      z-index: 10;
+      backdrop-filter: blur(14px);
+      background: rgba(251, 247, 239, 0.82);
+      border-bottom: 1px solid rgba(216, 207, 191, 0.9);
+    }
+
+    .nav-inner,
+    .section-inner,
+    .hero-inner,
+    .footer-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+
+    .nav-inner {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 56px;
-      z-index: 100;
-    }
-    .nav-logo { font-weight: 700; font-size: 1rem; letter-spacing: -.5px; }
-    .nav-logo span { color: var(--accent); }
-    .nav-links { display: flex; gap: 28px; align-items: center; }
-    .nav-links a {
-      text-decoration: none;
-      color: var(--gray-600);
-      font-size: .9rem;
-      transition: color .15s;
-    }
-    .nav-links a:hover { color: var(--black); }
-    .btn-nav {
-      background: var(--accent);
-      color: var(--white) !important;
-      padding: 8px 18px;
-      border-radius: var(--radius);
-      font-weight: 600;
-      transition: background .15s !important;
-    }
-    .btn-nav:hover { background: var(--accent-dark) !important; }
-
-    /* ─── HERO ─── */
-    .hero {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 80px 24px 64px;
-      text-align: center;
-    }
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--accent-light);
-      color: var(--accent-dark);
-      border-radius: 99px;
-      padding: 4px 14px;
-      font-size: .8rem;
-      font-weight: 600;
-      margin-bottom: 24px;
-    }
-    .hero h1 {
-      font-size: clamp(2rem, 5vw, 3.2rem);
-      font-weight: 800;
-      line-height: 1.15;
-      letter-spacing: -.5px;
-      margin-bottom: 20px;
-    }
-    .hero h1 em { font-style: normal; color: var(--accent); }
-    .hero p {
-      font-size: 1.15rem;
-      color: var(--gray-600);
-      max-width: 620px;
-      margin: 0 auto 36px;
-    }
-    .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--accent);
-      color: var(--white);
-      padding: 14px 28px;
-      border-radius: var(--radius);
-      font-size: 1rem;
-      font-weight: 700;
-      text-decoration: none;
-      transition: background .15s, transform .1s;
-      box-shadow: 0 4px 14px rgba(99,102,241,.35);
-    }
-    .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--white);
-      color: var(--gray-800);
-      padding: 14px 28px;
-      border-radius: var(--radius);
-      font-size: 1rem;
-      font-weight: 600;
-      text-decoration: none;
-      border: 1.5px solid var(--gray-200);
-      transition: border-color .15s;
-    }
-    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-
-    /* ─── PLATFORM LOGOS ─── */
-    .platforms {
-      display: flex;
+      min-height: 68px;
       gap: 20px;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-top: 48px;
-      padding: 16px 24px;
-      background: var(--gray-50);
-      border-top: 1px solid var(--gray-200);
-      border-bottom: 1px solid var(--gray-200);
-    }
-    .platforms p { font-size: .8rem; color: var(--gray-400); margin-right: 8px; text-transform: uppercase; letter-spacing: 1px; }
-    .platform-pill {
-      background: var(--white);
-      border: 1px solid var(--gray-200);
-      border-radius: 99px;
-      padding: 6px 16px;
-      font-size: .85rem;
-      font-weight: 600;
-      color: var(--gray-600);
     }
 
-    /* ─── VALUE PROPS ─── */
-    .section { max-width: 1100px; margin: 0 auto; padding: 72px 24px; }
-    .section-label {
-      font-size: .8rem;
+    .brand {
+      font-size: 18px;
       font-weight: 700;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
+      letter-spacing: -0.03em;
+    }
+
+    .brand span {
       color: var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 14px;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .nav-links a:hover {
+      color: var(--ink);
+    }
+
+    .hero {
+      padding: 64px 0 48px;
+    }
+
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: rgba(255, 253, 249, 0.86);
+      border: 1px solid var(--line);
+      border-radius: calc(var(--radius) + 4px);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-copy {
+      padding: 42px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-copy::after {
+      content: '';
+      position: absolute;
+      inset: auto -120px -140px auto;
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, rgba(184, 92, 45, 0.18) 0%, rgba(184, 92, 45, 0) 72%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 20px 0 14px;
+      font-size: clamp(38px, 6vw, 68px);
+      line-height: 0.98;
+      letter-spacing: -0.05em;
+    }
+
+    .hero-copy p {
+      margin: 0 0 18px;
+      font-size: 20px;
+      color: var(--muted);
+      max-width: 720px;
+    }
+
+    .hero-proof {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 22px 0 26px;
+    }
+
+    .proof-pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      background: var(--surface);
+      color: var(--muted);
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 15px;
+      font-family: inherit;
+    }
+
+    .button.primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 14px 28px rgba(184, 92, 45, 0.22);
+    }
+
+    .button.primary:hover {
+      background: var(--accent-dark);
+    }
+
+    .button.secondary {
+      background: var(--surface);
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    .button.secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+
+    .note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .hero-card {
+      display: flex;
+      flex-direction: column;
+      padding: 28px;
+      background: linear-gradient(180deg, var(--surface-strong) 0%, var(--surface) 100%);
+    }
+
+    .hero-card h2 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    .hero-card p,
+    .hero-card li {
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    .hero-card ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .mini {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.65);
+    }
+
+    .mini strong {
+      display: block;
+      font-size: 13px;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    section {
+      padding: 34px 0 28px;
+    }
+
+    .section-head {
+      margin-bottom: 22px;
+    }
+
+    .section-head .eyebrow {
       margin-bottom: 12px;
     }
-    .section-title {
-      font-size: clamp(1.6rem, 3vw, 2.2rem);
-      font-weight: 800;
-      letter-spacing: -.4px;
-      margin-bottom: 48px;
+
+    .section-head h2 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      letter-spacing: -0.04em;
+      line-height: 1.04;
     }
-    .props-grid {
+
+    .section-head p {
+      max-width: 760px;
+      margin: 12px 0 0;
+      font-size: 18px;
+      color: var(--muted);
+    }
+
+    .grid-3,
+    .grid-2 {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 24px;
+      gap: 18px;
     }
-    .prop-card {
-      background: var(--gray-50);
-      border: 1px solid var(--gray-200);
-      border-radius: 12px;
-      padding: 28px 24px;
-      transition: box-shadow .2s;
-    }
-    .prop-card:hover { box-shadow: var(--shadow-lg); }
-    .prop-icon { font-size: 1.8rem; margin-bottom: 12px; }
-    .prop-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
-    .prop-card p { font-size: .9rem; color: var(--gray-600); }
-    .stat-row {
-      display: flex;
-      gap: 40px;
-      flex-wrap: wrap;
-      margin-top: 48px;
-    }
-    .stat { display: flex; flex-direction: column; }
-    .stat-num { font-size: 2.4rem; font-weight: 800; color: var(--accent); line-height: 1; }
-    .stat-label { font-size: .85rem; color: var(--gray-600); margin-top: 4px; }
 
-    /* ─── DEMO ─── */
-    .demo-section {
-      background: var(--black);
-      color: var(--white);
-      padding: 72px 24px;
+    .grid-3 {
+      grid-template-columns: repeat(3, 1fr);
     }
-    .demo-inner { max-width: 900px; margin: 0 auto; }
-    .demo-section .section-label { color: #818cf8; }
-    .demo-section .section-title { color: var(--white); margin-bottom: 32px; }
-    .terminal {
-      background: #111827;
-      border: 1px solid #374151;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: var(--shadow-lg);
-    }
-    .terminal-bar {
-      background: #1f2937;
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .dot { width: 12px; height: 12px; border-radius: 50%; }
-    .dot-red { background: #ef4444; }
-    .dot-yellow { background: #f59e0b; }
-    .dot-green { background: #10b981; }
-    .terminal-title { font-size: .75rem; color: #6b7280; margin-left: 8px; }
-    .terminal-body { padding: 24px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: .85rem; line-height: 1.8; overflow-x: auto; }
-    .terminal-body .prompt { color: #6b7280; }
-    .terminal-body .cmd { color: #a5f3fc; }
-    .terminal-body .comment { color: #4b5563; }
-    .terminal-body .out { color: #d1d5db; }
-    .terminal-body .key { color: #86efac; }
-    .terminal-body .val { color: #fde68a; }
 
-    /* ─── PRICING ─── */
-    .pricing-section { background: var(--gray-50); }
+    .grid-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .card {
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 249, 0.84);
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 24px;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+    }
+
+    .card p,
+    .card li {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .card ul,
+    .steps ol {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .steps {
+      padding: 28px;
+      border-radius: 22px;
+      background: #171411;
+      color: #f6f1e8;
+      box-shadow: var(--shadow);
+    }
+
+    .steps h3 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      letter-spacing: -0.04em;
+    }
+
+    .steps li {
+      margin-bottom: 14px;
+      color: #d8cec1;
+    }
+
+    .steps strong {
+      color: #fff;
+    }
+
+    .pricing {
+      padding-bottom: 52px;
+    }
+
     .pricing-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
-      max-width: 900px;
-      margin: 0 auto;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
     }
-    .price-card {
-      background: var(--white);
-      border: 1.5px solid var(--gray-200);
-      border-radius: 16px;
-      padding: 32px;
+
+    .pricing .card.featured {
+      border-color: var(--accent);
+      background: linear-gradient(180deg, #fff7ef 0%, #fffdf9 100%);
       position: relative;
     }
-    .price-card.featured {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 4px var(--accent-light);
-    }
-    .featured-badge {
-      position: absolute;
-      top: -12px;
-      left: 50%;
-      transform: translateX(-50%);
+
+    .badge {
+      display: inline-block;
+      margin-bottom: 12px;
+      padding: 5px 10px;
+      border-radius: 999px;
       background: var(--accent);
-      color: var(--white);
-      font-size: .75rem;
+      color: #fff;
+      font-size: 12px;
       font-weight: 700;
-      padding: 4px 16px;
-      border-radius: 99px;
-      white-space: nowrap;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
-    .plan-name { font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-600); margin-bottom: 12px; }
-    .price-amount { font-size: 2.6rem; font-weight: 800; letter-spacing: -1px; }
-    .price-period { font-size: .9rem; color: var(--gray-600); margin-bottom: 20px; }
-    .price-desc { font-size: .9rem; color: var(--gray-600); margin-bottom: 24px; border-bottom: 1px solid var(--gray-200); padding-bottom: 24px; }
-    .feature-list { list-style: none; margin-bottom: 32px; }
-    .feature-list li {
+
+    .price {
+      font-size: 54px;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      margin: 8px 0 12px;
+    }
+
+    .price small {
+      font-size: 18px;
+      color: var(--muted);
+      letter-spacing: normal;
+    }
+
+    .pricing .card .button {
+      width: 100%;
+      margin-top: 18px;
+    }
+
+    .footer {
+      padding: 30px 0 60px;
+    }
+
+    .footer-inner {
       display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      font-size: .9rem;
-      margin-bottom: 10px;
-      color: var(--gray-600);
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 14px;
     }
-    .feature-list li::before { content: "✓"; color: var(--green); font-weight: 700; flex-shrink: 0; }
-    .btn-checkout {
-      display: block;
-      width: 100%;
-      background: var(--accent);
-      color: var(--white);
-      border: none;
-      border-radius: var(--radius);
-      padding: 14px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      text-align: center;
-      text-decoration: none;
-      transition: background .15s;
-    }
-    .btn-checkout:hover { background: var(--accent-dark); }
-    .btn-outline {
-      display: block;
-      width: 100%;
-      background: var(--white);
-      color: var(--gray-800);
-      border: 1.5px solid var(--gray-200);
-      border-radius: var(--radius);
-      padding: 14px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-align: center;
-      text-decoration: none;
-      transition: border-color .15s;
-    }
-    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
 
-    /* ─── FOOTER ─── */
-    footer {
-      background: var(--black);
-      color: var(--gray-400);
-      text-align: center;
-      padding: 32px 24px;
-      font-size: .85rem;
+    .footer-inner a {
+      color: var(--muted);
     }
-    footer a { color: var(--gray-400); text-decoration: none; }
-    footer a:hover { color: var(--white); }
-    .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
 
-    @media (max-width: 640px) {
-      .nav-links .btn-nav { display: none; }
-      .stat-row { gap: 24px; }
+    code {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    @media (max-width: 920px) {
+      .hero-inner,
+      .grid-3,
+      .grid-2,
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-top: 40px;
+      }
+
+      .hero-copy,
+      .hero-card {
+        padding: 26px;
+      }
+
+      .nav-inner {
+        padding-top: 12px;
+        padding-bottom: 12px;
+      }
     }
   </style>
 </head>
 <body>
-
-<!-- NAV -->
-<nav>
-  <div class="nav-logo">rlhf<span>.</span>loop</div>
-  <div class="nav-links">
-    <a href="#value">Features</a>
-    <a href="#demo">Demo</a>
-    <a href="#pricing">Pricing</a>
-    <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop" target="_blank">GitHub</a>
-    <a href="#pricing" class="btn-nav">Get Started</a>
-  </div>
-</nav>
-
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-badge">
-    <span>&#x1f4e6;</span> v0.6.11 — Hosted API + billing
-  </div>
-  <h1>RLHF for AI Coding Agents —<br /><em>Stop Repeating Mistakes</em></h1>
-  <p>
-    Capture thumbs-up/down signals, enforce schema quality, generate prevention rules,
-    and export DPO training pairs. Drop into any AI agent in under 5 minutes.
-  </p>
-  <div class="hero-cta">
-    <a href="#pricing" class="btn-primary">
-      Get Started — $0
-    </a>
-    <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop" target="_blank" class="btn-secondary">
-      &#x2605; Star on GitHub
-    </a>
-  </div>
-  <p style="margin-top:14px;font-size:.85rem;color:var(--gray-600);">
-    Verified proof:
-    <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank">Verification Evidence</a>
-    ·
-    <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/proof/automation/report.json" target="_blank">Automation Report (JSON)</a>
-  </p>
-
-  <div style="margin-top:40px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-    <span class="platform-pill">ChatGPT</span>
-    <span class="platform-pill">Claude</span>
-    <span class="platform-pill">Gemini</span>
-    <span class="platform-pill">Codex</span>
-    <span class="platform-pill">Amp</span>
-  </div>
-</section>
-
-<!-- VALUE PROPS -->
-<section class="section" id="value">
-  <div class="section-label">Semantic Advantage</div>
-  <h2 class="section-title">Closing the Agentic Feedback Loop</h2>
-
-  <div class="props-grid">
-    <div class="prop-card">
-      <div class="prop-icon">&#x1f9e0;</div>
-      <h3>Capture Preference Data</h3>
-      <p>Score agentic outcomes with rubric-based guardrails. Capture rich context for DPO training, moving beyond simple binary feedback.</p>
-    </div>
-    <div class="prop-card">
-      <div class="prop-icon">&#x1f6e1;&#xfe0f;</div>
-      <h3>Workflow Reliability</h3>
-      <p>Repeated failures trigger automated prevention rule generation (e.g., CLAUDE.md/AGENTS.md). Enforce architectural guardrails across all turns.</p>
-    </div>
-    <div class="prop-card">
-      <div class="prop-icon">&#x1f4ca;</div>
-      <h3>Bayesian Preference Scoring</h3>
-      <p>Thompson Sampling with exponential time-decay handles preference shifts over time. Superior to raw counts for production AI.</p>
-    </div>
-    <div class="prop-card">
-      <div class="prop-icon">&#x1f4e4;</div>
-      <h3>DPO Data Pipeline</h3>
-      <p>Export PyTorch-ready preference pairs (Positive/Negative) to fine-tune custom LLM adapters with direct human preference signals.</p>
-    </div>
-    <div class="prop-card">
-      <div class="prop-icon">&#x1f50c;</div>
-      <h3>Universal Agent Adaptability</h3>
-      <p>Native plugins for ChatGPT, Claude 3.5, Gemini 1.5, Codex, and Amp — unified feedback schema across your entire stack.</p>
-    </div>
-    <div class="prop-card">
-      <div class="prop-icon">&#x1f9ea;</div>
-      <h3>Auditable RLHF Evidence</h3>
-      <p>314+ verified tests ensure every signal is captured and every rule is generated correctly. Machine-readable audit reports for enterprise compliance.</p>
-    </div>
-  </div>
-
-  <div class="stat-row">
-    <div class="stat">
-      <span class="stat-num">5</span>
-      <span class="stat-label">AI platforms supported</span>
-    </div>
-    <div class="stat">
-      <span class="stat-num">314+</span>
-      <span class="stat-label">tests in CI</span>
-    </div>
-    <div class="stat">
-      <span class="stat-num">$0</span>
-      <span class="stat-label">to start (OSS)</span>
-    </div>
-    <div class="stat">
-      <span class="stat-num">&lt;5min</span>
-      <span class="stat-label">time-to-first-signal</span>
-    </div>
-  </div>
-</section>
-
-<!-- USE CASES -->
-<section class="section" style="background:var(--gray-50); border-top: 1px solid var(--gray-200); border-bottom: 1px solid var(--gray-200);">
-  <div class="section-label">Common Use Cases</div>
-  <h2 class="section-title">Feedback-Driven Development for Modern AI</h2>
-  <div class="props-grid">
-    <div>
-      <h4 style="margin-bottom:12px;">Automating Code Reviews</h4>
-      <p style="font-size: .9rem; color: var(--gray-600);">Capture PR feedback and feed it directly into the agent's memory to ensure future refactors follow team-specific style guides without manual instruction.</p>
-    </div>
-    <div>
-      <h4 style="margin-bottom:12px;">Self-Healing Multi-Agent Systems</h4>
-      <p style="font-size: .9rem; color: var(--gray-600);">When an agent fails a task, the feedback loop generates a "prevention rule" that other agents in the system can use to avoid the same bottleneck.</p>
-    </div>
-    <div>
-      <h4 style="margin-bottom:12px;">DPO for Domain-Specific LLMs</h4>
-      <p style="font-size: .9rem; color: var(--gray-600);">Collect high-quality human preference data on your company's proprietary codebase to fine-tune smaller, cheaper models to perform like GPT-4 on your stack.</p>
-    </div>
-  </div>
-</section>
-
-<!-- DEMO -->
-<section class="demo-section" id="demo">
-  <div class="demo-inner">
-    <div class="section-label">Quick start</div>
-    <h2 class="section-title">From MCP add to first feedback in minutes</h2>
-
-    <div class="terminal">
-      <div class="terminal-bar">
-        <div class="dot dot-red"></div>
-        <div class="dot dot-yellow"></div>
-        <div class="dot dot-green"></div>
-        <span class="terminal-title">bash — your machine</span>
-      </div>
-      <div class="terminal-body">
-        <div><span class="comment"># 1. Add MCP server (stable command)</span></div>
-        <div><span class="prompt">$ </span><span class="cmd">claude mcp add rlhf -- npx -y rlhf-feedback-loop serve</span></div>
-        <div><span class="out">Added MCP server: rlhf</span></div>
-        <div>&nbsp;</div>
-        <div><span class="comment"># 2. Optional: auto-detect clients and install all</span></div>
-        <div><span class="prompt">$ </span><span class="cmd">npx add-mcp rlhf-feedback-loop</span></div>
-        <div><span class="out">Installed across detected MCP clients</span></div>
-        <div>&nbsp;</div>
-        <div><span class="comment"># 3. Or hit the Cloud API with your key</span></div>
-        <div><span class="prompt">$ </span><span class="cmd">curl -X POST https://rlhf-feedback-loop-710216278770.us-central1.run.app/v1/feedback/capture \</span></div>
-        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">-H "Authorization: Bearer rlhf_YOUR_KEY" \</span></div>
-        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">-H "Content-Type: application/json" \</span></div>
-        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">-d '{"signal":"up","context":"auth refactor","tags":["auth"]}'</span></div>
-        <div><span class="out">{</span></div>
-        <div>&nbsp;&nbsp;<span class="key">"id"</span><span class="out">: </span><span class="val">"fb_1772663401_up"</span><span class="out">,</span></div>
-        <div>&nbsp;&nbsp;<span class="key">"status"</span><span class="out">: </span><span class="val">"captured"</span><span class="out">,</span></div>
-        <div>&nbsp;&nbsp;<span class="key">"version"</span><span class="out">: </span><span class="val">"0.6.11"</span></div>
-        <div><span class="out">}</span></div>
+  <nav>
+    <div class='nav-inner'>
+      <div class='brand'>RLHF <span>Cloud Pro</span></div>
+      <div class='nav-links'>
+        <a href='#why'>Why buy</a>
+        <a href='#pricing'>Pricing</a>
+        <a href='__VERIFICATION_URL__'>Proof</a>
+        <a href='__GITHUB_URL__'>OSS core</a>
       </div>
     </div>
-  </div>
-</section>
+  </nav>
 
-<!-- PRICING -->
-<section class="section pricing-section" id="pricing">
-  <div style="max-width:900px;margin:0 auto;">
-    <div class="section-label">Pricing</div>
-    <h2 class="section-title" style="margin-bottom:12px;">Start free. Scale when you need it.</h2>
-    <p style="color:var(--gray-600);margin-bottom:48px;">The OSS core is always free. Cloud Pro gives you a hosted API, usage metering, and priority support.</p>
+  <main>
+    <section class='hero'>
+      <div class='hero-inner'>
+        <div class='panel hero-copy'>
+          <span class='eyebrow'>Hosted guardrails for AI workflow teams</span>
+          <h1>Stop AI workflows from repeating the same mistakes.</h1>
+          <p>Cloud Pro gives your team hosted API keys, shared memory, and proof-ready workflow runs so Claude Code, Codex, and Gemini automations stop drifting and start compounding.</p>
+          <p>The best first wedge is not “better prompts.” It is one high-ROI workflow like lead-to-meeting, onboarding, or internal ops, backed by a feedback and verification layer your team can actually audit.</p>
+          <div class='hero-proof'>
+            <span class='proof-pill'>Founding price: $10/mo</span>
+            <span class='proof-pill'>Versioned proof: v__PACKAGE_VERSION__</span>
+            <span class='proof-pill'>Hosted onboarding at __APP_ORIGIN__</span>
+          </div>
+          <div class='cta-row'>
+            <button class='button primary' id='checkout-btn' type='button'>Start Cloud Pro for $10/mo</button>
+            <a class='button secondary' href='__GTM_PLAN_URL__'>Read the 30-day GTM plan</a>
+            <a class='button secondary' href='__GITHUB_URL__'>View the OSS core</a>
+          </div>
+          <p class='note'>Checkout is owned through the hosted API first. If that fails, the page falls back to the direct Stripe link.</p>
+        </div>
 
-    <div class="pricing-grid">
-      <!-- OSS -->
-      <div class="price-card">
-        <div class="plan-name">Open Source</div>
-        <div class="price-amount">$0</div>
-        <div class="price-period">forever</div>
-        <div class="price-desc">Self-hosted. Full source code. No rate limits on your own machine.</div>
-        <ul class="feature-list">
-          <li>Capture feedback locally</li>
-          <li>Thompson Sampling posteriors</li>
-          <li>DPO export</li>
-          <li>5-platform plugins</li>
-          <li>314+ tests included</li>
-          <li>MIT license</li>
-        </ul>
-        <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop" target="_blank" class="btn-outline">
-          View on GitHub
-        </a>
+        <div class='panel hero-card'>
+          <h2>Why teams pay</h2>
+          <p>Most teams can install the OSS package. They pay for Cloud Pro when they need a shared operational layer instead of scattered local JSON files and ad hoc guardrails.</p>
+          <ul>
+            <li>Provision hosted API keys instead of self-hosting the feedback store.</li>
+            <li>Share memory, prevention rules, and funnel evidence across operators.</li>
+            <li>Move one revenue or ops workflow into a monitored, auditable system.</li>
+          </ul>
+          <div class='mini-grid'>
+            <div class='mini'>
+              <strong>Best ICP</strong>
+              RevOps, growth, and platform teams building repeatable agent workflows.
+            </div>
+            <div class='mini'>
+              <strong>Best first offer</strong>
+              Lead-to-meeting workflow with approvals, CRM sync, and auditability.
+            </div>
+            <div class='mini'>
+              <strong>Why not $49</strong>
+              That ask is too aggressive before the hosted workflow layer has stronger proof.
+            </div>
+            <div class='mini'>
+              <strong>What stays OSS</strong>
+              Local feedback capture, MCP server, and DPO export remain free.
+            </div>
+          </div>
+        </div>
       </div>
+    </section>
 
-      <!-- Cloud Pro -->
-      <div class="price-card featured">
-        <div class="featured-badge">Founding Price</div>
-        <div class="plan-name">Cloud Pro</div>
-        <div class="price-amount">$10</div>
-        <div class="price-period">/month</div>
-        <div class="price-desc">Hosted API with HTTPS, metering, and managed key rotation.</div>
-        <ul class="feature-list">
-          <li>Everything in Open Source</li>
-          <li>Hosted HTTPS API endpoint</li>
-          <li>Provisioned API key on payment</li>
-          <li>Usage metering per key</li>
-          <li>Webhook-driven key lifecycle</li>
-          <li>Email support</li>
-        </ul>
-        <!-- Replace STRIPE_CHECKOUT_URL with your actual Stripe Checkout link -->
-        <a href="https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02" class="btn-checkout" id="checkout-btn">
-          Get Started — $10/mo
-        </a>
-        <p style="margin-top:12px;font-size:.8rem;color:var(--gray-600);">
-          <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank">Verification evidence</a>
-        </p>
+    <section id='why'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>What changes</span>
+          <h2>Turn the repo from “interesting infra” into something a buyer can justify.</h2>
+          <p>Cloud Pro is not the hero product by itself. The hero is the workflow outcome. Cloud Pro is the hosted reliability layer that makes the workflow safe to roll out across a team.</p>
+        </div>
+        <div class='grid-3'>
+          <div class='card'>
+            <h3>Shared memory</h3>
+            <p>Local-only feedback logs are useful for one operator. Teams pay when those learnings need to survive handoffs, shifts, and multiple agent surfaces.</p>
+          </div>
+          <div class='card'>
+            <h3>Hosted guardrails</h3>
+            <p>Provisioned API keys, usage metering, and centralized prevention rules let you run the same workflow across repos and operators without duct tape.</p>
+          </div>
+          <div class='card'>
+            <h3>Proof-ready runs</h3>
+            <p>Verification evidence, machine-readable endpoints, and auditable funnel events make it easier to prove the workflow is actually improving.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class='section-inner grid-2'>
+        <div class='steps'>
+          <h3>How the first paid wedge works</h3>
+          <ol>
+            <li><strong>Choose one workflow.</strong> Lead intake, enrichment, drafting, approval, CRM sync.</li>
+            <li><strong>Run through Cloud Pro.</strong> Every step can capture feedback and produce evidence.</li>
+            <li><strong>Use the feedback loop.</strong> Repeat failures become prevention rules instead of recurring incidents.</li>
+            <li><strong>Roll out team-wide.</strong> Shared API keys and hosted memory remove the single-laptop bottleneck.</li>
+          </ol>
+        </div>
+        <div class='card'>
+          <h3>What buyers actually hear</h3>
+          <p>Not “RLHF-ready data infrastructure.”</p>
+          <p>They hear: “We can ship one workflow that creates or saves money, while keeping agents on-policy and proving what happened.”</p>
+          <p>That is the bridge between the open-source repo and a real paid offer.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class='pricing' id='pricing'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Pricing</span>
+          <h2>Keep self-serve cheap. Sell the bigger workflow outcome separately.</h2>
+          <p>The repo remains free. Cloud Pro stays at a low-friction founding price while the hosted layer proves onboarding and retention. Services and workflow installs carry the larger ticket.</p>
+        </div>
+        <div class='pricing-grid'>
+          <div class='card'>
+            <h3>OSS core</h3>
+            <div class='price'>$0 <small>/ forever</small></div>
+            <ul>
+              <li>Local MCP server and CLI</li>
+              <li>Feedback capture and prevention rules</li>
+              <li>DPO export and local memory</li>
+              <li>Self-hosted by default</li>
+            </ul>
+            <a class='button secondary' href='__GITHUB_URL__'>Use the open-source package</a>
+          </div>
+          <div class='card featured'>
+            <span class='badge'>Founding price</span>
+            <h3>Cloud Pro</h3>
+            <div class='price'>$10 <small>/ month</small></div>
+            <ul>
+              <li>Hosted HTTPS API</li>
+              <li>Provisioned API key after checkout</li>
+              <li>Shared team memory and funnel events</li>
+              <li>Built for Claude Code, Codex, Gemini, and custom runners</li>
+            </ul>
+            <button class='button primary' id='checkout-btn-bottom' type='button'>Start Cloud Pro for $10/mo</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class='footer'>
+    <div class='footer-inner'>
+      <div>RLHF Feedback Loop Cloud Pro • v__PACKAGE_VERSION__</div>
+      <div>
+        <a href='__VERIFICATION_URL__'>Verification evidence</a>
+        •
+        <a href='__GTM_PLAN_URL__'>GTM plan</a>
+        •
+        <a href='__GITHUB_URL__'>GitHub</a>
       </div>
     </div>
-  </div>
-</section>
+  </footer>
 
-<!-- FOOTER -->
-<footer>
-  <div class="footer-links">
-    <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop" target="_blank">GitHub</a>
-    <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/LICENSE">MIT License</a>
-    <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/CONTRIBUTING.md">Contributing</a>
-    <a href="https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/SECURITY.md">Security</a>
-  </div>
-  <div>
-    &copy; 2026 RLHF Feedback Loop. MIT License.
-    Built with no VC funding and 314+ passing tests.
-  </div>
-</footer>
+  <script>
+    (function () {
+      const checkoutEndpoint = '__CHECKOUT_ENDPOINT__';
+      const checkoutFallbackUrl = '__CHECKOUT_FALLBACK_URL__';
+      const appOrigin = '__APP_ORIGIN__';
+      const installStorageKey = 'rlhf_cloud_pro_install_id';
 
-<script>
-  // Smooth scroll for anchor links
-  document.querySelectorAll('a[href^="#"]').forEach(function(a) {
-    a.addEventListener('click', function(e) {
-      var target = document.querySelector(this.getAttribute('href'));
-      if (target) {
-        e.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      function getInstallId() {
+        const existing = window.localStorage.getItem(installStorageKey);
+        if (existing) {
+          return existing;
+        }
+
+        const generated = 'inst_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+        window.localStorage.setItem(installStorageKey, generated);
+        return generated;
       }
-    });
-  });
-</script>
 
+      async function startCheckout() {
+        const installId = getInstallId();
+
+        try {
+          const response = await fetch(checkoutEndpoint, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+              installId,
+              metadata: {
+                source: 'landing_page',
+                origin: appOrigin
+              }
+            })
+          });
+
+          const body = await response.json();
+          if (!response.ok) {
+            throw new Error(body.error || 'Unable to create checkout session.');
+          }
+
+          if (body.url) {
+            window.location.href = body.url;
+            return;
+          }
+
+          if (body.sessionId) {
+            window.location.href = '/success?session_id=' + encodeURIComponent(body.sessionId);
+            return;
+          }
+
+          throw new Error('Checkout response missing redirect target.');
+        } catch (err) {
+          console.error(err);
+          window.location.href = checkoutFallbackUrl;
+        }
+      }
+
+      document.getElementById('checkout-btn').addEventListener('click', startCheckout);
+      document.getElementById('checkout-btn-bottom').addEventListener('click', startCheckout);
+    }());
+  </script>
 </body>
 </html>

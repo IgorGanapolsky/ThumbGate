@@ -32,6 +32,7 @@ const {
 } = require('../../scripts/intent-router');
 const {
   createCheckoutSession,
+  getCheckoutSessionStatus,
   provisionApiKey,
   validateApiKey,
   recordUsage,
@@ -41,6 +42,8 @@ const {
   handleGithubWebhook,
   getFunnelAnalytics,
 } = require('../../scripts/billing');
+
+const LANDING_PAGE_PATH = path.resolve(__dirname, '../../docs/landing-page.html');
 
 function getSafeDataDir() {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
@@ -68,6 +71,282 @@ function sendText(res, statusCode, text) {
     'Content-Length': Buffer.byteLength(text),
   });
   res.end(text);
+}
+
+function sendHtml(res, statusCode, html) {
+  res.writeHead(statusCode, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Content-Length': Buffer.byteLength(html),
+  });
+  res.end(html);
+}
+
+function getPublicOrigin(req) {
+  const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() || 'http';
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim() || 'localhost';
+  return `${proto}://${host}`;
+}
+
+function wantsJson(req, parsed) {
+  if (parsed.searchParams.get('format') === 'json') {
+    return true;
+  }
+
+  const accept = String(req.headers.accept || '');
+  return accept.includes('application/json') && !accept.includes('text/html');
+}
+
+function fillTemplate(template, replacements) {
+  let output = template;
+  for (const [token, value] of Object.entries(replacements)) {
+    output = output.split(token).join(String(value));
+  }
+  return output;
+}
+
+function loadLandingPageHtml(origin) {
+  const template = fs.readFileSync(LANDING_PAGE_PATH, 'utf-8');
+  return fillTemplate(template, {
+    '__PACKAGE_VERSION__': pkg.version,
+    '__APP_ORIGIN__': origin,
+    '__CHECKOUT_ENDPOINT__': '/v1/billing/checkout',
+    '__CHECKOUT_FALLBACK_URL__': 'https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02',
+    '__VERIFICATION_URL__': 'https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/docs/VERIFICATION_EVIDENCE.md',
+    '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
+    '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/rlhf-feedback-loop',
+  });
+}
+
+function renderCheckoutSuccessPage() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloud Pro Activated</title>
+  <style>
+    :root {
+      --bg: #f6f1e8;
+      --ink: #1d1b18;
+      --muted: #625a4d;
+      --line: #d7cfbf;
+      --accent: #b85c2d;
+      --accent-dark: #8f451f;
+      --card: #fffdf9;
+      --success: #2f7d4b;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, 'Times New Roman', serif;
+      background: linear-gradient(180deg, #fcfaf5 0%, var(--bg) 100%);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+    }
+    .eyebrow {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #efe3d5;
+      color: var(--accent-dark);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    h1 {
+      margin: 18px 0 12px;
+      font-size: clamp(32px, 6vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+    p.lead {
+      max-width: 700px;
+      font-size: 19px;
+      color: var(--muted);
+      margin: 0 0 28px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-top: 22px;
+      box-shadow: 0 10px 30px rgba(29, 27, 24, 0.08);
+    }
+    .status {
+      color: var(--success);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #171411;
+      color: #f5efe6;
+      padding: 16px;
+      border-radius: 12px;
+      overflow-x: auto;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 13px;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+    a.button {
+      display: inline-block;
+      text-decoration: none;
+      background: var(--accent);
+      color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+    a.button.secondary {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="eyebrow">Cloud Pro</span>
+    <h1>Your hosted API key is ready.</h1>
+    <p class="lead">This page verifies your Stripe session, provisions the key if needed, and gives you a copy-paste onboarding snippet for the hosted API.</p>
+
+    <div class="card">
+      <div class="status" id="status">Verifying payment and provisioning your key...</div>
+      <p class="muted" id="summary">Do not close this tab until the key appears.</p>
+      <pre id="key-block">Waiting for checkout session...</pre>
+    </div>
+
+    <div class="card">
+      <h2>Next steps</h2>
+      <ol>
+        <li>Copy the environment block below into your workflow runner.</li>
+        <li>Use the curl example to confirm the hosted API captures an event.</li>
+        <li>Keep your key private and rotate by repurchasing or contacting support if needed.</li>
+      </ol>
+      <pre id="env-block">Waiting for provisioning...</pre>
+      <pre id="curl-block">Waiting for provisioning...</pre>
+      <div class="actions">
+        <a class="button" href="/">Back to landing page</a>
+        <a class="button secondary" href="https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Verification evidence</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+    const statusEl = document.getElementById('status');
+    const summaryEl = document.getElementById('summary');
+    const keyBlock = document.getElementById('key-block');
+    const envBlock = document.getElementById('env-block');
+    const curlBlock = document.getElementById('curl-block');
+
+    async function run() {
+      if (!sessionId) {
+        statusEl.textContent = 'Missing checkout session.';
+        summaryEl.textContent = 'Open the landing page and start a new checkout.';
+        keyBlock.textContent = 'No session_id was provided in the URL.';
+        return;
+      }
+
+      try {
+        const res = await fetch('/v1/billing/session?sessionId=' + encodeURIComponent(sessionId));
+        const body = await res.json();
+        if (!res.ok) {
+          throw new Error(body.error || 'Unable to load checkout session.');
+        }
+
+        if (!body.paid) {
+          statusEl.textContent = 'Payment is still processing.';
+          summaryEl.textContent = 'Refresh this page in a few seconds if Stripe has already confirmed payment.';
+          keyBlock.textContent = JSON.stringify(body, null, 2);
+          return;
+        }
+
+        statusEl.textContent = 'Cloud Pro activated.';
+        summaryEl.textContent = 'Your API key is ready. Copy the snippets below into your workflow project.';
+        keyBlock.textContent = body.apiKey || 'Provisioned, but no key was returned.';
+        envBlock.textContent = body.nextSteps && body.nextSteps.env ? body.nextSteps.env : 'Environment snippet unavailable.';
+        curlBlock.textContent = body.nextSteps && body.nextSteps.curl ? body.nextSteps.curl : 'curl snippet unavailable.';
+      } catch (err) {
+        statusEl.textContent = 'Provisioning lookup failed.';
+        summaryEl.textContent = 'You can retry this page. If it keeps failing, inspect the hosted API logs.';
+        keyBlock.textContent = err && err.message ? err.message : 'Unknown error';
+      }
+    }
+
+    run();
+  </script>
+</body>
+</html>`;
+}
+
+function renderCheckoutCancelledPage() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout Cancelled</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Georgia, 'Times New Roman', serif;
+      background: #f6f1e8;
+      color: #1d1b18;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 64px 20px 80px;
+    }
+    h1 {
+      font-size: clamp(32px, 6vw, 52px);
+      line-height: 1.05;
+      margin: 0 0 14px;
+    }
+    p {
+      font-size: 18px;
+      color: #625a4d;
+      margin: 0 0 20px;
+    }
+    a {
+      display: inline-block;
+      text-decoration: none;
+      background: #b85c2d;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Checkout cancelled.</h1>
+    <p>No charge was made. You can return to the landing page and restart checkout whenever you are ready.</p>
+    <a href="/">Return to Cloud Pro</a>
+  </main>
+</body>
+</html>`;
 }
 
 function parseJsonBody(req, maxBytes = 1024 * 1024) {
@@ -193,16 +472,36 @@ function createApiServer() {
   return http.createServer(async (req, res) => {
     const parsed = new URL(req.url, 'http://localhost');
     const pathname = parsed.pathname;
+    const publicOrigin = getPublicOrigin(req);
 
     // Public endpoints — no auth required
     if (req.method === 'GET' && pathname === '/') {
-      sendJson(res, 200, {
-        name: 'rlhf-feedback-loop',
-        version: pkg.version,
-        status: 'ok',
-        docs: 'https://github.com/IgorGanapolsky/rlhf-feedback-loop',
-        endpoints: ['/health', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/dpo/export'],
-      });
+      if (wantsJson(req, parsed)) {
+        sendJson(res, 200, {
+          name: 'rlhf-feedback-loop',
+          version: pkg.version,
+          status: 'ok',
+          docs: 'https://github.com/IgorGanapolsky/rlhf-feedback-loop',
+          endpoints: ['/health', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/dpo/export'],
+        });
+        return;
+      }
+
+      try {
+        sendHtml(res, 200, loadLandingPageHtml(publicOrigin));
+      } catch (err) {
+        sendText(res, 500, err.message || 'Landing page unavailable');
+      }
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/success') {
+      sendHtml(res, 200, renderCheckoutSuccessPage());
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/cancel') {
+      sendHtml(res, 200, renderCheckoutCancelledPage());
       return;
     }
 
@@ -326,13 +625,43 @@ function createApiServer() {
       try {
         const body = await parseJsonBody(req);
         const result = await createCheckoutSession({
-          successUrl: body.successUrl,
-          cancelUrl: body.cancelUrl,
+          successUrl: body.successUrl || `${publicOrigin}/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: body.cancelUrl || `${publicOrigin}/cancel`,
           customerEmail: body.customerEmail,
           installId: body.installId,
           metadata: body.metadata,
         });
         sendJson(res, 200, result);
+      } catch (err) {
+        if (err.statusCode) {
+          sendJson(res, err.statusCode, { error: err.message });
+        } else {
+          sendJson(res, 500, { error: err.message || 'Internal Server Error' });
+        }
+      }
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/v1/billing/session') {
+      try {
+        const sessionId = parsed.searchParams.get('sessionId');
+        if (!sessionId) {
+          throw createHttpError(400, 'sessionId is required');
+        }
+
+        const result = await getCheckoutSessionStatus(sessionId);
+        if (!result.found) {
+          throw createHttpError(404, 'Checkout session not found');
+        }
+
+        sendJson(res, 200, {
+          ...result,
+          apiBaseUrl: publicOrigin,
+          nextSteps: {
+            env: `RLHF_API_KEY=${result.apiKey || ''}\nRLHF_API_BASE_URL=${publicOrigin}`,
+            curl: `curl -X POST ${publicOrigin}/v1/feedback/capture \\\n  -H 'Authorization: Bearer ${result.apiKey || ''}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{"signal":"down","context":"example","whatWentWrong":"example","whatToChange":"example"}'`,
+          },
+        });
       } catch (err) {
         if (err.statusCode) {
           sendJson(res, err.statusCode, { error: err.message });

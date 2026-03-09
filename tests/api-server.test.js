@@ -9,6 +9,7 @@ process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.RLHF_API_KEY = 'test-api-key';
 process.env._TEST_API_KEYS_PATH = path.join(tmpFeedbackDir, 'api-keys.json');
 process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpFeedbackDir, 'funnel-events.jsonl');
+process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = path.join(tmpFeedbackDir, 'local-checkout-sessions.json');
 
 const { startServer } = require('../src/api/server');
 const { provisionApiKey } = require('../scripts/billing');
@@ -34,6 +35,49 @@ test('health endpoint returns ok', async () => {
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.status, 'ok');
+});
+
+test('root serves the landing page by default', async () => {
+  const res = await fetch('http://localhost:8790/');
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+
+  const body = await res.text();
+  assert.match(body, /Stop AI workflows from repeating the same mistakes\./);
+  assert.match(body, /Cloud Pro/);
+  assert.match(body, /\/v1\/billing\/checkout/);
+});
+
+test('root still serves JSON status when explicitly requested', async () => {
+  const res = await fetch('http://localhost:8790/?format=json', {
+    headers: { accept: 'application/json' },
+  });
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /application\/json/);
+
+  const body = await res.json();
+  assert.equal(body.name, 'rlhf-feedback-loop');
+  assert.equal(body.status, 'ok');
+});
+
+test('success page serves hosted onboarding shell', async () => {
+  const res = await fetch('http://localhost:8790/success');
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+
+  const body = await res.text();
+  assert.match(body, /Your hosted API key is ready\./);
+  assert.match(body, /\/v1\/billing\/session\?sessionId=/);
+});
+
+test('cancel page serves retry message', async () => {
+  const res = await fetch('http://localhost:8790/cancel');
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+
+  const body = await res.text();
+  assert.match(body, /Checkout cancelled\./);
+  assert.match(body, /Return to Cloud Pro/);
 });
 
 test('feedback capture accepts valid payload', async () => {
@@ -203,14 +247,45 @@ test('billing checkout endpoint is public', async () => {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      successUrl: 'https://example.com/success',
-      cancelUrl: 'https://example.com/cancel',
       installId: 'inst_public_checkout_test',
     }),
   });
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.ok(typeof body.sessionId === 'string');
+  assert.equal(body.localMode, true);
+});
+
+test('billing session endpoint returns provisioned local checkout details', async () => {
+  const checkoutRes = await fetch('http://localhost:8790/v1/billing/checkout', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      customerEmail: 'buyer@example.com',
+      installId: 'inst_public_checkout_lookup',
+    }),
+  });
+  assert.equal(checkoutRes.status, 200);
+  const checkoutBody = await checkoutRes.json();
+  assert.ok(typeof checkoutBody.sessionId === 'string');
+
+  const sessionRes = await fetch(
+    `http://localhost:8790/v1/billing/session?sessionId=${encodeURIComponent(checkoutBody.sessionId)}`
+  );
+  assert.equal(sessionRes.status, 200);
+  const sessionBody = await sessionRes.json();
+  assert.equal(sessionBody.paid, true);
+  assert.equal(sessionBody.installId, 'inst_public_checkout_lookup');
+  assert.ok(sessionBody.apiKey.startsWith('rlhf_'));
+  assert.match(sessionBody.nextSteps.env, /RLHF_API_KEY=/);
+  assert.match(sessionBody.nextSteps.curl, /\/v1\/feedback\/capture/);
+});
+
+test('billing session endpoint rejects missing session ids', async () => {
+  const res = await fetch('http://localhost:8790/v1/billing/session');
+  assert.equal(res.status, 400);
+  const body = await res.json();
+  assert.match(body.error, /sessionId/);
 });
 
 test('billing provision requires static admin key and rejects billing keys', async () => {
@@ -241,8 +316,6 @@ test('funnel analytics returns counts and conversion rates', async () => {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
-      successUrl: 'https://example.com/success',
-      cancelUrl: 'https://example.com/cancel',
       installId: 'inst_api_server_test',
     }),
   });

@@ -38,6 +38,11 @@ const FUNNEL_LEDGER_PATH = process.env._TEST_FUNNEL_LEDGER_PATH || process.env.R
   '../.claude/memory/feedback/funnel-events.jsonl'
 );
 
+const LOCAL_CHECKOUT_SESSIONS_PATH = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.resolve(
+  __dirname,
+  '../.claude/memory/feedback/local-checkout-sessions.json'
+);
+
 const LOCAL_MODE = !STRIPE_SECRET_KEY;
 
 // ---------------------------------------------------------------------------
@@ -136,6 +141,29 @@ function loadFunnelLedger() {
   } catch {
     return [];
   }
+}
+
+function loadLocalCheckoutSessions() {
+  try {
+    if (!fs.existsSync(LOCAL_CHECKOUT_SESSIONS_PATH)) {
+      return { sessions: {} };
+    }
+
+    const raw = fs.readFileSync(LOCAL_CHECKOUT_SESSIONS_PATH, 'utf-8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed.sessions !== 'object' || Array.isArray(parsed.sessions)) {
+      return { sessions: {} };
+    }
+
+    return parsed;
+  } catch {
+    return { sessions: {} };
+  }
+}
+
+function saveLocalCheckoutSessions(store) {
+  ensureParentDir(LOCAL_CHECKOUT_SESSIONS_PATH);
+  fs.writeFileSync(LOCAL_CHECKOUT_SESSIONS_PATH, JSON.stringify(store, null, 2), 'utf-8');
 }
 
 function safeRate(numerator, denominator) {
@@ -350,6 +378,21 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
 
   if (LOCAL_MODE) {
     const localSessionId = `local_${crypto.randomUUID()}`;
+    const localCustomerId = `local_customer_${localSessionId}`;
+    const sessions = loadLocalCheckoutSessions();
+
+    sessions.sessions[localSessionId] = {
+      sessionId: localSessionId,
+      customerId: localCustomerId,
+      customerEmail: customerEmail || '',
+      installId: resolvedInstallId,
+      metadata: checkoutMetadata,
+      createdAt: new Date().toISOString(),
+      paymentStatus: 'paid',
+      status: 'complete',
+    };
+    saveLocalCheckoutSessions(sessions);
+
     appendFunnelEvent({
       stage: 'acquisition',
       event: 'checkout_session_created',
@@ -411,6 +454,91 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     sessionId: session.id,
     url: session.url,
     metadata: checkoutMetadata,
+  };
+}
+
+async function getCheckoutSessionStatus(sessionId) {
+  if (!sessionId || typeof sessionId !== 'string') {
+    throw new Error('sessionId is required');
+  }
+
+  if (LOCAL_MODE) {
+    const store = loadLocalCheckoutSessions();
+    const session = store.sessions[sessionId];
+
+    if (!session) {
+      return { found: false, localMode: true };
+    }
+
+    const provisioned = provisionApiKey(session.customerId, {
+      installId: session.installId || null,
+      source: 'local_checkout_session_lookup',
+    });
+
+    return {
+      found: true,
+      localMode: true,
+      sessionId,
+      paid: true,
+      paymentStatus: session.paymentStatus || 'paid',
+      customerId: session.customerId,
+      customerEmail: session.customerEmail || '',
+      installId: session.installId || null,
+      apiKey: provisioned.key,
+    };
+  }
+
+  const session = await stripeRequest('GET', `/checkout/sessions/${sessionId}`);
+  const paymentStatus = session && typeof session.payment_status === 'string'
+    ? session.payment_status
+    : 'unknown';
+
+  if (!session || paymentStatus !== 'paid') {
+    return {
+      found: Boolean(session),
+      localMode: false,
+      sessionId,
+      paid: false,
+      paymentStatus,
+      status: session && typeof session.status === 'string' ? session.status : 'unknown',
+    };
+  }
+
+  if (!session.customer || typeof session.customer !== 'string') {
+    return {
+      found: true,
+      localMode: false,
+      sessionId,
+      paid: true,
+      paymentStatus,
+      customerId: null,
+      customerEmail: '',
+      installId: null,
+      apiKey: null,
+    };
+  }
+
+  const installId = session.metadata && typeof session.metadata.installId === 'string'
+    ? session.metadata.installId
+    : null;
+
+  const provisioned = provisionApiKey(session.customer, {
+    installId,
+    source: 'stripe_checkout_session_lookup',
+  });
+
+  return {
+    found: true,
+    localMode: false,
+    sessionId,
+    paid: true,
+    paymentStatus,
+    customerId: session.customer,
+    customerEmail: session.customer_details && typeof session.customer_details.email === 'string'
+      ? session.customer_details.email
+      : '',
+    installId,
+    apiKey: provisioned.key,
   };
 }
 
@@ -805,6 +933,7 @@ function handleGithubWebhook(event) {
 
 module.exports = {
   createCheckoutSession,
+  getCheckoutSessionStatus,
   provisionApiKey,
   validateApiKey,
   recordUsage,
@@ -821,5 +950,6 @@ module.exports = {
   // Expose for testing
   _API_KEYS_PATH: API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: FUNNEL_LEDGER_PATH,
+  _LOCAL_CHECKOUT_SESSIONS_PATH: LOCAL_CHECKOUT_SESSIONS_PATH,
   _LOCAL_MODE: () => LOCAL_MODE,
 };
