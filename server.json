@@ -6,12 +6,12 @@
     "url": "https://github.com/IgorGanapolsky/rlhf-feedback-loop",
     "source": "github"
   },
-  "version": "0.6.10",
+  "version": "0.6.11",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "rlhf-feedback-loop",
-      "version": "0.6.10",
+      "version": "0.6.11",
       "transport": {
         "type": "stdio"
       },
