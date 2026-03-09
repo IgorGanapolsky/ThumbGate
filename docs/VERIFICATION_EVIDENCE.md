@@ -232,13 +232,63 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-09 Local Intelligence Verification
+
+Scope:
+
+- Hardware-aware local embedding profile selection with machine-readable fit evidence.
+- Safe fallback embedding profile selection when the primary local profile fails.
+- Boosted local risk scorer trained from RLHF feedback sequences.
+- CLI surface for `model-fit`, `risk`, and `prove --target=local-intelligence`.
+
+Commands run:
+
+```bash
+npm ci
+node --test tests/cli.test.js
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run prove:local-intelligence
+npm run self-heal:check
+```
+
+Observed results:
+
+- `node --test tests/cli.test.js`: `20` passed, `0` failed.
+- `npm test`: all suites pass, including:
+  - `tests/local-model-profile.test.js`
+  - `tests/risk-scorer.test.js`
+  - `tests/vector-store.test.js`
+  - `tests/feedback-sequences.test.js`
+  - `tests/feedback-loop.test.js`
+  - `tests/prove-local-intelligence.test.js`
+- `npm run test:coverage`: pass with overall coverage `82.86%` lines, `68.01%` branches, `86.00%` functions.
+- `npm run prove:adapters`: `{ "passed": 21, "failed": 0 }`
+- `npm run prove:automation`: `{ "passed": 14, "failed": 0 }`
+- `npm run prove:local-intelligence`: `Status: PASSED`
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+
+Behavioral proof points:
+
+- `FIT-01`: low-RAM override selects the `compact` embedding profile and writes `model-fit-report.json`.
+- `FIT-02`: `vector-store` falls back to the safe embedding profile when the primary profile load fails.
+- `RISK-01`: feedback capture flow trains and persists `risk-model.json` from sequence data.
+- `RISK-02`: analytics expose boosted risk summary with `exampleCount=6`, `mode=boosted`, and top high-risk domain `testing`.
+
+Artifacts updated:
+
+- `proof/local-intelligence-report.json`
+- `proof/local-intelligence-report.md`
+
 ## 2026-03-09 Technical Debt Audit Cleanup Verification
 
 Scope:
 
 - Added a portable `npm run test:coverage` command using Node's built-in coverage for `tests/**/*.test.js`.
 - Removed the unused `stripe` SDK dependency; billing continues to use direct HTTPS calls in `scripts/billing.js`.
-- Synced published version metadata across MCP manifests and public docs to `0.6.10`.
+- Synced published version metadata across MCP manifests and public docs to `0.6.11`.
 - Refreshed active proof artifacts and pruned stale milestone-era proof files that were no longer referenced.
 
 Commands run:

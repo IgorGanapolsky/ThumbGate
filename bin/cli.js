@@ -320,6 +320,65 @@ function summary() {
   console.log(feedbackSummary(Number(args.recent || 20)));
 }
 
+function modelFit() {
+  const { writeModelFitReport } = require(path.join(PKG_ROOT, 'scripts', 'local-model-profile'));
+  const { reportPath, report } = writeModelFitReport();
+  console.log(JSON.stringify({ reportPath, report }, null, 2));
+}
+
+function risk() {
+  const args = parseArgs(process.argv.slice(3));
+  const riskScorer = require(path.join(PKG_ROOT, 'scripts', 'risk-scorer'));
+
+  if (args.context || args.tags || args.skill || args.domain || args['rubric-scores'] || args.guardrails) {
+    const { inferDomain } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+    const { buildRubricEvaluation } = require(path.join(PKG_ROOT, 'scripts', 'rubric-engine'));
+    const historyRows = riskScorer.readJSONL(riskScorer.sequencePathFor());
+    const tags = String(args.tags || '')
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+
+    let rubric = null;
+    if (args['rubric-scores'] || args.guardrails) {
+      const evaluation = buildRubricEvaluation({
+        rubricScores: args['rubric-scores'],
+        guardrails: args.guardrails,
+      });
+      rubric = {
+        rubricId: evaluation.rubricId,
+        weightedScore: evaluation.weightedScore,
+        failingCriteria: evaluation.failingCriteria,
+        failingGuardrails: evaluation.failingGuardrails,
+        judgeDisagreements: evaluation.judgeDisagreements,
+      };
+    }
+
+    const candidate = riskScorer.buildRiskCandidate({
+      context: args.context || '',
+      tags,
+      skill: args.skill || null,
+      domain: args.domain || inferDomain(tags, args.context || ''),
+      rubric,
+      filePathCount: Number(args['file-count'] || 0),
+      errorType: args['error-type'] || null,
+    }, historyRows);
+    const model = riskScorer.loadRiskModel() || riskScorer.trainAndPersistRiskModel().model;
+    console.log(JSON.stringify({
+      prediction: riskScorer.predictRisk(model, candidate),
+      candidate,
+    }, null, 2));
+    return;
+  }
+
+  const { model, modelPath } = riskScorer.trainAndPersistRiskModel();
+  console.log(JSON.stringify({
+    modelPath,
+    metrics: model.metrics,
+    summary: riskScorer.getRiskSummary(),
+  }, null, 2));
+}
+
 function exportDpo() {
   const extraArgs = process.argv.slice(3).join(' ');
   try {
@@ -359,7 +418,7 @@ function prove() {
   const script = path.join(PKG_ROOT, 'scripts', `prove-${target}.js`);
   if (!fs.existsSync(script)) {
     console.error(`Unknown proof target: ${target}`);
-    console.error('Available: adapters, automation, attribution, lancedb, data-quality, intelligence, loop-closure, training-export');
+    console.error('Available: adapters, automation, attribution, lancedb, data-quality, intelligence, local-intelligence, loop-closure, training-export');
     process.exit(1);
   }
   try {
@@ -422,17 +481,21 @@ function help() {
   console.log('  capture [flags]       Capture feedback (--feedback=up|down --context="..." --tags="...")');
   console.log('  stats                 Show feedback analytics + Revenue-at-Risk');
   console.log('  summary               Human-readable feedback summary');
+  console.log('  model-fit             Detect the current local embedding profile and write evidence report');
+  console.log('  risk [flags]          Train or query the boosted local risk scorer');
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
   console.log('  rules                 Generate prevention rules from repeated failures');
   console.log('  self-heal             Run self-healing check and auto-fix');
   console.log('  pro                   Upgrade to Cloud Pro ($10/mo)');
-  console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|...)');
+  console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
   console.log('  start-api             Start the RLHF HTTPS API server');
   console.log('  help                  Show this help message');
   console.log('');
   console.log('Examples:');
   console.log('  npx rlhf-feedback-loop init');
   console.log('  npx rlhf-feedback-loop stats');
+  console.log('  npx rlhf-feedback-loop model-fit');
+  console.log('  npx rlhf-feedback-loop risk');
   console.log('  npx rlhf-feedback-loop pro');
 }
 
@@ -456,6 +519,12 @@ switch (COMMAND) {
     break;
   case 'summary':
     summary();
+    break;
+  case 'model-fit':
+    modelFit();
+    break;
+  case 'risk':
+    risk();
     break;
   case 'export-dpo':
   case 'dpo':

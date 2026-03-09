@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-03-09T19:52:35.300Z",
+  "checks": [
+    {
+      "id": "FIT-01",
+      "passed": true,
+      "evidence": "model-fit report written; selected profile=compact; maxChars=1024"
+    },
+    {
+      "id": "FIT-02",
+      "passed": true,
+      "evidence": "vector-store active profile=fallback; fallbackUsed=true; reason=Forced primary embedding profile failure"
+    },
+    {
+      "id": "RISK-01",
+      "passed": true,
+      "evidence": "risk-model artifact written"
+    },
+    {
+      "id": "RISK-02",
+      "passed": true,
+      "evidence": "boostedRisk exampleCount=6; mode=boosted; topDomain=testing"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0
+  },
+  "testResults": {
+    "passed": 35,
+    "failed": 0
+  }
+}

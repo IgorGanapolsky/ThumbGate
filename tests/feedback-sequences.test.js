@@ -62,6 +62,11 @@ describe('Sequence Tracking (ML-03)', () => {
     assert.ok(!isNaN(Date.parse(entry.timestamp)), 'timestamp should be a valid ISO string');
     assert.equal(typeof entry.targetReward, 'number', 'targetReward should be a number');
     assert.ok(Array.isArray(entry.targetTags), 'targetTags should be an array');
+    assert.equal(typeof entry.accepted, 'boolean', 'accepted should be a boolean');
+    assert.equal(typeof entry.context, 'string', 'context should be a string');
+    assert.equal(typeof entry.domain, 'string', 'domain should be a string');
+    assert.equal(typeof entry.outcomeCategory, 'string', 'outcomeCategory should be a string');
+    assert.equal(typeof entry.targetRisk, 'number', 'targetRisk should be a number');
     assert.equal(typeof entry.features, 'object', 'features should be an object');
     assert.equal(typeof entry.label, 'string', 'label should be a string');
   });
@@ -144,7 +149,7 @@ describe('Sequence Tracking (ML-03)', () => {
     assert.ok(!Array.isArray(entry.features.tagFrequency), 'features.tagFrequency should not be an array');
   });
 
-  it('rejected captureFeedback() does NOT create sequence entry', () => {
+  it('invalid signal does NOT create sequence entry', () => {
     delete require.cache[require.resolve('../scripts/feedback-loop')];
     const { captureFeedback } = require('../scripts/feedback-loop');
 
@@ -161,7 +166,44 @@ describe('Sequence Tracking (ML-03)', () => {
       ? fs.readFileSync(seqPath, 'utf-8').trim().split('\n').filter(Boolean).length
       : 0;
 
-    assert.equal(linesAfter, linesBefore, 'rejected call should not add sequence entry');
+    assert.equal(linesAfter, linesBefore, 'invalid signal should not add sequence entry');
+  });
+
+  it('rubric-blocked positive capture still creates a training row with high-risk label', () => {
+    delete require.cache[require.resolve('../scripts/feedback-loop')];
+    const { captureFeedback } = require('../scripts/feedback-loop');
+
+    const seqPath = path.join(tmpDir, 'feedback-sequences.jsonl');
+    const linesBefore = fs.existsSync(seqPath)
+      ? fs.readFileSync(seqPath, 'utf-8').trim().split('\n').filter(Boolean).length
+      : 0;
+
+    const result = captureFeedback({
+      signal: 'positive',
+      context: 'claimed success without logs',
+      whatWorked: 'looked good',
+      tags: ['verification'],
+      rubricScores: [
+        { criterion: 'verification_evidence', score: 5, judge: 'judge-a' },
+        { criterion: 'verification_evidence', score: 2, judge: 'judge-b', evidence: 'missing logs' },
+      ],
+      guardrails: {
+        testsPassed: false,
+        pathSafety: true,
+        budgetCompliant: true,
+      },
+    });
+
+    assert.equal(result.accepted, false, 'rubric-blocked capture should not be promoted');
+
+    const linesAfter = fs.readFileSync(seqPath, 'utf-8').trim().split('\n').filter(Boolean);
+    assert.equal(linesAfter.length, linesBefore + 1, 'blocked capture should still add a sequence entry');
+
+    const entry = JSON.parse(linesAfter[linesAfter.length - 1]);
+    assert.equal(entry.accepted, false);
+    assert.equal(entry.riskLabel, 'high-risk');
+    assert.equal(entry.targetRisk, 1);
+    assert.equal(entry.actionType, 'no-action');
   });
 
   it('multiple accepted calls append multiple sequence entries', () => {

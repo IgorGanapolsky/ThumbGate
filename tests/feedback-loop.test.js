@@ -175,3 +175,61 @@ test('feedbackSummary: returns string with "Positive:"', (t) => {
   assert.strictEqual(typeof summary, 'string');
   assert.ok(summary.includes('Positive:'), `expected "Positive:" in summary, got: ${summary}`);
 });
+
+test('analyzeFeedback: includes boosted risk summary after sequence training rows exist', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.RLHF_VECTOR_STUB_EMBED = 'true';
+  t.after(() => {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.RLHF_VECTOR_STUB_EMBED;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  captureFeedback({
+    signal: 'up',
+    context: 'ran tests and included logs',
+    whatWorked: 'evidence first',
+    tags: ['testing', 'verification'],
+  });
+  captureFeedback({
+    signal: 'up',
+    context: 'verified fix with proof',
+    whatWorked: 'tests passed',
+    tags: ['testing', 'verification'],
+  });
+  captureFeedback({
+    signal: 'down',
+    context: 'skipped tests and missing logs caused failure',
+    whatWentWrong: 'verification skipped',
+    whatToChange: 'always run tests',
+    tags: ['debugging', 'verification'],
+  });
+  captureFeedback({
+    signal: 'down',
+    context: 'unsafe path and security risk caused rejection',
+    whatWentWrong: 'unsafe path',
+    whatToChange: 'validate paths',
+    tags: ['security'],
+  });
+  captureFeedback({
+    signal: 'up',
+    context: 'proof attached and verification complete',
+    whatWorked: 'full evidence',
+    tags: ['testing', 'verification'],
+  });
+  captureFeedback({
+    signal: 'down',
+    context: 'regression due to skipped verification',
+    whatWentWrong: 'regression shipped',
+    whatToChange: 'add regression tests',
+    tags: ['debugging', 'verification'],
+  });
+
+  const analysis = analyzeFeedback();
+  assert.ok(analysis.boostedRisk, 'expected boostedRisk summary');
+  assert.ok(analysis.boostedRisk.exampleCount >= 6, `expected >= 6 examples, got ${analysis.boostedRisk.exampleCount}`);
+
+  const summary = feedbackSummary();
+  assert.ok(summary.includes('Boosted risk'), `expected boosted risk line in summary, got: ${summary}`);
+});
