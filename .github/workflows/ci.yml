@@ -40,6 +40,9 @@ jobs:
       - name: Run automation proof
         run: npm run prove:automation
 
+      - name: Run workflow contract proof
+        run: npm run prove:workflow-contract
+
       - name: Upload proof artifacts
         if: always()
         uses: actions/upload-artifact@v7
@@ -50,3 +53,5 @@ jobs:
             proof/compatibility/report.md
             proof/automation/report.json
             proof/automation/report.md
+            proof/workflow-contract/report.json
+            proof/workflow-contract/report.md

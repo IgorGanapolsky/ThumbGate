@@ -53,6 +53,21 @@ The OSS package stays free. Cloud Pro remains a low-friction founding offer whil
 
 [Landing Page](https://rlhf-feedback-loop-710216278770.us-central1.run.app) | [Get Cloud Pro ($10/mo)](https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02) | [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
 
+## Agent Runner Contract
+
+This repo now ships a Symphony-compatible, repo-owned agent-runner contract:
+
+- [WORKFLOW.md](WORKFLOW.md): scope, proof-of-work, hard stops, and done criteria for isolated agent runs
+- [.github/ISSUE_TEMPLATE/ready-for-agent.yml](.github/ISSUE_TEMPLATE/ready-for-agent.yml): bounded intake template for "Ready for Agent" tickets
+- [.github/pull_request_template.md](.github/pull_request_template.md): proof-first handoff format for PRs
+
+Validate the contract locally with:
+
+```bash
+node scripts/validate-workflow-contract.js
+node scripts/prove-workflow-contract.js
+```
+
 ## Best First Use Case
 
 The most credible first paid workflow is a lead-to-meeting system:

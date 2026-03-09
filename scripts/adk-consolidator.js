@@ -42,14 +42,41 @@ function saveState(state) {
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
 }
 
+function summarizeLogsLocally(logs) {
+  const tags = new Set();
+  let environmentSignals = 0;
+
+  logs.forEach((entry) => {
+    (entry.tags || []).forEach((tag) => tags.add(String(tag).toLowerCase()));
+    const context = `${entry.context || ''} ${entry.whatWentWrong || ''}`.toLowerCase();
+    if (
+      context.includes('environment')
+      || context.includes('port')
+      || context.includes('connection string')
+      || context.includes('node version')
+    ) {
+      environmentSignals += 1;
+    }
+  });
+
+  const pattern = environmentSignals >= 2
+    ? 'Repeated execution failures came from starting work before validating local environment assumptions.'
+    : 'Recent failures point to missing preflight verification before execution.';
+
+  return {
+    consolidatedInsights: [
+      {
+        pattern,
+        rule: 'ALWAYS verify runtime prerequisites, ports, credentials, and environment assumptions before executing workflow steps.',
+        severity: environmentSignals >= 2 ? 'high' : 'medium',
+      },
+    ],
+    reasoning: `Local deterministic consolidation used ${logs.length} feedback events with tags: ${[...tags].sort().join(', ') || 'none'}.`,
+  };
+}
+
 async function consolidateMemory() {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.warn('[ADK Consolidator] GEMINI_API_KEY is not set. Skipping active consolidation.');
-    return;
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
   const paths = getFeedbackPaths();
   const state = loadState();
 
@@ -107,16 +134,26 @@ Output ONLY a valid JSON object with the following structure, representing the n
 `;
 
   try {
-    // We use gemini-2.5-flash as the proxy for Flash-Lite/Flash efficiency
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-      }
-    });
+    let result;
+    if (!apiKey && process.env.ADK_FAKE_CONSOLIDATION === 'true') {
+      console.log('[ADK Consolidator] GEMINI_API_KEY is not set. Using deterministic local consolidation.');
+      result = summarizeLogsLocally(newLogs);
+    } else if (!apiKey) {
+      console.warn('[ADK Consolidator] GEMINI_API_KEY is not set. Skipping active consolidation.');
+      return;
+    } else {
+      const ai = new GoogleGenAI({ apiKey });
+      // We use gemini-2.5-flash as the proxy for Flash-Lite/Flash efficiency
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+        }
+      });
+      result = JSON.parse(response.text);
+    }
 
-    const result = JSON.parse(response.text);
     console.log(`[ADK Consolidator] Consolidation complete. Reasoning: ${result.reasoning}`);
 
     if (result.consolidatedInsights && result.consolidatedInsights.length > 0) {
@@ -170,4 +207,7 @@ if (require.main === module) {
   }
 }
 
-module.exports = { consolidateMemory };
+module.exports = {
+  consolidateMemory,
+  summarizeLogsLocally,
+};

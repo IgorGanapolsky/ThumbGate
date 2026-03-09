@@ -1,0 +1,72 @@
+{
+  "generatedAt": "2026-03-09T20:45:11.773Z",
+  "files": {
+    "workflow": "WORKFLOW.md",
+    "issueTemplate": ".github/ISSUE_TEMPLATE/ready-for-agent.yml",
+    "pullRequestTemplate": ".github/pull_request_template.md",
+    "readme": "README.md"
+  },
+  "checks": [
+    {
+      "name": "workflow.contract.complete",
+      "passed": true,
+      "details": {
+        "headingsFound": [
+          "## Scope",
+          "## Hard Stops",
+          "## Required Proof of Work",
+          "## Implementation Rules",
+          "## Done Means",
+          "## Handoff Format"
+        ],
+        "proofCommandsFound": [
+          "npm test",
+          "npm run test:coverage",
+          "npm run prove:adapters",
+          "npm run prove:automation",
+          "npm run self-heal:check"
+        ]
+      }
+    },
+    {
+      "name": "issue.template.complete",
+      "passed": true,
+      "details": {
+        "fieldIdsFound": [
+          "business_outcome",
+          "problem",
+          "in_scope",
+          "out_of_scope",
+          "acceptance_criteria",
+          "proof_commands"
+        ]
+      }
+    },
+    {
+      "name": "pull_request.template.complete",
+      "passed": true,
+      "details": {
+        "sectionsFound": [
+          "## What Changed",
+          "## Why",
+          "## Verification",
+          "## Evidence",
+          "## Risks"
+        ]
+      }
+    },
+    {
+      "name": "readme.links.contracts",
+      "passed": true,
+      "details": {
+        "referencesWorkflow": true,
+        "referencesReadyTemplate": true
+      }
+    }
+  ],
+  "issues": [],
+  "summary": {
+    "passed": 4,
+    "failed": 0
+  }
+}

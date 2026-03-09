@@ -1,4 +1,45 @@
-# Verification Evidence (March 4, 2026)
+# Verification Evidence (March 9, 2026)
+
+## March 9, 2026: Symphony workflow contract and hermetic coverage
+
+Commands:
+
+```bash
+npm ci
+npm test
+npm run test:coverage
+npm run prove:workflow-contract
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+```
+
+Observed result:
+
+- Clean install completed with `0 vulnerabilities`.
+- `npm test` passed end-to-end, including the new `test:workflow` contract gate.
+- `npm run test:coverage` passed after hardening `tests/adk-consolidator.test.js` to use explicit deterministic consolidation in test mode instead of relying on a live Gemini key.
+- Coverage summary: `83.39%` lines, `67.58%` branches, `86.63%` functions.
+- `npm run prove:workflow-contract`: `4 passed`, `0 failed`.
+- `npm run prove:adapters`: `21 passed`, `0 failed`.
+- `npm run prove:automation`: `14 passed`, `0 failed`.
+- `npm run self-heal:check`: `HEALTHY` with `4/4` checks healthy.
+
+Evidence artifacts:
+
+- `proof/workflow-contract/report.json`
+- `proof/workflow-contract/report.md`
+- `proof/compatibility/report.json`
+- `proof/compatibility/report.md`
+- `proof/automation/report.json`
+- `proof/automation/report.md`
+
+Requirements verified:
+
+- Repo-owned `WORKFLOW.md` contract exists and encodes scope, hard stops, proof commands, and done criteria.
+- Agent intake is bounded by `.github/ISSUE_TEMPLATE/ready-for-agent.yml`.
+- PR handoff now requires proof-first structure via `.github/pull_request_template.md`.
+- CI runs machine validation for the workflow contract and uploads workflow-proof artifacts.
 
 ## Phase 6: Feedback Attribution
 
@@ -54,7 +95,7 @@ npm run prove:adapters
 
 Observed result:
 
-- Summary: `19 passed`, `0 failed`
+- Summary: `21 passed`, `0 failed`
 - Evidence artifacts:
   - `proof/compatibility/report.json`
   - `proof/compatibility/report.md`
@@ -81,7 +122,7 @@ npm run prove:automation
 
 Observed result:
 
-- Summary: `12 passed`, `0 failed`
+- Summary: `14 passed`, `0 failed`
 - Evidence artifacts:
   - `proof/automation/report.json`
   - `proof/automation/report.md`
