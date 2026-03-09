@@ -84,7 +84,7 @@ All data stored locally as **JSONL** files — fully transparent, fully portable
 
 The open-source package is fully functional and free forever. Cloud Pro is for teams that don't want to self-host.
 
-| | Open Source | Cloud Pro ($49/mo) |
+| | Open Source | Cloud Pro (Founding price: $10/mo) |
 |---|---|---|
 | Feedback capture | Local MCP server | Hosted HTTPS API |
 | Storage | Your machine | Managed cloud |
@@ -94,7 +94,7 @@ The open-source package is fully functional and free forever. Cloud Pro is for t
 | Support | GitHub Issues | Email |
 | Uptime | You manage | We manage (99.9% SLA) |
 
-[Get Cloud Pro](https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02) | [Live API](https://rlhf-feedback-loop-710216278770.us-central1.run.app) | [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
+[Get Cloud Pro ($10/mo)](https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02) | [Live API](https://rlhf-feedback-loop-710216278770.us-central1.run.app) | [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
 
 ## Deep Dive
 

@@ -16,7 +16,7 @@ RLHF Feedback Loop is the **Enterprise Control Plane** for Claude-based agentic 
 ## Technical Integration (The Listing Payload)
 - **Delivery Format:** MCP Server (Standard) + OpenAPI Spec (for Claude Cowork).
 - **Security Evidence:** All listed skills are verified by our `VERIFICATION_EVIDENCE.md` audit trail.
-- **Pricing:** $49/mo (Cloud Pro) - Eligible for committed spend credits.
+- **Pricing:** Founding price `$10/mo` (Cloud Pro) while the product is still in the early distribution phase.
 
 ## Strategic Improvement: "Vibe-to-Verification" (V2V)
 The product will now feature a **V2V Pipeline**:

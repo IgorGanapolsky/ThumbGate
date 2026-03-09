@@ -87,7 +87,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 }
 ```
 
-Get your API key at: https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02 ($49/mo Cloud Pro)
+Get your API key at: https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02 ($10/mo Cloud Pro founding price)
 Verification evidence: https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ---

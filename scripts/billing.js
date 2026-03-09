@@ -26,7 +26,7 @@ const crypto = require('crypto');
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const GITHUB_MARKETPLACE_WEBHOOK_SECRET = process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '';
-const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || 'price_cloud_pro_49_monthly';
+const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || '';
 
 const API_KEYS_PATH = process.env._TEST_API_KEYS_PATH || path.resolve(
   __dirname,
@@ -369,6 +369,10 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
       localMode: true,
       metadata: checkoutMetadata,
     };
+  }
+
+  if (!STRIPE_PRICE_ID) {
+    throw new Error('STRIPE_PRICE_ID not configured');
   }
 
   const params = {

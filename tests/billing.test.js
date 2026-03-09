@@ -507,6 +507,40 @@ describe('billing.js — createCheckoutSession (local mode)', () => {
   });
 });
 
+describe('billing.js — createCheckoutSession (live mode config)', () => {
+  test('throws if STRIPE_PRICE_ID is missing in live mode', async () => {
+    const oldStripeKey = process.env.STRIPE_SECRET_KEY;
+    const oldPriceId = process.env.STRIPE_PRICE_ID;
+    delete require.cache[require.resolve('../scripts/billing')];
+    try {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
+      delete process.env.STRIPE_PRICE_ID;
+
+      const billing = require('../scripts/billing');
+
+      await assert.rejects(
+        () => billing.createCheckoutSession({
+          successUrl: 'https://example.com/success',
+          cancelUrl: 'https://example.com/cancel',
+        }),
+        /STRIPE_PRICE_ID not configured/
+      );
+    } finally {
+      delete require.cache[require.resolve('../scripts/billing')];
+      if (oldStripeKey === undefined) {
+        delete process.env.STRIPE_SECRET_KEY;
+      } else {
+        process.env.STRIPE_SECRET_KEY = oldStripeKey;
+      }
+      if (oldPriceId === undefined) {
+        delete process.env.STRIPE_PRICE_ID;
+      } else {
+        process.env.STRIPE_PRICE_ID = oldPriceId;
+      }
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Integration tests: API server billing routes
 // ---------------------------------------------------------------------------

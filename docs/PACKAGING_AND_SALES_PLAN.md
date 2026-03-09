@@ -10,7 +10,7 @@
 - DPO export
 - Local MCP server
 
-### Tier 2: Cloud Pro ($49/mo)
+### Tier 2: Cloud Pro (Founding price: $10/mo)
 
 - Hosted API endpoint
 - Team workspaces
@@ -19,6 +19,11 @@
 - Intent routing control plane (policy bundles + checkpoint approvals)
 - Semantic cache analytics + cache policy tuning
 - Autonomous GitOps controls (self-healing + PR auto-merge policy)
+
+Pricing note:
+
+- Keep the current live Stripe price at `$10/mo` while Cloud Pro is still proving conversion.
+- Revisit repricing after the hosted analytics dashboard and team workspace workflows are generally available.
 
 ### Tier 3: Enterprise (Pricing: custom quote)
 

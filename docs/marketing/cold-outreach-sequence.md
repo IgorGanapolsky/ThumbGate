@@ -27,7 +27,7 @@ Following up on my last email. One of the biggest hurdles to adopting an Agentic
 
 That's why we made the Agentic Feedback Studio **Zero-Config**. You literally just drop `npx rlhf-feedback-loop install` into a repository, and it auto-discovers the context, integrating directly with Claude, Gemini, or Copilot via MCP. 
 
-Platform teams use our Cloud Pro tier ($10/mo/user) to sync these prevention rules globally across every repository in the organization. 
+Platform teams use our Cloud Pro tier ($10/mo founding price) to sync these prevention rules globally across every repository in the organization. 
 
 If you have 5 minutes, I'd love to show you how our Vibe-to-Verification (V2V) pipeline works.
 
