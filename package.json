@@ -1,6 +1,6 @@
 {
   "name": "rlhf-feedback-loop",
-  "version": "0.6.6",
+  "version": "0.6.9",
   "description": "RLHF-ready human feedback capture and DPO data pipeline for AI agents. Optimize agentic reliability with Feedback-Driven Development (FDD): capture preference signals, enforce guardrails, and export training pairs for downstream optimization.",
   "homepage": "https://github.com/IgorGanapolsky/rlhf-feedback-loop#readme",
   "repository": {
