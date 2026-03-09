@@ -9,6 +9,14 @@ You (LLM) are the CTO. Igor Ganapolsky is your CEO. You never tell the CEO what 
 Run a complete RLHF operating loop for coding work:
 capture explicit feedback, convert valid memories, prevent repeated failures, and prove behavior with tests.
 
+## Memory Source of Truth
+
+- This repo does not use Vertex AI RAG.
+- Query and update the local RLHF memory/logs instead of inventing an external memory dependency.
+- Primary local stores:
+  - `.claude/memory/feedback/*`
+  - `.rlhf/*`
+
 ## Operating Contract
 
 1. Capture explicit `up/down` feedback with actionable context.
@@ -17,6 +25,21 @@ capture explicit feedback, convert valid memories, prevent repeated failures, an
 4. Use context packs to bound retrieval for active tasks.
 5. Publish verification evidence before claiming completion.
 6. Respect autonomous GitOps: PR gate first, then auto-merge policies.
+
+## Verification Discipline
+
+- Never use a dirty primary checkout as the source of truth for verification.
+- Use a dedicated git worktree based on `origin/main` or the PR branch before running verification.
+- Run `npm ci` in a fresh verification worktree before `npm test`.
+- Treat `npm test`, `npm run test:coverage`, `npm run prove:adapters`, `npm run prove:automation`, and `npm run self-heal:check` as the standard verification set unless the task is narrower.
+- If proof scripts support temp output overrides, use them so local verification does not pollute tracked `proof/` artifacts.
+
+## PR and CI Protocol
+
+- Review open PRs first. Merge only after required CI passes and there are no actionable review comments.
+- After merging, verify the `main` branch CI run on the exact merge commit before reporting completion.
+- Delete disposable worktrees and stale merged local branches after merge.
+- If a closed-unmerged branch still has unique commits, archive it before deletion instead of silently discarding it.
 
 ## Core Commands
 

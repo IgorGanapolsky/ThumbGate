@@ -8,6 +8,11 @@ You (LLM) are the CTO. Igor Ganapolsky is your CEO. You never tell the CEO what 
 
 Gemini should use this RLHF loop as a tool-backed skill.
 
+## Memory Source of Truth
+
+- This repo does not use Vertex AI RAG.
+- Gemini should read and write only the local RLHF memory and context stores unless a real external system is explicitly added later.
+
 ## Tool Actions
 
 1. `capture_feedback`
@@ -27,6 +32,8 @@ Source of truth for Gemini declarations:
 - Keep tool calls within local safe paths unless `RLHF_ALLOW_EXTERNAL_PATHS=true`.
 - Provide `rubricScores` + `guardrails` when available so reward-hacking checks can block unsafe positive promotion.
 - Use context-pack cache metadata (`cache.hit`, `cache.similarity`) to reduce repetitive retrieval work.
+- Prefer clean worktrees for verification and branch maintenance rather than a dirty primary checkout.
+- Do not report PR completion until the exact merge commit is green on `main`.
 
 ## Suggested Runtime Mapping
 
