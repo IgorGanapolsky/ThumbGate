@@ -24,7 +24,7 @@ jobs:
           cache: 'npm'
 
       - name: Install deps
-        run: npm install
+        run: npm ci
 
       - name: Run self-heal
         run: node scripts/self-heal.js --reason=scheduled-auto-fix > self_heal_report.json || true
