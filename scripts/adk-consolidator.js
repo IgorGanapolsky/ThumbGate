@@ -2,10 +2,10 @@
 /**
  * Agent Development Kit (ADK) Memory Consolidator
  * 
- * "Always-On" background service that reads disparate feedback logs and uses 
+ * 'Always-On' background service that reads disparate feedback logs and uses 
  * Gemini (Flash-Lite/Flash) to actively consolidate, compress, and dream up 
- * generalized prevention rules. This moves the system from "passive logging" 
- * to "active semantic memory consolidation".
+ * generalized prevention rules. This moves the system from 'passive logging' 
+ * to 'active semantic memory consolidation'.
  */
 
 'use strict';
@@ -83,9 +83,9 @@ async function consolidateMemory() {
   console.log(`[ADK Consolidator] Found ${newLogs.length} new feedback events. Activating Gemini for semantic consolidation...`);
 
   const prompt = `
-You are the Agent Development Kit (ADK) "Always-On" Memory Consolidator.
+You are the Agent Development Kit (ADK) 'Always-On' Memory Consolidator.
 Your job is to read the raw, disparate feedback logs of an AI agent and synthesize them into high-level, generalized prevention rules and learned intuitions.
-Unlike standard systems that just count regex matches, you must semantically connect different failures (e.g., an API timeout and a missing import might both stem from "rushing execution without verifying environment").
+Unlike standard systems that just count regex matches, you must semantically connect different failures (e.g., an API timeout and a missing import might both stem from 'rushing execution without verifying environment').
 
 Here are the latest feedback events (JSON):
 ${JSON.stringify(newLogs.map(l => ({ signal: l.signal, context: l.context, tags: l.tags, whatWentWrong: l.whatWentWrong, whatWorked: l.whatWorked })), null, 2)}
