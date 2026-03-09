@@ -65,6 +65,16 @@ The most credible first paid workflow is a lead-to-meeting system:
 
 Cloud Pro sits underneath that workflow as the hosted memory, guardrail, and evidence layer.
 
+## Architecture
+
+![RLHF Feedback Loop Architecture](docs/diagrams/rlhf-architecture-pb.png)
+
+Five-phase pipeline: **Capture** human signals → **Validate** with rubric engine → **Learn** via LanceDB vector memory → **Prevent** repeated mistakes → **Export** DPO pairs for fine-tuning.
+
+![Plugin Topology](docs/diagrams/plugin-topology-pb.png)
+
+Three-tier stack: external integrations (Claude, Codex, Gemini, ChatGPT via MCP/OpenAPI) → plugin orchestration (schema validation, Bayesian scoring, DPO export) → data persistence (JSONL, LanceDB vectors, ShieldCortex context packs).
+
 ## Deep Dive
 
 - [GTM Revenue Wedge](docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md)
