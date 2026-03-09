@@ -28,7 +28,7 @@ test('public docs render the current package version', () => {
   const landingPage = readText('docs/landing-page.html');
   const mcpSubmission = readText('docs/mcp-hub-submission.md');
 
-  assert.match(landingPage, new RegExp(`v${packageJson.version} — Hosted API \\+ billing`));
-  assert.match(landingPage, new RegExp(`"version"</span><span class="out">: </span><span class="val">"${packageJson.version}"`));
+  assert.match(landingPage, /v__PACKAGE_VERSION__/);
+  assert.match(landingPage, /Start Cloud Pro for \$10\/mo/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
 });

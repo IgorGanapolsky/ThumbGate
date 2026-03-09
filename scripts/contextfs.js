@@ -218,6 +218,7 @@ function writeContextObject({ namespace, title, content, tags = [], source, ttl 
   };
 
   writeJson(filePath, doc);
+  indexContextObject(doc, filePath);
 
   recordProvenance({
     type: 'context_object_created',
@@ -353,6 +354,130 @@ function scoreDocument(doc, queryTokens) {
   }
 
   return score;
+}
+
+/* ── Memex-style Indexed Memory ────────────────────────────────── */
+
+const MEMEX_INDEX_FILE = 'memex-index.jsonl';
+
+function getMemexIndexPath() {
+  return path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, MEMEX_INDEX_FILE);
+}
+
+function buildIndexEntry(doc, filePath) {
+  return {
+    id: doc.id,
+    namespace: doc.namespace || '',
+    title: doc.title || '',
+    tags: doc.tags || [],
+    digest: String(doc.content || '').slice(0, 120),
+    createdAt: doc.createdAt || nowIso(),
+    stableRef: filePath,
+  };
+}
+
+function indexContextObject(doc, filePath) {
+  const entry = buildIndexEntry(doc, filePath);
+  appendJsonl(getMemexIndexPath(), entry);
+  return entry;
+}
+
+function loadMemexIndex() {
+  return readJsonl(getMemexIndexPath());
+}
+
+function dereferenceEntry(entry) {
+  if (!entry || !entry.stableRef) return null;
+  try {
+    return JSON.parse(fs.readFileSync(entry.stableRef, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+function searchMemexIndex({ query = '', maxResults = 10, namespaces = [] } = {}) {
+  const index = loadMemexIndex();
+  const tokens = tokenizeQuery(query);
+  const nsFilter = namespaces.length > 0 ? new Set(normalizeNamespaces(namespaces)) : null;
+
+  const scored = index
+    .filter((entry) => !nsFilter || nsFilter.has(entry.namespace))
+    .map((entry) => {
+      const haystack = `${entry.title} ${entry.digest} ${(entry.tags || []).join(' ')}`.toLowerCase();
+      let score = 0;
+      tokens.forEach((t) => { if (t.length > 2 && haystack.includes(t)) score += 3; });
+      if (entry.namespace.includes('memory/error')) score += 1;
+      if (entry.namespace.includes('memory/learning')) score += 1;
+      if (entry.createdAt) {
+        const hours = (Date.now() - new Date(entry.createdAt).getTime()) / 3_600_000;
+        if (Number.isFinite(hours)) {
+          if (hours < 24) score += 2;
+          else if (hours < 168) score += 1;
+        }
+      }
+      return { entry, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, maxResults);
+
+  return scored.map((x) => ({ ...x.entry, _score: x.score }));
+}
+
+function constructMemexPack({ query = '', maxItems = 8, maxChars = 6000, namespaces = [] } = {}) {
+  const normalizedNamespaces = normalizeNamespaces(namespaces);
+  const hits = searchMemexIndex({ query, maxResults: maxItems * 2, namespaces: normalizedNamespaces });
+
+  const items = [];
+  let usedChars = 0;
+  const dereferenced = [];
+
+  for (const hit of hits) {
+    if (items.length >= maxItems) break;
+    const full = dereferenceEntry(hit);
+    if (!full) continue;
+
+    const snippet = `${full.title}\n${full.content || ''}`;
+    if (usedChars + snippet.length > maxChars) continue;
+
+    items.push({
+      id: full.id,
+      namespace: hit.namespace,
+      title: full.title,
+      content: full.content,
+      tags: full.tags || [],
+      score: hit._score,
+    });
+    usedChars += snippet.length;
+    dereferenced.push(hit.id);
+  }
+
+  const packId = `memex_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const pack = {
+    packId,
+    query,
+    maxItems,
+    maxChars,
+    usedChars,
+    namespaces: normalizedNamespaces,
+    createdAt: nowIso(),
+    items,
+    indexHits: hits.length,
+    dereferencedCount: dereferenced.length,
+    cache: { hit: false },
+  };
+
+  appendJsonl(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'packs.jsonl'), pack);
+  recordProvenance({
+    type: 'memex_pack_constructed',
+    packId,
+    query,
+    indexHits: hits.length,
+    dereferencedCount: dereferenced.length,
+    usedChars,
+  });
+
+  return pack;
 }
 
 function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, namespaces = [] } = {}) {
@@ -505,6 +630,11 @@ module.exports = {
   querySimilarity,
   findSemanticCacheHit,
   getSemanticCacheConfig,
+  buildIndexEntry,
+  loadMemexIndex,
+  dereferenceEntry,
+  searchMemexIndex,
+  constructMemexPack,
 };
 
 if (require.main === module) {

@@ -21,11 +21,14 @@ let tmpDir;
 const billingTestRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'billing-suite-'));
 const testApiKeysPath = path.join(billingTestRoot, 'api-keys.json');
 const testFunnelLedgerPath = path.join(billingTestRoot, 'funnel-events.jsonl');
+const testLocalCheckoutSessionsPath = path.join(billingTestRoot, 'local-checkout-sessions.json');
 const savedApiKeysPath = process.env._TEST_API_KEYS_PATH;
 const savedFunnelPath = process.env._TEST_FUNNEL_LEDGER_PATH;
+const savedLocalCheckoutSessionsPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
 
 process.env._TEST_API_KEYS_PATH = testApiKeysPath;
 process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
+process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = testLocalCheckoutSessionsPath;
 
 after(() => {
   if (savedApiKeysPath === undefined) {
@@ -38,6 +41,12 @@ after(() => {
     delete process.env._TEST_FUNNEL_LEDGER_PATH;
   } else {
     process.env._TEST_FUNNEL_LEDGER_PATH = savedFunnelPath;
+  }
+
+  if (savedLocalCheckoutSessionsPath === undefined) {
+    delete process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
+  } else {
+    process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = savedLocalCheckoutSessionsPath;
   }
 
   fs.rmSync(billingTestRoot, { recursive: true, force: true });
@@ -101,7 +110,7 @@ function requireFreshBilling(keyStorePath, stripeKey = '') {
 }
 
 function clearBillingArtifacts() {
-  for (const target of [testApiKeysPath, testFunnelLedgerPath]) {
+  for (const target of [testApiKeysPath, testFunnelLedgerPath, testLocalCheckoutSessionsPath]) {
     if (fs.existsSync(target)) {
       fs.rmSync(target, { force: true });
     }
@@ -483,7 +492,8 @@ describe('billing.js — verifyWebhookSignature', () => {
 describe('billing.js — createCheckoutSession (local mode)', () => {
   let billing;
 
-  before(() => {
+  beforeEach(() => {
+    clearBillingArtifacts();
     delete require.cache[require.resolve('../scripts/billing')];
     // Ensure no Stripe key is set
     const oldKey = process.env.STRIPE_SECRET_KEY;
@@ -492,7 +502,8 @@ describe('billing.js — createCheckoutSession (local mode)', () => {
     if (oldKey) process.env.STRIPE_SECRET_KEY = oldKey;
   });
 
-  after(() => {
+  afterEach(() => {
+    clearBillingArtifacts();
     delete require.cache[require.resolve('../scripts/billing')];
   });
 
@@ -504,6 +515,32 @@ describe('billing.js — createCheckoutSession (local mode)', () => {
     assert.ok(result.sessionId.startsWith('local_'), `expected local_ prefix, got ${result.sessionId}`);
     assert.equal(result.localMode, true);
     assert.equal(result.url, null);
+  });
+
+  test('persists local checkout sessions and provisions an API key via session lookup', async () => {
+    const result = await billing.createCheckoutSession({
+      customerEmail: 'founder@example.com',
+      installId: 'inst_checkout_local_status',
+      metadata: { source: 'landing_page' },
+    });
+
+    assert.equal(fs.existsSync(testLocalCheckoutSessionsPath), true, 'expected local session store to exist');
+
+    const sessionStore = JSON.parse(fs.readFileSync(testLocalCheckoutSessionsPath, 'utf-8'));
+    assert.ok(sessionStore.sessions[result.sessionId], 'expected session to be persisted');
+    assert.equal(sessionStore.sessions[result.sessionId].installId, 'inst_checkout_local_status');
+
+    const status = await billing.getCheckoutSessionStatus(result.sessionId);
+    assert.equal(status.found, true);
+    assert.equal(status.localMode, true);
+    assert.equal(status.paid, true);
+    assert.equal(status.customerEmail, 'founder@example.com');
+    assert.equal(status.installId, 'inst_checkout_local_status');
+    assert.ok(status.apiKey.startsWith('rlhf_'));
+
+    const validation = billing.validateApiKey(status.apiKey);
+    assert.equal(validation.valid, true);
+    assert.equal(validation.installId, 'inst_checkout_local_status');
   });
 });
 
@@ -625,12 +662,32 @@ describe('API server — /v1/billing/* routes', () => {
 
   test('POST /v1/billing/checkout returns sessionId (local mode)', async () => {
     const res = await apiRequest('POST', '/v1/billing/checkout', {
-      successUrl: 'https://example.com/success',
-      cancelUrl: 'https://example.com/cancel',
+      installId: 'inst_api_checkout_defaults',
     });
     assert.equal(res.status, 200);
     assert.ok(res.body.sessionId, 'should have sessionId');
     assert.equal(res.body.localMode, true);
+  });
+
+  test('GET /v1/billing/session returns paid local session details and onboarding snippets', async () => {
+    const checkoutRes = await apiRequest('POST', '/v1/billing/checkout', {
+      customerEmail: 'buyer@example.com',
+      installId: 'inst_api_checkout_lookup',
+    });
+
+    assert.equal(checkoutRes.status, 200);
+    assert.ok(checkoutRes.body.sessionId);
+
+    const sessionRes = await apiRequest(
+      'GET',
+      `/v1/billing/session?sessionId=${encodeURIComponent(checkoutRes.body.sessionId)}`
+    );
+    assert.equal(sessionRes.status, 200);
+    assert.equal(sessionRes.body.paid, true);
+    assert.equal(sessionRes.body.installId, 'inst_api_checkout_lookup');
+    assert.ok(sessionRes.body.apiKey.startsWith('rlhf_'));
+    assert.match(sessionRes.body.nextSteps.env, /RLHF_API_KEY=/);
+    assert.match(sessionRes.body.nextSteps.curl, /\/v1\/feedback\/capture/);
   });
 
   test('POST /v1/billing/provision provisions a key', async () => {

@@ -5,6 +5,7 @@ const {
   createTrace,
   addStep,
   addEdgeCase,
+  computeControllability,
   finalizeTrace,
   traceForSelfHealFix,
   traceForDpoPair,
@@ -242,6 +243,61 @@ test('traceForProofCheck — failing check', () => {
   assert.ok(trace.summary.refuted >= 1);
 });
 
+test('computeControllability — empty trace scores 0', () => {
+  const trace = createTrace('verification', 'test');
+  const result = computeControllability(trace);
+  assert.equal(result.score, 0);
+  assert.deepEqual(result.flags, ['empty_trace']);
+});
+
+test('computeControllability — all-verified + no edge cases flags suspicion', () => {
+  const trace = createTrace('verification', 'test');
+  addStep(trace, { location: 'a:1', claim: 'c1', evidence: 'solid evidence here', verdict: 'verified' });
+  addStep(trace, { location: 'a:2', claim: 'c2', evidence: 'more evidence here', verdict: 'verified' });
+  addStep(trace, { location: 'a:3', claim: 'c3', evidence: 'good evidence here', verdict: 'verified' });
+  const result = computeControllability(trace);
+  assert.ok(result.flags.includes('all_verified'));
+  assert.ok(result.flags.includes('no_edge_cases'));
+  assert.ok(result.score >= 0.5);
+});
+
+test('computeControllability — identical evidence is flagged', () => {
+  const trace = createTrace('verification', 'test');
+  addStep(trace, { location: 'a:1', claim: 'c1', evidence: 'same', verdict: 'verified' });
+  addStep(trace, { location: 'a:2', claim: 'c2', evidence: 'same', verdict: 'verified' });
+  addStep(trace, { location: 'a:3', claim: 'c3', evidence: 'same', verdict: 'verified' });
+  const result = computeControllability(trace);
+  assert.ok(result.flags.includes('identical_evidence'));
+});
+
+test('computeControllability — thin evidence is flagged', () => {
+  const trace = createTrace('verification', 'test');
+  addStep(trace, { location: 'a:1', claim: 'c1', evidence: 'ok', verdict: 'verified' });
+  addStep(trace, { location: 'a:2', claim: 'c2', evidence: 'yes', verdict: 'unverified' });
+  addEdgeCase(trace, 'edge case present');
+  const result = computeControllability(trace);
+  assert.ok(result.flags.includes('thin_evidence'));
+});
+
+test('computeControllability — well-formed trace has low score', () => {
+  const trace = createTrace('verification', 'test');
+  addStep(trace, { location: 'a:1', claim: 'c1', evidence: 'Ran npm test, 45 tests passed in 2.3s', verdict: 'verified' });
+  addStep(trace, { location: 'a:2', claim: 'c2', evidence: 'git diff shows 3 files changed', verdict: 'verified' });
+  addStep(trace, { location: 'a:3', claim: 'c3', evidence: 'Coverage report: 87% lines', verdict: 'unverified' });
+  addEdgeCase(trace, 'Module not loaded in CI environment');
+  const result = computeControllability(trace);
+  assert.equal(result.score, 0);
+  assert.deepEqual(result.flags, []);
+});
+
+test('finalizeTrace includes controllability in summary', () => {
+  const trace = createTrace('verification', 'test');
+  addStep(trace, { location: 'a:1', claim: 'c1', evidence: 'ev', verdict: 'verified' });
+  finalizeTrace(trace);
+  assert.ok(typeof trace.summary.controllability === 'number');
+  assert.ok(Array.isArray(trace.summary.controllabilityFlags));
+});
+
 test('aggregateTraces — mixed results', () => {
   const t1 = createTrace('verification', 'a');
   addStep(t1, { location: 'x:1', claim: 'c1', verdict: 'verified' });
@@ -260,6 +316,7 @@ test('aggregateTraces — mixed results', () => {
   assert.equal(agg.refuted, 1);
   assert.equal(agg.allPassed, false);
   assert.ok(agg.averageConfidence > 0);
+  assert.equal(typeof agg.flaggedTraces, 'number');
 });
 
 test('aggregateTraces — empty input', () => {

@@ -71,12 +71,33 @@ function addEdgeCase(trace, description) {
   return trace;
 }
 
+function computeControllability(trace) {
+  const steps = trace.steps;
+  const edgeCases = trace.edgeCases;
+  if (steps.length === 0) return { score: 0, flags: ['empty_trace'] };
+
+  const flags = [];
+  const allVerified = steps.every((s) => s.verdict === 'verified');
+  const allSameEvidence = new Set(steps.map((s) => s.evidence)).size === 1 && steps.length > 1;
+  const shortEvidence = steps.filter((s) => s.evidence.length < 10).length;
+  const noEdgeCases = edgeCases.length === 0;
+
+  if (allVerified && steps.length > 2) flags.push('all_verified');
+  if (allSameEvidence) flags.push('identical_evidence');
+  if (shortEvidence > steps.length / 2) flags.push('thin_evidence');
+  if (noEdgeCases && steps.length > 1) flags.push('no_edge_cases');
+
+  const score = Math.round((flags.length / 4) * 1000) / 1000;
+  return { score, flags };
+}
+
 function finalizeTrace(trace, { confidenceThreshold = DEFAULT_CONFIDENCE_THRESHOLD } = {}) {
   const totalSteps = trace.steps.length;
   const verified = trace.steps.filter((s) => s.verdict === 'verified').length;
   const unverified = trace.steps.filter((s) => s.verdict === 'unverified').length;
   const refuted = trace.steps.filter((s) => s.verdict === 'refuted').length;
   const confidence = totalSteps > 0 ? Math.round((verified / totalSteps) * 1000) / 1000 : 0;
+  const ctrl = computeControllability(trace);
 
   trace.summary = {
     totalSteps,
@@ -85,6 +106,8 @@ function finalizeTrace(trace, { confidenceThreshold = DEFAULT_CONFIDENCE_THRESHO
     refuted,
     confidence,
     passed: confidence >= confidenceThreshold && refuted === 0,
+    controllability: ctrl.score,
+    controllabilityFlags: ctrl.flags,
   };
 
   return trace;
@@ -291,6 +314,7 @@ function aggregateTraces(traces) {
     refuted,
     averageConfidence: avgConfidence,
     allPassed: passedTraces === totalTraces,
+    flaggedTraces: traces.filter((t) => t.summary && t.summary.controllability > 0.5).length,
   };
 }
 
@@ -298,6 +322,7 @@ module.exports = {
   createTrace,
   addStep,
   addEdgeCase,
+  computeControllability,
   finalizeTrace,
   traceForSelfHealFix,
   traceForDpoPair,

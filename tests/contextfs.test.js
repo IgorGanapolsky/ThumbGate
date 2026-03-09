@@ -18,6 +18,10 @@ const {
   evaluateContextPack,
   getProvenance,
   querySimilarity,
+  loadMemexIndex,
+  searchMemexIndex,
+  dereferenceEntry,
+  constructMemexPack,
 } = require('../scripts/contextfs');
 
 test.after(() => {
@@ -99,4 +103,87 @@ test('constructContextPack returns semantic cache hit on similar query', () => {
 test('querySimilarity computes jaccard overlap', () => {
   const score = querySimilarity(['a', 'b', 'c'], ['a', 'b', 'd']);
   assert.equal(score, 0.5);
+});
+
+/* ── Memex Indexed Memory Tests ────────────────────────────────── */
+
+test('writeContextObject auto-indexes into memex', () => {
+  const index = loadMemexIndex();
+  assert.ok(index.length >= 1, 'index should have entries from earlier registerFeedback calls');
+  const entry = index[0];
+  assert.ok(entry.id, 'entry has id');
+  assert.ok(entry.stableRef, 'entry has stableRef path');
+  assert.ok(entry.title, 'entry has title');
+  assert.ok(typeof entry.digest === 'string', 'entry has digest');
+  assert.ok(entry.digest.length <= 120, 'digest is truncated');
+});
+
+test('dereferenceEntry loads full document from stableRef', () => {
+  const index = loadMemexIndex();
+  const entry = index.find((e) => e.stableRef);
+  assert.ok(entry, 'need at least one indexed entry');
+  const full = dereferenceEntry(entry);
+  assert.ok(full, 'dereference should return document');
+  assert.equal(full.id, entry.id);
+  assert.ok(full.content.length >= entry.digest.length, 'full content >= digest');
+});
+
+test('dereferenceEntry returns null for missing file', () => {
+  const result = dereferenceEntry({ stableRef: '/tmp/nonexistent-file.json' });
+  assert.equal(result, null);
+});
+
+test('dereferenceEntry returns null for null input', () => {
+  assert.equal(dereferenceEntry(null), null);
+  assert.equal(dereferenceEntry({}), null);
+});
+
+test('searchMemexIndex returns ranked results without loading full content', () => {
+  const results = searchMemexIndex({ query: 'verification testing' });
+  assert.ok(Array.isArray(results));
+  assert.ok(results.length >= 1);
+  results.forEach((r) => {
+    assert.ok(r.id, 'result has id');
+    assert.ok(typeof r._score === 'number', 'result has score');
+    assert.ok(!r.content, 'result should NOT have full content (index only)');
+  });
+  for (let i = 1; i < results.length; i++) {
+    assert.ok(results[i]._score <= results[i - 1]._score, 'results sorted by score desc');
+  }
+});
+
+test('searchMemexIndex filters by namespace', () => {
+  const results = searchMemexIndex({
+    query: 'verification',
+    namespaces: ['memoryError'],
+  });
+  results.forEach((r) => {
+    assert.ok(r.namespace.includes('memory/error'), 'should only return error namespace');
+  });
+});
+
+test('constructMemexPack builds pack via index then dereference', () => {
+  const pack = constructMemexPack({
+    query: 'verification testing',
+    maxItems: 5,
+    maxChars: 5000,
+  });
+  assert.ok(pack.packId.startsWith('memex_'), 'packId starts with memex_');
+  assert.ok(typeof pack.indexHits === 'number', 'has indexHits count');
+  assert.ok(typeof pack.dereferencedCount === 'number', 'has dereferencedCount');
+  assert.ok(pack.dereferencedCount <= pack.indexHits, 'dereferenced <= index hits');
+  assert.ok(Array.isArray(pack.items));
+  assert.ok(pack.usedChars <= pack.maxChars, 'respects char budget');
+  pack.items.forEach((item) => {
+    assert.ok(item.content, 'dereferenced items have full content');
+  });
+});
+
+test('constructMemexPack respects maxChars budget', () => {
+  const pack = constructMemexPack({
+    query: 'verification testing rules prevention',
+    maxItems: 100,
+    maxChars: 50,
+  });
+  assert.ok(pack.usedChars <= 50, 'total chars within budget');
 });
