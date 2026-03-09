@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const {
   KNOWN_FIX_SCRIPTS,
   buildFixPlan,
+  quickHealthCheck,
   runFixPlan,
   runSelfHeal,
   loadPackageScripts,
@@ -161,4 +162,57 @@ test('runSelfHeal traces have correct type and structure', () => {
     assert.ok(trace.steps.length >= 1);
     assert.ok(Array.isArray(trace.edgeCases));
   });
+});
+
+test('quickHealthCheck returns healthy boolean', () => {
+  const result = quickHealthCheck({
+    runner: () => ({ exitCode: 0, durationMs: 1, stdout: '', stderr: '', error: null }),
+  });
+  assert.equal(result.healthy, true);
+  assert.equal(result.exitCode, 0);
+});
+
+test('quickHealthCheck returns unhealthy on failure', () => {
+  const result = quickHealthCheck({
+    runner: () => ({ exitCode: 1, durationMs: 1, stdout: '', stderr: 'fail', error: null }),
+  });
+  assert.equal(result.healthy, false);
+  assert.equal(result.exitCode, 1);
+});
+
+test('adaptive runFixPlan skips remaining scripts when healthy', () => {
+  const report = runFixPlan({
+    plan: ['lint:fix', 'format', 'fix'],
+    adaptive: true,
+    runner: () => ({ exitCode: 0, durationMs: 1, stdout: '', stderr: '', error: null }),
+  });
+  assert.equal(report.results.length, 1);
+  assert.deepEqual(report.skipped, ['format', 'fix']);
+});
+
+test('adaptive runFixPlan continues when health check fails', () => {
+  const calls = [];
+  const report = runFixPlan({
+    plan: ['lint:fix', 'format'],
+    adaptive: true,
+    runner: (command) => {
+      const name = command.join(' ');
+      calls.push(name);
+      if (name === 'npm test') return { exitCode: 1, durationMs: 1, stdout: '', stderr: '', error: null };
+      return { exitCode: 0, durationMs: 1, stdout: '', stderr: '', error: null };
+    },
+  });
+  assert.equal(report.results.length, 2);
+  assert.deepEqual(report.skipped, []);
+  assert.ok(calls.includes('npm test'));
+});
+
+test('non-adaptive runFixPlan has empty skipped array', () => {
+  const report = runFixPlan({
+    plan: ['lint:fix', 'format'],
+    adaptive: false,
+    runner: () => ({ exitCode: 0, durationMs: 1, stdout: '', stderr: '', error: null }),
+  });
+  assert.equal(report.results.length, 2);
+  assert.deepEqual(report.skipped, []);
 });

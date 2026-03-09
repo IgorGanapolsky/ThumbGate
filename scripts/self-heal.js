@@ -48,9 +48,18 @@ function listChangedFiles({ cwd = PROJECT_ROOT } = {}) {
     .filter(Boolean);
 }
 
-function runFixPlan({ plan, runner = runCommand, cwd = PROJECT_ROOT } = {}) {
+function quickHealthCheck({ runner = runCommand, cwd = PROJECT_ROOT } = {}) {
+  const run = runner(['npm', 'test'], { cwd, timeoutMs: 5 * 60_000 });
+  return { healthy: run.exitCode === 0, exitCode: run.exitCode };
+}
+
+function runFixPlan({ plan, runner = runCommand, cwd = PROJECT_ROOT, adaptive = false } = {}) {
   const results = [];
-  plan.forEach((scriptName) => {
+  const remaining = [...plan];
+  const skipped = [];
+
+  while (remaining.length > 0) {
+    const scriptName = remaining.shift();
     const filesBefore = new Set(listChangedFiles({ cwd }));
     const run = runner(['npm', 'run', scriptName], { cwd, timeoutMs: 10 * 60_000 });
     const filesAfter = listChangedFiles({ cwd });
@@ -64,13 +73,22 @@ function runFixPlan({ plan, runner = runCommand, cwd = PROJECT_ROOT } = {}) {
       outputTail: `${run.stdout}\n${run.stderr}`.trim().slice(-2000),
       changedFiles: scriptChangedFiles,
     });
-  });
+
+    if (adaptive && remaining.length > 0) {
+      const health = quickHealthCheck({ runner, cwd });
+      if (health.healthy) {
+        skipped.push(...remaining.splice(0));
+        break;
+      }
+    }
+  }
 
   const successful = results.filter((x) => x.status === 'success').length;
   return {
     successful,
     failed: results.length - successful,
     total: results.length,
+    skipped,
     results,
   };
 }
@@ -80,7 +98,8 @@ function runSelfHeal({ reason = 'unknown', cwd = PROJECT_ROOT } = {}) {
   const beforeSet = new Set(beforeChanges);
   const scripts = loadPackageScripts();
   const plan = buildFixPlan(scripts);
-  const execution = runFixPlan({ plan, cwd });
+  const adaptive = process.env.RLHF_ADAPTIVE_HEAL !== 'false';
+  const execution = runFixPlan({ plan, cwd, adaptive });
   const afterChanges = listChangedFiles({ cwd });
   const changedFiles = afterChanges.filter((filePath) => !beforeSet.has(filePath));
 
@@ -118,6 +137,7 @@ module.exports = {
   KNOWN_FIX_SCRIPTS,
   loadPackageScripts,
   buildFixPlan,
+  quickHealthCheck,
   runFixPlan,
   runSelfHeal,
 };

@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { getActiveMcpProfile, getAllowedTools } = require('./mcp-policy');
+const { loadModel, samplePosteriors } = require('./thompson-sampling');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_BUNDLE_DIR = path.join(PROJECT_ROOT, 'config', 'policy-bundles');
@@ -82,12 +83,54 @@ function listIntents(options = {}) {
   };
 }
 
+/* ── Token Budget Defaults ──────────────────────────────────────── */
+const DEFAULT_TOKEN_BUDGET = {
+  total: 12000,
+  perAction: 4000,
+  contextPack: 6000,
+};
+
+function resolveTokenBudget(overrides = {}) {
+  const budget = { ...DEFAULT_TOKEN_BUDGET };
+  if (typeof overrides.total === 'number' && overrides.total > 0) budget.total = overrides.total;
+  if (typeof overrides.perAction === 'number' && overrides.perAction > 0) budget.perAction = overrides.perAction;
+  if (typeof overrides.contextPack === 'number' && overrides.contextPack > 0) budget.contextPack = overrides.contextPack;
+  return budget;
+}
+
+/* ── Planning Decomposition ────────────────────────────────────── */
+
+function decomposeActions(actions) {
+  if (!Array.isArray(actions) || actions.length === 0) return [];
+
+  const phases = [];
+  let currentPhase = { kind: actions[0].kind, actions: [] };
+
+  actions.forEach((action) => {
+    if (action.kind === currentPhase.kind) {
+      currentPhase.actions.push(action);
+    } else {
+      phases.push(currentPhase);
+      currentPhase = { kind: action.kind, actions: [action] };
+    }
+  });
+  phases.push(currentPhase);
+
+  return phases.map((phase, i) => ({
+    phaseIndex: i,
+    kind: phase.kind,
+    parallel: phase.actions.length > 1,
+    actions: phase.actions,
+  }));
+}
+
 function planIntent(options = {}) {
   const bundle = loadPolicyBundle(options.bundleId);
   const profile = assertKnownMcpProfile(options.mcpProfile || getActiveMcpProfile());
   const intentId = String(options.intentId || '').trim();
   const context = String(options.context || '').trim();
   const approved = options.approved === true;
+  const tokenBudget = resolveTokenBudget(options.tokenBudget);
 
   if (!intentId) {
     throw new Error('intentId is required');
@@ -101,6 +144,7 @@ function planIntent(options = {}) {
   const requiredRisks = getRequiredApprovalRisks(bundle, profile);
   const requiresApproval = requiredRisks.includes(intent.risk);
   const checkpointRequired = requiresApproval && !approved;
+  const phases = decomposeActions(intent.actions);
 
   return {
     bundleId: bundle.bundleId,
@@ -123,11 +167,50 @@ function planIntent(options = {}) {
       }
       : null,
     actions: intent.actions,
+    phases,
+    tokenBudget,
+  };
+}
+
+const ACTION_CATEGORY_MAP = {
+  capture_feedback: 'code_edit',
+  feedback_summary: 'debugging',
+  prevention_rules: 'security',
+  construct_context_pack: 'architecture',
+  export_dpo_pairs: 'testing',
+  context_provenance: 'search',
+  evaluate_context_pack: 'pr_review',
+};
+
+function getDefaultModelPath() {
+  const feedbackDir = process.env.RLHF_FEEDBACK_DIR
+    || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+  return path.join(feedbackDir, 'feedback_model.json');
+}
+
+function scoreActions(actions, modelPath) {
+  const model = loadModel(modelPath || getDefaultModelPath());
+  const posteriors = samplePosteriors(model);
+
+  return actions.map((action) => {
+    const category = ACTION_CATEGORY_MAP[action.name] || 'uncategorized';
+    const score = posteriors[category] !== undefined ? posteriors[category] : 0.5;
+    return { action, category, score };
+  }).sort((a, b) => b.score - a.score);
+}
+
+function rankActions(actions, options = {}) {
+  const modelPath = options.modelPath || getDefaultModelPath();
+  const scored = scoreActions(actions, modelPath);
+  return {
+    ranked: scored.map((s) => s.action),
+    scores: scored.map((s) => ({ name: s.action.name, category: s.category, score: s.score })),
   };
 }
 
 module.exports = {
   DEFAULT_BUNDLE_DIR,
+  DEFAULT_TOKEN_BUDGET,
   RISK_LEVELS,
   getDefaultBundleId,
   getBundlePath,
@@ -137,6 +220,11 @@ module.exports = {
   assertKnownMcpProfile,
   listIntents,
   planIntent,
+  resolveTokenBudget,
+  decomposeActions,
+  ACTION_CATEGORY_MAP,
+  scoreActions,
+  rankActions,
 };
 
 if (require.main === module) {
