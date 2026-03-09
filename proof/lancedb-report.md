@@ -1,6 +1,6 @@
 # LanceDB Vector Storage Proof Report
 
-Generated: 2026-03-06T23:02:47.508Z
+Generated: 2026-03-09T16:07:33.949Z
 Phase: 04-lancedb-vector-storage
 
 **Passed: 4 | Failed: 1 | Warned: 0**
@@ -9,7 +9,7 @@ Phase: 04-lancedb-vector-storage
 
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
-| VEC-01 | PASS | lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-UOjM7X/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: rlhf_memories. |
+| VEC-01 | PASS | lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-EhN4XL/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: rlhf_memories. |
 | VEC-02 | PASS | scripts/vector-store.js uses dynamic import() at line 16: `_lancedb = await import('@lancedb/lancedb');`; line 23: `const { pipeline } = await import('@huggingface/transformers');`. Total dynamic import() calls: 2. This is the only CJS-compatible approach for ESM-only @lancedb/lancedb and @huggingface/transformers. |
 | VEC-03 | PASS | package.json: apache-arrow="^18.1.0" (base: 18.1.0), @lancedb/lancedb="^0.26.2". LanceDB 0.26.2 peer dep is apache-arrow >=15.0.0 <=18.1.0. Arrow 19+ breaks binary compat. Pin confirmed safe: 18.1.0 <= 18.1.0 ceiling. |
 | VEC-04 | PASS | searchSimilar() returned 2 result(s). proof-vec01 present: true. proof-vec04-b present: true. API: searchSimilar(queryText, limit=10) returns vector-ranked rows from rlhf_memories table. Note: stub embed (RLHF_VECTOR_STUB_EMBED=true) returns identical 384-dim unit vectors — ranking is insertion-order with stub, cosine similarity with real ONNX model. |
@@ -19,7 +19,7 @@ Phase: 04-lancedb-vector-storage
 
 ### VEC-01 — PASS
 
-lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-UOjM7X/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: rlhf_memories.
+lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-EhN4XL/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: rlhf_memories.
 
 ### VEC-02 — PASS
 

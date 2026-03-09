@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-03-09T16:02:00.370Z",
-  "durationMs": 13472,
+  "generatedAt": "2026-03-09T16:07:27.472Z",
+  "durationMs": 13247,
   "overall_status": "healthy",
   "summary": {
     "total": 4,
@@ -13,7 +13,7 @@
       "command": "npm run budget:status",
       "status": "healthy",
       "exitCode": 0,
-      "durationMs": 256,
+      "durationMs": 208,
       "error": null,
       "outputTail": "> rlhf-feedback-loop@0.6.10 budget:status\n> node scripts/budget-guard.js --status\n\n{\n  \"month\": \"2026-03\",\n  \"totalUsd\": 0,\n  \"budgetUsd\": 10,\n  \"remainingUsd\": 10\n}"
     },
@@ -22,16 +22,16 @@
       "command": "npm test",
       "status": "healthy",
       "exitCode": 0,
-      "durationMs": 11600,
+      "durationMs": 11560,
       "error": null,
-      "outputTail": "(1.051416ms)\n  ✔ POST /v1/billing/webhook handles customer.subscription.deleted (2.037625ms)\n  ✔ POST /v1/billing/provision without customerId returns 400 (0.424084ms)\n  ✔ invalid Bearer key returns 401 on protected route (0.529375ms)\n  ✔ usage metering increments after authenticated API call (2.58825ms)\n  ✔ GET /v1/analytics/funnel returns counts and conversion rates (0.445917ms)\n✔ API server — /v1/billing/* routes (26.284875ms)\n▶ API server — admin provision boundary\n  ✔ admin static token can call POST /v1/billing/provision (1.067458ms)\n  ✔ billing key is forbidden from POST /v1/billing/provision (0.806ms)\n✔ API server — admin provision boundary (3.458791ms)\nℹ tests 34\nℹ suites 10\nℹ pass 34\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 136.612833\n\n> rlhf-feedback-loop@0.6.10 test:cli\n> node --test tests/cli.test.js\n\n▶ bin/cli.js\n  ✔ CLI file exists and is executable (0.462583ms)\n  ✔ help command exits 0 and lists subcommands (61.564625ms)\n  ✔ --help flag exits 0 (64.841167ms)\n  ✔ no-arg invocation exits 0 with help (60.81925ms)\n  ✔ unknown command exits 1 (61.809625ms)\n  ✔ init creates .rlhf/ directory (127.850334ms)\n  ✔ init creates config.json with required fields (0.231167ms)\n  ✔ init emits acquisition funnel event correlated by installId (116.934625ms)\n  ✔ init creates .mcp.json with server entry (0.227083ms)\n  ✔ init output includes initialized message and platform detection (110.484667ms)\n  ✔ capture --feedback=up routes to full engine (56.83425ms)\n  ✔ capture --feedback=down routes to full engine (62.630791ms)\n  ✔ serve responds to initialize over Content-Length framed transport (66.405375ms)\n  ✔ serve responds to initialize over newline-delimited JSON transport (63.558958ms)\n  ✔ serve returns ndjson error envelope for malformed ndjson input (65.347458ms)\n  ✔ init is idempotent — running twice exits 0 (126.335084ms)\n✔ bin/cli.js (1048.889583ms)\nℹ tests 16\nℹ suites 1\nℹ pass 16\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1132.718958"
+      "outputTail": "d (1.125375ms)\n  ✔ POST /v1/billing/webhook handles customer.subscription.deleted (1.605542ms)\n  ✔ POST /v1/billing/provision without customerId returns 400 (0.412459ms)\n  ✔ invalid Bearer key returns 401 on protected route (0.6475ms)\n  ✔ usage metering increments after authenticated API call (3.021167ms)\n  ✔ GET /v1/analytics/funnel returns counts and conversion rates (0.491916ms)\n✔ API server — /v1/billing/* routes (26.657625ms)\n▶ API server — admin provision boundary\n  ✔ admin static token can call POST /v1/billing/provision (1.112375ms)\n  ✔ billing key is forbidden from POST /v1/billing/provision (0.783458ms)\n✔ API server — admin provision boundary (3.280834ms)\nℹ tests 34\nℹ suites 10\nℹ pass 34\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 134.464208\n\n> rlhf-feedback-loop@0.6.10 test:cli\n> node --test tests/cli.test.js\n\n▶ bin/cli.js\n  ✔ CLI file exists and is executable (0.50025ms)\n  ✔ help command exits 0 and lists subcommands (62.628417ms)\n  ✔ --help flag exits 0 (63.610833ms)\n  ✔ no-arg invocation exits 0 with help (63.3185ms)\n  ✔ unknown command exits 1 (60.491459ms)\n  ✔ init creates .rlhf/ directory (126.110667ms)\n  ✔ init creates config.json with required fields (0.308375ms)\n  ✔ init emits acquisition funnel event correlated by installId (109.821375ms)\n  ✔ init creates .mcp.json with server entry (0.23525ms)\n  ✔ init output includes initialized message and platform detection (111.585584ms)\n  ✔ capture --feedback=up routes to full engine (61.553167ms)\n  ✔ capture --feedback=down routes to full engine (65.015542ms)\n  ✔ serve responds to initialize over Content-Length framed transport (63.472375ms)\n  ✔ serve responds to initialize over newline-delimited JSON transport (65.656875ms)\n  ✔ serve returns ndjson error envelope for malformed ndjson input (65.741416ms)\n  ✔ init is idempotent — running twice exits 0 (121.265667ms)\n✔ bin/cli.js (1043.833625ms)\nℹ tests 16\nℹ suites 1\nℹ pass 16\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1125.3925"
     },
     {
       "name": "prove_adapters",
       "command": "npm run prove:adapters",
       "status": "healthy",
       "exitCode": 0,
-      "durationMs": 586,
+      "durationMs": 577,
       "error": null,
       "outputTail": "> rlhf-feedback-loop@0.6.10 prove:adapters\n> node scripts/prove-adapters.js\n\n{\n  \"passed\": 21,\n  \"failed\": 0\n}\n\ndtype not specified for \"model\". Using the default dtype (fp32) for this device (cpu)."
     },
@@ -40,7 +40,7 @@
       "command": "npm run prove:automation",
       "status": "healthy",
       "exitCode": 0,
-      "durationMs": 1028,
+      "durationMs": 901,
       "error": null,
       "outputTail": "> rlhf-feedback-loop@0.6.10 prove:automation\n> node scripts/prove-automation.js\n\n{\n  \"passed\": 14,\n  \"failed\": 0\n}\n\ndtype not specified for \"model\". Using the default dtype (fp32) for this device (cpu).\ndtype not specified for \"model\". Using the default dtype (fp32) for this device (cpu)."
     }

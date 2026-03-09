@@ -176,7 +176,7 @@ MIT
 
 ## Test Count
 
-560+ passing Node test assertions in the current coverage runner, plus inline script test phases in CI. No placeholder results.
+570 passing Node test assertions in the current coverage runner, plus inline script test phases in CI. No placeholder results.
 
 ```bash
 npm test

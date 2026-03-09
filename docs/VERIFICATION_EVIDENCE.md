@@ -257,9 +257,9 @@ Observed results:
 
 - `npm test`: pass.
 - `npm run test:coverage`: pass with Node test runner coverage summary:
-  - line coverage: `81.57%`
-  - branch coverage: `67.00%`
-  - function coverage: `83.65%`
+  - line coverage: `81.61%`
+  - branch coverage: `67.06%`
+  - function coverage: `83.76%`
 - `npm run prove:adapters`: pass with `21 passed`, `0 failed`.
 - `npm run prove:automation`: pass with `14 passed`, `0 failed`.
 - `self-healing-check`: `Overall: HEALTHY` with `4/4` healthy checks.

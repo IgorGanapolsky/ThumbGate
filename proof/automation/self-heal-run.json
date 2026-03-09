@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-09T16:02:00.780Z",
+  "timestamp": "2026-03-09T16:07:27.786Z",
   "reason": "manual",
   "plan": [
     "feedback:rules"
@@ -13,7 +13,7 @@
         "script": "feedback:rules",
         "status": "success",
         "exitCode": 0,
-        "durationMs": 256,
+        "durationMs": 207,
         "error": null,
         "outputTail": "> rlhf-feedback-loop@0.6.10 feedback:rules\n> node .claude/scripts/feedback/capture-feedback.js --rules\n\nWrote prevention rules to /Users/ganapolsky_i/workspace/git/igor/_worktrees/rlhf-tech-debt/.claude/memory/feedback/prevention-rules.md",
         "changedFiles": []
@@ -25,35 +25,16 @@
     ".claude/context-engine/quality-log.json",
     ".rlhf/feedback-log.jsonl",
     ".rlhf/feedback-summary.json",
-    ".well-known/mcp/server-card.json",
-    "CLAUDE.md",
-    "docs/VERIFICATION_EVIDENCE.md",
-    "docs/landing-page.html",
-    "docs/mcp-hub-submission.md",
-    "package-lock.json",
-    "package.json",
     "proof/attribution-report.json",
     "proof/attribution-report.md",
+    "proof/automation/report.json",
+    "proof/automation/report.md",
     "proof/automation/self-heal-run.json",
     "proof/automation/self-healing-health.json",
-    "proof/baseline-test-count.md",
-    "proof/contract-audit-report.md",
-    "proof/data-quality-report.json",
-    "proof/data-quality-report.md",
-    "proof/intelligence-report.json",
-    "proof/intelligence-report.md",
+    "proof/compatibility/report.json",
+    "proof/compatibility/report.md",
     "proof/lancedb-report.json",
-    "proof/lancedb-report.md",
-    "proof/loop-closure-report.json",
-    "proof/loop-closure-report.md",
-    "proof/training-export-report.json",
-    "proof/training-export-report.md",
-    "proof/v2-milestone-report.json",
-    "proof/v2-milestone-report.md",
-    "proof/v3-milestone-report.json",
-    "proof/v3-milestone-report.md",
-    "scripts/code-reasoning.js",
-    "server.json"
+    "proof/lancedb-report.md"
   ],
   "changedFiles": [],
   "changed": false,
@@ -71,15 +52,15 @@
   },
   "traces": [
     {
-      "traceId": "trace-5774f59f9645",
-      "timestamp": "2026-03-09T16:02:00.779Z",
+      "traceId": "trace-721cfaa183a8",
+      "timestamp": "2026-03-09T16:07:27.785Z",
       "type": "self-heal",
       "subject": "feedback:rules",
       "steps": [
         {
           "location": "npm run feedback:rules",
           "claim": "Fix script \"feedback:rules\" executes without error",
-          "evidence": "Exit code 0, completed in 256ms",
+          "evidence": "Exit code 0, completed in 207ms",
           "verdict": "verified"
         },
         {
