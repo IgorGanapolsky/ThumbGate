@@ -84,7 +84,7 @@ test('Anchor-Memory Management - keeps foundational logs in context', async (t) 
 
   console.log = originalLog;
 
-  const activationLog = logs.find(l => l.includes('Activating Gemini'));
+  const activationLog = logs.find(l => l.includes('Activating') && l.includes('anchors'));
   assert.ok(activationLog, 'Should have found Activation log');
   assert.ok(activationLog.includes('5 anchors'), `Should include 5 anchor logs, found: ${activationLog}`);
   assert.ok(activationLog.includes('3 new events'), `Should include 3 new events, found: ${activationLog}`);

@@ -48,6 +48,28 @@ function saveState(state) {
 const { createRuleProposal, createReasoningTrace } = require('./a2ui-engine');
 
 async function consolidateMemory() {
+  const paths = getFeedbackPaths();
+  const state = loadState();
+
+  // Fake consolidation mode for tests — bypasses Gemini API call
+  if (process.env.ADK_FAKE_CONSOLIDATION === 'true') {
+    const allLogs = readJSONL(paths.FEEDBACK_LOG_PATH);
+    if (allLogs.length === 0) {
+      console.log('[ADK Consolidator] No logs to consolidate.');
+      return;
+    }
+    const stub = '## ADK Semantic Consolidations\n\n' +
+      '- ALWAYS check environment variables before running scripts.\n' +
+      '- NEVER deploy without verifying database connection strings.\n' +
+      '- ALWAYS verify port availability before starting servers.\n';
+    ensureDir(path.dirname(paths.PREVENTION_RULES_PATH));
+    fs.writeFileSync(paths.PREVENTION_RULES_PATH, stub, 'utf-8');
+    state.lastProcessedFeedbackId = allLogs[allLogs.length - 1].id;
+    saveState(state);
+    console.log('[ADK Consolidator] Fake consolidation complete (ADK_FAKE_CONSOLIDATION=true).');
+    return;
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.warn('[ADK Consolidator] GEMINI_API_KEY is not set. Skipping active consolidation.');
@@ -55,8 +77,6 @@ async function consolidateMemory() {
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  const paths = getFeedbackPaths();
-  const state = loadState();
 
   const allLogs = readJSONL(paths.FEEDBACK_LOG_PATH);
   
