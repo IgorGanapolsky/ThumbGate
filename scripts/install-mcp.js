@@ -43,7 +43,12 @@ function loadSettings(filePath) {
     return null;
   }
   const raw = fs.readFileSync(filePath, 'utf8');
-  return JSON.parse(raw);
+  try {
+    return JSON.parse(raw);
+  } catch {
+    console.warn(`Warning: ${filePath} contains malformed JSON. Starting fresh.`);
+    return {};
+  }
 }
 
 function backupFile(filePath) {
