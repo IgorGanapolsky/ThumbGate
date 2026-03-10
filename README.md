@@ -8,7 +8,7 @@
 [![Marketplace Ready](https://img.shields.io/badge/Anthropic_Marketplace-Ready-blue)](docs/ANTHROPIC_MARKETPLACE_STRATEGY.md)
 [![GEO Optimized](https://img.shields.io/badge/GEO-optimized-orange)](docs/geo-strategy-for-ai-agents.md)
 
-The open-source RLHF Feedback Loop captures preference signals, generates prevention rules, and exports DPO-ready data for AI agents. Cloud Pro adds the hosted layer teams actually pay for: shared memory, provisioned API keys, funnel evidence, and team-safe workflow runs.
+Feedback-Driven Development (FDD) for AI agents. The open-source RLHF Feedback Loop captures preference signals, steers behavior via Thompson Sampling, generates prevention rules, and exports KTO/DPO training pairs for downstream fine-tuning. Cloud Pro adds the hosted layer teams actually pay for: shared memory, provisioned API keys, funnel evidence, and team-safe workflow runs.
 
 The best first paid wedge is not "agent infra" by itself. It is one workflow with a clear business outcome, such as lead-to-meeting, onboarding, or internal ops automation. This repo is the reliability layer behind that workflow.
 
@@ -36,6 +36,12 @@ Optional auto-installer:
 npx add-mcp rlhf-feedback-loop
 ```
 
+### As npm package
+
+```bash
+npm install rlhf-feedback-loop
+```
+
 The MCP is intentionally strict: a bare `thumbs up` or `thumbs down` is logged as a signal, but reusable memory promotion requires one sentence explaining why. If feedback is vague, the server asks for clarification instead of pretending it learned something.
 
 ## OSS vs Cloud Pro
@@ -47,7 +53,7 @@ The OSS package stays free. Cloud Pro remains a low-friction founding offer whil
 | Price | `$0` | `$10/mo` |
 | Feedback capture | Local MCP server | Hosted HTTPS API |
 | Storage | Your machine | Managed cloud |
-| DPO export | CLI command | API endpoint |
+| KTO/DPO export | CLI command | API endpoint |
 | Team sharing | Manual | Built-in |
 | Onboarding | Self-serve | Checkout + provisioned API key |
 
@@ -86,7 +92,7 @@ Cloud Pro sits underneath that workflow as the hosted memory, guardrail, and evi
 
 ![RLHF Feedback Loop Architecture](docs/diagrams/rlhf-architecture-pb.png)
 
-Five-phase pipeline: **Capture** human signals → **Validate** with rubric engine → **Learn** via LanceDB vector memory → **Prevent** repeated mistakes → **Export** DPO pairs for fine-tuning.
+Five-phase pipeline: **Capture** human signals → **Validate** with rubric engine → **Learn** via LanceDB vector memory → **Prevent** repeated mistakes → **Export** KTO/DPO pairs for fine-tuning.
 
 ![Plugin Topology](docs/diagrams/plugin-topology-pb.png)
 
