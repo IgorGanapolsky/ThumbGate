@@ -59,19 +59,19 @@ Pick your platform:
 
 ```bash
 # Claude
-claude mcp add rlhf -- npx -y rlhf-feedback-loop serve
+claude mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve
 
 # Codex
-codex mcp add rlhf -- npx -y rlhf-feedback-loop serve
+codex mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve
 
 # Gemini
-gemini mcp add rlhf "npx -y rlhf-feedback-loop serve"
+gemini mcp add rlhf "npx -y rlhf-feedback-loop@0.6.11 serve"
 
 # Amp
-amp mcp add rlhf -- npx -y rlhf-feedback-loop serve
+amp mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve
 
 # Cursor
-cursor mcp add rlhf -- npx -y rlhf-feedback-loop serve
+cursor mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve
 ```
 
 Run once per project. The MCP server starts automatically on each session after that.

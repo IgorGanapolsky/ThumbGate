@@ -113,6 +113,6 @@ test('adapter proof: default profile has more tools than locked', () => {
 
 test('adapter proof: cleanup', () => {
   try {
-    fs.rmSync(tmpProofDir, { recursive: true, force: true });
+    fs.rmSync(tmpProofDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   } catch (err) {}
 });

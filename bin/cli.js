@@ -42,22 +42,43 @@ const HOME = process.env.HOME || process.env.USERPROFILE || '';
 const MCP_SERVER_NAME = 'rlhf';
 const LEGACY_MCP_SERVER_NAMES = ['rlhf', 'rlhf-feedback-loop', 'rlhf_feedback_loop'];
 const PORTABLE_MCP_COMMAND = 'npx';
-const PORTABLE_MCP_ARGS = ['-y', 'rlhf-feedback-loop', 'serve'];
+const LOCAL_MCP_COMMAND = 'node';
+
+function portableMcpArgs() {
+  return ['-y', `rlhf-feedback-loop@${pkgVersion()}`, 'serve'];
+}
+
+function localServerEntryPath() {
+  return path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
+}
+
+function shouldUseLocalServerEntry() {
+  return fs.existsSync(path.join(PKG_ROOT, '.git'));
+}
 
 function portableMcpEntry() {
   return {
     command: PORTABLE_MCP_COMMAND,
-    args: [...PORTABLE_MCP_ARGS],
+    args: portableMcpArgs(),
   };
 }
 
-function isPortableMcpEntry(entry) {
+function localMcpEntry() {
+  return {
+    command: LOCAL_MCP_COMMAND,
+    args: [localServerEntryPath()],
+  };
+}
+
+function mcpEntriesMatch(entry, expectedEntry) {
   return Boolean(
     entry &&
-    entry.command === PORTABLE_MCP_COMMAND &&
+    expectedEntry &&
+    entry.command === expectedEntry.command &&
     Array.isArray(entry.args) &&
-    entry.args.length === PORTABLE_MCP_ARGS.length &&
-    entry.args.every((arg, index) => arg === PORTABLE_MCP_ARGS[index])
+    Array.isArray(expectedEntry.args) &&
+    entry.args.length === expectedEntry.args.length &&
+    entry.args.every((arg, index) => arg === expectedEntry.args[index])
   );
 }
 
@@ -65,8 +86,17 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function formatTomlStringArray(values) {
+  return `[${values.map((value) => JSON.stringify(value)).join(', ')}]`;
+}
+
+function canonicalMcpEntry() {
+  return shouldUseLocalServerEntry() ? localMcpEntry() : portableMcpEntry();
+}
+
 function mcpSectionBlock(name = MCP_SERVER_NAME) {
-  return `[mcp_servers.${name}]\ncommand = "${PORTABLE_MCP_COMMAND}"\nargs = ["${PORTABLE_MCP_ARGS.join('", "')}"]\n`;
+  const entry = canonicalMcpEntry();
+  return `[mcp_servers.${name}]\ncommand = "${entry.command}"\nargs = ${formatTomlStringArray(entry.args)}\n`;
 }
 
 function upsertCodexServerConfig(content) {
@@ -121,7 +151,7 @@ function upsertCodexServerConfig(content) {
 }
 
 function mergeMcpJson(filePath, label) {
-  const canonicalEntry = portableMcpEntry();
+  const canonicalEntry = canonicalMcpEntry();
   if (!fs.existsSync(filePath)) {
     const dir = path.dirname(filePath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -134,7 +164,7 @@ function mergeMcpJson(filePath, label) {
 
   let changed = false;
   const currentEntry = existing.mcpServers[MCP_SERVER_NAME];
-  if (!isPortableMcpEntry(currentEntry)) {
+  if (!mcpEntriesMatch(currentEntry, canonicalEntry)) {
     existing.mcpServers[MCP_SERVER_NAME] = canonicalEntry;
     changed = true;
   }
@@ -192,9 +222,10 @@ function setupGemini() {
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
     settings.mcpServers = settings.mcpServers || {};
     let changed = false;
+    const canonicalEntry = canonicalMcpEntry();
 
-    if (!isPortableMcpEntry(settings.mcpServers[MCP_SERVER_NAME])) {
-      settings.mcpServers[MCP_SERVER_NAME] = portableMcpEntry();
+    if (!mcpEntriesMatch(settings.mcpServers[MCP_SERVER_NAME], canonicalEntry)) {
+      settings.mcpServers[MCP_SERVER_NAME] = canonicalEntry;
       changed = true;
     }
 

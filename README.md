@@ -46,11 +46,11 @@ Add the MCP server directly in your client config:
 
 | Platform | Command |
 |----------|---------|
-| **Claude** | `claude mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
-| **Codex** | `codex mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
-| **Gemini** | `gemini mcp add rlhf "npx -y rlhf-feedback-loop serve"` |
-| **Amp** | `amp mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
-| **Cursor** | `cursor mcp add rlhf -- npx -y rlhf-feedback-loop serve` |
+| **Claude** | `claude mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve` |
+| **Codex** | `codex mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve` |
+| **Gemini** | `gemini mcp add rlhf "npx -y rlhf-feedback-loop@0.6.11 serve"` |
+| **Amp** | `amp mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve` |
+| **Cursor** | `cursor mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve` |
 
 Optional auto-installer:
 

@@ -1,14 +1,14 @@
 {
   "phase": "04-lancedb-vector-storage",
-  "generated": "2026-03-09T16:07:33.949Z",
+  "generated": "2026-03-10T16:58:21.895Z",
   "requirements": {
     "VEC-01": {
       "status": "pass",
-      "evidence": "lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-EhN4XL/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: rlhf_memories."
+      "evidence": "lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-9wvWex/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: rlhf_memories."
     },
     "VEC-02": {
       "status": "pass",
-      "evidence": "scripts/vector-store.js uses dynamic import() at line 16: `_lancedb = await import('@lancedb/lancedb');`; line 23: `const { pipeline } = await import('@huggingface/transformers');`. Total dynamic import() calls: 2. This is the only CJS-compatible approach for ESM-only @lancedb/lancedb and @huggingface/transformers."
+      "evidence": "scripts/vector-store.js uses dynamic import() at line 26: `_lancedb = _lancedbLoader ? await _lancedbLoader() : await import('@lancedb/lancedb');`; line 61: `const pipeline = _pipelineLoader || (await import('@huggingface/transformers')).pipeline;`. Total dynamic import() calls: 2. This is the only CJS-compatible approach for ESM-only @lancedb/lancedb and @huggingface/transformers."
     },
     "VEC-03": {
       "status": "pass",
@@ -19,13 +19,13 @@
       "evidence": "searchSimilar() returned 2 result(s). proof-vec01 present: true. proof-vec04-b present: true. API: searchSimilar(queryText, limit=10) returns vector-ranked rows from rlhf_memories table. Note: stub embed (RLHF_VECTOR_STUB_EMBED=true) returns identical 384-dim unit vectors — ranking is insertion-order with stub, cosine similarity with real ONNX model."
     },
     "VEC-05": {
-      "status": "fail",
-      "evidence": "node --test tests/vector-store.test.js: pass=0, fail=0. Expected >= 4 passing tests, got 0."
+      "status": "pass",
+      "evidence": "node --test tests/vector-store.test.js: pass=6, fail=0. Delta from Phase 3 baseline (89 tests): +6 vector-store tests. Meets VEC-05 requirement: >= 4 new tests above Phase 3 baseline. Test file: tests/vector-store.test.js (4 it() blocks using node:test describe/it pattern). Proof report: proof/lancedb-report.md (this file)."
     }
   },
   "summary": {
-    "passed": 4,
-    "failed": 1,
+    "passed": 5,
+    "failed": 0,
     "warned": 0
   }
 }

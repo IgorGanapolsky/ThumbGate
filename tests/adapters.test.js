@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
+const packageVersion = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8')).version;
 
 test('adapter files exist', () => {
   const files = [
@@ -35,7 +36,7 @@ test('claude .mcp.json is valid JSON with mcpServers key', () => {
   assert.equal(typeof payload.mcpServers, 'object');
   assert.deepEqual(payload.mcpServers.rlhf, {
     command: 'npx',
-    args: ['-y', 'rlhf-feedback-loop', 'serve'],
+    args: ['-y', `rlhf-feedback-loop@${packageVersion}`, 'serve'],
   });
 });
 
@@ -44,7 +45,11 @@ test('codex config.toml contains mcp_servers section', () => {
   const content = fs.readFileSync(filePath, 'utf-8');
   assert.match(content, /\[mcp_servers\.rlhf\]/, 'config.toml must contain canonical rlhf section');
   assert.match(content, /command = "npx"/, 'config.toml must use portable npx launcher');
-  assert.match(content, /args = \["-y", "rlhf-feedback-loop", "serve"\]/, 'config.toml must launch the package serve entrypoint');
+  assert.match(
+    content,
+    new RegExp(`args = \\["-y", "rlhf-feedback-loop@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}", "serve"\\]`),
+    'config.toml must launch the version-pinned package serve entrypoint'
+  );
 });
 
 test('amp SKILL.md contains capture-feedback reference', () => {

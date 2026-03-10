@@ -362,7 +362,7 @@ async function runProof(options = {}) {
         check(Boolean(response.result && response.result.serverInfo), 'cli serve bad HOME initialize missing serverInfo');
         addResult('mcp.cli.serve.bad_home.initialize', true, { server: response.result.serverInfo.name });
       } finally {
-        fs.rmSync(isolatedDir, { recursive: true, force: true });
+        fs.rmSync(isolatedDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       }
     }
 
@@ -522,7 +522,7 @@ async function runProof(options = {}) {
     addResult('fatal', false, { error: err.message });
   } finally {
     await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+    fs.rmSync(tmpFeedbackDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     if (previousFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
     else process.env.RLHF_FEEDBACK_DIR = previousFeedbackDir;
     if (previousApiKey === undefined) delete process.env.RLHF_API_KEY;

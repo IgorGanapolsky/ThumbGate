@@ -10,4 +10,9 @@ node_modules/
 !.claude/memory/feedback/.gitkeep
 # Billing key store — contains provisioned API keys, never commit
 .claude/memory/feedback/api-keys.json
+.rlhf/adk-state.json
+.rlhf/adk-test-run/
+.rlhf/a2ui_proposal_*.json
+.rlhf/reminder-state.json
+.rlhf/reminder_*.json
 .npmrc

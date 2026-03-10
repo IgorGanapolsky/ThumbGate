@@ -1,4 +1,4 @@
 # Codex MCP profile (copy into ~/.codex/config.toml or merge section)
 [mcp_servers.rlhf]
 command = "npx"
-args = ["-y", "rlhf-feedback-loop", "serve"]
+args = ["-y", "rlhf-feedback-loop@0.6.11", "serve"]

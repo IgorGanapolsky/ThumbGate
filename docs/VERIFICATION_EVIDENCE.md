@@ -1,5 +1,50 @@
 # Verification Evidence (March 9, 2026)
 
+## March 10, 2026: MCP launcher hardening and proof-cleanup reliability
+
+Commands:
+
+```bash
+npm ci
+node --test tests/adapters.test.js tests/install-mcp.test.js tests/cli.test.js
+node --test tests/prove-adapters.test.js tests/prove-lancedb.test.js
+npm test
+npm run prove:adapters
+npm run prove:automation
+node scripts/prove-lancedb.js
+npm run self-heal:check
+npm run test:coverage
+```
+
+Observed result:
+
+- `npm ci` completed successfully with `0 vulnerabilities`.
+- Targeted launcher verification passed: `39` tests passed, `0` failed across `tests/adapters.test.js`, `tests/install-mcp.test.js`, and `tests/cli.test.js`.
+- Targeted proof cleanup verification passed: `39` tests passed, `0` failed across `tests/prove-adapters.test.js` and `tests/prove-lancedb.test.js`.
+- `npm test` passed end-to-end after hardening MCP launcher generation and retry-based cleanup in the proof scripts.
+- `npm run prove:adapters`: `24 passed`, `0 failed`.
+- `npm run prove:automation`: `14 passed`, `0 failed`.
+- `node scripts/prove-lancedb.js`: `5 passed`, `0 failed`, `0 warned`.
+- `npm run self-heal:check`: `HEALTHY` with `4/4` checks healthy.
+- `npm run test:coverage` passed with overall coverage at `83.16%` lines, `69.30%` branches, and `86.86%` functions (`719` passed, `0` failed, `1` skipped).
+
+Evidence artifacts:
+
+- `proof/compatibility/report.json`
+- `proof/compatibility/report.md`
+- `proof/automation/report.json`
+- `proof/automation/report.md`
+- `proof/lancedb-report.json`
+- `proof/lancedb-report.md`
+
+Requirements verified:
+
+- Source checkouts now install canonical MCP entries that launch the local stdio server directly via `node adapters/mcp/server-stdio.js`.
+- Portable docs and adapter examples now use the version-pinned launcher `npx -y rlhf-feedback-loop@0.6.11 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
+- Re-running the MCP installer upgrades stale config entries instead of treating them as already configured.
+- Adapter and LanceDB proof cleanup now uses retry-capable recursive removal so ephemeral filesystem contention no longer flakes CI.
+- Transient `.rlhf` reminder/A2UI/test-run files are now ignored as local runtime state and do not pollute git hygiene during verification.
+
 ## March 10, 2026: Value-led GTM surfaces and hermetic ADK coverage
 
 Commands:

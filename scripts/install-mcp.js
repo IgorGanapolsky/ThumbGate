@@ -16,10 +16,32 @@ const fs = require('fs');
 const path = require('path');
 
 const MCP_SERVER_KEY = 'rlhf';
-const MCP_SERVER_CONFIG = {
-  command: 'npx',
-  args: ['-y', 'rlhf-feedback-loop', 'serve'],
-};
+const PKG_ROOT = path.join(__dirname, '..');
+const PKG_VERSION = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8')).version;
+
+function portableMcpConfig() {
+  return {
+    command: 'npx',
+    args: ['-y', `rlhf-feedback-loop@${PKG_VERSION}`, 'serve'],
+  };
+}
+
+function localMcpConfig() {
+  return {
+    command: 'node',
+    args: [path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js')],
+  };
+}
+
+function shouldUseLocalMcpConfig() {
+  return fs.existsSync(path.join(PKG_ROOT, '.git'));
+}
+
+function resolveMcpServerConfig() {
+  return shouldUseLocalMcpConfig() ? localMcpConfig() : portableMcpConfig();
+}
+
+const MCP_SERVER_CONFIG = resolveMcpServerConfig();
 
 function parseFlags(argv) {
   const flags = {};
@@ -58,11 +80,21 @@ function backupFile(filePath) {
   return backupPath;
 }
 
+function serverConfigMatches(entry) {
+  return Boolean(
+    entry &&
+    entry.command === MCP_SERVER_CONFIG.command &&
+    Array.isArray(entry.args) &&
+    entry.args.length === MCP_SERVER_CONFIG.args.length &&
+    entry.args.every((arg, index) => arg === MCP_SERVER_CONFIG.args[index])
+  );
+}
+
 function isAlreadyInstalled(settings) {
   return !!(
     settings &&
     settings.mcpServers &&
-    settings.mcpServers[MCP_SERVER_KEY]
+    serverConfigMatches(settings.mcpServers[MCP_SERVER_KEY])
   );
 }
 

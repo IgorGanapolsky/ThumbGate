@@ -7,7 +7,7 @@ rlhf-feedback-loop is an MCP server that captures thumbs-up/down feedback during
 **One-line install (Claude Code):**
 
 ```
-claude mcp add rlhf -- npx -y rlhf-feedback-loop serve
+claude mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve
 ```
 
 **What it actually does:**

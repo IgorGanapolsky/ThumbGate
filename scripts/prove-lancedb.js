@@ -228,7 +228,7 @@ async function runProof(options = {}) {
   } finally {
     // Clean up tmp dir
     try {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
+      fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     } catch (_) {
       // ignore cleanup errors
     }

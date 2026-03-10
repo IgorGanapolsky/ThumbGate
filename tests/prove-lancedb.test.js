@@ -13,7 +13,7 @@ test('lancedb proof core requirements pass (VEC-01 through VEC-04)', () => {
         const r = await runProof({ proofDir: tmp });
         process.stderr.write('PROOF_JSON:' + JSON.stringify({ passed: r.summary.passed, reqs: Object.fromEntries(Object.entries(r.requirements).map(([k,v]) => [k, v.status])) }) + '\\n');
       } finally {
-        fs.rmSync(tmp, { recursive: true, force: true });
+        fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       }
     })();
   `], {

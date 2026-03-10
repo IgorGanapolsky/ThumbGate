@@ -44,16 +44,14 @@ describe('install-mcp', () => {
   test('buildMcpConfig generates correct MCP config JSON', () => {
     const config = buildMcpConfig();
     assert.deepStrictEqual(config, {
-      rlhf: {
-        command: 'npx',
-        args: ['-y', 'rlhf-feedback-loop', 'serve'],
-      },
+      rlhf: MCP_SERVER_CONFIG,
     });
   });
 
-  test('MCP_SERVER_CONFIG has expected shape', () => {
-    assert.equal(MCP_SERVER_CONFIG.command, 'npx');
-    assert.deepStrictEqual(MCP_SERVER_CONFIG.args, ['-y', 'rlhf-feedback-loop', 'serve']);
+  test('MCP_SERVER_CONFIG prefers local direct server path in source checkouts', () => {
+    assert.equal(MCP_SERVER_CONFIG.command, 'node');
+    assert.equal(MCP_SERVER_CONFIG.args.length, 1);
+    assert.match(MCP_SERVER_CONFIG.args[0], /adapters[\\/]mcp[\\/]server-stdio\.js$/);
   });
 
   test('parseFlags detects --project flag', () => {
@@ -118,6 +116,34 @@ describe('install-mcp', () => {
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       const serverKeys = Object.keys(settings.mcpServers);
       assert.equal(serverKeys.filter((k) => k === MCP_SERVER_KEY).length, 1);
+    } finally {
+      process.env.HOME = origHome;
+      fs.rmSync(isolatedDir, { recursive: true, force: true });
+    }
+  });
+
+  test('replaces a stale existing server entry with the resolved config', () => {
+    const isolatedDir = makeTmpDir();
+    const settingsDir = path.join(isolatedDir, '.claude');
+    const settingsPath = path.join(settingsDir, 'settings.json');
+
+    fs.mkdirSync(settingsDir, { recursive: true });
+    fs.writeFileSync(settingsPath, JSON.stringify({
+      mcpServers: {
+        [MCP_SERVER_KEY]: {
+          command: 'npx',
+          args: ['-y', 'rlhf-feedback-loop', 'serve'],
+        },
+      },
+    }, null, 2) + '\n');
+
+    const origHome = process.env.HOME;
+    process.env.HOME = isolatedDir;
+    try {
+      const result = installMcp({});
+      assert.equal(result.installed, true);
+      const updated = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      assert.deepStrictEqual(updated.mcpServers[MCP_SERVER_KEY], MCP_SERVER_CONFIG);
     } finally {
       process.env.HOME = origHome;
       fs.rmSync(isolatedDir, { recursive: true, force: true });
