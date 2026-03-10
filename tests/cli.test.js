@@ -22,6 +22,8 @@ const assert = require('node:assert/strict');
 
 const CLI = path.resolve(__dirname, '../bin/cli.js');
 const savedFunnelPath = process.env._TEST_FUNNEL_LEDGER_PATH;
+const savedHome = process.env.HOME;
+const savedUserProfile = process.env.USERPROFILE;
 
 function makeTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cli-test-'));
@@ -221,8 +223,10 @@ function parseMcpMessage(buffer) {
   return line;
 }
 
-function runServeHandshake(sendRequest) {
+function runServeHandshake(sendRequest, options = {}) {
   const child = spawn(process.execPath, [CLI, 'serve'], {
+    cwd: options.cwd,
+    env: options.env,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
 
@@ -289,19 +293,34 @@ function runServeHandshake(sendRequest) {
 describe('bin/cli.js', () => {
   let tmpDir;
   let defaultLedgerPath;
+  let testHomeDir;
 
   before(() => {
     tmpDir = makeTmpDir();
     defaultLedgerPath = path.join(tmpDir, 'default-funnel-events.jsonl');
+    testHomeDir = makeTmpDir();
     process.env._TEST_FUNNEL_LEDGER_PATH = defaultLedgerPath;
+    process.env.HOME = testHomeDir;
+    process.env.USERPROFILE = testHomeDir;
   });
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rmSync(testHomeDir, { recursive: true, force: true });
     if (savedFunnelPath === undefined) {
       delete process.env._TEST_FUNNEL_LEDGER_PATH;
     } else {
       process.env._TEST_FUNNEL_LEDGER_PATH = savedFunnelPath;
+    }
+    if (savedHome === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = savedHome;
+    }
+    if (savedUserProfile === undefined) {
+      delete process.env.USERPROFILE;
+    } else {
+      process.env.USERPROFILE = savedUserProfile;
     }
   });
 
@@ -470,9 +489,38 @@ describe('bin/cli.js', () => {
     assert.ok(fs.existsSync(mcpPath), '.mcp.json should be created');
     const mcp = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
     assert.ok(mcp.mcpServers, '.mcp.json should have mcpServers');
-    assert.ok(mcp.mcpServers['rlhf-feedback-loop'], 'Should have rlhf-feedback-loop server entry');
-    assert.strictEqual(mcp.mcpServers['rlhf-feedback-loop'].command, 'node');
-    assert.ok(mcp.mcpServers['rlhf-feedback-loop'].args[0].includes('server-stdio.js'));
+    assert.ok(mcp.mcpServers.rlhf, 'Should have canonical rlhf server entry');
+    assert.strictEqual(mcp.mcpServers.rlhf.command, 'npx');
+    assert.deepEqual(mcp.mcpServers.rlhf.args, ['-y', 'rlhf-feedback-loop', 'serve']);
+  });
+
+  test('init writes portable codex MCP launcher when Codex home exists', () => {
+    const isolatedDir = makeTmpDir();
+    const isolatedHome = makeTmpDir();
+    const codexHome = path.join(isolatedHome, '.codex');
+    fs.mkdirSync(codexHome, { recursive: true });
+
+    const result = spawnSync(process.execPath, [CLI, 'init'], {
+      encoding: 'utf8',
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        HOME: isolatedHome,
+        USERPROFILE: isolatedHome,
+      },
+    });
+
+    assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
+
+    const configPath = path.join(codexHome, 'config.toml');
+    const content = fs.readFileSync(configPath, 'utf8');
+    assert.match(content, /\[mcp_servers\.rlhf\]/);
+    assert.match(content, /command = "npx"/);
+    assert.match(content, /args = \["-y", "rlhf-feedback-loop", "serve"\]/);
+    assert.doesNotMatch(content, /server-stdio\.js/);
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+    fs.rmSync(isolatedHome, { recursive: true, force: true });
   });
 
   test('init output includes initialized message and platform detection', () => {
@@ -536,6 +584,28 @@ describe('bin/cli.js', () => {
     assert.equal(response.id, null);
     assert.equal(response.error.code, -32603);
     assert.ok(!raw.startsWith('Content-Length:'), `Expected ndjson response, got: ${raw}`);
+  });
+
+  test('serve responds to initialize from a clean cwd even when HOME is a file', async () => {
+    const isolatedDir = makeTmpDir();
+    const homeFile = path.join(isolatedDir, 'invalid-home');
+    fs.writeFileSync(homeFile, 'not-a-directory\n');
+
+    const { response } = await runServeHandshake((stdin, payload) => {
+      stdin.write(`${JSON.stringify(payload)}\n`);
+    }, {
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        HOME: homeFile,
+        USERPROFILE: homeFile,
+      },
+    });
+
+    assert.equal(response.id, 99);
+    assert.equal(response.result.serverInfo.name, 'rlhf-feedback-loop-mcp');
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
 
   test('init is idempotent — running twice exits 0', () => {

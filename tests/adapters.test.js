@@ -33,12 +33,18 @@ test('claude .mcp.json is valid JSON with mcpServers key', () => {
   const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
   assert.ok(payload.mcpServers, '.mcp.json must have mcpServers key');
   assert.equal(typeof payload.mcpServers, 'object');
+  assert.deepEqual(payload.mcpServers.rlhf, {
+    command: 'npx',
+    args: ['-y', 'rlhf-feedback-loop', 'serve'],
+  });
 });
 
 test('codex config.toml contains mcp_servers section', () => {
   const filePath = path.join(root, 'adapters/codex/config.toml');
   const content = fs.readFileSync(filePath, 'utf-8');
-  assert.match(content, /\[mcp_servers/, 'config.toml must contain [mcp_servers section');
+  assert.match(content, /\[mcp_servers\.rlhf\]/, 'config.toml must contain canonical rlhf section');
+  assert.match(content, /command = "npx"/, 'config.toml must use portable npx launcher');
+  assert.match(content, /args = \["-y", "rlhf-feedback-loop", "serve"\]/, 'config.toml must launch the package serve entrypoint');
 });
 
 test('amp SKILL.md contains capture-feedback reference', () => {

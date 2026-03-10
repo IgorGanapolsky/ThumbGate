@@ -30,12 +30,12 @@ This avoids platform-specific rewrite cost and keeps the product under a `$10/mo
 ## Claude (MCP)
 
 - Use: `adapters/claude/.mcp.json`
-- Transport: local stdio MCP server (`node adapters/mcp/server-stdio.js`)
+- Transport: local stdio MCP server launched via `npx -y rlhf-feedback-loop serve`
 
 ## Codex (MCP)
 
 - Merge section from `adapters/codex/config.toml`
-- Transport: local stdio MCP server
+- Transport: local stdio MCP server launched via `npx -y rlhf-feedback-loop serve`
 
 ## Gemini (Function Calling)
 

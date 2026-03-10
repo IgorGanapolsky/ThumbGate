@@ -39,23 +39,116 @@ function pkgVersion() {
 // --- Platform auto-detection helpers ---
 
 const HOME = process.env.HOME || process.env.USERPROFILE || '';
-const MCP_SERVER_ENTRY = {
-  command: 'node',
-  args: [path.relative(CWD, path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js'))],
-};
+const MCP_SERVER_NAME = 'rlhf';
+const LEGACY_MCP_SERVER_NAMES = ['rlhf', 'rlhf-feedback-loop', 'rlhf_feedback_loop'];
+const PORTABLE_MCP_COMMAND = 'npx';
+const PORTABLE_MCP_ARGS = ['-y', 'rlhf-feedback-loop', 'serve'];
+
+function portableMcpEntry() {
+  return {
+    command: PORTABLE_MCP_COMMAND,
+    args: [...PORTABLE_MCP_ARGS],
+  };
+}
+
+function isPortableMcpEntry(entry) {
+  return Boolean(
+    entry &&
+    entry.command === PORTABLE_MCP_COMMAND &&
+    Array.isArray(entry.args) &&
+    entry.args.length === PORTABLE_MCP_ARGS.length &&
+    entry.args.every((arg, index) => arg === PORTABLE_MCP_ARGS[index])
+  );
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function mcpSectionBlock(name = MCP_SERVER_NAME) {
+  return `[mcp_servers.${name}]\ncommand = "${PORTABLE_MCP_COMMAND}"\nargs = ["${PORTABLE_MCP_ARGS.join('", "')}"]\n`;
+}
+
+function upsertCodexServerConfig(content) {
+  const canonicalBlock = mcpSectionBlock();
+  const sections = LEGACY_MCP_SERVER_NAMES.map((name) => ({
+    name,
+    regex: new RegExp(`^\\[mcp_servers\\.${escapeRegExp(name)}\\]\\n[\\s\\S]*?(?=^\\[|\\Z)`, 'm'),
+  }));
+  const matches = sections
+    .map((section) => ({ ...section, match: content.match(section.regex) }))
+    .filter((section) => section.match);
+
+  if (matches.length === 0) {
+    const prefix = content.trimEnd();
+    return {
+      changed: true,
+      content: `${prefix}${prefix ? '\n\n' : ''}${canonicalBlock}`,
+    };
+  }
+
+  let nextContent = content;
+  let changed = false;
+  let canonicalPresent = false;
+
+  for (const section of matches) {
+    const normalized = canonicalBlock;
+    const current = section.match[0];
+
+    if (section.name === MCP_SERVER_NAME) {
+      canonicalPresent = true;
+      if (current !== normalized) {
+        nextContent = nextContent.replace(section.regex, normalized);
+        changed = true;
+      }
+      continue;
+    }
+
+    nextContent = nextContent.replace(section.regex, '');
+    changed = true;
+  }
+
+  if (!canonicalPresent) {
+    const prefix = nextContent.trimEnd();
+    nextContent = `${prefix}${prefix ? '\n\n' : ''}${canonicalBlock}`;
+    changed = true;
+  }
+
+  return {
+    changed,
+    content: nextContent.endsWith('\n') ? nextContent : `${nextContent}\n`,
+  };
+}
 
 function mergeMcpJson(filePath, label) {
+  const canonicalEntry = portableMcpEntry();
   if (!fs.existsSync(filePath)) {
     const dir = path.dirname(filePath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify({ mcpServers: { 'rlhf-feedback-loop': MCP_SERVER_ENTRY } }, null, 2) + '\n');
+    fs.writeFileSync(filePath, JSON.stringify({ mcpServers: { [MCP_SERVER_NAME]: canonicalEntry } }, null, 2) + '\n');
     console.log(`  ${label}: wrote ${path.relative(CWD, filePath)}`);
     return true;
   }
   const existing = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  if (existing.mcpServers && existing.mcpServers['rlhf-feedback-loop']) return false;
   existing.mcpServers = existing.mcpServers || {};
-  existing.mcpServers['rlhf-feedback-loop'] = MCP_SERVER_ENTRY;
+
+  let changed = false;
+  const currentEntry = existing.mcpServers[MCP_SERVER_NAME];
+  if (!isPortableMcpEntry(currentEntry)) {
+    existing.mcpServers[MCP_SERVER_NAME] = canonicalEntry;
+    changed = true;
+  }
+
+  for (const legacyName of LEGACY_MCP_SERVER_NAMES) {
+    if (legacyName === MCP_SERVER_NAME) continue;
+    if (Object.prototype.hasOwnProperty.call(existing.mcpServers, legacyName)) {
+      delete existing.mcpServers[legacyName];
+      changed = true;
+    }
+  }
+
+  if (!changed) return false;
+
   fs.writeFileSync(filePath, JSON.stringify(existing, null, 2) + '\n');
   console.log(`  ${label}: updated ${path.relative(CWD, filePath)}`);
   return true;
@@ -78,7 +171,7 @@ function setupClaude() {
 
 function setupCodex() {
   const configPath = path.join(HOME, '.codex', 'config.toml');
-  const block = `\n[mcp_servers.rlhf_feedback_loop]\ncommand = "node"\nargs = ["${MCP_SERVER_ENTRY.args[0]}"]\n`;
+  const block = mcpSectionBlock();
   if (!fs.existsSync(configPath)) {
     fs.mkdirSync(path.dirname(configPath), { recursive: true });
     fs.writeFileSync(configPath, block);
@@ -86,8 +179,9 @@ function setupCodex() {
     return true;
   }
   const content = fs.readFileSync(configPath, 'utf8');
-  if (content.includes('[mcp_servers.rlhf_feedback_loop]')) return false;
-  fs.appendFileSync(configPath, block);
+  const updated = upsertCodexServerConfig(content);
+  if (!updated.changed) return false;
+  fs.writeFileSync(configPath, updated.content);
   console.log('  Codex: appended MCP server to ~/.codex/config.toml');
   return true;
 }
@@ -96,9 +190,23 @@ function setupGemini() {
   const settingsPath = path.join(HOME, '.gemini', 'settings.json');
   if (fs.existsSync(settingsPath)) {
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-    if (settings.mcpServers && settings.mcpServers['rlhf-feedback-loop']) return false;
     settings.mcpServers = settings.mcpServers || {};
-    settings.mcpServers['rlhf-feedback-loop'] = MCP_SERVER_ENTRY;
+    let changed = false;
+
+    if (!isPortableMcpEntry(settings.mcpServers[MCP_SERVER_NAME])) {
+      settings.mcpServers[MCP_SERVER_NAME] = portableMcpEntry();
+      changed = true;
+    }
+
+    for (const legacyName of LEGACY_MCP_SERVER_NAMES) {
+      if (legacyName === MCP_SERVER_NAME) continue;
+      if (Object.prototype.hasOwnProperty.call(settings.mcpServers, legacyName)) {
+        delete settings.mcpServers[legacyName];
+        changed = true;
+      }
+    }
+
+    if (!changed) return false;
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
     console.log('  Gemini: updated ~/.gemini/settings.json');
     return true;
@@ -429,16 +537,6 @@ function prove() {
 }
 
 function serve() {
-  const rlhfDir = path.join(CWD, '.rlhf');
-  if (!fs.existsSync(rlhfDir) && !fs.existsSync(path.join(CWD, '.claude', 'memory', 'feedback'))) {
-    // If not initialized, ensure global fallback exists
-    const projectName = path.basename(CWD) || 'default';
-    const globalDir = path.join(HOME, '.rlhf', 'projects', projectName);
-    if (!fs.existsSync(globalDir)) {
-      fs.mkdirSync(globalDir, { recursive: true });
-    }
-  }
-
   // Start MCP server over stdio
   const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
   const { startStdioServer } = require(mcpServer);

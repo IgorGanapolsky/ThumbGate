@@ -39,12 +39,14 @@ async function proveMcpStdioTransport({
   root,
   transport = 'ndjson',
   timeoutMs = 5000,
+  cwd = root,
+  env = process.env,
 }) {
-  const serverPath = path.join(root, 'adapters', 'mcp', 'server-stdio.js');
-  const child = spawn(process.execPath, [serverPath], {
-    cwd: root,
+  const cliPath = path.join(root, 'bin', 'cli.js');
+  const child = spawn(process.execPath, [cliPath, 'serve'], {
+    cwd,
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: process.env,
+    env,
   });
 
   let stdoutBuffer = Buffer.alloc(0);
@@ -91,6 +93,12 @@ async function proveMcpStdioTransport({
     child.on('error', (err) => {
       clearTimeout(timer);
       done(err);
+    });
+
+    child.on('exit', (code, signal) => {
+      if (settled) return;
+      clearTimeout(timer);
+      done(new Error(`stdio ${transport} exited early (code=${code}, signal=${signal}); stderr=${stderrBuffer}`));
     });
 
     child.stderr.on('data', (chunk) => {
@@ -332,6 +340,30 @@ async function runProof(options = {}) {
       check(ndjsonResponse.id === 777, 'stdio ndjson initialize returned wrong id');
       check(Boolean(ndjsonResponse.result && ndjsonResponse.result.serverInfo), 'stdio ndjson initialize missing serverInfo');
       addResult('mcp.stdio.ndjson.initialize', true, { server: ndjsonResponse.result.serverInfo.name });
+    }
+
+    {
+      const isolatedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-proof-cli-serve-'));
+      const badHomePath = path.join(isolatedDir, 'invalid-home');
+      fs.writeFileSync(badHomePath, 'not-a-directory\n');
+
+      try {
+        const response = await proveMcpStdioTransport({
+          root: ROOT,
+          transport: 'ndjson',
+          cwd: isolatedDir,
+          env: {
+            ...process.env,
+            HOME: badHomePath,
+            USERPROFILE: badHomePath,
+          },
+        });
+        check(response.id === 777, 'cli serve bad HOME initialize returned wrong id');
+        check(Boolean(response.result && response.result.serverInfo), 'cli serve bad HOME initialize missing serverInfo');
+        addResult('mcp.cli.serve.bad_home.initialize', true, { server: response.result.serverInfo.name });
+      } finally {
+        fs.rmSync(isolatedDir, { recursive: true, force: true });
+      }
     }
 
     {
