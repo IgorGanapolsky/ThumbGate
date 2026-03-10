@@ -83,43 +83,6 @@ Requirements verified:
 - Adapter and LanceDB proof cleanup now uses retry-capable recursive removal so ephemeral filesystem contention no longer flakes CI.
 - Transient `.rlhf` reminder/A2UI/test-run files are now ignored as local runtime state and do not pollute git hygiene during verification.
 
-## March 10, 2026: Main CI stdio startup hardening for CLI + adapter proof
-
-Commands:
-
-```bash
-node --test --experimental-test-coverage --test-concurrency=1 tests/cli.test.js
-node --test --test-concurrency=1 tests/prove-adapters.test.js
-npm test
-npm run test:coverage
-npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
-npm run self-heal:check
-```
-
-Observed result:
-
-- Targeted CLI coverage verification passed: `22` tests passed, `0` failed.
-- Targeted adapter proof verification passed: `38` tests passed, `0` failed.
-- `npm test` passed end-to-end on the merged branch state after hardening the spawned stdio startup budget used by the CLI and adapter proof harness and after merging the latest `main` revenue-gap changes.
-- `npm run test:coverage` passed with `723` tests passed, `0` failed, `1` skipped and overall coverage at `82.97%` lines, `69.36%` branches, and `86.59%` functions.
-- `npm run prove:adapters`: `24 passed`, `0 failed`.
-- `npm run prove:automation`: `14 passed`, `0 failed`.
-- `npm run self-heal:check`: `HEALTHY` with `4/4` checks healthy.
-
-Artifacts updated:
-
-- `proof/compatibility/report.json`
-- `proof/compatibility/report.md`
-- `proof/automation/report.json`
-- `proof/automation/report.md`
-
-Requirements verified:
-
-- The CLI handshake test now tolerates coverage-induced subprocess startup lag without changing runtime behavior.
-- The adapter proof harness now uses the same widened stdio startup budget, eliminating false negatives in `tests/prove-adapters.test.js` and `npm test`.
-- Fatal adapter-proof failures now identify the exact MCP or adapter check that was executing when a timeout or parse error occurred.
-
 ## March 10, 2026: Value-led GTM surfaces and hermetic ADK coverage
 
 Commands:
