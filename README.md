@@ -1,22 +1,22 @@
-# RLHF Feedback Loop | Hosted Guardrails and Shared Memory for AI Workflow Teams
+# MCP Memory Gateway | Hosted Guardrails and Context Hub for AI Agents
 
 [![CI](https://github.com/IgorGanapolsky/rlhf-feedback-loop/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/rlhf-feedback-loop/actions/workflows/ci.yml)
 [![Self-Healing](https://github.com/IgorGanapolsky/rlhf-feedback-loop/actions/workflows/self-healing-monitor.yml/badge.svg)](https://github.com/IgorGanapolsky/rlhf-feedback-loop/actions/workflows/self-healing-monitor.yml)
 [![npm](https://img.shields.io/npm/v/rlhf-feedback-loop)](https://www.npmjs.com/package/rlhf-feedback-loop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
-[![Marketplace Ready](https://img.shields.io/badge/Anthropic_Marketplace-Ready-blue)](docs/ANTHROPIC_MARKETPLACE_STRATEGY.md)
-[![GEO Optimized](https://img.shields.io/badge/GEO-optimized-orange)](docs/geo-strategy-for-ai-agents.md)
 
-Stop one AI workflow from repeating the same mistakes.
+**The Universal Context & Memory Layer for Model Context Protocol (MCP) Agents.**
 
-RLHF Feedback Loop is the open-source Agentic Feedback Studio and Veto Layer for teams shipping AI workflows with real business stakes. Start with one workflow like lead-to-meeting, onboarding, or internal ops automation. Capture operator feedback, turn repeated failures into prevention rules, and prove the workflow is getting safer over time.
+As the AI ecosystem standardizes on MCP, agents need a centralized, "Always-On" brain to store context, consolidate failures, and enforce architectural guardrails across sessions. 
 
-The open-source core gives one operator local feedback capture, context packs, Thompson Sampling, and KTO/DPO export. Cloud Pro is the hosted layer teams pay for when they need shared memory, provisioned API keys, funnel evidence, and proof-ready workflow runs.
+This repository provides a production-ready, local-first **MCP Memory Gateway** that bridges the gap between raw LLM inference and long-term agentic reliability. Turn repeated AI failures into strict prevention rules, track token consumption, and share reasoning graphs across your entire team.
+
+The open-source core gives one operator local feedback capture, context packs, and "Always-On" ADK memory consolidation. **Cloud Pro** is the hosted layer teams pay for when they need a shared context hub, remote observability, and a live web dashboard.
 
 ## North Star
 
-One team running one proof-backed workflow every week with shared memory, hosted guardrails, and clear evidence that the workflow is improving.
+One unified MCP gateway powering every agent in your team, ensuring they never make the same mistake twice while maintaining absolute context security.
 
 That is the wedge. Not generic "agent infrastructure." Not another prompt library. One workflow outcome that a buyer can justify.
 
