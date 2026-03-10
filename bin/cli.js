@@ -462,6 +462,12 @@ function install() {
   }
 }
 
+function installMcp() {
+  const { installMcp: doInstall, parseFlags } = require(path.join(PKG_ROOT, 'scripts', 'install-mcp'));
+  const flags = parseFlags(process.argv.slice(3));
+  doInstall(flags);
+}
+
 function startApi() {
   const serverPath = path.join(PKG_ROOT, 'src', 'api', 'server.js');
   try {
@@ -477,6 +483,7 @@ function help() {
   console.log('');
   console.log('Commands:');
   console.log('  init                  Scaffold .rlhf/ config + MCP server in current project');
+  console.log('  install-mcp           Install RLHF MCP server into Claude Code settings (--project for local)');
   console.log('  serve                 Start MCP server (stdio) — for claude/codex/gemini mcp add');
   console.log('  capture [flags]       Capture feedback (--feedback=up|down --context="..." --tags="...")');
   console.log('  stats                 Show feedback analytics + Revenue-at-Risk');
@@ -505,6 +512,9 @@ switch (COMMAND) {
     break;
   case 'install':
     install();
+    break;
+  case 'install-mcp':
+    installMcp();
     break;
   case 'serve':
   case 'mcp':
