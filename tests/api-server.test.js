@@ -16,7 +16,7 @@ process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';
 
 const { startServer } = require('../src/api/server');
-const { provisionApiKey } = require('../scripts/billing');
+const billing = require('../scripts/billing');
 
 let handle;
 const authHeader = { authorization: 'Bearer test-api-key' };
@@ -55,6 +55,23 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /proof\/compatibility\/report\.json/);
   assert.match(body, /proof\/automation\/report\.json/);
   assert.match(body, /\/v1\/billing\/checkout/);
+});
+
+test('provisioning endpoint works', async () => {
+  const res = await fetch('http://localhost:8790/v1/billing/provision', {
+    method: 'POST',
+    headers: { 
+      'content-type': 'application/json',
+      authorization: 'Bearer test-api-key' 
+    },
+    body: JSON.stringify({ customerId: 'cus_api_test' })
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.ok(body.key.startsWith('rlhf_'));
+  
+  // Verify isolated path
+  assert.equal(billing._API_KEYS_PATH(), path.join(tmpFeedbackDir, 'api-keys.json'));
 });
 
 test('root still serves JSON status when explicitly requested', async () => {
@@ -316,7 +333,7 @@ test('billing session endpoint rejects missing session ids', async () => {
 });
 
 test('billing provision requires static admin key and rejects billing keys', async () => {
-  const billingKey = provisionApiKey('cus_non_admin').key;
+  const billingKey = billing.provisionApiKey('cus_non_admin').key;
   const res = await fetch('http://localhost:8790/v1/billing/provision', {
     method: 'POST',
     headers: {

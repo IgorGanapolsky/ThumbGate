@@ -78,11 +78,13 @@ test('capture_feedback returns clarification_required for vague positive feedbac
       },
     },
   });
-  const payload = JSON.parse(result.content[0].text);
-  assert.equal(payload.accepted, false);
-  assert.equal(payload.status, 'clarification_required');
-  assert.equal(payload.needsClarification, true);
-  assert.match(payload.prompt, /What specifically worked that should be repeated/);
+  
+  const text = result.content[0].text;
+  assert.equal(result.isError, undefined);
+  assert.match(text, /"accepted":\s*false/);
+  assert.match(text, /"status":\s*"clarification_required"/);
+  assert.match(text, /"needsClarification":\s*true/);
+  assert.match(text, /What specifically worked that should be repeated/);
 });
 
 test('intent tools list and plan enforce checkpoint flow', async () => {
