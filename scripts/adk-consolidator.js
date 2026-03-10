@@ -62,7 +62,12 @@ async function consolidateMemory() {
     return;
   }
 
-  // Find where we left off
+  // 1. Anchor-Memories: Always include the first 5 "foundational" logs of the session.
+  // These act as "attention sinks" that provide global context and numerical anchors
+  // for the model's reasoning stability.
+  const anchorLogs = allLogs.slice(0, 5);
+
+  // 2. Incremental Window: Find where we left off
   let newLogs = [];
   if (state.lastProcessedFeedbackId) {
     const lastIdx = allLogs.findIndex(l => l.id === state.lastProcessedFeedbackId);
@@ -75,19 +80,25 @@ async function consolidateMemory() {
     newLogs = allLogs.slice(-50);
   }
 
-  if (newLogs.length === 0) {
+  // Filter anchors out of newLogs if they overlap to save tokens
+  const filteredNewLogs = newLogs.filter(nl => !anchorLogs.some(al => al.id === nl.id));
+
+  if (filteredNewLogs.length === 0 && anchorLogs.length > 0) {
     console.log('[ADK Consolidator] No new logs since last consolidation cycle.');
     return;
   }
 
-  console.log(`[ADK Consolidator] Found ${newLogs.length} new feedback events. Activating Gemini for semantic A2UI synthesis...`);
+  console.log(`[ADK Consolidator] Activating Gemini with ${anchorLogs.length} anchors and ${filteredNewLogs.length} new events...`);
 
   const prompt = `
 You are the Agent Development Kit (ADK) 'Always-On' Memory Consolidator.
 Synthesize the latest feedback into generalized prevention rules AND dynamic A2UI components.
 
-Feedback Events (JSON):
-${JSON.stringify(newLogs.map(l => ({ id: l.id, signal: l.signal, context: l.context, whatWentWrong: l.whatWentWrong })), null, 2)}
+Foundational Anchors (Numerical Sinks):
+${JSON.stringify(anchorLogs.map(l => ({ id: l.id, signal: l.signal, context: l.context, whatWentWrong: l.whatWentWrong })), null, 2)}
+
+Latest Feedback Events (Spikes):
+${JSON.stringify(filteredNewLogs.map(l => ({ id: l.id, signal: l.signal, context: l.context, whatWentWrong: l.whatWentWrong })), null, 2)}
 
 Output ONLY valid JSON:
 {
