@@ -8,15 +8,21 @@ const { runProof } = require('../scripts/prove-adapters');
 let report;
 let tmpProofDir;
 
+function getCheck(name) {
+  assert.ok(report, 'proof report missing');
+  const fatal = report.checks.find((check) => check.name === 'fatal');
+  assert.equal(fatal, undefined, fatal ? `proof fatal: ${JSON.stringify(fatal.details)}` : 'proof fatal check present');
+  const found = report.checks.find((check) => check.name === name);
+  assert.ok(
+    found,
+    `check "${name}" not found in report; available: ${report.checks.map((check) => check.name).join(', ')}`,
+  );
+  return found;
+}
+
 test('adapter proof harness setup', async () => {
   tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-proof-test-'));
-  try {
-    report = await runProof({ proofDir: tmpProofDir, port: 0 });
-  } catch (err) {
-    if (err.code !== 'ENOTEMPTY') throw err;
-    // Fallback if ENOTEMPTY breaks the promise rejection
-    report = { summary: { passed: 0, failed: 1 }, checks: [] };
-  }
+  report = await runProof({ proofDir: tmpProofDir, port: 0 });
 });
 
 test('adapter proof: zero failures', () => {
@@ -65,49 +71,49 @@ const requiredChecks = [
 
 for (const checkName of requiredChecks) {
   test(`adapter proof: individual check "${checkName}" passes`, () => {
-    const found = report.checks.find((c) => c.name === checkName);
-    assert.ok(found, `check "${checkName}" not found in report`);
+    const found = getCheck(checkName);
     assert.equal(found.passed, true, `check "${checkName}" failed: ${JSON.stringify(found.details)}`);
   });
 }
 
 test('adapter proof: no unexpected failing checks', () => {
+  assert.ok(report.checks.length > 0, 'proof report should include checks');
   const failed = report.checks.filter((c) => !c.passed);
   assert.equal(failed.length, 0, `unexpected failures: ${failed.map((c) => c.name).join(', ')}`);
 });
 
 test('adapter proof: API healthz returns status 200', () => {
-  const check = report.checks.find((c) => c.name === 'api.healthz');
+  const check = getCheck('api.healthz');
   assert.equal(check.details.status, 200);
 });
 
 test('adapter proof: auth required returns 401', () => {
-  const check = report.checks.find((c) => c.name === 'api.auth.required');
+  const check = getCheck('api.auth.required');
   assert.equal(check.details.status, 401);
 });
 
 test('adapter proof: rubric gate returns accepted=false', () => {
-  const check = report.checks.find((c) => c.name === 'api.capture_feedback.rubric_gate');
+  const check = getCheck('api.capture_feedback.rubric_gate');
   assert.equal(check.details.accepted, false);
 });
 
 test('adapter proof: vague API feedback requires clarification', () => {
-  const check = report.checks.find((c) => c.name === 'api.capture_feedback.clarification');
+  const check = getCheck('api.capture_feedback.clarification');
   assert.equal(check.details.status, 'clarification_required');
 });
 
 test('adapter proof: vague MCP feedback requires clarification', () => {
-  const check = report.checks.find((c) => c.name === 'mcp.tools.call.capture_feedback.clarification');
+  const check = getCheck('mcp.tools.call.capture_feedback.clarification');
   assert.equal(check.details.status, 'clarification_required');
 });
 
 test('adapter proof: gemini has >= 3 tools', () => {
-  const check = report.checks.find((c) => c.name === 'adapter.gemini.declarations');
+  const check = getCheck('adapter.gemini.declarations');
   assert.ok(check.details.tools >= 3);
 });
 
 test('adapter proof: default profile has more tools than locked', () => {
-  const check = report.checks.find((c) => c.name === 'mcp.policy.profile_differentiation');
+  const check = getCheck('mcp.policy.profile_differentiation');
   assert.ok(check.details.defaultTools > check.details.lockedTools);
 });
 

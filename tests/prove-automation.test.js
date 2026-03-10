@@ -8,6 +8,18 @@ const { runAutomationProof } = require('../scripts/prove-automation');
 let report;
 let tmpProofDir;
 
+function getCheck(name) {
+  assert.ok(report, 'automation proof report missing');
+  const fatal = report.checks.find((check) => check.name === 'fatal');
+  assert.equal(fatal, undefined, fatal ? `automation proof fatal: ${JSON.stringify(fatal.details)}` : 'automation fatal check present');
+  const found = report.checks.find((check) => check.name === name);
+  assert.ok(
+    found,
+    `check "${name}" not found in report; available: ${report.checks.map((check) => check.name).join(', ')}`,
+  );
+  return found;
+}
+
 test('automation proof harness setup', async () => {
   tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-automation-proof-test-'));
   report = await runAutomationProof({ proofDir: tmpProofDir, port: 0 });
@@ -49,80 +61,80 @@ const requiredChecks = [
 
 for (const checkName of requiredChecks) {
   test(`automation proof: individual check "${checkName}" passes`, () => {
-    const found = report.checks.find((c) => c.name === checkName);
-    assert.ok(found, `check "${checkName}" not found in report`);
+    const found = getCheck(checkName);
     assert.equal(found.passed, true, `check "${checkName}" failed: ${JSON.stringify(found.details)}`);
   });
 }
 
 test('automation proof: no unexpected failing checks', () => {
+  assert.ok(report.checks.length > 0, 'automation proof report should include checks');
   const failed = report.checks.filter((c) => !c.passed);
   assert.equal(failed.length, 0, `unexpected failures: ${failed.map((c) => c.name).join(', ')}`);
 });
 
 test('automation proof: rubric pass has weighted score', () => {
-  const check = report.checks.find((c) => c.name === 'feedback.capture.rubric_pass');
+  const check = getCheck('feedback.capture.rubric_pass');
   assert.ok(typeof check.details.weightedScore === 'number');
   assert.ok(check.details.weightedScore > 0);
 });
 
 test('automation proof: rubric block has rejection reason', () => {
-  const check = report.checks.find((c) => c.name === 'feedback.capture.rubric_block');
+  const check = getCheck('feedback.capture.rubric_block');
   assert.equal(check.details.accepted, false);
   assert.ok(check.details.reason);
 });
 
 test('automation proof: negative with rubric has failure tags', () => {
-  const check = report.checks.find((c) => c.name === 'feedback.capture.negative_with_rubric');
+  const check = getCheck('feedback.capture.negative_with_rubric');
   assert.ok(Array.isArray(check.details.tags));
   assert.ok(check.details.tags.some((t) => t.startsWith('rubric-')));
 });
 
 test('automation proof: analytics tracks rubric samples >= 3', () => {
-  const check = report.checks.find((c) => c.name === 'analytics.rubric_tracking');
+  const check = getCheck('analytics.rubric_tracking');
   assert.ok(check.details.samples >= 3);
 });
 
 test('automation proof: DPO rubric metadata present', () => {
-  const check = report.checks.find((c) => c.name === 'dpo_export.rubric_metadata');
+  const check = getCheck('dpo_export.rubric_metadata');
   assert.ok(check.details);
 });
 
 test('automation proof: API rubric gate returns 422', () => {
-  const check = report.checks.find((c) => c.name === 'api.rubric_gate');
+  const check = getCheck('api.rubric_gate');
   assert.equal(check.details.status, 422);
 });
 
 test('automation proof: MCP rubric gate rejects', () => {
-  const check = report.checks.find((c) => c.name === 'mcp.rubric_gate');
+  const check = getCheck('mcp.rubric_gate');
   assert.equal(check.details.accepted, false);
 });
 
 test('automation proof: intent checkpoint enforced', () => {
-  const check = report.checks.find((c) => c.name === 'intent.checkpoint_enforcement');
+  const check = getCheck('intent.checkpoint_enforcement');
   assert.equal(check.details.blocked, 'checkpoint_required');
   assert.equal(check.details.approved, 'ready');
 });
 
 test('automation proof: semantic cache hit on equivalent query', () => {
-  const check = report.checks.find((c) => c.name === 'context.semantic_cache.hit');
+  const check = getCheck('context.semantic_cache.hit');
   assert.equal(check.details.firstHit, false);
   assert.equal(check.details.secondHit, true);
 });
 
 test('automation proof: self-healing includes reasoning traces', () => {
-  const check = report.checks.find((c) => c.name === 'self_healing.helpers');
+  const check = getCheck('self_healing.helpers');
   assert.ok(check.details.reasoning, 'should include reasoning aggregate');
   assert.ok(check.details.reasoning.allPassed, 'all traces should pass');
 });
 
 test('automation proof: code reasoning DPO traces have confidence', () => {
-  const check = report.checks.find((c) => c.name === 'code_reasoning.dpo_traces');
+  const check = getCheck('code_reasoning.dpo_traces');
   assert.ok(check.details);
 });
 
 test('automation proof: code reasoning proof gate passes', () => {
-  const check = report.checks.find((c) => c.name === 'code_reasoning.proof_gate');
+  const check = getCheck('code_reasoning.proof_gate');
   assert.ok(check.details.allPassed, 'all proof traces should pass');
   assert.ok(check.details.averageConfidence > 0);
 });

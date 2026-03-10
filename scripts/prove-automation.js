@@ -8,6 +8,7 @@ const {
   buildPreventionRules,
   getFeedbackPaths,
   readJSONL,
+  waitForBackgroundSideEffects,
 } = require('./feedback-loop');
 const { exportDpoFromMemories } = require('./export-dpo-pairs');
 const { planIntent } = require('./intent-router');
@@ -27,6 +28,24 @@ function ensureDir(dirPath) {
 
 function check(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+async function fetchWithRetry(url, options, { retries = 5, delayMs = 100 } = {}) {
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await fetch(url, options);
+    } catch (err) {
+      lastError = err;
+      if (attempt === retries) {
+        throw err;
+      }
+      await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
+    }
+  }
+
+  throw lastError;
 }
 
 async function runAutomationProof(options = {}) {
@@ -54,6 +73,8 @@ async function runAutomationProof(options = {}) {
   }
 
   const { server, port } = await startServer({ port: proofPort });
+  const baseUrl = `http://127.0.0.1:${port}`;
+  let currentCheck = 'bootstrap';
   try {
     // 1) Positive with valid rubric -> accepted
     {
@@ -159,7 +180,8 @@ async function runAutomationProof(options = {}) {
 
     // 7) API rubric gate returns 422
     {
-      const res = await fetch(`http://localhost:${port}/v1/feedback/capture`, {
+      currentCheck = 'api.rubric_gate';
+      const res = await fetchWithRetry(`${baseUrl}/v1/feedback/capture`, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer automation-proof-key',
@@ -185,6 +207,7 @@ async function runAutomationProof(options = {}) {
 
     // 8) MCP rubric gate returns accepted=false
     {
+      currentCheck = 'mcp.rubric_gate';
       const call = await handleRequest({
         jsonrpc: '2.0',
         id: 91,
@@ -210,6 +233,7 @@ async function runAutomationProof(options = {}) {
 
     // 9) intent checkpoints still enforced
     {
+      currentCheck = 'intent.checkpoint_enforcement';
       const planBlocked = planIntent({
         intentId: 'publish_dpo_training_data',
         mcpProfile: 'default',
@@ -231,7 +255,8 @@ async function runAutomationProof(options = {}) {
 
     // 10) context evaluate stores rubric evaluation
     {
-      const construct = await fetch(`http://localhost:${port}/v1/context/construct`, {
+      currentCheck = 'context.evaluate.construct';
+      const construct = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer automation-proof-key',
@@ -242,7 +267,8 @@ async function runAutomationProof(options = {}) {
       check(construct.status === 200, `context construct expected 200, got ${construct.status}`);
       const pack = await construct.json();
 
-      const evaluate = await fetch(`http://localhost:${port}/v1/context/evaluate`, {
+      currentCheck = 'context.evaluate.rubric';
+      const evaluate = await fetchWithRetry(`${baseUrl}/v1/context/evaluate`, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer automation-proof-key',
@@ -267,8 +293,9 @@ async function runAutomationProof(options = {}) {
 
     // 11) semantic cache hit on equivalent query
     {
+      currentCheck = 'context.semantic_cache.hit.first';
       fs.rmSync(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'semantic-cache.jsonl'), { force: true });
-      const first = await fetch(`http://localhost:${port}/v1/context/construct`, {
+      const first = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer automation-proof-key',
@@ -279,7 +306,8 @@ async function runAutomationProof(options = {}) {
       check(first.status === 200, `first context construct expected 200, got ${first.status}`);
       const firstPack = await first.json();
 
-      const second = await fetch(`http://localhost:${port}/v1/context/construct`, {
+      currentCheck = 'context.semantic_cache.hit.second';
+      const second = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer automation-proof-key',
@@ -355,10 +383,15 @@ async function runAutomationProof(options = {}) {
       });
     }
   } catch (err) {
-    addResult('fatal', false, { error: err.message });
+    addResult('fatal', false, {
+      check: currentCheck,
+      error: err.message,
+      cause: err.cause && err.cause.message ? err.cause.message : null,
+    });
   } finally {
     await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+    await waitForBackgroundSideEffects();
+    fs.rmSync(tmpFeedbackDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 
   if (writeArtifacts) {

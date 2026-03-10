@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
+const { waitForBackgroundSideEffects } = require('./feedback-loop');
 const { startServer } = require('../src/api/server');
 const { handleRequest } = require('../adapters/mcp/server-stdio');
 const { validateSubagentProfiles, listSubagentProfiles } = require('./subagent-profiles');
@@ -33,6 +34,24 @@ function parseLeadingJson(text) {
   const boundary = raw.indexOf(marker);
   const jsonSegment = boundary === -1 ? raw : raw.slice(0, boundary);
   return JSON.parse(jsonSegment.trim());
+}
+
+async function fetchWithRetry(url, options, { retries = 5, delayMs = 100 } = {}) {
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await fetch(url, options);
+    } catch (err) {
+      lastError = err;
+      if (attempt === retries) {
+        throw err;
+      }
+      await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
+    }
+  }
+
+  throw lastError;
 }
 
 async function proveMcpStdioTransport({
@@ -173,11 +192,14 @@ async function runProof(options = {}) {
   }
 
   const { server, port } = await startServer({ port: proofPort });
+  const baseUrl = `http://127.0.0.1:${port}`;
+  let currentCheck = 'bootstrap';
 
   try {
     // API checks
     {
-      const res = await fetch(`http://localhost:${port}/healthz`, {
+      currentCheck = 'api.healthz';
+      const res = await fetchWithRetry(`${baseUrl}/healthz`, {
         headers: { Authorization: 'Bearer proof-key' },
       });
       check(res.status === 200, `health expected 200, got ${res.status}`);
@@ -185,13 +207,15 @@ async function runProof(options = {}) {
     }
 
     {
-      const res = await fetch(`http://localhost:${port}/v1/feedback/stats`);
+      currentCheck = 'api.auth.required';
+      const res = await fetchWithRetry(`${baseUrl}/v1/feedback/stats`);
       check(res.status === 401, `stats unauthorized expected 401, got ${res.status}`);
       addResult('api.auth.required', true, { status: res.status });
     }
 
     {
-      const res = await fetch(`http://localhost:${port}/v1/intents/catalog?mcpProfile=locked`, {
+      currentCheck = 'api.intents.catalog';
+      const res = await fetchWithRetry(`${baseUrl}/v1/intents/catalog?mcpProfile=locked`, {
         headers: { Authorization: 'Bearer proof-key' },
       });
       check(res.status === 200, `intents catalog expected 200, got ${res.status}`);
@@ -201,7 +225,8 @@ async function runProof(options = {}) {
     }
 
     {
-      const res = await fetch(`http://localhost:${port}/v1/intents/plan`, {
+      currentCheck = 'api.intents.plan';
+      const res = await fetchWithRetry(`${baseUrl}/v1/intents/plan`, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer proof-key',
@@ -220,7 +245,8 @@ async function runProof(options = {}) {
     }
 
     {
-      const res = await fetch(`http://localhost:${port}/v1/feedback/capture`, {
+      currentCheck = 'api.capture_feedback';
+      const res = await fetchWithRetry(`${baseUrl}/v1/feedback/capture`, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer proof-key',
@@ -240,7 +266,8 @@ async function runProof(options = {}) {
     }
 
     {
-      const res = await fetch(`http://localhost:${port}/v1/feedback/capture`, {
+      currentCheck = 'api.capture_feedback.clarification';
+      const res = await fetchWithRetry(`${baseUrl}/v1/feedback/capture`, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer proof-key',
@@ -260,7 +287,8 @@ async function runProof(options = {}) {
     }
 
     {
-      const res = await fetch(`http://localhost:${port}/v1/feedback/capture`, {
+      currentCheck = 'api.capture_feedback.rubric_gate';
+      const res = await fetchWithRetry(`${baseUrl}/v1/feedback/capture`, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer proof-key',
@@ -285,7 +313,8 @@ async function runProof(options = {}) {
     }
 
     {
-      const construct = await fetch(`http://localhost:${port}/v1/context/construct`, {
+      currentCheck = 'api.context.construct';
+      const construct = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer proof-key',
@@ -298,7 +327,8 @@ async function runProof(options = {}) {
       check(Boolean(pack.packId), 'context packId missing');
       addResult('api.context.construct', true, { packId: pack.packId, items: pack.items.length });
 
-      const evaluate = await fetch(`http://localhost:${port}/v1/context/evaluate`, {
+      currentCheck = 'api.context.evaluate';
+      const evaluate = await fetchWithRetry(`${baseUrl}/v1/context/evaluate`, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer proof-key',
@@ -519,10 +549,15 @@ async function runProof(options = {}) {
       });
     }
   } catch (err) {
-    addResult('fatal', false, { error: err.message });
+    addResult('fatal', false, {
+      check: currentCheck,
+      error: err.message,
+      cause: err.cause && err.cause.message ? err.cause.message : null,
+    });
   } finally {
     await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+    await waitForBackgroundSideEffects();
+    fs.rmSync(tmpFeedbackDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     if (previousFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
     else process.env.RLHF_FEEDBACK_DIR = previousFeedbackDir;
     if (previousApiKey === undefined) delete process.env.RLHF_API_KEY;

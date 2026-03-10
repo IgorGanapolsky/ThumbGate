@@ -12,11 +12,13 @@ const {
   analyzeFeedback,
   buildPreventionRules,
   feedbackSummary,
+  getPendingBackgroundSideEffectCount,
   readJSONL,
   getFeedbackPaths,
   inferDomain,
   inferOutcome,
   enrichFeedbackContext,
+  waitForBackgroundSideEffects,
 } = require('../scripts/feedback-loop');
 
 function makeTmpDir() {
@@ -254,4 +256,41 @@ test('analyzeFeedback: includes boosted risk summary after sequence training row
 
   const summary = feedbackSummary();
   assert.ok(summary.includes('Boosted risk'), `expected boosted risk line in summary, got: ${summary}`);
+});
+
+test('captureFeedback: waitForBackgroundSideEffects drains deferred vector writes', async (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  await waitForBackgroundSideEffects();
+
+  const vectorStore = require('../scripts/vector-store');
+  const originalUpsertFeedback = vectorStore.upsertFeedback;
+  let flushed = false;
+
+  vectorStore.upsertFeedback = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    flushed = true;
+  };
+
+  t.after(() => {
+    vectorStore.upsertFeedback = originalUpsertFeedback;
+    delete process.env.RLHF_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const result = captureFeedback({
+    signal: 'up',
+    context: 'Deferred vector side-effect proof',
+    whatWorked: 'background task tracking',
+    tags: ['verification'],
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(flushed, false);
+  assert.equal(getPendingBackgroundSideEffectCount(), 1);
+
+  await waitForBackgroundSideEffects();
+
+  assert.equal(flushed, true);
+  assert.equal(getPendingBackgroundSideEffectCount(), 0);
 });

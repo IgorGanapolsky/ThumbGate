@@ -33,6 +33,7 @@ const DOMAIN_CATEGORIES = [
 ];
 
 const HOME = process.env.HOME || process.env.USERPROFILE || '';
+const pendingBackgroundSideEffects = new Set();
 
 function getFeedbackPaths() {
   if (process.env.RLHF_FEEDBACK_DIR) {
@@ -113,6 +114,34 @@ function ensureDir(dirPath) {
 function appendJSONL(filePath, record) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
+}
+
+function trackBackgroundSideEffect(taskPromise) {
+  if (!taskPromise || typeof taskPromise.then !== 'function') {
+    return null;
+  }
+
+  let tracked;
+  tracked = Promise.resolve(taskPromise)
+    .catch(() => {
+      // Non-critical side effects should never fail the primary feedback write.
+    })
+    .finally(() => {
+      pendingBackgroundSideEffects.delete(tracked);
+    });
+
+  pendingBackgroundSideEffects.add(tracked);
+  return tracked;
+}
+
+async function waitForBackgroundSideEffects() {
+  while (pendingBackgroundSideEffects.size > 0) {
+    await Promise.allSettled([...pendingBackgroundSideEffects]);
+  }
+}
+
+function getPendingBackgroundSideEffectCount() {
+  return pendingBackgroundSideEffects.size;
 }
 
 function readJSONL(filePath) {
@@ -555,10 +584,8 @@ function captureFeedback(params) {
 
   // Vector storage side-effect (non-blocking — primary write already succeeded)
   const vectorStore = getVectorStoreModule();
-  if (vectorStore) {
-    vectorStore.upsertFeedback(feedbackEvent).catch(() => {
-      // Non-critical; primary feedback log is the source of truth
-    });
+  if (vectorStore && typeof vectorStore.upsertFeedback === 'function') {
+    trackBackgroundSideEffect(vectorStore.upsertFeedback(feedbackEvent));
   }
 
   // RLAIF self-audit side-effect (non-blocking — 4th enrichment layer)
@@ -964,6 +991,8 @@ module.exports = {
   inferDomain,
   inferOutcome,
   enrichFeedbackContext,
+  waitForBackgroundSideEffects,
+  getPendingBackgroundSideEffectCount,
   get FEEDBACK_LOG_PATH() {
     return getFeedbackPaths().FEEDBACK_LOG_PATH;
   },
