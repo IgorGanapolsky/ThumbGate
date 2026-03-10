@@ -28,20 +28,26 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const GITHUB_MARKETPLACE_WEBHOOK_SECRET = process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '';
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || '';
 
-const API_KEYS_PATH = process.env._TEST_API_KEYS_PATH || path.resolve(
-  __dirname,
-  '../.claude/memory/feedback/api-keys.json'
-);
+function getApiKeysPath() {
+  return process.env._TEST_API_KEYS_PATH || path.resolve(
+    __dirname,
+    '../.claude/memory/feedback/api-keys.json'
+  );
+}
 
-const FUNNEL_LEDGER_PATH = process.env._TEST_FUNNEL_LEDGER_PATH || process.env.RLHF_FUNNEL_LEDGER_PATH || path.resolve(
-  __dirname,
-  '../.claude/memory/feedback/funnel-events.jsonl'
-);
+function getFunnelLedgerPath() {
+  return process.env._TEST_FUNNEL_LEDGER_PATH || process.env.RLHF_FUNNEL_LEDGER_PATH || path.resolve(
+    __dirname,
+    '../.claude/memory/feedback/funnel-events.jsonl'
+  );
+}
 
-const LOCAL_CHECKOUT_SESSIONS_PATH = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.resolve(
-  __dirname,
-  '../.claude/memory/feedback/local-checkout-sessions.json'
-);
+function getLocalCheckoutSessionsPath() {
+  return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.resolve(
+    __dirname,
+    '../.claude/memory/feedback/local-checkout-sessions.json'
+  );
+}
 
 const LOCAL_MODE = !STRIPE_SECRET_KEY;
 
@@ -101,8 +107,8 @@ function appendFunnelEvent({ stage, event, installId = null, evidence, metadata 
   };
 
   try {
-    ensureParentDir(FUNNEL_LEDGER_PATH);
-    fs.appendFileSync(FUNNEL_LEDGER_PATH, `${JSON.stringify(payload)}\n`, 'utf-8');
+    ensureParentDir(getFunnelLedgerPath());
+    fs.appendFileSync(getFunnelLedgerPath(), `${JSON.stringify(payload)}\n`, 'utf-8');
     return { written: true, payload };
   } catch (err) {
     return {
@@ -115,12 +121,12 @@ function appendFunnelEvent({ stage, event, installId = null, evidence, metadata 
 
 function loadFunnelLedger() {
   try {
-    if (!fs.existsSync(FUNNEL_LEDGER_PATH)) {
+    if (!fs.existsSync(getFunnelLedgerPath())) {
       return [];
     }
 
     const lines = fs
-      .readFileSync(FUNNEL_LEDGER_PATH, 'utf-8')
+      .readFileSync(getFunnelLedgerPath(), 'utf-8')
       .split('\n')
       .map((line) => line.trim())
       .filter(Boolean);
@@ -145,11 +151,11 @@ function loadFunnelLedger() {
 
 function loadLocalCheckoutSessions() {
   try {
-    if (!fs.existsSync(LOCAL_CHECKOUT_SESSIONS_PATH)) {
+    if (!fs.existsSync(getLocalCheckoutSessionsPath())) {
       return { sessions: {} };
     }
 
-    const raw = fs.readFileSync(LOCAL_CHECKOUT_SESSIONS_PATH, 'utf-8');
+    const raw = fs.readFileSync(getLocalCheckoutSessionsPath(), 'utf-8');
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed.sessions !== 'object' || Array.isArray(parsed.sessions)) {
       return { sessions: {} };
@@ -162,8 +168,8 @@ function loadLocalCheckoutSessions() {
 }
 
 function saveLocalCheckoutSessions(store) {
-  ensureParentDir(LOCAL_CHECKOUT_SESSIONS_PATH);
-  fs.writeFileSync(LOCAL_CHECKOUT_SESSIONS_PATH, JSON.stringify(store, null, 2), 'utf-8');
+  ensureParentDir(getLocalCheckoutSessionsPath());
+  fs.writeFileSync(getLocalCheckoutSessionsPath(), JSON.stringify(store, null, 2), 'utf-8');
 }
 
 function safeRate(numerator, denominator) {
@@ -216,10 +222,10 @@ function getFunnelAnalytics() {
  */
 function loadKeyStore() {
   try {
-    if (!fs.existsSync(API_KEYS_PATH)) {
+    if (!fs.existsSync(getApiKeysPath())) {
       return { keys: {} };
     }
-    const raw = fs.readFileSync(API_KEYS_PATH, 'utf-8');
+    const raw = fs.readFileSync(getApiKeysPath(), 'utf-8');
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed.keys !== 'object') {
       return { keys: {} };
@@ -234,8 +240,8 @@ function loadKeyStore() {
  * Persist the key store to disk. Creates parent directory if needed.
  */
 function saveKeyStore(store) {
-  ensureParentDir(API_KEYS_PATH);
-  fs.writeFileSync(API_KEYS_PATH, JSON.stringify(store, null, 2), 'utf-8');
+  ensureParentDir(getApiKeysPath());
+  fs.writeFileSync(getApiKeysPath(), JSON.stringify(store, null, 2), 'utf-8');
 }
 
 // ---------------------------------------------------------------------------
@@ -671,6 +677,67 @@ function recordUsage(key) {
 }
 
 /**
+ * Rotate an API key for a customer.
+ * Disables the old key (sets active: false, revokedAt: timestamp) and provisions a new one
+ * for the same customerId + installId. The old key is preserved in the store for audit purposes.
+ *
+ * @param {string} oldKey - The current active API key to rotate
+ * @returns {{ newKey: string, customerId: string, oldKey: string }}
+ */
+function rotateApiKey(oldKey) {
+  if (!oldKey || typeof oldKey !== 'string') {
+    return { rotated: false, reason: 'invalid_key' };
+  }
+
+  const store = loadKeyStore();
+  const meta = store.keys[oldKey];
+
+  if (!meta) {
+    return { rotated: false, reason: 'key_not_found' };
+  }
+
+  if (!meta.active) {
+    return { rotated: false, reason: 'key_already_disabled' };
+  }
+
+  const { customerId, installId } = meta;
+
+  // Disable the old key (do not delete — preserve for audit)
+  meta.active = false;
+  meta.revokedAt = new Date().toISOString();
+  saveKeyStore(store);
+
+  // Provision a new key for the same customer (force new — old key is now inactive)
+  const newKey = `rlhf_${require('crypto').randomBytes(16).toString('hex')}`;
+  const createdAt = new Date().toISOString();
+
+  const freshStore = loadKeyStore();
+  freshStore.keys[newKey] = {
+    customerId,
+    active: true,
+    usageCount: 0,
+    createdAt,
+    installId: installId || null,
+    source: 'rotation',
+  };
+  saveKeyStore(freshStore);
+
+  appendFunnelEvent({
+    stage: 'paid',
+    event: 'api_key_rotated',
+    evidence: 'api_key_rotated',
+    installId: installId || null,
+    metadata: {
+      customerId,
+      oldKeyPrefix: oldKey.slice(0, 12),
+      newKeyPrefix: newKey.slice(0, 12),
+    },
+  });
+
+  return { rotated: true, newKey, customerId, oldKey };
+}
+
+/**
  * Disable all API keys for a customer (called on subscription cancellation).
  *
  * @param {string} customerId - Stripe customer ID
@@ -937,6 +1004,7 @@ module.exports = {
   provisionApiKey,
   validateApiKey,
   recordUsage,
+  rotateApiKey,
   disableCustomerKeys,
   handleWebhook,
   verifyWebhookSignature,
@@ -948,8 +1016,8 @@ module.exports = {
   getFunnelAnalytics,
   readInstallIdFromConfig,
   // Expose for testing
-  _API_KEYS_PATH: API_KEYS_PATH,
-  _FUNNEL_LEDGER_PATH: FUNNEL_LEDGER_PATH,
-  _LOCAL_CHECKOUT_SESSIONS_PATH: LOCAL_CHECKOUT_SESSIONS_PATH,
+  _API_KEYS_PATH: getApiKeysPath(),
+  _FUNNEL_LEDGER_PATH: getFunnelLedgerPath(),
+  _LOCAL_CHECKOUT_SESSIONS_PATH: getLocalCheckoutSessionsPath(),
   _LOCAL_MODE: () => LOCAL_MODE,
 };

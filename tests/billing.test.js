@@ -860,6 +860,90 @@ describe('API server — /v1/billing/* routes', () => {
   });
 });
 
+describe('billing.js — rotateApiKey', () => {
+  let billing;
+  let realPath;
+
+  before(() => {
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
+    realPath = billing._API_KEYS_PATH;
+  });
+
+  afterEach(() => {
+    // Clean up any rotation test keys
+    if (fs.existsSync(realPath)) {
+      const store = JSON.parse(fs.readFileSync(realPath, 'utf-8'));
+      for (const key of Object.keys(store.keys)) {
+        if (
+          store.keys[key].customerId.startsWith('cus_rotate_') ||
+          store.keys[key].customerId.startsWith('cus_roterr_')
+        ) {
+          delete store.keys[key];
+        }
+      }
+      fs.writeFileSync(realPath, JSON.stringify(store, null, 2), 'utf-8');
+    }
+  });
+
+  after(() => {
+    delete require.cache[require.resolve('../scripts/billing')];
+  });
+
+  test('rotateApiKey rotates key and disables old one', () => {
+    const provisioned = billing.provisionApiKey('cus_rotate_001');
+    const oldKey = provisioned.key;
+
+    // Old key should be valid before rotation
+    assert.equal(billing.validateApiKey(oldKey).valid, true);
+
+    const result = billing.rotateApiKey(oldKey);
+
+    assert.equal(result.rotated, true, 'should report rotated: true');
+    assert.ok(result.newKey, 'should return a newKey');
+    assert.ok(result.newKey.startsWith('rlhf_'), `newKey should start with rlhf_, got: ${result.newKey}`);
+    assert.notEqual(result.newKey, oldKey, 'newKey must differ from oldKey');
+    assert.equal(result.oldKey, oldKey, 'should echo back oldKey');
+
+    // Old key must be disabled
+    const oldValidation = billing.validateApiKey(oldKey);
+    assert.equal(oldValidation.valid, false, 'old key should be disabled after rotation');
+    assert.equal(oldValidation.reason, 'key_disabled', 'reason should be key_disabled');
+
+    // New key must be valid
+    const newValidation = billing.validateApiKey(result.newKey);
+    assert.equal(newValidation.valid, true, 'new key should be valid');
+  });
+
+  test('rotateApiKey returns error for invalid key', () => {
+    const result = billing.rotateApiKey('rlhf_doesnotexist000000000000000000');
+    assert.equal(result.rotated, false);
+    assert.equal(result.reason, 'key_not_found');
+
+    const emptyResult = billing.rotateApiKey('');
+    assert.equal(emptyResult.rotated, false);
+    assert.equal(emptyResult.reason, 'invalid_key');
+
+    const nullResult = billing.rotateApiKey(null);
+    assert.equal(nullResult.rotated, false);
+    assert.equal(nullResult.reason, 'invalid_key');
+  });
+
+  test('rotateApiKey preserves customerId across rotation', () => {
+    const provisioned = billing.provisionApiKey('cus_rotate_002', { installId: 'inst_rotate_001' });
+    const oldKey = provisioned.key;
+
+    const result = billing.rotateApiKey(oldKey);
+
+    assert.equal(result.rotated, true);
+    assert.equal(result.customerId, 'cus_rotate_002', 'customerId must be preserved');
+
+    const newValidation = billing.validateApiKey(result.newKey);
+    assert.equal(newValidation.valid, true);
+    assert.equal(newValidation.customerId, 'cus_rotate_002', 'new key must carry same customerId');
+  });
+});
+
 describe('API server — admin provision boundary', () => {
   let server;
   let port;

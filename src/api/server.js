@@ -36,6 +36,7 @@ const {
   provisionApiKey,
   validateApiKey,
   recordUsage,
+  rotateApiKey,
   handleWebhook,
   verifyWebhookSignature,
   verifyGithubWebhookSignature,
@@ -879,6 +880,34 @@ function createApiServer() {
           source: 'admin_provision',
         });
         sendJson(res, 200, result);
+        return;
+      }
+
+      // POST /v1/billing/rotate-key — rotate the authenticated key, preserving subscription
+      if (req.method === 'POST' && pathname === '/v1/billing/rotate-key') {
+        const currentKey = extractBearerToken(req);
+        if (!currentKey) {
+          sendJson(res, 401, { error: 'Unauthorized' });
+          return;
+        }
+        const validation = validateApiKey(currentKey);
+        if (!validation.valid) {
+          sendJson(res, 400, { error: 'Key not found or already disabled' });
+          return;
+        }
+        try {
+          const result = rotateApiKey(currentKey);
+          if (!result.rotated) {
+            sendJson(res, 400, { error: result.reason || 'Key rotation failed' });
+            return;
+          }
+          sendJson(res, 200, {
+            newKey: result.newKey,
+            message: 'Key rotated. Update your configuration.',
+          });
+        } catch (err) {
+          sendJson(res, 500, { error: err.message || 'Internal Server Error' });
+        }
         return;
       }
 
