@@ -58,6 +58,7 @@ test('Anchor-Memory Management - keeps foundational logs in context', async (t) 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-anchor-test-'));
   process.env.RLHF_FEEDBACK_DIR = tmpDir;
   process.env.ADK_STATE_FILE = path.join(tmpDir, 'state.json');
+  process.env.ADK_FAKE_CONSOLIDATION = 'true';
   process.env.GEMINI_API_KEY = 'dummy-key'; 
 
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
@@ -90,4 +91,5 @@ test('Anchor-Memory Management - keeps foundational logs in context', async (t) 
   assert.ok(activationLog.includes('3 new events'), `Should include 3 new events, found: ${activationLog}`);
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
+  delete process.env.ADK_FAKE_CONSOLIDATION;
 });

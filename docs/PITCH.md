@@ -1,29 +1,45 @@
 # One-Line Pitch
 
-The enterprise-grade **Agentic Feedback Studio** that turns user vibes into verifiable context and stops AI agents from repeating mistakes.
+Make one AI workflow safe enough to ship team-wide.
 
 # Positioning
 
-The Studio is the operational layer between raw LLM output and production reliability. We provide a **Context Engineering Studio** that move beyond simple prompts to high-density semantic environments.
+RLHF Feedback Loop is the hosted reliability layer behind one workflow with business value. It is not another horizontal agent platform. It gives teams shared memory, guardrails, and proof-ready runs so a workflow can be deployed, audited, and improved over time.
 
-- **Primary Goal:** Transform "Vibe Coding" into "Context Engineering" through the **Veto Layer**.
-- **Secondary Goal:** Generate **RLHF-ready datasets** to permanently align custom models with human preference.
+- **Primary Goal:** Turn "vibe coding" into a controlled rollout through the **Veto Layer**.
+- **Secondary Goal:** Convert real operator feedback into prevention rules, Thompson Sampling signals, and RLHF-ready datasets such as KTO/DPO pairs.
+
+# Buyer Promise
+
+We make one AI workflow measurable enough to justify and safe enough to roll out.
+
+- Ship a lead-to-meeting, onboarding, or internal ops workflow without relying on one operator's laptop.
+- Turn operator complaints into reusable prevention rules instead of repeated incidents.
+- Prove what happened through audit trails, context provenance, and verification evidence.
+
+# Buyer, User, Champion
+
+- **Buyer:** head of ops, head of growth, platform lead, or consultancy owner.
+- **User:** the operator running the workflow day to day.
+- **Champion:** the engineer or platform owner wiring Cloud Pro, the Agentic Feedback Studio, and the Veto Layer into the workflow.
 
 # High-Signal Features
 
-- **Vibe-to-Verification (V2V):** Capture thumbs up/down and convert them into repo-level rules.
-- **Zero-Config Plug-and-Play:** Drop into any repo; auto-discovers project context or falls back to global store.
-- **ShieldCortex Context Packs:** Dynamic semantic assembly of project knowledge for agent boot-up.
-- **Agentic Guardrails (The Veto Layer):** Repeated failures trigger non-bypassable `CLAUDE.md` / `AGENTS.md` rules.
+- **Vibe-to-Verification (V2V):** Capture thumbs up/down and convert them into workflow-level rules.
+- **ShieldCortex Context Packs:** Dynamic semantic assembly of project knowledge for agent boot-up and bounded retrieval.
+- **Agentic Guardrails (The Veto Layer):** Repeated failures trigger non-bypassable `CLAUDE.md` / `AGENTS.md` rules and shared prevention policies.
+- **Proof-Ready Runs:** Machine-readable evidence, audit trails, and hosted workflow artifacts for rollout decisions.
 
-# Buyer Value
+# Best First Wedge
 
-- Reduce repeated failures from AI agents in production workflows.
-- Increase trust via explicit and auditable feedback handling.
-- Shorten time from customer complaint to model improvement.
+Start with one workflow, not a platform migration.
+
+- Best first offer: lead-to-meeting with intake, enrichment, drafting, approvals, CRM sync, and auditability.
+- Same operating model: onboarding and internal ops automation.
+- Technical engine stays the same: feedback capture, context engineering, Thompson Sampling, and DPO export.
 
 # ICP (Ideal Customer Profile)
 
-- AI-first product teams shipping copilots/agents.
-- Platform teams standardizing agent behavior across runtimes (Claude, GPT, Gemini).
-- Consultancies integrating LLM workflows for enterprise clients.
+- AI-first product teams shipping copilots or agentic workflows with real business owners.
+- Platform teams standardizing behavior across Claude, GPT, Codex, Gemini, and custom runners.
+- Consultancies installing AI workflows for clients who need proof, policy, and auditability.
