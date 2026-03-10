@@ -29,7 +29,7 @@ function findCoverageTestFiles({
 }
 
 function buildCoverageArgs(files) {
-  return ['--test', '--experimental-test-coverage', ...files];
+  return ['--test', '--test-concurrency=1', '--experimental-test-coverage', ...files];
 }
 
 function runCoverage({

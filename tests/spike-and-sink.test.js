@@ -7,11 +7,30 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+function snapshotEnv(keys) {
+  return Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+}
+
+function restoreEnv(snapshot) {
+  Object.entries(snapshot).forEach(([key, value]) => {
+    if (value === undefined) {
+      delete process.env[key];
+      return;
+    }
+    process.env[key] = value;
+  });
+}
+
 test('Inverse Sink Weighting - penalizes generic logs', async (t) => {
+  const envSnapshot = snapshotEnv(['RLHF_VECTOR_STUB_EMBED', 'RLHF_FEEDBACK_DIR']);
   // Use stub embed for speed/determinism
   process.env.RLHF_VECTOR_STUB_EMBED = 'true';
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-sink-test-'));
   process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    restoreEnv(envSnapshot);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
 
   // Require inside to pick up env vars
   const { searchSimilar, upsertFeedback } = require('../scripts/vector-store');
@@ -44,11 +63,16 @@ test('Inverse Sink Weighting - penalizes generic logs', async (t) => {
 
   // Since stub distance is 0, let's verify distance ranking works as intended.
   assert.ok(spikeResult._distance <= sinkResult._distance, 'Spike should have smaller or equal distance to Sink');
-  
-  fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
 test('Anchor-Memory Management - keeps foundational logs in context', async (t) => {
+  const envSnapshot = snapshotEnv([
+    'RLHF_FEEDBACK_DIR',
+    'ADK_STATE_FILE',
+    'ADK_FAKE_CONSOLIDATION',
+    'GEMINI_API_KEY',
+    'NODE_ENV',
+  ]);
   const originalLog = console.log;
   const logs = [];
   console.log = (...args) => {
@@ -58,7 +82,14 @@ test('Anchor-Memory Management - keeps foundational logs in context', async (t) 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-anchor-test-'));
   process.env.RLHF_FEEDBACK_DIR = tmpDir;
   process.env.ADK_STATE_FILE = path.join(tmpDir, 'state.json');
+  process.env.ADK_FAKE_CONSOLIDATION = 'true';
+  process.env.NODE_ENV = 'test';
   process.env.GEMINI_API_KEY = 'dummy-key'; 
+  t.after(() => {
+    console.log = originalLog;
+    restoreEnv(envSnapshot);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
 
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
   
@@ -82,12 +113,8 @@ test('Anchor-Memory Management - keeps foundational logs in context', async (t) 
 
   await consolidateMemory();
 
-  console.log = originalLog;
-
   const activationLog = logs.find(l => l.includes('Activating Gemini'));
   assert.ok(activationLog, 'Should have found Activation log');
   assert.ok(activationLog.includes('5 anchors'), `Should include 5 anchor logs, found: ${activationLog}`);
   assert.ok(activationLog.includes('3 new events'), `Should include 3 new events, found: ${activationLog}`);
-
-  fs.rmSync(tmpDir, { recursive: true, force: true });
 });

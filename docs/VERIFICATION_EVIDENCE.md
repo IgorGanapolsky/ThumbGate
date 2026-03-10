@@ -1,5 +1,51 @@
 # Verification Evidence (March 9, 2026)
 
+## March 10, 2026: Value-led GTM surfaces and hermetic ADK coverage
+
+Commands:
+
+```bash
+npm ci
+node --test tests/api-server.test.js tests/version-metadata.test.js
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+```
+
+Observed result:
+
+- `npm ci` completed successfully with `0 vulnerabilities`.
+- Targeted landing-page verification passed: `25` tests passed, `0` failed across `tests/api-server.test.js` and `tests/version-metadata.test.js`.
+- `npm test` passed end-to-end after the public messaging and GTM doc changes.
+- `npm run test:coverage` passed with a serialized Node test runner (`--test-concurrency=1`) so suites that rewrite `process.env` do not race each other during coverage.
+- The ADK consolidation path stayed hermetic under test:
+  - first-run anchor-only consolidation no longer exits early
+  - `ADK_FAKE_CONSOLIDATION=true` is honored only under `NODE_ENV=test`
+  - the anchor-memory test opts into deterministic consolidation instead of a live Gemini path
+- Coverage summary: `83.20%` lines, `69.28%` branches, `86.78%` functions.
+- `npm run prove:adapters`: `24 passed`, `0 failed`.
+- `npm run prove:automation`: `14 passed`, `0 failed`.
+- `npm run self-heal:check`: `HEALTHY` with `4/4` checks healthy.
+
+Evidence artifacts:
+
+- Targeted landing/API verification was exercised directly by the commands above.
+- `proof/compatibility/report.json`
+- `proof/compatibility/report.md`
+- `proof/automation/report.json`
+- `proof/automation/report.md`
+
+The command output above is the primary evidence for this run. The tracked proof artifacts listed here were refreshed locally by the proof commands and serve as machine-readable corroboration.
+
+Requirements verified:
+
+- Public-facing GTM surfaces now lead with one workflow outcome instead of generic agent infrastructure.
+- The landing page preserves `SoftwareApplication` and `FAQPage` JSON-LD while adding buyer-facing FAQ and comparison content.
+- The GTM plan link referenced by the landing page now resolves to `docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md`.
+- The ADK consolidator and spike/anchor coverage path is deterministic again and no longer blocks the proof gate.
+
 ## March 9, 2026: Symphony workflow contract and hermetic coverage
 
 Commands:

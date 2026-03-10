@@ -47,14 +47,50 @@ function saveState(state) {
 
 const { createRuleProposal, createReasoningTrace } = require('./a2ui-engine');
 
+function buildFakeConsolidation(anchorLogs, newLogs) {
+  const combined = [...anchorLogs, ...newLogs].filter(Boolean);
+  const connectedLogIds = combined.slice(0, 3).map((log) => log.id).filter(Boolean);
+  const issueHints = combined
+    .map((log) => log.whatWentWrong || log.context || '')
+    .map((text) => String(text).trim())
+    .filter(Boolean);
+
+  const primaryHint = issueHints[0] || 'Environment and rollout checks were skipped';
+  return {
+    consolidatedInsights: [
+      {
+        pattern: primaryHint,
+        rule: 'ALWAYS verify environment, approvals, and rollout prerequisites before executing workflow changes',
+        severity: 'high',
+        connectedLogIds,
+      },
+    ],
+    a2uiPayload: {
+      reasoningGraph: {
+        summary: 'Synthetic consolidation used for hermetic test mode.',
+        connections: connectedLogIds.slice(1).map((id) => ({
+          from: connectedLogIds[0],
+          to: id,
+          label: 'Shared failure pattern',
+        })),
+      },
+    },
+  };
+}
+
 async function consolidateMemory() {
+  const requestedFakeConsolidation = process.env.ADK_FAKE_CONSOLIDATION === 'true';
+  const useFakeConsolidation = requestedFakeConsolidation && process.env.NODE_ENV === 'test';
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  if (requestedFakeConsolidation && !useFakeConsolidation) {
+    console.warn('[ADK Consolidator] Ignoring ADK_FAKE_CONSOLIDATION outside test mode.');
+  }
+  if (!useFakeConsolidation && !apiKey) {
     console.warn('[ADK Consolidator] GEMINI_API_KEY is not set. Skipping active consolidation.');
     return;
   }
 
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = useFakeConsolidation ? null : new GoogleGenAI({ apiKey });
   const paths = getFeedbackPaths();
   const state = loadState();
 
@@ -71,8 +107,9 @@ async function consolidateMemory() {
   const anchorLogs = allLogs.slice(0, 5);
 
   // 2. Incremental Window: Find where we left off
+  const hasPriorState = Boolean(state.lastProcessedFeedbackId);
   let newLogs = [];
-  if (state.lastProcessedFeedbackId) {
+  if (hasPriorState) {
     const lastIdx = allLogs.findIndex(l => l.id === state.lastProcessedFeedbackId);
     if (lastIdx !== -1) {
       newLogs = allLogs.slice(lastIdx + 1);
@@ -86,7 +123,7 @@ async function consolidateMemory() {
   // Filter anchors out of newLogs if they overlap to save tokens
   const rawNewLogs = newLogs.filter(nl => !anchorLogs.some(al => al.id === nl.id));
 
-  if (rawNewLogs.length === 0 && anchorLogs.length > 0) {
+  if (rawNewLogs.length === 0 && anchorLogs.length > 0 && hasPriorState) {
     console.log('[ADK Consolidator] No new logs since last consolidation cycle.');
     return;
   }
@@ -100,7 +137,8 @@ async function consolidateMemory() {
 
   // Resolve model via role router instead of hardcoding
   const modelConfig = resolveModelRole('normal');
-  console.log(`[ADK Consolidator] Activating ${modelConfig.model} with ${anchorLogs.length} anchors and ${filteredNewLogs.length} new events...`);
+  const activationLabel = useFakeConsolidation ? `Gemini test stub (${modelConfig.model})` : `Gemini (${modelConfig.model})`;
+  console.log(`[ADK Consolidator] Activating ${activationLabel} with ${anchorLogs.length} anchors and ${filteredNewLogs.length} new events...`);
 
   const prompt = `
 You are the Agent Development Kit (ADK) 'Always-On' Memory Consolidator.
@@ -132,13 +170,13 @@ Output ONLY valid JSON:
 `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: modelConfig.model,
-      contents: prompt,
-      config: { responseMimeType: 'application/json' }
-    });
-
-    const result = JSON.parse(response.text);
+    const result = useFakeConsolidation
+      ? buildFakeConsolidation(anchorLogs, filteredNewLogs)
+      : JSON.parse((await ai.models.generateContent({
+        model: modelConfig.model,
+        contents: prompt,
+        config: { responseMimeType: 'application/json' }
+      })).text);
     console.log('[ADK Consolidator] Consolidation complete.');
 
     if (result.consolidatedInsights) {

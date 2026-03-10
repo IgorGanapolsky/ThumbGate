@@ -26,6 +26,7 @@ test('findCoverageTestFiles returns sorted nested test files', () => {
 test('buildCoverageArgs prepends Node coverage flags', () => {
   assert.deepEqual(buildCoverageArgs(['tests/a.test.js']), [
     '--test',
+    '--test-concurrency=1',
     '--experimental-test-coverage',
     'tests/a.test.js',
   ]);
@@ -53,6 +54,7 @@ test('runCoverage delegates to Node with test coverage flags', () => {
   assert.equal(captured.cmd, process.execPath);
   assert.deepEqual(captured.args, [
     '--test',
+    '--test-concurrency=1',
     '--experimental-test-coverage',
     'tests/a.test.js',
     'tests/b.test.js',

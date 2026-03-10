@@ -6,27 +6,39 @@
   <title>RLHF Feedback Loop Cloud Pro | Hosted Guardrails for AI Workflow Teams</title>
   <meta
     name='description'
-    content='Hosted guardrails, shared memory, and proof-ready workflow runs for teams shipping Claude Code, Codex, and Gemini automations. Start with Cloud Pro for $10/mo.'
+    content='Roll out one revenue or ops workflow with hosted memory, guardrails, and verification evidence. Start with Cloud Pro for $10/mo.'
   />
   <script type='application/ld+json'>
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": "RLHF Feedback Loop Cloud Pro",
+    "url": "__APP_ORIGIN__",
     "operatingSystem": "Cross-platform",
     "applicationCategory": "DeveloperApplication",
-    "description": "Hosted guardrails, shared memory, and verification evidence for AI workflow teams shipping Claude Code, Codex, and Gemini automations.",
+    "description": "Hosted Agentic Feedback Studio for teams rolling out one workflow outcome with shared memory, guardrails, and verification evidence.",
+    "keywords": "Agentic Feedback Studio, Veto Layer, DPO, Thompson Sampling, context engineering, lead-to-meeting workflow, AI workflow guardrails",
+    "audience": {
+      "@type": "Audience",
+      "audienceType": "RevOps, growth, platform, and engineering teams running AI workflows"
+    },
     "offers": {
       "@type": "Offer",
       "price": "10",
       "priceCurrency": "USD"
     },
+    "sameAs": [
+      "__GITHUB_URL__",
+      "__VERIFICATION_URL__",
+      "__COMPATIBILITY_REPORT_URL__",
+      "__AUTOMATION_REPORT_URL__"
+    ],
     "featureList": [
       "Hosted API keys for workflow runs",
-      "Shared audit trail and funnel analytics",
-      "Feedback capture and prevention rules",
-      "Machine-readable verification evidence",
-      "Works with Claude Code, Codex, Gemini, and custom workflow runners"
+      "Shared memory and prevention rules across operators",
+      "Verification evidence for workflow rollout",
+      "Works with Claude Code, Codex, Gemini, and custom workflow runners",
+      "Built to support one high-value workflow such as lead-to-meeting, onboarding, or internal ops"
     ]
   }
   </script>
@@ -47,6 +59,20 @@
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "The best first wedge is a lead-to-meeting workflow: intake, enrichment, drafting, approvals, CRM sync, and auditability. The same stack also fits onboarding and internal ops automation."
+      }
+    }, {
+      "@type": "Question",
+      "name": "Who buys Cloud Pro versus who uses it?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Buyers are usually RevOps, growth, platform, or engineering leaders who need one workflow to run consistently. Users are the operators and agent runners executing the workflow day to day."
+      }
+    }, {
+      "@type": "Question",
+      "name": "What proves the workflow is safe to roll out?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Cloud Pro pairs hosted onboarding with auditable runs, machine-readable verification evidence, and prevention rules so teams can show what changed, what failed, and what passed."
       }
     }]
   }
@@ -450,6 +476,41 @@
       margin-top: 18px;
     }
 
+    .table-card {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+
+    .comparison-table thead {
+      background: var(--surface-strong);
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      color: var(--muted);
+    }
+
+    .comparison-table th {
+      color: var(--accent-dark);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .comparison-table td strong {
+      color: var(--ink);
+    }
+
     .footer {
       padding: 30px 0 60px;
     }
@@ -489,6 +550,24 @@
         padding: 26px;
       }
 
+      .comparison-table,
+      .comparison-table thead,
+      .comparison-table tbody,
+      .comparison-table tr,
+      .comparison-table th,
+      .comparison-table td {
+        display: block;
+      }
+
+      .comparison-table thead {
+        display: none;
+      }
+
+      .comparison-table td {
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+
       .nav-inner {
         padding-top: 12px;
         padding-bottom: 12px;
@@ -502,6 +581,8 @@
       <div class='brand'>RLHF <span>Cloud Pro</span></div>
       <div class='nav-links'>
         <a href='#why'>Why buy</a>
+        <a href='#north-star'>North Star</a>
+        <a href='#faq'>FAQ</a>
         <a href='#pricing'>Pricing</a>
         <a href='__VERIFICATION_URL__'>Proof</a>
         <a href='__GITHUB_URL__'>OSS core</a>
@@ -513,11 +594,12 @@
     <section class='hero'>
       <div class='hero-inner'>
         <div class='panel hero-copy'>
-          <span class='eyebrow'>Hosted guardrails for AI workflow teams</span>
-          <h1>Stop AI workflows from repeating the same mistakes.</h1>
-          <p>Cloud Pro gives your team hosted API keys, shared memory, and proof-ready workflow runs so Claude Code, Codex, and Gemini automations stop drifting and start compounding.</p>
-          <p>The best first wedge is not “better prompts.” It is one high-ROI workflow like lead-to-meeting, onboarding, or internal ops, backed by a feedback and verification layer your team can actually audit.</p>
+          <span class='eyebrow'>Hosted Agentic Feedback Studio for workflow teams</span>
+          <h1>Roll out one revenue or ops workflow with proof, not hope.</h1>
+          <p>Cloud Pro gives RevOps, growth, platform, and engineering teams hosted API keys, shared memory, and verification evidence so one workflow like lead-to-meeting can run across operators without drift.</p>
+          <p>Start where pain is already real: lead-to-meeting, onboarding, or internal ops. Cloud Pro is the hosted Veto Layer behind that workflow, not another dashboard full of vague AI claims.</p>
           <div class='hero-proof'>
+            <span class='proof-pill'>North Star: one workflow live and auditable</span>
             <span class='proof-pill'>Founding price: $10/mo</span>
             <span class='proof-pill'>Versioned proof: v__PACKAGE_VERSION__</span>
             <span class='proof-pill'>Hosted onboarding at __APP_ORIGIN__</span>
@@ -527,33 +609,33 @@
             <a class='button secondary' href='__GTM_PLAN_URL__'>Read the 30-day GTM plan</a>
             <a class='button secondary' href='__GITHUB_URL__'>View the OSS core</a>
           </div>
-          <p class='note'>Checkout is owned through the hosted API first. If that fails, the page falls back to the direct Stripe link.</p>
+          <p class='note'>Bought by teams that need shared control. Used by operators and agent runners doing the work. Checkout is owned through the hosted API first, then falls back to direct Stripe if needed.</p>
         </div>
 
         <div class='panel hero-card'>
-          <h2>Why teams pay</h2>
-          <p>Most teams can install the OSS package. They pay for Cloud Pro when they need a shared operational layer instead of scattered local JSON files and ad hoc guardrails.</p>
+          <h2>Why teams buy, not just install</h2>
+          <p>Most teams can use the OSS package. They buy Cloud Pro when one workflow needs to survive handoffs, approvals, and multiple operators instead of living in scattered local files.</p>
           <ul>
-            <li>Provision hosted API keys instead of self-hosting the feedback store.</li>
-            <li>Share memory, prevention rules, and funnel evidence across operators.</li>
-            <li>Move one revenue or ops workflow into a monitored, auditable system.</li>
+            <li>Replace self-hosted feedback sprawl with a shared operational layer.</li>
+            <li>Run the same workflow with shared memory, prevention rules, and hosted keys.</li>
+            <li>Link rollout decisions to verification evidence instead of gut feel.</li>
           </ul>
           <div class='mini-grid'>
             <div class='mini'>
-              <strong>Best ICP</strong>
-              RevOps, growth, and platform teams building repeatable agent workflows.
+              <strong>Bought By</strong>
+              RevOps, growth, platform, and engineering leaders accountable for one workflow outcome.
             </div>
             <div class='mini'>
-              <strong>Best first offer</strong>
-              Lead-to-meeting workflow with approvals, CRM sync, and auditability.
+              <strong>Used By</strong>
+              Operators and agent runners executing intake, drafting, approval, and sync steps every day.
             </div>
             <div class='mini'>
-              <strong>Why not $49</strong>
-              That ask is too aggressive before the hosted workflow layer has stronger proof.
+              <strong>Best First Workflow</strong>
+              Lead-to-meeting with intake, enrichment, drafting, approval, CRM sync, and auditability.
             </div>
             <div class='mini'>
               <strong>What stays OSS</strong>
-              Local feedback capture, MCP server, and DPO export remain free.
+              Local feedback capture, MCP server, and DPO export remain free while hosted team control is paid.
             </div>
           </div>
         </div>
@@ -564,7 +646,7 @@
       <div class='section-inner'>
         <div class='section-head'>
           <span class='eyebrow'>What changes</span>
-          <h2>Turn the repo from “interesting infra” into something a buyer can justify.</h2>
+          <h2>Sell the workflow outcome. Use Cloud Pro as the control layer behind it.</h2>
           <p>Cloud Pro is not the hero product by itself. The hero is the workflow outcome. Cloud Pro is the hosted reliability layer that makes the workflow safe to roll out across a team.</p>
         </div>
         <div class='grid-3'>
@@ -584,7 +666,7 @@
       </div>
     </section>
 
-    <section>
+    <section id='north-star'>
       <div class='section-inner grid-2'>
         <div class='steps'>
           <h3>How the first paid wedge works</h3>
@@ -596,10 +678,107 @@
           </ol>
         </div>
         <div class='card'>
-          <h3>What buyers actually hear</h3>
-          <p>Not “RLHF-ready data infrastructure.”</p>
-          <p>They hear: “We can ship one workflow that creates or saves money, while keeping agents on-policy and proving what happened.”</p>
-          <p>That is the bridge between the open-source repo and a real paid offer.</p>
+          <h3>North Star</h3>
+          <p>One workflow is live, bought by a team, and backed by proof links that survive handoffs.</p>
+          <ul>
+            <li>One workflow outcome is clearly defined and in production.</li>
+            <li>Every rollout step can point to verification evidence.</li>
+            <li>Repeat mistakes turn into prevention rules instead of recurring incidents.</li>
+            <li>More than one operator can run the same system without local-only knowledge.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Buyer Translation</span>
+          <h2>What buyers worry about, what Cloud Pro changes, and where the proof lives.</h2>
+          <p>Use this language in deals, workshops, and AI-search content. It translates product mechanics into buyer concerns and proof surfaces.</p>
+        </div>
+        <div class='card table-card'>
+          <table class='comparison-table'>
+            <thead>
+              <tr>
+                <th>Buyer Concern</th>
+                <th>What Cloud Pro Changes</th>
+                <th>Proof Surface</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Can one workflow survive handoffs?</strong></td>
+                <td>Hosted API keys, shared memory, and prevention rules replace single-laptop tribal knowledge.</td>
+                <td>Verification evidence, auditable runs, and machine-readable reports.</td>
+              </tr>
+              <tr>
+                <td><strong>Can we trust the rollout?</strong></td>
+                <td>Cloud Pro adds hosted guardrails and explicit feedback handling so drift is visible instead of hidden.</td>
+                <td>Proof-ready runs plus versioned verification artifacts.</td>
+              </tr>
+              <tr>
+                <td><strong>Why not stay on the OSS package?</strong></td>
+                <td>OSS is great for a single builder. Cloud Pro is for a team that needs one workflow to run consistently.</td>
+                <td>Hosted onboarding, shared state, and team-safe workflow execution.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id='faq'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>FAQ</span>
+          <h2>Answer the buyer questions before they stall the deal.</h2>
+          <p>Visible FAQ content keeps the landing page aligned with the JSON-LD schema and makes the pitch easier to quote in AI search.</p>
+        </div>
+        <div class='grid-2'>
+          <div class='card'>
+            <h3>Who should buy Cloud Pro?</h3>
+            <p>Teams running agentic workflows who need hosted API keys, shared memory, and auditable runs without self-hosting the feedback and guardrail layer.</p>
+          </div>
+          <div class='card'>
+            <h3>Who uses it every day?</h3>
+            <p>Operators and agent runners doing lead intake, research, drafting, approvals, and sync steps inside the workflow.</p>
+          </div>
+          <div class='card'>
+            <h3>What is the best first workflow?</h3>
+            <p>Lead-to-meeting is the clearest wedge because the value chain is easy to explain: intake, enrichment, drafting, approval, CRM sync, and auditability.</p>
+          </div>
+          <div class='card'>
+            <h3>What does Cloud Pro prove?</h3>
+            <p>It proves what changed, what passed, and how the workflow is being controlled so rollout decisions are based on evidence instead of vibes.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Proof Surface</span>
+          <h2>Publish the authority evidence where buyers and AI systems can inspect it.</h2>
+          <p>The public proof surface should be explicit. These links anchor claims to human-readable verification evidence and machine-readable reports.</p>
+        </div>
+        <div class='grid-3'>
+          <div class='card'>
+            <h3>Verification evidence</h3>
+            <p>Command history, observed results, and report paths for product and workflow claims.</p>
+            <p><a href='__VERIFICATION_URL__'>Open <code>VERIFICATION_EVIDENCE.md</code></a></p>
+          </div>
+          <div class='card'>
+            <h3>Compatibility proof JSON</h3>
+            <p>Machine-readable adapter and API compatibility evidence for AI runtimes.</p>
+            <p><a href='__COMPATIBILITY_REPORT_URL__'>Open <code>proof/compatibility/report.json</code></a></p>
+          </div>
+          <div class='card'>
+            <h3>Automation proof JSON</h3>
+            <p>Machine-readable automation evidence for rubric gates, prevention rules, and workflow checks.</p>
+            <p><a href='__AUTOMATION_REPORT_URL__'>Open <code>proof/automation/report.json</code></a></p>
+          </div>
         </div>
       </div>
     </section>
@@ -608,7 +787,7 @@
       <div class='section-inner'>
         <div class='section-head'>
           <span class='eyebrow'>Pricing</span>
-          <h2>Keep self-serve cheap. Sell the bigger workflow outcome separately.</h2>
+          <h2>Keep self-serve cheap. Close the bigger workflow install separately.</h2>
           <p>The repo remains free. Cloud Pro stays at a low-friction founding price while the hosted layer proves onboarding and retention. Services and workflow installs carry the larger ticket.</p>
         </div>
         <div class='pricing-grid'>
@@ -632,6 +811,7 @@
               <li>Provisioned API key after checkout</li>
               <li>Shared team memory and funnel events</li>
               <li>Built for Claude Code, Codex, Gemini, and custom runners</li>
+              <li>Best when attached to one workflow that creates or saves money</li>
             </ul>
             <button class='button primary' id='checkout-btn-bottom' type='button'>Start Cloud Pro for $10/mo</button>
           </div>

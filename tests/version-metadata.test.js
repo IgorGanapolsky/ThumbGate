@@ -32,3 +32,18 @@ test('public docs render the current package version', () => {
   assert.match(landingPage, /Start Cloud Pro for \$10\/mo/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
 });
+
+test('landing page keeps GTM and schema assets wired', () => {
+  const landingPage = readText('docs/landing-page.html');
+  const gtmPlan = readText('docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md');
+
+  assert.match(landingPage, /"@type": "SoftwareApplication"/);
+  assert.match(landingPage, /"@type": "FAQPage"/);
+  assert.match(landingPage, /<section id='faq'>/);
+  assert.match(landingPage, /__GTM_PLAN_URL__/);
+  assert.match(landingPage, /__COMPATIBILITY_REPORT_URL__/);
+  assert.match(landingPage, /__AUTOMATION_REPORT_URL__/);
+  assert.match(gtmPlan, /Weekly active proof-backed workflow runs\./);
+  assert.match(gtmPlan, /Workflow Install Workshop/);
+  assert.match(gtmPlan, /lead-to-meeting/i);
+});
