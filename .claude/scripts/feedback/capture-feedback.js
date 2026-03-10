@@ -109,20 +109,34 @@ function main() {
     console.log(`  Type        : ${mem.type || ev.actionType}`);
     console.log(`  Storage     : JSONL log + LanceDB vector index`);
     console.log('');
-    console.log(`  Action: promoted to memory. Prevention rules will auto-update.`);
+    console.log(`  Action: promoted to reusable memory. Prevention rules will auto-update.`);
     console.log(`  DPO export: run \`npx rlhf-feedback-loop export-dpo\` to generate training pairs.`);
     console.log('');
     return;
   }
 
+  if (result.needsClarification) {
+    console.log('');
+    console.log(`RLHF Signal Logged [${feedback.toUpperCase()}] — clarification required`);
+    console.log('─'.repeat(50));
+    console.log(`  Feedback ID : ${result.feedbackEvent ? result.feedbackEvent.id : 'n/a'}`);
+    console.log(`  Reason      : ${result.reason}`);
+    console.log(`  Next detail : ${result.prompt}`);
+    console.log(`  Example     : ${result.example}`);
+    console.log('');
+    console.log('  Signal log only: stored in feedback history, but reusable memory was not created yet.');
+    console.log('');
+    process.exit(2);
+  }
+
   console.log('');
-  console.log(`RLHF Feedback Recorded [${feedback.toUpperCase()}] — not promoted`);
+  console.log(`RLHF Feedback Logged [${feedback.toUpperCase()}] — not promoted`);
   console.log('─'.repeat(50));
   console.log(`  Feedback ID : ${result.feedbackEvent ? result.feedbackEvent.id : 'n/a'}`);
   console.log(`  Reason      : ${result.reason}`);
   console.log('');
-  console.log(`  The rubric engine did not promote this to memory.`);
-  console.log(`  Common causes: missing tags, no test evidence, low rubric score.`);
+  console.log('  Signal log only: reusable memory was not created.');
+  console.log('  Common causes: rubric guardrails, missing domain tags, or invalid evidence payloads.');
   console.log('');
   process.exit(2);
 }

@@ -86,7 +86,7 @@ async function runAutomationProof(options = {}) {
       const result = captureFeedback({
         signal: 'up',
         context: 'Claimed done without logs',
-        whatWorked: 'looked good',
+        whatWorked: 'Reviewer approved despite missing logs',
         tags: ['verification', 'automation'],
         rubricScores: [
           { criterion: 'verification_evidence', score: 5, judge: 'judge-a' },

@@ -56,8 +56,9 @@ function runConsolidator() {
   const env = { 
     ...process.env, 
     RLHF_FEEDBACK_DIR: TEST_DIR,
-    ADK_STATE_FILE: path.join(TEST_DIR, "adk-state.json"),
-    NODE_ENV: "test" 
+    ADK_STATE_FILE: path.join(TEST_DIR, 'adk-state.json'),
+    ADK_FAKE_CONSOLIDATION: 'true',
+    NODE_ENV: 'test' 
   };
   
   const result = spawnSync('node', [path.join(PROJECT_ROOT, 'scripts', 'adk-consolidator.js')], { env, encoding: 'utf-8' });

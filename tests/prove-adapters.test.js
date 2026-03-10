@@ -23,8 +23,8 @@ test('adapter proof: zero failures', () => {
   assert.equal(report.summary.failed, 0);
 });
 
-test('adapter proof: at least 21 checks pass', () => {
-  assert.ok(report.summary.passed >= 21, `expected >= 21 passed, got ${report.summary.passed}`);
+test('adapter proof: at least 23 checks pass', () => {
+  assert.ok(report.summary.passed >= 23, `expected >= 23 passed, got ${report.summary.passed}`);
 });
 
 test('adapter proof: report.json written', () => {
@@ -42,6 +42,7 @@ const requiredChecks = [
   'api.intents.catalog',
   'api.intents.plan',
   'api.capture_feedback',
+  'api.capture_feedback.clarification',
   'api.capture_feedback.rubric_gate',
   'api.context.construct',
   'api.context.evaluate',
@@ -51,6 +52,7 @@ const requiredChecks = [
   'mcp.tools.list',
   'mcp.tools.call.feedback_summary',
   'mcp.tools.call.plan_intent',
+  'mcp.tools.call.capture_feedback.clarification',
   'mcp.tools.call.capture_feedback.rubric_gate',
   'mcp.policy.locked_profile_denies_write_tool',
   'adapter.chatgpt.openapi.parity',
@@ -86,6 +88,16 @@ test('adapter proof: auth required returns 401', () => {
 test('adapter proof: rubric gate returns accepted=false', () => {
   const check = report.checks.find((c) => c.name === 'api.capture_feedback.rubric_gate');
   assert.equal(check.details.accepted, false);
+});
+
+test('adapter proof: vague API feedback requires clarification', () => {
+  const check = report.checks.find((c) => c.name === 'api.capture_feedback.clarification');
+  assert.equal(check.details.status, 'clarification_required');
+});
+
+test('adapter proof: vague MCP feedback requires clarification', () => {
+  const check = report.checks.find((c) => c.name === 'mcp.tools.call.capture_feedback.clarification');
+  assert.equal(check.details.status, 'clarification_required');
 });
 
 test('adapter proof: gemini has >= 3 tools', () => {

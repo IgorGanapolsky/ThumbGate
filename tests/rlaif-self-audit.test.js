@@ -71,6 +71,18 @@ describe('rlaif-self-audit — selfAudit()', () => {
     assert.strictEqual(actionable.passed, false, 'missing whatWorked must fail has_actionable_detail');
   });
 
+  it('generic thumbs-up context fails no_vague_signal', () => {
+    const { selfAudit } = freshModule();
+    const event = {
+      signal: 'positive',
+      context: 'thumbs up',
+      tags: ['verification'],
+    };
+    const result = selfAudit(event);
+    const vague = result.constraints.find((c) => c.constraint === 'no_vague_signal');
+    assert.strictEqual(vague.passed, false, 'generic praise must fail no_vague_signal');
+  });
+
   it('negative feedback with whatWentWrong and whatToChange passes has_actionable_detail', () => {
     const { selfAudit } = freshModule();
     const event = {

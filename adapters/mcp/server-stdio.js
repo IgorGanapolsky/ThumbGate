@@ -58,13 +58,13 @@ function resolveSafePath(inputPath, { mustExist = false } = {}) {
 const TOOLS = [
   {
     name: 'capture_feedback',
-    description: 'Capture thumbs up/down feedback and promote actionable memory',
+    description: 'Capture an up/down signal plus one line of why. Vague feedback is logged, then returned with a clarification prompt instead of memory promotion.',
     inputSchema: {
       type: 'object',
-      required: ['signal', 'context'],
+      required: ['signal'],
       properties: {
         signal: { type: 'string', enum: ['up', 'down'] },
-        context: { type: 'string' },
+        context: { type: 'string', description: 'One-sentence reason describing what worked or failed' },
         whatWentWrong: { type: 'string' },
         whatToChange: { type: 'string' },
         whatWorked: { type: 'string' },
@@ -234,6 +234,15 @@ function toText(result) {
   return JSON.stringify(result, null, 2);
 }
 
+function formatCaptureFeedbackResult(result) {
+  const message = result.accepted
+    ? 'Feedback promoted to reusable memory.'
+    : result.needsClarification
+      ? result.message
+      : 'Signal logged, but reusable memory was not created.';
+  return toText({ ...result, message });
+}
+
 function parseOptionalObject(input, name) {
   if (input == null) return {};
   if (typeof input === 'object' && !Array.isArray(input)) return input;
@@ -328,6 +337,11 @@ async function callTool(name, args = {}) {
       tags: ['auto-capture', 'mcp'],
     });
     const ev = autoResult.feedbackEvent || {};
+    const promotionLine = autoResult.accepted
+      ? `yes (Memory ID: ${(autoResult.memoryRecord || {}).id})`
+      : autoResult.needsClarification
+        ? `no — clarification required: ${autoResult.prompt}`
+        : `no — ${autoResult.reason || ''}`;
     const autoReport = [
       '',
       `## Auto-Captured Feedback [${autoSignal.toUpperCase()}]`,
@@ -335,7 +349,7 @@ async function callTool(name, args = {}) {
       `  Signal      : ${ev.signal || autoSignal} (${ev.actionType || 'unknown'})`,
       `  Context     : ${(ev.context || textToCheck).slice(0, 80)}`,
       `  Timestamp   : ${ev.timestamp || new Date().toISOString()}`,
-      `  Promoted    : ${autoResult.accepted ? 'yes (Memory ID: ' + (autoResult.memoryRecord || {}).id + ')' : 'no — ' + (autoResult.reason || '')}`,
+      `  Promoted    : ${promotionLine}`,
       '',
       formatStats(),
     ].join('\n');
@@ -433,7 +447,7 @@ async function callToolInner(name, args = {}) {
       }
     } catch (_) {}
 
-    return { content: [{ type: 'text', text: toText(result) + recallText }] };
+    return { content: [{ type: 'text', text: formatCaptureFeedbackResult(result) + recallText }] };
   }
 
   if (name === 'feedback_summary') {

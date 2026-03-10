@@ -5,6 +5,8 @@ info:
   description: |
     Production API for feedback capture, schema-validated memory promotion,
     prevention rule generation, and DPO export.
+    Bare up/down signals are logged immediately, but the API returns
+    clarification_required until one sentence explains what worked or failed.
 servers:
   - url: https://rlhf-feedback-loop-710216278770.us-central1.run.app
 security:
@@ -32,13 +34,14 @@ components:
           type: string
     CaptureFeedbackRequest:
       type: object
-      required: [signal, context]
+      required: [signal]
       properties:
         signal:
           type: string
           enum: [up, down, positive, negative]
         context:
           type: string
+          description: One-sentence reason describing what worked or failed
         whatWentWrong:
           type: string
         whatToChange:
@@ -155,7 +158,7 @@ paths:
         '200':
           description: Feedback accepted and promoted to memory
         '422':
-          description: Feedback recorded but rejected for memory promotion
+          description: Feedback logged only; clarification required or promotion rejected
         '401':
           description: Unauthorized
   /v1/feedback/stats:

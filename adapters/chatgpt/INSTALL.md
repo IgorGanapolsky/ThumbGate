@@ -52,17 +52,20 @@ Click **Test** on the `captureFeedback` action:
 ```json
 {
   "signal": "up",
-  "context": "GPT Actions install verified"
+  "context": "GPT Actions install verified with a successful test call",
+  "whatWorked": "The hosted action returned accepted=true and a promoted status"
 }
 ```
 
-Expected response: `200 OK` with `{ "id": "fb-...", "status": "captured" }`.
+Expected response: `200 OK` with `{ "accepted": true, "status": "promoted" }`.
+
+If you only send a bare `thumbs up/down` style payload, expect `422` with `status: "clarification_required"` and a follow-up `prompt`.
 
 ## Available Actions
 
 | Action | Method | Path | Description |
 |---|---|---|---|
-| `captureFeedback` | POST | `/v1/feedback/capture` | Capture thumbs up/down signal |
+| `captureFeedback` | POST | `/v1/feedback/capture` | Capture up/down signal plus one-line why |
 | `getFeedbackStats` | GET | `/v1/feedback/stats` | Aggregated feedback statistics |
 | `getFeedbackSummary` | GET | `/v1/feedback/summary` | Recent feedback summary |
 | `generatePreventionRules` | POST | `/v1/feedback/rules` | Generate prevention rules |

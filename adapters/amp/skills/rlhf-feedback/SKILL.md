@@ -12,6 +12,8 @@ node .claude/scripts/feedback/capture-feedback.js --feedback=up --context="..." 
 node .claude/scripts/feedback/capture-feedback.js --feedback=down --context="..." --tags="..."
 ```
 
+Do not claim promotion from a bare `thumbs up/down`. Ask for one sentence describing what worked or failed first.
+
 Before major implementation:
 
 ```bash

@@ -17,6 +17,12 @@ capture_and_report() {
 
   # Capture feedback (verbose output already shows IDs, signal, storage)
   node "$CAPTURE" --feedback="$SIGNAL" --context="$PROMPT" --tags="auto-capture,hook"
+  local CAPTURE_STATUS=$?
+
+  if [ "$CAPTURE_STATUS" -eq 2 ]; then
+    echo "Reusable memory status: signal logged only. Add one specific sentence so the MCP can promote it."
+    echo ""
+  fi
 
   # Show storage proof
   echo ""

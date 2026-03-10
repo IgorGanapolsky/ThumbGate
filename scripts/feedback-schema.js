@@ -12,6 +12,9 @@ const GENERIC_TAGS = new Set(['feedback', 'positive', 'negative']);
 const MIN_CONTENT_LENGTH = 20;
 const VALID_TITLE_PREFIXES = ['SUCCESS:', 'MISTAKE:', 'LEARNING:', 'PREFERENCE:'];
 const VALID_CATEGORIES = new Set(['error', 'learning', 'preference']);
+const {
+  assessFeedbackActionability,
+} = require('./feedback-quality');
 
 function validateFeedbackMemory(memory) {
   const issues = [];
@@ -112,8 +115,16 @@ function resolveFeedbackAction(params) {
     : [];
 
   if (signal === 'negative') {
-    if (!whatWentWrong && !context) {
-      return { type: 'no-action', reason: 'Negative feedback without context — cannot determine what went wrong' };
+    const actionability = assessFeedbackActionability({
+      signal: 'negative',
+      context,
+      whatWentWrong,
+    });
+    if (!actionability.promotable) {
+      const reason = actionability.issue === 'missing'
+        ? 'Negative feedback without context — cannot determine what went wrong'
+        : 'Negative feedback is too vague to promote — describe what failed in one sentence';
+      return { type: 'no-action', reason };
     }
 
     const content = [
@@ -157,8 +168,16 @@ function resolveFeedbackAction(params) {
       return { type: 'no-action', reason: `Rubric gate prevented promotion: ${reasons}` };
     }
 
-    if (!whatWorked && !context) {
-      return { type: 'no-action', reason: 'Positive feedback without context — cannot determine what worked' };
+    const actionability = assessFeedbackActionability({
+      signal: 'positive',
+      context,
+      whatWorked,
+    });
+    if (!actionability.promotable) {
+      const reason = actionability.issue === 'missing'
+        ? 'Positive feedback without context — cannot determine what worked'
+        : 'Positive feedback is too vague to promote — describe what worked in one sentence';
+      return { type: 'no-action', reason };
     }
 
     const content = whatWorked ? `What worked: ${whatWorked}` : `Approach: ${context}`;
@@ -246,6 +265,13 @@ function runTests() {
   const bareThumbsDown = resolveFeedbackAction({ signal: 'negative' });
   assert(bareThumbsDown.type === 'no-action', 'bare negative feedback becomes no-action');
 
+  const vagueThumbsUp = resolveFeedbackAction({
+    signal: 'positive',
+    context: 'thumbs up',
+    tags: ['verification'],
+  });
+  assert(vagueThumbsUp.type === 'no-action', 'generic positive context becomes no-action');
+
   const fullNegative = resolveFeedbackAction({
     signal: 'negative',
     context: 'Pushed code with no tests',
@@ -267,7 +293,7 @@ function runTests() {
 
   const blockedPositive = resolveFeedbackAction({
     signal: 'positive',
-    whatWorked: 'Looked correct',
+    whatWorked: 'Manual approval happened without evidence',
     tags: ['testing'],
     rubricEvaluation: {
       promotionEligible: false,

@@ -1,31 +1,100 @@
 'use strict';
 
+const fs = require('fs');
 const path = require('path');
+const {
+  resolveEmbeddingProfile,
+  writeModelFitReport,
+  resolveFeedbackDir,
+} = require('./local-model-profile');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const DEFAULT_LANCE_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback', 'lancedb');
+const DEFAULT_FEEDBACK_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+const DEFAULT_LANCE_DIR = path.join(DEFAULT_FEEDBACK_DIR, 'lancedb');
 
 // Module-level cache — prevents re-importing on every upsertFeedback() call
 // First ESM import takes ~200ms; second is instant from cache.
 let _lancedb = null;
-let _pipeline = null;
+let _lancedbLoader = null;
+const _pipelineCache = new Map();
+let _lastEmbeddingProfile = null;
+let _pipelineLoader = null;
 const TABLE_NAME = 'rlhf_memories';
 
 async function getLanceDB() {
   if (!_lancedb) {
-    _lancedb = await import('@lancedb/lancedb');
+    _lancedb = _lancedbLoader ? await _lancedbLoader() : await import('@lancedb/lancedb');
   }
   return _lancedb;
 }
 
-async function getEmbeddingPipeline() {
-  if (!_pipeline) {
-    const { pipeline } = await import('@huggingface/transformers');
-    _pipeline = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
-      quantized: true,
-    });
+function getFeedbackDir() {
+  return resolveFeedbackDir(process.env.RLHF_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR);
+}
+
+function getLanceDir() {
+  return path.join(getFeedbackDir(), 'lancedb');
+}
+
+function ensureDir(dirPath) {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
   }
-  return _pipeline;
+}
+
+function truncateForEmbedding(text, maxChars) {
+  const raw = String(text || '');
+  if (!maxChars || raw.length <= maxChars) return raw;
+  return raw.slice(0, maxChars);
+}
+
+async function loadPipelineForProfile(profile) {
+  const cacheKey = `${profile.model}::${profile.quantized}`;
+  if (_pipelineCache.has(cacheKey)) {
+    return _pipelineCache.get(cacheKey);
+  }
+
+  if (process.env.RLHF_VECTOR_FORCE_PRIMARY_FAILURE === 'true' && profile.id !== 'fallback') {
+    throw new Error('Forced primary embedding profile failure');
+  }
+
+  const pipeline = _pipelineLoader || (await import('@huggingface/transformers')).pipeline;
+  const pipe = await pipeline('feature-extraction', profile.model, {
+    quantized: profile.quantized,
+  });
+  _pipelineCache.set(cacheKey, pipe);
+  return pipe;
+}
+
+async function getEmbeddingPipeline() {
+  const resolved = resolveEmbeddingProfile();
+  const report = writeModelFitReport(getFeedbackDir(), { resolved }).report;
+
+  try {
+    const pipe = await loadPipelineForProfile(resolved.selectedProfile);
+    _lastEmbeddingProfile = {
+      ...report,
+      activeProfile: resolved.selectedProfile,
+      fallbackUsed: false,
+    };
+    return { pipe, profile: _lastEmbeddingProfile };
+  } catch (primaryError) {
+    const fallback = resolved.fallbackProfile;
+    const pipe = await loadPipelineForProfile(fallback);
+    _lastEmbeddingProfile = {
+      ...report,
+      activeProfile: fallback,
+      fallbackUsed: true,
+      fallbackReason: primaryError.message,
+    };
+    writeModelFitReport(getFeedbackDir(), {
+      resolved: {
+        ...resolved,
+        selectedProfile: fallback,
+      },
+    });
+    return { pipe, profile: _lastEmbeddingProfile };
+  }
 }
 
 // Stub embed support for unit tests — avoids HuggingFace ONNX model download.
@@ -39,15 +108,17 @@ async function embed(text) {
     stub[0] = 1.0;
     return stub;
   }
-  const pipe = await getEmbeddingPipeline();
-  const output = await pipe(text, { pooling: 'mean', normalize: true });
+  const { pipe, profile } = await getEmbeddingPipeline();
+  const output = await pipe(truncateForEmbedding(text, profile.activeProfile.maxChars), {
+    pooling: 'mean',
+    normalize: true,
+  });
   return Array.from(output.data); // Float32Array -> plain number[] for LanceDB Arrow serialization
 }
 
 async function upsertFeedback(feedbackEvent) {
-  const lanceDir = process.env.RLHF_FEEDBACK_DIR
-    ? path.join(process.env.RLHF_FEEDBACK_DIR, 'lancedb')
-    : DEFAULT_LANCE_DIR;
+  const lanceDir = getLanceDir();
+  ensureDir(lanceDir);
 
   const { connect } = await getLanceDB();
   const db = await connect(lanceDir);
@@ -81,9 +152,8 @@ async function upsertFeedback(feedbackEvent) {
 }
 
 async function searchSimilar(queryText, limit = 5) {
-  const lanceDir = process.env.RLHF_FEEDBACK_DIR
-    ? path.join(process.env.RLHF_FEEDBACK_DIR, 'lancedb')
-    : DEFAULT_LANCE_DIR;
+  const lanceDir = getLanceDir();
+  ensureDir(lanceDir);
 
   const { connect } = await getLanceDB();
   const db = await connect(lanceDir);
@@ -97,4 +167,32 @@ async function searchSimilar(queryText, limit = 5) {
   return results;
 }
 
-module.exports = { upsertFeedback, searchSimilar, TABLE_NAME };
+function getEmbeddingConfig() {
+  return resolveEmbeddingProfile();
+}
+
+function getLastEmbeddingProfile() {
+  return _lastEmbeddingProfile;
+}
+
+function setPipelineLoaderForTests(loader) {
+  _pipelineLoader = loader;
+  _pipelineCache.clear();
+  _lastEmbeddingProfile = null;
+}
+
+function setLanceLoaderForTests(loader) {
+  _lancedbLoader = loader;
+  _lancedb = null;
+}
+
+module.exports = {
+  upsertFeedback,
+  searchSimilar,
+  TABLE_NAME,
+  getEmbeddingConfig,
+  getLastEmbeddingProfile,
+  setPipelineLoaderForTests,
+  setLanceLoaderForTests,
+  truncateForEmbedding,
+};

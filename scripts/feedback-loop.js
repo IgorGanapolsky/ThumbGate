@@ -15,6 +15,9 @@ const {
   parseTimestamp,
 } = require('./feedback-schema');
 const {
+  buildClarificationMessage,
+} = require('./feedback-quality');
+const {
   buildRubricEvaluation,
 } = require('./rubric-engine');
 const { recordAction, attributeFeedback } = require('./feedback-attribution');
@@ -80,6 +83,14 @@ function getContextFsModule() {
 function getVectorStoreModule() {
   try {
     return require('./vector-store');
+  } catch {
+    return null;
+  }
+}
+
+function getRiskScorerModule() {
+  try {
+    return require('./risk-scorer');
   } catch {
     return null;
   }
@@ -290,15 +301,41 @@ function buildSequenceFeatures(recentEntries, currentEntry) {
   };
 }
 
-function appendSequence(feedbackEvent, paths) {
+function appendSequence(historyEntries, feedbackEvent, paths, outcome = {}) {
   const sequencePath = path.join(paths.FEEDBACK_DIR, 'feedback-sequences.jsonl');
-  const recent = readJSONL(paths.FEEDBACK_LOG_PATH).slice(-SEQUENCE_WINDOW);
+  const recent = Array.isArray(historyEntries) ? historyEntries.slice(-SEQUENCE_WINDOW) : [];
   const features = buildSequenceFeatures(recent, feedbackEvent);
+  const rubric = feedbackEvent.rubric || null;
+  const filePaths = feedbackEvent.richContext && Array.isArray(feedbackEvent.richContext.filePaths)
+    ? feedbackEvent.richContext.filePaths
+    : [];
+  const accepted = outcome.accepted === true;
+  const targetRisk = feedbackEvent.signal === 'negative' || !accepted ? 1 : 0;
   const entry = {
     id: `seq_${Date.now()}`,
     timestamp: new Date().toISOString(),
     targetReward: feedbackEvent.signal === 'positive' ? 1 : -1,
     targetTags: feedbackEvent.tags,
+    accepted,
+    actionType: feedbackEvent.actionType || null,
+    actionReason: feedbackEvent.actionReason || null,
+    context: feedbackEvent.context || '',
+    skill: feedbackEvent.skill || null,
+    domain: feedbackEvent.richContext ? feedbackEvent.richContext.domain : 'general',
+    outcomeCategory: feedbackEvent.richContext ? feedbackEvent.richContext.outcomeCategory : 'unknown',
+    filePathCount: filePaths.length,
+    errorType: feedbackEvent.richContext ? feedbackEvent.richContext.errorType : null,
+    rubric: rubric
+      ? {
+        rubricId: rubric.rubricId || null,
+        weightedScore: rubric.weightedScore,
+        failingCriteria: rubric.failingCriteria || [],
+        failingGuardrails: rubric.failingGuardrails || [],
+        judgeDisagreements: rubric.judgeDisagreements || [],
+      }
+      : null,
+    targetRisk,
+    riskLabel: targetRisk === 1 ? 'high-risk' : 'low-risk',
     features,
     label: feedbackEvent.signal === 'positive' ? 'positive' : 'negative',
   };
@@ -343,7 +380,7 @@ function updateDiversityTracking(feedbackEvent, paths) {
 }
 
 function captureFeedback(params) {
-  const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH } = getFeedbackPaths();
+  const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
   const signal = normalizeSignal(params.signal);
   if (!signal) {
     return {
@@ -411,20 +448,44 @@ function captureFeedback(params) {
 
   // Rich context enrichment (QUAL-02, QUAL-03) — non-blocking
   const feedbackEvent = enrichFeedbackContext(rawFeedbackEvent, params);
+  const historyEntries = readJSONL(FEEDBACK_LOG_PATH).slice(-SEQUENCE_WINDOW);
 
   const summary = loadSummary();
   summary.total += 1;
   summary[signal] += 1;
 
   if (action.type === 'no-action') {
+    const clarification = buildClarificationMessage({
+      signal,
+      context: params.context || '',
+      whatWentWrong: params.whatWentWrong,
+      whatToChange: params.whatToChange,
+      whatWorked: params.whatWorked,
+    });
     summary.rejected += 1;
     summary.lastUpdated = now;
     saveSummary(summary);
     appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
+    try {
+      appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(), { accepted: false });
+    } catch {
+      // Sequence tracking failure is non-critical
+    }
+    try {
+      const riskScorer = getRiskScorerModule();
+      if (riskScorer) {
+        riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
+      }
+    } catch {
+      // Risk model refresh is non-critical
+    }
     return {
       accepted: false,
+      status: clarification ? 'clarification_required' : 'rejected',
       reason: action.reason,
+      message: clarification ? clarification.message : 'Signal logged, but reusable memory was not created.',
       feedbackEvent,
+      ...(clarification || {}),
     };
   }
 
@@ -437,9 +498,24 @@ function captureFeedback(params) {
       ...feedbackEvent,
       validationIssues: prepared.issues,
     });
+    try {
+      appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(), { accepted: false });
+    } catch {
+      // Sequence tracking failure is non-critical
+    }
+    try {
+      const riskScorer = getRiskScorerModule();
+      if (riskScorer) {
+        riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
+      }
+    } catch {
+      // Risk model refresh is non-critical
+    }
     return {
       accepted: false,
+      status: 'rejected',
       reason: `Schema validation failed: ${prepared.issues.join('; ')}`,
+      message: 'Signal logged, but reusable memory was not created.',
       feedbackEvent,
       issues: prepared.issues,
     };
@@ -467,7 +543,7 @@ function captureFeedback(params) {
   // ML side-effects: sequence tracking and diversity (non-blocking — primary write already succeeded)
   const mlPaths = getFeedbackPaths();
   try {
-    appendSequence(feedbackEvent, mlPaths);
+    appendSequence(historyEntries, feedbackEvent, mlPaths, { accepted: true });
   } catch (err) {
     // Sequence tracking failure is non-critical
   }
@@ -491,6 +567,14 @@ function captureFeedback(params) {
     if (sam) sam.selfAuditAndLog(feedbackEvent, mlPaths);
   } catch (_err) { /* non-critical */ }
 
+  // Boosted risk model refresh — local, file-based, and non-blocking
+  try {
+    const riskScorer = getRiskScorerModule();
+    if (riskScorer) {
+      riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
+    }
+  } catch (_err) { /* non-critical */ }
+
   // Attribution side-effects — fire-and-forget, never throw
   try {
     const toolName = feedbackEvent.toolName || feedbackEvent.tool_name || 'unknown';
@@ -511,6 +595,8 @@ function captureFeedback(params) {
 
   return {
     accepted: true,
+    status: 'promoted',
+    message: 'Feedback promoted to reusable memory.',
     feedbackEvent,
     memoryRecord,
   };
@@ -519,6 +605,7 @@ function captureFeedback(params) {
 function analyzeFeedback(logPath) {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
   const entries = readJSONL(logPath || FEEDBACK_LOG_PATH);
+  const paths = getFeedbackPaths();
   const skills = {};
   const tags = {};
   const rubricCriteria = {};
@@ -586,6 +673,24 @@ function analyzeFeedback(logPath) {
     recommendations.push('DECLINING trend in last 20 signals; tighten verification before response.');
   }
 
+  let boostedRisk = null;
+  try {
+    const riskScorer = getRiskScorerModule();
+    if (riskScorer) {
+      boostedRisk = riskScorer.getRiskSummary(paths.FEEDBACK_DIR);
+      if (boostedRisk) {
+        boostedRisk.highRiskDomains.slice(0, 2).forEach((bucket) => {
+          recommendations.push(`CHECK high-risk domain '${bucket.key}' (${bucket.highRisk}/${bucket.total} high-risk)`);
+        });
+        boostedRisk.highRiskTags.slice(0, 2).forEach((bucket) => {
+          recommendations.push(`CHECK high-risk tag '${bucket.key}' (${bucket.highRisk}/${bucket.total} high-risk)`);
+        });
+      }
+    }
+  } catch {
+    boostedRisk = null;
+  }
+
   return {
     total,
     totalPositive,
@@ -599,6 +704,7 @@ function analyzeFeedback(logPath) {
       blockedPromotions,
       failingCriteria: rubricCriteria,
     },
+    boostedRisk,
     recommendations,
   };
 }
@@ -698,6 +804,15 @@ function feedbackSummary(recentN = 20) {
     `- Approval: ${pct}%`,
     `- Overall approval: ${Math.round(analysis.approvalRate * 100)}%`,
   ];
+
+  if (analysis.boostedRisk) {
+    lines.push(`- Boosted risk base rate: ${Math.round((analysis.boostedRisk.baseRate || 0) * 100)}%`);
+    lines.push(`- Boosted risk mode: ${analysis.boostedRisk.mode}`);
+    if (analysis.boostedRisk.highRiskDomains.length > 0) {
+      const topDomain = analysis.boostedRisk.highRiskDomains[0];
+      lines.push(`- Highest-risk domain: ${topDomain.key} (${Math.round(topDomain.riskRate * 100)}%)`);
+    }
+  }
 
   if (analysis.recommendations.length > 0) {
     lines.push('- Recommendations:');
@@ -822,6 +937,7 @@ function runTests() {
 
   const bad = captureFeedback({ signal: 'down' });
   assert(!bad.accepted, 'captureFeedback rejects vague negative feedback');
+  assert(bad.needsClarification === true, 'captureFeedback requests clarification for vague negative feedback');
 
   const summary = feedbackSummary(5);
   assert(summary.includes('Feedback Summary'), 'feedbackSummary returns text output');

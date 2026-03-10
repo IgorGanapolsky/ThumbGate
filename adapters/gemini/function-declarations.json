@@ -2,7 +2,7 @@
   "tools": [
     {
       "name": "capture_feedback",
-      "description": "Capture thumbs-up/down feedback and promote actionable memories",
+      "description": "Capture an up/down signal plus one line of why. Vague feedback is logged and returned with a clarification prompt instead of memory promotion.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -37,7 +37,7 @@
           },
           "skill": { "type": "string" }
         },
-        "required": ["signal", "context"]
+        "required": ["signal"]
       },
       "http": {
         "method": "POST",

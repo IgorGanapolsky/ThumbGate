@@ -240,6 +240,26 @@ async function runProof(options = {}) {
         },
         body: JSON.stringify({
           signal: 'up',
+          context: 'thumbs up',
+          tags: ['verification'],
+        }),
+      });
+      check(res.status === 422, `clarification capture expected 422, got ${res.status}`);
+      const body = await res.json();
+      check(body.status === 'clarification_required', 'vague capture should require clarification');
+      check(body.needsClarification === true, 'vague capture should set needsClarification');
+      addResult('api.capture_feedback.clarification', true, { status: body.status, prompt: body.prompt });
+    }
+
+    {
+      const res = await fetch(`http://localhost:${port}/v1/feedback/capture`, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer proof-key',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          signal: 'up',
           context: 'unsafe approval attempt',
           whatWorked: 'claimed success',
           rubricScores: [
@@ -374,6 +394,26 @@ async function runProof(options = {}) {
       const payload = parseLeadingJson(call.content[0].text);
       check(payload.accepted === false, 'mcp capture_feedback should apply rubric gating');
       addResult('mcp.tools.call.capture_feedback.rubric_gate', true, { accepted: payload.accepted });
+    }
+
+    {
+      const call = await handleRequest({
+        jsonrpc: '2.0',
+        id: 33,
+        method: 'tools/call',
+        params: {
+          name: 'capture_feedback',
+          arguments: {
+            signal: 'up',
+            context: 'thumbs up',
+            tags: ['verification'],
+          },
+        },
+      });
+      const payload = parseLeadingJson(call.content[0].text);
+      check(payload.status === 'clarification_required', 'mcp capture_feedback should require clarification for vague praise');
+      check(payload.needsClarification === true, 'mcp capture_feedback should mark vague praise as clarification_required');
+      addResult('mcp.tools.call.capture_feedback.clarification', true, { status: payload.status, prompt: payload.prompt });
     }
 
     {

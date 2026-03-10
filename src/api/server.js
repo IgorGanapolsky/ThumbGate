@@ -512,7 +512,7 @@ function createApiServer() {
         version: pkg.version,
         tools: [
           { name: 'recall', description: 'Recall relevant past feedback for current task' },
-          { name: 'capture_feedback', description: 'Capture thumbs up/down feedback' },
+          { name: 'capture_feedback', description: 'Capture an up/down signal plus one line of why' },
           { name: 'feedback_stats', description: 'Feedback analytics' },
           { name: 'feedback_summary', description: 'Human-readable feedback summary' },
           { name: 'prevention_rules', description: 'Generate prevention rules from failures' },

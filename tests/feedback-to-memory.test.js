@@ -48,6 +48,17 @@ test('bare thumbs up (no context): ok=false', () => {
   assert.strictEqual(result.ok, false);
 });
 
+test('generic positive context requires clarification instead of promotion', () => {
+  const result = convertFeedbackToMemory({
+    signal: 'positive',
+    context: 'thumbs up',
+    tags: ['verification'],
+  });
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.needsClarification, true);
+  assert.match(result.prompt, /What specifically worked that should be repeated/i);
+});
+
 // -- Unknown signal --
 
 test('unknown signal: ok=false', () => {

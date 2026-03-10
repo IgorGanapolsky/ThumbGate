@@ -10,6 +10,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { assessFeedbackActionability } = require('./feedback-quality');
 
 // ---------------------------------------------------------------------------
 // CLAUDE.md Constraint Definitions (weight sum = 1.0)
@@ -53,7 +54,12 @@ const CONSTRAINTS = [
   {
     id: 'no_vague_signal',
     weight: 0.10,
-    check: (e) => typeof e.context === 'string' && e.context.length > 10,
+    check: (e) => assessFeedbackActionability({
+      signal: e.signal,
+      context: e.context,
+      whatWentWrong: e.whatWentWrong,
+      whatWorked: e.whatWorked,
+    }).promotable,
   },
 ];
 

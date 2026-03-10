@@ -2,18 +2,26 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
+const fs = require('node:fs');
+const os = require('node:os');
 
 const SCRIPT = path.join(__dirname, '..', '.claude', 'scripts', 'feedback', 'capture-feedback.js');
 
-function run(feedbackValue) {
-  return spawnSync('node', [SCRIPT, `--feedback=${feedbackValue}`, '--context=fuzzy-test'], {
-    encoding: 'utf-8',
-    timeout: 10000,
-    cwd: path.join(__dirname, '..'),
-  });
+function run(feedbackValue, extraArgs = []) {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-normalize-'));
+  try {
+    return spawnSync('node', [SCRIPT, `--feedback=${feedbackValue}`, '--context=fuzzy-test', ...extraArgs], {
+      encoding: 'utf-8',
+      timeout: 10000,
+      cwd: path.join(__dirname, '..'),
+      env: { ...process.env, RLHF_FEEDBACK_DIR: tmpDir },
+    });
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 }
 
-// Exit 0 = promoted, exit 2 = captured but not promoted (rubric gate).
+// Exit 0 = promoted, exit 2 = signal logged only (clarification or rubric gate).
 // Exit 1 = normalize failed (unrecognized input).
 // We test normalize by asserting status !== 1.
 
@@ -74,4 +82,11 @@ test('normalize: "banana" rejected', () => {
 
 test('normalize: "xyz" rejected', () => {
   assert.equal(run('xyz').status, 1);
+});
+
+test('capture wrapper asks for clarification on generic positive context', () => {
+  const result = run('up', ['--context=thumbs up', '--tags=verification']);
+  assert.equal(result.status, 2);
+  assert.match(result.stdout, /clarification required/i);
+  assert.match(result.stdout, /What specifically worked that should be repeated/i);
 });

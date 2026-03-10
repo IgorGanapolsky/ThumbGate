@@ -1,0 +1,91 @@
+name: Ready for Agent
+description: Queue a bounded, proof-ready implementation run for the RLHF Feedback Loop.
+title: '[Agent] '
+labels:
+  - ready-for-agent
+body:
+  - type: textarea
+    id: business_outcome
+    attributes:
+      label: Business outcome
+      description: Describe the customer or operator result this task should produce.
+      placeholder: Reduce friction for Cloud Pro onboarding by turning checkout success into a reusable API-key handoff.
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: State the failure mode, missing capability, or bottleneck in concrete terms.
+      placeholder: The current flow provisions a key, but the repo lacks a reusable agent-run contract and proof gate for deterministic execution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: in_scope
+    attributes:
+      label: In scope
+      description: List the exact files, modules, and behaviors the agent is allowed to change.
+      placeholder: |
+        - WORKFLOW.md
+        - .github/ISSUE_TEMPLATE/ready-for-agent.yml
+        - scripts/validate-workflow-contract.js
+        - tests/workflow-contract.test.js
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: Call out the areas the agent must not touch.
+      placeholder: |
+        - Stripe product IDs
+        - unrelated MCP adapters
+        - packaging/version bumps unless required by the task
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: One line per required outcome.
+      placeholder: |
+        - Repo-owned workflow contract exists at WORKFLOW.md
+        - CI fails if the workflow contract or proof template drifts
+        - Verification evidence is updated with exact commands and results
+    validations:
+      required: true
+
+  - type: textarea
+    id: proof_commands
+    attributes:
+      label: Proof commands
+      description: The commands that must pass before the task can land.
+      value: |
+        npm test
+        npm run test:coverage
+        npm run prove:adapters
+        npm run prove:automation
+        npm run self-heal:check
+    validations:
+      required: true
+
+  - type: textarea
+    id: context_links
+    attributes:
+      label: Context links
+      description: Link specs, PRs, screenshots, or docs the agent should use.
+      placeholder: |
+        - WORKFLOW.md contract proposal
+        - docs/VERIFICATION_EVIDENCE.md
+        - https://github.com/openai/symphony/blob/main/SPEC.md
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and edge cases
+      description: Call out anything that could break if the task is implemented poorly.
+      placeholder: The agent must not add dead code, weaken proof gates, or mutate tracked proof files during iteration without final evidence.

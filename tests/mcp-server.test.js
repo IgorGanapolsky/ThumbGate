@@ -64,6 +64,27 @@ test('capture_feedback applies rubric anti-hacking gate', async () => {
   assert.match(payload.reason, /Rubric gate prevented promotion/);
 });
 
+test('capture_feedback returns clarification_required for vague positive feedback', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 24,
+    method: 'tools/call',
+    params: {
+      name: 'capture_feedback',
+      arguments: {
+        signal: 'up',
+        context: 'thumbs up',
+        tags: ['verification'],
+      },
+    },
+  });
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.accepted, false);
+  assert.equal(payload.status, 'clarification_required');
+  assert.equal(payload.needsClarification, true);
+  assert.match(payload.prompt, /What specifically worked that should be repeated/);
+});
+
 test('intent tools list and plan enforce checkpoint flow', async () => {
   const listResult = await handleRequest({
     jsonrpc: '2.0',

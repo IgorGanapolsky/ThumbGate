@@ -125,6 +125,24 @@ test('feedback capture blocks positive memory promotion when rubric guardrail fa
   assert.match(body.reason, /Rubric gate prevented promotion/);
 });
 
+test('feedback capture returns clarification_required for vague positive signal', async () => {
+  const res = await fetch('http://localhost:8790/v1/feedback/capture', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      signal: 'up',
+      context: 'thumbs up',
+      tags: ['verification'],
+    }),
+  });
+  assert.equal(res.status, 422);
+  const body = await res.json();
+  assert.equal(body.accepted, false);
+  assert.equal(body.status, 'clarification_required');
+  assert.equal(body.needsClarification, true);
+  assert.match(body.prompt, /What specifically worked that should be repeated/);
+});
+
 test('intent catalog endpoint returns configured intents', async () => {
   const res = await fetch('http://localhost:8790/v1/intents/catalog?mcpProfile=locked', { headers: authHeader });
   assert.equal(res.status, 200);

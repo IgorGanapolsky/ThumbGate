@@ -25,6 +25,7 @@
 'use strict';
 
 const { resolveFeedbackAction, prepareForStorage } = require('./feedback-schema');
+const { buildClarificationMessage } = require('./feedback-quality');
 
 function convertFeedbackToMemory(params) {
   const action = resolveFeedbackAction({
@@ -37,7 +38,18 @@ function convertFeedbackToMemory(params) {
   });
 
   if (!action || action.type === 'no-action') {
-    return { ok: false, reason: action ? action.reason : 'Unknown action resolution failure' };
+    const clarification = buildClarificationMessage({
+      signal: params.signal,
+      context: params.context || '',
+      whatWentWrong: params.whatWentWrong,
+      whatToChange: params.whatToChange,
+      whatWorked: params.whatWorked,
+    });
+    return {
+      ok: false,
+      reason: action ? action.reason : 'Unknown action resolution failure',
+      ...(clarification || {}),
+    };
   }
 
   const prep = prepareForStorage(action.memory);

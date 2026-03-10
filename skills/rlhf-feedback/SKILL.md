@@ -2,6 +2,7 @@
 name: rlhf-feedback
 description: >
   Capture thumbs up/down feedback into structured memories and prevention rules.
+  Require one sentence of why before claiming memory promotion.
   Use when user gives explicit quality signals about agent work (e.g. "that worked",
   "that failed", "thumbs up/down"). Do NOT use for general questions, code generation,
   file operations, or any task that is not explicit feedback on prior agent output.
@@ -37,6 +38,8 @@ node .claude/scripts/feedback/capture-feedback.js \
   --what-worked="<repeatable pattern>" \
   --tags="<domain>,fix"
 ```
+
+If the user only says `thumbs up`, `thumbs down`, `that worked`, or `that failed`, log the signal and ask one follow-up question before claiming it became reusable memory.
 
 At session start, run:
 

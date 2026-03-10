@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T18:21:01.310Z",
+  "generatedAt": "2026-03-09T20:45:46.471Z",
   "checks": [
     {
       "name": "feedback.capture.rubric_pass",
@@ -122,7 +122,8 @@
           "unverified": 0,
           "refuted": 0,
           "averageConfidence": 1,
-          "allPassed": true
+          "allPassed": true,
+          "flaggedTraces": 0
         }
       }
     },
@@ -130,7 +131,7 @@
       "name": "code_reasoning.dpo_traces",
       "passed": true,
       "details": {
-        "traceId": "trace-526f7709c1aa",
+        "traceId": "trace-dea2ed045f1c",
         "confidence": 1,
         "aggregateConfidence": 1
       }
@@ -158,12 +159,13 @@
     "unverified": 0,
     "refuted": 0,
     "averageConfidence": 1,
-    "allPassed": true
+    "allPassed": true,
+    "flaggedTraces": 0
   },
   "proofTraces": [
     {
-      "traceId": "trace-c43989c7dadb",
-      "timestamp": "2026-03-09T18:21:02.177Z",
+      "traceId": "trace-7483c7000dcb",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "feedback.capture.rubric_pass",
       "steps": [
@@ -187,12 +189,16 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0.25,
+        "controllabilityFlags": [
+          "no_edge_cases"
+        ]
       }
     },
     {
-      "traceId": "trace-a628c2e39266",
-      "timestamp": "2026-03-09T18:21:02.177Z",
+      "traceId": "trace-a5f74b5ffe45",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "feedback.capture.rubric_block",
       "steps": [
@@ -216,12 +222,16 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0.25,
+        "controllabilityFlags": [
+          "no_edge_cases"
+        ]
       }
     },
     {
-      "traceId": "trace-2dffdc757f02",
-      "timestamp": "2026-03-09T18:21:02.177Z",
+      "traceId": "trace-a9263243c7b8",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "feedback.capture.negative_with_rubric",
       "steps": [
@@ -245,12 +255,16 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0.25,
+        "controllabilityFlags": [
+          "no_edge_cases"
+        ]
       }
     },
     {
-      "traceId": "trace-1a1ddd204d2a",
-      "timestamp": "2026-03-09T18:21:02.178Z",
+      "traceId": "trace-8b9ccc57685b",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "analytics.rubric_tracking",
       "steps": [
@@ -268,12 +282,14 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0,
+        "controllabilityFlags": []
       }
     },
     {
-      "traceId": "trace-2653e03e08b8",
-      "timestamp": "2026-03-09T18:21:02.178Z",
+      "traceId": "trace-579ab83e41a7",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "prevention_rules.rubric_dimensions",
       "steps": [
@@ -291,12 +307,14 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0,
+        "controllabilityFlags": []
       }
     },
     {
-      "traceId": "trace-0eedce784a3d",
-      "timestamp": "2026-03-09T18:21:02.178Z",
+      "traceId": "trace-4d369de11ac9",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "dpo_export.rubric_metadata",
       "steps": [
@@ -314,12 +332,14 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0,
+        "controllabilityFlags": []
       }
     },
     {
-      "traceId": "trace-b29d15358369",
-      "timestamp": "2026-03-09T18:21:02.178Z",
+      "traceId": "trace-40a7e5d357d7",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "api.rubric_gate",
       "steps": [
@@ -343,12 +363,16 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0.25,
+        "controllabilityFlags": [
+          "no_edge_cases"
+        ]
       }
     },
     {
-      "traceId": "trace-e575540c24c6",
-      "timestamp": "2026-03-09T18:21:02.178Z",
+      "traceId": "trace-cf1440aac9a4",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "mcp.rubric_gate",
       "steps": [
@@ -372,12 +396,16 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0.25,
+        "controllabilityFlags": [
+          "no_edge_cases"
+        ]
       }
     },
     {
-      "traceId": "trace-3873da70cee9",
-      "timestamp": "2026-03-09T18:21:02.178Z",
+      "traceId": "trace-e3d8819bdf0d",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "intent.checkpoint_enforcement",
       "steps": [
@@ -395,12 +423,14 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0,
+        "controllabilityFlags": []
       }
     },
     {
-      "traceId": "trace-061b34f7bd85",
-      "timestamp": "2026-03-09T18:21:02.178Z",
+      "traceId": "trace-dc1d841c3e91",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "context.evaluate.rubric",
       "steps": [
@@ -418,12 +448,14 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0,
+        "controllabilityFlags": []
       }
     },
     {
-      "traceId": "trace-fb2789cecede",
-      "timestamp": "2026-03-09T18:21:02.178Z",
+      "traceId": "trace-a43b1d53e29a",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "context.semantic_cache.hit",
       "steps": [
@@ -441,19 +473,21 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0,
+        "controllabilityFlags": []
       }
     },
     {
-      "traceId": "trace-6f7a93a3d3ed",
-      "timestamp": "2026-03-09T18:21:02.178Z",
+      "traceId": "trace-0249f3d46b52",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "self_healing.helpers",
       "steps": [
         {
           "location": "check:self_healing.helpers",
           "claim": "Proof check \"self_healing.helpers\" passes",
-          "evidence": "Passed with details: {\"healthStatus\":\"healthy\",\"changed\":false,\"reasoning\":{\"totalTraces\":1,\"passedTraces\":1,\"failedTraces\":0,\"totalSteps\":3,\"verified\":3,\"unverified\":0,\"refuted\":0,\"averageConfidence\":1,\"allPassed\":true}}",
+          "evidence": "Passed with details: {\"healthStatus\":\"healthy\",\"changed\":false,\"reasoning\":{\"totalTraces\":1,\"passedTraces\":1,\"failedTraces\":0,\"totalSteps\":3,\"verified\":3,\"unverified\":0,\"refuted\":0,\"averageConfidence\":1,\"allPassed\":true,\"flaggedTraces\":0}}",
           "verdict": "verified"
         }
       ],
@@ -464,19 +498,21 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0,
+        "controllabilityFlags": []
       }
     },
     {
-      "traceId": "trace-1b05fdd1230c",
-      "timestamp": "2026-03-09T18:21:02.178Z",
+      "traceId": "trace-f9f30082e42e",
+      "timestamp": "2026-03-09T20:45:47.106Z",
       "type": "proof-gate",
       "subject": "code_reasoning.dpo_traces",
       "steps": [
         {
           "location": "check:code_reasoning.dpo_traces",
           "claim": "Proof check \"code_reasoning.dpo_traces\" passes",
-          "evidence": "Passed with details: {\"traceId\":\"trace-526f7709c1aa\",\"confidence\":1,\"aggregateConfidence\":1}",
+          "evidence": "Passed with details: {\"traceId\":\"trace-dea2ed045f1c\",\"confidence\":1,\"aggregateConfidence\":1}",
           "verdict": "verified"
         }
       ],
@@ -487,7 +523,9 @@
         "unverified": 0,
         "refuted": 0,
         "confidence": 1,
-        "passed": true
+        "passed": true,
+        "controllability": 0,
+        "controllabilityFlags": []
       }
     }
   ]
