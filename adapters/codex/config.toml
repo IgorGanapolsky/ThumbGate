@@ -1,4 +1,4 @@
 # Codex MCP profile (copy into ~/.codex/config.toml or merge section)
-[mcp_servers.rlhf_feedback_loop]
-command = "node"
-args = ["adapters/mcp/server-stdio.js"]
+[mcp_servers.rlhf]
+command = "npx"
+args = ["-y", "rlhf-feedback-loop", "serve"]

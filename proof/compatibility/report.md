@@ -1,8 +1,8 @@
 # Adapter Compatibility Proof
 
-Generated: 2026-03-09T20:45:45.894Z
+Generated: 2026-03-10T14:07:29.848Z
 
-Passed: 21
+Passed: 24
 Failed: 0
 
 ## Checks
@@ -11,16 +11,19 @@ Failed: 0
 - PASS api.intents.catalog
 - PASS api.intents.plan
 - PASS api.capture_feedback
+- PASS api.capture_feedback.clarification
 - PASS api.capture_feedback.rubric_gate
 - PASS api.context.construct
 - PASS api.context.evaluate
 - PASS mcp.initialize
 - PASS mcp.stdio.framed.initialize
 - PASS mcp.stdio.ndjson.initialize
+- PASS mcp.cli.serve.bad_home.initialize
 - PASS mcp.tools.list
 - PASS mcp.tools.call.feedback_summary
 - PASS mcp.tools.call.plan_intent
 - PASS mcp.tools.call.capture_feedback.rubric_gate
+- PASS mcp.tools.call.capture_feedback.clarification
 - PASS mcp.policy.locked_profile_denies_write_tool
 - PASS adapter.chatgpt.openapi.parity
 - PASS adapter.gemini.declarations

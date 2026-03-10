@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T20:45:45.894Z",
+  "generatedAt": "2026-03-10T14:07:29.848Z",
   "checks": [
     {
       "name": "api.healthz",
@@ -39,6 +39,14 @@
       }
     },
     {
+      "name": "api.capture_feedback.clarification",
+      "passed": true,
+      "details": {
+        "status": "clarification_required",
+        "prompt": "What specifically worked that should be repeated?"
+      }
+    },
+    {
       "name": "api.capture_feedback.rubric_gate",
       "passed": true,
       "details": {
@@ -49,7 +57,7 @@
       "name": "api.context.construct",
       "passed": true,
       "details": {
-        "packId": "pack_1773089146036_mp6723",
+        "packId": "pack_1773151650167_3dou3e",
         "items": 5
       }
     },
@@ -83,6 +91,13 @@
       }
     },
     {
+      "name": "mcp.cli.serve.bad_home.initialize",
+      "passed": true,
+      "details": {
+        "server": "rlhf-feedback-loop-mcp"
+      }
+    },
+    {
       "name": "mcp.tools.list",
       "passed": true,
       "details": {
@@ -93,7 +108,7 @@
       "name": "mcp.tools.call.feedback_summary",
       "passed": true,
       "details": {
-        "contentLength": 322
+        "contentLength": 370
       }
     },
     {
@@ -108,6 +123,14 @@
       "passed": true,
       "details": {
         "accepted": false
+      }
+    },
+    {
+      "name": "mcp.tools.call.capture_feedback.clarification",
+      "passed": true,
+      "details": {
+        "status": "clarification_required",
+        "prompt": "What specifically worked that should be repeated?"
       }
     },
     {
@@ -159,7 +182,7 @@
     }
   ],
   "summary": {
-    "passed": 21,
+    "passed": 24,
     "failed": 0
   }
 }

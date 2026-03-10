@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "rlhf-feedback-loop": {
-      "command": "node",
-      "args": ["adapters/mcp/server-stdio.js"]
+    "rlhf": {
+      "command": "npx",
+      "args": ["-y", "rlhf-feedback-loop", "serve"]
     }
   }
 }

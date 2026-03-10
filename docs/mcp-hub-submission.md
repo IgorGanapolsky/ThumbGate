@@ -59,9 +59,9 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 ```json
 {
   "mcpServers": {
-    "rlhf-feedback-loop": {
-      "command": "node",
-      "args": ["/path/to/rlhf-feedback-loop/adapters/mcp/server-stdio.js"],
+    "rlhf": {
+      "command": "npx",
+      "args": ["-y", "rlhf-feedback-loop", "serve"],
       "env": {
         "RLHF_BASE_URL": "http://localhost:8787"
       }
@@ -75,9 +75,9 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 ```json
 {
   "mcpServers": {
-    "rlhf-feedback-loop": {
-      "command": "node",
-      "args": ["/path/to/rlhf-feedback-loop/adapters/mcp/server-stdio.js"],
+    "rlhf": {
+      "command": "npx",
+      "args": ["-y", "rlhf-feedback-loop", "serve"],
       "env": {
         "RLHF_BASE_URL": "https://rlhf-feedback-loop-710216278770.us-central1.run.app",
         "RLHF_API_KEY": "rlhf_YOUR_KEY_HERE"
@@ -123,7 +123,7 @@ Verification evidence: https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob
 
 ## Transport
 
-- **stdio** (primary): `adapters/mcp/server-stdio.js` — works with Claude Code desktop and CLI
+- **stdio** (primary): `npx -y rlhf-feedback-loop serve` — portable MCP launcher for Claude Code desktop and CLI
 - **HTTP** (secondary): `src/api/server.js` — REST API (`POST /v1/feedback/capture`, `GET /v1/feedback/summary`, `POST /v1/dpo/export`)
 
 ---
