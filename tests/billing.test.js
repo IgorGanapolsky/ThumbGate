@@ -24,6 +24,7 @@ const savedLocalCheckoutSessionsPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS
 const savedStripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const savedStripePriceId = process.env.STRIPE_PRICE_ID;
 
+// Initial setup
 process.env._TEST_API_KEYS_PATH = testApiKeysPath;
 process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
 process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = testLocalCheckoutSessionsPath;
@@ -43,24 +44,18 @@ after(() => {
 });
 
 function setupTempStore() {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'billing-test-'));
-  return path.join(tmpDir, 'api-keys.json');
+  if (fs.existsSync(testApiKeysPath)) fs.rmSync(testApiKeysPath, { force: true });
+  return testApiKeysPath;
 }
 
 function cleanupTempStore() {
-  if (tmpDir && fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+  if (fs.existsSync(testApiKeysPath)) fs.rmSync(testApiKeysPath, { force: true });
 }
 
-function requireFreshBilling(keyStorePath, stripeKey = '') {
+function requireFreshBilling(stripeKey = '') {
   delete require.cache[require.resolve('../scripts/billing')];
-  const oldStripe = process.env.STRIPE_SECRET_KEY;
-  const oldPath = process.env._TEST_API_KEYS_PATH;
   process.env.STRIPE_SECRET_KEY = stripeKey;
-  process.env._TEST_API_KEYS_PATH = keyStorePath;
-  const billing = require('../scripts/billing');
-  process.env.STRIPE_SECRET_KEY = oldStripe || '';
-  process.env._TEST_API_KEYS_PATH = oldPath || '';
-  return billing;
+  return require('../scripts/billing');
 }
 
 function clearBillingArtifacts() {
@@ -80,8 +75,7 @@ describe('billing.js — provisionApiKey', () => {
   afterEach(() => { cleanupTempStore(); });
 
   test('generates a unique key with rlhf_ prefix', () => {
-    const billing = requireFreshBilling(keyStorePath);
-    // Verify isolated path matches what we passed to requireFreshBilling
+    const billing = requireFreshBilling('');
     assert.equal(billing._API_KEYS_PATH(), keyStorePath);
     const result = billing.provisionApiKey('cus_test_001');
     assert.ok(result.key.startsWith('rlhf_'));
@@ -90,7 +84,7 @@ describe('billing.js — provisionApiKey', () => {
   });
 
   test('reuses existing active key for same customerId', () => {
-    const billing = requireFreshBilling(keyStorePath);
+    const billing = requireFreshBilling('');
     const r1 = billing.provisionApiKey('cus_reuse_001');
     const r2 = billing.provisionApiKey('cus_reuse_001');
     assert.equal(r1.key, r2.key);
@@ -98,12 +92,17 @@ describe('billing.js — provisionApiKey', () => {
 });
 
 describe('billing.js — funnel ledger', () => {
-  beforeEach(() => { clearBillingArtifacts(); delete require.cache[require.resolve('../scripts/billing')]; });
+  beforeEach(() => { 
+    clearBillingArtifacts(); 
+    delete require.cache[require.resolve('../scripts/billing')];
+    // Reset global env for this test
+    process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
+  });
 
   test('createCheckoutSession emits acquisition event', async () => {
     const billing = require('../scripts/billing');
     const result = await billing.createCheckoutSession({ installId: 'inst_123', metadata: { campaign: 'test' } });
-    assert.ok(result.sessionId && result.sessionId.startsWith('test_session_'), `Expected test_session_ prefix, got: ${result.sessionId}`);
+    assert.ok(result.sessionId.startsWith('test_session_'));
     const events = readLedgerEvents();
     const acq = events.find(e => e.stage === 'acquisition');
     assert.ok(acq);
@@ -123,7 +122,7 @@ describe('billing.js — funnel ledger', () => {
 describe('billing.js — rotateApiKey', () => {
   test('rotateApiKey rotates key and disables old one', () => {
     const keyStorePath = setupTempStore();
-    const billing = requireFreshBilling(keyStorePath);
+    const billing = requireFreshBilling('');
     const p1 = billing.provisionApiKey('cus_rot');
     const oldKey = p1.key;
     const rot = billing.rotateApiKey(oldKey);
@@ -140,7 +139,16 @@ describe('API server — /v1/billing/* routes', () => {
   let server, port, billing;
   before(async () => {
     process.env.RLHF_ALLOW_INSECURE = 'true';
-    const started = await startServer({ port: 0 });
+    process.env._TEST_API_KEYS_PATH = testApiKeysPath;
+    process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
+    process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = testLocalCheckoutSessionsPath;
+
+    // Clear cache to ensure server picks up fresh isolated module
+    delete require.cache[require.resolve('../src/api/server')];
+    delete require.cache[require.resolve('../scripts/billing')];
+    
+    const { startServer: freshStart } = require('../src/api/server');
+    const started = await freshStart({ port: 0 });
     server = started.server;
     port = started.port;
     billing = require('../scripts/billing');
@@ -158,6 +166,6 @@ describe('API server — /v1/billing/* routes', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.json();
-    assert.ok(body && body.sessionId && body.sessionId.startsWith('test_session_'), `Expected sessionId, got: ${JSON.stringify(body)}`);
+    assert.ok(body && body.sessionId && body.sessionId.startsWith('test_session_'));
   });
 });

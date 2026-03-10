@@ -13,33 +13,23 @@ const crypto = require('crypto');
 // Config
 // ---------------------------------------------------------------------------
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
-const GITHUB_MARKETPLACE_WEBHOOK_SECRET = process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '';
-const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || '';
+const CONFIG = {
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
+  GITHUB_MARKETPLACE_WEBHOOK_SECRET: process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '',
+  STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || '',
+  get API_KEYS_PATH() {
+    return process.env._TEST_API_KEYS_PATH || path.resolve(__dirname, '../.claude/memory/feedback/api-keys.json');
+  },
+  get FUNNEL_LEDGER_PATH() {
+    return process.env._TEST_FUNNEL_LEDGER_PATH || process.env.RLHF_FUNNEL_LEDGER_PATH || path.resolve(__dirname, '../.claude/memory/feedback/funnel-events.jsonl');
+  },
+  get LOCAL_CHECKOUT_SESSIONS_PATH() {
+    return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.resolve(__dirname, '../.claude/memory/feedback/local-checkout-sessions.json');
+  }
+};
 
-function getApiKeysPath() {
-  return process.env._TEST_API_KEYS_PATH || path.resolve(
-    __dirname,
-    '../.claude/memory/feedback/api-keys.json'
-  );
-}
-
-function getFunnelLedgerPath() {
-  return process.env._TEST_FUNNEL_LEDGER_PATH || process.env.RLHF_FUNNEL_LEDGER_PATH || path.resolve(
-    __dirname,
-    '../.claude/memory/feedback/funnel-events.jsonl'
-  );
-}
-
-function getLocalCheckoutSessionsPath() {
-  return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.resolve(
-    __dirname,
-    '../.claude/memory/feedback/local-checkout-sessions.json'
-  );
-}
-
-const LOCAL_MODE = !STRIPE_SECRET_KEY;
+const LOCAL_MODE = () => !CONFIG.STRIPE_SECRET_KEY;
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -53,38 +43,15 @@ function ensureParentDir(filePath) {
 }
 
 function sanitizeMetadata(metadata) {
-  if (!metadata || typeof metadata !== 'object') {
-    return {};
-  }
+  if (!metadata || typeof metadata !== 'object') return {};
   return { ...metadata };
-}
-
-function readInstallIdFromConfig() {
-  try {
-    const configPath = path.resolve(__dirname, '../.rlhf/config.json');
-    if (!fs.existsSync(configPath)) return null;
-    const content = fs.readFileSync(configPath, 'utf-8');
-    const parsed = JSON.parse(content);
-    return (parsed && parsed.installId && parsed.installId.trim()) || null;
-  } catch {
-    return null;
-  }
 }
 
 function appendFunnelEvent({ stage, event, installId = null, evidence, metadata = {} } = {}) {
   if (!stage || !event) return { written: false, reason: 'missing_stage_or_event' };
-
-  const payload = {
-    timestamp: new Date().toISOString(),
-    stage,
-    event,
-    evidence: evidence || event,
-    installId: installId || null,
-    metadata: sanitizeMetadata(metadata),
-  };
-
+  const payload = { timestamp: new Date().toISOString(), stage, event, evidence: evidence || event, installId: installId || null, metadata: sanitizeMetadata(metadata) };
   try {
-    const target = getFunnelLedgerPath();
+    const target = CONFIG.FUNNEL_LEDGER_PATH;
     ensureParentDir(target);
     fs.appendFileSync(target, `${JSON.stringify(payload)}\n`, 'utf-8');
     return { written: true, payload };
@@ -95,47 +62,31 @@ function appendFunnelEvent({ stage, event, installId = null, evidence, metadata 
 
 function loadFunnelLedger() {
   try {
-    const target = getFunnelLedgerPath();
+    const target = CONFIG.FUNNEL_LEDGER_PATH;
     if (!fs.existsSync(target)) return [];
-    return fs.readFileSync(target, 'utf-8')
-      .split('\n')
-      .map(l => l.trim())
-      .filter(Boolean)
-      .map(l => {
-        try { return JSON.parse(l); } catch { return null; }
-      })
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
+    return fs.readFileSync(target, 'utf-8').split('\n').map(l => l.trim()).filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+  } catch { return []; }
 }
 
 function loadLocalCheckoutSessions() {
   try {
-    const target = getLocalCheckoutSessionsPath();
+    const target = CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH;
     if (!fs.existsSync(target)) return { sessions: {} };
     const parsed = JSON.parse(fs.readFileSync(target, 'utf-8'));
     return (parsed && typeof parsed.sessions === 'object') ? parsed : { sessions: {} };
-  } catch {
-    return { sessions: {} };
-  }
+  } catch { return { sessions: {} }; }
 }
 
 function saveLocalCheckoutSessions(store) {
-  const target = getLocalCheckoutSessionsPath();
+  const target = CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH;
   ensureParentDir(target);
   fs.writeFileSync(target, JSON.stringify(store, null, 2), 'utf-8');
-}
-
-function safeRate(num, den) {
-  return den ? Number((num / den).toFixed(4)) : 0;
 }
 
 function getFunnelAnalytics() {
   const events = loadFunnelLedger();
   const stageCounts = { acquisition: 0, activation: 0, paid: 0 };
   const eventCounts = {};
-
   for (const entry of events) {
     if (entry && stageCounts.hasOwnProperty(entry.stage)) {
       stageCounts[entry.stage]++;
@@ -143,59 +94,37 @@ function getFunnelAnalytics() {
       eventCounts[key] = (eventCounts[key] || 0) + 1;
     }
   }
-
-  return {
-    totalEvents: events.length,
-    stageCounts,
-    eventCounts,
-    conversionRates: {
-      acquisitionToActivation: safeRate(stageCounts.activation, stageCounts.acquisition),
-      activationToPaid: safeRate(stageCounts.paid, stageCounts.activation),
-      acquisitionToPaid: safeRate(stageCounts.paid, stageCounts.acquisition),
-    }
-  };
+  const safeRate = (num, den) => den ? Number((num / den).toFixed(4)) : 0;
+  return { totalEvents: events.length, stageCounts, eventCounts, conversionRates: { acquisitionToActivation: safeRate(stageCounts.activation, stageCounts.acquisition), activationToPaid: safeRate(stageCounts.paid, stageCounts.activation), acquisitionToPaid: safeRate(stageCounts.paid, stageCounts.acquisition) } };
 }
 
 function loadKeyStore() {
   try {
-    const target = getApiKeysPath();
+    const target = CONFIG.API_KEYS_PATH;
     if (!fs.existsSync(target)) return { keys: {} };
     const parsed = JSON.parse(fs.readFileSync(target, 'utf-8'));
     return (parsed && typeof parsed.keys === 'object') ? parsed : { keys: {} };
-  } catch {
-    return { keys: {} };
-  }
+  } catch { return { keys: {} }; }
 }
 
 function saveKeyStore(store) {
-  const target = getApiKeysPath();
+  const target = CONFIG.API_KEYS_PATH;
   ensureParentDir(target);
   fs.writeFileSync(target, JSON.stringify(store, null, 2), 'utf-8');
 }
 
 async function stripeFetch(method, endpoint, body = null) {
   const url = `https://api.stripe.com/v1/${endpoint}`;
-  const auth = Buffer.from(`${STRIPE_SECRET_KEY}:`).toString('base64');
-  const options = {
-    method,
-    headers: {
-      Authorization: `Basic ${auth}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-  };
-
+  const auth = Buffer.from(`${CONFIG.STRIPE_SECRET_KEY}:`).toString('base64');
+  const options = { method, headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' } };
   if (body) {
     const params = new URLSearchParams();
     for (const [k, v] of Object.entries(body)) {
-      if (typeof v === 'object' && v !== null) {
-        for (const [ik, iv] of Object.entries(v)) params.append(`${k}[${ik}]`, String(iv));
-      } else {
-        params.append(k, String(v));
-      }
+      if (typeof v === 'object' && v !== null) for (const [ik, iv] of Object.entries(v)) params.append(`${k}[${ik}]`, String(iv));
+      else params.append(k, String(v));
     }
     options.body = params.toString();
   }
-
   const response = await fetch(url, options);
   const data = await response.json();
   if (!response.ok) throw new Error(data.error?.message || 'Stripe API error');
@@ -204,112 +133,45 @@ async function stripeFetch(method, endpoint, body = null) {
 
 async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, metadata = {} } = {}) {
   const checkoutMetadata = { ...metadata, installId: installId || 'unknown' };
-
-  if (LOCAL_MODE) {
+  if (LOCAL_MODE()) {
     const localSessionId = `test_session_${crypto.randomBytes(8).toString('hex')}`;
     const store = loadLocalCheckoutSessions();
-    store.sessions[localSessionId] = {
-      id: localSessionId,
-      customer: `local_cus_${crypto.randomBytes(4).toString('hex')}`,
-      metadata: checkoutMetadata,
-      payment_status: 'paid',
-      status: 'complete',
-    };
+    store.sessions[localSessionId] = { id: localSessionId, customer: `local_cus_${crypto.randomBytes(4).toString('hex')}`, metadata: checkoutMetadata, payment_status: 'paid', status: 'complete' };
     saveLocalCheckoutSessions(store);
-
-    appendFunnelEvent({
-      stage: 'acquisition',
-      event: 'checkout_session_created',
-      installId,
-      evidence: 'local_mode_manual',
-      metadata: checkoutMetadata,
-    });
-
+    appendFunnelEvent({ stage: 'acquisition', event: 'checkout_session_created', installId, evidence: 'local_mode_manual', metadata: checkoutMetadata });
     return { sessionId: localSessionId, url: null, localMode: true, metadata: checkoutMetadata };
   }
-
-  if (!STRIPE_PRICE_ID) throw new Error('STRIPE_PRICE_ID is required for live checkout sessions');
-
-  const session = await stripeFetch('POST', 'checkout/sessions', {
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    customer_email: customerEmail,
-    mode: 'subscription',
-    line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
-    metadata: checkoutMetadata,
-  });
-
-  appendFunnelEvent({
-    stage: 'acquisition',
-    event: 'checkout_session_created',
-    installId,
-    evidence: session.id,
-    metadata: checkoutMetadata,
-  });
-
+  if (!CONFIG.STRIPE_PRICE_ID) throw new Error('STRIPE_PRICE_ID is required for live checkout sessions');
+  const session = await stripeFetch('POST', 'checkout/sessions', { success_url: successUrl, cancel_url: cancelUrl, customer_email: customerEmail, mode: 'subscription', line_items: [{ price: CONFIG.STRIPE_PRICE_ID, quantity: 1 }], metadata: checkoutMetadata });
+  appendFunnelEvent({ stage: 'acquisition', event: 'checkout_session_created', installId, evidence: session.id, metadata: checkoutMetadata });
   return { sessionId: session.id, url: session.url, localMode: false, metadata: checkoutMetadata };
 }
 
 async function getCheckoutSessionStatus(sessionId) {
-  if (LOCAL_MODE) {
+  if (LOCAL_MODE()) {
     const store = loadLocalCheckoutSessions();
     const session = store.sessions[sessionId];
     if (!session) return { found: false };
-
-    const installId = session.metadata?.installId;
-    const provisioned = provisionApiKey(session.customer, { installId, source: 'local_checkout_lookup' });
-
-    return {
-      found: true,
-      localMode: true,
-      sessionId,
-      paid: true,
-      paymentStatus: 'paid',
-      status: 'complete',
-      customerId: session.customer,
-      installId,
-      apiKey: provisioned.key,
-    };
+    const provisioned = provisionApiKey(session.customer, { installId: session.metadata?.installId, source: 'local_checkout_lookup' });
+    return { found: true, localMode: true, sessionId, paid: true, paymentStatus: 'paid', status: 'complete', customerId: session.customer, installId: session.metadata?.installId, apiKey: provisioned.key };
   }
-
   try {
     const session = await stripeFetch('GET', `checkout/sessions/${sessionId}`);
     const isPaid = session.payment_status === 'paid' || session.payment_status === 'no_payment_required';
-
     if (!isPaid) return { found: true, localMode: false, sessionId, paid: false, paymentStatus: session.payment_status, status: session.status };
-
-    const installId = session.metadata?.installId || null;
-    const provisioned = provisionApiKey(session.customer, { installId, source: 'stripe_checkout_session_lookup' });
-
-    return {
-      found: true,
-      localMode: false,
-      sessionId,
-      paid: true,
-      paymentStatus: session.payment_status,
-      customerId: session.customer,
-      customerEmail: session.customer_details?.email || '',
-      installId,
-      apiKey: provisioned.key,
-    };
-  } catch {
-    return { found: false };
-  }
+    const provisioned = provisionApiKey(session.customer, { installId: session.metadata?.installId || null, source: 'stripe_checkout_session_lookup' });
+    return { found: true, localMode: false, sessionId, paid: true, paymentStatus: session.payment_status, customerId: session.customer, customerEmail: session.customer_details?.email || '', installId: session.metadata?.installId || null, apiKey: provisioned.key };
+  } catch { return { found: false }; }
 }
 
 function provisionApiKey(customerId, opts = {}) {
   if (!customerId || typeof customerId !== 'string') throw new Error('customerId is required');
   const store = loadKeyStore();
   const existing = Object.entries(store.keys).find(([, m]) => m.customerId === customerId && m.active);
-
   if (existing) {
-    if (opts.installId && !existing[1].installId) {
-      existing[1].installId = opts.installId;
-      saveKeyStore(store);
-    }
+    if (opts.installId && !existing[1].installId) { existing[1].installId = opts.installId; saveKeyStore(store); }
     return { key: existing[0], customerId, createdAt: existing[1].createdAt, installId: existing[1].installId || null, reused: true };
   }
-
   const key = `rlhf_${crypto.randomBytes(16).toString('hex')}`;
   const createdAt = new Date().toISOString();
   store.keys[key] = { customerId, active: true, usageCount: 0, createdAt, installId: opts.installId || null, source: opts.source || 'provision' };
@@ -322,7 +184,6 @@ function rotateApiKey(oldKey) {
   const store = loadKeyStore();
   const meta = store.keys[oldKey];
   if (!meta || !meta.active) return { rotated: false, reason: 'key_not_active' };
-
   meta.active = false;
   meta.disabledAt = new Date().toISOString();
   const newKey = `rlhf_${crypto.randomBytes(16).toString('hex')}`;
@@ -355,11 +216,7 @@ function disableCustomerKeys(customerId) {
   const store = loadKeyStore();
   let disabledCount = 0;
   for (const [key, meta] of Object.entries(store.keys)) {
-    if (meta.customerId === customerId && meta.active) {
-      meta.active = false;
-      meta.disabledAt = new Date().toISOString();
-      disabledCount++;
-    }
+    if (meta.customerId === customerId && meta.active) { meta.active = false; meta.disabledAt = new Date().toISOString(); disabledCount++; }
   }
   if (disabledCount > 0) saveKeyStore(store);
   return { disabledCount };
@@ -371,36 +228,34 @@ async function handleWebhook(event) {
     case 'checkout.session.completed': {
       const session = event.data?.object;
       if (!session || !session.customer) return { handled: false, reason: 'missing_session_data' };
-      const installId = session.metadata?.installId;
-      const result = provisionApiKey(session.customer, { installId, source: 'stripe_webhook_checkout_completed' });
-      appendFunnelEvent({ stage: 'paid', event: 'stripe_checkout_completed', installId, evidence: session.id, metadata: { customerId: session.customer, subscriptionId: session.subscription } });
+      const result = provisionApiKey(session.customer, { installId: session.metadata?.installId, source: 'stripe_webhook_checkout_completed' });
+      appendFunnelEvent({ stage: 'paid', event: 'stripe_checkout_completed', installId: session.metadata?.installId, evidence: session.id, metadata: { customerId: session.customer, subscriptionId: session.subscription } });
       return { handled: true, action: 'provisioned_api_key', result };
     }
     case 'customer.subscription.deleted': {
       const sub = event.data?.object;
       if (!sub || !sub.customer) return { handled: false, reason: 'missing_subscription_data' };
-      const result = disableCustomerKeys(sub.customer);
-      return { handled: true, action: 'disabled_customer_keys', result };
+      return { handled: true, action: 'disabled_customer_keys', result: disableCustomerKeys(sub.customer) };
     }
     default: return { handled: false, reason: `unhandled_event_type:${event.type}` };
   }
 }
 
 function verifyWebhookSignature(rawBody, signature) {
-  if (!STRIPE_WEBHOOK_SECRET) return true;
+  if (!CONFIG.STRIPE_WEBHOOK_SECRET) return true;
   if (!signature || !rawBody) return false;
   const parts = Object.fromEntries(signature.split(',').map(p => p.split('=')));
   if (!parts.t || !parts.v1) return false;
   const ts = parseInt(parts.t, 10);
   if (isNaN(ts) || Math.abs(Math.floor(Date.now() / 1000) - ts) > 300) return false;
-  const expected = crypto.createHmac('sha256', STRIPE_WEBHOOK_SECRET).update(`${parts.t}.${rawBody.toString()}`, 'utf-8').digest('hex');
+  const expected = crypto.createHmac('sha256', CONFIG.STRIPE_WEBHOOK_SECRET).update(`${parts.t}.${rawBody.toString()}`, 'utf-8').digest('hex');
   try { return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(parts.v1, 'hex')); } catch { return false; }
 }
 
 function verifyGithubWebhookSignature(rawBody, signature) {
-  if (!GITHUB_MARKETPLACE_WEBHOOK_SECRET) return true;
+  if (!CONFIG.GITHUB_MARKETPLACE_WEBHOOK_SECRET) return true;
   if (!signature || !rawBody) return false;
-  const expected = crypto.createHmac('sha256', GITHUB_MARKETPLACE_WEBHOOK_SECRET).update(rawBody).digest('hex');
+  const expected = crypto.createHmac('sha256', CONFIG.GITHUB_MARKETPLACE_WEBHOOK_SECRET).update(rawBody).digest('hex');
   const digest = Buffer.from(`sha256=${expected}`, 'utf8');
   const checksum = Buffer.from(signature, 'utf8');
   return checksum.length === digest.length && crypto.timingSafeEqual(digest, checksum);
@@ -424,9 +279,9 @@ function handleGithubWebhook(event) {
 }
 
 module.exports = {
-  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, loadFunnelLedger, getFunnelAnalytics, readInstallIdFromConfig,
-  _API_KEYS_PATH: () => getApiKeysPath(),
-  _FUNNEL_LEDGER_PATH: () => getFunnelLedgerPath(),
-  _LOCAL_CHECKOUT_SESSIONS_PATH: () => getLocalCheckoutSessionsPath(),
-  _LOCAL_MODE: () => LOCAL_MODE,
+  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, loadFunnelLedger, getFunnelAnalytics,
+  _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
+  _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,
+  _LOCAL_CHECKOUT_SESSIONS_PATH: () => CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH,
+  _LOCAL_MODE: () => LOCAL_MODE(),
 };
