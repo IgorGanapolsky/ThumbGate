@@ -103,7 +103,7 @@ Feedback and context data are local and git-ignored:
 
 ### CTO Protocol
 1. **Research & Recall:** Read directives and query RAG/RLHF memory for lessons before starting.
-2. **PR Inspection:** Review all open PRs for merge readiness. Report blockers immediately.
+2. **PR Inspection:** Use `npm run pr:manage` to review all open PRs for merge readiness and diagnose blockers.
 3. **Orphan Cleanup:** Evaluate branches/worktrees without PRs. Merge, archive, or delete regressive/stale state.
 4. **Main Integrity:** Ensure `main` is 100% green after all merges. Fix regressions before claiming completion.
 5. **Operational Readiness:** Run a dry run verification to confirm the system is ready for the next session.

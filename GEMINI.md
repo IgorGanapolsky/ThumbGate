@@ -79,7 +79,7 @@ Use feedback-derived prevention rules as constraints to reduce repeated failures
 
 ### CTO Protocol
 1. **Research & Recall:** Read directives and local RLHF memory for lessons before tasks.
-2. **PR Inspection:** Review all open PRs. No PR should remain open if mergeable.
+2. **PR Inspection:** Review all open PRs using `npm run pr:manage`. No PR should remain open if mergeable.
 3. **Orphan Cleanup:** List branches without PRs. Evaluate and delete stale/regressive ones.
 4. **Main Integrity:** Ensure CI passes on `main` after all merges. Fix regressions immediately.
 5. **Dry Run:** Confirm operational readiness for the next session.

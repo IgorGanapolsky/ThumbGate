@@ -86,7 +86,8 @@
     "ml:model-fit": "node scripts/local-model-profile.js",
     "ml:risk": "node scripts/risk-scorer.js",
     "adk:consolidate": "node scripts/adk-consolidator.js",
-    "adk:watch": "node scripts/adk-consolidator.js --watch"
+    "adk:watch": "node scripts/adk-consolidator.js --watch",
+    "pr:manage": "node scripts/pr-manager.js"
   },
   "keywords": [
     "rlhf",

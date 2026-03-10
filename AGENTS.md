@@ -70,7 +70,7 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 
 ### CTO Protocol
 1. **Research:** Read directives and local RLHF memory first.
-2. **PRs:** Inspect all open PRs. Merge green, non-blocking ones.
+2. **PRs:** Inspect all open PRs with `npm run pr:manage`. Merge green, non-blocking ones.
 3. **Orphans:** Delete branches/worktrees without PRs after evaluation.
 4. **Integrity:** `main` must be 100% green. Fix regressions on sight.
 5. **Hygiene:** Remove stale logs and temporary files.
