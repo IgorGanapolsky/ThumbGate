@@ -196,7 +196,32 @@ function whichExists(cmd) {
 }
 
 function setupClaude() {
-  return mergeMcpJson(path.join(CWD, '.mcp.json'), 'Claude Code');
+  const mcpChanged = mergeMcpJson(path.join(CWD, '.mcp.json'), 'Claude Code');
+
+  // Upsert Stop hook into .claude/settings.json for autonomous self-scoring
+  const settingsPath = path.join(CWD, '.claude', 'settings.json');
+  const stopHookCommand = 'bash scripts/hook-stop-self-score.sh';
+
+  let settings = { hooks: {} };
+  if (fs.existsSync(settingsPath)) {
+    try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch (_) { /* fresh */ }
+  }
+  settings.hooks = settings.hooks || {};
+
+  const stopAlreadyPresent = (settings.hooks.Stop || [])
+    .some(entry => (entry.hooks || []).some(h => h.command === stopHookCommand));
+
+  let hooksChanged = false;
+  if (!stopAlreadyPresent) {
+    settings.hooks.Stop = settings.hooks.Stop || [];
+    settings.hooks.Stop.push({ hooks: [{ type: 'command', command: stopHookCommand }] });
+    fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+    console.log('  Claude Code: installed Stop hook in .claude/settings.json');
+    hooksChanged = true;
+  }
+
+  return mcpChanged || hooksChanged;
 }
 
 function setupCodex() {
@@ -580,7 +605,8 @@ function install() {
     setupClaude(),
     setupCodex(),
     setupGemini(),
-    setupCursor()
+    setupCursor(),
+    setupAmp()
   ];
   const success = results.some(r => r === true);
   if (success) {
