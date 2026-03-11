@@ -1,20 +1,20 @@
 {
   "version": 1,
   "algorithm": "adaboost-stumps",
-  "trainedAt": "2026-03-11T15:29:19.761Z",
-  "exampleCount": 3,
-  "highRiskExamples": 1,
-  "baseRate": 0.3333333333333333,
+  "trainedAt": "2026-03-11T17:51:41.868Z",
+  "exampleCount": 5,
+  "highRiskExamples": 3,
+  "baseRate": 0.6,
   "featureRegistry": {
     "topTags": [
+      "debug",
+      "railway",
       "adk",
       "autonomy",
       "crisis",
       "data-integrity",
-      "execution",
-      "human-feedback",
-      "marketing",
-      "monetization"
+      "deployment",
+      "execution"
     ],
     "topSkills": [],
     "domains": [
@@ -62,19 +62,38 @@
     "domain:debugging",
     "domain:architecture",
     "domain:data-modeling",
+    "tag:debug",
+    "tag:railway",
     "tag:adk",
     "tag:autonomy",
     "tag:crisis",
     "tag:data-integrity",
-    "tag:execution",
-    "tag:human-feedback",
-    "tag:marketing",
-    "tag:monetization"
+    "tag:deployment",
+    "tag:execution"
   ],
   "learners": [],
   "patterns": {
-    "tags": [],
+    "tags": [
+      {
+        "key": "debug",
+        "total": 2,
+        "highRisk": 2,
+        "riskRate": 1
+      },
+      {
+        "key": "railway",
+        "total": 2,
+        "highRisk": 2,
+        "riskRate": 1
+      }
+    ],
     "domains": [
+      {
+        "key": "debugging",
+        "total": 2,
+        "highRisk": 2,
+        "riskRate": 1
+      },
       {
         "key": "general",
         "total": 2,
@@ -85,7 +104,7 @@
     "skills": []
   },
   "metrics": {
-    "trainingAccuracy": 0.6666666666666666,
+    "trainingAccuracy": 0.6,
     "rounds": 0,
     "mode": "baseline"
   }

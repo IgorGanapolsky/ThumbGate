@@ -87,7 +87,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 }
 ```
 
-Get your API key at: https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02 ($10/mo Context Gateway founding price)
+Get your API key at: https://buy.stripe.com/fZu4gz0I47Dg9G1cGv3sI03 ($10/mo Context Gateway founding price)
 Verification evidence: https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ---

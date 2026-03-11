@@ -1,34 +1,27 @@
-# Show HN: MCP Memory Gateway – MCP server that stops AI agents from repeating mistakes
+# Show HN: MCP Memory Gateway – Persistent memory for AI coding agents
 
-AI coding agents make the same mistakes across sessions. They forget what failed, repeat broken patterns, and have no way to learn from corrections you already gave them.
+**HN Title (80 chars max):**
+Show HN: MCP Memory Gateway – Persistent memory for AI coding agents
 
-rlhf-feedback-loop is an MCP server that captures thumbs-up/down feedback during agent sessions, stores it locally, and uses it to block repeated failures. It works with any MCP-compatible agent: Claude Code, Codex, Gemini CLI, Amp, Cursor.
+---
 
-**One-line install (Claude Code):**
+**Post body (paste this into the text field at https://news.ycombinator.com/submit):**
 
-```
-claude mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve
-```
+Every time you start a new Claude Code, Codex, or Gemini session, your agent forgets everything — including the mistakes you already corrected. You re-explain the same constraints. It breaks the same things. You fix them again.
 
-**What it actually does:**
+MCP Memory Gateway is an MCP server that gives AI agents a persistent feedback memory. During any session you give a thumbs-up or thumbs-down with brief context. That signal gets written to a local JSONL log and indexed with LanceDB. On future sessions the agent queries that history before acting, so it stops repeating known-bad approaches. Three or more identical failures auto-generate a CLAUDE.md prevention rule. You can also export all the data as DPO pairs (chosen/rejected) for fine-tuning.
 
-- Captures structured feedback (up/down + context) into a local JSONL log
-- In-session recall: the agent queries past feedback mid-conversation so it does not repeat known-bad approaches
-- Auto-generates prevention rules from repeated failures (3+ identical mistakes trigger a block)
-- Rubric scoring engine with guardrails to filter false positives
-- Exports DPO training pairs (chosen/rejected) for model fine-tuning
-- All data stays local (git-ignored `.claude/memory/feedback/`)
+The self-hosted version is free. Install in 30 seconds: npx rlhf-feedback-loop serve. It works with Claude Code, Codex CLI, Gemini CLI, Amp, and Cursor. All data stays local. The hosted tier ($10/mo) adds team-shared feedback, a web dashboard, and managed LanceDB vector search at https://rlhf-feedback-loop-production.up.railway.app
 
-**What it is not:**
+GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
+npm: https://www.npmjs.com/package/rlhf-feedback-loop
+Live hosted: https://rlhf-feedback-loop-production.up.railway.app
 
-This is not a hosted platform or a wrapper around an LLM. It is a local MCP server that adds a feedback memory layer to your existing agent. No data leaves your machine unless you explicitly export it.
+Happy to answer questions on the protocol, the DPO export format, or how the prevention-rule generation works.
 
-**Multi-agent validation:**
+---
 
-Four independent AI agents (Claude, Codex, Amp, Gemini) were used to evaluate and validate the system. Each agent's compatibility is tested in CI.
-
-**Context Gateway ($10/mo)** adds team-shared feedback, LanceDB vector search, and a dashboard. The open-source version is fully functional standalone.
-
-- GitHub: https://github.com/IgorGanapolsky/rlhf-feedback-loop
-- npm: https://www.npmjs.com/package/rlhf-feedback-loop
-- License: MIT
+**Direct submit URL:**
+https://news.ycombinator.com/submit
+(Title: Show HN: MCP Memory Gateway – Persistent memory for AI coding agents)
+(URL: https://github.com/IgorGanapolsky/mcp-memory-gateway)
