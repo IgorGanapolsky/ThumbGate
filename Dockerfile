@@ -28,6 +28,7 @@ COPY scripts/ ./scripts/
 COPY src/ ./src/
 COPY config/ ./config/
 COPY adapters/ ./adapters/
+COPY docs/landing-page.html ./docs/
 
 # Data directory for runtime feedback logs
 RUN mkdir -p /data && chown rlhf:rlhf /data
