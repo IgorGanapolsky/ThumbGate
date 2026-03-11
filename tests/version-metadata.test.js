@@ -29,7 +29,7 @@ test('public docs render the current package version', () => {
   const mcpSubmission = readText('docs/mcp-hub-submission.md');
 
   assert.match(landingPage, /v__PACKAGE_VERSION__/);
-  assert.match(landingPage, /Start Context Gateway for \$10\/mo/);
+  assert.match(landingPage, /Join as Founding Member — \$5\/mo forever/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
 });
 

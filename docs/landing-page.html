@@ -6,7 +6,7 @@
   <title>MCP Memory Gateway Context Gateway | Hosted Guardrails for AI Workflow Teams</title>
   <meta
     name='description'
-    content='Roll out one revenue or ops workflow with hosted memory, guardrails, and verification evidence. Start with Context Gateway for $10/mo.'
+    content='Roll out one revenue or ops workflow with hosted memory, guardrails, and verification evidence. Founding Member offer: $5/mo locked forever — 50 spots only.'
   />
   <script type='application/ld+json'>
   {
@@ -24,7 +24,7 @@
     },
     "offers": {
       "@type": "Offer",
-      "price": "10",
+      "price": "5",
       "priceCurrency": "USD"
     },
     "sameAs": [
@@ -600,16 +600,17 @@
           <p>Start where pain is already real: lead-to-meeting, onboarding, or internal ops. Context Gateway is the hosted Veto Layer behind that workflow, not another dashboard full of vague AI claims.</p>
           <div class='hero-proof'>
             <span class='proof-pill'>North Star: one workflow live and auditable</span>
-            <span class='proof-pill'>Founding price: $10/mo</span>
+            <span class='proof-pill'>Founding price: $5/mo · 50 spots</span>
             <span class='proof-pill'>Versioned proof: v__PACKAGE_VERSION__</span>
             <span class='proof-pill'>Hosted onboarding at https://rlhf-feedback-loop-production.up.railway.app</span>
           </div>
           <div class='cta-row'>
-            <button class='button primary' id='checkout-btn' type='button'>Start Context Gateway for $10/mo</button>
+            <button class='button primary' id='checkout-btn' type='button'>Join as Founding Member — $5/mo forever</button>
             <a class='button secondary' href='__GTM_PLAN_URL__'>Read the 30-day GTM plan</a>
             <a class='button secondary' href='__GITHUB_URL__'>View the OSS core</a>
           </div>
-          <p class='note'>Bought by teams that need shared control. Used by operators and agent runners doing the work. Checkout is owned through the hosted API first, then falls back to direct Stripe if needed.</p>
+          <p class='note' style='font-weight:700;color:var(--accent-dark);'>50 founding spots · $5/mo locked forever · First 50 only</p>
+          <p class='note'>Regular price $10/mo after founding spots fill. Checkout is owned through the hosted API first, then falls back to <a href='__CHECKOUT_FALLBACK_URL__'>direct Stripe</a> if needed.</p>
         </div>
 
         <div class='panel hero-card'>
@@ -805,7 +806,8 @@
           <div class='card featured'>
             <span class='badge'>Founding price</span>
             <h3>Context Gateway</h3>
-            <div class='price'>$10 <small>/ month</small></div>
+            <div class='price'>$5 <small>/ month</small></div>
+          <p style='margin:0 0 8px;font-size:13px;color:var(--muted);'><s>$10/mo</s> — founding price locked forever</p>
             <ul>
               <li>Hosted HTTPS API</li>
               <li>Provisioned API key after checkout</li>
@@ -813,7 +815,7 @@
               <li>Built for Claude Code, Codex, Gemini, and custom runners</li>
               <li>Best when attached to one workflow that creates or saves money</li>
             </ul>
-            <button class='button primary' id='checkout-btn-bottom' type='button'>Start Context Gateway for $10/mo</button>
+            <button class='button primary' id='checkout-btn-bottom' type='button'>Join as Founding Member — $5/mo forever</button>
           </div>
         </div>
       </div>
@@ -836,7 +838,7 @@
   <script>
     (function () {
       const checkoutEndpoint = '/v1/billing/checkout';
-      const checkoutFallbackUrl = 'https://buy.stripe.com/test';
+      const checkoutFallbackUrl = '__CHECKOUT_FALLBACK_URL__';
       const appOrigin = 'https://rlhf-feedback-loop-production.up.railway.app';
       const installStorageKey = 'rlhf_cloud_pro_install_id';
 
