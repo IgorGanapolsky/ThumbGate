@@ -1,4 +1,4 @@
-# MCP Memory Gateway | Hosted Guardrails and Context Hub for AI Agents
+# MCP Memory Gateway
 
 [![CI](https://github.com/IgorGanapolsky/rlhf-feedback-loop/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/rlhf-feedback-loop/actions/workflows/ci.yml)
 [![Self-Healing](https://github.com/IgorGanapolsky/rlhf-feedback-loop/actions/workflows/self-healing-monitor.yml/badge.svg)](https://github.com/IgorGanapolsky/rlhf-feedback-loop/actions/workflows/self-healing-monitor.yml)
@@ -6,134 +6,148 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 
-**The Universal Context & Memory Layer for Model Context Protocol (MCP) Agents.**
+**Local-first memory and feedback pipeline for AI agents.** Captures thumbs-up/down signals, promotes reusable memories, generates prevention rules from repeated failures, and exports KTO/DPO pairs for fine-tuning.
 
-As the AI ecosystem standardizes on MCP, agents need a centralized, "Always-On" brain to store context, consolidate failures, and enforce architectural guardrails across sessions. 
+Works with any MCP-compatible agent: Claude, Codex, Gemini, Amp, Cursor.
 
-This repository provides a production-ready, local-first **MCP Memory Gateway** that bridges the gap between raw LLM inference and long-term agentic reliability. Turn repeated AI failures into strict prevention rules, track token consumption, and share reasoning graphs across your entire team.
+## What It Does
 
-The open-source core gives one operator local feedback capture, context packs, and "Always-On" ADK memory consolidation. **Cloud Pro** is the hosted layer teams pay for when they need a shared context hub, remote observability, and a live web dashboard.
+```
+thumbs up/down → validate → promote to memory → vector index → prevention rules → DPO export
+```
 
-## North Star
-
-One unified MCP gateway powering every agent in your team, ensuring they never make the same mistake twice while maintaining absolute context security.
-
-That is the wedge. Not generic "agent infrastructure." Not another prompt library. One workflow outcome that a buyer can justify.
-
-## Who Buys And Who Uses
-
-- Buyer: head of ops, head of growth, platform lead, or consultancy owner funding a workflow rollout.
-- User: the operator running lead intake, research, drafting, approval, onboarding, or internal ops steps.
-- Champion: the engineer or platform owner wiring the Veto Layer, policy checks, and verification evidence into the workflow.
-
-## Why someone would pay
-
-- They want to make one workflow deployable, auditable, and improvable over time.
-- They need hosted API keys instead of self-hosting the feedback and guardrail store.
-- They need shared memory and prevention rules across operators, repos, or agents.
-- They need proof-ready runs and funnel evidence instead of local-only logs.
-
-## Install To Value
-
-1. Install the MCP server or package.
-2. Instrument one workflow with feedback capture and context packs.
-3. Turn repeated failures into prevention rules instead of repeated incidents.
-4. Review proof-ready runs and verification evidence to decide whether the workflow is ready for team-wide rollout.
+1. **Capture** — `capture_feedback` MCP tool accepts signals with context
+2. **Validate** — Rubric engine gates promotion (vague feedback is rejected with clarification prompts)
+3. **Remember** — Promoted memories stored in JSONL + LanceDB vectors
+4. **Prevent** — Repeated failures auto-generate prevention rules
+5. **Export** — KTO/DPO pairs for downstream fine-tuning
+6. **Bridge** — JSONL file watcher auto-ingests signals from external sources (Amp plugins, hooks, scripts)
 
 ## Quick Start
 
-Add the MCP server directly in your client config:
-
-| Platform | Command |
-|----------|---------|
-| **Claude** | `claude mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve` |
-| **Codex** | `codex mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve` |
-| **Gemini** | `gemini mcp add rlhf "npx -y rlhf-feedback-loop@0.6.11 serve"` |
-| **Amp** | `amp mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve` |
-| **Cursor** | `cursor mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.11 serve` |
-
-Optional auto-installer:
-
 ```bash
-npx add-mcp rlhf-feedback-loop
+# Add to any MCP-compatible agent
+claude mcp add rlhf -- npx -y rlhf-feedback-loop serve
+codex mcp add rlhf -- npx -y rlhf-feedback-loop serve
+amp mcp add rlhf -- npx -y rlhf-feedback-loop serve
+gemini mcp add rlhf "npx -y rlhf-feedback-loop serve"
+
+# Or auto-detect all installed platforms
+npx rlhf-feedback-loop init
 ```
 
-### As npm package
+## MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `capture_feedback` | Accept up/down signal + context, validate, promote to memory |
+| `recall` | Vector-search past feedback and prevention rules for current task |
+| `feedback_stats` | Approval rate, per-skill/tag breakdown, trend analysis |
+| `feedback_summary` | Human-readable recent feedback summary |
+| `prevention_rules` | Generate prevention rules from repeated mistakes |
+| `export_dpo_pairs` | Build DPO preference pairs from promoted memories |
+| `construct_context_pack` | Bounded context pack from contextfs |
+| `evaluate_context_pack` | Record context pack outcome (closes learning loop) |
+| `list_intents` | Available action plan templates |
+| `plan_intent` | Generate execution plan with policy checkpoints |
+| `context_provenance` | Audit trail of context decisions |
+
+## CLI
 
 ```bash
-npm install rlhf-feedback-loop
+npx rlhf-feedback-loop init              # Scaffold .rlhf/ + configure MCP
+npx rlhf-feedback-loop serve             # Start MCP server (stdio) + watcher
+npx rlhf-feedback-loop status            # Learning curve dashboard
+npx rlhf-feedback-loop watch             # Watch .rlhf/ for external signals
+npx rlhf-feedback-loop watch --once      # Process pending signals and exit
+npx rlhf-feedback-loop capture           # Capture feedback via CLI
+npx rlhf-feedback-loop stats             # Analytics + Revenue-at-Risk
+npx rlhf-feedback-loop rules             # Generate prevention rules
+npx rlhf-feedback-loop export-dpo        # Export DPO training pairs
+npx rlhf-feedback-loop risk              # Train/query boosted risk scorer
+npx rlhf-feedback-loop self-heal         # Run self-healing diagnostics
 ```
 
-The MCP is intentionally strict: a bare `thumbs up` or `thumbs down` is logged as a signal, but reusable memory promotion requires one sentence explaining why. If feedback is vague, the server asks for clarification instead of pretending it learned something.
+## JSONL File Watcher
 
-## OSS vs Cloud Pro
+The `serve` command automatically starts a background watcher that monitors `feedback-log.jsonl` for entries written by external sources (Amp plugins, shell hooks, CI scripts). These entries are routed through the full `captureFeedback()` pipeline — validation, memory promotion, vector indexing, and DPO eligibility.
 
-The OSS package stays free. Cloud Pro remains a low-friction founding offer while the hosted workflow layer proves onboarding and retention.
+```bash
+# Standalone watcher
+npx rlhf-feedback-loop watch --source amp-plugin-bridge
 
-| | OSS core | Cloud Pro |
-|---|---|---|
-| Price | `$0` | `$10/mo` |
-| Feedback capture | Local MCP server | Hosted HTTPS API |
-| Storage | Your machine | Managed cloud |
-| KTO/DPO export | CLI command | API endpoint |
-| Team sharing | Manual | Built-in |
-| Onboarding | Self-serve | Checkout + provisioned API key |
+# Process pending entries once and exit
+npx rlhf-feedback-loop watch --once
+```
 
-[Landing Page](https://rlhf-feedback-loop-710216278770.us-central1.run.app) | [30-Day GTM Plan](docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md) | [Get Cloud Pro ($10/mo)](https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02) | [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
+External sources write entries with a `source` field:
+```json
+{"signal":"positive","context":"Agent fixed bug on first try","source":"amp-plugin-bridge","tags":["amp-ui-bridge"]}
+```
+
+The watcher tracks its position via `.rlhf/.watcher-offset` for crash-safe, idempotent processing.
+
+## Learning Curve Dashboard
+
+```bash
+npx rlhf-feedback-loop status
+```
+
+```
+╔══════════════════════════════════════╗
+║     RLHF Learning Curve Dashboard   ║
+╠══════════════════════════════════════╣
+║ Total signals:    148                ║
+║ Positive:          45  (30%)         ║
+║ Negative:         103  (70%)         ║
+║ Recent (last 20):  20%               ║
+║ Trend:            📉 declining       ║
+║ Memories:          17                ║
+║ Prevention rules:   9                ║
+╠══════════════════════════════════════╣
+║ Top failure domains:                 ║
+║   execution-gap     4                ║
+║   asked-not-doing   2                ║
+║   speed             2                ║
+╠══════════════════════════════════════╣
+║ Learning curve (approval % by window)║
+║   [1-10]   10% ██                    ║
+║   [11-20]  20% ████                  ║
+║   [21-30]  35% ███████               ║
+║   [31-40]  30% ██████                ║
+╚══════════════════════════════════════╝
+```
+
+## Architecture
+
+Five-phase pipeline: **Capture** → **Validate** → **Remember** → **Prevent** → **Export**
+
+```
+Agent (Claude/Codex/Amp/Gemini)
+  │
+  ├── MCP tool call ──→ captureFeedback()
+  ├── REST API ────────→ captureFeedback()
+  ├── CLI ─────────────→ captureFeedback()
+  └── External write ──→ JSONL ──→ Watcher ──→ captureFeedback()
+                                        │
+                                        ▼
+                              ┌─────────────────┐
+                              │  Full Pipeline   │
+                              │  • Schema valid  │
+                              │  • Rubric gate   │
+                              │  • Memory promo  │
+                              │  • Vector index  │
+                              │  • Risk scoring  │
+                              │  • RLAIF audit   │
+                              │  • DPO eligible  │
+                              └─────────────────┘
+```
 
 ## Agent Runner Contract
-
-This repo now ships a Symphony-compatible, repo-owned agent-runner contract:
 
 - [WORKFLOW.md](WORKFLOW.md): scope, proof-of-work, hard stops, and done criteria for isolated agent runs
 - [.github/ISSUE_TEMPLATE/ready-for-agent.yml](.github/ISSUE_TEMPLATE/ready-for-agent.yml): bounded intake template for "Ready for Agent" tickets
 - [.github/pull_request_template.md](.github/pull_request_template.md): proof-first handoff format for PRs
-
-Validate the contract locally with:
-
-```bash
-node scripts/validate-workflow-contract.js
-node scripts/prove-workflow-contract.js
-```
-
-## Best First Use Case
-
-The most credible first paid workflow is a lead-to-meeting system:
-
-- inbound or CSV lead intake
-- enrichment
-- account research
-- draft generation
-- approval step
-- CRM sync
-- audit trail and prevention rules
-
-Cloud Pro sits underneath that workflow as the hosted memory, guardrail, and evidence layer.
-
-## What The Buyer Gets
-
-- One workflow with shared memory instead of scattered local learnings.
-- A Veto Layer that turns repeated operator complaints into prevention rules.
-- Proof-ready runs, audit trails, and machine-readable evidence for rollout decisions.
-- A compounding data asset through KTO/DPO export once the workflow is producing useful feedback.
-
-## Architecture
-
-![RLHF Feedback Loop Architecture](docs/diagrams/rlhf-architecture-pb.png)
-
-Five-phase pipeline: **Capture** human signals → **Validate** with rubric engine → **Learn** via LanceDB vector memory → **Prevent** repeated mistakes → **Export** KTO/DPO pairs for fine-tuning.
-
-![Plugin Topology](docs/diagrams/plugin-topology-pb.png)
-
-Three-tier stack: external integrations (Claude, Codex, Gemini, ChatGPT via MCP/OpenAPI) → plugin orchestration (schema validation, Bayesian scoring, DPO export) → data persistence (JSONL, LanceDB vectors, ShieldCortex context packs).
-
-## Deep Dive
-
-- [GTM Revenue Wedge](docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md)
-- [Pricing Research](docs/PRICING_RESEARCH_2026-03-09.md)
-- [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
-- [API Reference](openapi/openapi.yaml)
-- [Context Engine](docs/CONTEXTFS.md)
 
 ## License
 

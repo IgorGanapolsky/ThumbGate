@@ -28,7 +28,7 @@
   ],
   "type": "commonjs",
   "scripts": {
-    "test": "npm run test:schema && npm run test:loop && npm run test:dpo && npm run test:kto && npm run test:api && npm run test:proof && npm run test:e2e && npm run test:rlaif && npm run test:attribution && npm run test:quality && npm run test:intelligence && npm run test:training-export && npm run test:deployment && npm run test:workflow && npm run test:billing && npm run test:cli",
+    "test": "npm run test:schema && npm run test:loop && npm run test:dpo && npm run test:kto && npm run test:api && npm run test:proof && npm run test:e2e && npm run test:rlaif && npm run test:attribution && npm run test:quality && npm run test:intelligence && npm run test:training-export && npm run test:deployment && npm run test:workflow && npm run test:billing && npm run test:cli && npm run test:watcher",
     "test:e2e": "node --test tests/e2e-pipeline.test.js",
     "test:schema": "node scripts/feedback-schema.js --test",
     "test:loop": "node scripts/feedback-loop.js --test",
@@ -87,7 +87,10 @@
     "ml:risk": "node scripts/risk-scorer.js",
     "adk:consolidate": "node scripts/adk-consolidator.js",
     "adk:watch": "node scripts/adk-consolidator.js --watch",
-    "pr:manage": "node scripts/pr-manager.js"
+    "pr:manage": "node scripts/pr-manager.js",
+    "watch": "node scripts/jsonl-watcher.js",
+    "status": "node scripts/status-dashboard.js",
+    "test:watcher": "node --test tests/jsonl-watcher.test.js"
   },
   "keywords": [
     "rlhf",

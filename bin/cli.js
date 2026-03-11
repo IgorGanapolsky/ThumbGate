@@ -592,11 +592,39 @@ function prove() {
   }
 }
 
+function watchCmd() {
+  const args = parseArgs(process.argv.slice(3));
+  const { watch, once } = require(path.join(PKG_ROOT, 'scripts', 'jsonl-watcher'));
+  const sourceFilter = args.source || undefined;
+  if (args.once) {
+    once(sourceFilter);
+  } else {
+    watch(sourceFilter);
+  }
+}
+
+function status() {
+  const statusDashboard = require(path.join(PKG_ROOT, 'scripts', 'status-dashboard'));
+  const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  const { FEEDBACK_DIR } = getFeedbackPaths();
+  const data = statusDashboard.generateStatus(FEEDBACK_DIR);
+  // printDashboard writes directly to stdout when run as main;
+  // for CLI we call the same renderer
+  statusDashboard.printDashboard
+    ? statusDashboard.printDashboard(data)
+    : console.log(JSON.stringify(data, null, 2));
+}
+
 function serve() {
   // Start MCP server over stdio
   const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
   const { startStdioServer } = require(mcpServer);
   startStdioServer();
+  // Start watcher as a background daemon alongside MCP server
+  try {
+    const { watch } = require(path.join(PKG_ROOT, 'scripts', 'jsonl-watcher'));
+    watch();
+  } catch (_) { /* watcher is non-critical */ }
 }
 
 function install() {
@@ -650,6 +678,8 @@ function help() {
   console.log('  self-heal             Run self-healing check and auto-fix');
   console.log('  pro                   Upgrade to Cloud Pro ($10/mo)');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
+  console.log('  watch [flags]           Watch .rlhf/ for external signals and ingest through pipeline (--once, --source=X)');
+  console.log('  status                  Show learning curve dashboard — approval trend + failure domains');
   console.log('  start-api             Start the RLHF HTTPS API server');
   console.log('  help                  Show this help message');
   console.log('');
@@ -706,6 +736,12 @@ switch (COMMAND) {
     break;
   case 'prove':
     prove();
+    break;
+  case 'watch':
+    watchCmd();
+    break;
+  case 'status':
+    status();
     break;
   case 'start-api':
     startApi();
