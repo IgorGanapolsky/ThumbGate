@@ -22,7 +22,7 @@ jobs:
       - name: Run Prospecting & Personalization Agent
         run: node scripts/autonomous-sales-agent.js
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Run X.com Premium+ Marketing Loop
         run: node scripts/x-autonomous-marketing.js
