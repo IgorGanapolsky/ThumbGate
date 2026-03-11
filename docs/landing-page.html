@@ -3,42 +3,38 @@
 <head>
   <meta charset='UTF-8' />
   <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-  <title>MCP Memory Gateway Context Gateway | Hosted Guardrails for AI Workflow Teams</title>
+  <title>MCP Memory Gateway | Local-First RLHF & Context Hub for AI Agents</title>
   <meta
     name='description'
-    content='Roll out one revenue or ops workflow with hosted memory, guardrails, and verification evidence. Founding Member offer: $5/mo locked forever — 50 spots only.'
+    content='Build better AI agents with MCP Memory Gateway – local RLHF feedback, reusable memories via MCP, prevention rules, and KTO/DPO fine-tuning. Open-source, npm rlhf-feedback-loop for developers.'
   />
   <script type='application/ld+json'>
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "MCP Memory Gateway Context Gateway",
-    "url": "https://rlhf-feedback-loop-production.up.railway.app",
-    "operatingSystem": "Cross-platform",
+    "name": "MCP Memory Gateway",
+    "url": "__APP_ORIGIN__",
+    "operatingSystem": "Node.js, Cross-platform",
     "applicationCategory": "DeveloperApplication",
-    "description": "Hosted Agentic Feedback Studio for teams rolling out one workflow outcome with shared memory, guardrails, and verification evidence.",
-    "keywords": "Agentic Feedback Studio, Veto Layer, DPO, Thompson Sampling, context engineering, lead-to-meeting workflow, AI workflow guardrails",
-    "audience": {
-      "@type": "Audience",
-      "audienceType": "RevOps, growth, platform, and engineering teams running AI workflows"
-    },
+    "description": "Local-first memory and feedback pipeline for AI agents using Model Context Protocol (MCP). Captures RLHF thumbs-up/down signals, promotes reusable memories, and generates prevention rules.",
+    "keywords": "MCP Memory Gateway, RLHF, DPO, KTO, AI agent memory, context engineering, prevention rules, Veto Layer",
     "offers": {
       "@type": "Offer",
-      "price": "5",
+      "price": "10",
       "priceCurrency": "USD"
     },
     "sameAs": [
-      "__GITHUB_URL__",
+      "https://github.com/IgorGanapolsky/mcp-memory-gateway",
       "__VERIFICATION_URL__",
       "__COMPATIBILITY_REPORT_URL__",
       "__AUTOMATION_REPORT_URL__"
     ],
     "featureList": [
-      "Hosted API keys for workflow runs",
-      "Shared memory and prevention rules across operators",
-      "Verification evidence for workflow rollout",
-      "Works with Claude Code, Codex, Gemini, and custom workflow runners",
-      "Built to support one high-value workflow such as lead-to-meeting, onboarding, or internal ops"
+      "RLHF thumbs-up/down capture",
+      "MCP reusable memories and prompts",
+      "Auto-prevention rules from failures",
+      "KTO/DPO export for fine-tuning",
+      "Local-first, offline capable"
     ]
   }
   </script>
@@ -46,35 +42,32 @@
   {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "mainEntity": [{
-      "@type": "Question",
-      "name": "Who should buy Context Gateway?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Context Gateway is for teams building agentic workflows who want hosted API keys, shared memory, billing hooks, and provable runs without self-hosting the feedback and guardrail layer."
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is MCP Memory Gateway for AI agents?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "MCP Memory Gateway is a local-first memory and feedback pipeline for AI agents using the Model Context Protocol (MCP). It captures thumbs-up/down RLHF signals, promotes reusable memories as MCP resources, generates prevention rules from repeated failures, and exports KTO/DPO pairs for fine-tuning."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does MCP Memory Gateway handle RLHF feedback loops?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It implements an npm package 'rlhf-feedback-loop' that captures thumbs-up/down signals locally, stores them as reusable MCP resources or prompts, and automates generation of prevention rules to avoid repeated agent failures."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is MCP Memory Gateway compatible with local AI agent setups?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, it's designed as local-first, running via npm without cloud dependencies. It integrates with MCP servers for resources like reusable memories and prompts, mimicking gateway flows for caching and routing."
+        }
       }
-    }, {
-      "@type": "Question",
-      "name": "What is the best first use case?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "The best first wedge is a lead-to-meeting workflow: intake, enrichment, drafting, approvals, CRM sync, and auditability. The same stack also fits onboarding and internal ops automation."
-      }
-    }, {
-      "@type": "Question",
-      "name": "Who buys Context Gateway versus who uses it?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Buyers are usually RevOps, growth, platform, or engineering leaders who need one workflow to run consistently. Users are the operators and agent runners executing the workflow day to day."
-      }
-    }, {
-      "@type": "Question",
-      "name": "What proves the workflow is safe to roll out?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Context Gateway pairs hosted onboarding with auditable runs, machine-readable verification evidence, and prevention rules so teams can show what changed, what failed, and what passed."
-      }
-    }]
+    ]
   }
   </script>
   <style>
@@ -599,18 +592,17 @@
           <p>Context Gateway gives RevOps, growth, platform, and engineering teams hosted API keys, shared memory, and verification evidence so one workflow like lead-to-meeting can run across operators without drift.</p>
           <p>Start where pain is already real: lead-to-meeting, onboarding, or internal ops. Context Gateway is the hosted Veto Layer behind that workflow, not another dashboard full of vague AI claims.</p>
           <div class='hero-proof'>
-            <span class='proof-pill'>North Star: one workflow live and auditable</span>
-            <span class='proof-pill'>Founding price: $5/mo · 50 spots</span>
+            <span class='proof-pill'>North Star: Always-On Agent Memory</span>
+            <span class='proof-pill'>Founding price: $10/mo · 50 spots</span>
             <span class='proof-pill'>Versioned proof: v__PACKAGE_VERSION__</span>
-            <span class='proof-pill'>Hosted onboarding at https://rlhf-feedback-loop-production.up.railway.app</span>
+            <span class='proof-pill'>Hosted Veto Layer at rlhf-feedback-loop-production.up.railway.app</span>
           </div>
           <div class='cta-row'>
-            <button class='button primary' id='checkout-btn' type='button'>Join as Founding Member — $5/mo forever</button>
-            <a class='button secondary' href='__GTM_PLAN_URL__'>Read the 30-day GTM plan</a>
-            <a class='button secondary' href='__GITHUB_URL__'>View the OSS core</a>
+            <button class='button primary' id='checkout-btn' type='button'>Start Context Gateway ($10/mo)</button>
+            <button class='button secondary' id='one-time-btn' type='button'>Mistake-Free Starter Pack ($49)</button>
           </div>
-          <p class='note' style='font-weight:700;color:var(--accent-dark);'>50 founding spots · $5/mo locked forever · First 50 only</p>
-          <p class='note'>Regular price $10/mo after founding spots fill. Checkout is owned through the hosted API first, then falls back to <a href='__CHECKOUT_FALLBACK_URL__'>direct Stripe</a> if needed.</p>
+          <p class='note' style='font-weight:700;color:var(--accent-dark);'>50 founding spots · $10/mo locked forever · 500 Credits Included</p>
+          <p class='note'>One-time pack: 500 consolidations + 5 custom rules. No subscription required.</p>
         </div>
 
         <div class='panel hero-card'>
@@ -853,7 +845,7 @@
         return generated;
       }
 
-      async function startCheckout() {
+      async function startCheckout(options = {}) {
         const installId = getInstallId();
 
         try {
@@ -864,9 +856,11 @@
             },
             body: JSON.stringify({
               installId,
+              oneTime: options.oneTime === true,
               metadata: {
                 source: 'landing_page',
-                origin: appOrigin
+                origin: appOrigin,
+                oneTime: options.oneTime === true
               }
             })
           });
@@ -893,8 +887,9 @@
         }
       }
 
-      document.getElementById('checkout-btn').addEventListener('click', startCheckout);
-      document.getElementById('checkout-btn-bottom').addEventListener('click', startCheckout);
+      document.getElementById('checkout-btn').addEventListener('click', () => startCheckout({ oneTime: false }));
+      document.getElementById('one-time-btn').addEventListener('click', () => startCheckout({ oneTime: true }));
+      // document.getElementById('checkout-btn-bottom').addEventListener('click', () => startCheckout({ oneTime: false }));
     }());
   </script>
 </body>

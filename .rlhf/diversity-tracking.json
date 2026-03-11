@@ -1,10 +1,10 @@
 {
   "domains": {
     "general": {
-      "count": 2,
-      "positive": 1,
+      "count": 3,
+      "positive": 2,
       "negative": 1,
-      "lastSeen": "2026-03-11T15:29:19.727Z"
+      "lastSeen": "2026-03-11T21:59:47.045Z"
     },
     "testing": {
       "count": 1,
@@ -17,9 +17,15 @@
       "positive": 0,
       "negative": 2,
       "lastSeen": "2026-03-11T17:51:41.848Z"
+    },
+    "architecture": {
+      "count": 1,
+      "positive": 0,
+      "negative": 1,
+      "lastSeen": "2026-03-11T22:11:52.060Z"
     }
   },
-  "lastUpdated": "2026-03-11T17:51:41.855Z",
-  "diversityScore": "87.4",
-  "recommendation": "Good diversity (87.4%)"
+  "lastUpdated": "2026-03-11T22:11:52.070Z",
+  "diversityScore": "86.6",
+  "recommendation": "Good diversity (86.6%)"
 }

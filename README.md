@@ -41,7 +41,7 @@ feedback signal → validate → promote to memory → vector index → preventi
 ## Quick Start
 
 ```bash
-# Add to any MCP-compatible agent
+# Recommended: essential profile (5 high-ROI tools)
 claude mcp add rlhf -- npx -y rlhf-feedback-loop serve
 codex mcp add rlhf -- npx -y rlhf-feedback-loop serve
 amp mcp add rlhf -- npx -y rlhf-feedback-loop serve
@@ -51,21 +51,38 @@ gemini mcp add rlhf "npx -y rlhf-feedback-loop serve"
 npx rlhf-feedback-loop init
 ```
 
+> **Profiles:** Set `RLHF_MCP_PROFILE=essential` for the lean 5-tool setup (recommended), or leave unset for the full 11-tool pipeline. See [MCP Tools](#mcp-tools) for details.
+
 ## MCP Tools
+
+### Essential (high-ROI — start here)
+
+These 5 tools deliver ~80% of the value. Use the `essential` profile for a lean setup:
+
+```bash
+RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y rlhf-feedback-loop serve
+```
 
 | Tool | Description |
 |------|-------------|
 | `capture_feedback` | Accept up/down signal + context, validate, promote to memory |
 | `recall` | Vector-search past feedback and prevention rules for current task |
+| `prevention_rules` | Generate prevention rules from repeated mistakes |
 | `feedback_stats` | Approval rate, per-skill/tag breakdown, trend analysis |
 | `feedback_summary` | Human-readable recent feedback summary |
-| `prevention_rules` | Generate prevention rules from repeated mistakes |
-| `export_dpo_pairs` | Build DPO preference pairs from promoted memories |
-| `construct_context_pack` | Bounded context pack from contextfs |
-| `evaluate_context_pack` | Record context pack outcome (closes learning loop) |
-| `list_intents` | Available action plan templates |
-| `plan_intent` | Generate execution plan with policy checkpoints |
-| `context_provenance` | Audit trail of context decisions |
+
+### Full pipeline (advanced)
+
+These tools support fine-tuning workflows, context engineering, and audit trails. Use the `default` profile to enable all tools:
+
+| Tool | Description | When you need it |
+|------|-------------|------------------|
+| `export_dpo_pairs` | Build DPO preference pairs from promoted memories | Fine-tuning a model on your feedback |
+| `construct_context_pack` | Bounded context pack from contextfs | Custom retrieval for large projects |
+| `evaluate_context_pack` | Record context pack outcome (closes learning loop) | Measuring retrieval quality |
+| `list_intents` | Available action plan templates | Policy-gated workflows |
+| `plan_intent` | Generate execution plan with policy checkpoints | Policy-gated workflows |
+| `context_provenance` | Audit trail of context decisions | Debugging retrieval decisions |
 
 ## CLI
 
@@ -134,6 +151,18 @@ npx rlhf-feedback-loop status
 ```
 
 ## Architecture
+
+### Value tiers
+
+| Tier | Components | Impact |
+|------|-----------|--------|
+| **Core** (use now) | `capture_feedback` + `recall` + `prevention_rules` + enforcement hooks | Captures mistakes, prevents repeats, constrains behavior |
+| **Analytics** (use now) | `feedback_stats` + `feedback_summary` + learning curve dashboard | Measures whether the agent is actually improving |
+| **Fine-tuning** (future) | DPO/KTO export, Thompson Sampling, context packs | Infrastructure for model fine-tuning — valuable when you have a training pipeline |
+
+~30% of the codebase delivers ~80% of the runtime value. The rest is forward-looking infrastructure for teams that export training data.
+
+### Pipeline
 
 Five-phase pipeline: **Capture** → **Validate** → **Remember** → **Prevent** → **Export**
 

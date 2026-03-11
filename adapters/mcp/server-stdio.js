@@ -34,6 +34,10 @@ const {
 const {
   searchSimilar,
 } = require('../../scripts/vector-store');
+const {
+  loadModel,
+  getReliability,
+} = require('../../scripts/thompson-sampling');
 
 const SERVER_INFO = {
   name: 'rlhf-feedback-loop-mcp',
@@ -223,6 +227,19 @@ const TOOLS = [
       required: ['query'],
       properties: {
         query: { type: 'string', description: 'Describe the current task or context to find relevant past feedback' },
+        limit: { type: 'number', description: 'Max memories to return (default 5)' },
+      },
+    },
+  },
+  {
+    name: 'commerce_recall',
+    description: 'Recall past feedback filtered by commerce categories (product_recommendation, brand_compliance, sizing, pricing, regulatory). Returns quality scores alongside memories for agentic commerce agents.',
+    inputSchema: {
+      type: 'object',
+      required: ['query'],
+      properties: {
+        query: { type: 'string', description: 'Product or brand context to find relevant past feedback' },
+        categories: { type: 'array', items: { type: 'string' }, description: 'Commerce categories to filter (default: all commerce categories)' },
         limit: { type: 'number', description: 'Max memories to return (default 5)' },
       },
     },
@@ -417,6 +434,67 @@ async function callToolInner(name, args = {}) {
       ? parts.join('\n')
       : 'No past feedback found. This appears to be a fresh start.\n\n' + formatStats();
 
+    return { content: [{ type: 'text', text }] };
+  }
+
+  if (name === 'commerce_recall') {
+    const COMMERCE_CATEGORIES = ['product_recommendation', 'brand_compliance', 'sizing', 'pricing', 'regulatory'];
+    const query = args.query || '';
+    const limit = Number(args.limit || 5);
+    const requestedCategories = Array.isArray(args.categories) && args.categories.length > 0
+      ? args.categories.filter(c => COMMERCE_CATEGORIES.includes(c))
+      : COMMERCE_CATEGORIES;
+    const parts = [];
+
+    // 1. Quality scores for requested commerce categories
+    const modelPath = path.join(SAFE_DATA_DIR, 'feedback_model.json');
+    const model = loadModel(modelPath);
+    const reliability = getReliability(model);
+    parts.push('## Commerce Quality Scores\n');
+    for (const cat of requestedCategories) {
+      const r = reliability[cat];
+      if (r) {
+        const pct = (r.reliability * 100).toFixed(0);
+        parts.push(`- **${cat}**: ${pct}% reliability (${r.samples} samples)`);
+      } else {
+        parts.push(`- **${cat}**: no data yet`);
+      }
+    }
+    parts.push('');
+
+    // 2. Vector search filtered to commerce context
+    try {
+      const similar = await searchSimilar(query, limit);
+      if (similar.length > 0) {
+        parts.push('## Relevant Commerce Feedback\n');
+        for (const mem of similar.slice(0, limit)) {
+          const signal = mem.signal === 'positive' ? 'GOOD' : 'BAD';
+          const confidence = mem._distance != null ? Math.max(0, (1 - mem._distance) * 100).toFixed(0) : '?';
+          parts.push(`**[${signal}]** (${confidence}% match) ${mem.context}`);
+          if (mem.tags) parts.push(`  Tags: ${mem.tags}`);
+          parts.push('');
+        }
+      }
+    } catch (_) {
+      // Vector store may not be initialized
+    }
+
+    // 3. Prevention rules
+    try {
+      const rulesPath = path.join(SAFE_DATA_DIR, 'prevention-rules.md');
+      if (fs.existsSync(rulesPath)) {
+        const rules = fs.readFileSync(rulesPath, 'utf8').trim();
+        if (rules.length > 50) {
+          parts.push('## Active Prevention Rules\n');
+          parts.push(rules);
+          parts.push('');
+        }
+      }
+    } catch (_) {}
+
+    const text = parts.length > 1
+      ? parts.join('\n')
+      : 'No commerce feedback found yet. Start capturing feedback with commerce tags.\n';
     return { content: [{ type: 'text', text }] };
   }
 

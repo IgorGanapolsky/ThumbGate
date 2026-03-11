@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 3,
   "profiles": {
     "default": [
       "recall",
@@ -12,7 +12,23 @@
       "export_dpo_pairs",
       "construct_context_pack",
       "evaluate_context_pack",
-      "context_provenance"
+      "context_provenance",
+      "commerce_recall"
+    ],
+    "essential": [
+      "capture_feedback",
+      "recall",
+      "prevention_rules",
+      "feedback_stats",
+      "feedback_summary"
+    ],
+    "commerce": [
+      "capture_feedback",
+      "recall",
+      "commerce_recall",
+      "prevention_rules",
+      "feedback_stats",
+      "feedback_summary"
     ],
     "readonly": [
       "recall",

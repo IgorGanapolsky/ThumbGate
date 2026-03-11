@@ -31,6 +31,11 @@ const {
   planIntent,
 } = require('../../scripts/intent-router');
 const {
+  loadModel,
+  getReliability,
+  samplePosteriors,
+} = require('../../scripts/thompson-sampling');
+const {
   createCheckoutSession,
   getCheckoutSessionStatus,
   provisionApiKey,
@@ -734,14 +739,21 @@ function createApiServer() {
     if (req.method === 'POST' && pathname === '/v1/billing/checkout') {
       try {
         const body = await parseJsonBody(req);
+        // $49 Wedge: If oneTime is set, create a one-time payment session
+        const isOneTime = body.oneTime === true || body.amount === 49;
+        
         const result = await createCheckoutSession({
           successUrl: body.successUrl || `${publicOrigin}/success?session_id={CHECKOUT_SESSION_ID}`,
           cancelUrl: body.cancelUrl || `${publicOrigin}/cancel`,
           customerEmail: body.customerEmail,
           installId: body.installId,
-          metadata: body.metadata,
+          metadata: { 
+            ...body.metadata, 
+            oneTime: isOneTime,
+            credits: isOneTime ? 500 : 0 
+          },
         });
-        sendJson(res, 200, result);
+        sendJson(res, 200, { ...result, price: isOneTime ? 49 : 10, type: isOneTime ? 'one-time' : 'subscription' });
       } catch (err) {
         if (err.statusCode) {
           sendJson(res, err.statusCode, { error: err.message });
@@ -952,6 +964,55 @@ function createApiServer() {
         return;
       }
 
+
+      // ----------------------------------------------------------------
+      // Quality / ACO routes
+      // ----------------------------------------------------------------
+
+      if (req.method === 'GET' && pathname === '/v1/quality/scores') {
+        const modelPath = path.join(getSafeDataDir(), 'feedback_model.json');
+        const model = loadModel(modelPath);
+        const reliability = getReliability(model);
+        const category = parsed.searchParams.get('category');
+        if (category) {
+          if (!reliability[category]) {
+            throw createHttpError(404, `Category '${category}' not found`);
+          }
+          sendJson(res, 200, { category, ...reliability[category] });
+          return;
+        }
+        sendJson(res, 200, {
+          categories: reliability,
+          totalEntries: model.total_entries || 0,
+          updated: model.updated || null,
+        });
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/quality/rules') {
+        const rulesPath = path.join(getSafeDataDir(), 'prevention-rules.md');
+        let markdown = '';
+        if (fs.existsSync(rulesPath)) {
+          markdown = fs.readFileSync(rulesPath, 'utf8').trim();
+        }
+        const rules = [];
+        for (const line of markdown.split('\n')) {
+          const match = line.match(/^-\s+\*\*(\w+)\*\*.*?:\s*(.+)/);
+          if (match) {
+            rules.push({ severity: match[1].toLowerCase(), rule: match[2].trim() });
+          }
+        }
+        sendJson(res, 200, { count: rules.length, rules, markdown });
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/quality/posteriors') {
+        const modelPath = path.join(getSafeDataDir(), 'feedback_model.json');
+        const model = loadModel(modelPath);
+        const posteriors = samplePosteriors(model);
+        sendJson(res, 200, { posteriors });
+        return;
+      }
 
       // ----------------------------------------------------------------
       // Billing routes

@@ -1,20 +1,20 @@
 {
   "version": 1,
   "algorithm": "adaboost-stumps",
-  "trainedAt": "2026-03-11T17:51:41.868Z",
-  "exampleCount": 5,
-  "highRiskExamples": 3,
-  "baseRate": 0.6,
+  "trainedAt": "2026-03-11T22:11:52.085Z",
+  "exampleCount": 7,
+  "highRiskExamples": 4,
+  "baseRate": 0.5714285714285714,
   "featureRegistry": {
     "topTags": [
       "debug",
+      "monetization",
       "railway",
       "adk",
+      "architecture",
       "autonomy",
-      "crisis",
-      "data-integrity",
-      "deployment",
-      "execution"
+      "budget-guard",
+      "crisis"
     ],
     "topSkills": [],
     "domains": [
@@ -63,15 +63,64 @@
     "domain:architecture",
     "domain:data-modeling",
     "tag:debug",
+    "tag:monetization",
     "tag:railway",
     "tag:adk",
+    "tag:architecture",
     "tag:autonomy",
-    "tag:crisis",
-    "tag:data-integrity",
-    "tag:deployment",
-    "tag:execution"
+    "tag:budget-guard",
+    "tag:crisis"
   ],
-  "learners": [],
+  "learners": [
+    {
+      "feature": "actionNegativeRate",
+      "threshold": 0.6239316239316239,
+      "polarity": 1,
+      "alpha": 6.908
+    },
+    {
+      "feature": "actionNegativeRate",
+      "threshold": 0.6239316239316239,
+      "polarity": 1,
+      "alpha": 6.908
+    },
+    {
+      "feature": "actionNegativeRate",
+      "threshold": 0.6239316239316239,
+      "polarity": 1,
+      "alpha": 6.908
+    },
+    {
+      "feature": "actionNegativeRate",
+      "threshold": 0.6239316239316239,
+      "polarity": 1,
+      "alpha": 6.908
+    },
+    {
+      "feature": "actionNegativeRate",
+      "threshold": 0.6239316239316239,
+      "polarity": 1,
+      "alpha": 6.908
+    },
+    {
+      "feature": "actionNegativeRate",
+      "threshold": 0.6239316239316239,
+      "polarity": 1,
+      "alpha": 6.908
+    },
+    {
+      "feature": "actionNegativeRate",
+      "threshold": 0.6239316239316239,
+      "polarity": 1,
+      "alpha": 6.908
+    },
+    {
+      "feature": "actionNegativeRate",
+      "threshold": 0.6239316239316239,
+      "polarity": 1,
+      "alpha": 6.908
+    }
+  ],
   "patterns": {
     "tags": [
       {
@@ -85,6 +134,12 @@
         "total": 2,
         "highRisk": 2,
         "riskRate": 1
+      },
+      {
+        "key": "monetization",
+        "total": 2,
+        "highRisk": 0,
+        "riskRate": 0
       }
     ],
     "domains": [
@@ -96,16 +151,16 @@
       },
       {
         "key": "general",
-        "total": 2,
+        "total": 3,
         "highRisk": 1,
-        "riskRate": 0.5
+        "riskRate": 0.333
       }
     ],
     "skills": []
   },
   "metrics": {
-    "trainingAccuracy": 0.6,
-    "rounds": 0,
-    "mode": "baseline"
+    "trainingAccuracy": 1,
+    "rounds": 8,
+    "mode": "boosted"
   }
 }

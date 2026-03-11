@@ -121,10 +121,11 @@ describe('postTweet', () => {
   });
 
   it('handles 429 rate limit and eventually returns null', async () => {
+    const headers = new Map([['retry-after', '0']]);
     mock.method(globalThis, 'fetch', async () => ({
       ok: false,
       status: 429,
-      headers: { get: () => '0' },
+      headers,
       json: async () => ({ detail: 'Too Many Requests' }),
     }));
 

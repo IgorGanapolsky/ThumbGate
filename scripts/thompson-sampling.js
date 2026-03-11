@@ -48,6 +48,11 @@ const DEFAULT_CATEGORIES = [
   'architecture',
   'security',
   'debugging',
+  'product_recommendation',
+  'brand_compliance',
+  'sizing',
+  'pricing',
+  'regulatory',
   'uncategorized',
 ];
 

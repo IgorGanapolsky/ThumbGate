@@ -19,6 +19,7 @@ const CONFIG = {
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   GITHUB_MARKETPLACE_WEBHOOK_SECRET: process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '',
   STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || 'price_1RNdUBGGBpd520QYG1A9SWF4',
+  STRIPE_ONE_TIME_PRICE_ID: process.env.STRIPE_ONE_TIME_PRICE_ID || 'price_1RNeMBGGBpd520QYNmZYZY12',
   get API_KEYS_PATH() {
     return process.env._TEST_API_KEYS_PATH || path.resolve(__dirname, '../.claude/memory/feedback/api-keys.json');
   },
@@ -147,8 +148,8 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     success_url: successUrl,
     cancel_url: cancelUrl,
     customer_email: customerEmail,
-    mode: 'subscription',
-    line_items: [{ price: CONFIG.STRIPE_PRICE_ID, quantity: 1 }],
+    mode: metadata.oneTime ? 'payment' : 'subscription',
+    line_items: [{ price: metadata.oneTime ? CONFIG.STRIPE_ONE_TIME_PRICE_ID : CONFIG.STRIPE_PRICE_ID, quantity: 1 }],
     metadata: checkoutMetadata,
   });
 

@@ -1,0 +1,40 @@
+1/6: AI agents are becoming the primary shoppers. Morgan Stanley says $190B-$385B in agentic commerce by 2030.
+
+Google UCP, OpenAI ACP, and Azoma AMP tell agents about products.
+
+But who tells agents about their own mistakes?
+
+2/6: When an AI agent recommends the wrong product size, violates brand guidelines, or ignores FDA constraints — nothing captures that failure.
+
+The agent makes the same mistake next session. And the session after that.
+
+SEO became ACO. Now ACO needs a feedback loop.
+
+3/6: We built MCP Memory Gateway — the feedback and memory layer for AI shopping agents.
+
+It captures thumbs up/down signals, auto-generates prevention rules from repeated failures, and makes agents measurably better over time.
+
+One line to install: npx rlhf-feedback-loop serve
+
+4/6: It plugs directly into the agentic commerce stack:
+
+UCP + ACP + AMP = product discovery
+MCP = standard tool interface
+MCP Memory Gateway = quality layer
+
+All three protocols support MCP transport. Zero custom integration needed.
+
+5/6: What it delivers for brands:
+- Prevention rules enforce brand compliance automatically
+- Feedback attribution traces which agent interactions cause returns
+- DPO export creates training data for commerce-specific fine-tuning
+
+L'Oreal, Unilever, and Mars are adopting AMP. Their agents need this layer.
+
+6/6: Open source. MIT license. 384 tests passing.
+
+Works with Claude, ChatGPT, Gemini, Codex, Cursor.
+
+The agent quality gap in agentic commerce is a $1.9B-$3.8B problem. We're the fix.
+
+github.com/IgorGanapolsky/mcp-memory-gateway
