@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.IgorGanapolsky/mcp-memory-gateway",
+  "name": "io.github.IgorGanapolsky/rlhf-feedback-loop",
   "description": "MCP Memory Gateway: RLHF feedback loop for AI agents. Capture feedback, block mistakes, export DPO training data.",
   "repository": {
     "url": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
     "source": "github"
   },
-  "version": "0.6.12",
+  "version": "0.6.13",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "rlhf-feedback-loop",
-      "version": "0.6.12",
+      "version": "0.6.13",
       "transport": {
         "type": "stdio"
       },
