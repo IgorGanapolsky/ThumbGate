@@ -1,0 +1,37 @@
+name: mcp-memory-gateway
+description: >
+  RLHF feedback loop for AI agents. Capture up/down preference signals,
+  block repeated mistakes via prevention rules, and export KTO/DPO training
+  pairs. Supports Claude, Codex, Gemini, Amp, and Cursor.
+version: "0.6.13"
+homepage: https://rlhf-feedback-loop-production.up.railway.app
+repository: https://github.com/IgorGanapolsky/mcp-memory-gateway
+
+runtime: node
+entrypoint: scripts/feedback-loop.js
+buildCommand: npm ci
+startCommand: node scripts/feedback-loop.js serve
+transport: stdio
+
+pricing:
+  - tier: free
+    description: "Community tier — up to 100 feedback captures/day"
+    price: 0
+  - tier: hosted
+    description: "Hosted gateway at $10/mo — unlimited captures, live API"
+    price: 10
+    interval: monthly
+
+publisher:
+  name: Igor Ganapolsky
+  email: support@mcpize.com
+  url: https://github.com/IgorGanapolsky
+
+tags:
+  - rlhf
+  - feedback
+  - memory
+  - dpo
+  - kto
+  - ai-training
+  - model-context-protocol

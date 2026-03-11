@@ -478,6 +478,73 @@ function createApiServer() {
     const pathname = parsed.pathname;
     const publicOrigin = getPublicOrigin(req);
 
+    // Public MCP endpoint — responds to Smithery registry scanning and MCP initialize
+    // The initialize handshake is unauthenticated; subsequent tool calls require Bearer auth
+    if (pathname === '/mcp') {
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', (chunk) => { body += chunk; });
+        req.on('end', () => {
+          try {
+            const msg = JSON.parse(body);
+            if (msg.method === 'initialize') {
+              sendJson(res, 200, {
+                jsonrpc: '2.0',
+                id: msg.id,
+                result: {
+                  protocolVersion: '2024-11-05',
+                  capabilities: { tools: {} },
+                  serverInfo: { name: 'rlhf-feedback-loop', version: pkg.version },
+                },
+              });
+            } else if (msg.method === 'notifications/initialized') {
+              res.writeHead(204);
+              res.end();
+            } else if (msg.method === 'tools/list') {
+              sendJson(res, 200, {
+                jsonrpc: '2.0',
+                id: msg.id,
+                result: {
+                  tools: [
+                    { name: 'recall', description: 'Recall relevant past feedback for current task', inputSchema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } },
+                    { name: 'capture_feedback', description: 'Capture an up/down signal plus one line of why', inputSchema: { type: 'object', properties: { signal: { type: 'string', enum: ['up', 'down'] }, context: { type: 'string' }, whatWentWrong: { type: 'string' }, whatToChange: { type: 'string' }, whatWorked: { type: 'string' } }, required: ['signal', 'context'] } },
+                    { name: 'feedback_stats', description: 'Feedback analytics', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'feedback_summary', description: 'Human-readable feedback summary', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'prevention_rules', description: 'Generate prevention rules from failures', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'export_dpo_pairs', description: 'Export DPO training pairs', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'construct_context_pack', description: 'Build bounded context pack', inputSchema: { type: 'object', properties: { task: { type: 'string' } }, required: ['task'] } },
+                    { name: 'evaluate_context_pack', description: 'Record context pack outcome', inputSchema: { type: 'object', properties: { packId: { type: 'string' }, outcome: { type: 'string' } }, required: ['packId', 'outcome'] } },
+                    { name: 'context_provenance', description: 'Audit trail of context decisions', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'list_intents', description: 'Available action plans', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'plan_intent', description: 'Generate execution plan', inputSchema: { type: 'object', properties: { intent: { type: 'string' } }, required: ['intent'] } },
+                  ],
+                },
+              });
+            } else {
+              // All other tool calls require auth — return method not found for unauthenticated
+              sendJson(res, 200, {
+                jsonrpc: '2.0',
+                id: msg.id,
+                error: { code: -32601, message: 'Method requires authentication. Provide Bearer token.' },
+              });
+            }
+          } catch (_e) {
+            sendJson(res, 400, { error: 'Invalid JSON' });
+          }
+        });
+        return;
+      }
+      if (req.method === 'GET') {
+        // SSE upgrade or capability probe
+        sendJson(res, 200, {
+          name: 'rlhf-feedback-loop',
+          version: pkg.version,
+          transport: ['streamable-http', 'stdio'],
+        });
+        return;
+      }
+    }
+
     // Public endpoints — no auth required
     if (req.method === 'GET' && pathname === '/') {
       if (wantsJson(req, parsed)) {
