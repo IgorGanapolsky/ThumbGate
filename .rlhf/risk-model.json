@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "algorithm": "adaboost-stumps",
+  "trainedAt": "2026-03-11T15:29:19.761Z",
+  "exampleCount": 3,
+  "highRiskExamples": 1,
+  "baseRate": 0.3333333333333333,
+  "featureRegistry": {
+    "topTags": [
+      "adk",
+      "autonomy",
+      "crisis",
+      "data-integrity",
+      "execution",
+      "human-feedback",
+      "marketing",
+      "monetization"
+    ],
+    "topSkills": [],
+    "domains": [
+      "general",
+      "testing",
+      "security",
+      "performance",
+      "ui-components",
+      "api-integration",
+      "git-workflow",
+      "documentation",
+      "debugging",
+      "architecture",
+      "data-modeling"
+    ]
+  },
+  "featureNames": [
+    "recentTrend",
+    "sequenceLength",
+    "recentNegativeCount",
+    "recentPositiveCount",
+    "avgTimeGap",
+    "maxTimeGap",
+    "tagCount",
+    "filePathCount",
+    "hasErrorType",
+    "hasRubric",
+    "rubricWeightedScore",
+    "failingCriteriaCount",
+    "failingGuardrailsCount",
+    "judgeDisagreementCount",
+    "actionNegativeRate",
+    "containsRiskWord",
+    "containsVerificationWord",
+    "containsSafetyWord",
+    "containsSuccessWord",
+    "domain:general",
+    "domain:testing",
+    "domain:security",
+    "domain:performance",
+    "domain:ui-components",
+    "domain:api-integration",
+    "domain:git-workflow",
+    "domain:documentation",
+    "domain:debugging",
+    "domain:architecture",
+    "domain:data-modeling",
+    "tag:adk",
+    "tag:autonomy",
+    "tag:crisis",
+    "tag:data-integrity",
+    "tag:execution",
+    "tag:human-feedback",
+    "tag:marketing",
+    "tag:monetization"
+  ],
+  "learners": [],
+  "patterns": {
+    "tags": [],
+    "domains": [
+      {
+        "key": "general",
+        "total": 2,
+        "highRisk": 1,
+        "riskRate": 0.5
+      }
+    ],
+    "skills": []
+  },
+  "metrics": {
+    "trainingAccuracy": 0.6666666666666666,
+    "rounds": 0,
+    "mode": "baseline"
+  }
+}
