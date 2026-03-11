@@ -1,10 +1,10 @@
 {
   "version": 1,
   "algorithm": "adaboost-stumps",
-  "trainedAt": "2026-03-12T04:03:20.631Z",
-  "exampleCount": 8,
-  "highRiskExamples": 5,
-  "baseRate": 0.625,
+  "trainedAt": "2026-03-12T04:07:55.547Z",
+  "exampleCount": 9,
+  "highRiskExamples": 6,
+  "baseRate": 0.6666666666666666,
   "featureRegistry": {
     "topTags": [
       "debug",
@@ -154,9 +154,9 @@
       },
       {
         "key": "general",
-        "total": 3,
-        "highRisk": 1,
-        "riskRate": 0.333
+        "total": 4,
+        "highRisk": 2,
+        "riskRate": 0.5
       }
     ],
     "skills": []
