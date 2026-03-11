@@ -1,0 +1,56 @@
+{
+  "constraints": [
+    {
+      "id": "has_context",
+      "weight": 0.15,
+      "description": "Feedback must include context ≥20 characters"
+    },
+    {
+      "id": "has_actionable_detail",
+      "weight": 0.20,
+      "description": "Positive needs whatWorked; negative needs whatWentWrong + whatToChange"
+    },
+    {
+      "id": "schema_valid",
+      "weight": 0.10,
+      "description": "Signal is positive/negative, tags array is non-empty"
+    },
+    {
+      "id": "rubric_evaluated",
+      "weight": 0.10,
+      "description": "Rubric must be evaluated with promotionEligible set"
+    },
+    {
+      "id": "budget_compliant",
+      "weight": 0.10,
+      "description": "No budgetCompliant guardrail failures"
+    },
+    {
+      "id": "no_vague_signal",
+      "weight": 0.10,
+      "description": "Feedback must pass actionability assessment"
+    },
+    {
+      "id": "pr_threads_verified",
+      "weight": 0.10,
+      "description": "PR completion claims must include gh pr view evidence of 0 unresolved threads"
+    },
+    {
+      "id": "test_coverage_gate",
+      "weight": 0.05,
+      "description": "Code changes must show test execution output before completion"
+    },
+    {
+      "id": "security_scan_pass",
+      "weight": 0.05,
+      "description": "Security-sensitive changes must show scan results"
+    },
+    {
+      "id": "docs_freshness",
+      "weight": 0.05,
+      "description": "API or architecture changes must update relevant documentation"
+    }
+  ],
+  "version": "1.0.0",
+  "total_weight": 1.0
+}

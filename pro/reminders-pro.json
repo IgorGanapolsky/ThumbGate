@@ -1,0 +1,45 @@
+{
+  "templates": {
+    "post_push_thread_check": {
+      "message": "MANDATORY: Push detected. Run `gh pr view --json reviewDecision,comments,reviewThreads` and confirm 0 unresolved threads before declaring done.",
+      "threshold": 1,
+      "priority": "critical"
+    },
+    "pre_merge_ci_verify": {
+      "message": "MANDATORY: Before merging, run `gh pr checks` and confirm all checks pass. Show output.",
+      "threshold": 1,
+      "priority": "critical"
+    },
+    "stale_branch_cleanup": {
+      "message": "Housekeeping: {{count}} merged branches detected. Run `git branch --merged | grep -v main` and delete stale branches.",
+      "threshold": 3,
+      "priority": "low"
+    },
+    "memory_consolidation": {
+      "message": "Context window approaching capacity. Run memory consolidation to promote STM → LTM before context degrades.",
+      "threshold": 1,
+      "priority": "high"
+    },
+    "guardrail_spike": {
+      "message": "Safety guardrails triggered {{count}} times. Re-apply rule: {{rule}}",
+      "threshold": 3,
+      "priority": "high"
+    },
+    "iteration_limit": {
+      "message": "Approaching max iterations ({{count}}/{{limit}}). Prioritize essential actions only.",
+      "threshold": 1,
+      "priority": "medium"
+    },
+    "tool_misuse": {
+      "message": "Tool misuse detected {{count}} times for: {{tools}}. Verify tool schemas before calling.",
+      "threshold": 2,
+      "priority": "high"
+    },
+    "error_cascade": {
+      "message": "Repeated errors ({{count}}). Switch strategy: {{suggestion}}",
+      "threshold": 3,
+      "priority": "critical"
+    }
+  },
+  "version": "1.0.0"
+}

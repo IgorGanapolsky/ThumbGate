@@ -5,6 +5,9 @@
 [![npm](https://img.shields.io/npm/v/rlhf-feedback-loop)](https://www.npmjs.com/package/rlhf-feedback-loop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
+[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-Gumroad-FF90E8?logo=gumroad)](https://gumroad.com/igorganapolsky)
 
 **Local-first memory and feedback pipeline for AI agents.** Captures thumbs-up/down signals, promotes reusable memories, generates prevention rules from repeated failures, and exports KTO/DPO pairs for fine-tuning.
 
@@ -148,6 +151,28 @@ Agent (Claude/Codex/Amp/Gemini)
 - [WORKFLOW.md](WORKFLOW.md): scope, proof-of-work, hard stops, and done criteria for isolated agent runs
 - [.github/ISSUE_TEMPLATE/ready-for-agent.yml](.github/ISSUE_TEMPLATE/ready-for-agent.yml): bounded intake template for "Ready for Agent" tickets
 - [.github/pull_request_template.md](.github/pull_request_template.md): proof-first handoff format for PRs
+
+## 💎 Pro Pack — Production RLHF Configs
+
+Battle-tested configurations extracted from 500+ agentic sessions. Skip months of tuning.
+
+| What You Get | Description |
+|---|---|
+| **Prevention Rules** | 10 curated rules covering PR workflow, git hygiene, tool misuse, memory management |
+| **Thompson Sampling Presets** | 4 pre-tuned profiles: Conservative, Exploratory, Balanced, Strict |
+| **Extended Constraints** | 10 RLAIF self-audit constraints (vs 6 in free tier) |
+| **Hook Templates** | Ready-to-install Stop, UserPromptSubmit, PostToolUse hooks |
+| **Reminder Templates** | 8 production reminder templates with priority levels |
+
+**[$9 on Gumroad →](https://gumroad.com/igorganapolsky)**
+
+## Support the Project
+
+If MCP Memory Gateway saves you time, consider supporting development:
+
+- ⭐ [Star the repo](https://github.com/IgorGanapolsky/mcp-memory-gateway)
+- ❤️ [Sponsor on GitHub](https://github.com/sponsors/IgorGanapolsky)
+- ☕ [Buy Me a Coffee](https://buymeacoffee.com/igorganapolsky)
 
 ## License
 
