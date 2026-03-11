@@ -1,11 +1,11 @@
 ---
-title: Claude MCP Hub Submission — RLHF Feedback Loop
+title: Claude MCP Hub Submission — MCP Memory Gateway
 created: 2026-03-04T00:00:00Z
 updated: 2026-03-04T00:00:00Z
 status: ready-to-submit
 ---
 
-# Claude MCP Hub Submission: RLHF Feedback Loop
+# Claude MCP Hub Submission: MCP Memory Gateway
 
 Submit to: https://github.com/modelcontextprotocol/servers (official MCP servers list)
 Also submit to: https://mcp.so (community MCP directory)
@@ -31,7 +31,7 @@ Capture thumbs-up/down feedback from Claude coding sessions, enforce schema qual
 ## Full Description
 
 ```
-RLHF Feedback Loop gives Claude Code (and any MCP-compatible client) a production-grade feedback capture loop.
+MCP Memory Gateway gives Claude Code (and any MCP-compatible client) a production-grade feedback capture loop.
 
 Every interaction can be rated with a thumbs-up or thumbs-down signal plus rich context: rubric scores, guardrails, file paths, error types, and outcome categories. Repeated failures automatically generate prevention rules in CLAUDE.md format so Claude stops making the same mistakes.
 
@@ -41,7 +41,7 @@ The server exposes MCP tools for:
 - Querying feedback summaries and statistics
 - Exporting DPO preference pairs for offline fine-tuning
 
-Works in local mode (zero config, no API key) or connected to the Cloud Pro hosted API.
+Works in local mode (zero config, no API key) or connected to the Context Gateway hosted API.
 ```
 
 ---
@@ -70,7 +70,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 }
 ```
 
-### Option B: Cloud Pro (hosted API)
+### Option B: Context Gateway (hosted API)
 
 ```json
 {
@@ -87,7 +87,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 }
 ```
 
-Get your API key at: https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02 ($10/mo Cloud Pro founding price)
+Get your API key at: https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02 ($10/mo Context Gateway founding price)
 Verification evidence: https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ---
@@ -189,7 +189,7 @@ npm test
 - [ ] Fork https://github.com/modelcontextprotocol/servers
 - [ ] Add entry to `README.md` under **Community Servers** in alphabetical order:
   ```markdown
-  - **[RLHF Feedback Loop](https://github.com/IgorGanapolsky/rlhf-feedback-loop)** — Capture feedback from AI coding agents, prevent repeated mistakes, export DPO training pairs. Works with Claude Code, ChatGPT, Gemini, Codex, and Amp.
+  - **[MCP Memory Gateway](https://github.com/IgorGanapolsky/rlhf-feedback-loop)** — Capture feedback from AI coding agents, prevent repeated mistakes, export DPO training pairs. Works with Claude Code, ChatGPT, Gemini, Codex, and Amp.
   ```
 - [ ] Open PR titled: `Add rlhf-feedback-loop community server`
 - [ ] Verify CI passes on the PR

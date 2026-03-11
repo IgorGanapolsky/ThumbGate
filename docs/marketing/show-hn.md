@@ -1,4 +1,4 @@
-# Show HN: RLHF Feedback Loop – MCP server that stops AI agents from repeating mistakes
+# Show HN: MCP Memory Gateway – MCP server that stops AI agents from repeating mistakes
 
 AI coding agents make the same mistakes across sessions. They forget what failed, repeat broken patterns, and have no way to learn from corrections you already gave them.
 
@@ -27,7 +27,7 @@ This is not a hosted platform or a wrapper around an LLM. It is a local MCP serv
 
 Four independent AI agents (Claude, Codex, Amp, Gemini) were used to evaluate and validate the system. Each agent's compatibility is tested in CI.
 
-**Cloud Pro ($10/mo)** adds team-shared feedback, LanceDB vector search, and a dashboard. The open-source version is fully functional standalone.
+**Context Gateway ($10/mo)** adds team-shared feedback, LanceDB vector search, and a dashboard. The open-source version is fully functional standalone.
 
 - GitHub: https://github.com/IgorGanapolsky/rlhf-feedback-loop
 - npm: https://www.npmjs.com/package/rlhf-feedback-loop

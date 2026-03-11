@@ -40,7 +40,7 @@ codex:
   stall_timeout_ms: 300000
 ---
 
-# RLHF Feedback Loop Agent Workflow
+# MCP Memory Gateway Agent Workflow
 
 You are implementing work inside the `rlhf-feedback-loop` repository. Deliver the ticket outcome with no dead code, no vague completion claims, and proof that the result works.
 

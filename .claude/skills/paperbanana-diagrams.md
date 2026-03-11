@@ -14,7 +14,7 @@ Generate publication-quality architecture and methodology diagrams using Google'
 # Basic diagram from text description
 paperbanana generate \
     --input docs/diagrams/description.txt \
-    --caption "RLHF Feedback Loop Architecture" \
+    --caption "MCP Memory Gateway Architecture" \
     --vlm-provider gemini \
     --optimize --auto \
     --output docs/diagrams/architecture.png

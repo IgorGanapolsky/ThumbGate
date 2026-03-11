@@ -1,7 +1,7 @@
 # Anthropic Marketplace Strategy: The Reliability & Context Engineering Layer
 
 ## Marketplace Positioning
-RLHF Feedback Loop is the **Enterprise Control Plane** for Claude-based agentic workflows. We solve the "Vibe Coding" security crisis by providing a verifiable, context-engineered runtime.
+MCP Memory Gateway is the **Enterprise Control Plane** for Claude-based agentic workflows. We solve the "Vibe Coding" security crisis by providing a verifiable, context-engineered runtime.
 
 ## Value Proposition for Marketplace Customers
 1. **Context Engineering Moat:** Move beyond raw prompts. Use our Semantic Context Packs to give Claude high-density proprietary knowledge.
@@ -16,7 +16,7 @@ RLHF Feedback Loop is the **Enterprise Control Plane** for Claude-based agentic 
 ## Technical Integration (The Listing Payload)
 - **Delivery Format:** MCP Server (Standard) + OpenAPI Spec (for Claude Cowork).
 - **Security Evidence:** All listed skills are verified by our `VERIFICATION_EVIDENCE.md` audit trail.
-- **Pricing:** Founding price `$10/mo` (Cloud Pro) while the product is still in the early distribution phase.
+- **Pricing:** Founding price `$10/mo` (Context Gateway) while the product is still in the early distribution phase.
 
 ## Strategic Improvement: "Vibe-to-Verification" (V2V)
 The product will now feature a **V2V Pipeline**:

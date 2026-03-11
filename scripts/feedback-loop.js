@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * RLHF Feedback Loop (local-first)
+ * MCP Memory Gateway (local-first)
  *
  * Pipeline:
  *   thumbs up/down -> resolve action -> validate memory -> append logs

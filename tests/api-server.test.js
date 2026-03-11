@@ -47,7 +47,7 @@ test('root serves the landing page by default', async () => {
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
   const body = await res.text();
-  assert.match(body, /Cloud Pro/);
+  assert.match(body, /Context Gateway/);
   assert.match(body, /North Star/);
   assert.match(body, /<section id='faq'>/);
   assert.match(body, /Answer the buyer questions before they stall the deal\./);
@@ -103,7 +103,7 @@ test('cancel page serves retry message', async () => {
 
   const body = await res.text();
   assert.match(body, /Checkout cancelled\./);
-  assert.match(body, /Return to Cloud Pro/);
+  assert.match(body, /Return to Context Gateway/);
 });
 
 test('feedback capture accepts valid payload', async () => {

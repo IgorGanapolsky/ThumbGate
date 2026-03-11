@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: RLHF Feedback Loop API
+  title: MCP Memory Gateway API
   version: 1.2.0
   description: |
     Production API for feedback capture, schema-validated memory promotion,

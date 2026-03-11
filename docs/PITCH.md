@@ -4,7 +4,7 @@ Make one AI workflow safe enough to ship team-wide.
 
 # Positioning
 
-RLHF Feedback Loop is the hosted reliability layer behind one workflow with business value. It is not another horizontal agent platform. It gives teams shared memory, guardrails, and proof-ready runs so a workflow can be deployed, audited, and improved over time.
+MCP Memory Gateway is the hosted reliability layer behind one workflow with business value. It is not another horizontal agent platform. It gives teams shared memory, guardrails, and proof-ready runs so a workflow can be deployed, audited, and improved over time.
 
 - **Primary Goal:** Turn "vibe coding" into a controlled rollout through the **Veto Layer**.
 - **Secondary Goal:** Convert real operator feedback into prevention rules, Thompson Sampling signals, and RLHF-ready datasets such as KTO/DPO pairs.
@@ -21,7 +21,7 @@ We make one AI workflow measurable enough to justify and safe enough to roll out
 
 - **Buyer:** head of ops, head of growth, platform lead, or consultancy owner.
 - **User:** the operator running the workflow day to day.
-- **Champion:** the engineer or platform owner wiring Cloud Pro, the Agentic Feedback Studio, and the Veto Layer into the workflow.
+- **Champion:** the engineer or platform owner wiring Context Gateway, the Agentic Feedback Studio, and the Veto Layer into the workflow.
 
 # High-Signal Features
 

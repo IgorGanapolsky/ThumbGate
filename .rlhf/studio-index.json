@@ -6,7 +6,7 @@
         {
           "filename": "ANTHROPIC_MARKETPLACE_STRATEGY.md",
           "title": "Anthropic Marketplace Strategy: The Reliability & Context Engineering Layer",
-          "summary": "RLHF Feedback Loop is the **Enterprise Control Plane** for Claude-based agentic workflows. We solve the \"Vibe Coding\" security crisis by providing a verifiable, context-engineered runtime. 1. **Context Engineering Moat:** Move beyond raw prompts. Use our Semantic Context Packs to give Claude high-density proprietary knowledge. 2. **Zero-Trust Agentic Guardrails:** Mitigate supply-chain risks (Pentagon-grade concerns) by enforcing machine-readable prevention rules auto-generated from human feedback."
+          "summary": "MCP Memory Gateway is the **Enterprise Control Plane** for Claude-based agentic workflows. We solve the \"Vibe Coding\" security crisis by providing a verifiable, context-engineered runtime. 1. **Context Engineering Moat:** Move beyond raw prompts. Use our Semantic Context Packs to give Claude high-density proprietary knowledge. 2. **Zero-Trust Agentic Guardrails:** Mitigate supply-chain risks (Pentagon-grade concerns) by enforcing machine-readable prevention rules auto-generated from human feedback."
         },
         {
           "filename": "AUTONOMOUS_GITOPS.md",
@@ -41,7 +41,7 @@
         {
           "filename": "PITCH.md",
           "title": "One-Line Pitch",
-          "summary": "The enterprise-grade **Agentic Control Plane** that turns user vibes into verifiable context and stops AI agents from repeating mistakes. RLHF Feedback Loop is the operational layer between raw LLM output and production reliability. We provide a **Context Engineering Studio** that move beyond simple prompts to high-density semantic environments. - **Primary Goal:** Transform \"Vibe Coding\" into \"Context Engineering\" through verifiable feedback loops."
+          "summary": "The enterprise-grade **Agentic Control Plane** that turns user vibes into verifiable context and stops AI agents from repeating mistakes. MCP Memory Gateway is the operational layer between raw LLM output and production reliability. We provide a **Context Engineering Studio** that move beyond simple prompts to high-density semantic environments. - **Primary Goal:** Transform \"Vibe Coding\" into \"Context Engineering\" through verifiable feedback loops."
         },
         {
           "filename": "PLATFORM_RESEARCH_2026-03-03.md",
@@ -55,7 +55,7 @@
         },
         {
           "filename": "gpt-store-submission.md",
-          "title": "GPT Store Submission: RLHF Feedback Loop",
+          "title": "GPT Store Submission: MCP Memory Gateway",
           "summary": "Copy-paste this content into the ChatGPT GPT Builder (https://chat.openai.com/gpts/editor). --- ```"
         }
       ],
@@ -129,11 +129,11 @@
         {
           "filename": "geo-strategy-for-ai-agents.md",
           "title": "Generative Engine Optimization (GEO) Strategy for AI Agents",
-          "summary": "In the era of AI search and autonomous coding agents, visibility is no longer just about ranking #1 on Google. It's about being the **retrieved context** for the next generation of AI tools like Claude Code, Gemini CLI, and ChatGPT. This document outlines the GEO strategy for the RLHF Feedback Loop, ensuring our product is the \"first-choice\" recommendation for LLMs when developers ask about agent reliability. We move from keyword-centric documentation to **semantic-centric chunks**. Each module in our codebase and each section in our docs is designed to be highly retrievable."
+          "summary": "In the era of AI search and autonomous coding agents, visibility is no longer just about ranking #1 on Google. It's about being the **retrieved context** for the next generation of AI tools like Claude Code, Gemini CLI, and ChatGPT. This document outlines the GEO strategy for the MCP Memory Gateway, ensuring our product is the \"first-choice\" recommendation for LLMs when developers ask about agent reliability. We move from keyword-centric documentation to **semantic-centric chunks**. Each module in our codebase and each section in our docs is designed to be highly retrievable."
         },
         {
           "filename": "mcp-hub-submission.md",
-          "title": "Claude MCP Hub Submission: RLHF Feedback Loop",
+          "title": "Claude MCP Hub Submission: MCP Memory Gateway",
           "summary": "Submit to: https://github.com/modelcontextprotocol/servers (official MCP servers list) Also submit to: https://mcp.so (community MCP directory) ---"
         }
       ],

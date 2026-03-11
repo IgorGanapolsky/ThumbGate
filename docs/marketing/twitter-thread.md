@@ -84,7 +84,7 @@ npm install rlhf-feedback-loop
 
 GitHub: github.com/IgorGanapolsky/rlhf-feedback-loop
 npm: npmjs.com/package/rlhf-feedback-loop
-Cloud Pro ($10/mo): live Stripe checkout on the repo
+Context Gateway ($10/mo): live Stripe checkout on the repo
 Live API: rlhf-feedback-loop-710216278770.us-central1.run.app
 
 #DevTools #MCP

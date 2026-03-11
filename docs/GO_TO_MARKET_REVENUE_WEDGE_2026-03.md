@@ -4,7 +4,7 @@
 
 Sell one workflow outcome, not horizontal agent infrastructure.
 
-The product story is strongest when Cloud Pro is presented as the hosted reliability layer behind one workflow with business stakes. The first wedge is a lead-to-meeting workflow. Onboarding and internal ops automation use the same operating model, but they should stay secondary until the wedge is converting.
+The product story is strongest when Context Gateway is presented as the hosted reliability layer behind one workflow with business stakes. The first wedge is a lead-to-meeting workflow. Onboarding and internal ops automation use the same operating model, but they should stay secondary until the wedge is converting.
 
 Proof anchors for public claims:
 
@@ -75,7 +75,7 @@ These matter, but they are the compounding engine behind the workflow, not the s
 - prevention rules
 - DPO/KTO export
 
-### Cloud Pro
+### Context Gateway
 
 - best for one team running one workflow
 - hosted API keys
@@ -119,7 +119,7 @@ These matter, but they are the compounding engine behind the workflow, not the s
 - run hands-on workflow workshops instead of generic webinars
 - require one workflow owner, one buyer, and one measurable pain
 - use a skinny funnel and disqualify weak fits early
-- convert strong conversations into design-partner pilots or Cloud Pro installs
+- convert strong conversations into design-partner pilots or Context Gateway installs
 
 ## Distribution Channels
 
@@ -155,7 +155,7 @@ Do not spend cycles on accounts that lack:
 - number of teams running one proof-backed workflow weekly
 - number of workflows with shared memory and prevention rules enabled
 - number of workshop installs that become active pilots
-- OSS to Cloud Pro conversion for teams with a live workflow
+- OSS to Context Gateway conversion for teams with a live workflow
 - reduction in repeated workflow failures after V2V capture and prevention rules
 
 ## Guardrails
