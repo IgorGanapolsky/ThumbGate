@@ -13,7 +13,7 @@
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": "RLHF Feedback Loop Cloud Pro",
-    "url": "__APP_ORIGIN__",
+    "url": "https://rlhf-feedback-loop-production.up.railway.app",
     "operatingSystem": "Cross-platform",
     "applicationCategory": "DeveloperApplication",
     "description": "Hosted Agentic Feedback Studio for teams rolling out one workflow outcome with shared memory, guardrails, and verification evidence.",
@@ -28,10 +28,10 @@
       "priceCurrency": "USD"
     },
     "sameAs": [
-      "__GITHUB_URL__",
-      "__VERIFICATION_URL__",
-      "__COMPATIBILITY_REPORT_URL__",
-      "__AUTOMATION_REPORT_URL__"
+      "https://github.com/IgorGanapolsky/mcp-memory-gateway",
+      "https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/proof/compatibility/report.json",
+      "https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/proof/automation/report.json"
     ],
     "featureList": [
       "Hosted API keys for workflow runs",
@@ -584,8 +584,8 @@
         <a href='#north-star'>North Star</a>
         <a href='#faq'>FAQ</a>
         <a href='#pricing'>Pricing</a>
-        <a href='__VERIFICATION_URL__'>Proof</a>
-        <a href='__GITHUB_URL__'>OSS core</a>
+        <a href='https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md'>Proof</a>
+        <a href='https://github.com/IgorGanapolsky/mcp-memory-gateway'>OSS core</a>
       </div>
     </div>
   </nav>
@@ -601,13 +601,13 @@
           <div class='hero-proof'>
             <span class='proof-pill'>North Star: one workflow live and auditable</span>
             <span class='proof-pill'>Founding price: $10/mo</span>
-            <span class='proof-pill'>Versioned proof: v__PACKAGE_VERSION__</span>
-            <span class='proof-pill'>Hosted onboarding at __APP_ORIGIN__</span>
+            <span class='proof-pill'>Versioned proof: v0.6.11</span>
+            <span class='proof-pill'>Hosted onboarding at https://rlhf-feedback-loop-production.up.railway.app</span>
           </div>
           <div class='cta-row'>
             <button class='button primary' id='checkout-btn' type='button'>Start Cloud Pro for $10/mo</button>
-            <a class='button secondary' href='__GTM_PLAN_URL__'>Read the 30-day GTM plan</a>
-            <a class='button secondary' href='__GITHUB_URL__'>View the OSS core</a>
+            <a class='button secondary' href='https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md'>Read the 30-day GTM plan</a>
+            <a class='button secondary' href='https://github.com/IgorGanapolsky/mcp-memory-gateway'>View the OSS core</a>
           </div>
           <p class='note'>Bought by teams that need shared control. Used by operators and agent runners doing the work. Checkout is owned through the hosted API first, then falls back to direct Stripe if needed.</p>
         </div>
@@ -767,17 +767,17 @@
           <div class='card'>
             <h3>Verification evidence</h3>
             <p>Command history, observed results, and report paths for product and workflow claims.</p>
-            <p><a href='__VERIFICATION_URL__'>Open <code>VERIFICATION_EVIDENCE.md</code></a></p>
+            <p><a href='https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md'>Open <code>VERIFICATION_EVIDENCE.md</code></a></p>
           </div>
           <div class='card'>
             <h3>Compatibility proof JSON</h3>
             <p>Machine-readable adapter and API compatibility evidence for AI runtimes.</p>
-            <p><a href='__COMPATIBILITY_REPORT_URL__'>Open <code>proof/compatibility/report.json</code></a></p>
+            <p><a href='https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/proof/compatibility/report.json'>Open <code>proof/compatibility/report.json</code></a></p>
           </div>
           <div class='card'>
             <h3>Automation proof JSON</h3>
             <p>Machine-readable automation evidence for rubric gates, prevention rules, and workflow checks.</p>
-            <p><a href='__AUTOMATION_REPORT_URL__'>Open <code>proof/automation/report.json</code></a></p>
+            <p><a href='https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/proof/automation/report.json'>Open <code>proof/automation/report.json</code></a></p>
           </div>
         </div>
       </div>
@@ -800,7 +800,7 @@
               <li>DPO export and local memory</li>
               <li>Self-hosted by default</li>
             </ul>
-            <a class='button secondary' href='__GITHUB_URL__'>Use the open-source package</a>
+            <a class='button secondary' href='https://github.com/IgorGanapolsky/mcp-memory-gateway'>Use the open-source package</a>
           </div>
           <div class='card featured'>
             <span class='badge'>Founding price</span>
@@ -822,22 +822,22 @@
 
   <footer class='footer'>
     <div class='footer-inner'>
-      <div>RLHF Feedback Loop Cloud Pro • v__PACKAGE_VERSION__</div>
+      <div>RLHF Feedback Loop Cloud Pro • v0.6.11</div>
       <div>
-        <a href='__VERIFICATION_URL__'>Verification evidence</a>
+        <a href='https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md'>Verification evidence</a>
         •
-        <a href='__GTM_PLAN_URL__'>GTM plan</a>
+        <a href='https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md'>GTM plan</a>
         •
-        <a href='__GITHUB_URL__'>GitHub</a>
+        <a href='https://github.com/IgorGanapolsky/mcp-memory-gateway'>GitHub</a>
       </div>
     </div>
   </footer>
 
   <script>
     (function () {
-      const checkoutEndpoint = '__CHECKOUT_ENDPOINT__';
-      const checkoutFallbackUrl = '__CHECKOUT_FALLBACK_URL__';
-      const appOrigin = '__APP_ORIGIN__';
+      const checkoutEndpoint = '/v1/billing/checkout';
+      const checkoutFallbackUrl = 'https://buy.stripe.com/test';
+      const appOrigin = 'https://rlhf-feedback-loop-production.up.railway.app';
       const installStorageKey = 'rlhf_cloud_pro_install_id';
 
       function getInstallId() {
