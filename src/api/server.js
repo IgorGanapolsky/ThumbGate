@@ -560,21 +560,8 @@ function createApiServer() {
         });
 
         const sig = req.headers['stripe-signature'] || '';
-        if (!verifyWebhookSignature(rawBody, sig)) {
-          sendJson(res, 400, { error: 'Invalid webhook signature' });
-          return;
-        }
-
-        let event;
-        try {
-          event = JSON.parse(rawBody.toString('utf-8'));
-        } catch {
-          sendJson(res, 400, { error: 'Invalid JSON in webhook body' });
-          return;
-        }
-
-        const result = handleWebhook(event);
-        sendJson(res, 200, result);
+        const result = await handleWebhook(rawBody, sig);
+        sendJson(res, result.handled ? 200 : 400, result);
       } catch (err) {
         if (err.statusCode) {
           sendJson(res, err.statusCode, { error: err.message });
