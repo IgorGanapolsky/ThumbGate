@@ -623,6 +623,54 @@ function createApiServer() {
       return;
     }
 
+    // Public OpenAPI spec — no auth required (needed for ChatGPT GPT Store import)
+    if (req.method === 'GET' && pathname === '/openapi.json') {
+      const specPath = path.join(__dirname, '../../adapters/chatgpt/openapi.yaml');
+      try {
+        const yaml = fs.readFileSync(specPath, 'utf8');
+        // Convert YAML to JSON inline (simple key:value conversion via js-yaml if available, else serve as-is)
+        try {
+          const jsYaml = require('js-yaml');
+          const spec = jsYaml.load(yaml);
+          // Override server URL to current deployment
+          if (spec.servers && spec.servers[0]) {
+            spec.servers[0].url = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify(spec, null, 2));
+        } catch {
+          res.writeHead(200, { 'Content-Type': 'text/yaml', 'Access-Control-Allow-Origin': '*' });
+          res.end(yaml);
+        }
+      } catch {
+        sendJson(res, 404, { error: 'OpenAPI spec not found' });
+      }
+      return;
+    }
+
+    // Public privacy policy — required for GPT Store and marketplace listings
+    if (req.method === 'GET' && pathname === '/privacy') {
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(`<!DOCTYPE html><html><head><title>Privacy Policy — MCP Memory Gateway</title></head><body>
+<h1>Privacy Policy</h1>
+<p><strong>MCP Memory Gateway</strong> (npm: rlhf-feedback-loop)</p>
+<p>Last updated: 2026-03-11</p>
+<h2>Data Collection</h2>
+<p>The self-hosted version stores all data locally on your machine. No data is sent to external servers.</p>
+<p>The hosted tier (rlhf-feedback-loop-production.up.railway.app) stores feedback signals and memory entries associated with your API key. We do not sell or share your data with third parties.</p>
+<h2>Data Stored</h2><ul>
+<li>Feedback signals (thumbs up/down) with context you provide</li>
+<li>Promoted memory entries</li>
+<li>Prevention rules generated from your feedback</li>
+</ul>
+<h2>Data Deletion</h2>
+<p>Contact igor.ganapolsky@gmail.com to request deletion of your data.</p>
+<h2>Contact</h2><p>igor.ganapolsky@gmail.com</p>
+<p><a href="https://github.com/IgorGanapolsky/mcp-memory-gateway">GitHub</a></p>
+</body></html>`);
+      return;
+    }
+
     // Stripe webhook is unauthenticated — uses HMAC signature verification instead
     if (req.method === 'POST' && pathname === '/v1/billing/webhook') {
       try {

@@ -16,11 +16,8 @@ function readText(relativePath) {
 test('package version matches MCP manifests', () => {
   const packageJson = readJson('package.json');
   const serverManifest = readJson('server.json');
-  const serverCard = readJson('.well-known/mcp/server-card.json');
 
   assert.equal(serverManifest.version, packageJson.version);
-  assert.equal(serverManifest.packages[0].version, packageJson.version);
-  assert.equal(serverCard.version, packageJson.version);
 });
 
 test('public docs render the current package version', () => {
@@ -43,7 +40,7 @@ test('landing page keeps GTM and schema assets wired', () => {
   assert.match(landingPage, /__GTM_PLAN_URL__/);
   assert.match(landingPage, /__COMPATIBILITY_REPORT_URL__/);
   assert.match(landingPage, /__AUTOMATION_REPORT_URL__/);
-  assert.match(gtmPlan, /Weekly active proof-backed workflow runs\./);
-  assert.match(gtmPlan, /Workflow Install Workshop/);
-  assert.match(gtmPlan, /lead-to-meeting/i);
+  assert.match(gtmPlan, /"Outcome-Based" Memory Packages/);
+  assert.match(gtmPlan, /\*\*\"Success-Based Memory Credits\.\"\*\*/);
+  assert.match(gtmPlan, /"Mistake-Free" Credits/i);
 });

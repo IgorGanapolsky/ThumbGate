@@ -8,7 +8,7 @@ info:
     Bare up/down signals are logged immediately, but the API returns
     clarification_required until one sentence explains what worked or failed.
 servers:
-  - url: https://rlhf-feedback-loop-710216278770.us-central1.run.app
+  - url: https://rlhf-feedback-loop-production.up.railway.app
 security:
   - bearerAuth: []
 components:
