@@ -26,10 +26,13 @@ jobs:
           X_API_KEY: ${{ secrets.X_API_KEY }}
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
           GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
-      - name: Commit Hourly Leads
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Create Pull Request for Leads
+        uses: peter-evans/create-pull-request@v6
         with:
-          commit_message: "chore: hourly leads and marketing dispatch [skip ci]"
-          file_pattern: 'docs/AUTONOMOUS_GITOPS.md docs/X_AUTOMATION_REPORT.md'
-          commit_author: 'GTM Agent <gtm-agent@mcp-memory-gateway.ai>'
-
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: hourly leads and marketing dispatch"
+          title: "🤖 GTM: Hourly Prospecting Report"
+          body: "Autonomous GTM agent has generated new leads and marketing reports."
+          branch: "gtm/hourly-leads"
+          base: "main"
+          delete-branch: true
