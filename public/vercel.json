@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "public": true,
+  "name": "mcp-memory-gateway",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

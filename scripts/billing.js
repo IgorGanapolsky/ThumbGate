@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * billing.js — Stripe billing integration using raw fetch (no stripe npm package).
+ * billing.js — Stripe billing integration using official Stripe SDK.
  */
 
 'use strict';
@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const Stripe = require('stripe');
 
 // ---------------------------------------------------------------------------
 // Config
@@ -17,7 +18,7 @@ const CONFIG = {
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   GITHUB_MARKETPLACE_WEBHOOK_SECRET: process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '',
-  STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || '',
+  STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || 'price_1RNdUBGGBpd520QYG1A9SWF4',
   get API_KEYS_PATH() {
     return process.env._TEST_API_KEYS_PATH || path.resolve(__dirname, '../.claude/memory/feedback/api-keys.json');
   },
@@ -28,6 +29,17 @@ const CONFIG = {
     return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.resolve(__dirname, '../.claude/memory/feedback/local-checkout-sessions.json');
   }
 };
+
+let _stripeClient = null;
+function getStripeClient() {
+  if (!_stripeClient) {
+    if (!CONFIG.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY is missing. Stripe client cannot be initialized.');
+    }
+    _stripeClient = new Stripe(CONFIG.STRIPE_SECRET_KEY);
+  }
+  return _stripeClient;
+}
 
 const LOCAL_MODE = () => !CONFIG.STRIPE_SECRET_KEY;
 
@@ -113,36 +125,33 @@ function saveKeyStore(store) {
   fs.writeFileSync(target, JSON.stringify(store, null, 2), 'utf-8');
 }
 
-async function stripeFetch(method, endpoint, body = null) {
-  const url = `https://api.stripe.com/v1/${endpoint}`;
-  const auth = Buffer.from(`${CONFIG.STRIPE_SECRET_KEY}:`).toString('base64');
-  const options = { method, headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' } };
-  if (body) {
-    const params = new URLSearchParams();
-    for (const [k, v] of Object.entries(body)) {
-      if (typeof v === 'object' && v !== null) for (const [ik, iv] of Object.entries(v)) params.append(`${k}[${ik}]`, String(iv));
-      else params.append(k, String(v));
-    }
-    options.body = params.toString();
-  }
-  const response = await fetch(url, options);
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error?.message || 'Stripe API error');
-  return data;
-}
+// ---------------------------------------------------------------------------
+// Core Exports
+// ---------------------------------------------------------------------------
 
 async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, metadata = {} } = {}) {
   const checkoutMetadata = { ...metadata, installId: installId || 'unknown' };
+
   if (LOCAL_MODE()) {
     const localSessionId = `test_session_${crypto.randomBytes(8).toString('hex')}`;
     const store = loadLocalCheckoutSessions();
     store.sessions[localSessionId] = { id: localSessionId, customer: `local_cus_${crypto.randomBytes(4).toString('hex')}`, metadata: checkoutMetadata, payment_status: 'paid', status: 'complete' };
     saveLocalCheckoutSessions(store);
+
     appendFunnelEvent({ stage: 'acquisition', event: 'checkout_session_created', installId, evidence: 'local_mode_manual', metadata: checkoutMetadata });
     return { sessionId: localSessionId, url: null, localMode: true, metadata: checkoutMetadata };
   }
-  if (!CONFIG.STRIPE_PRICE_ID) throw new Error('STRIPE_PRICE_ID is required for live checkout sessions');
-  const session = await stripeFetch('POST', 'checkout/sessions', { success_url: successUrl, cancel_url: cancelUrl, customer_email: customerEmail, mode: 'subscription', line_items: [{ price: CONFIG.STRIPE_PRICE_ID, quantity: 1 }], metadata: checkoutMetadata });
+
+  const stripe = getStripeClient();
+  const session = await stripe.checkout.sessions.create({
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    customer_email: customerEmail,
+    mode: 'subscription',
+    line_items: [{ price: CONFIG.STRIPE_PRICE_ID, quantity: 1 }],
+    metadata: checkoutMetadata,
+  });
+
   appendFunnelEvent({ stage: 'acquisition', event: 'checkout_session_created', installId, evidence: session.id, metadata: checkoutMetadata });
   return { sessionId: session.id, url: session.url, localMode: false, metadata: checkoutMetadata };
 }
@@ -155,23 +164,43 @@ async function getCheckoutSessionStatus(sessionId) {
     const provisioned = provisionApiKey(session.customer, { installId: session.metadata?.installId, source: 'local_checkout_lookup' });
     return { found: true, localMode: true, sessionId, paid: true, paymentStatus: 'paid', status: 'complete', customerId: session.customer, installId: session.metadata?.installId, apiKey: provisioned.key };
   }
+
   try {
-    const session = await stripeFetch('GET', `checkout/sessions/${sessionId}`);
+    const stripe = getStripeClient();
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
     const isPaid = session.payment_status === 'paid' || session.payment_status === 'no_payment_required';
+
     if (!isPaid) return { found: true, localMode: false, sessionId, paid: false, paymentStatus: session.payment_status, status: session.status };
-    const provisioned = provisionApiKey(session.customer, { installId: session.metadata?.installId || null, source: 'stripe_checkout_session_lookup' });
-    return { found: true, localMode: false, sessionId, paid: true, paymentStatus: session.payment_status, customerId: session.customer, customerEmail: session.customer_details?.email || '', installId: session.metadata?.installId || null, apiKey: provisioned.key };
-  } catch { return { found: false }; }
+
+    const installId = session.metadata?.installId || null;
+    const provisioned = provisionApiKey(session.customer, { installId, source: 'stripe_checkout_session_lookup' });
+
+    return {
+      found: true,
+      localMode: false,
+      sessionId,
+      paid: true,
+      paymentStatus: session.payment_status,
+      customerId: session.customer,
+      customerEmail: session.customer_details?.email || '',
+      installId,
+      apiKey: provisioned.key,
+    };
+  } catch {
+    return { found: false };
+  }
 }
 
 function provisionApiKey(customerId, opts = {}) {
   if (!customerId || typeof customerId !== 'string') throw new Error('customerId is required');
   const store = loadKeyStore();
   const existing = Object.entries(store.keys).find(([, m]) => m.customerId === customerId && m.active);
+
   if (existing) {
     if (opts.installId && !existing[1].installId) { existing[1].installId = opts.installId; saveKeyStore(store); }
     return { key: existing[0], customerId, createdAt: existing[1].createdAt, installId: existing[1].installId || null, reused: true };
   }
+
   const key = `rlhf_${crypto.randomBytes(16).toString('hex')}`;
   const createdAt = new Date().toISOString();
   store.keys[key] = { customerId, active: true, usageCount: 0, createdAt, installId: opts.installId || null, source: opts.source || 'provision' };
@@ -184,6 +213,7 @@ function rotateApiKey(oldKey) {
   const store = loadKeyStore();
   const meta = store.keys[oldKey];
   if (!meta || !meta.active) return { rotated: false, reason: 'key_not_active' };
+
   meta.active = false;
   meta.disabledAt = new Date().toISOString();
   const newKey = `rlhf_${crypto.randomBytes(16).toString('hex')}`;
@@ -212,6 +242,24 @@ function recordUsage(key) {
   return { recorded: false };
 }
 
+/**
+ * Report usage to Stripe for metered billing.
+ */
+async function reportUsageToStripe(subscriptionItemId, quantity = 1) {
+  if (LOCAL_MODE()) return { reported: false, reason: 'local_mode' };
+  try {
+    const stripe = getStripeClient();
+    const record = await stripe.subscriptionItems.createUsageRecord(subscriptionItemId, {
+      quantity,
+      timestamp: 'now',
+      action: 'increment'
+    });
+    return { reported: true, record };
+  } catch (err) {
+    return { reported: false, error: err.message };
+  }
+}
+
 function disableCustomerKeys(customerId) {
   const store = loadKeyStore();
   let disabledCount = 0;
@@ -222,34 +270,31 @@ function disableCustomerKeys(customerId) {
   return { disabledCount };
 }
 
-async function handleWebhook(event) {
-  if (!event) return { handled: false, reason: 'missing_payload_data' };
+async function handleWebhook(rawBody, signature) {
+  if (LOCAL_MODE()) return { handled: false, reason: 'local_mode' };
+  let event;
+  try {
+    const stripe = getStripeClient();
+    event = stripe.webhooks.constructEvent(rawBody, signature, CONFIG.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    return { handled: false, reason: 'invalid_signature', error: err.message };
+  }
+
   switch (event.type) {
     case 'checkout.session.completed': {
-      const session = event.data?.object;
-      if (!session || !session.customer) return { handled: false, reason: 'missing_session_data' };
-      const result = provisionApiKey(session.customer, { installId: session.metadata?.installId, source: 'stripe_webhook_checkout_completed' });
-      appendFunnelEvent({ stage: 'paid', event: 'stripe_checkout_completed', installId: session.metadata?.installId, evidence: session.id, metadata: { customerId: session.customer, subscriptionId: session.subscription } });
+      const session = event.data.object;
+      const customerId = session.customer;
+      const installId = session.metadata?.installId;
+      const result = provisionApiKey(customerId, { installId, source: 'stripe_webhook_checkout_completed' });
+      appendFunnelEvent({ stage: 'paid', event: 'stripe_checkout_completed', installId, evidence: session.id, metadata: { customerId, subscriptionId: session.subscription } });
       return { handled: true, action: 'provisioned_api_key', result };
     }
     case 'customer.subscription.deleted': {
-      const sub = event.data?.object;
-      if (!sub || !sub.customer) return { handled: false, reason: 'missing_subscription_data' };
+      const sub = event.data.object;
       return { handled: true, action: 'disabled_customer_keys', result: disableCustomerKeys(sub.customer) };
     }
     default: return { handled: false, reason: `unhandled_event_type:${event.type}` };
   }
-}
-
-function verifyWebhookSignature(rawBody, signature) {
-  if (!CONFIG.STRIPE_WEBHOOK_SECRET) return true;
-  if (!signature || !rawBody) return false;
-  const parts = Object.fromEntries(signature.split(',').map(p => p.split('=')));
-  if (!parts.t || !parts.v1) return false;
-  const ts = parseInt(parts.t, 10);
-  if (isNaN(ts) || Math.abs(Math.floor(Date.now() / 1000) - ts) > 300) return false;
-  const expected = crypto.createHmac('sha256', CONFIG.STRIPE_WEBHOOK_SECRET).update(`${parts.t}.${rawBody.toString()}`, 'utf-8').digest('hex');
-  try { return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(parts.v1, 'hex')); } catch { return false; }
 }
 
 function verifyGithubWebhookSignature(rawBody, signature) {
@@ -279,7 +324,7 @@ function handleGithubWebhook(event) {
 }
 
 module.exports = {
-  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, loadFunnelLedger, getFunnelAnalytics,
+  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, reportUsageToStripe, disableCustomerKeys, handleWebhook, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, loadFunnelLedger, getFunnelAnalytics,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,
   _LOCAL_CHECKOUT_SESSIONS_PATH: () => CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH,

@@ -95,7 +95,6 @@ describe('billing.js — funnel ledger', () => {
   beforeEach(() => { 
     clearBillingArtifacts(); 
     delete require.cache[require.resolve('../scripts/billing')];
-    // Reset global env for this test
     process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
   });
 
@@ -143,7 +142,6 @@ describe('API server — /v1/billing/* routes', () => {
     process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
     process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = testLocalCheckoutSessionsPath;
 
-    // Clear cache to ensure server picks up fresh isolated module
     delete require.cache[require.resolve('../src/api/server')];
     delete require.cache[require.resolve('../scripts/billing')];
     
