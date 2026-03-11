@@ -511,6 +511,10 @@ function createApiServer() {
 
     if (req.method === 'GET' && pathname === '/.well-known/mcp/server-card.json') {
       sendJson(res, 200, {
+        serverInfo: {
+          name: 'rlhf-feedback-loop',
+          version: pkg.version,
+        },
         name: 'rlhf-feedback-loop',
         description: 'RLHF feedback loop for AI agents. Capture feedback, block mistakes, export DPO data.',
         version: pkg.version,
@@ -527,8 +531,8 @@ function createApiServer() {
           { name: 'list_intents', description: 'Available action plans' },
           { name: 'plan_intent', description: 'Generate execution plan' },
         ],
-        repository: 'https://github.com/IgorGanapolsky/rlhf-feedback-loop',
-        homepage: 'https://rlhf-feedback-loop-710216278770.us-central1.run.app',
+        repository: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
+        homepage: 'https://rlhf-feedback-loop-production.up.railway.app',
       });
       return;
     }
