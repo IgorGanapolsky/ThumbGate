@@ -9,6 +9,7 @@ node_modules
 tests/
 proof/
 docs/
+!docs/landing-page.html
 *.md
 !README.md
 .env
