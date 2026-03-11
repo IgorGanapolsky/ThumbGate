@@ -44,7 +44,10 @@
     "adk:watch": "node scripts/adk-consolidator.js --watch",
     "pr:manage": "node scripts/pr-manager.js",
     "self-heal:run": "node scripts/self-heal.js",
-    "self-heal:check": "node scripts/self-healing-check.js"
+    "self-heal:check": "node scripts/self-healing-check.js",
+    "prove:adapters": "node --test tests/prove-adapters.test.js",
+    "prove:automation": "node --test tests/prove-automation.test.js",
+    "prove:workflow-contract": "node --test tests/prove-workflow-contract.test.js"
   },
   "keywords": [
     "rlhf",
