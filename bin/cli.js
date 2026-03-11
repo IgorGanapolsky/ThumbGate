@@ -7,7 +7,7 @@
  *   npx rlhf-feedback-loop capture       # capture feedback
  *   npx rlhf-feedback-loop export-dpo    # export DPO training pairs
  *   npx rlhf-feedback-loop stats         # feedback analytics + Revenue-at-Risk
- *   npx rlhf-feedback-loop pro           # upgrade to Cloud Pro
+ *   npx rlhf-feedback-loop pro           # upgrade to Context Gateway
  */
 
 'use strict';
@@ -457,7 +457,7 @@ function stats() {
     console.log(`  Repeated Failures detected: ${data.totalNegative}`);
     console.log(`  Estimated Operational Loss: $${revenueAtRisk}`);
     console.log('  Action Required: Run "npx rlhf-feedback-loop rules" to generate guardrails.');
-    console.log('  Strategic Recommendation: Upgrade to Cloud Pro to sync these rules across your team.');
+    console.log('  Strategic Recommendation: Upgrade to Context Gateway to sync these rules across your team.');
     console.log('  Run: npx rlhf-feedback-loop pro');
   } else {
     console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');
@@ -466,7 +466,7 @@ function stats() {
 
 function pro() {
   const stripeUrl = 'https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02';
-  console.log('\n🚀 RLHF Feedback Loop — Cloud Pro');
+  console.log('\n🚀 MCP Memory Gateway — Context Gateway');
   console.log('─'.repeat(50));
   console.log('Unlock the full Agentic Control Plane:');
   console.log('  - Hosted Team API (Shared memory across all repos)');
@@ -628,7 +628,7 @@ function serve() {
 }
 
 function install() {
-  console.log('Installing RLHF Feedback Loop as a global MCP skill...');
+  console.log('Installing MCP Memory Gateway as a global MCP skill...');
   const results = [
     setupClaude(),
     setupCodex(),
@@ -638,10 +638,10 @@ function install() {
   ];
   const success = results.some(r => r === true);
   if (success) {
-    console.log('\nSuccess! RLHF Feedback Loop is now available to your agents.');
+    console.log('\nSuccess! MCP Memory Gateway is now available to your agents.');
     console.log('Try asking your agent: "Capture positive feedback for this task"');
   } else {
-    console.log('\nRLHF Feedback Loop is already configured.');
+    console.log('\nMCP Memory Gateway is already configured.');
   }
 }
 
@@ -676,7 +676,7 @@ function help() {
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
   console.log('  rules                 Generate prevention rules from repeated failures');
   console.log('  self-heal             Run self-healing check and auto-fix');
-  console.log('  pro                   Upgrade to Cloud Pro ($10/mo)');
+  console.log('  pro                   Upgrade to Context Gateway ($10/mo)');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
   console.log('  watch [flags]           Watch .rlhf/ for external signals and ingest through pipeline (--once, --source=X)');
   console.log('  status                  Show learning curve dashboard — approval trend + failure domains');

@@ -38,7 +38,7 @@ It has a built-in Revenue-at-Risk analyzer that calculates EXACTLY how much mone
 The era of prompt engineering is over. The era of Context Engineering and Agentic Control Planes is here.
 
 Open source and free forever for solo devs. 
-Cloud Pro for teams who want to sync Veto rules across the organization.
+Context Gateway for teams who want to sync Veto rules across the organization.
 
 Stop vibe-coding. Start engineering. 🚀
 [Link to Repo / Stripe Checkout]

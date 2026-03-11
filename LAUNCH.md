@@ -16,7 +16,7 @@ Post this to your X/Twitter and LinkedIn immediately:
 > ✅ Thumbs-Up/Down feedback loops
 > ✅ Automatic prevention rules (Never make the same mistake twice)
 > ✅ Team-wide context sharing
-> ✅ Metered billing for Cloud Pro
+> ✅ Metered billing for Context Gateway
 > 
 > Get your first dollar of reliability here: https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02"
 

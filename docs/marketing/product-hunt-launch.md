@@ -30,6 +30,6 @@ It is completely Zero-Config. Run `npx rlhf-feedback-loop install` in any repo, 
 
 **Bonus:** Run `npx rlhf-feedback-loop stats` to see our **Revenue-at-Risk Analyzer**, which calculates exactly how much money you are losing to repeated agent failures.
 
-We are entirely open source, with a Cloud Pro tier for teams who want to sync their Veto rules globally. 
+We are entirely open source, with a Context Gateway tier for teams who want to sync their Veto rules globally. 
 
 I'll be here all day answering questions! Let me know what you think. 🚀

@@ -1,4 +1,4 @@
-# ChatGPT GPT Actions: RLHF Feedback Loop Install
+# ChatGPT GPT Actions: MCP Memory Gateway Install
 
 Import the OpenAPI spec into a Custom GPT in under 5 minutes. No coding required.
 

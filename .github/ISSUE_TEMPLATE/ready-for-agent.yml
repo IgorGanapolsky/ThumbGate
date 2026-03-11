@@ -1,5 +1,5 @@
 name: Ready for Agent
-description: Queue a bounded, proof-ready implementation run for the RLHF Feedback Loop.
+description: Queue a bounded, proof-ready implementation run for the MCP Memory Gateway.
 title: '[Agent] '
 labels:
   - ready-for-agent
@@ -9,7 +9,7 @@ body:
     attributes:
       label: Business outcome
       description: Describe the customer or operator result this task should produce.
-      placeholder: Reduce friction for Cloud Pro onboarding by turning checkout success into a reusable API-key handoff.
+      placeholder: Reduce friction for Context Gateway onboarding by turning checkout success into a reusable API-key handoff.
     validations:
       required: true
 

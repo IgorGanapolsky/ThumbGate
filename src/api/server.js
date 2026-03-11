@@ -126,7 +126,7 @@ function renderCheckoutSuccessPage() {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cloud Pro Activated</title>
+  <title>Context Gateway Activated</title>
   <style>
     :root {
       --bg: #f6f1e8;
@@ -227,7 +227,7 @@ function renderCheckoutSuccessPage() {
 </head>
 <body>
   <main>
-    <span class="eyebrow">Cloud Pro</span>
+    <span class="eyebrow">Context Gateway</span>
     <h1>Your hosted API key is ready.</h1>
     <p class="lead">This page verifies your Stripe session, provisions the key if needed, and gives you a copy-paste onboarding snippet for the hosted API.</p>
 
@@ -284,7 +284,7 @@ function renderCheckoutSuccessPage() {
           return;
         }
 
-        statusEl.textContent = 'Cloud Pro activated.';
+        statusEl.textContent = 'Context Gateway activated.';
         summaryEl.textContent = 'Your API key is ready. Copy the snippets below into your workflow project.';
         keyBlock.textContent = body.apiKey || 'Provisioned, but no key was returned.';
         envBlock.textContent = body.nextSteps && body.nextSteps.env ? body.nextSteps.env : 'Environment snippet unavailable.';
@@ -346,7 +346,7 @@ function renderCheckoutCancelledPage() {
   <main>
     <h1>Checkout cancelled.</h1>
     <p>No charge was made. You can return to the landing page and restart checkout whenever you are ready.</p>
-    <a href="/">Return to Cloud Pro</a>
+    <a href="/">Return to Context Gateway</a>
   </main>
 </body>
 </html>`;

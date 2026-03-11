@@ -1,11 +1,11 @@
 ---
-title: GPT Store Submission — RLHF Feedback Loop
+title: GPT Store Submission — MCP Memory Gateway
 created: 2026-03-04T00:00:00Z
 updated: 2026-03-04T00:00:00Z
 status: ready-to-submit
 ---
 
-# GPT Store Submission: RLHF Feedback Loop
+# GPT Store Submission: MCP Memory Gateway
 
 Copy-paste this content into the ChatGPT GPT Builder (https://chat.openai.com/gpts/editor).
 
@@ -14,7 +14,7 @@ Copy-paste this content into the ChatGPT GPT Builder (https://chat.openai.com/gp
 ## GPT Name
 
 ```
-RLHF Feedback Loop
+MCP Memory Gateway
 ```
 
 ---
@@ -30,7 +30,7 @@ Stop your AI agent from repeating mistakes
 ## Full Description (max 300 characters)
 
 ```
-Capture thumbs-up/down feedback from AI coding agents, enforce schema quality, generate prevention rules, and export DPO training pairs. Works with Claude, Codex, Gemini, and Amp. Start with stable MCP add commands or connect to the Cloud Pro API.
+Capture thumbs-up/down feedback from AI coding agents, enforce schema quality, generate prevention rules, and export DPO training pairs. Works with Claude, Codex, Gemini, and Amp. Start with stable MCP add commands or connect to the Context Gateway API.
 ```
 
 ---
@@ -89,12 +89,12 @@ To import into GPT Builder:
 ```yaml
 openapi: 3.1.0
 info:
-  title: RLHF Feedback Loop API
+  title: MCP Memory Gateway API
   description: Capture feedback from AI coding agents, generate prevention rules, and export DPO training pairs.
   version: 1.2.0
 servers:
   - url: https://rlhf-feedback-loop-710216278770.us-central1.run.app
-    description: Cloud Pro hosted API
+    description: Context Gateway hosted API
 paths:
   /v1/feedback/capture:
     post:

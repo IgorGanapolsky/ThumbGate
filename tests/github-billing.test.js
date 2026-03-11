@@ -53,7 +53,7 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
           id: 12345,
           login: 'octocat'
         },
-        plan: { id: 1, name: 'Cloud Pro' }
+        plan: { id: 1, name: 'Context Gateway' }
       }
     };
 
@@ -104,7 +104,7 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
           id: 67890,
           login: 'github'
         },
-        plan: { id: 2, name: 'Cloud Pro Plus' }
+        plan: { id: 2, name: 'Context Gateway Plus' }
       }
     };
 

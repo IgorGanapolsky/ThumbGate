@@ -6,13 +6,13 @@ Our engineering is world-class, but our go-to-market (GTM) strategy is misaligne
 Here is the empirical breakdown of why our funnel is failing:
 
 ### 1. The "Local-First" Trap
-Developers in 2026 want zero-friction "agentic primitives." We require them to clone a repository, run local tests, and manually discover our `docs/landing-page.html` to find the $10/mo "Cloud Pro" upgrade. **There is zero top-of-funnel acquisition because our monetization surface is buried inside a local codebase.**
+Developers in 2026 want zero-friction "agentic primitives." We require them to clone a repository, run local tests, and manually discover our `docs/landing-page.html` to find the $10/mo "Context Gateway" upgrade. **There is zero top-of-funnel acquisition because our monetization surface is buried inside a local codebase.**
 
 ### 2. Pricing Model Mismatch
 The 2026 market for agent tooling operates almost exclusively on **consumption-based credit systems** or "per-agent identity" models (like Okta for Agents). Our flat $10/month subscription feels outdated. Developers don't want to pay a subscription for a local tool; they want to pay for the *inference and storage costs* associated with "Always-On" memory.
 
 ### 3. Misaligned Positioning (RLHF vs. MCP Gateway)
-We are marketing ourselves as an "RLHF Feedback Loop." However, the March 2026 market data shows that the highest revenue growth is in **MCP (Model Context Protocol) Gateways and Observability**. MCP has become the "USB-C of AI." We already have deep MCP integration, but we aren't selling ourselves as an "MCP Memory & Context Hub." 
+We are marketing ourselves as an "MCP Memory Gateway." However, the March 2026 market data shows that the highest revenue growth is in **MCP (Model Context Protocol) Gateways and Observability**. MCP has become the "USB-C of AI." We already have deep MCP integration, but we aren't selling ourselves as an "MCP Memory & Context Hub." 
 
 ---
 

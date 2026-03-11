@@ -9,7 +9,7 @@ This is the metric that matters most. Stars, visits, and installs matter only if
 ## Best First Offer
 
 - OSS core for one operator proving a workflow locally.
-- Cloud Pro for one team running one workflow with shared memory and proof-ready runs.
+- Context Gateway for one team running one workflow with shared memory and proof-ready runs.
 - Workflow install workshop for buyers who want help wiring lead-to-meeting, onboarding, or internal ops automation into a production process.
 
 ## Product Tiers
@@ -22,7 +22,7 @@ This is the metric that matters most. Stars, visits, and installs matter only if
 - DPO export
 - Local MCP server
 
-### Tier 2: Cloud Pro (Founding price: $10/mo)
+### Tier 2: Context Gateway (Founding price: $10/mo)
 
 - Hosted API endpoint
 - Provisioned API keys and hosted onboarding
@@ -33,7 +33,7 @@ This is the metric that matters most. Stars, visits, and installs matter only if
 
 Pricing note:
 
-- Keep the current live Stripe price at `$10/mo` while Cloud Pro is still proving conversion.
+- Keep the current live Stripe price at `$10/mo` while Context Gateway is still proving conversion.
 - Revisit repricing after the hosted workflow layer shows retained usage and stronger buyer pull.
 
 ### Tier 3: Enterprise (Pricing: custom quote)
@@ -79,7 +79,7 @@ Pricing note:
 ## Sales Motion
 
 1. Land: OSS adoption by one operator proving a workflow locally.
-2. Expand: Cloud Pro for shared memory, hosted keys, proof-ready runs, and team rollout.
+2. Expand: Context Gateway for shared memory, hosted keys, proof-ready runs, and team rollout.
 3. Accelerate: workshop/install offer for buyers who want fast implementation with minimal risk.
 4. Close enterprise: security, compliance, support SLA, and governance requirements.
 
@@ -94,7 +94,7 @@ Pricing note:
 
 1. Number of teams running one monitored workflow weekly.
 2. Number of proof-backed workflow runs reviewed by operators or buyers.
-3. OSS user to Cloud Pro conversion for teams running a real workflow.
+3. OSS user to Context Gateway conversion for teams running a real workflow.
 4. Workshop-to-pilot conversion rate.
 5. Reduction in repeated workflow failure patterns after prevention rules are enabled.
 

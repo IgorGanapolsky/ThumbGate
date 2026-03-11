@@ -14,7 +14,7 @@
 
 ### Billing
 
-- [x] **BILL-01**: Stripe Checkout creates a $49/mo Cloud Pro subscription
+- [x] **BILL-01**: Stripe Checkout creates a $49/mo Context Gateway subscription
 - [x] **BILL-02**: On successful payment, system provisions a unique API key and returns it
 - [x] **BILL-03**: API validates incoming requests against provisioned keys (reject invalid/expired)
 - [x] **BILL-04**: Usage metering tracks requests per API key per month

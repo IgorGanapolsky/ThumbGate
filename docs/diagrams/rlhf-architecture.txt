@@ -1,4 +1,4 @@
-The RLHF Feedback Loop system has five phases arranged left to right.
+The MCP Memory Gateway system has five phases arranged left to right.
 
 CAPTURE PHASE: A user or AI agent gives thumbs up/down feedback. A Capture Layer enriches the signal with context, tags, and rubric scores. Raw feedback is appended to a JSONL feedback log file.
 
