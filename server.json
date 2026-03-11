@@ -1,12 +1,23 @@
 {
-  "mcpName": "io.github.igorganapolsky/mcp-memory-gateway",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.igorganapolsky/mcp-memory-gateway",
+  "description": "Agent quality feedback loop with prevention rules and commerce quality scores.",
+  "title": "MCP Memory Gateway",
+  "websiteUrl": "https://rlhf-feedback-loop-production.up.railway.app",
+  "repository": {
+    "source": "github",
+    "url": "https://github.com/IgorGanapolsky/mcp-memory-gateway"
+  },
   "version": "0.6.13",
-  "description": "The Universal Context & Memory Layer for Model Context Protocol (MCP) Agents. Centralized hub to consolidate failures and enforce architectural guardrails.",
-  "repository": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
   "packages": [
     {
-      "name": "mcp-memory-gateway",
-      "version": "0.6.13"
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "rlhf-feedback-loop",
+      "version": "0.6.13",
+      "transport": {
+        "type": "stdio"
+      }
     }
   ]
 }
