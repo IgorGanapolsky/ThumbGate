@@ -11,9 +11,15 @@
       "positive": 1,
       "negative": 0,
       "lastSeen": "2026-03-11T14:48:32.355Z"
+    },
+    "debugging": {
+      "count": 2,
+      "positive": 0,
+      "negative": 2,
+      "lastSeen": "2026-03-11T17:51:41.848Z"
     }
   },
-  "lastUpdated": "2026-03-11T15:29:19.755Z",
-  "diversityScore": "87.0",
-  "recommendation": "Good diversity (87.0%)"
+  "lastUpdated": "2026-03-11T17:51:41.855Z",
+  "diversityScore": "87.4",
+  "recommendation": "Good diversity (87.4%)"
 }

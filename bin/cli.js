@@ -465,7 +465,7 @@ function stats() {
 }
 
 function pro() {
-  const stripeUrl = 'https://buy.stripe.com/bJe14neyU4r4f0leOD3sI02';
+  const stripeUrl = 'https://buy.stripe.com/fZu4gz0I47Dg9G1cGv3sI03';
   console.log('\n🚀 MCP Memory Gateway — Context Gateway');
   console.log('─'.repeat(50));
   console.log('Unlock the full Agentic Control Plane:');

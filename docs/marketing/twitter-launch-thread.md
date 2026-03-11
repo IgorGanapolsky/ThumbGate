@@ -1,44 +1,66 @@
-# Twitter / X Launch Thread
+# Twitter / X Launch Thread — MCP Memory Gateway
 
-**Tweet 1:**
-"Vibe Coding" is a security debt crisis waiting to happen. 🚨
+---
 
-If your AI agents are running on vibes instead of verifiable constraints, you're bleeding operational revenue. 
+**Tweet 1 (hook):**
+Your AI coding agent forgets every mistake the moment you close the session.
 
-Today we're launching the Agentic Feedback Studio: The Veto Layer for AI workflows. 🧵👇
-[Link to GitHub / Landing Page]
-[Image: Architecture diagram showing Veto Layer blocking a bad action]
+You corrected it yesterday. Today it breaks the same thing again.
 
-**Tweet 2:**
-The problem: You tell Claude/Gemini "don't do X". Next session, it does X again. 
-Why? Because prompts are subjective. 
+I built a fix. Thread 🧵
 
-You need a V2V (Vibe-to-Verification) pipeline. 
-We turn a simple "thumbs down" into a hard, non-bypassable `CLAUDE.md` guardrail automatically.
+---
 
-**Tweet 3:**
-Here's how the Agentic Feedback Studio works:
-1️⃣ Capture: User flags a mistake (the vibe).
-2️⃣ Learn: We extract the exact semantic state of the failure.
-3️⃣ Veto: We generate an architectural rule that blocks the agent from EVER making that mistake again.
+**Tweet 2 (product + live URL):**
+MCP Memory Gateway gives Claude Code, Codex, and Gemini persistent memory across sessions.
 
-**Tweet 4:**
-It's Zero-Config and truly Plug-and-Play.
-Drop it into ANY repository with one command:
-`npx rlhf-feedback-loop install`
+Thumbs-up/down feedback → stored locally → queried before every action → repeated failures auto-blocked.
 
-It auto-discovers your project context or falls back to a global store. It works locally, securely, right now.
+Live hosted at $10/mo:
+https://rlhf-feedback-loop-production.up.railway.app
 
-**Tweet 5:**
-Run `npx rlhf-feedback-loop stats` in your terminal today. 
+---
 
-It has a built-in Revenue-at-Risk analyzer that calculates EXACTLY how much money you are losing to repeated agent failures. 💸
+**Tweet 3 (free self-hosted CTA):**
+Self-hosting is free and takes 30 seconds.
 
-**Tweet 6:**
-The era of prompt engineering is over. The era of Context Engineering and Agentic Control Planes is here.
+npx rlhf-feedback-loop serve
 
-Open source and free forever for solo devs. 
-Context Gateway for teams who want to sync Veto rules across the organization.
+That's it. Works with Claude Code, Codex CLI, Gemini CLI, Amp, Cursor. All data stays on your machine.
 
-Stop vibe-coding. Start engineering. 🚀
-[Link to Repo / Stripe Checkout]
+---
+
+**Tweet 4 (what it actually does):**
+Under the hood:
+
+→ Captures structured feedback (context, what went wrong, severity)
+→ LanceDB vector index for semantic recall mid-session
+→ 3+ identical failures auto-generate a CLAUDE.md prevention rule
+→ Exports DPO training pairs (chosen/rejected) for fine-tuning your own model
+
+---
+
+**Tweet 5 (social proof / validation):**
+The system was validated using four independent AI agents — Claude, Codex, Amp, Gemini — each running the same test suite against it.
+
+Compatibility report is generated in CI on every push.
+
+This is what dogfooding looks like.
+
+---
+
+**Tweet 6 (objection handling):**
+"I just put rules in my system prompt."
+
+System prompts are per-session. They don't accumulate signal over time. They don't block semantically similar variants of the same mistake. They don't export training data.
+
+This does all three.
+
+---
+
+**Tweet 7 (close + dual CTA):**
+Free self-hosted: npx rlhf-feedback-loop serve
+Hosted ($10/mo): https://rlhf-feedback-loop-production.up.railway.app
+GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
+
+First 10 signups get a 30-min setup call. DM me.
