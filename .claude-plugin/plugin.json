@@ -1,11 +1,12 @@
 {
-  "name": "rlhf-feedback-loop",
-  "description": "RLHF feedback loop — capture feedback, block mistakes, export DPO training pairs",
-  "version": "0.6.6",
+  "name": "mcp-memory-gateway",
+  "description": "Local-first memory and RLHF feedback pipeline for AI agents — capture feedback, promote memories, generate prevention rules, export DPO/KTO training pairs",
+  "version": "0.6.13",
   "author": {
     "name": "Igor Ganapolsky"
   },
-  "homepage": "https://github.com/IgorGanapolsky/rlhf-feedback-loop",
-  "repository": "https://github.com/IgorGanapolsky/rlhf-feedback-loop",
-  "license": "MIT"
+  "homepage": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
+  "repository": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
+  "license": "MIT",
+  "keywords": ["rlhf", "mcp", "memory", "feedback", "dpo", "guardrails", "ai-agents"]
 }
