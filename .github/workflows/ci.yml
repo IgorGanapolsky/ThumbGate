@@ -50,6 +50,9 @@ jobs:
       - name: Run workflow contract proof
         run: npm run prove:workflow-contract
 
+      - name: Run autoresearch proof
+        run: npm run prove:autoresearch
+
       - name: Upload proof artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -62,6 +65,8 @@ jobs:
             proof/automation/report.md
             proof/workflow-contract/report.json
             proof/workflow-contract/report.md
+            proof/autoresearch-report.json
+            proof/autoresearch-report.md
 
   deploy:
     runs-on: ubuntu-latest

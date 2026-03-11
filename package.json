@@ -16,13 +16,13 @@
   },
   "scripts": {
     "start": "node src/api/server.js",
-    "test": "npm run test:schema && npm run test:loop && npm run test:dpo && npm run test:kto && npm run test:api && npm run test:proof && npm run test:e2e && npm run test:rlaif && npm run test:attribution && npm run test:quality && npm run test:intelligence && npm run test:training-export && npm run test:deployment && npm run test:workflow && npm run test:billing && npm run test:cli && npm run test:watcher",
+    "test": "npm run test:schema && npm run test:loop && npm run test:dpo && npm run test:kto && npm run test:api && npm run test:proof && npm run test:e2e && npm run test:rlaif && npm run test:attribution && npm run test:quality && npm run test:intelligence && npm run test:training-export && npm run test:deployment && npm run test:workflow && npm run test:billing && npm run test:cli && npm run test:watcher && npm run test:autoresearch",
     "test:schema": "node scripts/feedback-schema.js --test",
     "test:loop": "node scripts/feedback-loop.js --test",
     "test:dpo": "node scripts/export-dpo-pairs.js --test",
     "test:kto": "node --test tests/export-kto.test.js",
     "test:api": "node --test tests/api-server.test.js tests/api-auth-config.test.js tests/mcp-server.test.js tests/adapters.test.js tests/openapi-parity.test.js tests/budget-guard.test.js tests/contextfs.test.js tests/mcp-policy.test.js tests/subagent-profiles.test.js tests/intent-router.test.js tests/rubric-engine.test.js tests/self-healing-check.test.js tests/self-heal.test.js tests/feedback-schema.test.js tests/thompson-sampling.test.js tests/feedback-sequences.test.js tests/diversity-tracking.test.js tests/vector-store.test.js tests/feedback-attribution.test.js tests/hybrid-feedback-context.test.js tests/loop-closure.test.js tests/code-reasoning.test.js tests/feedback-loop.test.js tests/feedback-inbox-read.test.js tests/feedback-to-memory.test.js tests/test-coverage.test.js tests/version-metadata.test.js tests/local-model-profile.test.js tests/risk-scorer.test.js tests/context-compaction.test.js tests/reminder-engine.test.js tests/post-to-x.test.js tests/verification-loop.test.js tests/async-job-runner.test.js tests/commerce-quality.test.js",
-    "test:proof": "node --test tests/prove-adapters.test.js tests/prove-attribution.test.js tests/prove-automation.test.js tests/prove-data-quality.test.js tests/prove-intelligence.test.js tests/prove-lancedb.test.js tests/prove-loop-closure.test.js tests/prove-subway-upgrades.test.js tests/prove-training-export.test.js tests/prove-local-intelligence.test.js tests/prove-workflow-contract.test.js",
+    "test:proof": "node --test tests/prove-adapters.test.js tests/prove-attribution.test.js tests/prove-automation.test.js tests/prove-data-quality.test.js tests/prove-intelligence.test.js tests/prove-lancedb.test.js tests/prove-loop-closure.test.js tests/prove-subway-upgrades.test.js tests/prove-training-export.test.js tests/prove-local-intelligence.test.js tests/prove-workflow-contract.test.js tests/prove-autoresearch.test.js",
     "test:e2e": "node --test tests/e2e-pipeline.test.js",
     "test:rlaif": "node --test tests/rlaif-self-audit.test.js tests/dpo-optimizer.test.js tests/meta-policy.test.js",
     "test:attribution": "node --test tests/feedback-attribution.test.js tests/hybrid-feedback-context.test.js",
@@ -34,6 +34,7 @@
     "test:billing": "node --test tests/billing.test.js",
     "test:cli": "node --test tests/cli.test.js tests/feedback-normalize.test.js tests/install-mcp.test.js",
     "test:watcher": "node --test tests/jsonl-watcher.test.js",
+    "test:autoresearch": "node --test tests/autoresearch.test.js",
     "test:coverage": "node scripts/test-coverage.js",
     "start:api": "node src/api/server.js",
     "start:mcp": "node adapters/mcp/server-stdio.js",
@@ -47,7 +48,8 @@
     "self-heal:check": "node scripts/self-healing-check.js",
     "prove:adapters": "node --test tests/prove-adapters.test.js",
     "prove:automation": "node --test tests/prove-automation.test.js",
-    "prove:workflow-contract": "node --test tests/prove-workflow-contract.test.js"
+    "prove:workflow-contract": "node --test tests/prove-workflow-contract.test.js",
+    "prove:autoresearch": "node scripts/prove-autoresearch.js"
   },
   "keywords": [
     "rlhf",
