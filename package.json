@@ -42,7 +42,9 @@
     "feedback:stats": "node .claude/scripts/feedback/capture-feedback.js --stats",
     "adk:consolidate": "node scripts/adk-consolidator.js",
     "adk:watch": "node scripts/adk-consolidator.js --watch",
-    "pr:manage": "node scripts/pr-manager.js"
+    "pr:manage": "node scripts/pr-manager.js",
+    "self-heal:run": "node scripts/self-heal.js",
+    "self-heal:check": "node scripts/self-healing-check.js"
   },
   "keywords": [
     "rlhf",
@@ -56,6 +58,16 @@
   ],
   "author": "Igor Ganapolsky",
   "license": "MIT",
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/IgorGanapolsky"
+    },
+    {
+      "type": "individual",
+      "url": "https://buymeacoffee.com/igorganapolsky"
+    }
+  ],
   "engines": {
     "node": ">=18.18.0"
   },

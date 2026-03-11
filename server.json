@@ -2,5 +2,11 @@
   "mcpName": "io.github.igorganapolsky/mcp-memory-gateway",
   "version": "0.6.13",
   "description": "The Universal Context & Memory Layer for Model Context Protocol (MCP) Agents. Centralized hub to consolidate failures and enforce architectural guardrails.",
-  "repository": "https://github.com/IgorGanapolsky/mcp-memory-gateway"
+  "repository": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
+  "packages": [
+    {
+      "name": "mcp-memory-gateway",
+      "version": "0.6.13"
+    }
+  ]
 }
