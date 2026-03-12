@@ -362,6 +362,51 @@ describe('bin/cli.js', () => {
     assert.doesNotMatch(result.stdout, /\$10\/mo|38 spots remaining|first 50 users|Founding Member/i);
   });
 
+  test('help command shows Pro Pack nudge on stderr', () => {
+    const result = spawnSync(process.execPath, [CLI, 'help'], {
+      encoding: 'utf8',
+      env: { ...process.env, RLHF_NO_NUDGE: undefined },
+    });
+    assert.strictEqual(result.status, 0);
+    assert.ok(result.stderr.includes('Pro Pack'), 'Nudge should appear on stderr');
+    assert.ok(result.stderr.includes('gumroad.com'), 'Nudge should include Gumroad link');
+    assert.ok(!result.stdout.includes('gumroad.com'), 'Nudge must NOT appear on stdout (would break MCP stdio)');
+  });
+
+  test('RLHF_NO_NUDGE=1 suppresses Pro Pack nudge', () => {
+    const result = spawnSync(process.execPath, [CLI, 'help'], {
+      encoding: 'utf8',
+      env: { ...process.env, RLHF_NO_NUDGE: '1' },
+    });
+    assert.strictEqual(result.status, 0);
+    assert.ok(!result.stderr.includes('Pro Pack'), 'Nudge should be suppressed when RLHF_NO_NUDGE=1');
+  });
+
+  test('pro command Gumroad link includes UTM params', () => {
+    const result = spawnSync(process.execPath, [CLI, 'pro'], { encoding: 'utf8' });
+    assert.strictEqual(result.status, 0);
+    assert.ok(result.stdout.includes('utm_source=cli'), 'Pro command should include UTM source');
+    assert.ok(result.stdout.includes('utm_campaign=pro_pack'), 'Pro command should include UTM campaign');
+  });
+
+  test('RLHF_NO_TELEMETRY=1 prevents telemetry ping on init', () => {
+    const initDir = makeTmpDir();
+    const result = spawnSync(process.execPath, [CLI, 'init'], {
+      encoding: 'utf8',
+      cwd: initDir,
+      env: {
+        ...process.env,
+        RLHF_NO_TELEMETRY: '1',
+        RLHF_NO_NUDGE: '1',
+        RLHF_API_URL: 'http://127.0.0.1:1',
+        HOME: testHomeDir,
+        USERPROFILE: testHomeDir,
+      },
+    });
+    assert.strictEqual(result.status, 0, `init should succeed even with telemetry disabled: ${result.stderr}`);
+    fs.rmSync(initDir, { recursive: true, force: true });
+  });
+
   test('--help flag exits 0', () => {
     const result = spawnSync(process.execPath, [CLI, '--help'], { encoding: 'utf8' });
     assert.strictEqual(result.status, 0);

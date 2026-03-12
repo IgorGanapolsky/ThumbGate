@@ -22,6 +22,37 @@ const COMMAND = process.argv[2];
 const CWD = process.cwd();
 const PKG_ROOT = path.join(__dirname, '..');
 
+const PRO_PACK_URL = 'https://iganapolsky.gumroad.com/l/tjovof?utm_source=cli&utm_medium=nudge&utm_campaign=pro_pack';
+
+function telemetryPing(installId) {
+  if (process.env.RLHF_NO_TELEMETRY === '1') return;
+  const apiUrl = process.env.RLHF_API_URL || 'https://rlhf-feedback-loop-production.up.railway.app';
+  const payload = JSON.stringify({
+    installId,
+    version: pkgVersion(),
+    platform: process.platform,
+    nodeVersion: process.version,
+    timestamp: new Date().toISOString(),
+  });
+  try {
+    const url = new URL('/v1/telemetry/ping', apiUrl);
+    const mod = url.protocol === 'https:' ? require('https') : require('http');
+    const req = mod.request(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }, timeout: 3000 }, () => {});
+    req.on('error', () => {});
+    req.on('timeout', () => { req.destroy(); });
+    req.end(payload);
+  } catch (_) { /* telemetry is best-effort */ }
+}
+
+function proNudge() {
+  if (process.env.RLHF_NO_NUDGE === '1') return;
+  // Write to stderr so it never contaminates MCP stdio JSON on stdout
+  process.stderr.write(
+    '\n💡 Like this? Get the Pro Pack — curated rules, presets & priority support. $9 one-time.\n' +
+    `   → ${PRO_PACK_URL}\n\n`
+  );
+}
+
 function parseArgs(argv) {
   const args = {};
   argv.forEach((arg) => {
@@ -369,6 +400,7 @@ function init() {
   console.log('');
   console.log(`rlhf-feedback-loop v${pkgVersion()} initialized.`);
   console.log('Run: npx rlhf-feedback-loop help');
+  proNudge();
 
   try {
     const { appendFunnelEvent } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
@@ -385,6 +417,7 @@ function init() {
   } catch (_) {
     // Avoid failing init if telemetry write cannot be performed.
   }
+  telemetryPing(config.installId);
 }
 
 function capture() {
@@ -431,6 +464,7 @@ function capture() {
     console.log(`  Signal      : ${ev.signal} (${ev.actionType})`);
     console.log(`  Memory ID   : ${mem.id}`);
     console.log(`  Storage     : JSONL log + LanceDB vector index\n`);
+    proNudge();
   } else {
     console.log(`\nRLHF Feedback Recorded [${normalized.toUpperCase()}] — not promoted`);
     console.log('─'.repeat(50));
@@ -463,6 +497,7 @@ function stats() {
   } else {
     console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');
   }
+  proNudge();
 }
 
 function cfo() {
@@ -472,7 +507,7 @@ function cfo() {
 }
 
 function pro() {
-  const gumroadUrl = 'https://iganapolsky.gumroad.com/l/tjovof';
+  const gumroadUrl = 'https://iganapolsky.gumroad.com/l/tjovof?utm_source=cli&utm_medium=pro_command&utm_campaign=pro_pack';
   const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
   const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
   console.log('\nMCP Memory Gateway — Commercial Truth');
@@ -720,6 +755,7 @@ function help() {
   console.log('  npx rlhf-feedback-loop model-fit');
   console.log('  npx rlhf-feedback-loop risk');
   console.log('  npx rlhf-feedback-loop pro');
+  proNudge();
 }
 
 switch (COMMAND) {

@@ -20,3 +20,4 @@ node_modules/
 .npmrc
 .mcpregistry_github_token
 .mcpregistry_registry_token
+.omx/

@@ -63,6 +63,16 @@ test('GET /health content-type is application/json', async () => {
   assert.ok(ct.includes('application/json'), `expected application/json, got: ${ct}`);
 });
 
+test('POST /v1/telemetry/ping returns 204 without auth', async () => {
+  const payload = JSON.stringify({ installId: 'test-install-123', version: '0.6.16', platform: 'darwin', nodeVersion: 'v20.0.0' });
+  const res = await fetch(`http://localhost:${DEPLOY_PORT}/v1/telemetry/ping`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: payload,
+  });
+  assert.strictEqual(res.status, 204, 'Telemetry ping should return 204');
+});
+
 test('PORT env var controls listen port (server started on custom port)', async () => {
   // Already running on DEPLOY_PORT — this test confirms it responded on that port
   const res = await fetch(`http://localhost:${DEPLOY_PORT}/health`);

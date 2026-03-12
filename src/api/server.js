@@ -689,6 +689,39 @@ function createApiServer() {
       return;
     }
 
+    if (req.method === 'POST' && pathname === '/v1/telemetry/ping') {
+      let body = '';
+      req.on('data', (chunk) => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(body);
+          const { FEEDBACK_DIR } = getFeedbackPaths();
+          const telemetryPath = path.join(FEEDBACK_DIR, 'telemetry-pings.jsonl');
+          const entry = {
+            receivedAt: new Date().toISOString(),
+            installId: String(payload.installId || '').slice(0, 64),
+            version: String(payload.version || '').slice(0, 16),
+            platform: String(payload.platform || '').slice(0, 32),
+            nodeVersion: String(payload.nodeVersion || '').slice(0, 16),
+          };
+          fs.appendFileSync(telemetryPath, JSON.stringify(entry) + '\n');
+        } catch (_) { /* never fail the caller */ }
+        res.writeHead(204);
+        res.end();
+      });
+      return;
+    }
+
+    if (req.method === 'OPTIONS' && pathname === '/v1/telemetry/ping') {
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      });
+      res.end();
+      return;
+    }
+
     // Public OpenAPI spec — no auth required (needed for ChatGPT GPT Store import)
     if (req.method === 'GET' && pathname === '/openapi.json') {
       const specPath = path.join(__dirname, '../../adapters/chatgpt/openapi.yaml');
