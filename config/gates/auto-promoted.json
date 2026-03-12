@@ -9,7 +9,7 @@
       "message": "Auto-promoted: \"error 2\" (3 occurrences in 30 days)",
       "severity": "medium",
       "occurrences": 3,
-      "promotedAt": "2026-03-12T20:05:49.935Z",
+      "promotedAt": "2026-03-12T20:10:04.907Z",
       "source": "auto-promote"
     },
     {
@@ -20,7 +20,7 @@
       "message": "Auto-promoted: \"error 3\" (3 occurrences in 30 days)",
       "severity": "medium",
       "occurrences": 3,
-      "promotedAt": "2026-03-12T20:05:49.935Z",
+      "promotedAt": "2026-03-12T20:10:04.907Z",
       "source": "auto-promote"
     },
     {
@@ -31,7 +31,7 @@
       "message": "Auto-promoted: \"error 4\" (3 occurrences in 30 days)",
       "severity": "medium",
       "occurrences": 3,
-      "promotedAt": "2026-03-12T20:05:49.935Z",
+      "promotedAt": "2026-03-12T20:10:04.907Z",
       "source": "auto-promote"
     },
     {
@@ -42,7 +42,7 @@
       "message": "Auto-promoted: \"error 5\" (3 occurrences in 30 days)",
       "severity": "medium",
       "occurrences": 3,
-      "promotedAt": "2026-03-12T20:05:49.935Z",
+      "promotedAt": "2026-03-12T20:10:04.907Z",
       "source": "auto-promote"
     },
     {
@@ -53,7 +53,7 @@
       "message": "Auto-promoted: \"error 6\" (3 occurrences in 30 days)",
       "severity": "medium",
       "occurrences": 3,
-      "promotedAt": "2026-03-12T20:05:49.935Z",
+      "promotedAt": "2026-03-12T20:10:04.907Z",
       "source": "auto-promote"
     },
     {
@@ -64,7 +64,7 @@
       "message": "Auto-promoted: \"error 7\" (3 occurrences in 30 days)",
       "severity": "medium",
       "occurrences": 3,
-      "promotedAt": "2026-03-12T20:05:49.935Z",
+      "promotedAt": "2026-03-12T20:10:04.907Z",
       "source": "auto-promote"
     },
     {
@@ -75,7 +75,7 @@
       "message": "Auto-promoted: \"error 8\" (3 occurrences in 30 days)",
       "severity": "medium",
       "occurrences": 3,
-      "promotedAt": "2026-03-12T20:05:49.935Z",
+      "promotedAt": "2026-03-12T20:10:04.907Z",
       "source": "auto-promote"
     },
     {
@@ -86,7 +86,7 @@
       "message": "Auto-promoted: \"error 9\" (3 occurrences in 30 days)",
       "severity": "medium",
       "occurrences": 3,
-      "promotedAt": "2026-03-12T20:05:49.935Z",
+      "promotedAt": "2026-03-12T20:10:04.907Z",
       "source": "auto-promote"
     },
     {
@@ -97,7 +97,7 @@
       "message": "Auto-promoted: \"error 10\" (3 occurrences in 30 days)",
       "severity": "medium",
       "occurrences": 3,
-      "promotedAt": "2026-03-12T20:05:49.935Z",
+      "promotedAt": "2026-03-12T20:10:04.907Z",
       "source": "auto-promote"
     },
     {
@@ -108,7 +108,7 @@
       "message": "Auto-promoted: \"Pipeline integration test failure 2\" (3 occurrences in 30 days)",
       "severity": "medium",
       "occurrences": 3,
-      "promotedAt": "2026-03-12T20:05:49.999Z",
+      "promotedAt": "2026-03-12T20:10:04.998Z",
       "source": "auto-promote"
     }
   ],
@@ -438,6 +438,758 @@
       "action": "warn",
       "occurrences": 3,
       "timestamp": "2026-03-12T20:05:49.999Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-2",
+      "timestamp": "2026-03-12T20:08:35.193Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pr-review",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.193Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-3",
+      "timestamp": "2026-03-12T20:08:35.198Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-execution-gap",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.198Z"
+    },
+    {
+      "type": "upgrade",
+      "gateId": "auto-execution-gap",
+      "from": "warn",
+      "to": "block",
+      "occurrences": 5,
+      "timestamp": "2026-03-12T20:08:35.200Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-4",
+      "timestamp": "2026-03-12T20:08:35.204Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-dedup-test",
+      "action": "warn",
+      "occurrences": 4,
+      "timestamp": "2026-03-12T20:08:35.204Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-5",
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-0",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-6",
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-1",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-7",
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-2",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-8",
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-3",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-9",
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-4",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-10",
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-5",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pipeline-integration-test",
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-6",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pr-review",
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-7",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-execution-gap",
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-8",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-dedup-test",
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-9",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-0",
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-10",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.215Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-1",
+      "timestamp": "2026-03-12T20:08:35.252Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pipeline-integration-test",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:08:35.252Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-2",
+      "timestamp": "2026-03-12T20:09:31.665Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pr-review",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.665Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-3",
+      "timestamp": "2026-03-12T20:09:31.671Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-execution-gap",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.671Z"
+    },
+    {
+      "type": "upgrade",
+      "gateId": "auto-execution-gap",
+      "from": "warn",
+      "to": "block",
+      "occurrences": 5,
+      "timestamp": "2026-03-12T20:09:31.681Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-4",
+      "timestamp": "2026-03-12T20:09:31.692Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-dedup-test",
+      "action": "warn",
+      "occurrences": 4,
+      "timestamp": "2026-03-12T20:09:31.692Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-5",
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-0",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-6",
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-1",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-7",
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-2",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-8",
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-3",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-9",
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-4",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-10",
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-5",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pipeline-integration-test",
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-6",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pr-review",
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-7",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-execution-gap",
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-8",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-dedup-test",
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-9",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-0",
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-10",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.708Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-1",
+      "timestamp": "2026-03-12T20:09:31.744Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pipeline-integration-test",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:31.744Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-2",
+      "timestamp": "2026-03-12T20:09:44.604Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pr-review",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.604Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-3",
+      "timestamp": "2026-03-12T20:09:44.617Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-execution-gap",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.617Z"
+    },
+    {
+      "type": "upgrade",
+      "gateId": "auto-execution-gap",
+      "from": "warn",
+      "to": "block",
+      "occurrences": 5,
+      "timestamp": "2026-03-12T20:09:44.620Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-4",
+      "timestamp": "2026-03-12T20:09:44.627Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-dedup-test",
+      "action": "warn",
+      "occurrences": 4,
+      "timestamp": "2026-03-12T20:09:44.627Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-5",
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-0",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-6",
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-1",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-7",
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-2",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-8",
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-3",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-9",
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-4",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-10",
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-5",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pipeline-integration-test",
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-6",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pr-review",
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-7",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-execution-gap",
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-8",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-dedup-test",
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-9",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-0",
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-10",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.684Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-1",
+      "timestamp": "2026-03-12T20:09:44.844Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pipeline-integration-test",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:09:44.844Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-2",
+      "timestamp": "2026-03-12T20:10:04.781Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pr-review",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.781Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-3",
+      "timestamp": "2026-03-12T20:10:04.793Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-execution-gap",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.793Z"
+    },
+    {
+      "type": "upgrade",
+      "gateId": "auto-execution-gap",
+      "from": "warn",
+      "to": "block",
+      "occurrences": 5,
+      "timestamp": "2026-03-12T20:10:04.798Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-4",
+      "timestamp": "2026-03-12T20:10:04.808Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-dedup-test",
+      "action": "warn",
+      "occurrences": 4,
+      "timestamp": "2026-03-12T20:10:04.808Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-5",
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-0",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-6",
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-1",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-7",
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-2",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-8",
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-3",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-9",
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-4",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-10",
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-5",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pipeline-integration-test",
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-6",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pr-review",
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-7",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-execution-gap",
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-8",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-dedup-test",
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-9",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-0",
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pattern-10",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.907Z"
+    },
+    {
+      "type": "rotated",
+      "removedGateId": "auto-pattern-1",
+      "timestamp": "2026-03-12T20:10:04.998Z"
+    },
+    {
+      "type": "new",
+      "gateId": "auto-pipeline-integration-test",
+      "action": "warn",
+      "occurrences": 3,
+      "timestamp": "2026-03-12T20:10:04.998Z"
     }
   ]
 }
