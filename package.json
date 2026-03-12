@@ -1,6 +1,6 @@
 {
   "name": "mcp-memory-gateway",
-  "version": "0.6.14",
+  "version": "0.6.15",
   "description": "The Universal Context & Memory Layer for Model Context Protocol (MCP) Agents. Centralized hub to consolidate failures and enforce architectural guardrails.",
   "homepage": "https://mcp-memory-gateway.up.railway.app",
   "repository": {
