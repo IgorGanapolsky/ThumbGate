@@ -2,7 +2,7 @@
   "mcpServers": {
     "rlhf": {
       "command": "npx",
-      "args": ["-y", "rlhf-feedback-loop@0.6.13", "serve"]
+      "args": ["-y", "rlhf-feedback-loop@0.6.14", "serve"]
     }
   }
 }

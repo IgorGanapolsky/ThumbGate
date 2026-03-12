@@ -51,7 +51,7 @@ Works in local mode (zero config, no API key) or connected to the Context Gatewa
 ### Option A: Local mode (OSS, no API key needed)
 
 ```bash
-claude mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.13 serve
+claude mcp add rlhf -- npx -y rlhf-feedback-loop@0.6.14 serve
 ```
 
 Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/settings.json`):
@@ -61,7 +61,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
   "mcpServers": {
     "rlhf": {
       "command": "npx",
-      "args": ["-y", "rlhf-feedback-loop@0.6.13", "serve"],
+      "args": ["-y", "rlhf-feedback-loop@0.6.14", "serve"],
       "env": {
         "RLHF_BASE_URL": "http://localhost:8787"
       }
@@ -77,7 +77,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
   "mcpServers": {
     "rlhf": {
       "command": "npx",
-      "args": ["-y", "rlhf-feedback-loop@0.6.13", "serve"],
+      "args": ["-y", "rlhf-feedback-loop@0.6.14", "serve"],
       "env": {
         "RLHF_BASE_URL": "https://rlhf-feedback-loop-710216278770.us-central1.run.app",
         "RLHF_API_KEY": "rlhf_YOUR_KEY_HERE"
@@ -123,7 +123,7 @@ Verification evidence: https://github.com/IgorGanapolsky/rlhf-feedback-loop/blob
 
 ## Transport
 
-- **stdio** (primary): `npx -y rlhf-feedback-loop@0.6.13 serve` — version-pinned portable MCP launcher for Claude Code desktop and CLI
+- **stdio** (primary): `npx -y rlhf-feedback-loop@0.6.14 serve` — version-pinned portable MCP launcher for Claude Code desktop and CLI
 - **HTTP** (secondary): `src/api/server.js` — REST API (`POST /v1/feedback/capture`, `GET /v1/feedback/summary`, `POST /v1/dpo/export`)
 
 ---
@@ -170,7 +170,7 @@ MIT
 
 ## Version
 
-0.6.13
+0.6.14
 
 ---
 
