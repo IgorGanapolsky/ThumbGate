@@ -120,7 +120,7 @@ Evidence expires after 5 minutes (configurable TTL).
 ### Dashboard
 
 ```bash
-npx rlhf-feedback-loop dashboard
+npx mcp-memory-gateway dashboard
 ```
 
 ```
@@ -212,37 +212,6 @@ External sources write entries with a `source` field:
 ```
 
 The watcher tracks its position via `.rlhf/.watcher-offset` for crash-safe, idempotent processing.
-
-## Feedback Dashboard
-
-```bash
-npx mcp-memory-gateway status
-```
-
-```
-╔══════════════════════════════════════╗
-║     Feedback Tracking Dashboard     ║
-╠══════════════════════════════════════╣
-║ Total signals:    148                ║
-║ Positive:          45  (30%)         ║
-║ Negative:         103  (70%)         ║
-║ Recent (last 20):  20%               ║
-║ Trend:            📉 declining       ║
-║ Memories:          17                ║
-║ Prevention rules:   9                ║
-╠══════════════════════════════════════╣
-║ Top failure domains:                 ║
-║   execution-gap     4                ║
-║   asked-not-doing   2                ║
-║   speed             2                ║
-╠══════════════════════════════════════╣
-║ Feedback trend (approval % by window)║
-║   [1-10]   10% ██                    ║
-║   [11-20]  20% ████                  ║
-║   [21-30]  35% ███████               ║
-║   [31-40]  30% ██████                ║
-╚══════════════════════════════════════╝
-```
 
 ## Architecture
 
