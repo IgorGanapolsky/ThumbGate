@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.igorganapolsky/mcp-memory-gateway",
+  "name": "io.github.IgorGanapolsky/mcp-memory-gateway",
   "description": "Agent quality feedback loop with prevention rules and commerce quality scores.",
   "title": "MCP Memory Gateway",
   "websiteUrl": "https://rlhf-feedback-loop-production.up.railway.app",
