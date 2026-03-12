@@ -317,6 +317,34 @@ function disableCustomerKeys(customerId) {
   return { disabledCount };
 }
 
+function verifyWebhookSignature(rawBody, signature) {
+  if (!CONFIG.STRIPE_WEBHOOK_SECRET) return true;
+  if (!signature || !rawBody) return false;
+
+  // Stripe signature format: t=<timestamp>,v1=<hmac>,...
+  const parts = {};
+  for (const part of signature.split(',')) {
+    const [k, v] = part.split('=');
+    if (k && v) parts[k] = v;
+  }
+
+  if (!parts.t || !parts.v1) return false;
+
+  // Timestamp tolerance: +/- 5 minutes
+  const timestamp = parseInt(parts.t, 10);
+  const now = Math.floor(Date.now() / 1000);
+  if (isNaN(timestamp) || Math.abs(now - timestamp) > 300) return false;
+
+  const payload = `${parts.t}.${typeof rawBody === 'string' ? rawBody : rawBody.toString('utf-8')}`;
+  const expected = crypto.createHmac('sha256', CONFIG.STRIPE_WEBHOOK_SECRET).update(payload).digest('hex');
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(parts.v1, 'hex'));
+  } catch {
+    return false;
+  }
+}
+
 async function handleWebhook(rawBody, signature) {
   if (LOCAL_MODE()) return { handled: false, reason: 'local_mode' };
   let event;
@@ -379,7 +407,7 @@ function handleGithubWebhook(event) {
 }
 
 module.exports = {
-  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, reportUsageToStripe, disableCustomerKeys, handleWebhook, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, loadFunnelLedger, getFunnelAnalytics,
+  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, reportUsageToStripe, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, loadFunnelLedger, getFunnelAnalytics,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,
   _LOCAL_CHECKOUT_SESSIONS_PATH: () => CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH,

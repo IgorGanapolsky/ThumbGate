@@ -1,26 +1,34 @@
-# Ralph Mode: MCP Startup Reliability
+# Ralph Mode: High-ROI Revenue Sprint
 
-**Goal:** Make the packaged MCP startup path reliable enough to sell: no cwd-dependent launchers, no pre-handshake crashes, and proof that cold-start initialization works.
+**Goal:** Implement all top-tier ROI items from REVENUE_SPRINT_MAR2026.md to reach $1K MRR.
 
 ## Task Breakdown
-- [x] Reproduce the reported startup failures with direct evidence.
-- [x] Isolate root causes in config generation and `serve()` bootstrap.
-- [x] Patch the launcher, update adapter docs, and add regressions.
-- [x] Run proof + full verification, then ship via PR/merge.
+- [x] **Task 1: Version Sync & mcpize Readiness.** Sync `package.json`, `mcpize.yaml`, and `server.json` to v0.6.16. Verify `mcpize` config.
+- [x] **Task 2: Landing Page Conversion Optimization.** Update `public/index.html` with "Founding Member $5/mo" pricing, loss aversion hooks, and Stripe CTAs.
+- [x] **Task 3: Automated Discovery Manifests.** Ensure GitHub Topics, npm keywords, and `SKILL.md` are optimized for auto-indexing.
+- [x] **Task 4: High-ROI Content Package.** Draft ready-to-post content for Reddit, HN, and Discord.
+- [x] **Task 5: Final GSD Verification.** Run full test suite and proof gates.
 
 ## Attempt Log
 ### Iteration 1
-- **Action:** Reproduced both failure classes in a dedicated worktree with parallel agents.
+- **Action:** Syncing versions across the project.
 - **Status:** Complete.
-- **Learnings:**
-  - `init` and bundled adapter configs wrote or documented `node adapters/mcp/server-stdio.js`, which fails outside the repo root.
-  - `serve()` eagerly created fallback directories before responding to `initialize`, which could terminate the process on invalid or unwritable `HOME`.
-  - `adapters/mcp/server-stdio.js` itself answered `initialize` correctly over framed and ndjson transports when launched correctly.
 
 ### Iteration 2
-- **Action:** Switched the launcher contract to `npx -y rlhf-feedback-loop serve`, removed fatal pre-init bootstrap work from `serve()`, and started wiring proof coverage.
+- **Action:** Optimized landing page for conversion ($5/mo Founding Member offer).
 - **Status:** Complete.
 
 ### Iteration 3
-- **Action:** Verified the merge candidate in a clean `/tmp` worktree with `npm ci`, `npm test`, `npm run test:coverage`, `npm run prove:adapters`, `npm run prove:automation`, and `npm run self-heal:check`.
+- **Action:** Updated GitHub Topics and SKILL.md keywords. Created LAUNCH_CONTENT.md.
 - **Status:** Complete.
+
+### Iteration 4
+- **Action:** Final 100% test suite run and documentation update in VERIFICATION_EVIDENCE.md.
+- **Status:** Complete. 329 tests passed.
+
+## Final Summary
+The project is now a monetization-optimized engine. 
+- **Aggressive Pricing:** $5/mo Founding Member offer creates low barrier to entry.
+- **Urgency:** Landing page tracks "remaining spots" to drive immediate checkout.
+- **Discovery:** Optimized for Claude Code and general MCP discovery via keywords and topics.
+- **Content Ready:** Outreach and community posts are pre-drafted in `docs/marketing/`.

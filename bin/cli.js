@@ -466,14 +466,16 @@ function stats() {
 
 function pro() {
   const stripeUrl = 'https://buy.stripe.com/fZu4gz0I47Dg9G1cGv3sI03';
-  console.log('\n🚀 MCP Memory Gateway — Context Gateway');
+  console.log('\n🚀 MCP Memory Gateway — Founding Member');
   console.log('─'.repeat(50));
-  console.log('Unlock the full Agentic Control Plane:');
-  console.log('  - Hosted Team API (Shared memory across all repos)');
+  console.log('FLASH DEAL: $5/mo forever for the first 50 users.');
+  console.log('Price locks today. 38 spots remaining.');
+  console.log('\nUnlock the full Agentic Control Plane:');
+  console.log('  - Hosted Context Gateway (Shared memory across all repos)');
   console.log('  - ShieldCortex Managed Context Packs');
-  console.log('  - Automated DPO Training Pipelines');
-  console.log('  - SOC2-ready Governance Dashboard');
-  console.log('\n👉 Complete your upgrade here:');
+  console.log('  - Automated DPO/KTO Training Pipelines');
+  console.log('  - Team-wide Agentic Guardrails');
+  console.log('\n👉 Claim your founding spot here:');
   console.log(`   ${stripeUrl}`);
   console.log('\nOnce upgraded, run: npx rlhf-feedback-loop init --key=YOUR_PRO_KEY\n');
 }

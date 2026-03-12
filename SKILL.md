@@ -1,6 +1,6 @@
 ---
 name: rlhf-feedback-loop
-description: The Agentic Feedback Studio & Veto Layer. Capture human preference (up/down), engineer high-density context packs, and convert vibes into verifiable Agentic Guardrails (V2V).
+description: The Agentic Feedback Studio & Veto Layer. Persistent agent memory, high-density context packs, and Agentic Guardrails (V2V) for Claude Code, Codex, and Gemini.
 ---
 
 # Agentic Feedback Studio Skill
