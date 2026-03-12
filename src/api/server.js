@@ -632,6 +632,16 @@ function createApiServer() {
       return;
     }
 
+    if (req.method === 'GET' && pathname === '/healthz') {
+      const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH } = getFeedbackPaths();
+      sendJson(res, 200, {
+        status: 'ok',
+        feedbackLogPath: FEEDBACK_LOG_PATH,
+        memoryLogPath: MEMORY_LOG_PATH,
+      });
+      return;
+    }
+
     // Public OpenAPI spec — no auth required (needed for ChatGPT GPT Store import)
     if (req.method === 'GET' && pathname === '/openapi.json') {
       const specPath = path.join(__dirname, '../../adapters/chatgpt/openapi.yaml');
@@ -691,8 +701,14 @@ function createApiServer() {
         });
 
         const sig = req.headers['stripe-signature'] || '';
+        if (!verifyWebhookSignature(rawBody, sig)) {
+          sendJson(res, 400, { error: 'Invalid webhook signature' });
+          return;
+        }
+
         const result = await handleWebhook(rawBody, sig);
-        sendJson(res, result.handled ? 200 : 400, result);
+        sendJson(res, 200, result);
+
       } catch (err) {
         if (err.statusCode) {
           sendJson(res, err.statusCode, { error: err.message });
