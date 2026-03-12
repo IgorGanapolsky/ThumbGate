@@ -13,7 +13,8 @@
       "construct_context_pack",
       "evaluate_context_pack",
       "context_provenance",
-      "commerce_recall"
+      "commerce_recall",
+      "generate_skill"
     ],
     "essential": [
       "capture_feedback",

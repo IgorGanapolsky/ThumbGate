@@ -48,6 +48,9 @@ const {
   handleGithubWebhook,
   getFunnelAnalytics,
 } = require('../../scripts/billing');
+const {
+  generateSkills,
+} = require('../../scripts/skill-generator');
 
 const LANDING_PAGE_PATH = path.resolve(__dirname, '../../docs/landing-page.html');
 
@@ -602,6 +605,7 @@ function createApiServer() {
           { name: 'context_provenance', description: 'Audit trail of context decisions' },
           { name: 'list_intents', description: 'Available action plans' },
           { name: 'plan_intent', description: 'Generate execution plan' },
+          { name: 'generate_skill', description: 'Auto-generate Claude skills from feedback patterns' },
         ],
         repository: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
         homepage: 'https://rlhf-feedback-loop-production.up.railway.app',
@@ -874,6 +878,21 @@ function createApiServer() {
           path: result.path,
           markdown: result.markdown,
         });
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/skills/generate') {
+        const body = await parseJsonBody(req);
+        const minOccurrences = Number(body.minOccurrences || 3);
+        const tags = Array.isArray(body.tags) ? body.tags : [];
+        let skills = generateSkills({
+          minClusterSize: Number.isFinite(minOccurrences) ? minOccurrences : 3,
+        });
+        if (tags.length > 0) {
+          const tagSet = new Set(tags.map(t => t.toLowerCase()));
+          skills = skills.filter(s => (s.tags || []).some(t => tagSet.has(t.toLowerCase())));
+        }
+        sendJson(res, 200, { skills });
         return;
       }
 

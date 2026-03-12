@@ -38,6 +38,9 @@ const {
   loadModel,
   getReliability,
 } = require('../../scripts/thompson-sampling');
+const {
+  generateSkills,
+} = require('../../scripts/skill-generator');
 
 const SERVER_INFO = {
   name: 'rlhf-feedback-loop-mcp',
@@ -216,6 +219,17 @@ const TOOLS = [
       type: 'object',
       properties: {
         limit: { type: 'number' },
+      },
+    },
+  },
+  {
+    name: 'generate_skill',
+    description: 'Auto-generate Claude skills from repeated feedback patterns. Clusters failure patterns by tags and produces SKILL.md files with DO/INSTEAD rules.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        minOccurrences: { type: 'number', description: 'Minimum pattern occurrences to trigger skill generation (default 3)' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Filter to specific tags' },
       },
     },
   },
@@ -615,6 +629,19 @@ async function callToolInner(name, args = {}) {
   if (name === 'context_provenance') {
     const limit = Number(args.limit || 50);
     const result = getProvenance(Number.isFinite(limit) ? limit : 50);
+    return { content: [{ type: 'text', text: toText(result) }] };
+  }
+
+  if (name === 'generate_skill') {
+    const minOccurrences = Number(args.minOccurrences || 3);
+    const tags = Array.isArray(args.tags) ? args.tags : [];
+    let result = generateSkills({
+      minClusterSize: Number.isFinite(minOccurrences) ? minOccurrences : 3,
+    });
+    if (tags.length > 0) {
+      const tagSet = new Set(tags.map(t => t.toLowerCase()));
+      result = result.filter(s => (s.tags || []).some(t => tagSet.has(t.toLowerCase())));
+    }
     return { content: [{ type: 'text', text: toText(result) }] };
   }
 
