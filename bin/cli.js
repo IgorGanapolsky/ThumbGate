@@ -626,6 +626,21 @@ function status() {
     : console.log(JSON.stringify(data, null, 2));
 }
 
+function funnel() {
+  const { generateFunnelReport } = require(path.join(PKG_ROOT, 'scripts', 'funnel-analytics'));
+  generateFunnelReport();
+}
+
+function pulse() {
+  const { showPulse } = require(path.join(PKG_ROOT, 'scripts', 'pulse'));
+  showPulse();
+}
+
+function optimize() {
+  const { optimize: doOptimize } = require(path.join(PKG_ROOT, 'scripts', 'optimize-context'));
+  doOptimize();
+}
+
 function serve() {
   // Start MCP server over stdio
   const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
@@ -687,11 +702,14 @@ function help() {
   console.log('  risk [flags]          Train or query the boosted local risk scorer');
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
   console.log('  rules                 Generate prevention rules from repeated failures');
+  console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Veto Layer');
   console.log('  self-heal             Run self-healing check and auto-fix');
   console.log('  pro                   Open the $9 one-time Pro Pack + hosted pilot info');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
   console.log('  watch [flags]           Watch .rlhf/ for external signals and ingest through pipeline (--once, --source=X)');
   console.log('  status                  Show feedback tracking dashboard — approval trend + failure domains');
+  console.log('  funnel                  Show marketing & revenue conversion funnel analytics');
+  console.log('  pulse                   Show real-time GTM velocity and Mission Control summary');
   console.log('  start-api             Start the Memory Gateway HTTPS API server');
   console.log('  help                  Show this help message');
   console.log('');
@@ -745,6 +763,9 @@ switch (COMMAND) {
   case 'rules':
     rules();
     break;
+  case 'optimize':
+    optimize();
+    break;
   case 'self-heal':
     selfHeal();
     break;
@@ -759,6 +780,12 @@ switch (COMMAND) {
     break;
   case 'status':
     status();
+    break;
+  case 'funnel':
+    funnel();
+    break;
+  case 'pulse':
+    pulse();
     break;
   case 'start-api':
     startApi();
