@@ -15,6 +15,12 @@ jobs:
           node-version: 20
       - name: Install Railway CLI
         run: npm install -g @railway/cli
+      - name: Set Railway environment variables
+        run: |
+          railway variables set STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" --service rlhf-feedback-loop || true
+          railway variables set STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" --service rlhf-feedback-loop || true
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       - name: Deploy to Railway
         run: railway up --detach --service rlhf-feedback-loop
         env:
