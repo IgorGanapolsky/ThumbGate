@@ -25,9 +25,10 @@ feedback signal → validate → promote to memory → vector index → preventi
 2. **Validate** — Rubric engine gates promotion — requires specific failure descriptions, not vibes
 3. **Remember** — Promoted memories stored in JSONL + LanceDB vectors for semantic search
 4. **Prevent** — Repeated failures auto-generate prevention rules (the actual value — agents follow these when loaded)
-5. **Recall** — `recall` tool injects relevant past context into current session (this is the mechanism that works)
-6. **Export** — DPO/KTO pairs for optional downstream fine-tuning (separate from runtime behavior)
-7. **Bridge** — JSONL file watcher auto-ingests signals from external sources (Amp plugins, hooks, scripts)
+5. **Gate** — Pre-action blocking via PreToolUse hooks — physically prevents known mistakes before they happen
+6. **Recall** — `recall` tool injects relevant past context into current session (this is the mechanism that works)
+7. **Export** — DPO/KTO pairs for optional downstream fine-tuning (separate from runtime behavior)
+8. **Bridge** — JSONL file watcher auto-ingests signals from external sources (Amp plugins, hooks, scripts)
 
 ### What Works vs. What Doesn't
 
@@ -36,7 +37,8 @@ feedback signal → validate → promote to memory → vector index → preventi
 | `recall` injects past context — agent reads and uses it | Thumbs up/down changing agent behavior mid-session |
 | `remember` persists decisions across sessions | LLM weight updates from feedback signals |
 | Prevention rules — followed when loaded at session start | Feedback stats improving agent performance automatically |
-| Knowledge graph — gives agents project history | "Learning curve" implying the agent itself learns |
+| **Pre-action gates — physically block known mistakes** | "Learning curve" implying the agent itself learns |
+| **Auto-promotion — 3+ failures become blocking rules** | Agents self-correcting without context injection |
 
 ## Quick Start
 
@@ -49,9 +51,95 @@ gemini mcp add rlhf "npx -y rlhf-feedback-loop serve"
 
 # Or auto-detect all installed platforms
 npx rlhf-feedback-loop init
+
+# Auto-wire PreToolUse hooks (blocks known mistakes before they happen)
+npx rlhf-feedback-loop init --agent claude-code
+npx rlhf-feedback-loop init --agent codex
+npx rlhf-feedback-loop init --agent gemini
 ```
 
 > **Profiles:** Set `RLHF_MCP_PROFILE=essential` for the lean 5-tool setup (recommended), or leave unset for the full 11-tool pipeline. See [MCP Tools](#mcp-tools) for details.
+
+## Pre-Action Gates (v0.7.0)
+
+Gates are the enforcement layer. They physically block tool calls that match known failure patterns — no agent cooperation required.
+
+```
+Agent tries git push → PreToolUse hook fires → gates-engine checks rules → BLOCKED (no PR thread check)
+```
+
+### How it works
+
+1. **`init --agent claude-code`** auto-wires a PreToolUse hook into your agent settings
+2. The hook pipes every Bash command through `gates-engine.js`
+3. Gates match tool calls against regex patterns and block/warn
+4. **Auto-promotion**: 3+ same-tag failures → auto-creates a `warn` gate. 5+ → upgrades to `block`.
+
+### Built-in gates
+
+| Gate | Action | What it blocks |
+|------|--------|----------------|
+| `push-without-thread-check` | block | `git push` without checking PR review threads first |
+| `package-lock-reset` | block | `git checkout <branch> -- package-lock.json` |
+| `force-push` | block | `git push --force` / `-f` |
+| `protected-branch-push` | block | Direct push to develop/main/master |
+| `env-file-edit` | warn | Editing `.env` files |
+
+### Custom gates
+
+Define your own in `config/gates/custom.json`:
+
+```json
+{
+  "version": 1,
+  "gates": [
+    {
+      "id": "no-npm-audit-fix",
+      "pattern": "npm audit fix --force",
+      "action": "block",
+      "message": "npm audit fix --force can break dependencies. Review manually."
+    }
+  ]
+}
+```
+
+### Gate satisfaction
+
+Some gates have `unless` conditions. To satisfy a gate before pushing:
+
+```bash
+# Via MCP tool
+satisfy_gate(gateId: "push-without-thread-check", evidence: "0/42 unresolved")
+
+# Via CLI
+node scripts/gate-satisfy.js --gate push-without-thread-check --evidence "0 unresolved"
+```
+
+Evidence expires after 5 minutes (configurable TTL).
+
+### Dashboard
+
+```bash
+npx rlhf-feedback-loop dashboard
+```
+
+```
+📊 RLHF Dashboard
+══════════════════════════════════════════════
+  Approval Rate    : 26% → 45% (7-day trend ↑)
+  Total Signals    : 190 (15 positive, 43 negative)
+
+🛡️ Gate Enforcement
+  Active Gates     : 7 (4 manual, 3 auto-promoted)
+  Actions Blocked  : 12 this week
+  Actions Warned   : 8 this week
+  Top Blocked      : push-without-thread-check (5×)
+
+⚡ Prevention Impact
+  Estimated Saves  : 3.2 hours
+  Rules Active     : 5 prevention rules
+  Last Promotion   : pr-review (2 days ago)
+```
 
 ## MCP Tools
 
@@ -83,15 +171,21 @@ These tools support fine-tuning workflows, context engineering, and audit trails
 | `list_intents` | Available action plan templates | Policy-gated workflows |
 | `plan_intent` | Generate execution plan with policy checkpoints | Policy-gated workflows |
 | `context_provenance` | Audit trail of context decisions | Debugging retrieval decisions |
+| `satisfy_gate` | Record evidence that a gate condition is met | Unblocking gated actions (e.g., PR thread check) |
+| `gate_stats` | Gate enforcement statistics (blocked/warned counts) | Monitoring gate effectiveness |
+| `dashboard` | Full RLHF dashboard (approval rate, gates, prevention) | Overview of system health |
 
 ## CLI
 
 ```bash
 npx rlhf-feedback-loop init              # Scaffold .rlhf/ + configure MCP
+npx rlhf-feedback-loop init --agent X    # + auto-wire PreToolUse hooks (claude-code/codex/gemini)
+npx rlhf-feedback-loop init --wire-hooks # Wire hooks only (auto-detect agent)
 npx rlhf-feedback-loop serve             # Start MCP server (stdio) + watcher
+npx rlhf-feedback-loop dashboard         # Full RLHF dashboard with gate stats
+npx rlhf-feedback-loop gate-stats        # Gate enforcement statistics
 npx rlhf-feedback-loop status            # Learning curve dashboard
 npx rlhf-feedback-loop watch             # Watch .rlhf/ for external signals
-npx rlhf-feedback-loop watch --once      # Process pending signals and exit
 npx rlhf-feedback-loop capture           # Capture feedback via CLI
 npx rlhf-feedback-loop stats             # Analytics + Revenue-at-Risk
 npx rlhf-feedback-loop rules             # Generate prevention rules
@@ -157,6 +251,7 @@ npx rlhf-feedback-loop status
 | Tier | Components | Impact |
 |------|-----------|--------|
 | **Core** (use now) | `capture_feedback` + `recall` + `prevention_rules` + enforcement hooks | Captures mistakes, prevents repeats, constrains behavior |
+| **Gates** (use now) | Pre-action gates + auto-promotion + `satisfy_gate` + `dashboard` | Physically blocks known mistakes before they happen |
 | **Analytics** (use now) | `feedback_stats` + `feedback_summary` + learning curve dashboard | Measures whether the agent is actually improving |
 | **Fine-tuning** (future) | DPO/KTO export, Thompson Sampling, context packs | Infrastructure for model fine-tuning — valuable when you have a training pipeline |
 
@@ -164,7 +259,7 @@ npx rlhf-feedback-loop status
 
 ### Pipeline
 
-Five-phase pipeline: **Capture** → **Validate** → **Remember** → **Prevent** → **Export**
+Six-phase pipeline: **Capture** → **Validate** → **Remember** → **Prevent** → **Gate** → **Export**
 
 ![Context Engineering Architecture](https://raw.githubusercontent.com/IgorGanapolsky/mcp-memory-gateway/main/docs/diagrams/rlhf-architecture-pb.png)
 
