@@ -30,7 +30,7 @@ test('public docs render the current package version', () => {
 
   assert.match(landingPage, /MCP Memory Gateway/);
   assert.match(landingPage, /Pre-Action Gates/i);
-  assert.match(landingPage, /\$10\/mo/);
+  assert.match(landingPage, /\$29\/mo/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
 });
 
@@ -61,7 +61,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
 
   assert.match(publicLanding, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
   assert.match(publicLanding, /mcp-memory-gateway/i);
-  assert.match(publicLanding, /\$10\/mo/);
+  assert.match(publicLanding, /\$29\/mo/);
   assert.match(publicLanding, /Pre-Action Gates/i);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
   assert.doesNotMatch(publicLanding, /github\.com\/IgorGanapolsky\/rlhf-feedback-loop/);
@@ -103,7 +103,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const xStrategy = readText('docs/X_AUTOMATION_STRATEGY.md');
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
-  assert.match(commercialTruth, /Pro at \$10\/mo recurring/);
+  assert.match(commercialTruth, /Pro at \$29\/mo recurring/);
   assert.match(commercialTruth, /auto-gate promotion/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 
