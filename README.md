@@ -15,11 +15,49 @@
 
 Works with any MCP-compatible agent: Claude, Codex, Gemini, Amp, Cursor.
 
-## What It Actually Does
+## Visual Demo: Experience the Magic
 
+Stop imagining and see the **MCP Memory Gateway** in action. This is the difference between an agent that repeats mistakes and one that actually improves.
+
+### 1. The "Repeat Mistake" Cycle (Without Gateway)
+```text
+Agent: I'll fix the bug and push directly to main.
+User: No, you forgot to check the PR review thread again!
+Agent: Sorry, I'll remember next time. (It won't).
 ```
-feedback signal → validate → promote to memory → vector index → prevention rules → recall at session start
+
+### 2. The "Agentic Memory" Cycle (With Gateway)
+Watch how the **Pre-Action Gates** and **Reasoning Traces** physically block the failure:
+
+```text
+User: Fix the bug and push.
+Agent: I'll apply the fix... [Applying Edit]
+Agent: Now I'll push to main... [Executing: git push]
+
+🛑 GATE BLOCKED: push-without-thread-check
+──────────────────────────────────────────────────
+Reason    : Rule promoted from 3+ previous failures.
+Condition : No 'gh pr view' or thread check detected in current session.
+Action    : Blocked. Please check review threads first.
+──────────────────────────────────────────────────
+
+Agent: My apologies. I see that I am blocked because I haven't checked 
+the PR threads. I'll do that now... [Executing: gh pr view]
+
+Success! Agent finds a blocker in the thread, fixes it, and then pushes.
 ```
+
+### 3. Deep Troubleshooting with Reasoning Traces
+Every captured signal now includes a **Reasoning Trace**, making "black-box" failures transparent:
+
+```bash
+# Capture feedback with the new --reasoning flag
+npx mcp-memory-gateway capture --feedback=down \
+  --context="Agent skipped unit tests" \
+  --reasoning="The agent assumed the change was too small to break anything, but it regressed the auth flow." \
+  --tags="testing,regression"
+```
+*Now, when the agent starts its next session, it doesn't just see "Don't skip tests." It sees the **logic** that led to the failure, preventing the same cognitive trap.*
 
 1. **Capture** — `capture_feedback` MCP tool accepts signals with structured context (vague "thumbs down" is rejected)
 2. **Validate** — Rubric engine gates promotion — requires specific failure descriptions, not vibes
