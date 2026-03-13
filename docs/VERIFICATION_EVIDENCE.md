@@ -67,7 +67,7 @@ Status:
 
 Scope:
 
-- Version sync across `package.json`, `mcpize.yaml`, and `server.json` to `v0.7.0`.
+- Version sync across `package.json`, `mcpize.yaml`, and `server.json` to `v0.7.1`.
 - Historical pricing experiment: tested a "Founding Member $5/mo" offer and urgency hooks before the current commercial-truth correction.
 - Discovery optimization: Added high-ROI GitHub topics and updated `SKILL.md` auto-indexing keywords.
 - Launch content package: Created `docs/marketing/LAUNCH_CONTENT.md` with Reddit, HN, and Discord assets.
@@ -217,7 +217,7 @@ Evidence artifacts:
 Requirements verified:
 
 - Source checkouts now install canonical MCP entries that launch the local stdio server directly via `node adapters/mcp/server-stdio.js`.
-- Portable docs and adapter examples now use the version-pinned launcher `npx -y mcp-memory-gateway@0.7.0 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
+- Portable docs and adapter examples now use the version-pinned launcher `npx -y mcp-memory-gateway@0.7.1 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
 - Re-running the MCP installer upgrades stale config entries instead of treating them as already configured.
 - Adapter and LanceDB proof cleanup now uses retry-capable recursive removal so ephemeral filesystem contention no longer flakes CI.
 - Transient `.rlhf` reminder/A2UI/test-run files are now ignored as local runtime state and do not pollute git hygiene during verification.
@@ -597,7 +597,7 @@ Scope:
 
 - Added a portable `npm run test:coverage` command using Node's built-in coverage for `tests/**/*.test.js`.
 - Removed the unused `stripe` SDK dependency; billing continues to use direct HTTPS calls in `scripts/billing.js`.
-- Synced published version metadata across MCP manifests and public docs to `0.7.0`.
+- Synced published version metadata across MCP manifests and public docs to `0.7.1`.
 - Refreshed active proof artifacts and pruned stale milestone-era proof files that were no longer referenced.
 
 Commands run:

@@ -59,19 +59,19 @@ Pick your platform:
 
 ```bash
 # Claude
-claude mcp add rlhf -- npx -y mcp-memory-gateway@0.7.0 serve
+claude mcp add rlhf -- npx -y mcp-memory-gateway@0.7.1 serve
 
 # Codex
-codex mcp add rlhf -- npx -y mcp-memory-gateway@0.7.0 serve
+codex mcp add rlhf -- npx -y mcp-memory-gateway@0.7.1 serve
 
 # Gemini
-gemini mcp add rlhf "npx -y mcp-memory-gateway@0.7.0 serve"
+gemini mcp add rlhf "npx -y mcp-memory-gateway@0.7.1 serve"
 
 # Amp
-amp mcp add rlhf -- npx -y mcp-memory-gateway@0.7.0 serve
+amp mcp add rlhf -- npx -y mcp-memory-gateway@0.7.1 serve
 
 # Cursor
-cursor mcp add rlhf -- npx -y mcp-memory-gateway@0.7.0 serve
+cursor mcp add rlhf -- npx -y mcp-memory-gateway@0.7.1 serve
 ```
 
 Run once per project. The MCP server starts automatically on each session after that.

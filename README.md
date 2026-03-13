@@ -60,7 +60,7 @@ npx mcp-memory-gateway init --agent gemini
 
 > **Profiles:** Set `RLHF_MCP_PROFILE=essential` for the lean 5-tool setup (recommended), or leave unset for the full 11-tool pipeline. See [MCP Tools](#mcp-tools) for details.
 
-## Pre-Action Gates (v0.7.0)
+## Pre-Action Gates (v0.7.1)
 
 Gates are the enforcement layer. They physically block tool calls that match known failure patterns — no agent cooperation required.
 

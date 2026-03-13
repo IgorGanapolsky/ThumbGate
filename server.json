@@ -8,13 +8,13 @@
     "source": "github",
     "url": "https://github.com/IgorGanapolsky/mcp-memory-gateway"
   },
-  "version": "0.7.0",
+  "version": "0.7.1",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "mcp-memory-gateway",
-      "version": "0.7.0",
+      "version": "0.7.1",
       "transport": {
         "type": "stdio"
       }

@@ -1,6 +1,6 @@
 {
   "name": "mcp-memory-gateway",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "The Universal Context & Memory Layer for Model Context Protocol (MCP) Agents. Centralized hub to consolidate failures and enforce architectural guardrails.",
   "homepage": "https://rlhf-feedback-loop-production.up.railway.app",
   "repository": {

@@ -1,5 +1,5 @@
 # mcpize configuration for MCP Memory Gateway
 project: "mcp-memory-gateway"
-version: "0.7.0"
+version: "0.7.1"
 start_command: "npx -y mcp-memory-gateway serve"
 mcp_profile: "default"
