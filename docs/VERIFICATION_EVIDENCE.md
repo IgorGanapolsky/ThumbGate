@@ -5,8 +5,9 @@ Scope:
 - Fixed the free-tier gate loading regression in `scripts/gates-engine.js` so core default gates always load and free-tier capping applies only to auto-promoted add-on gates.
 - Removed dead duplicate `/healthz` routing in `src/api/server.js`.
 - Removed the legacy in-memory recall limiter in `adapters/mcp/server-stdio.js`, switched recall usage to the shared rate-limiter, and kept the free-tier upgrade nudge without dropping recall results.
+- Hardened `tests/recall-limit.test.js` so CI-provided secrets like `RLHF_API_KEY` cannot bypass the free-tier assertions.
 - Added exact feedback-memory deduplication in `scripts/contextfs.js` so repeated identical lessons no longer create duplicate ContextFS entries.
-- Hardened CI to install and verify the `workers/` package, upgraded vulnerable worker dependencies, and aligned Stripe worker code with the current SDK API version.
+- Hardened CI to install and verify the `workers/` package, aligned Stripe worker code with the current SDK API version, and removed the repo-local `wrangler` dependency because the current npm advisories did not leave a clean vendored release line.
 - Deleted six duplicate RLHF memory entries that were already storing the same lessons.
 
 Baseline snapshot before changes:
@@ -39,7 +40,7 @@ npm ci
 npm --prefix workers ci
 npm run test:gates
 node --test tests/contextfs.test.js
-node --test tests/recall-limit.test.js
+RLHF_API_KEY=ci-secret node --test tests/recall-limit.test.js
 RLHF_API_KEY=ci-secret npm run test:api
 node --test tests/mcp-server.test.js tests/api-server.test.js
 RLHF_API_KEY=ci-secret npm test
@@ -51,26 +52,24 @@ env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:workflow-
 env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:autoresearch
 RLHF_API_KEY=ci-secret npm run self-heal:check
 npm --prefix workers audit --json
-./workers/node_modules/.bin/tsc -p workers/tsconfig.json --noEmit
-./node_modules/.bin/wrangler deploy --dry-run
+wrangler deploy --dry-run
 ```
 
 Observed result:
 
 - `npm test` passed end-to-end after the audit changes.
 - `npm run test:coverage` passed with `963` passed, `0` failed, `1` skipped.
-- Current coverage summary on the rebased audit head: `82.61%` lines, `68.88%` branches, `85.24%` functions.
-- `npm run test:gates`, `node --test tests/contextfs.test.js`, `node --test tests/recall-limit.test.js`, and `node --test tests/mcp-server.test.js tests/api-server.test.js` all passed.
+- Current coverage summary on the final audit head: `82.56%` lines, `68.81%` branches, `85.07%` functions.
+- `npm run test:gates`, `node --test tests/contextfs.test.js`, `RLHF_API_KEY=ci-secret node --test tests/recall-limit.test.js`, and `node --test tests/mcp-server.test.js tests/api-server.test.js` all passed.
 - `RLHF_API_KEY=ci-secret npm run test:api` passed, proving the recall-limit regression is fixed under the same hosted-key environment GitHub Actions uses.
 - `npm run test:workers` passed after the worker package gained a dedicated type-check test script.
 - `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
 - `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `37` passed, `0` failed.
 - `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:workflow-contract`: `6` passed, `0` failed.
 - `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:autoresearch`: `Phase 9 proof: 5 passed, 0 failed`.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
-- `npm --prefix workers audit --json` reported `0` vulnerabilities after the dependency refresh.
-- `./workers/node_modules/.bin/tsc -p workers/tsconfig.json --noEmit` passed.
-- `./node_modules/.bin/wrangler deploy --dry-run` passed from `workers/` after the Wrangler upgrade.
+- `RLHF_API_KEY=ci-secret npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
+- `npm --prefix workers ci`, `npm run test:workers`, and `npm --prefix workers audit --json` all passed with `0` vulnerabilities after removing the direct `wrangler` dependency from the repo-local worker package.
+- `wrangler deploy --dry-run` passed from `workers/` via the globally installed Wrangler CLI (`4.63.0`).
 
 Requirements verified:
 
@@ -79,7 +78,7 @@ Requirements verified:
 - Recall-limit verification no longer depends on CI secrets or shared test-state, so the free-tier upgrade nudge is exercised deterministically in GitHub Actions.
 - Exact duplicate feedback-memory lessons no longer create duplicate ContextFS records, and the repository’s duplicate tracked memory entries were removed.
 - The worker package is now covered by CI install and test steps instead of being outside the main pipeline.
-- The open `workers/package-lock.json` Dependabot advisory on `esbuild` was patched by upgrading the worker toolchain to the fixed Wrangler stack.
+- The worker package no longer vendors a vulnerable Wrangler release in-repo; deploys and `wrangler types` continue to use the globally installed CLI already required by `workers/README.md`.
 
 ## March 13, 2026: Partner-aware orchestration MVP
 

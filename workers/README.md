@@ -25,6 +25,8 @@ npm install -g wrangler
 wrangler login
 ```
 
+`wrangler` is intentionally kept out of this repository's `package.json` until the current npm advisory set has a clean non-conflicting local release line. Use the global CLI for deploys and `wrangler types`.
+
 ### 2. Create KV Namespaces
 
 ```bash
