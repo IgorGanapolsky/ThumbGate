@@ -24,7 +24,7 @@ const COMMAND = process.argv[2];
 const CWD = process.cwd();
 const PKG_ROOT = path.join(__dirname, '..');
 
-const PRO_PACK_URL = 'https://iganapolsky.gumroad.com/l/tjovof?utm_source=cli&utm_medium=nudge&utm_campaign=pro_pack';
+const PRO_URL = 'https://rlhf-feedback-loop-production.up.railway.app';
 
 function telemetryPing(installId) {
   if (process.env.RLHF_NO_TELEMETRY === '1') return;
@@ -50,8 +50,8 @@ function proNudge() {
   if (process.env.RLHF_NO_NUDGE === '1') return;
   // Write to stderr so it never contaminates MCP stdio JSON on stdout
   process.stderr.write(
-    '\n💡 Like this? Get the Pro Pack — curated rules, presets & priority support. $9 one-time.\n' +
-    `   → ${PRO_PACK_URL}\n\n`
+    '\n💡 Like this? Go Pro — hosted dashboard, auto-gate promotion, unlimited gates. $29/mo.\n' +
+    `   → ${PRO_URL}\n\n`
   );
 }
 
@@ -548,20 +548,18 @@ function cfo() {
 }
 
 function pro() {
-  const gumroadUrl = 'https://iganapolsky.gumroad.com/l/tjovof?utm_source=cli&utm_medium=pro_command&utm_campaign=pro_pack';
   const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
   const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
   console.log('\nMCP Memory Gateway — Commercial Truth');
   console.log('─'.repeat(50));
-  console.log('Self-serve offer today: Pro Pack ($9 one-time) on Gumroad.');
-  console.log('Hosted Context Gateway access is pilot/by-request; it is not a public self-serve recurring subscription.');
+  console.log('Self-serve offer today: Pro ($29/mo recurring).');
+  console.log('Hosted Context Gateway access is pilot/by-request.');
   console.log('\nWhat is available:');
-  console.log('  - Pro Pack: curated prevention rules, presets, hooks, and reminder templates');
+  console.log('  - Pro: hosted dashboard, auto-gate promotion, unlimited custom gates, multi-repo sync');
   console.log('  - Hosted demo: public product surface and onboarding shell');
   console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
   console.log('\nLinks:');
-  console.log(`  Pro Pack        : ${gumroadUrl}`);
-  console.log(`  Hosted demo     : ${hostedUrl}`);
+  console.log(`  Pro             : ${hostedUrl}`);
   console.log(`  Commercial truth: ${truthUrl}\n`);
 }
 
@@ -803,7 +801,7 @@ function help() {
   console.log('  rules                 Generate prevention rules from repeated failures');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Veto Layer');
   console.log('  self-heal             Run self-healing check and auto-fix');
-  console.log('  pro                   Open the $9 one-time Pro Pack + hosted pilot info');
+  console.log('  pro                   Show Pro plan ($29/mo) + hosted pilot info');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
   console.log('  watch [flags]           Watch .rlhf/ for external signals and ingest through pipeline (--once, --source=X)');
   console.log('  status                  Show feedback tracking dashboard — approval trend + failure domains');

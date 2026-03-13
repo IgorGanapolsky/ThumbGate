@@ -31,7 +31,7 @@ async function generateStrategy() {
     - Key Sources: ${JSON.stringify(summary.keys.bySource)}
     - Infrastructure: Stripe Live, AWS Handshake verified, Perplexity Max SEO injected.
     - Active Channels: X.com (17M impressionsLever), GitHub (Always-On Loop).
-    - Latest Milestone: support for $49 "Mistake-Free" credit packs.
+    - Latest Milestone: Pro plan at $29/mo recurring.
 
     Goal: Capture the first real external paid event in the next 60 minutes.
 

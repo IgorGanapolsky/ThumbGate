@@ -18,7 +18,7 @@ MCP Memory Gateway is the **Enterprise Control Plane** for Claude-based agentic 
 ## Technical Integration (The Listing Payload)
 - **Delivery Format:** MCP Server (Standard) + OpenAPI Spec (for Claude Cowork).
 - **Security Evidence:** All listed skills are verified by our `VERIFICATION_EVIDENCE.md` audit trail.
-- **Pricing (historical hypothesis):** This strategy assumed a `$10/mo` Context Gateway founding price while the product was still in early distribution. The current public self-serve offer is the `$9` one-time Pro Pack in `docs/COMMERCIAL_TRUTH.md`, and hosted gateway access is pilot/by-request.
+- **Pricing:** The current public self-serve offer is Pro at `$29/mo` recurring per `docs/COMMERCIAL_TRUTH.md`. Hosted gateway access is pilot/by-request.
 
 ## Strategic Improvement: "Vibe-to-Verification" (V2V)
 The product will now feature a **V2V Pipeline**:

@@ -86,6 +86,7 @@ function main() {
     whatWentWrong: args['what-went-wrong'],
     whatToChange: args['what-to-change'],
     whatWorked: args['what-worked'],
+    reasoning: args.reasoning,
     rubricScores: args['rubric-scores'],
     guardrails: args.guardrails,
     tags: args.tags,

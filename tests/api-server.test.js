@@ -53,7 +53,7 @@ test('root serves the landing page by default', async () => {
   const body = await res.text();
   assert.match(body, /mcp.memory.gateway/i);
   assert.match(body, /Pre.Action Gates/i);
-  assert.match(body, /\$10\/mo/);
+  assert.match(body, /\$29\/mo/);
 });
 
 test('provisioning endpoint works', async () => {

@@ -68,14 +68,14 @@ async function generateOutreach(targets) {
 You are an expert, highly technical AI sales agent in March 2026. 
 You are selling the "MCP Memory Gateway" to a developer. 
 Our value proposition: We provide an 'Always-On' Context Hub that stops AI agents from repeating failures across sessions using a Thumbs-Up/Down Veto Layer.
-Our Pricing: $49 one-time "Mistake-Free" credit pack (500 verifiable memory consolidations). Link: ${CHECKOUT_LINK}
+Our Pricing: $29/mo Pro plan with auto-gate promotion, unlimited custom gates, multi-repo sync, and priority support. Link: ${CHECKOUT_LINK}
 
 Target Developer: @${target.username}
 Target Repository: ${target.repoName}
 Repository Description: ${target.description}
 
 Write a very short (2-3 sentences max), highly technical direct message (DM) to this developer. 
-Issue a "Live Debugging Challenge": tell them to throw their hardest repeating agent failure at our system, and if the $49 Veto Layer doesn't stop it, zero charge. 
+Issue a "Live Debugging Challenge": tell them to throw their hardest repeating agent failure at our system, and if the Pro Veto Layer doesn't stop it, zero charge.
 Reference their specific repo. Do not sound like a marketer. Sound like a senior engineer issuing a technical challenge.
 `;
 

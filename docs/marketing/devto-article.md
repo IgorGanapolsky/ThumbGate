@@ -1,127 +1,106 @@
 ---
-title: How I Made My AI Coding Agent Actually Learn From Mistakes
+title: "I Built Persistent Memory for Claude Code — Here's What I Learned"
 published: false
 tags: ai, mcp, rlhf, devtools
-cover_image: # Suggestion: A feedback loop diagram — dark background, neon arrows cycling through "Mistake → Capture → Prevention Rule → Better Code". Tools like Excalidraw or Figma work well.
+cover_image:
+canonical_url: https://github.com/IgorGanapolsky/mcp-memory-gateway
 ---
 
-Every AI coding agent has the same problem: it forgets everything between sessions.
+Every AI coding agent has the same defect, and it has nothing to do with intelligence.
 
-You thumbs-down a bad refactor. The agent apologizes. Next session, it does the exact same thing. It claims tests pass without running them. It rewrites files you told it never to touch. There is no memory, no accountability, no learning.
+It forgets.
 
-I got tired of repeating myself, so I built a feedback loop that actually sticks.
+You spend 20 minutes explaining a constraint. The agent nails it. Next session, it violates that same constraint in the first 30 seconds. You thumbs-down, re-explain, move on. Two sessions later — same thing. There is no learning. There is no memory. There is just an expensive autocomplete that makes you repeat yourself.
 
-## The Core Problem
+I got tired of it, so I built a system that actually retains feedback across sessions. Along the way, I discovered that the hard part is not storing memories — it is deciding which ones to enforce.
 
-AI coding agents (Claude, Codex, Gemini, Cursor, Amp) are stateless by default. Each session starts from zero. That means:
+## The Problem Is Not What You Think
 
-- **Repeated mistakes.** The agent breaks the same build for the same reason, over and over.
-- **False completions.** "Done!" — but no tests ran, no linter passed.
-- **Lost wins.** A great pattern that worked on Monday is forgotten by Tuesday.
+When I started, I assumed the fix was simple: write feedback to a file, load it next session, done. I tried several approaches:
 
-The missing piece is not a better model. It is a persistent feedback signal that the agent can read before it acts.
+**Attempt 1: CLAUDE.md rules.** I manually added "never do X" lines to my project instructions. This worked until the file hit 200 lines and the agent started ignoring half of it due to context window pressure. Rules conflicted with each other. No way to know which ones actually mattered.
 
-## The Solution: mcp-memory-gateway
+**Attempt 2: A simple feedback log.** I captured every up/down signal to a JSONL file and injected recent entries into the system prompt. Better, but noisy. The agent would fixate on irrelevant old feedback while ignoring critical patterns. No prioritization, no decay.
 
-[mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) is an MCP server that gives your agent a memory. You rate its work (thumbs up or down), and those signals get captured, indexed, and turned into actionable rules — automatically.
+**Attempt 3: Vector search over feedback.** I embedded all feedback entries and retrieved the most relevant ones per query. This helped with relevance but created a new problem: the agent would retrieve memories about a similar-sounding situation and apply the wrong lesson. Semantic similarity is not the same as causal relevance.
 
-The architecture is simple:
+None of these worked reliably. The missing piece was not retrieval — it was **behavior steering**.
 
-```
-Thumbs up/down
-      |
-      v
-  Capture → JSONL log
-      |
-      v
-  Rubric engine (block false positives)
-      |
-  +---+---+
-  |       |
- Good    Bad
-  |       |
-  v       v
-Learn   Prevention rule
-  |       |
-  v       v
-LanceDB   ShieldCortex
-vectors   context packs
-  |
-  v
-DPO export → fine-tune your model
-```
+## What Actually Worked: Prevention Gates
 
-**JSONL** files store every feedback event locally — transparent, portable, no vendor lock-in. **LanceDB** indexes memories as vector embeddings so the agent can semantically search past learnings. Negative feedback auto-generates **prevention rules** that block the agent from repeating known mistakes.
+The breakthrough came when I stopped treating feedback as passive context and started treating it as active control flow.
 
-## One-Command Install
+[mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) is an MCP server that sits inside your agent's tool chain. The core loop:
 
-Pick your platform:
+1. You rate agent actions (thumbs up or down) with a brief note
+2. Feedback gets stored in JSONL and indexed in LanceDB
+3. When the same failure pattern appears 3+ times, the system auto-generates a **prevention gate** — a structured rule that the agent must check before acting
+4. Gates get enforced pre-action, not post-hoc
+
+The install is one line:
 
 ```bash
-# Claude
-claude mcp add rlhf -- npx -y mcp-memory-gateway@0.7.1 serve
-
-# Codex
-codex mcp add rlhf -- npx -y mcp-memory-gateway@0.7.1 serve
-
-# Gemini
-gemini mcp add rlhf "npx -y mcp-memory-gateway@0.7.1 serve"
-
-# Amp
-amp mcp add rlhf -- npx -y mcp-memory-gateway@0.7.1 serve
-
-# Cursor
-cursor mcp add rlhf -- npx -y mcp-memory-gateway@0.7.1 serve
+npx mcp-memory-gateway serve
 ```
 
-Run once per project. The MCP server starts automatically on each session after that.
-
-## What the Data Looks Like
-
-Every feedback event is a structured JSON record:
+Then add it to your MCP config (Claude Code example):
 
 ```json
 {
-  "feedback": "up",
-  "context": "Refactored auth middleware to use async/await",
-  "what-worked": "Preserved all existing error handlers while modernizing syntax",
-  "rubric-scores": [{"criterion": "correctness", "score": 4}],
-  "guardrails": {"testsPassed": true, "pathSafety": true},
-  "tags": ["refactor", "auth"]
+  "mcpServers": {
+    "memory-gateway": {
+      "command": "npx",
+      "args": ["mcp-memory-gateway", "serve"]
+    }
+  }
 }
 ```
 
-```json
-{
-  "feedback": "down",
-  "context": "Agent deleted integration tests during cleanup",
-  "what-went-wrong": "Removed test files it considered unused",
-  "what-to-change": "Never delete test files without explicit confirmation",
-  "tags": ["tests", "destructive"]
-}
-```
+The agent now has access to tools like `capture_feedback`, `query_memory`, and `check_gates`. When it starts a task, it queries relevant gates first. If a gate fires, the agent gets a structured warning with the historical context of why that approach failed before.
 
-The thumbs-down entry becomes a prevention rule. Next session, the agent reads it before touching any test files.
+## The Interesting Part: Thompson Sampling
 
-## The DPO Export: Actually Fine-Tune Your Model
+Static rules decay in usefulness. A gate that was critical last month might be irrelevant after a refactor. Hard-coding enforcement creates the same problem as the 200-line CLAUDE.md — the agent drowns in stale constraints.
 
-This is where it gets interesting. Every up/down pair on the same task becomes a **DPO training pair** — a chosen response and a rejected response, ready for fine-tuning.
+So I added Thompson Sampling (Beta-Bernoulli model) to decide which gates to enforce. Each gate tracks its own alpha/beta parameters based on outcomes:
+
+- Gate fires and prevents a real failure -> reward (alpha increments)
+- Gate fires but the action would have been fine -> penalty (beta increments)
+- Gate with low engagement over time -> natural decay toward prior
+
+The agent samples from each gate's Beta distribution to decide enforcement probability. High-value gates get enforced consistently. Stale or noisy gates fade out on their own. No manual curation needed.
+
+This turned out to be the single most impactful design decision in the project. The system self-corrects without human maintenance.
+
+## DPO Export: Your Feedback as Training Data
+
+Every up/down rating with context is a preference pair. The system exports these in standard DPO format (chosen/rejected with full prompt context) as JSONL, compatible with TRL and similar frameworks. It also supports KTO (Kahneman-Tversky Optimization) export for unpaired preference data.
+
+I have not fine-tuned a model with this data yet, but the export pipeline is tested and the format is standard. If you are doing preference optimization research, this gives you a structured way to collect pairs from real coding sessions instead of synthetic generation.
+
+## What I Learned
+
+**Memory without enforcement is just a suggestion.** Agents ignore passive context under pressure. Gates that block action are 10x more effective than memories that inform context.
+
+**Behavior steering needs exploration/exploitation.** Static rules accumulate cruft. Thompson Sampling keeps the system adaptive without manual pruning.
+
+**MCP is the right abstraction layer.** Building this as an MCP server means it works with any MCP-compatible agent — Claude Code, Codex CLI, Gemini CLI, Amp — without agent-specific integration code. One server, multiple agents.
+
+**Testing feedback systems is hard.** You cannot unit test "does the agent learn" in the traditional sense. I ended up with 314 tests and 12 proof-of-correctness reports that verify the pipeline mechanics (capture, storage, retrieval, gate generation, DPO export) without trying to test emergent behavior.
+
+## Try It
+
+The core is open source under MIT:
 
 ```bash
-npm run feedback:export:dpo
+npx mcp-memory-gateway serve
 ```
 
-This exports pairs compatible with [TRL](https://github.com/huggingface/trl) and [OpenPipe](https://openpipe.ai/). Feed them into Direct Preference Optimization and you get a model that has internalized your team's standards — not just for one session, but permanently.
+GitHub: [github.com/IgorGanapolsky/mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)
+npm: [mcp-memory-gateway](https://www.npmjs.com/package/mcp-memory-gateway)
 
-## What's Next
+If you want a hosted dashboard with auto-gate promotion, multi-repo sync, and CI webhook ingestion, there is a [Pro tier at $29/mo](https://rlhf-feedback-loop-production.up.railway.app). But the local version handles the full feedback loop on its own.
 
-The feedback loop is running in production on my own projects. The roadmap:
+I have been running this on my own projects for months. The difference between session 1 and session 50 is noticeable — the agent stops making the same classes of mistakes. Not because it got smarter, but because the gates will not let it repeat what already failed.
 
-- **Cross-agent rule sharing** — prevention rules that propagate across a swarm of agents working on the same codebase.
-- **Bayesian confidence scoring** — Thompson Sampling to weight feedback signals that evolve over time.
-- **One-click fine-tuning** — pipe DPO exports directly into TRL or OpenPipe from the CLI.
-
-If your AI agent keeps making the same mistakes, it does not need a bigger context window. It needs a feedback loop.
-
-**GitHub:** [github.com/IgorGanapolsky/mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)
-**npm:** [npmjs.com/package/mcp-memory-gateway](https://www.npmjs.com/package/mcp-memory-gateway)
+Happy to answer questions or take feedback (pun intended).

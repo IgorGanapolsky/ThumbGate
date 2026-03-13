@@ -91,6 +91,7 @@ function resolveFeedbackAction(params) {
     whatWentWrong,
     whatToChange,
     whatWorked,
+    reasoning,
     tags,
     rubricEvaluation,
   } = params;
@@ -130,7 +131,8 @@ function resolveFeedbackAction(params) {
     const content = [
       whatWentWrong ? `What went wrong: ${whatWentWrong}` : `Context: ${context}`,
       whatToChange ? `How to avoid: ${whatToChange}` : 'Action needed: investigate and prevent recurrence',
-    ].join('\n');
+      reasoning ? `Reasoning: ${reasoning}` : null,
+    ].filter(Boolean).join('\n');
     const rubricLines = [];
     if (rubricSummary) {
       rubricLines.push(`Rubric weighted score: ${rubricSummary.weightedScore}`);
@@ -180,7 +182,10 @@ function resolveFeedbackAction(params) {
       return { type: 'no-action', reason };
     }
 
-    const content = whatWorked ? `What worked: ${whatWorked}` : `Approach: ${context}`;
+    const content = [
+      whatWorked ? `What worked: ${whatWorked}` : `Approach: ${context}`,
+      reasoning ? `Reasoning: ${reasoning}` : null,
+    ].filter(Boolean).join('\n');
     const rubricLines = [];
     if (rubricSummary) {
       rubricLines.push(`Rubric weighted score: ${rubricSummary.weightedScore}`);

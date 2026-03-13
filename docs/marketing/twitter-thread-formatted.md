@@ -12,7 +12,7 @@ I built a fix. 🧵
 
 Thumbs-up/down feedback → stored locally → queried before every action → repeated failures auto-blocked.
 
-Pro Pack ($9 one-time):
+Pro ($29/mo):
 https://iganapolsky.gumroad.com/l/tjovof
 
 ---
@@ -49,7 +49,7 @@ This does all three.
 ---
 
 **7/7:** Free self-hosted: npx mcp-memory-gateway serve
-Pro Pack ($9): https://iganapolsky.gumroad.com/l/tjovof
+Pro ($29/mo): https://iganapolsky.gumroad.com/l/tjovof
 GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
 
 npm install mcp-memory-gateway

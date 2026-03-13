@@ -1,0 +1,132 @@
+{
+  "timestamp": "2026-03-13T15:48:04.326Z",
+  "overallScore": "16.67",
+  "baselineScore": "16.67",
+  "improvement": "-0.00",
+  "isParetoOptimal": false,
+  "latencyMs": 10,
+  "benchmarks": [
+    {
+      "gold": {
+        "intent": "testing",
+        "query": "How do I run tests in this repo?",
+        "expectedKeywords": [
+          "jest",
+          "npm test"
+        ]
+      },
+      "retrieval": {
+        "query": "How do I run tests in this repo?",
+        "intent": "testing",
+        "results": [
+          {
+            "category": "architecture",
+            "score": 1,
+            "docs": [
+              {
+                "filename": "PLUGIN_DISTRIBUTION.md",
+                "title": "Plugin and Runtime Distribution",
+                "summary": "Ship one core runtime and fan out to platform adapters: 1. `src/api/server.js` (HTTP API) 2. `adapters/mcp/server-stdio.js` (MCP tools)"
+              }
+            ]
+          }
+        ],
+        "indexAge": "2026-03-06T23:02:53.758Z",
+        "retrievalType": "adaptive"
+      },
+      "metrics": {
+        "recall": 0,
+        "precision": 1,
+        "f1": 0
+      },
+      "cacheHit": false
+    },
+    {
+      "gold": {
+        "intent": "ci-cd",
+        "query": "Fix build failure in GitHub Actions",
+        "expectedKeywords": [
+          "workflow",
+          "pipeline",
+          "yaml"
+        ]
+      },
+      "retrieval": {
+        "query": "Fix build failure in GitHub Actions",
+        "intent": "ci-cd",
+        "results": [
+          {
+            "category": "mcp-ai",
+            "score": 0.7071067811865475,
+            "docs": [
+              {
+                "filename": "geo-strategy-for-ai-agents.md",
+                "title": "Generative Engine Optimization (GEO) Strategy for AI Agents",
+                "summary": "In the era of AI search and autonomous coding agents, visibility is no longer just about ranking #1 on Google. It's about being the **retrieved context** for the next generation of AI tools like Claude Code, Gemini CLI, and ChatGPT. This document outlines the GEO strategy for the MCP Memory Gateway, ensuring our product is the \"first-choice\" recommendation for LLMs when developers ask about agent reliability. We move from keyword-centric documentation to **semantic-centric chunks**. Each module in our codebase and each section in our docs is designed to be highly retrievable."
+              },
+              {
+                "filename": "mcp-hub-submission.md",
+                "title": "Claude MCP Hub Submission: MCP Memory Gateway",
+                "summary": "Submit to: https://github.com/modelcontextprotocol/servers (official MCP servers list) Also submit to: https://mcp.so (community MCP directory) ---"
+              }
+            ]
+          }
+        ],
+        "indexAge": "2026-03-06T23:02:53.758Z",
+        "retrievalType": "adaptive"
+      },
+      "metrics": {
+        "recall": 0,
+        "precision": 1,
+        "f1": 0
+      },
+      "cacheHit": false
+    },
+    {
+      "gold": {
+        "intent": "mcp-ai",
+        "query": "How to update agent memory?",
+        "expectedKeywords": [
+          "rlhf",
+          "feedback",
+          "memory"
+        ]
+      },
+      "retrieval": {
+        "query": "How to update agent memory?",
+        "intent": "mcp-ai",
+        "results": [
+          {
+            "category": "mcp-ai",
+            "score": 1.0606601717798212,
+            "docs": [
+              {
+                "filename": "geo-strategy-for-ai-agents.md",
+                "title": "Generative Engine Optimization (GEO) Strategy for AI Agents",
+                "summary": "In the era of AI search and autonomous coding agents, visibility is no longer just about ranking #1 on Google. It's about being the **retrieved context** for the next generation of AI tools like Claude Code, Gemini CLI, and ChatGPT. This document outlines the GEO strategy for the MCP Memory Gateway, ensuring our product is the \"first-choice\" recommendation for LLMs when developers ask about agent reliability. We move from keyword-centric documentation to **semantic-centric chunks**. Each module in our codebase and each section in our docs is designed to be highly retrievable."
+              },
+              {
+                "filename": "mcp-hub-submission.md",
+                "title": "Claude MCP Hub Submission: MCP Memory Gateway",
+                "summary": "Submit to: https://github.com/modelcontextprotocol/servers (official MCP servers list) Also submit to: https://mcp.so (community MCP directory) ---"
+              }
+            ]
+          }
+        ],
+        "indexAge": "2026-03-06T23:02:53.758Z",
+        "retrievalType": "adaptive"
+      },
+      "metrics": {
+        "recall": 0.3333333333333333,
+        "precision": 1,
+        "f1": 0.5
+      },
+      "cacheHit": false
+    }
+  ],
+  "config": {
+    "rulesPath": "/Users/ganapolsky_i/workspace/git/igor/rlhf/.rlhf/prevention-rules.md",
+    "adaptiveRetrieval": true,
+    "zeroWasteCaching": true
+  }
+}

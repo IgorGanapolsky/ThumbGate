@@ -446,6 +446,7 @@ function captureFeedback(params) {
     whatWentWrong: params.whatWentWrong,
     whatToChange: params.whatToChange,
     whatWorked: params.whatWorked,
+    reasoning: params.reasoning,
     tags,
     rubricEvaluation,
   });
@@ -458,6 +459,7 @@ function captureFeedback(params) {
     whatWentWrong: params.whatWentWrong || null,
     whatToChange: params.whatToChange || null,
     whatWorked: params.whatWorked || null,
+    reasoning: params.reasoning || null,
     tags,
     skill: params.skill || null,
     rubric: rubricEvaluation

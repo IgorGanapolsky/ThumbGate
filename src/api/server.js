@@ -857,8 +857,8 @@ function createApiServer() {
         const body = await parseJsonBody(req);
         const traceId = body.traceId || createTraceId('checkout');
         const responseHeaders = getPublicBillingHeaders(traceId);
-        // $49 Wedge: If oneTime is set, create a one-time payment session
-        const isOneTime = body.oneTime === true || body.amount === 49;
+        // Pro plan: $29/mo recurring subscription
+        const isOneTime = body.oneTime === true;
         
         const result = await createCheckoutSession({
           successUrl: body.successUrl || buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
@@ -876,7 +876,7 @@ function createApiServer() {
         sendJson(res, 200, {
           ...result,
           traceId: result.traceId || traceId,
-          price: isOneTime ? 49 : 10,
+          price: isOneTime ? 29 : 29,
           type: isOneTime ? 'one-time' : 'subscription',
         }, responseHeaders);
       } catch (err) {

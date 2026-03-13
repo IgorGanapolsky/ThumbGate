@@ -16,7 +16,7 @@ It's called **Agentic Feedback Studio**.
   - Bayesian Preference Scoring: Thompson Sampling models your preferences in real-time.
   - DPO/KTO Export: Turn your sessions into training data for fine-tuning.
 - **Open Source:** Totally free for solo devs.
-- **Commercial:** The public self-serve offer today is the **$9 one-time Pro Pack**. Hosted pilots are by request.
+- **Commercial:** The public self-serve offer today is the **$29/mo Pro plan**. Hosted pilots are by request.
 
 Check it out on GitHub: [https://github.com/IgorGanapolsky/mcp-memory-gateway]
 Demo/Hosted: [https://mcp-memory-gateway.up.railway.app]
@@ -61,7 +61,7 @@ Stop vibe-coding. If Claude makes a mistake, flag it, and the Studio generates a
 - 🧠 **Smart Memory:** Vector storage via LanceDB + Bayesian reward estimation.
 - ⚡ **Global Skill:** Install once, use across all your repos.
 
-OSS is free. The public self-serve offer is the $9 one-time Pro Pack.
+OSS is free. The public self-serve offer is Pro at $29/mo.
 Repo: https://github.com/IgorGanapolsky/mcp-memory-gateway
 Live: https://mcp-memory-gateway.up.railway.app
 

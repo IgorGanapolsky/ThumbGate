@@ -263,19 +263,10 @@ function scoreBundle(queryTokens, bundle) {
  * @param {number} [topN=3] - Number of top bundles to return
  * @returns {{ query: string, results: object[] }} Top-N bundles with scores and doc references
  */
-function routeQuery(query, indexPath, topN) {
-  const idxPath = indexPath || DEFAULT_INDEX_PATH;
-  const n = topN || 3;
-
-  // Load index
-  let index;
-  try {
-    index = JSON.parse(fs.readFileSync(idxPath, 'utf-8'));
-  } catch {
-    // Index doesn't exist — build it on the fly
-    index = buildKnowledgeIndex(undefined, idxPath);
-  }
-
+/**
+ * Base routing logic for bundles.
+ */
+function baseRouteQuery(query, index, topN) {
   const queryTokens = query
     .toLowerCase()
     .split(/\s+/)
@@ -289,12 +280,69 @@ function routeQuery(query, indexPath, topN) {
     }))
     .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score)
+    .slice(0, topN);
+
+  return scored;
+}
+
+/**
+ * Adaptive Retrieval Loop (Agentic RAG)
+ * 
+ * Step 1: Analyze query to expand tokens or identify intent.
+ * Step 2: Perform retrieval with boosted weights for intent-matching categories.
+ */
+function routeQuery(query, indexPath, topN) {
+  const idxPath = indexPath || DEFAULT_INDEX_PATH;
+  const n = topN || 3;
+
+  // Load index
+  let index;
+  try {
+    index = JSON.parse(fs.readFileSync(idxPath, 'utf-8'));
+  } catch {
+    index = buildKnowledgeIndex(undefined, idxPath);
+  }
+
+  // Step 1: Intent Detection (Simple heuristic for now, can be LLM-backed)
+  const lowerQuery = query.toLowerCase();
+  let intentBoost = null;
+  if (lowerQuery.includes('test') || lowerQuery.includes('jest')) intentBoost = 'testing';
+  if (lowerQuery.includes('build') || lowerQuery.includes('ci')) intentBoost = 'ci-cd';
+  if (lowerQuery.includes('security') || lowerQuery.includes('audit')) intentBoost = 'security';
+  if (lowerQuery.includes('mobile') || lowerQuery.includes('android')) intentBoost = 'mobile-dev';
+  if (lowerQuery.includes('memory') || lowerQuery.includes('rlhf')) intentBoost = 'mcp-ai';
+
+  // Step 2: Contextual Ranking
+  const queryTokens = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 2);
+
+  const scored = Object.entries(index.bundles)
+    .map(([category, bundle]) => {
+      let score = scoreBundle(queryTokens, bundle);
+      
+      // Boost score if intent matches category
+      if (intentBoost && category === intentBoost) {
+        score *= 1.5; 
+      }
+
+      return {
+        category,
+        score,
+        docs: bundle.docs,
+      };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
     .slice(0, n);
 
   return {
     query,
+    intent: intentBoost,
     results: scored,
     indexAge: index.metadata && index.metadata.builtAt,
+    retrievalType: intentBoost ? 'adaptive' : 'base',
   };
 }
 

@@ -2,7 +2,7 @@
 
 Scope:
 
-- Replaced stale `$5/mo` and `$10/mo` self-serve subscription language on live-facing surfaces with the actual public offer: Pro Pack (`$9` one-time).
+- Replaced stale `$5/mo` and `$10/mo` self-serve subscription language on live-facing surfaces with the actual public offer: Pro (`$29/mo`).
 - Removed unsupported scarcity and adoption framing from CLI and landing-page copy.
 - Added `docs/COMMERCIAL_TRUTH.md` as the source of truth for pricing, traction, and proof claims.
 

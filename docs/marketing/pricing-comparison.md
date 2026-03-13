@@ -1,6 +1,6 @@
 # Pricing Comparison
 
-| Feature | Free | Pro ($10/mo) |
+| Feature | Free | Pro ($29/mo) |
 |---------|------|--------------|
 | Feedback capture + recall | Yes | Yes |
 | Prevention rules | Yes | Yes |

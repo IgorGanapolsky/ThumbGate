@@ -10,11 +10,27 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const os = require('os');
 const PROJECT_ROOT = path.join(__dirname, '..');
-const FEEDBACK_DIR = process.env.RLHF_FEEDBACK_DIR || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+const HOME = os.homedir();
 
+function getFeedbackBaseDir() {
+  if (process.env.RLHF_FEEDBACK_DIR) return process.env.RLHF_FEEDBACK_DIR;
+
+  const localRlhf = path.join(process.cwd(), '.rlhf');
+  const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback');
+  
+  if (fs.existsSync(localRlhf)) return localRlhf;
+  if (fs.existsSync(localClaude)) return localClaude;
+
+  const projectName = path.basename(process.cwd()) || 'default';
+  return path.join(HOME, '.rlhf', 'projects', projectName);
+}
+
+const FEEDBACK_DIR = getFeedbackBaseDir();
 const CONTEXTFS_ROOT = process.env.RLHF_CONTEXTFS_DIR
-  || path.join(FEEDBACK_DIR, 'contextfs');
+  || (FEEDBACK_DIR.endsWith('contextfs') ? FEEDBACK_DIR : path.join(FEEDBACK_DIR, 'contextfs'));
 
 const NAMESPACES = {
   rawHistory: 'raw_history',
@@ -156,6 +172,30 @@ function appendSemanticCacheEntry(entry) {
   appendJsonl(getSemanticCachePath(), entry);
 }
 
+function getSourceHash(namespaces) {
+  const hasher = crypto.createHash('sha256');
+  const normalizedNamespaces = normalizeNamespaces(namespaces);
+
+  for (const ns of normalizedNamespaces) {
+    const dirPath = path.join(CONTEXTFS_ROOT, ns);
+    if (!fs.existsSync(dirPath)) continue;
+
+    const files = fs.readdirSync(dirPath).sort();
+    for (const file of files) {
+      if (file.endsWith('.json') || file.endsWith('.jsonl') || file.endsWith('.md')) {
+        const filePath = path.join(dirPath, file);
+        try {
+          const stats = fs.statSync(filePath);
+          hasher.update(`${file}:${stats.mtimeMs}:${stats.size}`);
+        } catch {
+          // Skip if file disappeared
+        }
+      }
+    }
+  }
+  return hasher.digest('hex');
+}
+
 function findSemanticCacheHit({ query, namespaces, maxItems, maxChars }) {
   const { enabled, threshold, ttlSeconds } = getSemanticCacheConfig();
   if (!enabled) return null;
@@ -166,10 +206,16 @@ function findSemanticCacheHit({ query, namespaces, maxItems, maxChars }) {
   const now = Date.now();
   const queryTokens = tokenizeQuery(query);
   const key = buildSemanticCacheKey({ namespaces, maxItems, maxChars });
+  const currentSourceHash = getSourceHash(namespaces);
 
   for (let i = entries.length - 1; i >= 0; i -= 1) {
     const entry = entries[i];
     if (!entry || entry.key !== key || !entry.pack) continue;
+
+    // Zero-Waste Caching: validate source hash
+    if (entry.sourceHash !== currentSourceHash) {
+      continue;
+    }
 
     const createdMs = new Date(entry.timestamp || 0).getTime();
     if (Number.isFinite(createdMs) && now - createdMs > ttlSeconds * 1000) {
@@ -483,6 +529,7 @@ function constructMemexPack({ query = '', maxItems = 8, maxChars = 6000, namespa
 function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, namespaces = [] } = {}) {
   const normalizedNamespaces = normalizeNamespaces(namespaces);
   const tokens = tokenizeQuery(query);
+  const sourceHash = getSourceHash(normalizedNamespaces);
 
   const cacheHit = findSemanticCacheHit({
     query,
@@ -557,6 +604,7 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
     cache: {
       hit: false,
     },
+    sourceHash,
   };
 
   appendJsonl(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'packs.jsonl'), pack);
@@ -570,6 +618,7 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
     }),
     query,
     tokens,
+    sourceHash,
     pack,
   });
   recordProvenance({
@@ -578,6 +627,7 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
     query,
     itemCount: selected.length,
     usedChars,
+    sourceHash,
   });
 
   return pack;

@@ -356,37 +356,36 @@ describe('bin/cli.js', () => {
   test('pro command prints truthful commercial offer info', () => {
     const result = spawnSync(process.execPath, [CLI, 'pro'], { encoding: 'utf8' });
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
-    assert.match(result.stdout, /Pro Pack \(\$9 one-time\)/);
+    assert.match(result.stdout, /Pro \(\$29\/mo recurring\)/);
     assert.match(result.stdout, /pilot\/by-request/);
     assert.match(result.stdout, /COMMERCIAL_TRUTH\.md/);
     assert.doesNotMatch(result.stdout, /\$10\/mo|38 spots remaining|first 50 users|Founding Member/i);
   });
 
-  test('help command shows Pro Pack nudge on stderr', () => {
+  test('help command shows Pro nudge on stderr', () => {
     const result = spawnSync(process.execPath, [CLI, 'help'], {
       encoding: 'utf8',
       env: { ...process.env, RLHF_NO_NUDGE: undefined },
     });
     assert.strictEqual(result.status, 0);
-    assert.ok(result.stderr.includes('Pro Pack'), 'Nudge should appear on stderr');
-    assert.ok(result.stderr.includes('gumroad.com'), 'Nudge should include Gumroad link');
-    assert.ok(!result.stdout.includes('gumroad.com'), 'Nudge must NOT appear on stdout (would break MCP stdio)');
+    assert.ok(result.stderr.includes('Go Pro'), 'Nudge should appear on stderr');
+    assert.ok(result.stderr.includes('railway.app'), 'Nudge should include hosted link');
   });
 
-  test('RLHF_NO_NUDGE=1 suppresses Pro Pack nudge', () => {
+  test('RLHF_NO_NUDGE=1 suppresses Pro nudge', () => {
     const result = spawnSync(process.execPath, [CLI, 'help'], {
       encoding: 'utf8',
       env: { ...process.env, RLHF_NO_NUDGE: '1' },
     });
     assert.strictEqual(result.status, 0);
-    assert.ok(!result.stderr.includes('Pro Pack'), 'Nudge should be suppressed when RLHF_NO_NUDGE=1');
+    assert.ok(!result.stderr.includes('Go Pro'), 'Nudge should be suppressed when RLHF_NO_NUDGE=1');
   });
 
-  test('pro command Gumroad link includes UTM params', () => {
+  test('pro command includes hosted link', () => {
     const result = spawnSync(process.execPath, [CLI, 'pro'], { encoding: 'utf8' });
     assert.strictEqual(result.status, 0);
-    assert.ok(result.stdout.includes('utm_source=cli'), 'Pro command should include UTM source');
-    assert.ok(result.stdout.includes('utm_campaign=pro_pack'), 'Pro command should include UTM campaign');
+    assert.ok(result.stdout.includes('railway.app'), 'Pro command should include hosted URL');
+    assert.ok(result.stdout.includes('$29/mo'), 'Pro command should include current price');
   });
 
   test('RLHF_NO_TELEMETRY=1 prevents telemetry ping on init', () => {

@@ -88,7 +88,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 ```
 
 Hosted API access is currently pilot/by-request rather than a public self-serve monthly subscription.
-Current self-serve commercial offer: Pro Pack ($9 one-time): https://iganapolsky.gumroad.com/l/tjovof
+Current self-serve commercial offer: Pro ($29/mo): https://iganapolsky.gumroad.com/l/tjovof
 Verification evidence: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ---

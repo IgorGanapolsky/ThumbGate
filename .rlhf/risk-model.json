@@ -1,10 +1,10 @@
 {
   "version": 1,
   "algorithm": "adaboost-stumps",
-  "trainedAt": "2026-03-11T22:11:52.085Z",
-  "exampleCount": 7,
+  "trainedAt": "2026-03-13T15:39:04.428Z",
+  "exampleCount": 8,
   "highRiskExamples": 4,
-  "baseRate": 0.5714285714285714,
+  "baseRate": 0.5,
   "featureRegistry": {
     "topTags": [
       "debug",
@@ -74,49 +74,49 @@
   "learners": [
     {
       "feature": "actionNegativeRate",
-      "threshold": 0.6239316239316239,
+      "threshold": 0.6461538461538461,
       "polarity": 1,
       "alpha": 6.908
     },
     {
       "feature": "actionNegativeRate",
-      "threshold": 0.6239316239316239,
+      "threshold": 0.6461538461538461,
       "polarity": 1,
       "alpha": 6.908
     },
     {
       "feature": "actionNegativeRate",
-      "threshold": 0.6239316239316239,
+      "threshold": 0.6461538461538461,
       "polarity": 1,
       "alpha": 6.908
     },
     {
       "feature": "actionNegativeRate",
-      "threshold": 0.6239316239316239,
+      "threshold": 0.6461538461538461,
       "polarity": 1,
       "alpha": 6.908
     },
     {
       "feature": "actionNegativeRate",
-      "threshold": 0.6239316239316239,
+      "threshold": 0.6461538461538461,
       "polarity": 1,
       "alpha": 6.908
     },
     {
       "feature": "actionNegativeRate",
-      "threshold": 0.6239316239316239,
+      "threshold": 0.6461538461538461,
       "polarity": 1,
       "alpha": 6.908
     },
     {
       "feature": "actionNegativeRate",
-      "threshold": 0.6239316239316239,
+      "threshold": 0.6461538461538461,
       "polarity": 1,
       "alpha": 6.908
     },
     {
       "feature": "actionNegativeRate",
-      "threshold": 0.6239316239316239,
+      "threshold": 0.6461538461538461,
       "polarity": 1,
       "alpha": 6.908
     }
@@ -154,6 +154,12 @@
         "total": 3,
         "highRisk": 1,
         "riskRate": 0.333
+      },
+      {
+        "key": "testing",
+        "total": 2,
+        "highRisk": 0,
+        "riskRate": 0
       }
     ],
     "skills": []

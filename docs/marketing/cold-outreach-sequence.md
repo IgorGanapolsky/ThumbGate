@@ -27,7 +27,7 @@ Following up on my last email. One of the biggest hurdles to adopting an Agentic
 
 That's why we made the Agentic Feedback Studio **Zero-Config**. You literally just drop `npx mcp-memory-gateway install` into a repository, and it auto-discovers the context, integrating directly with Claude, Gemini, or Copilot via MCP. 
 
-For teams that outgrow local-only use, we offer hosted pilot access by direct arrangement. The only public self-serve commercial SKU today is the $9 one-time Pro Pack.
+For teams that outgrow local-only use, we offer hosted pilot access by direct arrangement. The only public self-serve commercial SKU today is Pro at $29/mo.
 
 If you have 5 minutes, I'd love to show you how our Vibe-to-Verification (V2V) pipeline works.
 
