@@ -26,3 +26,4 @@ This document is the source of truth for product, pricing, traction, and proof c
 - Use booked revenue, paid orders, or named pilot agreements for commercial proof.
 - Use `docs/VERIFICATION_EVIDENCE.md`, `proof/compatibility/report.json`, and `proof/automation/report.json` for engineering proof.
 - When in doubt, prefer "early-stage" or "pilot" language over unverified traction claims.
+ 
