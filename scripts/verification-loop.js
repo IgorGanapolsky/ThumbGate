@@ -2,6 +2,11 @@
 
 const path = require('path');
 const { readJSONL, getFeedbackPaths } = require('./feedback-loop');
+const {
+  buildPartnerStrategy,
+  computePartnerReward,
+  resolveVerificationRetries,
+} = require('./partner-orchestration');
 
 const MAX_RETRIES = 3;
 const DEFAULT_MODEL_PATH = path.join(__dirname, '..', '.rlhf', 'verification-model.json');
@@ -77,7 +82,11 @@ function extractKeywords(text) {
  * @returns {object} { accepted, attempts, finalVerification, history, thompsonUpdate }
  */
 function runVerificationLoop(params) {
-  const maxRetries = params.maxRetries || MAX_RETRIES;
+  const requestedMaxRetries = Number.isFinite(params.maxRetries) ? params.maxRetries : MAX_RETRIES;
+  const partnerStrategy = buildPartnerStrategy({
+    partnerProfile: params.partnerProfile,
+  });
+  const maxRetries = resolveVerificationRetries(requestedMaxRetries, partnerStrategy);
   const modelPath = params.modelPath || DEFAULT_MODEL_PATH;
   const tags = Array.isArray(params.tags) ? params.tags : [];
   const history = [];
@@ -122,14 +131,29 @@ function runVerificationLoop(params) {
   const ts = require('./thompson-sampling');
   const model = ts.loadModel(modelPath);
   const signal = accepted ? 'positive' : 'negative';
+  const partnerReward = computePartnerReward({
+    accepted,
+    attempts: history.length,
+    violationCount: finalVerification && Array.isArray(finalVerification.violations)
+      ? finalVerification.violations.length
+      : 0,
+    partnerStrategy,
+  });
+  const categories = [...new Set([
+    ...(tags.length ? tags : ['uncategorized']),
+    partnerStrategy.partnerCategory,
+  ])];
   ts.updateModel(model, {
     signal,
     timestamp: new Date().toISOString(),
-    categories: tags.length ? tags : ['uncategorized'],
+    categories,
+    weightMultiplier: partnerReward.weightMultiplier,
   });
   ts.saveModel(model, modelPath);
   const thompsonUpdate = {
     signal,
+    partnerCategory: partnerStrategy.partnerCategory,
+    weightMultiplier: partnerReward.weightMultiplier,
     reliability: ts.getReliability(model),
   };
 
@@ -137,8 +161,11 @@ function runVerificationLoop(params) {
     accepted,
     attempts: history.length,
     maxRetries,
+    requestedMaxRetries,
     finalVerification,
     history,
+    partnerStrategy,
+    partnerReward,
     thompsonUpdate,
   };
 }

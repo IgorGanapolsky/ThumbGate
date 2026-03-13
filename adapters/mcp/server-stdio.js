@@ -136,6 +136,7 @@ const TOOLS = [
       properties: {
         mcpProfile: { type: 'string' },
         bundleId: { type: 'string' },
+        partnerProfile: { type: 'string' },
       },
     },
   },
@@ -150,6 +151,7 @@ const TOOLS = [
         context: { type: 'string' },
         mcpProfile: { type: 'string' },
         bundleId: { type: 'string' },
+        partnerProfile: { type: 'string' },
         approved: { type: 'boolean' },
       },
     },
@@ -618,6 +620,7 @@ async function callToolInner(name, args = {}) {
     const result = listIntents({
       mcpProfile: args.mcpProfile,
       bundleId: args.bundleId,
+      partnerProfile: args.partnerProfile,
     });
     return { content: [{ type: 'text', text: toText(result) }] };
   }
@@ -628,6 +631,7 @@ async function callToolInner(name, args = {}) {
       context: args.context || '',
       mcpProfile: args.mcpProfile,
       bundleId: args.bundleId,
+      partnerProfile: args.partnerProfile,
       approved: args.approved === true,
     });
     return { content: [{ type: 'text', text: toText(result) }] };

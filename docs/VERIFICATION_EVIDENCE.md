@@ -1,3 +1,46 @@
+## March 13, 2026: Partner-aware orchestration MVP
+
+Scope:
+
+- Added `config/partner-routing.json` and `scripts/partner-orchestration.js` to define reusable partner profiles, aliases, token-budget rules, and reward coefficients.
+- Threaded optional `partnerProfile` through the HTTP API, MCP adapter, and OpenAPI surfaces so intent planning can return a partner-specific strategy summary.
+- Updated the intent router and verification loop to adapt action ranking, token budgets, retry behavior, and Thompson updates for `partner_<profile>` reliability learning.
+- Extended the automation proof harness and regression suite to verify partner-aware planning and emitted strategy metadata.
+
+Commands run:
+
+```bash
+npm ci
+node --test tests/intent-router.test.js tests/verification-loop.test.js tests/thompson-sampling.test.js tests/async-job-runner.test.js
+node --test tests/api-server.test.js tests/mcp-server.test.js tests/prove-automation.test.js
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check
+```
+
+Observed result:
+
+- Both targeted regression commands passed with `0` failures across partner orchestration, API, MCP, and automation-proof coverage.
+- `npm test` passed end-to-end after adding partner-aware orchestration.
+- `npm run test:coverage` passed with all-files coverage at `82.52%` lines, `68.69%` branches, and `85.19%` functions.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `37` passed, `0` failed.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
+
+Evidence artifacts:
+
+- Targeted `node --test` output covering `tests/intent-router.test.js`, `tests/verification-loop.test.js`, `tests/thompson-sampling.test.js`, `tests/async-job-runner.test.js`, `tests/api-server.test.js`, `tests/mcp-server.test.js`, and `tests/prove-automation.test.js`.
+- Ephemeral adapter and automation proof reports emitted under temporary `RLHF_PROOF_DIR` directories so verification did not leave tracked proof churn in the repository.
+
+Requirements verified:
+
+- `partnerProfile` is accepted by the public API and MCP `plan_intent` and `list_intents` surfaces and reaches the runtime planner.
+- Intent plans now emit partner strategy metadata and adapt token budgets plus action ranking for strict, fast, silent-blocker, tool-limited, and balanced counterparts.
+- Verification updates now learn partner-specific reliability in Thompson sampling under `partner_<profile>` categories without weakening the existing hard gate model.
+- The automation proof harness now checks for `intent.partner_strategy`, so the new orchestration behavior is covered by proof, not only by unit tests.
+
 ## March 12, 2026: Commercial truth correction
 
 Scope:

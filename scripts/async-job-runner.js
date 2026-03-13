@@ -48,6 +48,7 @@ function recallContext(params) {
  * @param {string} job.context - The task output to verify
  * @param {string[]} [job.tags] - Domain tags
  * @param {string} [job.skill] - Originating skill
+ * @param {string} [job.partnerProfile] - Counterpart behavior profile used for orchestration
  * @param {function} [job.taskFn] - Optional function that produces output (called with recall context)
  * @param {function} [job.onRetry] - Retry handler passed to verification loop
  * @param {number} [job.maxRetries] - Max retries for verification (default 3)
@@ -72,6 +73,7 @@ function executeJob(job) {
     context: taskOutput,
     tags,
     skill: job.skill,
+    partnerProfile: job.partnerProfile,
     onRetry: job.onRetry,
     maxRetries: job.maxRetries,
   });
@@ -101,6 +103,9 @@ function executeJob(job) {
         accepted: verification.accepted,
         attempts: verification.attempts,
         score: verification.finalVerification.score,
+        partnerProfile: verification.partnerStrategy.profile,
+        verificationMode: verification.partnerStrategy.verificationMode,
+        reward: verification.partnerReward.reward,
       },
       feedback: {
         accepted: feedbackResult.accepted,

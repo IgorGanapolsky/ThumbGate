@@ -104,6 +104,18 @@ describe('updateModel', () => {
     updateModel(model, { signal: 'negative', timestamp: ts, categories: ['git'] });
     assert.strictEqual(model.total_entries, 2);
   });
+
+  it('weightMultiplier scales posterior updates', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    updateModel(model, {
+      signal: 'positive',
+      timestamp: ts,
+      categories: ['testing'],
+      weightMultiplier: 2,
+    });
+    assert.ok(model.categories.testing.alpha > 2.9, `alpha should reflect weighted update, got ${model.categories.testing.alpha}`);
+  });
 });
 
 describe('getReliability', () => {

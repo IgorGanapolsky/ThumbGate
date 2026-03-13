@@ -152,8 +152,8 @@ function saveModel(model, modelPath) {
 /**
  * Apply a single weighted Beta-Bernoulli update to the model.
  *
- * For positive signal:  alpha += timeDecayWeight(timestamp)
- * For negative signal:  beta  += timeDecayWeight(timestamp)
+ * For positive signal:  alpha += timeDecayWeight(timestamp) * weightMultiplier
+ * For negative signal:  beta  += timeDecayWeight(timestamp) * weightMultiplier
  *
  * Updates all provided categories. If a category is not in the model yet,
  * it is added with default priors before applying the update.
@@ -165,10 +165,12 @@ function saveModel(model, modelPath) {
  * @param {'positive'|'negative'} params.signal - Feedback direction
  * @param {string} params.timestamp - ISO 8601 timestamp for decay calculation
  * @param {string[]} [params.categories] - Categories to update; defaults to ['uncategorized']
+ * @param {number} [params.weightMultiplier] - Optional multiplier for stronger/slower updates
  * @returns {Object} The mutated model
  */
-function updateModel(model, { signal, timestamp, categories }) {
-  const weight = timeDecayWeight(timestamp);
+function updateModel(model, { signal, timestamp, categories, weightMultiplier }) {
+  const multiplier = Number.isFinite(weightMultiplier) && weightMultiplier > 0 ? weightMultiplier : 1;
+  const weight = timeDecayWeight(timestamp) * multiplier;
   const isPositive = signal === 'positive';
   const cats = categories && categories.length ? categories : ['uncategorized'];
 

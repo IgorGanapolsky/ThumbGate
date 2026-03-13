@@ -29,8 +29,8 @@ test('automation proof: zero failures', () => {
   assert.equal(report.summary.failed, 0);
 });
 
-test('automation proof: at least 14 checks pass', () => {
-  assert.ok(report.summary.passed >= 14, `expected >= 14 passed, got ${report.summary.passed}`);
+test('automation proof: at least 15 checks pass', () => {
+  assert.ok(report.summary.passed >= 15, `expected >= 15 passed, got ${report.summary.passed}`);
 });
 
 test('automation proof: report.json written', () => {
@@ -52,6 +52,7 @@ const requiredChecks = [
   'api.rubric_gate',
   'mcp.rubric_gate',
   'intent.checkpoint_enforcement',
+  'intent.partner_strategy',
   'context.evaluate.rubric',
   'context.semantic_cache.hit',
   'self_healing.helpers',
@@ -114,6 +115,13 @@ test('automation proof: intent checkpoint enforced', () => {
   const check = getCheck('intent.checkpoint_enforcement');
   assert.equal(check.details.blocked, 'checkpoint_required');
   assert.equal(check.details.approved, 'ready');
+});
+
+test('automation proof: partner strategy exposed in intent plan', () => {
+  const check = getCheck('intent.partner_strategy');
+  assert.equal(check.details.partnerProfile, 'strict_reviewer');
+  assert.equal(check.details.verificationMode, 'evidence_first');
+  assert.ok(check.details.contextPack > 6000);
 });
 
 test('automation proof: semantic cache hit on equivalent query', () => {

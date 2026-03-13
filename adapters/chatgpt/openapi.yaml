@@ -81,6 +81,8 @@ components:
           type: string
         bundleId:
           type: string
+        partnerProfile:
+          type: string
         approved:
           type: boolean
     BillingCheckoutRequest:
@@ -295,6 +297,10 @@ paths:
             type: string
         - in: query
           name: bundleId
+          schema:
+            type: string
+        - in: query
+          name: partnerProfile
           schema:
             type: string
       responses:
