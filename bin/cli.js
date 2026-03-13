@@ -55,6 +55,14 @@ function proNudge() {
   );
 }
 
+function limitNudge(action) {
+  process.stderr.write(
+    `\nFree tier: ${action} daily limit reached (5/day).\n` +
+    `   Upgrade to Pro for unlimited usage: ${PRO_URL}\n` +
+    '   Or set RLHF_API_KEY or RLHF_PRO_MODE=1 to bypass.\n\n'
+  );
+}
+
 function parseArgs(argv) {
   const args = {};
   argv.forEach((arg) => {
@@ -466,6 +474,13 @@ function capture() {
 
   // Delegate to the full engine
   const { captureFeedback, analyzeFeedback, feedbackSummary, writePreventionRules } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  const { checkLimit } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+
+  const capLimit = checkLimit('capture_feedback');
+  if (!capLimit.allowed) {
+    limitNudge('capture_feedback');
+    process.exit(1);
+  }
 
   if (args.stats) {
     stats();
