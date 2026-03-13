@@ -24,7 +24,7 @@ Tracked files after: 562
 Tracked lines before: 89691
 Tracked lines after: 89811
 Coverage before: 82.07% lines / 68.96% branches / 85.52% functions (coverage job failed on 4 regressions)
-Coverage after: 82.58% lines / 68.88% branches / 85.24% functions
+Coverage after: 82.61% lines / 68.88% branches / 85.24% functions
 CI before: PASSING on main at 57a7498e42578270a2dc1421c1bfd8d06f07dded
 CI after: verified locally before PR merge; GitHub Actions link added after merge
 ```
@@ -34,7 +34,7 @@ CI after: verified locally before PR merge; GitHub Actions link added after merg
 1. `scripts/gates-engine.js`: fixed free-tier gate slicing so core safety gates are never dropped.
 2. `tests/gates-engine.test.js`: added a regression proving free-tier core gates stay loaded.
 3. `adapters/mcp/server-stdio.js`: removed dead legacy recall-limit state and switched recall gating to the shared rate limiter.
-4. `tests/recall-limit.test.js`: isolated rate-limiter state so recall-limit tests are deterministic and match production behavior.
+4. `tests/recall-limit.test.js`: isolated recall-limit validation from CI secrets and shared test state so the free-tier upgrade nudge is deterministic in GitHub Actions.
 5. `scripts/contextfs.js`: added exact duplicate detection for feedback-memory writes.
 6. `tests/contextfs.test.js`: added a regression proving duplicate lessons reuse the same ContextFS object.
 7. `src/api/server.js`: removed a duplicate dead `/healthz` route.
@@ -55,7 +55,7 @@ These tracked files were removed because they were duplicate RLHF memory entries
 
 ```text
 Before: 82.07% line coverage (job failed on 4 regressions)
-After: 82.69% line coverage
+After: 82.61% line coverage
 New tests added: 2
 Existing tests hardened: 3 recall-limit cases
 Gaps remaining: adapters/mcp/server-stdio.js, bin/cli.js, scripts/feedback-inbox-read.js, scripts/feedback-to-memory.js, scripts/gate-satisfy.js, scripts/pr-manager.js, scripts/autoresearch-runner.js

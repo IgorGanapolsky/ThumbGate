@@ -1,6 +1,6 @@
 'use strict';
 
-const test = require('node:test');
+const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
 const os = require('node:os');
 const path = require('node:path');
@@ -8,6 +8,18 @@ const fs = require('node:fs');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-recall-limit-'));
 const tmpUsageFile = path.join(tmpDir, 'usage-limits.json');
+const savedEnv = {
+  RLHF_API_KEY: process.env.RLHF_API_KEY,
+  RLHF_PRO_MODE: process.env.RLHF_PRO_MODE,
+  RLHF_NO_RATE_LIMIT: process.env.RLHF_NO_RATE_LIMIT,
+  RLHF_FEEDBACK_DIR: process.env.RLHF_FEEDBACK_DIR,
+  RLHF_MCP_PROFILE: process.env.RLHF_MCP_PROFILE,
+};
+
+// CI exports RLHF_API_KEY for hosted API checks, but this suite verifies free-tier limits.
+delete process.env.RLHF_API_KEY;
+delete process.env.RLHF_PRO_MODE;
+delete process.env.RLHF_NO_RATE_LIMIT;
 process.env.RLHF_FEEDBACK_DIR = tmpDir;
 process.env.RLHF_MCP_PROFILE = 'default';
 
@@ -15,41 +27,53 @@ const { callTool } = require('../adapters/mcp/server-stdio');
 const rateLimiter = require('../scripts/rate-limiter');
 rateLimiter.USAGE_FILE = tmpUsageFile;
 
-test.beforeEach(() => {
-  try { fs.unlinkSync(tmpUsageFile); } catch (_) {}
-});
+describe('recall limit', { concurrency: false }, () => {
+  test.beforeEach(() => {
+    try { fs.unlinkSync(tmpUsageFile); } catch (_) {}
+  });
 
-test('recall returns results without upgrade nudge for first 5 calls', async () => {
-  for (let i = 0; i < 5; i++) {
+  test('recall returns results without upgrade nudge for first 5 calls', async () => {
+    for (let i = 0; i < 5; i++) {
+      const result = await callTool('recall', { query: 'test task' });
+      const text = result.content[0].text;
+      assert.ok(!text.includes('Upgrade to Context Gateway'), `Call ${i + 1} should not show upgrade nudge`);
+      assert.ok(!text.includes('Free tier limit reached'), `Call ${i + 1} should still return recall content`);
+    }
+  });
+
+  test('recall shows upgrade nudge after 5 calls in a day', async () => {
+    for (let i = 0; i < 5; i++) {
+      await callTool('recall', { query: `warmup ${i + 1}` });
+    }
+    const result = await callTool('recall', { query: 'test task 6' });
+    const text = result.content[0].text;
+    assert.ok(text.includes('Upgrade to Context Gateway'), 'Call 6 should show upgrade nudge');
+    assert.ok(text.includes('gumroad.com'), 'Should include Gumroad link');
+    assert.ok(text.includes('rlhf-feedback-loop-production'), 'Should include hosted API link');
+  });
+
+  test('recall still returns actual results even when over limit', async () => {
+    for (let i = 0; i < 5; i++) {
+      await callTool('recall', { query: `warmup ${i + 1}` });
+    }
     const result = await callTool('recall', { query: 'test task' });
     const text = result.content[0].text;
-    assert.ok(!text.includes('Upgrade to Context Gateway'), `Call ${i + 1} should not show upgrade nudge`);
-    assert.ok(!text.includes('Free tier limit reached'), `Call ${i + 1} should still return recall content`);
-  }
-});
-
-test('recall shows upgrade nudge after 5 calls in a day', async () => {
-  for (let i = 0; i < 5; i++) {
-    await callTool('recall', { query: `warmup ${i + 1}` });
-  }
-  const result = await callTool('recall', { query: 'test task 6' });
-  const text = result.content[0].text;
-  assert.ok(text.includes('Upgrade to Context Gateway'), 'Call 6 should show upgrade nudge');
-  assert.ok(text.includes('gumroad.com'), 'Should include Gumroad link');
-  assert.ok(text.includes('rlhf-feedback-loop-production'), 'Should include hosted API link');
-});
-
-test('recall still returns actual results even when over limit', async () => {
-  for (let i = 0; i < 5; i++) {
-    await callTool('recall', { query: `warmup ${i + 1}` });
-  }
-  const result = await callTool('recall', { query: 'test task' });
-  const text = result.content[0].text;
-  // Should have both results AND the nudge
-  assert.ok(text.length > 50, 'Should still return content, not just the nudge');
+    // Should have both results AND the nudge
+    assert.ok(text.length > 50, 'Should still return content, not just the nudge');
+  });
 });
 
 test.after(() => {
+  if (savedEnv.RLHF_API_KEY !== undefined) process.env.RLHF_API_KEY = savedEnv.RLHF_API_KEY;
+  else delete process.env.RLHF_API_KEY;
+  if (savedEnv.RLHF_PRO_MODE !== undefined) process.env.RLHF_PRO_MODE = savedEnv.RLHF_PRO_MODE;
+  else delete process.env.RLHF_PRO_MODE;
+  if (savedEnv.RLHF_NO_RATE_LIMIT !== undefined) process.env.RLHF_NO_RATE_LIMIT = savedEnv.RLHF_NO_RATE_LIMIT;
+  else delete process.env.RLHF_NO_RATE_LIMIT;
+  if (savedEnv.RLHF_FEEDBACK_DIR !== undefined) process.env.RLHF_FEEDBACK_DIR = savedEnv.RLHF_FEEDBACK_DIR;
+  else delete process.env.RLHF_FEEDBACK_DIR;
+  if (savedEnv.RLHF_MCP_PROFILE !== undefined) process.env.RLHF_MCP_PROFILE = savedEnv.RLHF_MCP_PROFILE;
+  else delete process.env.RLHF_MCP_PROFILE;
   try { fs.unlinkSync(tmpUsageFile); } catch (_) {}
   try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}
 });

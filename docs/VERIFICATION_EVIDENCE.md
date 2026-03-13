@@ -40,15 +40,16 @@ npm --prefix workers ci
 npm run test:gates
 node --test tests/contextfs.test.js
 node --test tests/recall-limit.test.js
+RLHF_API_KEY=ci-secret npm run test:api
 node --test tests/mcp-server.test.js tests/api-server.test.js
-npm test
-npm run test:coverage
+RLHF_API_KEY=ci-secret npm test
+RLHF_API_KEY=ci-secret npm run test:coverage
 npm run test:workers
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:workflow-contract
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:autoresearch
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check
+env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:automation
+env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:workflow-contract
+env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:autoresearch
+RLHF_API_KEY=ci-secret npm run self-heal:check
 npm --prefix workers audit --json
 ./workers/node_modules/.bin/tsc -p workers/tsconfig.json --noEmit
 ./node_modules/.bin/wrangler deploy --dry-run
@@ -58,8 +59,9 @@ Observed result:
 
 - `npm test` passed end-to-end after the audit changes.
 - `npm run test:coverage` passed with `963` passed, `0` failed, `1` skipped.
-- Current coverage summary on the rebased audit head: `82.58%` lines, `68.88%` branches, `85.24%` functions.
+- Current coverage summary on the rebased audit head: `82.61%` lines, `68.88%` branches, `85.24%` functions.
 - `npm run test:gates`, `node --test tests/contextfs.test.js`, `node --test tests/recall-limit.test.js`, and `node --test tests/mcp-server.test.js tests/api-server.test.js` all passed.
+- `RLHF_API_KEY=ci-secret npm run test:api` passed, proving the recall-limit regression is fixed under the same hosted-key environment GitHub Actions uses.
 - `npm run test:workers` passed after the worker package gained a dedicated type-check test script.
 - `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
 - `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `37` passed, `0` failed.
@@ -74,6 +76,7 @@ Requirements verified:
 
 - Free-tier users keep the default safety gates (`force-push`, `protected-branch-push`, `.env` edits) while still capping auto-promoted add-on gates.
 - Recall requests now share the real rate-limiter state and still return useful content after the free tier is exhausted.
+- Recall-limit verification no longer depends on CI secrets or shared test-state, so the free-tier upgrade nudge is exercised deterministically in GitHub Actions.
 - Exact duplicate feedback-memory lessons no longer create duplicate ContextFS records, and the repository’s duplicate tracked memory entries were removed.
 - The worker package is now covered by CI install and test steps instead of being outside the main pipeline.
 - The open `workers/package-lock.json` Dependabot advisory on `esbuild` was patched by upgrading the worker toolchain to the fixed Wrangler stack.
