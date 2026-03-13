@@ -9,10 +9,10 @@ The final repo-state totals include `main` changes merged during the audit windo
 
 ```text
 Files scanned: 557
-Issues found: 8
-Issues fixed: 8
+Issues found: 10
+Issues fixed: 10
 Files deleted: 6
-Lines removed: 167 net
+Lines removed: 1154 net
 RAG entries cleaned: 6 deleted, exact duplicates now deduped on write
 ```
 
@@ -20,11 +20,11 @@ RAG entries cleaned: 6 deleted, exact duplicates now deduped on write
 
 ```text
 Tracked files before: 557
-Tracked files after: 562
-Tracked lines before: 89691
-Tracked lines after: 89811
+Tracked files after: 561
+Tracked lines before: 89658
+Tracked lines after: 88504
 Coverage before: 82.07% lines / 68.96% branches / 85.52% functions (coverage job failed on 4 regressions)
-Coverage after: 82.61% lines / 68.88% branches / 85.24% functions
+Coverage after: 82.42% lines / 68.76% branches / 85.10% functions
 CI before: PASSING on main at 57a7498e42578270a2dc1421c1bfd8d06f07dded
 CI after: verified locally before PR merge; GitHub Actions link added after merge
 ```
@@ -34,11 +34,13 @@ CI after: verified locally before PR merge; GitHub Actions link added after merg
 1. `scripts/gates-engine.js`: fixed free-tier gate slicing so core safety gates are never dropped.
 2. `tests/gates-engine.test.js`: added a regression proving free-tier core gates stay loaded.
 3. `adapters/mcp/server-stdio.js`: removed dead legacy recall-limit state and switched recall gating to the shared rate limiter.
-4. `tests/recall-limit.test.js`: isolated recall-limit validation from CI secrets and shared test state so the free-tier upgrade nudge is deterministic in GitHub Actions.
+4. `tests/recall-limit.test.js`: isolated rate-limiter state and forced free-tier env so recall-limit tests are deterministic under CI secrets.
 5. `scripts/contextfs.js`: added exact duplicate detection for feedback-memory writes.
 6. `tests/contextfs.test.js`: added a regression proving duplicate lessons reuse the same ContextFS object.
 7. `src/api/server.js`: removed a duplicate dead `/healthz` route.
-8. `.github/workflows/ci.yml` and `workers/*`: added worker install/test coverage to CI, upgraded the vulnerable worker toolchain, and aligned the Stripe API version.
+8. `.github/workflows/ci.yml`: added worker install/test coverage to CI.
+9. `workers/src/billing.ts`: aligned the Stripe API version with the current SDK release line.
+10. `workers/package.json`, `workers/package-lock.json`, `workers/README.md`, and `CLAUDE.md`: removed the direct `wrangler` dependency and codified the global-CLI policy so the worker package is audit-clean without stale local tooling.
 
 ## Deleted Files
 
@@ -55,7 +57,7 @@ These tracked files were removed because they were duplicate RLHF memory entries
 
 ```text
 Before: 82.07% line coverage (job failed on 4 regressions)
-After: 82.61% line coverage
+After: 82.42% line coverage
 New tests added: 2
 Existing tests hardened: 3 recall-limit cases
 Gaps remaining: adapters/mcp/server-stdio.js, bin/cli.js, scripts/feedback-inbox-read.js, scripts/feedback-to-memory.js, scripts/gate-satisfy.js, scripts/pr-manager.js, scripts/autoresearch-runner.js
@@ -66,7 +68,7 @@ Gaps remaining: adapters/mcp/server-stdio.js, bin/cli.js, scripts/feedback-inbox
 ```text
 Pipeline status: pending post-push at audit commit
 Flaky tests fixed: 1 recall-limit sequence
-New checks added: workers dependency install, workers type-check test, worker vulnerability remediation via upgraded wrangler/esbuild stack
+New checks added: workers dependency install, workers type-check test
 ```
 
 ## Core-System Snapshot
@@ -79,7 +81,7 @@ New checks added: workers dependency install, workers type-check test, worker vu
 ## Security Summary
 
 - Before: `npm --prefix workers audit --json` reported 4 moderate vulnerabilities in the worker toolchain dependency graph.
-- After: `npm --prefix workers audit --json` reported 0 vulnerabilities.
+- After: `npm --prefix workers audit --json` reported 0 vulnerabilities after externalizing the repo-local Wrangler CLI dependency.
 
 ## RAG Cleanup Summary
 
