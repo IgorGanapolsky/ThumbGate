@@ -829,8 +829,8 @@ function createApiServer() {
 
       } catch (err) {
         sendProblem(res, {
-          type: err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
-          title: err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+          type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
+          title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
           status: err.statusCode || 500,
           detail: err.message,
         });
@@ -876,8 +876,8 @@ function createApiServer() {
         sendJson(res, 200, result);
       } catch (err) {
         sendProblem(res, {
-          type: err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
-          title: err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+          type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
+          title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
           status: err.statusCode || 500,
           detail: err.message,
         });
@@ -921,8 +921,8 @@ function createApiServer() {
       } catch (err) {
         const fallbackTraceId = createTraceId('checkout_error');
         sendProblem(res, {
-          type: err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
-          title: err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+          type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
+          title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
           status: err.statusCode || 500,
           detail: err.message || 'An unexpected error occurred.',
         }, getPublicBillingHeaders(fallbackTraceId));
@@ -958,8 +958,8 @@ function createApiServer() {
       } catch (err) {
         const requestedTraceId = parsed.searchParams.get('traceId') || '';
         sendProblem(res, {
-          type: err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
-          title: err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+          type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
+          title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
           status: err.statusCode || 500,
           detail: err.message || 'An unexpected error occurred.',
         }, getPublicBillingHeaders(requestedTraceId));
@@ -1062,6 +1062,8 @@ function createApiServer() {
           whatWorked: body.whatWorked,
           reasoning: body.reasoning,
           visualEvidence: body.visualEvidence,
+          packId: body.packId,
+          utilityScore: body.utilityScore,
           rubricScores: body.rubricScores,
           guardrails: body.guardrails,
           tags: extractTags(body.tags),
