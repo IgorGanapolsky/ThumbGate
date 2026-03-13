@@ -71,6 +71,7 @@ const {
   checkLimit,
   UPGRADE_MESSAGE: RATE_LIMIT_MESSAGE,
 } = require('../../scripts/rate-limiter');
+const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
 
 const LANDING_PAGE_PATH = path.resolve(__dirname, '../../public/index.html');
 
@@ -593,7 +594,12 @@ function createApiServer() {
               });
             }
           } catch (_e) {
-            sendJson(res, 400, { error: 'Invalid JSON' });
+            sendProblem(res, {
+              type: PROBLEM_TYPES.INVALID_JSON,
+              title: 'Invalid JSON',
+              status: 400,
+              detail: 'The request body could not be parsed as valid JSON.',
+            });
           }
         });
         return;
@@ -755,7 +761,12 @@ function createApiServer() {
           res.end(yaml);
         }
       } catch {
-        sendJson(res, 404, { error: 'OpenAPI spec not found' });
+        sendProblem(res, {
+          type: PROBLEM_TYPES.NOT_FOUND,
+          title: 'Not Found',
+          status: 404,
+          detail: 'OpenAPI spec not found.',
+        });
       }
       return;
     }
@@ -795,23 +806,34 @@ function createApiServer() {
 
         const sig = req.headers['stripe-signature'] || '';
         if (!verifyWebhookSignature(rawBody, sig)) {
-          sendJson(res, 400, { error: 'Invalid webhook signature' });
+          sendProblem(res, {
+            type: PROBLEM_TYPES.WEBHOOK_INVALID,
+            title: 'Invalid webhook signature',
+            status: 400,
+            detail: 'The webhook signature could not be verified.',
+          });
           return;
         }
 
         const result = await handleWebhook(rawBody, sig);
         if (result && result.reason === 'invalid_signature') {
-          sendJson(res, 400, { error: result.error || 'Invalid webhook signature' });
+          sendProblem(res, {
+            type: PROBLEM_TYPES.WEBHOOK_INVALID,
+            title: 'Invalid webhook signature',
+            status: 400,
+            detail: result.error || 'The webhook signature could not be verified.',
+          });
           return;
         }
         sendJson(res, 200, result);
 
       } catch (err) {
-        if (err.statusCode) {
-          sendJson(res, err.statusCode, { error: err.message });
-        } else {
-          sendJson(res, 500, { error: err.message || 'Internal Server Error' });
-        }
+        sendProblem(res, {
+          type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
+          title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+          status: err.statusCode || 500,
+          detail: err.message,
+        });
       }
       return;
     }
@@ -828,7 +850,12 @@ function createApiServer() {
 
         const sig = req.headers['x-hub-signature-256'] || '';
         if (!verifyGithubWebhookSignature(rawBody, sig)) {
-          sendJson(res, 400, { error: 'Invalid webhook signature' });
+          sendProblem(res, {
+            type: PROBLEM_TYPES.WEBHOOK_INVALID,
+            title: 'Invalid webhook signature',
+            status: 400,
+            detail: 'The webhook signature could not be verified.',
+          });
           return;
         }
 
@@ -836,18 +863,24 @@ function createApiServer() {
         try {
           event = JSON.parse(rawBody.toString('utf-8'));
         } catch {
-          sendJson(res, 400, { error: 'Invalid JSON in webhook body' });
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INVALID_JSON,
+            title: 'Invalid JSON',
+            status: 400,
+            detail: 'Invalid JSON in webhook body.',
+          });
           return;
         }
 
         const result = handleGithubWebhook(event);
         sendJson(res, 200, result);
       } catch (err) {
-        if (err.statusCode) {
-          sendJson(res, err.statusCode, { error: err.message });
-        } else {
-          sendJson(res, 500, { error: err.message || 'Internal Server Error' });
-        }
+        sendProblem(res, {
+          type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
+          title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+          status: err.statusCode || 500,
+          detail: err.message,
+        });
       }
       return;
     }
@@ -887,11 +920,12 @@ function createApiServer() {
         }, responseHeaders);
       } catch (err) {
         const fallbackTraceId = createTraceId('checkout_error');
-        if (err.statusCode) {
-          sendJson(res, err.statusCode, { error: err.message }, getPublicBillingHeaders(fallbackTraceId));
-        } else {
-          sendJson(res, 500, { error: err.message || 'Internal Server Error' }, getPublicBillingHeaders(fallbackTraceId));
-        }
+        sendProblem(res, {
+          type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
+          title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+          status: err.statusCode || 500,
+          detail: err.message || 'An unexpected error occurred.',
+        }, getPublicBillingHeaders(fallbackTraceId));
       }
       return;
     }
@@ -923,17 +957,23 @@ function createApiServer() {
         }, getPublicBillingHeaders(resolvedTraceId));
       } catch (err) {
         const requestedTraceId = parsed.searchParams.get('traceId') || '';
-        if (err.statusCode) {
-          sendJson(res, err.statusCode, { error: err.message }, getPublicBillingHeaders(requestedTraceId));
-        } else {
-          sendJson(res, 500, { error: err.message || 'Internal Server Error' }, getPublicBillingHeaders(requestedTraceId));
-        }
+        sendProblem(res, {
+          type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
+          title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+          status: err.statusCode || 500,
+          detail: err.message || 'An unexpected error occurred.',
+        }, getPublicBillingHeaders(requestedTraceId));
       }
       return;
     }
 
     if (!isAuthorized(req, expectedApiKey)) {
-      sendJson(res, 401, { error: 'Unauthorized' });
+      sendProblem(res, {
+        type: PROBLEM_TYPES.UNAUTHORIZED,
+        title: 'Unauthorized',
+        status: 401,
+        detail: 'A valid API key is required to access this endpoint.',
+      });
       return;
     }
 
@@ -1005,7 +1045,12 @@ function createApiServer() {
       if (req.method === 'POST' && pathname === '/v1/feedback/capture') {
         const captureLimit = checkLimit('capture_feedback');
         if (!captureLimit.allowed) {
-          sendJson(res, 429, { error: RATE_LIMIT_MESSAGE });
+          sendProblem(res, {
+            type: PROBLEM_TYPES.RATE_LIMIT,
+            title: 'Free tier limit reached',
+            status: 429,
+            detail: RATE_LIMIT_MESSAGE,
+          });
           return;
         }
         const body = await parseJsonBody(req);
@@ -1017,6 +1062,8 @@ function createApiServer() {
           whatWorked: body.whatWorked,
           reasoning: body.reasoning,
           visualEvidence: body.visualEvidence,
+          packId: body.packId,
+          utilityScore: body.utilityScore,
           rubricScores: body.rubricScores,
           guardrails: body.guardrails,
           tags: extractTags(body.tags),
@@ -1200,7 +1247,12 @@ function createApiServer() {
         const token = extractBearerToken(req);
         const validation = validateApiKey(token);
         if (!validation.valid) {
-          sendJson(res, 401, { error: 'Unauthorized' });
+          sendProblem(res, {
+            type: PROBLEM_TYPES.UNAUTHORIZED,
+            title: 'Unauthorized',
+            status: 401,
+            detail: 'A valid API key is required to access this endpoint.',
+          });
           return;
         }
         sendJson(res, 200, {
@@ -1214,7 +1266,12 @@ function createApiServer() {
       // POST /v1/billing/provision — manually provision key (admin)
       if (req.method === 'POST' && pathname === '/v1/billing/provision') {
         if (!isStaticAdminAuthorized(req, expectedApiKey)) {
-          sendJson(res, 403, { error: 'Forbidden: admin key required' });
+          sendProblem(res, {
+            type: PROBLEM_TYPES.FORBIDDEN,
+            title: 'Forbidden',
+            status: 403,
+            detail: 'Admin API key required for this endpoint.',
+          });
           return;
         }
 
@@ -1233,7 +1290,12 @@ function createApiServer() {
       // GET /v1/billing/summary — admin-only operational billing summary
       if (req.method === 'GET' && pathname === '/v1/billing/summary') {
         if (!isStaticAdminAuthorized(req, expectedApiKey)) {
-          sendJson(res, 403, { error: 'Forbidden: admin key required' });
+          sendProblem(res, {
+            type: PROBLEM_TYPES.FORBIDDEN,
+            title: 'Forbidden',
+            status: 403,
+            detail: 'Admin API key required for this endpoint.',
+          });
           return;
         }
 
@@ -1246,18 +1308,33 @@ function createApiServer() {
       if (req.method === 'POST' && pathname === '/v1/billing/rotate-key') {
         const currentKey = extractBearerToken(req);
         if (!currentKey) {
-          sendJson(res, 401, { error: 'Unauthorized' });
+          sendProblem(res, {
+            type: PROBLEM_TYPES.UNAUTHORIZED,
+            title: 'Unauthorized',
+            status: 401,
+            detail: 'A valid API key is required to access this endpoint.',
+          });
           return;
         }
         const validation = validateApiKey(currentKey);
         if (!validation.valid) {
-          sendJson(res, 400, { error: 'Key not found or already disabled' });
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Bad Request',
+            status: 400,
+            detail: 'Key not found or already disabled.',
+          });
           return;
         }
         try {
           const result = rotateApiKey(currentKey);
           if (!result.rotated) {
-            sendJson(res, 400, { error: result.reason || 'Key rotation failed' });
+            sendProblem(res, {
+              type: PROBLEM_TYPES.BAD_REQUEST,
+              title: 'Key Rotation Failed',
+              status: 400,
+              detail: result.reason || 'Key rotation failed.',
+            });
             return;
           }
           sendJson(res, 200, {
@@ -1265,7 +1342,12 @@ function createApiServer() {
             message: 'Key rotated. Update your configuration.',
           });
         } catch (err) {
-          sendJson(res, 500, { error: err.message || 'Internal Server Error' });
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INTERNAL,
+            title: 'Internal Server Error',
+            status: 500,
+            detail: err.message || 'An unexpected error occurred.',
+          });
         }
         return;
       }
@@ -1296,7 +1378,12 @@ function createApiServer() {
       if (req.method === 'POST' && pathname === '/v1/gates/satisfy') {
         const body = await parseJsonBody(req);
         if (!body.gateId || !body.evidence) {
-          sendJson(res, 400, { error: 'gateId and evidence are required' });
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Bad Request',
+            status: 400,
+            detail: 'gateId and evidence are required.',
+          });
           return;
         }
         const entry = satisfyCondition(body.gateId, body.evidence);
@@ -1304,13 +1391,19 @@ function createApiServer() {
         return;
       }
 
-      sendJson(res, 404, { error: 'Not Found' });
+      sendProblem(res, {
+        type: PROBLEM_TYPES.NOT_FOUND,
+        title: 'Not Found',
+        status: 404,
+        detail: `No handler for ${req.method} ${pathname}`,
+      });
     } catch (err) {
-      if (err.statusCode) {
-        sendJson(res, err.statusCode, { error: err.message });
-        return;
-      }
-      sendJson(res, 500, { error: err.message || 'Internal Server Error' });
+      sendProblem(res, {
+        type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
+        title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+        status: err.statusCode || 500,
+        detail: err.message || 'An unexpected error occurred.',
+      });
     }
   });
 }

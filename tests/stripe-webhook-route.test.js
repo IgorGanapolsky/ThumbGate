@@ -123,7 +123,7 @@ test('billing webhook returns 400 when Stripe verification fails after precheck'
 
   const response = await postWebhook(handle.port, '{"id":"evt_invalid"}');
   assert.equal(response.status, 400);
-  assert.match(response.body.error, /Stripe SDK rejected payload/);
+  assert.match(response.body.detail, /Stripe SDK rejected payload/);
 });
 
 test('billing webhook returns 200 for handled Stripe events', async (t) => {

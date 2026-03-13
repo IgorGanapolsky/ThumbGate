@@ -377,7 +377,7 @@ test('billing session endpoint rejects missing session ids', async () => {
   const res = await fetch('http://localhost:8790/v1/billing/session');
   assert.equal(res.status, 400);
   const body = await res.json();
-  assert.match(body.error, /sessionId/);
+  assert.match(body.detail, /sessionId/);
 });
 
 test('billing provision requires static admin key and rejects billing keys', async () => {

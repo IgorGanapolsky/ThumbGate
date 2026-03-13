@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import type { Env, ApiKeyRecord } from './types';
+import { problemResponse, PROBLEM_TYPES } from './problem-detail';
 
 function getStripe(env: Env): Stripe {
   return new Stripe(env.STRIPE_SECRET_KEY, {
@@ -24,10 +25,12 @@ export async function handleCheckout(
   env: Env,
 ): Promise<Response> {
   if (!env.STRIPE_SECRET_KEY) {
-    return Response.json(
-      { error: 'Stripe is not configured. STRIPE_SECRET_KEY secret is missing.' },
-      { status: 503 },
-    );
+    return problemResponse({
+      type: PROBLEM_TYPES.SERVICE_UNAVAILABLE,
+      title: 'Service Unavailable',
+      status: 503,
+      detail: 'Stripe is not configured. Set STRIPE_SECRET_KEY and STRIPE_PRICE_ID.',
+    });
   }
   const stripe = getStripe(env);
   const url = new URL(request.url);
@@ -74,7 +77,12 @@ export async function handleWebhook(
   const signature = request.headers.get('stripe-signature');
 
   if (!signature) {
-    return new Response('Missing stripe-signature header', { status: 400 });
+    return problemResponse({
+      type: PROBLEM_TYPES.WEBHOOK_INVALID,
+      title: 'Missing Webhook Signature',
+      status: 400,
+      detail: 'The stripe-signature header is required.',
+    });
   }
 
   let event: Stripe.Event;
@@ -85,9 +93,11 @@ export async function handleWebhook(
       env.STRIPE_WEBHOOK_SECRET,
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return new Response(`Webhook signature verification failed: ${message}`, {
+    return problemResponse({
+      type: PROBLEM_TYPES.WEBHOOK_INVALID,
+      title: 'Invalid Webhook Signature',
       status: 400,
+      detail: 'Webhook signature verification failed.',
     });
   }
 

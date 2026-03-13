@@ -3,6 +3,7 @@ import { validateAuth } from './auth';
 import { handleCheckout, handleWebhook } from './billing';
 import { FREE_TOOLS, isFreeTool, executeFree } from './tools/free';
 import { PAID_TOOLS, isPaidTool, executePaid } from './tools/paid';
+import { problemResponse, PROBLEM_TYPES } from './problem-detail';
 
 const ALL_TOOLS = [...FREE_TOOLS, ...PAID_TOOLS];
 
@@ -65,10 +66,13 @@ export default {
           break;
 
         default:
-          response = Response.json(
-            { error: 'Not found', endpoints: ['/mcp', '/billing/checkout', '/health'] },
-            { status: 404 },
-          );
+          response = problemResponse({
+            type: PROBLEM_TYPES.NOT_FOUND,
+            title: 'Not Found',
+            status: 404,
+            detail: `No handler for ${request.method} ${url.pathname}`,
+            endpoints: ['/mcp', '/billing/checkout', '/billing/webhook', '/health'],
+          });
       }
 
       return corsResponse(response);
@@ -76,7 +80,12 @@ export default {
       const message = err instanceof Error ? err.message : 'Internal server error';
       console.error('Worker error:', message);
       return corsResponse(
-        Response.json({ error: message }, { status: 500 }),
+        problemResponse({
+          type: PROBLEM_TYPES.INTERNAL,
+          title: 'Internal Server Error',
+          status: 500,
+          detail: message,
+        }),
       );
     }
   },
