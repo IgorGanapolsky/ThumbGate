@@ -16,6 +16,7 @@ capture explicit feedback, convert valid memories, prevent repeated failures, an
 - Primary local stores:
   - `.claude/memory/feedback/*`
   - `.rlhf/*`
+- Never commit ephemeral `.claude/worktrees/*` lanes or live `.rlhf/*` runtime artifacts. Treat them as local operational state only.
 
 ## Operating Contract
 
@@ -36,6 +37,7 @@ capture explicit feedback, convert valid memories, prevent repeated failures, an
 - Treat Wrangler as an external global prerequisite for `workers/`; do not reintroduce a repo-local `wrangler` dependency until the npm advisory set has a clean non-conflicting release line.
 - Treat `npm test`, `npm run test:coverage`, `npm run prove:adapters`, `npm run prove:automation`, and `npm run self-heal:check` as the standard verification set unless the task is narrower.
 - If proof scripts support temp output overrides, use them so local verification does not pollute tracked `proof/` artifacts.
+- Archive unique closed-orphan branches before deletion; delete clean redundant worktrees aggressively once verified.
 
 ## PR and CI Protocol
 

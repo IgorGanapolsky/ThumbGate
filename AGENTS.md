@@ -14,6 +14,7 @@ This project uses a local-first **Agentic Feedback Studio** operational loop.
 - Query and update the local RLHF memory system instead:
   - `.claude/memory/feedback/*`
   - `.rlhf/*`
+- Never commit ephemeral `.claude/worktrees/*` lanes or live `.rlhf/*` runtime state. Keep them local, disposable, and git-ignored.
 - Do not mention Vertex, LangSmith, or any other external memory stack unless it is actually configured in this repository.
 
 ### SEO & GEO Command Center Directive
@@ -65,6 +66,7 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 - Follow Conventional Commits for all messages.
 - Never report unverified metrics or fake ROI.
 - Maintain 100% reliability in the RLHF feedback-to-rule pipeline.
+- Archive or delete stale local-only branches after verifying whether they still carry unique commits.
 
 ## Session Directive: PR Management & System Hygiene
 

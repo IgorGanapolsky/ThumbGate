@@ -12,6 +12,7 @@ Gemini should use this RLHF loop as a tool-backed skill.
 
 - This repo does not use Vertex AI RAG.
 - Gemini should read and write only the local RLHF memory and context stores unless a real external system is explicitly added later.
+- Gemini must not commit ephemeral `.claude/worktrees/*` lanes or live `.rlhf/*` runtime state.
 
 ## Tool Actions
 
@@ -34,6 +35,7 @@ Source of truth for Gemini declarations:
 - Use context-pack cache metadata (`cache.hit`, `cache.similarity`) to reduce repetitive retrieval work.
 - Prefer clean worktrees for verification and branch maintenance rather than a dirty primary checkout.
 - Do not report PR completion until the exact merge commit is green on `main`.
+- Archive unique orphan branches before deletion and remove clean redundant worktrees once they are no longer needed.
 
 ## Suggested Runtime Mapping
 

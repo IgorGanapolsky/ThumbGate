@@ -1,3 +1,70 @@
+## March 13, 2026: PR hygiene and runtime-state cleanup
+
+Scope:
+
+- Removed accidental tracked `.claude/worktrees/agent-*` gitlinks from the repository index so disposable worktree lanes stop polluting `main`.
+- Removed tracked live `.rlhf/*` runtime artifacts from version control and aligned `.gitignore` with the repo policy that RLHF memory/state is local operational data.
+- Persisted the runtime-state hygiene rule in `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md`.
+- Archived unique orphan branches before deletion and removed clean redundant worktrees/branches with no active PR or verification role.
+
+Commands run:
+
+```bash
+git fetch --all --prune
+git worktree add /Users/ganapolsky_i/workspace/git/igor/rlhf-pr-hygiene-20260313 -b chore/pr-hygiene-20260313 origin/main
+npm ci
+env RLHF_API_KEY=ci-secret npm test
+env RLHF_API_KEY=ci-secret npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check
+npm audit --json
+git diff --check
+```
+
+Observed result:
+
+- GitHub open PRs: `0`.
+- `main` CI was already green on `bbfa45576d3ea7136e544e68662253079646feeb`.
+- `npm ci` completed with `0` vulnerabilities.
+- `env RLHF_API_KEY=ci-secret npm test` passed end-to-end.
+- `env RLHF_API_KEY=ci-secret npm run test:coverage` passed with `971` passed, `0` failed, `1` skipped and all-files coverage at `82.59%` lines, `68.77%` branches, `85.37%` functions.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `37` passed, `0` failed.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
+- `npm audit --json` reported `0` open vulnerabilities.
+- `git diff --check` passed with no whitespace or patch-format defects.
+
+Cleanup evidence:
+
+- Tracked branch count: `22 -> 18`.
+- Worktree count: `18 -> 7`.
+- Archived before deletion:
+  - `archive/20260313/chore-stripe-incident-response`
+  - `archive/20260313/docs-update-product-tiers`
+  - `archive/20260313/feat-deep-document-infrastructure`
+  - `archive/20260313/feat-fix-verification-failures`
+  - `archive/20260313/feat-free-tier-limits`
+  - `archive/20260313/feat-step-feedback-export`
+  - `archive/20260313/pr-190-readonly`
+  - `archive/20260313/worktree-agent-a6591335`
+  - `archive/20260313/worktree-agent-a7dc457b`
+- Removed clean redundant worktrees/branches:
+  - `chore/pr-cleanup-20260312`
+  - `feat/context-hub-preflight`
+  - `feat/local-provider-abstraction`
+  - `worktree-agent-ade17c3c`
+  - detached verification worktree `/Users/ganapolsky_i/workspace/git/igor/rlhf-techdebt-audit`
+  - stale `main` worktree `/Users/ganapolsky_i/workspace/git/igor/rlhf-partner-aware-orchestration`
+- Repository hygiene change size: `42` tracked runtime artifacts removed from source control, `1286` tracked lines deleted.
+
+Requirements verified:
+
+- Disposable worktree lanes are no longer a versioned part of the product repository.
+- RLHF runtime state now matches the documented local-only operating model instead of creating tracked churn in every session.
+- Unique orphan branches were preserved before deletion, while clean redundant lanes were removed outright.
+- The verification suite still passes after moving runtime state out of version control.
+
 ## March 13, 2026: Technical debt audit and CI hardening
 
 Scope:

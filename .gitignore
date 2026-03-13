@@ -5,6 +5,7 @@ node_modules/
 .DS_Store
 .claude/settings.local.json
 .claude/debug/
+.claude/worktrees/
 .claude/memory/feedback/*.json
 .claude/memory/feedback/*.jsonl
 .claude/memory/feedback/*.md
@@ -17,6 +18,7 @@ node_modules/
 .rlhf/a2ui_proposal_*.json
 .rlhf/reminder-state.json
 .rlhf/reminder_*.json
+.rlhf/
 .npmrc
 .mcpregistry_github_token
 .mcpregistry_registry_token
