@@ -30,6 +30,14 @@ jobs:
           X_API_KEY: ${{ secrets.X_API_KEY }}
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
           GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+      - name: Post Launch Thread to X.com
+        if: github.event_name == 'workflow_dispatch'
+        run: node scripts/post-to-x.js --thread
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
       - name: Create Pull Request for Leads
         uses: peter-evans/create-pull-request@v6
         with:

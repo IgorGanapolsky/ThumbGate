@@ -303,9 +303,13 @@ async function main() {
       console.log(`\n✅ https://x.com/IgorGanapolsky/status/${id}\n`);
     }
   } else if (command === '--thread') {
-    const threadFile = path.join(__dirname, '..', '.amp', 'in', 'artifacts', 'marketing', '03-twitter-thread.md');
-    if (!fs.existsSync(threadFile)) {
-      console.error('❌ No twitter thread file. Run: npm run marketing:posts first');
+    const candidates = [
+      path.join(__dirname, '..', '.amp', 'in', 'artifacts', 'marketing', '03-twitter-thread.md'),
+      path.join(__dirname, '..', 'docs', 'marketing', 'twitter-thread-formatted.md'),
+    ];
+    const threadFile = candidates.find(f => fs.existsSync(f));
+    if (!threadFile) {
+      console.error('❌ No twitter thread file found.');
       process.exit(1);
     }
     const content = fs.readFileSync(threadFile, 'utf-8');
