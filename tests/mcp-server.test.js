@@ -118,6 +118,26 @@ test('intent tools list and plan enforce checkpoint flow', async () => {
   assert.equal(plan.requiresApproval, true);
 });
 
+test('plan_intent exposes partner-aware strategy over MCP', async () => {
+  const planResult = await handleRequest({
+    jsonrpc: '2.0',
+    id: 25,
+    method: 'tools/call',
+    params: {
+      name: 'plan_intent',
+      arguments: {
+        intentId: 'incident_postmortem',
+        mcpProfile: 'default',
+        partnerProfile: 'strict-reviewer',
+      },
+    },
+  });
+  const plan = JSON.parse(planResult.content[0].text);
+  assert.equal(plan.partnerProfile, 'strict_reviewer');
+  assert.equal(plan.partnerStrategy.verificationMode, 'evidence_first');
+  assert.ok(Array.isArray(plan.actionScores));
+});
+
 test('prevention_rules blocks external output paths', async () => {
   await assert.rejects(async () => {
     await handleRequest({

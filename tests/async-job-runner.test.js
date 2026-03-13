@@ -85,6 +85,19 @@ describe('async-job-runner', () => {
     assert.equal(result.status, 'completed');
   });
 
+  it('executeJob carries partner profile through verification', () => {
+    const result = m.executeJob({
+      id: 'partner-job',
+      context: 'verified output',
+      tags: ['testing'],
+      partnerProfile: 'strict-reviewer',
+    });
+
+    assert.equal(result.phases.verification.partnerProfile, 'strict_reviewer');
+    assert.equal(result.phases.verification.verificationMode, 'evidence_first');
+    assert.ok(typeof result.phases.verification.reward === 'number');
+  });
+
   it('executeJob writes to job log', () => {
     const before = m.readJobLog();
     m.executeJob({

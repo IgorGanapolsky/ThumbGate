@@ -3,6 +3,10 @@ const fs = require('fs');
 const path = require('path');
 const { getActiveMcpProfile, getAllowedTools } = require('./mcp-policy');
 const { loadModel, samplePosteriors } = require('./thompson-sampling');
+const {
+  buildPartnerStrategy,
+  getPartnerActionBias,
+} = require('./partner-orchestration');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_BUNDLE_DIR = path.join(PROJECT_ROOT, 'config', 'policy-bundles');
@@ -69,10 +73,19 @@ function listIntents(options = {}) {
   const bundle = loadPolicyBundle(options.bundleId);
   const profile = assertKnownMcpProfile(options.mcpProfile || getActiveMcpProfile());
   const requiredRisks = getRequiredApprovalRisks(bundle, profile);
+  const partnerStrategy = buildPartnerStrategy({
+    partnerProfile: options.partnerProfile,
+    tokenBudget: DEFAULT_TOKEN_BUDGET,
+  });
 
   return {
     bundleId: bundle.bundleId,
     mcpProfile: profile,
+    partnerProfile: partnerStrategy.profile,
+    partnerStrategy: {
+      verificationMode: partnerStrategy.verificationMode,
+      recommendedChecks: partnerStrategy.recommendedChecks,
+    },
     intents: bundle.intents.map((intent) => ({
       id: intent.id,
       description: intent.description,
@@ -144,11 +157,23 @@ function planIntent(options = {}) {
   const requiredRisks = getRequiredApprovalRisks(bundle, profile);
   const requiresApproval = requiredRisks.includes(intent.risk);
   const checkpointRequired = requiresApproval && !approved;
-  const phases = decomposeActions(intent.actions);
+  const partnerStrategy = buildPartnerStrategy({
+    partnerProfile: options.partnerProfile,
+    tokenBudget,
+  });
+  const rankedActions = rankActions(intent.actions, {
+    modelPath: options.modelPath,
+    partnerStrategy,
+  });
+  const plannedActions = partnerStrategy.profile === 'balanced'
+    ? intent.actions
+    : rankedActions.ranked;
+  const phases = decomposeActions(plannedActions);
 
   return {
     bundleId: bundle.bundleId,
     mcpProfile: profile,
+    partnerProfile: partnerStrategy.profile,
     generatedAt: new Date().toISOString(),
     status: checkpointRequired ? 'checkpoint_required' : 'ready',
     intent: {
@@ -166,9 +191,11 @@ function planIntent(options = {}) {
         requiredForRiskLevels: requiredRisks,
       }
       : null,
-    actions: intent.actions,
+    actions: plannedActions,
     phases,
-    tokenBudget,
+    tokenBudget: partnerStrategy.tokenBudget || tokenBudget,
+    partnerStrategy,
+    actionScores: rankedActions.scores,
   };
 }
 
@@ -188,23 +215,53 @@ function getDefaultModelPath() {
   return path.join(feedbackDir, 'feedback_model.json');
 }
 
-function scoreActions(actions, modelPath) {
+function scoreActions(actions, modelPath, options = {}) {
+  const partnerStrategy = options.partnerStrategy || buildPartnerStrategy({
+    partnerProfile: options.partnerProfile,
+  });
   const model = loadModel(modelPath || getDefaultModelPath());
   const posteriors = samplePosteriors(model);
+  const partnerScore = posteriors[partnerStrategy.partnerCategory] !== undefined
+    ? posteriors[partnerStrategy.partnerCategory]
+    : 0.5;
 
-  return actions.map((action) => {
+  return actions.map((action, index) => {
     const category = ACTION_CATEGORY_MAP[action.name] || 'uncategorized';
-    const score = posteriors[category] !== undefined ? posteriors[category] : 0.5;
-    return { action, category, score };
-  }).sort((a, b) => b.score - a.score);
+    const categoryScore = posteriors[category] !== undefined ? posteriors[category] : 0.5;
+    const partnerBias = getPartnerActionBias(action, partnerStrategy);
+    const score = Math.max(0, Math.min(1, (categoryScore * 0.7) + (partnerScore * 0.3) + partnerBias));
+    return {
+      action,
+      category,
+      actionScore: categoryScore,
+      partnerProfile: partnerStrategy.profile,
+      partnerCategory: partnerStrategy.partnerCategory,
+      partnerScore,
+      partnerBias,
+      score,
+      index,
+    };
+  }).sort((a, b) => b.score - a.score || a.index - b.index);
 }
 
 function rankActions(actions, options = {}) {
   const modelPath = options.modelPath || getDefaultModelPath();
-  const scored = scoreActions(actions, modelPath);
+  const partnerStrategy = options.partnerStrategy || buildPartnerStrategy({
+    partnerProfile: options.partnerProfile,
+  });
+  const scored = scoreActions(actions, modelPath, { partnerStrategy });
   return {
     ranked: scored.map((s) => s.action),
-    scores: scored.map((s) => ({ name: s.action.name, category: s.category, score: s.score })),
+    scores: scored.map((s) => ({
+      name: s.action.name,
+      category: s.category,
+      partnerProfile: s.partnerProfile,
+      partnerCategory: s.partnerCategory,
+      actionScore: s.actionScore,
+      partnerScore: s.partnerScore,
+      partnerBias: s.partnerBias,
+      score: s.score,
+    })),
   };
 }
 

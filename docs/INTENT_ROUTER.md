@@ -39,6 +39,40 @@ Risk levels: `low`, `medium`, `high`, `critical`.
 Each bundle defines which risk levels require human approval for each MCP profile.
 If approval is required and `approved` is not set, plan status is `checkpoint_required`.
 
+## Partner-Aware Orchestration
+
+The MVP now accepts `partnerProfile` on both `list_intents` and `plan_intent`.
+
+Supported profiles:
+
+- `balanced`: mixed-pool default with no special bias
+- `strict_reviewer`: bias toward evidence, provenance, and larger context packs
+- `fast_executor`: favor faster execution with tighter token budgets
+- `silent_blocker`: spend more budget surfacing hidden blockers before claiming done
+- `tool_limited`: reduce ambiguity quickly when the counterpart has weaker tools
+
+Runtime hooks:
+
+1. `plan_intent` resolves a partner strategy from `config/partner-routing.json`
+2. Token budgets are scaled per partner profile
+3. Action ranking combines Thompson samples for the action category with partner-specific action bias
+4. The verification loop records the outcome under both the task tags and `partner_<profile>`
+
+Reward function:
+
+```text
+reward = clamp(
+  baseOutcome
+  - (attempts - 1) * attemptPenalty
+  - min(violationCount * violationPenalty, maxViolationPenalty)
+  + rewardBias,
+  -1,
+  1
+)
+```
+
+The resulting reward drives a weighted Thompson update so clean one-shot successes and repeated failures shift partner-specific reliability faster than neutral runs.
+
 ## Examples
 
 ```bash

@@ -32,6 +32,17 @@ test('listIntents returns approval metadata for profile', () => {
   assert.equal(mediumIntent.requiresApproval, true);
 });
 
+test('listIntents normalizes partner profile and exposes partner strategy', () => {
+  const catalog = listIntents({
+    bundleId: 'default-v1',
+    mcpProfile: 'default',
+    partnerProfile: 'strict-reviewer',
+  });
+  assert.equal(catalog.partnerProfile, 'strict_reviewer');
+  assert.equal(catalog.partnerStrategy.verificationMode, 'evidence_first');
+  assert.ok(Array.isArray(catalog.partnerStrategy.recommendedChecks));
+});
+
 test('high-risk intent requires approval by default profile', () => {
   const plan = planIntent({
     bundleId: 'default-v1',
@@ -192,6 +203,38 @@ test('planIntent accepts custom token budget', () => {
   assert.equal(plan.tokenBudget.total, 8000);
   assert.equal(plan.tokenBudget.perAction, 2000);
   assert.equal(plan.tokenBudget.contextPack, DEFAULT_TOKEN_BUDGET.contextPack);
+});
+
+test('planIntent applies partner-aware token budget and action scoring', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ir-plan-partner-'));
+  const modelPath = path.join(tmpDir, 'feedback_model.json');
+  try {
+    const model = createInitialModel();
+    for (let i = 0; i < 20; i++) {
+      updateModel(model, { signal: 'positive', timestamp: new Date().toISOString(), categories: ['architecture'] });
+    }
+    saveModel(model, modelPath);
+
+    const plan = planIntent({
+      bundleId: 'default-v1',
+      mcpProfile: 'default',
+      intentId: 'incident_postmortem',
+      partnerProfile: 'strict-reviewer',
+      tokenBudget: { total: 10000, perAction: 3000, contextPack: 5000 },
+      modelPath,
+    });
+
+    assert.equal(plan.partnerProfile, 'strict_reviewer');
+    assert.equal(plan.partnerStrategy.verificationMode, 'evidence_first');
+    assert.ok(plan.tokenBudget.contextPack > 5000);
+    assert.equal(plan.actionScores.length, 3);
+    assert.ok(
+      ['construct_context_pack', 'context_provenance'].includes(plan.actions[0].name),
+      `expected evidence action first, got ${plan.actions[0].name}`,
+    );
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });
 
 /* ── Token Budget Tests ────────────────────────────────────────── */

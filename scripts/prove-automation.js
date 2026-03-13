@@ -253,7 +253,27 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 10) context evaluate stores rubric evaluation
+    // 10) partner-aware planning returns execution strategy
+    {
+      currentCheck = 'intent.partner_strategy';
+      const partnerPlan = planIntent({
+        intentId: 'incident_postmortem',
+        mcpProfile: 'default',
+        partnerProfile: 'strict-reviewer',
+      });
+      check(partnerPlan.partnerProfile === 'strict_reviewer', 'expected normalized strict_reviewer partner profile');
+      check(Boolean(partnerPlan.partnerStrategy), 'expected partner strategy metadata');
+      check(partnerPlan.partnerStrategy.verificationMode === 'evidence_first', 'expected evidence_first verification mode');
+      check(partnerPlan.tokenBudget.contextPack > 6000, 'expected boosted contextPack budget for strict reviewer');
+      check(Array.isArray(partnerPlan.actionScores), 'expected action scores for partner-aware plan');
+      addResult('intent.partner_strategy', true, {
+        partnerProfile: partnerPlan.partnerProfile,
+        verificationMode: partnerPlan.partnerStrategy.verificationMode,
+        contextPack: partnerPlan.tokenBudget.contextPack,
+      });
+    }
+
+    // 11) context evaluate stores rubric evaluation
     {
       currentCheck = 'context.evaluate.construct';
       const construct = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
@@ -291,7 +311,7 @@ async function runAutomationProof(options = {}) {
       addResult('context.evaluate.rubric', true, { rubricId: evalBody.rubricEvaluation.rubricId });
     }
 
-    // 11) semantic cache hit on equivalent query
+    // 12) semantic cache hit on equivalent query
     {
       currentCheck = 'context.semantic_cache.hit.first';
       fs.rmSync(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'semantic-cache.jsonl'), { force: true });
@@ -326,7 +346,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 12) self-healing helpers produce healthy reports in baseline state
+    // 13) self-healing helpers produce healthy reports in baseline state
     {
       const health = collectHealthReport({
         checks: [
@@ -346,7 +366,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 13) code reasoning traces verify DPO pair quality
+    // 14) code reasoning traces verify DPO pair quality
     {
       const { MEMORY_LOG_PATH } = getFeedbackPaths();
       const memories = readJSONL(MEMORY_LOG_PATH);
@@ -367,7 +387,7 @@ async function runAutomationProof(options = {}) {
       }
     }
 
-    // 14) code reasoning traces attached to proof checks
+    // 15) code reasoning traces attached to proof checks
     {
       const proofTraces = report.checks.map((chk) => traceForProofCheck(chk));
       const aggregate = aggregateTraces(proofTraces);

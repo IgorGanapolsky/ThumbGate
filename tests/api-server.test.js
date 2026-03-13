@@ -178,6 +178,14 @@ test('intent catalog endpoint returns configured intents', async () => {
   assert.ok(body.intents.length >= 3);
 });
 
+test('intent catalog endpoint accepts partner profile', async () => {
+  const res = await fetch('http://localhost:8790/v1/intents/catalog?mcpProfile=default&partnerProfile=strict-reviewer', { headers: authHeader });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.partnerProfile, 'strict_reviewer');
+  assert.equal(body.partnerStrategy.verificationMode, 'evidence_first');
+});
+
 test('intent catalog rejects invalid mcp profile', async () => {
   const res = await fetch('http://localhost:8790/v1/intents/catalog?mcpProfile=bad-profile', {
     headers: authHeader,
@@ -200,6 +208,25 @@ test('intent plan returns checkpoint for unapproved high-risk action', async () 
   const body = await res.json();
   assert.equal(body.status, 'checkpoint_required');
   assert.equal(body.requiresApproval, true);
+});
+
+test('intent plan returns partner-aware strategy metadata', async () => {
+  const res = await fetch('http://localhost:8790/v1/intents/plan', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      intentId: 'incident_postmortem',
+      mcpProfile: 'default',
+      partnerProfile: 'strict-reviewer',
+    }),
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.partnerProfile, 'strict_reviewer');
+  assert.equal(body.partnerStrategy.verificationMode, 'evidence_first');
+  assert.ok(body.tokenBudget.contextPack > 6000);
+  assert.ok(Array.isArray(body.actionScores));
 });
 
 test('summary endpoint returns markdown text payload', async () => {

@@ -573,8 +573,8 @@ function createApiServer() {
                     { name: 'construct_context_pack', description: 'Build bounded context pack', inputSchema: { type: 'object', properties: { task: { type: 'string' } }, required: ['task'] } },
                     { name: 'evaluate_context_pack', description: 'Record context pack outcome', inputSchema: { type: 'object', properties: { packId: { type: 'string' }, outcome: { type: 'string' } }, required: ['packId', 'outcome'] } },
                     { name: 'context_provenance', description: 'Audit trail of context decisions', inputSchema: { type: 'object', properties: {} } },
-                    { name: 'list_intents', description: 'Available action plans', inputSchema: { type: 'object', properties: {} } },
-                    { name: 'plan_intent', description: 'Generate execution plan', inputSchema: { type: 'object', properties: { intent: { type: 'string' } }, required: ['intent'] } },
+                    { name: 'list_intents', description: 'Available action plans', inputSchema: { type: 'object', properties: { mcpProfile: { type: 'string' }, bundleId: { type: 'string' }, partnerProfile: { type: 'string' } } } },
+                    { name: 'plan_intent', description: 'Generate execution plan', inputSchema: { type: 'object', properties: { intentId: { type: 'string' }, context: { type: 'string' }, mcpProfile: { type: 'string' }, bundleId: { type: 'string' }, partnerProfile: { type: 'string' }, approved: { type: 'boolean' } }, required: ['intentId'] } },
                   ],
                 },
               });
@@ -946,8 +946,9 @@ function createApiServer() {
       if (req.method === 'GET' && pathname === '/v1/intents/catalog') {
         const mcpProfile = parsed.searchParams.get('mcpProfile') || undefined;
         const bundleId = parsed.searchParams.get('bundleId') || undefined;
+        const partnerProfile = parsed.searchParams.get('partnerProfile') || undefined;
         try {
-          const catalog = listIntents({ mcpProfile, bundleId });
+          const catalog = listIntents({ mcpProfile, bundleId, partnerProfile });
           sendJson(res, 200, catalog);
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid intent catalog request');
@@ -963,6 +964,7 @@ function createApiServer() {
             context: body.context || '',
             mcpProfile: body.mcpProfile,
             bundleId: body.bundleId,
+            partnerProfile: body.partnerProfile,
             approved: body.approved === true,
           });
           sendJson(res, 200, plan);

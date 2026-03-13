@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "defaultProfile": "balanced",
+  "aliases": {
+    "default": "balanced",
+    "reviewer": "strict_reviewer",
+    "strict-reviewer": "strict_reviewer",
+    "strict_reviewer": "strict_reviewer",
+    "fast": "fast_executor",
+    "fast-executor": "fast_executor",
+    "fast_executor": "fast_executor",
+    "blocker": "silent_blocker",
+    "silent-blocker": "silent_blocker",
+    "silent_blocker": "silent_blocker",
+    "limited": "tool_limited",
+    "tool-limited": "tool_limited",
+    "tool_limited": "tool_limited"
+  },
+  "rewardModel": {
+    "accepted": 1,
+    "rejected": -1,
+    "attemptPenalty": 0.15,
+    "violationPenalty": 0.1,
+    "maxViolationPenalty": 0.3
+  },
+  "profiles": {
+    "balanced": {
+      "label": "Balanced",
+      "description": "Mixed-pool default for unknown or steady collaborators.",
+      "verificationMode": "standard",
+      "maxRetryDelta": 0,
+      "rewardBias": 0,
+      "tokenBudgetMultiplier": {
+        "total": 1,
+        "perAction": 1,
+        "contextPack": 1
+      },
+      "recommendedChecks": [
+        "Keep default approval thresholds",
+        "Use the standard verification loop"
+      ],
+      "actionBiases": {}
+    },
+    "strict_reviewer": {
+      "label": "Strict Reviewer",
+      "description": "Prefers explicit evidence, provenance, and audit-friendly plans.",
+      "verificationMode": "evidence_first",
+      "maxRetryDelta": 1,
+      "rewardBias": 0.1,
+      "tokenBudgetMultiplier": {
+        "total": 1.15,
+        "perAction": 1.1,
+        "contextPack": 1.4
+      },
+      "recommendedChecks": [
+        "Front-load context packs and provenance",
+        "Bias toward evidence-producing actions"
+      ],
+      "actionBiases": {
+        "construct_context_pack": 0.22,
+        "context_provenance": 0.2,
+        "evaluate_context_pack": 0.16,
+        "feedback_summary": 0.08
+      }
+    },
+    "fast_executor": {
+      "label": "Fast Executor",
+      "description": "Optimizes for low drag and quick convergence when the partner is responsive.",
+      "verificationMode": "fast_path",
+      "maxRetryDelta": -1,
+      "rewardBias": -0.05,
+      "tokenBudgetMultiplier": {
+        "total": 0.85,
+        "perAction": 0.85,
+        "contextPack": 0.7
+      },
+      "recommendedChecks": [
+        "Keep action order lean",
+        "Avoid oversized context packs unless the model strongly prefers them"
+      ],
+      "actionBiases": {
+        "feedback_summary": 0.16,
+        "capture_feedback": 0.1,
+        "construct_context_pack": -0.08,
+        "context_provenance": -0.05
+      }
+    },
+    "silent_blocker": {
+      "label": "Silent Blocker",
+      "description": "Looks cooperative but tends to surface blockers late.",
+      "verificationMode": "blocker_hunt",
+      "maxRetryDelta": 1,
+      "rewardBias": 0.05,
+      "tokenBudgetMultiplier": {
+        "total": 1.2,
+        "perAction": 1.1,
+        "contextPack": 1.3
+      },
+      "recommendedChecks": [
+        "Pull provenance earlier",
+        "Spend extra verification budget before claiming completion"
+      ],
+      "actionBiases": {
+        "context_provenance": 0.2,
+        "construct_context_pack": 0.14,
+        "feedback_summary": 0.1,
+        "evaluate_context_pack": 0.08
+      }
+    },
+    "tool_limited": {
+      "label": "Tool Limited",
+      "description": "Operates with fewer tools or weaker environmental visibility.",
+      "verificationMode": "explicit_contracts",
+      "maxRetryDelta": 0,
+      "rewardBias": -0.02,
+      "tokenBudgetMultiplier": {
+        "total": 0.95,
+        "perAction": 0.9,
+        "contextPack": 0.8
+      },
+      "recommendedChecks": [
+        "Use smaller context packs with sharper instructions",
+        "Favor actions that reduce ambiguity quickly"
+      ],
+      "actionBiases": {
+        "feedback_summary": 0.12,
+        "capture_feedback": 0.08,
+        "construct_context_pack": 0.05
+      }
+    }
+  }
+}

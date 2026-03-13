@@ -198,6 +198,31 @@ describe('verification-loop', () => {
     assert.ok(model.categories.architecture.alpha > 1);
   });
 
+  it('runVerificationLoop records partner-aware strategy and model updates', () => {
+    fs.writeFileSync(path.join(tmpDir, 'memory-log.jsonl'), '');
+    delete require.cache[require.resolve('../scripts/verification-loop')];
+    const fresh = require('../scripts/verification-loop');
+
+    const modelPath = path.join(tmpDir, 'partner-model.json');
+    const result = fresh.runVerificationLoop({
+      context: 'verified output with evidence',
+      tags: ['testing'],
+      partnerProfile: 'strict-reviewer',
+      maxRetries: 1,
+      modelPath,
+    });
+
+    assert.equal(result.partnerStrategy.profile, 'strict_reviewer');
+    assert.equal(result.requestedMaxRetries, 1);
+    assert.equal(result.maxRetries, 2);
+    assert.ok(result.partnerReward.reward > 0);
+    assert.equal(result.thompsonUpdate.partnerCategory, 'partner_strict_reviewer');
+
+    const model = JSON.parse(fs.readFileSync(modelPath, 'utf-8'));
+    assert.ok(model.categories.partner_strict_reviewer);
+    assert.ok(model.categories.partner_strict_reviewer.alpha > 1);
+  });
+
   it('getVerificationReliability returns per-category reliability', () => {
     const modelPath = path.join(tmpDir, 'rel-model.json');
     fs.writeFileSync(path.join(tmpDir, 'memory-log.jsonl'), '');
