@@ -19,6 +19,7 @@ const CONFIG = {
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   GITHUB_MARKETPLACE_WEBHOOK_SECRET: process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '',
+  GITHUB_MARKETPLACE_PLAN_PRICES_JSON: process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON || '',
   STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || 'price_1RNdUBGGBpd520QYG1A9SWF4',
   STRIPE_ONE_TIME_PRICE_ID: process.env.STRIPE_ONE_TIME_PRICE_ID || 'price_1RNeMBGGBpd520QYNmZYZY12',
   get API_KEYS_PATH() {
@@ -26,6 +27,9 @@ const CONFIG = {
   },
   get FUNNEL_LEDGER_PATH() {
     return process.env._TEST_FUNNEL_LEDGER_PATH || process.env.RLHF_FUNNEL_LEDGER_PATH || path.resolve(__dirname, '../.claude/memory/feedback/funnel-events.jsonl');
+  },
+  get REVENUE_LEDGER_PATH() {
+    return process.env._TEST_REVENUE_LEDGER_PATH || process.env.RLHF_REVENUE_LEDGER_PATH || path.resolve(__dirname, '../.claude/memory/feedback/revenue-events.jsonl');
   },
   get LOCAL_CHECKOUT_SESSIONS_PATH() {
     return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.resolve(__dirname, '../.claude/memory/feedback/local-checkout-sessions.json');
@@ -71,7 +75,88 @@ function ensureParentDir(filePath) {
 
 function sanitizeMetadata(metadata) {
   if (!metadata || typeof metadata !== 'object') return {};
-  return { ...metadata };
+  try {
+    return JSON.parse(JSON.stringify(metadata));
+  } catch {
+    return { ...metadata };
+  }
+}
+
+function appendJsonlRecord(filePath, payload) {
+  try {
+    ensureParentDir(filePath);
+    fs.appendFileSync(filePath, `${JSON.stringify(payload)}\n`, 'utf-8');
+    return { written: true, payload };
+  } catch (err) {
+    return { written: false, reason: 'write_failed', error: err.message };
+  }
+}
+
+function loadJsonlRecords(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return [];
+    return fs.readFileSync(filePath, 'utf-8')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        try {
+          return JSON.parse(line);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  } catch { return []; }
+}
+
+function normalizeText(value) {
+  if (value === undefined || value === null) return null;
+  const text = String(value).trim();
+  return text || null;
+}
+
+function normalizeCurrency(value) {
+  const text = normalizeText(value);
+  return text ? text.toUpperCase() : null;
+}
+
+function normalizeInteger(value) {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'string' && value.trim() === '') return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? Math.trunc(num) : null;
+}
+
+function safeRate(num, den) {
+  return den ? Number((num / den).toFixed(4)) : 0;
+}
+
+function incrementCounter(target, key, amount = 1) {
+  const resolvedKey = normalizeText(key) || 'unknown';
+  target[resolvedKey] = (target[resolvedKey] || 0) + amount;
+}
+
+function extractAttribution(metadata = {}) {
+  const safe = sanitizeMetadata(metadata);
+  return {
+    source: normalizeText(safe.utmSource || safe.source),
+    medium: normalizeText(safe.utmMedium || safe.medium),
+    campaign: normalizeText(safe.utmCampaign || safe.campaign),
+    content: normalizeText(safe.utmContent || safe.content),
+    term: normalizeText(safe.utmTerm || safe.term),
+    referrer: normalizeText(safe.referrer),
+    landingPath: normalizeText(safe.landingPath),
+    ctaId: normalizeText(safe.ctaId),
+  };
+}
+
+function resolveAttributionSource(attribution, fallback = null) {
+  return attribution.source || normalizeText(fallback) || 'unknown';
+}
+
+function resolveAttributionCampaign(attribution) {
+  return attribution.campaign || 'unassigned';
 }
 
 function appendFunnelEvent({ stage, event, installId = null, traceId = null, evidence, metadata = {} } = {}) {
@@ -85,22 +170,57 @@ function appendFunnelEvent({ stage, event, installId = null, traceId = null, evi
     traceId: traceId || metadata.traceId || null,
     metadata: sanitizeMetadata(metadata),
   };
-  try {
-    const target = CONFIG.FUNNEL_LEDGER_PATH;
-    ensureParentDir(target);
-    fs.appendFileSync(target, `${JSON.stringify(payload)}\n`, 'utf-8');
-    return { written: true, payload };
-  } catch (err) {
-    return { written: false, reason: 'write_failed', error: err.message };
-  }
+  return appendJsonlRecord(CONFIG.FUNNEL_LEDGER_PATH, payload);
 }
 
 function loadFunnelLedger() {
-  try {
-    const target = CONFIG.FUNNEL_LEDGER_PATH;
-    if (!fs.existsSync(target)) return [];
-    return fs.readFileSync(target, 'utf-8').split('\n').map(l => l.trim()).filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
-  } catch { return []; }
+  return loadJsonlRecords(CONFIG.FUNNEL_LEDGER_PATH);
+}
+
+function loadRevenueLedger() {
+  return loadJsonlRecords(CONFIG.REVENUE_LEDGER_PATH);
+}
+
+function appendRevenueEvent({
+  provider,
+  event,
+  status = 'paid',
+  customerId,
+  orderId = null,
+  installId = null,
+  traceId = null,
+  evidence = null,
+  amountCents = null,
+  currency = null,
+  amountKnown = false,
+  recurringInterval = null,
+  attribution = {},
+  metadata = {},
+} = {}) {
+  if (!provider || !event || !customerId) {
+    return { written: false, reason: 'missing_required_fields' };
+  }
+
+  const normalizedAmount = normalizeInteger(amountCents);
+  const payload = {
+    timestamp: new Date().toISOString(),
+    provider: normalizeText(provider),
+    event,
+    status: normalizeText(status) || 'paid',
+    orderId: normalizeText(orderId) || normalizeText(evidence) || null,
+    evidence: evidence || orderId || event,
+    customerId,
+    installId: installId || null,
+    traceId: traceId || metadata.traceId || null,
+    amountCents: normalizedAmount,
+    currency: normalizeCurrency(currency),
+    amountKnown: Boolean(amountKnown && normalizedAmount !== null),
+    recurringInterval: normalizeText(recurringInterval),
+    attribution: extractAttribution({ ...sanitizeMetadata(metadata), ...sanitizeMetadata(attribution) }),
+    metadata: sanitizeMetadata(metadata),
+  };
+
+  return appendJsonlRecord(CONFIG.REVENUE_LEDGER_PATH, payload);
 }
 
 function loadLocalCheckoutSessions() {
@@ -118,6 +238,56 @@ function saveLocalCheckoutSessions(store) {
   fs.writeFileSync(target, JSON.stringify(store, null, 2), 'utf-8');
 }
 
+function serializeStripeMetadata(metadata) {
+  const safe = sanitizeMetadata(metadata);
+  const serialized = {};
+  for (const [key, value] of Object.entries(safe)) {
+    if (value === undefined || value === null) continue;
+    if (typeof value === 'object') continue;
+    serialized[key] = String(value);
+  }
+  return serialized;
+}
+
+function parseGithubPlanPricing() {
+  if (!CONFIG.GITHUB_MARKETPLACE_PLAN_PRICES_JSON) return {};
+  try {
+    const parsed = JSON.parse(CONFIG.GITHUB_MARKETPLACE_PLAN_PRICES_JSON);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function resolveGithubPlanPricing(planId) {
+  const pricing = parseGithubPlanPricing();
+  const raw = pricing[String(planId)];
+  if (raw === undefined) {
+    return { amountKnown: false, amountCents: null, currency: null, recurringInterval: null };
+  }
+
+  if (typeof raw === 'number') {
+    return {
+      amountKnown: Number.isFinite(raw),
+      amountCents: normalizeInteger(raw),
+      currency: 'USD',
+      recurringInterval: 'month',
+    };
+  }
+
+  if (!raw || typeof raw !== 'object') {
+    return { amountKnown: false, amountCents: null, currency: null, recurringInterval: null };
+  }
+
+  const amountCents = normalizeInteger(raw.amountCents ?? raw.amount ?? raw.priceCents);
+  return {
+    amountKnown: amountCents !== null,
+    amountCents,
+    currency: normalizeCurrency(raw.currency) || 'USD',
+    recurringInterval: normalizeText(raw.recurringInterval || raw.interval) || 'month',
+  };
+}
+
 function getFunnelAnalytics() {
   const events = loadFunnelLedger();
   const stageCounts = { acquisition: 0, activation: 0, paid: 0 };
@@ -129,18 +299,177 @@ function getFunnelAnalytics() {
       eventCounts[key] = (eventCounts[key] || 0) + 1;
     }
   }
-  const safeRate = (num, den) => den ? Number((num / den).toFixed(4)) : 0;
-  return { totalEvents: events.length, stageCounts, eventCounts, conversionRates: { acquisitionToActivation: safeRate(stageCounts.activation, stageCounts.acquisition), activationToPaid: safeRate(stageCounts.paid, stageCounts.activation), acquisitionToPaid: safeRate(stageCounts.paid, stageCounts.acquisition) } };
+  return {
+    totalEvents: events.length,
+    stageCounts,
+    eventCounts,
+    conversionRates: {
+      acquisitionToActivation: safeRate(stageCounts.activation, stageCounts.acquisition),
+      activationToPaid: safeRate(stageCounts.paid, stageCounts.activation),
+      acquisitionToPaid: safeRate(stageCounts.paid, stageCounts.acquisition),
+    },
+  };
+}
+
+function getBusinessAnalytics() {
+  const events = loadFunnelLedger();
+  const revenueEvents = loadRevenueLedger();
+  const funnel = getFunnelAnalytics();
+  const acquisitionEvents = events.filter((entry) => entry && entry.stage === 'acquisition');
+  const paidEvents = events.filter((entry) => entry && entry.stage === 'paid');
+  const paidOrders = revenueEvents.filter((entry) => entry && entry.status === 'paid');
+  const firstPaid = paidEvents[0] || null;
+  const lastPaid = paidEvents[paidEvents.length - 1] || null;
+
+  const signupsBySource = {};
+  const signupsByCampaign = {};
+  const acquisitionLeadKeys = new Set();
+  for (const entry of acquisitionEvents) {
+    const attribution = extractAttribution(entry.metadata);
+    const sourceKey = resolveAttributionSource(attribution);
+    const campaignKey = resolveAttributionCampaign(attribution);
+    incrementCounter(signupsBySource, sourceKey);
+    incrementCounter(signupsByCampaign, campaignKey);
+    acquisitionLeadKeys.add(entry.traceId || entry.installId || entry.evidence || `${entry.timestamp}:${entry.event}`);
+  }
+
+  const paidBySource = {};
+  const paidByCampaign = {};
+  const bookedRevenueBySourceCents = {};
+  const bookedRevenueByCampaignCents = {};
+  const bookedRevenueByCurrency = {};
+  const paidCustomerIds = new Set();
+  const revenueByProvider = {};
+  let bookedRevenueCents = 0;
+  let amountKnownOrders = 0;
+  let amountUnknownOrders = 0;
+  let latestPaidAt = null;
+  let latestPaidOrder = null;
+
+  for (const entry of paidOrders) {
+    const providerKey = normalizeText(entry.provider) || 'unknown';
+    const sourceKey = resolveAttributionSource(entry.attribution || {}, providerKey);
+    const campaignKey = resolveAttributionCampaign(entry.attribution || {});
+    incrementCounter(paidBySource, sourceKey);
+    incrementCounter(paidByCampaign, campaignKey);
+    paidCustomerIds.add(entry.customerId);
+
+    if (!revenueByProvider[providerKey]) {
+      revenueByProvider[providerKey] = {
+        paidOrders: 0,
+        bookedRevenueCents: 0,
+        amountKnownOrders: 0,
+        amountUnknownOrders: 0,
+        bookedRevenueByCurrency: {},
+      };
+    }
+
+    const providerSummary = revenueByProvider[providerKey];
+    providerSummary.paidOrders += 1;
+
+    if (entry.amountKnown && Number.isInteger(entry.amountCents)) {
+      const currency = normalizeCurrency(entry.currency) || 'UNKNOWN';
+      amountKnownOrders += 1;
+      bookedRevenueCents += entry.amountCents;
+      incrementCounter(bookedRevenueBySourceCents, sourceKey, entry.amountCents);
+      incrementCounter(bookedRevenueByCampaignCents, campaignKey, entry.amountCents);
+      incrementCounter(bookedRevenueByCurrency, currency, entry.amountCents);
+      providerSummary.bookedRevenueCents += entry.amountCents;
+      providerSummary.amountKnownOrders += 1;
+      incrementCounter(providerSummary.bookedRevenueByCurrency, currency, entry.amountCents);
+    } else {
+      amountUnknownOrders += 1;
+      providerSummary.amountUnknownOrders += 1;
+    }
+
+    if (!latestPaidAt || String(entry.timestamp || '') > latestPaidAt) {
+      latestPaidAt = entry.timestamp || null;
+      latestPaidOrder = {
+        timestamp: entry.timestamp || null,
+        provider: entry.provider || null,
+        event: entry.event || null,
+        orderId: entry.orderId || null,
+        customerId: entry.customerId || null,
+        amountCents: entry.amountCents ?? null,
+        currency: entry.currency || null,
+        amountKnown: Boolean(entry.amountKnown),
+      };
+    }
+  }
+
+  const conversionBySource = {};
+  for (const sourceKey of new Set([...Object.keys(signupsBySource), ...Object.keys(paidBySource)])) {
+    conversionBySource[sourceKey] = safeRate(paidBySource[sourceKey] || 0, signupsBySource[sourceKey] || 0);
+  }
+
+  const conversionByCampaign = {};
+  for (const campaignKey of new Set([...Object.keys(signupsByCampaign), ...Object.keys(paidByCampaign)])) {
+    conversionByCampaign[campaignKey] = safeRate(paidByCampaign[campaignKey] || 0, signupsByCampaign[campaignKey] || 0);
+  }
+
+  return {
+    generatedAt: new Date().toISOString(),
+    coverage: {
+      source: 'funnel_ledger+revenue_ledger',
+      tracksBookedRevenue: true,
+      tracksPaidOrders: true,
+      tracksInvoices: false,
+      tracksAttribution: true,
+      providerCoverage: {
+        stripe: 'booked_revenue',
+        githubMarketplace: CONFIG.GITHUB_MARKETPLACE_PLAN_PRICES_JSON ? 'configured_plan_prices' : 'paid_orders_only',
+      },
+    },
+    funnel: {
+      ...funnel,
+      uniqueAcquisitionLeads: acquisitionLeadKeys.size,
+      uniquePaidCustomers: paidCustomerIds.size,
+      firstPaidAt: firstPaid ? firstPaid.timestamp || null : null,
+      lastPaidAt: lastPaid ? lastPaid.timestamp || null : null,
+      lastPaidEvent: lastPaid ? {
+        timestamp: lastPaid.timestamp || null,
+        event: lastPaid.event || null,
+        evidence: lastPaid.evidence || null,
+        customerId: lastPaid.metadata?.customerId || null,
+        traceId: lastPaid.traceId || null,
+      } : null,
+    },
+    signups: {
+      total: acquisitionEvents.length,
+      uniqueLeads: acquisitionLeadKeys.size,
+      bySource: signupsBySource,
+      byCampaign: signupsByCampaign,
+    },
+    revenue: {
+      paidOrders: paidOrders.length,
+      paidCustomers: paidCustomerIds.size,
+      bookedRevenueCents,
+      bookedRevenueByCurrency,
+      amountKnownOrders,
+      amountUnknownOrders,
+      amountKnownCoverageRate: safeRate(amountKnownOrders, paidOrders.length),
+      unreconciledPaidEvents: Math.max(0, paidEvents.length - paidOrders.length),
+      latestPaidAt,
+      latestPaidOrder,
+      byProvider: revenueByProvider,
+    },
+    attribution: {
+      acquisitionBySource: signupsBySource,
+      acquisitionByCampaign: signupsByCampaign,
+      paidBySource,
+      paidByCampaign,
+      bookedRevenueBySourceCents,
+      bookedRevenueByCampaignCents,
+      conversionBySource,
+      conversionByCampaign,
+    },
+  };
 }
 
 function getBillingSummary() {
-  const events = loadFunnelLedger();
-  const funnel = getFunnelAnalytics();
+  const business = getBusinessAnalytics();
   const store = loadKeyStore();
   const keyEntries = Object.values(store.keys || {});
-  const paidEvents = events.filter((entry) => entry && entry.stage === 'paid');
-  const firstPaid = paidEvents[0] || null;
-  const lastPaid = paidEvents[paidEvents.length - 1] || null;
   const customers = new Map();
   const bySource = {};
   const activeBySource = {};
@@ -204,24 +533,15 @@ function getBillingSummary() {
   });
 
   return {
-    generatedAt: new Date().toISOString(),
+    generatedAt: business.generatedAt,
     coverage: {
-      source: 'funnel_ledger+key_store',
-      tracksBookedRevenue: false,
-      tracksInvoices: false,
+      ...business.coverage,
+      source: 'funnel_ledger+revenue_ledger+key_store',
     },
-    funnel: {
-      ...funnel,
-      firstPaidAt: firstPaid ? firstPaid.timestamp || null : null,
-      lastPaidAt: lastPaid ? lastPaid.timestamp || null : null,
-      lastPaidEvent: lastPaid ? {
-        timestamp: lastPaid.timestamp || null,
-        event: lastPaid.event || null,
-        evidence: lastPaid.evidence || null,
-        customerId: lastPaid.metadata?.customerId || null,
-        traceId: lastPaid.traceId || null,
-      } : null,
-    },
+    funnel: business.funnel,
+    signups: business.signups,
+    revenue: business.revenue,
+    attribution: business.attribution,
     keys: {
       total: keyEntries.length,
       active: activeKeys,
@@ -256,7 +576,7 @@ function saveKeyStore(store) {
 
 async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, metadata = {} } = {}) {
   const resolvedTraceId = traceId || metadata.traceId || createTraceId('checkout');
-  const checkoutMetadata = { ...metadata, installId: installId || 'unknown', traceId: resolvedTraceId };
+  const checkoutMetadata = sanitizeMetadata({ ...metadata, installId: installId || 'unknown', traceId: resolvedTraceId });
 
   if (LOCAL_MODE()) {
     const localSessionId = `test_session_${crypto.randomBytes(8).toString('hex')}`;
@@ -283,7 +603,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     payment_method_types: ['card', 'link'],
     mode: metadata.oneTime ? 'payment' : 'subscription',
     line_items: [{ price: metadata.oneTime ? CONFIG.STRIPE_ONE_TIME_PRICE_ID : CONFIG.STRIPE_PRICE_ID, quantity: 1 }],
-    metadata: checkoutMetadata,
+    metadata: serializeStripeMetadata(checkoutMetadata),
   });
 
   appendFunnelEvent({
@@ -477,6 +797,7 @@ async function handleWebhook(rawBody, signature) {
       const customerId = session.customer;
       const installId = session.metadata?.installId;
       const traceId = session.metadata?.traceId || null;
+      const attribution = extractAttribution(session.metadata);
       const result = provisionApiKey(customerId, { installId, source: 'stripe_webhook_checkout_completed' });
       appendFunnelEvent({
         stage: 'paid',
@@ -484,7 +805,27 @@ async function handleWebhook(rawBody, signature) {
         installId,
         traceId,
         evidence: session.id,
-        metadata: { customerId, subscriptionId: session.subscription, traceId },
+        metadata: { customerId, subscriptionId: session.subscription, traceId, ...attribution },
+      });
+      appendRevenueEvent({
+        provider: 'stripe',
+        event: 'stripe_checkout_completed',
+        status: 'paid',
+        customerId,
+        orderId: session.id,
+        installId,
+        traceId,
+        evidence: session.id,
+        amountCents: session.amount_total,
+        currency: session.currency,
+        amountKnown: session.amount_total !== undefined && session.amount_total !== null,
+        recurringInterval: session.mode === 'subscription' ? 'month' : null,
+        attribution,
+        metadata: {
+          subscriptionId: session.subscription || null,
+          mode: session.mode || null,
+          paymentStatus: session.payment_status || null,
+        },
       });
       return { handled: true, action: 'provisioned_api_key', result };
     }
@@ -510,22 +851,97 @@ function handleGithubWebhook(event) {
   const { action, marketplace_purchase: mp } = event;
   if (!action || !mp || !mp.account?.id) return { handled: false, reason: 'missing_payload_data' };
   const customerId = `github_${String(mp.account.type).toLowerCase()}_${mp.account.id}`;
+  const planPricing = resolveGithubPlanPricing(mp.plan?.id);
   switch (action) {
     case 'purchased': {
       const result = provisionApiKey(customerId, { source: 'github_marketplace_purchased' });
-      appendFunnelEvent({ stage: 'paid', event: 'github_marketplace_purchased', evidence: 'github_marketplace_purchased', metadata: { provider: 'github', customerId, accountId: String(mp.account.id), accountType: String(mp.account.type) } });
+      appendFunnelEvent({
+        stage: 'paid',
+        event: 'github_marketplace_purchased',
+        evidence: 'github_marketplace_purchased',
+        metadata: {
+          provider: 'github_marketplace',
+          customerId,
+          accountId: String(mp.account.id),
+          accountType: String(mp.account.type),
+          source: 'github_marketplace',
+          planId: mp.plan?.id || null,
+          planName: mp.plan?.name || null,
+        },
+      });
+      appendRevenueEvent({
+        provider: 'github_marketplace',
+        event: 'github_marketplace_purchased',
+        status: 'paid',
+        customerId,
+        orderId: mp.id || null,
+        evidence: 'github_marketplace_purchased',
+        amountCents: planPricing.amountCents,
+        currency: planPricing.currency,
+        amountKnown: planPricing.amountKnown,
+        recurringInterval: planPricing.recurringInterval,
+        attribution: { source: 'github_marketplace' },
+        metadata: {
+          accountId: String(mp.account.id),
+          accountType: String(mp.account.type),
+          planId: mp.plan?.id || null,
+          planName: mp.plan?.name || null,
+        },
+      });
       return { handled: true, action: 'provisioned_api_key', result };
     }
-    case 'cancelled': return { handled: true, action: 'disabled_customer_keys', result: disableCustomerKeys(customerId) };
-    case 'changed': return { handled: true, action: 'plan_changed', result: provisionApiKey(customerId, { source: 'github_marketplace_changed' }) };
+    case 'cancelled':
+      appendRevenueEvent({
+        provider: 'github_marketplace',
+        event: 'github_marketplace_cancelled',
+        status: 'cancelled',
+        customerId,
+        orderId: mp.id || null,
+        evidence: 'github_marketplace_cancelled',
+        amountCents: planPricing.amountCents,
+        currency: planPricing.currency,
+        amountKnown: planPricing.amountKnown,
+        recurringInterval: planPricing.recurringInterval,
+        attribution: { source: 'github_marketplace' },
+        metadata: {
+          accountId: String(mp.account.id),
+          accountType: String(mp.account.type),
+          planId: mp.plan?.id || null,
+          planName: mp.plan?.name || null,
+        },
+      });
+      return { handled: true, action: 'disabled_customer_keys', result: disableCustomerKeys(customerId) };
+    case 'changed': {
+      appendRevenueEvent({
+        provider: 'github_marketplace',
+        event: 'github_marketplace_changed',
+        status: 'changed',
+        customerId,
+        orderId: mp.id || null,
+        evidence: 'github_marketplace_changed',
+        amountCents: planPricing.amountCents,
+        currency: planPricing.currency,
+        amountKnown: planPricing.amountKnown,
+        recurringInterval: planPricing.recurringInterval,
+        attribution: { source: 'github_marketplace' },
+        metadata: {
+          accountId: String(mp.account.id),
+          accountType: String(mp.account.type),
+          planId: mp.plan?.id || null,
+          planName: mp.plan?.name || null,
+        },
+      });
+      return { handled: true, action: 'plan_changed', result: provisionApiKey(customerId, { source: 'github_marketplace_changed' }) };
+    }
     default: return { handled: false, reason: `unhandled_action:${action}` };
   }
 }
 
 module.exports = {
-  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, reportUsageToStripe, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, loadFunnelLedger, getFunnelAnalytics, getBillingSummary,
+  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, reportUsageToStripe, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,
+  _REVENUE_LEDGER_PATH: () => CONFIG.REVENUE_LEDGER_PATH,
   _LOCAL_CHECKOUT_SESSIONS_PATH: () => CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH,
   _LOCAL_MODE: () => LOCAL_MODE(),
 };

@@ -15,11 +15,14 @@ const crypto = require('crypto');
 
 let tmpDir;
 let keyStorePath;
+let revenueLedgerPath;
 
 function setupTempStore() {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'github-billing-test-'));
   keyStorePath = path.join(tmpDir, 'api-keys.json');
+  revenueLedgerPath = path.join(tmpDir, 'revenue-events.jsonl');
   process.env._TEST_API_KEYS_PATH = keyStorePath;
+  process.env._TEST_REVENUE_LEDGER_PATH = revenueLedgerPath;
   fs.writeFileSync(keyStorePath, JSON.stringify({ keys: {} }), 'utf-8');
 }
 
@@ -28,6 +31,17 @@ function cleanupTempStore() {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
   delete process.env._TEST_API_KEYS_PATH;
+  delete process.env._TEST_REVENUE_LEDGER_PATH;
+  delete process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
+}
+
+function readRevenueEvents() {
+  if (!revenueLedgerPath || !fs.existsSync(revenueLedgerPath)) return [];
+  return fs.readFileSync(revenueLedgerPath, 'utf-8')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
 }
 
 describe('billing.js — GitHub Marketplace Webhooks', () => {
@@ -67,6 +81,44 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     const validation = billing.validateApiKey(result.result.key);
     assert.equal(validation.valid, true);
     assert.equal(validation.customerId, 'github_user_12345');
+
+    const revenueEvents = readRevenueEvents();
+    assert.equal(revenueEvents.length, 1);
+    assert.equal(revenueEvents[0].provider, 'github_marketplace');
+    assert.equal(revenueEvents[0].amountKnown, false);
+  });
+
+  test('handleGithubWebhook — purchased uses configured plan pricing when available', () => {
+    process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
+      11: { amountCents: 2900, currency: 'USD', recurringInterval: 'month' },
+    });
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
+
+    const event = {
+      action: 'purchased',
+      marketplace_purchase: {
+        account: {
+          type: 'Organization',
+          id: 2026,
+          login: 'memory-gateway'
+        },
+        plan: { id: 11, name: 'Pro' }
+      }
+    };
+
+    const result = billing.handleGithubWebhook(event);
+    assert.equal(result.handled, true);
+
+    const revenueEvents = readRevenueEvents();
+    const latest = revenueEvents[revenueEvents.length - 1];
+    assert.equal(latest.amountKnown, true);
+    assert.equal(latest.amountCents, 2900);
+    assert.equal(latest.currency, 'USD');
+
+    delete process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
   });
 
   test('handleGithubWebhook — cancelled disables API keys', () => {

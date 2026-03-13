@@ -40,6 +40,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 ## Proof policy
 
 - Use booked revenue, paid orders, or named pilot agreements for commercial proof.
+- Use the admin billing summary and CLI CFO output to distinguish `bookedRevenueCents` from `paidOrders`; not every paid provider event carries a verifiable amount by default.
 - Use `docs/VERIFICATION_EVIDENCE.md`, `proof/compatibility/report.json`, and `proof/automation/report.json` for engineering proof.
 - When in doubt, prefer "early-stage" or "pilot" language over unverified traction claims.
  

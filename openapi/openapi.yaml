@@ -151,13 +151,25 @@ components:
               type: string
             tracksBookedRevenue:
               type: boolean
+            tracksPaidOrders:
+              type: boolean
             tracksInvoices:
               type: boolean
+            tracksAttribution:
+              type: boolean
+            providerCoverage:
+              type: object
+              additionalProperties:
+                type: string
         funnel:
           allOf:
             - $ref: '#/components/schemas/FunnelAnalyticsResponse'
             - type: object
               properties:
+                uniqueAcquisitionLeads:
+                  type: integer
+                uniquePaidCustomers:
+                  type: integer
                 firstPaidAt:
                   type: string
                   nullable: true
@@ -183,6 +195,124 @@ components:
                     traceId:
                       type: string
                       nullable: true
+        signups:
+          type: object
+          properties:
+            total:
+              type: integer
+            uniqueLeads:
+              type: integer
+            bySource:
+              type: object
+              additionalProperties:
+                type: integer
+            byCampaign:
+              type: object
+              additionalProperties:
+                type: integer
+        revenue:
+          type: object
+          properties:
+            paidOrders:
+              type: integer
+            paidCustomers:
+              type: integer
+            bookedRevenueCents:
+              type: integer
+            bookedRevenueByCurrency:
+              type: object
+              additionalProperties:
+                type: integer
+            amountKnownOrders:
+              type: integer
+            amountUnknownOrders:
+              type: integer
+            amountKnownCoverageRate:
+              type: number
+            unreconciledPaidEvents:
+              type: integer
+            latestPaidAt:
+              type: string
+              nullable: true
+            latestPaidOrder:
+              type: object
+              nullable: true
+              properties:
+                timestamp:
+                  type: string
+                  nullable: true
+                provider:
+                  type: string
+                  nullable: true
+                event:
+                  type: string
+                  nullable: true
+                orderId:
+                  type: string
+                  nullable: true
+                customerId:
+                  type: string
+                  nullable: true
+                amountCents:
+                  type: integer
+                  nullable: true
+                currency:
+                  type: string
+                  nullable: true
+                amountKnown:
+                  type: boolean
+            byProvider:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  paidOrders:
+                    type: integer
+                  bookedRevenueCents:
+                    type: integer
+                  amountKnownOrders:
+                    type: integer
+                  amountUnknownOrders:
+                    type: integer
+                  bookedRevenueByCurrency:
+                    type: object
+                    additionalProperties:
+                      type: integer
+        attribution:
+          type: object
+          properties:
+            acquisitionBySource:
+              type: object
+              additionalProperties:
+                type: integer
+            acquisitionByCampaign:
+              type: object
+              additionalProperties:
+                type: integer
+            paidBySource:
+              type: object
+              additionalProperties:
+                type: integer
+            paidByCampaign:
+              type: object
+              additionalProperties:
+                type: integer
+            bookedRevenueBySourceCents:
+              type: object
+              additionalProperties:
+                type: integer
+            bookedRevenueByCampaignCents:
+              type: object
+              additionalProperties:
+                type: integer
+            conversionBySource:
+              type: object
+              additionalProperties:
+                type: number
+            conversionByCampaign:
+              type: object
+              additionalProperties:
+                type: number
         keys:
           type: object
           properties:
@@ -278,7 +408,7 @@ paths:
       operationId: getBillingSummary
       responses:
         '200':
-          description: Admin-only operational billing summary from the funnel ledger and key store
+          description: Admin-only business summary from the funnel ledger, revenue ledger, and key store
           content:
             application/json:
               schema:

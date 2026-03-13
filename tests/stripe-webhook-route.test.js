@@ -16,6 +16,7 @@ const savedEnv = {
   RLHF_ALLOW_INSECURE: process.env.RLHF_ALLOW_INSECURE,
   _TEST_API_KEYS_PATH: process.env._TEST_API_KEYS_PATH,
   _TEST_FUNNEL_LEDGER_PATH: process.env._TEST_FUNNEL_LEDGER_PATH,
+  _TEST_REVENUE_LEDGER_PATH: process.env._TEST_REVENUE_LEDGER_PATH,
   _TEST_LOCAL_CHECKOUT_SESSIONS_PATH: process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID,
@@ -36,6 +37,7 @@ function primeBillingEnv() {
   process.env.RLHF_ALLOW_INSECURE = 'true';
   process.env._TEST_API_KEYS_PATH = path.join(tmpRoot, 'api-keys.json');
   process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpRoot, 'funnel-events.jsonl');
+  process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpRoot, 'revenue-events.jsonl');
   process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = path.join(tmpRoot, 'local-checkout-sessions.json');
   process.env.STRIPE_SECRET_KEY = '';
   process.env.STRIPE_PRICE_ID = '';

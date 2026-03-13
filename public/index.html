@@ -11,6 +11,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://rlhf-feedback-loop-production.up.railway.app" />
   <link rel="canonical" href="https://rlhf-feedback-loop-production.up.railway.app" />
+  <script defer data-domain="rlhf-feedback-loop-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -724,11 +725,11 @@
     <!-- ── Social proof strip ── -->
     <div class="proof-strip">
       <div class="wrap" style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;">
-        <span class="proof-item"><strong>935</strong> tests passing</span>
-        <span class="proof-item"><strong>0</strong> failures</span>
-        <span class="proof-item"><strong>4</strong> agents supported</span>
+        <span class="proof-item"><strong>Verification</strong> evidence published</span>
+        <span class="proof-item"><strong>CLI + API + MCP</strong> same control plane</span>
+        <span class="proof-item"><strong>Claude, Codex, Gemini, Amp</strong> supported</span>
         <span class="proof-item"><strong>MIT</strong> licensed</span>
-        <span class="proof-item"><strong>Local-first</strong> no cloud required</span>
+        <span class="proof-item"><strong>Local-first</strong> or hosted Pro</span>
       </div>
     </div>
 
@@ -764,7 +765,7 @@
               <li>Unlimited custom gates with auto-gate promotion</li>
               <li>Priority support</li>
             </ul>
-            <a class="btn btn-primary" href="https://iganapolsky.gumroad.com/l/tjovof" target="_blank" rel="noreferrer">Get Pro &mdash; $29/mo</a>
+            <a class="btn btn-primary" id="pro-cta" data-cta-id="pricing_pro" href="https://iganapolsky.gumroad.com/l/tjovof?utm_source=website&utm_medium=cta_button&utm_campaign=pro_pack" target="_blank" rel="noreferrer">Get Pro &mdash; $29/mo</a>
           </div>
         </div>
       </div>
@@ -781,5 +782,114 @@
       </div>
     </div>
   </footer>
+  <script>
+    (function () {
+      const checkoutCta = document.getElementById('pro-cta');
+      if (!checkoutCta) return;
+
+      const fallbackBase = 'https://iganapolsky.gumroad.com/l/tjovof';
+      const originalLabel = checkoutCta.textContent;
+
+      function getInstallId() {
+        const storageKey = 'rlhf_install_id';
+        const existing = window.localStorage.getItem(storageKey);
+        if (existing) return existing;
+        const generated = window.crypto && window.crypto.randomUUID
+          ? window.crypto.randomUUID()
+          : 'inst_' + Math.random().toString(16).slice(2);
+        window.localStorage.setItem(storageKey, generated);
+        return generated;
+      }
+
+      function getAttributionValue(params, key, fallbackValue) {
+        const value = params.get(key);
+        return value && value.trim() ? value.trim() : fallbackValue;
+      }
+
+      function buildAttribution(ctaId) {
+        const params = new URLSearchParams(window.location.search);
+        return {
+          source: getAttributionValue(params, 'utm_source', 'website'),
+          utmSource: getAttributionValue(params, 'utm_source', 'website'),
+          utmMedium: getAttributionValue(params, 'utm_medium', 'cta_button'),
+          utmCampaign: getAttributionValue(params, 'utm_campaign', 'pro_pack'),
+          utmContent: getAttributionValue(params, 'utm_content', ctaId),
+          utmTerm: getAttributionValue(params, 'utm_term', null),
+          referrer: document.referrer || null,
+          landingPath: window.location.pathname,
+          ctaId: ctaId
+        };
+      }
+
+      function buildFallbackUrl(attribution) {
+        const url = new URL(fallbackBase);
+        url.searchParams.set('utm_source', attribution.utmSource || attribution.source || 'website');
+        url.searchParams.set('utm_medium', attribution.utmMedium || 'cta_button');
+        url.searchParams.set('utm_campaign', attribution.utmCampaign || 'pro_pack');
+        if (attribution.utmContent) url.searchParams.set('utm_content', attribution.utmContent);
+        if (attribution.utmTerm) url.searchParams.set('utm_term', attribution.utmTerm);
+        return url.toString();
+      }
+
+      async function startCheckout(event) {
+        event.preventDefault();
+        const ctaId = checkoutCta.dataset.ctaId || 'pricing_pro';
+        const attribution = buildAttribution(ctaId);
+        const fallbackUrl = buildFallbackUrl(attribution);
+        checkoutCta.href = fallbackUrl;
+        checkoutCta.setAttribute('aria-busy', 'true');
+        checkoutCta.textContent = 'Opening checkout...';
+
+        if (window.plausible) {
+          window.plausible('Checkout Started', {
+            props: {
+              source: attribution.source || 'website',
+              campaign: attribution.utmCampaign || 'pro_pack',
+              ctaId: ctaId
+            }
+          });
+        }
+
+        try {
+          const response = await fetch('/v1/billing/checkout', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              installId: getInstallId(),
+              metadata: attribution
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('checkout_request_failed');
+          }
+
+          const payload = await response.json();
+          if (payload.url) {
+            window.location.assign(payload.url);
+            return;
+          }
+
+          if (payload.sessionId) {
+            const successUrl = new URL('/success', window.location.origin);
+            successUrl.searchParams.set('sessionId', payload.sessionId);
+            if (payload.traceId) successUrl.searchParams.set('traceId', payload.traceId);
+            window.location.assign(successUrl.toString());
+            return;
+          }
+
+          throw new Error('missing_checkout_redirect');
+        } catch (_) {
+          window.location.assign(fallbackUrl);
+        } finally {
+          checkoutCta.removeAttribute('aria-busy');
+          checkoutCta.textContent = originalLabel;
+        }
+      }
+
+      checkoutCta.href = buildFallbackUrl(buildAttribution(checkoutCta.dataset.ctaId || 'pricing_pro'));
+      checkoutCta.addEventListener('click', startCheckout);
+    }());
+  </script>
 </body>
 </html>

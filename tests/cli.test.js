@@ -426,6 +426,7 @@ describe('bin/cli.js', () => {
     const isolatedDir = makeTmpDir();
     const apiKeysPath = path.join(isolatedDir, 'api-keys.json');
     const ledgerPath = path.join(isolatedDir, 'funnel-events.jsonl');
+    const revenuePath = path.join(isolatedDir, 'revenue-events.jsonl');
     fs.writeFileSync(apiKeysPath, JSON.stringify({
       keys: {
         rlhf_active_cli: {
@@ -467,6 +468,29 @@ describe('bin/cli.js', () => {
       }),
       '',
     ].join('\n'));
+    fs.writeFileSync(revenuePath, [
+      JSON.stringify({
+        timestamp: '2026-03-12T00:15:00.000Z',
+        provider: 'stripe',
+        event: 'stripe_checkout_completed',
+        status: 'paid',
+        orderId: 'cs_cli_summary',
+        evidence: 'cs_cli_summary',
+        customerId: 'cus_cli_summary',
+        installId: 'inst_cli_summary',
+        traceId: 'trace_cli_summary',
+        amountCents: 2900,
+        currency: 'USD',
+        amountKnown: true,
+        recurringInterval: 'month',
+        attribution: {
+          source: 'website',
+          campaign: 'pro_pack',
+        },
+        metadata: {},
+      }),
+      '',
+    ].join('\n'));
 
     const result = spawnSync(process.execPath, [CLI, 'cfo'], {
       encoding: 'utf8',
@@ -475,16 +499,19 @@ describe('bin/cli.js', () => {
         ...process.env,
         _TEST_API_KEYS_PATH: apiKeysPath,
         _TEST_FUNNEL_LEDGER_PATH: ledgerPath,
+        _TEST_REVENUE_LEDGER_PATH: revenuePath,
       },
     });
     assert.equal(result.status, 0, `cfo failed:\n${result.stderr}`);
 
     const payload = JSON.parse(result.stdout);
-    assert.equal(payload.coverage.source, 'funnel_ledger+key_store');
+    assert.equal(payload.coverage.source, 'funnel_ledger+revenue_ledger+key_store');
     assert.equal(payload.keys.active, 1);
     assert.equal(payload.keys.bySource.stripe_webhook_checkout_completed, 1);
     assert.equal(payload.keys.bySource.github_marketplace_purchased, 1);
     assert.equal(payload.funnel.stageCounts.paid, 1);
+    assert.equal(payload.revenue.bookedRevenueCents, 2900);
+    assert.equal(payload.revenue.paidOrders, 1);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });

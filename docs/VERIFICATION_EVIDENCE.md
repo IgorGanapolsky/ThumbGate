@@ -666,6 +666,55 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-13 Truthful Revenue Analytics Verification
+
+Scope:
+
+- Added a dedicated revenue ledger to separate booked revenue from generic paid-stage funnel telemetry.
+- Preserved honest provider coverage: Stripe records booked revenue; GitHub Marketplace records paid orders and only records booked revenue when plan pricing is explicitly configured.
+- Threaded attribution metadata (`source`, UTM fields, referrer, landing path, CTA id) through public checkout creation, funnel events, revenue events, API summaries, CLI CFO output, and the hosted landing page.
+- Replaced hardcoded marketing proof-strip vanity numbers with stable evidence-backed claims on the public landing page.
+
+Commands run:
+
+```bash
+npm ci
+env RLHF_API_KEY=test-api-key node --test tests/billing.test.js tests/api-server.test.js tests/github-billing.test.js tests/cli.test.js tests/stripe-webhook-route.test.js
+env RLHF_API_KEY=test-api-key node --test tests/openapi-parity.test.js tests/adapters.test.js tests/commerce-quality.test.js
+env RLHF_API_KEY=ci-secret npm test
+env RLHF_API_KEY=ci-secret npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- `npm ci`: completed successfully; `audited 151 packages` and `found 0 vulnerabilities`.
+- Targeted changed-surface suite: `76 passed`, `0 failed`.
+- OpenAPI / adapter / commerce suite: `27 passed`, `0 failed`.
+- `npm test`: completed successfully across schema, loop, API, proof, E2E, billing, CLI, watcher, workflow, autoresearch, gates, and hardening phases.
+- `npm run test:coverage`: `971 passed`, `0 failed`, `1 skipped`; coverage `82.59%` lines, `68.77%` branches, `85.37%` functions.
+- `npm run prove:adapters`: `38 passed`, `0 failed`.
+- `npm run prove:automation`: `37 passed`, `0 failed`.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4 healthy` checks.
+
+Behavioral proof points:
+
+- `scripts/billing.js` now emits `bookedRevenueCents`, `paidOrders`, `amountKnownCoverageRate`, `unreconciledPaidEvents`, and attribution breakdowns from a dedicated revenue ledger instead of inferring money from stage counts.
+- `tests/billing.test.js` proves Stripe booked revenue is summarized truthfully and GitHub Marketplace remains amount-unknown unless plan pricing is configured.
+- `tests/api-server.test.js` proves checkout attribution survives the API path and shows up in the admin billing summary.
+- `tests/cli.test.js` proves `node bin/cli.js cfo` emits the richer revenue + attribution summary shape.
+- `tests/github-billing.test.js` proves GitHub Marketplace purchase events create paid-order records and optionally booked revenue when plan pricing config is present.
+- `tests/openapi-parity.test.js` and `tests/adapters.test.js` prove the machine-readable adapter surface stayed in sync after the summary shape expansion.
+
+Artifacts updated:
+
+- `proof/compatibility/report.json`
+- `proof/compatibility/report.md`
+- `proof/automation/report.json`
+- `proof/automation/report.md`
+
 ## 2026-03-09 Local Intelligence Verification
 
 Scope:

@@ -12,6 +12,7 @@ process.env.RLHF_FEEDBACK_DIR = tmpDir;
 process.env.RLHF_API_KEY = 'test-commerce-key';
 process.env._TEST_API_KEYS_PATH = path.join(tmpDir, 'api-keys.json');
 process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpDir, 'funnel-events.jsonl');
+process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpDir, 'revenue-events.jsonl');
 process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = path.join(tmpDir, 'local-checkout-sessions.json');
 process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';

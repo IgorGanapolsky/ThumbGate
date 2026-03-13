@@ -16,17 +16,21 @@ let tmpDir;
 const billingTestRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'billing-suite-'));
 const testApiKeysPath = path.join(billingTestRoot, 'api-keys.json');
 const testFunnelLedgerPath = path.join(billingTestRoot, 'funnel-events.jsonl');
+const testRevenueLedgerPath = path.join(billingTestRoot, 'revenue-events.jsonl');
 const testLocalCheckoutSessionsPath = path.join(billingTestRoot, 'local-checkout-sessions.json');
 
 const savedApiKeysPath = process.env._TEST_API_KEYS_PATH;
 const savedFunnelPath = process.env._TEST_FUNNEL_LEDGER_PATH;
+const savedRevenuePath = process.env._TEST_REVENUE_LEDGER_PATH;
 const savedLocalCheckoutSessionsPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
+const savedGithubPlanPricing = process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
 const savedStripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const savedStripePriceId = process.env.STRIPE_PRICE_ID;
 
 // Initial setup
 process.env._TEST_API_KEYS_PATH = testApiKeysPath;
 process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
+process.env._TEST_REVENUE_LEDGER_PATH = testRevenueLedgerPath;
 process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = testLocalCheckoutSessionsPath;
 process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';
@@ -38,8 +42,12 @@ after(() => {
   else process.env._TEST_API_KEYS_PATH = savedApiKeysPath;
   if (savedFunnelPath === undefined) delete process.env._TEST_FUNNEL_LEDGER_PATH;
   else process.env._TEST_FUNNEL_LEDGER_PATH = savedFunnelPath;
+  if (savedRevenuePath === undefined) delete process.env._TEST_REVENUE_LEDGER_PATH;
+  else process.env._TEST_REVENUE_LEDGER_PATH = savedRevenuePath;
   if (savedLocalCheckoutSessionsPath === undefined) delete process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
   else process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = savedLocalCheckoutSessionsPath;
+  if (savedGithubPlanPricing === undefined) delete process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
+  else process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = savedGithubPlanPricing;
   fs.rmSync(billingTestRoot, { recursive: true, force: true });
 });
 
@@ -59,7 +67,7 @@ function requireFreshBilling(stripeKey = '') {
 }
 
 function clearBillingArtifacts() {
-  for (const t of [testApiKeysPath, testFunnelLedgerPath, testLocalCheckoutSessionsPath]) {
+  for (const t of [testApiKeysPath, testFunnelLedgerPath, testRevenueLedgerPath, testLocalCheckoutSessionsPath]) {
     if (fs.existsSync(t)) fs.rmSync(t, { force: true });
   }
 }
@@ -67,6 +75,11 @@ function clearBillingArtifacts() {
 function readLedgerEvents() {
   if (!fs.existsSync(testFunnelLedgerPath)) return [];
   return fs.readFileSync(testFunnelLedgerPath, 'utf-8').split('\n').map(l => l.trim()).filter(Boolean).map(l => JSON.parse(l));
+}
+
+function readRevenueEvents() {
+  if (!fs.existsSync(testRevenueLedgerPath)) return [];
+  return fs.readFileSync(testRevenueLedgerPath, 'utf-8').split('\n').map((line) => line.trim()).filter(Boolean).map((line) => JSON.parse(line));
 }
 
 describe('billing.js — provisionApiKey', () => {
@@ -96,11 +109,21 @@ describe('billing.js — funnel ledger', () => {
     clearBillingArtifacts(); 
     delete require.cache[require.resolve('../scripts/billing')];
     process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
+    process.env._TEST_REVENUE_LEDGER_PATH = testRevenueLedgerPath;
+    delete process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
   });
 
   test('createCheckoutSession emits acquisition event', async () => {
     const billing = require('../scripts/billing');
-    const result = await billing.createCheckoutSession({ installId: 'inst_123', metadata: { campaign: 'test' } });
+    const result = await billing.createCheckoutSession({
+      installId: 'inst_123',
+      metadata: {
+        source: 'website',
+        utmSource: 'website',
+        utmMedium: 'cta_button',
+        utmCampaign: 'test',
+      },
+    });
     assert.ok(result.sessionId.startsWith('test_session_'));
     assert.match(result.traceId, /^checkout_/);
     const events = readLedgerEvents();
@@ -108,6 +131,8 @@ describe('billing.js — funnel ledger', () => {
     assert.ok(acq);
     assert.equal(acq.installId, 'inst_123');
     assert.equal(acq.traceId, result.traceId);
+    assert.equal(acq.metadata.utmSource, 'website');
+    assert.equal(acq.metadata.utmCampaign, 'test');
   });
 
   test('checkout session status preserves trace id for cross-service lookup', async () => {
@@ -146,22 +171,63 @@ describe('billing.js — funnel ledger', () => {
       event: 'checkout_session_created',
       installId: 'inst_summary_a',
       evidence: 'sess_summary_a',
-      metadata: { customerId: 'cus_summary_a' },
+      metadata: {
+        customerId: 'cus_summary_a',
+        source: 'website',
+        utmSource: 'website',
+        utmMedium: 'cta_button',
+        utmCampaign: 'pro_pack',
+      },
     });
     billing.appendFunnelEvent({
       stage: 'paid',
       event: 'stripe_checkout_completed',
       installId: 'inst_summary_a',
       evidence: 'cs_summary_a',
-      metadata: { customerId: 'cus_summary_a' },
+      traceId: 'trace_summary_a',
+      metadata: {
+        customerId: 'cus_summary_a',
+        source: 'website',
+        utmSource: 'website',
+        utmMedium: 'cta_button',
+        utmCampaign: 'pro_pack',
+      },
+    });
+    billing.appendRevenueEvent({
+      provider: 'stripe',
+      event: 'stripe_checkout_completed',
+      status: 'paid',
+      customerId: 'cus_summary_a',
+      orderId: 'cs_summary_a',
+      installId: 'inst_summary_a',
+      traceId: 'trace_summary_a',
+      amountCents: 2900,
+      currency: 'usd',
+      amountKnown: true,
+      recurringInterval: 'month',
+      attribution: {
+        source: 'website',
+        utmSource: 'website',
+        utmMedium: 'cta_button',
+        utmCampaign: 'pro_pack',
+      },
+      metadata: { subscriptionId: 'sub_summary_a' },
     });
 
     const summary = billing.getBillingSummary();
-    assert.equal(summary.coverage.source, 'funnel_ledger+key_store');
-    assert.equal(summary.coverage.tracksBookedRevenue, false);
+    assert.equal(summary.coverage.source, 'funnel_ledger+revenue_ledger+key_store');
+    assert.equal(summary.coverage.tracksBookedRevenue, true);
+    assert.equal(summary.coverage.tracksPaidOrders, true);
     assert.equal(summary.funnel.stageCounts.acquisition, 1);
     assert.equal(summary.funnel.stageCounts.activation, 1);
     assert.equal(summary.funnel.stageCounts.paid, 1);
+    assert.equal(summary.signups.uniqueLeads, 1);
+    assert.equal(summary.revenue.paidOrders, 1);
+    assert.equal(summary.revenue.bookedRevenueCents, 2900);
+    assert.equal(summary.revenue.amountKnownCoverageRate, 1);
+    assert.equal(summary.attribution.acquisitionBySource.website, 1);
+    assert.equal(summary.attribution.paidByCampaign.pro_pack, 1);
+    assert.equal(summary.attribution.bookedRevenueBySourceCents.website, 2900);
     assert.equal(summary.keys.total, 2);
     assert.equal(summary.keys.active, 1);
     assert.equal(summary.keys.disabled, 1);
@@ -180,6 +246,43 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(disabledCustomer.activeKeys, 0);
     assert.equal(disabledCustomer.source, 'github_marketplace_purchased');
     assert.equal(disabledKey.customerId, 'cus_summary_b');
+  });
+
+  test('handleGithubWebhook records paid order with unknown amount when plan pricing is not configured', () => {
+    const billing = require('../scripts/billing');
+    billing.handleGithubWebhook({
+      action: 'purchased',
+      marketplace_purchase: {
+        account: { type: 'User', id: 42, login: 'octocat' },
+        plan: { id: 1, name: 'Pro' },
+      },
+    });
+
+    const revenueEvents = readRevenueEvents();
+    assert.equal(revenueEvents.length, 1);
+    assert.equal(revenueEvents[0].provider, 'github_marketplace');
+    assert.equal(revenueEvents[0].amountKnown, false);
+    assert.equal(revenueEvents[0].amountCents, null);
+  });
+
+  test('handleGithubWebhook records booked revenue when plan pricing is configured', () => {
+    process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
+      7: { amountCents: 2900, currency: 'USD', recurringInterval: 'month' },
+    });
+    const billing = requireFreshBilling('');
+    billing.handleGithubWebhook({
+      action: 'purchased',
+      marketplace_purchase: {
+        account: { type: 'Organization', id: 77, login: 'team' },
+        plan: { id: 7, name: 'Pro' },
+      },
+    });
+
+    const revenueEvents = readRevenueEvents();
+    assert.equal(revenueEvents.length, 1);
+    assert.equal(revenueEvents[0].amountKnown, true);
+    assert.equal(revenueEvents[0].amountCents, 2900);
+    assert.equal(revenueEvents[0].currency, 'USD');
   });
 });
 

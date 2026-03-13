@@ -9,6 +9,7 @@ process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.RLHF_API_KEY = 'test-api-key';
 process.env._TEST_API_KEYS_PATH = path.join(tmpFeedbackDir, 'api-keys.json');
 process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpFeedbackDir, 'funnel-events.jsonl');
+process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpFeedbackDir, 'revenue-events.jsonl');
 process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = path.join(tmpFeedbackDir, 'local-checkout-sessions.json');
 
 // Force local mode for billing tests by clearing Stripe keys
@@ -54,6 +55,8 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /mcp.memory.gateway/i);
   assert.match(body, /Pre.Action Gates/i);
   assert.match(body, /\$29\/mo/);
+  assert.match(body, /plausible\.io\/js\/script\.js/);
+  assert.match(body, /\/v1\/billing\/checkout/);
 });
 
 test('provisioning endpoint works', async () => {
@@ -405,6 +408,25 @@ test('billing summary returns admin-only operational proxy', async () => {
     evidence: 'cs_admin_summary',
     metadata: { customerId: 'cus_admin_summary' },
   });
+  billing.appendRevenueEvent({
+    provider: 'stripe',
+    event: 'stripe_checkout_completed',
+    status: 'paid',
+    customerId: 'cus_admin_summary',
+    orderId: 'cs_admin_summary',
+    installId: 'inst_admin_summary',
+    traceId: 'trace_admin_summary',
+    amountCents: 2900,
+    currency: 'USD',
+    amountKnown: true,
+    recurringInterval: 'month',
+    attribution: {
+      source: 'website',
+      utmSource: 'website',
+      utmMedium: 'cta_button',
+      utmCampaign: 'pro_pack',
+    },
+  });
 
   const res = await fetch('http://localhost:8790/v1/billing/summary', {
     headers: authHeader,
@@ -412,10 +434,13 @@ test('billing summary returns admin-only operational proxy', async () => {
   assert.equal(res.status, 200);
 
   const body = await res.json();
-  assert.equal(body.coverage.source, 'funnel_ledger+key_store');
-  assert.equal(body.coverage.tracksBookedRevenue, false);
+  assert.equal(body.coverage.source, 'funnel_ledger+revenue_ledger+key_store');
+  assert.equal(body.coverage.tracksBookedRevenue, true);
   assert.ok(body.funnel.stageCounts.paid >= 1);
   assert.ok(body.keys.active >= 1);
+  assert.equal(body.revenue.bookedRevenueCents, 2900);
+  assert.equal(body.revenue.paidOrders, 1);
+  assert.equal(body.attribution.bookedRevenueByCampaignCents.pro_pack, 2900);
   assert.ok(Array.isArray(body.customers));
 });
 
@@ -445,6 +470,13 @@ test('funnel analytics returns counts and conversion rates', async () => {
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
       installId: 'inst_api_server_test',
+      metadata: {
+        source: 'website',
+        utmSource: 'website',
+        utmMedium: 'cta_button',
+        utmCampaign: 'spring_launch',
+        ctaId: 'pricing_pro',
+      },
     }),
   });
   assert.equal(checkoutRes.status, 200);
@@ -460,4 +492,12 @@ test('funnel analytics returns counts and conversion rates', async () => {
   assert.ok(typeof body.conversionRates === 'object');
   assert.ok(body.stageCounts.acquisition >= 1);
   assert.ok(typeof body.conversionRates.acquisitionToActivation === 'number');
+
+  const summaryRes = await fetch('http://localhost:8790/v1/billing/summary', {
+    headers: authHeader,
+  });
+  assert.equal(summaryRes.status, 200);
+  const summary = await summaryRes.json();
+  assert.ok(summary.signups.bySource.website >= 1);
+  assert.ok(summary.attribution.acquisitionByCampaign.spring_launch >= 1);
 });

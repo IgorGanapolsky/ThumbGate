@@ -86,6 +86,40 @@ function createHttpError(statusCode, message) {
   return err;
 }
 
+function normalizeNullableText(value) {
+  if (value === undefined || value === null) return null;
+  const text = String(value).trim();
+  return text || null;
+}
+
+function pickFirstText(...values) {
+  for (const value of values) {
+    const normalized = normalizeNullableText(value);
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
+function buildCheckoutAttributionMetadata(body, req, traceId) {
+  const rawMetadata = body && body.metadata && typeof body.metadata === 'object' ? body.metadata : {};
+  const utmSource = pickFirstText(rawMetadata.utmSource, body.utmSource, rawMetadata.source, body.source);
+  const utmMedium = pickFirstText(rawMetadata.utmMedium, body.utmMedium, 'checkout_api');
+
+  return {
+    ...rawMetadata,
+    traceId,
+    source: pickFirstText(rawMetadata.source, body.source, utmSource, 'direct'),
+    utmSource,
+    utmMedium,
+    utmCampaign: pickFirstText(rawMetadata.utmCampaign, body.utmCampaign),
+    utmContent: pickFirstText(rawMetadata.utmContent, body.utmContent),
+    utmTerm: pickFirstText(rawMetadata.utmTerm, body.utmTerm),
+    referrer: pickFirstText(rawMetadata.referrer, req.headers.referer, req.headers.referrer),
+    landingPath: pickFirstText(rawMetadata.landingPath, body.landingPath),
+    ctaId: pickFirstText(rawMetadata.ctaId, body.ctaId),
+  };
+}
+
 function sendJson(res, statusCode, payload, extraHeaders = {}) {
   const body = JSON.stringify(payload);
   res.writeHead(statusCode, {
@@ -888,6 +922,7 @@ function createApiServer() {
         const responseHeaders = getPublicBillingHeaders(traceId);
         // Pro plan: $29/mo recurring subscription
         const isOneTime = body.oneTime === true;
+        const analyticsMetadata = buildCheckoutAttributionMetadata(body, req, traceId);
         
         const result = await createCheckoutSession({
           successUrl: body.successUrl || buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
@@ -896,8 +931,7 @@ function createApiServer() {
           installId: body.installId,
           traceId,
           metadata: { 
-            ...body.metadata, 
-            traceId,
+            ...analyticsMetadata,
             oneTime: isOneTime,
             credits: isOneTime ? 500 : 0 
           },
