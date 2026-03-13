@@ -19,13 +19,13 @@ const TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 function loadGatesConfig(configPath) {
   const primaryPath = configPath || process.env.RLHF_GATES_CONFIG || DEFAULT_CONFIG_PATH;
-  
+
   if (!fs.existsSync(primaryPath)) {
     throw new Error(`Gates config not found: ${primaryPath}`);
   }
 
   const mergedConfig = { version: 1, gates: [] };
-  
+
   const loadOne = (p, isPrimary) => {
     try {
       const raw = fs.readFileSync(p, 'utf8');
@@ -34,23 +34,25 @@ function loadGatesConfig(configPath) {
         if (isPrimary) throw new Error('Invalid gates config: missing "gates" array');
         return;
       }
-      mergedConfig.gates.push(...config.gates);
+      return config.gates;
     } catch (e) {
       if (isPrimary) throw e;
       console.error(`Warning: failed to load gates from ${p}: ${e.message}`);
+      return [];
     }
   };
 
-  loadOne(primaryPath, true);
+  const primaryGates = loadOne(primaryPath, true);
+  mergedConfig.gates.push(...primaryGates);
 
-  if (isProTier()) {
-    // Pro tier: load all gates + auto-promoted
-    if (!configPath && fs.existsSync(AUTO_CONFIG_PATH)) {
-      loadOne(AUTO_CONFIG_PATH, false);
-    }
-  } else {
-    // Free tier: cap at FREE_TIER_MAX_GATES from default only
-    mergedConfig.gates = mergedConfig.gates.slice(0, FREE_TIER_MAX_GATES);
+  // Always preserve the full primary/default safety policy. Free tier limits apply
+  // only to auto-promoted add-on gates so core protections never disappear.
+  if (!configPath && fs.existsSync(AUTO_CONFIG_PATH)) {
+    const autoGates = loadOne(AUTO_CONFIG_PATH, false);
+    const limitedAutoGates = isProTier()
+      ? autoGates
+      : autoGates.slice(0, FREE_TIER_MAX_GATES);
+    mergedConfig.gates.push(...limitedAutoGates);
   }
 
   return mergedConfig;
@@ -148,7 +150,7 @@ function checkWhenClause(when, constraints) {
   return true;
 }
 
-function matchesGate(gate, toolName, toolInput) {
+function matchesGate(gate, _toolName, toolInput) {
   // Build the text to match against: for Bash it's the command, for Edit it's the file path
   const text = toolInput.command || toolInput.file_path || toolInput.path || '';
   try {

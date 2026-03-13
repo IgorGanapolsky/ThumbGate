@@ -4,7 +4,7 @@ import { problemResponse, PROBLEM_TYPES } from './problem-detail';
 
 function getStripe(env: Env): Stripe {
   return new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: '2023-10-16',
+    apiVersion: '2026-02-25.clover',
     httpClient: Stripe.createFetchHttpClient(),
   });
 }

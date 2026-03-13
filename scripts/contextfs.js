@@ -281,6 +281,43 @@ function writeContextObject({ namespace, title, content, tags = [], source, ttl 
   };
 }
 
+function normalizeTagList(tags) {
+  return Array.isArray(tags)
+    ? [...new Set(tags.map((tag) => String(tag)))]
+      .sort()
+    : [];
+}
+
+function findExistingContextObject({ namespace, title, content, tags = [], source }) {
+  ensureContextFs();
+
+  const expectedTags = normalizeTagList(tags);
+  const dirPath = path.join(CONTEXTFS_ROOT, namespace);
+  const files = listJsonFiles(dirPath).sort();
+
+  for (const filePath of files) {
+    try {
+      const doc = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      if (doc.title !== title || doc.content !== content || doc.source !== source) {
+        continue;
+      }
+
+      if (JSON.stringify(normalizeTagList(doc.tags)) !== JSON.stringify(expectedTags)) {
+        continue;
+      }
+
+      return {
+        filePath,
+        document: doc,
+      };
+    } catch {
+      // Ignore malformed entries while searching for exact duplicates.
+    }
+  }
+
+  return null;
+}
+
 function registerFeedback(feedbackEvent, memoryRecord = null) {
   ensureContextFs();
 
@@ -301,18 +338,45 @@ function registerFeedback(feedbackEvent, memoryRecord = null) {
     const namespace = memoryRecord.category === 'error'
       ? NAMESPACES.memoryError
       : NAMESPACES.memoryLearning;
-
-    memory = writeContextObject({
+    const existingMemory = findExistingContextObject({
       namespace,
       title: memoryRecord.title,
       content: memoryRecord.content,
       tags: memoryRecord.tags || [],
       source: 'feedback-memory',
-      metadata: {
-        category: memoryRecord.category,
-        sourceFeedbackId: memoryRecord.sourceFeedbackId,
-      },
     });
+
+    if (existingMemory) {
+      memory = {
+        id: existingMemory.document.id,
+        namespace,
+        filePath: existingMemory.filePath,
+        document: existingMemory.document,
+        deduped: true,
+      };
+
+      recordProvenance({
+        type: 'context_object_deduped',
+        namespace,
+        objectId: existingMemory.document.id,
+        source: 'feedback-memory',
+        metadata: {
+          sourceFeedbackId: memoryRecord.sourceFeedbackId,
+        },
+      });
+    } else {
+      memory = writeContextObject({
+        namespace,
+        title: memoryRecord.title,
+        content: memoryRecord.content,
+        tags: memoryRecord.tags || [],
+        source: 'feedback-memory',
+        metadata: {
+          category: memoryRecord.category,
+          sourceFeedbackId: memoryRecord.sourceFeedbackId,
+        },
+      });
+    }
   }
 
   return { raw, memory };

@@ -698,16 +698,6 @@ function createApiServer() {
       return;
     }
 
-    if (req.method === 'GET' && pathname === '/healthz') {
-      const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH } = getFeedbackPaths();
-      sendJson(res, 200, {
-        status: 'ok',
-        feedbackLogPath: FEEDBACK_LOG_PATH,
-        memoryLogPath: MEMORY_LOG_PATH,
-      });
-      return;
-    }
-
     if (req.method === 'POST' && pathname === '/v1/telemetry/ping') {
       let body = '';
       req.on('data', (chunk) => { body += chunk; });

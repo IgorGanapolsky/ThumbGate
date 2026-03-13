@@ -78,6 +78,45 @@ test('register feedback and construct pack', () => {
   assert.ok(provenance.length >= 1);
 });
 
+test('registerFeedback dedupes exact feedback-memory repeats', () => {
+  const feedbackEvent1 = {
+    id: 'fb_dedupe_1',
+    signal: 'positive',
+    context: 'Used proof harness and verification logs',
+    tags: ['verification', 'automation'],
+    actionType: 'store-learning',
+  };
+  const feedbackEvent2 = {
+    id: 'fb_dedupe_2',
+    signal: 'positive',
+    context: 'Used proof harness and verification logs',
+    tags: ['verification', 'automation'],
+    actionType: 'store-learning',
+  };
+
+  const memoryRecord = {
+    title: 'SUCCESS: Used proof harness and verification logs',
+    content: 'What worked: Used proof harness and verification logs\nRubric weighted score: 0.6\nRubric criteria passed with no blocking guardrails.',
+    category: 'learning',
+    tags: ['feedback', 'positive', 'verification', 'automation'],
+    sourceFeedbackId: feedbackEvent1.id,
+  };
+
+  const first = registerFeedback(feedbackEvent1, memoryRecord);
+  const beforeFiles = fs.readdirSync(path.join(CONTEXTFS_ROOT, NAMESPACES.memoryLearning)).length;
+  const second = registerFeedback(feedbackEvent2, {
+    ...memoryRecord,
+    sourceFeedbackId: feedbackEvent2.id,
+  });
+  const afterFiles = fs.readdirSync(path.join(CONTEXTFS_ROOT, NAMESPACES.memoryLearning)).length;
+
+  assert.ok(first.memory);
+  assert.ok(second.memory);
+  assert.equal(second.memory.deduped, true);
+  assert.equal(first.memory.document.id, second.memory.document.id);
+  assert.equal(afterFiles, beforeFiles);
+});
+
 test('normalizeNamespaces rejects path traversal attempts', () => {
   assert.throws(() => normalizeNamespaces(['../..']), /Unsupported namespace/);
 });

@@ -7,14 +7,15 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "tail": "wrangler tail",
+    "test": "tsc -p tsconfig.json --noEmit",
     "types": "wrangler types"
   },
   "dependencies": {
-    "stripe": "^14.0.0"
+    "stripe": "^20.4.1"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240925.0",
+    "@cloudflare/workers-types": "^4.20260313.1",
     "typescript": "^5.5.0",
-    "wrangler": "^3.80.0"
+    "wrangler": "^4.73.0"
   }
 }

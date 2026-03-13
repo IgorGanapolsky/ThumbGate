@@ -53,6 +53,7 @@ const {
 } = require('../../scripts/gate-satisfy');
 const {
   checkLimit,
+  getUsage,
   UPGRADE_MESSAGE: RATE_LIMIT_MESSAGE,
 } = require('../../scripts/rate-limiter');
 
@@ -437,23 +438,10 @@ async function callTool(name, args = {}) {
   return callToolInner(name, args);
 }
 
-// Legacy in-memory recall limit (kept for backward compat, now also enforced by rate-limiter)
-const FREE_DAILY_RECALL_LIMIT = 5;
-const _recallUsage = { date: '', count: 0 };
-
-function checkRecallLimit() {
-  const today = new Date().toISOString().slice(0, 10);
-  if (_recallUsage.date !== today) {
-    _recallUsage.date = today;
-    _recallUsage.count = 0;
-  }
-  _recallUsage.count++;
-  return _recallUsage.count > FREE_DAILY_RECALL_LIMIT;
-}
-
 async function callToolInner(name, args = {}) {
-  // Free-tier daily rate limiting for capture_feedback and recall
-  if (name === 'capture_feedback' || name === 'recall') {
+  // Free-tier daily rate limiting. capture_feedback blocks at the limit, while
+  // recall keeps returning results and appends the upgrade nudge once over.
+  if (name === 'capture_feedback') {
     const limitResult = checkLimit(name);
     if (!limitResult.allowed) {
       return { content: [{ type: 'text', text: RATE_LIMIT_MESSAGE }], isError: true };
@@ -461,6 +449,13 @@ async function callToolInner(name, args = {}) {
   }
 
   if (name === 'recall') {
+    const limitResult = checkLimit(name);
+    const usage = getUsage('recall');
+    const recallUsage = {
+      overLimit: !limitResult.allowed,
+      count: !limitResult.allowed ? usage.count + 1 : usage.count,
+      limit: usage.limit,
+    };
     const query = args.query || '';
     const limit = Number(args.limit || 5);
     const parts = [];
@@ -511,12 +506,11 @@ async function callToolInner(name, args = {}) {
     parts.push(formatStats());
 
     // Free-tier usage nudge
-    const overLimit = checkRecallLimit();
-    if (overLimit) {
+    if (recallUsage.overLimit) {
       parts.push('');
       parts.push('---');
       parts.push('## Upgrade to Context Gateway');
-      parts.push(`You've used ${_recallUsage.count}/${FREE_DAILY_RECALL_LIMIT} free recalls today. Upgrade for unlimited recalls + shared team memory:`);
+      parts.push(`You've used ${recallUsage.count}/${recallUsage.limit} free recalls today. Upgrade for unlimited recalls + shared team memory:`);
       parts.push('- Context Gateway: https://rlhf-feedback-loop-production.up.railway.app');
       parts.push('- Pro Pack (one-time): https://iganapolsky.gumroad.com/l/tjovof');
     }

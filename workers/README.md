@@ -117,6 +117,7 @@ curl -X POST https://your-worker.workers.dev/mcp \
 npm run dev    # Local dev server with wrangler
 npm run deploy # Deploy to Cloudflare
 npm run tail   # Live logs
+npm test       # Type-check the worker package
 ```
 
 ## KV Schema

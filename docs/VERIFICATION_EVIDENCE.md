@@ -1,3 +1,86 @@
+## March 13, 2026: Technical debt audit and CI hardening
+
+Scope:
+
+- Fixed the free-tier gate loading regression in `scripts/gates-engine.js` so core default gates always load and free-tier capping applies only to auto-promoted add-on gates.
+- Removed dead duplicate `/healthz` routing in `src/api/server.js`.
+- Removed the legacy in-memory recall limiter in `adapters/mcp/server-stdio.js`, switched recall usage to the shared rate-limiter, and kept the free-tier upgrade nudge without dropping recall results.
+- Added exact feedback-memory deduplication in `scripts/contextfs.js` so repeated identical lessons no longer create duplicate ContextFS entries.
+- Hardened CI to install and verify the `workers/` package, upgraded vulnerable worker dependencies, and aligned Stripe worker code with the current SDK API version.
+- Deleted six duplicate RLHF memory entries that were already storing the same lessons.
+
+Baseline snapshot before changes:
+
+Commands run in dedicated baseline worktree at `57a7498e42578270a2dc1421c1bfd8d06f07dded`:
+
+```bash
+git worktree add /Users/ganapolsky_i/workspace/git/igor/rlhf-audit-baseline 57a7498e42578270a2dc1421c1bfd8d06f07dded
+npm ci
+npm --prefix workers ci
+node --test tests/contextfs.test.js tests/intent-router.test.js tests/verification-loop.test.js tests/mcp-server.test.js
+npm --prefix workers audit --json
+npm run test:coverage
+```
+
+Observed baseline result:
+
+- Core RAG/orchestration snapshot passed: `57` tests passed, `0` failed across `tests/contextfs.test.js`, `tests/intent-router.test.js`, `tests/verification-loop.test.js`, and `tests/mcp-server.test.js`.
+- `npm --prefix workers audit --json` reported `4` moderate vulnerabilities in the worker dependency chain (`esbuild`, `wrangler`, `miniflare`, `undici`).
+- `npm run test:coverage` exited non-zero on the pre-audit tree with `957` passed, `4` failed, `1` skipped.
+- Baseline coverage summary still emitted: `82.07%` lines, `68.96%` branches, `85.52%` functions.
+- The failing baseline regressions were:
+  - `tests/gates-engine.test.js`: protected-branch and `.env` gate expectations failed.
+  - `tests/recall-limit.test.js`: sixth recall call never emitted the upgrade nudge.
+
+Commands run on the audit branch:
+
+```bash
+npm ci
+npm --prefix workers ci
+npm run test:gates
+node --test tests/contextfs.test.js
+node --test tests/recall-limit.test.js
+RLHF_API_KEY=ci-secret npm run test:api
+node --test tests/mcp-server.test.js tests/api-server.test.js
+RLHF_API_KEY=ci-secret npm test
+RLHF_API_KEY=ci-secret npm run test:coverage
+npm run test:workers
+env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:automation
+env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:workflow-contract
+env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:autoresearch
+RLHF_API_KEY=ci-secret npm run self-heal:check
+npm --prefix workers audit --json
+./workers/node_modules/.bin/tsc -p workers/tsconfig.json --noEmit
+./node_modules/.bin/wrangler deploy --dry-run
+```
+
+Observed result:
+
+- `npm test` passed end-to-end after the audit changes.
+- `npm run test:coverage` passed with `963` passed, `0` failed, `1` skipped.
+- Current coverage summary on the rebased audit head: `82.61%` lines, `68.88%` branches, `85.24%` functions.
+- `npm run test:gates`, `node --test tests/contextfs.test.js`, `node --test tests/recall-limit.test.js`, and `node --test tests/mcp-server.test.js tests/api-server.test.js` all passed.
+- `RLHF_API_KEY=ci-secret npm run test:api` passed, proving the recall-limit regression is fixed under the same hosted-key environment GitHub Actions uses.
+- `npm run test:workers` passed after the worker package gained a dedicated type-check test script.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `37` passed, `0` failed.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:workflow-contract`: `6` passed, `0` failed.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:autoresearch`: `Phase 9 proof: 5 passed, 0 failed`.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
+- `npm --prefix workers audit --json` reported `0` vulnerabilities after the dependency refresh.
+- `./workers/node_modules/.bin/tsc -p workers/tsconfig.json --noEmit` passed.
+- `./node_modules/.bin/wrangler deploy --dry-run` passed from `workers/` after the Wrangler upgrade.
+
+Requirements verified:
+
+- Free-tier users keep the default safety gates (`force-push`, `protected-branch-push`, `.env` edits) while still capping auto-promoted add-on gates.
+- Recall requests now share the real rate-limiter state and still return useful content after the free tier is exhausted.
+- Recall-limit verification no longer depends on CI secrets or shared test-state, so the free-tier upgrade nudge is exercised deterministically in GitHub Actions.
+- Exact duplicate feedback-memory lessons no longer create duplicate ContextFS records, and the repository’s duplicate tracked memory entries were removed.
+- The worker package is now covered by CI install and test steps instead of being outside the main pipeline.
+- The open `workers/package-lock.json` Dependabot advisory on `esbuild` was patched by upgrading the worker toolchain to the fixed Wrangler stack.
+
 ## March 13, 2026: Partner-aware orchestration MVP
 
 Scope:

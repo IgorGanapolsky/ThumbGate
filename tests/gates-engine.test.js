@@ -48,6 +48,14 @@ test('loadGatesConfig loads default config', () => {
   assert.ok(config.gates.length >= 5);
 });
 
+test('loadGatesConfig preserves core default gates for free tier', () => {
+  const config = loadGatesConfig();
+  const gateIds = config.gates.map((gate) => gate.id);
+  assert.ok(gateIds.includes('force-push'));
+  assert.ok(gateIds.includes('protected-branch-push'));
+  assert.ok(gateIds.includes('env-file-edit'));
+});
+
 test('loadGatesConfig throws on missing file', () => {
   assert.throws(
     () => loadGatesConfig('/tmp/nonexistent-gates-config.json'),

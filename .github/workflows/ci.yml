@@ -34,12 +34,21 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            workers/package-lock.json
 
       - name: Install deps
         run: npm ci
 
+      - name: Install worker deps
+        run: npm --prefix workers ci
+
       - name: Run tests
         run: npm test
+
+      - name: Run worker checks
+        run: npm run test:workers
 
       - name: Run adapter proof
         run: npm run prove:adapters
