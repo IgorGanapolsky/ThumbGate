@@ -1,5 +1,7 @@
 'use strict';
 
+process.env.RLHF_PRO_MODE = '1';
+
 const { test, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -21,6 +23,7 @@ const {
   saveState,
   STATE_PATH,
   STATS_PATH,
+  CONSTRAINTS_PATH,
   TTL_MS,
 } = require('../scripts/gates-engine');
 
@@ -31,6 +34,7 @@ const {
 function cleanupStateFiles() {
   try { fs.unlinkSync(STATE_PATH); } catch {}
   try { fs.unlinkSync(STATS_PATH); } catch {}
+  try { fs.unlinkSync(CONSTRAINTS_PATH); } catch {}
 }
 
 // ---------------------------------------------------------------------------
