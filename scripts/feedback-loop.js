@@ -408,6 +408,21 @@ function updateDiversityTracking(feedbackEvent, paths) {
   fs.writeFileSync(diversityPath, JSON.stringify(diversity, null, 2) + '\n');
 }
 
+function extractAndSetConstraints(context) {
+  if (!context) return;
+  try {
+    const { setConstraint } = require('./gates-engine');
+    const lower = context.toLowerCase();
+
+    // Extraction heuristics
+    if (lower.includes('local only') || lower.includes('not in git') || lower.includes("don't push") || lower.includes("no push")) {
+      setConstraint('local_only', true);
+    }
+  } catch (err) {
+    // Non-critical if gates engine not loaded
+  }
+}
+
 function captureFeedback(params) {
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
   const signal = normalizeSignal(params.signal);
@@ -417,6 +432,9 @@ function captureFeedback(params) {
       reason: `Invalid signal "${params.signal}". Use up/down or positive/negative.`,
     };
   }
+
+  const context = params.context || '';
+  extractAndSetConstraints(context);
 
   const tags = Array.isArray(params.tags)
     ? params.tags
@@ -447,6 +465,7 @@ function captureFeedback(params) {
     whatToChange: params.whatToChange,
     whatWorked: params.whatWorked,
     reasoning: params.reasoning,
+    visualEvidence: params.visualEvidence,
     tags,
     rubricEvaluation,
   });
@@ -460,6 +479,7 @@ function captureFeedback(params) {
     whatToChange: params.whatToChange || null,
     whatWorked: params.whatWorked || null,
     reasoning: params.reasoning || null,
+    visualEvidence: params.visualEvidence || null,
     tags,
     skill: params.skill || null,
     rubric: rubricEvaluation

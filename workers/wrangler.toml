@@ -4,7 +4,7 @@ compatibility_date = "2024-09-25"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-STRIPE_PRICE_ID = "price_REPLACE_WITH_REAL_PRICE_ID"
+STRIPE_PRICE_ID = "price_1RNdUBGGBpd520QYG1A9SWF4"
 FREE_DAILY_LIMIT = "5"
 
 # KV namespace bindings — create with:
@@ -13,15 +13,15 @@ FREE_DAILY_LIMIT = "5"
 #   wrangler kv namespace create GATES_KV
 [[kv_namespaces]]
 binding = "MEMORY_KV"
-id = "REPLACE_WITH_MEMORY_KV_ID"
+id = "7171635c8e704feabd6de15bbb8197b7"
 
 [[kv_namespaces]]
 binding = "KEYS_KV"
-id = "REPLACE_WITH_KEYS_KV_ID"
+id = "573e5d4374e2424b9764f428fd572b76"
 
 [[kv_namespaces]]
 binding = "GATES_KV"
-id = "REPLACE_WITH_GATES_KV_ID"
+id = "0c6089c738d44a538e0904a483c15ff7"
 
 # Secrets (set via `wrangler secret put`):
 #   STRIPE_SECRET_KEY

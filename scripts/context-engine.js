@@ -18,6 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { constructContextPack } = require('./contextfs');
 
 // ---------------------------------------------------------------------------
 // Default paths
@@ -337,10 +338,26 @@ function routeQuery(query, indexPath, topN) {
     .sort((a, b) => b.score - a.score)
     .slice(0, n);
 
+  // Recursive Retrieval (EvoSkill Hardening)
+  // Drill down to get high-density structured state documents
+  let denseContext = null;
+  if (scored.length > 0) {
+    try {
+      denseContext = constructContextPack({
+        query,
+        maxItems: 3,
+        namespaces: ['rules', 'memoryLearning', 'memoryError']
+      });
+    } catch (err) {
+      // Graceful fallback if contextfs is unavailable
+    }
+  }
+
   return {
     query,
     intent: intentBoost,
     results: scored,
+    denseContext: denseContext ? denseContext.items : [],
     indexAge: index.metadata && index.metadata.builtAt,
     retrievalType: intentBoost ? 'adaptive' : 'base',
   };

@@ -11,6 +11,7 @@
           "whatWentWrong": { "type": "string" },
           "whatToChange": { "type": "string" },
           "whatWorked": { "type": "string" },
+          "visualEvidence": { "type": "string", "description": "Base64 encoded image or filepath for visual regressions" },
           "rubricScores": {
             "type": "array",
             "items": {
@@ -89,6 +90,22 @@
       "http": {
         "method": "POST",
         "path": "/v1/intents/plan"
+      }
+    },
+    {
+      "name": "set_session_constraint",
+      "description": "Persist a session-specific constraint (e.g., local_only=true) into the gate engine",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string" },
+          "value": { "type": "boolean" }
+        },
+        "required": ["key", "value"]
+      },
+      "http": {
+        "method": "POST",
+        "path": "/v1/gates/constraint"
       }
     }
   ]

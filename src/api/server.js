@@ -61,6 +61,8 @@ const {
 const {
   satisfyCondition,
   loadStats: loadGateStats,
+  setConstraint,
+  loadConstraints,
 } = require('../../scripts/gates-engine');
 const {
   generateDashboard,
@@ -978,6 +980,21 @@ function createApiServer() {
         return;
       }
 
+      if (req.method === 'POST' && pathname === '/v1/gates/constraint') {
+        const body = await parseJsonBody(req);
+        if (!body.key || body.value === undefined) {
+          throw createHttpError(400, 'Missing key or value');
+        }
+        const result = setConstraint(body.key, body.value);
+        sendJson(res, 200, result);
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/gates/constraints') {
+        sendJson(res, 200, loadConstraints());
+        return;
+      }
+
       if (req.method === 'GET' && pathname === '/v1/feedback/summary') {
         const recent = Number(parsed.searchParams.get('recent') || 20);
         const summary = feedbackSummary(Number.isFinite(recent) ? recent : 20);
@@ -998,6 +1015,8 @@ function createApiServer() {
           whatWentWrong: body.whatWentWrong,
           whatToChange: body.whatToChange,
           whatWorked: body.whatWorked,
+          reasoning: body.reasoning,
+          visualEvidence: body.visualEvidence,
           rubricScores: body.rubricScores,
           guardrails: body.guardrails,
           tags: extractTags(body.tags),

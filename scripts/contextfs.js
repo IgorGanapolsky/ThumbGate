@@ -486,11 +486,27 @@ function constructMemexPack({ query = '', maxItems = 8, maxChars = 6000, namespa
     const snippet = `${full.title}\n${full.content || ''}`;
     if (usedChars + snippet.length > maxChars) continue;
 
+    const structuredContext = {
+      rawContent: full.content || '',
+      reasoning: null,
+      whatWentWrong: null,
+      whatToChange: null,
+      rubricFailure: null
+    };
+
+    const lines = (full.content || '').split('\n');
+    for (const line of lines) {
+      if (line.startsWith('Reasoning:')) structuredContext.reasoning = line.replace('Reasoning:', '').trim();
+      else if (line.startsWith('What went wrong:')) structuredContext.whatWentWrong = line.replace('What went wrong:', '').trim();
+      else if (line.startsWith('How to avoid:')) structuredContext.whatToChange = line.replace('How to avoid:', '').trim();
+      else if (line.startsWith('Rubric failing criteria:')) structuredContext.rubricFailure = line.replace('Rubric failing criteria:', '').trim();
+    }
+
     items.push({
       id: full.id,
       namespace: hit.namespace,
       title: full.title,
-      content: full.content,
+      structuredContext,
       tags: full.tags || [],
       score: hit._score,
     });
@@ -580,11 +596,29 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
     const snippet = `${item.doc.title}\n${item.doc.content || ''}`;
     if (usedChars + snippet.length > maxChars) continue;
 
+    // Context Structuralizer (EvoSkill Hardening)
+    // Parse unstructured text back into a high-density State Document
+    const structuredContext = {
+      rawContent: item.doc.content || '',
+      reasoning: null,
+      whatWentWrong: null,
+      whatToChange: null,
+      rubricFailure: null
+    };
+
+    const lines = (item.doc.content || '').split('\n');
+    for (const line of lines) {
+      if (line.startsWith('Reasoning:')) structuredContext.reasoning = line.replace('Reasoning:', '').trim();
+      else if (line.startsWith('What went wrong:')) structuredContext.whatWentWrong = line.replace('What went wrong:', '').trim();
+      else if (line.startsWith('How to avoid:')) structuredContext.whatToChange = line.replace('How to avoid:', '').trim();
+      else if (line.startsWith('Rubric failing criteria:')) structuredContext.rubricFailure = line.replace('Rubric failing criteria:', '').trim();
+    }
+
     selected.push({
       id: item.doc.id,
       namespace: item.doc.namespace,
       title: item.doc.title,
-      content: item.doc.content,
+      structuredContext,
       tags: item.doc.tags || [],
       score: item.score,
     });

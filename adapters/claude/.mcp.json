@@ -1,8 +1,14 @@
 {
   "mcpServers": {
     "rlhf": {
-      "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.7.1", "serve"]
+      "command": "node",
+      "args": ["/Users/ganapolsky_i/workspace/git/igor/rlhf/bin/cli.js", "serve"]
+    }
+  },
+  "hooks": {
+    "preToolUse": {
+      "command": "node",
+      "args": ["/Users/ganapolsky_i/workspace/git/igor/rlhf/bin/cli.js", "gate"]
     }
   }
 }

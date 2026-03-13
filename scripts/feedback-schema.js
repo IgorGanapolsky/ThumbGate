@@ -92,6 +92,7 @@ function resolveFeedbackAction(params) {
     whatToChange,
     whatWorked,
     reasoning,
+    visualEvidence,
     tags,
     rubricEvaluation,
   } = params;
@@ -132,6 +133,7 @@ function resolveFeedbackAction(params) {
       whatWentWrong ? `What went wrong: ${whatWentWrong}` : `Context: ${context}`,
       whatToChange ? `How to avoid: ${whatToChange}` : 'Action needed: investigate and prevent recurrence',
       reasoning ? `Reasoning: ${reasoning}` : null,
+      visualEvidence ? `Visual Evidence: ${visualEvidence}` : null,
     ].filter(Boolean).join('\n');
     const rubricLines = [];
     if (rubricSummary) {
@@ -185,6 +187,7 @@ function resolveFeedbackAction(params) {
     const content = [
       whatWorked ? `What worked: ${whatWorked}` : `Approach: ${context}`,
       reasoning ? `Reasoning: ${reasoning}` : null,
+      visualEvidence ? `Visual Evidence: ${visualEvidence}` : null,
     ].filter(Boolean).join('\n');
     const rubricLines = [];
     if (rubricSummary) {

@@ -1,8 +1,8 @@
 {
   "version": 1,
   "created": "2026-03-12T20:09:44.489Z",
-  "updated": "2026-03-13T16:52:07.291Z",
-  "total_entries": 209,
+  "updated": "2026-03-13T19:00:33.612Z",
+  "total_entries": 255,
   "categories": {
     "code_edit": {
       "alpha": 1,
@@ -17,10 +17,10 @@
       "last_updated": null
     },
     "testing": {
-      "alpha": 38.99999999541569,
+      "alpha": 54.99999999312354,
       "beta": 1,
-      "samples": 38,
-      "last_updated": "2026-03-13T16:52:07.159Z"
+      "samples": 48,
+      "last_updated": "2026-03-13T19:00:33.342Z"
     },
     "pr_review": {
       "alpha": 1,
@@ -83,16 +83,28 @@
       "last_updated": null
     },
     "uncategorized": {
-      "alpha": 133.9999999896853,
+      "alpha": 175.99999998624708,
       "beta": 1,
-      "samples": 133,
-      "last_updated": "2026-03-13T16:52:07.092Z"
+      "samples": 161,
+      "last_updated": "2026-03-13T19:00:32.867Z"
     },
     "api": {
-      "alpha": 38.99999999885392,
+      "alpha": 50.99999999885392,
       "beta": 1,
-      "samples": 38,
-      "last_updated": "2026-03-13T16:52:07.291Z"
+      "samples": 46,
+      "last_updated": "2026-03-13T19:00:33.612Z"
+    },
+    "partner_balanced": {
+      "alpha": 44.999999997707846,
+      "beta": 1,
+      "samples": 22,
+      "last_updated": "2026-03-13T19:00:33.612Z"
+    },
+    "partner_strict_reviewer": {
+      "alpha": 5,
+      "beta": 1,
+      "samples": 2,
+      "last_updated": "2026-03-13T19:00:30.907Z"
     }
   }
 }

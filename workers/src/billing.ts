@@ -23,6 +23,12 @@ export async function handleCheckout(
   request: Request,
   env: Env,
 ): Promise<Response> {
+  if (!env.STRIPE_SECRET_KEY) {
+    return Response.json(
+      { error: 'Stripe is not configured. STRIPE_SECRET_KEY secret is missing.' },
+      { status: 503 },
+    );
+  }
   const stripe = getStripe(env);
   const url = new URL(request.url);
   const origin = url.origin;
