@@ -1,0 +1,20 @@
+{
+  "name": "mcp-memory-gateway-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers MCP server for mcp-memory-gateway Pro tier ($29/mo)",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "types": "wrangler types"
+  },
+  "dependencies": {
+    "stripe": "^14.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240925.0",
+    "typescript": "^5.5.0",
+    "wrangler": "^3.80.0"
+  }
+}

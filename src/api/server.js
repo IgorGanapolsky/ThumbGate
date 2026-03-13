@@ -65,6 +65,10 @@ const {
 const {
   generateDashboard,
 } = require('../../scripts/dashboard');
+const {
+  checkLimit,
+  UPGRADE_MESSAGE: RATE_LIMIT_MESSAGE,
+} = require('../../scripts/rate-limiter');
 
 const LANDING_PAGE_PATH = path.resolve(__dirname, '../../public/index.html');
 
@@ -982,6 +986,11 @@ function createApiServer() {
       }
 
       if (req.method === 'POST' && pathname === '/v1/feedback/capture') {
+        const captureLimit = checkLimit('capture_feedback');
+        if (!captureLimit.allowed) {
+          sendJson(res, 429, { error: RATE_LIMIT_MESSAGE });
+          return;
+        }
         const body = await parseJsonBody(req);
         const result = captureFeedback({
           signal: body.signal,

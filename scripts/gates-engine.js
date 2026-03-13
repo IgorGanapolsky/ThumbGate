@@ -4,6 +4,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const { isProTier, FREE_TIER_MAX_GATES } = require('./rate-limiter');
+
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'default.json');
 const AUTO_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'auto-promoted.json');
 const STATE_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'gate-state.json');
@@ -41,8 +43,14 @@ function loadGatesConfig(configPath) {
 
   loadOne(primaryPath, true);
 
-  if (!configPath && fs.existsSync(AUTO_CONFIG_PATH)) {
-    loadOne(AUTO_CONFIG_PATH, false);
+  if (isProTier()) {
+    // Pro tier: load all gates + auto-promoted
+    if (!configPath && fs.existsSync(AUTO_CONFIG_PATH)) {
+      loadOne(AUTO_CONFIG_PATH, false);
+    }
+  } else {
+    // Free tier: cap at FREE_TIER_MAX_GATES from default only
+    mergedConfig.gates = mergedConfig.gates.slice(0, FREE_TIER_MAX_GATES);
   }
 
   return mergedConfig;

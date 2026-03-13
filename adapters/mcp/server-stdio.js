@@ -51,6 +51,10 @@ const {
 const {
   satisfyGate,
 } = require('../../scripts/gate-satisfy');
+const {
+  checkLimit,
+  UPGRADE_MESSAGE: RATE_LIMIT_MESSAGE,
+} = require('../../scripts/rate-limiter');
 
 const SERVER_INFO = {
   name: 'mcp-memory-gateway-mcp',
@@ -433,6 +437,7 @@ async function callTool(name, args = {}) {
   return callToolInner(name, args);
 }
 
+// Legacy in-memory recall limit (kept for backward compat, now also enforced by rate-limiter)
 const FREE_DAILY_RECALL_LIMIT = 5;
 const _recallUsage = { date: '', count: 0 };
 
@@ -447,6 +452,14 @@ function checkRecallLimit() {
 }
 
 async function callToolInner(name, args = {}) {
+  // Free-tier daily rate limiting for capture_feedback and recall
+  if (name === 'capture_feedback' || name === 'recall') {
+    const limitResult = checkLimit(name);
+    if (!limitResult.allowed) {
+      return { content: [{ type: 'text', text: RATE_LIMIT_MESSAGE }], isError: true };
+    }
+  }
+
   if (name === 'recall') {
     const query = args.query || '';
     const limit = Number(args.limit || 5);

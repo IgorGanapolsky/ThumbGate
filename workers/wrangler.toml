@@ -1,0 +1,28 @@
+name = "mcp-memory-gateway"
+main = "src/index.ts"
+compatibility_date = "2024-09-25"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+STRIPE_PRICE_ID = "price_REPLACE_WITH_REAL_PRICE_ID"
+FREE_DAILY_LIMIT = "5"
+
+# KV namespace bindings — create with:
+#   wrangler kv namespace create MEMORY_KV
+#   wrangler kv namespace create KEYS_KV
+#   wrangler kv namespace create GATES_KV
+[[kv_namespaces]]
+binding = "MEMORY_KV"
+id = "REPLACE_WITH_MEMORY_KV_ID"
+
+[[kv_namespaces]]
+binding = "KEYS_KV"
+id = "REPLACE_WITH_KEYS_KV_ID"
+
+[[kv_namespaces]]
+binding = "GATES_KV"
+id = "REPLACE_WITH_GATES_KV_ID"
+
+# Secrets (set via `wrangler secret put`):
+#   STRIPE_SECRET_KEY
+#   STRIPE_WEBHOOK_SECRET
