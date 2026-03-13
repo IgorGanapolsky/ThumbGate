@@ -29,6 +29,9 @@ function normalize(ctx) {
   return (ctx || '').replace(/\/Users\/[^\s/]+/g, '~').replace(/:[0-9]+/g, '').toLowerCase().trim();
 }
 
+const HIGH_RISK_TAGS = new Set(['git-workflow', 'scope-control', 'trust-breach', 'execution-gap', 'regression', 'security']);
+const AUTO_GATE_PATH = path.join(__dirname, '..', 'config', 'gates', 'auto-promoted.json');
+
 function analyze(entries) {
   let positiveCount = 0, negativeCount = 0;
   const categories = {};
@@ -50,7 +53,15 @@ function analyze(entries) {
       toolBuckets[tool] = (toolBuckets[tool] || 0) + 1;
       const key = normalize(e.context);
       if (key.length > 10) {
-        if (!contextCounts[key]) contextCounts[key] = { raw: e.context, count: 0, tool };
+        if (!contextCounts[key]) {
+          contextCounts[key] = { 
+            raw: e.context, 
+            count: 0, 
+            tool, 
+            tags: e.tags || [],
+            hasHighRisk: (e.tags || []).some(t => HIGH_RISK_TAGS.has(t))
+          };
+        }
         contextCounts[key].count++;
       }
     }
@@ -58,14 +69,24 @@ function analyze(entries) {
 
   const total = positiveCount + negativeCount;
   const recurringIssues = Object.values(contextCounts)
-    .filter(v => v.count >= 2)
+    .filter(v => v.count >= 2 || (v.count >= 1 && v.hasHighRisk)) // Lower threshold for high-risk
     .sort((a, b) => b.count - a.count)
-    .map(v => ({
-      pattern: v.raw.slice(0, 120),
-      count: v.count,
-      severity: v.count >= 4 ? 'critical' : v.count >= 3 ? 'high' : 'medium',
-      suggestedRule: `NEVER ${v.raw.slice(0, 80).replace(/CRITICAL ERROR - User frustrated: /i, '')}`,
-    }));
+    .map(v => {
+      // Threshold hardening: promote high-risk to block after 2 failures
+      const threshold = v.hasHighRisk ? 2 : 4;
+      const severity = v.count >= threshold ? 'critical' : v.count >= (threshold - 1) ? 'high' : 'medium';
+      
+      return {
+        pattern: v.raw.slice(0, 120),
+        count: v.count,
+        severity,
+        hasHighRisk: v.hasHighRisk,
+        suggestedRule: `NEVER ${v.raw.slice(0, 80).replace(/CRITICAL ERROR - User frustrated: /i, '')}`,
+      };
+    });
+
+  // Auto-Gate Promotion logic
+  promoteToGates(recurringIssues);
 
   return {
     generatedAt: new Date().toISOString(),
@@ -77,6 +98,39 @@ function analyze(entries) {
     categoryBreakdown: categories,
     topTools: toolBuckets,
   };
+}
+
+function promoteToGates(recurringIssues) {
+  const autoGates = { version: 1, gates: [] };
+  
+  for (const issue of recurringIssues) {
+    if (issue.severity === 'critical') {
+      // Extract key nouns/verbs for pattern matching
+      const keywords = issue.pattern
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .split(/\s+/)
+        .filter(w => w.length > 4)
+        .slice(0, 3);
+      
+      if (keywords.length >= 2) {
+        const pattern = keywords.join('.*');
+        autoGates.gates.push({
+          id: `auto-${issue.hasHighRisk ? 'hardened' : 'promoted'}-${Date.now().toString(36)}`,
+          pattern,
+          action: 'block',
+          message: `Automatically blocked due to repeated failures: ${issue.suggestedRule}`,
+          severity: 'critical',
+          source: 'feedback-auto-promotion'
+        });
+      }
+    }
+  }
+
+  if (autoGates.gates.length > 0) {
+    fs.mkdirSync(path.dirname(AUTO_GATE_PATH), { recursive: true });
+    fs.writeFileSync(AUTO_GATE_PATH, JSON.stringify(autoGates, null, 2));
+  }
 }
 
 function toRules(report) {

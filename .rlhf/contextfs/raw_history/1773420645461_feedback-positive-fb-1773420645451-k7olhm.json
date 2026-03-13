@@ -1,0 +1,17 @@
+{
+  "id": "1773420645461_feedback-positive-fb-1773420645451-k7olhm",
+  "title": "feedback_positive_fb_1773420645451_k7olhm",
+  "content": "{\"id\":\"fb_1773420645451_k7olhm\",\"signal\":\"positive\",\"context\":\"Implemented with tests and evidence\",\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Used proof harness and verification logs\",\"reasoning\":null,\"tags\":[\"verification\",\"automation\"],\"skill\":null,\"rubric\":{\"rubricId\":\"default-v1\",\"weightedScore\":0.6,\"failingCriteria\":[],\"failingGuardrails\":[],\"judgeDisagreements\":[],\"promotionEligible\":true},\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-13T16:50:45.451Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "verification",
+    "automation"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-13T16:50:45.463Z",
+  "lastUsedAt": null
+}

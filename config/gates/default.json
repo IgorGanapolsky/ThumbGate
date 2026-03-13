@@ -2,12 +2,36 @@
   "version": 1,
   "gates": [
     {
+      "id": "local-only-git-writes",
+      "pattern": "^(git\\s+(add|commit|push)|gh\\s+pr\\s+)",
+      "action": "block",
+      "when": { "constraints": { "local_only": true } },
+      "message": "User requested local-only work. Git writes and PR operations are blocked.",
+      "severity": "critical"
+    },
+    {
+      "id": "gh-pr-create-restricted",
+      "pattern": "gh\\s+pr\\s+create",
+      "action": "block",
+      "unless": "pr_create_allowed",
+      "message": "PR creation requires explicit 'pr_create_allowed' satisfaction with evidence of user permission.",
+      "severity": "high"
+    },
+    {
+      "id": "gh-pr-merge-restricted",
+      "pattern": "gh\\s+pr\\s+merge",
+      "action": "block",
+      "unless": "pr_merge_allowed",
+      "message": "PR merging requires explicit 'pr_merge_allowed' satisfaction with evidence of user permission.",
+      "severity": "high"
+    },
+    {
       "id": "push-without-thread-check",
       "trigger": "Bash:git_push",
       "pattern": "git\\s+push",
       "action": "block",
       "unless": "pr_threads_checked",
-      "message": "Check PR review threads (reviewThreads first:50) before pushing",
+      "message": "Check PR review threads (reviewThreads first:50) before pushing. Use satisfy_gate('pr_threads_checked', 'evidence') to bypass.",
       "severity": "critical"
     },
     {

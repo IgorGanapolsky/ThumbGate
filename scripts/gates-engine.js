@@ -5,7 +5,9 @@ const fs = require('fs');
 const path = require('path');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'default.json');
+const AUTO_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'auto-promoted.json');
 const STATE_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'gate-state.json');
+const CONSTRAINTS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'session-constraints.json');
 const STATS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'gate-stats.json');
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -14,34 +16,70 @@ const TTL_MS = 5 * 60 * 1000; // 5 minutes
 // ---------------------------------------------------------------------------
 
 function loadGatesConfig(configPath) {
-  const resolved = configPath || process.env.RLHF_GATES_CONFIG || DEFAULT_CONFIG_PATH;
-  if (!fs.existsSync(resolved)) {
-    throw new Error(`Gates config not found: ${resolved}`);
+  const primaryPath = configPath || process.env.RLHF_GATES_CONFIG || DEFAULT_CONFIG_PATH;
+  
+  if (!fs.existsSync(primaryPath)) {
+    throw new Error(`Gates config not found: ${primaryPath}`);
   }
-  const raw = fs.readFileSync(resolved, 'utf8');
-  const config = JSON.parse(raw);
-  if (!config || !Array.isArray(config.gates)) {
-    throw new Error('Invalid gates config: missing "gates" array');
+
+  const mergedConfig = { version: 1, gates: [] };
+  
+  const loadOne = (p, isPrimary) => {
+    try {
+      const raw = fs.readFileSync(p, 'utf8');
+      const config = JSON.parse(raw);
+      if (!config || !Array.isArray(config.gates)) {
+        if (isPrimary) throw new Error('Invalid gates config: missing "gates" array');
+        return;
+      }
+      mergedConfig.gates.push(...config.gates);
+    } catch (e) {
+      if (isPrimary) throw e;
+      console.error(`Warning: failed to load gates from ${p}: ${e.message}`);
+    }
+  };
+
+  loadOne(primaryPath, true);
+
+  if (!configPath && fs.existsSync(AUTO_CONFIG_PATH)) {
+    loadOne(AUTO_CONFIG_PATH, false);
   }
-  return config;
+
+  return mergedConfig;
 }
 
 // ---------------------------------------------------------------------------
-// State management (unless conditions)
+// State and Constraints management
 // ---------------------------------------------------------------------------
 
-function loadState() {
-  if (!fs.existsSync(STATE_PATH)) return {};
+function loadJSON(filePath) {
+  if (!fs.existsSync(filePath)) return {};
   try {
-    return JSON.parse(fs.readFileSync(STATE_PATH, 'utf8'));
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch {
     return {};
   }
 }
 
-function saveState(state) {
-  fs.mkdirSync(path.dirname(STATE_PATH), { recursive: true });
-  fs.writeFileSync(STATE_PATH, JSON.stringify(state, null, 2) + '\n');
+function saveJSON(filePath, data) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n');
+}
+
+function loadState() { return loadJSON(module.exports.STATE_PATH); }
+function saveState(state) { saveJSON(module.exports.STATE_PATH, state); }
+
+function loadConstraints() { return loadJSON(module.exports.CONSTRAINTS_PATH); }
+function saveConstraints(constraints) { saveJSON(module.exports.CONSTRAINTS_PATH, constraints); }
+
+function setConstraint(key, value) {
+  const constraints = loadConstraints();
+  constraints[key] = {
+    value,
+    timestamp: Date.now()
+  };
+  saveConstraints(constraints);
+  return constraints[key];
 }
 
 function isConditionSatisfied(conditionId) {
@@ -67,18 +105,12 @@ function satisfyCondition(conditionId, evidence) {
 // ---------------------------------------------------------------------------
 
 function loadStats() {
-  if (!fs.existsSync(STATS_PATH)) return { blocked: 0, warned: 0, passed: 0, byGate: {} };
-  try {
-    return JSON.parse(fs.readFileSync(STATS_PATH, 'utf8'));
-  } catch {
-    return { blocked: 0, warned: 0, passed: 0, byGate: {} };
-  }
+  const stats = loadJSON(module.exports.STATS_PATH);
+  if (Object.keys(stats).length === 0) return { blocked: 0, warned: 0, passed: 0, byGate: {} };
+  return stats;
 }
 
-function saveStats(stats) {
-  fs.mkdirSync(path.dirname(STATS_PATH), { recursive: true });
-  fs.writeFileSync(STATS_PATH, JSON.stringify(stats, null, 2) + '\n');
-}
+function saveStats(stats) { saveJSON(module.exports.STATS_PATH, stats); }
 
 function recordStat(gateId, action) {
   const stats = loadStats();
@@ -95,6 +127,18 @@ function recordStat(gateId, action) {
 // ---------------------------------------------------------------------------
 // Matching engine
 // ---------------------------------------------------------------------------
+
+function checkWhenClause(when, constraints) {
+  if (!when || !when.constraints) return true;
+  
+  for (const [key, expectedValue] of Object.entries(when.constraints)) {
+    const constraint = constraints[key];
+    if (!constraint || constraint.value !== expectedValue) {
+      return false;
+    }
+  }
+  return true;
+}
 
 function matchesGate(gate, toolName, toolInput) {
   // Build the text to match against: for Bash it's the command, for Edit it's the file path
@@ -116,8 +160,15 @@ function evaluateGates(toolName, toolInput, configPath) {
     return null;
   }
 
+  const constraints = loadConstraints();
+
   for (const gate of config.gates) {
     if (!matchesGate(gate, toolName, toolInput)) continue;
+
+    // EvoSkill Hardening: check contextual 'when' clause
+    if (gate.when && !checkWhenClause(gate.when, constraints)) {
+      continue;
+    }
 
     // Check unless condition
     if (gate.unless && isConditionSatisfied(gate.unless)) {
@@ -193,6 +244,9 @@ module.exports = {
   loadGatesConfig,
   loadState,
   saveState,
+  loadConstraints,
+  saveConstraints,
+  setConstraint,
   isConditionSatisfied,
   satisfyCondition,
   loadStats,
@@ -204,6 +258,7 @@ module.exports = {
   run,
   DEFAULT_CONFIG_PATH,
   STATE_PATH,
+  CONSTRAINTS_PATH,
   STATS_PATH,
   TTL_MS,
 };

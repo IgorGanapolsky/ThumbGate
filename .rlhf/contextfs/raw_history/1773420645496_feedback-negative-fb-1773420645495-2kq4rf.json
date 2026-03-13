@@ -1,0 +1,17 @@
+{
+  "id": "1773420645496_feedback-negative-fb-1773420645495-2kq4rf",
+  "title": "feedback_negative_fb_1773420645495_2kq4rf",
+  "content": "{\"id\":\"fb_1773420645495_2kq4rf\",\"signal\":\"negative\",\"context\":\"Skipped verification before completion claim\",\"whatWentWrong\":\"No test evidence\",\"whatToChange\":\"Always include test output\",\"whatWorked\":null,\"reasoning\":null,\"tags\":[\"verification\",\"automation\"],\"skill\":null,\"rubric\":{\"rubricId\":\"default-v1\",\"weightedScore\":0.17,\"failingCriteria\":[\"correctness\",\"verification_evidence\"],\"failingGuardrails\":[\"testsPassed\"],\"judgeDisagreements\":[],\"promotionEligible\":false},\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-13T16:50:45.495Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "verification",
+    "automation"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-13T16:50:45.496Z",
+  "lastUsedAt": null
+}
