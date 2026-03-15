@@ -24,8 +24,8 @@ Observed result:
 
 - `npm ci` completed with `0` vulnerabilities.
 - `npm test` passed end-to-end on the post-fix tree after the review-found diagnostic gaps were closed.
-- `npm run test:coverage` passed with `1010` tests, `1009` passed, `0` failed, `1` skipped.
-- All-files coverage on the post-fix tree: `83.41%` lines, `69.73%` branches, `86.35%` functions.
+- `npm run test:coverage` passed with `1018` tests, `1017` passed, `0` failed, `1` skipped.
+- All-files coverage on the post-fix tree: `83.43%` lines, `69.93%` branches, `86.36%` functions.
 - `npm run prove:adapters`: `46` passed, `0` failed.
 - `npm run prove:automation`: `43` passed, `0` failed.
 - `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
