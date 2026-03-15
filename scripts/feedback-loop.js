@@ -470,11 +470,22 @@ function captureFeedback(params) {
     rubricEvaluation,
   });
 
+  // Tool-call attribution: link feedback to specific action (#203)
+  const lastAction = params.lastAction
+    ? {
+      tool: params.lastAction.tool || 'unknown',
+      contextKey: params.lastAction.contextKey || null,
+      file: params.lastAction.file || null,
+      timestamp: params.lastAction.timestamp || null,
+    }
+    : null;
+
   const now = new Date().toISOString();
   const rawFeedbackEvent = {
     id: `fb_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     signal,
     context: params.context || '',
+    lastAction,
     whatWentWrong: params.whatWentWrong || null,
     whatToChange: params.whatToChange || null,
     whatWorked: params.whatWorked || null,
@@ -712,6 +723,36 @@ function analyzeFeedback(logPath) {
   const recentPos = recent.filter((e) => e.signal === 'positive').length;
   const recentRate = recent.length > 0 ? Math.round((recentPos / recent.length) * 1000) / 1000 : 0;
 
+  // Rolling windows: 7-day, 30-day, lifetime (#204)
+  const now = Date.now();
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const windowStats = { '7d': { total: 0, positive: 0 }, '30d': { total: 0, positive: 0 } };
+  for (const entry of entries) {
+    const ts = entry.timestamp ? new Date(entry.timestamp).getTime() : 0;
+    const age = now - ts;
+    if (age <= SEVEN_DAYS_MS) {
+      windowStats['7d'].total++;
+      if (entry.signal === 'positive') windowStats['7d'].positive++;
+    }
+    if (age <= THIRTY_DAYS_MS) {
+      windowStats['30d'].total++;
+      if (entry.signal === 'positive') windowStats['30d'].positive++;
+    }
+  }
+  const rate7d = windowStats['7d'].total > 0
+    ? Math.round((windowStats['7d'].positive / windowStats['7d'].total) * 1000) / 1000 : 0;
+  const rate30d = windowStats['30d'].total > 0
+    ? Math.round((windowStats['30d'].positive / windowStats['30d'].total) * 1000) / 1000 : 0;
+  const TREND_THRESHOLD = 0.05;
+  const trend = rate7d > rate30d + TREND_THRESHOLD ? 'improving'
+    : rate7d < rate30d - TREND_THRESHOLD ? 'degrading' : 'stable';
+  const windows = {
+    '7d': { ...windowStats['7d'], rate: rate7d },
+    '30d': { ...windowStats['30d'], rate: rate30d },
+    lifetime: { total, positive: totalPositive, rate: approvalRate },
+  };
+
   const recommendations = [];
 
   for (const [skill, stat] of Object.entries(skills)) {
@@ -730,6 +771,9 @@ function analyzeFeedback(logPath) {
 
   if (recent.length >= 10 && recentRate < approvalRate - 0.1) {
     recommendations.push('DECLINING trend in last 20 signals; tighten verification before response.');
+  }
+  if (trend === 'degrading') {
+    recommendations.push(`DEGRADING 7d trend (${rate7d}) vs 30d (${rate30d}); increase prevention rule injection.`);
   }
 
   let boostedRisk = null;
@@ -756,6 +800,8 @@ function analyzeFeedback(logPath) {
     totalNegative,
     approvalRate,
     recentRate,
+    windows,
+    trend,
     skills,
     tags,
     rubric: {
@@ -768,19 +814,32 @@ function analyzeFeedback(logPath) {
   };
 }
 
-function buildPreventionRules(minOccurrences = 2) {
+function buildPreventionRules(minOccurrences = 2, options = {}) {
   const { MEMORY_LOG_PATH } = getFeedbackPaths();
   const memories = readJSONL(MEMORY_LOG_PATH).filter((m) => m.category === 'error');
   if (memories.length === 0) {
     return '# Prevention Rules\n\nNo mistake memories recorded yet.';
   }
 
+  // Time-weighted decay: recent mistakes count more (#202)
+  const decayHalfLifeDays = options.decayHalfLifeDays || 7;
+  const lambda = Math.LN2 / decayHalfLifeDays;
+  const now = Date.now();
+
+  function decayWeight(memory) {
+    const ts = memory.timestamp ? new Date(memory.timestamp).getTime() : now;
+    const daysSince = (now - ts) / (24 * 60 * 60 * 1000);
+    return Math.exp(-lambda * daysSince);
+  }
+
   const buckets = {};
   const rubricBuckets = {};
   for (const m of memories) {
     const key = (m.tags || []).find((t) => !['feedback', 'negative', 'positive'].includes(t)) || 'general';
-    if (!buckets[key]) buckets[key] = [];
-    buckets[key].push(m);
+    if (!buckets[key]) buckets[key] = { items: [], weightedCount: 0 };
+    const w = decayWeight(m);
+    buckets[key].items.push(m);
+    buckets[key].weightedCount += w;
 
     const failed = m.rubricSummary && Array.isArray(m.rubricSummary.failingCriteria)
       ? m.rubricSummary.failingCriteria
@@ -791,17 +850,17 @@ function buildPreventionRules(minOccurrences = 2) {
     });
   }
 
-  const lines = ['# Prevention Rules', '', 'Generated from negative feedback memories.'];
+  const lines = ['# Prevention Rules', '', 'Generated from negative feedback memories (time-weighted, half-life: ' + decayHalfLifeDays + 'd).'];
 
   Object.entries(buckets)
-    .sort((a, b) => b[1].length - a[1].length)
-    .forEach(([domain, items]) => {
-      if (items.length < minOccurrences) return;
+    .sort((a, b) => b[1].weightedCount - a[1].weightedCount)
+    .forEach(([domain, { items, weightedCount }]) => {
+      if (weightedCount < minOccurrences) return;
       const latest = items[items.length - 1];
       const avoid = (latest.content || '').split('\n').find((l) => l.toLowerCase().startsWith('how to avoid:')) || 'How to avoid: Investigate and prevent recurrence';
       lines.push('');
       lines.push(`## ${domain}`);
-      lines.push(`- Recurrence count: ${items.length}`);
+      lines.push(`- Recurrence count: ${items.length} (weighted: ${weightedCount.toFixed(1)})`);
       lines.push(`- Rule: ${avoid.replace(/^How to avoid:\s*/i, '')}`);
       lines.push(`- Latest mistake: ${latest.title}`);
     });
