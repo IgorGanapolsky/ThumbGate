@@ -48,6 +48,24 @@ test('analyzeCodeGraphImpact normalizes stub evidence and verification hints', (
   }
 });
 
+test('analyzeCodeGraphImpact ignores malformed stub JSON', () => {
+  const previous = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
+  process.env.RLHF_CODEGRAPH_STUB_RESPONSE = '{invalid json';
+
+  try {
+    const impact = analyzeCodeGraphImpact({
+      context: 'Refactor `planIntent` in scripts/intent-router.js',
+    });
+
+    assert.equal(impact.enabled, false);
+    assert.equal(impact.hasImpact, false);
+    assert.equal(impact.summary, '');
+  } finally {
+    if (previous === undefined) delete process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
+    else process.env.RLHF_CODEGRAPH_STUB_RESPONSE = previous;
+  }
+});
+
 test('formatCodeGraphRecallSection returns readable structural evidence', () => {
   const section = formatCodeGraphRecallSection({
     enabled: true,

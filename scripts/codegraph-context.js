@@ -227,7 +227,15 @@ function ensureIndexed(bin, repoPath, options = {}) {
 
 function parseStubImpact(input, context = {}) {
   if (!input) return null;
-  const parsed = typeof input === 'string' ? JSON.parse(input) : input;
+  let parsed = input;
+
+  if (typeof input === 'string') {
+    try {
+      parsed = JSON.parse(input);
+    } catch (_) {
+      return null;
+    }
+  }
 
   return normalizeImpact({
     source: parsed.source || 'stub',
