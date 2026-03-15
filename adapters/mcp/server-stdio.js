@@ -45,6 +45,9 @@ const {
   analyzeCodeGraphImpact,
   formatCodeGraphRecallSection,
 } = require('../../scripts/codegraph-context');
+const {
+  diagnoseFailure,
+} = require('../../scripts/failure-diagnostics');
 
 const {
   loadStats: loadGateStats,
@@ -135,6 +138,46 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {},
+    },
+  },
+  {
+    name: 'diagnose_failure',
+    description: 'Diagnose a failed or suspect workflow step using MCP schema, workflow, gate, and approval constraints.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        step: { type: 'string' },
+        context: { type: 'string' },
+        toolName: { type: 'string' },
+        toolArgs: { type: 'object' },
+        output: { type: 'string' },
+        error: { type: 'string' },
+        exitCode: { type: 'number' },
+        intentId: { type: 'string' },
+        approved: { type: 'boolean' },
+        mcpProfile: { type: 'string' },
+        verification: { type: 'object' },
+        rubricScores: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              criterion: { type: 'string' },
+              score: { type: 'number' },
+              evidence: { type: 'string' },
+              judge: { type: 'string' },
+            },
+          },
+        },
+        guardrails: {
+          type: 'object',
+          properties: {
+            testsPassed: { type: 'boolean' },
+            pathSafety: { type: 'boolean' },
+            budgetCompliant: { type: 'boolean' },
+          },
+        },
+      },
     },
   },
   {
@@ -637,6 +680,43 @@ async function callToolInner(name, args = {}) {
 
   if (name === 'feedback_stats') {
     return { content: [{ type: 'text', text: toText(analyzeFeedback()) }] };
+  }
+
+  if (name === 'diagnose_failure') {
+    const resolvedProfile = args.mcpProfile || getActiveMcpProfile();
+    const allowedToolNames = getAllowedTools(resolvedProfile);
+    const allowedToolSchemas = TOOLS.filter((tool) => allowedToolNames.includes(tool.name));
+    const intentPlan = args.intentId
+      ? planIntent({
+        intentId: args.intentId,
+        context: args.context || '',
+        mcpProfile: resolvedProfile,
+        approved: args.approved === true,
+      })
+      : null;
+    const result = diagnoseFailure({
+      step: args.step || 'mcp_tool',
+      context: args.context || '',
+      toolName: args.toolName || null,
+      toolArgs: parseOptionalObject(args.toolArgs, 'toolArgs'),
+      output: args.output || '',
+      error: args.error || '',
+      exitCode: Number.isFinite(Number(args.exitCode)) ? Number(args.exitCode) : null,
+      intentPlan,
+      verification: args.verification && typeof args.verification === 'object' ? args.verification : null,
+      rubricEvaluation: args.rubricScores || args.guardrails
+        ? buildRubricEvaluation({
+          rubricScores: args.rubricScores,
+          guardrails: parseOptionalObject(args.guardrails, 'guardrails'),
+        })
+        : null,
+      toolSchemas: allowedToolSchemas,
+      allowedToolNames,
+      mcpProfile: resolvedProfile,
+      includeConstraints: true,
+      suspect: true,
+    });
+    return { content: [{ type: 'text', text: toText(result) }] };
   }
 
   if (name === 'list_intents') {

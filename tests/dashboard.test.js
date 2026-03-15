@@ -31,6 +31,12 @@ function writeMemoryLog(entries) {
   fs.writeFileSync(memPath, lines + '\n');
 }
 
+function writeDiagnosticLog(entries) {
+  const diagnosticPath = path.join(tmpDir, 'diagnostic-log.jsonl');
+  const lines = entries.map((e) => JSON.stringify(e)).join('\n');
+  fs.writeFileSync(diagnosticPath, lines + '\n');
+}
+
 // ---------------------------------------------------------------------------
 // Empty state
 // ---------------------------------------------------------------------------
@@ -47,6 +53,7 @@ test('generateDashboard handles empty state (no files)', () => {
   assert.equal(data.approval.negative, 0);
   assert.equal(data.health.feedbackCount, 0);
   assert.equal(data.health.memoryCount, 0);
+  assert.equal(data.diagnostics.totalDiagnosed, 0);
 });
 
 // ---------------------------------------------------------------------------
@@ -125,6 +132,11 @@ test('generateDashboard returns complete structure with data', () => {
       signal: i < 20 ? 'positive' : 'negative',
       timestamp: new Date(now.getTime() - i * 60000).toISOString(),
       tags: i >= 20 ? ['testing'] : [],
+      diagnosis: i >= 20 ? {
+        rootCauseCategory: 'tool_output_misread',
+        criticalFailureStep: 'verification',
+        violations: [{ constraintId: 'workflow:proof_commands' }],
+      } : null,
     });
   }
   writeFeedbackLog(entries);
@@ -138,6 +150,7 @@ test('generateDashboard returns complete structure with data', () => {
   assert.ok(data.prevention);
   assert.ok(data.trend);
   assert.ok(data.health);
+  assert.ok(data.diagnostics);
 
   // Values
   assert.equal(data.approval.total, 30);
@@ -145,6 +158,28 @@ test('generateDashboard returns complete structure with data', () => {
   assert.equal(data.approval.negative, 10);
   assert.equal(data.health.feedbackCount, 30);
   assert.equal(data.health.memoryCount, 2);
+  assert.equal(data.diagnostics.totalDiagnosed, 10);
+  assert.equal(data.diagnostics.categories[0].key, 'tool_output_misread');
+});
+
+test('generateDashboard aggregates persisted diagnostics beyond feedback capture', () => {
+  writeFeedbackLog([
+    { signal: 'positive', timestamp: new Date().toISOString() },
+  ]);
+  writeDiagnosticLog([
+    {
+      source: 'verification_loop',
+      diagnosis: {
+        rootCauseCategory: 'intent_plan_misalignment',
+        criticalFailureStep: 'verification',
+        violations: [{ constraintId: 'intent:publish_dpo_training_data' }],
+      },
+    },
+  ]);
+
+  const data = generateDashboard(tmpDir);
+  assert.equal(data.diagnostics.totalDiagnosed, 1);
+  assert.equal(data.diagnostics.categories[0].key, 'intent_plan_misalignment');
 });
 
 // ---------------------------------------------------------------------------

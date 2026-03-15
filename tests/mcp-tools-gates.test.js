@@ -87,6 +87,11 @@ test('gate_stats returns stats object', async () => {
   assert.equal(typeof parsed.passed, 'number');
 });
 
+test('diagnose_failure tool is registered', () => {
+  const tool = TOOLS.find((t) => t.name === 'diagnose_failure');
+  assert.ok(tool, 'diagnose_failure should be in TOOLS array');
+});
+
 // ---------------------------------------------------------------------------
 // dashboard (new tool)
 // ---------------------------------------------------------------------------
@@ -101,7 +106,16 @@ test('dashboard returns full report', async () => {
   const feedbackPath = path.join(tmpFeedbackDir, 'feedback-log.jsonl');
   const entries = [
     { signal: 'positive', timestamp: new Date().toISOString(), tags: [] },
-    { signal: 'negative', timestamp: new Date().toISOString(), tags: ['testing'] },
+    {
+      signal: 'negative',
+      timestamp: new Date().toISOString(),
+      tags: ['testing'],
+      diagnosis: {
+        rootCauseCategory: 'tool_output_misread',
+        criticalFailureStep: 'verification',
+        violations: [{ constraintId: 'workflow:proof_commands' }],
+      },
+    },
     { signal: 'positive', timestamp: new Date().toISOString(), tags: [] },
   ];
   fs.writeFileSync(feedbackPath, entries.map((e) => JSON.stringify(e)).join('\n') + '\n');
@@ -123,9 +137,11 @@ test('dashboard returns full report', async () => {
   assert.ok(parsed.prevention);
   assert.ok(parsed.trend);
   assert.ok(parsed.health);
+  assert.ok(parsed.diagnostics);
   assert.equal(parsed.approval.total, 3);
   assert.equal(parsed.approval.positive, 2);
   assert.equal(parsed.approval.negative, 1);
+  assert.equal(parsed.diagnostics.totalDiagnosed, 1);
 });
 
 test('dashboard handles empty state', async () => {
@@ -152,10 +168,11 @@ test('dashboard handles empty state', async () => {
 // tools/list includes new tools
 // ---------------------------------------------------------------------------
 
-test('tools/list includes gate_stats and dashboard', async () => {
+test('tools/list includes gate_stats, dashboard, and diagnose_failure', async () => {
   const result = await handleRequest({ jsonrpc: '2.0', id: 105, method: 'tools/list' });
   const names = result.tools.map((t) => t.name);
   assert.ok(names.includes('satisfy_gate'), 'satisfy_gate in tools/list');
   assert.ok(names.includes('gate_stats'), 'gate_stats in tools/list');
   assert.ok(names.includes('dashboard'), 'dashboard in tools/list');
+  assert.ok(names.includes('diagnose_failure'), 'diagnose_failure in tools/list');
 });

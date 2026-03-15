@@ -1,5 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const {
   collectHealthReport,
@@ -43,6 +46,7 @@ test('collectHealthReport marks overall unhealthy when one check fails', () => {
   assert.equal(report.summary.healthy, 1);
   assert.equal(report.summary.unhealthy, 1);
   assert.equal(report.checks[1].status, 'unhealthy');
+  assert.equal(report.checks[1].diagnosis.rootCauseCategory, 'system_failure');
 });
 
 test('collectHealthReport records duration for each check', () => {
@@ -73,6 +77,32 @@ test('collectHealthReport captures output tail on failure', () => {
 
   assert.equal(report.checks[0].status, 'unhealthy');
   assert.ok(report.checks[0].outputTail.includes('error details'));
+});
+
+test('collectHealthReport can persist unhealthy diagnoses for shared analytics', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-self-heal-'));
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+
+  const report = collectHealthReport({
+    checks: [{ name: 'failing', command: ['mock'] }],
+    persistDiagnostics: true,
+    runner: () => ({
+      exitCode: 1,
+      durationMs: 10,
+      stdout: '',
+      stderr: 'error details here',
+      error: null,
+    }),
+  });
+
+  const diagnosticLog = path.join(tmpDir, 'diagnostic-log.jsonl');
+  const entries = fs.readFileSync(diagnosticLog, 'utf-8').trim().split('\n').map((line) => JSON.parse(line));
+  assert.equal(report.checks[0].persistedDiagnosis.diagnosis.rootCauseCategory, 'system_failure');
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].source, 'self_heal_check');
+
+  delete process.env.RLHF_FEEDBACK_DIR;
+  fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
 test('collectHealthReport handles empty checks array', () => {
@@ -122,11 +152,17 @@ test('reportToText shows unhealthy status', () => {
     generatedAt: '2026-03-03T00:00:00.000Z',
     overall_status: 'unhealthy',
     summary: { healthy: 0, total: 1, unhealthy: 1 },
-    checks: [{ name: 'broken', status: 'unhealthy', durationMs: 5 }],
+    checks: [{
+      name: 'broken',
+      status: 'unhealthy',
+      durationMs: 5,
+      diagnosis: { rootCauseCategory: 'system_failure' },
+    }],
   });
 
   assert.match(text, /UNHEALTHY/i);
   assert.match(text, /broken/);
+  assert.match(text, /system_failure/);
 });
 
 test('reportToText includes multiple checks', () => {

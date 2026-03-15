@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const AUTO_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'auto-promoted.json');
@@ -196,13 +197,16 @@ function computeSystemHealth(feedbackDir, gateStats) {
 
 function generateDashboard(feedbackDir) {
   const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
+  const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');
   const entries = readJSONL(feedbackLogPath);
+  const diagnosticEntries = readJSONL(diagnosticLogPath);
 
   const approval = computeApprovalStats(entries);
   const gateStats = computeGateStats(feedbackDir);
   const prevention = computePreventionImpact(feedbackDir, gateStats);
   const trend = computeSessionTrend(entries, 10);
   const health = computeSystemHealth(feedbackDir, gateStats);
+  const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
 
   return {
     approval,
@@ -210,6 +214,7 @@ function generateDashboard(feedbackDir) {
     prevention,
     trend,
     health,
+    diagnostics,
   };
 }
 
@@ -218,7 +223,14 @@ function generateDashboard(feedbackDir) {
 // ---------------------------------------------------------------------------
 
 function printDashboard(data) {
-  const { approval, gateStats, prevention, trend, health } = data;
+  const {
+    approval,
+    gateStats,
+    prevention,
+    trend,
+    health,
+    diagnostics,
+  } = data;
 
   const trendArrow = approval.trendDirection === 'improving' ? '\u2191'
     : approval.trendDirection === 'declining' ? '\u2193'
@@ -260,6 +272,12 @@ function printDashboard(data) {
   console.log(`  Memory Store     : ${health.memoryCount} memories`);
   console.log(`  Gate Config      : ${health.gateConfigLoaded ? 'loaded' : 'not found'} (${health.gateCount} gates)`);
   console.log(`  MCP Server       : running`);
+  if (diagnostics.totalDiagnosed > 0) {
+    console.log(`  Failure Diagnoses: ${diagnostics.totalDiagnosed}`);
+    if (diagnostics.categories[0]) {
+      console.log(`  Top Root Cause   : ${diagnostics.categories[0].key} (${diagnostics.categories[0].count}\u00D7)`);
+    }
+  }
   console.log('');
 }
 

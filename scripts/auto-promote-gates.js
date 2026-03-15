@@ -66,6 +66,26 @@ function extractPatternKey(entry) {
   return ctx.replace(/\/Users\/[^\s/]+/g, '~').replace(/:[0-9]+/g, '').replace(/\s+/g, ' ').slice(0, 100);
 }
 
+function extractDiagnosticKeys(entry) {
+  const keys = [];
+  const diagnosis = entry && entry.diagnosis ? entry.diagnosis : null;
+  if (!diagnosis) return keys;
+
+  if (diagnosis.rootCauseCategory) {
+    keys.push(`diagnosis:${diagnosis.rootCauseCategory}`);
+  }
+
+  const violations = Array.isArray(diagnosis.violations) ? diagnosis.violations : [];
+  violations.slice(0, 3).forEach((violation) => {
+    const key = violation.constraintId || violation.message;
+    if (key) {
+      keys.push(`constraint:${key}`);
+    }
+  });
+
+  return keys;
+}
+
 function groupNegativeFeedback(entries, windowDays) {
   const cutoff = Date.now() - windowDays * 24 * 60 * 60 * 1000;
   const groups = {};
@@ -76,23 +96,27 @@ function groupNegativeFeedback(entries, windowDays) {
     const ts = entry.timestamp ? new Date(entry.timestamp).getTime() : 0;
     if (ts < cutoff) continue;
 
-    const key = extractPatternKey(entry);
-    if (!key) continue;
+    const keys = [extractPatternKey(entry), ...extractDiagnosticKeys(entry)]
+      .filter(Boolean)
+      .filter((value, index, values) => values.indexOf(value) === index);
+    if (keys.length === 0) continue;
 
-    if (!groups[key]) {
-      groups[key] = {
-        key,
-        count: 0,
-        entries: [],
-        latestContext: '',
-        latestTimestamp: '',
-      };
-    }
-    groups[key].count++;
-    groups[key].entries.push(entry);
-    if (!groups[key].latestTimestamp || (entry.timestamp && entry.timestamp > groups[key].latestTimestamp)) {
-      groups[key].latestTimestamp = entry.timestamp || '';
-      groups[key].latestContext = entry.context || entry.whatWentWrong || '';
+    for (const key of keys) {
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          count: 0,
+          entries: [],
+          latestContext: '',
+          latestTimestamp: '',
+        };
+      }
+      groups[key].count++;
+      groups[key].entries.push(entry);
+      if (!groups[key].latestTimestamp || (entry.timestamp && entry.timestamp > groups[key].latestTimestamp)) {
+        groups[key].latestTimestamp = entry.timestamp || '';
+        groups[key].latestContext = entry.context || entry.whatWentWrong || '';
+      }
     }
   }
 
@@ -107,7 +131,12 @@ function buildGateRule(group) {
   const action = group.count >= BLOCK_THRESHOLD ? 'block' : 'warn';
   const severity = group.count >= BLOCK_THRESHOLD ? 'critical' : 'medium';
   const context = group.latestContext.slice(0, 120);
-  const suggestedMessage = `Auto-promoted: "${context}" (${group.count} occurrences in ${WINDOW_DAYS} days)`;
+  const kind = group.key.startsWith('diagnosis:')
+    ? 'repeated diagnosis'
+    : group.key.startsWith('constraint:')
+      ? 'repeated constraint violation'
+      : 'repeated pattern';
+  const suggestedMessage = `Auto-promoted ${kind}: "${context}" (${group.count} occurrences in ${WINDOW_DAYS} days)`;
 
   return {
     id: patternToGateId(group.key),

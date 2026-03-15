@@ -121,6 +121,28 @@ test('groupNegativeFeedback: ignores positive signals', () => {
   assert.strictEqual(groups['testing'].count, 1);
 });
 
+test('groupNegativeFeedback: also groups repeated diagnostic categories', () => {
+  const entries = [
+    {
+      ...makeNegativeEntry(['testing'], 'failure 1', 1),
+      diagnosis: {
+        rootCauseCategory: 'guardrail_triggered',
+        violations: [{ constraintId: 'rubric:verification_evidence' }],
+      },
+    },
+    {
+      ...makeNegativeEntry(['testing'], 'failure 2', 2),
+      diagnosis: {
+        rootCauseCategory: 'guardrail_triggered',
+        violations: [{ constraintId: 'rubric:verification_evidence' }],
+      },
+    },
+  ];
+  const groups = groupNegativeFeedback(entries, WINDOW_DAYS);
+  assert.strictEqual(groups['diagnosis:guardrail_triggered'].count, 2);
+  assert.strictEqual(groups['constraint:rubric:verification_evidence'].count, 2);
+});
+
 // -- promote: threshold triggers warn gate --
 
 test('promote: 3 occurrences triggers warn gate', (t) => {
