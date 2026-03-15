@@ -96,7 +96,7 @@ npx mcp-memory-gateway init --agent codex
 npx mcp-memory-gateway init --agent gemini
 ```
 
-> **Profiles:** Set `RLHF_MCP_PROFILE=essential` for the lean 5-tool setup (recommended), or leave unset for the full 11-tool pipeline. See [MCP Tools](#mcp-tools) for details.
+> **Profiles:** Set `RLHF_MCP_PROFILE=essential` for the lean 5-tool setup (recommended), or leave unset for the full 12-tool pipeline. See [MCP Tools](#mcp-tools) for details.
 
 ## Pre-Action Gates (v0.7.1)
 
@@ -212,6 +212,7 @@ These tools support fine-tuning workflows, context engineering, and audit trails
 | `satisfy_gate` | Record evidence that a gate condition is met | Unblocking gated actions (e.g., PR thread check) |
 | `gate_stats` | Gate enforcement statistics (blocked/warned counts) | Monitoring gate effectiveness |
 | `dashboard` | Full RLHF dashboard (approval rate, gates, prevention) | Overview of system health |
+| `diagnose_failure` | Compile workflow, gate, approval, and MCP-tool constraints into a root-cause report | Systematic debugging for failed or suspect agent runs |
 
 ## CLI
 

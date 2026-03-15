@@ -456,6 +456,33 @@ async function runProof(options = {}) {
     }
 
     {
+      currentCheck = 'mcp.tools.call.diagnose_failure';
+      const call = await handleRequest({
+        jsonrpc: '2.0',
+        id: 36,
+        method: 'tools/call',
+        params: {
+          name: 'diagnose_failure',
+          arguments: {
+            step: 'capture_feedback',
+            context: 'Attempted to approve publish flow without required approval',
+            toolName: 'capture_feedback',
+            toolArgs: {},
+            intentId: 'publish_dpo_training_data',
+            mcpProfile: 'default',
+          },
+        },
+      });
+      const diagnosis = JSON.parse(call.content[0].text);
+      check(diagnosis.rootCauseCategory === 'intent_plan_misalignment', 'mcp diagnose_failure should classify approval mismatch');
+      check(diagnosis.compiledConstraints.summary.toolSchemaCount >= 1, 'mcp diagnose_failure should include compiled constraints');
+      addResult('mcp.tools.call.diagnose_failure', true, {
+        rootCauseCategory: diagnosis.rootCauseCategory,
+        toolSchemaCount: diagnosis.compiledConstraints.summary.toolSchemaCount,
+      });
+    }
+
+    {
       currentCheck = 'mcp.tools.call.plan_intent';
       const call = await handleRequest({
         jsonrpc: '2.0',

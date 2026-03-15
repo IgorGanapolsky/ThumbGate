@@ -1,3 +1,51 @@
+## March 15, 2026: AgentRx-style failure diagnostics
+
+Scope:
+
+- Added `scripts/failure-diagnostics.js` with a narrow failure taxonomy for `invalid_invocation`, `tool_output_misread`, `intent_plan_misalignment`, `guardrail_triggered`, and `system_failure`.
+- Compiled diagnosis constraints from workflow contract rules, gate policies, session constraints, approval checkpoints, and MCP tool schemas.
+- Added the `diagnose_failure` MCP tool and made it profile-aware so locked/read-only profiles diagnose disallowed tool calls correctly instead of pretending the full tool catalog is available.
+- Threaded diagnoses into the verification loop, self-healing health checks, dashboard aggregation, analytics, and prevention-rule generation through a shared `diagnostic-log.jsonl` path.
+- Removed false-positive fallback diagnoses so vague or unsupported negative signals no longer inflate root-cause metrics.
+- Updated `README.md` so the MCP tool inventory and profile counts match the shipped product surface.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/rlhf/.claude/worktrees/agent-agentrx`:
+
+```bash
+npm ci
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+```
+
+Observed result:
+
+- `npm ci` completed with `0` vulnerabilities.
+- `npm test` passed end-to-end on the post-fix tree after the review-found diagnostic gaps were closed.
+- `npm run test:coverage` passed with `1018` tests, `1017` passed, `0` failed, `1` skipped.
+- All-files coverage on the post-fix tree: `83.43%` lines, `69.93%` branches, `86.36%` functions.
+- `npm run prove:adapters`: `46` passed, `0` failed.
+- `npm run prove:automation`: `43` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+
+Evidence artifacts verified:
+
+- `proof/compatibility/report.json`
+- `proof/compatibility/report.md`
+- `proof/automation/report.json`
+- `proof/automation/report.md`
+
+Requirements verified:
+
+- `diagnose_failure` no longer fabricates `tool_output_misread` for vague or unclassified failures with no real evidence.
+- `diagnose_failure` now respects MCP profile allowlists and emits policy-backed invalid-invocation diagnoses for disallowed tools.
+- Failed verification runs persist diagnoses into the shared analytics path instead of dying inside transient return payloads.
+- `self-heal:check` persists unhealthy-check diagnoses into the same shared analytics path when run via CLI.
+- Dashboard and prevention-rule outputs now include persisted verification and self-heal diagnoses, not only diagnoses attached during feedback capture.
+- The README tool inventory now matches the shipped MCP surface: essential profile remains `5` tools, full profile is `12` tools including `diagnose_failure`.
+
 ## March 13, 2026: PR hygiene and runtime-state cleanup
 
 Scope:

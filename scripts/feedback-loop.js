@@ -21,6 +21,10 @@ const {
   buildRubricEvaluation,
 } = require('./rubric-engine');
 const { recordAction, attributeFeedback } = require('./feedback-attribution');
+const {
+  diagnoseFailure,
+  aggregateFailureDiagnostics,
+} = require('./failure-diagnostics');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_FEEDBACK_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
@@ -41,6 +45,7 @@ function getFeedbackPaths() {
     return {
       FEEDBACK_DIR: d,
       FEEDBACK_LOG_PATH: path.join(d, 'feedback-log.jsonl'),
+      DIAGNOSTIC_LOG_PATH: path.join(d, 'diagnostic-log.jsonl'),
       MEMORY_LOG_PATH: path.join(d, 'memory-log.jsonl'),
       SUMMARY_PATH: path.join(d, 'feedback-summary.json'),
       PREVENTION_RULES_PATH: path.join(d, 'prevention-rules.md'),
@@ -67,6 +72,7 @@ function getFeedbackPaths() {
   return {
     FEEDBACK_DIR: baseDir,
     FEEDBACK_LOG_PATH: path.join(baseDir, 'feedback-log.jsonl'),
+    DIAGNOSTIC_LOG_PATH: path.join(baseDir, 'diagnostic-log.jsonl'),
     MEMORY_LOG_PATH: path.join(baseDir, 'memory-log.jsonl'),
     SUMMARY_PATH: path.join(baseDir, 'feedback-summary.json'),
     PREVENTION_RULES_PATH: path.join(baseDir, 'prevention-rules.md'),
@@ -114,6 +120,43 @@ function ensureDir(dirPath) {
 function appendJSONL(filePath, record) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
+}
+
+function toStoredDiagnosis(diagnosis) {
+  if (!diagnosis || diagnosis.diagnosed === false || !diagnosis.rootCauseCategory) {
+    return null;
+  }
+  return {
+    rootCauseCategory: diagnosis.rootCauseCategory,
+    criticalFailureStep: diagnosis.criticalFailureStep,
+    violations: Array.isArray(diagnosis.violations) ? diagnosis.violations : [],
+    evidence: Array.isArray(diagnosis.evidence) ? diagnosis.evidence : [],
+  };
+}
+
+function appendDiagnosticRecord(params = {}) {
+  const { DIAGNOSTIC_LOG_PATH } = getFeedbackPaths();
+  const storedDiagnosis = toStoredDiagnosis(params.diagnosis);
+  if (!storedDiagnosis) {
+    return null;
+  }
+
+  const record = {
+    id: `diag_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    source: params.source || 'system',
+    step: params.step || storedDiagnosis.criticalFailureStep || null,
+    context: params.context || '',
+    metadata: params.metadata && typeof params.metadata === 'object' ? params.metadata : {},
+    diagnosis: storedDiagnosis,
+    timestamp: params.timestamp || new Date().toISOString(),
+  };
+  appendJSONL(DIAGNOSTIC_LOG_PATH, record);
+  return record;
+}
+
+function readDiagnosticEntries(logPath) {
+  const { DIAGNOSTIC_LOG_PATH } = getFeedbackPaths();
+  return readJSONL(logPath || DIAGNOSTIC_LOG_PATH);
 }
 
 function trackBackgroundSideEffect(taskPromise) {
@@ -509,7 +552,29 @@ function captureFeedback(params) {
   };
 
   // Rich context enrichment (QUAL-02, QUAL-03) — non-blocking
-  const feedbackEvent = enrichFeedbackContext(rawFeedbackEvent, params);
+  let feedbackEvent = enrichFeedbackContext(rawFeedbackEvent, params);
+  const shouldDiagnose = signal === 'negative'
+    || (rubricEvaluation && (
+      (rubricEvaluation.failingCriteria || []).length > 0
+      || (rubricEvaluation.failingGuardrails || []).length > 0
+    ))
+    || (typeof rawFeedbackEvent.actionReason === 'string' && /rubric gate/i.test(rawFeedbackEvent.actionReason));
+  const diagnosis = shouldDiagnose
+    ? diagnoseFailure({
+      step: 'feedback_capture',
+      context,
+      rubricEvaluation,
+      feedbackEvent,
+      suspect: signal === 'negative' || action.type === 'no-action',
+    })
+    : null;
+  const storedDiagnosis = toStoredDiagnosis(diagnosis);
+  if (storedDiagnosis) {
+    feedbackEvent = {
+      ...feedbackEvent,
+      diagnosis: storedDiagnosis,
+    };
+  }
   const historyEntries = readJSONL(FEEDBACK_LOG_PATH).slice(-SEQUENCE_WINDOW);
 
   const summary = loadSummary();
@@ -586,6 +651,7 @@ function captureFeedback(params) {
   const memoryRecord = {
     id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     ...prepared.memory,
+    diagnosis: storedDiagnosis,
     sourceFeedbackId: feedbackEvent.id,
     timestamp: now,
   };
@@ -675,6 +741,8 @@ function captureFeedback(params) {
 function analyzeFeedback(logPath) {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
   const entries = readJSONL(logPath || FEEDBACK_LOG_PATH);
+  const diagnosticLogPath = path.join(path.dirname(logPath || FEEDBACK_LOG_PATH), 'diagnostic-log.jsonl');
+  const diagnosticEntries = readDiagnosticEntries(diagnosticLogPath);
   const paths = getFeedbackPaths();
   const skills = {};
   const tags = {};
@@ -793,6 +861,10 @@ function analyzeFeedback(logPath) {
   } catch {
     boostedRisk = null;
   }
+  const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
+  diagnostics.categories.slice(0, 2).forEach((bucket) => {
+    recommendations.push(`DIAGNOSE '${bucket.key}' failures (${bucket.count})`);
+  });
 
   return {
     total,
@@ -809,16 +881,20 @@ function analyzeFeedback(logPath) {
       blockedPromotions,
       failingCriteria: rubricCriteria,
     },
+    diagnostics,
     boostedRisk,
     recommendations,
   };
 }
 
 function buildPreventionRules(minOccurrences = 2, options = {}) {
-  const { MEMORY_LOG_PATH } = getFeedbackPaths();
+  const { MEMORY_LOG_PATH, DIAGNOSTIC_LOG_PATH } = getFeedbackPaths();
   const memories = readJSONL(MEMORY_LOG_PATH).filter((m) => m.category === 'error');
+  const diagnosticEntries = readDiagnosticEntries(DIAGNOSTIC_LOG_PATH);
   if (memories.length === 0) {
-    return '# Prevention Rules\n\nNo mistake memories recorded yet.';
+    if (diagnosticEntries.length === 0) {
+      return '# Prevention Rules\n\nNo mistake memories recorded yet.';
+    }
   }
 
   // Time-weighted decay: recent mistakes count more (#202)
@@ -834,6 +910,8 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
 
   const buckets = {};
   const rubricBuckets = {};
+  const diagnosisBuckets = {};
+  const repeatedViolationBuckets = {};
   for (const m of memories) {
     const key = (m.tags || []).find((t) => !['feedback', 'negative', 'positive'].includes(t)) || 'general';
     if (!buckets[key]) buckets[key] = { items: [], weightedCount: 0 };
@@ -847,6 +925,32 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
     failed.forEach((criterion) => {
       if (!rubricBuckets[criterion]) rubricBuckets[criterion] = [];
       rubricBuckets[criterion].push(m);
+    });
+
+    if (m.diagnosis && m.diagnosis.rootCauseCategory) {
+      if (!diagnosisBuckets[m.diagnosis.rootCauseCategory]) diagnosisBuckets[m.diagnosis.rootCauseCategory] = [];
+      diagnosisBuckets[m.diagnosis.rootCauseCategory].push(m);
+    }
+
+    (m.diagnosis && Array.isArray(m.diagnosis.violations) ? m.diagnosis.violations : []).forEach((violation) => {
+      const key = violation.constraintId || violation.message;
+      if (!key) return;
+      if (!repeatedViolationBuckets[key]) repeatedViolationBuckets[key] = [];
+      repeatedViolationBuckets[key].push(m);
+    });
+  }
+
+  for (const entry of diagnosticEntries) {
+    const diagnosis = entry && entry.diagnosis ? entry.diagnosis : null;
+    if (!diagnosis || !diagnosis.rootCauseCategory) continue;
+    if (!diagnosisBuckets[diagnosis.rootCauseCategory]) diagnosisBuckets[diagnosis.rootCauseCategory] = [];
+    diagnosisBuckets[diagnosis.rootCauseCategory].push(entry);
+
+    (Array.isArray(diagnosis.violations) ? diagnosis.violations : []).forEach((violation) => {
+      const key = violation.constraintId || violation.message;
+      if (!key) return;
+      if (!repeatedViolationBuckets[key]) repeatedViolationBuckets[key] = [];
+      repeatedViolationBuckets[key].push(entry);
     });
   }
 
@@ -865,13 +969,36 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
       lines.push(`- Latest mistake: ${latest.title}`);
     });
 
-  const rubricEntries = Object.entries(rubricBuckets).sort((a, b) => b[1].length - a[1].length);
+  const rubricEntries = Object.entries(rubricBuckets)
+    .sort((a, b) => b[1].length - a[1].length)
+    .filter(([, items]) => items.length >= minOccurrences);
   if (rubricEntries.length > 0) {
     lines.push('');
     lines.push('## Rubric Failure Dimensions');
     rubricEntries.forEach(([criterion, items]) => {
-      if (items.length < minOccurrences) return;
       lines.push(`- ${criterion}: ${items.length} failures`);
+    });
+  }
+
+  const diagnosisEntries = Object.entries(diagnosisBuckets)
+    .sort((a, b) => b[1].length - a[1].length)
+    .filter(([, items]) => items.length >= minOccurrences);
+  if (diagnosisEntries.length > 0) {
+    lines.push('');
+    lines.push('## Root Cause Categories');
+    diagnosisEntries.forEach(([category, items]) => {
+      lines.push(`- ${category}: ${items.length} failures`);
+    });
+  }
+
+  const repeatedViolationEntries = Object.entries(repeatedViolationBuckets)
+    .sort((a, b) => b[1].length - a[1].length)
+    .filter(([, items]) => items.length >= minOccurrences);
+  if (repeatedViolationEntries.length > 0) {
+    lines.push('');
+    lines.push('## Repeated Failure Constraints');
+    repeatedViolationEntries.forEach(([constraintId, items]) => {
+      lines.push(`- ${constraintId}: ${items.length} failures`);
     });
   }
 
@@ -1078,6 +1205,8 @@ module.exports = {
   writePreventionRules,
   feedbackSummary,
   readJSONL,
+  appendDiagnosticRecord,
+  readDiagnosticEntries,
   getFeedbackPaths,
   inferDomain,
   inferOutcome,
@@ -1086,6 +1215,9 @@ module.exports = {
   getPendingBackgroundSideEffectCount,
   get FEEDBACK_LOG_PATH() {
     return getFeedbackPaths().FEEDBACK_LOG_PATH;
+  },
+  get DIAGNOSTIC_LOG_PATH() {
+    return getFeedbackPaths().DIAGNOSTIC_LOG_PATH;
   },
   get MEMORY_LOG_PATH() {
     return getFeedbackPaths().MEMORY_LOG_PATH;

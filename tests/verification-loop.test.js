@@ -178,6 +178,14 @@ describe('verification-loop', () => {
     assert.equal(result.accepted, false);
     assert.equal(result.attempts, 2);
     assert.equal(result.thompsonUpdate.signal, 'negative');
+    assert.equal(result.finalVerification.diagnosis.rootCauseCategory, 'tool_output_misread');
+    assert.equal(result.history[0].criticalFailureStep, 'verification');
+    assert.equal(result.persistedDiagnosis.diagnosis.rootCauseCategory, 'tool_output_misread');
+
+    const diagnosticLog = path.join(tmpDir, 'diagnostic-log.jsonl');
+    const entries = fs.readFileSync(diagnosticLog, 'utf-8').trim().split('\n').map((line) => JSON.parse(line));
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].source, 'verification_loop');
   });
 
   it('runVerificationLoop updates Thompson model on disk', () => {

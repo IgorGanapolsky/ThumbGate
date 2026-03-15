@@ -29,8 +29,8 @@ test('automation proof: zero failures', () => {
   assert.equal(report.summary.failed, 0);
 });
 
-test('automation proof: at least 16 checks pass', () => {
-  assert.ok(report.summary.passed >= 16, `expected >= 16 passed, got ${report.summary.passed}`);
+test('automation proof: at least 18 checks pass', () => {
+  assert.ok(report.summary.passed >= 18, `expected >= 18 passed, got ${report.summary.passed}`);
 });
 
 test('automation proof: report.json written', () => {
@@ -47,10 +47,12 @@ const requiredChecks = [
   'feedback.capture.rubric_block',
   'feedback.capture.negative_with_rubric',
   'analytics.rubric_tracking',
+  'verification.failure_diagnostics',
   'prevention_rules.rubric_dimensions',
   'dpo_export.rubric_metadata',
   'api.rubric_gate',
   'mcp.rubric_gate',
+  'mcp.failure_diagnostics',
   'intent.checkpoint_enforcement',
   'intent.partner_strategy',
   'intent.codegraph_impact',
@@ -97,6 +99,12 @@ test('automation proof: analytics tracks rubric samples >= 3', () => {
   assert.ok(check.details.samples >= 3);
 });
 
+test('automation proof: failed verification includes diagnosis', () => {
+  const check = getCheck('verification.failure_diagnostics');
+  assert.equal(check.details.rootCauseCategory, 'tool_output_misread');
+  assert.equal(check.details.criticalFailureStep, 'verification');
+});
+
 test('automation proof: DPO rubric metadata present', () => {
   const check = getCheck('dpo_export.rubric_metadata');
   assert.ok(check.details);
@@ -110,6 +118,12 @@ test('automation proof: API rubric gate returns 422', () => {
 test('automation proof: MCP rubric gate rejects', () => {
   const check = getCheck('mcp.rubric_gate');
   assert.equal(check.details.accepted, false);
+});
+
+test('automation proof: MCP failure diagnostics compiles constraints', () => {
+  const check = getCheck('mcp.failure_diagnostics');
+  assert.equal(check.details.rootCauseCategory, 'intent_plan_misalignment');
+  assert.ok(check.details.toolSchemaCount >= 1);
 });
 
 test('automation proof: intent checkpoint enforced', () => {

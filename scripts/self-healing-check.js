@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
+const { diagnoseFailure } = require('./failure-diagnostics');
+const { appendDiagnosticRecord } = require('./feedback-loop');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 
@@ -32,10 +34,41 @@ function runCommand(command, { cwd = PROJECT_ROOT, timeoutMs = 5 * 60_000 } = {}
   };
 }
 
-function collectHealthReport({ checks = DEFAULT_CHECKS, runner = runCommand, cwd = PROJECT_ROOT } = {}) {
+function collectHealthReport({
+  checks = DEFAULT_CHECKS,
+  runner = runCommand,
+  cwd = PROJECT_ROOT,
+  persistDiagnostics = false,
+} = {}) {
   const startedAt = new Date();
   const results = checks.map((check) => {
     const run = runner(check.command, { cwd, timeoutMs: check.timeoutMs });
+    const diagnosis = run.exitCode === 0
+      ? null
+      : diagnoseFailure({
+        step: check.name,
+        context: check.command.join(' '),
+        healthCheck: {
+          name: check.name,
+          exitCode: run.exitCode,
+          status: 'unhealthy',
+          outputTail: `${run.stdout}\n${run.stderr}`.trim().slice(-2000),
+        },
+        exitCode: run.exitCode,
+        error: run.error,
+        output: `${run.stdout}\n${run.stderr}`.trim(),
+      });
+    const persistedDiagnosis = persistDiagnostics && diagnosis
+      ? appendDiagnosticRecord({
+        source: 'self_heal_check',
+        step: check.name,
+        context: check.command.join(' '),
+        diagnosis,
+        metadata: {
+          command: check.command.join(' '),
+        },
+      })
+      : null;
     return {
       name: check.name,
       command: check.command.join(' '),
@@ -44,6 +77,8 @@ function collectHealthReport({ checks = DEFAULT_CHECKS, runner = runCommand, cwd
       durationMs: run.durationMs,
       error: run.error,
       outputTail: `${run.stdout}\n${run.stderr}`.trim().slice(-2000),
+      diagnosis,
+      persistedDiagnosis,
     };
   });
 
@@ -76,6 +111,9 @@ function reportToText(report) {
     if (check.status !== 'healthy') {
       lines.push(`   command: ${check.command}`);
       if (check.error) lines.push(`   error: ${check.error}`);
+      if (check.diagnosis && check.diagnosis.rootCauseCategory) {
+        lines.push(`   diagnosis: ${check.diagnosis.rootCauseCategory}`);
+      }
     }
   });
 
@@ -86,7 +124,7 @@ function runCli() {
   const args = new Set(process.argv.slice(2));
   const emitJson = args.has('--json');
   const noFail = args.has('--no-fail');
-  const report = collectHealthReport();
+  const report = collectHealthReport({ persistDiagnostics: true });
 
   if (emitJson) {
     console.log(JSON.stringify(report, null, 2));

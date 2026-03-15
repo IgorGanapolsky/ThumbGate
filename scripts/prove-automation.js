@@ -18,6 +18,7 @@ const { collectHealthReport } = require('./self-healing-check');
 const { runSelfHeal } = require('./self-heal');
 const { CONTEXTFS_ROOT, NAMESPACES } = require('./contextfs');
 const { traceForProofCheck, aggregateTraces } = require('./code-reasoning');
+const { runVerificationLoop } = require('./verification-loop');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_PROOF_DIR = path.join(ROOT, 'proof', 'automation');
@@ -164,18 +165,45 @@ async function runAutomationProof(options = {}) {
       const stats = analyzeFeedback(FEEDBACK_LOG_PATH);
       check(stats.rubric.samples >= 3, 'expected rubric samples to be tracked');
       check(stats.rubric.blockedPromotions >= 1, 'expected blocked rubric promotions to be tracked');
+      check(stats.diagnostics.totalDiagnosed >= 2, 'expected diagnostic counts for failed/suspect feedback');
       addResult('analytics.rubric_tracking', true, stats.rubric);
     }
 
-    // 5) prevention rules include rubric dimensions
+    // 5) failed verification emits structured diagnosis and critical step
+    {
+      currentCheck = 'verification.failure_diagnostics';
+      const { MEMORY_LOG_PATH } = getFeedbackPaths();
+      fs.appendFileSync(MEMORY_LOG_PATH, `${JSON.stringify({
+        id: 'mem_verification_failure',
+        category: 'error',
+        title: 'MISTAKE: agent claimed done without running tests',
+        content: 'How to avoid: Run npm test before claiming completion',
+      })}\n`);
+      const verification = runVerificationLoop({
+        context: 'Agent claimed done without running tests or verification',
+        tags: ['verification', 'testing'],
+        maxRetries: 0,
+        modelPath: path.join(tmpFeedbackDir, 'verification-model.json'),
+      });
+      check(verification.accepted === false, 'expected failed verification for unverified completion claim');
+      check(Boolean(verification.finalVerification && verification.finalVerification.diagnosis), 'failed verification should include diagnosis');
+      check(verification.finalVerification.diagnosis.rootCauseCategory === 'tool_output_misread', 'verification diagnosis should classify output misread');
+      addResult('verification.failure_diagnostics', true, {
+        rootCauseCategory: verification.finalVerification.diagnosis.rootCauseCategory,
+        criticalFailureStep: verification.finalVerification.diagnosis.criticalFailureStep,
+      });
+    }
+
+    // 6) prevention rules include rubric dimensions and root causes
     {
       const markdown = buildPreventionRules(1);
       check(markdown.includes('Rubric Failure Dimensions'), 'expected rubric section in prevention rules');
       check(markdown.includes('verification_evidence'), 'expected criterion in prevention rules');
+      check(markdown.includes('Root Cause Categories'), 'expected diagnosis section in prevention rules');
       addResult('prevention_rules.rubric_dimensions', true, { hasRubricSection: true });
     }
 
-    // 6) DPO export includes rubric delta metadata
+    // 7) DPO export includes rubric delta metadata
     {
       const { MEMORY_LOG_PATH } = getFeedbackPaths();
       const memories = readJSONL(MEMORY_LOG_PATH);
@@ -186,7 +214,7 @@ async function runAutomationProof(options = {}) {
       addResult('dpo_export.rubric_metadata', true, first.metadata.rubric);
     }
 
-    // 7) API rubric gate returns 422
+    // 8) API rubric gate returns 422
     {
       currentCheck = 'api.rubric_gate';
       const res = await fetchWithRetry(`${baseUrl}/v1/feedback/capture`, {
@@ -213,7 +241,7 @@ async function runAutomationProof(options = {}) {
       addResult('api.rubric_gate', true, { status: res.status });
     }
 
-    // 8) MCP rubric gate returns accepted=false
+    // 9) MCP rubric gate returns accepted=false
     {
       currentCheck = 'mcp.rubric_gate';
       const call = await handleRequest({
@@ -239,7 +267,35 @@ async function runAutomationProof(options = {}) {
       addResult('mcp.rubric_gate', true, { accepted: payload.accepted });
     }
 
-    // 9) intent checkpoints still enforced
+    // 10) MCP failure diagnostics compile schema and approval constraints
+    {
+      currentCheck = 'mcp.failure_diagnostics';
+      const call = await handleRequest({
+        jsonrpc: '2.0',
+        id: 92,
+        method: 'tools/call',
+        params: {
+          name: 'diagnose_failure',
+          arguments: {
+            step: 'capture_feedback',
+            context: 'Attempted to approve publish flow without required approval',
+            toolName: 'capture_feedback',
+            toolArgs: {},
+            intentId: 'publish_dpo_training_data',
+            mcpProfile: 'default',
+          },
+        },
+      });
+      const payload = JSON.parse(call.content[0].text);
+      check(payload.rootCauseCategory === 'intent_plan_misalignment', 'diagnose_failure should classify approval mismatch');
+      check(payload.compiledConstraints.summary.toolSchemaCount >= 1, 'diagnose_failure should include MCP schema constraints');
+      addResult('mcp.failure_diagnostics', true, {
+        rootCauseCategory: payload.rootCauseCategory,
+        toolSchemaCount: payload.compiledConstraints.summary.toolSchemaCount,
+      });
+    }
+
+    // 11) intent checkpoints still enforced
     {
       currentCheck = 'intent.checkpoint_enforcement';
       const planBlocked = planIntent({
@@ -261,7 +317,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 10) partner-aware planning returns execution strategy
+    // 12) partner-aware planning returns execution strategy
     {
       currentCheck = 'intent.partner_strategy';
       const partnerPlan = planIntent({
@@ -281,7 +337,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 11) coding workflows include structural impact evidence and dead-code checks
+    // 13) coding workflows include structural impact evidence and dead-code checks
     {
       currentCheck = 'intent.codegraph_impact';
       const plan = planIntent({
@@ -303,7 +359,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 12) context evaluate stores rubric evaluation
+    // 14) context evaluate stores rubric evaluation
     {
       currentCheck = 'context.evaluate.construct';
       const construct = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
@@ -341,7 +397,7 @@ async function runAutomationProof(options = {}) {
       addResult('context.evaluate.rubric', true, { rubricId: evalBody.rubricEvaluation.rubricId });
     }
 
-    // 13) semantic cache hit on equivalent query
+    // 15) semantic cache hit on equivalent query
     {
       currentCheck = 'context.semantic_cache.hit.first';
       fs.rmSync(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'semantic-cache.jsonl'), { force: true });
@@ -376,7 +432,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 14) self-healing helpers produce healthy reports in baseline state
+    // 16) self-healing helpers produce healthy reports in baseline state
     {
       const health = collectHealthReport({
         checks: [
@@ -384,6 +440,12 @@ async function runAutomationProof(options = {}) {
         ],
       });
       check(health.overall_status === 'healthy', 'health report expected healthy for noop check');
+      const unhealthy = collectHealthReport({
+        checks: [
+          { name: 'explode', command: ['node', '-e', 'process.exit(2)'] },
+        ],
+      });
+      check(unhealthy.checks[0].diagnosis.rootCauseCategory === 'system_failure', 'unhealthy self-heal check should include system_failure diagnosis');
 
       const heal = runSelfHeal({ reason: 'automation-proof', cwd: ROOT });
       check(heal.healthy === true, 'self-heal expected healthy execution');
@@ -396,7 +458,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 15) code reasoning traces verify DPO pair quality
+    // 17) code reasoning traces verify DPO pair quality
     {
       const { MEMORY_LOG_PATH } = getFeedbackPaths();
       const memories = readJSONL(MEMORY_LOG_PATH);
@@ -417,7 +479,7 @@ async function runAutomationProof(options = {}) {
       }
     }
 
-    // 16) code reasoning traces attached to proof checks
+    // 18) code reasoning traces attached to proof checks
     {
       const proofTraces = report.checks.map((chk) => traceForProofCheck(chk));
       const aggregate = aggregateTraces(proofTraces);

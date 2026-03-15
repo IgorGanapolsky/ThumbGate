@@ -1,12 +1,19 @@
 'use strict';
 
 const path = require('path');
-const { readJSONL, getFeedbackPaths } = require('./feedback-loop');
+const {
+  readJSONL,
+  getFeedbackPaths,
+  appendDiagnosticRecord,
+} = require('./feedback-loop');
 const {
   buildPartnerStrategy,
   computePartnerReward,
   resolveVerificationRetries,
 } = require('./partner-orchestration');
+const {
+  diagnoseFailure,
+} = require('./failure-diagnostics');
 
 const MAX_RETRIES = 3;
 const DEFAULT_MODEL_PATH = path.join(__dirname, '..', '.rlhf', 'verification-model.json');
@@ -101,12 +108,24 @@ function runVerificationLoop(params) {
       tags,
       skill: params.skill,
     });
+    const diagnosis = verification.passed
+      ? null
+      : diagnoseFailure({
+        step: 'verification',
+        context: currentContext,
+        verification,
+        intentPlan: params.intentPlan || null,
+        toolName: params.toolName || null,
+        toolArgs: params.toolArgs || null,
+      });
 
     history.push({
       attempt,
       passed: verification.passed,
       violationCount: verification.violations.length,
       score: verification.score,
+      rootCauseCategory: diagnosis ? diagnosis.rootCauseCategory : null,
+      criticalFailureStep: diagnosis ? diagnosis.criticalFailureStep : null,
       timestamp: new Date().toISOString(),
     });
 
@@ -116,7 +135,10 @@ function runVerificationLoop(params) {
       break;
     }
 
-    finalVerification = verification;
+    finalVerification = {
+      ...verification,
+      diagnosis,
+    };
 
     if (attempt > maxRetries) break;
 
@@ -156,6 +178,19 @@ function runVerificationLoop(params) {
     weightMultiplier: partnerReward.weightMultiplier,
     reliability: ts.getReliability(model),
   };
+  const persistedDiagnosis = finalVerification && finalVerification.diagnosis
+    ? appendDiagnosticRecord({
+      source: 'verification_loop',
+      step: finalVerification.diagnosis.criticalFailureStep || 'verification',
+      context: currentContext,
+      diagnosis: finalVerification.diagnosis,
+      metadata: {
+        tags,
+        skill: params.skill || null,
+        partnerProfile: partnerStrategy.profile,
+      },
+    })
+    : null;
 
   return {
     accepted,
@@ -167,6 +202,7 @@ function runVerificationLoop(params) {
     partnerStrategy,
     partnerReward,
     thompsonUpdate,
+    persistedDiagnosis,
   };
 }
 

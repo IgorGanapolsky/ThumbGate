@@ -139,6 +139,54 @@ test('plan_intent exposes partner-aware strategy over MCP', async () => {
   assert.ok(Array.isArray(plan.actionScores));
 });
 
+test('diagnose_failure exposes compiled constraints and root cause over MCP', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 251,
+    method: 'tools/call',
+    params: {
+      name: 'diagnose_failure',
+      arguments: {
+        step: 'capture_feedback',
+        context: 'Attempted to approve publish flow without required approval',
+        toolName: 'capture_feedback',
+        toolArgs: {},
+        intentId: 'publish_dpo_training_data',
+        mcpProfile: 'default',
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.rootCauseCategory, 'intent_plan_misalignment');
+  assert.ok(payload.compiledConstraints.summary.toolSchemaCount >= 1);
+});
+
+test('diagnose_failure honors MCP profile allowlists', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 252,
+    method: 'tools/call',
+    params: {
+      name: 'diagnose_failure',
+      arguments: {
+        step: 'capture_feedback',
+        context: 'Attempted write tool from locked profile',
+        toolName: 'capture_feedback',
+        toolArgs: {
+          signal: 'down',
+        },
+        mcpProfile: 'locked',
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.rootCauseCategory, 'invalid_invocation');
+  assert.ok(payload.violations.some((violation) => violation.source === 'mcp_policy'));
+  assert.ok(payload.compiledConstraints.summary.toolSchemaCount < TOOLS.length);
+});
+
 test('plan_intent includes codegraph impact for coding workflows', async () => {
   const previous = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
   process.env.RLHF_CODEGRAPH_STUB_RESPONSE = JSON.stringify({

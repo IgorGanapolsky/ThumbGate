@@ -6,6 +6,7 @@
       "capture_feedback",
       "feedback_summary",
       "feedback_stats",
+      "diagnose_failure",
       "list_intents",
       "plan_intent",
       "prevention_rules",
@@ -38,6 +39,7 @@
       "recall",
       "feedback_summary",
       "feedback_stats",
+      "diagnose_failure",
       "list_intents",
       "plan_intent",
       "context_provenance",
@@ -46,6 +48,7 @@
     ],
     "locked": [
       "feedback_summary",
+      "diagnose_failure",
       "list_intents",
       "plan_intent"
     ]

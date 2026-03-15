@@ -29,8 +29,8 @@ test('adapter proof: zero failures', () => {
   assert.equal(report.summary.failed, 0);
 });
 
-test('adapter proof: at least 27 checks pass', () => {
-  assert.ok(report.summary.passed >= 27, `expected >= 27 passed, got ${report.summary.passed}`);
+test('adapter proof: at least 28 checks pass', () => {
+  assert.ok(report.summary.passed >= 28, `expected >= 28 passed, got ${report.summary.passed}`);
 });
 
 test('adapter proof: report.json written', () => {
@@ -59,6 +59,7 @@ const requiredChecks = [
   'mcp.cli.serve.bad_home.initialize',
   'mcp.tools.list',
   'mcp.tools.call.feedback_summary',
+  'mcp.tools.call.diagnose_failure',
   'mcp.tools.call.plan_intent',
   'mcp.tools.call.plan_intent.codegraph',
   'mcp.tools.call.recall.codegraph',
@@ -108,6 +109,12 @@ test('adapter proof: vague API feedback requires clarification', () => {
 test('adapter proof: vague MCP feedback requires clarification', () => {
   const check = getCheck('mcp.tools.call.capture_feedback.clarification');
   assert.equal(check.details.status, 'clarification_required');
+});
+
+test('adapter proof: MCP diagnose_failure returns compiled constraints', () => {
+  const check = getCheck('mcp.tools.call.diagnose_failure');
+  assert.equal(check.details.rootCauseCategory, 'intent_plan_misalignment');
+  assert.ok(check.details.toolSchemaCount >= 1);
 });
 
 test('adapter proof: API intent plan includes codegraph evidence', () => {

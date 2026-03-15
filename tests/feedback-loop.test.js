@@ -12,6 +12,7 @@ const {
   analyzeFeedback,
   buildPreventionRules,
   feedbackSummary,
+  appendDiagnosticRecord,
   getPendingBackgroundSideEffectCount,
   readJSONL,
   getFeedbackPaths,
@@ -87,6 +88,8 @@ test('captureFeedback: valid negative feedback returns accepted=true', (t) => {
     tags: ['verification', 'testing'],
   });
   assert.strictEqual(result.accepted, true);
+  assert.equal(result.feedbackEvent.diagnosis.rootCauseCategory, 'tool_output_misread');
+  assert.equal(result.memoryRecord.diagnosis.rootCauseCategory, 'tool_output_misread');
 });
 
 test('captureFeedback: valid positive feedback returns accepted=true', (t) => {
@@ -118,6 +121,7 @@ test('captureFeedback: rejects vague negative (no context/whatWentWrong/whatToCh
   assert.strictEqual(result.accepted, false);
   assert.strictEqual(result.needsClarification, true);
   assert.match(result.prompt, /What failed and what should change next time/i);
+  assert.equal(result.feedbackEvent.diagnosis, undefined);
 });
 
 test('captureFeedback: rejects generic positive context and requests clarification', (t) => {
@@ -160,6 +164,7 @@ test('analyzeFeedback: returns correct counts on populated log', (t) => {
   assert.strictEqual(stats.totalPositive, 2);
   assert.strictEqual(stats.totalNegative, 1);
   assert.strictEqual(stats.tags.testing.total, 3);
+  assert.equal(stats.diagnostics.totalDiagnosed, 0);
 });
 
 // -- buildPreventionRules --
@@ -175,6 +180,43 @@ test('buildPreventionRules: returns markdown string with header', (t) => {
   const rules = buildPreventionRules();
   assert.strictEqual(typeof rules, 'string');
   assert.ok(rules.includes('# Prevention Rules'), 'should contain header');
+});
+
+test('buildPreventionRules: includes diagnostic sections for repeated root causes', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  captureFeedback({
+    signal: 'down',
+    context: 'Approved without proof and triggered rubric gate',
+    whatWentWrong: 'Missing verification evidence',
+    whatToChange: 'Always include proof',
+    tags: ['verification'],
+    rubricScores: [
+      { criterion: 'verification_evidence', score: 1, evidence: 'no logs', judge: 'judge-a' },
+    ],
+    guardrails: { testsPassed: false, pathSafety: true, budgetCompliant: true },
+  });
+  captureFeedback({
+    signal: 'down',
+    context: 'Approved without proof and triggered rubric gate again',
+    whatWentWrong: 'Missing verification evidence',
+    whatToChange: 'Always include proof',
+    tags: ['verification'],
+    rubricScores: [
+      { criterion: 'verification_evidence', score: 1, evidence: 'no logs', judge: 'judge-a' },
+    ],
+    guardrails: { testsPassed: false, pathSafety: true, budgetCompliant: true },
+  });
+
+  const rules = buildPreventionRules(2);
+  assert.match(rules, /Root Cause Categories/);
+  assert.match(rules, /guardrail_triggered/);
+  assert.match(rules, /Repeated Failure Constraints/);
 });
 
 // -- feedbackSummary --
@@ -253,9 +295,40 @@ test('analyzeFeedback: includes boosted risk summary after sequence training row
   const analysis = analyzeFeedback();
   assert.ok(analysis.boostedRisk, 'expected boostedRisk summary');
   assert.ok(analysis.boostedRisk.exampleCount >= 6, `expected >= 6 examples, got ${analysis.boostedRisk.exampleCount}`);
+  assert.ok(analysis.diagnostics.totalDiagnosed >= 2, 'expected diagnosis aggregation');
 
   const summary = feedbackSummary();
   assert.ok(summary.includes('Boosted risk'), `expected boosted risk line in summary, got: ${summary}`);
+});
+
+test('analyzeFeedback and prevention rules include persisted diagnostic records outside feedback capture', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  appendDiagnosticRecord({
+    source: 'verification_loop',
+    step: 'verification',
+    context: 'claimed done without tests',
+    diagnosis: {
+      diagnosed: true,
+      rootCauseCategory: 'tool_output_misread',
+      criticalFailureStep: 'verification',
+      violations: [{ constraintId: 'workflow:proof_commands' }],
+      evidence: [],
+    },
+  });
+
+  const analysis = analyzeFeedback();
+  assert.equal(analysis.diagnostics.totalDiagnosed, 1);
+
+  const rules = buildPreventionRules(1);
+  assert.match(rules, /Root Cause Categories/);
+  assert.match(rules, /tool_output_misread: 1 failures/);
+  assert.match(rules, /workflow:proof_commands: 1 failures/);
 });
 
 test('captureFeedback: waitForBackgroundSideEffects drains deferred vector writes', async (t) => {
