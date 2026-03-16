@@ -27,7 +27,7 @@ jobs:
       RLHF_API_KEY: ${{ secrets.RLHF_API_KEY }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -99,7 +99,7 @@ jobs:
       STRIPE_WEBHOOK_SECRET_ROTATED_AT: ${{ vars.STRIPE_WEBHOOK_SECRET_ROTATED_AT }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Check Railway deployment configuration
         id: railway-config

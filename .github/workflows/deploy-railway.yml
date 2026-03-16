@@ -24,7 +24,7 @@ jobs:
       STRIPE_SECRET_KEY_ROTATED_AT: ${{ vars.STRIPE_SECRET_KEY_ROTATED_AT }}
       STRIPE_WEBHOOK_SECRET_ROTATED_AT: ${{ vars.STRIPE_WEBHOOK_SECRET_ROTATED_AT }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 20
