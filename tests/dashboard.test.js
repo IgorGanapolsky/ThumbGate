@@ -54,6 +54,7 @@ test('generateDashboard handles empty state (no files)', () => {
   assert.equal(data.health.feedbackCount, 0);
   assert.equal(data.health.memoryCount, 0);
   assert.equal(data.diagnostics.totalDiagnosed, 0);
+  assert.equal(data.secretGuard.blocked, 0);
 });
 
 // ---------------------------------------------------------------------------
@@ -151,6 +152,7 @@ test('generateDashboard returns complete structure with data', () => {
   assert.ok(data.trend);
   assert.ok(data.health);
   assert.ok(data.diagnostics);
+  assert.ok(data.secretGuard);
 
   // Values
   assert.equal(data.approval.total, 30);
@@ -160,6 +162,7 @@ test('generateDashboard returns complete structure with data', () => {
   assert.equal(data.health.memoryCount, 2);
   assert.equal(data.diagnostics.totalDiagnosed, 10);
   assert.equal(data.diagnostics.categories[0].key, 'tool_output_misread');
+  assert.equal(data.secretGuard.blocked, 0);
 });
 
 test('generateDashboard aggregates persisted diagnostics beyond feedback capture', () => {
@@ -180,6 +183,29 @@ test('generateDashboard aggregates persisted diagnostics beyond feedback capture
   const data = generateDashboard(tmpDir);
   assert.equal(data.diagnostics.totalDiagnosed, 1);
   assert.equal(data.diagnostics.categories[0].key, 'intent_plan_misalignment');
+});
+
+test('generateDashboard reports secret guard violations separately', () => {
+  writeFeedbackLog([
+    { signal: 'positive', timestamp: new Date().toISOString() },
+  ]);
+  writeDiagnosticLog([
+    {
+      source: 'secret_guard',
+      step: 'pre_tool_use',
+      timestamp: new Date().toISOString(),
+      diagnosis: {
+        rootCauseCategory: 'guardrail_triggered',
+        criticalFailureStep: 'pre_tool_use',
+        violations: [{ constraintId: 'security:stripe_live_secret' }],
+      },
+    },
+  ]);
+
+  const data = generateDashboard(tmpDir);
+  assert.equal(data.secretGuard.blocked, 1);
+  assert.equal(data.secretGuard.topConstraint.key, 'security:stripe_live_secret');
+  assert.equal(data.secretGuard.recent[0].step, 'pre_tool_use');
 });
 
 // ---------------------------------------------------------------------------

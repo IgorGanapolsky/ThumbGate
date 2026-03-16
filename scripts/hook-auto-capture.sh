@@ -6,11 +6,20 @@
 PROMPT="$CLAUDE_USER_PROMPT"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CAPTURE="$SCRIPT_DIR/../.claude/scripts/feedback/capture-feedback.js"
+PROMPT_GUARD="$SCRIPT_DIR/prompt-guard.js"
 FEEDBACK_LOG="$SCRIPT_DIR/../.claude/memory/feedback/feedback-log.jsonl"
 MEMORY_LOG="$SCRIPT_DIR/../.claude/memory/feedback/memory-log.jsonl"
 
 # Normalize to lowercase for matching
 LOWER=$(echo "$PROMPT" | tr '[:upper:]' '[:lower:]')
+
+if [ -f "$PROMPT_GUARD" ]; then
+  GUARD_RESULT=$(node "$PROMPT_GUARD" 2>/dev/null || true)
+  if [ -n "$GUARD_RESULT" ]; then
+    echo "$GUARD_RESULT"
+    exit 0
+  fi
+fi
 
 capture_and_report() {
   local SIGNAL="$1"

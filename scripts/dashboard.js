@@ -191,6 +191,43 @@ function computeSystemHealth(feedbackDir, gateStats) {
   };
 }
 
+function computeSecretGuardStats(diagnosticEntries) {
+  const secretEntries = diagnosticEntries.filter((entry) => {
+    if (entry.source === 'secret_guard') return true;
+    const violations = entry.diagnosis && Array.isArray(entry.diagnosis.violations)
+      ? entry.diagnosis.violations
+      : [];
+    return violations.some((violation) => String(violation.constraintId || '').startsWith('security:'));
+  });
+
+  const byConstraint = {};
+  for (const entry of secretEntries) {
+    const violations = entry.diagnosis && Array.isArray(entry.diagnosis.violations)
+      ? entry.diagnosis.violations
+      : [];
+    for (const violation of violations) {
+      const key = String(violation.constraintId || 'security:unknown');
+      byConstraint[key] = (byConstraint[key] || 0) + 1;
+    }
+  }
+
+  const topConstraint = Object.entries(byConstraint)
+    .sort((a, b) => b[1] - a[1])[0] || null;
+
+  return {
+    blocked: secretEntries.length,
+    topConstraint: topConstraint ? { key: topConstraint[0], count: topConstraint[1] } : null,
+    recent: secretEntries
+      .slice(-5)
+      .reverse()
+      .map((entry) => ({
+        step: entry.step || null,
+        source: entry.source || null,
+        timestamp: entry.timestamp || null,
+      })),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Full dashboard data
 // ---------------------------------------------------------------------------
@@ -207,6 +244,7 @@ function generateDashboard(feedbackDir) {
   const trend = computeSessionTrend(entries, 10);
   const health = computeSystemHealth(feedbackDir, gateStats);
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
+  const secretGuard = computeSecretGuardStats(diagnosticEntries);
 
   return {
     approval,
@@ -215,6 +253,7 @@ function generateDashboard(feedbackDir) {
     trend,
     health,
     diagnostics,
+    secretGuard,
   };
 }
 
@@ -230,6 +269,7 @@ function printDashboard(data) {
     trend,
     health,
     diagnostics,
+    secretGuard,
   } = data;
 
   const trendArrow = approval.trendDirection === 'improving' ? '\u2191'
@@ -257,6 +297,13 @@ function printDashboard(data) {
   console.log(`  Rules Active     : ${prevention.ruleCount} prevention rules`);
   if (prevention.lastPromotion) {
     console.log(`  Last Promotion   : ${prevention.lastPromotion.id} (${prevention.lastPromotion.daysAgo} days ago)`);
+  }
+
+  console.log('');
+  console.log('\uD83D\uDD10 Secret Guard');
+  console.log(`  Blocks Recorded  : ${secretGuard.blocked}`);
+  if (secretGuard.topConstraint) {
+    console.log(`  Top Constraint   : ${secretGuard.topConstraint.key} (${secretGuard.topConstraint.count}\u00D7)`);
   }
 
   console.log('');
@@ -293,6 +340,7 @@ module.exports = {
   computePreventionImpact,
   computeSessionTrend,
   computeSystemHealth,
+  computeSecretGuardStats,
   readJSONL,
   readJsonFile,
 };

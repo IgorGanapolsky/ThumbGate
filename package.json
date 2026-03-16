@@ -54,7 +54,7 @@
     "test:cli": "node --test tests/cli.test.js tests/feedback-normalize.test.js tests/install-mcp.test.js",
     "test:watcher": "node --test tests/jsonl-watcher.test.js",
     "test:autoresearch": "node --test tests/autoresearch.test.js",
-    "test:gates": "node --test tests/gates-engine.test.js",
+    "test:gates": "node --test tests/gates-engine.test.js tests/secret-scanner.test.js tests/prompt-guard.test.js",
     "test:workers": "npm --prefix workers test",
     "test:evoskill": "node --test tests/evoskill.test.js",
     "test:gates-hardening": "node --test tests/gates-hardening.test.js",

@@ -52,6 +52,8 @@ const requiredChecks = [
   'dpo_export.rubric_metadata',
   'api.rubric_gate',
   'mcp.rubric_gate',
+  'secret_guard.read_block',
+  'secret_guard.prompt_block',
   'mcp.failure_diagnostics',
   'intent.checkpoint_enforcement',
   'intent.partner_strategy',
@@ -118,6 +120,18 @@ test('automation proof: API rubric gate returns 422', () => {
 test('automation proof: MCP rubric gate rejects', () => {
   const check = getCheck('mcp.rubric_gate');
   assert.equal(check.details.accepted, false);
+});
+
+test('automation proof: secret guard blocks file reads', () => {
+  const check = getCheck('secret_guard.read_block');
+  assert.equal(check.details.decision, 'deny');
+  assert.match(check.details.reason, /secret material/i);
+});
+
+test('automation proof: prompt guard blocks secret-bearing prompts', () => {
+  const check = getCheck('secret_guard.prompt_block');
+  assert.equal(check.details.continue, false);
+  assert.match(check.details.stopReason, /secret material/i);
 });
 
 test('automation proof: MCP failure diagnostics compiles constraints', () => {

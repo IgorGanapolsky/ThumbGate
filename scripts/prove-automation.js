@@ -19,6 +19,8 @@ const { runSelfHeal } = require('./self-heal');
 const { CONTEXTFS_ROOT, NAMESPACES } = require('./contextfs');
 const { traceForProofCheck, aggregateTraces } = require('./code-reasoning');
 const { runVerificationLoop } = require('./verification-loop');
+const { run: runGateCheck } = require('./gates-engine');
+const { evaluatePromptGuard } = require('./prompt-guard');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_PROOF_DIR = path.join(ROOT, 'proof', 'automation');
@@ -267,7 +269,37 @@ async function runAutomationProof(options = {}) {
       addResult('mcp.rubric_gate', true, { accepted: payload.accepted });
     }
 
-    // 10) MCP failure diagnostics compile schema and approval constraints
+    // 10) PreToolUse blocks reads of secret-bearing files
+    {
+      currentCheck = 'secret_guard.read_block';
+      const secretPath = path.join(tmpFeedbackDir, '.env');
+      const stripeKey = ['sk', '_live_', '1234567890abcdefghijklmnopqrstuvwxyz'].join('');
+      fs.writeFileSync(secretPath, `STRIPE_SECRET_KEY=${stripeKey}\n`);
+      const gateOutput = JSON.parse(runGateCheck({
+        tool_name: 'Read',
+        tool_input: { file_path: secretPath },
+        cwd: tmpFeedbackDir,
+      }));
+      check(gateOutput.hookSpecificOutput.permissionDecision === 'deny', 'expected secret file read to be blocked');
+      addResult('secret_guard.read_block', true, {
+        decision: gateOutput.hookSpecificOutput.permissionDecision,
+        reason: gateOutput.hookSpecificOutput.permissionDecisionReason,
+      });
+    }
+
+    // 11) UserPromptSubmit blocks prompts with inline secrets
+    {
+      currentCheck = 'secret_guard.prompt_block';
+      const gitHubPat = ['gh', 'p_', 'abcdefghijklmnopqrstuvwxyz1234'].join('');
+      const result = evaluatePromptGuard(`Ship this token to support: ${gitHubPat}`);
+      check(result && result.continue === false, 'expected prompt guard to block secret-bearing prompt');
+      addResult('secret_guard.prompt_block', true, {
+        continue: result.continue,
+        stopReason: result.stopReason,
+      });
+    }
+
+    // 12) MCP failure diagnostics compile schema and approval constraints
     {
       currentCheck = 'mcp.failure_diagnostics';
       const call = await handleRequest({
@@ -295,7 +327,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 11) intent checkpoints still enforced
+    // 13) intent checkpoints still enforced
     {
       currentCheck = 'intent.checkpoint_enforcement';
       const planBlocked = planIntent({
@@ -317,7 +349,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 12) partner-aware planning returns execution strategy
+    // 14) partner-aware planning returns execution strategy
     {
       currentCheck = 'intent.partner_strategy';
       const partnerPlan = planIntent({
@@ -337,7 +369,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 13) coding workflows include structural impact evidence and dead-code checks
+    // 15) coding workflows include structural impact evidence and dead-code checks
     {
       currentCheck = 'intent.codegraph_impact';
       const plan = planIntent({
@@ -359,7 +391,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 14) context evaluate stores rubric evaluation
+    // 16) context evaluate stores rubric evaluation
     {
       currentCheck = 'context.evaluate.construct';
       const construct = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
@@ -397,7 +429,7 @@ async function runAutomationProof(options = {}) {
       addResult('context.evaluate.rubric', true, { rubricId: evalBody.rubricEvaluation.rubricId });
     }
 
-    // 15) semantic cache hit on equivalent query
+    // 17) semantic cache hit on equivalent query
     {
       currentCheck = 'context.semantic_cache.hit.first';
       fs.rmSync(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'semantic-cache.jsonl'), { force: true });
@@ -432,7 +464,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 16) self-healing helpers produce healthy reports in baseline state
+    // 18) self-healing helpers produce healthy reports in baseline state
     {
       const health = collectHealthReport({
         checks: [
@@ -458,7 +490,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 17) code reasoning traces verify DPO pair quality
+    // 19) code reasoning traces verify DPO pair quality
     {
       const { MEMORY_LOG_PATH } = getFeedbackPaths();
       const memories = readJSONL(MEMORY_LOG_PATH);
@@ -479,7 +511,7 @@ async function runAutomationProof(options = {}) {
       }
     }
 
-    // 18) code reasoning traces attached to proof checks
+    // 20) code reasoning traces attached to proof checks
     {
       const proofTraces = report.checks.map((chk) => traceForProofCheck(chk));
       const aggregate = aggregateTraces(proofTraces);

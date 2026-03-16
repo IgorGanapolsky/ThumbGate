@@ -28,6 +28,10 @@ function preToolHookCommand() {
   return 'bash scripts/generate-pretool-hook.sh';
 }
 
+function userPromptHookCommand() {
+  return 'bash scripts/hook-auto-capture.sh';
+}
+
 function sessionStartHookCommand() {
   return 'bash scripts/rlhf_session_start.sh';
 }
@@ -36,6 +40,9 @@ const CLAUDE_HOOKS = {
   PreToolUse: {
     matcher: 'Bash',
     hooks: [{ type: 'command', command: preToolHookCommand() }],
+  },
+  UserPromptSubmit: {
+    hooks: [{ type: 'command', command: userPromptHookCommand() }],
   },
   SessionStart: {
     hooks: [{ type: 'command', command: sessionStartHookCommand() }],
@@ -138,6 +145,7 @@ function wireCodexHooks(options) {
 
   const added = [];
   const preToolCmd = preToolHookCommand();
+  const userPromptCmd = userPromptHookCommand();
 
   if (!hookAlreadyPresent(config.hooks.PreToolUse, preToolCmd)) {
     config.hooks.PreToolUse = config.hooks.PreToolUse || [];
@@ -146,6 +154,14 @@ function wireCodexHooks(options) {
       hooks: [{ type: 'command', command: preToolCmd }],
     });
     added.push({ lifecycle: 'PreToolUse', command: preToolCmd });
+  }
+
+  if (!hookAlreadyPresent(config.hooks.UserPromptSubmit, userPromptCmd)) {
+    config.hooks.UserPromptSubmit = config.hooks.UserPromptSubmit || [];
+    config.hooks.UserPromptSubmit.push({
+      hooks: [{ type: 'command', command: userPromptCmd }],
+    });
+    added.push({ lifecycle: 'UserPromptSubmit', command: userPromptCmd });
   }
 
   if (added.length === 0) {
@@ -176,6 +192,7 @@ function wireGeminiHooks(options) {
 
   const added = [];
   const preToolCmd = preToolHookCommand();
+  const userPromptCmd = userPromptHookCommand();
 
   if (!hookAlreadyPresent(settings.hooks.PreToolUse, preToolCmd)) {
     settings.hooks.PreToolUse = settings.hooks.PreToolUse || [];
@@ -184,6 +201,14 @@ function wireGeminiHooks(options) {
       hooks: [{ type: 'command', command: preToolCmd }],
     });
     added.push({ lifecycle: 'PreToolUse', command: preToolCmd });
+  }
+
+  if (!hookAlreadyPresent(settings.hooks.UserPromptSubmit, userPromptCmd)) {
+    settings.hooks.UserPromptSubmit = settings.hooks.UserPromptSubmit || [];
+    settings.hooks.UserPromptSubmit.push({
+      hooks: [{ type: 'command', command: userPromptCmd }],
+    });
+    added.push({ lifecycle: 'UserPromptSubmit', command: userPromptCmd });
   }
 
   if (added.length === 0) {
@@ -261,6 +286,7 @@ module.exports = {
   geminiSettingsPath,
   CLAUDE_HOOKS,
   preToolHookCommand,
+  userPromptHookCommand,
   sessionStartHookCommand,
 };
 
