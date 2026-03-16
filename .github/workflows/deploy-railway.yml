@@ -25,7 +25,7 @@ jobs:
       STRIPE_WEBHOOK_SECRET_ROTATED_AT: ${{ vars.STRIPE_WEBHOOK_SECRET_ROTATED_AT }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
       - name: Check Railway deployment configuration
