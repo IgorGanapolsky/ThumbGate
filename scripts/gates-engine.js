@@ -5,6 +5,11 @@ const fs = require('fs');
 const path = require('path');
 
 const { isProTier, FREE_TIER_MAX_GATES } = require('./rate-limiter');
+const {
+  scanHookInput,
+  buildSafeSummary,
+  redactText,
+} = require('./secret-scanner');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'default.json');
 const AUTO_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'auto-promoted.json');
@@ -209,6 +214,97 @@ function evaluateGates(toolName, toolInput, configPath) {
   return null;
 }
 
+function buildSecretGuardResult(scanResult) {
+  return {
+    decision: 'deny',
+    gate: 'secret-exfiltration',
+    message: buildSafeSummary(
+      scanResult.findings,
+      'Blocked because the action appears to expose secret material'
+    ),
+    severity: 'critical',
+    secretScan: {
+      provider: scanResult.provider,
+      findings: scanResult.findings.map((finding) => ({
+        id: finding.id,
+        label: finding.label,
+        line: finding.line || null,
+        path: finding.path || null,
+        source: finding.source || null,
+        reason: finding.reason || null,
+      })),
+    },
+  };
+}
+
+function getFeedbackLoopModule() {
+  try {
+    return require('./feedback-loop');
+  } catch {
+    return null;
+  }
+}
+
+function recordSecretViolation(input, scanResult) {
+  const feedbackLoop = getFeedbackLoopModule();
+  if (!feedbackLoop || typeof feedbackLoop.appendDiagnosticRecord !== 'function') {
+    return;
+  }
+
+  const toolName = input.tool_name || input.toolName || 'unknown';
+  const toolInput = input.tool_input && typeof input.tool_input === 'object' ? input.tool_input : {};
+  const filePath = toolInput.file_path || toolInput.path || toolInput.filePath || null;
+  const command = typeof toolInput.command === 'string' ? toolInput.command : '';
+  const safeContext = redactText(
+    filePath
+      ? `${toolName} requested ${filePath}`
+      : command
+        ? `${toolName} requested command ${command}`
+        : `${toolName} requested protected content`
+  ).slice(0, 400);
+
+  feedbackLoop.appendDiagnosticRecord({
+    source: 'secret_guard',
+    step: 'pre_tool_use',
+    context: safeContext,
+    metadata: {
+      toolName,
+      provider: scanResult.provider,
+      filePath,
+      commandHash: scanResult.commandHash || null,
+      fileHashes: scanResult.fileHashes || [],
+    },
+    diagnosis: {
+      diagnosed: true,
+      rootCauseCategory: 'guardrail_triggered',
+      criticalFailureStep: 'pre_tool_use',
+      violations: scanResult.findings.map((finding) => ({
+        constraintId: `security:${finding.id || 'secret_exfiltration'}`,
+        description: finding.reason || finding.label || 'Secret exposure blocked',
+        metadata: {
+          label: finding.label || finding.id || 'secret',
+          path: finding.path || null,
+          line: finding.line || null,
+          source: finding.source || null,
+        },
+      })),
+      evidence: scanResult.findings.map((finding) => (
+        `${finding.label || finding.id}${finding.path ? ` in ${finding.path}` : ''}${finding.line ? ` line ${finding.line}` : ''}`
+      )),
+    },
+  });
+}
+
+function evaluateSecretGuard(input = {}) {
+  const scanResult = scanHookInput(input);
+  if (!scanResult.detected) {
+    return null;
+  }
+  recordStat('secret-exfiltration', 'block');
+  recordSecretViolation(input, scanResult);
+  return buildSecretGuardResult(scanResult);
+}
+
 // ---------------------------------------------------------------------------
 // PreToolUse hook interface (stdin/stdout JSON)
 // ---------------------------------------------------------------------------
@@ -240,6 +336,11 @@ function formatOutput(result) {
 }
 
 function run(input) {
+  const secretGuard = evaluateSecretGuard(input);
+  if (secretGuard) {
+    return formatOutput(secretGuard);
+  }
+
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
   const result = evaluateGates(toolName, toolInput);
@@ -262,6 +363,8 @@ module.exports = {
   loadStats,
   saveStats,
   recordStat,
+  evaluateSecretGuard,
+  buildSecretGuardResult,
   matchesGate,
   evaluateGates,
   formatOutput,

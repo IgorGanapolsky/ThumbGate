@@ -33,7 +33,7 @@ fi
 echo "$RESULT"
 
 # Check if blocked
-if echo "$RESULT" | grep -q '"decision":\s*"block"'; then
+if echo "$RESULT" | grep -q '"permissionDecision":\s*"deny"'; then
   exit 2
 fi
 
