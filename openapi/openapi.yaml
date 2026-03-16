@@ -391,6 +391,19 @@ paths:
           description: Aggregated feedback statistics
         '401':
           description: Unauthorized
+  /v1/telemetry/ping:
+    post:
+      operationId: recordTelemetryPing
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '204':
+          description: Telemetry accepted on a best-effort basis
   /v1/analytics/funnel:
     get:
       operationId: getFunnelAnalytics
@@ -401,6 +414,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FunnelAnalyticsResponse'
+        '401':
+          description: Unauthorized
+  /v1/dashboard:
+    get:
+      operationId: getDashboard
+      responses:
+        '200':
+          description: Full RLHF dashboard with feedback, telemetry, funnel, and observability analytics
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
         '401':
           description: Unauthorized
   /v1/billing/summary:

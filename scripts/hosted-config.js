@@ -4,7 +4,8 @@ const crypto = require('node:crypto');
 
 const DEFAULT_PUBLIC_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
 const DEFAULT_CHECKOUT_FALLBACK_URL = DEFAULT_PUBLIC_APP_ORIGIN;
-const DEFAULT_FOUNDING_PRICE = '$29/mo';
+const DEFAULT_PRO_PRICE_DOLLARS = 29;
+const DEFAULT_PRO_PRICE_LABEL = '$29/mo';
 
 function normalizeOrigin(value) {
   if (!value || typeof value !== 'string') {
@@ -44,6 +45,17 @@ function createTraceId(prefix = 'trace') {
   return `${prefix}_${Date.now().toString(36)}_${crypto.randomBytes(6).toString('hex')}`;
 }
 
+function normalizePriceDollars(value) {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return Math.round(parsed);
+}
+
 function buildHostedSuccessUrl(appOrigin, traceId) {
   const encodedTraceId = encodeURIComponent(String(traceId || ''));
   const traceQuery = traceId ? `&trace_id=${encodedTraceId}` : '';
@@ -62,6 +74,8 @@ function resolveHostedBillingConfig({ requestOrigin } = {}) {
   const billingApiBaseUrl = normalizeOrigin(
     process.env.RLHF_BILLING_API_BASE_URL || process.env.RLHF_CANONICAL_API_BASE_URL || appOrigin
   ) || appOrigin;
+  const proPriceDollars = normalizePriceDollars(process.env.RLHF_PRO_PRICE_DOLLARS) || DEFAULT_PRO_PRICE_DOLLARS;
+  const proPriceLabel = process.env.RLHF_PRO_PRICE_LABEL || DEFAULT_PRO_PRICE_LABEL;
 
   return {
     appOrigin,
@@ -69,15 +83,18 @@ function resolveHostedBillingConfig({ requestOrigin } = {}) {
     checkoutEndpoint: joinPublicUrl(billingApiBaseUrl, '/v1/billing/checkout'),
     sessionEndpoint: joinPublicUrl(billingApiBaseUrl, '/v1/billing/session'),
     checkoutFallbackUrl: process.env.RLHF_CHECKOUT_FALLBACK_URL || DEFAULT_CHECKOUT_FALLBACK_URL,
-    foundingPrice: process.env.RLHF_FOUNDING_PRICE || DEFAULT_FOUNDING_PRICE,
+    proPriceDollars,
+    proPriceLabel,
   };
 }
 
 module.exports = {
   DEFAULT_PUBLIC_APP_ORIGIN,
   DEFAULT_CHECKOUT_FALLBACK_URL,
-  DEFAULT_FOUNDING_PRICE,
+  DEFAULT_PRO_PRICE_DOLLARS,
+  DEFAULT_PRO_PRICE_LABEL,
   normalizeOrigin,
+  normalizePriceDollars,
   joinPublicUrl,
   createTraceId,
   buildHostedSuccessUrl,

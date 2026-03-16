@@ -14,8 +14,11 @@ const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { GoogleGenAI } = require('@google/genai');
+const { resolveHostedBillingConfig } = require('./hosted-config');
 
-const CHECKOUT_LINK = 'https://buy.stripe.com/fZu4gz0I47Dg9G1cGv3sI03';
+const PRODUCT_LINK = resolveHostedBillingConfig({
+  requestOrigin: 'https://rlhf-feedback-loop-production.up.railway.app',
+}).appOrigin;
 
 // Helper to run gh api
 function runGH(args) {
@@ -68,7 +71,7 @@ async function generateOutreach(targets) {
 You are an expert, highly technical AI sales agent in March 2026. 
 You are selling the "MCP Memory Gateway" to a developer. 
 Our value proposition: We provide an 'Always-On' Context Hub that stops AI agents from repeating failures across sessions using a Thumbs-Up/Down Veto Layer.
-Our Pricing: $29/mo Pro plan with auto-gate promotion, unlimited custom gates, multi-repo sync, and priority support. Link: ${CHECKOUT_LINK}
+Our Pricing: $29/mo Pro plan with auto-gate promotion, unlimited custom gates, multi-repo sync, and priority support. Link: ${PRODUCT_LINK}
 
 Target Developer: @${target.username}
 Target Repository: ${target.repoName}

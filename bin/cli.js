@@ -32,6 +32,9 @@ function telemetryPing(installId) {
   const apiUrl = process.env.RLHF_API_URL || 'https://rlhf-feedback-loop-production.up.railway.app';
   const payload = JSON.stringify({
     installId,
+    eventType: 'cli_init',
+    clientType: 'cli',
+    source: 'cli',
     version: pkgVersion(),
     platform: process.platform,
     nodeVersion: process.version,

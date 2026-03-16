@@ -32,7 +32,7 @@ https://github.com/IgorGanapolsky/mcp-memory-gateway
 
 **Body:**
 
-If you're fine-tuning local models and need preference data, I built a tool that might help. `mcp-memory-gateway` runs entirely on your machine, stores everything in JSONL files (no cloud, no telemetry), and exports DPO training pairs you can feed into TRL/axolotl/whatever your training stack is.
+If you're fine-tuning local models and need preference data, I built a tool that might help. `mcp-memory-gateway` runs entirely on your machine, stores everything in JSONL files, and exports DPO training pairs you can feed into TRL/axolotl/whatever your training stack is. Best-effort telemetry is optional and can be disabled with `RLHF_NO_TELEMETRY=1`.
 
 How it works: you give thumbs up/down feedback during coding sessions with an AI agent. The tool captures the context, the agent's output, and your signal. Over time it builds a dataset of chosen/rejected pairs with full prompt context. It also detects repeated mistakes and generates prevention rules so the agent stops making the same errors.
 

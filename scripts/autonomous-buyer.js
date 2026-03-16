@@ -8,11 +8,14 @@
 
 'use strict';
 
+const { resolveHostedBillingConfig } = require('./hosted-config');
+
 async function executeAutonomousPurchase() {
   console.log('🤖 [Autonomous Agent] Initiating programmatic purchase flow...');
   
   // 1. Hit our own public checkout endpoint
-  const checkoutUrl = 'https://rlhf-feedback-loop-production.up.railway.app/v1/billing/checkout';
+  const hostedConfig = resolveHostedBillingConfig();
+  const checkoutUrl = `${hostedConfig.appOrigin}/v1/billing/checkout`;
   
   try {
     const response = await fetch(checkoutUrl, {
@@ -20,7 +23,6 @@ async function executeAutonomousPurchase() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         installId: 'autonomous_agent_001',
-        oneTime: true,
         metadata: { source: 'autonomous_loop' }
       })
     });

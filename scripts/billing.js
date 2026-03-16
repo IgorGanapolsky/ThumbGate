@@ -21,7 +21,6 @@ const CONFIG = {
   GITHUB_MARKETPLACE_WEBHOOK_SECRET: process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '',
   GITHUB_MARKETPLACE_PLAN_PRICES_JSON: process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON || '',
   STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || 'price_1RNdUBGGBpd520QYG1A9SWF4',
-  STRIPE_ONE_TIME_PRICE_ID: process.env.STRIPE_ONE_TIME_PRICE_ID || 'price_1RNeMBGGBpd520QYNmZYZY12',
   get API_KEYS_PATH() {
     return process.env._TEST_API_KEYS_PATH || path.resolve(__dirname, '../.claude/memory/feedback/api-keys.json');
   },
@@ -151,6 +150,27 @@ function extractAttribution(metadata = {}) {
   };
 }
 
+function extractJourneyFields(metadata = {}) {
+  const safe = sanitizeMetadata(metadata);
+  const attribution = extractAttribution(safe);
+  return {
+    acquisitionId: normalizeText(safe.acquisitionId),
+    visitorId: normalizeText(safe.visitorId),
+    sessionId: normalizeText(safe.sessionId),
+    ctaId: attribution.ctaId,
+    ctaPlacement: normalizeText(safe.ctaPlacement),
+    planId: normalizeText(safe.planId),
+    referrer: attribution.referrer,
+    referrerHost: normalizeText(safe.referrerHost),
+    landingPath: attribution.landingPath,
+    utmSource: attribution.source,
+    utmMedium: attribution.medium,
+    utmCampaign: attribution.campaign,
+    utmContent: attribution.content,
+    utmTerm: attribution.term,
+  };
+}
+
 function resolveAttributionSource(attribution, fallback = null) {
   return attribution.source || normalizeText(fallback) || 'unknown';
 }
@@ -168,6 +188,7 @@ function appendFunnelEvent({ stage, event, installId = null, traceId = null, evi
     evidence: evidence || event,
     installId: installId || null,
     traceId: traceId || metadata.traceId || null,
+    ...extractJourneyFields(metadata),
     metadata: sanitizeMetadata(metadata),
   };
   return appendJsonlRecord(CONFIG.FUNNEL_LEDGER_PATH, payload);
@@ -202,6 +223,10 @@ function appendRevenueEvent({
   }
 
   const normalizedAmount = normalizeInteger(amountCents);
+  const journeyFields = extractJourneyFields({
+    ...sanitizeMetadata(metadata),
+    ...sanitizeMetadata(attribution),
+  });
   const payload = {
     timestamp: new Date().toISOString(),
     provider: normalizeText(provider),
@@ -217,6 +242,7 @@ function appendRevenueEvent({
     amountKnown: Boolean(amountKnown && normalizedAmount !== null),
     recurringInterval: normalizeText(recurringInterval),
     attribution: extractAttribution({ ...sanitizeMetadata(metadata), ...sanitizeMetadata(attribution) }),
+    ...journeyFields,
     metadata: sanitizeMetadata(metadata),
   };
 
@@ -325,18 +351,26 @@ function getBusinessAnalytics() {
   const signupsByCampaign = {};
   const acquisitionLeadKeys = new Set();
   for (const entry of acquisitionEvents) {
-    const attribution = extractAttribution(entry.metadata);
+    const attribution = extractAttribution({
+      ...sanitizeMetadata(entry.metadata),
+      ...sanitizeMetadata(entry),
+    });
     const sourceKey = resolveAttributionSource(attribution);
     const campaignKey = resolveAttributionCampaign(attribution);
     incrementCounter(signupsBySource, sourceKey);
     incrementCounter(signupsByCampaign, campaignKey);
-    acquisitionLeadKeys.add(entry.traceId || entry.installId || entry.evidence || `${entry.timestamp}:${entry.event}`);
+    acquisitionLeadKeys.add(
+      entry.acquisitionId || entry.traceId || entry.installId || entry.evidence || `${entry.timestamp}:${entry.event}`
+    );
   }
 
   const paidBySource = {};
   const paidByCampaign = {};
   const bookedRevenueBySourceCents = {};
   const bookedRevenueByCampaignCents = {};
+  const bookedRevenueByCtaId = {};
+  const bookedRevenueByLandingPath = {};
+  const bookedRevenueByReferrerHost = {};
   const bookedRevenueByCurrency = {};
   const paidCustomerIds = new Set();
   const revenueByProvider = {};
@@ -348,8 +382,12 @@ function getBusinessAnalytics() {
 
   for (const entry of paidOrders) {
     const providerKey = normalizeText(entry.provider) || 'unknown';
-    const sourceKey = resolveAttributionSource(entry.attribution || {}, providerKey);
-    const campaignKey = resolveAttributionCampaign(entry.attribution || {});
+    const attribution = extractAttribution({
+      ...sanitizeMetadata(entry.attribution || {}),
+      ...sanitizeMetadata(entry),
+    });
+    const sourceKey = resolveAttributionSource(attribution, providerKey);
+    const campaignKey = resolveAttributionCampaign(attribution);
     incrementCounter(paidBySource, sourceKey);
     incrementCounter(paidByCampaign, campaignKey);
     paidCustomerIds.add(entry.customerId);
@@ -373,6 +411,9 @@ function getBusinessAnalytics() {
       bookedRevenueCents += entry.amountCents;
       incrementCounter(bookedRevenueBySourceCents, sourceKey, entry.amountCents);
       incrementCounter(bookedRevenueByCampaignCents, campaignKey, entry.amountCents);
+      incrementCounter(bookedRevenueByCtaId, entry.ctaId, entry.amountCents);
+      incrementCounter(bookedRevenueByLandingPath, entry.landingPath, entry.amountCents);
+      incrementCounter(bookedRevenueByReferrerHost, entry.referrerHost, entry.amountCents);
       incrementCounter(bookedRevenueByCurrency, currency, entry.amountCents);
       providerSummary.bookedRevenueCents += entry.amountCents;
       providerSummary.amountKnownOrders += 1;
@@ -460,6 +501,9 @@ function getBusinessAnalytics() {
       paidByCampaign,
       bookedRevenueBySourceCents,
       bookedRevenueByCampaignCents,
+      bookedRevenueByCtaId,
+      bookedRevenueByLandingPath,
+      bookedRevenueByReferrerHost,
       conversionBySource,
       conversionByCampaign,
     },
@@ -601,8 +645,8 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     cancel_url: cancelUrl,
     customer_email: customerEmail,
     payment_method_types: ['card', 'link'],
-    mode: metadata.oneTime ? 'payment' : 'subscription',
-    line_items: [{ price: metadata.oneTime ? CONFIG.STRIPE_ONE_TIME_PRICE_ID : CONFIG.STRIPE_PRICE_ID, quantity: 1 }],
+    mode: 'subscription',
+    line_items: [{ price: CONFIG.STRIPE_PRICE_ID, quantity: 1 }],
     metadata: serializeStripeMetadata(checkoutMetadata),
   });
 
@@ -633,6 +677,14 @@ async function getCheckoutSessionStatus(sessionId) {
       customerId: session.customer,
       installId: session.metadata?.installId,
       traceId: session.metadata?.traceId || null,
+      acquisitionId: session.metadata?.acquisitionId || null,
+      visitorId: session.metadata?.visitorId || null,
+      visitorSessionId: session.metadata?.sessionId || null,
+      ctaId: session.metadata?.ctaId || null,
+      ctaPlacement: session.metadata?.ctaPlacement || null,
+      planId: session.metadata?.planId || null,
+      landingPath: session.metadata?.landingPath || null,
+      referrerHost: session.metadata?.referrerHost || null,
       apiKey: provisioned.key,
     };
   }
@@ -658,6 +710,14 @@ async function getCheckoutSessionStatus(sessionId) {
       customerEmail: session.customer_details?.email || '',
       installId,
       traceId,
+      acquisitionId: session.metadata?.acquisitionId || null,
+      visitorId: session.metadata?.visitorId || null,
+      visitorSessionId: session.metadata?.sessionId || null,
+      ctaId: session.metadata?.ctaId || null,
+      ctaPlacement: session.metadata?.ctaPlacement || null,
+      planId: session.metadata?.planId || null,
+      landingPath: session.metadata?.landingPath || null,
+      referrerHost: session.metadata?.referrerHost || null,
       apiKey: provisioned.key,
     };
   } catch {
@@ -805,7 +865,13 @@ async function handleWebhook(rawBody, signature) {
         installId,
         traceId,
         evidence: session.id,
-        metadata: { customerId, subscriptionId: session.subscription, traceId, ...attribution },
+        metadata: {
+          customerId,
+          subscriptionId: session.subscription,
+          traceId,
+          ...extractJourneyFields(session.metadata),
+          ...attribution,
+        },
       });
       appendRevenueEvent({
         provider: 'stripe',
@@ -822,6 +888,7 @@ async function handleWebhook(rawBody, signature) {
         recurringInterval: session.mode === 'subscription' ? 'month' : null,
         attribution,
         metadata: {
+          ...extractJourneyFields(session.metadata),
           subscriptionId: session.subscription || null,
           mode: session.mode || null,
           paymentStatus: session.payment_status || null,

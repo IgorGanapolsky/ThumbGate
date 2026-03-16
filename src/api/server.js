@@ -10,6 +10,7 @@ const {
   feedbackSummary,
   writePreventionRules,
   getFeedbackPaths,
+  appendDiagnosticRecord,
 } = require('../../scripts/feedback-loop');
 const {
   readJSONL,
@@ -71,6 +72,9 @@ const {
   generateDashboard,
 } = require('../../scripts/dashboard');
 const {
+  appendTelemetryPing,
+} = require('../../scripts/telemetry-analytics');
+const {
   checkLimit,
   UPGRADE_MESSAGE: RATE_LIMIT_MESSAGE,
 } = require('../../scripts/rate-limiter');
@@ -103,23 +107,40 @@ function pickFirstText(...values) {
   return null;
 }
 
+function parseReferrerHost(referrer) {
+  const normalized = normalizeNullableText(referrer);
+  if (!normalized) return null;
+  try {
+    return new URL(normalized).host || null;
+  } catch {
+    return null;
+  }
+}
+
 function buildCheckoutAttributionMetadata(body, req, traceId) {
   const rawMetadata = body && body.metadata && typeof body.metadata === 'object' ? body.metadata : {};
   const utmSource = pickFirstText(rawMetadata.utmSource, body.utmSource, rawMetadata.source, body.source);
   const utmMedium = pickFirstText(rawMetadata.utmMedium, body.utmMedium, 'checkout_api');
+  const referrer = pickFirstText(rawMetadata.referrer, body.referrer, req.headers.referer, req.headers.referrer);
 
   return {
     ...rawMetadata,
     traceId,
+    acquisitionId: pickFirstText(rawMetadata.acquisitionId, body.acquisitionId),
+    visitorId: pickFirstText(rawMetadata.visitorId, body.visitorId),
+    sessionId: pickFirstText(rawMetadata.sessionId, body.sessionId),
     source: pickFirstText(rawMetadata.source, body.source, utmSource, 'direct'),
     utmSource,
     utmMedium,
     utmCampaign: pickFirstText(rawMetadata.utmCampaign, body.utmCampaign),
     utmContent: pickFirstText(rawMetadata.utmContent, body.utmContent),
     utmTerm: pickFirstText(rawMetadata.utmTerm, body.utmTerm),
-    referrer: pickFirstText(rawMetadata.referrer, req.headers.referer, req.headers.referrer),
-    landingPath: pickFirstText(rawMetadata.landingPath, body.landingPath),
+    referrer,
+    referrerHost: pickFirstText(rawMetadata.referrerHost, body.referrerHost, parseReferrerHost(referrer)),
+    landingPath: pickFirstText(rawMetadata.landingPath, body.landingPath, body.page),
     ctaId: pickFirstText(rawMetadata.ctaId, body.ctaId),
+    ctaPlacement: pickFirstText(rawMetadata.ctaPlacement, body.ctaPlacement),
+    planId: pickFirstText(rawMetadata.planId, body.planId, 'pro'),
   };
 }
 
@@ -203,7 +224,8 @@ function loadLandingPageHtml(runtimeConfig) {
     '__APP_ORIGIN__': runtimeConfig.appOrigin,
     '__CHECKOUT_ENDPOINT__': runtimeConfig.checkoutEndpoint,
     '__CHECKOUT_FALLBACK_URL__': runtimeConfig.checkoutFallbackUrl,
-    '__FOUNDING_PRICE__': runtimeConfig.foundingPrice,
+    '__PRO_PRICE_DOLLARS__': runtimeConfig.proPriceDollars,
+    '__PRO_PRICE_LABEL__': runtimeConfig.proPriceLabel,
     '__VERIFICATION_URL__': 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md',
     '__COMPATIBILITY_REPORT_URL__': 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/proof/compatibility/report.json',
     '__AUTOMATION_REPORT_URL__': 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/proof/automation/report.json',
@@ -738,25 +760,44 @@ function createApiServer() {
     }
 
     if (req.method === 'POST' && pathname === '/v1/telemetry/ping') {
-      let body = '';
-      req.on('data', (chunk) => { body += chunk; });
-      req.on('end', () => {
+      const { FEEDBACK_DIR } = getFeedbackPaths();
+      try {
+        const payload = await parseJsonBody(req, 16 * 1024);
+        appendTelemetryPing(FEEDBACK_DIR, payload, req.headers);
+      } catch (err) {
         try {
-          const payload = JSON.parse(body);
-          const { FEEDBACK_DIR } = getFeedbackPaths();
-          const telemetryPath = path.join(FEEDBACK_DIR, 'telemetry-pings.jsonl');
-          const entry = {
-            receivedAt: new Date().toISOString(),
-            installId: String(payload.installId || '').slice(0, 64),
-            version: String(payload.version || '').slice(0, 16),
-            platform: String(payload.platform || '').slice(0, 32),
-            nodeVersion: String(payload.nodeVersion || '').slice(0, 16),
-          };
-          fs.appendFileSync(telemetryPath, JSON.stringify(entry) + '\n');
-        } catch (_) { /* never fail the caller */ }
-        res.writeHead(204);
-        res.end();
+          appendDiagnosticRecord({
+            source: 'telemetry_ingest',
+            step: 'telemetry_ingest',
+            context: 'best-effort telemetry ingest failed',
+            metadata: {
+              path: pathname,
+              method: req.method,
+              reason: err && err.statusCode && err.statusCode < 500 ? 'invalid_payload' : 'write_failed',
+              error: err && err.message ? err.message : 'unknown_error',
+            },
+            diagnosis: {
+              diagnosed: true,
+              rootCauseCategory: err && err.statusCode && err.statusCode < 500 ? 'invalid_invocation' : 'system_failure',
+              criticalFailureStep: 'telemetry_ingest',
+              violations: [{
+                constraintId: 'telemetry:ingest',
+                message: 'Telemetry ping could not be processed.',
+              }],
+              evidence: [err && err.message ? err.message : 'unknown_error'],
+            },
+          });
+        } catch (_) {
+          // Telemetry is best-effort and must never fail the caller.
+        }
+      }
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Length': '0',
       });
+      res.end();
       return;
     }
 
@@ -923,10 +964,11 @@ function createApiServer() {
     if (req.method === 'POST' && pathname === '/v1/billing/checkout') {
       try {
         const body = await parseJsonBody(req);
+        if (body.oneTime === true) {
+          throw createHttpError(400, 'oneTime checkout is no longer supported. The public self-serve offer is recurring Pro only.');
+        }
         const traceId = body.traceId || createTraceId('checkout');
         const responseHeaders = getPublicBillingHeaders(traceId);
-        // Pro plan: $29/mo recurring subscription
-        const isOneTime = body.oneTime === true;
         const analyticsMetadata = buildCheckoutAttributionMetadata(body, req, traceId);
         
         const result = await createCheckoutSession({
@@ -935,17 +977,13 @@ function createApiServer() {
           customerEmail: body.customerEmail,
           installId: body.installId,
           traceId,
-          metadata: { 
-            ...analyticsMetadata,
-            oneTime: isOneTime,
-            credits: isOneTime ? 500 : 0 
-          },
+          metadata: analyticsMetadata,
         });
         sendJson(res, 200, {
           ...result,
           traceId: result.traceId || traceId,
-          price: isOneTime ? 29 : 29,
-          type: isOneTime ? 'one-time' : 'subscription',
+          price: hostedConfig.proPriceDollars,
+          type: 'subscription',
         }, responseHeaders);
       } catch (err) {
         const fallbackTraceId = createTraceId('checkout_error');

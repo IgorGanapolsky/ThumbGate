@@ -377,7 +377,7 @@ Requirements verified:
 - Billing funnel telemetry, active keys, disabled keys, customer usage, and source attribution now resolve from one shared summary shape instead of ad hoc paid-line counting.
 - `GET /v1/billing/summary` is admin-only and rejects provisioned billing keys.
 - `node bin/cli.js cfo` returns the same machine-readable summary shape as the API surface, while reading the local ledger and key store in the current checkout.
-- This surface is an operational billing proxy only; it does not claim booked revenue or invoice truth because the persisted stores track paid events, API keys, customer IDs, and usage rather than Stripe ledger amounts.
+- This surface is an operational billing proxy with ledger-backed `bookedRevenueCents` for providers that emit known amounts; it still does not claim invoice truth.
 
 ## March 12, 2026: Revenue Sprint & Conversion Optimization (historical, superseded)
 

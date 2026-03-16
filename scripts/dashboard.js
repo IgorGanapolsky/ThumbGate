@@ -4,6 +4,8 @@
 const fs = require('fs');
 const path = require('path');
 const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
+const { getBillingSummary, loadFunnelLedger, loadRevenueLedger } = require('./billing');
+const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-analytics');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const AUTO_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'auto-promoted.json');
@@ -29,6 +31,20 @@ function readJsonFile(filePath) {
   } catch {
     return null;
   }
+}
+
+function normalizeText(value) {
+  if (value === undefined || value === null) return null;
+  const text = String(value).trim();
+  return text || null;
+}
+
+function pickFirstText(...values) {
+  for (const value of values) {
+    const normalized = normalizeText(value);
+    if (normalized) return normalized;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,7 +88,7 @@ function computeApprovalStats(entries) {
 // Gate enforcement stats
 // ---------------------------------------------------------------------------
 
-function computeGateStats(feedbackDir) {
+function computeGateStats() {
   const statsPath = path.join(
     process.env.HOME || '/tmp',
     '.rlhf',
@@ -191,6 +207,119 @@ function computeSystemHealth(feedbackDir, gateStats) {
   };
 }
 
+function safeRate(numerator, denominator) {
+  if (!denominator) return 0;
+  return Number((numerator / denominator).toFixed(4));
+}
+
+function resolveJourneyKey(entry = {}) {
+  const metadata = entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
+  const attribution = entry.attribution && typeof entry.attribution === 'object' ? entry.attribution : {};
+  return pickFirstText(
+    entry.acquisitionId,
+    metadata.acquisitionId,
+    attribution.acquisitionId,
+    entry.traceId,
+    metadata.traceId,
+    entry.installId,
+    metadata.installId,
+    entry.visitorId,
+    metadata.visitorId,
+    entry.sessionId,
+    metadata.sessionId,
+    entry.orderId,
+    entry.evidence
+  );
+}
+
+function countCoverage(entries, resolver) {
+  if (!entries.length) return 0;
+  const matched = entries.filter((entry) => resolver(entry)).length;
+  return safeRate(matched, entries.length);
+}
+
+function computeAnalyticsSummary(feedbackDir) {
+  const telemetryEntries = loadTelemetryEvents(feedbackDir);
+  const telemetry = getTelemetryAnalytics(feedbackDir);
+  const billing = getBillingSummary();
+  const funnelEntries = loadFunnelLedger();
+  const paidOrderEntries = loadRevenueLedger().filter((entry) => entry && entry.status === 'paid');
+  const uniqueVisitors = telemetry.visitors.uniqueVisitors;
+  const ctaClicks = telemetry.ctas.totalClicks;
+  const acquisitionLeads = billing.signups ? billing.signups.uniqueLeads || 0 : 0;
+  const paidOrders = billing.revenue ? billing.revenue.paidOrders || 0 : 0;
+  const checkoutStartEntries = telemetryEntries.filter((entry) => (entry.eventType || entry.event) === 'checkout_start');
+  const acquisitionEntries = funnelEntries.filter((entry) => entry && entry.stage === 'acquisition');
+  const checkoutKeys = new Set(checkoutStartEntries.map(resolveJourneyKey).filter(Boolean));
+  const acquisitionKeys = new Set(acquisitionEntries.map(resolveJourneyKey).filter(Boolean));
+  const matchedAcquisitionKeys = new Set([...checkoutKeys].filter((key) => acquisitionKeys.has(key)));
+  const matchedPaidOrders = paidOrderEntries.filter((entry) => {
+    const key = resolveJourneyKey(entry);
+    return key && checkoutKeys.has(key);
+  }).length;
+  const unmatchedCheckoutStarts = checkoutStartEntries.filter((entry) => {
+    const key = resolveJourneyKey(entry);
+    return !key || !acquisitionKeys.has(key);
+  }).length;
+  const paidWithoutAcquisition = paidOrderEntries.filter((entry) => {
+    const key = resolveJourneyKey(entry);
+    return !key || !acquisitionKeys.has(key);
+  }).length;
+  const stitchedJourneyEntries = [...checkoutStartEntries, ...acquisitionEntries, ...paidOrderEntries];
+
+  return {
+    telemetry,
+    funnel: {
+      visitors: uniqueVisitors,
+      ctaClicks,
+      acquisitionLeads,
+      paidOrders,
+      visitorToLeadRate: safeRate(acquisitionLeads, uniqueVisitors),
+      visitorToPaidRate: safeRate(paidOrders, uniqueVisitors),
+      ctaToLeadRate: safeRate(acquisitionLeads, ctaClicks),
+      ctaToPaidRate: safeRate(paidOrders, ctaClicks),
+    },
+    revenue: billing.revenue || {
+      paidOrders: 0,
+      bookedRevenueCents: 0,
+      amountKnownOrders: 0,
+      amountUnknownOrders: 0,
+      amountKnownCoverageRate: 0,
+    },
+    attribution: billing.attribution || {
+      acquisitionBySource: {},
+      acquisitionByCampaign: {},
+      paidBySource: {},
+      paidByCampaign: {},
+      bookedRevenueBySourceCents: {},
+      bookedRevenueByCampaignCents: {},
+      bookedRevenueByCtaId: {},
+      bookedRevenueByLandingPath: {},
+      bookedRevenueByReferrerHost: {},
+      conversionBySource: {},
+      conversionByCampaign: {},
+    },
+    reconciliation: {
+      telemetryCheckoutStarts: telemetry.ctas.totalClicks,
+      uniqueCheckoutStarters: telemetry.ctas.uniqueCheckoutStarters,
+      matchedAcquisitions: matchedAcquisitionKeys.size,
+      matchedPaidOrders,
+      unmatchedCheckoutStarts,
+      paidWithoutAcquisition,
+      paidWithoutAmount: paidOrderEntries.filter((entry) => !entry.amountKnown).length,
+    },
+    identityCoverage: {
+      visitorIdCoverage: telemetry.visitors.visitorIdCoverageRate,
+      sessionIdCoverage: telemetry.visitors.sessionIdCoverageRate,
+      acquisitionIdCoverage: countCoverage(
+        stitchedJourneyEntries,
+        (entry) => pickFirstText(entry.acquisitionId, entry.metadata && entry.metadata.acquisitionId)
+      ),
+      amountKnownCoverage: billing.revenue ? billing.revenue.amountKnownCoverageRate || 0 : 0,
+    },
+  };
+}
+
 function computeSecretGuardStats(diagnosticEntries) {
   const secretEntries = diagnosticEntries.filter((entry) => {
     if (entry.source === 'secret_guard') return true;
@@ -228,6 +357,32 @@ function computeSecretGuardStats(diagnosticEntries) {
   };
 }
 
+function computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, telemetry = null) {
+  const bySource = {};
+  let latestEventAt = null;
+
+  for (const entry of diagnosticEntries) {
+    const key = String(entry.source || 'unknown');
+    bySource[key] = (bySource[key] || 0) + 1;
+    if (!latestEventAt || String(entry.timestamp || '') > latestEventAt) {
+      latestEventAt = entry.timestamp || null;
+    }
+  }
+
+  const topSource = Object.entries(bySource).sort((a, b) => b[1] - a[1])[0] || null;
+
+  return {
+    diagnosticEvents: diagnosticEntries.length,
+    bySource,
+    topSource: topSource ? { key: topSource[0], count: topSource[1] } : null,
+    latestEventAt,
+    topRootCause: diagnostics.categories[0] || null,
+    secretGuardBlocks: secretGuard.blocked,
+    telemetryIngestErrors: diagnosticEntries.filter((entry) => entry.source === 'telemetry_ingest').length,
+    checkoutApiFailuresByCode: telemetry && telemetry.ctas ? telemetry.ctas.failuresByCode || {} : {},
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Full dashboard data
 // ---------------------------------------------------------------------------
@@ -239,12 +394,14 @@ function generateDashboard(feedbackDir) {
   const diagnosticEntries = readJSONL(diagnosticLogPath);
 
   const approval = computeApprovalStats(entries);
-  const gateStats = computeGateStats(feedbackDir);
+  const gateStats = computeGateStats();
   const prevention = computePreventionImpact(feedbackDir, gateStats);
   const trend = computeSessionTrend(entries, 10);
   const health = computeSystemHealth(feedbackDir, gateStats);
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
   const secretGuard = computeSecretGuardStats(diagnosticEntries);
+  const analytics = computeAnalyticsSummary(feedbackDir);
+  const observability = computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, analytics.telemetry);
 
   return {
     approval,
@@ -254,6 +411,8 @@ function generateDashboard(feedbackDir) {
     health,
     diagnostics,
     secretGuard,
+    analytics,
+    observability,
   };
 }
 
@@ -270,6 +429,8 @@ function printDashboard(data) {
     health,
     diagnostics,
     secretGuard,
+    analytics,
+    observability,
   } = data;
 
   const trendArrow = approval.trendDirection === 'improving' ? '\u2191'
@@ -300,6 +461,19 @@ function printDashboard(data) {
   }
 
   console.log('');
+  console.log('\uD83D\uDCBC Growth Analytics');
+  console.log(`  Unique Visitors  : ${analytics.funnel.visitors}`);
+  console.log(`  CTA Clicks       : ${analytics.funnel.ctaClicks}`);
+  console.log(`  Leads            : ${analytics.funnel.acquisitionLeads}`);
+  console.log(`  Paid Orders      : ${analytics.funnel.paidOrders}`);
+  console.log(`  Visitor \u2192 Paid  : ${analytics.funnel.visitorToPaidRate}`);
+  console.log(`  Booked Revenue   : $${(analytics.revenue.bookedRevenueCents / 100).toFixed(2)}`);
+  console.log(`  Matched Journeys : ${analytics.reconciliation.matchedPaidOrders}/${analytics.reconciliation.telemetryCheckoutStarts}`);
+  if (analytics.telemetry.visitors.topSource) {
+    console.log(`  Top Source       : ${analytics.telemetry.visitors.topSource.key} (${analytics.telemetry.visitors.topSource.count}\u00D7)`);
+  }
+
+  console.log('');
   console.log('\uD83D\uDD10 Secret Guard');
   console.log(`  Blocks Recorded  : ${secretGuard.blocked}`);
   if (secretGuard.topConstraint) {
@@ -325,6 +499,15 @@ function printDashboard(data) {
       console.log(`  Top Root Cause   : ${diagnostics.categories[0].key} (${diagnostics.categories[0].count}\u00D7)`);
     }
   }
+
+  console.log('');
+  console.log('\uD83D\uDCE1 Observability');
+  console.log(`  Diagnostic Events: ${observability.diagnosticEvents}`);
+  console.log(`  Secret Blocks    : ${observability.secretGuardBlocks}`);
+  console.log(`  Telemetry Errors : ${observability.telemetryIngestErrors}`);
+  if (observability.topSource) {
+    console.log(`  Top Source       : ${observability.topSource.key} (${observability.topSource.count}\u00D7)`);
+  }
   console.log('');
 }
 
@@ -340,7 +523,9 @@ module.exports = {
   computePreventionImpact,
   computeSessionTrend,
   computeSystemHealth,
+  computeAnalyticsSummary,
   computeSecretGuardStats,
+  computeObservabilityStats,
   readJSONL,
   readJsonFile,
 };

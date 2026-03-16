@@ -31,11 +31,11 @@
       },
       {
         "@type": "Offer",
-        "price": "29",
+        "price": "__PRO_PRICE_DOLLARS__",
         "priceCurrency": "USD",
         "priceSpecification": {
           "@type": "UnitPriceSpecification",
-          "price": "29",
+          "price": "__PRO_PRICE_DOLLARS__",
           "priceCurrency": "USD",
           "billingDuration": "P1M"
         },
@@ -605,8 +605,8 @@
         <h1>Your AI agent keeps making the same mistakes. <em>We fix that.</em></h1>
         <p class="sub">Pre-action gates that physically block known failure patterns. Auto-generated from your feedback. Works with Claude, Codex, Gemini.</p>
         <div class="cta-row">
-          <a class="btn btn-primary" href="https://github.com/IgorGanapolsky/mcp-memory-gateway#quick-start" target="_blank" rel="noreferrer">Get Started Free</a>
-          <a class="btn btn-secondary" href="#pricing">See Pro Plan</a>
+          <a class="btn btn-primary" data-cta-id="hero_free" data-cta-placement="hero" data-plan-id="free" href="https://github.com/IgorGanapolsky/mcp-memory-gateway#quick-start" target="_blank" rel="noreferrer">Get Started Free</a>
+          <a class="btn btn-secondary" data-cta-id="hero_pricing" data-cta-placement="hero" data-plan-id="pro" href="#pricing">See Pro Plan</a>
         </div>
         <div class="badges">
           <span class="badge"><span class="dot"></span> 935 tests, 0 failures</span>
@@ -751,12 +751,12 @@
               <li>DPO/KTO export for fine-tuning</li>
               <li>CLI dashboard</li>
             </ul>
-            <a class="btn btn-secondary" href="https://github.com/IgorGanapolsky/mcp-memory-gateway#quick-start" target="_blank" rel="noreferrer">Get Started</a>
+            <a class="btn btn-secondary" data-cta-id="pricing_free" data-cta-placement="pricing" data-plan-id="free" href="https://github.com/IgorGanapolsky/mcp-memory-gateway#quick-start" target="_blank" rel="noreferrer">Get Started</a>
           </div>
           <div class="price-card pro">
             <div class="tier-label">Pro</div>
             <h3>Cloud</h3>
-            <div class="price-amount">$29 <small>/ month</small></div>
+            <div class="price-amount">$__PRO_PRICE_DOLLARS__ <small>/ month</small></div>
             <ul>
               <li>Cloud-synced memories from any machine</li>
               <li>Unlimited memories and retrievals</li>
@@ -765,7 +765,7 @@
               <li>Unlimited custom gates with auto-gate promotion</li>
               <li>Priority support</li>
             </ul>
-            <a class="btn btn-primary" id="pro-cta" data-cta-id="pricing_pro" href="https://iganapolsky.gumroad.com/l/tjovof?utm_source=website&utm_medium=cta_button&utm_campaign=pro_pack" target="_blank" rel="noreferrer">Get Pro &mdash; $29/mo</a>
+            <a class="btn btn-primary" id="pro-cta" data-cta-id="pricing_pro" data-cta-placement="pricing" data-plan-id="pro" href="https://iganapolsky.gumroad.com/l/tjovof?utm_source=website&utm_medium=cta_button&utm_campaign=pro_pack" target="_blank" rel="noreferrer">Get Pro &mdash; __PRO_PRICE_LABEL__</a>
           </div>
         </div>
       </div>
@@ -785,20 +785,33 @@
   <script>
     (function () {
       const checkoutCta = document.getElementById('pro-cta');
-      if (!checkoutCta) return;
-
+      const trackedCtas = Array.prototype.slice.call(document.querySelectorAll('[data-cta-id]'));
       const fallbackBase = 'https://iganapolsky.gumroad.com/l/tjovof';
-      const originalLabel = checkoutCta.textContent;
 
-      function getInstallId() {
-        const storageKey = 'rlhf_install_id';
-        const existing = window.localStorage.getItem(storageKey);
+      function getStoredId(storage, storageKey, prefix) {
+        const existing = storage.getItem(storageKey);
         if (existing) return existing;
         const generated = window.crypto && window.crypto.randomUUID
           ? window.crypto.randomUUID()
-          : 'inst_' + Math.random().toString(16).slice(2);
-        window.localStorage.setItem(storageKey, generated);
+          : prefix + Math.random().toString(16).slice(2);
+        storage.setItem(storageKey, generated);
         return generated;
+      }
+
+      function getInstallId() {
+        return getStoredId(window.localStorage, 'rlhf_install_id', 'inst_');
+      }
+
+      function getVisitorId() {
+        return getStoredId(window.localStorage, 'rlhf_visitor_id', 'visitor_');
+      }
+
+      function getSessionId() {
+        return getStoredId(window.sessionStorage, 'rlhf_session_id', 'session_');
+      }
+
+      function getAcquisitionId() {
+        return getStoredId(window.sessionStorage, 'rlhf_acquisition_id', 'acq_');
       }
 
       function getAttributionValue(params, key, fallbackValue) {
@@ -821,6 +834,35 @@
         };
       }
 
+      function sendTelemetry(eventName, extra) {
+        const payload = Object.assign({
+          eventType: eventName,
+          clientType: 'web',
+          installId: getInstallId(),
+          visitorId: getVisitorId(),
+          sessionId: getSessionId(),
+          acquisitionId: getAcquisitionId(),
+          version: '__PACKAGE_VERSION__',
+          pageTitle: document.title,
+          page: window.location.pathname,
+          userAgent: navigator.userAgent
+        }, buildAttribution(extra && extra.ctaId ? extra.ctaId : null), extra || {});
+
+        const body = JSON.stringify(payload);
+        if (navigator.sendBeacon) {
+          const blob = new Blob([body], { type: 'application/json' });
+          navigator.sendBeacon('/v1/telemetry/ping', blob);
+          return;
+        }
+
+        fetch('/v1/telemetry/ping', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: body,
+          keepalive: true
+        }).catch(function () {});
+      }
+
       function buildFallbackUrl(attribution) {
         const url = new URL(fallbackBase);
         url.searchParams.set('utm_source', attribution.utmSource || attribution.source || 'website');
@@ -831,14 +873,42 @@
         return url.toString();
       }
 
+      function trackGenericCtaClick(target) {
+        if (!target || target === checkoutCta) return;
+        sendTelemetry('cta_click', {
+          ctaId: target.dataset.ctaId || null,
+          ctaPlacement: target.dataset.ctaPlacement || null,
+          planId: target.dataset.planId || null
+        });
+      }
+
+      trackedCtas.forEach(function (target) {
+        target.addEventListener('click', function () {
+          trackGenericCtaClick(target);
+        });
+      });
+
+      sendTelemetry('landing_page_view');
+      if (!checkoutCta) return;
+
+      const originalLabel = checkoutCta.textContent;
+
       async function startCheckout(event) {
         event.preventDefault();
         const ctaId = checkoutCta.dataset.ctaId || 'pricing_pro';
+        const ctaPlacement = checkoutCta.dataset.ctaPlacement || 'pricing';
+        const planId = checkoutCta.dataset.planId || 'pro';
         const attribution = buildAttribution(ctaId);
         const fallbackUrl = buildFallbackUrl(attribution);
         checkoutCta.href = fallbackUrl;
         checkoutCta.setAttribute('aria-busy', 'true');
         checkoutCta.textContent = 'Opening checkout...';
+
+        sendTelemetry('checkout_start', {
+          ctaId: ctaId,
+          ctaPlacement: ctaPlacement,
+          planId: planId
+        });
 
         if (window.plausible) {
           window.plausible('Checkout Started', {
@@ -856,12 +926,21 @@
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
               installId: getInstallId(),
+              acquisitionId: getAcquisitionId(),
+              visitorId: getVisitorId(),
+              sessionId: getSessionId(),
+              ctaId: ctaId,
+              ctaPlacement: ctaPlacement,
+              planId: planId,
+              page: window.location.pathname,
               metadata: attribution
             })
           });
 
           if (!response.ok) {
-            throw new Error('checkout_request_failed');
+            const error = new Error('checkout_request_failed');
+            error.httpStatus = response.status;
+            throw error;
           }
 
           const payload = await response.json();
@@ -879,7 +958,14 @@
           }
 
           throw new Error('missing_checkout_redirect');
-        } catch (_) {
+        } catch (err) {
+          sendTelemetry('checkout_api_failed', {
+            ctaId: ctaId,
+            ctaPlacement: ctaPlacement,
+            planId: planId,
+            failureCode: err && err.message ? err.message : 'checkout_api_failed',
+            httpStatus: err && err.httpStatus ? err.httpStatus : null
+          });
           window.location.assign(fallbackUrl);
         } finally {
           checkoutCta.removeAttribute('aria-busy');

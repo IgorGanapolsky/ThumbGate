@@ -61,7 +61,8 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
 
   assert.match(publicLanding, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
   assert.match(publicLanding, /mcp-memory-gateway/i);
-  assert.match(publicLanding, /\$29\/mo/);
+  assert.match(publicLanding, /__PRO_PRICE_LABEL__/);
+  assert.match(publicLanding, /__PRO_PRICE_DOLLARS__/);
   assert.match(publicLanding, /Pre-Action Gates/i);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
   assert.doesNotMatch(publicLanding, /github\.com\/IgorGanapolsky\/rlhf-feedback-loop/);
@@ -74,20 +75,42 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.doesNotMatch(twitterThread, /us-central1\.run\.app/);
 });
 
-test('runtime hosted billing config defaults to the live founding price', () => {
-  const previous = process.env.RLHF_FOUNDING_PRICE;
-  delete process.env.RLHF_FOUNDING_PRICE;
+test('runtime hosted billing config defaults to the live pro price label', () => {
+  const previousLabel = process.env.RLHF_PRO_PRICE_LABEL;
+  const previousDollars = process.env.RLHF_PRO_PRICE_DOLLARS;
+  delete process.env.RLHF_PRO_PRICE_LABEL;
+  delete process.env.RLHF_PRO_PRICE_DOLLARS;
 
   try {
     const runtimeConfig = resolveHostedBillingConfig();
-    assert.equal(runtimeConfig.foundingPrice, '$29/mo');
+    assert.equal(runtimeConfig.proPriceLabel, '$29/mo');
+    assert.equal(runtimeConfig.proPriceDollars, 29);
     assert.equal(runtimeConfig.checkoutFallbackUrl, CANONICAL_APP_ORIGIN);
   } finally {
-    if (previous === undefined) {
-      delete process.env.RLHF_FOUNDING_PRICE;
+    if (previousLabel === undefined) {
+      delete process.env.RLHF_PRO_PRICE_LABEL;
     } else {
-      process.env.RLHF_FOUNDING_PRICE = previous;
+      process.env.RLHF_PRO_PRICE_LABEL = previousLabel;
     }
+    if (previousDollars === undefined) {
+      delete process.env.RLHF_PRO_PRICE_DOLLARS;
+    } else {
+      process.env.RLHF_PRO_PRICE_DOLLARS = previousDollars;
+    }
+  }
+});
+
+test('active GTM scripts and reports point to the canonical offer without founding-language drift', () => {
+  const outreachTargets = readText('docs/OUTREACH_TARGETS.md');
+  const xAutomationReport = readText('docs/X_AUTOMATION_REPORT.md');
+  const githubOutreach = readText('scripts/github-outreach.js');
+  const xAutomation = readText('scripts/x-autonomous-marketing.js');
+  const autonomousSales = readText('scripts/autonomous-sales-agent.js');
+
+  for (const artifact of [outreachTargets, xAutomationReport, githubOutreach, xAutomation, autonomousSales]) {
+    assert.doesNotMatch(artifact, /buy\.stripe\.com/);
+    assert.doesNotMatch(artifact, /founding users today/i);
+    assert.match(artifact, /rlhf-feedback-loop-production\.up\.railway\.app/);
   }
 });
 

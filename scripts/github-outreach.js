@@ -10,8 +10,11 @@
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { resolveHostedBillingConfig } = require('./hosted-config');
 
-const CHECKOUT_LINK = 'https://buy.stripe.com/fZu4gz0I47Dg9G1cGv3sI03';
+const PRODUCT_LINK = resolveHostedBillingConfig({
+  requestOrigin: 'https://rlhf-feedback-loop-production.up.railway.app',
+}).appOrigin;
 
 function runGH(args) {
   const result = spawnSync('gh', ['api', ...args], { encoding: 'utf-8' });
@@ -49,7 +52,7 @@ function generateOutreachScript(targets) {
   targets.forEach(t => {
     report += `### Target: @${t.username} (Author of ${t.repoName})\n`;
     report += `**DM Script:**\n`;
-    report += `> "Hey @${t.username}, saw you're building with MCP on \`${t.repoName}\`. I just launched a Context Gateway that gives MCP agents 'Always-On' memory and stops them from repeating failures across sessions. Thought it might be highly relevant to your stack. I'm taking founding users today: ${CHECKOUT_LINK}"\n\n`;
+    report += `> "Hey @${t.username}, saw you're building with MCP on \`${t.repoName}\`. I just launched a Context Gateway that gives MCP agents 'Always-On' memory and stops them from repeating failures across sessions. Thought it might be highly relevant to your stack. Current self-serve offer is Pro at $29/mo: ${PRODUCT_LINK}"\n\n`;
   });
 
   const reportPath = path.join(__dirname, '../docs/OUTREACH_TARGETS.md');

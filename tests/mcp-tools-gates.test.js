@@ -138,6 +138,8 @@ test('dashboard returns full report', async () => {
   assert.ok(parsed.trend);
   assert.ok(parsed.health);
   assert.ok(parsed.diagnostics);
+  assert.ok(parsed.analytics);
+  assert.ok(parsed.observability);
   assert.equal(parsed.approval.total, 3);
   assert.equal(parsed.approval.positive, 2);
   assert.equal(parsed.approval.negative, 1);

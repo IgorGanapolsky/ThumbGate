@@ -27,11 +27,12 @@ const {
 } = require('../scripts/thompson-sampling');
 
 let handle;
-const BASE = 'http://localhost:8791';
+let baseUrl = '';
 const authHeader = { authorization: 'Bearer test-commerce-key' };
 
 test.before(async () => {
-  handle = await startServer({ port: 8791 });
+  handle = await startServer({ port: 0 });
+  baseUrl = `http://localhost:${handle.port}`;
 });
 
 test.after(async () => {
@@ -107,7 +108,7 @@ test('GET /v1/quality/scores returns all categories', async () => {
   });
   saveModel(model, modelPath);
 
-  const res = await fetch(`${BASE}/v1/quality/scores`, { headers: authHeader });
+  const res = await fetch(`${baseUrl}/v1/quality/scores`, { headers: authHeader });
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.ok(body.categories);
@@ -117,7 +118,7 @@ test('GET /v1/quality/scores returns all categories', async () => {
 });
 
 test('GET /v1/quality/scores?category=sizing returns single category', async () => {
-  const res = await fetch(`${BASE}/v1/quality/scores?category=sizing`, { headers: authHeader });
+  const res = await fetch(`${baseUrl}/v1/quality/scores?category=sizing`, { headers: authHeader });
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.category, 'sizing');
@@ -125,7 +126,7 @@ test('GET /v1/quality/scores?category=sizing returns single category', async () 
 });
 
 test('GET /v1/quality/scores?category=nonexistent returns 404', async () => {
-  const res = await fetch(`${BASE}/v1/quality/scores?category=nonexistent`, { headers: authHeader });
+  const res = await fetch(`${baseUrl}/v1/quality/scores?category=nonexistent`, { headers: authHeader });
   assert.equal(res.status, 404);
 });
 
@@ -139,7 +140,7 @@ test('GET /v1/quality/rules returns structured rules', async () => {
     '- **MEDIUM** severity: Always verify brand guidelines before generating copy',
   ].join('\n'));
 
-  const res = await fetch(`${BASE}/v1/quality/rules`, { headers: authHeader });
+  const res = await fetch(`${baseUrl}/v1/quality/rules`, { headers: authHeader });
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.count, 2);
@@ -163,7 +164,7 @@ test('GET /v1/quality/rules returns empty when no rules exist', async () => {
 });
 
 test('GET /v1/quality/posteriors returns sampled posteriors', async () => {
-  const res = await fetch(`${BASE}/v1/quality/posteriors`, { headers: authHeader });
+  const res = await fetch(`${baseUrl}/v1/quality/posteriors`, { headers: authHeader });
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.ok(body.posteriors);
@@ -175,7 +176,7 @@ test('GET /v1/quality/posteriors returns sampled posteriors', async () => {
 test('quality endpoints require auth', async () => {
   const endpoints = ['/v1/quality/scores', '/v1/quality/rules', '/v1/quality/posteriors'];
   for (const ep of endpoints) {
-    const res = await fetch(`${BASE}${ep}`);
+    const res = await fetch(`${baseUrl}${ep}`);
     assert.equal(res.status, 401, `${ep} should require auth`);
   }
 });

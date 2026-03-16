@@ -10,8 +10,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveHostedBillingConfig } = require('./hosted-config');
 
-const STRIPE_LINK = 'https://buy.stripe.com/fZu4gz0I47Dg9G1cGv3sI03';
+const PRODUCT_LINK = resolveHostedBillingConfig({
+  requestOrigin: 'https://rlhf-feedback-loop-production.up.railway.app',
+}).appOrigin;
 
 /**
  * 1. RADAR AUTOMATION: Scan for high-velocity trends in MCP/AI Agent Reliability.
@@ -33,11 +36,11 @@ async function generateGrokReply(threadContext, model = 'grok-4.1-fast') {
     Context: ${threadContext}
     Goal: Respond as a senior engineer who solved this problem using MCP Memory Gateway.
     Product: MCP Memory Gateway (Always-on context hub for AI agents).
-    CTA: ${STRIPE_LINK}
+    CTA: ${PRODUCT_LINK}
     Constraints: technical, non-salesy, under 280 chars, maximize "Reply Boost" priority.
   `;
   // Mocking Grok response
-  return "Actually, I hit this too. I built a Gateway that uses a Veto Layer to store these failures in persistent memory so the agent doesn't repeat them. Solved my context drift issues: " + STRIPE_LINK;
+  return "Actually, I hit this too. I built a Gateway that uses a Veto Layer to store these failures in persistent memory so the agent doesn't repeat them. Solved my context drift issues: " + PRODUCT_LINK;
 }
 
 /**

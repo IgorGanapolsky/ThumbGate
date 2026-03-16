@@ -24,10 +24,16 @@ const { startServer } = require('../src/api/server');
 const billing = require('../scripts/billing');
 
 let handle;
+let apiOrigin = '';
 const authHeader = { authorization: 'Bearer test-api-key' };
 
+function apiUrl(pathname = '/') {
+  return new URL(pathname, apiOrigin).toString();
+}
+
 test.before(async () => {
-  handle = await startServer({ port: 8790 });
+  handle = await startServer({ port: 0 });
+  apiOrigin = `http://localhost:${handle.port}`;
 });
 
 test.after(async () => {
@@ -43,14 +49,14 @@ test.after(async () => {
 });
 
 test('health endpoint returns ok', async () => {
-  const res = await fetch('http://localhost:8790/healthz', { headers: authHeader });
+  const res = await fetch(apiUrl('/healthz'), { headers: authHeader });
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.status, 'ok');
 });
 
 test('root serves the landing page by default', async () => {
-  const res = await fetch('http://localhost:8790/');
+  const res = await fetch(apiUrl('/'));
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
@@ -63,7 +69,7 @@ test('root serves the landing page by default', async () => {
 });
 
 test('provisioning endpoint works', async () => {
-  const res = await fetch('http://localhost:8790/v1/billing/provision', {
+  const res = await fetch(apiUrl('/v1/billing/provision'), {
     method: 'POST',
     headers: { 
       'content-type': 'application/json',
@@ -80,7 +86,7 @@ test('provisioning endpoint works', async () => {
 });
 
 test('root still serves JSON status when explicitly requested', async () => {
-  const res = await fetch('http://localhost:8790/?format=json', {
+  const res = await fetch(apiUrl('/?format=json'), {
     headers: { accept: 'application/json' },
   });
   assert.equal(res.status, 200);
@@ -92,7 +98,7 @@ test('root still serves JSON status when explicitly requested', async () => {
 });
 
 test('success page serves hosted onboarding shell', async () => {
-  const res = await fetch('http://localhost:8790/success');
+  const res = await fetch(apiUrl('/success'));
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
@@ -103,7 +109,7 @@ test('success page serves hosted onboarding shell', async () => {
 });
 
 test('cancel page serves retry message', async () => {
-  const res = await fetch('http://localhost:8790/cancel');
+  const res = await fetch(apiUrl('/cancel'));
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
@@ -113,7 +119,7 @@ test('cancel page serves retry message', async () => {
 });
 
 test('feedback capture accepts valid payload', async () => {
-  const res = await fetch('http://localhost:8790/v1/feedback/capture', {
+  const res = await fetch(apiUrl('/v1/feedback/capture'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
@@ -132,7 +138,7 @@ test('feedback capture accepts valid payload', async () => {
 });
 
 test('feedback capture blocks positive memory promotion when rubric guardrail fails', async () => {
-  const res = await fetch('http://localhost:8790/v1/feedback/capture', {
+  const res = await fetch(apiUrl('/v1/feedback/capture'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
@@ -158,7 +164,7 @@ test('feedback capture blocks positive memory promotion when rubric guardrail fa
 });
 
 test('feedback capture returns clarification_required for vague positive signal', async () => {
-  const res = await fetch('http://localhost:8790/v1/feedback/capture', {
+  const res = await fetch(apiUrl('/v1/feedback/capture'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
@@ -176,7 +182,7 @@ test('feedback capture returns clarification_required for vague positive signal'
 });
 
 test('intent catalog endpoint returns configured intents', async () => {
-  const res = await fetch('http://localhost:8790/v1/intents/catalog?mcpProfile=locked', { headers: authHeader });
+  const res = await fetch(apiUrl('/v1/intents/catalog?mcpProfile=locked'), { headers: authHeader });
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.mcpProfile, 'locked');
@@ -185,7 +191,7 @@ test('intent catalog endpoint returns configured intents', async () => {
 });
 
 test('intent catalog endpoint accepts partner profile', async () => {
-  const res = await fetch('http://localhost:8790/v1/intents/catalog?mcpProfile=default&partnerProfile=strict-reviewer', { headers: authHeader });
+  const res = await fetch(apiUrl('/v1/intents/catalog?mcpProfile=default&partnerProfile=strict-reviewer'), { headers: authHeader });
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.partnerProfile, 'strict_reviewer');
@@ -193,14 +199,14 @@ test('intent catalog endpoint accepts partner profile', async () => {
 });
 
 test('intent catalog rejects invalid mcp profile', async () => {
-  const res = await fetch('http://localhost:8790/v1/intents/catalog?mcpProfile=bad-profile', {
+  const res = await fetch(apiUrl('/v1/intents/catalog?mcpProfile=bad-profile'), {
     headers: authHeader,
   });
   assert.equal(res.status, 400);
 });
 
 test('intent plan returns checkpoint for unapproved high-risk action', async () => {
-  const res = await fetch('http://localhost:8790/v1/intents/plan', {
+  const res = await fetch(apiUrl('/v1/intents/plan'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
@@ -217,7 +223,7 @@ test('intent plan returns checkpoint for unapproved high-risk action', async () 
 });
 
 test('intent plan returns partner-aware strategy metadata', async () => {
-  const res = await fetch('http://localhost:8790/v1/intents/plan', {
+  const res = await fetch(apiUrl('/v1/intents/plan'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
@@ -246,7 +252,7 @@ test('intent plan returns codegraph impact for coding workflows', async () => {
   });
 
   try {
-    const res = await fetch('http://localhost:8790/v1/intents/plan', {
+    const res = await fetch(apiUrl('/v1/intents/plan'), {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...authHeader },
       body: JSON.stringify({
@@ -268,7 +274,7 @@ test('intent plan returns codegraph impact for coding workflows', async () => {
 });
 
 test('summary endpoint returns markdown text payload', async () => {
-  const res = await fetch('http://localhost:8790/v1/feedback/summary?recent=10', { headers: authHeader });
+  const res = await fetch(apiUrl('/v1/feedback/summary?recent=10'), { headers: authHeader });
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.match(body.summary, /Feedback Summary/);
@@ -276,7 +282,7 @@ test('summary endpoint returns markdown text payload', async () => {
 
 test('dpo export endpoint works with local memory log', async () => {
   const outputPath = path.join(tmpFeedbackDir, 'dpo.jsonl');
-  const res = await fetch('http://localhost:8790/v1/dpo/export', {
+  const res = await fetch(apiUrl('/v1/dpo/export'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({ outputPath }),
@@ -295,7 +301,7 @@ test('databricks export endpoint writes analytics bundle', async () => {
     JSON.stringify({ checks: [{ id: 'AUTO-01', passed: true }] }, null, 2)
   );
 
-  const res = await fetch('http://localhost:8790/v1/analytics/databricks/export', {
+  const res = await fetch(apiUrl('/v1/analytics/databricks/export'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({ outputPath }),
@@ -310,7 +316,7 @@ test('databricks export endpoint writes analytics bundle', async () => {
 });
 
 test('databricks export endpoint defaults bundle path inside the safe feedback dir', async () => {
-  const res = await fetch('http://localhost:8790/v1/analytics/databricks/export', {
+  const res = await fetch(apiUrl('/v1/analytics/databricks/export'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({}),
@@ -323,7 +329,7 @@ test('databricks export endpoint defaults bundle path inside the safe feedback d
 });
 
 test('context construct/evaluate/provenance endpoints work', async () => {
-  const constructRes = await fetch('http://localhost:8790/v1/context/construct', {
+  const constructRes = await fetch(apiUrl('/v1/context/construct'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
@@ -336,7 +342,7 @@ test('context construct/evaluate/provenance endpoints work', async () => {
   const constructBody = await constructRes.json();
   assert.ok(constructBody.packId);
 
-  const evalRes = await fetch('http://localhost:8790/v1/context/evaluate', {
+  const evalRes = await fetch(apiUrl('/v1/context/evaluate'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
@@ -361,7 +367,7 @@ test('context construct/evaluate/provenance endpoints work', async () => {
   assert.ok(evalBody.rubricEvaluation);
   assert.equal(typeof evalBody.rubricEvaluation.promotionEligible, 'boolean');
 
-  const provRes = await fetch('http://localhost:8790/v1/context/provenance?limit=5', {
+  const provRes = await fetch(apiUrl('/v1/context/provenance?limit=5'), {
     headers: authHeader,
   });
   assert.equal(provRes.status, 200);
@@ -370,7 +376,7 @@ test('context construct/evaluate/provenance endpoints work', async () => {
 });
 
 test('context construct rejects invalid namespaces', async () => {
-  const res = await fetch('http://localhost:8790/v1/context/construct', {
+  const res = await fetch(apiUrl('/v1/context/construct'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
@@ -382,12 +388,12 @@ test('context construct rejects invalid namespaces', async () => {
 });
 
 test('unauthorized without bearer token', async () => {
-  const res = await fetch('http://localhost:8790/v1/feedback/stats');
+  const res = await fetch(apiUrl('/v1/feedback/stats'));
   assert.equal(res.status, 401);
 });
 
 test('billing checkout endpoint is public', async () => {
-  const res = await fetch('http://localhost:8790/v1/billing/checkout', {
+  const res = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -404,7 +410,7 @@ test('billing checkout endpoint is public', async () => {
 });
 
 test('billing session endpoint returns provisioned local checkout details', async () => {
-  const checkoutRes = await fetch('http://localhost:8790/v1/billing/checkout', {
+  const checkoutRes = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -417,7 +423,7 @@ test('billing session endpoint returns provisioned local checkout details', asyn
   assert.ok(typeof checkoutBody.sessionId === 'string');
 
   const sessionRes = await fetch(
-    `http://localhost:8790/v1/billing/session?sessionId=${encodeURIComponent(checkoutBody.sessionId)}`
+    `${apiUrl('/v1/billing/session')}?sessionId=${encodeURIComponent(checkoutBody.sessionId)}`
   );
   assert.equal(sessionRes.status, 200);
   const sessionBody = await sessionRes.json();
@@ -433,7 +439,7 @@ test('billing session endpoint returns provisioned local checkout details', asyn
 });
 
 test('billing checkout supports CORS preflight', async () => {
-  const res = await fetch('http://localhost:8790/v1/billing/checkout', {
+  const res = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'OPTIONS',
     headers: {
       origin: 'https://app.example.com',
@@ -447,7 +453,7 @@ test('billing checkout supports CORS preflight', async () => {
 });
 
 test('billing session endpoint rejects missing session ids', async () => {
-  const res = await fetch('http://localhost:8790/v1/billing/session');
+  const res = await fetch(apiUrl('/v1/billing/session'));
   assert.equal(res.status, 400);
   const body = await res.json();
   assert.match(body.detail, /sessionId/);
@@ -455,7 +461,7 @@ test('billing session endpoint rejects missing session ids', async () => {
 
 test('billing provision requires static admin key and rejects billing keys', async () => {
   const billingKey = billing.provisionApiKey('cus_non_admin').key;
-  const res = await fetch('http://localhost:8790/v1/billing/provision', {
+  const res = await fetch(apiUrl('/v1/billing/provision'), {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -498,7 +504,7 @@ test('billing summary returns admin-only operational proxy', async () => {
     },
   });
 
-  const res = await fetch('http://localhost:8790/v1/billing/summary', {
+  const res = await fetch(apiUrl('/v1/billing/summary'), {
     headers: authHeader,
   });
   assert.equal(res.status, 200);
@@ -516,7 +522,7 @@ test('billing summary returns admin-only operational proxy', async () => {
 
 test('billing summary rejects billing keys', async () => {
   const billingKey = billing.provisionApiKey('cus_non_admin_summary').key;
-  const res = await fetch('http://localhost:8790/v1/billing/summary', {
+  const res = await fetch(apiUrl('/v1/billing/summary'), {
     headers: {
       authorization: `Bearer ${billingKey}`,
     },
@@ -526,7 +532,7 @@ test('billing summary rejects billing keys', async () => {
 
 test('rejects external output path by default', async () => {
   const externalPath = '/tmp/should-not-write-outside-safe-root.jsonl';
-  const res = await fetch('http://localhost:8790/v1/dpo/export', {
+  const res = await fetch(apiUrl('/v1/dpo/export'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({ outputPath: externalPath }),
@@ -535,7 +541,7 @@ test('rejects external output path by default', async () => {
 });
 
 test('funnel analytics returns counts and conversion rates', async () => {
-  const checkoutRes = await fetch('http://localhost:8790/v1/billing/checkout', {
+  const checkoutRes = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
@@ -551,7 +557,7 @@ test('funnel analytics returns counts and conversion rates', async () => {
   });
   assert.equal(checkoutRes.status, 200);
 
-  const analyticsRes = await fetch('http://localhost:8790/v1/analytics/funnel', {
+  const analyticsRes = await fetch(apiUrl('/v1/analytics/funnel'), {
     headers: authHeader,
   });
   assert.equal(analyticsRes.status, 200);
@@ -563,7 +569,7 @@ test('funnel analytics returns counts and conversion rates', async () => {
   assert.ok(body.stageCounts.acquisition >= 1);
   assert.ok(typeof body.conversionRates.acquisitionToActivation === 'number');
 
-  const summaryRes = await fetch('http://localhost:8790/v1/billing/summary', {
+  const summaryRes = await fetch(apiUrl('/v1/billing/summary'), {
     headers: authHeader,
   });
   assert.equal(summaryRes.status, 200);
