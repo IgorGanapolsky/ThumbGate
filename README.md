@@ -15,6 +15,8 @@
 
 Works with any MCP-compatible agent: Claude, Codex, Gemini, Amp, Cursor.
 
+Verification evidence for shipped features lives in [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md).
+
 ## Visual Demo: Experience the Magic
 
 Stop imagining and see the **MCP Memory Gateway** in action. This is the difference between an agent that repeats mistakes and one that actually improves.
@@ -204,6 +206,7 @@ These tools support fine-tuning workflows, context engineering, and audit trails
 | Tool | Description | When you need it |
 |------|-------------|------------------|
 | `export_dpo_pairs` | Build DPO preference pairs from promoted memories | Fine-tuning a model on your feedback |
+| `export_databricks_bundle` | Export RLHF logs and proof artifacts as a Databricks-ready analytics bundle | Warehousing local feedback, attribution, and proof data for Databricks / Genie Code analysis |
 | `construct_context_pack` | Bounded context pack from contextfs | Custom retrieval for large projects |
 | `evaluate_context_pack` | Record context pack outcome (closes learning loop) | Measuring retrieval quality |
 | `list_intents` | Available action plan templates | Policy-gated workflows |
@@ -229,6 +232,7 @@ npx mcp-memory-gateway capture           # Capture feedback via CLI
 npx mcp-memory-gateway stats             # Analytics + Revenue-at-Risk
 npx mcp-memory-gateway rules             # Generate prevention rules
 npx mcp-memory-gateway export-dpo        # Export DPO training pairs
+npx mcp-memory-gateway export-databricks # Export Databricks-ready analytics bundle
 npx mcp-memory-gateway risk              # Train/query boosted risk scorer
 npx mcp-memory-gateway self-heal         # Run self-healing diagnostics
 ```

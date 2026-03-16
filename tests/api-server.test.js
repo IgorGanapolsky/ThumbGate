@@ -5,7 +5,9 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-api-test-'));
+const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-api-proof-'));
 process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.RLHF_PROOF_DIR = tmpProofDir;
 process.env.RLHF_API_KEY = 'test-api-key';
 process.env._TEST_API_KEYS_PATH = path.join(tmpFeedbackDir, 'api-keys.json');
 process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpFeedbackDir, 'funnel-events.jsonl');
@@ -34,6 +36,7 @@ test.after(async () => {
   delete process.env.RLHF_BILLING_API_BASE_URL;
   try {
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+    fs.rmSync(tmpProofDir, { recursive: true, force: true });
   } catch (err) {
     // Ignore ENOTEMPTY errors during teardown
   }
@@ -282,6 +285,28 @@ test('dpo export endpoint works with local memory log', async () => {
   const body = await res.json();
   assert.ok(typeof body.pairs === 'number');
   assert.equal(fs.existsSync(outputPath), true);
+});
+
+test('databricks export endpoint writes analytics bundle', async () => {
+  const outputPath = path.join(tmpFeedbackDir, 'analytics', 'bundle-api');
+  fs.mkdirSync(path.join(tmpProofDir, 'automation'), { recursive: true });
+  fs.writeFileSync(
+    path.join(tmpProofDir, 'automation', 'report.json'),
+    JSON.stringify({ checks: [{ id: 'AUTO-01', passed: true }] }, null, 2)
+  );
+
+  const res = await fetch('http://localhost:8790/v1/analytics/databricks/export', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({ outputPath }),
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.bundlePath, outputPath);
+  assert.equal(fs.existsSync(path.join(outputPath, 'manifest.json')), true);
+  assert.equal(fs.existsSync(path.join(outputPath, 'load_databricks.sql')), true);
+  assert.ok(body.tables.some((table) => table.tableName === 'proof_reports'));
 });
 
 test('context construct/evaluate/provenance endpoints work', async () => {

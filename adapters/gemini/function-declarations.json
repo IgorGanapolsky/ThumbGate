@@ -93,6 +93,20 @@
       }
     },
     {
+      "name": "export_databricks_bundle",
+      "description": "Export RLHF logs and proof artifacts as a Databricks-ready bundle",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "outputPath": { "type": "string" }
+        }
+      },
+      "http": {
+        "method": "POST",
+        "path": "/v1/analytics/databricks/export"
+      }
+    },
+    {
       "name": "set_session_constraint",
       "description": "Persist a session-specific constraint (e.g., local_only=true) into the gate engine",
       "parameters": {

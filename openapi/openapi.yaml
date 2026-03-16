@@ -509,6 +509,23 @@ paths:
           description: DPO export completed
         '401':
           description: Unauthorized
+  /v1/analytics/databricks/export:
+    post:
+      operationId: exportDatabricksBundle
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                outputPath:
+                  type: string
+      responses:
+        '200':
+          description: Databricks bundle exported
+        '401':
+          description: Unauthorized
   /v1/context/construct:
     post:
       operationId: constructContextPack

@@ -8,6 +8,7 @@
  *   npx mcp-memory-gateway init --agent claude-code   # scaffold + wire hooks for specific agent
  *   npx mcp-memory-gateway capture       # capture feedback
  *   npx mcp-memory-gateway export-dpo    # export DPO training pairs
+ *   npx mcp-memory-gateway export-databricks   # export Databricks-ready analytics bundle
  *   npx mcp-memory-gateway stats         # feedback analytics + Revenue-at-Risk
  *   npx mcp-memory-gateway cfo           # local operational billing summary
  *   npx mcp-memory-gateway pro           # upgrade to Context Gateway
@@ -657,6 +658,20 @@ function exportDpo() {
   }
 }
 
+function exportDatabricks() {
+  const extraArgs = process.argv.slice(3).join(' ');
+  try {
+    const output = execSync(
+      `node "${path.join(PKG_ROOT, 'scripts', 'export-databricks-bundle.js')}" ${extraArgs}`,
+      { encoding: 'utf8', stdio: 'pipe', cwd: CWD }
+    );
+    process.stdout.write(output);
+  } catch (err) {
+    process.stderr.write(err.stderr || err.stdout || err.message);
+    process.exit(err.status || 1);
+  }
+}
+
 function rules() {
   const args = parseArgs(process.argv.slice(3));
   const { writePreventionRules } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
@@ -813,6 +828,7 @@ function help() {
   console.log('  model-fit             Detect the current local embedding profile and write evidence report');
   console.log('  risk [flags]          Train or query the boosted local risk scorer');
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
+  console.log('  export-databricks     Export RLHF logs + proof artifacts as a Databricks-ready analytics bundle');
   console.log('  rules                 Generate prevention rules from repeated failures');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Veto Layer');
   console.log('  self-heal             Run self-healing check and auto-fix');
@@ -874,6 +890,10 @@ switch (COMMAND) {
   case 'export-dpo':
   case 'dpo':
     exportDpo();
+    break;
+  case 'export-databricks':
+  case 'databricks':
+    exportDatabricks();
     break;
   case 'rules':
     rules();

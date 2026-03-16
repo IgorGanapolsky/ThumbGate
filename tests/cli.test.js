@@ -347,6 +347,7 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('model-fit'), 'Help should mention model-fit');
     assert.ok(result.stdout.includes('risk'), 'Help should mention risk');
     assert.ok(result.stdout.includes('export-dpo'), 'Help should mention export-dpo');
+    assert.ok(result.stdout.includes('export-databricks'), 'Help should mention export-databricks');
     assert.ok(result.stdout.includes('stats'), 'Help should mention stats');
     assert.ok(result.stdout.includes('rules'), 'Help should mention rules');
     assert.ok(result.stdout.includes('self-heal'), 'Help should mention self-heal');

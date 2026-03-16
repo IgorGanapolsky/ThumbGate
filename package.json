@@ -47,7 +47,7 @@
     "test:attribution": "node --test tests/feedback-attribution.test.js tests/hybrid-feedback-context.test.js",
     "test:quality": "node --test tests/validate-feedback.test.js",
     "test:intelligence": "node --test tests/intelligence.test.js",
-    "test:training-export": "node --test tests/training-export.test.js",
+    "test:training-export": "node --test tests/training-export.test.js tests/databricks-export.test.js",
     "test:deployment": "node --test tests/deployment.test.js tests/deploy-policy.test.js",
     "test:workflow": "node --test tests/workflow-contract.test.js",
     "test:billing": "node --test tests/billing.test.js",

@@ -86,6 +86,7 @@ test('ACTION_CATEGORY_MAP covers known action names', () => {
   assert.ok(ACTION_CATEGORY_MAP.capture_feedback);
   assert.ok(ACTION_CATEGORY_MAP.feedback_summary);
   assert.ok(ACTION_CATEGORY_MAP.export_dpo_pairs);
+  assert.ok(ACTION_CATEGORY_MAP.export_databricks_bundle);
 });
 
 test('scoreActions returns scored and sorted actions', () => {
@@ -127,10 +128,11 @@ test('rankActions returns ranked array and scores metadata', () => {
       { kind: 'mcp_tool', name: 'capture_feedback' },
       { kind: 'mcp_tool', name: 'prevention_rules' },
       { kind: 'mcp_tool', name: 'export_dpo_pairs' },
+      { kind: 'mcp_tool', name: 'export_databricks_bundle' },
     ];
     const result = rankActions(actions, { modelPath });
-    assert.equal(result.ranked.length, 3);
-    assert.equal(result.scores.length, 3);
+    assert.equal(result.ranked.length, 4);
+    assert.equal(result.scores.length, 4);
     result.scores.forEach((s) => {
       assert.ok(s.name);
       assert.ok(s.category);

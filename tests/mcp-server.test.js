@@ -5,13 +5,16 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-test-'));
+const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-proof-'));
 process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.RLHF_PROOF_DIR = tmpProofDir;
 process.env.RLHF_NO_RATE_LIMIT = '1'; // bypass free-tier rate limits during tests
 
 const { handleRequest, TOOLS, SAFE_DATA_DIR } = require('../adapters/mcp/server-stdio');
 
 test.after(() => {
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+  fs.rmSync(tmpProofDir, { recursive: true, force: true });
 });
 
 test('tools/list returns all configured tools', async () => {
@@ -266,6 +269,31 @@ test('prevention_rules blocks external output paths', async () => {
       },
     });
   }, /Path must stay within/);
+});
+
+test('export_databricks_bundle writes manifest and sql template over MCP', async () => {
+  fs.mkdirSync(path.join(tmpProofDir, 'automation'), { recursive: true });
+  fs.writeFileSync(
+    path.join(tmpProofDir, 'automation', 'report.json'),
+    JSON.stringify({ checks: [{ id: 'AUTO-01', passed: true }] }, null, 2)
+  );
+
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 29,
+    method: 'tools/call',
+    params: {
+      name: 'export_databricks_bundle',
+      arguments: {
+        outputPath: path.join(SAFE_DATA_DIR, 'analytics', 'bundle-mcp'),
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(fs.existsSync(path.join(payload.bundlePath, 'manifest.json')), true);
+  assert.equal(fs.existsSync(path.join(payload.bundlePath, 'load_databricks.sql')), true);
+  assert.ok(payload.tables.some((table) => table.tableName === 'proof_reports'));
 });
 
 test('construct/evaluate context pack tools work', async () => {

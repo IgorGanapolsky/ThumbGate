@@ -1,3 +1,43 @@
+## March 16, 2026: Databricks analytics bundle export
+
+Scope:
+
+- Added `scripts/export-databricks-bundle.js` to export the local RLHF control plane into a Databricks-ready analytics bundle instead of coupling the runtime system to an external warehouse.
+- Export now emits `feedback_events.jsonl`, `memory_records.jsonl`, `feedback_sequences.jsonl`, `feedback_attributions.jsonl`, `proof_reports.jsonl`, `manifest.json`, and a bootstrap `load_databricks.sql` template with catalog/schema placeholders.
+- Added the bundle export to every primary surface:
+  - CLI: `npx mcp-memory-gateway export-databricks`
+  - HTTP API: `POST /v1/analytics/databricks/export`
+  - MCP: `export_databricks_bundle`
+- Updated policy and adapter metadata so intent planning, OpenAPI parity, and Gemini function declarations expose the new analytics-plane export consistently.
+- Kept the smart-learning review fix on the same branch and verified it still passes after the Databricks export surface was added.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/rlhf-smart-learning-fix`:
+
+```bash
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+npm run self-heal:check
+```
+
+Observed result:
+
+- Targeted Databricks/API/MCP/OpenAPI/CLI regressions passed: `101` tests passed, `0` failed.
+- `npm test` passed end-to-end on the worktree after the analytics export surface and smart-learning fix were combined.
+- `npm run test:coverage` passed with `1024` tests, `1023` passed, `0` failed, `1` skipped.
+- All-files coverage on the verified tree: `83.44%` lines, `69.92%` branches, `86.33%` functions.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `43` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+
+Requirements verified:
+
+- The Databricks export is reachable and consistent across CLI, HTTP API, MCP, ChatGPT OpenAPI, and Gemini declarations.
+- The bundle contains local RLHF memory, attribution, sequence, and proof-report tables without mutating the control-plane storage model.
+- The generated SQL bootstrap keeps external warehouse details parameterized rather than hard-coding catalog/schema paths into the product.
+- Codegraph-aware intent planning, recall, and proof flows still pass after the analytics export path was introduced.
+
 ## March 15, 2026: AgentRx-style failure diagnostics
 
 Scope:

@@ -14,6 +14,9 @@ const {
   DEFAULT_LOCAL_MEMORY_LOG,
 } = require('../../scripts/export-dpo-pairs');
 const {
+  exportDatabricksBundle,
+} = require('../../scripts/export-databricks-bundle');
+const {
   ensureContextFs,
   constructContextPack,
   evaluateContextPack,
@@ -227,6 +230,16 @@ const TOOLS = [
       type: 'object',
       properties: {
         memoryLogPath: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'export_databricks_bundle',
+    description: 'Export RLHF logs and proof artifacts as a Databricks-ready analytics bundle',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        outputPath: { type: 'string' },
       },
     },
   },
@@ -762,6 +775,17 @@ async function callToolInner(name, args = {}) {
           errors: result.errors.length,
           learnings: result.learnings.length,
         }),
+      }],
+    };
+  }
+
+  if (name === 'export_databricks_bundle') {
+    const outputPath = args.outputPath ? resolveSafePath(args.outputPath) : undefined;
+    const result = exportDatabricksBundle(undefined, outputPath);
+    return {
+      content: [{
+        type: 'text',
+        text: toText(result),
       }],
     };
   }

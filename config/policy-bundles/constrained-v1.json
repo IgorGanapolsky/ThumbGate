@@ -48,6 +48,17 @@
           "name": "export_dpo_pairs"
         }
       ]
+    },
+    {
+      "id": "publish_databricks_analytics_bundle",
+      "description": "Export RLHF analytics and proof artifacts as a Databricks-ready bundle.",
+      "risk": "high",
+      "actions": [
+        {
+          "kind": "mcp_tool",
+          "name": "export_databricks_bundle"
+        }
+      ]
     }
   ]
 }

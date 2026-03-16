@@ -17,6 +17,9 @@ const {
   DEFAULT_LOCAL_MEMORY_LOG,
 } = require('../../scripts/export-dpo-pairs');
 const {
+  exportDatabricksBundle,
+} = require('../../scripts/export-databricks-bundle');
+const {
   ensureContextFs,
   normalizeNamespaces,
   constructContextPack,
@@ -611,6 +614,7 @@ function createApiServer() {
                     { name: 'feedback_summary', description: 'Human-readable feedback summary', inputSchema: { type: 'object', properties: {} } },
                     { name: 'prevention_rules', description: 'Generate prevention rules from failures', inputSchema: { type: 'object', properties: {} } },
                     { name: 'export_dpo_pairs', description: 'Export DPO training pairs', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'export_databricks_bundle', description: 'Export RLHF logs and proof artifacts as a Databricks-ready bundle', inputSchema: { type: 'object', properties: { outputPath: { type: 'string' } } } },
                     { name: 'construct_context_pack', description: 'Build bounded context pack', inputSchema: { type: 'object', properties: { task: { type: 'string' } }, required: ['task'] } },
                     { name: 'evaluate_context_pack', description: 'Record context pack outcome', inputSchema: { type: 'object', properties: { packId: { type: 'string' }, outcome: { type: 'string' } }, required: ['packId', 'outcome'] } },
                     { name: 'context_provenance', description: 'Audit trail of context decisions', inputSchema: { type: 'object', properties: {} } },
@@ -657,7 +661,7 @@ function createApiServer() {
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
-          endpoints: ['/health', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/dpo/export'],
+          endpoints: ['/health', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/dpo/export', '/v1/analytics/databricks/export'],
         });
         return;
       }
@@ -687,7 +691,7 @@ function createApiServer() {
           version: pkg.version,
         },
         name: 'mcp-memory-gateway',
-        description: 'RLHF feedback loop for AI agents. Capture feedback, block mistakes, export DPO data.',
+        description: 'RLHF feedback loop for AI agents. Capture feedback, block mistakes, export DPO data, and warehouse analytics bundles.',
         version: pkg.version,
         tools: [
           { name: 'recall', description: 'Recall relevant past feedback for current task' },
@@ -696,6 +700,7 @@ function createApiServer() {
           { name: 'feedback_summary', description: 'Human-readable feedback summary' },
           { name: 'prevention_rules', description: 'Generate prevention rules from failures' },
           { name: 'export_dpo_pairs', description: 'Export DPO training pairs' },
+          { name: 'export_databricks_bundle', description: 'Export RLHF logs and proof artifacts as a Databricks-ready bundle' },
           { name: 'construct_context_pack', description: 'Build bounded context pack' },
           { name: 'evaluate_context_pack', description: 'Record context pack outcome' },
           { name: 'context_provenance', description: 'Audit trail of context decisions' },
@@ -1157,6 +1162,14 @@ function createApiServer() {
           unpairedLearnings: result.unpairedLearnings.length,
           outputPath: body.outputPath ? resolveSafePath(body.outputPath) : null,
         });
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/analytics/databricks/export') {
+        const body = await parseJsonBody(req);
+        const outputPath = body.outputPath ? resolveSafePath(body.outputPath) : undefined;
+        const result = exportDatabricksBundle(undefined, outputPath);
+        sendJson(res, 200, result);
         return;
       }
 

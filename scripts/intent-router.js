@@ -224,6 +224,7 @@ const ACTION_CATEGORY_MAP = {
   prevention_rules: 'security',
   construct_context_pack: 'architecture',
   export_dpo_pairs: 'testing',
+  export_databricks_bundle: 'testing',
   context_provenance: 'search',
   evaluate_context_pack: 'pr_review',
 };

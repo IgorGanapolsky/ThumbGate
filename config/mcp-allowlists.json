@@ -11,6 +11,7 @@
       "plan_intent",
       "prevention_rules",
       "export_dpo_pairs",
+      "export_databricks_bundle",
       "construct_context_pack",
       "evaluate_context_pack",
       "context_provenance",
