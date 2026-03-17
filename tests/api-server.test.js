@@ -80,7 +80,7 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Request Workflow Sprint/i);
   assert.match(body, /Code modernization guardrails/i);
   assert.match(body, /same agent session|same reliability layer|No orchestration tax/i);
-  assert.match(body, /\$49 one-time/);
+  assert.match(body, /\\$49/);
   assert.match(body, /plausible\.io\/js\/script\.js/);
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
   assert.match(body, /google-site-verification" content="test-verification-token"/);
