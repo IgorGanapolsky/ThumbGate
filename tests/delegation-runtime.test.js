@@ -30,8 +30,26 @@ function emptyDir(dirPath) {
     });
   }
 }
-
+function removeDirWithRetry(targetPath, attempts = 5) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      emptyDir(targetPath);
+      fs.rmSync(targetPath, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 50,
+      });
+      return;
+    } catch (error) {
+      if (attempt === attempts - 1 || error.code !== 'ENOTEMPTY') {
+        throw error;
+      }
+    }
+  }
+}
 function resetFeedbackDir() {
+  removeDirWithRetry(tmpFeedbackDir);
   fs.mkdirSync(tmpFeedbackDir, { recursive: true });
   emptyDir(tmpFeedbackDir);
 }
@@ -51,7 +69,7 @@ test.beforeEach(() => {
 
 test.after(() => {
   try {
-    emptyDir(tmpFeedbackDir);
+    removeDirWithRetry(tmpFeedbackDir);
   } catch {
     // Best-effort cleanup for temp coverage directories.
   }
