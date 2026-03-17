@@ -10,9 +10,9 @@ const {
   buildSafeSummary,
   redactText,
 } = require('./secret-scanner');
+const { getAutoGatesPath } = require('./auto-promote-gates');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'default.json');
-const AUTO_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'auto-promoted.json');
 const STATE_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'gate-state.json');
 const CONSTRAINTS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'session-constraints.json');
 const STATS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'gate-stats.json');
@@ -52,8 +52,9 @@ function loadGatesConfig(configPath) {
 
   // Always preserve the full primary/default safety policy. Free tier limits apply
   // only to auto-promoted add-on gates so core protections never disappear.
-  if (!configPath && fs.existsSync(AUTO_CONFIG_PATH)) {
-    const autoGates = loadOne(AUTO_CONFIG_PATH, false);
+  const autoConfigPath = getAutoGatesPath();
+  if (!configPath && fs.existsSync(autoConfigPath)) {
+    const autoGates = loadOne(autoConfigPath, false);
     const limitedAutoGates = isProTier()
       ? autoGates
       : autoGates.slice(0, FREE_TIER_MAX_GATES);

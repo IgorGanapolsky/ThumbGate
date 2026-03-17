@@ -20,7 +20,7 @@ const {
   WARN_THRESHOLD,
   BLOCK_THRESHOLD,
   WINDOW_DAYS,
-  AUTO_GATES_PATH,
+  getAutoGatesPath,
 } = require('../scripts/auto-promote-gates');
 
 function makeTmpDir() {
@@ -79,6 +79,17 @@ test('extractPatternKey: falls back to normalized context', () => {
 test('extractPatternKey: returns null for short context and no tags', () => {
   const key = extractPatternKey({ tags: [], context: 'short', signal: 'negative' });
   assert.strictEqual(key, null);
+});
+
+test('getAutoGatesPath: resolves inside the active feedback directory', () => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  try {
+    assert.strictEqual(getAutoGatesPath(), path.join(tmpDir, 'auto-promoted-gates.json'));
+  } finally {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });
 
 // -- patternToGateId --
@@ -263,18 +274,19 @@ test('promote: fewer than 3 occurrences does not create a gate', (t) => {
   const tmpDir = makeTmpDir();
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
   process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  const autoGatesPath = getAutoGatesPath();
 
   // Save and clear auto-promoted.json to isolate this test
-  const savedData = fs.existsSync(AUTO_GATES_PATH) ? fs.readFileSync(AUTO_GATES_PATH, 'utf-8') : null;
+  const savedData = fs.existsSync(autoGatesPath) ? fs.readFileSync(autoGatesPath, 'utf-8') : null;
   saveAutoGates({ version: 1, gates: [], promotionLog: [] });
 
   t.after(() => {
     delete process.env.RLHF_FEEDBACK_DIR;
     // Restore original auto-promoted.json
     if (savedData !== null) {
-      fs.writeFileSync(AUTO_GATES_PATH, savedData);
-    } else if (fs.existsSync(AUTO_GATES_PATH)) {
-      fs.unlinkSync(AUTO_GATES_PATH);
+      fs.writeFileSync(autoGatesPath, savedData);
+    } else if (fs.existsSync(autoGatesPath)) {
+      fs.unlinkSync(autoGatesPath);
     }
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });

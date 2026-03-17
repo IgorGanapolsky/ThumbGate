@@ -26,6 +26,7 @@ const {
   CONSTRAINTS_PATH,
   TTL_MS,
 } = require('../scripts/gates-engine');
+const { getAutoGatesPath } = require('../scripts/auto-promote-gates');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -85,6 +86,24 @@ test('loadGatesConfig preserves core default gates for free tier', () => {
   assert.ok(gateIds.includes('force-push'));
   assert.ok(gateIds.includes('protected-branch-push'));
   assert.ok(gateIds.includes('env-file-edit'));
+});
+
+test('loadGatesConfig reads auto-promoted gates from the feedback runtime directory', () => {
+  withTempFeedbackDir((tmpFeedbackDir) => {
+    fs.writeFileSync(getAutoGatesPath(), JSON.stringify({
+      version: 1,
+      gates: [{
+        id: 'auto-runtime-test',
+        pattern: 'echo\\s+runtime',
+        action: 'warn',
+        message: 'runtime gate',
+        severity: 'medium',
+      }],
+    }));
+    const config = loadGatesConfig();
+    assert.ok(config.gates.some((gate) => gate.id === 'auto-runtime-test'));
+    assert.ok(getAutoGatesPath().startsWith(tmpFeedbackDir));
+  });
 });
 
 test('loadGatesConfig throws on missing file', () => {

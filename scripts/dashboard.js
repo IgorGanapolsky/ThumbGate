@@ -6,9 +6,9 @@ const path = require('path');
 const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
 const { getBillingSummary, loadFunnelLedger, loadRevenueLedger } = require('./billing');
 const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-analytics');
+const { getAutoGatesPath } = require('./auto-promote-gates');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const AUTO_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'auto-promoted.json');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
 
 // ---------------------------------------------------------------------------
@@ -89,6 +89,7 @@ function computeApprovalStats(entries) {
 // ---------------------------------------------------------------------------
 
 function computeGateStats() {
+  const autoGatesPath = getAutoGatesPath();
   const statsPath = path.join(
     process.env.HOME || '/tmp',
     '.rlhf',
@@ -98,7 +99,7 @@ function computeGateStats() {
 
   // Count manual vs auto-promoted gates
   const defaultGates = readJsonFile(DEFAULT_GATES_PATH);
-  const autoGates = readJsonFile(AUTO_GATES_PATH);
+  const autoGates = readJsonFile(autoGatesPath);
   const manualCount = defaultGates && Array.isArray(defaultGates.gates) ? defaultGates.gates.length : 0;
   const autoCount = autoGates && Array.isArray(autoGates.gates) ? autoGates.gates.length : 0;
   const totalGates = manualCount + autoCount;
@@ -134,6 +135,7 @@ function computeGateStats() {
 // ---------------------------------------------------------------------------
 
 function computePreventionImpact(feedbackDir, gateStats) {
+  const autoGatesPath = getAutoGatesPath();
   const preventionRulesPath = path.join(feedbackDir, 'prevention-rules.md');
   let ruleCount = 0;
   if (fs.existsSync(preventionRulesPath)) {
@@ -147,7 +149,7 @@ function computePreventionImpact(feedbackDir, gateStats) {
   const estimatedHoursSaved = (estimatedMinutesSaved / 60).toFixed(1);
 
   // Last auto-promotion
-  const autoGates = readJsonFile(AUTO_GATES_PATH);
+  const autoGates = readJsonFile(autoGatesPath);
   let lastPromotion = null;
   if (autoGates && Array.isArray(autoGates.promotionLog) && autoGates.promotionLog.length > 0) {
     const sorted = autoGates.promotionLog

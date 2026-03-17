@@ -125,7 +125,9 @@ test('loadPackageScripts returns scripts object', () => {
   const scripts = loadPackageScripts();
   assert.ok(typeof scripts === 'object');
   assert.ok('test' in scripts);
+  assert.ok('test:workers' in scripts);
   assert.ok('self-heal:run' in scripts);
+  assert.equal(scripts['test:workers'], 'npm --prefix workers ci && npm --prefix workers test');
 });
 
 test('runSelfHeal returns complete report structure', () => {
