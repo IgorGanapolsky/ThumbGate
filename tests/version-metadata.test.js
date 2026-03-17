@@ -192,6 +192,8 @@ test('active GTM scripts and reports point to the canonical offer without foundi
     assert.doesNotMatch(artifact, /buy\.stripe\.com/);
     assert.doesNotMatch(artifact, /founding users today/i);
     assert.match(artifact, /rlhf-feedback-loop-production\.up\.railway\.app/);
+    assert.doesNotMatch(artifact, /Always-On/i);
+    assert.doesNotMatch(artifact, /Mistake-Free/i);
   }
 });
 

@@ -52,9 +52,9 @@ That is the conversation I want to have more often.
 ## First Comment
 
 ```text
-Workflow Hardening Sprint + proof pack:
+Workflow Hardening Sprint intake + proof pack:
 
-https://rlhf-feedback-loop-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=founder_post&campaign_variant=workflow_hardening_sprint&offer_code=LINKEDIN-SPRINT
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=founder_post&campaign_variant=workflow_hardening_sprint&offer_code=LINKEDIN-SPRINT#workflow-sprint-intake
 ```
 
 ## Carousel Caption

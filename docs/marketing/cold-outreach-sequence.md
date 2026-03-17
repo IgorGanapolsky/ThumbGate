@@ -13,7 +13,7 @@ The teams I see moving fastest usually do not need another agent platform. They 
 
 That is the offer we are leading with: a **Workflow Hardening Sprint** for one workflow, one owner, and one proof review.
 
-If you already have one workflow that keeps hitting the same failure pattern, I can send the sprint brief and the proof pack.
+If you already have one workflow that keeps hitting the same failure pattern, I can send the sprint brief, proof pack, and direct intake link.
 
 Best,
 Igor
@@ -27,6 +27,7 @@ Following up with the two assets behind the offer:
 
 - Sprint brief: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md
 - Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Sprint intake: https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake
 
 The point is not generic AI governance. The point is to make one workflow safer to ship with recall, prevention rules, pre-action gates, and machine-readable evidence.
 
@@ -45,7 +46,7 @@ Looks like the timing is probably off, so I will close the loop here.
 If one Claude-first workflow becomes hard to trust again, these are the two useful links:
 
 - Sprint brief: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md
-- Product + proof path: https://rlhf-feedback-loop-production.up.railway.app
+- Product + proof path: https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake
 
 If the pain becomes real, the fastest conversation is still the same: one workflow, one owner, one proof review.
 

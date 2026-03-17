@@ -77,7 +77,7 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Keep one sharp agent/i);
   assert.match(body, /Claude workflow hardening/i);
   assert.match(body, /Workflow Hardening Sprint/i);
-  assert.match(body, /Request Workflow Sprint/i);
+  assert.match(body, /Start Sprint Intake/i);
   assert.match(body, /Code modernization guardrails/i);
   assert.match(body, /same agent session|same reliability layer|No orchestration tax/i);
   assert.match(body, /\$29\/mo/);
@@ -86,6 +86,7 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /google-site-verification" content="test-verification-token"/);
   assert.match(body, /gtag\('config', 'G-TEST1234', \{ send_page_view: false \}\)/);
   assert.match(body, /\/v1\/billing\/checkout/);
+  assert.match(body, /\/v1\/intake\/workflow-sprint/);
 });
 
 test('robots and sitemap endpoints publish crawl metadata for the canonical app origin', async () => {
@@ -589,6 +590,45 @@ test('billing checkout endpoint is public', async () => {
   assert.equal(res.headers.get('x-rlhf-trace-id'), body.traceId);
 });
 
+test('workflow sprint intake endpoint captures a contactable lead', async () => {
+  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      email: 'buyer@example.com',
+      company: 'Example Co',
+      workflow: 'PR review hardening',
+      owner: 'Platform Lead',
+      blocker: 'The same CI and review regressions keep resurfacing across agent runs.',
+      runtime: 'Claude Code',
+      note: 'Need proof before rolling this out team-wide.',
+      utmSource: 'linkedin',
+      utmMedium: 'organic_social',
+      utmCampaign: 'claude_workflow_hardening_march_2026',
+      ctaId: 'workflow_sprint_intake',
+      ctaPlacement: 'workflow_sprint',
+      planId: 'sprint',
+    }),
+  });
+
+  assert.equal(res.status, 201);
+  assert.equal(res.headers.get('access-control-allow-origin'), '*');
+  const body = await res.json();
+  assert.equal(body.ok, true);
+  assert.match(body.leadId, /^lead_/);
+  assert.equal(body.status, 'new');
+  assert.match(body.proofPackUrl, /VERIFICATION_EVIDENCE\.md/);
+
+  const leads = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'));
+  assert.equal(leads.length, 1);
+  assert.equal(leads[0].contact.email, 'buyer@example.com');
+  assert.equal(leads[0].qualification.workflow, 'PR review hardening');
+  assert.equal(leads[0].attribution.planId, 'sprint');
+
+  const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  assert.ok(telemetry.some((entry) => entry.eventType === 'workflow_sprint_lead_submitted'));
+});
+
 test('billing session endpoint returns provisioned local checkout details', async () => {
   const checkoutRes = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'POST',
@@ -653,6 +693,29 @@ test('billing provision requires static admin key and rejects billing keys', asy
 });
 
 test('billing summary returns admin-only operational proxy', async () => {
+  fs.writeFileSync(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'), `${JSON.stringify({
+    leadId: 'lead_admin_summary',
+    submittedAt: '2026-03-12T02:00:00.000Z',
+    status: 'new',
+    offer: 'workflow_hardening_sprint',
+    contact: {
+      email: 'ops@example.com',
+      company: 'Example Co',
+    },
+    qualification: {
+      workflow: 'Claude deployment review',
+      owner: 'Platform lead',
+      blocker: 'Rollouts need audit proof',
+      runtime: 'Claude Code + MCP',
+      note: null,
+    },
+    attribution: {
+      source: 'linkedin',
+      utmSource: 'linkedin',
+      utmCampaign: 'workflow_hardening',
+      community: 'platform',
+    },
+  })}\n`);
   billing.provisionApiKey('cus_admin_summary', {
     installId: 'inst_admin_summary',
     source: 'stripe_webhook_checkout_completed',
@@ -690,12 +753,15 @@ test('billing summary returns admin-only operational proxy', async () => {
   assert.equal(res.status, 200);
 
   const body = await res.json();
-  assert.equal(body.coverage.source, 'funnel_ledger+revenue_ledger+key_store');
+  assert.equal(body.coverage.source, 'funnel_ledger+revenue_ledger+key_store+workflow_sprint_leads');
   assert.equal(body.coverage.tracksBookedRevenue, true);
+  assert.equal(body.coverage.tracksWorkflowSprintLeads, true);
   assert.ok(body.funnel.stageCounts.paid >= 1);
   assert.ok(body.keys.active >= 1);
   assert.equal(body.revenue.bookedRevenueCents, 2900);
   assert.equal(body.revenue.paidOrders, 1);
+  assert.equal(body.pipeline.workflowSprintLeads.total, 1);
+  assert.equal(body.pipeline.workflowSprintLeads.bySource.linkedin, 1);
   assert.equal(body.attribution.bookedRevenueByCampaignCents.pro_pack, 2900);
   assert.ok(Array.isArray(body.customers));
 });

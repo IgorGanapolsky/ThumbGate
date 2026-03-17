@@ -8,30 +8,47 @@
 
 const { getBillingSummary } = require('./billing');
 
-console.log('👀 Money Watcher activated. Polling billing summary for new paid events...');
+function getCommercialRevenueSnapshot(summary) {
+  const revenue = summary.revenue || {};
+  return {
+    paidOrders: revenue.paidOrders || 0,
+    bookedRevenueCents: revenue.bookedRevenueCents || 0,
+    latestPaidAt: revenue.latestPaidAt || null,
+    latestPaidOrder: revenue.latestPaidOrder || null,
+  };
+}
 
-let initialCount = getBillingSummary().funnel.stageCounts.paid;
+function watchMoney(intervalMs = 10000) {
+  console.log('👀 Money Watcher activated. Polling billing summary for new paid orders...');
+  let initialSnapshot = getCommercialRevenueSnapshot(getBillingSummary());
 
-setInterval(() => {
-  const summary = getBillingSummary();
-  const paidCount = summary.funnel.stageCounts.paid;
+  return setInterval(() => {
+    const summary = getBillingSummary();
+    const currentSnapshot = getCommercialRevenueSnapshot(summary);
 
-  if (paidCount > initialCount) {
-    const newCount = paidCount - initialCount;
-    console.log(`\n🚨🚨🚨 PAYMENT ALERT: ${newCount} NEW PAID EVENT(S) DETECTED! 🚨🚨🚨`);
-    console.log('Operational billing summary:');
-    console.log(JSON.stringify({
-      firstPaidAt: summary.funnel.firstPaidAt,
-      lastPaidAt: summary.funnel.lastPaidAt,
-      lastPaidEvent: summary.funnel.lastPaidEvent,
-      activeKeys: summary.keys.active,
-      totalUsage: summary.keys.totalUsage,
-    }, null, 2));
+    if (currentSnapshot.paidOrders > initialSnapshot.paidOrders) {
+      const newCount = currentSnapshot.paidOrders - initialSnapshot.paidOrders;
+      console.log(`\n🚨🚨🚨 PAYMENT ALERT: ${newCount} NEW PAID ORDER(S) DETECTED! 🚨🚨🚨`);
+      console.log('Operational billing summary:');
+      console.log(JSON.stringify({
+        latestPaidAt: currentSnapshot.latestPaidAt,
+        latestPaidOrder: currentSnapshot.latestPaidOrder,
+        bookedRevenueCents: currentSnapshot.bookedRevenueCents,
+        activeKeys: summary.keys.active,
+        totalUsage: summary.keys.totalUsage,
+      }, null, 2));
 
-    // Attempt to trigger a system beep
-    process.stdout.write('\x07');
+      process.stdout.write('\x07');
+      initialSnapshot = currentSnapshot;
+    }
+  }, intervalMs);
+}
 
-    // Update baseline
-    initialCount = paidCount;
-  }
-}, 10000); // Check every 10 seconds
+if (require.main === module) {
+  watchMoney();
+}
+
+module.exports = {
+  getCommercialRevenueSnapshot,
+  watchMoney,
+};

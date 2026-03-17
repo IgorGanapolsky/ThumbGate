@@ -17,11 +17,34 @@ __GA_BOOTSTRAP__
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": "https://rlhf-feedback-loop-production.up.railway.app/#organization",
+    "name": "mcp-memory-gateway",
+    "url": "https://rlhf-feedback-loop-production.up.railway.app",
+    "sameAs": [
+      "https://github.com/IgorGanapolsky/mcp-memory-gateway",
+      "https://www.npmjs.com/package/mcp-memory-gateway"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "sales",
+      "email": "igor.ganapolsky@gmail.com",
+      "url": "https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
     "@type": "SoftwareApplication",
+    "@id": "https://rlhf-feedback-loop-production.up.railway.app/#software",
     "name": "mcp-memory-gateway",
     "url": "https://rlhf-feedback-loop-production.up.railway.app",
     "operatingSystem": "Cross-platform",
     "applicationCategory": "DeveloperApplication",
+    "publisher": {
+      "@id": "https://rlhf-feedback-loop-production.up.railway.app/#organization"
+    },
     "description": "Harden Claude Code and other AI workflows with recall, reliability rules, pre-action gates, and verification evidence without adding orchestration or handoff overhead.",
     "keywords": "Claude workflow hardening, AI reliability system, AI agent reliability, AI agent guardrails, MCP server, pre-action gates, feedback loop, prevention rules, Thompson Sampling, code modernization",
     "offers": [
@@ -29,12 +52,14 @@ __GA_BOOTSTRAP__
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "USD",
+        "url": "https://rlhf-feedback-loop-production.up.railway.app/#pricing",
         "description": "Free local tier: 500 memories, 100 retrievals/day, 5 built-in gates, single user, DPO/KTO export, CLI dashboard."
       },
       {
         "@type": "Offer",
         "price": "__PRO_PRICE_DOLLARS__",
         "priceCurrency": "USD",
+        "url": "https://rlhf-feedback-loop-production.up.railway.app/checkout/pro",
         "priceSpecification": {
           "@type": "UnitPriceSpecification",
           "price": "__PRO_PRICE_DOLLARS__",
@@ -57,6 +82,17 @@ __GA_BOOTSTRAP__
       "Runs inside the agent loop you already use; no orchestration or subagent routing required",
       "Pairs cleanly with continuity tools and IDE re-entry workflows",
       "Local-first, MIT licensed, no cloud required"
+    ],
+    "potentialAction": [
+      {
+        "@type": "BuyAction",
+        "target": "https://rlhf-feedback-loop-production.up.railway.app/checkout/pro"
+      },
+      {
+        "@type": "CommunicateAction",
+        "name": "Start Workflow Hardening Sprint intake",
+        "target": "https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake"
+      }
     ]
   }
   </script>
@@ -632,6 +668,29 @@ __GA_BOOTSTRAP__
       font: inherit;
     }
 
+    .intake-form input,
+    .intake-form textarea {
+      width: 100%;
+      font: inherit;
+      margin-top: 6px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .intake-form textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .intake-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
     .buyer-feedback button {
       border: 1px solid var(--border-bright);
       border-radius: 999px;
@@ -671,6 +730,12 @@ __GA_BOOTSTRAP__
       background: var(--accent-dim);
       border-color: var(--accent);
       color: var(--accent);
+    }
+
+    .intake-form label {
+      display: block;
+      color: var(--text-muted);
+      font-size: 14px;
     }
 
     .buyer-feedback-status {
@@ -782,7 +847,7 @@ __GA_BOOTSTRAP__
           <span id="campaign-banner-copy">Self-hosted is free. If this thread includes an early-access code, it will flow through checkout attribution automatically.</span>
         </div>
         <div class="cta-row">
-          <a class="btn btn-primary" data-cta-id="hero_sprint" data-cta-placement="hero" data-plan-id="sprint" href="mailto:igor.ganapolsky@gmail.com?subject=Workflow%20Hardening%20Sprint&body=Workflow%3A%0AOwner%3A%0ABiggest%20repeated%20failure%20or%20rollout%20blocker%3A%0AAgent%20or%20runtime%20in%20use%3A%0A" rel="noreferrer">Request Workflow Sprint</a>
+          <a class="btn btn-primary" data-cta-id="hero_sprint" data-cta-placement="hero" data-plan-id="sprint" href="#workflow-sprint-intake">Start Sprint Intake</a>
           <a class="btn btn-secondary" data-cta-id="hero_proof" data-cta-placement="hero" data-plan-id="proof" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Review Proof Pack</a>
           <a class="btn btn-secondary" data-cta-id="hero_free" data-cta-placement="hero" data-plan-id="free" href="https://github.com/IgorGanapolsky/mcp-memory-gateway#quick-start" target="_blank" rel="noreferrer">Get Started Free</a>
         </div>
@@ -938,8 +1003,74 @@ __GA_BOOTSTRAP__
           </div>
         </div>
         <div class="cta-row">
-          <a class="btn btn-primary" data-cta-id="offers_sprint" data-cta-placement="offers" data-plan-id="sprint" href="mailto:igor.ganapolsky@gmail.com?subject=Workflow%20Hardening%20Sprint&body=Workflow%3A%0AOwner%3A%0ABiggest%20repeated%20failure%20or%20rollout%20blocker%3A%0AAgent%20or%20runtime%20in%20use%3A%0A" rel="noreferrer">Request Workflow Sprint</a>
+          <a class="btn btn-primary" data-cta-id="offers_sprint" data-cta-placement="offers" data-plan-id="sprint" href="#workflow-sprint-intake">Start Sprint Intake</a>
           <a class="btn btn-secondary" data-cta-id="offers_scope" data-cta-placement="offers" data-plan-id="sprint" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md" target="_blank" rel="noreferrer">See Sprint Scope</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="workflow-sprint-intake">
+      <div class="wrap">
+        <div class="section-label">Sprint Intake</div>
+        <div class="section-title">Qualify one workflow in under two minutes.</div>
+        <div class="section-desc">Tell us the workflow, the owner, and the repeated blocker. This writes into a contactable sprint-intake queue instead of disappearing into generic telemetry.</div>
+        <div class="pricing-grid">
+          <div class="price-card pro">
+            <div class="tier-label">Workflow Hardening Sprint</div>
+            <h3>One workflow, one owner, one proof review</h3>
+            <p>Best fit when one Claude-first workflow already matters and the problem is repeated mistakes, rollout hesitation, or weak proof.</p>
+            <form class="intake-form" id="workflow-sprint-form">
+              <div class="intake-grid">
+                <label>
+                  Work email
+                  <input id="sprint-email" name="email" type="email" autocomplete="email" required />
+                </label>
+                <label>
+                  Company
+                  <input id="sprint-company" name="company" type="text" autocomplete="organization" />
+                </label>
+              </div>
+              <label>
+                Workflow
+                <input id="sprint-workflow" name="workflow" type="text" placeholder="Example: PR review, code modernization, incident ops" required />
+              </label>
+              <div class="intake-grid">
+                <label>
+                  Workflow owner
+                  <input id="sprint-owner" name="owner" type="text" placeholder="Who owns the outcome?" required />
+                </label>
+                <label>
+                  Current agent or runtime
+                  <input id="sprint-runtime" name="runtime" type="text" placeholder="Claude Code, Codex, Gemini, Amp" required />
+                </label>
+              </div>
+              <label>
+                Biggest repeated failure or rollout blocker
+                <textarea id="sprint-blocker" name="blocker" maxlength="1000" placeholder="Describe the failure pattern, approval problem, or trust gap that keeps this workflow from shipping." required></textarea>
+              </label>
+              <label>
+                Optional detail
+                <textarea id="sprint-note" name="note" maxlength="1000" placeholder="Anything else that would help us qualify the sprint quickly: compliance constraints, rollout pressure, current workaround, or proof requirement."></textarea>
+              </label>
+              <div class="buyer-feedback-actions">
+                <button type="submit" class="btn btn-primary" id="workflow-sprint-submit" data-cta-id="workflow_sprint_intake" data-cta-placement="workflow_sprint" data-plan-id="sprint">Submit Sprint Intake</button>
+                <a class="btn btn-secondary" href="mailto:igor.ganapolsky@gmail.com?subject=Workflow%20Hardening%20Sprint" rel="noreferrer">Email Instead</a>
+                <a class="btn btn-secondary" id="workflow-sprint-proof" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Review Proof Pack</a>
+              </div>
+              <p class="buyer-feedback-status" id="workflow-sprint-status" aria-live="polite">No sprint intake submitted yet.</p>
+            </form>
+          </div>
+          <div class="price-card">
+            <div class="tier-label">Need immediate access?</div>
+            <h3>Start with Pro today</h3>
+            <p>Self-serve Pro is still the fastest paid path if you want hosted synced memory right now. Use the sprint when the blocker is workflow reliability, buyer proof, or rollout discipline.</p>
+            <ul>
+              <li>Use Pro when you need hosted synced memory immediately.</li>
+              <li>Use the sprint when one workflow needs proof, gates, and rollout support.</li>
+              <li>Both paths point to the same commercial truth and verification evidence.</li>
+            </ul>
+            <a class="btn btn-secondary" href="#pricing">Compare with Pro</a>
+          </div>
         </div>
       </div>
     </section>
@@ -1093,6 +1224,9 @@ __GA_BOOTSTRAP__
       const buyerFeedbackNote = document.getElementById('buyer-feedback-note');
       const buyerFeedbackSubmit = document.getElementById('buyer-feedback-submit');
       const buyerFeedbackStatus = document.getElementById('buyer-feedback-status');
+      const workflowSprintForm = document.getElementById('workflow-sprint-form');
+      const workflowSprintSubmit = document.getElementById('workflow-sprint-submit');
+      const workflowSprintStatus = document.getElementById('workflow-sprint-status');
       let selectedLossReason = null;
       let activeCheckoutTraceId = null;
 
@@ -1333,6 +1467,93 @@ __GA_BOOTSTRAP__
         }
       }
 
+      function setWorkflowSprintStatus(message) {
+        if (workflowSprintStatus) {
+          workflowSprintStatus.textContent = message;
+        }
+      }
+
+      async function submitWorkflowSprintIntake(event) {
+        event.preventDefault();
+        if (!workflowSprintForm || !workflowSprintSubmit) return;
+
+        const formData = new FormData(workflowSprintForm);
+        const ctaId = workflowSprintSubmit.dataset.ctaId || 'workflow_sprint_intake';
+        const attribution = buildAttribution(ctaId);
+        const traceId = createEphemeralId('sprint_');
+        const payload = {
+          email: formData.get('email'),
+          company: formData.get('company'),
+          workflow: formData.get('workflow'),
+          owner: formData.get('owner'),
+          runtime: formData.get('runtime'),
+          blocker: formData.get('blocker'),
+          note: formData.get('note'),
+          installId: getInstallId(),
+          visitorId: getVisitorId(),
+          sessionId: getSessionId(),
+          acquisitionId: getAcquisitionId(),
+          traceId: traceId,
+          ctaId: ctaId,
+          ctaPlacement: workflowSprintSubmit.dataset.ctaPlacement || 'workflow_sprint',
+          planId: workflowSprintSubmit.dataset.planId || 'sprint',
+          page: window.location.pathname,
+          landingPath: attribution.landingPath,
+          referrer: attribution.referrer,
+          referrerHost: attribution.referrerHost,
+          source: attribution.source,
+          utmSource: attribution.utmSource,
+          utmMedium: attribution.utmMedium || 'workflow_sprint_intake',
+          utmCampaign: attribution.utmCampaign || 'workflow_hardening_sprint',
+          utmContent: attribution.utmContent || 'workflow_sprint_form',
+          utmTerm: attribution.utmTerm,
+          community: attribution.community,
+          postId: attribution.postId,
+          commentId: attribution.commentId,
+          campaignVariant: attribution.campaignVariant,
+          offerCode: attribution.offerCode
+        };
+
+        workflowSprintSubmit.disabled = true;
+        workflowSprintSubmit.setAttribute('aria-busy', 'true');
+        setWorkflowSprintStatus('Submitting sprint intake...');
+
+        try {
+          const response = await fetch('/v1/intake/workflow-sprint', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const result = await response.json().catch(function () { return {}; });
+          if (!response.ok) {
+            throw new Error(result && result.detail ? result.detail : 'Unable to submit sprint intake.');
+          }
+
+          workflowSprintForm.reset();
+          setWorkflowSprintStatus('Sprint intake captured. Review the proof pack while we follow up.');
+          trackGaEvent('generate_lead', {
+            lead_type: 'workflow_sprint',
+            cta_id: ctaId,
+            cta_placement: payload.ctaPlacement,
+            traffic_channel: attribution.source || 'website'
+          });
+          if (window.plausible) {
+            window.plausible('Workflow Sprint Intake Submitted', {
+              props: {
+                source: attribution.source || 'website',
+                ctaId: ctaId
+              }
+            });
+          }
+        } catch (err) {
+          setWorkflowSprintStatus(err && err.message ? err.message : 'Unable to submit sprint intake right now.');
+        } finally {
+          workflowSprintSubmit.disabled = false;
+          workflowSprintSubmit.removeAttribute('aria-busy');
+        }
+      }
+
       function trackGenericCtaClick(target) {
         if (!target || target === checkoutCta) return;
         sendTelemetry('cta_click', {
@@ -1378,6 +1599,10 @@ __GA_BOOTSTRAP__
           }
           selectedLossReason = null;
         });
+      }
+
+      if (workflowSprintForm) {
+        workflowSprintForm.addEventListener('submit', submitWorkflowSprintIntake);
       }
 
       const landingAttribution = buildAttribution(null);
