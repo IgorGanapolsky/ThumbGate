@@ -20,8 +20,9 @@ process.env.STRIPE_PRICE_ID = '';
 process.env.RLHF_PUBLIC_APP_ORIGIN = 'https://app.example.com';
 process.env.RLHF_BILLING_API_BASE_URL = 'https://billing.example.com';
 
-const { startServer } = require('../src/api/server');
+const { startServer, __test__ } = require('../src/api/server');
 const billing = require('../scripts/billing');
+const { buildHostedSuccessUrl } = require('../scripts/hosted-config');
 
 let handle;
 let apiOrigin = '';
@@ -149,6 +150,25 @@ test('cancel page serves retry message', async () => {
   assert.match(body, /Return to Context Gateway/);
 });
 
+test('checkout fallback URLs preserve Stripe session placeholders while carrying visitor-session attribution', () => {
+  const hostedSuccessUrl = buildHostedSuccessUrl('https://app.example.com', 'trace_checkout');
+  const decoratedUrl = __test__.buildCheckoutFallbackUrl(hostedSuccessUrl, {
+    acquisitionId: 'acq_test',
+    visitorId: 'visitor_test',
+    sessionId: 'visitor_session_test',
+    utmSource: 'reddit',
+    community: 'ClaudeCode',
+  });
+  const parsed = new URL(decoratedUrl);
+
+  assert.equal(parsed.searchParams.get('session_id'), '{CHECKOUT_SESSION_ID}');
+  assert.equal(parsed.searchParams.get('visitor_session_id'), 'visitor_session_test');
+  assert.equal(parsed.searchParams.get('acquisition_id'), 'acq_test');
+  assert.equal(parsed.searchParams.get('visitor_id'), 'visitor_test');
+  assert.equal(parsed.searchParams.get('utm_source'), 'reddit');
+  assert.equal(parsed.searchParams.get('community'), 'ClaudeCode');
+});
+
 test('checkout bootstrap route preserves attribution and records first-party telemetry in local mode', async () => {
   const res = await fetch(
     apiUrl('/checkout/pro?acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_term=agentic+feedback&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
@@ -163,11 +183,11 @@ test('checkout bootstrap route preserves attribution and records first-party tel
   assert.equal(res.status, 302);
   const location = new URL(res.headers.get('location'));
   assert.equal(location.pathname, '/success');
-  assert.ok(location.searchParams.get('session_id'));
+  assert.match(String(location.searchParams.get('session_id')), /^test_session_/);
   assert.match(String(location.searchParams.get('trace_id')), /^checkout_/);
   assert.equal(location.searchParams.get('acquisition_id'), 'acq_bootstrap');
   assert.equal(location.searchParams.get('visitor_id'), 'visitor_bootstrap');
-  assert.equal(location.searchParams.get('session_id'), 'session_bootstrap');
+  assert.equal(location.searchParams.get('visitor_session_id'), 'session_bootstrap');
   assert.equal(location.searchParams.get('install_id'), 'inst_bootstrap');
 
   const funnelEvents = readJsonl(process.env._TEST_FUNNEL_LEDGER_PATH);
@@ -644,6 +664,9 @@ test('funnel analytics returns counts and conversion rates', async () => {
         utmMedium: 'organic_social',
         utmCampaign: 'reddit_launch',
         community: 'ClaudeCode',
+        postId: '1rsudq0',
+        commentId: 'oa9mqjf',
+        campaignVariant: 'comment_problem_solution',
         offerCode: 'REDDIT-EARLY',
         ctaId: 'pricing_pro',
       },
@@ -671,5 +694,8 @@ test('funnel analytics returns counts and conversion rates', async () => {
   assert.ok(summary.signups.bySource.reddit >= 1);
   assert.ok(summary.attribution.acquisitionByCampaign.reddit_launch >= 1);
   assert.ok(summary.attribution.acquisitionByCommunity.ClaudeCode >= 1);
+  assert.ok(summary.attribution.acquisitionByPostId['1rsudq0'] >= 1);
+  assert.ok(summary.attribution.acquisitionByCommentId.oa9mqjf >= 1);
+  assert.ok(summary.attribution.acquisitionByCampaignVariant.comment_problem_solution >= 1);
   assert.ok(summary.attribution.acquisitionByOfferCode['REDDIT-EARLY'] >= 1);
 });

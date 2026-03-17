@@ -160,6 +160,24 @@ function appendQueryParam(url, key, value) {
   }
 }
 
+function appendVisitorSessionQueryParam(url, value) {
+  const normalized = normalizeNullableText(value);
+  if (!normalized) {
+    return;
+  }
+
+  if (url.searchParams.has('session_id')) {
+    url.searchParams.set('visitor_session_id', normalized);
+    return;
+  }
+
+  url.searchParams.set('session_id', normalized);
+}
+
+function restoreStripeCheckoutPlaceholder(urlString) {
+  return String(urlString).replace(/%7BCHECKOUT_SESSION_ID%7D/g, '{CHECKOUT_SESSION_ID}');
+}
+
 function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
   const url = new URL(baseUrl);
   appendQueryParam(url, 'utm_source', metadata.utmSource || metadata.source);
@@ -175,13 +193,13 @@ function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
   appendQueryParam(url, 'trace_id', metadata.traceId);
   appendQueryParam(url, 'acquisition_id', metadata.acquisitionId);
   appendQueryParam(url, 'visitor_id', metadata.visitorId);
-  appendQueryParam(url, 'session_id', metadata.sessionId);
+  appendVisitorSessionQueryParam(url, metadata.sessionId);
   appendQueryParam(url, 'cta_id', metadata.ctaId);
   appendQueryParam(url, 'cta_placement', metadata.ctaPlacement);
   appendQueryParam(url, 'plan_id', metadata.planId);
   appendQueryParam(url, 'landing_path', metadata.landingPath);
   appendQueryParam(url, 'referrer_host', metadata.referrerHost);
-  return url.toString();
+  return restoreStripeCheckoutPlaceholder(url.toString());
 }
 
 function buildCheckoutBootstrapBody(parsed, req) {
@@ -192,7 +210,7 @@ function buildCheckoutBootstrapBody(parsed, req) {
     installId: pickFirstText(params.get('install_id')),
     acquisitionId: pickFirstText(params.get('acquisition_id')) || createJourneyId('acq'),
     visitorId: pickFirstText(params.get('visitor_id')) || createJourneyId('visitor'),
-    sessionId: pickFirstText(params.get('session_id')) || createJourneyId('session'),
+    sessionId: pickFirstText(params.get('visitor_session_id'), params.get('session_id')) || createJourneyId('session'),
     customerEmail: pickFirstText(params.get('customer_email')),
     source: pickFirstText(params.get('source'), params.get('utm_source'), 'website'),
     utmSource: pickFirstText(params.get('utm_source'), params.get('source'), 'website'),
@@ -656,7 +674,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
             traceId: params.get('trace_id'),
             acquisitionId: params.get('acquisition_id'),
             visitorId: params.get('visitor_id'),
-            sessionId: params.get('session_id'),
+            sessionId: params.get('visitor_session_id') || params.get('session_id'),
             installId: params.get('install_id'),
             source: params.get('utm_source') || params.get('source') || 'website',
             utmSource: params.get('utm_source') || params.get('source') || 'website',
@@ -692,7 +710,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         }
 
         const retryUrl = new URL(retryLink.href, window.location.origin);
-        ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'install_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'community', 'post_id', 'comment_id', 'campaign_variant', 'offer_code', 'cta_id', 'cta_placement', 'plan_id', 'landing_path', 'referrer_host'].forEach(function (key) {
+        ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'visitor_session_id', 'install_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'community', 'post_id', 'comment_id', 'campaign_variant', 'offer_code', 'cta_id', 'cta_placement', 'plan_id', 'landing_path', 'referrer_host'].forEach(function (key) {
           const value = params.get(key);
           if (value) retryUrl.searchParams.set(key, value);
         });
@@ -1018,7 +1036,7 @@ function createApiServer() {
         successUrl.searchParams.set('trace_id', traceId);
         appendQueryParam(successUrl, 'acquisition_id', analyticsMetadata.acquisitionId);
         appendQueryParam(successUrl, 'visitor_id', analyticsMetadata.visitorId);
-        appendQueryParam(successUrl, 'session_id', analyticsMetadata.sessionId);
+        appendVisitorSessionQueryParam(successUrl, analyticsMetadata.sessionId);
         appendQueryParam(successUrl, 'install_id', bootstrapBody.installId);
         appendQueryParam(successUrl, 'utm_source', analyticsMetadata.utmSource);
         appendQueryParam(successUrl, 'utm_medium', analyticsMetadata.utmMedium);
@@ -1884,6 +1902,9 @@ function startServer({ port } = {}) {
 module.exports = {
   createApiServer,
   startServer,
+  __test__: {
+    buildCheckoutFallbackUrl,
+  },
 };
 
 if (require.main === module) {
