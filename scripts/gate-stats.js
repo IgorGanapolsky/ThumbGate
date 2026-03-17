@@ -3,10 +3,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const { getAutoGatesPath } = require('./auto-promote-gates');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const MANUAL_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
-const AUTO_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'auto-promoted.json');
 
 function loadGatesFile(filePath) {
   if (!fs.existsSync(filePath)) return [];
@@ -19,13 +19,14 @@ function loadGatesFile(filePath) {
 }
 
 function calculateStats() {
+  const autoGatesPath = getAutoGatesPath();
   const manualGates = loadGatesFile(MANUAL_GATES_PATH);
-  const autoGates = loadGatesFile(AUTO_GATES_PATH);
+  const autoGates = loadGatesFile(autoGatesPath);
   const allGates = [...manualGates, ...autoGates];
 
   let autoPromotedData = { promotionLog: [] };
-  if (fs.existsSync(AUTO_GATES_PATH)) {
-    try { autoPromotedData = JSON.parse(fs.readFileSync(AUTO_GATES_PATH, 'utf-8')); } catch {}
+  if (fs.existsSync(autoGatesPath)) {
+    try { autoPromotedData = JSON.parse(fs.readFileSync(autoGatesPath, 'utf-8')); } catch {}
   }
   const promotionLog = autoPromotedData.promotionLog || [];
 
@@ -112,5 +113,4 @@ module.exports = {
   formatLastPromotion,
   loadGatesFile,
   MANUAL_GATES_PATH,
-  AUTO_GATES_PATH,
 };

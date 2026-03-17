@@ -5,9 +5,15 @@ const os = require('node:os');
 const path = require('node:path');
 
 const {
+  DEFAULT_CHECKS,
   collectHealthReport,
   reportToText,
 } = require('../scripts/self-healing-check');
+
+test('DEFAULT_CHECKS delegates verification through npm test', () => {
+  const testsCheck = DEFAULT_CHECKS.find((check) => check.name === 'tests');
+  assert.deepEqual(testsCheck.command, ['npm', 'test']);
+});
 
 test('collectHealthReport marks overall healthy when all checks pass', () => {
   const checks = [

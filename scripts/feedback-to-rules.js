@@ -2,6 +2,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { getAutoGatesPath } = require('./auto-promote-gates');
 
 const DEFAULT_LOG = path.join(__dirname, '..', '.claude', 'memory', 'feedback', 'feedback-log.jsonl');
 const NEG = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
@@ -30,8 +31,6 @@ function normalize(ctx) {
 }
 
 const HIGH_RISK_TAGS = new Set(['git-workflow', 'scope-control', 'trust-breach', 'execution-gap', 'regression', 'security']);
-const AUTO_GATE_PATH = path.join(__dirname, '..', 'config', 'gates', 'auto-promoted.json');
-
 function analyze(entries) {
   let positiveCount = 0, negativeCount = 0;
   const categories = {};
@@ -101,6 +100,7 @@ function analyze(entries) {
 }
 
 function promoteToGates(recurringIssues) {
+  const autoGatePath = getAutoGatesPath();
   const autoGates = { version: 1, gates: [] };
   
   for (const issue of recurringIssues) {
@@ -128,8 +128,8 @@ function promoteToGates(recurringIssues) {
   }
 
   if (autoGates.gates.length > 0) {
-    fs.mkdirSync(path.dirname(AUTO_GATE_PATH), { recursive: true });
-    fs.writeFileSync(AUTO_GATE_PATH, JSON.stringify(autoGates, null, 2));
+    fs.mkdirSync(path.dirname(autoGatePath), { recursive: true });
+    fs.writeFileSync(autoGatePath, JSON.stringify(autoGates, null, 2));
   }
 }
 

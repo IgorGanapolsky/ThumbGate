@@ -4,8 +4,6 @@
 const fs = require('fs');
 const path = require('path');
 
-const PROJECT_ROOT = path.join(__dirname, '..');
-const AUTO_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'auto-promoted.json');
 const MAX_AUTO_GATES = 10;
 const WARN_THRESHOLD = 3;
 const BLOCK_THRESHOLD = 5;
@@ -24,6 +22,10 @@ function getFeedbackLogPath() {
   return localRlhf; // default even if doesn't exist
 }
 
+function getAutoGatesPath() {
+  return path.join(path.dirname(getFeedbackLogPath()), 'auto-promoted-gates.json');
+}
+
 function readJSONL(filePath) {
   if (!fs.existsSync(filePath)) return [];
   const raw = fs.readFileSync(filePath, 'utf-8').trim();
@@ -34,20 +36,22 @@ function readJSONL(filePath) {
 }
 
 function loadAutoGates() {
-  if (!fs.existsSync(AUTO_GATES_PATH)) {
+  const autoGatesPath = getAutoGatesPath();
+  if (!fs.existsSync(autoGatesPath)) {
     return { version: 1, gates: [], promotionLog: [] };
   }
   try {
-    return JSON.parse(fs.readFileSync(AUTO_GATES_PATH, 'utf-8'));
+    return JSON.parse(fs.readFileSync(autoGatesPath, 'utf-8'));
   } catch {
     return { version: 1, gates: [], promotionLog: [] };
   }
 }
 
 function saveAutoGates(data) {
-  const dir = path.dirname(AUTO_GATES_PATH);
+  const autoGatesPath = getAutoGatesPath();
+  const dir = path.dirname(autoGatesPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(AUTO_GATES_PATH, JSON.stringify(data, null, 2) + '\n');
+  fs.writeFileSync(autoGatesPath, JSON.stringify(data, null, 2) + '\n');
 }
 
 function isNegative(entry) {
@@ -231,6 +235,7 @@ module.exports = {
   promote,
   loadAutoGates,
   saveAutoGates,
+  getAutoGatesPath,
   groupNegativeFeedback,
   patternToGateId,
   buildGateRule,
@@ -240,5 +245,4 @@ module.exports = {
   WARN_THRESHOLD,
   BLOCK_THRESHOLD,
   WINDOW_DAYS,
-  AUTO_GATES_PATH,
 };

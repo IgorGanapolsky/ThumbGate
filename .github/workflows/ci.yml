@@ -41,14 +41,8 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Install worker deps
-        run: npm --prefix workers ci
-
       - name: Run tests
         run: npm test
-
-      - name: Run worker checks
-        run: npm run test:workers
 
       - name: Run adapter proof
         run: npm run prove:adapters

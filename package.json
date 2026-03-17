@@ -55,7 +55,7 @@
     "test:watcher": "node --test tests/jsonl-watcher.test.js",
     "test:autoresearch": "node --test tests/autoresearch.test.js",
     "test:gates": "node --test tests/gates-engine.test.js tests/secret-scanner.test.js tests/prompt-guard.test.js",
-    "test:workers": "npm --prefix workers test",
+    "test:workers": "npm --prefix workers ci && npm --prefix workers test",
     "test:evoskill": "node --test tests/evoskill.test.js",
     "test:gates-hardening": "node --test tests/gates-hardening.test.js",
     "test:coverage": "node scripts/test-coverage.js",
