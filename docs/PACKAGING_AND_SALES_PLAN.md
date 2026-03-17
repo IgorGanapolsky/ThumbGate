@@ -43,7 +43,7 @@ Pricing note:
 
 Current note:
 
-- The public self-serve commercial offer is Pro at `$29/mo` recurring per `docs/COMMERCIAL_TRUTH.md`.
+- The public self-serve commercial offer is Pro at `$49/mo` recurring per `docs/COMMERCIAL_TRUTH.md`.
 - Hosted Context Gateway access is pilot/by-request, not a public recurring subscription.
 
 ### Tier 3: Enterprise (Pricing: custom quote)

@@ -30,7 +30,7 @@ Then add it to your Claude Code MCP config. That's it.
 - Exports DPO/KTO training pairs if you want to fine-tune
 - Works with Claude Code, Codex, Gemini CLI, and Amp
 
-It's open source and free for local use. There's a [$29/mo Pro tier](https://rlhf-feedback-loop-production.up.railway.app) if you want hosted dashboard, auto-gate promotion, and multi-repo sync for teams — but the core is fully functional without it.
+It's open source and free for local use. There's a [$49/mo Pro tier](https://rlhf-feedback-loop-production.up.railway.app) if you want hosted dashboard, auto-gate promotion, and multi-repo sync for teams — but the core is fully functional without it.
 
 314 tests, 12 proof reports, MIT licensed. Would love feedback from other Claude Code users on what failure patterns you'd want gates for.
 

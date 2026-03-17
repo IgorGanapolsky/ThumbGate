@@ -16,7 +16,7 @@ MCP Memory Gateway gives Claude Code, Codex, and Gemini persistent memory across
 
 Thumbs-up/down feedback → stored locally → queried before every action → repeated failures auto-blocked.
 
-Self-serve Pro ($29/mo):
+Self-serve Pro ($49/mo):
 https://iganapolsky.gumroad.com/l/tjovof
 
 ---
@@ -60,6 +60,6 @@ This does all three.
 
 **Tweet 7 (close + dual CTA):**
 Free self-hosted: npx mcp-memory-gateway serve
-Pro ($29/mo): https://iganapolsky.gumroad.com/l/tjovof
+Pro ($49/mo): https://iganapolsky.gumroad.com/l/tjovof
 Hosted demo: https://rlhf-feedback-loop-production.up.railway.app
 GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
