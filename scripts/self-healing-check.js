@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-const { spawnSync } = require('node:child_process');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const { diagnoseFailure } = require('./failure-diagnostics');
 const { appendDiagnosticRecord } = require('./feedback-loop');
 
@@ -9,15 +11,20 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_CHECKS = [
   { name: 'budget_status', command: ['npm', 'run', 'budget:status'], timeoutMs: 60_000 },
   { name: 'tests', command: ['npm', 'test'], timeoutMs: 15 * 60_000 },
-  { name: 'prove_adapters', command: ['npm', 'run', 'prove:adapters'], timeoutMs: 10 * 60_000 },
-  { name: 'prove_automation', command: ['npm', 'run', 'prove:automation'], timeoutMs: 10 * 60_000 },
+  { name: 'prove_adapters', command: ['npm', 'run', 'prove:adapters'], timeoutMs: 10 * 60_000, useTempProofDir: true },
+  { name: 'prove_automation', command: ['npm', 'run', 'prove:automation'], timeoutMs: 10 * 60_000, useTempProofDir: true },
 ];
 
-function runCommand(command, { cwd = PROJECT_ROOT, timeoutMs = 5 * 60_000 } = {}) {
+function runCommand(command, {
+  cwd = PROJECT_ROOT,
+  timeoutMs = 5 * 60_000,
+  env = process.env,
+} = {}) {
   const [cmd, ...args] = command;
   const started = Date.now();
   const result = spawnSync(cmd, args, {
     cwd,
+    env,
     encoding: 'utf-8',
     timeout: timeoutMs,
     shell: false,
@@ -34,6 +41,21 @@ function runCommand(command, { cwd = PROJECT_ROOT, timeoutMs = 5 * 60_000 } = {}
   };
 }
 
+function createCheckEnvironment(check) {
+  const environment = { ...process.env };
+  let cleanup = null;
+
+  if (check.useTempProofDir) {
+    const proofDir = fs.mkdtempSync(path.join(os.tmpdir(), `rlhf-${check.name}-`));
+    environment.RLHF_PROOF_DIR = proofDir;
+    cleanup = () => {
+      fs.rmSync(proofDir, { recursive: true, force: true });
+    };
+  }
+
+  return { env: environment, cleanup };
+}
+
 function collectHealthReport({
   checks = DEFAULT_CHECKS,
   runner = runCommand,
@@ -42,7 +64,15 @@ function collectHealthReport({
 } = {}) {
   const startedAt = new Date();
   const results = checks.map((check) => {
-    const run = runner(check.command, { cwd, timeoutMs: check.timeoutMs });
+    const { env, cleanup } = createCheckEnvironment(check);
+    let run;
+    try {
+      run = runner(check.command, { cwd, timeoutMs: check.timeoutMs, env });
+    } finally {
+      if (cleanup) {
+        cleanup();
+      }
+    }
     const diagnosis = run.exitCode === 0
       ? null
       : diagnoseFailure({

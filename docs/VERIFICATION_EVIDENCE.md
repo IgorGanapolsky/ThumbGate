@@ -862,6 +862,48 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-17 Self-Heal Proof Isolation Verification
+
+Scope:
+
+- Fixed `scripts/self-healing-check.js` so proof-bearing health checks run with an isolated temporary `RLHF_PROOF_DIR`.
+- Prevented `self-heal:check` from failing on clean merge commits due to shared tracked `proof/` artifacts instead of real behavioral regressions.
+- Added regression coverage to prove the health checker both injects and cleans temporary proof directories.
+
+Commands run:
+
+```bash
+git diff --check
+node --test tests/self-healing-check.test.js
+npm ci
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- `git diff --check`: completed cleanly.
+- `node --test tests/self-healing-check.test.js`: `14` passed, `0` failed.
+- `npm ci`: completed successfully; `audited 151 packages` and `found 0 vulnerabilities`.
+- `npm test`: passed.
+- `npm run test:coverage`: `1100` tests, `1099` passed, `0` failed, `1` skipped; coverage `84.40%` lines, `70.77%` branches, `87.18%` functions.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `55` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+
+Behavioral proof points:
+
+- `DEFAULT_CHECKS` now marks both `prove_adapters` and `prove_automation` for proof-directory isolation.
+- `collectHealthReport` provisions a temp `RLHF_PROOF_DIR` per proof check and removes it after execution.
+- The repaired `self-heal:check` now stays healthy under the same heavy `tests + prove_*` workload that failed on merge commit `9b5f5a1`.
+
+Artifacts updated:
+
+- `docs/VERIFICATION_EVIDENCE.md`
+
 ## 2026-03-17 Growth Observability + Tracking Readiness Verification
 
 Scope:
