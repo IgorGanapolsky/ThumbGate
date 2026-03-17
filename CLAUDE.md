@@ -17,6 +17,7 @@ capture explicit feedback, convert valid memories, prevent repeated failures, an
   - `.claude/memory/feedback/*`
   - `.rlhf/*`
 - Never commit ephemeral `.claude/worktrees/*` lanes or live `.rlhf/*` runtime artifacts. Treat them as local operational state only.
+- Never commit generated `.claude/memory/feedback/lancedb/*` artifacts. The vector store must be rebuilt locally, not versioned.
 
 ## Operating Contract
 
@@ -103,6 +104,7 @@ Feedback and context data are local and git-ignored:
 - `.claude/memory/feedback/feedback-summary.json`
 - `.claude/memory/feedback/prevention-rules.md`
 - `.claude/memory/feedback/contextfs/`
+- `.claude/memory/feedback/lancedb/`
 
 ## Session Directive: PR Management & System Hygiene
 

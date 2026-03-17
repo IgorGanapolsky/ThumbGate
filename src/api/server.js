@@ -144,6 +144,65 @@ function buildCheckoutAttributionMetadata(body, req, traceId) {
   };
 }
 
+function createJourneyId(prefix) {
+  return createTraceId(prefix).replace(/^trace_/, `${prefix}_`);
+}
+
+function appendQueryParam(url, key, value) {
+  const normalized = normalizeNullableText(value);
+  if (normalized) {
+    url.searchParams.set(key, normalized);
+  }
+}
+
+function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
+  const url = new URL(baseUrl);
+  appendQueryParam(url, 'utm_source', metadata.utmSource || metadata.source);
+  appendQueryParam(url, 'utm_medium', metadata.utmMedium);
+  appendQueryParam(url, 'utm_campaign', metadata.utmCampaign);
+  appendQueryParam(url, 'utm_content', metadata.utmContent);
+  appendQueryParam(url, 'utm_term', metadata.utmTerm);
+  appendQueryParam(url, 'trace_id', metadata.traceId);
+  appendQueryParam(url, 'acquisition_id', metadata.acquisitionId);
+  appendQueryParam(url, 'visitor_id', metadata.visitorId);
+  appendQueryParam(url, 'session_id', metadata.sessionId);
+  appendQueryParam(url, 'cta_id', metadata.ctaId);
+  appendQueryParam(url, 'cta_placement', metadata.ctaPlacement);
+  appendQueryParam(url, 'plan_id', metadata.planId);
+  appendQueryParam(url, 'landing_path', metadata.landingPath);
+  appendQueryParam(url, 'referrer_host', metadata.referrerHost);
+  return url.toString();
+}
+
+function buildCheckoutBootstrapBody(parsed, req) {
+  const params = parsed.searchParams;
+  const traceId = pickFirstText(params.get('trace_id')) || createJourneyId('checkout');
+  return {
+    traceId,
+    installId: pickFirstText(params.get('install_id')),
+    acquisitionId: pickFirstText(params.get('acquisition_id')) || createJourneyId('acq'),
+    visitorId: pickFirstText(params.get('visitor_id')) || createJourneyId('visitor'),
+    sessionId: pickFirstText(params.get('session_id')) || createJourneyId('session'),
+    customerEmail: pickFirstText(params.get('customer_email')),
+    source: pickFirstText(params.get('source'), params.get('utm_source'), 'website'),
+    utmSource: pickFirstText(params.get('utm_source'), params.get('source'), 'website'),
+    utmMedium: pickFirstText(params.get('utm_medium'), 'cta_button'),
+    utmCampaign: pickFirstText(params.get('utm_campaign'), 'pro_pack'),
+    utmContent: pickFirstText(params.get('utm_content')),
+    utmTerm: pickFirstText(params.get('utm_term')),
+    landingPath: pickFirstText(params.get('landing_path'), req.headers.referer ? '/' : '/'),
+    referrerHost: pickFirstText(params.get('referrer_host')),
+    ctaId: pickFirstText(params.get('cta_id'), 'pricing_pro'),
+    ctaPlacement: pickFirstText(params.get('cta_placement'), 'pricing'),
+    planId: pickFirstText(params.get('plan_id'), 'pro'),
+    metadata: {
+      referrer: pickFirstText(params.get('referrer'), req.headers.referer, req.headers.referrer),
+      landingPath: pickFirstText(params.get('landing_path'), '/'),
+      referrerHost: pickFirstText(params.get('referrer_host')),
+    },
+  };
+}
+
 function sendJson(res, statusCode, payload, extraHeaders = {}) {
   const body = JSON.stringify(payload);
   res.writeHead(statusCode, {
@@ -234,6 +293,28 @@ function loadLandingPageHtml(runtimeConfig) {
   });
 }
 
+function renderRobotsTxt(runtimeConfig) {
+  return [
+    'User-agent: *',
+    'Allow: /',
+    `Sitemap: ${runtimeConfig.appOrigin}/sitemap.xml`,
+  ].join('\n');
+}
+
+function renderSitemapXml(runtimeConfig) {
+  const homeUrl = `${runtimeConfig.appOrigin}/`;
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    '  <url>',
+    `    <loc>${homeUrl}</loc>`,
+    '    <changefreq>weekly</changefreq>',
+    '    <priority>1.0</priority>',
+    '  </url>',
+    '</urlset>',
+  ].join('\n');
+}
+
 function renderCheckoutSuccessPage(runtimeConfig) {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -241,6 +322,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Context Gateway Activated</title>
+  <meta name="robots" content="noindex,nofollow" />
   <style>
     :root {
       --bg: #f6f1e8;
@@ -433,12 +515,21 @@ function renderCheckoutCancelledPage(runtimeConfig) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Checkout Cancelled</title>
+  <meta name="robots" content="noindex,nofollow" />
   <style>
+    :root {
+      --bg: #f6f1e8;
+      --ink: #1d1b18;
+      --muted: #625a4d;
+      --line: #d7cfbf;
+      --accent: #b85c2d;
+      --surface: #fffdf9;
+    }
     body {
       margin: 0;
       font-family: Georgia, 'Times New Roman', serif;
-      background: #f6f1e8;
-      color: #1d1b18;
+      background: var(--bg);
+      color: var(--ink);
     }
     main {
       max-width: 720px;
@@ -452,17 +543,60 @@ function renderCheckoutCancelledPage(runtimeConfig) {
     }
     p {
       font-size: 18px;
-      color: #625a4d;
+      color: var(--muted);
       margin: 0 0 20px;
     }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      margin-top: 18px;
+    }
+    .reason-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    button,
     a {
       display: inline-block;
       text-decoration: none;
-      background: #b85c2d;
+      background: var(--accent);
       color: white;
       padding: 12px 18px;
       border-radius: 10px;
       font-weight: 700;
+      border: 0;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 15px;
+    }
+    button.secondary,
+    a.secondary {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    textarea {
+      width: 100%;
+      min-height: 88px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      padding: 12px;
+      font: inherit;
+      resize: vertical;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .note {
+      font-size: 14px;
+      margin-top: 12px;
     }
   </style>
 </head>
@@ -470,7 +604,100 @@ function renderCheckoutCancelledPage(runtimeConfig) {
   <main>
     <h1>Checkout cancelled.</h1>
     <p>No charge was made. You can return to the landing page and restart checkout whenever you are ready.</p>
-    <a href="${runtimeConfig.appOrigin}">Return to Context Gateway</a>
+    <div class="card">
+      <h2>What stopped you?</h2>
+      <p>Pick the closest reason. This writes directly into the first-party telemetry stream so we can fix the real blocker instead of guessing.</p>
+      <div class="reason-grid">
+        <button type="button" data-reason="too_expensive">Too expensive</button>
+        <button type="button" data-reason="not_ready">Just researching</button>
+        <button type="button" data-reason="need_team_features">Need team workflow features</button>
+        <button type="button" data-reason="need_more_proof">Need more proof or trust</button>
+        <button type="button" data-reason="prefer_oss">Sticking with OSS only</button>
+        <button type="button" data-reason="integration_unclear">Integration is unclear</button>
+      </div>
+      <div style="margin-top:16px;">
+        <label for="buyer-note">Anything specific?</label>
+        <textarea id="buyer-note" placeholder="Optional detail: team size, workflow, blocker, competitor, or missing feature."></textarea>
+      </div>
+      <div class="actions">
+        <button type="button" id="submit-reason">Send feedback</button>
+        <a id="retry-checkout" href="/checkout/pro" class="secondary">Try checkout again</a>
+        <a href="${runtimeConfig.appOrigin}" class="secondary">Return to Context Gateway</a>
+      </div>
+      <p class="note" id="status">No feedback sent yet.</p>
+    </div>
+    <script>
+      (function () {
+        const params = new URLSearchParams(window.location.search);
+        const statusEl = document.getElementById('status');
+        const noteEl = document.getElementById('buyer-note');
+        const retryLink = document.getElementById('retry-checkout');
+        let selectedReason = null;
+
+        function sendTelemetry(eventType, extra) {
+          const payload = Object.assign({
+            eventType: eventType,
+            clientType: 'web',
+            traceId: params.get('trace_id'),
+            acquisitionId: params.get('acquisition_id'),
+            visitorId: params.get('visitor_id'),
+            sessionId: params.get('session_id'),
+            installId: params.get('install_id'),
+            source: params.get('utm_source') || params.get('source') || 'website',
+            utmSource: params.get('utm_source') || params.get('source') || 'website',
+            utmMedium: params.get('utm_medium') || 'checkout_cancel',
+            utmCampaign: params.get('utm_campaign') || 'pro_pack',
+            utmContent: params.get('utm_content'),
+            utmTerm: params.get('utm_term'),
+            ctaId: params.get('cta_id') || 'pricing_pro',
+            ctaPlacement: params.get('cta_placement') || 'pricing',
+            planId: params.get('plan_id') || 'pro',
+            page: window.location.pathname,
+            landingPath: params.get('landing_path') || '/',
+            referrerHost: params.get('referrer_host'),
+            referrer: document.referrer || null
+          }, extra || {});
+
+          const body = JSON.stringify(payload);
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon('/v1/telemetry/ping', new Blob([body], { type: 'application/json' }));
+            return;
+          }
+          fetch('/v1/telemetry/ping', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: body,
+            keepalive: true
+          }).catch(function () {});
+        }
+
+        const retryUrl = new URL(retryLink.href, window.location.origin);
+        ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'install_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'cta_id', 'cta_placement', 'plan_id', 'landing_path', 'referrer_host'].forEach(function (key) {
+          const value = params.get(key);
+          if (value) retryUrl.searchParams.set(key, value);
+        });
+        retryLink.href = retryUrl.toString();
+
+        sendTelemetry('checkout_cancelled');
+
+        document.querySelectorAll('[data-reason]').forEach(function (button) {
+          button.addEventListener('click', function () {
+            selectedReason = button.getAttribute('data-reason');
+            statusEl.textContent = 'Selected reason: ' + selectedReason.replaceAll('_', ' ') + '.';
+          });
+        });
+
+        document.getElementById('submit-reason').addEventListener('click', function () {
+          sendTelemetry('reason_not_buying', {
+            reasonCode: selectedReason || 'unspecified',
+            reasonText: noteEl.value || null
+          });
+          statusEl.textContent = selectedReason
+            ? 'Feedback saved: ' + selectedReason.replaceAll('_', ' ') + '.'
+            : 'Feedback saved.';
+        });
+      }());
+    </script>
   </main>
 </body>
 </html>`;
@@ -676,6 +903,20 @@ function createApiServer() {
     }
 
     // Public endpoints — no auth required
+    if (req.method === 'GET' && pathname === '/robots.txt') {
+      sendText(res, 200, renderRobotsTxt(hostedConfig), {
+        'Content-Type': 'text/plain; charset=utf-8',
+      });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/sitemap.xml') {
+      sendText(res, 200, renderSitemapXml(hostedConfig), {
+        'Content-Type': 'application/xml; charset=utf-8',
+      });
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/') {
       if (wantsJson(req, parsed)) {
         sendJson(res, 200, {
@@ -692,6 +933,93 @@ function createApiServer() {
         sendHtml(res, 200, loadLandingPageHtml(hostedConfig));
       } catch (err) {
         sendText(res, 500, err.message || 'Landing page unavailable');
+      }
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/checkout/pro') {
+      const { FEEDBACK_DIR } = getFeedbackPaths();
+      const bootstrapBody = buildCheckoutBootstrapBody(parsed, req);
+      const traceId = bootstrapBody.traceId || createJourneyId('checkout');
+      const analyticsMetadata = buildCheckoutAttributionMetadata(bootstrapBody, req, traceId);
+
+      appendTelemetryPing(FEEDBACK_DIR, {
+        eventType: 'checkout_bootstrap',
+        clientType: 'web',
+        installId: bootstrapBody.installId,
+        acquisitionId: analyticsMetadata.acquisitionId,
+        visitorId: analyticsMetadata.visitorId,
+        sessionId: analyticsMetadata.sessionId,
+        traceId,
+        source: analyticsMetadata.source,
+        utmSource: analyticsMetadata.utmSource,
+        utmMedium: analyticsMetadata.utmMedium,
+        utmCampaign: analyticsMetadata.utmCampaign,
+        utmContent: analyticsMetadata.utmContent,
+        utmTerm: analyticsMetadata.utmTerm,
+        landingPath: analyticsMetadata.landingPath,
+        page: '/checkout/pro',
+        ctaId: analyticsMetadata.ctaId,
+        ctaPlacement: analyticsMetadata.ctaPlacement,
+        planId: analyticsMetadata.planId,
+        referrer: analyticsMetadata.referrer,
+        referrerHost: analyticsMetadata.referrerHost,
+      }, req.headers);
+
+      try {
+        const result = await createCheckoutSession({
+          successUrl: buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
+          cancelUrl: buildHostedCancelUrl(hostedConfig.appOrigin, traceId),
+          customerEmail: bootstrapBody.customerEmail,
+          installId: bootstrapBody.installId,
+          traceId,
+          metadata: analyticsMetadata,
+        });
+
+        if (result.url) {
+          res.writeHead(302, { Location: result.url });
+          res.end();
+          return;
+        }
+
+        const successUrl = new URL('/success', hostedConfig.appOrigin);
+        successUrl.searchParams.set('session_id', result.sessionId);
+        successUrl.searchParams.set('trace_id', traceId);
+        appendQueryParam(successUrl, 'acquisition_id', analyticsMetadata.acquisitionId);
+        appendQueryParam(successUrl, 'visitor_id', analyticsMetadata.visitorId);
+        appendQueryParam(successUrl, 'session_id', analyticsMetadata.sessionId);
+        appendQueryParam(successUrl, 'install_id', bootstrapBody.installId);
+        res.writeHead(302, { Location: successUrl.toString() });
+        res.end();
+      } catch (err) {
+        appendTelemetryPing(FEEDBACK_DIR, {
+          eventType: 'checkout_api_failed',
+          clientType: 'web',
+          installId: bootstrapBody.installId,
+          acquisitionId: analyticsMetadata.acquisitionId,
+          visitorId: analyticsMetadata.visitorId,
+          sessionId: analyticsMetadata.sessionId,
+          traceId,
+          source: analyticsMetadata.source,
+          utmSource: analyticsMetadata.utmSource,
+          utmMedium: analyticsMetadata.utmMedium,
+          utmCampaign: analyticsMetadata.utmCampaign,
+          utmContent: analyticsMetadata.utmContent,
+          utmTerm: analyticsMetadata.utmTerm,
+          landingPath: analyticsMetadata.landingPath,
+          page: '/checkout/pro',
+          ctaId: analyticsMetadata.ctaId,
+          ctaPlacement: analyticsMetadata.ctaPlacement,
+          planId: analyticsMetadata.planId,
+          referrer: analyticsMetadata.referrer,
+          referrerHost: analyticsMetadata.referrerHost,
+          failureCode: err && err.message ? err.message : 'checkout_bootstrap_failed',
+          httpStatus: err && err.statusCode ? err.statusCode : null,
+        }, req.headers);
+        res.writeHead(302, {
+          Location: buildCheckoutFallbackUrl(hostedConfig.checkoutFallbackUrl, analyticsMetadata),
+        });
+        res.end();
       }
       return;
     }

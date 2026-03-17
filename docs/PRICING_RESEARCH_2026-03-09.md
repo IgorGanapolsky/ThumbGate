@@ -21,7 +21,7 @@ This monthly self-serve hypothesis has since been retired. The current public co
 - Cursor Pro: `$20/mo`
 - Claude Team standard seat: `$20/user/mo` annual or `$25/user/mo` monthly
 - Langfuse Context Gateway: `$29/mo`
-- LangSmith Plus: `$39/seat/mo`
+- Enterprise trace-observability seats: `~$39/seat/mo`
 - Portkey Production: `$49/mo`
 - Helicone Pro: `$79/mo`
 - Braintrust Pro: `$249/mo`
@@ -31,4 +31,4 @@ This monthly self-serve hypothesis has since been retired. The current public co
 - The recommendation at the time was to keep `Context Gateway` at `$10/mo` while proving onboarding, activation, and retention.
 - The recommendation at the time was to describe it as a `founding price` or `early adopter price`.
 - The recommendation at the time was not to move to `$49/mo` until the hosted dashboard, team workflows, and measurable ROI proof were live.
-- The recommendation at the time was to revisit a move into the `$29-$49/mo` range once the hosted product clearly competed with Langfuse, LangSmith, Portkey, or Helicone instead of just low-friction developer subscriptions.
+- The recommendation at the time was to revisit a move into the `$29-$49/mo` range once the hosted product clearly competed with Langfuse, trace-observability suites, Portkey, or Helicone instead of just low-friction developer subscriptions.

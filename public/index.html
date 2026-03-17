@@ -55,6 +55,38 @@
     ]
   }
   </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What does mcp-memory-gateway stop?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It stops known AI agent failure patterns before they execute by turning repeated negative feedback into Pre-Action Gates."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Who should upgrade to Pro?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Teams that need cloud-synced memory, shared prevention rules, usage analytics, and unlimited custom gates across multiple machines and repos."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the first workflow this product fits?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The strongest first fit is a repeated coding or operations workflow where the same mistakes recur and a Veto Layer can block them before they waste more engineering time."
+        }
+      }
+    ]
+  }
+  </script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -510,6 +542,83 @@
       margin-top: 8px;
     }
 
+    .buyer-feedback {
+      margin-top: 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      background: rgba(34, 211, 238, 0.04);
+    }
+
+    .buyer-feedback h3 {
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+
+    .buyer-feedback p {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .buyer-feedback-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .buyer-feedback button,
+    .buyer-feedback textarea {
+      font: inherit;
+    }
+
+    .buyer-feedback button {
+      border: 1px solid var(--border-bright);
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color 120ms ease, transform 120ms ease;
+    }
+
+    .buyer-feedback button:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .buyer-feedback textarea {
+      width: 100%;
+      min-height: 88px;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      resize: vertical;
+    }
+
+    .buyer-feedback-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .buyer-feedback-submit {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .buyer-feedback-status {
+      min-height: 20px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
     /* ── Social proof ── */
     .proof-strip {
       display: flex;
@@ -765,8 +874,25 @@
               <li>Unlimited custom gates with auto-gate promotion</li>
               <li>Priority support</li>
             </ul>
-            <a class="btn btn-primary" id="pro-cta" data-cta-id="pricing_pro" data-cta-placement="pricing" data-plan-id="pro" href="https://iganapolsky.gumroad.com/l/tjovof?utm_source=website&utm_medium=cta_button&utm_campaign=pro_pack" target="_blank" rel="noreferrer">Get Pro &mdash; __PRO_PRICE_LABEL__</a>
+            <a class="btn btn-primary" id="pro-cta" data-cta-id="pricing_pro" data-cta-placement="pricing" data-plan-id="pro" href="__CHECKOUT_FALLBACK_URL__?utm_source=website&utm_medium=cta_button&utm_campaign=pro_pack" target="_blank" rel="noreferrer">Get Pro &mdash; __PRO_PRICE_LABEL__</a>
           </div>
+        </div>
+        <div class="buyer-feedback" id="buyer-feedback">
+          <h3>Not buying yet?</h3>
+          <p>Tell us what is blocking the decision. This feeds the buyer-diagnostics layer so pricing, proof, and onboarding can be tightened with evidence instead of guesses.</p>
+          <div class="buyer-feedback-grid">
+            <button type="button" data-loss-reason="too_expensive">Too expensive</button>
+            <button type="button" data-loss-reason="not_ready">Not ready yet</button>
+            <button type="button" data-loss-reason="need_team_features">Need team features</button>
+            <button type="button" data-loss-reason="missing_trust">Need more proof</button>
+            <button type="button" data-loss-reason="using_oss">OSS is enough for now</button>
+          </div>
+          <textarea id="buyer-feedback-note" maxlength="280" placeholder="Optional context: workflow, blocker, team size, or what would make the purchase a yes."></textarea>
+          <div class="buyer-feedback-actions">
+            <button type="button" class="buyer-feedback-submit" id="buyer-feedback-submit">Send buyer feedback</button>
+            <span class="buyer-feedback-status" id="buyer-feedback-status" aria-live="polite"></span>
+          </div>
+          <noscript><p>JavaScript is off, so this quick buyer-feedback capture is unavailable. The direct checkout link still works.</p></noscript>
         </div>
       </div>
     </section>
@@ -786,7 +912,13 @@
     (function () {
       const checkoutCta = document.getElementById('pro-cta');
       const trackedCtas = Array.prototype.slice.call(document.querySelectorAll('[data-cta-id]'));
-      const fallbackBase = 'https://iganapolsky.gumroad.com/l/tjovof';
+      const fallbackBase = '__CHECKOUT_FALLBACK_URL__';
+      const buyerFeedback = document.getElementById('buyer-feedback');
+      const buyerFeedbackNote = document.getElementById('buyer-feedback-note');
+      const buyerFeedbackSubmit = document.getElementById('buyer-feedback-submit');
+      const buyerFeedbackStatus = document.getElementById('buyer-feedback-status');
+      let selectedLossReason = null;
+      let activeCheckoutTraceId = null;
 
       function getStoredId(storage, storageKey, prefix) {
         const existing = storage.getItem(storageKey);
@@ -814,6 +946,21 @@
         return getStoredId(window.sessionStorage, 'rlhf_acquisition_id', 'acq_');
       }
 
+      function createEphemeralId(prefix) {
+        return window.crypto && window.crypto.randomUUID
+          ? prefix + window.crypto.randomUUID().replace(/-/g, '')
+          : prefix + Math.random().toString(16).slice(2) + Date.now().toString(16);
+      }
+
+      function parseReferrerHost(referrer) {
+        if (!referrer) return null;
+        try {
+          return new URL(referrer).host || null;
+        } catch (err) {
+          return null;
+        }
+      }
+
       function getAttributionValue(params, key, fallbackValue) {
         const value = params.get(key);
         return value && value.trim() ? value.trim() : fallbackValue;
@@ -829,6 +976,7 @@
           utmContent: getAttributionValue(params, 'utm_content', ctaId),
           utmTerm: getAttributionValue(params, 'utm_term', null),
           referrer: document.referrer || null,
+          referrerHost: parseReferrerHost(document.referrer || null),
           landingPath: window.location.pathname,
           ctaId: ctaId
         };
@@ -863,14 +1011,42 @@
         }).catch(function () {});
       }
 
-      function buildFallbackUrl(attribution) {
+      function buildFallbackUrl(attribution, checkoutTraceId) {
         const url = new URL(fallbackBase);
         url.searchParams.set('utm_source', attribution.utmSource || attribution.source || 'website');
         url.searchParams.set('utm_medium', attribution.utmMedium || 'cta_button');
         url.searchParams.set('utm_campaign', attribution.utmCampaign || 'pro_pack');
         if (attribution.utmContent) url.searchParams.set('utm_content', attribution.utmContent);
         if (attribution.utmTerm) url.searchParams.set('utm_term', attribution.utmTerm);
+        if (checkoutTraceId) url.searchParams.set('trace_id', checkoutTraceId);
+        url.searchParams.set('acquisition_id', getAcquisitionId());
+        url.searchParams.set('visitor_id', getVisitorId());
+        url.searchParams.set('session_id', getSessionId());
+        url.searchParams.set('install_id', getInstallId());
+        if (attribution.landingPath) url.searchParams.set('landing_path', attribution.landingPath);
+        if (attribution.referrerHost) url.searchParams.set('referrer_host', attribution.referrerHost);
+        if (attribution.ctaId) url.searchParams.set('cta_id', attribution.ctaId);
         return url.toString();
+      }
+
+      function recordBuyerReason(reasonCode, reasonText) {
+        sendTelemetry('reason_not_buying', {
+          ctaId: checkoutCta && checkoutCta.dataset ? checkoutCta.dataset.ctaId || 'pricing_pro' : 'pricing_pro',
+          ctaPlacement: checkoutCta && checkoutCta.dataset ? checkoutCta.dataset.ctaPlacement || 'pricing' : 'pricing',
+          planId: checkoutCta && checkoutCta.dataset ? checkoutCta.dataset.planId || 'pro' : 'pro',
+          reasonCode: reasonCode || 'unspecified',
+          reasonText: reasonText && reasonText.trim() ? reasonText.trim() : null,
+          traceId: activeCheckoutTraceId
+        });
+
+        if (window.plausible) {
+          window.plausible('Buyer Feedback Submitted', {
+            props: {
+              reasonCode: reasonCode || 'unspecified',
+              ctaId: checkoutCta && checkoutCta.dataset ? checkoutCta.dataset.ctaId || 'pricing_pro' : 'pricing_pro'
+            }
+          });
+        }
       }
 
       function trackGenericCtaClick(target) {
@@ -888,6 +1064,34 @@
         });
       });
 
+      if (buyerFeedback) {
+        Array.prototype.slice.call(buyerFeedback.querySelectorAll('[data-loss-reason]')).forEach(function (button) {
+          button.addEventListener('click', function () {
+            selectedLossReason = button.getAttribute('data-loss-reason');
+            sendTelemetry('pricing_interest', {
+              ctaId: checkoutCta && checkoutCta.dataset ? checkoutCta.dataset.ctaId || 'pricing_pro' : 'pricing_pro',
+              reasonCode: selectedLossReason
+            });
+            if (buyerFeedbackStatus) {
+              buyerFeedbackStatus.textContent = 'Selected: ' + selectedLossReason.replace(/_/g, ' ') + '. Add optional context and send.';
+            }
+          });
+        });
+      }
+
+      if (buyerFeedbackSubmit) {
+        buyerFeedbackSubmit.addEventListener('click', function () {
+          recordBuyerReason(selectedLossReason, buyerFeedbackNote ? buyerFeedbackNote.value : '');
+          if (buyerFeedbackStatus) {
+            buyerFeedbackStatus.textContent = 'Thanks. Buyer feedback recorded.';
+          }
+          if (buyerFeedbackNote) {
+            buyerFeedbackNote.value = '';
+          }
+          selectedLossReason = null;
+        });
+      }
+
       sendTelemetry('landing_page_view');
       if (!checkoutCta) return;
 
@@ -899,7 +1103,9 @@
         const ctaPlacement = checkoutCta.dataset.ctaPlacement || 'pricing';
         const planId = checkoutCta.dataset.planId || 'pro';
         const attribution = buildAttribution(ctaId);
-        const fallbackUrl = buildFallbackUrl(attribution);
+        const checkoutTraceId = createEphemeralId('checkout_');
+        activeCheckoutTraceId = checkoutTraceId;
+        const fallbackUrl = buildFallbackUrl(attribution, checkoutTraceId);
         checkoutCta.href = fallbackUrl;
         checkoutCta.setAttribute('aria-busy', 'true');
         checkoutCta.textContent = 'Opening checkout...';
@@ -907,7 +1113,8 @@
         sendTelemetry('checkout_start', {
           ctaId: ctaId,
           ctaPlacement: ctaPlacement,
-          planId: planId
+          planId: planId,
+          traceId: checkoutTraceId
         });
 
         if (window.plausible) {
@@ -932,6 +1139,7 @@
               ctaId: ctaId,
               ctaPlacement: ctaPlacement,
               planId: planId,
+              traceId: checkoutTraceId,
               page: window.location.pathname,
               metadata: attribution
             })
@@ -963,8 +1171,15 @@
             ctaId: ctaId,
             ctaPlacement: ctaPlacement,
             planId: planId,
+            traceId: checkoutTraceId,
             failureCode: err && err.message ? err.message : 'checkout_api_failed',
             httpStatus: err && err.httpStatus ? err.httpStatus : null
+          });
+          sendTelemetry('checkout_fallback_redirect', {
+            ctaId: ctaId,
+            ctaPlacement: ctaPlacement,
+            planId: planId,
+            traceId: checkoutTraceId
           });
           window.location.assign(fallbackUrl);
         } finally {

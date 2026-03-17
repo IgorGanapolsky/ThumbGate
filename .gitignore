@@ -9,6 +9,7 @@ node_modules/
 .claude/memory/feedback/*.json
 .claude/memory/feedback/*.jsonl
 .claude/memory/feedback/*.md
+.claude/memory/feedback/lancedb/
 .claude/memory/feedback/contextfs/
 !.claude/memory/feedback/.gitkeep
 # Billing key store — contains provisioned API keys, never commit

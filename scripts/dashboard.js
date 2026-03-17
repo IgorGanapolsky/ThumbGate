@@ -278,6 +278,26 @@ function computeAnalyticsSummary(feedbackDir) {
       visitorToPaidRate: safeRate(paidOrders, uniqueVisitors),
       ctaToLeadRate: safeRate(acquisitionLeads, ctaClicks),
       ctaToPaidRate: safeRate(paidOrders, ctaClicks),
+      topTrafficChannel: telemetry.visitors ? telemetry.visitors.topTrafficChannel || null : null,
+      checkoutConversionByTrafficChannel: telemetry.ctas ? telemetry.ctas.conversionByTrafficChannel || {} : {},
+    },
+    buyerLoss: telemetry.buyerLoss || {
+      totalSignals: 0,
+      reasonsByCode: {},
+      cancellationReasons: {},
+      abandonmentReasons: {},
+      topReason: null,
+    },
+    pricing: telemetry.pricing || {
+      pricingInterestEvents: 0,
+      interestByLevel: {},
+    },
+    seo: telemetry.seo || {
+      landingViews: 0,
+      bySurface: {},
+      byQuery: {},
+      topSurface: null,
+      topQuery: null,
     },
     revenue: billing.revenue || {
       paidOrders: 0,
@@ -380,6 +400,9 @@ function computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, 
     secretGuardBlocks: secretGuard.blocked,
     telemetryIngestErrors: diagnosticEntries.filter((entry) => entry.source === 'telemetry_ingest').length,
     checkoutApiFailuresByCode: telemetry && telemetry.ctas ? telemetry.ctas.failuresByCode || {} : {},
+    buyerLossSignals: telemetry && telemetry.buyerLoss ? telemetry.buyerLoss.totalSignals || 0 : 0,
+    topBuyerLossReason: telemetry && telemetry.buyerLoss ? telemetry.buyerLoss.topReason || null : null,
+    seoLandingViews: telemetry && telemetry.seo ? telemetry.seo.landingViews || 0 : 0,
   };
 }
 
@@ -469,8 +492,18 @@ function printDashboard(data) {
   console.log(`  Visitor \u2192 Paid  : ${analytics.funnel.visitorToPaidRate}`);
   console.log(`  Booked Revenue   : $${(analytics.revenue.bookedRevenueCents / 100).toFixed(2)}`);
   console.log(`  Matched Journeys : ${analytics.reconciliation.matchedPaidOrders}/${analytics.reconciliation.telemetryCheckoutStarts}`);
+  console.log(`  Buyer Loss       : ${analytics.buyerLoss.totalSignals}`);
   if (analytics.telemetry.visitors.topSource) {
     console.log(`  Top Source       : ${analytics.telemetry.visitors.topSource.key} (${analytics.telemetry.visitors.topSource.count}\u00D7)`);
+  }
+  if (analytics.funnel.topTrafficChannel) {
+    console.log(`  Traffic Channel  : ${analytics.funnel.topTrafficChannel.key} (${analytics.funnel.topTrafficChannel.count}\u00D7)`);
+  }
+  if (analytics.buyerLoss.topReason) {
+    console.log(`  Top Loss Reason  : ${analytics.buyerLoss.topReason.key} (${analytics.buyerLoss.topReason.count}\u00D7)`);
+  }
+  if (analytics.seo.topSurface) {
+    console.log(`  SEO Surface      : ${analytics.seo.topSurface.key} (${analytics.seo.topSurface.count}\u00D7)`);
   }
 
   console.log('');
@@ -505,8 +538,13 @@ function printDashboard(data) {
   console.log(`  Diagnostic Events: ${observability.diagnosticEvents}`);
   console.log(`  Secret Blocks    : ${observability.secretGuardBlocks}`);
   console.log(`  Telemetry Errors : ${observability.telemetryIngestErrors}`);
+  console.log(`  Buyer Loss       : ${observability.buyerLossSignals}`);
+  console.log(`  SEO Views        : ${observability.seoLandingViews}`);
   if (observability.topSource) {
     console.log(`  Top Source       : ${observability.topSource.key} (${observability.topSource.count}\u00D7)`);
+  }
+  if (observability.topBuyerLossReason) {
+    console.log(`  Top Loss Reason  : ${observability.topBuyerLossReason.key} (${observability.topBuyerLossReason.count}\u00D7)`);
   }
   console.log('');
 }

@@ -31,6 +31,15 @@ function apiUrl(pathname = '/') {
   return new URL(pathname, apiOrigin).toString();
 }
 
+function readJsonl(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  return fs.readFileSync(filePath, 'utf8')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
 test.before(async () => {
   handle = await startServer({ port: 0 });
   apiOrigin = `http://localhost:${handle.port}`;
@@ -66,6 +75,23 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /\$29\/mo/);
   assert.match(body, /plausible\.io\/js\/script\.js/);
   assert.match(body, /\/v1\/billing\/checkout/);
+});
+
+test('robots and sitemap endpoints publish crawl metadata for the canonical app origin', async () => {
+  const robotsRes = await fetch(apiUrl('/robots.txt'));
+  assert.equal(robotsRes.status, 200);
+  assert.match(String(robotsRes.headers.get('content-type')), /text\/plain/);
+  const robotsBody = await robotsRes.text();
+  assert.match(robotsBody, /User-agent: \*/);
+  assert.match(robotsBody, /Allow: \//);
+  assert.match(robotsBody, /Sitemap: https:\/\/app\.example\.com\/sitemap\.xml/);
+
+  const sitemapRes = await fetch(apiUrl('/sitemap.xml'));
+  assert.equal(sitemapRes.status, 200);
+  assert.match(String(sitemapRes.headers.get('content-type')), /application\/xml/);
+  const sitemapBody = await sitemapRes.text();
+  assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/<\/loc>/);
+  assert.match(sitemapBody, /<changefreq>weekly<\/changefreq>/);
 });
 
 test('provisioning endpoint works', async () => {
@@ -109,13 +135,72 @@ test('success page serves hosted onboarding shell', async () => {
 });
 
 test('cancel page serves retry message', async () => {
-  const res = await fetch(apiUrl('/cancel'));
+  const res = await fetch(apiUrl('/cancel?trace_id=trace_test&acquisition_id=acq_test&visitor_id=visitor_test&session_id=session_test&install_id=inst_test&utm_source=google&utm_medium=organic&utm_campaign=seo_launch&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2F&referrer_host=www.google.com'));
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
   const body = await res.text();
   assert.match(body, /Checkout cancelled\./);
+  assert.match(body, /noindex,nofollow/);
+  assert.match(body, /data-reason="too_expensive"/);
+  assert.match(body, /sendTelemetry\('checkout_cancelled'\)/);
+  assert.match(body, /sendTelemetry\('reason_not_buying'/);
+  assert.match(body, /retryUrl\.searchParams\.set\(key, value\)/);
   assert.match(body, /Return to Context Gateway/);
+});
+
+test('checkout bootstrap route preserves attribution and records first-party telemetry in local mode', async () => {
+  const res = await fetch(
+    apiUrl('/checkout/pro?acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&utm_source=google&utm_medium=organic&utm_campaign=seo_launch&utm_term=agentic+feedback&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
+    {
+      redirect: 'manual',
+      headers: {
+        referer: 'https://www.google.com/search?q=agentic+feedback+studio',
+      },
+    }
+  );
+
+  assert.equal(res.status, 302);
+  const location = new URL(res.headers.get('location'));
+  assert.equal(location.pathname, '/success');
+  assert.ok(location.searchParams.get('session_id'));
+  assert.match(String(location.searchParams.get('trace_id')), /^checkout_/);
+  assert.equal(location.searchParams.get('acquisition_id'), 'acq_bootstrap');
+  assert.equal(location.searchParams.get('visitor_id'), 'visitor_bootstrap');
+  assert.equal(location.searchParams.get('session_id'), 'session_bootstrap');
+  assert.equal(location.searchParams.get('install_id'), 'inst_bootstrap');
+
+  const funnelEvents = readJsonl(process.env._TEST_FUNNEL_LEDGER_PATH);
+  const checkoutCreated = funnelEvents.find((entry) => (
+    entry.event === 'checkout_session_created' &&
+    entry.traceId === location.searchParams.get('trace_id')
+  ));
+  assert.ok(checkoutCreated);
+  assert.equal(checkoutCreated.installId, 'inst_bootstrap');
+  assert.equal(checkoutCreated.acquisitionId, 'acq_bootstrap');
+  assert.equal(checkoutCreated.visitorId, 'visitor_bootstrap');
+  assert.equal(checkoutCreated.sessionId, 'session_bootstrap');
+  assert.equal(checkoutCreated.ctaId, 'pricing_pro');
+  assert.equal(checkoutCreated.ctaPlacement, 'pricing');
+  assert.equal(checkoutCreated.planId, 'pro');
+  assert.equal(checkoutCreated.landingPath, '/pricing');
+  assert.equal(checkoutCreated.referrerHost, 'www.google.com');
+
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  const bootstrapEvent = telemetryEvents.find((entry) => entry.eventType === 'checkout_bootstrap');
+  assert.ok(bootstrapEvent);
+  assert.equal(bootstrapEvent.page, '/checkout/pro');
+  assert.equal(bootstrapEvent.acquisitionId, 'acq_bootstrap');
+  assert.equal(bootstrapEvent.visitorId, 'visitor_bootstrap');
+  assert.equal(bootstrapEvent.sessionId, 'session_bootstrap');
+  assert.equal(bootstrapEvent.installId, 'inst_bootstrap');
+  assert.equal(bootstrapEvent.utmSource, 'google');
+  assert.equal(bootstrapEvent.utmMedium, 'organic');
+  assert.equal(bootstrapEvent.utmCampaign, 'seo_launch');
+  assert.equal(bootstrapEvent.ctaId, 'pricing_pro');
+  assert.equal(bootstrapEvent.planId, 'pro');
+  assert.equal(bootstrapEvent.landingPath, '/pricing');
+  assert.equal(bootstrapEvent.referrerHost, 'www.google.com');
 });
 
 test('feedback capture accepts valid payload', async () => {

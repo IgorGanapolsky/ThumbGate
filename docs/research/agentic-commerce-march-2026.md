@@ -20,7 +20,7 @@ No dominant open agentic commerce protocol exists yet. MCP itself is the closest
 ## Who's Buying
 
 - Sierra AI customers (Gap, Wayfair, ASOS, Casper, Sonos) — already paying for agent quality
-- LangSmith enterprise customers — $2.50-5.00/1K traces
+- Enterprise trace-observability customers — $2.50-5.00/1K traces
 - Shopify merchants experimenting with AI agents (~2M merchants)
 - Deloitte/EPAM building agentic commerce implementations for enterprises
 
@@ -28,7 +28,7 @@ No dominant open agentic commerce protocol exists yet. MCP itself is the closest
 
 | Tool | Price | MCP-Native | Prevention Rules | Commerce Categories |
 |------|-------|-----------|-----------------|-------------------|
-| LangSmith | $39/seat + traces | No | No | No |
+| Trace observability suites | ~$39/seat + traces | No | No | No |
 | Arize | $50/mo+ | No | No | No |
 | Helicone | $79-799/mo | No | No | No |
 | Sierra AI | Custom enterprise | No | No | No |

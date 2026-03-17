@@ -2,7 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { resolveHostedBillingConfig } = require('../scripts/hosted-config');
+const {
+  DEFAULT_CHECKOUT_FALLBACK_URL,
+  resolveHostedBillingConfig,
+} = require('../scripts/hosted-config');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const CANONICAL_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
@@ -78,14 +81,16 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
 test('runtime hosted billing config defaults to the live pro price label', () => {
   const previousLabel = process.env.RLHF_PRO_PRICE_LABEL;
   const previousDollars = process.env.RLHF_PRO_PRICE_DOLLARS;
+  const previousFallback = process.env.RLHF_CHECKOUT_FALLBACK_URL;
   delete process.env.RLHF_PRO_PRICE_LABEL;
   delete process.env.RLHF_PRO_PRICE_DOLLARS;
+  delete process.env.RLHF_CHECKOUT_FALLBACK_URL;
 
   try {
     const runtimeConfig = resolveHostedBillingConfig();
     assert.equal(runtimeConfig.proPriceLabel, '$29/mo');
     assert.equal(runtimeConfig.proPriceDollars, 29);
-    assert.equal(runtimeConfig.checkoutFallbackUrl, CANONICAL_APP_ORIGIN);
+    assert.equal(runtimeConfig.checkoutFallbackUrl, DEFAULT_CHECKOUT_FALLBACK_URL);
   } finally {
     if (previousLabel === undefined) {
       delete process.env.RLHF_PRO_PRICE_LABEL;
@@ -96,6 +101,30 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
       delete process.env.RLHF_PRO_PRICE_DOLLARS;
     } else {
       process.env.RLHF_PRO_PRICE_DOLLARS = previousDollars;
+    }
+    if (previousFallback === undefined) {
+      delete process.env.RLHF_CHECKOUT_FALLBACK_URL;
+    } else {
+      process.env.RLHF_CHECKOUT_FALLBACK_URL = previousFallback;
+    }
+  }
+});
+
+test('runtime hosted billing config preserves absolute fallback checkout urls', () => {
+  const previousFallback = process.env.RLHF_CHECKOUT_FALLBACK_URL;
+  process.env.RLHF_CHECKOUT_FALLBACK_URL = 'https://iganapolsky.gumroad.com/l/tjovof?utm_source=website&utm_medium=cta_button';
+
+  try {
+    const runtimeConfig = resolveHostedBillingConfig();
+    assert.equal(
+      runtimeConfig.checkoutFallbackUrl,
+      'https://iganapolsky.gumroad.com/l/tjovof?utm_source=website&utm_medium=cta_button'
+    );
+  } finally {
+    if (previousFallback === undefined) {
+      delete process.env.RLHF_CHECKOUT_FALLBACK_URL;
+    } else {
+      process.env.RLHF_CHECKOUT_FALLBACK_URL = previousFallback;
     }
   }
 });

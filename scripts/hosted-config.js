@@ -3,7 +3,7 @@
 const crypto = require('node:crypto');
 
 const DEFAULT_PUBLIC_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
-const DEFAULT_CHECKOUT_FALLBACK_URL = DEFAULT_PUBLIC_APP_ORIGIN;
+const DEFAULT_CHECKOUT_FALLBACK_URL = 'https://iganapolsky.gumroad.com/l/tjovof';
 const DEFAULT_PRO_PRICE_DOLLARS = 29;
 const DEFAULT_PRO_PRICE_LABEL = '$29/mo';
 
@@ -27,6 +27,27 @@ function normalizeOrigin(value) {
     parsed.hash = '';
     const serialized = parsed.toString();
     return serialized.endsWith('/') ? serialized.slice(0, -1) : serialized;
+  } catch {
+    return '';
+  }
+}
+
+function normalizeAbsoluteUrl(value) {
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    if (!/^https?:$/.test(parsed.protocol)) {
+      return '';
+    }
+    return parsed.toString();
   } catch {
     return '';
   }
@@ -82,7 +103,9 @@ function resolveHostedBillingConfig({ requestOrigin } = {}) {
     billingApiBaseUrl,
     checkoutEndpoint: joinPublicUrl(billingApiBaseUrl, '/v1/billing/checkout'),
     sessionEndpoint: joinPublicUrl(billingApiBaseUrl, '/v1/billing/session'),
-    checkoutFallbackUrl: process.env.RLHF_CHECKOUT_FALLBACK_URL || DEFAULT_CHECKOUT_FALLBACK_URL,
+    checkoutFallbackUrl: normalizeAbsoluteUrl(
+      process.env.RLHF_CHECKOUT_FALLBACK_URL || DEFAULT_CHECKOUT_FALLBACK_URL
+    ) || DEFAULT_CHECKOUT_FALLBACK_URL,
     proPriceDollars,
     proPriceLabel,
   };
@@ -93,6 +116,7 @@ module.exports = {
   DEFAULT_CHECKOUT_FALLBACK_URL,
   DEFAULT_PRO_PRICE_DOLLARS,
   DEFAULT_PRO_PRICE_LABEL,
+  normalizeAbsoluteUrl,
   normalizeOrigin,
   normalizePriceDollars,
   joinPublicUrl,

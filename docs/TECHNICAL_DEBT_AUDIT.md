@@ -1,5 +1,7 @@
 # Technical Debt Audit
 
+> Historical audit snapshot from an earlier cleanup branch. The metrics below are not live repository truth. Use the current verification run, PR evidence, and `docs/VERIFICATION_EVIDENCE.md` for current state.
+
 ## Scope
 
 Repository-wide audit performed in dedicated worktrees only. Metrics below use tracked repository files and exclude `node_modules/` trees.

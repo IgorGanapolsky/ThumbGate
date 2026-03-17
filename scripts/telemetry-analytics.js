@@ -76,6 +76,50 @@ function parseReferrerHost(referrer) {
   }
 }
 
+function normalizeHostToken(value) {
+  const text = normalizeText(value, 255);
+  return text ? text.toLowerCase() : null;
+}
+
+function inferTrafficChannel(raw = {}, referrerHost = null) {
+  const source = normalizeHostToken(raw.source || raw.utmSource);
+  const medium = normalizeHostToken(raw.utmMedium);
+  const seoSurface = normalizeHostToken(raw.seoSurface || raw.searchSurface || raw.surface);
+  const host = normalizeHostToken(referrerHost);
+
+  if (source === 'ai_search' || seoSurface === 'ai_search') return 'ai_search';
+  if (source === 'organic_search' || seoSurface === 'organic_search') return 'organic_search';
+  if (source === 'direct') return 'direct';
+  if (source === 'website' && !host) return 'direct';
+  if (medium === 'organic') return 'organic_search';
+
+  const aiHosts = [
+    'perplexity.ai',
+    'chatgpt.com',
+    'chat.openai.com',
+    'claude.ai',
+    'gemini.google.com',
+  ];
+  if (host && aiHosts.some((candidate) => host === candidate || host.endsWith(`.${candidate}`))) {
+    return 'ai_search';
+  }
+
+  const searchHosts = [
+    'google.com',
+    'bing.com',
+    'duckduckgo.com',
+    'search.yahoo.com',
+    'search.brave.com',
+    'ecosia.org',
+  ];
+  if (host && searchHosts.some((candidate) => host === candidate || host.endsWith(`.${candidate}`))) {
+    return 'organic_search';
+  }
+
+  if (!host) return 'direct';
+  return 'referral';
+}
+
 function sanitizeTelemetryPayload(payload = {}, headers = {}) {
   const raw = payload && typeof payload === 'object' ? payload : {};
   const clientType = inferClientType(raw);
@@ -85,6 +129,14 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
   const utmMedium = pickFirstText(raw.utmMedium, clientType === 'web' ? 'landing_page' : clientType);
   const utmCampaign = pickFirstText(raw.utmCampaign, raw.campaign, clientType === 'web' ? 'organic' : null);
   const referrer = pickFirstText(raw.referrer, headers.referer, headers.referrer);
+  const referrerHost = parseReferrerHost(referrer);
+  const reasonCode = pickFirstText(
+    raw.reasonCode,
+    raw.reason,
+    raw.cancelReason,
+    raw.lossReason,
+    raw.abandonReason
+  );
   const entry = {
     receivedAt: new Date().toISOString(),
     client: clientType,
@@ -102,7 +154,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     page: pickFirstText(raw.page, raw.landingPath, raw.path),
     landingPath: pickFirstText(raw.landingPath, raw.page, raw.path),
     referrer,
-    referrerHost: parseReferrerHost(referrer),
+    referrerHost,
     source,
     utmSource,
     utmMedium,
@@ -112,6 +164,12 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     ctaId: pickFirstText(raw.ctaId),
     ctaPlacement: pickFirstText(raw.ctaPlacement),
     planId: pickFirstText(raw.planId),
+    reasonCode,
+    reasonDetail: pickFirstText(raw.reasonDetail, raw.reasonText, raw.otherReason, raw.notes),
+    pricingInterest: pickFirstText(raw.pricingInterest, raw.interestLevel),
+    seoQuery: pickFirstText(raw.seoQuery, raw.query),
+    seoSurface: pickFirstText(raw.seoSurface, raw.searchSurface, raw.surface),
+    trafficChannel: inferTrafficChannel(raw, referrerHost),
     failureCode: pickFirstText(raw.failureCode),
     httpStatus: normalizeInteger(raw.httpStatus),
     userAgent: pickFirstText(raw.userAgent, headers['user-agent']),
@@ -165,6 +223,7 @@ function summarizeRecentEvents(events) {
       utmCampaign: entry.utmCampaign || null,
       ctaId: entry.ctaId || null,
       page: entry.page || null,
+      reasonCode: entry.reasonCode || null,
     }));
 }
 
@@ -179,17 +238,30 @@ function getTelemetrySummary(feedbackDir) {
   const pageViewsBySource = {};
   const pageViewsByCampaign = {};
   const pageViewsByPath = {};
+  const pageViewsByTrafficChannel = {};
   const checkoutStartsBySource = {};
   const checkoutStartsByCampaign = {};
+  const checkoutStartsByTrafficChannel = {};
   const byCtaId = {};
   const byReferrerHost = {};
   const checkoutFailuresByCode = {};
   const checkoutFailuresByStatus = {};
+  const cancellationsByReason = {};
+  const abandonmentsByReason = {};
+  const buyerLossReasons = {};
+  const pricingInterestByLevel = {};
+  const seoLandingViewsBySurface = {};
+  const seoLandingViewsByQuery = {};
   const cliByPlatform = {};
   const cliByVersion = {};
   let pageViews = 0;
   let checkoutStarts = 0;
   let checkoutFailures = 0;
+  let checkoutCancelled = 0;
+  let checkoutAbandoned = 0;
+  let buyerLossSignals = 0;
+  let pricingInterestEvents = 0;
+  let seoLandingViews = 0;
   let webEvents = 0;
   let webEventsWithVisitorId = 0;
   let webEventsWithSessionId = 0;
@@ -220,6 +292,7 @@ function getTelemetrySummary(feedbackDir) {
         incrementCounter(pageViewsBySource, entry.source);
         incrementCounter(pageViewsByCampaign, entry.utmCampaign);
         incrementCounter(pageViewsByPath, entry.page);
+        incrementCounter(pageViewsByTrafficChannel, entry.trafficChannel);
         if (entry.attributionTagged) attributedPageViews += 1;
       }
 
@@ -227,6 +300,7 @@ function getTelemetrySummary(feedbackDir) {
         checkoutStarts += 1;
         incrementCounter(checkoutStartsBySource, entry.source);
         incrementCounter(checkoutStartsByCampaign, entry.utmCampaign);
+        incrementCounter(checkoutStartsByTrafficChannel, entry.trafficChannel);
         incrementCounter(byCtaId, entry.ctaId);
         const starterKey = pickFirstText(
           entry.acquisitionId,
@@ -246,6 +320,36 @@ function getTelemetrySummary(feedbackDir) {
           checkoutFailuresByStatus,
           entry.httpStatus === null ? null : String(entry.httpStatus)
         );
+      }
+
+      if ((entry.eventType || entry.event) === 'checkout_cancelled') {
+        checkoutCancelled += 1;
+        incrementCounter(cancellationsByReason, entry.reasonCode);
+        incrementCounter(buyerLossReasons, entry.reasonCode);
+        buyerLossSignals += 1;
+      }
+
+      if ((entry.eventType || entry.event) === 'checkout_abandoned') {
+        checkoutAbandoned += 1;
+        incrementCounter(abandonmentsByReason, entry.reasonCode);
+        incrementCounter(buyerLossReasons, entry.reasonCode);
+        buyerLossSignals += 1;
+      }
+
+      if ((entry.eventType || entry.event) === 'reason_not_buying') {
+        incrementCounter(buyerLossReasons, entry.reasonCode);
+        buyerLossSignals += 1;
+      }
+
+      if ((entry.eventType || entry.event) === 'pricing_interest') {
+        pricingInterestEvents += 1;
+        incrementCounter(pricingInterestByLevel, entry.pricingInterest);
+      }
+
+      if ((entry.eventType || entry.event) === 'seo_landing_view') {
+        seoLandingViews += 1;
+        incrementCounter(seoLandingViewsBySurface, entry.seoSurface);
+        incrementCounter(seoLandingViewsByQuery, entry.seoQuery);
       }
     }
 
@@ -272,6 +376,14 @@ function getTelemetrySummary(feedbackDir) {
     );
   }
 
+  const checkoutConversionByTrafficChannel = {};
+  for (const channelKey of new Set([...Object.keys(pageViewsByTrafficChannel), ...Object.keys(checkoutStartsByTrafficChannel)])) {
+    checkoutConversionByTrafficChannel[channelKey] = safeRate(
+      checkoutStartsByTrafficChannel[channelKey] || 0,
+      pageViewsByTrafficChannel[channelKey] || 0
+    );
+  }
+
   return {
     totalEvents: events.length,
     latestSeenAt,
@@ -285,6 +397,11 @@ function getTelemetrySummary(feedbackDir) {
       pageViews,
       checkoutStarts,
       checkoutFailures,
+      checkoutCancelled,
+      checkoutAbandoned,
+      buyerLossSignals,
+      pricingInterestEvents,
+      seoLandingViews,
       pageViewToCheckoutRate: safeRate(checkoutStarts, pageViews),
       visitorToCheckoutRate: safeRate(checkoutStarts, webVisitors.size),
       visitorIdCoverageRate: safeRate(webEventsWithVisitorId, webEvents),
@@ -304,14 +421,23 @@ function getTelemetrySummary(feedbackDir) {
       pageViewsBySource,
       pageViewsByCampaign,
       pageViewsByPath,
+      pageViewsByTrafficChannel,
       checkoutStartsBySource,
       checkoutStartsByCampaign,
+      checkoutStartsByTrafficChannel,
       byCtaId,
       byReferrerHost,
       checkoutFailuresByCode,
       checkoutFailuresByStatus,
+      cancellationsByReason,
+      abandonmentsByReason,
+      buyerLossReasons,
+      pricingInterestByLevel,
+      seoLandingViewsBySurface,
+      seoLandingViewsByQuery,
       checkoutConversionBySource,
       checkoutConversionByCampaign,
+      checkoutConversionByTrafficChannel,
     },
     recent: summarizeRecentEvents(events),
   };
@@ -329,6 +455,10 @@ function getTelemetryAnalytics(feedbackDir) {
   const topCta = getTopCounterEntry(summary.marketing.byCtaId);
   const topReferrerHost = getTopCounterEntry(summary.marketing.byReferrerHost);
   const topPath = getTopCounterEntry(summary.marketing.pageViewsByPath);
+  const topTrafficChannel = getTopCounterEntry(summary.marketing.pageViewsByTrafficChannel);
+  const topBuyerLossReason = getTopCounterEntry(summary.marketing.buyerLossReasons);
+  const topSeoSurface = getTopCounterEntry(summary.marketing.seoLandingViewsBySurface);
+  const topSeoQuery = getTopCounterEntry(summary.marketing.seoLandingViewsByQuery);
 
   return {
     totalEvents: summary.totalEvents,
@@ -348,24 +478,52 @@ function getTelemetryAnalytics(feedbackDir) {
       bySource: summary.marketing.pageViewsBySource,
       byCampaign: summary.marketing.pageViewsByCampaign,
       byPath: summary.marketing.pageViewsByPath,
+      byTrafficChannel: summary.marketing.pageViewsByTrafficChannel,
       byReferrerHost: summary.marketing.byReferrerHost,
       topSource: topSource ? { key: topSource[0], count: topSource[1] } : null,
       topCampaign: topCampaign ? { key: topCampaign[0], count: topCampaign[1] } : null,
       topPath: topPath ? { key: topPath[0], count: topPath[1] } : null,
+      topTrafficChannel: topTrafficChannel ? { key: topTrafficChannel[0], count: topTrafficChannel[1] } : null,
       topReferrerHost: topReferrerHost ? { key: topReferrerHost[0], count: topReferrerHost[1] } : null,
     },
     ctas: {
       totalClicks: summary.web.checkoutStarts,
       uniqueCheckoutStarters: summary.web.uniqueCheckoutStarters,
       checkoutFailures: summary.web.checkoutFailures,
+      checkoutCancelled: summary.web.checkoutCancelled,
+      checkoutAbandoned: summary.web.checkoutAbandoned,
       failuresByCode: summary.marketing.checkoutFailuresByCode,
       failuresByStatus: summary.marketing.checkoutFailuresByStatus,
+      cancellationReasons: summary.marketing.cancellationsByReason,
+      abandonmentReasons: summary.marketing.abandonmentsByReason,
       bySource: summary.marketing.checkoutStartsBySource,
       byCampaign: summary.marketing.checkoutStartsByCampaign,
+      byTrafficChannel: summary.marketing.checkoutStartsByTrafficChannel,
       byId: summary.marketing.byCtaId,
       topCta: topCta ? { key: topCta[0], count: topCta[1] } : null,
       pageViewToCheckoutRate: summary.web.pageViewToCheckoutRate,
       visitorToCheckoutRate: summary.web.visitorToCheckoutRate,
+      cancellationRate: safeRate(summary.web.checkoutCancelled, summary.web.checkoutStarts),
+      abandonmentRate: safeRate(summary.web.checkoutAbandoned, summary.web.checkoutStarts),
+      conversionByTrafficChannel: summary.marketing.checkoutConversionByTrafficChannel,
+    },
+    buyerLoss: {
+      totalSignals: summary.web.buyerLossSignals,
+      reasonsByCode: summary.marketing.buyerLossReasons,
+      cancellationReasons: summary.marketing.cancellationsByReason,
+      abandonmentReasons: summary.marketing.abandonmentsByReason,
+      topReason: topBuyerLossReason ? { key: topBuyerLossReason[0], count: topBuyerLossReason[1] } : null,
+    },
+    pricing: {
+      pricingInterestEvents: summary.web.pricingInterestEvents,
+      interestByLevel: summary.marketing.pricingInterestByLevel,
+    },
+    seo: {
+      landingViews: summary.web.seoLandingViews,
+      bySurface: summary.marketing.seoLandingViewsBySurface,
+      byQuery: summary.marketing.seoLandingViewsByQuery,
+      topSurface: topSeoSurface ? { key: topSeoSurface[0], count: topSeoSurface[1] } : null,
+      topQuery: topSeoQuery ? { key: topSeoQuery[0], count: topSeoQuery[1] } : null,
     },
     cli: summary.cli,
     recent: summary.recent,
@@ -381,4 +539,5 @@ module.exports = {
   appendTelemetryEvent,
   loadTelemetryEvents,
   getTelemetryAnalytics,
+  inferTrafficChannel,
 };
