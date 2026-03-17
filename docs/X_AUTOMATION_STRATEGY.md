@@ -1,3 +1,6 @@
+> [!NOTE]
+> Historical hypothesis: archived for context alignment with COMMERCIAL_TRUTH.md.
+
 # 𝕏 Premium+ Automation Strategy (March 2026)
 
 > Historical research note: this file captures a launch experiment and may reference outdated pricing or reach assumptions. Use `docs/COMMERCIAL_TRUTH.md` for current pricing and traction claims. Reach figures below are research snapshots, not product proof.

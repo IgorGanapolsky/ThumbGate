@@ -1,3 +1,6 @@
+> [!NOTE]
+> Historical hypothesis: archived for context alignment with COMMERCIAL_TRUTH.md.
+
 # Pricing Research (March 9, 2026)
 
 > Historical research note: this document captures a point-in-time pricing exploration. It is not the current product truth. Use `docs/COMMERCIAL_TRUTH.md` for current pricing and proof language.

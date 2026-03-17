@@ -21,7 +21,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - DPO/KTO export for fine-tuning
 - CLI dashboard
 
-### Pro ($29/mo, hosted on Cloudflare Workers)
+### Pro ($49 one-time, hosted on Cloudflare Workers)
 
 - Cloud-synced memories accessible from any machine
 - Unlimited memories and retrievals

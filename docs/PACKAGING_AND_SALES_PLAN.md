@@ -1,3 +1,6 @@
+> [!NOTE]
+> Historical hypothesis: archived for context alignment with COMMERCIAL_TRUTH.md.
+
 # Packaging and Sales Plan
 
 > Historical research note: this file contains packaging hypotheses and outdated pricing experiments. Use `docs/COMMERCIAL_TRUTH.md` for current pricing and traction claims.

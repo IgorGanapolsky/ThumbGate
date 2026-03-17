@@ -1,3 +1,6 @@
+> [!NOTE]
+> Historical hypothesis: archived for context alignment with COMMERCIAL_TRUTH.md.
+
 # CTO Crisis Report: Revenue Autopsy & Strategic Pivot (March 2026)
 
 > Historical research note: this document describes a pricing and packaging pivot proposal. It is not the current product truth. Use `docs/COMMERCIAL_TRUTH.md` for current pricing and proof language. All subscription references below describe the March 2026 situation being analyzed, not the current offer.

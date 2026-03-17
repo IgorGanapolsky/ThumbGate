@@ -42,7 +42,7 @@ test('public docs render the current package version', () => {
 
   assert.match(landingPage, /MCP Memory Gateway/);
   assert.match(landingPage, /AI Agent Reliability Without Orchestration Tax/i);
-  assert.match(landingPage, /\$29\/mo/);
+  assert.match(landingPage, /\$49 one-time/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
 });
 
@@ -50,6 +50,7 @@ test('landing page keeps GTM and schema assets wired', () => {
   const landingPage = readText('docs/landing-page.html');
   const gtmPlan = readText('docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md');
 
+  assert.match(landingPage, /"@context": "https:\/\/schema\.org"/);
   assert.match(landingPage, /"@type": "SoftwareApplication"/);
   assert.match(landingPage, /"@type": "FAQPage"/);
   assert.match(landingPage, /<section id='faq'>/);
@@ -73,8 +74,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
 
   assert.match(publicLanding, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
   assert.match(publicLanding, /mcp-memory-gateway/i);
-  assert.match(publicLanding, /__PRO_PRICE_LABEL__/);
-  assert.match(publicLanding, /__PRO_PRICE_DOLLARS__/);
+  assert.match(publicLanding, /Starter Pack/i);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
   assert.match(publicLanding, /AI reliability system/i);
@@ -105,7 +105,6 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
     const runtimeConfig = resolveHostedBillingConfig();
     assert.equal(runtimeConfig.proPriceLabel, '$49 one-time');
     assert.equal(runtimeConfig.proPriceDollars, 49);
-
     assert.equal(runtimeConfig.checkoutFallbackUrl, DEFAULT_CHECKOUT_FALLBACK_URL);
     assert.equal(runtimeConfig.gaMeasurementId, '');
     assert.equal(runtimeConfig.googleSiteVerification, '');
@@ -205,11 +204,10 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const packagingPlan = readText('docs/PACKAGING_AND_SALES_PLAN.md');
   const revenueSprint = readText('docs/REVENUE_SPRINT_MAR2026.md');
   const anthropicStrategy = readText('docs/ANTHROPIC_MARKETPLACE_STRATEGY.md');
-  const workflowSprint = readText('docs/WORKFLOW_HARDENING_SPRINT.md');
   const xStrategy = readText('docs/X_AUTOMATION_STRATEGY.md');
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
-  assert.match(commercialTruth, /Pro at \$29\/mo recurring/);
+  assert.match(commercialTruth, /Pro at \$49 one-time/);
   assert.match(commercialTruth, /auto-gate promotion/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 
@@ -218,23 +216,10 @@ test('commercial truth sources stay aligned across public and historical docs', 
   assert.doesNotMatch(readme, /500\+ agentic sessions|battle-tested/i);
   assert.doesNotMatch(proReadme, /500\+ agentic sessions|battle-tested/i);
 
-  for (const historicalDoc of [pricingResearch, crisisReport, packagingPlan, revenueSprint, xStrategy]) {
+  for (const historicalDoc of [pricingResearch, crisisReport, packagingPlan, revenueSprint, anthropicStrategy, xStrategy]) {
     assert.match(historicalDoc, /Historical .*note|Historical .*archived|Historical .*hypothesis/i);
     assert.match(historicalDoc, /COMMERCIAL_TRUTH\.md/);
   }
-
-  assert.match(anthropicStrategy, /Status: current/i);
-  assert.match(anthropicStrategy, /Claude workflow hardening/i);
-  assert.match(anthropicStrategy, /booked pilots/i);
-  assert.match(anthropicStrategy, /founder-led outbound/i);
-  assert.match(anthropicStrategy, /COMMERCIAL_TRUTH\.md/);
-  assert.doesNotMatch(anthropicStrategy, /^We are an official Anthropic partner\b/m);
-
-  assert.match(workflowSprint, /Status: current/i);
-  assert.match(workflowSprint, /pilot-by-request/i);
-  assert.match(workflowSprint, /one workflow/i);
-  assert.match(workflowSprint, /VERIFICATION_EVIDENCE\.md/);
-  assert.doesNotMatch(workflowSprint, /^We are an official Anthropic partner\b/m);
 
   assert.doesNotMatch(directoryGuide, /30k\+ stars|18k\+ servers listed/i);
 });

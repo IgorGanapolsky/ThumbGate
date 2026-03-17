@@ -1,3 +1,6 @@
+> [!NOTE]
+> Historical hypothesis: archived for context alignment with COMMERCIAL_TRUTH.md.
+
 # Revenue Sprint: First Paying Customer TODAY, $1K MRR in 30 Days
 
 > Historical research note: community-size figures, pricing experiments, and growth targets in this file are point-in-time planning assumptions from March 11, 2026. They are not current product truth. Use `docs/COMMERCIAL_TRUTH.md` for current pricing, traction, and proof language. All `$5/mo`, `$10/mo`, "Founding Member", and scarcity references below are retired experiments retained for historical context only.
@@ -121,7 +124,7 @@ Retired experiment: the `$5/mo`, `$10/mo`, and scarcity-based tiers below are pr
 | **Free** | $0 | `npx mcp-memory-gateway serve` local, 1000 feedback captures/mo | Funnel entry |
 | **Founding Member** | **$5/mo forever** (locked, first 50 users) | Hosted gateway, 10K captures/mo, team sharing (3 seats), DPO export, dashboard | **Day-1 conversion** |
 | **Pro** | $10/mo | 50K captures/mo, 10 seats, priority support, custom guardrails | Standard |
-| **Team** | $29/mo | Unlimited captures, unlimited seats, SSO, audit log, SLA | Upsell target |
+| **Team** | $49/mo | Unlimited captures, unlimited seats, SSO, audit log, SLA | Upsell target |
 
 ### Why The Team Believed "Founding Member $5/mo Forever" Could Convert At The Time:
 1. **Loss aversion** — "This price disappears after 50 users" creates urgency

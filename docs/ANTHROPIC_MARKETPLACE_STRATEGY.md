@@ -1,3 +1,6 @@
+> [!NOTE]
+> Historical hypothesis: archived for context alignment with COMMERCIAL_TRUTH.md.
+
 # Anthropic Partner Strategy: Claude Workflow Hardening Revenue Motion
 
 Status: current  
