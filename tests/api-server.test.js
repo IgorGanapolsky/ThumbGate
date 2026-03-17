@@ -20,8 +20,9 @@ process.env.STRIPE_PRICE_ID = '';
 process.env.RLHF_PUBLIC_APP_ORIGIN = 'https://app.example.com';
 process.env.RLHF_BILLING_API_BASE_URL = 'https://billing.example.com';
 
-const { startServer } = require('../src/api/server');
+const { startServer, __test__ } = require('../src/api/server');
 const billing = require('../scripts/billing');
+const { buildHostedSuccessUrl } = require('../scripts/hosted-config');
 
 let handle;
 let apiOrigin = '';
@@ -147,6 +148,25 @@ test('cancel page serves retry message', async () => {
   assert.match(body, /sendTelemetry\('reason_not_buying'/);
   assert.match(body, /retryUrl\.searchParams\.set\(key, value\)/);
   assert.match(body, /Return to Context Gateway/);
+});
+
+test('checkout fallback URLs preserve Stripe session placeholders while carrying visitor-session attribution', () => {
+  const hostedSuccessUrl = buildHostedSuccessUrl('https://app.example.com', 'trace_checkout');
+  const decoratedUrl = __test__.buildCheckoutFallbackUrl(hostedSuccessUrl, {
+    acquisitionId: 'acq_test',
+    visitorId: 'visitor_test',
+    sessionId: 'visitor_session_test',
+    utmSource: 'reddit',
+    community: 'ClaudeCode',
+  });
+  const parsed = new URL(decoratedUrl);
+
+  assert.equal(parsed.searchParams.get('session_id'), '{CHECKOUT_SESSION_ID}');
+  assert.equal(parsed.searchParams.get('visitor_session_id'), 'visitor_session_test');
+  assert.equal(parsed.searchParams.get('acquisition_id'), 'acq_test');
+  assert.equal(parsed.searchParams.get('visitor_id'), 'visitor_test');
+  assert.equal(parsed.searchParams.get('utm_source'), 'reddit');
+  assert.equal(parsed.searchParams.get('community'), 'ClaudeCode');
 });
 
 test('checkout bootstrap route preserves attribution and records first-party telemetry in local mode', async () => {

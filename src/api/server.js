@@ -174,6 +174,10 @@ function appendVisitorSessionQueryParam(url, value) {
   url.searchParams.set('session_id', normalized);
 }
 
+function restoreStripeCheckoutPlaceholder(urlString) {
+  return String(urlString).replace(/%7BCHECKOUT_SESSION_ID%7D/g, '{CHECKOUT_SESSION_ID}');
+}
+
 function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
   const url = new URL(baseUrl);
   appendQueryParam(url, 'utm_source', metadata.utmSource || metadata.source);
@@ -195,7 +199,7 @@ function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
   appendQueryParam(url, 'plan_id', metadata.planId);
   appendQueryParam(url, 'landing_path', metadata.landingPath);
   appendQueryParam(url, 'referrer_host', metadata.referrerHost);
-  return url.toString();
+  return restoreStripeCheckoutPlaceholder(url.toString());
 }
 
 function buildCheckoutBootstrapBody(parsed, req) {
@@ -1898,6 +1902,9 @@ function startServer({ port } = {}) {
 module.exports = {
   createApiServer,
   startServer,
+  __test__: {
+    buildCheckoutFallbackUrl,
+  },
 };
 
 if (require.main === module) {
