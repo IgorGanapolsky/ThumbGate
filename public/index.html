@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>mcp-memory-gateway | AI Agent Memory and Pre-Action Gates</title>
-  <meta name="description" content="Resume AI coding sessions without re-explaining context. mcp-memory-gateway recalls decisions, injects relevant history, and blocks known failure patterns before agents repeat them." />
-  <meta name="keywords" content="AI agent guardrails, AI coding memory, MCP server, Claude Code, Codex, Gemini CLI, feedback loop, prevention rules, pre-action gates, project continuity" />
-  <meta property="og:title" content="mcp-memory-gateway — Resume AI work faster. Repeat fewer mistakes." />
-  <meta property="og:description" content="Use any continuity workflow to regain context, then let mcp-memory-gateway act as the control plane for recall, prevention rules, and pre-action gates." />
+  <title>mcp-memory-gateway | AI Agent Reliability Without Orchestration Tax</title>
+  <meta name="description" content="Keep one sharp AI agent. Resume sessions faster, recall project decisions, and block repeated mistakes without adding orchestration or handoff overhead." />
+  <meta name="keywords" content="AI agent reliability, AI agent guardrails, AI coding memory, MCP server, Claude Code, Codex, Gemini CLI, feedback loop, prevention rules, pre-action gates, project continuity" />
+  <meta property="og:title" content="mcp-memory-gateway — Keep one sharp agent. Repeat fewer mistakes." />
+  <meta property="og:description" content="Use any continuity workflow to regain context, then let mcp-memory-gateway add recall, prevention rules, and pre-action gates in the same agent loop without another orchestration layer." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://rlhf-feedback-loop-production.up.railway.app" />
   <link rel="canonical" href="https://rlhf-feedback-loop-production.up.railway.app" />
@@ -20,8 +20,8 @@
     "url": "https://rlhf-feedback-loop-production.up.railway.app",
     "operatingSystem": "Cross-platform",
     "applicationCategory": "DeveloperApplication",
-    "description": "Resume AI coding sessions without re-explaining context. mcp-memory-gateway recalls decisions, injects relevant history, and blocks known failure patterns before agents repeat them.",
-    "keywords": "AI agent guardrails, AI coding memory, MCP server, pre-action gates, feedback loop, prevention rules, Thompson Sampling, project continuity",
+    "description": "Keep one sharp AI agent. Resume sessions faster, recall project decisions, and block repeated mistakes without adding orchestration or handoff overhead.",
+    "keywords": "AI agent reliability, AI agent guardrails, AI coding memory, MCP server, pre-action gates, feedback loop, prevention rules, Thompson Sampling, project continuity",
     "offers": [
       {
         "@type": "Offer",
@@ -51,7 +51,8 @@
       "Auto-gate promotion from repeated feedback",
       "Thompson Sampling for adaptive steering",
       "Works with Claude Code, Codex, Gemini CLI, and Amp",
-      "Pairs with continuity tools and IDE re-entry workflows",
+      "Runs inside the agent loop you already use; no orchestration or subagent routing required",
+      "Pairs cleanly with continuity tools and IDE re-entry workflows",
       "Local-first, MIT licensed, no cloud required"
     ]
   }
@@ -90,7 +91,15 @@
         "name": "Can I pair it with editor continuity tools or resume assistants?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. Use continuity tools to regain project context quickly, then let mcp-memory-gateway act as the control plane for recall, prevention rules, and pre-action gates. External tools can also append structured JSONL events for watcher-based ingestion."
+          "text": "Yes. Continuity tools are optional context inputs, not a required orchestration layer. mcp-memory-gateway adds recall, prevention rules, and pre-action gates in the same agent session. External tools can also append structured JSONL events for watcher-based ingestion."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need subagents or an orchestration layer to get value?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. The Gateway is meant to keep one sharp agent on task. It adds recall, prevention rules, and pre-action gates without introducing extra agent handoffs or planner overhead."
         }
       }
     ]
@@ -736,8 +745,8 @@
     <!-- ── Hero ── -->
     <section class="hero">
       <div class="wrap">
-        <h1>Resume AI work faster. <em>Keep agents from looping.</em></h1>
-        <p class="sub">Use any continuity workflow to get back into context. mcp-memory-gateway becomes the control plane: it recalls past decisions, injects relevant history, and blocks known failure patterns before they execute. Works with Claude, Codex, Gemini, and Amp.</p>
+        <h1>Resume AI work faster. <em>Keep one sharp agent.</em></h1>
+        <p class="sub">Use any continuity workflow to get back into context. mcp-memory-gateway adds recall, prevention rules, and pre-action gates without introducing another orchestration layer or subagent handoff tax. Works with Claude, Codex, Gemini, and Amp.</p>
         <div class="campaign-banner" id="campaign-banner" hidden>
           <strong>Coming from Reddit?</strong>
           <span id="campaign-banner-copy">Self-hosted is free. If this thread includes an early-access code, it will flow through checkout attribution automatically.</span>
@@ -749,6 +758,7 @@
         <div class="badges">
           <span class="badge"><span class="dot"></span> CI + proof artifacts published</span>
           <span class="badge">Claude Code / Codex / Gemini / Amp</span>
+          <span class="badge">No orchestration tax</span>
           <span class="badge">Pairs with continuity tools</span>
           <span class="badge">MIT Licensed</span>
           <span class="badge">Local-first, no cloud required</span>
@@ -761,7 +771,7 @@
       <div class="wrap">
         <div class="section-label">The Problem</div>
         <div class="section-title">Resuming is not enough if the agent still repeats the same mistake.</div>
-        <div class="section-desc">Continuity gets you back into the project. Gates, recall, and verification keep the resumed session from burning the same time twice.</div>
+        <div class="section-desc">Continuity gets you back into the project. The Gateway keeps one sharp agent on task instead of forcing more handoffs, planners, or orchestration layers.</div>
         <div class="ba-grid">
           <div class="ba-card before">
             <span class="ba-tag">Before</span>
@@ -801,17 +811,42 @@
       </div>
     </section>
 
+    <section>
+      <div class="wrap">
+        <div class="section-label">Why It Lands</div>
+        <div class="section-title">Reliability layer, not orchestration layer.</div>
+        <div class="section-desc">Keep the base agent that already feels sharp. Put continuity upstream, let the Gateway sit underneath the session, and only intervene when repeated failures prove the pattern is real.</div>
+        <div class="steps-grid">
+          <div class="step">
+            <div class="step-num">1</div>
+            <h3>Keep one sharp agent</h3>
+            <p>No swarm required. The Gateway improves one agent's continuity and safety instead of adding subagent coordination overhead.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <h3>Pair continuity upstream</h3>
+            <p>Use your editor or resume assistant to reload context. The Gateway consumes that context and turns it into actionable recall and prevention.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <h3>Block repeat mistakes downstream</h3>
+            <p>Repeated failures become gates and reminders. The system stays out of the way until evidence says the pattern is recurring.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ── How it works ── -->
     <section id="how">
       <div class="wrap">
         <div class="section-label">How It Works</div>
-        <div class="section-title">Three steps. No config files.</div>
-        <div class="section-desc">Set up in under a minute. The system learns from your feedback and auto-promotes repeated failures into blocking rules.</div>
+        <div class="section-title">Three steps. No orchestration tax.</div>
+        <div class="section-desc">Set up in under a minute. The system learns from your feedback and auto-promotes repeated failures into blocking rules while staying out of the agent's way.</div>
         <div class="steps-grid">
           <div class="step">
             <div class="step-num">1</div>
             <h3>One command setup</h3>
-            <p>Initialize the gateway for your agent. Creates the MCP config, hooks, and local database.</p>
+            <p>Initialize the gateway for your agent. Creates the MCP config, hooks, and local reliability layer without adding another planner or swarm.</p>
             <code>npx mcp-memory-gateway init --agent claude-code</code>
           </div>
           <div class="step">
@@ -865,8 +900,9 @@
     <div class="proof-strip">
       <div class="wrap" style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;">
         <span class="proof-item"><strong>Verification</strong> evidence published</span>
-        <span class="proof-item"><strong>CLI + API + MCP</strong> same control plane</span>
+        <span class="proof-item"><strong>CLI + API + MCP</strong> same reliability layer</span>
         <span class="proof-item"><strong>Claude, Codex, Gemini, Amp</strong> supported</span>
+        <span class="proof-item"><strong>No subagent handoff tax</strong> by default</span>
         <span class="proof-item"><strong>Continuity tools</strong> pair cleanly upstream</span>
         <span class="proof-item"><strong>MIT</strong> licensed</span>
         <span class="proof-item"><strong>Local-first</strong> or hosted Pro</span>
@@ -878,7 +914,7 @@
       <div class="wrap">
         <div class="section-label">Pricing</div>
         <div class="section-title">Free forever. Pro when you need it.</div>
-        <div class="section-desc">The local CLI handles single-machine use. Pro syncs your memories to the cloud via Cloudflare Workers so your whole team benefits.</div>
+        <div class="section-desc">The local CLI handles single-machine use without another coordination stack. Pro syncs your memories to the cloud via Cloudflare Workers so your whole team benefits.</div>
         <div class="pricing-grid">
           <div class="price-card">
             <div class="tier-label">Free</div>

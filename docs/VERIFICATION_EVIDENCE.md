@@ -893,6 +893,52 @@ Behavioral proof points:
 - `docs/marketing/reddit-posts.md` contains the current `r/ClaudeCode` post plus a showcase-safe `r/ClaudeAI` variant.
 - `docs/marketing/assets/` contains local/private export-ready SVG assets for LinkedIn and X, avoiding shared-workspace dependency for final posting assets.
 
+## 2026-03-17 Reliability-Without-Orchestration Positioning Verification
+
+Scope:
+
+- Repositioned the public landing page and package metadata around reliability without orchestration or subagent handoff overhead.
+- Added explicit FAQ and hero copy that keeps one sharp agent as the primary product story.
+- Tightened the continuity guide so it clearly frames the Gateway as the downstream reliability layer, not another planner or swarm.
+- Added a positioning contract test so README, package metadata, guide copy, and landing-page assertions cannot drift back to generic memory-layer messaging.
+
+Commands run:
+
+```bash
+node --test tests/public-landing.test.js tests/positioning-contract.test.js
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+npm run self-heal:check
+npm run test:workflow
+git diff --check
+```
+
+Observed results:
+
+- `tests/public-landing.test.js`: pass
+- `tests/positioning-contract.test.js`: pass
+- `npm test`: pass
+- `npm run test:coverage`: pass
+  - `1094` tests, `1093` passed, `0` failed, `1` skipped
+  - coverage `84.39%` lines, `70.80%` branches, `87.14%` functions
+- `npm run prove:adapters`: pass, `46/46`
+- `npm run prove:automation`: pass, `55/55`
+- `npm run self-heal:check`: `Overall: HEALTHY`, `4/4 healthy`
+- `npm run test:workflow`: pass
+- `git diff --check`: clean
+
+Behavioral proof points:
+
+- `public/index.html` now promises `Keep one sharp agent` and explicitly says the Gateway works without another orchestration layer or subagent handoff tax.
+- `public/index.html` FAQ now answers whether subagents or orchestration are required and states that the product is meant to keep one sharp agent on task.
+- `README.md` now leads with `Local-first reliability layer for AI coding agents` instead of generic context-and-memory phrasing.
+- `package.json` now carries reliability-over-orchestration positioning into npm and marketplace metadata.
+- `docs/guides/continuity-tools-integration.md` now documents the recommended split: continuity upstream, one base agent doing the work, Gateway downstream as the reliability layer.
+- `docs/marketing/LAUNCH_CONTENT.md` now aligns older launch variants with the reliability-without-orchestration story instead of stale persistent-memory-first copy.
+- `tests/positioning-contract.test.js` now guards the launch-content variants as well, so active GTM docs cannot silently drift back to memory-layer messaging.
+
 ## March 17, 2026: Cursor Marketplace packaging
 
 Scope:
