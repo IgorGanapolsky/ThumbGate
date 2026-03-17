@@ -17,6 +17,16 @@ Works with any MCP-compatible agent: Claude, Codex, Gemini, Amp, Cursor.
 
 Verification evidence for shipped features lives in [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md).
 
+## Cursor Marketplace
+
+This repo now ships a submission-ready Cursor plugin bundle:
+
+- Root marketplace manifest: `.cursor-plugin/marketplace.json`
+- Plugin directory: `plugins/cursor-marketplace/`
+- Plugin MCP config: `plugins/cursor-marketplace/.mcp.json`
+
+That package keeps the Cursor review surface intentionally small: one MCP server bundle for the **Agentic Feedback Studio**, **Veto Layer**, **DPO** export, and **Thompson Sampling** feedback loop. Until the public listing is approved, Cursor users can still install locally with `npx mcp-memory-gateway init`.
+
 ## Visual Demo: Experience the Magic
 
 Stop imagining and see the **MCP Memory Gateway** in action. This is the difference between an agent that repeats mistakes and one that actually improves.
@@ -100,7 +110,7 @@ npx mcp-memory-gateway init --agent gemini
 
 > **Profiles:** Set `RLHF_MCP_PROFILE=essential` for the lean 5-tool setup (recommended), or leave unset for the full 12-tool pipeline. See [MCP Tools](#mcp-tools) for details.
 
-## Pre-Action Gates (v0.7.1)
+## Pre-Action Gates
 
 Gates are the enforcement layer. They physically block tool calls that match known failure patterns — no agent cooperation required.
 

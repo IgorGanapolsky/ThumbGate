@@ -862,6 +862,53 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## March 17, 2026: Cursor Marketplace packaging
+
+Scope:
+
+- Added a repo-root Cursor marketplace manifest at `.cursor-plugin/marketplace.json`.
+- Added a dedicated Cursor plugin bundle in `plugins/cursor-marketplace/` with `.cursor-plugin/plugin.json`, `.mcp.json`, README, and committed logo asset.
+- Switched the Cursor launcher to the portable published package entrypoint `npx -y mcp-memory-gateway@0.7.1 serve` instead of any checkout-local absolute path.
+- Removed the stale `.mcp.json.plugin` legacy config file so the repo has one canonical Cursor packaging path.
+- Extended `scripts/sync-version.js` so Cursor manifests and all pinned launcher docs stay version-synced on future releases.
+- Added regression coverage for the repo-level marketplace contract, manifest/version consistency, and MCP launcher safety.
+
+Commands run in the dedicated worktree at `/private/tmp/rlhf-cursor-marketplace-20260317T074440Z`:
+
+```bash
+npm ci
+npm --prefix workers ci
+node scripts/sync-version.js --check
+node --test tests/adapters.test.js tests/version-metadata.test.js tests/cursor-plugin.test.js
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed result:
+
+- `npm ci` completed with `0` vulnerabilities.
+- `npm --prefix workers ci` completed with `0` vulnerabilities.
+- `node scripts/sync-version.js --check`: `✔ All 16 targets in sync at v0.7.1`.
+- Targeted Cursor packaging regressions passed: `18` tests passed, `0` failed.
+- `npm test` passed end-to-end on the Cursor marketplace branch.
+- `npm run test:coverage` passed with all-files coverage of `83.92%` lines, `70.52%` branches, and `86.81%` functions.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `47` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `git diff --check` completed cleanly.
+
+Requirements verified:
+
+- The Cursor marketplace root manifest resolves to a valid repo-relative plugin directory.
+- The Cursor marketplace manifest, Cursor plugin manifest, Claude plugin manifest, and package version remain synchronized.
+- The Cursor plugin launcher uses the published npm package and does not hardcode `/Users/...` checkout paths.
+- The multi-plugin marketplace contract is internally consistent: the marketplace entry name matches the plugin manifest name.
+- Version-sync automation now owns the pinned Cursor launcher docs instead of leaving release drift behind.
+
 ## 2026-03-13 Truthful Revenue Analytics Verification
 
 Scope:

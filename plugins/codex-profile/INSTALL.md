@@ -22,9 +22,9 @@ cat adapters/codex/config.toml >> ~/.codex/config.toml
 The following block is appended to `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.rlhf_feedback_loop]
-command = "node"
-args = ["adapters/mcp/server-stdio.js"]
+[mcp_servers.rlhf]
+command = "npx"
+args = ["-y", "mcp-memory-gateway@0.7.1", "serve"]
 ```
 
 ## Verify
@@ -37,7 +37,7 @@ node adapters/mcp/server-stdio.js
 # Press Ctrl+C to stop
 ```
 
-Then restart Codex. The `rlhf_feedback_loop` MCP server will appear in the tool list.
+Then restart Codex. The `rlhf` MCP server will appear in the tool list.
 
 ## Available Tools (via MCP)
 
@@ -54,4 +54,4 @@ Then restart Codex. The `rlhf_feedback_loop` MCP server will appear in the tool 
 
 ## Uninstall
 
-Remove the `[mcp_servers.rlhf_feedback_loop]` section from `~/.codex/config.toml`.
+Remove the `[mcp_servers.rlhf]` section from `~/.codex/config.toml`.

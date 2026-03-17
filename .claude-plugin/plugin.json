@@ -1,7 +1,7 @@
 {
   "name": "mcp-memory-gateway",
   "description": "Local-first memory and RLHF feedback pipeline for AI agents — capture feedback, promote memories, generate prevention rules, export DPO/KTO training pairs",
-  "version": "0.6.13",
+  "version": "0.7.1",
   "author": {
     "name": "Igor Ganapolsky"
   },

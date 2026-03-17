@@ -79,7 +79,109 @@ function syncVersion(opts) {
     targets.push(cardPath);
   }
 
-  // 3. docs/landing-page.html — hero badge + JSON snippet
+  // 3. .claude-plugin/plugin.json
+  const claudePluginPath = '.claude-plugin/plugin.json';
+  if (fs.existsSync(path.join(PROJECT_ROOT, claudePluginPath))) {
+    const claudePlugin = readJson(claudePluginPath);
+    if (claudePlugin.version !== version) {
+      drifted.push({ file: claudePluginPath, field: 'version', current: claudePlugin.version });
+      if (!checkOnly) {
+        claudePlugin.version = version;
+        writeJson(claudePluginPath, claudePlugin);
+      }
+    }
+    targets.push(claudePluginPath);
+  }
+
+  // 4. .claude-plugin/marketplace.json
+  const claudeMarketplacePath = '.claude-plugin/marketplace.json';
+  if (fs.existsSync(path.join(PROJECT_ROOT, claudeMarketplacePath))) {
+    const claudeMarketplace = readJson(claudeMarketplacePath);
+    if (claudeMarketplace.version !== version) {
+      drifted.push({ file: claudeMarketplacePath, field: 'version', current: claudeMarketplace.version });
+      if (!checkOnly) {
+        claudeMarketplace.version = version;
+        writeJson(claudeMarketplacePath, claudeMarketplace);
+      }
+    }
+    targets.push(claudeMarketplacePath);
+  }
+
+  // 5. root Cursor marketplace manifest
+  const cursorMarketplacePath = '.cursor-plugin/marketplace.json';
+  if (fs.existsSync(path.join(PROJECT_ROOT, cursorMarketplacePath))) {
+    const cursorMarketplace = readJson(cursorMarketplacePath);
+    const current = cursorMarketplace.metadata && cursorMarketplace.metadata.version;
+    if (current !== version) {
+      drifted.push({ file: cursorMarketplacePath, field: 'metadata.version', current });
+      if (!checkOnly) {
+        cursorMarketplace.metadata = cursorMarketplace.metadata || {};
+        cursorMarketplace.metadata.version = version;
+        writeJson(cursorMarketplacePath, cursorMarketplace);
+      }
+    }
+    targets.push(cursorMarketplacePath);
+  }
+
+  // 6. plugin Cursor manifest
+  const cursorPluginManifestPath = 'plugins/cursor-marketplace/.cursor-plugin/plugin.json';
+  if (fs.existsSync(path.join(PROJECT_ROOT, cursorPluginManifestPath))) {
+    const cursorPlugin = readJson(cursorPluginManifestPath);
+    if (cursorPlugin.version !== version) {
+      drifted.push({ file: cursorPluginManifestPath, field: 'version', current: cursorPlugin.version });
+      if (!checkOnly) {
+        cursorPlugin.version = version;
+        writeJson(cursorPluginManifestPath, cursorPlugin);
+      }
+    }
+    targets.push(cursorPluginManifestPath);
+  }
+
+  // 7. plugin Cursor MCP config
+  const cursorPluginConfigPath = 'plugins/cursor-marketplace/.mcp.json';
+  if (fs.existsSync(path.join(PROJECT_ROOT, cursorPluginConfigPath))) {
+    const cursorPluginConfig = readJson(cursorPluginConfigPath);
+    const server = cursorPluginConfig.mcpServers && cursorPluginConfig.mcpServers.rlhf;
+    const currentArg = server && Array.isArray(server.args)
+      ? server.args.find((arg) => typeof arg === 'string' && arg.startsWith('mcp-memory-gateway@'))
+      : null;
+    const expectedArg = `mcp-memory-gateway@${version}`;
+    if (currentArg && currentArg !== expectedArg) {
+      drifted.push({ file: cursorPluginConfigPath, field: 'mcpServers.rlhf.args', current: currentArg });
+      if (!checkOnly) {
+        server.args = server.args.map((arg) => (arg === currentArg ? expectedArg : arg));
+        writeJson(cursorPluginConfigPath, cursorPluginConfig);
+      }
+    }
+    targets.push(cursorPluginConfigPath);
+  }
+
+  // 8. docs/install files that pin the npm package version
+  const pinnedPackageTargets = [
+    'docs/PLUGIN_DISTRIBUTION.md',
+    'adapters/README.md',
+    'docs/mcp-hub-submission.md',
+    'docs/VERIFICATION_EVIDENCE.md',
+    'plugins/codex-profile/INSTALL.md',
+    'plugins/cursor-marketplace/README.md',
+  ];
+  const pinnedPackagePattern = /mcp-memory-gateway@\d+\.\d+\.\d+/g;
+  for (const relPath of pinnedPackageTargets) {
+    const filePath = path.join(PROJECT_ROOT, relPath);
+    if (!fs.existsSync(filePath)) continue;
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const matches = content.match(pinnedPackagePattern) || [];
+    const hasDrift = matches.some((match) => match !== `mcp-memory-gateway@${version}`);
+    if (hasDrift) {
+      drifted.push({ file: relPath, field: 'package-version-string', current: matches.join(', ') });
+      if (!checkOnly) {
+        fs.writeFileSync(filePath, content.replace(pinnedPackagePattern, `mcp-memory-gateway@${version}`));
+      }
+    }
+    targets.push(relPath);
+  }
+
+  // 9. docs/landing-page.html — hero badge + JSON snippet
   const landingPath = 'docs/landing-page.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, landingPath))) {
     const landingContent = fs.readFileSync(path.join(PROJECT_ROOT, landingPath), 'utf-8');
@@ -102,7 +204,7 @@ function syncVersion(opts) {
     targets.push(landingPath);
   }
 
-  // 4. docs/mcp-hub-submission.md
+  // 10. docs/mcp-hub-submission.md
   const mcpSubmPath = 'docs/mcp-hub-submission.md';
   if (fs.existsSync(path.join(PROJECT_ROOT, mcpSubmPath))) {
     const mcpContent = fs.readFileSync(path.join(PROJECT_ROOT, mcpSubmPath), 'utf-8');
@@ -116,7 +218,7 @@ function syncVersion(opts) {
     targets.push(mcpSubmPath);
   }
 
-  // 5. public/index.html — static landing proof pill + footer version
+  // 11. public/index.html — static landing proof pill + footer version
   const publicIndexPath = 'public/index.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, publicIndexPath))) {
     const publicContent = fs.readFileSync(path.join(PROJECT_ROOT, publicIndexPath), 'utf-8');
