@@ -32,6 +32,11 @@ test('public landing page enriches fallback checkout links with first-party attr
   assert.match(landingPage, /url\.searchParams\.set\('acquisition_id', getAcquisitionId\(\)\)/);
   assert.match(landingPage, /url\.searchParams\.set\('visitor_id', getVisitorId\(\)\)/);
   assert.match(landingPage, /url\.searchParams\.set\('session_id', getSessionId\(\)\)/);
+  assert.match(landingPage, /url\.searchParams\.set\('community', attribution\.community\)/);
+  assert.match(landingPage, /url\.searchParams\.set\('post_id', attribution\.postId\)/);
+  assert.match(landingPage, /url\.searchParams\.set\('comment_id', attribution\.commentId\)/);
+  assert.match(landingPage, /url\.searchParams\.set\('campaign_variant', attribution\.campaignVariant\)/);
+  assert.match(landingPage, /url\.searchParams\.set\('offer_code', attribution\.offerCode\)/);
   assert.match(landingPage, /url\.searchParams\.set\('landing_path', attribution\.landingPath\)/);
   assert.match(landingPage, /url\.searchParams\.set\('referrer_host', attribution\.referrerHost\)/);
   assert.match(landingPage, /sendTelemetry\('checkout_fallback_redirect'/);
@@ -46,4 +51,13 @@ test('public landing page includes buyer-loss capture wired to telemetry and Pla
   assert.match(landingPage, /id="buyer-feedback-submit"/);
   assert.match(landingPage, /sendTelemetry\('reason_not_buying'/);
   assert.match(landingPage, /window\.plausible\('Buyer Feedback Submitted'/);
+});
+
+test('public landing page includes a Reddit campaign banner and subreddit-aware attribution logic', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /id="campaign-banner"/);
+  assert.match(landingPage, /parseRedditCommunity/);
+  assert.match(landingPage, /utmSource !== 'reddit'/);
+  assert.match(landingPage, /Use code/);
 });

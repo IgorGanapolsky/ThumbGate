@@ -151,11 +151,11 @@ test('cancel page serves retry message', async () => {
 
 test('checkout bootstrap route preserves attribution and records first-party telemetry in local mode', async () => {
   const res = await fetch(
-    apiUrl('/checkout/pro?acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&utm_source=google&utm_medium=organic&utm_campaign=seo_launch&utm_term=agentic+feedback&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
+    apiUrl('/checkout/pro?acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_term=agentic+feedback&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
     {
       redirect: 'manual',
       headers: {
-        referer: 'https://www.google.com/search?q=agentic+feedback+studio',
+        referer: 'https://www.reddit.com/r/ClaudeCode/comments/1rsudq0/comment/oa9mqjf/',
       },
     }
   );
@@ -184,7 +184,12 @@ test('checkout bootstrap route preserves attribution and records first-party tel
   assert.equal(checkoutCreated.ctaPlacement, 'pricing');
   assert.equal(checkoutCreated.planId, 'pro');
   assert.equal(checkoutCreated.landingPath, '/pricing');
-  assert.equal(checkoutCreated.referrerHost, 'www.google.com');
+  assert.equal(checkoutCreated.referrerHost, 'www.reddit.com');
+  assert.equal(checkoutCreated.community, 'ClaudeCode');
+  assert.equal(checkoutCreated.postId, '1rsudq0');
+  assert.equal(checkoutCreated.commentId, 'oa9mqjf');
+  assert.equal(checkoutCreated.campaignVariant, 'comment_problem_solution');
+  assert.equal(checkoutCreated.offerCode, 'REDDIT-EARLY');
 
   const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
   const bootstrapEvent = telemetryEvents.find((entry) => entry.eventType === 'checkout_bootstrap');
@@ -194,13 +199,15 @@ test('checkout bootstrap route preserves attribution and records first-party tel
   assert.equal(bootstrapEvent.visitorId, 'visitor_bootstrap');
   assert.equal(bootstrapEvent.sessionId, 'session_bootstrap');
   assert.equal(bootstrapEvent.installId, 'inst_bootstrap');
-  assert.equal(bootstrapEvent.utmSource, 'google');
-  assert.equal(bootstrapEvent.utmMedium, 'organic');
-  assert.equal(bootstrapEvent.utmCampaign, 'seo_launch');
+  assert.equal(bootstrapEvent.utmSource, 'reddit');
+  assert.equal(bootstrapEvent.utmMedium, 'organic_social');
+  assert.equal(bootstrapEvent.utmCampaign, 'reddit_launch');
   assert.equal(bootstrapEvent.ctaId, 'pricing_pro');
   assert.equal(bootstrapEvent.planId, 'pro');
   assert.equal(bootstrapEvent.landingPath, '/pricing');
-  assert.equal(bootstrapEvent.referrerHost, 'www.google.com');
+  assert.equal(bootstrapEvent.referrerHost, 'www.reddit.com');
+  assert.equal(bootstrapEvent.community, 'ClaudeCode');
+  assert.equal(bootstrapEvent.offerCode, 'REDDIT-EARLY');
 });
 
 test('feedback capture accepts valid payload', async () => {
@@ -632,10 +639,12 @@ test('funnel analytics returns counts and conversion rates', async () => {
     body: JSON.stringify({
       installId: 'inst_api_server_test',
       metadata: {
-        source: 'website',
-        utmSource: 'website',
-        utmMedium: 'cta_button',
-        utmCampaign: 'spring_launch',
+        source: 'reddit',
+        utmSource: 'reddit',
+        utmMedium: 'organic_social',
+        utmCampaign: 'reddit_launch',
+        community: 'ClaudeCode',
+        offerCode: 'REDDIT-EARLY',
         ctaId: 'pricing_pro',
       },
     }),
@@ -659,6 +668,8 @@ test('funnel analytics returns counts and conversion rates', async () => {
   });
   assert.equal(summaryRes.status, 200);
   const summary = await summaryRes.json();
-  assert.ok(summary.signups.bySource.website >= 1);
-  assert.ok(summary.attribution.acquisitionByCampaign.spring_launch >= 1);
+  assert.ok(summary.signups.bySource.reddit >= 1);
+  assert.ok(summary.attribution.acquisitionByCampaign.reddit_launch >= 1);
+  assert.ok(summary.attribution.acquisitionByCommunity.ClaudeCode >= 1);
+  assert.ok(summary.attribution.acquisitionByOfferCode['REDDIT-EARLY'] >= 1);
 });

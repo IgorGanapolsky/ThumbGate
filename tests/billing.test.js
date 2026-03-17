@@ -173,10 +173,12 @@ describe('billing.js — funnel ledger', () => {
       evidence: 'sess_summary_a',
       metadata: {
         customerId: 'cus_summary_a',
-        source: 'website',
-        utmSource: 'website',
-        utmMedium: 'cta_button',
-        utmCampaign: 'pro_pack',
+        source: 'reddit',
+        utmSource: 'reddit',
+        utmMedium: 'organic_social',
+        utmCampaign: 'reddit_launch',
+        community: 'ClaudeCode',
+        offerCode: 'REDDIT-EARLY',
       },
     });
     billing.appendFunnelEvent({
@@ -187,10 +189,12 @@ describe('billing.js — funnel ledger', () => {
       traceId: 'trace_summary_a',
       metadata: {
         customerId: 'cus_summary_a',
-        source: 'website',
-        utmSource: 'website',
-        utmMedium: 'cta_button',
-        utmCampaign: 'pro_pack',
+        source: 'reddit',
+        utmSource: 'reddit',
+        utmMedium: 'organic_social',
+        utmCampaign: 'reddit_launch',
+        community: 'ClaudeCode',
+        offerCode: 'REDDIT-EARLY',
       },
     });
     billing.appendRevenueEvent({
@@ -206,10 +210,12 @@ describe('billing.js — funnel ledger', () => {
       amountKnown: true,
       recurringInterval: 'month',
       attribution: {
-        source: 'website',
-        utmSource: 'website',
-        utmMedium: 'cta_button',
-        utmCampaign: 'pro_pack',
+        source: 'reddit',
+        utmSource: 'reddit',
+        utmMedium: 'organic_social',
+        utmCampaign: 'reddit_launch',
+        community: 'ClaudeCode',
+        offerCode: 'REDDIT-EARLY',
       },
       metadata: { subscriptionId: 'sub_summary_a' },
     });
@@ -225,9 +231,17 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.revenue.paidOrders, 1);
     assert.equal(summary.revenue.bookedRevenueCents, 2900);
     assert.equal(summary.revenue.amountKnownCoverageRate, 1);
-    assert.equal(summary.attribution.acquisitionBySource.website, 1);
-    assert.equal(summary.attribution.paidByCampaign.pro_pack, 1);
-    assert.equal(summary.attribution.bookedRevenueBySourceCents.website, 2900);
+    assert.equal(summary.attribution.acquisitionBySource.reddit, 1);
+    assert.equal(summary.attribution.acquisitionByCommunity.ClaudeCode, 1);
+    assert.equal(summary.attribution.acquisitionByOfferCode['REDDIT-EARLY'], 1);
+    assert.equal(summary.attribution.paidByCampaign.reddit_launch, 1);
+    assert.equal(summary.attribution.paidByCommunity.ClaudeCode, 1);
+    assert.equal(summary.attribution.paidByOfferCode['REDDIT-EARLY'], 1);
+    assert.equal(summary.attribution.bookedRevenueBySourceCents.reddit, 2900);
+    assert.equal(summary.attribution.bookedRevenueByCommunityCents.ClaudeCode, 2900);
+    assert.equal(summary.attribution.bookedRevenueByOfferCodeCents['REDDIT-EARLY'], 2900);
+    assert.equal(summary.attribution.conversionByCommunity.ClaudeCode, 1);
+    assert.equal(summary.attribution.conversionByOfferCode['REDDIT-EARLY'], 1);
     assert.equal(summary.keys.total, 2);
     assert.equal(summary.keys.active, 1);
     assert.equal(summary.keys.disabled, 1);
