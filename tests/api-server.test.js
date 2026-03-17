@@ -163,11 +163,11 @@ test('checkout bootstrap route preserves attribution and records first-party tel
   assert.equal(res.status, 302);
   const location = new URL(res.headers.get('location'));
   assert.equal(location.pathname, '/success');
-  assert.ok(location.searchParams.get('session_id'));
+  assert.match(String(location.searchParams.get('session_id')), /^test_session_/);
   assert.match(String(location.searchParams.get('trace_id')), /^checkout_/);
   assert.equal(location.searchParams.get('acquisition_id'), 'acq_bootstrap');
   assert.equal(location.searchParams.get('visitor_id'), 'visitor_bootstrap');
-  assert.equal(location.searchParams.get('session_id'), 'session_bootstrap');
+  assert.equal(location.searchParams.get('visitor_session_id'), 'session_bootstrap');
   assert.equal(location.searchParams.get('install_id'), 'inst_bootstrap');
 
   const funnelEvents = readJsonl(process.env._TEST_FUNNEL_LEDGER_PATH);
@@ -644,6 +644,9 @@ test('funnel analytics returns counts and conversion rates', async () => {
         utmMedium: 'organic_social',
         utmCampaign: 'reddit_launch',
         community: 'ClaudeCode',
+        postId: '1rsudq0',
+        commentId: 'oa9mqjf',
+        campaignVariant: 'comment_problem_solution',
         offerCode: 'REDDIT-EARLY',
         ctaId: 'pricing_pro',
       },
@@ -671,5 +674,8 @@ test('funnel analytics returns counts and conversion rates', async () => {
   assert.ok(summary.signups.bySource.reddit >= 1);
   assert.ok(summary.attribution.acquisitionByCampaign.reddit_launch >= 1);
   assert.ok(summary.attribution.acquisitionByCommunity.ClaudeCode >= 1);
+  assert.ok(summary.attribution.acquisitionByPostId['1rsudq0'] >= 1);
+  assert.ok(summary.attribution.acquisitionByCommentId.oa9mqjf >= 1);
+  assert.ok(summary.attribution.acquisitionByCampaignVariant.comment_problem_solution >= 1);
   assert.ok(summary.attribution.acquisitionByOfferCode['REDDIT-EARLY'] >= 1);
 });
