@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350" fill="none">
+  <rect width="1080" height="1350" fill="#FFF9F0"/>
+  <text x="120" y="170" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700" letter-spacing="2">SLIDE 4 / FIRST USERS</text>
+  <text x="120" y="290" fill="#17181C" font-family="Georgia, serif" font-size="80" font-weight="700">Who it helps first</text>
+  <rect x="120" y="400" width="840" height="220" rx="28" fill="#17181C"/>
+  <text x="165" y="480" fill="#F4EDE1" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="700">SOLO FOUNDERS</text>
+  <text x="165" y="535" fill="#C9CCD5" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30">Keep the agent from repeating repo-specific mistakes every new session.</text>
+  <rect x="120" y="670" width="840" height="220" rx="28" fill="#77C8B5" fill-opacity="0.18" stroke="#77C8B5" stroke-width="3"/>
+  <text x="165" y="750" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="700">OSS MAINTAINERS</text>
+  <text x="165" y="805" fill="#4A4F5C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30">Turn PR review comments into reusable lessons instead of losing them after merge.</text>
+  <rect x="120" y="940" width="840" height="220" rx="28" fill="#F6C75A" fill-opacity="0.22" stroke="#F6C75A" stroke-width="3"/>
+  <text x="165" y="1020" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="700">AGENCY TEAMS</text>
+  <text x="165" y="1075" fill="#4A4F5C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30">Preserve client-specific constraints and prevent cross-client mistakes.</text>
+</svg>

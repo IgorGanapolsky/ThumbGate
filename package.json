@@ -1,7 +1,7 @@
 {
   "name": "mcp-memory-gateway",
   "version": "0.7.1",
-  "description": "The Universal Context & Memory Layer for Model Context Protocol (MCP) Agents. Centralized hub to consolidate failures and enforce architectural guardrails.",
+  "description": "Local-first reliability layer for AI coding agents. Resume sessions faster, recall project decisions, and block repeated mistakes without orchestration overhead.",
   "homepage": "https://rlhf-feedback-loop-production.up.railway.app",
   "repository": {
     "type": "git",
@@ -49,7 +49,7 @@
     "test:intelligence": "node --test tests/intelligence.test.js",
     "test:training-export": "node --test tests/training-export.test.js tests/databricks-export.test.js",
     "test:deployment": "node --test tests/deployment.test.js tests/deploy-policy.test.js",
-    "test:workflow": "node --test tests/workflow-contract.test.js",
+    "test:workflow": "node --test tests/workflow-contract.test.js tests/social-marketing-assets.test.js tests/positioning-contract.test.js",
     "test:billing": "node --test tests/billing.test.js",
     "test:cli": "node --test tests/cli.test.js tests/feedback-normalize.test.js tests/install-mcp.test.js",
     "test:watcher": "node --test tests/jsonl-watcher.test.js",

@@ -7,6 +7,7 @@ const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
 const { getBillingSummary, loadFunnelLedger, loadRevenueLedger } = require('./billing');
 const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-analytics');
 const { getAutoGatesPath } = require('./auto-promote-gates');
+const { summarizeDelegation } = require('./delegation-runtime');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -427,6 +428,7 @@ function generateDashboard(feedbackDir) {
   const secretGuard = computeSecretGuardStats(diagnosticEntries);
   const analytics = computeAnalyticsSummary(feedbackDir);
   const observability = computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, analytics.telemetry);
+  const delegation = summarizeDelegation(feedbackDir);
 
   return {
     approval,
@@ -435,6 +437,7 @@ function generateDashboard(feedbackDir) {
     trend,
     health,
     diagnostics,
+    delegation,
     secretGuard,
     analytics,
     observability,
@@ -453,6 +456,7 @@ function printDashboard(data) {
     trend,
     health,
     diagnostics,
+    delegation,
     secretGuard,
     analytics,
     observability,
@@ -484,6 +488,13 @@ function printDashboard(data) {
   if (prevention.lastPromotion) {
     console.log(`  Last Promotion   : ${prevention.lastPromotion.id} (${prevention.lastPromotion.daysAgo} days ago)`);
   }
+
+  console.log('');
+  console.log('\uD83E\uDD1D Delegation');
+  console.log(`  Attempts         : ${delegation.attemptCount}`);
+  console.log(`  Outcomes         : ${delegation.acceptedCount} accepted / ${delegation.rejectedCount} rejected / ${delegation.abortedCount} aborted`);
+  console.log(`  Verification Fail: ${Math.round((delegation.verificationFailureRate || 0) * 100)}%`);
+  console.log(`  Avoided Starts   : ${delegation.avoidedDelegationCount}`);
 
   console.log('');
   console.log('\uD83D\uDCBC Growth Analytics');

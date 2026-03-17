@@ -60,7 +60,7 @@ Current note:
 
 1. AI coding agent teams: Claude, Codex, Gemini, ChatGPT, Amp, and custom runners.
 2. RevOps and growth teams automating lead-to-meeting with human approvals.
-3. Platform teams standardizing one policy and memory layer across multiple runtimes.
+3. Platform teams standardizing one policy and reliability layer across multiple runtimes.
 4. Consultancies installing AI workflows for clients that demand proof and auditability.
 
 ## Ideal Customer Profile

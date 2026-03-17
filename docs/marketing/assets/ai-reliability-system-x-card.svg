@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" fill="none">
+  <rect width="1600" height="900" fill="#17181C"/>
+  <circle cx="1380" cy="170" r="180" fill="#F6C75A" fill-opacity="0.22"/>
+  <circle cx="220" cy="760" r="220" fill="#77C8B5" fill-opacity="0.18"/>
+  <text x="110" y="120" fill="#F4EDE1" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="700" letter-spacing="2">MCP MEMORY GATEWAY</text>
+  <text x="110" y="250" fill="#F4EDE1" font-family="Georgia, serif" font-size="94" font-weight="700">It is not a memory file.</text>
+  <text x="110" y="345" fill="#F4EDE1" font-family="Georgia, serif" font-size="94" font-weight="700">It is an AI reliability system.</text>
+  <text x="110" y="440" fill="#C9CCD5" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="40">Stop repeated mistakes across Claude Code, Codex, Cursor, and long agent sessions.</text>
+  <rect x="110" y="540" width="1270" height="116" rx="20" fill="#F4EDE1"/>
+  <text x="160" y="612" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="36" font-weight="700">Feedback  ->  Retrieval  ->  Prevention Rules  ->  Verification</text>
+  <rect x="110" y="710" width="280" height="84" rx="16" fill="#F07167"/>
+  <rect x="420" y="710" width="250" height="84" rx="16" fill="#77C8B5"/>
+  <rect x="700" y="710" width="300" height="84" rx="16" fill="#F6C75A"/>
+  <rect x="1030" y="710" width="350" height="84" rx="16" fill="#E9D7FF"/>
+  <text x="158" y="762" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700">Solo founders</text>
+  <text x="474" y="762" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700">OSS maintainers</text>
+  <text x="758" y="762" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700">Agency teams</text>
+  <text x="1073" y="762" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700">Staff eng / DevOps</text>
+</svg>

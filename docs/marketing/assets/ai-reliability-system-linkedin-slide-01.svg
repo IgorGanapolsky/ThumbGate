@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350" fill="none">
+  <rect width="1080" height="1350" fill="#F4EDE1"/>
+  <circle cx="930" cy="180" r="140" fill="#F6C75A" fill-opacity="0.5"/>
+  <circle cx="140" cy="1160" r="180" fill="#77C8B5" fill-opacity="0.25"/>
+  <rect x="90" y="100" width="900" height="1150" rx="36" fill="#17181C"/>
+  <text x="150" y="235" fill="#F4EDE1" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="600" letter-spacing="2">MCP MEMORY GATEWAY</text>
+  <text x="150" y="410" fill="#F4EDE1" font-family="Georgia, serif" font-size="92" font-weight="700">AI Reliability</text>
+  <text x="150" y="510" fill="#F4EDE1" font-family="Georgia, serif" font-size="92" font-weight="700">System for</text>
+  <text x="150" y="610" fill="#F4EDE1" font-family="Georgia, serif" font-size="92" font-weight="700">Coding Agents</text>
+  <text x="150" y="725" fill="#C9CCD5" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="36">Stop repeated mistakes across sessions.</text>
+  <rect x="150" y="835" width="760" height="120" rx="22" fill="#F4EDE1"/>
+  <text x="200" y="910" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="600">Feedback  ->  Retrieval  ->  Prevention Rules  ->  Verification</text>
+  <rect x="150" y="1025" width="196" height="88" rx="16" fill="#F07167"/>
+  <rect x="368" y="1025" width="166" height="88" rx="16" fill="#77C8B5"/>
+  <rect x="556" y="1025" width="228" height="88" rx="16" fill="#F6C75A"/>
+  <rect x="806" y="1025" width="104" height="88" rx="16" fill="#E9D7FF"/>
+  <text x="182" y="1080" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="28" font-weight="700">Local-first</text>
+  <text x="401" y="1080" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="28" font-weight="700">Auditable</text>
+  <text x="582" y="1080" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="28" font-weight="700">Operator-proof</text>
+  <text x="823" y="1080" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="28" font-weight="700">Real</text>
+  <text x="150" y="1185" fill="#8E93A3" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="26">It is not a memory file. It is a system that helps agents learn, verify, and improve.</text>
+</svg>

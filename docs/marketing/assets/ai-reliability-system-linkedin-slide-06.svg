@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350" fill="none">
+  <rect width="1080" height="1350" fill="#17181C"/>
+  <circle cx="850" cy="230" r="160" fill="#77C8B5" fill-opacity="0.18"/>
+  <circle cx="210" cy="1110" r="190" fill="#F07167" fill-opacity="0.16"/>
+  <text x="120" y="220" fill="#F4EDE1" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700" letter-spacing="2">SLIDE 6 / CTA</text>
+  <text x="120" y="360" fill="#F4EDE1" font-family="Georgia, serif" font-size="88" font-weight="700">Build.</text>
+  <text x="120" y="455" fill="#F4EDE1" font-family="Georgia, serif" font-size="88" font-weight="700">Learn.</text>
+  <text x="120" y="550" fill="#F4EDE1" font-family="Georgia, serif" font-size="88" font-weight="700">Verify.</text>
+  <text x="120" y="645" fill="#F4EDE1" font-family="Georgia, serif" font-size="88" font-weight="700">Improve.</text>
+  <text x="120" y="780" fill="#C9CCD5" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="38">The next generation of agent tooling wins by making the whole loop feel complete.</text>
+  <rect x="120" y="920" width="840" height="138" rx="24" fill="#F4EDE1"/>
+  <text x="165" y="1004" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="700">MCP Memory Gateway  /  AI Reliability System for Coding Agents</text>
+  <text x="120" y="1145" fill="#F6C75A" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="28">rlhf-feedback-loop-production.up.railway.app</text>
+</svg>

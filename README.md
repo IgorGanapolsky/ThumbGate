@@ -9,13 +9,15 @@
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
 [![Pro Pack](https://img.shields.io/badge/Pro%20Pack-Gumroad-FF90E8?logo=gumroad)](https://iganapolsky.gumroad.com/l/tjovof)
 
-**Local-first context engineering layer for AI agents.** Persists decisions, surfaces prevention rules, and injects relevant history into every new session — so agents stop repeating the same mistakes.
+**Local-first reliability layer for AI coding agents.** Keeps one sharp agent on task: persist decisions, surface prevention rules, and inject relevant history without adding orchestration or subagent handoff overhead.
 
 > **Honest disclaimer:** This is a **context injection system**, not RLHF. LLM weights are not updated by thumbs-up/down signals. What actually happens: feedback is validated, promoted to searchable memory, and recalled at session start so agents have project history they'd otherwise lose. That's genuinely valuable — but it's context engineering, not reinforcement learning.
 
 Works with any MCP-compatible agent: Claude, Codex, Gemini, Amp, Cursor.
 
 Verification evidence for shipped features lives in [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md).
+
+Continuity tools help you resume work. MCP Memory Gateway keeps the resumed session sharper: recall, prevention rules, pre-action gates, and verification layered on top of that continuity workflow without another planner or swarm.
 
 ## Cursor Marketplace
 
@@ -109,6 +111,27 @@ npx mcp-memory-gateway init --agent gemini
 ```
 
 > **Profiles:** Set `RLHF_MCP_PROFILE=essential` for the lean 5-tool setup (recommended), or leave unset for the full 12-tool pipeline. See [MCP Tools](#mcp-tools) for details.
+
+## Pair It With Continuity Tools
+
+Project continuity and agent reliability are complementary, not interchangeable.
+
+- Use your editor, assistant, or resume workflow to regain context quickly.
+- Use MCP Memory Gateway as the reliability layer for recall, gates, and proof.
+
+If an external tool can append structured JSONL entries with a `source` field, the built-in watcher can ingest them through the normal feedback pipeline:
+
+```json
+{"source":"editor-brief","signal":"down","context":"Agent resumed without reading the migration notes","whatWentWrong":"Skipped the resume brief and edited the wrong table","whatToChange":"Read the project brief before schema changes","tags":["continuity","resume","database"]}
+```
+
+```bash
+npx mcp-memory-gateway watch --source editor-brief
+```
+
+That routes the event through validation, memory promotion, vector indexing, and export eligibility without adding a second integration stack.
+
+Guide: [docs/guides/continuity-tools-integration.md](docs/guides/continuity-tools-integration.md)
 
 ## Pre-Action Gates
 
