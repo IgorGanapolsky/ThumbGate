@@ -862,6 +862,62 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-17 Workflow Hardening Sprint Revenue-Motion Verification
+
+Scope:
+
+- Tightened the landing page around the Workflow Hardening Sprint as the front-line commercial motion.
+- Added a current sprint brief for one workflow, one owner, and one proof review.
+- Aligned README, pitch, Anthropic partner strategy, outreach targets, cold outreach, LinkedIn, Reddit, and X assets to the same workflow-hardening story.
+- Added regression coverage so the public and sales surfaces do not drift back to generic AI-employee or infrastructure-first language.
+
+Commands run:
+
+```bash
+npm ci
+node --test tests/public-landing.test.js tests/api-server.test.js tests/social-marketing-assets.test.js tests/version-metadata.test.js tests/anthropic-partner-strategy.test.js tests/workflow-hardening-sprint.test.js
+npm test
+npm run test:coverage
+RLHF_PROOF_DIR=/tmp/rlhf-workflow-hardening-20260317T133407/proof/compatibility npm run prove:adapters
+RLHF_AUTOMATION_PROOF_DIR=/tmp/rlhf-workflow-hardening-20260317T133407/proof/automation npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- Targeted GTM regression suite: `58` pass, `0` fail.
+- `npm test`: pass.
+- `npm run test:coverage`: pass with Node test runner coverage summary:
+  - line coverage: `84.39%`
+  - branch coverage: `70.73%`
+  - function coverage: `87.26%`
+- `npm run prove:adapters`: pass with `46` passed, `0` failed.
+- `npm run prove:automation`: pass with `55` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+- Proof artifacts for adapter and automation verification were redirected to `/tmp/rlhf-workflow-hardening-20260317T133407/proof` so the clean worktree did not churn tracked `proof/` artifacts.
+
+Behavioral proof points:
+
+- `public/index.html` now sells the Workflow Hardening Sprint first, keeps Pro truthful and secondary, exposes a proof CTA, and adds Sprint FAQ/schema support without fake partner claims.
+- `docs/WORKFLOW_HARDENING_SPRINT.md` now defines the actual service offer, qualification rules, deliverables, contact path, and proof-pack requirement.
+- `docs/PITCH.md`, `docs/ANTHROPIC_MARKETPLACE_STRATEGY.md`, `docs/OUTREACH_TARGETS.md`, and `docs/marketing/cold-outreach-sequence.md` now align on the same 30-day revenue motion: founder-led outbound, one workflow, one owner, one proof review.
+- `docs/marketing/social-posts.md`, `docs/marketing/linkedin-ai-reliability-post.md`, `docs/marketing/reddit-posts.md`, and `docs/marketing/x-launch-thread.md` now frame the product as workflow hardening instead of generic AI-employee hype.
+- `tests/public-landing.test.js`, `tests/api-server.test.js`, `tests/social-marketing-assets.test.js`, `tests/version-metadata.test.js`, `tests/anthropic-partner-strategy.test.js`, and `tests/workflow-hardening-sprint.test.js` now guard the new commercial story against future drift.
+
+Artifacts updated:
+
+- `README.md`
+- `docs/WORKFLOW_HARDENING_SPRINT.md`
+- `docs/PITCH.md`
+- `docs/ANTHROPIC_MARKETPLACE_STRATEGY.md`
+- `docs/OUTREACH_TARGETS.md`
+- `docs/marketing/cold-outreach-sequence.md`
+- `docs/marketing/social-posts.md`
+- `docs/marketing/linkedin-ai-reliability-post.md`
+- `docs/marketing/reddit-posts.md`
+- `docs/marketing/x-launch-thread.md`
+- `public/index.html`
+
 ## 2026-03-17 Self-Heal Proof Isolation Verification
 
 Scope:

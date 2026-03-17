@@ -76,6 +76,8 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /mcp.memory.gateway/i);
   assert.match(body, /Keep one sharp agent/i);
   assert.match(body, /Claude workflow hardening/i);
+  assert.match(body, /Workflow Hardening Sprint/i);
+  assert.match(body, /Request Workflow Sprint/i);
   assert.match(body, /Code modernization guardrails/i);
   assert.match(body, /same agent session|same reliability layer|No orchestration tax/i);
   assert.match(body, /\$29\/mo/);

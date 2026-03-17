@@ -1,9 +1,21 @@
-# Anthropic Partner Strategy: Claude Workflow Hardening
+# Anthropic Partner Strategy: Claude Workflow Hardening Revenue Motion
 
 Status: current  
 Updated: March 17, 2026
 
 Use [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md) for live pricing and traction claims. Use [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) plus the machine-readable proof reports for engineering proof.
+
+## Operating Goal
+
+For the next 30 days, the goal is not vanity reach or speculative marketplace positioning.
+
+The goal is:
+
+- booked pilots
+- named pilot agreements
+- weekly proof-backed workflow runs
+
+Anthropic partner acceptance is a support lane for that revenue motion, not the primary KPI.
 
 ## Positioning
 
@@ -18,6 +30,13 @@ We are selling **Claude workflow hardening**:
 
 The product remains broad enough to work with Codex, Gemini, Amp, and Cursor, but the sharpest partner-facing story is Claude-first delivery for consultancies, platform teams, and code modernization work.
 
+## Primary 30-Day Motion
+
+- Primary channel: founder-led outbound
+- Front-line offer: [Workflow Hardening Sprint](WORKFLOW_HARDENING_SPRINT.md)
+- Support assets: landing page, proof pack, pitch, and outreach sequence
+- Target accounts: Claude-first consultancies, platform engineering leaders, and AI product teams with one workflow owner
+
 ## Why This Fits Anthropic's Current Motion
 
 Anthropic is publicly investing in services partners, technical certification, joint market development, and code modernization. That makes our best fit a services-and-governance layer around Claude delivery, not a generic marketplace listing.
@@ -30,7 +49,7 @@ Our angle:
 
 ## Packaged Offers
 
-### 1. Claude Workflow Hardening Sprint
+### 1. Workflow Hardening Sprint
 
 Outcome:
 
@@ -80,6 +99,16 @@ The buyer does not need a lecture about RLHF internals. The buyer needs a clear 
 
 That is the sellable story.
 
+## Why The Partner Network Helps
+
+Anthropic's partner motion helps us if it amplifies a sale that already works:
+
+1. Claude-first credibility for outreach and buyer conversations
+2. stronger positioning for code modernization and workflow-hardening work
+3. better support for consultancies and implementation-led delivery
+
+It does not replace founder-led outbound, proof, or a real offer.
+
 ## Seven High-Intent Use Cases
 
 1. **Code modernization partners** keeping migration rules, architecture constraints, and verification checks durable across long Claude sessions.
@@ -120,10 +149,11 @@ Always include:
 
 ## Recommended Distribution Sequence
 
-1. Tighten the public landing page around Claude workflow hardening and code modernization.
-2. Post the role-based X thread that frames the system as workflow hardening, not generic memory.
-3. Use the proof pack in direct outreach to consultancies, platform teams, and Claude-first engineering leaders.
+1. Tighten the public landing page around the Workflow Hardening Sprint.
+2. Use the proof pack in direct outreach to consultancies, platform teams, and Claude-first engineering leaders.
+3. Support the outreach with a role-based X thread and LinkedIn post.
 4. Keep the ask narrow: one workflow, one pilot, one proof review.
+5. Use partner-network status only as supporting credibility once it is real.
 
 ## GTM Signals Reinforced This Week
 

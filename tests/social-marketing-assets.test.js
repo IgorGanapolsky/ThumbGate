@@ -9,9 +9,10 @@ function read(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
 }
 
-test('canonical social launch kit uses AI reliability positioning and links channel docs', () => {
+test('canonical social launch kit uses workflow-hardening positioning and links channel docs', () => {
   const content = read('docs/marketing/social-posts.md');
-  assert.match(content, /AI reliability system for coding agents/i);
+  assert.match(content, /Claude workflow hardening/i);
+  assert.match(content, /one workflow, one owner, one proof pack/i);
   assert.match(content, /feedback -> retrieval -> prevention rules -> verification/i);
   assert.match(content, /\[linkedin-ai-reliability-post\.md\]/);
   assert.match(content, /\[x-launch-thread\.md\]/);
@@ -22,10 +23,12 @@ test('channel docs carry the current workflow-hardening messaging', () => {
   const linkedin = read('docs/marketing/linkedin-ai-reliability-post.md');
   const xThread = read('docs/marketing/x-launch-thread.md');
   const reddit = read('docs/marketing/reddit-posts.md');
-  assert.match(linkedin, /Memory Is Not the Product\. The System Is\./);
-  assert.match(linkedin, /Orchids/);
+  assert.match(linkedin, /Workflow Hardening Sprint/i);
+  assert.match(linkedin, /one workflow safe enough to ship/i);
   assert.match(xThread, /Claude workflow hardening/i);
+  assert.match(xThread, /Workflow Hardening Sprint/i);
   assert.match(xThread, /Not an "AI employee\."/);
+  assert.match(reddit, /workflow hardening/i);
   assert.match(reddit, /A system changes behavior\./);
 });
 
