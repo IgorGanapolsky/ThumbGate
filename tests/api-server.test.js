@@ -75,6 +75,8 @@ test('root serves the landing page by default', async () => {
   const body = await res.text();
   assert.match(body, /mcp.memory.gateway/i);
   assert.match(body, /Keep one sharp agent/i);
+  assert.match(body, /Claude workflow hardening/i);
+  assert.match(body, /Code modernization guardrails/i);
   assert.match(body, /same agent session|same reliability layer|No orchestration tax/i);
   assert.match(body, /\$29\/mo/);
   assert.match(body, /plausible\.io\/js\/script\.js/);

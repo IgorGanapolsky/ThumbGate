@@ -16,6 +16,7 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
   assert.match(landingPage, /"@type": "FAQPage"/);
   assert.match(landingPage, /Who should upgrade to Pro\?/);
   assert.match(landingPage, /Can I pair it with editor continuity tools or resume assistants\?/);
+  assert.match(landingPage, /Can consultancies and platform teams use this for Claude workflow hardening or code modernization\?/);
   assert.match(landingPage, /Do I need subagents or an orchestration layer to get value\?/);
   assert.match(landingPage, /optional context inputs/i);
   assert.match(landingPage, /same agent session/i);
@@ -91,12 +92,19 @@ test('public landing page includes a Reddit campaign banner and subreddit-aware 
 test('public landing page positions the gateway as continuity-friendly reliability without orchestration tax', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /AI Agent Reliability Without Orchestration Tax/i);
+  assert.match(landingPage, /Claude Workflow Hardening and AI Reliability/i);
   assert.match(landingPage, /Keep one sharp agent\./);
+  assert.match(landingPage, /Seven high-intent use cases for Claude workflow hardening/i);
+  assert.match(landingPage, /The sellable unit is not a generic AI employee/i);
+  assert.match(landingPage, /Code modernization guardrails/i);
+  assert.match(landingPage, /platform teams, consultancies, and AI-heavy engineering groups/i);
   assert.match(landingPage, /without introducing another orchestration layer or subagent handoff tax/i);
   assert.match(landingPage, /No orchestration tax/);
   assert.match(landingPage, /same agent session/i);
   assert.match(landingPage, /AI reliability system, not orchestration layer\./);
   assert.match(landingPage, /reliability rules/i);
+  assert.match(landingPage, /Review Proof Pack/);
+  assert.match(landingPage, /VERIFICATION_EVIDENCE\.md/);
+  assert.doesNotMatch(landingPage, /official Anthropic partner/i);
   assert.doesNotMatch(landingPage, /same control plane/i);
 });

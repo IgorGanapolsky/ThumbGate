@@ -18,13 +18,14 @@ test('canonical social launch kit uses AI reliability positioning and links chan
   assert.match(content, /\[reddit-posts\.md\]/);
 });
 
-test('channel docs carry the current reliability-system messaging', () => {
+test('channel docs carry the current workflow-hardening messaging', () => {
   const linkedin = read('docs/marketing/linkedin-ai-reliability-post.md');
   const xThread = read('docs/marketing/x-launch-thread.md');
   const reddit = read('docs/marketing/reddit-posts.md');
   assert.match(linkedin, /Memory Is Not the Product\. The System Is\./);
   assert.match(linkedin, /Orchids/);
-  assert.match(xThread, /I built an AI reliability system for coding agents\./);
+  assert.match(xThread, /Claude workflow hardening/i);
+  assert.match(xThread, /Not an "AI employee\."/);
   assert.match(reddit, /A system changes behavior\./);
 });
 

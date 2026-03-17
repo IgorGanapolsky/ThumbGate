@@ -941,6 +941,47 @@ Behavioral proof points:
 - The dashboard now reports whether traffic analytics, SEO verification, buyer-loss capture, and revenue attribution are configured and actually receiving events.
 - Public and active product copy now lead with AI reliability without orchestration tax instead of drifting back toward generic memory-layer framing.
 
+## 2026-03-17 Claude Workflow Hardening GTM Verification
+
+Scope:
+
+- Repositioned the public landing page around Claude workflow hardening, code modernization, and consultancy/platform-team use cases while keeping the no-orchestration-tax core message intact.
+- Added a proof-forward hero CTA and explicit proof-pack link to `VERIFICATION_EVIDENCE.md`.
+- Rewrote `docs/ANTHROPIC_MARKETPLACE_STRATEGY.md` as the current Anthropic partner strategy for Claude workflow hardening with packaged offers, buyer story, proof-pack rules, and claim hygiene.
+- Updated `docs/marketing/x-launch-thread.md` to a role-based workflow-hardening thread aligned with the public landing message.
+- Added regression coverage for the new partner strategy, landing copy, API root rendering, social-marketing messaging, and version-metadata expectations.
+
+Commands run:
+
+```bash
+npm ci
+node --test tests/public-landing.test.js tests/api-server.test.js tests/anthropic-partner-strategy.test.js
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- Targeted partner/landing/API tests: pass (`43` pass, `0` fail).
+- `npm test`: pass.
+- `npm run test:coverage`: pass with overall coverage:
+  - line coverage: `84.35%`
+  - branch coverage: `70.74%`
+  - function coverage: `87.14%`
+- `npm run prove:adapters`: pass with `46` pass, `0` fail.
+- `npm run prove:automation`: pass with `55` pass, `0` fail.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+
+Behavioral proof points:
+
+- `public/index.html` now sells the product as Claude workflow hardening with seven concrete buyer/use-case cards, three packaged offers, and a proof-pack CTA instead of generic continuity-only framing.
+- `public/index.html` preserves `SoftwareApplication` and `FAQPage` JSON-LD while adding consultancy/code-modernization FAQ coverage and keeping the no-orchestration-tax contract intact.
+- `docs/ANTHROPIC_MARKETPLACE_STRATEGY.md` is now a current-state partner strategy doc, not a stale historical note, and explicitly forbids false partner-membership claims while linking commercial truth and proof.
+- `docs/marketing/x-launch-thread.md` now aligns the social message with workflow hardening and code modernization instead of generic "AI employee" hype.
+- `tests/public-landing.test.js`, `tests/api-server.test.js`, `tests/anthropic-partner-strategy.test.js`, `tests/social-marketing-assets.test.js`, and `tests/version-metadata.test.js` enforce the new GTM messaging and claim-hygiene contracts.
 ## 2026-03-17 AI Reliability Social Asset Verification
 
 Scope:
