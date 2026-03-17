@@ -467,6 +467,8 @@ describe('bin/cli.js', () => {
     const apiKeysPath = path.join(isolatedDir, 'api-keys.json');
     const ledgerPath = path.join(isolatedDir, 'funnel-events.jsonl');
     const revenuePath = path.join(isolatedDir, 'revenue-events.jsonl');
+    const feedbackDir = path.join(isolatedDir, 'feedback');
+    const leadsPath = path.join(feedbackDir, 'workflow-sprint-leads.jsonl');
     fs.writeFileSync(apiKeysPath, JSON.stringify({
       keys: {
         rlhf_active_cli: {
@@ -531,6 +533,33 @@ describe('bin/cli.js', () => {
       }),
       '',
     ].join('\n'));
+    fs.mkdirSync(feedbackDir, { recursive: true });
+    fs.writeFileSync(leadsPath, [
+      JSON.stringify({
+        leadId: 'lead_cli_summary',
+        submittedAt: '2026-03-12T01:00:00.000Z',
+        status: 'new',
+        offer: 'workflow_hardening_sprint',
+        contact: {
+          email: 'founder@example.com',
+          company: 'Example Co',
+        },
+        qualification: {
+          workflow: 'Claude code review approvals',
+          owner: 'CEO',
+          blocker: 'Team cannot prove rollout safety',
+          runtime: 'Claude Code',
+          note: null,
+        },
+        attribution: {
+          source: 'x',
+          utmSource: 'x',
+          utmCampaign: 'workflow_hardening',
+          community: 'founders',
+        },
+      }),
+      '',
+    ].join('\n'));
 
     const result = spawnSync(process.execPath, [CLI, 'cfo'], {
       encoding: 'utf8',
@@ -540,18 +569,21 @@ describe('bin/cli.js', () => {
         _TEST_API_KEYS_PATH: apiKeysPath,
         _TEST_FUNNEL_LEDGER_PATH: ledgerPath,
         _TEST_REVENUE_LEDGER_PATH: revenuePath,
+        RLHF_FEEDBACK_DIR: feedbackDir,
       },
     });
     assert.equal(result.status, 0, `cfo failed:\n${result.stderr}`);
 
     const payload = JSON.parse(result.stdout);
-    assert.equal(payload.coverage.source, 'funnel_ledger+revenue_ledger+key_store');
+    assert.equal(payload.coverage.source, 'funnel_ledger+revenue_ledger+key_store+workflow_sprint_leads');
     assert.equal(payload.keys.active, 1);
     assert.equal(payload.keys.bySource.stripe_webhook_checkout_completed, 1);
     assert.equal(payload.keys.bySource.github_marketplace_purchased, 1);
     assert.equal(payload.funnel.stageCounts.paid, 1);
     assert.equal(payload.revenue.bookedRevenueCents, 2900);
     assert.equal(payload.revenue.paidOrders, 1);
+    assert.equal(payload.pipeline.workflowSprintLeads.total, 1);
+    assert.equal(payload.pipeline.workflowSprintLeads.bySource.x, 1);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });

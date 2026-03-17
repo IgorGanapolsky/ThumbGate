@@ -14,6 +14,7 @@ test('workflow hardening sprint brief stays current, proof-backed, and commercia
   assert.match(brief, /one proof review/i);
   assert.match(brief, /pilot-by-request/i);
   assert.match(brief, /igor\.ganapolsky@gmail\.com/i);
+  assert.match(brief, /workflow-sprint-intake/i);
   assert.match(brief, /COMMERCIAL_TRUTH\.md/);
   assert.match(brief, /VERIFICATION_EVIDENCE\.md/);
   assert.doesNotMatch(brief, /^We are an official Anthropic partner\b/m);

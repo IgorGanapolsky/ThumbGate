@@ -51,7 +51,15 @@ Only move forward when the buyer has:
 
 ## Contact
 
-Email `igor.ganapolsky@gmail.com` with:
+Primary intake:
+
+- https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake
+
+Email fallback:
+
+- `igor.ganapolsky@gmail.com`
+
+The intake asks for:
 
 1. the workflow you want hardened
 2. the repeated failure or rollout blocker

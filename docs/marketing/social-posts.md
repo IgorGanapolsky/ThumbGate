@@ -43,15 +43,15 @@ Local, private-first export-ready assets live under [assets](./assets/README.md)
 
 ### LinkedIn
 
-`https://rlhf-feedback-loop-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=founder_post&campaign_variant=workflow_hardening_sprint&offer_code=LINKEDIN-SPRINT`
+`https://rlhf-feedback-loop-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=founder_post&campaign_variant=workflow_hardening_sprint&offer_code=LINKEDIN-SPRINT#workflow-sprint-intake`
 
 ### X
 
-`https://rlhf-feedback-loop-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=thread&campaign_variant=workflow_hardening_sprint&offer_code=X-SPRINT`
+`https://rlhf-feedback-loop-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=thread&campaign_variant=workflow_hardening_sprint&offer_code=X-SPRINT#workflow-sprint-intake`
 
 ### Reddit
 
-`https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=claudecode_post&community=ClaudeCode&campaign_variant=workflow_hardening_sprint&offer_code=REDDIT-SPRINT`
+`https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=claudecode_post&community=ClaudeCode&campaign_variant=workflow_hardening_sprint&offer_code=REDDIT-SPRINT#workflow-sprint-intake`
 
 ## Guardrails
 

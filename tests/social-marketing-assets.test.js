@@ -24,11 +24,14 @@ test('channel docs carry the current workflow-hardening messaging', () => {
   const xThread = read('docs/marketing/x-launch-thread.md');
   const reddit = read('docs/marketing/reddit-posts.md');
   assert.match(linkedin, /Workflow Hardening Sprint/i);
+  assert.match(linkedin, /workflow-sprint-intake/i);
   assert.match(linkedin, /one workflow safe enough to ship/i);
   assert.match(xThread, /Claude workflow hardening/i);
   assert.match(xThread, /Workflow Hardening Sprint/i);
+  assert.match(xThread, /workflow-sprint-intake/i);
   assert.match(xThread, /Not an "AI employee\."/);
   assert.match(reddit, /workflow hardening/i);
+  assert.match(reddit, /workflow-sprint-intake/i);
   assert.match(reddit, /A system changes behavior\./);
 });
 

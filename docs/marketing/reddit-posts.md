@@ -59,7 +59,7 @@ Curious if this framing resonates more than “memory” or “AI employee” do
 ```text
 If useful, here is the self-hosted project link:
 
-https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=claudecode_post&community=ClaudeCode&campaign_variant=workflow_hardening_sprint&offer_code=REDDIT-SPRINT
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=claudecode_post&community=ClaudeCode&campaign_variant=workflow_hardening_sprint&offer_code=REDDIT-SPRINT#workflow-sprint-intake
 
 I am trying to make this local-first and practical, not just another generic memory layer.
 ```
@@ -85,5 +85,5 @@ What is free:
 The self-hosted version is free to try. Paid tiers are optional, but the core local workflow can be used without paying.
 
 Free try:
-https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=claudeai_showcase&community=ClaudeAI&campaign_variant=showcase_safe&offer_code=REDDIT-EARLY
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=claudeai_showcase&community=ClaudeAI&campaign_variant=showcase_safe&offer_code=REDDIT-EARLY#workflow-sprint-intake
 ```

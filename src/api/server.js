@@ -79,6 +79,9 @@ const {
   appendTelemetryPing,
 } = require('../../scripts/telemetry-analytics');
 const {
+  appendWorkflowSprintLead,
+} = require('../../scripts/workflow-sprint-intake');
+const {
   checkLimit,
   UPGRADE_MESSAGE: RATE_LIMIT_MESSAGE,
 } = require('../../scripts/rate-limiter');
@@ -1218,6 +1221,79 @@ function createApiServer() {
         'Access-Control-Allow-Headers': 'Content-Type',
       });
       res.end();
+      return;
+    }
+
+    if (req.method === 'OPTIONS' && pathname === '/v1/intake/workflow-sprint') {
+      sendPublicBillingPreflight(res);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/intake/workflow-sprint') {
+      const { FEEDBACK_DIR } = getFeedbackPaths();
+      const traceId = createTraceId('sprint_intake');
+      try {
+        const body = await parseJsonBody(req, 24 * 1024);
+        const lead = appendWorkflowSprintLead({
+          ...body,
+          traceId: body.traceId || traceId,
+          page: body.page || '/#workflow-sprint-intake',
+          landingPath: body.landingPath || '/',
+          ctaId: body.ctaId || 'workflow_sprint_intake',
+          ctaPlacement: body.ctaPlacement || 'workflow_sprint',
+          planId: body.planId || 'sprint',
+          source: body.source || body.utmSource || 'website',
+          utmSource: body.utmSource || body.source || 'website',
+          utmMedium: body.utmMedium || 'workflow_sprint_intake',
+          utmCampaign: body.utmCampaign || 'workflow_hardening_sprint',
+          referrer: body.referrer || req.headers.referer || req.headers.referrer || null,
+        }, { feedbackDir: FEEDBACK_DIR });
+
+        appendTelemetryPing(FEEDBACK_DIR, {
+          eventType: 'workflow_sprint_lead_submitted',
+          clientType: 'web',
+          traceId: lead.attribution.traceId,
+          acquisitionId: lead.attribution.acquisitionId,
+          visitorId: lead.attribution.visitorId,
+          sessionId: lead.attribution.sessionId,
+          installId: lead.attribution.installId,
+          source: lead.attribution.source,
+          utmSource: lead.attribution.utmSource,
+          utmMedium: lead.attribution.utmMedium,
+          utmCampaign: lead.attribution.utmCampaign,
+          utmContent: lead.attribution.utmContent,
+          utmTerm: lead.attribution.utmTerm,
+          community: lead.attribution.community,
+          postId: lead.attribution.postId,
+          commentId: lead.attribution.commentId,
+          campaignVariant: lead.attribution.campaignVariant,
+          offerCode: lead.attribution.offerCode,
+          ctaId: lead.attribution.ctaId,
+          ctaPlacement: lead.attribution.ctaPlacement,
+          planId: lead.attribution.planId,
+          page: lead.attribution.page,
+          landingPath: lead.attribution.landingPath,
+          referrerHost: lead.attribution.referrerHost,
+          referrer: lead.attribution.referrer,
+        }, req.headers);
+
+        sendJson(res, 201, {
+          ok: true,
+          leadId: lead.leadId,
+          status: lead.status,
+          offer: lead.offer,
+          nextStep: 'review_proof_pack',
+          proofPackUrl: 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md',
+          sprintBriefUrl: 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md',
+        }, getPublicBillingHeaders(lead.attribution.traceId));
+      } catch (err) {
+        sendProblem(res, {
+          type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
+          title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+          status: err.statusCode || 500,
+          detail: err.message || 'Unable to capture workflow sprint intake.',
+        }, getPublicBillingHeaders(traceId));
+      }
       return;
     }
 

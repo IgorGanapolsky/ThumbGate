@@ -1,3 +1,53 @@
+## March 17, 2026: Workflow hardening sprint intake and commercial-truth operator metrics
+
+Scope:
+
+- Replaced the public Workflow Hardening Sprint `mailto:` dependency with a hosted sprint-intake form on the landing page, including structured CTA tracking and success/failure handling.
+- Added `scripts/workflow-sprint-intake.js` as the single owner for sprint-intake lead capture, writing contactable workflow leads to the active local feedback runtime as `workflow-sprint-leads.jsonl`.
+- Added `POST /v1/intake/workflow-sprint` to the hosted API and wired the landing form to it.
+- Strengthened public machine-readable positioning with `Organization`, `SoftwareApplication`, `BuyAction`, and `CommunicateAction` schema on the public landing page.
+- Routed active outreach and social assets to the hosted sprint-intake path instead of stale email-first or legacy-growth messaging.
+- Integrated workflow-sprint lead counts into the admin billing/CFO summary so pipeline capture is visible in the same truth surface as booked revenue, while explicitly keeping leads separate from revenue claims.
+- Corrected operator scripts so `pulse.js` and `money-watcher.js` key off booked revenue and paid orders instead of unreconciled paid-stage funnel events.
+- Hardened `tests/delegation-runtime.test.js` temp-dir cleanup so clean-worktree coverage runs no longer fail with transient `ENOTEMPTY` teardown errors.
+
+Commands run in the dedicated clean verification worktree at `/tmp/rlhf-verify-first-dollar-20260317` on exact branch head `ba83de2`:
+
+```bash
+npm ci
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-adapters npm run prove:adapters
+env RLHF_AUTOMATION_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-automation npm run prove:automation
+npm run self-heal:check
+git status --short
+```
+
+Additional targeted GTM/commercial regressions run in the implementation worktree:
+
+```bash
+node --test tests/public-landing.test.js tests/api-server.test.js tests/workflow-hardening-sprint.test.js tests/social-marketing-assets.test.js tests/version-metadata.test.js tests/commercial-signals.test.js tests/billing.test.js tests/cli.test.js
+```
+
+Observed result:
+
+- `npm ci` completed with `0` vulnerabilities.
+- `npm test` passed end-to-end on exact branch head `ba83de2`.
+- `npm run test:coverage` passed with `1108` passed, `0` failed, `1` skipped.
+- All-files coverage on the verified tree: `90.18%` lines, `76.29%` branches, `93.55%` functions.
+- `env RLHF_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-adapters npm run prove:adapters`: `46` passed, `0` failed.
+- `env RLHF_AUTOMATION_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-automation npm run prove:automation`: `55` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `git status --short` remained empty after the full clean-worktree suite.
+- Targeted GTM/commercial regression pack passed with `98` tests passed, `0` failed.
+
+Requirements verified:
+
+- The public sprint offer now has a direct hosted intake path for qualified workflow demand instead of forcing an email handoff.
+- Sprint-intake leads are captured as structured local runtime records and exposed in the admin billing/CFO summary without being misrepresented as revenue.
+- Public positioning, outreach assets, billing truth surfaces, and operator scripts now agree on the same commercial story: Workflow Hardening Sprint for pipeline, Pro for self-serve recurring revenue.
+- Clean-worktree verification is stable again after hardening the delegation test teardown.
+
 ## March 16, 2026: Databricks post-merge safety follow-up
 
 Scope:
