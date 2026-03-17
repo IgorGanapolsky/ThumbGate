@@ -365,6 +365,17 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'estimate_uncertainty',
+    description: 'Estimate the uncertainty of agent beliefs for a specific set of tags. Returns confidence and entropy levels to determine if a clarification gate is needed.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tags: { type: 'array', items: { type: 'string' }, description: 'Tags to check for conflicting history' },
+      },
+      required: ['tags'],
+    },
+  },
 ];
 
 function toText(result) {
@@ -851,6 +862,40 @@ async function callToolInner(name, args = {}) {
       const tagSet = new Set(tags.map(t => t.toLowerCase()));
       result = result.filter(s => (s.tags || []).some(t => tagSet.has(t.toLowerCase())));
     }
+    return { content: [{ type: 'text', text: toText(result) }] };
+  }
+
+  if (name === 'estimate_uncertainty') {
+    const tags = Array.isArray(args.tags) ? args.tags : [];
+    const memories = readJSONL(path.join(SAFE_DATA_DIR, 'memory-log.jsonl'));
+    const relevant = memories.filter(m => 
+      m.tags && m.tags.some(t => tags.includes(t))
+    );
+
+    if (relevant.length === 0) {
+      return { content: [{ type: 'text', text: 'No relevant memories found for these tags.' }] };
+    }
+
+    const bayesianMemories = relevant.filter(m => m.bayesian);
+    if (bayesianMemories.length === 0) {
+      return { content: [{ type: 'text', text: 'Relevant memories found, but none contain Bayesian metadata.' }] };
+    }
+
+    const avgPrior = bayesianMemories.reduce((s, m) => s + m.bayesian.priorProbability, 0) / bayesianMemories.length;
+    const avgUncertainty = bayesianMemories.reduce((s, m) => s + m.bayesian.uncertainty, 0) / bayesianMemories.length;
+    
+    const recommendation = avgUncertainty > 0.6 
+      ? '⚠️ HIGH UNCERTAINTY: A clarification gate is recommended before proceeding.'
+      : '✅ LOW UNCERTAINTY: Beliefs are well-calibrated.';
+
+    const result = {
+      tagCount: tags.length,
+      sampleSize: bayesianMemories.length,
+      averagePrior: Math.round(avgPrior * 1000) / 1000,
+      averageUncertainty: Math.round(avgUncertainty * 1000) / 1000,
+      recommendation,
+    };
+
     return { content: [{ type: 'text', text: toText(result) }] };
   }
 

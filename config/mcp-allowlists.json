@@ -19,14 +19,16 @@
       "generate_skill",
       "satisfy_gate",
       "gate_stats",
-      "dashboard"
+      "dashboard",
+      "estimate_uncertainty"
     ],
     "essential": [
       "capture_feedback",
       "recall",
       "prevention_rules",
       "feedback_stats",
-      "feedback_summary"
+      "feedback_summary",
+      "estimate_uncertainty"
     ],
     "commerce": [
       "capture_feedback",

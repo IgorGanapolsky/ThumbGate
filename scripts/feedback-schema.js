@@ -81,6 +81,24 @@ function validateFeedbackMemory(memory) {
     }
   }
 
+  if (memory.bayesian != null) {
+    if (typeof memory.bayesian !== 'object') {
+      issues.push('bayesian: must be an object when provided');
+    } else {
+      const prior = Number(memory.bayesian.priorProbability);
+      if (!Number.isFinite(prior) || prior < 0 || prior > 1) {
+        issues.push('bayesian.priorProbability: must be a number between 0 and 1');
+      }
+      const uncertainty = Number(memory.bayesian.uncertainty);
+      if (!Number.isFinite(uncertainty) || uncertainty < 0 || uncertainty > 1) {
+        issues.push('bayesian.uncertainty: must be a number between 0 and 1');
+      }
+      if (typeof memory.bayesian.observations !== 'number') {
+        issues.push('bayesian.observations: must be a number');
+      }
+    }
+  }
+
   return { valid: issues.length === 0, issues };
 }
 
@@ -160,6 +178,12 @@ function resolveFeedbackAction(params) {
         importance: 'high',
         tags: ['feedback', 'negative', ...domainTags, ...rubricFailureTags],
         rubricSummary,
+        bayesian: {
+          priorProbability: 0.5,
+          uncertainty: 0.5,
+          observations: 1,
+          lastUpdated: new Date().toISOString(),
+        },
       },
     };
   }
@@ -205,6 +229,12 @@ function resolveFeedbackAction(params) {
         importance: 'normal',
         tags: ['feedback', 'positive', ...domainTags],
         rubricSummary,
+        bayesian: {
+          priorProbability: 0.7,
+          uncertainty: 0.3,
+          observations: 1,
+          lastUpdated: new Date().toISOString(),
+        },
       },
     };
   }
