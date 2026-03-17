@@ -830,6 +830,7 @@ function help() {
   console.log('  summary               Human-readable feedback summary');
   console.log('  model-fit             Detect the current local embedding profile and write evidence report');
   console.log('  risk [flags]          Train or query the boosted local risk scorer');
+  console.log('  doctor                Audit runtime isolation, bootstrap context, and permission tier');
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
   console.log('  export-databricks     Export RLHF logs + proof artifacts as a Databricks-ready analytics bundle');
   console.log('  rules                 Generate prevention rules from repeated failures');
@@ -890,6 +891,21 @@ switch (COMMAND) {
   case 'risk':
     risk();
     break;
+  case 'doctor': {
+    const {
+      generateAgentReadinessReport,
+      reportToText,
+    } = require(path.join(PKG_ROOT, 'scripts', 'agent-readiness'));
+    const args = parseArgs(process.argv.slice(3));
+    const report = generateAgentReadinessReport({ projectRoot: CWD });
+    if (args.json) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      process.stdout.write(reportToText(report));
+    }
+    process.exit(report.overallStatus === 'ready' ? 0 : 1);
+    break;
+  }
   case 'export-dpo':
   case 'dpo':
     exportDpo();

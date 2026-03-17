@@ -131,6 +131,9 @@ npx mcp-memory-gateway init
 npx mcp-memory-gateway init --agent claude-code
 npx mcp-memory-gateway init --agent codex
 npx mcp-memory-gateway init --agent gemini
+
+# Audit readiness before a long-running workflow
+npx mcp-memory-gateway doctor
 ```
 
 > **Profiles:** Set `RLHF_MCP_PROFILE=essential` for the lean 5-tool setup (recommended), or leave unset for the full 12-tool pipeline. See [MCP Tools](#mcp-tools) for details.
@@ -280,6 +283,7 @@ npx mcp-memory-gateway init              # Scaffold .rlhf/ + configure MCP
 npx mcp-memory-gateway init --agent X    # + auto-wire PreToolUse hooks (claude-code/codex/gemini)
 npx mcp-memory-gateway init --wire-hooks # Wire hooks only (auto-detect agent)
 npx mcp-memory-gateway serve             # Start MCP server (stdio) + watcher
+npx mcp-memory-gateway doctor            # Audit runtime isolation, bootstrap context, and MCP permission tier
 npx mcp-memory-gateway dashboard         # Full RLHF dashboard with gate stats
 npx mcp-memory-gateway gate-stats        # Gate enforcement statistics
 npx mcp-memory-gateway status            # Learning curve dashboard

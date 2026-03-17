@@ -352,6 +352,7 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('rules'), 'Help should mention rules');
     assert.ok(result.stdout.includes('self-heal'), 'Help should mention self-heal');
     assert.ok(result.stdout.includes('prove'), 'Help should mention prove');
+    assert.ok(result.stdout.includes('doctor'), 'Help should mention doctor');
   });
 
   test('pro command prints truthful commercial offer info', () => {
@@ -421,6 +422,44 @@ describe('bin/cli.js', () => {
   test('unknown command exits 1', () => {
     const result = spawnSync(process.execPath, [CLI, 'unknown-xyz'], { encoding: 'utf8' });
     assert.strictEqual(result.status, 1, `Expected exit 1, got ${result.status}`);
+  });
+
+  test('doctor --json reports readiness for a bootstrapped project', () => {
+    const doctorDir = makeTmpDir();
+    fs.writeFileSync(path.join(doctorDir, 'AGENTS.md'), '# Agents\n');
+    fs.writeFileSync(path.join(doctorDir, 'CLAUDE.md'), '# Claude\n');
+    fs.writeFileSync(path.join(doctorDir, 'GEMINI.md'), '# Gemini\n');
+    fs.writeFileSync(path.join(doctorDir, '.mcp.json'), JSON.stringify({ mcpServers: {} }, null, 2));
+    fs.mkdirSync(path.join(doctorDir, '.rlhf'), { recursive: true });
+    fs.writeFileSync(
+      path.join(doctorDir, '.rlhf', 'config.json'),
+      JSON.stringify({ version: 1 }, null, 2)
+    );
+
+    const result = spawnSync(process.execPath, [CLI, 'doctor', '--json'], {
+      encoding: 'utf8',
+      cwd: doctorDir,
+      env: {
+        ...process.env,
+        RLHF_NO_NUDGE: '1',
+        RLHF_MCP_PROFILE: 'default',
+        container: '1',
+      },
+    });
+
+    assert.strictEqual(result.status, 0, `doctor failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.overallStatus, 'ready');
+    assert.equal(payload.runtime.mode, 'container');
+    assert.equal(payload.permissions.profile, 'default');
+    assert.equal(payload.permissions.tier, 'builder');
+    assert.equal(payload.permissions.writeCapable, true);
+    assert.equal(payload.bootstrap.ready, true);
+    assert.equal(payload.articleAlignment.runtimeIsolation, true);
+    assert.equal(payload.articleAlignment.contextConditioning, true);
+    assert.equal(payload.articleAlignment.permissionEnvelope, true);
+
+    fs.rmSync(doctorDir, { recursive: true, force: true });
   });
 
   test('cfo emits operational billing summary JSON', () => {
