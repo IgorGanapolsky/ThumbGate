@@ -1315,6 +1315,60 @@ Artifacts updated:
 
 - `docs/REDDIT_GTM_PLAYBOOK.md`
 
+## 2026-03-17 Agent Readiness Diagnostics Verification
+
+Scope:
+
+- Added `scripts/agent-readiness.js` to audit runtime isolation, bootstrap context, and MCP permission tiers.
+- Added `doctor` CLI support in `bin/cli.js`.
+- Surfaced readiness data in `scripts/dashboard.js`.
+- Added context-pack visibility metadata in `scripts/contextfs.js`.
+- Hardened memex indexing so `constructMemexPack()` preserves namespace-aware results.
+- Fixed the coverage teardown race in `tests/delegation-runtime.test.js`.
+
+Commands run:
+
+```bash
+npm ci
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- `npm ci`: passed, `0` vulnerabilities.
+- `npm test`: passed.
+- `npm run test:coverage`: passed with Node test runner coverage summary:
+  - line coverage: `90.25%`
+  - branch coverage: `76.67%`
+  - function coverage: `93.68%`
+- `npm run prove:adapters`: passed with `46 passed`, `0 failed`.
+- `npm run prove:automation`: passed with `55 passed`, `0 failed`.
+- `self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+
+Behavioral proof points:
+
+- `doctor --json` reports `overallStatus`, runtime mode, bootstrap readiness, MCP tier, and article-alignment flags.
+- `generateDashboard()` exposes readiness truth instead of guessing bootstrap state; the dashboard reflects the repo's actual `.mcp.json` presence.
+- `constructContextPack()` and `constructMemexPack()` expose visibility metadata including hidden candidate counts, char-budget hits, and visible titles.
+- Memex pack construction no longer drops relevant entries because namespace metadata is preserved in indexed documents and recovered from `stableRef` when needed.
+
+Artifacts updated:
+
+- `README.md`
+- `bin/cli.js`
+- `scripts/agent-readiness.js`
+- `scripts/contextfs.js`
+- `scripts/dashboard.js`
+- `tests/agent-readiness.test.js`
+- `tests/cli.test.js`
+- `tests/contextfs.test.js`
+- `tests/dashboard.test.js`
+- `tests/delegation-runtime.test.js`
+
 ## 2026-03-09 Technical Debt Audit Cleanup Verification
 
 Scope:

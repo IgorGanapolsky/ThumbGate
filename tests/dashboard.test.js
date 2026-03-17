@@ -102,8 +102,13 @@ test('generateDashboard handles empty state (no files)', () => {
 test('generateDashboard surfaces tracking readiness and instrumentation truth', () => {
   const previousGaId = process.env.RLHF_GA_MEASUREMENT_ID;
   const previousGoogleVerification = process.env.RLHF_GOOGLE_SITE_VERIFICATION;
+  const previousMcpProfile = process.env.RLHF_MCP_PROFILE;
+  const previousContainer = process.env.container;
+  const repoHasMcpConfig = fs.existsSync(path.join(__dirname, '..', '.mcp.json'));
   process.env.RLHF_GA_MEASUREMENT_ID = 'G-TEST1234';
   process.env.RLHF_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
+  process.env.RLHF_MCP_PROFILE = 'default';
+  process.env.container = '1';
 
   try {
     writeTelemetryLog([
@@ -144,6 +149,16 @@ test('generateDashboard surfaces tracking readiness and instrumentation truth', 
     assert.equal(data.instrumentation.paidOrderTrackingEnabled, true);
     assert.equal(data.instrumentation.invoiceTrackingEnabled, false);
     assert.equal(data.instrumentation.attributionTrackingEnabled, true);
+    assert.equal(data.readiness.overallStatus, repoHasMcpConfig ? 'ready' : 'needs_attention');
+    assert.equal(data.readiness.runtime.mode, 'container');
+    assert.equal(data.readiness.bootstrap.ready, repoHasMcpConfig);
+    assert.equal(data.readiness.permissions.tier, 'builder');
+    assert.equal(data.readiness.articleAlignment.runtimeIsolation, true);
+    assert.equal(data.readiness.articleAlignment.contextConditioning, repoHasMcpConfig);
+    assert.equal(data.readiness.articleAlignment.permissionEnvelope, true);
+    if (!repoHasMcpConfig) {
+      assert.ok(data.readiness.bootstrap.missingRequired.includes('.mcp.json'));
+    }
   } finally {
     if (previousGaId === undefined) {
       delete process.env.RLHF_GA_MEASUREMENT_ID;
@@ -154,6 +169,16 @@ test('generateDashboard surfaces tracking readiness and instrumentation truth', 
       delete process.env.RLHF_GOOGLE_SITE_VERIFICATION;
     } else {
       process.env.RLHF_GOOGLE_SITE_VERIFICATION = previousGoogleVerification;
+    }
+    if (previousMcpProfile === undefined) {
+      delete process.env.RLHF_MCP_PROFILE;
+    } else {
+      process.env.RLHF_MCP_PROFILE = previousMcpProfile;
+    }
+    if (previousContainer === undefined) {
+      delete process.env.container;
+    } else {
+      process.env.container = previousContainer;
     }
   }
 });
