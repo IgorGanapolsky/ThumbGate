@@ -204,6 +204,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const packagingPlan = readText('docs/PACKAGING_AND_SALES_PLAN.md');
   const revenueSprint = readText('docs/REVENUE_SPRINT_MAR2026.md');
   const anthropicStrategy = readText('docs/ANTHROPIC_MARKETPLACE_STRATEGY.md');
+  const workflowSprint = readText('docs/WORKFLOW_HARDENING_SPRINT.md');
   const xStrategy = readText('docs/X_AUTOMATION_STRATEGY.md');
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
@@ -216,10 +217,23 @@ test('commercial truth sources stay aligned across public and historical docs', 
   assert.doesNotMatch(readme, /500\+ agentic sessions|battle-tested/i);
   assert.doesNotMatch(proReadme, /500\+ agentic sessions|battle-tested/i);
 
-  for (const historicalDoc of [pricingResearch, crisisReport, packagingPlan, revenueSprint, anthropicStrategy, xStrategy]) {
+  for (const historicalDoc of [pricingResearch, crisisReport, packagingPlan, revenueSprint, xStrategy]) {
     assert.match(historicalDoc, /Historical .*note|Historical .*archived|Historical .*hypothesis/i);
     assert.match(historicalDoc, /COMMERCIAL_TRUTH\.md/);
   }
+
+  assert.match(anthropicStrategy, /Status: current/i);
+  assert.match(anthropicStrategy, /Claude workflow hardening/i);
+  assert.match(anthropicStrategy, /booked pilots/i);
+  assert.match(anthropicStrategy, /founder-led outbound/i);
+  assert.match(anthropicStrategy, /COMMERCIAL_TRUTH\.md/);
+  assert.doesNotMatch(anthropicStrategy, /^We are an official Anthropic partner\b/m);
+
+  assert.match(workflowSprint, /Status: current/i);
+  assert.match(workflowSprint, /pilot-by-request/i);
+  assert.match(workflowSprint, /one workflow/i);
+  assert.match(workflowSprint, /VERIFICATION_EVIDENCE\.md/);
+  assert.doesNotMatch(workflowSprint, /^We are an official Anthropic partner\b/m);
 
   assert.doesNotMatch(directoryGuide, /30k\+ stars|18k\+ servers listed/i);
 });
