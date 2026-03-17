@@ -146,6 +146,35 @@ function mergeUnique(values = []) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
+/**
+ * recommendInferenceEngine: selects the optimal model based on intent risk and cost profile.
+ * Incorporates GLM-5 Turbo for medium-risk, high-reliability agentic tasks (Task Statement 5.3).
+ */
+function recommendInferenceEngine(intent) {
+  if (intent.risk === 'low') {
+    return {
+      provider: 'local',
+      model: 'llama-3-8b',
+      reason: 'Low risk intent; optimize for latency and cost.',
+      recommendedEngine: 'ollama'
+    };
+  }
+  if (intent.risk === 'medium') {
+    return {
+      provider: 'z-ai',
+      model: 'glm-5-turbo',
+      reason: 'Medium risk; specialized for multi-step agent stability and cost-efficiency (0.67% tool error rate).',
+      recommendedEngine: 'glm-api'
+    };
+  }
+  return {
+    provider: 'cloud-high',
+    model: 'claude-3-5-sonnet',
+    reason: `${intent.risk.toUpperCase()} risk intent; maximize reasoning and safety steering.`,
+    recommendedEngine: 'anthropic'
+  };
+}
+
 function planIntent(options = {}) {
   const bundle = loadPolicyBundle(options.bundleId);
   const profile = assertKnownMcpProfile(options.mcpProfile || getActiveMcpProfile());
@@ -192,6 +221,7 @@ function planIntent(options = {}) {
     ...partnerStrategy,
     recommendedChecks: partnerChecks,
   };
+
   const basePlan = {
     bundleId: bundle.bundleId,
     mcpProfile: profile,
@@ -219,7 +249,9 @@ function planIntent(options = {}) {
     partnerStrategy: enrichedPartnerStrategy,
     actionScores: rankedActions.scores,
     codegraphImpact,
+    inference: recommendInferenceEngine(intent),
   };
+
   const delegation = evaluateDelegation({
     delegationMode,
     plan: basePlan,
