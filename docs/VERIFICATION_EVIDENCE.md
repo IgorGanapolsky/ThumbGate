@@ -1015,7 +1015,7 @@ Scope:
 - Added first-party Reddit campaign attribution across the live landing page, hosted checkout bootstrap, fallback checkout URLs, billing funnel events, and telemetry analytics.
 - Preserved semantic SEO/GEO structure while introducing Reddit-specific campaign messaging and subreddit-aware attribution logic on the public landing page.
 - Added operator documentation for Reddit distribution in `docs/REDDIT_GTM_PLAYBOOK.md`.
-- Expanded business analytics so Reddit community, offer-code, and campaign-variant performance can be measured end-to-end instead of inferred from raw visit counts.
+- Expanded business analytics so Reddit community, post, comment, campaign-variant, and offer-code performance can be measured end-to-end instead of inferred from raw visit counts.
 
 Commands run:
 
@@ -1045,7 +1045,7 @@ Observed results:
   - `tests/api-server.test.js`: passed.
   - `tests/dashboard.test.js`: passed.
 - `npm test`: `1070` tests, `1069` passed, `0` failed, `1` skipped.
-- `npm run test:coverage`: `1070` tests, `1069` passed, `0` failed, `1` skipped; coverage `84.05%` lines, `70.46%` branches, `86.83%` functions.
+- `npm run test:coverage`: `1070` tests, `1069` passed, `0` failed, `1` skipped; coverage `84.14%` lines, `70.74%` branches, `86.83%` functions.
 - `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
 - `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `47` passed, `0` failed.
 - `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
@@ -1053,9 +1053,9 @@ Observed results:
 Behavioral proof points:
 
 - `public/index.html` now classifies Reddit-origin traffic, preserves `community`, `postId`, `commentId`, `campaignVariant`, and `offerCode`, shows a Reddit campaign banner, and pushes first-party `landing_page_view` telemetry before checkout.
-- `src/api/server.js` now threads Reddit attribution through `/checkout/pro`, `/v1/billing/checkout`, checkout bootstrap telemetry, and hosted success/cancel return URLs so Stripe/local checkout flows do not drop campaign context.
+- `src/api/server.js` now threads Reddit attribution through `/checkout/pro`, `/v1/billing/checkout`, checkout bootstrap telemetry, and hosted success/cancel return URLs without overwriting Stripe checkout `session_id`; visitor-session state is preserved separately via `visitor_session_id`.
 - `scripts/telemetry-analytics.js` now reports `byCommunity`, `byOfferCode`, `byCampaignVariant`, `topCommunity`, `topOfferCode`, and `topCampaignVariant` for page views and CTA events.
-- `scripts/billing.js` now reports acquisition, signup, paid, revenue, and conversion breakdowns by Reddit community and offer code, making first-dollar attribution measurable at the business layer.
+- `scripts/billing.js` now reports acquisition, signup, paid, revenue, and conversion breakdowns by Reddit community, post, comment, campaign variant, and offer code, making first-dollar attribution measurable at the business layer.
 - `tests/public-landing.test.js`, `tests/api-server.test.js`, `tests/billing.test.js`, and `tests/telemetry-analytics.test.js` prove the end-to-end Reddit attribution contract from landing click through checkout and analytics summaries.
 
 Artifacts updated:

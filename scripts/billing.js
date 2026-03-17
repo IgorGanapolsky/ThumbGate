@@ -360,6 +360,9 @@ function getBusinessAnalytics() {
   const signupsBySource = {};
   const signupsByCampaign = {};
   const signupsByCommunity = {};
+  const signupsByPostId = {};
+  const signupsByCommentId = {};
+  const signupsByCampaignVariant = {};
   const signupsByOfferCode = {};
   const acquisitionLeadKeys = new Set();
   for (const entry of acquisitionEvents) {
@@ -372,6 +375,9 @@ function getBusinessAnalytics() {
     incrementCounter(signupsBySource, sourceKey);
     incrementCounter(signupsByCampaign, campaignKey);
     incrementCounter(signupsByCommunity, attribution.community);
+    incrementCounter(signupsByPostId, attribution.postId);
+    incrementCounter(signupsByCommentId, attribution.commentId);
+    incrementCounter(signupsByCampaignVariant, attribution.campaignVariant);
     incrementCounter(signupsByOfferCode, attribution.offerCode);
     acquisitionLeadKeys.add(
       entry.acquisitionId || entry.traceId || entry.installId || entry.evidence || `${entry.timestamp}:${entry.event}`
@@ -381,10 +387,16 @@ function getBusinessAnalytics() {
   const paidBySource = {};
   const paidByCampaign = {};
   const paidByCommunity = {};
+  const paidByPostId = {};
+  const paidByCommentId = {};
+  const paidByCampaignVariant = {};
   const paidByOfferCode = {};
   const bookedRevenueBySourceCents = {};
   const bookedRevenueByCampaignCents = {};
   const bookedRevenueByCommunityCents = {};
+  const bookedRevenueByPostIdCents = {};
+  const bookedRevenueByCommentIdCents = {};
+  const bookedRevenueByCampaignVariantCents = {};
   const bookedRevenueByOfferCodeCents = {};
   const bookedRevenueByCtaId = {};
   const bookedRevenueByLandingPath = {};
@@ -409,6 +421,9 @@ function getBusinessAnalytics() {
     incrementCounter(paidBySource, sourceKey);
     incrementCounter(paidByCampaign, campaignKey);
     incrementCounter(paidByCommunity, attribution.community);
+    incrementCounter(paidByPostId, attribution.postId);
+    incrementCounter(paidByCommentId, attribution.commentId);
+    incrementCounter(paidByCampaignVariant, attribution.campaignVariant);
     incrementCounter(paidByOfferCode, attribution.offerCode);
     paidCustomerIds.add(entry.customerId);
 
@@ -432,6 +447,9 @@ function getBusinessAnalytics() {
       incrementCounter(bookedRevenueBySourceCents, sourceKey, entry.amountCents);
       incrementCounter(bookedRevenueByCampaignCents, campaignKey, entry.amountCents);
       incrementCounter(bookedRevenueByCommunityCents, attribution.community, entry.amountCents);
+      incrementCounter(bookedRevenueByPostIdCents, attribution.postId, entry.amountCents);
+      incrementCounter(bookedRevenueByCommentIdCents, attribution.commentId, entry.amountCents);
+      incrementCounter(bookedRevenueByCampaignVariantCents, attribution.campaignVariant, entry.amountCents);
       incrementCounter(bookedRevenueByOfferCodeCents, attribution.offerCode, entry.amountCents);
       incrementCounter(bookedRevenueByCtaId, entry.ctaId, entry.amountCents);
       incrementCounter(bookedRevenueByLandingPath, entry.landingPath, entry.amountCents);
@@ -475,6 +493,21 @@ function getBusinessAnalytics() {
     conversionByCommunity[communityKey] = safeRate(paidByCommunity[communityKey] || 0, signupsByCommunity[communityKey] || 0);
   }
 
+  const conversionByPostId = {};
+  for (const postId of new Set([...Object.keys(signupsByPostId), ...Object.keys(paidByPostId)])) {
+    conversionByPostId[postId] = safeRate(paidByPostId[postId] || 0, signupsByPostId[postId] || 0);
+  }
+
+  const conversionByCommentId = {};
+  for (const commentId of new Set([...Object.keys(signupsByCommentId), ...Object.keys(paidByCommentId)])) {
+    conversionByCommentId[commentId] = safeRate(paidByCommentId[commentId] || 0, signupsByCommentId[commentId] || 0);
+  }
+
+  const conversionByCampaignVariant = {};
+  for (const variant of new Set([...Object.keys(signupsByCampaignVariant), ...Object.keys(paidByCampaignVariant)])) {
+    conversionByCampaignVariant[variant] = safeRate(paidByCampaignVariant[variant] || 0, signupsByCampaignVariant[variant] || 0);
+  }
+
   const conversionByOfferCode = {};
   for (const offerCode of new Set([...Object.keys(signupsByOfferCode), ...Object.keys(paidByOfferCode)])) {
     conversionByOfferCode[offerCode] = safeRate(paidByOfferCode[offerCode] || 0, signupsByOfferCode[offerCode] || 0);
@@ -513,6 +546,9 @@ function getBusinessAnalytics() {
       bySource: signupsBySource,
       byCampaign: signupsByCampaign,
       byCommunity: signupsByCommunity,
+      byPostId: signupsByPostId,
+      byCommentId: signupsByCommentId,
+      byCampaignVariant: signupsByCampaignVariant,
       byOfferCode: signupsByOfferCode,
     },
     revenue: {
@@ -532,14 +568,23 @@ function getBusinessAnalytics() {
       acquisitionBySource: signupsBySource,
       acquisitionByCampaign: signupsByCampaign,
       acquisitionByCommunity: signupsByCommunity,
+      acquisitionByPostId: signupsByPostId,
+      acquisitionByCommentId: signupsByCommentId,
+      acquisitionByCampaignVariant: signupsByCampaignVariant,
       acquisitionByOfferCode: signupsByOfferCode,
       paidBySource,
       paidByCampaign,
       paidByCommunity,
+      paidByPostId,
+      paidByCommentId,
+      paidByCampaignVariant,
       paidByOfferCode,
       bookedRevenueBySourceCents,
       bookedRevenueByCampaignCents,
       bookedRevenueByCommunityCents,
+      bookedRevenueByPostIdCents,
+      bookedRevenueByCommentIdCents,
+      bookedRevenueByCampaignVariantCents,
       bookedRevenueByOfferCodeCents,
       bookedRevenueByCtaId,
       bookedRevenueByLandingPath,
@@ -547,6 +592,9 @@ function getBusinessAnalytics() {
       conversionBySource,
       conversionByCampaign,
       conversionByCommunity,
+      conversionByPostId,
+      conversionByCommentId,
+      conversionByCampaignVariant,
       conversionByOfferCode,
     },
   };
