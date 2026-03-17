@@ -1,77 +1,132 @@
-# X/Twitter Launch Thread
+# X Thread -- AI Reliability System
 
-## Posting Notes
-- Best times: Tue-Thu 8-10am PT
-- Cross-post highlights to LinkedIn
-- Reply to your own thread to boost engagement
+## Thread
 
----
+### Tweet 1
 
-**Tweet 1 (Hook)**
-Claude Code is incredible but it has one fatal flaw: it forgets everything between sessions.
+```text
+Most “memory for coding agents” tools are solving the wrong problem.
 
-Same bugs. Same wrong approaches. Same apologies.
+The problem is not just forgetting.
 
-I spent 6 months building a fix. Here's what I learned:
+It is repeating the same operational mistakes across sessions.
 
-**Tweet 2 (What it does)**
-mcp-memory-gateway is an MCP server that gives your AI agent persistent memory.
+I built an AI reliability system for coding agents.
 
-It captures your feedback, auto-generates prevention rules, and physically blocks your agent from repeating known mistakes.
+Here is how 7 different people can use it:
+```
 
-**Tweet 3 (How it works)**
-The loop:
+### Tweet 2
 
-1. You give thumbs up/down with context
-2. Repeated failures become prevention rules
-3. Rules become pre-action gates
-4. Gates block the agent BEFORE it makes the mistake
+```text
+1. Solo founders
 
-Your agent builds an immune system from your corrections.
+Your Claude/Codex workflow keeps losing project-specific lessons.
 
-**Tweet 4 (The tech)**
-Under the hood:
+Use it to:
+- capture what failed
+- retrieve the lesson next session
+- stop re-learning the same mistake over and over
+```
 
-- Thompson Sampling decides which gates fire (exploration vs exploitation)
-- DPO/KTO export pairs for fine-tuning from your history
-- LanceDB vector store for semantic retrieval
-- ONNX embeddings, all local, no cloud required
+### Tweet 3
 
-**Tweet 5 (Install)**
-Try it in 30 seconds:
+```text
+2. OSS maintainers
 
-npx mcp-memory-gateway serve
+PR reviews contain valuable lessons, but they disappear after merge.
 
-Add it to your Claude Code MCP config. Done.
+Use it to:
+- turn review feedback into reusable memory
+- generate prevention rules from repeated mistakes
+- keep future contributors from hitting the same issue
+```
 
-Works with Codex, Gemini CLI, and Amp too.
+### Tweet 4
 
-**Tweet 6 (Differentiation)**
-There are other memory MCP servers (Mem0, Zep, official reference).
+```text
+3. Agency teams
 
-None of them are MCP-native AND have RLHF feedback loops. None generate prevention rules. None have pre-action gates.
+Each client has different constraints, tone, architecture, and sharp edges.
 
-This is the only one that learns from your corrections.
+Use it to:
+- keep client-specific lessons durable
+- prevent cross-client mistakes
+- make AI workflows less dependent on one person remembering everything
+```
 
-**Tweet 7 (Proof)**
-Engineering proof, not marketing claims:
+### Tweet 5
 
-- 314 tests, 0 failures
-- 12 machine-readable proof reports
-- 82% code coverage
-- 5 platform adapters
-- Built on $0 budget
+```text
+4. Staff engineers
 
-Every claim is backed by evidence in the repo.
+You already know the common failure modes.
 
-**Tweet 8 (The ask)**
-Free and open source (MIT). Install and use locally forever.
+Use it to:
+- convert repeated review comments into prevention rules
+- block known-bad actions before they happen
+- keep agent work auditable instead of vibe-based
+```
 
-$29/mo Pro for teams: hosted dashboard, auto-gate promotion, unlimited gates, multi-repo sync.
+### Tweet 6
 
-https://github.com/IgorGanapolsky/mcp-memory-gateway
+```text
+5. AI-heavy product teams
 
-**Tweet 9 (Engagement)**
-What's the most annoying mistake your AI coding agent keeps repeating?
+You do not just want memory.
+You want reliability.
 
-Reply and I'll show you how to write a prevention gate for it.
+Use it to add:
+- feedback capture
+- retrieval
+- rule generation
+- proof and verification
+
+So agent behavior actually improves over time.
+```
+
+### Tweet 7
+
+```text
+6. DevOps / platform teams
+
+The issue is not just code quality.
+It is unsafe repeated actions.
+
+Use it to:
+- keep infra and tooling lessons persistent
+- add gates before risky actions
+- reduce repeated operational footguns
+```
+
+### Tweet 8
+
+```text
+7. Power users
+
+If you run long Claude Code / Codex / MCP workflows, this gives you continuity.
+
+Not just:
+"here are my notes"
+
+But:
+"here are the exact mistakes to avoid next time"
+```
+
+### Tweet 9
+
+```text
+It is not a memory file.
+
+It is an AI reliability system for coding agents.
+
+Local-first. Auditable. Built to stop repeated mistakes across sessions.
+
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=thread&campaign_variant=seven_use_cases&offer_code=X-EARLY
+
+#ClaudeCode #MCP
+```
+
+## Attached Asset
+
+- Use [ai-reliability-system-x-card.svg](./assets/ai-reliability-system-x-card.svg)

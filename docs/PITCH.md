@@ -1,12 +1,12 @@
 # One-Line Pitch
 
-Make one AI workflow safe enough to ship team-wide.
+Make one AI workflow reliable enough to ship team-wide.
 
 # Positioning
 
-MCP Memory Gateway is the hosted reliability layer behind one workflow with business value. It is not another horizontal agent platform. It gives teams shared memory, guardrails, and proof-ready runs so a workflow can be deployed, audited, and improved over time.
+MCP Memory Gateway is the hosted AI reliability system behind one workflow with business value. It is not another horizontal agent platform. It gives teams shared memory, guardrails, and proof-ready runs so a workflow can be deployed, audited, and improved over time.
 
-- **Primary Goal:** Turn "vibe coding" into a controlled rollout through the **Veto Layer**.
+- **Primary Goal:** Turn "vibe coding" into a controlled rollout through an AI reliability system for one sharp agent.
 - **Secondary Goal:** Convert real operator feedback into prevention rules, Thompson Sampling signals, and RLHF-ready datasets such as KTO/DPO pairs.
 
 # Buyer Promise
@@ -25,7 +25,7 @@ We make one AI workflow measurable enough to justify and safe enough to roll out
 
 # High-Signal Features
 
-- **Vibe-to-Verification (V2V):** Capture thumbs up/down and convert them into workflow-level rules.
+- **Vibe-to-Verification (V2V):** Capture thumbs up/down and convert them into workflow-level reliability rules.
 - **ShieldCortex Context Packs:** Dynamic semantic assembly of project knowledge for agent boot-up and bounded retrieval.
 - **Agentic Guardrails (The Veto Layer):** Repeated failures trigger non-bypassable `CLAUDE.md` / `AGENTS.md` rules and shared prevention policies.
 - **Proof-Ready Runs:** Machine-readable evidence, audit trails, and hosted workflow artifacts for rollout decisions.

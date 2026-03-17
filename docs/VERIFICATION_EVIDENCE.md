@@ -862,6 +862,162 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-17 Self-Heal Proof Isolation Verification
+
+Scope:
+
+- Fixed `scripts/self-healing-check.js` so proof-bearing health checks run with an isolated temporary `RLHF_PROOF_DIR`.
+- Prevented `self-heal:check` from failing on clean merge commits due to shared tracked `proof/` artifacts instead of real behavioral regressions.
+- Added regression coverage to prove the health checker both injects and cleans temporary proof directories.
+
+Commands run:
+
+```bash
+git diff --check
+node --test tests/self-healing-check.test.js
+npm ci
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- `git diff --check`: completed cleanly.
+- `node --test tests/self-healing-check.test.js`: `14` passed, `0` failed.
+- `npm ci`: completed successfully; `audited 151 packages` and `found 0 vulnerabilities`.
+- `npm test`: passed.
+- `npm run test:coverage`: `1100` tests, `1099` passed, `0` failed, `1` skipped; coverage `84.40%` lines, `70.77%` branches, `87.18%` functions.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `55` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+
+Behavioral proof points:
+
+- `DEFAULT_CHECKS` now marks both `prove_adapters` and `prove_automation` for proof-directory isolation.
+- `collectHealthReport` provisions a temp `RLHF_PROOF_DIR` per proof check and removes it after execution.
+- The repaired `self-heal:check` now stays healthy under the same heavy `tests + prove_*` workload that failed on merge commit `9b5f5a1`.
+
+Artifacts updated:
+
+- `docs/VERIFICATION_EVIDENCE.md`
+
+## 2026-03-17 Growth Observability + Tracking Readiness Verification
+
+Scope:
+
+- Tighten the public category from generic memory phrasing to an AI reliability system for one sharp agent.
+- Add optional GA4 and Google Search Console support alongside the existing Plausible + first-party telemetry stack.
+- Auto-record SEO landing views from organic and AI-search referrers.
+- Surface instrumentation readiness directly in the dashboard so traffic, funnel, revenue, and attribution gaps are explicit.
+
+Commands run in the implementation worktree:
+
+```bash
+npm ci
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- `npm ci`: passed, `150` packages installed, `0` vulnerabilities.
+- `npm test`: passed on `feat/growth-observability`.
+- `npm run test:coverage`: passed with overall coverage `84.37%` lines / `70.58%` branches / `87.17%` functions.
+- `npm run prove:adapters`: passed, `46/46`.
+- `npm run prove:automation`: passed, `55/55`.
+- `npm run self-heal:check`: `Overall: HEALTHY`, `4/4` healthy.
+- `git diff --check`: clean before commit.
+
+Behavioral proof points:
+
+- The landing page keeps Plausible and first-party telemetry, and now injects GA4 and Search Console only when explicit env vars are set.
+- Search and AI-search referrers now produce `seo_landing_view` telemetry instead of hiding in generic landing-page traffic.
+- The dashboard now reports whether traffic analytics, SEO verification, buyer-loss capture, and revenue attribution are configured and actually receiving events.
+- Public and active product copy now lead with AI reliability without orchestration tax instead of drifting back toward generic memory-layer framing.
+
+## 2026-03-17 AI Reliability Social Asset Verification
+
+Scope:
+
+- Repositioned the active social launch copy from a generic memory tool toward an AI reliability system for coding agents.
+- Added a canonical operator kit for LinkedIn, X, and Reddit under `docs/marketing/`.
+- Added local/private SVG source assets for a six-slide LinkedIn carousel and an X summary card under `docs/marketing/assets/`.
+- Added a regression test to keep the new positioning and asset inventory from drifting.
+
+Commands run:
+
+```bash
+node --test tests/social-marketing-assets.test.js
+npm run test:workflow
+git diff --check
+```
+
+Observed results:
+
+- `tests/social-marketing-assets.test.js`: pass
+- `npm run test:workflow`: pass
+- `git diff --check`: clean
+
+Behavioral proof points:
+
+- `docs/marketing/social-posts.md` is now the canonical social launch kit and points to current LinkedIn, X, and Reddit assets instead of older memory-first launch copy.
+- `docs/marketing/linkedin-ai-reliability-post.md` contains the current long-form founder post plus the six-slide carousel script and first-comment CTA.
+- `docs/marketing/x-launch-thread.md` contains the current nine-post thread focused on reliability, not just memory.
+- `docs/marketing/reddit-posts.md` contains the current `r/ClaudeCode` post plus a showcase-safe `r/ClaudeAI` variant.
+- `docs/marketing/assets/` contains local/private export-ready SVG assets for LinkedIn and X, avoiding shared-workspace dependency for final posting assets.
+
+## 2026-03-17 Reliability-Without-Orchestration Positioning Verification
+
+Scope:
+
+- Repositioned the public landing page and package metadata around reliability without orchestration or subagent handoff overhead.
+- Added explicit FAQ and hero copy that keeps one sharp agent as the primary product story.
+- Tightened the continuity guide so it clearly frames the Gateway as the downstream reliability layer, not another planner or swarm.
+- Added a positioning contract test so README, package metadata, guide copy, and landing-page assertions cannot drift back to generic memory-layer messaging.
+
+Commands run:
+
+```bash
+node --test tests/public-landing.test.js tests/positioning-contract.test.js
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+npm run self-heal:check
+npm run test:workflow
+git diff --check
+```
+
+Observed results:
+
+- `tests/public-landing.test.js`: pass
+- `tests/positioning-contract.test.js`: pass
+- `npm test`: pass
+- `npm run test:coverage`: pass
+  - `1094` tests, `1093` passed, `0` failed, `1` skipped
+  - coverage `84.39%` lines, `70.80%` branches, `87.14%` functions
+- `npm run prove:adapters`: pass, `46/46`
+- `npm run prove:automation`: pass, `55/55`
+- `npm run self-heal:check`: `Overall: HEALTHY`, `4/4 healthy`
+- `npm run test:workflow`: pass
+- `git diff --check`: clean
+
+Behavioral proof points:
+
+- `public/index.html` now promises `Keep one sharp agent` and explicitly says the Gateway works without another orchestration layer or subagent handoff tax.
+- `public/index.html` FAQ now answers whether subagents or orchestration are required and states that the product is meant to keep one sharp agent on task.
+- `README.md` now leads with `Local-first reliability layer for AI coding agents` instead of generic context-and-memory phrasing.
+- `package.json` now carries reliability-over-orchestration positioning into npm and marketplace metadata.
+- `docs/guides/continuity-tools-integration.md` now documents the recommended split: continuity upstream, one base agent doing the work, Gateway downstream as the reliability layer.
+- `docs/marketing/LAUNCH_CONTENT.md` now aligns older launch variants with the reliability-without-orchestration story instead of stale persistent-memory-first copy.
+- `tests/positioning-contract.test.js` now guards the launch-content variants as well, so active GTM docs cannot silently drift back to memory-layer messaging.
+
 ## March 17, 2026: Cursor Marketplace packaging
 
 Scope:
@@ -1007,6 +1163,60 @@ Artifacts updated:
 
 - `proof/local-intelligence-report.json`
 - `proof/local-intelligence-report.md`
+
+## 2026-03-17 Reddit GTM Attribution Verification
+
+Scope:
+
+- Added first-party Reddit campaign attribution across the live landing page, hosted checkout bootstrap, fallback checkout URLs, billing funnel events, and telemetry analytics.
+- Preserved semantic SEO/GEO structure while introducing Reddit-specific campaign messaging and subreddit-aware attribution logic on the public landing page.
+- Added operator documentation for Reddit distribution in `docs/REDDIT_GTM_PLAYBOOK.md`.
+- Expanded business analytics so Reddit community, post, comment, campaign-variant, and offer-code performance can be measured end-to-end instead of inferred from raw visit counts.
+
+Commands run:
+
+```bash
+git diff --check
+npm ci
+node --test tests/telemetry-analytics.test.js
+node --test tests/public-landing.test.js
+node --test tests/billing.test.js
+node --test --test-concurrency=1 tests/api-server.test.js
+node --test tests/dashboard.test.js
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- `git diff --check`: completed cleanly.
+- `npm ci`: completed successfully; `audited 151 packages` and `found 0 vulnerabilities`.
+- Targeted changed-surface tests:
+  - `tests/telemetry-analytics.test.js`: passed.
+  - `tests/public-landing.test.js`: passed.
+  - `tests/billing.test.js`: passed.
+  - `tests/api-server.test.js`: passed.
+  - `tests/dashboard.test.js`: passed.
+- `npm test`: `1070` tests, `1069` passed, `0` failed, `1` skipped.
+- `npm run test:coverage`: `1070` tests, `1069` passed, `0` failed, `1` skipped; coverage `84.14%` lines, `70.74%` branches, `86.83%` functions.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
+- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `47` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+
+Behavioral proof points:
+
+- `public/index.html` now classifies Reddit-origin traffic, preserves `community`, `postId`, `commentId`, `campaignVariant`, and `offerCode`, shows a Reddit campaign banner, and pushes first-party `landing_page_view` telemetry before checkout.
+- `src/api/server.js` now threads Reddit attribution through `/checkout/pro`, `/v1/billing/checkout`, checkout bootstrap telemetry, and hosted success/cancel return URLs without overwriting Stripe checkout `session_id`; visitor-session state is preserved separately via `visitor_session_id`.
+- `scripts/telemetry-analytics.js` now reports `byCommunity`, `byOfferCode`, `byCampaignVariant`, `topCommunity`, `topOfferCode`, and `topCampaignVariant` for page views and CTA events.
+- `scripts/billing.js` now reports acquisition, signup, paid, revenue, and conversion breakdowns by Reddit community, post, comment, campaign variant, and offer code, making first-dollar attribution measurable at the business layer.
+- `tests/public-landing.test.js`, `tests/api-server.test.js`, `tests/billing.test.js`, and `tests/telemetry-analytics.test.js` prove the end-to-end Reddit attribution contract from landing click through checkout and analytics summaries.
+
+Artifacts updated:
+
+- `docs/REDDIT_GTM_PLAYBOOK.md`
 
 ## 2026-03-09 Technical Debt Audit Cleanup Verification
 

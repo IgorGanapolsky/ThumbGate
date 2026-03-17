@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350" fill="none">
+  <rect width="1080" height="1350" fill="#F4EDE1"/>
+  <text x="120" y="170" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700" letter-spacing="2">SLIDE 3 / THE LOOP</text>
+  <text x="120" y="290" fill="#17181C" font-family="Georgia, serif" font-size="84" font-weight="700">Build a loop,</text>
+  <text x="120" y="380" fill="#17181C" font-family="Georgia, serif" font-size="84" font-weight="700">not just a log.</text>
+  <rect x="120" y="500" width="840" height="110" rx="22" fill="#F07167"/>
+  <text x="165" y="570" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="700">1. Capture what failed or worked</text>
+  <rect x="120" y="650" width="840" height="110" rx="22" fill="#77C8B5"/>
+  <text x="165" y="720" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="700">2. Validate it before promoting it</text>
+  <rect x="120" y="800" width="840" height="110" rx="22" fill="#F6C75A"/>
+  <text x="165" y="870" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="700">3. Retrieve the right lesson on the next task</text>
+  <rect x="120" y="950" width="840" height="110" rx="22" fill="#E9D7FF"/>
+  <text x="165" y="1020" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="700">4. Turn repeated failures into prevention rules</text>
+  <rect x="120" y="1100" width="840" height="110" rx="22" fill="#17181C"/>
+  <text x="165" y="1170" fill="#F4EDE1" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="700">5. Verify the result with tests and proof</text>
+</svg>

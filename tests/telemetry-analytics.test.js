@@ -76,14 +76,37 @@ test('sanitizeTelemetryPayload normalizes buyer-loss and SEO fields', () => {
 });
 
 test('inferTrafficChannel prefers explicit source and deterministic referrer heuristics', () => {
+  assert.equal(inferTrafficChannel({ source: 'reddit' }, null), 'reddit');
   assert.equal(inferTrafficChannel({ source: 'ai_search' }, null), 'ai_search');
   assert.equal(inferTrafficChannel({ source: 'organic_search' }, null), 'organic_search');
   assert.equal(inferTrafficChannel({ source: 'website' }, null), 'direct');
   assert.equal(inferTrafficChannel({ utmMedium: 'organic' }, 'docs.example.com'), 'organic_search');
   assert.equal(inferTrafficChannel({}, 'perplexity.ai'), 'ai_search');
+  assert.equal(inferTrafficChannel({}, 'www.reddit.com'), 'reddit');
   assert.equal(inferTrafficChannel({}, 'www.google.com'), 'organic_search');
   assert.equal(inferTrafficChannel({}, null), 'direct');
   assert.equal(inferTrafficChannel({}, 'news.ycombinator.com'), 'referral');
+});
+
+test('sanitizeTelemetryPayload preserves reddit campaign metadata', () => {
+  const entry = sanitizeTelemetryPayload({
+    eventType: 'landing_page_view',
+    clientType: 'web',
+    source: 'reddit',
+    utmCampaign: 'reddit_launch',
+    community: 'ClaudeCode',
+    offerCode: 'REDDIT-EARLY',
+    campaignVariant: 'comment_problem_solution',
+    postId: '1rsudq0',
+    commentId: 'oa9mqjf',
+  });
+
+  assert.equal(entry.trafficChannel, 'reddit');
+  assert.equal(entry.community, 'ClaudeCode');
+  assert.equal(entry.offerCode, 'REDDIT-EARLY');
+  assert.equal(entry.campaignVariant, 'comment_problem_solution');
+  assert.equal(entry.postId, '1rsudq0');
+  assert.equal(entry.commentId, 'oa9mqjf');
 });
 
 test('loadTelemetryEvents upgrades legacy event/client fields', () => {
@@ -254,4 +277,47 @@ test('getTelemetryAnalytics summarizes buyer-loss, abandonment, and SEO telemetr
   assert.equal(analytics.seo.byQuery['ai agent guardrails'], 1);
   assert.equal(analytics.seo.topSurface.key, 'google_search');
   assert.equal(analytics.seo.topQuery.key, 'ai agent guardrails');
+});
+
+test('getTelemetryAnalytics summarizes reddit community and offer performance', () => {
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'landing_page_view',
+    clientType: 'web',
+    acquisitionId: 'acq_reddit_1',
+    visitorId: 'visitor_reddit_1',
+    sessionId: 'session_reddit_1',
+    source: 'reddit',
+    utmSource: 'reddit',
+    utmMedium: 'organic_social',
+    utmCampaign: 'reddit_launch',
+    community: 'ClaudeCode',
+    offerCode: 'REDDIT-EARLY',
+    campaignVariant: 'comment_problem_solution',
+    page: '/',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_start',
+    clientType: 'web',
+    acquisitionId: 'acq_reddit_1',
+    visitorId: 'visitor_reddit_1',
+    sessionId: 'session_reddit_1',
+    source: 'reddit',
+    utmSource: 'reddit',
+    utmCampaign: 'reddit_launch',
+    community: 'ClaudeCode',
+    offerCode: 'REDDIT-EARLY',
+    campaignVariant: 'comment_problem_solution',
+    ctaId: 'pricing_pro',
+  });
+
+  const analytics = getTelemetryAnalytics(tmpDir);
+  assert.equal(analytics.visitors.byTrafficChannel.reddit, 1);
+  assert.equal(analytics.visitors.byCommunity.ClaudeCode, 1);
+  assert.equal(analytics.visitors.byOfferCode['REDDIT-EARLY'], 1);
+  assert.equal(analytics.visitors.byCampaignVariant.comment_problem_solution, 1);
+  assert.equal(analytics.visitors.topTrafficChannel.key, 'reddit');
+  assert.equal(analytics.visitors.topCommunity.key, 'ClaudeCode');
+  assert.equal(analytics.visitors.topOfferCode.key, 'REDDIT-EARLY');
+  assert.equal(analytics.ctas.byCommunity.ClaudeCode, 1);
+  assert.equal(analytics.ctas.byOfferCode['REDDIT-EARLY'], 1);
 });

@@ -6,6 +6,7 @@ const DEFAULT_PUBLIC_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.rail
 const DEFAULT_CHECKOUT_FALLBACK_URL = 'https://iganapolsky.gumroad.com/l/tjovof';
 const DEFAULT_PRO_PRICE_DOLLARS = 29;
 const DEFAULT_PRO_PRICE_LABEL = '$29/mo';
+const GA_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/i;
 
 function normalizeOrigin(value) {
   if (!value || typeof value !== 'string') {
@@ -53,6 +54,23 @@ function normalizeAbsoluteUrl(value) {
   }
 }
 
+function normalizeTrackingId(value, pattern) {
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  if (pattern && !pattern.test(trimmed)) {
+    return '';
+  }
+
+  return trimmed;
+}
+
 function joinPublicUrl(baseOrigin, pathname) {
   const normalized = normalizeOrigin(baseOrigin);
   if (!normalized) {
@@ -97,6 +115,8 @@ function resolveHostedBillingConfig({ requestOrigin } = {}) {
   ) || appOrigin;
   const proPriceDollars = normalizePriceDollars(process.env.RLHF_PRO_PRICE_DOLLARS) || DEFAULT_PRO_PRICE_DOLLARS;
   const proPriceLabel = process.env.RLHF_PRO_PRICE_LABEL || DEFAULT_PRO_PRICE_LABEL;
+  const gaMeasurementId = normalizeTrackingId(process.env.RLHF_GA_MEASUREMENT_ID, GA_MEASUREMENT_ID_PATTERN);
+  const googleSiteVerification = normalizeTrackingId(process.env.RLHF_GOOGLE_SITE_VERIFICATION);
 
   return {
     appOrigin,
@@ -108,6 +128,8 @@ function resolveHostedBillingConfig({ requestOrigin } = {}) {
     ) || DEFAULT_CHECKOUT_FALLBACK_URL,
     proPriceDollars,
     proPriceLabel,
+    gaMeasurementId,
+    googleSiteVerification,
   };
 }
 
@@ -116,8 +138,10 @@ module.exports = {
   DEFAULT_CHECKOUT_FALLBACK_URL,
   DEFAULT_PRO_PRICE_DOLLARS,
   DEFAULT_PRO_PRICE_LABEL,
+  GA_MEASUREMENT_ID_PATTERN,
   normalizeAbsoluteUrl,
   normalizeOrigin,
+  normalizeTrackingId,
   normalizePriceDollars,
   joinPublicUrl,
   createTraceId,

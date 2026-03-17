@@ -7,9 +7,12 @@ const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
 const { getBillingSummary, loadFunnelLedger, loadRevenueLedger } = require('./billing');
 const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-analytics');
 const { getAutoGatesPath } = require('./auto-promote-gates');
+const { summarizeDelegation } = require('./delegation-runtime');
+const { resolveHostedBillingConfig } = require('./hosted-config');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
+const LANDING_PAGE_PATH = path.join(PROJECT_ROOT, 'public', 'index.html');
 
 // ---------------------------------------------------------------------------
 // Data readers
@@ -408,6 +411,36 @@ function computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, 
   };
 }
 
+function computeInstrumentationReadiness(analytics, billing) {
+  const landingPage = fs.existsSync(LANDING_PAGE_PATH)
+    ? fs.readFileSync(LANDING_PAGE_PATH, 'utf-8')
+    : '';
+  const runtimeConfig = resolveHostedBillingConfig();
+  const coverage = billing && billing.coverage ? billing.coverage : {};
+  const telemetry = analytics.telemetry || {};
+  const visitors = telemetry.visitors || {};
+  const cli = telemetry.cli || {};
+
+  return {
+    plausibleConfigured: /plausible\.io\/js\/script\.js/.test(landingPage),
+    ga4Configured: Boolean(runtimeConfig.gaMeasurementId),
+    googleSearchConsoleConfigured: Boolean(runtimeConfig.googleSiteVerification),
+    softwareApplicationSchemaPresent: /"@type": "SoftwareApplication"/.test(landingPage),
+    faqSchemaPresent: /"@type": "FAQPage"/.test(landingPage),
+    telemetryEventsPresent: (telemetry.totalEvents || 0) > 0,
+    uniqueVisitorsTracked: visitors.uniqueVisitors || 0,
+    cliInstallsTracked: cli.uniqueInstalls || 0,
+    funnelEventsPresent: (analytics.reconciliation.telemetryCheckoutStarts || 0) > 0,
+    seoSignalsPresent: (analytics.seo.landingViews || 0) > 0,
+    buyerLossSignalsPresent: (analytics.buyerLoss.totalSignals || 0) > 0,
+    trafficAttributionCoverage: visitors.attributionCoverageRate || 0,
+    bookedRevenueTrackingEnabled: Boolean(coverage.tracksBookedRevenue),
+    paidOrderTrackingEnabled: Boolean(coverage.tracksPaidOrders),
+    invoiceTrackingEnabled: Boolean(coverage.tracksInvoices),
+    attributionTrackingEnabled: Boolean(coverage.tracksAttribution),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Full dashboard data
 // ---------------------------------------------------------------------------
@@ -427,6 +460,8 @@ function generateDashboard(feedbackDir) {
   const secretGuard = computeSecretGuardStats(diagnosticEntries);
   const analytics = computeAnalyticsSummary(feedbackDir);
   const observability = computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, analytics.telemetry);
+  const instrumentation = computeInstrumentationReadiness(analytics, getBillingSummary());
+  const delegation = summarizeDelegation(feedbackDir);
 
   return {
     approval,
@@ -435,9 +470,11 @@ function generateDashboard(feedbackDir) {
     trend,
     health,
     diagnostics,
+    delegation,
     secretGuard,
     analytics,
     observability,
+    instrumentation,
   };
 }
 
@@ -453,9 +490,11 @@ function printDashboard(data) {
     trend,
     health,
     diagnostics,
+    delegation,
     secretGuard,
     analytics,
     observability,
+    instrumentation,
   } = data;
 
   const trendArrow = approval.trendDirection === 'improving' ? '\u2191'
@@ -486,6 +525,13 @@ function printDashboard(data) {
   }
 
   console.log('');
+  console.log('\uD83E\uDD1D Delegation');
+  console.log(`  Attempts         : ${delegation.attemptCount}`);
+  console.log(`  Outcomes         : ${delegation.acceptedCount} accepted / ${delegation.rejectedCount} rejected / ${delegation.abortedCount} aborted`);
+  console.log(`  Verification Fail: ${Math.round((delegation.verificationFailureRate || 0) * 100)}%`);
+  console.log(`  Avoided Starts   : ${delegation.avoidedDelegationCount}`);
+
+  console.log('');
   console.log('\uD83D\uDCBC Growth Analytics');
   console.log(`  Unique Visitors  : ${analytics.funnel.visitors}`);
   console.log(`  CTA Clicks       : ${analytics.funnel.ctaClicks}`);
@@ -507,6 +553,17 @@ function printDashboard(data) {
   if (analytics.seo.topSurface) {
     console.log(`  SEO Surface      : ${analytics.seo.topSurface.key} (${analytics.seo.topSurface.count}\u00D7)`);
   }
+
+  console.log('');
+  console.log('\uD83D\uDCE1 Tracking Readiness');
+  console.log(`  Plausible        : ${instrumentation.plausibleConfigured ? 'configured' : 'missing'}`);
+  console.log(`  GA4              : ${instrumentation.ga4Configured ? 'configured' : 'missing'}`);
+  console.log(`  Search Console   : ${instrumentation.googleSearchConsoleConfigured ? 'configured' : 'missing'}`);
+  console.log(`  Telemetry Events : ${instrumentation.telemetryEventsPresent ? instrumentation.uniqueVisitorsTracked : 0} visitors`);
+  console.log(`  SEO Signals      : ${instrumentation.seoSignalsPresent ? analytics.seo.landingViews : 0}`);
+  console.log(`  Buyer Loss       : ${instrumentation.buyerLossSignalsPresent ? analytics.buyerLoss.totalSignals : 0}`);
+  console.log(`  Attribution      : ${Math.round((instrumentation.trafficAttributionCoverage || 0) * 100)}% page-view coverage`);
+  console.log(`  Revenue Tracking : ${instrumentation.bookedRevenueTrackingEnabled ? 'booked revenue enabled' : 'disabled'}`);
 
   console.log('');
   console.log('\uD83D\uDD10 Secret Guard');

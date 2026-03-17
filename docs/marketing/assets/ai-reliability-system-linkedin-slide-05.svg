@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350" fill="none">
+  <rect width="1080" height="1350" fill="#F8F5EE"/>
+  <text x="120" y="170" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700" letter-spacing="2">SLIDE 5 / EXPANSION</text>
+  <text x="120" y="290" fill="#17181C" font-family="Georgia, serif" font-size="80" font-weight="700">Who it helps next</text>
+  <rect x="120" y="400" width="400" height="220" rx="28" fill="#17181C"/>
+  <rect x="560" y="400" width="400" height="220" rx="28" fill="#F07167" fill-opacity="0.16" stroke="#F07167" stroke-width="3"/>
+  <rect x="120" y="670" width="400" height="220" rx="28" fill="#77C8B5" fill-opacity="0.18" stroke="#77C8B5" stroke-width="3"/>
+  <rect x="560" y="670" width="400" height="220" rx="28" fill="#F6C75A" fill-opacity="0.22" stroke="#F6C75A" stroke-width="3"/>
+  <text x="155" y="475" fill="#F4EDE1" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700">STAFF ENGINEERS</text>
+  <text x="155" y="530" fill="#C9CCD5" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="26">Turn repeated review comments into reusable prevention rules.</text>
+  <text x="595" y="475" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700">AI PRODUCT TEAMS</text>
+  <text x="595" y="530" fill="#4A4F5C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="26">Add feedback, retrieval, rules, and proof to agent workflows.</text>
+  <text x="155" y="745" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700">DEVOPS / PLATFORM</text>
+  <text x="155" y="800" fill="#4A4F5C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="26">Persist operational lessons and block repeated unsafe actions.</text>
+  <text x="595" y="745" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700">POWER USERS</text>
+  <text x="595" y="800" fill="#4A4F5C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="26">Run long Claude Code and Codex workflows with continuity and verification.</text>
+  <text x="120" y="1040" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="36" font-weight="700">The shift:</text>
+  <text x="120" y="1100" fill="#17181C" font-family="Georgia, serif" font-size="62" font-weight="700">Less memory tool.</text>
+  <text x="120" y="1170" fill="#17181C" font-family="Georgia, serif" font-size="62" font-weight="700">More operating system.</text>
+</svg>

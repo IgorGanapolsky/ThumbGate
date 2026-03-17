@@ -15,6 +15,14 @@ test('DEFAULT_CHECKS delegates verification through npm test', () => {
   assert.deepEqual(testsCheck.command, ['npm', 'test']);
 });
 
+test('DEFAULT_CHECKS isolates proof artifacts for prove checks', () => {
+  const proveAdapters = DEFAULT_CHECKS.find((check) => check.name === 'prove_adapters');
+  const proveAutomation = DEFAULT_CHECKS.find((check) => check.name === 'prove_automation');
+
+  assert.equal(proveAdapters.useTempProofDir, true);
+  assert.equal(proveAutomation.useTempProofDir, true);
+});
+
 test('collectHealthReport marks overall healthy when all checks pass', () => {
   const checks = [
     { name: 'a', command: ['mock', 'a'] },
@@ -67,6 +75,23 @@ test('collectHealthReport records duration for each check', () => {
 
   assert.equal(callCount, 1);
   assert.ok(report.checks[0].durationMs >= 0);
+});
+
+test('collectHealthReport injects and cleans temp proof dirs for proof checks', () => {
+  let capturedProofDir = null;
+  const report = collectHealthReport({
+    checks: [{ name: 'prove_automation', command: ['npm', 'run', 'prove:automation'], useTempProofDir: true }],
+    runner: (_command, options) => {
+      capturedProofDir = options.env.RLHF_PROOF_DIR;
+      assert.ok(capturedProofDir);
+      assert.equal(fs.existsSync(capturedProofDir), true);
+      return { exitCode: 0, durationMs: 1, stdout: 'ok', stderr: '', error: null };
+    },
+  });
+
+  assert.equal(report.overall_status, 'healthy');
+  assert.ok(capturedProofDir);
+  assert.equal(fs.existsSync(capturedProofDir), false);
 });
 
 test('collectHealthReport captures output tail on failure', () => {

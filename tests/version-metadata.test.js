@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {
   DEFAULT_CHECKOUT_FALLBACK_URL,
+  GA_MEASUREMENT_ID_PATTERN,
   resolveHostedBillingConfig,
 } = require('../scripts/hosted-config');
 
@@ -40,7 +41,7 @@ test('public docs render the current package version', () => {
   const mcpSubmission = readText('docs/mcp-hub-submission.md');
 
   assert.match(landingPage, /MCP Memory Gateway/);
-  assert.match(landingPage, /Pre-Action Gates/i);
+  assert.match(landingPage, /AI Agent Reliability Without Orchestration Tax/i);
   assert.match(landingPage, /\$29\/mo/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
 });
@@ -74,7 +75,9 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /mcp-memory-gateway/i);
   assert.match(publicLanding, /__PRO_PRICE_LABEL__/);
   assert.match(publicLanding, /__PRO_PRICE_DOLLARS__/);
-  assert.match(publicLanding, /Pre-Action Gates/i);
+  assert.match(publicLanding, /__GA_BOOTSTRAP__/);
+  assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
+  assert.match(publicLanding, /AI reliability system/i);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
   assert.doesNotMatch(publicLanding, /github\.com\/IgorGanapolsky\/rlhf-feedback-loop/);
 
@@ -90,15 +93,21 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
   const previousLabel = process.env.RLHF_PRO_PRICE_LABEL;
   const previousDollars = process.env.RLHF_PRO_PRICE_DOLLARS;
   const previousFallback = process.env.RLHF_CHECKOUT_FALLBACK_URL;
+  const previousGaMeasurementId = process.env.RLHF_GA_MEASUREMENT_ID;
+  const previousGoogleSiteVerification = process.env.RLHF_GOOGLE_SITE_VERIFICATION;
   delete process.env.RLHF_PRO_PRICE_LABEL;
   delete process.env.RLHF_PRO_PRICE_DOLLARS;
   delete process.env.RLHF_CHECKOUT_FALLBACK_URL;
+  delete process.env.RLHF_GA_MEASUREMENT_ID;
+  delete process.env.RLHF_GOOGLE_SITE_VERIFICATION;
 
   try {
     const runtimeConfig = resolveHostedBillingConfig();
     assert.equal(runtimeConfig.proPriceLabel, '$29/mo');
     assert.equal(runtimeConfig.proPriceDollars, 29);
     assert.equal(runtimeConfig.checkoutFallbackUrl, DEFAULT_CHECKOUT_FALLBACK_URL);
+    assert.equal(runtimeConfig.gaMeasurementId, '');
+    assert.equal(runtimeConfig.googleSiteVerification, '');
   } finally {
     if (previousLabel === undefined) {
       delete process.env.RLHF_PRO_PRICE_LABEL;
@@ -114,6 +123,16 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
       delete process.env.RLHF_CHECKOUT_FALLBACK_URL;
     } else {
       process.env.RLHF_CHECKOUT_FALLBACK_URL = previousFallback;
+    }
+    if (previousGaMeasurementId === undefined) {
+      delete process.env.RLHF_GA_MEASUREMENT_ID;
+    } else {
+      process.env.RLHF_GA_MEASUREMENT_ID = previousGaMeasurementId;
+    }
+    if (previousGoogleSiteVerification === undefined) {
+      delete process.env.RLHF_GOOGLE_SITE_VERIFICATION;
+    } else {
+      process.env.RLHF_GOOGLE_SITE_VERIFICATION = previousGoogleSiteVerification;
     }
   }
 });
@@ -133,6 +152,31 @@ test('runtime hosted billing config preserves absolute fallback checkout urls', 
       delete process.env.RLHF_CHECKOUT_FALLBACK_URL;
     } else {
       process.env.RLHF_CHECKOUT_FALLBACK_URL = previousFallback;
+    }
+  }
+});
+
+test('runtime hosted billing config accepts valid analytics tracking identifiers', () => {
+  const previousGaMeasurementId = process.env.RLHF_GA_MEASUREMENT_ID;
+  const previousGoogleSiteVerification = process.env.RLHF_GOOGLE_SITE_VERIFICATION;
+  process.env.RLHF_GA_MEASUREMENT_ID = 'G-TEST1234';
+  process.env.RLHF_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
+
+  try {
+    const runtimeConfig = resolveHostedBillingConfig();
+    assert.equal(runtimeConfig.gaMeasurementId, 'G-TEST1234');
+    assert.equal(runtimeConfig.googleSiteVerification, 'test-verification-token');
+    assert.match(runtimeConfig.gaMeasurementId, GA_MEASUREMENT_ID_PATTERN);
+  } finally {
+    if (previousGaMeasurementId === undefined) {
+      delete process.env.RLHF_GA_MEASUREMENT_ID;
+    } else {
+      process.env.RLHF_GA_MEASUREMENT_ID = previousGaMeasurementId;
+    }
+    if (previousGoogleSiteVerification === undefined) {
+      delete process.env.RLHF_GOOGLE_SITE_VERIFICATION;
+    } else {
+      process.env.RLHF_GOOGLE_SITE_VERIFICATION = previousGoogleSiteVerification;
     }
   }
 });

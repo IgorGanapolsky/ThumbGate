@@ -19,9 +19,12 @@ process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';
 process.env.RLHF_PUBLIC_APP_ORIGIN = 'https://app.example.com';
 process.env.RLHF_BILLING_API_BASE_URL = 'https://billing.example.com';
+process.env.RLHF_GA_MEASUREMENT_ID = 'G-TEST1234';
+process.env.RLHF_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
 
-const { startServer } = require('../src/api/server');
+const { startServer, __test__ } = require('../src/api/server');
 const billing = require('../scripts/billing');
+const { buildHostedSuccessUrl } = require('../scripts/hosted-config');
 
 let handle;
 let apiOrigin = '';
@@ -71,9 +74,13 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /mcp.memory.gateway/i);
-  assert.match(body, /Pre.Action Gates/i);
+  assert.match(body, /Keep one sharp agent/i);
+  assert.match(body, /same agent session|same reliability layer|No orchestration tax/i);
   assert.match(body, /\$29\/mo/);
   assert.match(body, /plausible\.io\/js\/script\.js/);
+  assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
+  assert.match(body, /google-site-verification" content="test-verification-token"/);
+  assert.match(body, /gtag\('config', 'G-TEST1234', \{ send_page_view: false \}\)/);
   assert.match(body, /\/v1\/billing\/checkout/);
 });
 
@@ -149,13 +156,32 @@ test('cancel page serves retry message', async () => {
   assert.match(body, /Return to Context Gateway/);
 });
 
+test('checkout fallback URLs preserve Stripe session placeholders while carrying visitor-session attribution', () => {
+  const hostedSuccessUrl = buildHostedSuccessUrl('https://app.example.com', 'trace_checkout');
+  const decoratedUrl = __test__.buildCheckoutFallbackUrl(hostedSuccessUrl, {
+    acquisitionId: 'acq_test',
+    visitorId: 'visitor_test',
+    sessionId: 'visitor_session_test',
+    utmSource: 'reddit',
+    community: 'ClaudeCode',
+  });
+  const parsed = new URL(decoratedUrl);
+
+  assert.equal(parsed.searchParams.get('session_id'), '{CHECKOUT_SESSION_ID}');
+  assert.equal(parsed.searchParams.get('visitor_session_id'), 'visitor_session_test');
+  assert.equal(parsed.searchParams.get('acquisition_id'), 'acq_test');
+  assert.equal(parsed.searchParams.get('visitor_id'), 'visitor_test');
+  assert.equal(parsed.searchParams.get('utm_source'), 'reddit');
+  assert.equal(parsed.searchParams.get('community'), 'ClaudeCode');
+});
+
 test('checkout bootstrap route preserves attribution and records first-party telemetry in local mode', async () => {
   const res = await fetch(
-    apiUrl('/checkout/pro?acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&utm_source=google&utm_medium=organic&utm_campaign=seo_launch&utm_term=agentic+feedback&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
+    apiUrl('/checkout/pro?acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_term=agentic+feedback&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
     {
       redirect: 'manual',
       headers: {
-        referer: 'https://www.google.com/search?q=agentic+feedback+studio',
+        referer: 'https://www.reddit.com/r/ClaudeCode/comments/1rsudq0/comment/oa9mqjf/',
       },
     }
   );
@@ -163,11 +189,11 @@ test('checkout bootstrap route preserves attribution and records first-party tel
   assert.equal(res.status, 302);
   const location = new URL(res.headers.get('location'));
   assert.equal(location.pathname, '/success');
-  assert.ok(location.searchParams.get('session_id'));
+  assert.match(String(location.searchParams.get('session_id')), /^test_session_/);
   assert.match(String(location.searchParams.get('trace_id')), /^checkout_/);
   assert.equal(location.searchParams.get('acquisition_id'), 'acq_bootstrap');
   assert.equal(location.searchParams.get('visitor_id'), 'visitor_bootstrap');
-  assert.equal(location.searchParams.get('session_id'), 'session_bootstrap');
+  assert.equal(location.searchParams.get('visitor_session_id'), 'session_bootstrap');
   assert.equal(location.searchParams.get('install_id'), 'inst_bootstrap');
 
   const funnelEvents = readJsonl(process.env._TEST_FUNNEL_LEDGER_PATH);
@@ -184,7 +210,12 @@ test('checkout bootstrap route preserves attribution and records first-party tel
   assert.equal(checkoutCreated.ctaPlacement, 'pricing');
   assert.equal(checkoutCreated.planId, 'pro');
   assert.equal(checkoutCreated.landingPath, '/pricing');
-  assert.equal(checkoutCreated.referrerHost, 'www.google.com');
+  assert.equal(checkoutCreated.referrerHost, 'www.reddit.com');
+  assert.equal(checkoutCreated.community, 'ClaudeCode');
+  assert.equal(checkoutCreated.postId, '1rsudq0');
+  assert.equal(checkoutCreated.commentId, 'oa9mqjf');
+  assert.equal(checkoutCreated.campaignVariant, 'comment_problem_solution');
+  assert.equal(checkoutCreated.offerCode, 'REDDIT-EARLY');
 
   const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
   const bootstrapEvent = telemetryEvents.find((entry) => entry.eventType === 'checkout_bootstrap');
@@ -194,13 +225,15 @@ test('checkout bootstrap route preserves attribution and records first-party tel
   assert.equal(bootstrapEvent.visitorId, 'visitor_bootstrap');
   assert.equal(bootstrapEvent.sessionId, 'session_bootstrap');
   assert.equal(bootstrapEvent.installId, 'inst_bootstrap');
-  assert.equal(bootstrapEvent.utmSource, 'google');
-  assert.equal(bootstrapEvent.utmMedium, 'organic');
-  assert.equal(bootstrapEvent.utmCampaign, 'seo_launch');
+  assert.equal(bootstrapEvent.utmSource, 'reddit');
+  assert.equal(bootstrapEvent.utmMedium, 'organic_social');
+  assert.equal(bootstrapEvent.utmCampaign, 'reddit_launch');
   assert.equal(bootstrapEvent.ctaId, 'pricing_pro');
   assert.equal(bootstrapEvent.planId, 'pro');
   assert.equal(bootstrapEvent.landingPath, '/pricing');
-  assert.equal(bootstrapEvent.referrerHost, 'www.google.com');
+  assert.equal(bootstrapEvent.referrerHost, 'www.reddit.com');
+  assert.equal(bootstrapEvent.community, 'ClaudeCode');
+  assert.equal(bootstrapEvent.offerCode, 'REDDIT-EARLY');
 });
 
 test('feedback capture accepts valid payload', async () => {
@@ -305,6 +338,11 @@ test('intent plan returns checkpoint for unapproved high-risk action', async () 
   const body = await res.json();
   assert.equal(body.status, 'checkpoint_required');
   assert.equal(body.requiresApproval, true);
+  assert.equal(body.executionMode, 'single_agent');
+  assert.equal(body.delegationEligible, false);
+  assert.equal(body.delegationScore, 0);
+  assert.equal(body.delegateProfile, null);
+  assert.equal(body.handoffContract, null);
 });
 
 test('intent plan returns partner-aware strategy metadata', async () => {
@@ -324,6 +362,59 @@ test('intent plan returns partner-aware strategy metadata', async () => {
   assert.equal(body.partnerStrategy.verificationMode, 'evidence_first');
   assert.ok(body.tokenBudget.contextPack > 6000);
   assert.ok(Array.isArray(body.actionScores));
+});
+
+test('handoff endpoints expose sequential delegation over HTTP', async () => {
+  const planRes = await fetch(apiUrl('/v1/intents/plan'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      intentId: 'improve_response_quality',
+      context: 'Improve the response with evidence and prevention rules',
+      mcpProfile: 'default',
+      delegationMode: 'auto',
+    }),
+  });
+  assert.equal(planRes.status, 200);
+  const planBody = await planRes.json();
+  assert.equal(planBody.executionMode, 'sequential_delegate');
+  assert.equal(planBody.delegateProfile, 'pr_workflow');
+  assert.ok(planBody.handoffContract);
+
+  const startRes = await fetch(apiUrl('/v1/handoffs/start'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      intentId: 'improve_response_quality',
+      context: 'Improve the response with evidence and prevention rules',
+      mcpProfile: 'default',
+    }),
+  });
+  assert.equal(startRes.status, 200);
+  const started = await startRes.json();
+  assert.equal(started.status, 'started');
+  assert.equal(started.executionMode, 'sequential_delegate');
+  assert.equal(started.delegateProfile, 'pr_workflow');
+  assert.ok(started.handoffContract);
+  assert.ok(Array.isArray(started.handoffContract.requiredChecks));
+
+  const completeRes = await fetch(apiUrl('/v1/handoffs/complete'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      handoffId: started.handoffId,
+      outcome: 'accepted',
+      summary: 'Accepted after evidence review.',
+      resultContext: 'Returned a verified result context with explicit evidence and clean checks.',
+      attempts: 2,
+      violationCount: 0,
+    }),
+  });
+  assert.equal(completeRes.status, 200);
+  const completed = await completeRes.json();
+  assert.equal(completed.status, 'completed');
+  assert.equal(completed.outcome, 'accepted');
+  assert.equal(completed.verificationAccepted, true);
 });
 
 test('intent plan returns codegraph impact for coding workflows', async () => {
@@ -632,10 +723,15 @@ test('funnel analytics returns counts and conversion rates', async () => {
     body: JSON.stringify({
       installId: 'inst_api_server_test',
       metadata: {
-        source: 'website',
-        utmSource: 'website',
-        utmMedium: 'cta_button',
-        utmCampaign: 'spring_launch',
+        source: 'reddit',
+        utmSource: 'reddit',
+        utmMedium: 'organic_social',
+        utmCampaign: 'reddit_launch',
+        community: 'ClaudeCode',
+        postId: '1rsudq0',
+        commentId: 'oa9mqjf',
+        campaignVariant: 'comment_problem_solution',
+        offerCode: 'REDDIT-EARLY',
         ctaId: 'pricing_pro',
       },
     }),
@@ -659,6 +755,11 @@ test('funnel analytics returns counts and conversion rates', async () => {
   });
   assert.equal(summaryRes.status, 200);
   const summary = await summaryRes.json();
-  assert.ok(summary.signups.bySource.website >= 1);
-  assert.ok(summary.attribution.acquisitionByCampaign.spring_launch >= 1);
+  assert.ok(summary.signups.bySource.reddit >= 1);
+  assert.ok(summary.attribution.acquisitionByCampaign.reddit_launch >= 1);
+  assert.ok(summary.attribution.acquisitionByCommunity.ClaudeCode >= 1);
+  assert.ok(summary.attribution.acquisitionByPostId['1rsudq0'] >= 1);
+  assert.ok(summary.attribution.acquisitionByCommentId.oa9mqjf >= 1);
+  assert.ok(summary.attribution.acquisitionByCampaignVariant.comment_problem_solution >= 1);
+  assert.ok(summary.attribution.acquisitionByOfferCode['REDDIT-EARLY'] >= 1);
 });

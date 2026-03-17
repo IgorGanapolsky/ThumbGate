@@ -92,9 +92,70 @@ test('generateDashboard handles empty state (no files)', () => {
   assert.equal(data.health.feedbackCount, 0);
   assert.equal(data.health.memoryCount, 0);
   assert.equal(data.diagnostics.totalDiagnosed, 0);
+  assert.ok(data.delegation);
+  assert.equal(data.delegation.attemptCount, 0);
   assert.equal(data.secretGuard.blocked, 0);
   assert.equal(data.analytics.funnel.visitors, 0);
   assert.equal(data.observability.diagnosticEvents, 0);
+});
+
+test('generateDashboard surfaces tracking readiness and instrumentation truth', () => {
+  const previousGaId = process.env.RLHF_GA_MEASUREMENT_ID;
+  const previousGoogleVerification = process.env.RLHF_GOOGLE_SITE_VERIFICATION;
+  process.env.RLHF_GA_MEASUREMENT_ID = 'G-TEST1234';
+  process.env.RLHF_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
+
+  try {
+    writeTelemetryLog([
+      {
+        receivedAt: new Date().toISOString(),
+        eventType: 'landing_page_view',
+        clientType: 'web',
+        acquisitionId: 'acq_track_1',
+        visitorId: 'visitor_track_1',
+        sessionId: 'session_track_1',
+        source: 'organic_search',
+        utmSource: 'google',
+        utmMedium: 'organic',
+        page: '/',
+      },
+      {
+        receivedAt: new Date().toISOString(),
+        eventType: 'seo_landing_view',
+        clientType: 'web',
+        acquisitionId: 'acq_track_1',
+        visitorId: 'visitor_track_1',
+        sessionId: 'session_track_1',
+        seoSurface: 'google_search',
+        seoQuery: 'ai reliability system',
+      },
+    ]);
+
+    const data = generateDashboard(tmpDir);
+    assert.equal(data.instrumentation.plausibleConfigured, true);
+    assert.equal(data.instrumentation.ga4Configured, true);
+    assert.equal(data.instrumentation.googleSearchConsoleConfigured, true);
+    assert.equal(data.instrumentation.softwareApplicationSchemaPresent, true);
+    assert.equal(data.instrumentation.faqSchemaPresent, true);
+    assert.equal(data.instrumentation.telemetryEventsPresent, true);
+    assert.equal(data.instrumentation.uniqueVisitorsTracked, 1);
+    assert.equal(data.instrumentation.seoSignalsPresent, true);
+    assert.equal(data.instrumentation.bookedRevenueTrackingEnabled, true);
+    assert.equal(data.instrumentation.paidOrderTrackingEnabled, true);
+    assert.equal(data.instrumentation.invoiceTrackingEnabled, false);
+    assert.equal(data.instrumentation.attributionTrackingEnabled, true);
+  } finally {
+    if (previousGaId === undefined) {
+      delete process.env.RLHF_GA_MEASUREMENT_ID;
+    } else {
+      process.env.RLHF_GA_MEASUREMENT_ID = previousGaId;
+    }
+    if (previousGoogleVerification === undefined) {
+      delete process.env.RLHF_GOOGLE_SITE_VERIFICATION;
+    } else {
+      process.env.RLHF_GOOGLE_SITE_VERIFICATION = previousGoogleVerification;
+    }
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -192,6 +253,7 @@ test('generateDashboard returns complete structure with data', () => {
   assert.ok(data.trend);
   assert.ok(data.health);
   assert.ok(data.diagnostics);
+  assert.ok(data.delegation);
   assert.ok(data.secretGuard);
 
   // Values
@@ -201,6 +263,7 @@ test('generateDashboard returns complete structure with data', () => {
   assert.equal(data.health.feedbackCount, 30);
   assert.equal(data.health.memoryCount, 2);
   assert.equal(data.diagnostics.totalDiagnosed, 10);
+  assert.equal(data.delegation.attemptCount, 0);
   assert.equal(data.diagnostics.categories[0].key, 'tool_output_misread');
   assert.equal(data.secretGuard.blocked, 0);
   assert.equal(data.analytics.funnel.visitors, 0);
