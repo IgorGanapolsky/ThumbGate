@@ -112,6 +112,14 @@ function getSelfAuditModule() {
   }
 }
 
+function getDelegationRuntimeModule() {
+  try {
+    return require('./delegation-runtime');
+  } catch {
+    return null;
+  }
+}
+
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
@@ -885,6 +893,21 @@ function analyzeFeedback(logPath) {
     boostedRisk = null;
   }
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
+  let delegation = null;
+  try {
+    const delegationRuntime = getDelegationRuntimeModule();
+    if (delegationRuntime && typeof delegationRuntime.summarizeDelegation === 'function') {
+      delegation = delegationRuntime.summarizeDelegation(paths.FEEDBACK_DIR);
+      if (delegation.attemptCount >= 3 && delegation.verificationFailureRate >= 0.5) {
+        recommendations.push(`REDUCE delegation: verification failure rate is ${Math.round(delegation.verificationFailureRate * 100)}%`);
+      }
+      if (delegation.avoidedDelegationCount >= 3) {
+        recommendations.push(`REVIEW delegation policy: ${delegation.avoidedDelegationCount} handoff starts were blocked before execution`);
+      }
+    }
+  } catch {
+    delegation = null;
+  }
   diagnostics.categories.slice(0, 2).forEach((bucket) => {
     recommendations.push(`DIAGNOSE '${bucket.key}' failures (${bucket.count})`);
   });
@@ -905,6 +928,7 @@ function analyzeFeedback(logPath) {
       failingCriteria: rubricCriteria,
     },
     diagnostics,
+    delegation,
     boostedRisk,
     recommendations,
   };
@@ -1073,6 +1097,12 @@ function feedbackSummary(recentN = 20) {
     `- Approval: ${pct}%`,
     `- Overall approval: ${Math.round(analysis.approvalRate * 100)}%`,
   ];
+
+  if (analysis.delegation) {
+    lines.push(`- Delegation attempts: ${analysis.delegation.attemptCount}`);
+    lines.push(`- Delegation accepted/rejected/aborted: ${analysis.delegation.acceptedCount}/${analysis.delegation.rejectedCount}/${analysis.delegation.abortedCount}`);
+    lines.push(`- Delegation verification failure rate: ${Math.round((analysis.delegation.verificationFailureRate || 0) * 100)}%`);
+  }
 
   if (analysis.boostedRisk) {
     lines.push(`- Boosted risk base rate: ${Math.round((analysis.boostedRisk.baseRate || 0) * 100)}%`);

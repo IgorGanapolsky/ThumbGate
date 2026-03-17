@@ -1,77 +1,89 @@
-# Reddit Posts for mcp-memory-gateway
+# Reddit Posts -- AI Reliability System
 
----
+## r/ClaudeCode
 
-## r/MachineLearning
-
-**Suggested flair:** [P] Project
-
-**Title:** I built an open-source pipeline that captures DPO training pairs from real AI agent sessions
+**Title:** Here is how 7 different people could use a reliability system for Claude Code
 
 **Body:**
 
-I've been working on a problem: when AI coding agents make mistakes and you correct them, that preference signal just disappears. There's no structured way to collect it and feed it back into training.
+```text
+I think a lot of “memory for coding agents” tools are framed too narrowly.
 
-So I built `mcp-memory-gateway` -- an MCP server that sits inside your coding agent session and captures explicit up/down feedback with full context. The key feature for this community: it exports DPO-ready training pairs in JSONL format (chosen/rejected with prompt context), so you can actually use real human preference data for fine-tuning.
+The problem is not just that Claude Code forgets things.
 
-The pipeline: capture feedback -> validate against schema -> detect repeated failure patterns -> generate prevention rules -> export DPO pairs. It also tracks rubric scores and guardrail metadata per interaction.
+The bigger problem is that it repeats the same operational mistakes across sessions.
 
-It's agent-agnostic (Claude, Codex, Gemini, Cursor, Amp), runs locally, stores everything in JSONL, and the exported pairs follow standard DPO format that plugs into TRL or any preference optimization trainer.
+So I have been building this more as an AI reliability system than a memory file.
 
-MIT licensed. Feedback and critique welcome -- especially on the DPO export format.
+The loop is:
 
-https://github.com/IgorGanapolsky/mcp-memory-gateway
+- capture what failed / worked
+- validate whether it is worth keeping
+- retrieve the right lesson on the next task
+- generate prevention rules from repeated mistakes
+- verify the result with tests and proof
 
----
+Here is how I think 7 different people could use something like this:
 
-## r/LocalLLaMA
+1. Solo founders
+Keep the agent from repeating repo-specific mistakes every new session.
 
-**Suggested flair:** Resources
+2. OSS maintainers
+Turn PR review comments into reusable lessons instead of losing them after merge.
 
-**Title:** Local-first tool for collecting DPO training data from your AI coding sessions -- exports JSONL for fine-tuning
+3. Agency teams
+Keep client-specific constraints durable and prevent cross-client mistakes.
 
-**Body:**
+4. Staff engineers
+Convert repeated review feedback into prevention rules.
 
-If you're fine-tuning local models and need preference data, I built a tool that might help. `mcp-memory-gateway` runs entirely on your machine, stores everything in JSONL files, and exports DPO training pairs you can feed into TRL/axolotl/whatever your training stack is. Best-effort telemetry is optional and can be disabled with `RLHF_NO_TELEMETRY=1`.
+5. AI-heavy product teams
+Add feedback + retrieval + rules + proof around agent workflows.
 
-How it works: you give thumbs up/down feedback during coding sessions with an AI agent. The tool captures the context, the agent's output, and your signal. Over time it builds a dataset of chosen/rejected pairs with full prompt context. It also detects repeated mistakes and generates prevention rules so the agent stops making the same errors.
+6. DevOps / platform teams
+Persist operational lessons and block repeated unsafe actions.
 
-Everything is file-based. Feedback log, memory log, prevention rules -- all local JSONL/JSON/Markdown. No database, no API keys required for core functionality.
+7. Power users
+Run long Claude Code / Codex workflows with more continuity and less rework.
 
-```bash
-npm install -g mcp-memory-gateway
+The main thing I have learned is:
+
+A notes file gives persistence.
+A system changes behavior.
+
+Curious if this framing resonates more than “memory” does.
 ```
 
-Works as an MCP server with Claude, Codex, Gemini, Cursor, and Amp. But the real value for this sub is the exported training data.
+**Top comment:**
 
-MIT licensed. Would love feedback from anyone doing local fine-tuning on preference data.
+```text
+If useful, here is the self-hosted project link:
 
-https://github.com/IgorGanapolsky/mcp-memory-gateway
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=claudecode_post&community=ClaudeCode&campaign_variant=ai_reliability_system&offer_code=REDDIT-EARLY
 
----
+I am trying to make this local-first and practical, not just another generic memory layer.
+```
 
-## r/ClaudeAI
+## r/ClaudeAI Showcase-Safe Variant
 
-**Suggested flair:** MCP
-
-**Title:** MCP server that gives Claude memory of what worked and what didn't across sessions
+**Title:** I built a local-first feedback loop for Claude Code to reduce repeated mistakes across sessions
 
 **Body:**
 
-I built an MCP server called `mcp-memory-gateway` that adds a structured feedback loop to Claude. When Claude does something well, you mark it up. When it fails, you mark it down with context. The server captures these signals, promotes validated patterns to memory, and generates prevention rules from repeated mistakes.
+```text
+I built this project myself.
 
-The result: Claude stops repeating the same errors because the MCP server feeds prevention rules back into context. It's not magic -- it's just structured recall backed by real preference data.
+It was built with Claude Code, and it is specifically for Claude-style coding-agent workflows.
 
-One-command install:
+What it does:
+It captures structured feedback about what failed or worked during agent runs, retrieves the most relevant lessons for the next task, and generates prevention rules from repeated mistakes. The goal is to reduce repeated errors across sessions instead of relying only on static docs.
 
-```bash
-npx mcp-memory-gateway init
+How Claude helped:
+Claude Code helped implement the tool surface, tests, docs, and verification loops while I iterated on the memory and retrieval design.
+
+What is free:
+The self-hosted version is free to try. Paid tiers are optional, but the core local workflow can be used without paying.
+
+Free try:
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=claudeai_showcase&community=ClaudeAI&campaign_variant=showcase_safe&offer_code=REDDIT-EARLY
 ```
-
-This drops a `.mcp.json` into your project and you're running. No config files to hand-edit.
-
-It also exports DPO training pairs if you want to go further, but the immediate value is in-session: Claude gets better within your project because it has a structured record of what you approved and rejected.
-
-Works with Claude Code, Claude Desktop, and also supports Codex, Gemini, Cursor, and Amp. All data stays local in JSONL files. MIT licensed.
-
-https://github.com/IgorGanapolsky/mcp-memory-gateway

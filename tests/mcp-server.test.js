@@ -120,6 +120,11 @@ test('intent tools list and plan enforce checkpoint flow', async () => {
   const plan = JSON.parse(planResult.content[0].text);
   assert.equal(plan.status, 'checkpoint_required');
   assert.equal(plan.requiresApproval, true);
+  assert.equal(plan.executionMode, 'single_agent');
+  assert.equal(plan.delegationEligible, false);
+  assert.equal(plan.delegationScore, 0);
+  assert.equal(plan.delegateProfile, null);
+  assert.equal(plan.handoffContract, null);
 });
 
 test('plan_intent exposes partner-aware strategy over MCP', async () => {
@@ -140,6 +145,68 @@ test('plan_intent exposes partner-aware strategy over MCP', async () => {
   assert.equal(plan.partnerProfile, 'strict_reviewer');
   assert.equal(plan.partnerStrategy.verificationMode, 'evidence_first');
   assert.ok(Array.isArray(plan.actionScores));
+});
+
+test('start_handoff and complete_handoff expose sequential delegation over MCP', async () => {
+  const planResult = await handleRequest({
+    jsonrpc: '2.0',
+    id: 26,
+    method: 'tools/call',
+    params: {
+      name: 'plan_intent',
+      arguments: {
+        intentId: 'improve_response_quality',
+        context: 'Improve the response with evidence and prevention rules',
+        mcpProfile: 'default',
+        delegationMode: 'auto',
+      },
+    },
+  });
+  const plan = JSON.parse(planResult.content[0].text);
+  assert.equal(plan.executionMode, 'sequential_delegate');
+  assert.equal(plan.delegateProfile, 'pr_workflow');
+  assert.ok(plan.handoffContract);
+
+  const startResult = await handleRequest({
+    jsonrpc: '2.0',
+    id: 27,
+    method: 'tools/call',
+    params: {
+      name: 'start_handoff',
+      arguments: {
+        intentId: 'improve_response_quality',
+        context: 'Improve the response with evidence and prevention rules',
+        mcpProfile: 'default',
+      },
+    },
+  });
+  const started = JSON.parse(startResult.content[0].text);
+  assert.equal(started.status, 'started');
+  assert.equal(started.executionMode, 'sequential_delegate');
+  assert.equal(started.delegateProfile, 'pr_workflow');
+  assert.ok(started.handoffContract);
+  assert.ok(Array.isArray(started.handoffContract.requiredChecks));
+
+  const completeResult = await handleRequest({
+    jsonrpc: '2.0',
+    id: 28,
+    method: 'tools/call',
+    params: {
+      name: 'complete_handoff',
+      arguments: {
+        handoffId: started.handoffId,
+        outcome: 'accepted',
+        summary: 'Accepted after evidence review.',
+        resultContext: 'Returned a verified result context with explicit evidence and clean checks.',
+        attempts: 2,
+        violationCount: 0,
+      },
+    },
+  });
+  const completed = JSON.parse(completeResult.content[0].text);
+  assert.equal(completed.status, 'completed');
+  assert.equal(completed.outcome, 'accepted');
+  assert.equal(completed.verificationAccepted, true);
 });
 
 test('diagnose_failure exposes compiled constraints and root cause over MCP', async () => {

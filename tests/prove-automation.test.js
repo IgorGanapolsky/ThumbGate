@@ -29,8 +29,8 @@ test('automation proof: zero failures', () => {
   assert.equal(report.summary.failed, 0);
 });
 
-test('automation proof: at least 18 checks pass', () => {
-  assert.ok(report.summary.passed >= 18, `expected >= 18 passed, got ${report.summary.passed}`);
+test('automation proof: at least 22 checks pass', () => {
+  assert.ok(report.summary.passed >= 22, `expected >= 22 passed, got ${report.summary.passed}`);
 });
 
 test('automation proof: report.json written', () => {
@@ -57,7 +57,11 @@ const requiredChecks = [
   'mcp.failure_diagnostics',
   'intent.checkpoint_enforcement',
   'intent.partner_strategy',
+  'intent.delegation_decision',
   'intent.codegraph_impact',
+  'handoff.contract_shape',
+  'handoff.sequential_guard',
+  'handoff.failure_diagnostics',
   'context.evaluate.rubric',
   'context.semantic_cache.hit',
   'self_healing.helpers',
@@ -151,6 +155,31 @@ test('automation proof: partner strategy exposed in intent plan', () => {
   assert.equal(check.details.partnerProfile, 'strict_reviewer');
   assert.equal(check.details.verificationMode, 'evidence_first');
   assert.ok(check.details.contextPack > 6000);
+});
+
+test('automation proof: delegation decision exposes sequential execution', () => {
+  const check = getCheck('intent.delegation_decision');
+  assert.equal(check.details.executionMode, 'sequential_delegate');
+  assert.equal(check.details.delegateProfile, 'pr_workflow');
+  assert.ok(check.details.delegationScore >= 0.6);
+});
+
+test('automation proof: handoff contract contains evidence and checks', () => {
+  const check = getCheck('handoff.contract_shape');
+  assert.ok(Array.isArray(check.details.requiredEvidence));
+  assert.ok(Array.isArray(check.details.requiredChecks));
+});
+
+test('automation proof: sequential guard blocks duplicate handoffs', () => {
+  const check = getCheck('handoff.sequential_guard');
+  assert.equal(check.details.statusCode, 409);
+  assert.match(check.details.message, /unresolved handoff/i);
+});
+
+test('automation proof: handoff failure records diagnostics', () => {
+  const check = getCheck('handoff.failure_diagnostics');
+  assert.equal(check.details.verificationAccepted, false);
+  assert.ok(check.details.rootCauseCategory);
 });
 
 test('automation proof: codegraph impact adds structural evidence', () => {

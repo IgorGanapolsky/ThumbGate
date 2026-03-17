@@ -12,6 +12,7 @@ const {
 } = require('./feedback-loop');
 const { exportDpoFromMemories } = require('./export-dpo-pairs');
 const { planIntent } = require('./intent-router');
+const { startHandoff, completeHandoff } = require('./delegation-runtime');
 const { startServer } = require('../src/api/server');
 const { handleRequest } = require('../adapters/mcp/server-stdio');
 const { collectHealthReport } = require('./self-healing-check');
@@ -371,6 +372,86 @@ async function runAutomationProof(options = {}) {
 
     // 15) coding workflows include structural impact evidence and dead-code checks
     {
+      currentCheck = 'intent.delegation_decision';
+      const plan = planIntent({
+        intentId: 'improve_response_quality',
+        context: 'Improve the response with evidence and prevention rules',
+        mcpProfile: 'default',
+        delegationMode: 'auto',
+      });
+      check(plan.executionMode === 'sequential_delegate', 'expected delegation decision for eligible multi-phase task');
+      check(plan.delegateProfile === 'pr_workflow', 'expected pr_workflow delegate profile');
+      check(Boolean(plan.handoffContract), 'expected handoff contract on delegated plan');
+      addResult('intent.delegation_decision', true, {
+        executionMode: plan.executionMode,
+        delegateProfile: plan.delegateProfile,
+        delegationScore: plan.delegationScore,
+      });
+    }
+
+    // 16) sequential handoff contract is explicit and blocks duplicate starts
+    {
+      currentCheck = 'handoff.contract_shape';
+      const plan = planIntent({
+        intentId: 'improve_response_quality',
+        context: 'Improve the response with evidence and prevention rules',
+        mcpProfile: 'default',
+        delegationMode: 'auto',
+      });
+      const started = startHandoff({
+        plan,
+        context: plan.context,
+        mcpProfile: plan.mcpProfile,
+        partnerProfile: plan.partnerProfile,
+      });
+      check(Boolean(started.handoffContract), 'expected handoff contract');
+      check(Array.isArray(started.handoffContract.scopeIn), 'handoff contract should include scopeIn');
+      check(Array.isArray(started.handoffContract.requiredEvidence), 'handoff contract should include requiredEvidence');
+      check(Array.isArray(started.handoffContract.requiredChecks), 'handoff contract should include requiredChecks');
+      addResult('handoff.contract_shape', true, {
+        handoffId: started.handoffId,
+        requiredEvidence: started.handoffContract.requiredEvidence,
+        requiredChecks: started.handoffContract.requiredChecks,
+      });
+
+      currentCheck = 'handoff.sequential_guard';
+      let guardErr = null;
+      try {
+        startHandoff({
+          plan,
+          context: plan.context,
+          mcpProfile: plan.mcpProfile,
+          partnerProfile: plan.partnerProfile,
+        });
+      } catch (err) {
+        guardErr = err;
+      }
+      check(Boolean(guardErr), 'expected duplicate handoff start to fail');
+      check(/unresolved handoff/i.test(guardErr.message), 'expected unresolved handoff guard');
+      addResult('handoff.sequential_guard', true, {
+        statusCode: guardErr.statusCode,
+        message: guardErr.message,
+      });
+
+      currentCheck = 'handoff.failure_diagnostics';
+      const completed = completeHandoff({
+        handoffId: started.handoffId,
+        outcome: 'accepted',
+        attempts: 1,
+        violationCount: 1,
+        summary: 'Returned without test evidence.',
+        resultContext: 'Agent claimed done without running tests or verification',
+      });
+      check(completed.verificationAccepted === false, 'expected handoff verification to fail');
+      check(Boolean(completed.diagnosis), 'expected handoff completion diagnosis');
+      addResult('handoff.failure_diagnostics', true, {
+        verificationAccepted: completed.verificationAccepted,
+        rootCauseCategory: completed.diagnosis.rootCauseCategory,
+      });
+    }
+
+    // 17) coding workflows include structural impact evidence and dead-code checks
+    {
       currentCheck = 'intent.codegraph_impact';
       const plan = planIntent({
         intentId: 'incident_postmortem',
@@ -391,7 +472,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 16) context evaluate stores rubric evaluation
+    // 18) context evaluate stores rubric evaluation
     {
       currentCheck = 'context.evaluate.construct';
       const construct = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
@@ -429,7 +510,7 @@ async function runAutomationProof(options = {}) {
       addResult('context.evaluate.rubric', true, { rubricId: evalBody.rubricEvaluation.rubricId });
     }
 
-    // 17) semantic cache hit on equivalent query
+    // 19) semantic cache hit on equivalent query
     {
       currentCheck = 'context.semantic_cache.hit.first';
       fs.rmSync(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'semantic-cache.jsonl'), { force: true });
@@ -464,7 +545,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 18) self-healing helpers produce healthy reports in baseline state
+    // 20) self-healing helpers produce healthy reports in baseline state
     {
       const health = collectHealthReport({
         checks: [
@@ -490,7 +571,7 @@ async function runAutomationProof(options = {}) {
       });
     }
 
-    // 19) code reasoning traces verify DPO pair quality
+    // 21) code reasoning traces verify DPO pair quality
     {
       const { MEMORY_LOG_PATH } = getFeedbackPaths();
       const memories = readJSONL(MEMORY_LOG_PATH);
@@ -511,7 +592,7 @@ async function runAutomationProof(options = {}) {
       }
     }
 
-    // 20) code reasoning traces attached to proof checks
+    // 22) code reasoning traces attached to proof checks
     {
       const proofTraces = report.checks.map((chk) => traceForProofCheck(chk));
       const aggregate = aggregateTraces(proofTraces);

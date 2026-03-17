@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350" fill="none">
+  <rect width="1080" height="1350" fill="#F8F5EE"/>
+  <rect x="72" y="72" width="936" height="1206" rx="32" fill="#FFFDF8" stroke="#17181C" stroke-width="3"/>
+  <text x="120" y="180" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700" letter-spacing="2">SLIDE 2 / THE PROBLEM</text>
+  <text x="120" y="300" fill="#17181C" font-family="Georgia, serif" font-size="86" font-weight="700">The issue is not</text>
+  <text x="120" y="390" fill="#17181C" font-family="Georgia, serif" font-size="86" font-weight="700">just forgetting.</text>
+  <text x="120" y="500" fill="#4A4F5C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="36">Agents repeat the same operational mistakes even when the repo docs exist.</text>
+  <rect x="120" y="610" width="840" height="164" rx="24" fill="#17181C"/>
+  <text x="160" y="685" fill="#F4EDE1" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700">MEMORY FILE</text>
+  <text x="160" y="730" fill="#C9CCD5" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30">The note exists, but the right lesson does not surface at the right moment.</text>
+  <rect x="120" y="820" width="840" height="164" rx="24" fill="#F07167" fill-opacity="0.15" stroke="#F07167" stroke-width="3"/>
+  <text x="160" y="895" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700">LONG CONTEXT</text>
+  <text x="160" y="940" fill="#4A4F5C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30">The agent saw the rule once, then drifted when the task got complex.</text>
+  <rect x="120" y="1030" width="840" height="164" rx="24" fill="#77C8B5" fill-opacity="0.15" stroke="#77C8B5" stroke-width="3"/>
+  <text x="160" y="1105" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30" font-weight="700">RELIABILITY SYSTEM</text>
+  <text x="160" y="1150" fill="#4A4F5C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="30">Capture the failure, retrieve the lesson later, and block repeat mistakes.</text>
+</svg>

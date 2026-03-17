@@ -35,6 +35,10 @@ const {
   planIntent,
 } = require('../../scripts/intent-router');
 const {
+  startHandoff,
+  completeHandoff,
+} = require('../../scripts/delegation-runtime');
+const {
   loadModel,
   getReliability,
   samplePosteriors,
@@ -79,12 +83,28 @@ const {
   UPGRADE_MESSAGE: RATE_LIMIT_MESSAGE,
 } = require('../../scripts/rate-limiter');
 const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
+const { TOOLS: MCP_TOOLS } = require('../../scripts/tool-registry');
 
 const LANDING_PAGE_PATH = path.resolve(__dirname, '../../public/index.html');
 
 function getSafeDataDir() {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
   return path.resolve(path.dirname(FEEDBACK_LOG_PATH));
+}
+
+function getPublicMcpTools() {
+  return MCP_TOOLS.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+  }));
+}
+
+function getServerCardTools() {
+  return MCP_TOOLS.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+  }));
 }
 
 function createHttpError(statusCode, message) {
@@ -135,6 +155,11 @@ function buildCheckoutAttributionMetadata(body, req, traceId) {
     utmCampaign: pickFirstText(rawMetadata.utmCampaign, body.utmCampaign),
     utmContent: pickFirstText(rawMetadata.utmContent, body.utmContent),
     utmTerm: pickFirstText(rawMetadata.utmTerm, body.utmTerm),
+    community: pickFirstText(rawMetadata.community, rawMetadata.subreddit, body.community, body.subreddit),
+    postId: pickFirstText(rawMetadata.postId, rawMetadata.post_id, body.postId, body.post_id),
+    commentId: pickFirstText(rawMetadata.commentId, rawMetadata.comment_id, body.commentId, body.comment_id),
+    campaignVariant: pickFirstText(rawMetadata.campaignVariant, rawMetadata.variant, body.campaignVariant, body.variant),
+    offerCode: pickFirstText(rawMetadata.offerCode, rawMetadata.offer, rawMetadata.coupon, body.offerCode, body.offer, body.coupon),
     referrer,
     referrerHost: pickFirstText(rawMetadata.referrerHost, body.referrerHost, parseReferrerHost(referrer)),
     landingPath: pickFirstText(rawMetadata.landingPath, body.landingPath, body.page),
@@ -155,6 +180,24 @@ function appendQueryParam(url, key, value) {
   }
 }
 
+function appendVisitorSessionQueryParam(url, value) {
+  const normalized = normalizeNullableText(value);
+  if (!normalized) {
+    return;
+  }
+
+  if (url.searchParams.has('session_id')) {
+    url.searchParams.set('visitor_session_id', normalized);
+    return;
+  }
+
+  url.searchParams.set('session_id', normalized);
+}
+
+function restoreStripeCheckoutPlaceholder(urlString) {
+  return String(urlString).replace(/%7BCHECKOUT_SESSION_ID%7D/g, '{CHECKOUT_SESSION_ID}');
+}
+
 function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
   const url = new URL(baseUrl);
   appendQueryParam(url, 'utm_source', metadata.utmSource || metadata.source);
@@ -162,16 +205,21 @@ function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
   appendQueryParam(url, 'utm_campaign', metadata.utmCampaign);
   appendQueryParam(url, 'utm_content', metadata.utmContent);
   appendQueryParam(url, 'utm_term', metadata.utmTerm);
+  appendQueryParam(url, 'community', metadata.community);
+  appendQueryParam(url, 'post_id', metadata.postId);
+  appendQueryParam(url, 'comment_id', metadata.commentId);
+  appendQueryParam(url, 'campaign_variant', metadata.campaignVariant);
+  appendQueryParam(url, 'offer_code', metadata.offerCode);
   appendQueryParam(url, 'trace_id', metadata.traceId);
   appendQueryParam(url, 'acquisition_id', metadata.acquisitionId);
   appendQueryParam(url, 'visitor_id', metadata.visitorId);
-  appendQueryParam(url, 'session_id', metadata.sessionId);
+  appendVisitorSessionQueryParam(url, metadata.sessionId);
   appendQueryParam(url, 'cta_id', metadata.ctaId);
   appendQueryParam(url, 'cta_placement', metadata.ctaPlacement);
   appendQueryParam(url, 'plan_id', metadata.planId);
   appendQueryParam(url, 'landing_path', metadata.landingPath);
   appendQueryParam(url, 'referrer_host', metadata.referrerHost);
-  return url.toString();
+  return restoreStripeCheckoutPlaceholder(url.toString());
 }
 
 function buildCheckoutBootstrapBody(parsed, req) {
@@ -182,7 +230,7 @@ function buildCheckoutBootstrapBody(parsed, req) {
     installId: pickFirstText(params.get('install_id')),
     acquisitionId: pickFirstText(params.get('acquisition_id')) || createJourneyId('acq'),
     visitorId: pickFirstText(params.get('visitor_id')) || createJourneyId('visitor'),
-    sessionId: pickFirstText(params.get('session_id')) || createJourneyId('session'),
+    sessionId: pickFirstText(params.get('visitor_session_id'), params.get('session_id')) || createJourneyId('session'),
     customerEmail: pickFirstText(params.get('customer_email')),
     source: pickFirstText(params.get('source'), params.get('utm_source'), 'website'),
     utmSource: pickFirstText(params.get('utm_source'), params.get('source'), 'website'),
@@ -190,6 +238,11 @@ function buildCheckoutBootstrapBody(parsed, req) {
     utmCampaign: pickFirstText(params.get('utm_campaign'), 'pro_pack'),
     utmContent: pickFirstText(params.get('utm_content')),
     utmTerm: pickFirstText(params.get('utm_term')),
+    community: pickFirstText(params.get('community'), params.get('subreddit')),
+    postId: pickFirstText(params.get('post_id')),
+    commentId: pickFirstText(params.get('comment_id')),
+    campaignVariant: pickFirstText(params.get('campaign_variant')),
+    offerCode: pickFirstText(params.get('offer_code')),
     landingPath: pickFirstText(params.get('landing_path'), req.headers.referer ? '/' : '/'),
     referrerHost: pickFirstText(params.get('referrer_host')),
     ctaId: pickFirstText(params.get('cta_id'), 'pricing_pro'),
@@ -641,7 +694,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
             traceId: params.get('trace_id'),
             acquisitionId: params.get('acquisition_id'),
             visitorId: params.get('visitor_id'),
-            sessionId: params.get('session_id'),
+            sessionId: params.get('visitor_session_id') || params.get('session_id'),
             installId: params.get('install_id'),
             source: params.get('utm_source') || params.get('source') || 'website',
             utmSource: params.get('utm_source') || params.get('source') || 'website',
@@ -649,6 +702,11 @@ function renderCheckoutCancelledPage(runtimeConfig) {
             utmCampaign: params.get('utm_campaign') || 'pro_pack',
             utmContent: params.get('utm_content'),
             utmTerm: params.get('utm_term'),
+            community: params.get('community') || params.get('subreddit'),
+            postId: params.get('post_id'),
+            commentId: params.get('comment_id'),
+            campaignVariant: params.get('campaign_variant'),
+            offerCode: params.get('offer_code'),
             ctaId: params.get('cta_id') || 'pricing_pro',
             ctaPlacement: params.get('cta_placement') || 'pricing',
             planId: params.get('plan_id') || 'pro',
@@ -672,7 +730,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         }
 
         const retryUrl = new URL(retryLink.href, window.location.origin);
-        ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'install_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'cta_id', 'cta_placement', 'plan_id', 'landing_path', 'referrer_host'].forEach(function (key) {
+        ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'visitor_session_id', 'install_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'community', 'post_id', 'comment_id', 'campaign_variant', 'offer_code', 'cta_id', 'cta_placement', 'plan_id', 'landing_path', 'referrer_host'].forEach(function (key) {
           const value = params.get(key);
           if (value) retryUrl.searchParams.set(key, value);
         });
@@ -856,20 +914,7 @@ function createApiServer() {
                 jsonrpc: '2.0',
                 id: msg.id,
                 result: {
-                  tools: [
-                    { name: 'recall', description: 'Recall relevant past feedback for current task', inputSchema: { type: 'object', properties: { query: { type: 'string' }, repoPath: { type: 'string' } }, required: ['query'] } },
-                    { name: 'capture_feedback', description: 'Capture an up/down signal plus one line of why', inputSchema: { type: 'object', properties: { signal: { type: 'string', enum: ['up', 'down'] }, context: { type: 'string' }, whatWentWrong: { type: 'string' }, whatToChange: { type: 'string' }, whatWorked: { type: 'string' } }, required: ['signal', 'context'] } },
-                    { name: 'feedback_stats', description: 'Feedback analytics', inputSchema: { type: 'object', properties: {} } },
-                    { name: 'feedback_summary', description: 'Human-readable feedback summary', inputSchema: { type: 'object', properties: {} } },
-                    { name: 'prevention_rules', description: 'Generate prevention rules from failures', inputSchema: { type: 'object', properties: {} } },
-                    { name: 'export_dpo_pairs', description: 'Export DPO training pairs', inputSchema: { type: 'object', properties: {} } },
-                    { name: 'export_databricks_bundle', description: 'Export RLHF logs and proof artifacts as a Databricks-ready bundle', inputSchema: { type: 'object', properties: { outputPath: { type: 'string' } } } },
-                    { name: 'construct_context_pack', description: 'Build bounded context pack', inputSchema: { type: 'object', properties: { task: { type: 'string' } }, required: ['task'] } },
-                    { name: 'evaluate_context_pack', description: 'Record context pack outcome', inputSchema: { type: 'object', properties: { packId: { type: 'string' }, outcome: { type: 'string' } }, required: ['packId', 'outcome'] } },
-                    { name: 'context_provenance', description: 'Audit trail of context decisions', inputSchema: { type: 'object', properties: {} } },
-                    { name: 'list_intents', description: 'Available action plans', inputSchema: { type: 'object', properties: { mcpProfile: { type: 'string' }, bundleId: { type: 'string' }, partnerProfile: { type: 'string' } } } },
-                    { name: 'plan_intent', description: 'Generate execution plan', inputSchema: { type: 'object', properties: { intentId: { type: 'string' }, context: { type: 'string' }, mcpProfile: { type: 'string' }, bundleId: { type: 'string' }, partnerProfile: { type: 'string' }, approved: { type: 'boolean' }, repoPath: { type: 'string' } }, required: ['intentId'] } },
-                  ],
+                  tools: getPublicMcpTools(),
                 },
               });
             } else {
@@ -957,6 +1002,11 @@ function createApiServer() {
         utmCampaign: analyticsMetadata.utmCampaign,
         utmContent: analyticsMetadata.utmContent,
         utmTerm: analyticsMetadata.utmTerm,
+        community: analyticsMetadata.community,
+        postId: analyticsMetadata.postId,
+        commentId: analyticsMetadata.commentId,
+        campaignVariant: analyticsMetadata.campaignVariant,
+        offerCode: analyticsMetadata.offerCode,
         landingPath: analyticsMetadata.landingPath,
         page: '/checkout/pro',
         ctaId: analyticsMetadata.ctaId,
@@ -968,8 +1018,14 @@ function createApiServer() {
 
       try {
         const result = await createCheckoutSession({
-          successUrl: buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
-          cancelUrl: buildHostedCancelUrl(hostedConfig.appOrigin, traceId),
+          successUrl: buildCheckoutFallbackUrl(
+            buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
+            analyticsMetadata,
+          ),
+          cancelUrl: buildCheckoutFallbackUrl(
+            buildHostedCancelUrl(hostedConfig.appOrigin, traceId),
+            analyticsMetadata,
+          ),
           customerEmail: bootstrapBody.customerEmail,
           installId: bootstrapBody.installId,
           traceId,
@@ -987,8 +1043,23 @@ function createApiServer() {
         successUrl.searchParams.set('trace_id', traceId);
         appendQueryParam(successUrl, 'acquisition_id', analyticsMetadata.acquisitionId);
         appendQueryParam(successUrl, 'visitor_id', analyticsMetadata.visitorId);
-        appendQueryParam(successUrl, 'session_id', analyticsMetadata.sessionId);
+        appendVisitorSessionQueryParam(successUrl, analyticsMetadata.sessionId);
         appendQueryParam(successUrl, 'install_id', bootstrapBody.installId);
+        appendQueryParam(successUrl, 'utm_source', analyticsMetadata.utmSource);
+        appendQueryParam(successUrl, 'utm_medium', analyticsMetadata.utmMedium);
+        appendQueryParam(successUrl, 'utm_campaign', analyticsMetadata.utmCampaign);
+        appendQueryParam(successUrl, 'utm_content', analyticsMetadata.utmContent);
+        appendQueryParam(successUrl, 'utm_term', analyticsMetadata.utmTerm);
+        appendQueryParam(successUrl, 'community', analyticsMetadata.community);
+        appendQueryParam(successUrl, 'post_id', analyticsMetadata.postId);
+        appendQueryParam(successUrl, 'comment_id', analyticsMetadata.commentId);
+        appendQueryParam(successUrl, 'campaign_variant', analyticsMetadata.campaignVariant);
+        appendQueryParam(successUrl, 'offer_code', analyticsMetadata.offerCode);
+        appendQueryParam(successUrl, 'cta_id', analyticsMetadata.ctaId);
+        appendQueryParam(successUrl, 'cta_placement', analyticsMetadata.ctaPlacement);
+        appendQueryParam(successUrl, 'plan_id', analyticsMetadata.planId);
+        appendQueryParam(successUrl, 'landing_path', analyticsMetadata.landingPath);
+        appendQueryParam(successUrl, 'referrer_host', analyticsMetadata.referrerHost);
         res.writeHead(302, { Location: successUrl.toString() });
         res.end();
       } catch (err) {
@@ -1043,21 +1114,7 @@ function createApiServer() {
         name: 'mcp-memory-gateway',
         description: 'RLHF feedback loop for AI agents. Capture feedback, block mistakes, export DPO data, and warehouse analytics bundles.',
         version: pkg.version,
-        tools: [
-          { name: 'recall', description: 'Recall relevant past feedback for current task' },
-          { name: 'capture_feedback', description: 'Capture an up/down signal plus one line of why' },
-          { name: 'feedback_stats', description: 'Feedback analytics' },
-          { name: 'feedback_summary', description: 'Human-readable feedback summary' },
-          { name: 'prevention_rules', description: 'Generate prevention rules from failures' },
-          { name: 'export_dpo_pairs', description: 'Export DPO training pairs' },
-          { name: 'export_databricks_bundle', description: 'Export RLHF logs and proof artifacts as a Databricks-ready bundle' },
-          { name: 'construct_context_pack', description: 'Build bounded context pack' },
-          { name: 'evaluate_context_pack', description: 'Record context pack outcome' },
-          { name: 'context_provenance', description: 'Audit trail of context decisions' },
-          { name: 'list_intents', description: 'Available action plans' },
-          { name: 'plan_intent', description: 'Generate execution plan' },
-          { name: 'generate_skill', description: 'Auto-generate Claude skills from feedback patterns' },
-        ],
+        tools: getServerCardTools(),
         repository: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
         homepage: hostedConfig.appOrigin,
       });
@@ -1300,8 +1357,14 @@ function createApiServer() {
         const analyticsMetadata = buildCheckoutAttributionMetadata(body, req, traceId);
         
         const result = await createCheckoutSession({
-          successUrl: body.successUrl || buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
-          cancelUrl: body.cancelUrl || buildHostedCancelUrl(hostedConfig.appOrigin, traceId),
+          successUrl: body.successUrl || buildCheckoutFallbackUrl(
+            buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
+            analyticsMetadata,
+          ),
+          cancelUrl: body.cancelUrl || buildCheckoutFallbackUrl(
+            buildHostedCancelUrl(hostedConfig.appOrigin, traceId),
+            analyticsMetadata,
+          ),
           customerEmail: body.customerEmail,
           installId: body.installId,
           traceId,
@@ -1406,12 +1469,62 @@ function createApiServer() {
             mcpProfile: body.mcpProfile,
             bundleId: body.bundleId,
             partnerProfile: body.partnerProfile,
+            delegationMode: body.delegationMode,
             approved: body.approved === true,
             repoPath: body.repoPath,
           });
           sendJson(res, 200, plan);
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid intent plan request');
+        }
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/handoffs/start') {
+        const body = await parseJsonBody(req);
+        try {
+          const plan = planIntent({
+            intentId: body.intentId,
+            context: body.context || '',
+            mcpProfile: body.mcpProfile,
+            bundleId: body.bundleId,
+            partnerProfile: body.partnerProfile,
+            delegationMode: 'sequential',
+            approved: body.approved === true,
+            repoPath: body.repoPath,
+          });
+          const result = startHandoff({
+            plan,
+            context: body.context || '',
+            mcpProfile: body.mcpProfile || plan.mcpProfile,
+            partnerProfile: body.partnerProfile || plan.partnerProfile,
+            repoPath: body.repoPath,
+            delegateProfile: body.delegateProfile || null,
+            plannedChecks: Array.isArray(body.plannedChecks) ? body.plannedChecks : [],
+          });
+          sendJson(res, 200, result);
+        } catch (err) {
+          throw createHttpError(err.statusCode || 400, err.message || 'Invalid handoff start request');
+        }
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/handoffs/complete') {
+        const body = await parseJsonBody(req);
+        try {
+          const result = completeHandoff({
+            handoffId: body.handoffId,
+            outcome: body.outcome,
+            resultContext: body.resultContext || '',
+            attempts: body.attempts,
+            violationCount: body.violationCount,
+            tokenEstimate: body.tokenEstimate,
+            latencyMs: body.latencyMs,
+            summary: body.summary || '',
+          });
+          sendJson(res, 200, result);
+        } catch (err) {
+          throw createHttpError(err.statusCode || 400, err.message || 'Invalid handoff completion request');
         }
         return;
       }
@@ -1832,6 +1945,9 @@ function startServer({ port } = {}) {
 module.exports = {
   createApiServer,
   startServer,
+  __test__: {
+    buildCheckoutFallbackUrl,
+  },
 };
 
 if (require.main === module) {

@@ -87,6 +87,7 @@ function inferTrafficChannel(raw = {}, referrerHost = null) {
   const seoSurface = normalizeHostToken(raw.seoSurface || raw.searchSurface || raw.surface);
   const host = normalizeHostToken(referrerHost);
 
+  if (source === 'reddit') return 'reddit';
   if (source === 'ai_search' || seoSurface === 'ai_search') return 'ai_search';
   if (source === 'organic_search' || seoSurface === 'organic_search') return 'organic_search';
   if (source === 'direct') return 'direct';
@@ -102,6 +103,18 @@ function inferTrafficChannel(raw = {}, referrerHost = null) {
   ];
   if (host && aiHosts.some((candidate) => host === candidate || host.endsWith(`.${candidate}`))) {
     return 'ai_search';
+  }
+
+  const redditHosts = [
+    'reddit.com',
+    'www.reddit.com',
+    'old.reddit.com',
+    'np.reddit.com',
+    'out.reddit.com',
+    'redd.it',
+  ];
+  if (host && redditHosts.some((candidate) => host === candidate || host.endsWith(`.${candidate}`))) {
+    return 'reddit';
   }
 
   const searchHosts = [
@@ -161,6 +174,11 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     utmCampaign,
     utmContent: pickFirstText(raw.utmContent),
     utmTerm: pickFirstText(raw.utmTerm),
+    campaignVariant: pickFirstText(raw.campaignVariant, raw.variant),
+    offerCode: pickFirstText(raw.offerCode, raw.offer, raw.coupon),
+    community: pickFirstText(raw.community, raw.subreddit),
+    postId: pickFirstText(raw.postId, raw.post_id),
+    commentId: pickFirstText(raw.commentId, raw.comment_id),
     ctaId: pickFirstText(raw.ctaId),
     ctaPlacement: pickFirstText(raw.ctaPlacement),
     planId: pickFirstText(raw.planId),
@@ -224,6 +242,9 @@ function summarizeRecentEvents(events) {
       ctaId: entry.ctaId || null,
       page: entry.page || null,
       reasonCode: entry.reasonCode || null,
+      community: entry.community || null,
+      offerCode: entry.offerCode || null,
+      campaignVariant: entry.campaignVariant || null,
     }));
 }
 
@@ -239,9 +260,15 @@ function getTelemetrySummary(feedbackDir) {
   const pageViewsByCampaign = {};
   const pageViewsByPath = {};
   const pageViewsByTrafficChannel = {};
+  const pageViewsByCommunity = {};
+  const pageViewsByOfferCode = {};
+  const pageViewsByCampaignVariant = {};
   const checkoutStartsBySource = {};
   const checkoutStartsByCampaign = {};
   const checkoutStartsByTrafficChannel = {};
+  const checkoutStartsByCommunity = {};
+  const checkoutStartsByOfferCode = {};
+  const checkoutStartsByCampaignVariant = {};
   const byCtaId = {};
   const byReferrerHost = {};
   const checkoutFailuresByCode = {};
@@ -293,6 +320,9 @@ function getTelemetrySummary(feedbackDir) {
         incrementCounter(pageViewsByCampaign, entry.utmCampaign);
         incrementCounter(pageViewsByPath, entry.page);
         incrementCounter(pageViewsByTrafficChannel, entry.trafficChannel);
+        incrementCounter(pageViewsByCommunity, entry.community);
+        incrementCounter(pageViewsByOfferCode, entry.offerCode);
+        incrementCounter(pageViewsByCampaignVariant, entry.campaignVariant);
         if (entry.attributionTagged) attributedPageViews += 1;
       }
 
@@ -301,6 +331,9 @@ function getTelemetrySummary(feedbackDir) {
         incrementCounter(checkoutStartsBySource, entry.source);
         incrementCounter(checkoutStartsByCampaign, entry.utmCampaign);
         incrementCounter(checkoutStartsByTrafficChannel, entry.trafficChannel);
+        incrementCounter(checkoutStartsByCommunity, entry.community);
+        incrementCounter(checkoutStartsByOfferCode, entry.offerCode);
+        incrementCounter(checkoutStartsByCampaignVariant, entry.campaignVariant);
         incrementCounter(byCtaId, entry.ctaId);
         const starterKey = pickFirstText(
           entry.acquisitionId,
@@ -422,9 +455,15 @@ function getTelemetrySummary(feedbackDir) {
       pageViewsByCampaign,
       pageViewsByPath,
       pageViewsByTrafficChannel,
+      pageViewsByCommunity,
+      pageViewsByOfferCode,
+      pageViewsByCampaignVariant,
       checkoutStartsBySource,
       checkoutStartsByCampaign,
       checkoutStartsByTrafficChannel,
+      checkoutStartsByCommunity,
+      checkoutStartsByOfferCode,
+      checkoutStartsByCampaignVariant,
       byCtaId,
       byReferrerHost,
       checkoutFailuresByCode,
@@ -456,6 +495,9 @@ function getTelemetryAnalytics(feedbackDir) {
   const topReferrerHost = getTopCounterEntry(summary.marketing.byReferrerHost);
   const topPath = getTopCounterEntry(summary.marketing.pageViewsByPath);
   const topTrafficChannel = getTopCounterEntry(summary.marketing.pageViewsByTrafficChannel);
+  const topCommunity = getTopCounterEntry(summary.marketing.pageViewsByCommunity);
+  const topOfferCode = getTopCounterEntry(summary.marketing.pageViewsByOfferCode);
+  const topCampaignVariant = getTopCounterEntry(summary.marketing.pageViewsByCampaignVariant);
   const topBuyerLossReason = getTopCounterEntry(summary.marketing.buyerLossReasons);
   const topSeoSurface = getTopCounterEntry(summary.marketing.seoLandingViewsBySurface);
   const topSeoQuery = getTopCounterEntry(summary.marketing.seoLandingViewsByQuery);
@@ -479,11 +521,17 @@ function getTelemetryAnalytics(feedbackDir) {
       byCampaign: summary.marketing.pageViewsByCampaign,
       byPath: summary.marketing.pageViewsByPath,
       byTrafficChannel: summary.marketing.pageViewsByTrafficChannel,
+      byCommunity: summary.marketing.pageViewsByCommunity,
+      byOfferCode: summary.marketing.pageViewsByOfferCode,
+      byCampaignVariant: summary.marketing.pageViewsByCampaignVariant,
       byReferrerHost: summary.marketing.byReferrerHost,
       topSource: topSource ? { key: topSource[0], count: topSource[1] } : null,
       topCampaign: topCampaign ? { key: topCampaign[0], count: topCampaign[1] } : null,
       topPath: topPath ? { key: topPath[0], count: topPath[1] } : null,
       topTrafficChannel: topTrafficChannel ? { key: topTrafficChannel[0], count: topTrafficChannel[1] } : null,
+      topCommunity: topCommunity ? { key: topCommunity[0], count: topCommunity[1] } : null,
+      topOfferCode: topOfferCode ? { key: topOfferCode[0], count: topOfferCode[1] } : null,
+      topCampaignVariant: topCampaignVariant ? { key: topCampaignVariant[0], count: topCampaignVariant[1] } : null,
       topReferrerHost: topReferrerHost ? { key: topReferrerHost[0], count: topReferrerHost[1] } : null,
     },
     ctas: {
@@ -499,6 +547,9 @@ function getTelemetryAnalytics(feedbackDir) {
       bySource: summary.marketing.checkoutStartsBySource,
       byCampaign: summary.marketing.checkoutStartsByCampaign,
       byTrafficChannel: summary.marketing.checkoutStartsByTrafficChannel,
+      byCommunity: summary.marketing.checkoutStartsByCommunity,
+      byOfferCode: summary.marketing.checkoutStartsByOfferCode,
+      byCampaignVariant: summary.marketing.checkoutStartsByCampaignVariant,
       byId: summary.marketing.byCtaId,
       topCta: topCta ? { key: topCta[0], count: topCta[1] } : null,
       pageViewToCheckoutRate: summary.web.pageViewToCheckoutRate,

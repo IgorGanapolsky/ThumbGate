@@ -1,0 +1,334 @@
+#!/usr/bin/env node
+'use strict';
+
+const TOOLS = [
+  {
+    name: 'capture_feedback',
+    description: 'Capture an up/down signal plus one line of why. Vague feedback is logged, then returned with a clarification prompt instead of memory promotion.',
+    inputSchema: {
+      type: 'object',
+      required: ['signal'],
+      properties: {
+        signal: { type: 'string', enum: ['up', 'down'] },
+        context: { type: 'string', description: 'One-sentence reason describing what worked or failed' },
+        whatWentWrong: { type: 'string' },
+        whatToChange: { type: 'string' },
+        whatWorked: { type: 'string' },
+        tags: { type: 'array', items: { type: 'string' } },
+        skill: { type: 'string' },
+        rubricScores: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              criterion: { type: 'string' },
+              score: { type: 'number' },
+              evidence: { type: 'string' },
+              judge: { type: 'string' },
+            },
+          },
+        },
+        guardrails: {
+          type: 'object',
+          properties: {
+            testsPassed: { type: 'boolean' },
+            pathSafety: { type: 'boolean' },
+            budgetCompliant: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: 'feedback_summary',
+    description: 'Get summary of recent feedback',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        recent: { type: 'number' },
+      },
+    },
+  },
+  {
+    name: 'feedback_stats',
+    description: 'Get feedback stats and recommendations',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'diagnose_failure',
+    description: 'Diagnose a failed or suspect workflow step using MCP schema, workflow, gate, and approval constraints.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        step: { type: 'string' },
+        context: { type: 'string' },
+        toolName: { type: 'string' },
+        toolArgs: { type: 'object' },
+        output: { type: 'string' },
+        error: { type: 'string' },
+        exitCode: { type: 'number' },
+        intentId: { type: 'string' },
+        approved: { type: 'boolean' },
+        mcpProfile: { type: 'string' },
+        verification: { type: 'object' },
+        rubricScores: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              criterion: { type: 'string' },
+              score: { type: 'number' },
+              evidence: { type: 'string' },
+              judge: { type: 'string' },
+            },
+          },
+        },
+        guardrails: {
+          type: 'object',
+          properties: {
+            testsPassed: { type: 'boolean' },
+            pathSafety: { type: 'boolean' },
+            budgetCompliant: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: 'list_intents',
+    description: 'List available intent plans and whether each requires human approval in the active profile',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mcpProfile: { type: 'string' },
+        bundleId: { type: 'string' },
+        partnerProfile: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'plan_intent',
+    description: 'Generate an intent execution plan with policy checkpoints',
+    inputSchema: {
+      type: 'object',
+      required: ['intentId'],
+      properties: {
+        intentId: { type: 'string' },
+        context: { type: 'string' },
+        mcpProfile: { type: 'string' },
+        bundleId: { type: 'string' },
+        partnerProfile: { type: 'string' },
+        delegationMode: { type: 'string', enum: ['off', 'auto', 'sequential'] },
+        approved: { type: 'boolean' },
+        repoPath: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'start_handoff',
+    description: 'Start a sequential delegation handoff from a delegation-eligible intent plan',
+    inputSchema: {
+      type: 'object',
+      required: ['intentId'],
+      properties: {
+        intentId: { type: 'string' },
+        context: { type: 'string' },
+        mcpProfile: { type: 'string' },
+        bundleId: { type: 'string' },
+        partnerProfile: { type: 'string' },
+        approved: { type: 'boolean' },
+        repoPath: { type: 'string' },
+        delegateProfile: { type: 'string' },
+        plannedChecks: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  },
+  {
+    name: 'complete_handoff',
+    description: 'Complete a sequential delegation handoff and record verification outcomes',
+    inputSchema: {
+      type: 'object',
+      required: ['handoffId', 'outcome'],
+      properties: {
+        handoffId: { type: 'string' },
+        outcome: { type: 'string', enum: ['accepted', 'rejected', 'aborted'] },
+        resultContext: { type: 'string' },
+        attempts: { type: 'number' },
+        violationCount: { type: 'number' },
+        tokenEstimate: { type: 'number' },
+        latencyMs: { type: 'number' },
+        summary: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'prevention_rules',
+    description: 'Generate prevention rules from repeated mistake patterns',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        minOccurrences: { type: 'number' },
+        outputPath: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'export_dpo_pairs',
+    description: 'Export DPO preference pairs from local memory log',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        memoryLogPath: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'export_databricks_bundle',
+    description: 'Export RLHF logs and proof artifacts as a Databricks-ready analytics bundle',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        outputPath: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'construct_context_pack',
+    description: 'Construct a bounded context pack from contextfs',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string' },
+        maxItems: { type: 'number' },
+        maxChars: { type: 'number' },
+        namespaces: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  },
+  {
+    name: 'evaluate_context_pack',
+    description: 'Record evaluation outcome for a context pack',
+    inputSchema: {
+      type: 'object',
+      required: ['packId', 'outcome'],
+      properties: {
+        packId: { type: 'string' },
+        outcome: { type: 'string' },
+        signal: { type: 'string' },
+        notes: { type: 'string' },
+        rubricScores: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              criterion: { type: 'string' },
+              score: { type: 'number' },
+              evidence: { type: 'string' },
+              judge: { type: 'string' },
+            },
+          },
+        },
+        guardrails: {
+          type: 'object',
+          properties: {
+            testsPassed: { type: 'boolean' },
+            pathSafety: { type: 'boolean' },
+            budgetCompliant: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: 'context_provenance',
+    description: 'Get recent context/provenance events',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number' },
+      },
+    },
+  },
+  {
+    name: 'generate_skill',
+    description: 'Auto-generate Claude skills from repeated feedback patterns. Clusters failure patterns by tags and produces SKILL.md files with DO/INSTEAD rules.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        minOccurrences: { type: 'number', description: 'Minimum pattern occurrences to trigger skill generation (default 3)' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Filter to specific tags' },
+      },
+    },
+  },
+  {
+    name: 'recall',
+    description: 'Recall relevant past feedback, memories, and prevention rules for the current task. Call this at the start of any task to inject past learnings into the conversation.',
+    inputSchema: {
+      type: 'object',
+      required: ['query'],
+      properties: {
+        query: { type: 'string', description: 'Describe the current task or context to find relevant past feedback' },
+        limit: { type: 'number', description: 'Max memories to return (default 5)' },
+        repoPath: { type: 'string', description: 'Optional repository path for structural impact analysis on coding tasks' },
+      },
+    },
+  },
+  {
+    name: 'satisfy_gate',
+    description: 'Satisfy a gate condition (e.g., after checking PR threads). Evidence is stored with a 5-minute TTL.',
+    inputSchema: {
+      type: 'object',
+      required: ['gate'],
+      properties: {
+        gate: { type: 'string', description: 'Gate condition ID to satisfy (e.g., pr_threads_checked)' },
+        evidence: { type: 'string', description: 'Evidence text (e.g., \"0 unresolved threads\")' },
+      },
+    },
+  },
+  {
+    name: 'gate_stats',
+    description: 'Get gate enforcement statistics -- blocked count, warned count, top gates',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'dashboard',
+    description: 'Get full RLHF dashboard -- approval rate, gate stats, prevention impact, system health',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'commerce_recall',
+    description: 'Recall past feedback filtered by commerce categories (product_recommendation, brand_compliance, sizing, pricing, regulatory). Returns quality scores alongside memories for agentic commerce agents.',
+    inputSchema: {
+      type: 'object',
+      required: ['query'],
+      properties: {
+        query: { type: 'string', description: 'Product or brand context to find relevant past feedback' },
+        categories: { type: 'array', items: { type: 'string' }, description: 'Commerce categories to filter (default: all commerce categories)' },
+        limit: { type: 'number', description: 'Max memories to return (default 5)' },
+      },
+    },
+  },
+  {
+    name: 'estimate_uncertainty',
+    description: 'Estimate Bayesian uncertainty for a set of tags based on past feedback.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tags: { type: 'array', items: { type: 'string' }, description: 'Tags to analyze for uncertainty' },
+      },
+    },
+  },
+];
+
+module.exports = {
+  TOOLS,
+};
