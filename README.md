@@ -19,6 +19,18 @@ Verification evidence for shipped features lives in [docs/VERIFICATION_EVIDENCE.
 
 Continuity tools help you resume work. MCP Memory Gateway keeps the resumed session sharper: recall, reliability rules, pre-action gates, and verification layered on top of that continuity workflow without another planner or swarm.
 
+## Claude Workflow Hardening
+
+If you are selling or deploying Claude-first delivery, the cleanest commercial wedge is not "AI employee" hype. It is one workflow with enough memory, gates, and proof to ship safely.
+
+That maps cleanly to three offers:
+
+- Claude workflow hardening for one production workflow with business value
+- code modernization guardrails for long-running migration and refactor sessions
+- proof-ready rollout pilots for consultancies and platform teams that need auditability
+
+Current partner-facing positioning lives in [docs/ANTHROPIC_MARKETPLACE_STRATEGY.md](docs/ANTHROPIC_MARKETPLACE_STRATEGY.md). Use [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md) as the proof pack behind every pitch.
+
 ## Cursor Marketplace
 
 This repo now ships a submission-ready Cursor plugin bundle:
