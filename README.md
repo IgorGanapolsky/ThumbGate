@@ -21,15 +21,26 @@ Continuity tools help you resume work. MCP Memory Gateway keeps the resumed sess
 
 ## Claude Workflow Hardening
 
-If you are selling or deploying Claude-first delivery, the cleanest commercial wedge is not "AI employee" hype. It is one workflow with enough memory, gates, and proof to ship safely.
+If you are selling or deploying Claude-first delivery, the cleanest commercial wedge is not "AI employee" hype. It is a **Workflow Hardening Sprint** for one workflow with enough memory, gates, and proof to ship safely.
+
+Use that motion when a buyer already has:
+
+- one workflow owner
+- one repeated failure pattern or rollout blocker
+- one buyer who needs proof before broader rollout
 
 That maps cleanly to three offers:
 
-- Claude workflow hardening for one production workflow with business value
+- Workflow Hardening Sprint for one production workflow with business value
 - code modernization guardrails for long-running migration and refactor sessions
-- proof-ready rollout pilots for consultancies and platform teams that need auditability
+- hosted Pro at `$29/mo` when the team only needs synced memory, gates, and usage analytics
 
-Current partner-facing positioning lives in [docs/ANTHROPIC_MARKETPLACE_STRATEGY.md](docs/ANTHROPIC_MARKETPLACE_STRATEGY.md). Use [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md) as the proof pack behind every pitch.
+Use these assets in sales and partner conversations:
+
+- [Workflow Hardening Sprint](docs/WORKFLOW_HARDENING_SPRINT.md)
+- [Pitch](docs/PITCH.md)
+- [Anthropic Partner Strategy](docs/ANTHROPIC_MARKETPLACE_STRATEGY.md)
+- [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
 
 ## Cursor Marketplace
 

@@ -17,6 +17,7 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
   assert.match(landingPage, /Who should upgrade to Pro\?/);
   assert.match(landingPage, /Can I pair it with editor continuity tools or resume assistants\?/);
   assert.match(landingPage, /Can consultancies and platform teams use this for Claude workflow hardening or code modernization\?/);
+  assert.match(landingPage, /What is the Workflow Hardening Sprint\?/);
   assert.match(landingPage, /Do I need subagents or an orchestration layer to get value\?/);
   assert.match(landingPage, /optional context inputs/i);
   assert.match(landingPage, /same agent session/i);
@@ -93,7 +94,11 @@ test('public landing page positions the gateway as continuity-friendly reliabili
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /Claude Workflow Hardening and AI Reliability/i);
+  assert.match(landingPage, /Harden one Claude workflow\./i);
   assert.match(landingPage, /Keep one sharp agent\./);
+  assert.match(landingPage, /Workflow Hardening Sprint/i);
+  assert.match(landingPage, /Request Workflow Sprint/);
+  assert.match(landingPage, /One workflow, one owner, one proof review/i);
   assert.match(landingPage, /Seven high-intent use cases for Claude workflow hardening/i);
   assert.match(landingPage, /The sellable unit is not a generic AI employee/i);
   assert.match(landingPage, /Code modernization guardrails/i);
@@ -104,7 +109,10 @@ test('public landing page positions the gateway as continuity-friendly reliabili
   assert.match(landingPage, /AI reliability system, not orchestration layer\./);
   assert.match(landingPage, /reliability rules/i);
   assert.match(landingPage, /Review Proof Pack/);
+  assert.match(landingPage, /See Sprint Scope/);
+  assert.match(landingPage, /mailto:igor\.ganapolsky@gmail\.com\?subject=Workflow%20Hardening%20Sprint/);
   assert.match(landingPage, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(landingPage, /WORKFLOW_HARDENING_SPRINT\.md/);
   assert.doesNotMatch(landingPage, /official Anthropic partner/i);
   assert.doesNotMatch(landingPage, /same control plane/i);
 });

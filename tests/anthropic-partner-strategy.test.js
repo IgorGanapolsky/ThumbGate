@@ -10,6 +10,9 @@ test('Anthropic partner strategy stays proof-backed and avoids false membership 
   const strategy = fs.readFileSync(strategyPath, 'utf8');
 
   assert.match(strategy, /Claude workflow hardening/i);
+  assert.match(strategy, /Workflow Hardening Sprint/i);
+  assert.match(strategy, /founder-led outbound/i);
+  assert.match(strategy, /booked pilots/i);
   assert.match(strategy, /code modernization/i);
   assert.match(strategy, /VERIFICATION_EVIDENCE\.md/);
   assert.match(strategy, /COMMERCIAL_TRUTH\.md/);
@@ -23,7 +26,9 @@ test('X launch thread aligns the public story with workflow hardening instead of
   const thread = fs.readFileSync(xThreadPath, 'utf8');
 
   assert.match(thread, /Claude workflow hardening/i);
+  assert.match(thread, /Workflow Hardening Sprint/i);
   assert.match(thread, /Not an "AI employee\."/i);
   assert.match(thread, /Code modernization partners/i);
-  assert.match(thread, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(thread, /rlhf-feedback-loop-production\.up\.railway\.app/);
+  assert.doesNotMatch(thread, /VERIFICATION_EVIDENCE\.md/);
 });
