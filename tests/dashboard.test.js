@@ -92,6 +92,8 @@ test('generateDashboard handles empty state (no files)', () => {
   assert.equal(data.health.feedbackCount, 0);
   assert.equal(data.health.memoryCount, 0);
   assert.equal(data.diagnostics.totalDiagnosed, 0);
+  assert.ok(data.delegation);
+  assert.equal(data.delegation.attemptCount, 0);
   assert.equal(data.secretGuard.blocked, 0);
   assert.equal(data.analytics.funnel.visitors, 0);
   assert.equal(data.observability.diagnosticEvents, 0);
@@ -192,6 +194,7 @@ test('generateDashboard returns complete structure with data', () => {
   assert.ok(data.trend);
   assert.ok(data.health);
   assert.ok(data.diagnostics);
+  assert.ok(data.delegation);
   assert.ok(data.secretGuard);
 
   // Values
@@ -201,6 +204,7 @@ test('generateDashboard returns complete structure with data', () => {
   assert.equal(data.health.feedbackCount, 30);
   assert.equal(data.health.memoryCount, 2);
   assert.equal(data.diagnostics.totalDiagnosed, 10);
+  assert.equal(data.delegation.attemptCount, 0);
   assert.equal(data.diagnostics.categories[0].key, 'tool_output_misread');
   assert.equal(data.secretGuard.blocked, 0);
   assert.equal(data.analytics.funnel.visitors, 0);

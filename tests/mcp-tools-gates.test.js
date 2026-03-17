@@ -138,12 +138,14 @@ test('dashboard returns full report', async () => {
   assert.ok(parsed.trend);
   assert.ok(parsed.health);
   assert.ok(parsed.diagnostics);
+  assert.ok(parsed.delegation);
   assert.ok(parsed.analytics);
   assert.ok(parsed.observability);
   assert.equal(parsed.approval.total, 3);
   assert.equal(parsed.approval.positive, 2);
   assert.equal(parsed.approval.negative, 1);
   assert.equal(parsed.diagnostics.totalDiagnosed, 1);
+  assert.equal(typeof parsed.delegation.attemptCount, 'number');
 });
 
 test('dashboard handles empty state', async () => {
@@ -177,4 +179,6 @@ test('tools/list includes gate_stats, dashboard, and diagnose_failure', async ()
   assert.ok(names.includes('gate_stats'), 'gate_stats in tools/list');
   assert.ok(names.includes('dashboard'), 'dashboard in tools/list');
   assert.ok(names.includes('diagnose_failure'), 'diagnose_failure in tools/list');
+  assert.ok(names.includes('start_handoff'), 'start_handoff in tools/list');
+  assert.ok(names.includes('complete_handoff'), 'complete_handoff in tools/list');
 });

@@ -8,6 +8,10 @@ const {
   buildPartnerStrategy,
   getPartnerActionBias,
 } = require('./partner-orchestration');
+const {
+  evaluateDelegation,
+  normalizeDelegationMode,
+} = require('./delegation-runtime');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_BUNDLE_DIR = path.join(PROJECT_ROOT, 'config', 'policy-bundles');
@@ -149,6 +153,7 @@ function planIntent(options = {}) {
   const context = String(options.context || '').trim();
   const approved = options.approved === true;
   const tokenBudget = resolveTokenBudget(options.tokenBudget);
+  const delegationMode = normalizeDelegationMode(options.delegationMode);
 
   if (!intentId) {
     throw new Error('intentId is required');
@@ -187,8 +192,7 @@ function planIntent(options = {}) {
     ...partnerStrategy,
     recommendedChecks: partnerChecks,
   };
-
-  return {
+  const basePlan = {
     bundleId: bundle.bundleId,
     mcpProfile: profile,
     partnerProfile: enrichedPartnerStrategy.profile,
@@ -215,6 +219,23 @@ function planIntent(options = {}) {
     partnerStrategy: enrichedPartnerStrategy,
     actionScores: rankedActions.scores,
     codegraphImpact,
+  };
+  const delegation = evaluateDelegation({
+    delegationMode,
+    plan: basePlan,
+    mcpProfile: profile,
+    context,
+    repoPath: options.repoPath,
+  });
+
+  return {
+    ...basePlan,
+    executionMode: delegation.executionMode,
+    delegationEligible: delegation.delegationEligible,
+    delegationScore: delegation.delegationScore,
+    delegationReason: delegation.delegationReason,
+    delegateProfile: delegation.delegateProfile,
+    handoffContract: delegation.handoffContract,
   };
 }
 

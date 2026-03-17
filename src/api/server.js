@@ -35,6 +35,10 @@ const {
   planIntent,
 } = require('../../scripts/intent-router');
 const {
+  startHandoff,
+  completeHandoff,
+} = require('../../scripts/delegation-runtime');
+const {
   loadModel,
   getReliability,
   samplePosteriors,
@@ -79,12 +83,28 @@ const {
   UPGRADE_MESSAGE: RATE_LIMIT_MESSAGE,
 } = require('../../scripts/rate-limiter');
 const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
+const { TOOLS: MCP_TOOLS } = require('../../scripts/tool-registry');
 
 const LANDING_PAGE_PATH = path.resolve(__dirname, '../../public/index.html');
 
 function getSafeDataDir() {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
   return path.resolve(path.dirname(FEEDBACK_LOG_PATH));
+}
+
+function getPublicMcpTools() {
+  return MCP_TOOLS.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+  }));
+}
+
+function getServerCardTools() {
+  return MCP_TOOLS.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+  }));
 }
 
 function createHttpError(statusCode, message) {
@@ -894,20 +914,7 @@ function createApiServer() {
                 jsonrpc: '2.0',
                 id: msg.id,
                 result: {
-                  tools: [
-                    { name: 'recall', description: 'Recall relevant past feedback for current task', inputSchema: { type: 'object', properties: { query: { type: 'string' }, repoPath: { type: 'string' } }, required: ['query'] } },
-                    { name: 'capture_feedback', description: 'Capture an up/down signal plus one line of why', inputSchema: { type: 'object', properties: { signal: { type: 'string', enum: ['up', 'down'] }, context: { type: 'string' }, whatWentWrong: { type: 'string' }, whatToChange: { type: 'string' }, whatWorked: { type: 'string' } }, required: ['signal', 'context'] } },
-                    { name: 'feedback_stats', description: 'Feedback analytics', inputSchema: { type: 'object', properties: {} } },
-                    { name: 'feedback_summary', description: 'Human-readable feedback summary', inputSchema: { type: 'object', properties: {} } },
-                    { name: 'prevention_rules', description: 'Generate prevention rules from failures', inputSchema: { type: 'object', properties: {} } },
-                    { name: 'export_dpo_pairs', description: 'Export DPO training pairs', inputSchema: { type: 'object', properties: {} } },
-                    { name: 'export_databricks_bundle', description: 'Export RLHF logs and proof artifacts as a Databricks-ready bundle', inputSchema: { type: 'object', properties: { outputPath: { type: 'string' } } } },
-                    { name: 'construct_context_pack', description: 'Build bounded context pack', inputSchema: { type: 'object', properties: { task: { type: 'string' } }, required: ['task'] } },
-                    { name: 'evaluate_context_pack', description: 'Record context pack outcome', inputSchema: { type: 'object', properties: { packId: { type: 'string' }, outcome: { type: 'string' } }, required: ['packId', 'outcome'] } },
-                    { name: 'context_provenance', description: 'Audit trail of context decisions', inputSchema: { type: 'object', properties: {} } },
-                    { name: 'list_intents', description: 'Available action plans', inputSchema: { type: 'object', properties: { mcpProfile: { type: 'string' }, bundleId: { type: 'string' }, partnerProfile: { type: 'string' } } } },
-                    { name: 'plan_intent', description: 'Generate execution plan', inputSchema: { type: 'object', properties: { intentId: { type: 'string' }, context: { type: 'string' }, mcpProfile: { type: 'string' }, bundleId: { type: 'string' }, partnerProfile: { type: 'string' }, approved: { type: 'boolean' }, repoPath: { type: 'string' } }, required: ['intentId'] } },
-                  ],
+                  tools: getPublicMcpTools(),
                 },
               });
             } else {
@@ -1107,21 +1114,7 @@ function createApiServer() {
         name: 'mcp-memory-gateway',
         description: 'RLHF feedback loop for AI agents. Capture feedback, block mistakes, export DPO data, and warehouse analytics bundles.',
         version: pkg.version,
-        tools: [
-          { name: 'recall', description: 'Recall relevant past feedback for current task' },
-          { name: 'capture_feedback', description: 'Capture an up/down signal plus one line of why' },
-          { name: 'feedback_stats', description: 'Feedback analytics' },
-          { name: 'feedback_summary', description: 'Human-readable feedback summary' },
-          { name: 'prevention_rules', description: 'Generate prevention rules from failures' },
-          { name: 'export_dpo_pairs', description: 'Export DPO training pairs' },
-          { name: 'export_databricks_bundle', description: 'Export RLHF logs and proof artifacts as a Databricks-ready bundle' },
-          { name: 'construct_context_pack', description: 'Build bounded context pack' },
-          { name: 'evaluate_context_pack', description: 'Record context pack outcome' },
-          { name: 'context_provenance', description: 'Audit trail of context decisions' },
-          { name: 'list_intents', description: 'Available action plans' },
-          { name: 'plan_intent', description: 'Generate execution plan' },
-          { name: 'generate_skill', description: 'Auto-generate Claude skills from feedback patterns' },
-        ],
+        tools: getServerCardTools(),
         repository: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
         homepage: hostedConfig.appOrigin,
       });
@@ -1476,12 +1469,62 @@ function createApiServer() {
             mcpProfile: body.mcpProfile,
             bundleId: body.bundleId,
             partnerProfile: body.partnerProfile,
+            delegationMode: body.delegationMode,
             approved: body.approved === true,
             repoPath: body.repoPath,
           });
           sendJson(res, 200, plan);
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid intent plan request');
+        }
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/handoffs/start') {
+        const body = await parseJsonBody(req);
+        try {
+          const plan = planIntent({
+            intentId: body.intentId,
+            context: body.context || '',
+            mcpProfile: body.mcpProfile,
+            bundleId: body.bundleId,
+            partnerProfile: body.partnerProfile,
+            delegationMode: 'sequential',
+            approved: body.approved === true,
+            repoPath: body.repoPath,
+          });
+          const result = startHandoff({
+            plan,
+            context: body.context || '',
+            mcpProfile: body.mcpProfile || plan.mcpProfile,
+            partnerProfile: body.partnerProfile || plan.partnerProfile,
+            repoPath: body.repoPath,
+            delegateProfile: body.delegateProfile || null,
+            plannedChecks: Array.isArray(body.plannedChecks) ? body.plannedChecks : [],
+          });
+          sendJson(res, 200, result);
+        } catch (err) {
+          throw createHttpError(err.statusCode || 400, err.message || 'Invalid handoff start request');
+        }
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/handoffs/complete') {
+        const body = await parseJsonBody(req);
+        try {
+          const result = completeHandoff({
+            handoffId: body.handoffId,
+            outcome: body.outcome,
+            resultContext: body.resultContext || '',
+            attempts: body.attempts,
+            violationCount: body.violationCount,
+            tokenEstimate: body.tokenEstimate,
+            latencyMs: body.latencyMs,
+            summary: body.summary || '',
+          });
+          sendJson(res, 200, result);
+        } catch (err) {
+          throw createHttpError(err.statusCode || 400, err.message || 'Invalid handoff completion request');
         }
         return;
       }

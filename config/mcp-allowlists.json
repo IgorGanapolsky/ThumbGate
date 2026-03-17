@@ -9,6 +9,8 @@
       "diagnose_failure",
       "list_intents",
       "plan_intent",
+      "start_handoff",
+      "complete_handoff",
       "prevention_rules",
       "export_dpo_pairs",
       "export_databricks_bundle",
@@ -43,6 +45,8 @@
       "diagnose_failure",
       "list_intents",
       "plan_intent",
+      "start_handoff",
+      "complete_handoff",
       "context_provenance",
       "gate_stats",
       "dashboard"

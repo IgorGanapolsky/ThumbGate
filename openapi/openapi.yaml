@@ -83,8 +83,58 @@ components:
           type: string
         partnerProfile:
           type: string
+        delegationMode:
+          type: string
+          enum: [off, auto, sequential]
         approved:
           type: boolean
+        repoPath:
+          type: string
+    HandoffStartRequest:
+      type: object
+      required: [intentId]
+      properties:
+        intentId:
+          type: string
+        context:
+          type: string
+        mcpProfile:
+          type: string
+        bundleId:
+          type: string
+        partnerProfile:
+          type: string
+        approved:
+          type: boolean
+        repoPath:
+          type: string
+        delegateProfile:
+          type: string
+        plannedChecks:
+          type: array
+          items:
+            type: string
+    HandoffCompleteRequest:
+      type: object
+      required: [handoffId, outcome]
+      properties:
+        handoffId:
+          type: string
+        outcome:
+          type: string
+          enum: [accepted, rejected, aborted]
+        resultContext:
+          type: string
+        attempts:
+          type: number
+        violationCount:
+          type: number
+        tokenEstimate:
+          type: number
+        latencyMs:
+          type: number
+        summary:
+          type: string
     BillingCheckoutRequest:
       type: object
       properties:
@@ -478,6 +528,38 @@ paths:
           description: Policy-scoped intent execution plan
         '400':
           description: Invalid intent request
+        '401':
+          description: Unauthorized
+  /v1/handoffs/start:
+    post:
+      operationId: startHandoff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HandoffStartRequest'
+      responses:
+        '200':
+          description: Sequential handoff started
+        '400':
+          description: Invalid handoff request
+        '401':
+          description: Unauthorized
+  /v1/handoffs/complete:
+    post:
+      operationId: completeHandoff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HandoffCompleteRequest'
+      responses:
+        '200':
+          description: Sequential handoff completed
+        '400':
+          description: Invalid handoff completion request
         '401':
           description: Unauthorized
   /v1/feedback/summary:

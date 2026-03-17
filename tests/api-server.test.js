@@ -332,6 +332,11 @@ test('intent plan returns checkpoint for unapproved high-risk action', async () 
   const body = await res.json();
   assert.equal(body.status, 'checkpoint_required');
   assert.equal(body.requiresApproval, true);
+  assert.equal(body.executionMode, 'single_agent');
+  assert.equal(body.delegationEligible, false);
+  assert.equal(body.delegationScore, 0);
+  assert.equal(body.delegateProfile, null);
+  assert.equal(body.handoffContract, null);
 });
 
 test('intent plan returns partner-aware strategy metadata', async () => {
@@ -351,6 +356,59 @@ test('intent plan returns partner-aware strategy metadata', async () => {
   assert.equal(body.partnerStrategy.verificationMode, 'evidence_first');
   assert.ok(body.tokenBudget.contextPack > 6000);
   assert.ok(Array.isArray(body.actionScores));
+});
+
+test('handoff endpoints expose sequential delegation over HTTP', async () => {
+  const planRes = await fetch(apiUrl('/v1/intents/plan'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      intentId: 'improve_response_quality',
+      context: 'Improve the response with evidence and prevention rules',
+      mcpProfile: 'default',
+      delegationMode: 'auto',
+    }),
+  });
+  assert.equal(planRes.status, 200);
+  const planBody = await planRes.json();
+  assert.equal(planBody.executionMode, 'sequential_delegate');
+  assert.equal(planBody.delegateProfile, 'pr_workflow');
+  assert.ok(planBody.handoffContract);
+
+  const startRes = await fetch(apiUrl('/v1/handoffs/start'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      intentId: 'improve_response_quality',
+      context: 'Improve the response with evidence and prevention rules',
+      mcpProfile: 'default',
+    }),
+  });
+  assert.equal(startRes.status, 200);
+  const started = await startRes.json();
+  assert.equal(started.status, 'started');
+  assert.equal(started.executionMode, 'sequential_delegate');
+  assert.equal(started.delegateProfile, 'pr_workflow');
+  assert.ok(started.handoffContract);
+  assert.ok(Array.isArray(started.handoffContract.requiredChecks));
+
+  const completeRes = await fetch(apiUrl('/v1/handoffs/complete'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      handoffId: started.handoffId,
+      outcome: 'accepted',
+      summary: 'Accepted after evidence review.',
+      resultContext: 'Returned a verified result context with explicit evidence and clean checks.',
+      attempts: 2,
+      violationCount: 0,
+    }),
+  });
+  assert.equal(completeRes.status, 200);
+  const completed = await completeRes.json();
+  assert.equal(completed.status, 'completed');
+  assert.equal(completed.outcome, 'accepted');
+  assert.equal(completed.verificationAccepted, true);
 });
 
 test('intent plan returns codegraph impact for coding workflows', async () => {
