@@ -191,6 +191,29 @@ const TOOLS = [
     },
   },
   {
+    name: 'context_provenance',
+    description: 'Retrieve recent context/provenance events.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', default: 50 },
+      },
+    },
+  },
+  {
+    name: 'commerce_recall',
+    description: 'Recall past feedback filtered by commerce categories (product_recommendation, brand_compliance, sizing, pricing, regulatory). Returns quality scores alongside memories for agentic commerce agents.\n\nFEW-SHOT EXAMPLES:\n1. Compliance Check: Validating if a product description follows brand guidelines. Action: commerce_recall(query="brand compliance for neon colors", categories=["brand_compliance"]).\n2. Pricing Strategy: Researching past user reactions to price changes. Action: commerce_recall(query="price sensitivity for starter packs", categories=["pricing"]).',
+    inputSchema: {
+      type: 'object',
+      required: ['query'],
+      properties: {
+        query: { type: 'string', description: 'Product or brand context to find relevant past feedback.' },
+        categories: { type: 'array', items: { type: 'string' }, description: 'Commerce categories to filter (default: all commerce categories).' },
+        limit: { type: 'number', default: 5, description: 'Max memories to return.' },
+      },
+    },
+  },
+  {
     name: 'generate_skill',
     description: 'Synthesize a formal SKILL.md file from clusters of feedback.',
     inputSchema: {
@@ -210,6 +233,16 @@ const TOOLS = [
       properties: {
         gate: { type: 'string' },
         evidence: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'estimate_uncertainty',
+    description: 'Perform a Bayesian estimation of uncertainty for a set of tags.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tags: { type: 'array', items: { type: 'string' } },
       },
     },
   },

@@ -21,6 +21,7 @@ const {
   constructContextPack,
   evaluateContextPack,
   getProvenance,
+  updateScratchpad,
 } = require('../../scripts/contextfs');
 const {
   buildRubricEvaluation,
@@ -258,10 +259,10 @@ function normalizeToolResult(name, result) {
   if (result.content[0].type === 'text') {
     let text = result.content[0].text;
     
-    // Normalize simple Unix timestamps (10+ digits) to ISO 8601
-    text = text.replace(/\b(\d{10,13})\b/g, (match) => {
+    // Normalize likely Unix timestamps (12-13 digits, starting with 17+) to ISO 8601
+    text = text.replace(/\b(17\d{10,11})\b/g, (match) => {
       try {
-        const ms = match.length === 10 ? parseInt(match) * 1000 : parseInt(match);
+        const ms = parseInt(match);
         const date = new Date(ms);
         if (!isNaN(date.getTime())) return date.toISOString();
         return match;

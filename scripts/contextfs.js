@@ -90,6 +90,10 @@ function toSlug(input) {
     .slice(0, 80) || 'item';
 }
 
+function unique(arr) {
+  return Array.from(new Set(arr));
+}
+
 function writeJson(filePath, payload) {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`);

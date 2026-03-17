@@ -755,6 +755,12 @@ function optimize() {
 }
 
 function serve() {
+  const args = parseArgs(process.argv.slice(3));
+  if (args.pack) {
+    const packPath = path.isAbsolute(args.pack) ? args.pack : path.resolve(CWD, args.pack);
+    process.env.RLHF_FEEDBACK_DIR = packPath;
+  }
+
   // Start MCP server over stdio
   const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
   const { startStdioServer } = require(mcpServer);

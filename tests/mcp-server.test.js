@@ -10,7 +10,8 @@ process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.RLHF_PROOF_DIR = tmpProofDir;
 process.env.RLHF_NO_RATE_LIMIT = '1'; // bypass free-tier rate limits during tests
 
-const { handleRequest, TOOLS, SAFE_DATA_DIR } = require('../adapters/mcp/server-stdio');
+const { handleRequest, SAFE_DATA_DIR } = require('../adapters/mcp/server-stdio');
+const { TOOLS } = require('../scripts/tool-registry');
 
 test.after(() => {
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
