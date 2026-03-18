@@ -1,6 +1,7 @@
 {
   "name": "mcp-memory-gateway",
-  "version": "0.7.1",
+  "version": "0.7.2",
+  "mcpName": "io.github.IgorGanapolsky/mcp-memory-gateway",
   "description": "Local-first reliability layer for AI coding agents. Resume sessions faster, recall project decisions, and block repeated mistakes without orchestration overhead.",
   "homepage": "https://rlhf-feedback-loop-production.up.railway.app",
   "repository": {
@@ -120,6 +121,5 @@
     "@lancedb/lancedb": "^0.26.2",
     "apache-arrow": "^18.1.0",
     "stripe": "^20.4.1"
-  },
-  "mcpName": "io.github.IgorGanapolsky/mcp-memory-gateway"
+  }
 }

@@ -31,3 +31,5 @@ The whole thing is free and open source. There's a $49 one-time Pro tier if you 
 
 - Repo: https://github.com/IgorGanapolsky/mcp-memory-gateway
 - 466 tests passing, 90% coverage. Happy to answer questions.
+
+**Disclosure:** I'm the creator of this project. The core is free and MIT licensed. The Pro tier ($49 one-time) funds continued development.
