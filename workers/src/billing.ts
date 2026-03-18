@@ -128,7 +128,7 @@ export async function handleWebhook(
 
 /**
  * Provision a new API key after successful checkout.
- * Stores the key in KEYS_KV and also stores a reverse lookup by subscription ID.
+ * Stores the key in KEYS_KV and also stores a reverse lookup by billing reference.
  */
 async function provisionApiKey(
   env: Env,
@@ -139,14 +139,14 @@ async function provisionApiKey(
     typeof session.customer === 'string'
       ? session.customer
       : session.customer?.id ?? 'unknown';
-  const subscriptionId =
-    typeof session.subscription === 'string'
-      ? session.subscription
-      : session.subscription?.id ?? 'unknown';
+  const billingReferenceId =
+    typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.id;
 
   const record: ApiKeyRecord = {
     customerId,
-    stripeSubscriptionId: subscriptionId,
+    billingReferenceId,
     tier: 'pro',
     active: true,
     createdAt: new Date().toISOString(),
@@ -155,18 +155,18 @@ async function provisionApiKey(
   // Store API key -> record
   await env.KEYS_KV.put(`key:${apiKey}`, JSON.stringify(record));
 
-  // Reverse lookup: subscription -> API key (for disabling on cancellation)
-  await env.KEYS_KV.put(`sub:${subscriptionId}`, apiKey);
+  // Reverse lookup: billing reference -> API key.
+  await env.KEYS_KV.put(`billing:${billingReferenceId}`, apiKey);
 
   // Store customer -> API key (for retrieval)
   await env.KEYS_KV.put(`customer:${customerId}:apikey`, apiKey);
 }
 
 /**
- * Disable API key when subscription is cancelled or becomes inactive.
+ * Disable API key when a stored billing reference is revoked.
  */
-async function disableApiKey(env: Env, subscriptionId: string): Promise<void> {
-  const apiKey = await env.KEYS_KV.get(`sub:${subscriptionId}`);
+async function disableApiKey(env: Env, billingReferenceId: string): Promise<void> {
+  const apiKey = await env.KEYS_KV.get(`billing:${billingReferenceId}`);
   if (!apiKey) return;
 
   const record = await env.KEYS_KV.get<ApiKeyRecord>(`key:${apiKey}`, 'json');

@@ -1919,7 +1919,7 @@ function createApiServer() {
         return;
       }
 
-      // POST /v1/billing/rotate-key — rotate the authenticated key, preserving subscription
+      // POST /v1/billing/rotate-key — rotate the authenticated key, preserving customer access
       if (req.method === 'POST' && pathname === '/v1/billing/rotate-key') {
         const currentKey = extractBearerToken(req);
         if (!currentKey) {

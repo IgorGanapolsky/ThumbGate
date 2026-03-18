@@ -19,7 +19,7 @@ const { getFeedbackPaths, readJSONL } = require('./feedback-loop');
 const { compactContext } = require('./context-engine');
 const { resolveModelRole } = require('./local-model-profile');
 const { trackEvent, shouldInjectReminder, injectReminder } = require('./reminder-engine');
-const { validateApiKey, reportUsageToStripe } = require('./billing');
+const { validateApiKey } = require('./billing');
 
 // Keep track of the last processed ID to avoid re-consolidating the exact same logs
 const STATE_FILE = process.env.ADK_STATE_FILE || path.join(PROJECT_ROOT, '.rlhf', 'adk-state.json');
@@ -211,13 +211,12 @@ Output ONLY valid JSON:
     state.lastProcessedFeedbackId = newLogs[newLogs.length - 1].id;
     saveState(state);
 
-    // Usage-based billing: Report this consolidation to Stripe if a valid API key exists
+    // Hosted consolidation can run with a valid cloud key, but it is not metered usage billing.
     const cloudKey = process.env.RLHF_API_KEY;
     if (cloudKey) {
       const validation = validateApiKey(cloudKey);
-      if (validation.valid && validation.metadata.subscriptionItemId) {
-        await reportUsageToStripe(validation.metadata.subscriptionItemId);
-        console.log(`[ADK Consolidator] Billable event reported to Stripe for customer: ${validation.metadata.customerId}`);
+      if (validation.valid) {
+        console.log(`[ADK Consolidator] Hosted key validated for customer: ${validation.customerId}`);
       }
     }
 

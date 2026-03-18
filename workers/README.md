@@ -125,8 +125,8 @@ npm test       # Type-check the worker package
 ## KV Schema
 
 ### KEYS_KV
-- `key:{apiKey}` → ApiKeyRecord (customer ID, subscription, tier, active)
-- `sub:{subscriptionId}` → API key (reverse lookup)
+- `key:{apiKey}` → ApiKeyRecord (customer ID, billing reference, tier, active)
+- `billing:{billingReferenceId}` → API key (reverse lookup)
 - `customer:{customerId}:apikey` → API key
 
 ### MEMORY_KV

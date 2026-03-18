@@ -39,7 +39,7 @@ export async function validateAuth(
 }
 
 /**
- * Require pro tier — returns a 402 JSON-RPC error if not subscribed.
+ * Require pro tier — returns a 402 JSON-RPC error if the caller has not upgraded.
  */
 export function requirePro(auth: AuthResult): { code: number; message: string } | null {
   if (auth.tier === 'pro' && auth.valid) {

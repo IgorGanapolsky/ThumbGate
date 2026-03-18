@@ -1103,24 +1103,6 @@ function recordUsage(key) {
   return { recorded: false };
 }
 
-/**
- * Report usage to Stripe for metered billing.
- */
-async function reportUsageToStripe(subscriptionItemId, quantity = 1) {
-  if (LOCAL_MODE()) return { reported: false, reason: 'local_mode' };
-  try {
-    const stripe = getStripeClient();
-    const record = await stripe.subscriptionItems.createUsageRecord(subscriptionItemId, {
-      quantity,
-      timestamp: 'now',
-      action: 'increment'
-    });
-    return { reported: true, record };
-  } catch (err) {
-    return { reported: false, error: err.message };
-  }
-}
-
 function disableCustomerKeys(customerId) {
   const store = loadKeyStore();
   let disabledCount = 0;
@@ -1184,7 +1166,6 @@ async function handleWebhook(rawBody, signature) {
         evidence: session.id,
         metadata: {
           customerId,
-          subscriptionId: session.subscription,
           sessionId: session.id,
           traceId,
           ...extractJourneyFields(session.metadata),
@@ -1210,7 +1191,6 @@ async function handleWebhook(rawBody, signature) {
         metadata: {
           ...extractJourneyFields(session.metadata),
           sessionId: session.id,
-          subscriptionId: session.subscription || null,
           mode: session.mode || null,
           paymentStatus: session.payment_status || null,
         },
@@ -1370,7 +1350,7 @@ function handleGithubWebhook(event) {
 }
 
 module.exports = {
-  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, reportUsageToStripe, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary,
+  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,
   _REVENUE_LEDGER_PATH: () => CONFIG.REVENUE_LEDGER_PATH,

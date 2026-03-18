@@ -22,7 +22,7 @@ export interface AuthResult {
 /** Stored API key metadata in KEYS_KV */
 export interface ApiKeyRecord {
   customerId: string;
-  stripeSubscriptionId: string;
+  billingReferenceId: string;
   tier: Tier;
   active: boolean;
   createdAt: string;
