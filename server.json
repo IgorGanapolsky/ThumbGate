@@ -1,20 +1,20 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.IgorGanapolsky/mcp-memory-gateway",
-  "description": "Agent quality feedback loop with Pre-Action Gates — configurable checkpoints that block dangerous tool calls before they execute. Includes prevention rules, RLHF capture, and commerce quality scores.",
+  "description": "Agent reliability feedback loop with pre-action gates and RLHF memory.",
   "title": "MCP Memory Gateway",
   "websiteUrl": "https://rlhf-feedback-loop-production.up.railway.app",
   "repository": {
     "source": "github",
     "url": "https://github.com/IgorGanapolsky/mcp-memory-gateway"
   },
-  "version": "0.7.1",
+  "version": "0.7.2",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "mcp-memory-gateway",
-      "version": "0.7.1",
+      "version": "0.7.2",
       "transport": {
         "type": "stdio"
       }

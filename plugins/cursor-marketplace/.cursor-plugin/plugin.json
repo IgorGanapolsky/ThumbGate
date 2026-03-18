@@ -1,7 +1,7 @@
 {
   "name": "mcp-memory-gateway",
   "description": "Local-first context engineering, Veto Layer guardrails, DPO exports, and Thompson Sampling feedback memory for Cursor agents.",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "author": {
     "name": "Igor Ganapolsky"
   },

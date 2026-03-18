@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Cursor Marketplace packaging for MCP Memory Gateway, the Agentic Feedback Studio and Veto Layer for AI agents.",
-    "version": "0.7.1"
+    "version": "0.7.2"
   },
   "plugins": [
     {

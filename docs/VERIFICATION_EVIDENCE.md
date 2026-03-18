@@ -105,7 +105,7 @@ Observed result:
 - `node --test tests/aider-integration.test.js`: `11` passed, `0` failed.
 - `node --test tests/adapters.test.js tests/version-metadata.test.js`: `19` passed, `0` failed.
 - `npm run test:workflow`: `11` passed, `0` failed.
-- `node scripts/sync-version.js --check`: all `18` pinned targets in sync at `v0.7.1`.
+- `node scripts/sync-version.js --check`: all `18` pinned targets in sync at `v0.7.2`.
 - `npm run aider:verify:quick` exited `0`; the embedded CLI regression pack passed with `55` tests, `0` failed.
 - `npx -y opencode-ai mcp list` reported `✓ rlhf connected` using `node bin/cli.js serve`.
 - `npx -y opencode-ai agent list | rg -n "build \\(primary\\)|plan \\(primary\\)|rlhf-review"` confirmed `build (primary)`, `plan (primary)`, and `rlhf-review (subagent)`.
@@ -566,7 +566,7 @@ Status:
 
 Scope:
 
-- Version sync across `package.json`, `mcpize.yaml`, and `server.json` to `v0.7.1`.
+- Version sync across `package.json`, `mcpize.yaml`, and `server.json` to `v0.7.2`.
 - Historical pricing experiment: tested a "Founding Member $5/mo" offer and urgency hooks before the current commercial-truth correction.
 - Discovery optimization: Added high-ROI GitHub topics and updated `SKILL.md` auto-indexing keywords.
 - Launch content package: Created `docs/marketing/LAUNCH_CONTENT.md` with Reddit, HN, and Discord assets.
@@ -716,7 +716,7 @@ Evidence artifacts:
 Requirements verified:
 
 - Source checkouts now install canonical MCP entries that launch the local stdio server directly via `node adapters/mcp/server-stdio.js`.
-- Portable docs and adapter examples now use the version-pinned launcher `npx -y mcp-memory-gateway@0.7.1 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
+- Portable docs and adapter examples now use the version-pinned launcher `npx -y mcp-memory-gateway@0.7.2 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
 - Re-running the MCP installer upgrades stale config entries instead of treating them as already configured.
 - Adapter and LanceDB proof cleanup now uses retry-capable recursive removal so ephemeral filesystem contention no longer flakes CI.
 - Transient `.rlhf` reminder/A2UI/test-run files are now ignored as local runtime state and do not pollute git hygiene during verification.
@@ -1299,7 +1299,7 @@ Scope:
 
 - Added a repo-root Cursor marketplace manifest at `.cursor-plugin/marketplace.json`.
 - Added a dedicated Cursor plugin bundle in `plugins/cursor-marketplace/` with `.cursor-plugin/plugin.json`, `.mcp.json`, README, and committed logo asset.
-- Switched the Cursor launcher to the portable published package entrypoint `npx -y mcp-memory-gateway@0.7.1 serve` instead of any checkout-local absolute path.
+- Switched the Cursor launcher to the portable published package entrypoint `npx -y mcp-memory-gateway@0.7.2 serve` instead of any checkout-local absolute path.
 - Removed the stale `.mcp.json.plugin` legacy config file so the repo has one canonical Cursor packaging path.
 - Extended `scripts/sync-version.js` so Cursor manifests and all pinned launcher docs stay version-synced on future releases.
 - Added regression coverage for the repo-level marketplace contract, manifest/version consistency, and MCP launcher safety.
@@ -1323,7 +1323,7 @@ Observed result:
 
 - `npm ci` completed with `0` vulnerabilities.
 - `npm --prefix workers ci` completed with `0` vulnerabilities.
-- `node scripts/sync-version.js --check`: `✔ All 16 targets in sync at v0.7.1`.
+- `node scripts/sync-version.js --check`: `✔ All 16 targets in sync at v0.7.2`.
 - Targeted Cursor packaging regressions passed: `18` tests passed, `0` failed.
 - `npm test` passed end-to-end on the Cursor marketplace branch.
 - `npm run test:coverage` passed with all-files coverage of `83.92%` lines, `70.52%` branches, and `86.81%` functions.
@@ -1553,7 +1553,7 @@ Scope:
 
 - Added a portable `npm run test:coverage` command using Node's built-in coverage for `tests/**/*.test.js`.
 - Removed the unused `stripe` SDK dependency; billing continues to use direct HTTPS calls in `scripts/billing.js`.
-- Synced published version metadata across MCP manifests and public docs to `0.7.1`.
+- Synced published version metadata across MCP manifests and public docs to `0.7.2`.
 - Refreshed active proof artifacts and pruned stale milestone-era proof files that were no longer referenced.
 
 Commands run:

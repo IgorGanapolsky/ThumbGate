@@ -43,7 +43,7 @@ Or copy the plugin MCP config into `.cursor/mcp.json`:
   "mcpServers": {
     "rlhf": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.7.1", "serve"]
+      "args": ["-y", "mcp-memory-gateway@0.7.2", "serve"]
     }
   }
 }

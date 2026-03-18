@@ -30,19 +30,19 @@ This avoids platform-specific rewrite cost and keeps the product under a `$10/mo
 ## Claude (MCP)
 
 - Use: `adapters/claude/.mcp.json`
-- Transport: local stdio MCP server launched via `npx -y mcp-memory-gateway@0.7.1 serve`
+- Transport: local stdio MCP server launched via `npx -y mcp-memory-gateway@0.7.2 serve`
 
 ## Codex (MCP)
 
 - Merge section from `adapters/codex/config.toml`
-- Transport: local stdio MCP server launched via `npx -y mcp-memory-gateway@0.7.1 serve`
+- Transport: local stdio MCP server launched via `npx -y mcp-memory-gateway@0.7.2 serve`
 
 ## Cursor Plugins
 
 - Public/team marketplace manifests: `.cursor-plugin/marketplace.json`
 - Plugin source directory: `plugins/cursor-marketplace/`
 - Plugin manifest: `plugins/cursor-marketplace/.cursor-plugin/plugin.json`
-- Transport: local stdio MCP server launched via `npx -y mcp-memory-gateway@0.7.1 serve`
+- Transport: local stdio MCP server launched via `npx -y mcp-memory-gateway@0.7.2 serve`
 - Submission path: `https://cursor.com/marketplace/publish`
 - Team fallback: import the GitHub repo through `Dashboard -> Settings -> Plugins -> Team Marketplaces`
 

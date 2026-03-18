@@ -24,7 +24,7 @@ The following block is appended to `~/.codex/config.toml`:
 ```toml
 [mcp_servers.rlhf]
 command = "npx"
-args = ["-y", "mcp-memory-gateway@0.7.1", "serve"]
+args = ["-y", "mcp-memory-gateway@0.7.2", "serve"]
 ```
 
 ## Verify
