@@ -54,12 +54,21 @@ This repo already ships a Claude Desktop extension lane:
 - Claude metadata: `.claude-plugin/plugin.json`
 - Claude marketplace metadata: `.claude-plugin/marketplace.json`
 - Claude extension install and support guide: `.claude-plugin/README.md`
+- Claude Desktop bundle builder: `npm run build:claude-mcpb`
+- Claude Desktop bundle launcher: `.claude-plugin/bundle/server/index.js`
+- Claude Desktop bundle icon: `.claude-plugin/bundle/icon.png`
 - Internal submission packet: [docs/CLAUDE_DESKTOP_EXTENSION.md](docs/CLAUDE_DESKTOP_EXTENSION.md)
 
 Install locally today with:
 
 ```bash
 claude mcp add rlhf -- npx -y mcp-memory-gateway serve
+```
+
+Build a submission-ready `.mcpb` locally with:
+
+```bash
+npm run build:claude-mcpb
 ```
 
 Treat Anthropic directory inclusion as a discoverability and trust lane, not as revenue proof or partner proof.

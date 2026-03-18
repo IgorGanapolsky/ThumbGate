@@ -107,6 +107,20 @@ test('root serves the landing page by default', async () => {
   assert.doesNotMatch(body, /mailto:/i);
 });
 
+test('privacy policy route covers collection, sharing, retention, and contact details', async () => {
+  const res = await fetch(apiUrl('/privacy'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+
+  const body = await res.text();
+  assert.match(body, /Privacy Policy/i);
+  assert.match(body, /Data Collection/i);
+  assert.match(body, /Data Sharing/i);
+  assert.match(body, /Data Retention/i);
+  assert.match(body, /optional CLI telemetry/i);
+  assert.match(body, /igor\.ganapolsky@gmail\.com/i);
+});
+
 test('root seeds journey cookies, injects server telemetry IDs, and records landing telemetry server-side', async () => {
   const res = await fetch(apiUrl('/'));
   assert.equal(res.status, 200);

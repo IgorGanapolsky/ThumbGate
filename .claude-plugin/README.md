@@ -11,6 +11,7 @@ The extension path is useful when a team wants Claude Desktop to keep one workfl
 - Reliability memory and recall across long sessions
 - Bounded context packs, provenance, and diagnostics
 - DPO export and analytics bundle generation after runtime reliability lands
+- Submission-ready MCPB packaging for Claude Desktop review and local installs
 
 ## Installation
 
@@ -33,6 +34,16 @@ npx mcp-memory-gateway init
 If Anthropic approves the listing, install from Claude Desktop via `Settings -> Extensions`.
 
 Directory inclusion is an external review process. Do not claim listing or approval before it is real.
+
+### MCPB bundle build
+
+Maintainers can build the local Claude Desktop bundle directly from this repo:
+
+```bash
+npm run build:claude-mcpb
+```
+
+That command stages a clean bundle, installs production dependencies, packs a `.mcpb`, and validates it with Anthropic's official MCPB CLI.
 
 ## Configuration
 
@@ -59,19 +70,38 @@ Optional hosted path:
 
 ### Example 1: PR review hardening
 
-Ask Claude Desktop to review a PR, capture the failure when it skips a blocker, and let the Veto Layer promote that pattern into a reusable gate.
+**User prompt:** "Review this PR and tell me if any blocker would stop merge."
+**Expected behavior:**
+- Claude Desktop inspects the workflow context instead of relying on one-shot memory
+- The extension recalls prior blocker patterns when they exist
+- The Veto Layer can promote the missed blocker into a reusable gate
 
 ### Example 2: Code modernization workflow
 
-Use Claude Desktop on a long refactor and keep migration notes, architecture constraints, and verification steps durable across sessions instead of re-explaining them every time.
+**User prompt:** "Help me modernize this service, but keep the migration constraints and verification steps across sessions."
+**Expected behavior:**
+- Claude Desktop recalls prior migration notes and architecture constraints
+- The extension keeps the context pack bounded instead of replaying full history
+- Verification steps stay attached to the workflow across sessions
 
 ### Example 3: Internal ops or release workflow
 
-Run one internal workflow repeatedly, attach proof artifacts, and keep repeated mistakes from leaking into the next operator run.
+**User prompt:** "Run the release checklist, capture what went wrong, and stop the same mistake next time."
+**Expected behavior:**
+- Claude Desktop records explicit operator feedback and proof artifacts
+- The extension keeps the workflow history local-first and searchable
+- Repeated release failures can be turned into prevention rules before the next run
 
 ## Privacy Policy
 
-Privacy policy: https://rlhf-feedback-loop-production.up.railway.app/privacy
+For complete privacy information, see: https://rlhf-feedback-loop-production.up.railway.app/privacy
+
+### Data Collection
+
+- Local installs store workflow memory, feedback entries, and proof artifacts in local project files.
+- Optional hosted mode sends feedback and memory data to the configured `RLHF_BASE_URL`.
+- Optional CLI telemetry is best-effort and can be disabled with `RLHF_NO_TELEMETRY=1`.
+- We do not sell customer data; retention and deletion details live in the public privacy policy.
 
 ## Support
 
@@ -82,4 +112,5 @@ Privacy policy: https://rlhf-feedback-loop-production.up.railway.app/privacy
 ## Notes For Submission
 
 - Local Claude metadata lives in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`.
+- The MCPB bundle is built with `npm run build:claude-mcpb`.
 - Anthropic directory requirements and the internal publish checklist live in `docs/CLAUDE_DESKTOP_EXTENSION.md`.

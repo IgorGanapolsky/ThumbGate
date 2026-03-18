@@ -1284,7 +1284,7 @@ __GA_BOOTSTRAP__
       <div class="wrap">
         <div class="section-label">Distribution</div>
         <div class="section-title">Publish the same workflow-hardening story as a Claude Desktop extension.</div>
-        <div class="section-desc">Claude Desktop is now a real discovery surface for Claude-first buyers. This repo already ships the local install path, Claude-specific plugin metadata, privacy policy, support links, and proof-backed docs. Use the extension lane for discoverability, not for fake traction claims.</div>
+        <div class="section-desc">Claude Desktop is now a real discovery surface for Claude-first buyers. This repo already ships the local install path, a buildable `.mcpb`, Claude-specific plugin metadata, privacy policy, support links, and proof-backed docs. Use the extension lane for discoverability, not for fake traction claims.</div>
         <div class="steps-grid">
           <div class="step">
             <div class="step-num">1</div>
@@ -1300,9 +1300,9 @@ __GA_BOOTSTRAP__
           </div>
           <div class="step">
             <div class="step-num">3</div>
-            <h3>Submit with clean metadata</h3>
-            <p>The repo now carries Claude-specific metadata and install docs so the extension lane stays aligned with workflow hardening, the Veto Layer, and the Agentic Feedback Studio.</p>
-            <code>.claude-plugin/plugin.json + marketplace.json + README.md</code>
+            <h3>Build the real bundle</h3>
+            <p>Package the actual `.mcpb` before you submit so the extension lane stays aligned with workflow hardening, the Veto Layer, and the Agentic Feedback Studio.</p>
+            <code>npm run build:claude-mcpb</code>
           </div>
         </div>
         <div class="cta-row">

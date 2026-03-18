@@ -55,9 +55,14 @@ test('public docs render the current package version', () => {
   assert.match(landingPage, /Run the hosted fit checker/i);
   assert.match(claudePluginReadme, /Claude Desktop/i);
   assert.match(claudePluginReadme, /Privacy Policy/i);
+  assert.match(claudePluginReadme, /Data Collection/i);
   assert.match(claudePluginReadme, /Support/i);
   assert.match(claudePluginReadme, /claude mcp add rlhf -- npx -y mcp-memory-gateway serve/i);
+  assert.match(claudePluginReadme, /npm run build:claude-mcpb/i);
   assert.match(claudeDesktopPacket, /Anthropic Local MCP Server Submission Guide/i);
+  assert.match(claudeDesktopPacket, /Build the MCPB/i);
+  assert.match(claudeDesktopPacket, /privacy_policies/i);
+  assert.match(claudeDesktopPacket, /npm run build:claude-mcpb/i);
   assert.match(claudeDesktopPacket, /Tool safety annotations/i);
   assert.match(claudeDesktopPacket, /Do not claim directory approval/i);
   assert.doesNotMatch(landingPage, /billingIncrement/);

@@ -24,6 +24,7 @@ For this repo, that means:
 ## Official references
 
 - Anthropic Local MCP Server Submission Guide: https://support.claude.com/en/articles/12922832-local-mcp-server-submission-guide
+- Anthropic Building Desktop Extensions with MCPB: https://support.claude.com/en/articles/12922929-building-desktop-extensions-with-mcpb
 - Anthropic Software Directory Terms: https://support.claude.com/en/articles/13145338-anthropic-software-directory-terms
 - Anthropic Software Directory Policy: https://support.claude.com/en/articles/13145358-anthropic-software-directory-policy
 - MCPB manifest specification: https://github.com/modelcontextprotocol/mcpb/blob/main/MANIFEST.md
@@ -33,6 +34,9 @@ For this repo, that means:
 - Claude plugin metadata: [../.claude-plugin/plugin.json](../.claude-plugin/plugin.json)
 - Claude marketplace metadata: [../.claude-plugin/marketplace.json](../.claude-plugin/marketplace.json)
 - Claude extension README: [../.claude-plugin/README.md](../.claude-plugin/README.md)
+- Claude bundle launcher: [../.claude-plugin/bundle/server/index.js](../.claude-plugin/bundle/server/index.js)
+- Claude bundle icon: [../.claude-plugin/bundle/icon.png](../.claude-plugin/bundle/icon.png)
+- Claude bundle build script: [../scripts/build-claude-mcpb.js](../scripts/build-claude-mcpb.js)
 - Local install config example: [../adapters/claude/.mcp.json](../adapters/claude/.mcp.json)
 - Privacy policy URL: `https://rlhf-feedback-loop-production.up.railway.app/privacy`
 - Security policy: [../SECURITY.md](../SECURITY.md)
@@ -85,6 +89,7 @@ This repo now enforces that contract in the MCP tool registry and test suite:
 
 - Public privacy route exists at `https://rlhf-feedback-loop-production.up.railway.app/privacy`
 - The Claude extension README links directly to it
+- The generated bundle manifest now includes `privacy_policies`
 
 ### 3. Support and vulnerability reporting
 
@@ -107,6 +112,24 @@ Every buyer-facing or directory-facing claim should point back to:
 - [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md)
 - [../proof/compatibility/report.json](../proof/compatibility/report.json)
 - [../proof/automation/report.json](../proof/automation/report.json)
+
+## Build the MCPB
+
+Anthropic's current guide requires a working `.mcpb`, not just marketplace metadata.
+
+Build the bundle locally with:
+
+```bash
+npm run build:claude-mcpb
+```
+
+That command:
+
+- stages a clean Claude Desktop bundle in `.artifacts/claude-desktop/bundle`
+- installs production dependencies only
+- writes a generated `manifest.json` with tool inventory and privacy policy URLs
+- packs `mcp-memory-gateway-<version>.mcpb`
+- validates the artifact with `mcpb info`
 
 ## Promotion lanes
 
@@ -135,11 +158,18 @@ Keep `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` aligned 
 - current product description
 - keywords for `claude-desktop`, `workflow-hardening`, and `veto-layer`
 
+Keep the generated MCPB manifest aligned with:
+
+- the package version
+- the current tool registry
+- the public privacy policy URL
+
 ## Submission checklist
 
 1. Re-run the standard verification suite.
 2. Keep Claude plugin metadata version-aligned with `package.json`.
-3. Confirm privacy, support, and proof links resolve.
-4. Prepare MCPB packaging if Anthropic requires a final `.mcpb` artifact for submission.
-5. Submit through Anthropic's official directory process.
-6. Do not market the directory listing until approval is real.
+3. Run `npm run build:claude-mcpb`.
+4. Confirm privacy, support, and proof links resolve.
+5. Inspect the resulting `.mcpb` with `mcpb info`.
+6. Submit through Anthropic's official directory process.
+7. Do not market the directory listing until approval is real.

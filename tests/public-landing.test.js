@@ -185,9 +185,10 @@ test('public landing page promotes the Claude Desktop extension path without fal
   assert.match(landingPage, /Publish the same workflow-hardening story as a Claude Desktop extension/i);
   assert.match(landingPage, /Claude Desktop is now a real discovery surface/i);
   assert.match(landingPage, /claude mcp add rlhf -- npx -y mcp-memory-gateway serve/i);
+  assert.match(landingPage, /buildable `.mcpb`|buildable \.mcpb/i);
+  assert.match(landingPage, /npm run build:claude-mcpb/i);
   assert.match(landingPage, /Review Claude Extension Guide/i);
   assert.match(landingPage, /Review Submission Packet/i);
-  assert.match(landingPage, /\.claude-plugin\/plugin\.json \+ marketplace\.json \+ README\.md/);
   assert.match(landingPage, /Directory inclusion depends on Anthropic review/i);
   assert.doesNotMatch(landingPage, /approved Claude listing/i);
 });

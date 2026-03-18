@@ -21,6 +21,8 @@ test('adapter files exist', () => {
     '.claude-plugin/plugin.json',
     '.claude-plugin/marketplace.json',
     '.claude-plugin/README.md',
+    '.claude-plugin/bundle/server/index.js',
+    '.claude-plugin/bundle/icon.png',
     'plugins/opencode-profile/INSTALL.md',
     'plugins/cursor-marketplace/.cursor-plugin/plugin.json',
     'plugins/cursor-marketplace/.mcp.json',
@@ -160,7 +162,9 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.ok(marketplaceEntry.metadata.keywords.includes('claude-desktop'));
   assert.ok(marketplaceEntry.metadata.keywords.includes('veto-layer'));
   assert.match(readme, /Privacy Policy/i);
+  assert.match(readme, /Data Collection/i);
   assert.match(readme, /Support/i);
   assert.match(readme, /Examples/i);
   assert.match(readme, /claude mcp add rlhf -- npx -y mcp-memory-gateway serve/i);
+  assert.match(readme, /build:claude-mcpb/i);
 });
