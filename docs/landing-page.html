@@ -66,6 +66,14 @@
           "@type": "Answer",
           "text": "Yes, it's designed as local-first, running via npm without cloud dependencies. It integrates with MCP servers for resources like reusable memories and prompts, mimicking gateway flows for caching and routing."
         }
+      },
+      {
+        "@type": "Question",
+        "name": "What is Reliability Studio Compare and Deploy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Reliability Studio is the buyer-facing workflow for importing workflow evidence, comparing the baseline agent run against the hardened run, and deploying the resulting rule pack and proof links without requiring model fine-tuning."
+        }
       }
     ]
   }
@@ -576,6 +584,7 @@
       <div class='nav-links'>
         <a href='#why'>Why buy</a>
         <a href='#north-star'>North Star</a>
+        <a href='#studio'>Studio</a>
         <a href='#faq'>FAQ</a>
         <a href='#pricing'>Pricing</a>
         <a href='__VERIFICATION_URL__'>Proof</a>
@@ -682,6 +691,31 @@
             <li>More than one operator can run the same system without local-only knowledge.</li>
           </ul>
         </div>
+      </div>
+    </section>
+
+    <section id='studio'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Reliability Studio</span>
+          <h2>Import workflow evidence, compare the baseline, deploy the rule pack.</h2>
+          <p>Make the product legible to buyers. Reliability Studio explains how PR threads, CI logs, runbooks, JSONL, and CSV inputs become a hardened workflow with proof links and deployable rules. No model fine-tuning required.</p>
+        </div>
+        <div class='grid-3'>
+          <div class='card'>
+            <h3>Import</h3>
+            <p>Use the workflow artifacts you already have: PR review threads, CI logs, runbooks, JSONL, and CSV. These become candidate memories, gates, and approval boundaries.</p>
+          </div>
+          <div class='card'>
+            <h3>Compare</h3>
+            <p>Show the before and after state for one workflow: fewer late review loops, stronger proof surfaces, and less tribal operator drift.</p>
+          </div>
+          <div class='card'>
+            <h3>Deploy</h3>
+            <p>Ship a shared rule pack for Claude Code, Codex, Gemini, and Amp, then attach the verification evidence and machine-readable reports buyers can inspect.</p>
+          </div>
+        </div>
+        <p class='note'>Product walkthrough only. This section describes the Compare and Deploy flow; it does not claim live customer telemetry or ROI proof.</p>
       </div>
     </section>
 

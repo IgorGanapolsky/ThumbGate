@@ -136,3 +136,19 @@ test('public landing page positions the gateway as continuity-friendly reliabili
   assert.doesNotMatch(landingPage, /official Anthropic partner/i);
   assert.doesNotMatch(landingPage, /same control plane/i);
 });
+
+test('public landing page includes Reliability Studio compare-and-deploy positioning without training drift', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /Reliability Studio/i);
+  assert.match(landingPage, /Import\. Compare\. Deploy\./);
+  assert.match(landingPage, /No model fine-tuning required/i);
+  assert.match(landingPage, /PR review threads, CI logs, runbooks, JSONL, and CSV/i);
+  assert.match(landingPage, /Start Compare &amp; Deploy/);
+  assert.match(landingPage, /Review Loops/i);
+  assert.match(landingPage, /Workflow proof pack/i);
+  assert.match(landingPage, /Product walkthrough only/i);
+  assert.match(landingPage, /What is Reliability Studio Compare and Deploy\?/);
+  assert.doesNotMatch(landingPage, /500\+ LLMs/i);
+  assert.doesNotMatch(landingPage, /GGUF/i);
+});
