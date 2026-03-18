@@ -1,0 +1,88 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    ".opencode/instructions/rlhf-workflow.md"
+  ],
+  "mcp": {
+    "rlhf": {
+      "type": "local",
+      "command": [
+        "node",
+        "bin/cli.js",
+        "serve"
+      ],
+      "enabled": true
+    }
+  },
+  "permission": {
+    "*": "ask",
+    "read": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "list": "allow",
+    "skill": "allow",
+    "todoread": "allow",
+    "webfetch": "ask",
+    "external_directory": "ask",
+    "doom_loop": "ask",
+    "bash": {
+      "*": "ask",
+      "pwd": "allow",
+      "ls*": "allow",
+      "find *": "allow",
+      "rg *": "allow",
+      "sed *": "allow",
+      "cat *": "allow",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git branch*": "allow",
+      "git rev-parse*": "allow",
+      "git worktree *": "allow",
+      "npm test": "allow",
+      "npm run test:*": "allow",
+      "npm run prove:*": "allow",
+      "npm run self-heal:check": "allow",
+      "git push*": "deny",
+      "git reset*": "deny",
+      "git checkout --*": "deny"
+    },
+    "edit": {
+      "*": "allow",
+      ".claude/worktrees/**": "deny",
+      ".rlhf/**": "deny",
+      ".claude/memory/feedback/*.json": "deny",
+      ".claude/memory/feedback/*.jsonl": "deny",
+      ".claude/memory/feedback/*.md": "deny",
+      ".claude/memory/feedback/.watcher-offset": "deny"
+    }
+  },
+  "agent": {
+    "build": {
+      "permission": {
+        "task": {
+          "*": "deny",
+          "rlhf-review": "allow"
+        }
+      }
+    },
+    "plan": {
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "*": "deny",
+          "pwd": "allow",
+          "ls*": "allow",
+          "find *": "allow",
+          "rg *": "allow",
+          "sed *": "allow",
+          "cat *": "allow",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git branch*": "allow",
+          "git rev-parse*": "allow",
+          "git worktree *": "allow"
+        }
+      }
+    }
+  }
+}

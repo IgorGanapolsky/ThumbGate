@@ -12,11 +12,17 @@ test('adapter files exist', () => {
     'adapters/gemini/function-declarations.json',
     'adapters/claude/.mcp.json',
     'adapters/codex/config.toml',
+    'adapters/opencode/opencode.json',
     'adapters/amp/skills/rlhf-feedback/SKILL.md',
+    'opencode.json',
+    '.opencode/instructions/rlhf-workflow.md',
+    '.opencode/agents/rlhf-review.md',
     '.cursor-plugin/marketplace.json',
+    'plugins/opencode-profile/INSTALL.md',
     'plugins/cursor-marketplace/.cursor-plugin/plugin.json',
     'plugins/cursor-marketplace/.mcp.json',
     'plugins/cursor-marketplace/README.md',
+    'docs/guides/opencode-integration.md',
   ];
 
   for (const file of files) {
@@ -63,6 +69,45 @@ test('codex config.toml contains mcp_servers section', () => {
     assert.match(content, /command = "node"/);
     assert.match(content, /"serve"/);
   }
+});
+
+test('opencode adapter is valid JSON with a version-pinned local MCP server', () => {
+  const filePath = path.join(root, 'adapters/opencode/opencode.json');
+  const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  const rlhf = payload.mcp && payload.mcp.rlhf;
+
+  assert.equal(payload.$schema, 'https://opencode.ai/config.json');
+  assert.ok(rlhf, 'opencode adapter must define mcp.rlhf');
+  assert.equal(rlhf.type, 'local');
+  assert.equal(rlhf.enabled, true);
+  assert.deepEqual(rlhf.command, ['npx', '-y', `mcp-memory-gateway@${packageVersion}`, 'serve']);
+});
+
+test('repo opencode.json enforces worktree-safe defaults', () => {
+  const filePath = path.join(root, 'opencode.json');
+  const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  const permissions = payload.permission || {};
+  const bashPermissions = permissions.bash || {};
+  const editPermissions = permissions.edit || {};
+
+  assert.deepEqual(payload.instructions, ['.opencode/instructions/rlhf-workflow.md']);
+  assert.deepEqual(payload.mcp.rlhf.command, ['node', 'bin/cli.js', 'serve']);
+  assert.equal(bashPermissions['git push*'], 'deny');
+  assert.equal(bashPermissions['git reset*'], 'deny');
+  assert.equal(bashPermissions['git checkout --*'], 'deny');
+  assert.equal(editPermissions['.rlhf/**'], 'deny');
+  assert.equal(editPermissions['.claude/worktrees/**'], 'deny');
+});
+
+test('opencode review agent remains read-only and verification-focused', () => {
+  const filePath = path.join(root, '.opencode', 'agents', 'rlhf-review.md');
+  const content = fs.readFileSync(filePath, 'utf-8');
+
+  assert.match(content, /edit:\s+deny/, 'rlhf-review must deny edits');
+  assert.match(content, /npm run test:\*/, 'rlhf-review must allow test commands');
+  assert.match(content, /npm run prove:\*/, 'rlhf-review must allow proof commands');
+  assert.match(content, /npm run self-heal:check/, 'rlhf-review must allow self-heal verification');
+  assert.match(content, /Do not edit files\./, 'rlhf-review must stay read-only');
 });
 
 test('amp SKILL.md contains capture-feedback reference', () => {

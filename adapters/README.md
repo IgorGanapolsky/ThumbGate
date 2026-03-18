@@ -6,3 +6,4 @@
 - `claude/.mcp.json`: example Claude Code MCP config using `npx -y mcp-memory-gateway@0.7.1 serve`.
 - `codex/config.toml`: example Codex MCP profile section using the same version-pinned portable launcher.
 - `amp/skills/rlhf-feedback/SKILL.md`: Amp skill template.
+- `opencode/opencode.json`: portable OpenCode MCP profile using the same version-pinned portable launcher.

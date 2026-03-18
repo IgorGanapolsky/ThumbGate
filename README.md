@@ -13,9 +13,14 @@
 
 > **Honest disclaimer:** This is a **context injection system**, not RLHF. LLM weights are not updated by thumbs-up/down signals. What actually happens: feedback is validated, promoted to searchable memory, and recalled at session start so agents have project history they'd otherwise lose. That's genuinely valuable — but it's context engineering, not reinforcement learning.
 
-Works with any MCP-compatible agent: Claude, Codex, Gemini, Amp, Cursor.
+Works with any MCP-compatible agent: Claude, Codex, Gemini, Amp, Cursor, OpenCode.
 
 Verification evidence for shipped features lives in [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md).
+
+Repo-local operator guides:
+
+- [Aider with OpenAI-compatible backends](docs/guides/aider-openai-compatible.md)
+- [OpenCode integration](docs/guides/opencode-integration.md)
 
 Continuity tools help you resume work. MCP Memory Gateway keeps the resumed session sharper: recall, reliability rules, pre-action gates, and verification layered on top of that continuity workflow without another planner or swarm.
 

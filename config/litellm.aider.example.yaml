@@ -1,0 +1,15 @@
+model_list:
+  - model_name: qwen3-dev
+    litellm_params:
+      model: openrouter/qwen/qwen3-coder
+      api_base: https://openrouter.ai/api/v1
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: kimi-2.5-dev
+    litellm_params:
+      model: openrouter/moonshotai/kimi-k2-thinking
+      api_base: https://openrouter.ai/api/v1
+      api_key: os.environ/OPENROUTER_API_KEY
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

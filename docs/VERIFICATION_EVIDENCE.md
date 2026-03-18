@@ -1,3 +1,59 @@
+## March 18, 2026: Aider OpenAI-compatible backends and OpenCode integration
+
+Scope:
+
+- Added repo-local Aider configs, launcher, smoke runner, and verification entrypoints for OpenAI-compatible backends in linked worktrees.
+- Added OpenRouter-first defaults for Qwen3 and Kimi plus a LiteLLM gateway example for stable alias-based routing.
+- Added a repo-local OpenCode profile with worktree-safe permissions, a read-only `rlhf-review` subagent, and a portable OpenCode adapter profile.
+- Added regression coverage for the Aider launcher/smoke path, OpenCode adapter integrity, and version-pin drift.
+- Fixed a live-discovered OpenRouter bug in the new Aider launcher so direct OpenRouter requests use raw model IDs instead of invalid `openrouter/...` IDs.
+- Closed a repo hygiene leak by ignoring `.claude/memory/feedback/.watcher-offset` so verification does not surface runtime cursor state as a repo change.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/rlhf-aider-opencode-20260318`:
+
+```bash
+npm ci
+node --test tests/aider-integration.test.js
+node --test tests/adapters.test.js tests/version-metadata.test.js
+npm run test:workflow
+node scripts/sync-version.js --check
+npm run aider:verify:quick
+npx -y opencode-ai mcp list
+npx -y opencode-ai agent list | rg -n "build \\(primary\\)|plan \\(primary\\)|rlhf-review"
+npm run aider:smoke:qwen3
+npm run aider:smoke:kimi
+npm run aider:verify:full
+npm run test:coverage
+git status --short
+```
+
+Observed result:
+
+- `npm ci` completed with `0` vulnerabilities.
+- `node --test tests/aider-integration.test.js`: `11` passed, `0` failed.
+- `node --test tests/adapters.test.js tests/version-metadata.test.js`: `19` passed, `0` failed.
+- `npm run test:workflow`: `11` passed, `0` failed.
+- `node scripts/sync-version.js --check`: all `18` pinned targets in sync at `v0.7.1`.
+- `npm run aider:verify:quick` exited `0`; the embedded CLI regression pack passed with `55` tests, `0` failed.
+- `npx -y opencode-ai mcp list` reported `✓ rlhf connected` using `node bin/cli.js serve`.
+- `npx -y opencode-ai agent list | rg -n "build \\(primary\\)|plan \\(primary\\)|rlhf-review"` confirmed `build (primary)`, `plan (primary)`, and `rlhf-review (subagent)`.
+- The first live Aider smoke exposed a real repo bug: direct OpenRouter requests were sending invalid `openrouter/...` model IDs. After fixing the launcher normalization, live smoke reached OpenRouter successfully.
+- `npm run aider:smoke:qwen3` now fails with an attributable provider-policy response, not a repo wiring error: HTTP `404` with `requested_providers=["xai"]` and `No allowed providers are available for the selected model.`
+- `npm run aider:smoke:kimi` fails for the same reason: HTTP `404` with `requested_providers=["xai"]`.
+- `npm run aider:verify:full` exited `0`, which reran `npm test`, `npm run test:coverage`, `npm run prove:adapters`, `npm run prove:automation`, and `npm run self-heal:check` from the worktree using temp proof directories.
+- `npm run test:coverage` passed with all-files coverage at `90.11%` lines, `76.27%` branches, and `93.51%` functions.
+- `npm run prove:adapters`: `46` passed, `0` failed.
+- `npm run prove:automation`: `55` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+- After ignoring `.claude/memory/feedback/.watcher-offset`, `git status --short` only reports the intended tracked integration changes in this worktree.
+
+Requirements verified:
+
+- Aider can now be launched from this repo against direct OpenRouter or a LiteLLM/OpenAI-compatible gateway without editing the primary checkout.
+- The repo now ships a project-scoped OpenCode config, a portable OpenCode adapter, and a read-only verification subagent that OpenCode discovers live.
+- Version-pinned Aider/OpenCode assets are covered by tests and by `scripts/sync-version.js --check`.
+- The remaining live Aider limitation is external to the repo: the provided OpenRouter key is restricted to the `xai` provider and cannot reach Qwen3 or Kimi.
+
 ## March 17, 2026: Workflow hardening sprint intake and commercial-truth operator metrics
 
 Scope:

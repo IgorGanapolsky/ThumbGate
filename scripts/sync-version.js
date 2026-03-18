@@ -160,9 +160,11 @@ function syncVersion(opts) {
   const pinnedPackageTargets = [
     'docs/PLUGIN_DISTRIBUTION.md',
     'adapters/README.md',
+    'adapters/opencode/opencode.json',
     'docs/mcp-hub-submission.md',
     'docs/VERIFICATION_EVIDENCE.md',
     'plugins/codex-profile/INSTALL.md',
+    'plugins/opencode-profile/INSTALL.md',
     'plugins/cursor-marketplace/README.md',
   ];
   const pinnedPackagePattern = /mcp-memory-gateway@\d+\.\d+\.\d+/g;
