@@ -62,6 +62,7 @@ async function handleRequest(message) {
 }
 
 function startStdioServer() {
+  appendFunnelEvent({ stage: "activation", event: "mcp_server_started", evidence: "stdio_init" });
   process.stdin.resume();
   process.stdin.on('data', async (chunk) => {
     try {
