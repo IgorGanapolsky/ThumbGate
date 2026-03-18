@@ -43,6 +43,9 @@ test('public docs render the current package version', () => {
   assert.match(landingPage, /MCP Memory Gateway/);
   assert.match(landingPage, /AI Agent Reliability Without Orchestration Tax/i);
   assert.match(landingPage, /\$49 one-time/);
+  assert.match(landingPage, /Reliability Studio/i);
+  assert.match(landingPage, /Compare and Deploy/i);
+  assert.match(landingPage, /No model fine-tuning required/i);
   assert.doesNotMatch(landingPage, /billingIncrement/);
   assert.doesNotMatch(landingPage, /P1M/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));

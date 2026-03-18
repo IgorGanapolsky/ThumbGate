@@ -145,6 +145,14 @@ __GA_BOOTSTRAP__
       },
       {
         "@type": "Question",
+        "name": "What is Reliability Studio Compare and Deploy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Reliability Studio is the buyer-facing workflow for importing PR threads, CI logs, runbooks, JSONL, and CSV evidence, comparing the baseline agent run against the hardened run, and deploying the resulting rule pack and proof links without requiring model fine-tuning."
+        }
+      },
+      {
+        "@type": "Question",
         "name": "Do I need subagents or an orchestration layer to get value?",
         "acceptedAnswer": {
           "@type": "Answer",
@@ -554,6 +562,153 @@ __GA_BOOTSTRAP__
     .dashboard-body .up { color: var(--green); }
     .dashboard-body .label { color: var(--text-dim); }
 
+    /* ── Reliability Studio ── */
+    .studio-shell {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .studio-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      padding: 28px;
+    }
+
+    .studio-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+
+    .studio-card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
+    .studio-flow {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .studio-step {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      background: var(--bg);
+    }
+
+    .studio-step strong {
+      display: block;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .studio-step span {
+      display: block;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .studio-proof-note {
+      border-left: 3px solid var(--accent);
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: rgba(34, 211, 238, 0.08);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .studio-compare {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .studio-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .studio-kpi {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      padding: 14px;
+    }
+
+    .studio-kpi-label {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+
+    .studio-kpi-value {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .studio-kpi-value .from {
+      color: var(--red);
+    }
+
+    .studio-kpi-value .to {
+      color: var(--green);
+    }
+
+    .studio-kpi-detail {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .studio-deploy {
+      border: 1px solid rgba(34, 211, 238, 0.25);
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(34, 211, 238, 0.08) 0%, rgba(17, 17, 19, 0.92) 100%);
+      padding: 18px;
+    }
+
+    .studio-deploy h4 {
+      font-size: 15px;
+      margin-bottom: 10px;
+    }
+
+    .studio-deploy ul {
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .studio-deploy li {
+      font-size: 14px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .studio-deploy li::before {
+      content: "\2192";
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
     /* ── Pricing ── */
     .pricing-grid {
       display: grid;
@@ -795,7 +950,9 @@ __GA_BOOTSTRAP__
     @media (max-width: 768px) {
       .ba-grid,
       .steps-grid,
-      .pricing-grid {
+      .pricing-grid,
+      .studio-shell,
+      .studio-grid {
         grid-template-columns: 1fr;
       }
 
@@ -819,6 +976,7 @@ __GA_BOOTSTRAP__
       <div class="brand">mcp-memory-gateway <span>v0.7.0</span></div>
       <div class="nav-links">
         <a href="#use-cases">Use Cases</a>
+        <a href="#studio">Studio</a>
         <a href="#offers">Offers</a>
         <a href="#how">How It Works</a>
         <a href="#pricing">Pricing</a>
@@ -999,6 +1157,71 @@ __GA_BOOTSTRAP__
         <div class="cta-row">
           <a class="btn btn-primary" data-cta-id="offers_sprint" data-cta-placement="offers" data-plan-id="sprint" href="#workflow-sprint-intake">Start Sprint Intake</a>
           <a class="btn btn-secondary" data-cta-id="offers_scope" data-cta-placement="offers" data-plan-id="sprint" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md" target="_blank" rel="noreferrer">See Sprint Scope</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="studio">
+      <div class="wrap">
+        <div class="section-label">Reliability Studio</div>
+        <div class="section-title">Import. Compare. Deploy.</div>
+        <div class="section-desc">Turn the abstract parts of the product into one buyer-legible flow: import workflow evidence, compare the baseline run against the hardened run, then deploy the rule pack and proof links. No model fine-tuning required.</div>
+        <div class="studio-shell">
+          <div class="studio-card">
+            <h3>Import workflow evidence</h3>
+            <p>Start with the artifacts the team already has instead of asking buyers to imagine a new process from scratch.</p>
+            <div class="studio-flow">
+              <div class="studio-step">
+                <strong>Import</strong>
+                <span>PR review threads, CI logs, runbooks, JSONL, and CSV become candidate memories, rules, and proof references.</span>
+              </div>
+              <div class="studio-step">
+                <strong>Normalize</strong>
+                <span>Repeated failures are grouped into workflow blockers, approval boundaries, and candidate pre-action gates.</span>
+              </div>
+              <div class="studio-step">
+                <strong>Score</strong>
+                <span>Commercial truth stays clean because pipeline noise stays separate from actual proof artifacts.</span>
+              </div>
+            </div>
+            <div class="studio-proof-note">Product walkthrough only. This explains the Compare and Deploy flow; it is not live customer telemetry or claimed ROI.</div>
+          </div>
+          <div class="studio-card">
+            <h3>Compare baseline vs hardened run</h3>
+            <p>Show what changes after the Gateway is wired into one workflow, then deploy the resulting rule pack to the runtimes the team already uses.</p>
+            <div class="studio-compare">
+              <div class="studio-grid">
+                <div class="studio-kpi">
+                  <div class="studio-kpi-label">Review Loops</div>
+                  <div class="studio-kpi-value"><span class="from">3</span><span>&rarr;</span><span class="to">0 blocked late</span></div>
+                  <div class="studio-kpi-detail">Pushes get blocked before the same PR failure returns in a different file.</div>
+                </div>
+                <div class="studio-kpi">
+                  <div class="studio-kpi-label">Proof Surface</div>
+                  <div class="studio-kpi-value"><span class="from">none</span><span>&rarr;</span><span class="to">evidence pack</span></div>
+                  <div class="studio-kpi-detail">Reviewers get verification links, machine-readable reports, and a cleaner rollout story.</div>
+                </div>
+                <div class="studio-kpi">
+                  <div class="studio-kpi-label">Operator Drift</div>
+                  <div class="studio-kpi-value"><span class="from">tribal</span><span>&rarr;</span><span class="to">shared pack</span></div>
+                  <div class="studio-kpi-detail">Rules, memory, and gates become portable across Claude Code, Codex, Gemini, and Amp.</div>
+                </div>
+              </div>
+              <div class="studio-deploy">
+                <h4>Deploy outputs</h4>
+                <ul>
+                  <li>Shared reliability rule pack for Claude Code, Codex, Gemini, and Amp.</li>
+                  <li>Workflow proof pack with `VERIFICATION_EVIDENCE.md` and machine-readable reports.</li>
+                  <li>Optional DPO export later, but runtime reliability lands first.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="cta-row">
+              <a class="btn btn-secondary" data-cta-id="studio_proof" data-cta-placement="studio" data-plan-id="proof" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Review Proof Pack</a>
+              <a class="btn btn-secondary" data-cta-id="studio_pro" data-cta-placement="studio" data-plan-id="pro" href="#pricing">Compare with Pro</a>
+              <a class="btn btn-primary" data-cta-id="studio_sprint" data-cta-placement="studio" data-plan-id="sprint" href="#workflow-sprint-intake">Start Compare &amp; Deploy</a>
+            </div>
+          </div>
         </div>
       </div>
     </section>
