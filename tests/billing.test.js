@@ -352,6 +352,29 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(revenueEvents[0].currency, 'USD');
     assert.equal(revenueEvents[0].recurringInterval, null);
   });
+
+  test('getBillingSummary derives paid orders from paid provider events when revenue ledger is missing', () => {
+    const billing = require('../scripts/billing');
+    billing.appendFunnelEvent({
+      stage: 'paid',
+      event: 'github_marketplace_purchased',
+      evidence: 'marketplace_order_derived',
+      metadata: {
+        provider: 'github_marketplace',
+        customerId: 'github_user_derived',
+        marketplaceOrderId: 'marketplace_order_derived',
+        source: 'github_marketplace',
+      },
+    });
+
+    const summary = billing.getBillingSummary();
+    assert.equal(summary.revenue.paidProviderEvents, 1);
+    assert.equal(summary.revenue.paidOrders, 1);
+    assert.equal(summary.revenue.bookedRevenueCents, 0);
+    assert.equal(summary.revenue.amountKnownCoverageRate, 0);
+    assert.equal(summary.revenue.derivedPaidOrders, 1);
+    assert.equal(summary.dataQuality.unreconciledPaidEvents, 0);
+  });
 });
 
 describe('billing.js — rotateApiKey', () => {

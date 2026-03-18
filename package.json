@@ -57,7 +57,7 @@
     "test:intelligence": "node --test tests/intelligence.test.js",
     "test:training-export": "node --test tests/training-export.test.js tests/databricks-export.test.js",
     "test:deployment": "node --test tests/deployment.test.js tests/deploy-policy.test.js",
-    "test:workflow": "node --test tests/workflow-contract.test.js tests/social-marketing-assets.test.js tests/positioning-contract.test.js",
+    "test:workflow": "node --test tests/workflow-contract.test.js tests/social-marketing-assets.test.js tests/positioning-contract.test.js tests/workflow-runs.test.js",
     "test:billing": "node --test tests/billing.test.js",
     "test:cli": "node --test tests/cli.test.js tests/feedback-normalize.test.js tests/install-mcp.test.js",
     "test:watcher": "node --test tests/jsonl-watcher.test.js",

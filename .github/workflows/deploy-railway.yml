@@ -19,6 +19,9 @@ jobs:
       RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL }}
       RLHF_PUBLIC_APP_ORIGIN: ${{ vars.RLHF_PUBLIC_APP_ORIGIN }}
       RLHF_BILLING_API_BASE_URL: ${{ vars.RLHF_BILLING_API_BASE_URL }}
+      RLHF_FEEDBACK_DIR: ${{ vars.RLHF_FEEDBACK_DIR }}
+      RLHF_GA_MEASUREMENT_ID: ${{ vars.RLHF_GA_MEASUREMENT_ID }}
+      RLHF_GOOGLE_SITE_VERIFICATION: ${{ vars.RLHF_GOOGLE_SITE_VERIFICATION }}
       RAILWAY_TOKEN_ROTATED_AT: ${{ vars.RAILWAY_TOKEN_ROTATED_AT }}
       RLHF_API_KEY_ROTATED_AT: ${{ vars.RLHF_API_KEY_ROTATED_AT }}
       STRIPE_SECRET_KEY_ROTATED_AT: ${{ vars.STRIPE_SECRET_KEY_ROTATED_AT }}
@@ -53,6 +56,15 @@ jobs:
           fi
           railway variables set STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" "${SERVICE_ARGS[@]}"
           railway variables set STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" "${SERVICE_ARGS[@]}"
+          if [ -n "$RLHF_FEEDBACK_DIR" ]; then
+            railway variables set RLHF_FEEDBACK_DIR="$RLHF_FEEDBACK_DIR" "${SERVICE_ARGS[@]}"
+          fi
+          if [ -n "$RLHF_GA_MEASUREMENT_ID" ]; then
+            railway variables set RLHF_GA_MEASUREMENT_ID="$RLHF_GA_MEASUREMENT_ID" "${SERVICE_ARGS[@]}"
+          fi
+          if [ -n "$RLHF_GOOGLE_SITE_VERIFICATION" ]; then
+            railway variables set RLHF_GOOGLE_SITE_VERIFICATION="$RLHF_GOOGLE_SITE_VERIFICATION" "${SERVICE_ARGS[@]}"
+          fi
       - name: Deploy to Railway
         if: steps.railway-config.outputs.enabled == 'true'
         run: |

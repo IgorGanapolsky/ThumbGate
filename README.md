@@ -290,6 +290,7 @@ npx mcp-memory-gateway init --wire-hooks # Wire hooks only (auto-detect agent)
 npx mcp-memory-gateway serve             # Start MCP server (stdio) + watcher
 npx mcp-memory-gateway doctor            # Audit runtime isolation, bootstrap context, and MCP permission tier
 npx mcp-memory-gateway dashboard         # Full RLHF dashboard with gate stats
+npx mcp-memory-gateway north-star        # North Star progress: proof-backed workflow runs
 npx mcp-memory-gateway gate-stats        # Gate enforcement statistics
 npx mcp-memory-gateway status            # Learning curve dashboard
 npx mcp-memory-gateway watch             # Watch .rlhf/ for external signals
@@ -309,6 +310,7 @@ The landing page ships first-party telemetry plus optional GA4 and Google Search
 ```bash
 export RLHF_PUBLIC_APP_ORIGIN='https://rlhf-feedback-loop-production.up.railway.app'
 export RLHF_BILLING_API_BASE_URL='https://rlhf-feedback-loop-production.up.railway.app'
+export RLHF_FEEDBACK_DIR='/data/feedback'
 export RLHF_GA_MEASUREMENT_ID='G-XXXXXXXXXX'          # optional
 export RLHF_GOOGLE_SITE_VERIFICATION='token-value'    # optional
 ```
@@ -316,6 +318,7 @@ export RLHF_GOOGLE_SITE_VERIFICATION='token-value'    # optional
 - Plausible stays on by default for lightweight page analytics.
 - GA4 is only injected when `RLHF_GA_MEASUREMENT_ID` is set.
 - Search Console verification meta is only injected when `RLHF_GOOGLE_SITE_VERIFICATION` is set.
+- Hosted deployments should set `RLHF_FEEDBACK_DIR=/data/feedback` (or another durable path) so telemetry, billing ledgers, and proof-backed workflow-run evidence survive restarts.
 - `npx mcp-memory-gateway dashboard` now shows whether traffic, SEO, funnel, and revenue instrumentation are actually configured and receiving events.
 
 ## JSONL File Watcher

@@ -25,18 +25,24 @@ const CONFIG = {
   GITHUB_MARKETPLACE_PLAN_PRICES_JSON: process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON || '',
   STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || 'price_1TCOL1GGBpd520QY8CyhR9Dd',
   get API_KEYS_PATH() {
-    return process.env._TEST_API_KEYS_PATH || path.resolve(__dirname, '../.claude/memory/feedback/api-keys.json');
+    return process.env._TEST_API_KEYS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'api-keys.json');
   },
   get FUNNEL_LEDGER_PATH() {
-    return process.env._TEST_FUNNEL_LEDGER_PATH || process.env.RLHF_FUNNEL_LEDGER_PATH || path.resolve(__dirname, '../.claude/memory/feedback/funnel-events.jsonl');
+    return process.env._TEST_FUNNEL_LEDGER_PATH || process.env.RLHF_FUNNEL_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'funnel-events.jsonl');
   },
   get REVENUE_LEDGER_PATH() {
-    return process.env._TEST_REVENUE_LEDGER_PATH || process.env.RLHF_REVENUE_LEDGER_PATH || path.resolve(__dirname, '../.claude/memory/feedback/revenue-events.jsonl');
+    return process.env._TEST_REVENUE_LEDGER_PATH || process.env.RLHF_REVENUE_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'revenue-events.jsonl');
   },
   get LOCAL_CHECKOUT_SESSIONS_PATH() {
-    return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.resolve(__dirname, '../.claude/memory/feedback/local-checkout-sessions.json');
+    return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'local-checkout-sessions.json');
   }
 };
+
+const LEGACY_FEEDBACK_DIR = path.resolve(__dirname, '../.claude/memory/feedback');
+
+function resolveLegacyBillingPath(fileName) {
+  return path.join(LEGACY_FEEDBACK_DIR, fileName);
+}
 
 let _stripeClient = null;
 function getStripeClient() {
@@ -94,21 +100,40 @@ function appendJsonlRecord(filePath, payload) {
   }
 }
 
-function loadJsonlRecords(filePath) {
+function loadJsonlRecords(filePath, legacyPath = null) {
   try {
-    if (!fs.existsSync(filePath)) return [];
-    return fs.readFileSync(filePath, 'utf-8')
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        try {
-          return JSON.parse(line);
-        } catch {
-          return null;
-        }
-      })
-      .filter(Boolean);
+    const paths = [filePath];
+    if (legacyPath && legacyPath !== filePath) {
+      paths.push(legacyPath);
+    }
+
+    const merged = [];
+    const seen = new Set();
+
+    for (const target of paths) {
+      if (!fs.existsSync(target)) continue;
+      const rows = fs.readFileSync(target, 'utf-8')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          try {
+            return JSON.parse(line);
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean);
+
+      for (const row of rows) {
+        const key = JSON.stringify(row);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(row);
+      }
+    }
+
+    return merged;
   } catch { return []; }
 }
 
@@ -225,14 +250,50 @@ function resolveAcquisitionLeadKey(entry = {}) {
   );
 }
 
+function buildProviderEventFallbackKey(entry = {}, metadata = {}, attribution = {}) {
+  const provider = normalizeText(metadata.provider || entry.provider || attribution.source || entry.source) || 'unknown';
+  const customerId = normalizeText(metadata.customerId || entry.customerId);
+  const accountId = normalizeText(metadata.accountId || entry.accountId);
+  const planId = normalizeText(entry.planId || metadata.planId);
+  const timestamp = normalizeText(entry.timestamp);
+  const evidence = normalizeText(entry.evidence);
+
+  if (customerId && timestamp) {
+    return [provider, customerId, planId || accountId || evidence || 'event', timestamp].join(':');
+  }
+
+  if (accountId && timestamp) {
+    return [provider, accountId, planId || evidence || 'event', timestamp].join(':');
+  }
+
+  if (customerId && evidence) {
+    return [provider, customerId, planId || evidence].join(':');
+  }
+
+  return null;
+}
+
+function resolveEvidenceOrderKey(entry = {}) {
+  const evidence = normalizeText(entry.evidence);
+  const eventName = normalizeText(entry.event);
+  if (!evidence) return null;
+  return evidence !== eventName ? evidence : null;
+}
+
 function resolvePaidProviderEventKey(entry = {}) {
   const metadata = sanitizeMetadata(entry.metadata);
+  const attribution = extractAttribution({
+    ...metadata,
+    ...sanitizeMetadata(entry.attribution),
+    ...sanitizeMetadata(entry),
+  });
   return pickFirstText(
     entry.orderId,
     metadata.orderId,
     metadata.sessionId,
     metadata.marketplaceOrderId,
-    entry.evidence,
+    resolveEvidenceOrderKey(entry),
+    buildProviderEventFallbackKey(entry, metadata, attribution),
     resolveAcquisitionLeadKey(entry)
   );
 }
@@ -244,6 +305,8 @@ function resolveRevenueEventKey(entry = {}) {
     entry.orderId,
     metadata.orderId,
     metadata.marketplaceOrderId,
+    resolveEvidenceOrderKey(entry),
+    buildProviderEventFallbackKey(entry, metadata, attribution),
     entry.evidence,
     entry.traceId,
     metadata.traceId,
@@ -318,11 +381,72 @@ function appendFunnelEvent({ stage, event, installId = null, traceId = null, evi
 }
 
 function loadFunnelLedger() {
-  return loadJsonlRecords(CONFIG.FUNNEL_LEDGER_PATH);
+  return loadJsonlRecords(
+    CONFIG.FUNNEL_LEDGER_PATH,
+    resolveLegacyBillingPath('funnel-events.jsonl')
+  );
 }
 
 function loadRevenueLedger() {
-  return loadJsonlRecords(CONFIG.REVENUE_LEDGER_PATH);
+  return loadJsonlRecords(
+    CONFIG.REVENUE_LEDGER_PATH,
+    resolveLegacyBillingPath('revenue-events.jsonl')
+  );
+}
+
+function deriveRevenueEventFromPaidProviderEvent(entry = {}) {
+  const metadata = sanitizeMetadata(entry.metadata);
+  const provider = normalizeText(metadata.provider || entry.provider || entry.utmSource || entry.source);
+  const customerId = normalizeText(metadata.customerId || entry.customerId);
+  const orderId = resolvePaidProviderEventKey(entry);
+  if (!provider || !customerId || !orderId) return null;
+
+  const attribution = extractAttribution({
+    ...metadata,
+    ...sanitizeMetadata(entry.attribution),
+    ...sanitizeMetadata(entry),
+  });
+
+  return {
+    timestamp: normalizeText(entry.timestamp) || new Date().toISOString(),
+    provider,
+    event: normalizeText(entry.event) || 'paid_provider_event',
+    status: 'paid',
+    orderId,
+    evidence: normalizeText(entry.evidence) || orderId,
+    customerId,
+    installId: normalizeText(entry.installId),
+    traceId: normalizeText(entry.traceId),
+    amountCents: null,
+    currency: null,
+    amountKnown: false,
+    recurringInterval: null,
+    attribution,
+    ...extractJourneyFields({
+      ...metadata,
+      ...sanitizeMetadata(entry),
+      ...sanitizeMetadata(entry.attribution),
+    }),
+    metadata: {
+      ...metadata,
+      derivedFromPaidProviderEvent: true,
+    },
+  };
+}
+
+function loadResolvedRevenueEvents() {
+  const revenueEvents = loadRevenueLedger();
+  const paidProviderEvents = loadFunnelLedger().filter((entry) => entry && entry.stage === 'paid');
+  const resolved = [...revenueEvents];
+
+  for (const entry of paidProviderEvents) {
+    const derived = deriveRevenueEventFromPaidProviderEvent(entry);
+    if (!derived) continue;
+    if (hasRevenueEventMatch(resolved, derived)) continue;
+    resolved.push(derived);
+  }
+
+  return resolved;
 }
 
 function appendRevenueEvent({
@@ -374,7 +498,9 @@ function appendRevenueEvent({
 
 function loadLocalCheckoutSessions() {
   try {
-    const target = CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH;
+    const primary = CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH;
+    const legacy = resolveLegacyBillingPath('local-checkout-sessions.json');
+    const target = fs.existsSync(primary) ? primary : legacy;
     if (!fs.existsSync(target)) return { sessions: {} };
     const parsed = JSON.parse(fs.readFileSync(target, 'utf-8'));
     return (parsed && typeof parsed.sessions === 'object') ? parsed : { sessions: {} };
@@ -439,7 +565,7 @@ function resolveGithubPlanPricing(planId) {
 
 function getFunnelAnalytics() {
   const events = loadFunnelLedger();
-  const paidOrders = loadRevenueLedger().filter((entry) => entry && entry.status === 'paid');
+  const paidOrders = loadResolvedRevenueEvents().filter((entry) => entry && entry.status === 'paid');
   const stageCounts = { acquisition: 0, activation: 0, paid: 0 };
   const eventCounts = {};
   for (const entry of events) {
@@ -466,7 +592,7 @@ function getBusinessAnalytics() {
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const telemetry = getTelemetryAnalytics(FEEDBACK_DIR);
   const events = loadFunnelLedger();
-  const revenueEvents = loadRevenueLedger();
+  const revenueEvents = loadResolvedRevenueEvents();
   const workflowSprintLeads = loadWorkflowSprintLeads();
   const funnel = getFunnelAnalytics();
   const acquisitionEvents = events.filter((entry) => entry && entry.stage === 'acquisition');
@@ -529,6 +655,7 @@ function getBusinessAnalytics() {
   let bookedRevenueCents = 0;
   let amountKnownOrders = 0;
   let amountUnknownOrders = 0;
+  let derivedPaidOrders = 0;
   let latestPaidAt = null;
   let latestPaidOrder = null;
 
@@ -583,6 +710,10 @@ function getBusinessAnalytics() {
     } else {
       amountUnknownOrders += 1;
       providerSummary.amountUnknownOrders += 1;
+    }
+
+    if (entry.metadata && entry.metadata.derivedFromPaidProviderEvent) {
+      derivedPaidOrders += 1;
     }
 
     if (!latestPaidAt || String(entry.timestamp || '') > latestPaidAt) {
@@ -763,6 +894,7 @@ function getBusinessAnalytics() {
       bookedRevenueByCurrency,
       amountKnownOrders,
       amountUnknownOrders,
+      derivedPaidOrders,
       amountKnownCoverageRate: safeRate(amountKnownOrders, paidOrders.length),
       unreconciledPaidEvents,
       latestPaidAt,
@@ -920,7 +1052,9 @@ function getBillingSummary() {
 
 function loadKeyStore() {
   try {
-    const target = CONFIG.API_KEYS_PATH;
+    const primary = CONFIG.API_KEYS_PATH;
+    const legacy = resolveLegacyBillingPath('api-keys.json');
+    const target = fs.existsSync(primary) ? primary : legacy;
     if (!fs.existsSync(target)) return { keys: {} };
     const parsed = JSON.parse(fs.readFileSync(target, 'utf-8'));
     return (parsed && typeof parsed.keys === 'object') ? parsed : { keys: {} };
@@ -1350,7 +1484,7 @@ function handleGithubWebhook(event) {
 }
 
 module.exports = {
-  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary,
+  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,
   _REVENUE_LEDGER_PATH: () => CONFIG.REVENUE_LEDGER_PATH,

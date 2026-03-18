@@ -1,3 +1,75 @@
+## March 18, 2026: North Star truth surface, workflow-run ledger, and hosted analytics durability
+
+Scope:
+
+- Added `scripts/workflow-runs.js` as a dedicated local ledger for proof-backed workflow runs, reviewed runs, paid team runs, and named pilot agreements.
+- Added a first-class `north-star` CLI command and a `🎯 North Star` section in the dashboard so the repo now reports the stated product metric directly instead of only adjacent revenue and telemetry proxies.
+- Updated `scripts/aider-verify.js` so `npm run aider:verify:full` records a proof-backed workflow run after the full suite passes.
+- Fixed billing and dashboard truth surfaces to use the active feedback directory discovery logic instead of being split between `.rlhf/` and legacy `.claude/memory/feedback/` defaults.
+- Added safe reconciliation logic for historical paid-provider events so legacy paid funnel events become honest `paidOrders` without fabricating booked revenue.
+- Wired hosted deployment examples and secret sync flows for durable runtime feedback storage and optional analytics/search-console variables: `RLHF_FEEDBACK_DIR`, `RLHF_GA_MEASUREMENT_ID`, and `RLHF_GOOGLE_SITE_VERIFICATION`.
+- Added regression coverage for workflow-run persistence, North Star CLI output, dashboard reporting, direct local telemetry persistence, and billing reconciliation when the revenue ledger is absent.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/rlhf-northstar-20260318-135757`:
+
+```bash
+npm ci
+node --test tests/workflow-runs.test.js tests/billing.test.js tests/dashboard.test.js tests/cli.test.js tests/aider-integration.test.js
+node --test tests/billing.test.js tests/dashboard.test.js
+npm run aider:verify:full
+node bin/cli.js north-star
+node bin/cli.js dashboard
+env _TEST_FUNNEL_LEDGER_PATH='/Users/ganapolsky_i/workspace/git/igor/rlhf/.claude/memory/feedback/funnel-events.jsonl' \
+    _TEST_REVENUE_LEDGER_PATH='/tmp/rlhf-empty-revenue-events.jsonl' \
+    _TEST_API_KEYS_PATH='/tmp/rlhf-empty-api-keys.jsonl' \
+    node -e "const { getBillingSummary } = require('./scripts/billing'); const summary = getBillingSummary(); console.log(JSON.stringify({ paidProviderEvents: summary.revenue.paidProviderEvents, paidOrders: summary.revenue.paidOrders, bookedRevenueCents: summary.revenue.bookedRevenueCents, derivedPaidOrders: summary.revenue.derivedPaidOrders, unreconciledPaidEvents: summary.revenue.unreconciledPaidEvents }, null, 2));"
+```
+
+Observed result:
+
+- `npm ci` completed with `0` vulnerabilities.
+- `node --test tests/workflow-runs.test.js tests/billing.test.js tests/dashboard.test.js tests/cli.test.js tests/aider-integration.test.js`: `72` passed, `0` failed.
+- `node --test tests/billing.test.js tests/dashboard.test.js`: `27` passed, `0` failed.
+- `npm run aider:verify:full` exited `0` and completed the standard full suite:
+  - `npm test`
+  - `npm run test:coverage`
+  - `npm run prove:adapters`
+  - `npm run prove:automation`
+  - `npm run self-heal:check`
+- `npm run test:coverage` passed with all-files coverage at `89.79%` lines, `76.04%` branches, and `93.43%` functions.
+- `npm run prove:adapters`: `46` passed, `0` failed.
+- `npm run prove:automation`: `55` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `node bin/cli.js north-star` now reports the explicit product metric:
+  - `Weekly proof-backed workflow runs : 1`
+  - `Weekly teams on proof-backed runs : 1`
+  - `Reviewed workflow runs            : 1`
+  - `Paid orders                       : 4`
+  - `Booked revenue                    : $0.00`
+  - `North Star status                 : tracking`
+- `node bin/cli.js dashboard` now includes the dedicated `🎯 North Star` section and reports:
+  - `Weekly Proof Runs: 1`
+  - `Weekly Teams     : 1`
+  - `Reviewed Runs    : 1`
+  - `Paid Team Runs   : 0`
+  - `Named Pilots     : 0`
+  - `Status           : tracking`
+  - `Customer Proof   : missing`
+- Historical revenue-truth proof against the real legacy funnel ledger now reconciles paid-stage events correctly without claiming revenue that is not provable:
+  - `paidProviderEvents: 23`
+  - `paidOrders: 23`
+  - `bookedRevenueCents: 0`
+  - `derivedPaidOrders: 23`
+  - `unreconciledPaidEvents: 0`
+
+Requirements verified:
+
+- The repo now tracks its documented North Star directly: weekly active proof-backed workflow runs.
+- Full-suite verification automatically writes a proof-backed workflow-run record after successful completion.
+- Dashboard and CLI truth surfaces agree on the same North Star state instead of only showing indirect commercial or telemetry proxies.
+- Historical paid-provider events are no longer stranded as unreconciled paid-stage funnel noise when the revenue ledger is missing.
+- Hosted deployment tooling now has first-class support for durable runtime feedback storage and optional GA/Search Console wiring without introducing tracked runtime state.
+
 ## March 18, 2026: Aider OpenAI-compatible backends and OpenCode integration
 
 Scope:

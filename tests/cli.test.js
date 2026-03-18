@@ -349,6 +349,7 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('export-dpo'), 'Help should mention export-dpo');
     assert.ok(result.stdout.includes('export-databricks'), 'Help should mention export-databricks');
     assert.ok(result.stdout.includes('stats'), 'Help should mention stats');
+    assert.ok(result.stdout.includes('north-star'), 'Help should mention north-star');
     assert.ok(result.stdout.includes('rules'), 'Help should mention rules');
     assert.ok(result.stdout.includes('self-heal'), 'Help should mention self-heal');
     assert.ok(result.stdout.includes('prove'), 'Help should mention prove');
@@ -405,6 +406,35 @@ describe('bin/cli.js', () => {
       },
     });
     assert.strictEqual(result.status, 0, `init should succeed even with telemetry disabled: ${result.stderr}`);
+    fs.rmSync(initDir, { recursive: true, force: true });
+  });
+
+  test('init records local CLI telemetry when telemetry is enabled', () => {
+    const initDir = makeTmpDir();
+    const feedbackDir = path.join(initDir, '.rlhf');
+    const telemetryPath = path.join(feedbackDir, 'telemetry-pings.jsonl');
+    const result = spawnSync(process.execPath, [CLI, 'init'], {
+      encoding: 'utf8',
+      cwd: initDir,
+      env: {
+        ...process.env,
+        RLHF_NO_NUDGE: '1',
+        RLHF_FEEDBACK_DIR: feedbackDir,
+        RLHF_API_URL: 'http://127.0.0.1:1',
+        HOME: testHomeDir,
+        USERPROFILE: testHomeDir,
+      },
+    });
+    assert.strictEqual(result.status, 0, `init should succeed with local telemetry enabled: ${result.stderr}`);
+    assert.ok(fs.existsSync(telemetryPath), 'telemetry-pings.jsonl should be created');
+    const entries = fs.readFileSync(telemetryPath, 'utf8')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    const initEntry = entries.find((entry) => entry.eventType === 'cli_init');
+    assert.ok(initEntry, 'expected cli_init telemetry entry');
+    assert.equal(initEntry.clientType, 'cli');
     fs.rmSync(initDir, { recursive: true, force: true });
   });
 
@@ -710,6 +740,40 @@ describe('bin/cli.js', () => {
     assert.equal(initEvent.stage, 'acquisition');
     assert.equal(initEvent.installId, config.installId);
 
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  });
+
+  test('north-star command reports workflow progress', () => {
+    const isolatedDir = makeTmpDir();
+    const feedbackDir = path.join(isolatedDir, '.rlhf');
+    fs.mkdirSync(feedbackDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(feedbackDir, 'workflow-runs.jsonl'),
+      `${JSON.stringify({
+        timestamp: new Date().toISOString(),
+        workflowId: 'repo_self_dogfood_aider_verify',
+        workflowName: 'Repo self dogfood verification',
+        owner: 'cto',
+        runtime: 'node+aider',
+        proofBacked: true,
+        reviewed: true,
+        customerType: 'internal_dogfood',
+        teamId: 'internal_repo',
+      })}\n`
+    );
+
+    const result = spawnSync(process.execPath, [CLI, 'north-star'], {
+      encoding: 'utf8',
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        RLHF_FEEDBACK_DIR: feedbackDir,
+      },
+    });
+
+    assert.equal(result.status, 0, `north-star failed:\n${result.stderr}`);
+    assert.match(result.stdout, /Weekly proof-backed workflow runs\s*:\s*1/);
+    assert.match(result.stdout, /North Star status\s*:\s*tracking/);
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
 

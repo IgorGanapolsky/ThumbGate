@@ -4,12 +4,13 @@
 const fs = require('fs');
 const path = require('path');
 const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
-const { getBillingSummary, loadFunnelLedger, loadRevenueLedger } = require('./billing');
+const { getBillingSummary, loadFunnelLedger, loadResolvedRevenueEvents } = require('./billing');
 const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-analytics');
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { summarizeDelegation } = require('./delegation-runtime');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { generateAgentReadinessReport } = require('./agent-readiness');
+const { summarizeWorkflowRuns } = require('./workflow-runs');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -249,7 +250,8 @@ function computeAnalyticsSummary(feedbackDir) {
   const telemetry = getTelemetryAnalytics(feedbackDir);
   const billing = getBillingSummary();
   const funnelEntries = loadFunnelLedger();
-  const paidOrderEntries = loadRevenueLedger().filter((entry) => entry && entry.status === 'paid');
+  const paidOrderEntries = loadResolvedRevenueEvents().filter((entry) => entry && entry.status === 'paid');
+  const northStar = summarizeWorkflowRuns(feedbackDir);
   const uniqueVisitors = telemetry.visitors.uniqueVisitors;
   const ctaClicks = telemetry.ctas.totalClicks;
   const acquisitionLeads = billing.signups ? billing.signups.uniqueLeads || 0 : 0;
@@ -333,6 +335,7 @@ function computeAnalyticsSummary(feedbackDir) {
       workflowSprintLeads: { total: 0, bySource: {} },
       qualifiedWorkflowSprintLeads: { total: 0, bySource: {} },
     },
+    northStar,
     trafficMetrics: billing.trafficMetrics || {
       visitors: 0,
       sessions: 0,
@@ -554,6 +557,19 @@ function printDashboard(data) {
   console.log(`  Rules Active     : ${prevention.ruleCount} prevention rules`);
   if (prevention.lastPromotion) {
     console.log(`  Last Promotion   : ${prevention.lastPromotion.id} (${prevention.lastPromotion.daysAgo} days ago)`);
+  }
+
+  console.log('');
+  console.log('🎯 North Star');
+  console.log(`  Weekly Proof Runs: ${analytics.northStar.weeklyActiveProofBackedWorkflowRuns}`);
+  console.log(`  Weekly Teams     : ${analytics.northStar.weeklyTeamsRunningProofBackedWorkflows}`);
+  console.log(`  Reviewed Runs    : ${analytics.northStar.reviewedRuns}`);
+  console.log(`  Paid Team Runs   : ${analytics.northStar.paidTeamRuns}`);
+  console.log(`  Named Pilots     : ${analytics.northStar.namedPilotAgreements}`);
+  console.log(`  Status           : ${analytics.northStar.northStarReached ? 'tracking' : 'not_started'}`);
+  console.log(`  Customer Proof   : ${analytics.northStar.customerProofReached ? 'present' : 'missing'}`);
+  if (analytics.northStar.latestRun) {
+    console.log(`  Latest Run       : ${analytics.northStar.latestRun.workflowId} @ ${analytics.northStar.latestRun.timestamp}`);
   }
 
   console.log('');

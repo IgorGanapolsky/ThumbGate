@@ -75,6 +75,12 @@ function writeRevenueLedger(entries) {
   fs.writeFileSync(ledgerPath, lines + '\n');
 }
 
+function writeWorkflowRuns(entries) {
+  const runsPath = path.join(tmpDir, 'workflow-runs.jsonl');
+  const lines = entries.map((e) => JSON.stringify(e)).join('\n');
+  fs.writeFileSync(runsPath, lines + '\n');
+}
+
 // ---------------------------------------------------------------------------
 // Empty state
 // ---------------------------------------------------------------------------
@@ -96,6 +102,7 @@ test('generateDashboard handles empty state (no files)', () => {
   assert.equal(data.delegation.attemptCount, 0);
   assert.equal(data.secretGuard.blocked, 0);
   assert.equal(data.analytics.funnel.visitors, 0);
+  assert.equal(data.analytics.northStar.weeklyActiveProofBackedWorkflowRuns, 0);
   assert.equal(data.observability.diagnosticEvents, 0);
 });
 
@@ -438,6 +445,19 @@ test('generateDashboard includes visitor funnel and booked revenue analytics', (
       },
     },
   ]);
+  writeWorkflowRuns([
+    {
+      timestamp: new Date().toISOString(),
+      workflowId: 'repo_self_dogfood_aider_verify',
+      workflowName: 'Repo self dogfood verification',
+      owner: 'cto',
+      runtime: 'node+aider',
+      proofBacked: true,
+      reviewed: true,
+      customerType: 'internal_dogfood',
+      teamId: 'internal_repo',
+    },
+  ]);
 
   const data = generateDashboard(tmpDir);
   assert.equal(data.analytics.telemetry.visitors.uniqueVisitors, 1);
@@ -454,6 +474,8 @@ test('generateDashboard includes visitor funnel and booked revenue analytics', (
   assert.equal(data.analytics.reconciliation.matchedPaidOrders, 1);
   assert.equal(data.analytics.identityCoverage.acquisitionIdCoverage, 1);
   assert.equal(data.analytics.dataQuality.unreconciledPaidEvents, 0);
+  assert.equal(data.analytics.northStar.weeklyActiveProofBackedWorkflowRuns, 1);
+  assert.equal(data.analytics.northStar.weeklyTeamsRunningProofBackedWorkflows, 1);
 });
 
 test('generateDashboard separates repeated CTA clicks from unique checkout starters and flags orphan revenue', () => {

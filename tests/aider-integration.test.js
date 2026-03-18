@@ -13,6 +13,12 @@ const {
   resolveTargetConfig,
 } = require('../scripts/aider-launch');
 const {
+  recordVerifyWorkflowRun,
+} = require('../scripts/aider-verify');
+const {
+  loadWorkflowRuns,
+} = require('../scripts/workflow-runs');
+const {
   buildChatCompletionsUrl,
   buildSmokeRequest,
 } = require('../scripts/aider-smoke');
@@ -173,4 +179,17 @@ test('buildSmokeRequest uses the resolved model and ping payload', () => {
   assert.deepEqual(request.body.messages, [{ role: 'user', content: 'Reply with the single word pong.' }]);
   assert.equal(request.body.max_tokens, 16);
   assert.equal(request.body.temperature, 0);
+});
+
+test('recordVerifyWorkflowRun persists a proof-backed workflow run for full verification', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'aider-verify-feedback-'));
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'aider-verify-cwd-'));
+
+  const entry = recordVerifyWorkflowRun('full', cwd, feedbackDir);
+  const entries = loadWorkflowRuns(feedbackDir);
+
+  assert.equal(entry.workflowId, 'repo_self_dogfood_aider_verify');
+  assert.equal(entry.proofBacked, true);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].reviewedBy, 'automation');
 });

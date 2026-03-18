@@ -27,10 +27,18 @@ const PKG_ROOT = path.join(__dirname, '..');
 
 const PRO_URL = 'https://rlhf-feedback-loop-production.up.railway.app';
 
+function appendLocalTelemetry(payload) {
+  try {
+    const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+    const { appendTelemetryPing } = require(path.join(PKG_ROOT, 'scripts', 'telemetry-analytics'));
+    const { FEEDBACK_DIR } = getFeedbackPaths();
+    appendTelemetryPing(FEEDBACK_DIR, payload);
+  } catch (_) { /* telemetry is best-effort */ }
+}
+
 function telemetryPing(installId) {
   if (process.env.RLHF_NO_TELEMETRY === '1') return;
-  const apiUrl = process.env.RLHF_API_URL || 'https://rlhf-feedback-loop-production.up.railway.app';
-  const payload = JSON.stringify({
+  const payloadObject = {
     installId,
     eventType: 'cli_init',
     clientType: 'cli',
@@ -39,7 +47,10 @@ function telemetryPing(installId) {
     platform: process.platform,
     nodeVersion: process.version,
     timestamp: new Date().toISOString(),
-  });
+  };
+  appendLocalTelemetry(payloadObject);
+  const apiUrl = process.env.RLHF_API_URL || 'https://rlhf-feedback-loop-production.up.railway.app';
+  const payload = JSON.stringify(payloadObject);
   try {
     const url = new URL('/v1/telemetry/ping', apiUrl);
     const mod = url.protocol === 'https:' ? require('https') : require('http');
@@ -566,6 +577,31 @@ function cfo() {
   console.log(JSON.stringify(summary, null, 2));
 }
 
+function northStar() {
+  const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  const { summarizeWorkflowRuns } = require(path.join(PKG_ROOT, 'scripts', 'workflow-runs'));
+  const { getBillingSummary } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
+  const { FEEDBACK_DIR } = getFeedbackPaths();
+  const summary = summarizeWorkflowRuns(FEEDBACK_DIR);
+  const billing = getBillingSummary();
+
+  console.log('\nNorth Star');
+  console.log('─'.repeat(40));
+  console.log(`Weekly proof-backed workflow runs : ${summary.weeklyActiveProofBackedWorkflowRuns}`);
+  console.log(`Weekly teams on proof-backed runs : ${summary.weeklyTeamsRunningProofBackedWorkflows}`);
+  console.log(`Reviewed workflow runs            : ${summary.reviewedRuns}`);
+  console.log(`Named pilot agreements            : ${summary.namedPilotAgreements}`);
+  console.log(`Paid team runs                    : ${summary.paidTeamRuns}`);
+  console.log(`Paid orders                       : ${billing.revenue.paidOrders}`);
+  console.log(`Booked revenue                    : $${(billing.revenue.bookedRevenueCents / 100).toFixed(2)}`);
+  console.log(`Customer proof                    : ${summary.customerProofReached ? 'present' : 'missing'}`);
+  console.log(`North Star status                 : ${summary.northStarReached ? 'tracking' : 'not_started'}`);
+  if (summary.latestRun) {
+    console.log(`Latest proof-backed run           : ${summary.latestRun.workflowId} @ ${summary.latestRun.timestamp}`);
+  }
+  console.log('');
+}
+
 function pro() {
   const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
   const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
@@ -827,6 +863,7 @@ function help() {
   console.log('  capture [flags]       Capture feedback (--feedback=up|down --context="..." --tags="...")');
   console.log('  stats                 Show feedback analytics + Revenue-at-Risk');
   console.log('  cfo                   Show local operational billing summary as JSON');
+  console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  summary               Human-readable feedback summary');
   console.log('  model-fit             Detect the current local embedding profile and write evidence report');
   console.log('  risk [flags]          Train or query the boosted local risk scorer');
@@ -881,6 +918,9 @@ switch (COMMAND) {
   case 'cfo':
   case 'revenue':
     cfo();
+    break;
+  case 'north-star':
+    northStar();
     break;
   case 'summary':
     summary();

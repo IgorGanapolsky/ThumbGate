@@ -6,6 +6,8 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
+const { appendWorkflowRun } = require('./workflow-runs');
+
 function npmCommand() {
   return process.platform === 'win32' ? 'npm.cmd' : 'npm';
 }
@@ -47,6 +49,31 @@ function runPlan(plan, env = process.env, cwd = process.cwd()) {
   }
 }
 
+function recordVerifyWorkflowRun(mode = 'quick', cwd = process.cwd(), feedbackDir = undefined) {
+  if (mode !== 'full') return null;
+  return appendWorkflowRun({
+    workflowId: 'repo_self_dogfood_aider_verify',
+    workflowName: 'Repo self dogfood Aider verification',
+    owner: 'cto',
+    runtime: 'node+aider',
+    status: 'passed',
+    customerType: 'internal_dogfood',
+    teamId: 'internal_repo',
+    reviewed: true,
+    reviewedBy: 'automation',
+    proofBacked: true,
+    source: 'aider:verify:full',
+    proofArtifacts: [
+      path.join(cwd, 'docs', 'VERIFICATION_EVIDENCE.md'),
+      path.join(cwd, 'proof', 'compatibility', 'report.json'),
+      path.join(cwd, 'proof', 'automation', 'report.json'),
+    ],
+    metadata: {
+      suite: 'aider_verify_full',
+    },
+  }, feedbackDir);
+}
+
 function runVerify(mode = 'quick', baseEnv = process.env, cwd = process.cwd()) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-aider-verify-'));
   const env = {
@@ -56,10 +83,12 @@ function runVerify(mode = 'quick', baseEnv = process.env, cwd = process.cwd()) {
   };
 
   runPlan(buildVerifyPlan(mode), env, cwd);
+  const workflowRun = recordVerifyWorkflowRun(mode, cwd);
 
   return {
     mode,
     tempRoot,
+    workflowRun,
   };
 }
 
@@ -74,6 +103,7 @@ if (require.main === module) {
 
 module.exports = {
   buildVerifyPlan,
+  recordVerifyWorkflowRun,
   runPlan,
   runVerify,
 };
