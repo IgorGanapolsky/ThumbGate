@@ -1,4 +1,3 @@
-const { appendFunnelEvent } = require("../../scripts/billing");
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
@@ -8,8 +7,8 @@ const {
   analyzeFeedback,
   writePreventionRules,
   FEEDBACK_LOG_PATH,
-  appendFunnelEvent,
 } = require('../../scripts/feedback-loop');
+const { appendFunnelEvent } = require('../../scripts/billing');
 const {
   ensureContextFs,
   constructContextPack,
