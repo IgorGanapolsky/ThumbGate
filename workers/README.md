@@ -1,12 +1,12 @@
 # MCP Memory Gateway — Cloudflare Workers
 
-Paid MCP server for mcp-memory-gateway Pro tier ($29/mo). Runs on Cloudflare Workers with KV storage and Stripe billing.
+Paid MCP server for mcp-memory-gateway Pro tier ($49 one-time). Runs on Cloudflare Workers with KV storage and Stripe billing.
 
 ## Architecture
 
 - **Compute:** Cloudflare Workers (edge, globally distributed)
 - **Storage:** Workers KV (API keys, gate state, memories, feedback)
-- **Billing:** Stripe ($29/mo subscription)
+- **Billing:** Stripe ($49 one-time payment)
 - **Protocol:** MCP JSON-RPC 2.0 over HTTP (streamable-http transport)
 
 ## Tiers
@@ -14,7 +14,7 @@ Paid MCP server for mcp-memory-gateway Pro tier ($29/mo). Runs on Cloudflare Wor
 | Tier | Price | Tools | Rate Limits |
 |------|-------|-------|-------------|
 | Free | $0 | capture_feedback, recall, feedback_summary, feedback_stats, prevention_rules | 5 calls/day per tool |
-| Pro  | $29/mo | All free tools + construct_context_pack, evaluate_context_pack, export_dpo_pairs, dashboard, generate_skill, list_intents, plan_intent, satisfy_gate | Unlimited |
+| Pro  | $49 one-time | All free tools + construct_context_pack, evaluate_context_pack, export_dpo_pairs, dashboard, generate_skill, list_intents, plan_intent, satisfy_gate | Unlimited |
 
 ## Setup
 
@@ -40,10 +40,10 @@ Copy the namespace IDs into `wrangler.toml`.
 ### 3. Create Stripe Product
 
 1. Create a product in Stripe Dashboard
-2. Add a $29/mo recurring price
+2. Add a $49 one-time price
 3. Copy the price ID to `STRIPE_PRICE_ID` in `wrangler.toml`
 4. Set up a webhook endpoint pointing to `https://your-worker.workers.dev/billing/webhook`
-5. Subscribe to events: `checkout.session.completed`, `customer.subscription.deleted`, `customer.subscription.updated`
+5. Subscribe to event: `checkout.session.completed`
 
 ### 4. Set Secrets
 

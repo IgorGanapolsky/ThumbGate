@@ -1054,7 +1054,7 @@ __GA_BOOTSTRAP__
               </label>
               <div class="buyer-feedback-actions">
                 <button type="submit" class="btn btn-primary" id="workflow-sprint-submit" data-cta-id="workflow_sprint_intake" data-cta-placement="workflow_sprint" data-plan-id="sprint">Submit Sprint Intake</button>
-                <a class="btn btn-secondary" href="mailto:igor.ganapolsky@gmail.com?subject=Workflow%20Hardening%20Sprint" rel="noreferrer">Email Instead</a>
+                <a class="btn btn-secondary" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md" target="_blank" rel="noreferrer">Review Sprint Brief</a>
                 <a class="btn btn-secondary" id="workflow-sprint-proof" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Review Proof Pack</a>
               </div>
               <p class="buyer-feedback-status" id="workflow-sprint-status" aria-live="polite">No sprint intake submitted yet.</p>
@@ -1172,7 +1172,7 @@ __GA_BOOTSTRAP__
           <div class="price-card pro">
             <div class="tier-label">Pro</div>
             <h3>Cloud</h3>
-            <div class="price-amount">$__PRO_PRICE_DOLLARS__ <small>/ month</small></div>
+            <div class="price-amount">$__PRO_PRICE_DOLLARS__ <small>/ one-time</small></div>
             <ul>
               <li>Cloud-synced memories from any machine</li>
               <li>Unlimited memories and retrievals</li>
@@ -1333,13 +1333,14 @@ __GA_BOOTSTRAP__
         return value && value.trim() ? value.trim() : fallbackValue;
       }
 
-      function buildAttribution(ctaId) {
+      function buildAttribution(ctaId, defaults) {
         const params = new URLSearchParams(window.location.search);
+        const safeDefaults = defaults && typeof defaults === 'object' ? defaults : {};
         const referrer = document.referrer || null;
         const referrerHost = parseReferrerHost(referrer);
         const seoSurface = inferSearchSurface(referrerHost);
         const inferredSource = inferSource(referrerHost);
-        const utmSource = getAttributionValue(params, 'utm_source', inferredSource);
+        const utmSource = getAttributionValue(params, 'utm_source', safeDefaults.source || safeDefaults.utmSource || inferredSource);
         const community = getAttributionValue(
           params,
           'community',
@@ -1348,19 +1349,19 @@ __GA_BOOTSTRAP__
         return {
           source: utmSource,
           utmSource: utmSource,
-          utmMedium: getAttributionValue(params, 'utm_medium', utmSource === 'reddit' ? 'organic_social' : 'cta_button'),
-          utmCampaign: getAttributionValue(params, 'utm_campaign', utmSource === 'reddit' ? 'reddit_organic' : 'pro_pack'),
-          utmContent: getAttributionValue(params, 'utm_content', ctaId),
-          utmTerm: getAttributionValue(params, 'utm_term', null),
+          utmMedium: getAttributionValue(params, 'utm_medium', safeDefaults.utmMedium || (utmSource === 'reddit' ? 'organic_social' : 'cta_button')),
+          utmCampaign: getAttributionValue(params, 'utm_campaign', safeDefaults.utmCampaign || (utmSource === 'reddit' ? 'reddit_organic' : 'pro_pack')),
+          utmContent: getAttributionValue(params, 'utm_content', safeDefaults.utmContent || ctaId),
+          utmTerm: getAttributionValue(params, 'utm_term', safeDefaults.utmTerm || null),
           community: community,
-          postId: getAttributionValue(params, 'post_id', null),
-          commentId: getAttributionValue(params, 'comment_id', null),
-          campaignVariant: getAttributionValue(params, 'campaign_variant', null),
-          offerCode: getAttributionValue(params, 'offer_code', null),
+          postId: getAttributionValue(params, 'post_id', safeDefaults.postId || null),
+          commentId: getAttributionValue(params, 'comment_id', safeDefaults.commentId || null),
+          campaignVariant: getAttributionValue(params, 'campaign_variant', safeDefaults.campaignVariant || null),
+          offerCode: getAttributionValue(params, 'offer_code', safeDefaults.offerCode || null),
           referrer: referrer,
           referrerHost: referrerHost,
-          seoSurface: getAttributionValue(params, 'seo_surface', seoSurface),
-          seoQuery: getAttributionValue(params, 'seo_query', inferSearchQuery(referrer)),
+          seoSurface: getAttributionValue(params, 'seo_surface', safeDefaults.seoSurface || seoSurface),
+          seoQuery: getAttributionValue(params, 'seo_query', safeDefaults.seoQuery || inferSearchQuery(referrer)),
           landingPath: window.location.pathname,
           ctaId: ctaId
         };
@@ -1479,7 +1480,12 @@ __GA_BOOTSTRAP__
 
         const formData = new FormData(workflowSprintForm);
         const ctaId = workflowSprintSubmit.dataset.ctaId || 'workflow_sprint_intake';
-        const attribution = buildAttribution(ctaId);
+        const attribution = buildAttribution(ctaId, {
+          source: 'website',
+          utmMedium: 'workflow_sprint_intake',
+          utmCampaign: 'workflow_hardening_sprint',
+          utmContent: 'workflow_sprint_form'
+        });
         const traceId = createEphemeralId('sprint_');
         const payload = {
           email: formData.get('email'),
@@ -1547,6 +1553,14 @@ __GA_BOOTSTRAP__
             });
           }
         } catch (err) {
+          sendTelemetry('workflow_sprint_lead_failed', {
+            ctaId: ctaId,
+            ctaPlacement: workflowSprintSubmit.dataset.ctaPlacement || 'workflow_sprint',
+            planId: workflowSprintSubmit.dataset.planId || 'sprint',
+            traceId: traceId,
+            failureCode: err && err.message ? err.message : 'workflow_sprint_lead_failed',
+            httpStatus: err && err.httpStatus ? err.httpStatus : null
+          });
           setWorkflowSprintStatus(err && err.message ? err.message : 'Unable to submit sprint intake right now.');
         } finally {
           workflowSprintSubmit.disabled = false;

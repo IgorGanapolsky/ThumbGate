@@ -18,7 +18,7 @@ function generateApiKey(): string {
 
 /**
  * POST /billing/checkout
- * Creates a Stripe Checkout session for the $29/mo Pro subscription.
+ * Creates a Stripe Checkout session for the $49 one-time Pro purchase.
  */
 export async function handleCheckout(
   request: Request,
@@ -45,7 +45,7 @@ export async function handleCheckout(
   }
 
   const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
+    mode: 'payment',
     payment_method_types: ['card'],
     line_items: [
       {
@@ -66,7 +66,7 @@ export async function handleCheckout(
 
 /**
  * POST /billing/webhook
- * Handles Stripe webhook events for subscription lifecycle.
+ * Handles Stripe webhook events for purchase provisioning and legacy revocation paths.
  */
 export async function handleWebhook(
   request: Request,

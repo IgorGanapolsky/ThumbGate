@@ -7,7 +7,7 @@ The engineering proof is real. The commercial surface must stay honest.
 MCP Memory Gateway v0.7.0 introduces **Pre-Action Gates** — configurable checkpoints that fire before every tool call, blocking dangerous actions based on learned failure patterns.
 
 - **Free tier**: Feedback capture, recall, prevention rules, 5 built-in gates, dashboard CLI, DPO/KTO export.
-- **Pro tier ($29/mo)**: Auto-gate promotion, unlimited custom gates, multi-repo sync, CI webhook auto-ingest, priority support.
+- **Pro tier ($49 one-time)**: Auto-gate promotion, unlimited custom gates, multi-repo sync, CI webhook auto-ingest, priority support.
 
 ## 2. Distribution Channels
 
@@ -28,7 +28,7 @@ MCP Memory Gateway v0.7.0 introduces **Pre-Action Gates** — configurable check
 > We built **Pre-Action Gates** for MCP agents — configurable checkpoints that block dangerous tool calls before they execute.
 >
 > Free: 5 built-in gates + feedback capture + prevention rules
-> Pro ($29/mo): auto-gate promotion, unlimited custom gates, multi-repo sync
+> Pro ($49 one-time): auto-gate promotion, unlimited custom gates, multi-repo sync
 >
 > OSS core: https://github.com/IgorGanapolsky/mcp-memory-gateway
 > Pro: https://iganapolsky.gumroad.com/l/tjovof"
@@ -39,7 +39,7 @@ MCP Memory Gateway v0.7.0 introduces **Pre-Action Gates** — configurable check
 >
 > We just shipped Pre-Action Gates in MCP Memory Gateway v0.7.0. Gates fire before every tool call and block dangerous actions based on learned failure patterns.
 >
-> Free OSS core with 5 built-in gates. Pro at $29/mo adds auto-gate promotion, unlimited custom gates, and multi-repo sync.
+> Free OSS core with 5 built-in gates. Pro at $49 one-time adds auto-gate promotion, unlimited custom gates, and multi-repo sync.
 >
 > GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway"
 
@@ -51,13 +51,13 @@ MCP Memory Gateway v0.7.0 introduces **Pre-Action Gates** — configurable check
 >
 > Built-in gates block: force-push to protected branches, .env edits, secret commits, destructive git ops, and shell injection patterns. The gates engine learns from your feedback history and auto-promotes new gates in the Pro tier.
 >
-> Free + MIT licensed. Pro at $29/mo for teams that need auto-gate promotion and multi-repo sync.
+> Free + MIT licensed. Pro at $49 one-time for teams that need auto-gate promotion and multi-repo sync.
 >
 > https://github.com/IgorGanapolsky/mcp-memory-gateway"
 
 ## 4. High-Intent Direct Messages
 
-> "Hey, I just shipped Pre-Action Gates in MCP Memory Gateway v0.7.0 — configurable checkpoints that block dangerous AI agent tool calls before they fire. The OSS core has 5 built-in gates and feedback capture for free. Pro is $29/mo for auto-gate promotion and multi-repo sync. Would love your honest feedback: https://github.com/IgorGanapolsky/mcp-memory-gateway"
+> "Hey, I just shipped Pre-Action Gates in MCP Memory Gateway v0.7.0 — configurable checkpoints that block dangerous AI agent tool calls before they fire. The OSS core has 5 built-in gates and feedback capture for free. Pro is $49 one-time for auto-gate promotion and multi-repo sync. Would love your honest feedback: https://github.com/IgorGanapolsky/mcp-memory-gateway"
 
 ## 5. Commercial Truth
 

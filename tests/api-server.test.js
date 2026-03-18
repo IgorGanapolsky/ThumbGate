@@ -80,13 +80,16 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Start Sprint Intake/i);
   assert.match(body, /Code modernization guardrails/i);
   assert.match(body, /same agent session|same reliability layer|No orchestration tax/i);
-  assert.match(body, /\$29\/mo/);
+  assert.match(body, /\$49 one-time/);
   assert.match(body, /plausible\.io\/js\/script\.js/);
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
   assert.match(body, /google-site-verification" content="test-verification-token"/);
   assert.match(body, /gtag\('config', 'G-TEST1234', \{ send_page_view: false \}\)/);
   assert.match(body, /\/v1\/billing\/checkout/);
   assert.match(body, /\/v1\/intake\/workflow-sprint/);
+  assert.match(body, /Review Sprint Brief/);
+  assert.doesNotMatch(body, /Email Instead/i);
+  assert.doesNotMatch(body, /mailto:/i);
 });
 
 test('robots and sitemap endpoints publish crawl metadata for the canonical app origin', async () => {
@@ -587,6 +590,8 @@ test('billing checkout endpoint is public', async () => {
   assert.ok(typeof body.sessionId === 'string');
   assert.equal(body.localMode, true);
   assert.match(body.traceId, /^checkout_/);
+  assert.equal(body.price, 49);
+  assert.equal(body.type, 'payment');
   assert.equal(res.headers.get('x-rlhf-trace-id'), body.traceId);
 });
 
@@ -624,6 +629,8 @@ test('workflow sprint intake endpoint captures a contactable lead', async () => 
   assert.equal(leads[0].contact.email, 'buyer@example.com');
   assert.equal(leads[0].qualification.workflow, 'PR review hardening');
   assert.equal(leads[0].attribution.planId, 'sprint');
+  assert.equal(leads[0].attribution.source, 'linkedin');
+  assert.equal(leads[0].attribution.utmMedium, 'organic_social');
 
   const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
   assert.ok(telemetry.some((entry) => entry.eventType === 'workflow_sprint_lead_submitted'));
@@ -735,10 +742,10 @@ test('billing summary returns admin-only operational proxy', async () => {
     orderId: 'cs_admin_summary',
     installId: 'inst_admin_summary',
     traceId: 'trace_admin_summary',
-    amountCents: 2900,
+    amountCents: 4900,
     currency: 'USD',
     amountKnown: true,
-    recurringInterval: 'month',
+    recurringInterval: null,
     attribution: {
       source: 'website',
       utmSource: 'website',
@@ -758,11 +765,16 @@ test('billing summary returns admin-only operational proxy', async () => {
   assert.equal(body.coverage.tracksWorkflowSprintLeads, true);
   assert.ok(body.funnel.stageCounts.paid >= 1);
   assert.ok(body.keys.active >= 1);
-  assert.equal(body.revenue.bookedRevenueCents, 2900);
+  assert.equal(body.revenue.bookedRevenueCents, 4900);
   assert.equal(body.revenue.paidOrders, 1);
+  assert.equal(body.revenue.paidProviderEvents, 1);
   assert.equal(body.pipeline.workflowSprintLeads.total, 1);
   assert.equal(body.pipeline.workflowSprintLeads.bySource.linkedin, 1);
-  assert.equal(body.attribution.bookedRevenueByCampaignCents.pro_pack, 2900);
+  assert.equal(body.pipeline.qualifiedWorkflowSprintLeads.total, 1);
+  assert.equal(body.attribution.bookedRevenueByCampaignCents.pro_pack, 4900);
+  assert.ok(body.trafficMetrics.visitors >= 1);
+  assert.equal(body.operatorGeneratedAcquisition.uniqueLeads, 0);
+  assert.equal(body.dataQuality.unreconciledPaidEvents, 0);
   assert.ok(Array.isArray(body.customers));
 });
 

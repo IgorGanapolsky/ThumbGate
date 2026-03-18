@@ -42,7 +42,7 @@ test('public docs render the current package version', () => {
 
   assert.match(landingPage, /MCP Memory Gateway/);
   assert.match(landingPage, /AI Agent Reliability Without Orchestration Tax/i);
-  assert.match(landingPage, /\$29\/mo/);
+  assert.match(landingPage, /\$49 one-time/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
 });
 
@@ -103,8 +103,8 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
 
   try {
     const runtimeConfig = resolveHostedBillingConfig();
-    assert.equal(runtimeConfig.proPriceLabel, '$29/mo');
-    assert.equal(runtimeConfig.proPriceDollars, 29);
+    assert.equal(runtimeConfig.proPriceLabel, '$49 one-time');
+    assert.equal(runtimeConfig.proPriceDollars, 49);
     assert.equal(runtimeConfig.checkoutFallbackUrl, DEFAULT_CHECKOUT_FALLBACK_URL);
     assert.equal(runtimeConfig.gaMeasurementId, '');
     assert.equal(runtimeConfig.googleSiteVerification, '');
@@ -210,7 +210,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const xStrategy = readText('docs/X_AUTOMATION_STRATEGY.md');
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
-  assert.match(commercialTruth, /Pro at \$29\/mo recurring/);
+  assert.match(commercialTruth, /Pro at \$49 one-time/);
   assert.match(commercialTruth, /auto-gate promotion/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 

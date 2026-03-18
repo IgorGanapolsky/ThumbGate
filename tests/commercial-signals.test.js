@@ -41,6 +41,11 @@ test('pulse snapshot reports paid orders instead of raw paid-stage events', () =
         'acquisition:outreach_target_generated': 4,
       },
     },
+    pipeline: {
+      workflowSprintLeads: {
+        total: 1,
+      },
+    },
     revenue: {
       paidOrders: 0,
       bookedRevenueCents: 0,
@@ -49,7 +54,7 @@ test('pulse snapshot reports paid orders instead of raw paid-stage events', () =
 
   assert.equal(snapshot.paidOrders, 0);
   assert.equal(snapshot.bookedRevenueCents, 0);
-  assert.match(snapshot.health, /WARM FUNNEL/);
+  assert.match(snapshot.health, /PIPELINE ACTIVE/);
   assert.equal(snapshot.conversionRate, '0.00');
 });
 

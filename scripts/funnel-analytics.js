@@ -6,8 +6,11 @@ function generateFunnelReport() {
   console.log('╔══════════════════════════════════════════════════════╗');
   console.log('║      Marketing & Revenue Funnel Analytics            ║');
   console.log('╠══════════════════════════════════════════════════════╣');
-  console.log(`║  Total Acquisition Events (Leads):  ${String(analytics.funnel.stageCounts.acquisition).padStart(6)}           ║`);
+  console.log(`║  Traffic Visitors:                  ${String((analytics.trafficMetrics && analytics.trafficMetrics.visitors) || 0).padStart(6)}           ║`);
+  console.log(`║  CTA Clicks:                        ${String((analytics.trafficMetrics && analytics.trafficMetrics.ctaClicks) || 0).padStart(6)}           ║`);
   console.log(`║  Unique Leads:                      ${String(analytics.signups.uniqueLeads).padStart(6)}           ║`);
+  console.log(`║  Sprint Leads:                      ${String((analytics.pipeline.workflowSprintLeads && analytics.pipeline.workflowSprintLeads.total) || 0).padStart(6)}           ║`);
+  console.log(`║  Paid Provider Events:              ${String(analytics.revenue.paidProviderEvents || 0).padStart(6)}           ║`);
   console.log(`║  Paid Orders Tracked:               ${String(analytics.revenue.paidOrders).padStart(6)}           ║`);
   console.log(`║  Known Booked Revenue (cents):      ${String(analytics.revenue.bookedRevenueCents).padStart(6)}           ║`);
   console.log('╠══════════════════════════════════════════════════════╣');

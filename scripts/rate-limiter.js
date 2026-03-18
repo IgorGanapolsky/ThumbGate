@@ -13,7 +13,7 @@ const FREE_TIER_LIMITS = {
 
 const FREE_TIER_MAX_GATES = 5;
 
-const UPGRADE_MESSAGE = 'Free tier limit reached. Upgrade to Pro ($29/mo) for unlimited: https://rlhf-feedback-loop-production.up.railway.app';
+const UPGRADE_MESSAGE = 'Free tier limit reached. Upgrade to Pro ($49 one-time) for unlimited: https://rlhf-feedback-loop-production.up.railway.app';
 
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;

@@ -114,11 +114,15 @@ test('public landing page positions the gateway as continuity-friendly reliabili
   assert.match(landingPage, /Review Proof Pack/);
   assert.match(landingPage, /See Sprint Scope/);
   assert.match(landingPage, /Start Sprint Intake/);
+  assert.match(landingPage, /Review Sprint Brief/);
   assert.match(landingPage, /id="workflow-sprint-form"/);
   assert.match(landingPage, /\/v1\/intake\/workflow-sprint/);
+  assert.match(landingPage, /workflow_sprint_lead_failed/);
   assert.match(landingPage, /href="#workflow-sprint-intake"/);
   assert.match(landingPage, /VERIFICATION_EVIDENCE\.md/);
   assert.match(landingPage, /WORKFLOW_HARDENING_SPRINT\.md/);
+  assert.doesNotMatch(landingPage, /Email Instead/i);
+  assert.doesNotMatch(landingPage, /mailto:/i);
   assert.doesNotMatch(landingPage, /official Anthropic partner/i);
   assert.doesNotMatch(landingPage, /same control plane/i);
 });

@@ -32,6 +32,7 @@ test('chatgpt openapi includes all core API routes', () => {
     '/v1/context/construct',
     '/v1/context/evaluate',
     '/v1/context/provenance',
+    '/v1/intake/workflow-sprint',
   ];
 
   for (const route of requiredPaths) {
@@ -53,6 +54,7 @@ test('canonical openapi includes monetization and funnel analytics routes', () =
     '/v1/billing/github-webhook',
     '/v1/analytics/funnel',
     '/v1/dashboard',
+    '/v1/intake/workflow-sprint',
   ];
 
   for (const route of monetizationRoutes) {
@@ -98,6 +100,7 @@ test('chatgpt adapter preserves core endpoint parity with canonical openapi', ()
     '/v1/dpo/export',
     '/v1/analytics/databricks/export',
     '/v1/dashboard',
+    '/v1/intake/workflow-sprint',
   ];
   for (const route of coreRoutes) {
     const escaped = new RegExp(route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));

@@ -90,7 +90,7 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
 
   test('handleGithubWebhook — purchased uses configured plan pricing when available', () => {
     process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
-      11: { amountCents: 2900, currency: 'USD', recurringInterval: 'month' },
+      11: { amountCents: 4900, currency: 'USD', recurringInterval: null },
     });
     delete require.cache[require.resolve('../scripts/billing')];
     billing = require('../scripts/billing');
@@ -113,8 +113,9 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     const revenueEvents = readRevenueEvents();
     const latest = revenueEvents[revenueEvents.length - 1];
     assert.equal(latest.amountKnown, true);
-    assert.equal(latest.amountCents, 2900);
+    assert.equal(latest.amountCents, 4900);
     assert.equal(latest.currency, 'USD');
+    assert.equal(latest.recurringInterval, null);
 
     delete process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
     delete require.cache[require.resolve('../scripts/billing')];
@@ -177,6 +178,27 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     assert.equal(res, true);
 
     if (oldSecret) process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET = oldSecret;
+  });
+
+  test('handleGithubWebhook — purchased is idempotent for repeated marketplace order events', () => {
+    const event = {
+      action: 'purchased',
+      marketplace_purchase: {
+        id: 4444,
+        account: {
+          type: 'User',
+          id: 333,
+          login: 'repeatbuyer'
+        },
+        plan: { id: 1, name: 'Context Gateway' }
+      }
+    };
+
+    billing.handleGithubWebhook(event);
+    billing.handleGithubWebhook(event);
+
+    const revenueEvents = readRevenueEvents().filter((entry) => entry.orderId === '4444');
+    assert.equal(revenueEvents.length, 1);
   });
 });
 

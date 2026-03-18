@@ -161,6 +161,90 @@ components:
           type: string
         installId:
           type: string
+    WorkflowSprintIntakeRequest:
+      type: object
+      required: [email, workflow, owner, blocker, runtime]
+      properties:
+        email:
+          type: string
+          format: email
+        company:
+          type: string
+        workflow:
+          type: string
+        owner:
+          type: string
+        blocker:
+          type: string
+        runtime:
+          type: string
+        note:
+          type: string
+        acquisitionId:
+          type: string
+        visitorId:
+          type: string
+        sessionId:
+          type: string
+        traceId:
+          type: string
+        installId:
+          type: string
+        source:
+          type: string
+        utmSource:
+          type: string
+        utmMedium:
+          type: string
+        utmCampaign:
+          type: string
+        utmContent:
+          type: string
+        utmTerm:
+          type: string
+        community:
+          type: string
+        postId:
+          type: string
+        commentId:
+          type: string
+        campaignVariant:
+          type: string
+        offerCode:
+          type: string
+        ctaId:
+          type: string
+        ctaPlacement:
+          type: string
+        planId:
+          type: string
+        page:
+          type: string
+        landingPath:
+          type: string
+        referrerHost:
+          type: string
+        referrer:
+          type: string
+    WorkflowSprintIntakeResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        leadId:
+          type: string
+        status:
+          type: string
+        offer:
+          type: string
+        nextStep:
+          type: string
+        proofPackUrl:
+          type: string
+          format: uri
+        sprintBriefUrl:
+          type: string
+          format: uri
     FunnelAnalyticsResponse:
       type: object
       properties:
@@ -188,6 +272,8 @@ components:
               type: number
             acquisitionToPaid:
               type: number
+        paidProviderEvents:
+          type: integer
     BillingSummaryResponse:
       type: object
       properties:
@@ -260,9 +346,32 @@ components:
               type: object
               additionalProperties:
                 type: integer
+        pipeline:
+          type: object
+          properties:
+            workflowSprintLeads:
+              type: object
+              properties:
+                total:
+                  type: integer
+                bySource:
+                  type: object
+                  additionalProperties:
+                    type: integer
+            qualifiedWorkflowSprintLeads:
+              type: object
+              properties:
+                total:
+                  type: integer
+                bySource:
+                  type: object
+                  additionalProperties:
+                    type: integer
         revenue:
           type: object
           properties:
+            paidProviderEvents:
+              type: integer
             paidOrders:
               type: integer
             paidCustomers:
@@ -408,6 +517,45 @@ components:
               disabledAt:
                 type: string
                 nullable: true
+        trafficMetrics:
+          type: object
+          properties:
+            visitors:
+              type: integer
+            sessions:
+              type: integer
+            pageViews:
+              type: integer
+            ctaClicks:
+              type: integer
+            checkoutStarts:
+              type: integer
+            buyerLossFeedback:
+              type: integer
+            seoLandingViews:
+              type: integer
+        operatorGeneratedAcquisition:
+          type: object
+          properties:
+            totalEvents:
+              type: integer
+            uniqueLeads:
+              type: integer
+            bySource:
+              type: object
+              additionalProperties:
+                type: integer
+        dataQuality:
+          type: object
+          properties:
+            telemetryCoverage:
+              type: number
+            attributionCoverage:
+              type: number
+            amountKnownCoverage:
+              type: number
+            unreconciledPaidEvents:
+              type: integer
 paths:
   /healthz:
     get:
@@ -493,6 +641,24 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
+  /v1/intake/workflow-sprint:
+    post:
+      operationId: submitWorkflowSprintIntake
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowSprintIntakeRequest'
+      responses:
+        '201':
+          description: Workflow Hardening Sprint lead accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowSprintIntakeResponse'
+        '400':
+          description: Invalid sprint intake request
   /v1/intents/catalog:
     get:
       operationId: listIntentCatalog
