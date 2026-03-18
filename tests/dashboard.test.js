@@ -401,6 +401,7 @@ test('generateDashboard includes visitor funnel and booked revenue analytics', (
       stage: 'paid',
       event: 'stripe_checkout_completed',
       acquisitionId: 'acq_dash_1',
+      evidence: 'cs_dash_1',
       traceId: 'trace_dash_1',
       metadata: {
         customerId: 'cus_dash_1',
@@ -424,7 +425,7 @@ test('generateDashboard includes visitor funnel and booked revenue analytics', (
       ctaId: 'pricing_pro',
       landingPath: '/',
       referrerHost: 'search.example',
-      amountCents: 2900,
+      amountCents: 4900,
       currency: 'USD',
       amountKnown: true,
       attribution: {
@@ -445,12 +446,14 @@ test('generateDashboard includes visitor funnel and booked revenue analytics', (
   assert.equal(data.analytics.funnel.acquisitionLeads, 1);
   assert.equal(data.analytics.funnel.paidOrders, 1);
   assert.equal(data.analytics.funnel.visitorToPaidRate, 1);
-  assert.equal(data.analytics.revenue.bookedRevenueCents, 2900);
+  assert.equal(data.analytics.revenue.bookedRevenueCents, 4900);
+  assert.equal(data.analytics.revenue.paidProviderEvents, 1);
   assert.equal(data.analytics.attribution.paidByCampaign.launch, 1);
-  assert.equal(data.analytics.attribution.bookedRevenueByCtaId.pricing_pro, 2900);
+  assert.equal(data.analytics.attribution.bookedRevenueByCtaId.pricing_pro, 4900);
   assert.equal(data.analytics.reconciliation.matchedAcquisitions, 1);
   assert.equal(data.analytics.reconciliation.matchedPaidOrders, 1);
   assert.equal(data.analytics.identityCoverage.acquisitionIdCoverage, 1);
+  assert.equal(data.analytics.dataQuality.unreconciledPaidEvents, 0);
 });
 
 test('generateDashboard separates repeated CTA clicks from unique checkout starters and flags orphan revenue', () => {
@@ -497,7 +500,7 @@ test('generateDashboard separates repeated CTA clicks from unique checkout start
       customerId: 'cus_repeat_1',
       orderId: 'cs_repeat_1',
       acquisitionId: 'acq_orphan_1',
-      amountCents: 2900,
+      amountCents: 4900,
       currency: 'USD',
       amountKnown: true,
       attribution: {

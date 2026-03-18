@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * money-watcher.js
- * Continuously polls the funnel ledger for the first real 'paid' event and alerts the system.
+ * Continuously polls the commercial summary for net-new paid orders or booked revenue.
  */
 
 'use strict';
@@ -19,18 +19,22 @@ function getCommercialRevenueSnapshot(summary) {
 }
 
 function watchMoney(intervalMs = 10000) {
-  console.log('👀 Money Watcher activated. Polling billing summary for new paid orders...');
+  console.log('👀 Money Watcher activated. Polling billing summary for commercial changes...');
   let initialSnapshot = getCommercialRevenueSnapshot(getBillingSummary());
 
   return setInterval(() => {
     const summary = getBillingSummary();
     const currentSnapshot = getCommercialRevenueSnapshot(summary);
 
-    if (currentSnapshot.paidOrders > initialSnapshot.paidOrders) {
-      const newCount = currentSnapshot.paidOrders - initialSnapshot.paidOrders;
-      console.log(`\n🚨🚨🚨 PAYMENT ALERT: ${newCount} NEW PAID ORDER(S) DETECTED! 🚨🚨🚨`);
+    const newPaidOrders = currentSnapshot.paidOrders - initialSnapshot.paidOrders;
+    const newBookedRevenue = currentSnapshot.bookedRevenueCents - initialSnapshot.bookedRevenueCents;
+
+    if (newPaidOrders > 0 || newBookedRevenue > 0) {
+      console.log('\n🚨🚨🚨 COMMERCIAL ALERT: NET-NEW PAID ACTIVITY DETECTED! 🚨🚨🚨');
       console.log('Operational billing summary:');
       console.log(JSON.stringify({
+        newPaidOrders,
+        newBookedRevenueCents: newBookedRevenue,
         latestPaidAt: currentSnapshot.latestPaidAt,
         latestPaidOrder: currentSnapshot.latestPaidOrder,
         bookedRevenueCents: currentSnapshot.bookedRevenueCents,

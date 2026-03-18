@@ -33,7 +33,7 @@ That maps cleanly to three offers:
 
 - Workflow Hardening Sprint for one production workflow with business value
 - code modernization guardrails for long-running migration and refactor sessions
-- hosted Pro at `$29/mo` when the team only needs synced memory, gates, and usage analytics
+- hosted Pro at `$49 one-time` when the team only needs synced memory, gates, and usage analytics
 
 Use these assets in sales and partner conversations:
 
@@ -392,7 +392,7 @@ Curated configuration pack for teams that want a faster production setup without
 | **Hook Templates** | Ready-to-install Stop, UserPromptSubmit, PostToolUse hooks |
 | **Reminder Templates** | 8 production reminder templates with priority levels |
 
-**[$29/mo on Gumroad →](https://iganapolsky.gumroad.com/l/tjovof)**
+**[Buy Pro ($49 one-time) →](https://iganapolsky.gumroad.com/l/tjovof)**
 
 Current pricing and traction policy: [Commercial Truth](docs/COMMERCIAL_TRUTH.md)
 

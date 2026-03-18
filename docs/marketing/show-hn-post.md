@@ -23,4 +23,4 @@ Stack: Node.js, MCP stdio protocol, LanceDB (vector), ONNX (embeddings). 314 tes
 
 Free and MIT licensed. `npx mcp-memory-gateway serve` to try it.
 
-Pro tier ($29/mo) adds hosted dashboard, auto-gate promotion, and team sync: https://rlhf-feedback-loop-production.up.railway.app
+Pro tier ($49 one-time) adds hosted dashboard, auto-gate promotion, and team sync: https://rlhf-feedback-loop-production.up.railway.app

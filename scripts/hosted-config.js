@@ -4,8 +4,8 @@ const crypto = require('node:crypto');
 
 const DEFAULT_PUBLIC_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
 const DEFAULT_CHECKOUT_FALLBACK_URL = 'https://iganapolsky.gumroad.com/l/tjovof';
-const DEFAULT_PRO_PRICE_DOLLARS = 29;
-const DEFAULT_PRO_PRICE_LABEL = '$29/mo';
+const DEFAULT_PRO_PRICE_DOLLARS = 49;
+const DEFAULT_PRO_PRICE_LABEL = '$49 one-time';
 const GA_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/i;
 
 function normalizeOrigin(value) {

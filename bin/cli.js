@@ -54,7 +54,7 @@ function proNudge() {
   if (process.env.RLHF_NO_NUDGE === '1') return;
   // Write to stderr so it never contaminates MCP stdio JSON on stdout
   process.stderr.write(
-    '\n💡 Like this? Go Pro — hosted dashboard, auto-gate promotion, unlimited gates. $29/mo.\n' +
+    '\n💡 Like this? Go Pro — hosted dashboard, auto-gate promotion, unlimited gates. $49 one-time.\n' +
     `   → ${PRO_URL}\n\n`
   );
 }
@@ -571,7 +571,7 @@ function pro() {
   const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
   console.log('\nMCP Memory Gateway — Commercial Truth');
   console.log('─'.repeat(50));
-  console.log('Self-serve offer today: Pro ($29/mo recurring).');
+  console.log('Self-serve offer today: Pro ($49 one-time).');
   console.log('Hosted Context Gateway access is pilot/by-request.');
   console.log('\nWhat is available:');
   console.log('  - Pro: hosted dashboard, auto-gate promotion, unlimited custom gates, multi-repo sync');
@@ -836,7 +836,7 @@ function help() {
   console.log('  rules                 Generate prevention rules from repeated failures');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Veto Layer');
   console.log('  self-heal             Run self-healing check and auto-fix');
-  console.log('  pro                   Show Pro plan ($29/mo) + hosted pilot info');
+  console.log('  pro                   Show Pro plan ($49 one-time) + hosted pilot info');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
   console.log('  watch [flags]           Watch .rlhf/ for external signals and ingest through pipeline (--once, --source=X)');
   console.log('  status                  Show feedback tracking dashboard — approval trend + failure domains');

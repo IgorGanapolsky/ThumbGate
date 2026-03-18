@@ -358,7 +358,7 @@ describe('bin/cli.js', () => {
   test('pro command prints truthful commercial offer info', () => {
     const result = spawnSync(process.execPath, [CLI, 'pro'], { encoding: 'utf8' });
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
-    assert.match(result.stdout, /Pro \(\$29\/mo recurring\)/);
+    assert.match(result.stdout, /Pro \(\$49 one-time\)/);
     assert.match(result.stdout, /pilot\/by-request/);
     assert.match(result.stdout, /COMMERCIAL_TRUTH\.md/);
     assert.doesNotMatch(result.stdout, /\$10\/mo|38 spots remaining|first 50 users|Founding Member/i);
@@ -387,7 +387,7 @@ describe('bin/cli.js', () => {
     const result = spawnSync(process.execPath, [CLI, 'pro'], { encoding: 'utf8' });
     assert.strictEqual(result.status, 0);
     assert.ok(result.stdout.includes('railway.app'), 'Pro command should include hosted URL');
-    assert.ok(result.stdout.includes('$29/mo'), 'Pro command should include current price');
+    assert.ok(result.stdout.includes('$49 one-time'), 'Pro command should include current price');
   });
 
   test('RLHF_NO_TELEMETRY=1 prevents telemetry ping on init', () => {
@@ -521,10 +521,10 @@ describe('bin/cli.js', () => {
         customerId: 'cus_cli_summary',
         installId: 'inst_cli_summary',
         traceId: 'trace_cli_summary',
-        amountCents: 2900,
+        amountCents: 4900,
         currency: 'USD',
         amountKnown: true,
-        recurringInterval: 'month',
+        recurringInterval: null,
         attribution: {
           source: 'website',
           campaign: 'pro_pack',
@@ -580,10 +580,12 @@ describe('bin/cli.js', () => {
     assert.equal(payload.keys.bySource.stripe_webhook_checkout_completed, 1);
     assert.equal(payload.keys.bySource.github_marketplace_purchased, 1);
     assert.equal(payload.funnel.stageCounts.paid, 1);
-    assert.equal(payload.revenue.bookedRevenueCents, 2900);
+    assert.equal(payload.revenue.bookedRevenueCents, 4900);
     assert.equal(payload.revenue.paidOrders, 1);
+    assert.equal(payload.revenue.paidProviderEvents, 1);
     assert.equal(payload.pipeline.workflowSprintLeads.total, 1);
     assert.equal(payload.pipeline.workflowSprintLeads.bySource.x, 1);
+    assert.equal(payload.pipeline.qualifiedWorkflowSprintLeads.total, 1);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });

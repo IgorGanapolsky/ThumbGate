@@ -8,7 +8,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 ## What is true today
 
 - The open-source `mcp-memory-gateway` package is free and MIT licensed.
-- The current public self-serve commercial offer is **Pro at $29/mo recurring**, hosted on Cloudflare Workers.
+- The current public self-serve commercial offer is **Pro at $49 one-time**, hosted on Cloudflare Workers.
 - Engineering verification is strong and should be cited through `docs/VERIFICATION_EVIDENCE.md` and machine-readable proof reports.
 
 ## Product Tiers
@@ -21,7 +21,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - DPO/KTO export for fine-tuning
 - CLI dashboard
 
-### Pro ($29/mo, hosted on Cloudflare Workers)
+### Pro ($49 one-time, hosted on Cloudflare Workers)
 
 - Cloud-synced memories accessible from any machine
 - Unlimited memories and retrievals

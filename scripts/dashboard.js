@@ -277,7 +277,10 @@ function computeAnalyticsSummary(feedbackDir) {
     telemetry,
     funnel: {
       visitors: uniqueVisitors,
+      sessions: telemetry.visitors ? telemetry.visitors.uniqueSessions || 0 : 0,
+      pageViews: telemetry.visitors ? telemetry.visitors.pageViews || 0 : 0,
       ctaClicks,
+      checkoutStarts: telemetry.ctas ? telemetry.ctas.totalClicks || 0 : 0,
       acquisitionLeads,
       paidOrders,
       visitorToLeadRate: safeRate(acquisitionLeads, uniqueVisitors),
@@ -306,6 +309,7 @@ function computeAnalyticsSummary(feedbackDir) {
       topQuery: null,
     },
     revenue: billing.revenue || {
+      paidProviderEvents: 0,
       paidOrders: 0,
       bookedRevenueCents: 0,
       amountKnownOrders: 0,
@@ -324,6 +328,30 @@ function computeAnalyticsSummary(feedbackDir) {
       bookedRevenueByReferrerHost: {},
       conversionBySource: {},
       conversionByCampaign: {},
+    },
+    pipeline: billing.pipeline || {
+      workflowSprintLeads: { total: 0, bySource: {} },
+      qualifiedWorkflowSprintLeads: { total: 0, bySource: {} },
+    },
+    trafficMetrics: billing.trafficMetrics || {
+      visitors: 0,
+      sessions: 0,
+      pageViews: 0,
+      ctaClicks: 0,
+      checkoutStarts: 0,
+      buyerLossFeedback: 0,
+      seoLandingViews: 0,
+    },
+    operatorGeneratedAcquisition: billing.operatorGeneratedAcquisition || {
+      totalEvents: 0,
+      uniqueLeads: 0,
+      bySource: {},
+    },
+    dataQuality: billing.dataQuality || {
+      telemetryCoverage: 0,
+      attributionCoverage: 0,
+      amountKnownCoverage: 0,
+      unreconciledPaidEvents: 0,
     },
     reconciliation: {
       telemetryCheckoutStarts: telemetry.ctas.totalClicks,
@@ -537,9 +565,14 @@ function printDashboard(data) {
 
   console.log('');
   console.log('\uD83D\uDCBC Growth Analytics');
-  console.log(`  Unique Visitors  : ${analytics.funnel.visitors}`);
-  console.log(`  CTA Clicks       : ${analytics.funnel.ctaClicks}`);
+  console.log(`  Unique Visitors  : ${analytics.trafficMetrics.visitors}`);
+  console.log(`  Sessions         : ${analytics.trafficMetrics.sessions}`);
+  console.log(`  Page Views       : ${analytics.trafficMetrics.pageViews}`);
+  console.log(`  CTA Clicks       : ${analytics.trafficMetrics.ctaClicks}`);
   console.log(`  Leads            : ${analytics.funnel.acquisitionLeads}`);
+  console.log(`  Sprint Leads     : ${analytics.pipeline.workflowSprintLeads.total}`);
+  console.log(`  Qualified Leads  : ${analytics.pipeline.qualifiedWorkflowSprintLeads.total}`);
+  console.log(`  Paid Provider Ev.: ${analytics.revenue.paidProviderEvents}`);
   console.log(`  Paid Orders      : ${analytics.funnel.paidOrders}`);
   console.log(`  Visitor \u2192 Paid  : ${analytics.funnel.visitorToPaidRate}`);
   console.log(`  Booked Revenue   : $${(analytics.revenue.bookedRevenueCents / 100).toFixed(2)}`);
@@ -568,6 +601,8 @@ function printDashboard(data) {
   console.log(`  Buyer Loss       : ${instrumentation.buyerLossSignalsPresent ? analytics.buyerLoss.totalSignals : 0}`);
   console.log(`  Attribution      : ${Math.round((instrumentation.trafficAttributionCoverage || 0) * 100)}% page-view coverage`);
   console.log(`  Revenue Tracking : ${instrumentation.bookedRevenueTrackingEnabled ? 'booked revenue enabled' : 'disabled'}`);
+  console.log(`  Amount Coverage  : ${Math.round((analytics.dataQuality.amountKnownCoverage || 0) * 100)}%`);
+  console.log(`  Unreconciled Paid: ${analytics.dataQuality.unreconciledPaidEvents}`);
 
   console.log('');
   console.log('🧭 Agent Readiness');

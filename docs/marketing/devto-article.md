@@ -99,7 +99,7 @@ npx mcp-memory-gateway serve
 GitHub: [github.com/IgorGanapolsky/mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)
 npm: [mcp-memory-gateway](https://www.npmjs.com/package/mcp-memory-gateway)
 
-If you want a hosted dashboard with auto-gate promotion, multi-repo sync, and CI webhook ingestion, there is a [Pro tier at $29/mo](https://rlhf-feedback-loop-production.up.railway.app). But the local version handles the full feedback loop on its own.
+If you want a hosted dashboard with auto-gate promotion, multi-repo sync, and CI webhook ingestion, there is a [Pro tier at $49 one-time](https://rlhf-feedback-loop-production.up.railway.app). But the local version handles the full feedback loop on its own.
 
 I have been running this on my own projects for months. The difference between session 1 and session 50 is noticeable — the agent stops making the same classes of mistakes. Not because it got smarter, but because the gates will not let it repeat what already failed.
 

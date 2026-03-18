@@ -218,10 +218,10 @@ describe('billing.js — funnel ledger', () => {
       orderId: 'cs_summary_a',
       installId: 'inst_summary_a',
       traceId: 'trace_summary_a',
-      amountCents: 2900,
+      amountCents: 4900,
       currency: 'usd',
       amountKnown: true,
-      recurringInterval: 'month',
+      recurringInterval: null,
       attribution: {
         source: 'reddit',
         utmSource: 'reddit',
@@ -258,8 +258,9 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.funnel.stageCounts.paid, 1);
     assert.equal(summary.signups.uniqueLeads, 1);
     assert.equal(summary.revenue.paidOrders, 1);
-    assert.equal(summary.revenue.bookedRevenueCents, 2900);
+    assert.equal(summary.revenue.bookedRevenueCents, 4900);
     assert.equal(summary.revenue.amountKnownCoverageRate, 1);
+    assert.equal(summary.revenue.paidProviderEvents, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.total, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.contactable, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.byStatus.new, 1);
@@ -268,6 +269,8 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.pipeline.workflowSprintLeads.byCommunity.platform, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.byRuntime['Claude Code + MCP'], 1);
     assert.equal(summary.pipeline.workflowSprintLeads.latestLead.email, 'ops@example.com');
+    assert.equal(summary.pipeline.qualifiedWorkflowSprintLeads.total, 1);
+    assert.equal(summary.pipeline.qualifiedWorkflowSprintLeads.bySource.linkedin, 1);
     assert.equal(summary.attribution.acquisitionBySource.reddit, 1);
     assert.equal(summary.attribution.acquisitionByCommunity.ClaudeCode, 1);
     assert.equal(summary.attribution.acquisitionByPostId['1rsudq0'], 1);
@@ -280,12 +283,12 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.attribution.paidByCommentId.oa9mqjf, 1);
     assert.equal(summary.attribution.paidByCampaignVariant.comment_problem_solution, 1);
     assert.equal(summary.attribution.paidByOfferCode['REDDIT-EARLY'], 1);
-    assert.equal(summary.attribution.bookedRevenueBySourceCents.reddit, 2900);
-    assert.equal(summary.attribution.bookedRevenueByCommunityCents.ClaudeCode, 2900);
-    assert.equal(summary.attribution.bookedRevenueByPostIdCents['1rsudq0'], 2900);
-    assert.equal(summary.attribution.bookedRevenueByCommentIdCents.oa9mqjf, 2900);
-    assert.equal(summary.attribution.bookedRevenueByCampaignVariantCents.comment_problem_solution, 2900);
-    assert.equal(summary.attribution.bookedRevenueByOfferCodeCents['REDDIT-EARLY'], 2900);
+    assert.equal(summary.attribution.bookedRevenueBySourceCents.reddit, 4900);
+    assert.equal(summary.attribution.bookedRevenueByCommunityCents.ClaudeCode, 4900);
+    assert.equal(summary.attribution.bookedRevenueByPostIdCents['1rsudq0'], 4900);
+    assert.equal(summary.attribution.bookedRevenueByCommentIdCents.oa9mqjf, 4900);
+    assert.equal(summary.attribution.bookedRevenueByCampaignVariantCents.comment_problem_solution, 4900);
+    assert.equal(summary.attribution.bookedRevenueByOfferCodeCents['REDDIT-EARLY'], 4900);
     assert.equal(summary.attribution.conversionByCommunity.ClaudeCode, 1);
     assert.equal(summary.attribution.conversionByPostId['1rsudq0'], 1);
     assert.equal(summary.attribution.conversionByCommentId.oa9mqjf, 1);
@@ -301,6 +304,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.keys.activeBySource.stripe_webhook_checkout_completed, 1);
     assert.ok(summary.funnel.firstPaidAt);
     assert.equal(summary.funnel.lastPaidEvent.customerId, 'cus_summary_a');
+    assert.equal(summary.dataQuality.unreconciledPaidEvents, 0);
 
     const activeCustomer = summary.customers.find((entry) => entry.customerId === 'cus_summary_a');
     const disabledCustomer = summary.customers.find((entry) => entry.customerId === 'cus_summary_b');
@@ -330,7 +334,7 @@ describe('billing.js — funnel ledger', () => {
 
   test('handleGithubWebhook records booked revenue when plan pricing is configured', () => {
     process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
-      7: { amountCents: 2900, currency: 'USD', recurringInterval: 'month' },
+      7: { amountCents: 4900, currency: 'USD', recurringInterval: null },
     });
     const billing = requireFreshBilling('');
     billing.handleGithubWebhook({
@@ -344,8 +348,9 @@ describe('billing.js — funnel ledger', () => {
     const revenueEvents = readRevenueEvents();
     assert.equal(revenueEvents.length, 1);
     assert.equal(revenueEvents[0].amountKnown, true);
-    assert.equal(revenueEvents[0].amountCents, 2900);
+    assert.equal(revenueEvents[0].amountCents, 4900);
     assert.equal(revenueEvents[0].currency, 'USD');
+    assert.equal(revenueEvents[0].recurringInterval, null);
   });
 });
 

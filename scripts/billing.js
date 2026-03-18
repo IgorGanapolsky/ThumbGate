@@ -10,6 +10,8 @@ const path = require('path');
 const crypto = require('crypto');
 const Stripe = require('stripe');
 const { createTraceId } = require('./hosted-config');
+const { getFeedbackPaths } = require('./feedback-loop');
+const { getTelemetryAnalytics } = require('./telemetry-analytics');
 const { loadWorkflowSprintLeads } = require('./workflow-sprint-intake');
 
 // ---------------------------------------------------------------------------
@@ -128,6 +130,14 @@ function normalizeInteger(value) {
   return Number.isFinite(num) ? Math.trunc(num) : null;
 }
 
+function pickFirstText(...values) {
+  for (const value of values) {
+    const normalized = normalizeText(value);
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
 function safeRate(num, den) {
   return den ? Number((num / den).toFixed(4)) : 0;
 }
@@ -188,6 +198,108 @@ function resolveAttributionSource(attribution, fallback = null) {
 
 function resolveAttributionCampaign(attribution) {
   return attribution.campaign || 'unassigned';
+}
+
+function resolveAcquisitionLeadKey(entry = {}) {
+  const metadata = sanitizeMetadata(entry.metadata);
+  const attribution = sanitizeMetadata(entry.attribution);
+  return pickFirstText(
+    entry.acquisitionId,
+    metadata.acquisitionId,
+    attribution.acquisitionId,
+    entry.traceId,
+    metadata.traceId,
+    attribution.traceId,
+    entry.visitorId,
+    metadata.visitorId,
+    attribution.visitorId,
+    entry.sessionId,
+    metadata.sessionId,
+    attribution.sessionId,
+    entry.installId,
+    metadata.installId,
+    attribution.installId,
+    entry.orderId,
+    metadata.orderId,
+    entry.evidence
+  );
+}
+
+function resolvePaidProviderEventKey(entry = {}) {
+  const metadata = sanitizeMetadata(entry.metadata);
+  return pickFirstText(
+    entry.orderId,
+    metadata.orderId,
+    metadata.sessionId,
+    metadata.marketplaceOrderId,
+    entry.evidence,
+    resolveAcquisitionLeadKey(entry)
+  );
+}
+
+function resolveRevenueEventKey(entry = {}) {
+  const metadata = sanitizeMetadata(entry.metadata);
+  const attribution = sanitizeMetadata(entry.attribution);
+  return pickFirstText(
+    entry.orderId,
+    metadata.orderId,
+    metadata.marketplaceOrderId,
+    entry.evidence,
+    entry.traceId,
+    metadata.traceId,
+    attribution.traceId,
+    entry.installId,
+    metadata.installId,
+    attribution.installId,
+    entry.customerId
+  );
+}
+
+function isQualifiedWorkflowSprintLead(entry = {}) {
+  return Boolean(
+    normalizeText(entry.contact && entry.contact.email) &&
+    normalizeText(entry.qualification && entry.qualification.workflow) &&
+    normalizeText(entry.qualification && entry.qualification.owner) &&
+    normalizeText(entry.qualification && entry.qualification.blocker) &&
+    normalizeText(entry.qualification && entry.qualification.runtime)
+  );
+}
+
+function isOperatorGeneratedAcquisitionEntry(entry = {}) {
+  const metadata = sanitizeMetadata(entry.metadata);
+  const attribution = extractAttribution({
+    ...metadata,
+    ...sanitizeMetadata(entry.attribution),
+    ...sanitizeMetadata(entry),
+  });
+  const source = normalizeText(attribution.source || metadata.source || entry.source);
+  const medium = normalizeText(attribution.medium || metadata.medium || entry.utmMedium);
+  const eventName = normalizeText(entry.event);
+
+  return source === 'cli' ||
+    medium === 'operator_outreach' ||
+    eventName === 'outreach_target_generated' ||
+    eventName === 'outreach_sequence_started' ||
+    eventName === 'lead_list_generated';
+}
+
+function hasRevenueEventMatch(entries, target) {
+  const targetKey = resolveRevenueEventKey(target);
+  if (!targetKey) return false;
+  return entries.some((entry) => {
+    return normalizeText(entry.status) === normalizeText(target.status) &&
+      resolveRevenueEventKey(entry) === targetKey;
+  });
+}
+
+function hasFunnelEventMatch(entries, target) {
+  const targetKey = resolvePaidProviderEventKey(target);
+  if (!targetKey) return false;
+  return entries.some((entry) => {
+    return normalizeText(entry.stage) === normalizeText(target.stage) &&
+      normalizeText(entry.event) === normalizeText(target.event) &&
+      resolvePaidProviderEventKey(entry) === targetKey;
+  });
 }
 
 function appendFunnelEvent({ stage, event, installId = null, traceId = null, evidence, metadata = {} } = {}) {
@@ -308,7 +420,7 @@ function resolveGithubPlanPricing(planId) {
       amountKnown: Number.isFinite(raw),
       amountCents: normalizeInteger(raw),
       currency: 'USD',
-      recurringInterval: 'month',
+      recurringInterval: null,
     };
   }
 
@@ -321,12 +433,13 @@ function resolveGithubPlanPricing(planId) {
     amountKnown: amountCents !== null,
     amountCents,
     currency: normalizeCurrency(raw.currency) || 'USD',
-    recurringInterval: normalizeText(raw.recurringInterval || raw.interval) || 'month',
+    recurringInterval: normalizeText(raw.recurringInterval || raw.interval),
   };
 }
 
 function getFunnelAnalytics() {
   const events = loadFunnelLedger();
+  const paidOrders = loadRevenueLedger().filter((entry) => entry && entry.status === 'paid');
   const stageCounts = { acquisition: 0, activation: 0, paid: 0 };
   const eventCounts = {};
   for (const entry of events) {
@@ -342,13 +455,16 @@ function getFunnelAnalytics() {
     eventCounts,
     conversionRates: {
       acquisitionToActivation: safeRate(stageCounts.activation, stageCounts.acquisition),
-      activationToPaid: safeRate(stageCounts.paid, stageCounts.activation),
-      acquisitionToPaid: safeRate(stageCounts.paid, stageCounts.acquisition),
+      activationToPaid: safeRate(paidOrders.length, stageCounts.activation),
+      acquisitionToPaid: safeRate(paidOrders.length, stageCounts.acquisition),
     },
+    paidProviderEvents: stageCounts.paid,
   };
 }
 
 function getBusinessAnalytics() {
+  const { FEEDBACK_DIR } = getFeedbackPaths();
+  const telemetry = getTelemetryAnalytics(FEEDBACK_DIR);
   const events = loadFunnelLedger();
   const revenueEvents = loadRevenueLedger();
   const workflowSprintLeads = loadWorkflowSprintLeads();
@@ -367,6 +483,8 @@ function getBusinessAnalytics() {
   const signupsByCampaignVariant = {};
   const signupsByOfferCode = {};
   const acquisitionLeadKeys = new Set();
+  const operatorGeneratedAcquisitionBySource = {};
+  const operatorGeneratedAcquisitionLeadKeys = new Set();
   for (const entry of acquisitionEvents) {
     const attribution = extractAttribution({
       ...sanitizeMetadata(entry.metadata),
@@ -381,9 +499,11 @@ function getBusinessAnalytics() {
     incrementCounter(signupsByCommentId, attribution.commentId);
     incrementCounter(signupsByCampaignVariant, attribution.campaignVariant);
     incrementCounter(signupsByOfferCode, attribution.offerCode);
-    acquisitionLeadKeys.add(
-      entry.acquisitionId || entry.traceId || entry.installId || entry.evidence || `${entry.timestamp}:${entry.event}`
-    );
+    acquisitionLeadKeys.add(resolveAcquisitionLeadKey(entry) || `${entry.timestamp}:${entry.event}`);
+    if (isOperatorGeneratedAcquisitionEntry(entry)) {
+      incrementCounter(operatorGeneratedAcquisitionBySource, sourceKey);
+      operatorGeneratedAcquisitionLeadKeys.add(resolveAcquisitionLeadKey(entry) || `${entry.timestamp}:${entry.event}`);
+    }
   }
 
   const paidBySource = {};
@@ -520,9 +640,11 @@ function getBusinessAnalytics() {
   const workflowSprintLeadByCampaign = {};
   const workflowSprintLeadByCommunity = {};
   const workflowSprintLeadByRuntime = {};
+  const qualifiedWorkflowSprintLeadBySource = {};
   let workflowSprintLeadLatest = null;
   let workflowSprintLeadLatestAt = null;
   let workflowSprintLeadContactable = 0;
+  let qualifiedWorkflowSprintLeadCount = 0;
 
   for (const entry of workflowSprintLeads) {
     if (!entry || typeof entry !== 'object') continue;
@@ -535,6 +657,13 @@ function getBusinessAnalytics() {
 
     if (entry.contact?.email) {
       workflowSprintLeadContactable += 1;
+    }
+    if (isQualifiedWorkflowSprintLead(entry)) {
+      qualifiedWorkflowSprintLeadCount += 1;
+      incrementCounter(
+        qualifiedWorkflowSprintLeadBySource,
+        resolveAttributionSource(attribution, 'workflow_sprint_intake')
+      );
     }
 
     if (!workflowSprintLeadLatestAt || String(entry.submittedAt || '') > workflowSprintLeadLatestAt) {
@@ -553,6 +682,39 @@ function getBusinessAnalytics() {
       };
     }
   }
+
+  const unreconciledPaidEvents = paidEvents.filter((entry) => {
+    const eventKey = resolvePaidProviderEventKey(entry);
+    if (!eventKey) return true;
+    return !paidOrders.some((order) => resolveRevenueEventKey(order) === eventKey);
+  }).length;
+
+  const trafficMetrics = {
+    visitors: telemetry.visitors ? telemetry.visitors.uniqueVisitors || 0 : 0,
+    sessions: telemetry.visitors ? telemetry.visitors.uniqueSessions || 0 : 0,
+    pageViews: telemetry.visitors ? telemetry.visitors.pageViews || 0 : 0,
+    ctaClicks: telemetry.ctas ? telemetry.ctas.totalClicks || 0 : 0,
+    checkoutStarts: telemetry.ctas ? telemetry.ctas.totalClicks || 0 : 0,
+    buyerLossFeedback: telemetry.buyerLoss ? telemetry.buyerLoss.totalSignals || 0 : 0,
+    seoLandingViews: telemetry.seo ? telemetry.seo.landingViews || 0 : 0,
+  };
+
+  const operatorGeneratedAcquisition = {
+    totalEvents: acquisitionEvents.filter(isOperatorGeneratedAcquisitionEntry).length,
+    uniqueLeads: operatorGeneratedAcquisitionLeadKeys.size,
+    bySource: operatorGeneratedAcquisitionBySource,
+  };
+
+  const dataQuality = {
+    telemetryCoverage: Number(((
+      (telemetry.visitors ? telemetry.visitors.visitorIdCoverageRate || 0 : 0) +
+      (telemetry.visitors ? telemetry.visitors.sessionIdCoverageRate || 0 : 0) +
+      (telemetry.visitors ? telemetry.visitors.acquisitionIdCoverageRate || 0 : 0)
+    ) / 3).toFixed(4)),
+    attributionCoverage: telemetry.visitors ? telemetry.visitors.attributionCoverageRate || 0 : 0,
+    amountKnownCoverage: paidOrders.length ? safeRate(amountKnownOrders, paidOrders.length) : 0,
+    unreconciledPaidEvents,
+  };
 
   return {
     generatedAt: new Date().toISOString(),
@@ -594,6 +756,7 @@ function getBusinessAnalytics() {
       byOfferCode: signupsByOfferCode,
     },
     revenue: {
+      paidProviderEvents: paidEvents.length,
       paidOrders: paidOrders.length,
       paidCustomers: paidCustomerIds.size,
       bookedRevenueCents,
@@ -601,7 +764,7 @@ function getBusinessAnalytics() {
       amountKnownOrders,
       amountUnknownOrders,
       amountKnownCoverageRate: safeRate(amountKnownOrders, paidOrders.length),
-      unreconciledPaidEvents: Math.max(0, paidEvents.length - paidOrders.length),
+      unreconciledPaidEvents,
       latestPaidAt,
       latestPaidOrder,
       byProvider: revenueByProvider,
@@ -617,6 +780,10 @@ function getBusinessAnalytics() {
         byRuntime: workflowSprintLeadByRuntime,
         latestLeadAt: workflowSprintLeadLatestAt,
         latestLead: workflowSprintLeadLatest,
+      },
+      qualifiedWorkflowSprintLeads: {
+        total: qualifiedWorkflowSprintLeadCount,
+        bySource: qualifiedWorkflowSprintLeadBySource,
       },
     },
     attribution: {
@@ -652,6 +819,9 @@ function getBusinessAnalytics() {
       conversionByCampaignVariant,
       conversionByOfferCode,
     },
+    trafficMetrics,
+    operatorGeneratedAcquisition,
+    dataQuality,
   };
 }
 
@@ -732,6 +902,9 @@ function getBillingSummary() {
     revenue: business.revenue,
     pipeline: business.pipeline,
     attribution: business.attribution,
+    trafficMetrics: business.trafficMetrics,
+    operatorGeneratedAcquisition: business.operatorGeneratedAcquisition,
+    dataQuality: business.dataQuality,
     keys: {
       total: keyEntries.length,
       active: activeKeys,
@@ -791,7 +964,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     cancel_url: cancelUrl,
     customer_email: customerEmail,
     payment_method_types: ['card', 'link'],
-    mode: 'subscription',
+    mode: 'payment',
     line_items: [{ price: CONFIG.STRIPE_PRICE_ID, quantity: 1 }],
     metadata: serializeStripeMetadata(checkoutMetadata),
   });
@@ -1005,41 +1178,56 @@ async function handleWebhook(rawBody, signature) {
       const traceId = session.metadata?.traceId || null;
       const attribution = extractAttribution(session.metadata);
       const result = provisionApiKey(customerId, { installId, source: 'stripe_webhook_checkout_completed' });
-      appendFunnelEvent({
+      const funnelRecord = {
         stage: 'paid',
         event: 'stripe_checkout_completed',
-        installId,
-        traceId,
         evidence: session.id,
         metadata: {
           customerId,
           subscriptionId: session.subscription,
+          sessionId: session.id,
           traceId,
           ...extractJourneyFields(session.metadata),
           ...attribution,
         },
-      });
-      appendRevenueEvent({
+      };
+      if (!hasFunnelEventMatch(loadFunnelLedger(), funnelRecord)) {
+        appendFunnelEvent({
+          stage: 'paid',
+          event: 'stripe_checkout_completed',
+          installId,
+          traceId,
+          evidence: session.id,
+          metadata: funnelRecord.metadata,
+        });
+      }
+      const revenueRecord = {
         provider: 'stripe',
         event: 'stripe_checkout_completed',
         status: 'paid',
         customerId,
         orderId: session.id,
-        installId,
-        traceId,
-        evidence: session.id,
-        amountCents: session.amount_total,
-        currency: session.currency,
-        amountKnown: session.amount_total !== undefined && session.amount_total !== null,
-        recurringInterval: session.mode === 'subscription' ? 'month' : null,
-        attribution,
         metadata: {
           ...extractJourneyFields(session.metadata),
+          sessionId: session.id,
           subscriptionId: session.subscription || null,
           mode: session.mode || null,
           paymentStatus: session.payment_status || null,
         },
-      });
+      };
+      if (!hasRevenueEventMatch(loadRevenueLedger(), revenueRecord)) {
+        appendRevenueEvent({
+          ...revenueRecord,
+          installId,
+          traceId,
+          evidence: session.id,
+          amountCents: session.amount_total,
+          currency: session.currency,
+          amountKnown: session.amount_total !== undefined && session.amount_total !== null,
+          recurringInterval: session.mode === 'subscription' ? 'month' : null,
+          attribution,
+        });
+      }
       return { handled: true, action: 'provisioned_api_key', result };
     }
     case 'customer.subscription.deleted': {
@@ -1064,14 +1252,15 @@ function handleGithubWebhook(event) {
   const { action, marketplace_purchase: mp } = event;
   if (!action || !mp || !mp.account?.id) return { handled: false, reason: 'missing_payload_data' };
   const customerId = `github_${String(mp.account.type).toLowerCase()}_${mp.account.id}`;
+  const marketplaceOrderId = normalizeText(mp.id) || `github_marketplace_${String(mp.account.id)}_${String(mp.plan?.id || 'unknown')}`;
   const planPricing = resolveGithubPlanPricing(mp.plan?.id);
   switch (action) {
     case 'purchased': {
       const result = provisionApiKey(customerId, { source: 'github_marketplace_purchased' });
-      appendFunnelEvent({
+      const funnelRecord = {
         stage: 'paid',
         event: 'github_marketplace_purchased',
-        evidence: 'github_marketplace_purchased',
+        evidence: marketplaceOrderId,
         metadata: {
           provider: 'github_marketplace',
           customerId,
@@ -1080,70 +1269,100 @@ function handleGithubWebhook(event) {
           source: 'github_marketplace',
           planId: mp.plan?.id || null,
           planName: mp.plan?.name || null,
+          marketplaceOrderId,
         },
-      });
-      appendRevenueEvent({
+      };
+      if (!hasFunnelEventMatch(loadFunnelLedger(), funnelRecord)) {
+        appendFunnelEvent(funnelRecord);
+      }
+      const revenueRecord = {
         provider: 'github_marketplace',
         event: 'github_marketplace_purchased',
         status: 'paid',
         customerId,
-        orderId: mp.id || null,
-        evidence: 'github_marketplace_purchased',
-        amountCents: planPricing.amountCents,
-        currency: planPricing.currency,
-        amountKnown: planPricing.amountKnown,
-        recurringInterval: planPricing.recurringInterval,
-        attribution: { source: 'github_marketplace' },
+        orderId: marketplaceOrderId,
         metadata: {
           accountId: String(mp.account.id),
           accountType: String(mp.account.type),
           planId: mp.plan?.id || null,
           planName: mp.plan?.name || null,
+          marketplaceOrderId,
         },
-      });
+      };
+      if (!hasRevenueEventMatch(loadRevenueLedger(), revenueRecord)) {
+        appendRevenueEvent({
+          ...revenueRecord,
+          evidence: marketplaceOrderId,
+          amountCents: planPricing.amountCents,
+          currency: planPricing.currency,
+          amountKnown: planPricing.amountKnown,
+          recurringInterval: planPricing.recurringInterval,
+          attribution: { source: 'github_marketplace' },
+        });
+      }
       return { handled: true, action: 'provisioned_api_key', result };
     }
     case 'cancelled':
-      appendRevenueEvent({
+      if (!hasRevenueEventMatch(loadRevenueLedger(), {
         provider: 'github_marketplace',
         event: 'github_marketplace_cancelled',
         status: 'cancelled',
         customerId,
-        orderId: mp.id || null,
-        evidence: 'github_marketplace_cancelled',
-        amountCents: planPricing.amountCents,
-        currency: planPricing.currency,
-        amountKnown: planPricing.amountKnown,
-        recurringInterval: planPricing.recurringInterval,
-        attribution: { source: 'github_marketplace' },
-        metadata: {
-          accountId: String(mp.account.id),
-          accountType: String(mp.account.type),
-          planId: mp.plan?.id || null,
-          planName: mp.plan?.name || null,
-        },
-      });
+        orderId: marketplaceOrderId,
+        metadata: { marketplaceOrderId },
+      })) {
+        appendRevenueEvent({
+          provider: 'github_marketplace',
+          event: 'github_marketplace_cancelled',
+          status: 'cancelled',
+          customerId,
+          orderId: marketplaceOrderId,
+          evidence: marketplaceOrderId,
+          amountCents: planPricing.amountCents,
+          currency: planPricing.currency,
+          amountKnown: planPricing.amountKnown,
+          recurringInterval: planPricing.recurringInterval,
+          attribution: { source: 'github_marketplace' },
+          metadata: {
+            accountId: String(mp.account.id),
+            accountType: String(mp.account.type),
+            planId: mp.plan?.id || null,
+            planName: mp.plan?.name || null,
+            marketplaceOrderId,
+          },
+        });
+      }
       return { handled: true, action: 'disabled_customer_keys', result: disableCustomerKeys(customerId) };
     case 'changed': {
-      appendRevenueEvent({
+      if (!hasRevenueEventMatch(loadRevenueLedger(), {
         provider: 'github_marketplace',
         event: 'github_marketplace_changed',
         status: 'changed',
         customerId,
-        orderId: mp.id || null,
-        evidence: 'github_marketplace_changed',
-        amountCents: planPricing.amountCents,
-        currency: planPricing.currency,
-        amountKnown: planPricing.amountKnown,
-        recurringInterval: planPricing.recurringInterval,
-        attribution: { source: 'github_marketplace' },
-        metadata: {
-          accountId: String(mp.account.id),
-          accountType: String(mp.account.type),
-          planId: mp.plan?.id || null,
-          planName: mp.plan?.name || null,
-        },
-      });
+        orderId: marketplaceOrderId,
+        metadata: { marketplaceOrderId },
+      })) {
+        appendRevenueEvent({
+          provider: 'github_marketplace',
+          event: 'github_marketplace_changed',
+          status: 'changed',
+          customerId,
+          orderId: marketplaceOrderId,
+          evidence: marketplaceOrderId,
+          amountCents: planPricing.amountCents,
+          currency: planPricing.currency,
+          amountKnown: planPricing.amountKnown,
+          recurringInterval: planPricing.recurringInterval,
+          attribution: { source: 'github_marketplace' },
+          metadata: {
+            accountId: String(mp.account.id),
+            accountType: String(mp.account.type),
+            planId: mp.plan?.id || null,
+            planName: mp.plan?.name || null,
+            marketplaceOrderId,
+          },
+        });
+      }
       return { handled: true, action: 'plan_changed', result: provisionApiKey(customerId, { source: 'github_marketplace_changed' }) };
     }
     default: return { handled: false, reason: `unhandled_action:${action}` };
