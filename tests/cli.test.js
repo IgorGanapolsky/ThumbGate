@@ -352,6 +352,7 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('rules'), 'Help should mention rules');
     assert.ok(result.stdout.includes('self-heal'), 'Help should mention self-heal');
     assert.ok(result.stdout.includes('prove'), 'Help should mention prove');
+    assert.ok(result.stdout.includes('doctor'), 'Help should mention doctor');
   });
 
   test('pro command prints truthful commercial offer info', () => {
@@ -423,11 +424,51 @@ describe('bin/cli.js', () => {
     assert.strictEqual(result.status, 1, `Expected exit 1, got ${result.status}`);
   });
 
+  test('doctor --json reports readiness for a bootstrapped project', () => {
+    const doctorDir = makeTmpDir();
+    fs.writeFileSync(path.join(doctorDir, 'AGENTS.md'), '# Agents\n');
+    fs.writeFileSync(path.join(doctorDir, 'CLAUDE.md'), '# Claude\n');
+    fs.writeFileSync(path.join(doctorDir, 'GEMINI.md'), '# Gemini\n');
+    fs.writeFileSync(path.join(doctorDir, '.mcp.json'), JSON.stringify({ mcpServers: {} }, null, 2));
+    fs.mkdirSync(path.join(doctorDir, '.rlhf'), { recursive: true });
+    fs.writeFileSync(
+      path.join(doctorDir, '.rlhf', 'config.json'),
+      JSON.stringify({ version: 1 }, null, 2)
+    );
+
+    const result = spawnSync(process.execPath, [CLI, 'doctor', '--json'], {
+      encoding: 'utf8',
+      cwd: doctorDir,
+      env: {
+        ...process.env,
+        RLHF_NO_NUDGE: '1',
+        RLHF_MCP_PROFILE: 'default',
+        container: '1',
+      },
+    });
+
+    assert.strictEqual(result.status, 0, `doctor failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.overallStatus, 'ready');
+    assert.equal(payload.runtime.mode, 'container');
+    assert.equal(payload.permissions.profile, 'default');
+    assert.equal(payload.permissions.tier, 'builder');
+    assert.equal(payload.permissions.writeCapable, true);
+    assert.equal(payload.bootstrap.ready, true);
+    assert.equal(payload.articleAlignment.runtimeIsolation, true);
+    assert.equal(payload.articleAlignment.contextConditioning, true);
+    assert.equal(payload.articleAlignment.permissionEnvelope, true);
+
+    fs.rmSync(doctorDir, { recursive: true, force: true });
+  });
+
   test('cfo emits operational billing summary JSON', () => {
     const isolatedDir = makeTmpDir();
     const apiKeysPath = path.join(isolatedDir, 'api-keys.json');
     const ledgerPath = path.join(isolatedDir, 'funnel-events.jsonl');
     const revenuePath = path.join(isolatedDir, 'revenue-events.jsonl');
+    const feedbackDir = path.join(isolatedDir, 'feedback');
+    const leadsPath = path.join(feedbackDir, 'workflow-sprint-leads.jsonl');
     fs.writeFileSync(apiKeysPath, JSON.stringify({
       keys: {
         rlhf_active_cli: {
@@ -492,6 +533,33 @@ describe('bin/cli.js', () => {
       }),
       '',
     ].join('\n'));
+    fs.mkdirSync(feedbackDir, { recursive: true });
+    fs.writeFileSync(leadsPath, [
+      JSON.stringify({
+        leadId: 'lead_cli_summary',
+        submittedAt: '2026-03-12T01:00:00.000Z',
+        status: 'new',
+        offer: 'workflow_hardening_sprint',
+        contact: {
+          email: 'founder@example.com',
+          company: 'Example Co',
+        },
+        qualification: {
+          workflow: 'Claude code review approvals',
+          owner: 'CEO',
+          blocker: 'Team cannot prove rollout safety',
+          runtime: 'Claude Code',
+          note: null,
+        },
+        attribution: {
+          source: 'x',
+          utmSource: 'x',
+          utmCampaign: 'workflow_hardening',
+          community: 'founders',
+        },
+      }),
+      '',
+    ].join('\n'));
 
     const result = spawnSync(process.execPath, [CLI, 'cfo'], {
       encoding: 'utf8',
@@ -501,18 +569,21 @@ describe('bin/cli.js', () => {
         _TEST_API_KEYS_PATH: apiKeysPath,
         _TEST_FUNNEL_LEDGER_PATH: ledgerPath,
         _TEST_REVENUE_LEDGER_PATH: revenuePath,
+        RLHF_FEEDBACK_DIR: feedbackDir,
       },
     });
     assert.equal(result.status, 0, `cfo failed:\n${result.stderr}`);
 
     const payload = JSON.parse(result.stdout);
-    assert.equal(payload.coverage.source, 'funnel_ledger+revenue_ledger+key_store');
+    assert.equal(payload.coverage.source, 'funnel_ledger+revenue_ledger+key_store+workflow_sprint_leads');
     assert.equal(payload.keys.active, 1);
     assert.equal(payload.keys.bySource.stripe_webhook_checkout_completed, 1);
     assert.equal(payload.keys.bySource.github_marketplace_purchased, 1);
     assert.equal(payload.funnel.stageCounts.paid, 1);
     assert.equal(payload.revenue.bookedRevenueCents, 2900);
     assert.equal(payload.revenue.paidOrders, 1);
+    assert.equal(payload.pipeline.workflowSprintLeads.total, 1);
+    assert.equal(payload.pipeline.workflowSprintLeads.bySource.x, 1);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });

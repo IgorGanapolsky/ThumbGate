@@ -10,6 +10,7 @@ const path = require('path');
 const crypto = require('crypto');
 const Stripe = require('stripe');
 const { createTraceId } = require('./hosted-config');
+const { loadWorkflowSprintLeads } = require('./workflow-sprint-intake');
 
 // ---------------------------------------------------------------------------
 // Config
@@ -350,6 +351,7 @@ function getFunnelAnalytics() {
 function getBusinessAnalytics() {
   const events = loadFunnelLedger();
   const revenueEvents = loadRevenueLedger();
+  const workflowSprintLeads = loadWorkflowSprintLeads();
   const funnel = getFunnelAnalytics();
   const acquisitionEvents = events.filter((entry) => entry && entry.stage === 'acquisition');
   const paidEvents = events.filter((entry) => entry && entry.stage === 'paid');
@@ -513,14 +515,54 @@ function getBusinessAnalytics() {
     conversionByOfferCode[offerCode] = safeRate(paidByOfferCode[offerCode] || 0, signupsByOfferCode[offerCode] || 0);
   }
 
+  const workflowSprintLeadStatus = {};
+  const workflowSprintLeadBySource = {};
+  const workflowSprintLeadByCampaign = {};
+  const workflowSprintLeadByCommunity = {};
+  const workflowSprintLeadByRuntime = {};
+  let workflowSprintLeadLatest = null;
+  let workflowSprintLeadLatestAt = null;
+  let workflowSprintLeadContactable = 0;
+
+  for (const entry of workflowSprintLeads) {
+    if (!entry || typeof entry !== 'object') continue;
+    incrementCounter(workflowSprintLeadStatus, entry.status);
+    const attribution = extractAttribution(entry.attribution || {});
+    incrementCounter(workflowSprintLeadBySource, resolveAttributionSource(attribution, 'workflow_sprint_intake'));
+    incrementCounter(workflowSprintLeadByCampaign, resolveAttributionCampaign(attribution));
+    incrementCounter(workflowSprintLeadByCommunity, attribution.community);
+    incrementCounter(workflowSprintLeadByRuntime, entry.qualification?.runtime);
+
+    if (entry.contact?.email) {
+      workflowSprintLeadContactable += 1;
+    }
+
+    if (!workflowSprintLeadLatestAt || String(entry.submittedAt || '') > workflowSprintLeadLatestAt) {
+      workflowSprintLeadLatestAt = entry.submittedAt || null;
+      workflowSprintLeadLatest = {
+        leadId: entry.leadId || null,
+        submittedAt: entry.submittedAt || null,
+        status: entry.status || null,
+        email: entry.contact?.email || null,
+        company: entry.contact?.company || null,
+        workflow: entry.qualification?.workflow || null,
+        owner: entry.qualification?.owner || null,
+        runtime: entry.qualification?.runtime || null,
+        source: attribution.source || null,
+        campaign: attribution.campaign || null,
+      };
+    }
+  }
+
   return {
     generatedAt: new Date().toISOString(),
     coverage: {
-      source: 'funnel_ledger+revenue_ledger',
+      source: 'funnel_ledger+revenue_ledger+workflow_sprint_leads',
       tracksBookedRevenue: true,
       tracksPaidOrders: true,
       tracksInvoices: false,
       tracksAttribution: true,
+      tracksWorkflowSprintLeads: true,
       providerCoverage: {
         stripe: 'booked_revenue',
         githubMarketplace: CONFIG.GITHUB_MARKETPLACE_PLAN_PRICES_JSON ? 'configured_plan_prices' : 'paid_orders_only',
@@ -563,6 +605,19 @@ function getBusinessAnalytics() {
       latestPaidAt,
       latestPaidOrder,
       byProvider: revenueByProvider,
+    },
+    pipeline: {
+      workflowSprintLeads: {
+        total: workflowSprintLeads.length,
+        contactable: workflowSprintLeadContactable,
+        byStatus: workflowSprintLeadStatus,
+        bySource: workflowSprintLeadBySource,
+        byCampaign: workflowSprintLeadByCampaign,
+        byCommunity: workflowSprintLeadByCommunity,
+        byRuntime: workflowSprintLeadByRuntime,
+        latestLeadAt: workflowSprintLeadLatestAt,
+        latestLead: workflowSprintLeadLatest,
+      },
     },
     attribution: {
       acquisitionBySource: signupsBySource,
@@ -670,11 +725,12 @@ function getBillingSummary() {
     generatedAt: business.generatedAt,
     coverage: {
       ...business.coverage,
-      source: 'funnel_ledger+revenue_ledger+key_store',
+      source: 'funnel_ledger+revenue_ledger+key_store+workflow_sprint_leads',
     },
     funnel: business.funnel,
     signups: business.signups,
     revenue: business.revenue,
+    pipeline: business.pipeline,
     attribution: business.attribution,
     keys: {
       total: keyEntries.length,

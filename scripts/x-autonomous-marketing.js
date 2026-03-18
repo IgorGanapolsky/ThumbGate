@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * x-autonomous-marketing.js
- * 
- * March 2026 X.com Premium+ Automation Agent.
- * Maximizes Premium+ benefits: Radar (Trends), Reply Boost (Priority), and Grok 4.1.
+ *
+ * March 2026 X.com planning helper.
+ * Generates a truthful operator report for high-intent reply ideas and sprint-intake routing.
  */
 
 'use strict';
@@ -12,39 +12,37 @@ const fs = require('fs');
 const path = require('path');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 
-const PRODUCT_LINK = resolveHostedBillingConfig({
+const APP_ORIGIN = resolveHostedBillingConfig({
   requestOrigin: 'https://rlhf-feedback-loop-production.up.railway.app',
 }).appOrigin;
+const SPRINT_LINK = `${APP_ORIGIN}/#workflow-sprint-intake`;
 
 /**
- * 1. RADAR AUTOMATION: Scan for high-velocity trends in MCP/AI Agent Reliability.
+ * 1. Discover likely intent clusters around coding-agent reliability.
  */
 async function scanRadarTrends() {
-  console.log('🤖 [Radar Agent] Scanning for high-velocity trends in "AI Reliability"...');
-  // In a real implementation, this would call X API v2 search with recent filters
-  // Mocking 2026 high-intent keywords discovered via Radar
+  console.log('🤖 [X Agent] Scanning for high-intent reliability clusters...');
   return ['MCP context drift', 'Claude amnesia', 'AI agent repetition', 'Agentic feedback loop'];
 }
 
 /**
- * 2. GROK REASONING: Generate hyper-personalized, technical replies for discovered threads.
+ * 2. Generate technical reply drafts for discovered threads.
  */
 async function generateGrokReply(threadContext, model = 'grok-4.1-fast') {
   console.log(`🤖 [Grok Agent] Reasoning over thread using ${model}...`);
-  // This calls api.x.ai
   const prompt = `
     Context: ${threadContext}
-    Goal: Respond as a senior engineer who solved this problem using MCP Memory Gateway.
-    Product: MCP Memory Gateway (Always-on context hub for AI agents).
-    CTA: ${PRODUCT_LINK}
-    Constraints: technical, non-salesy, under 280 chars, maximize "Reply Boost" priority.
+    Goal: Respond as a senior engineer who cares about workflow hardening.
+    Product: mcp-memory-gateway with a Workflow Hardening Sprint.
+    CTA: ${SPRINT_LINK}
+    Constraints: technical, non-salesy, under 280 chars.
   `;
-  // Mocking Grok response
-  return "Actually, I hit this too. I built a Gateway that uses a Veto Layer to store these failures in persistent memory so the agent doesn't repeat them. Solved my context drift issues: " + PRODUCT_LINK;
+  void prompt;
+  return `I ran into this too. The problem usually is not the model, it is one workflow repeating the same mistake. I have been treating it as workflow hardening with recall, gates, and proof instead of more orchestration: ${SPRINT_LINK}`;
 }
 
 /**
- * 3. EXECUTION: Automated Posting & Engagement.
+ * 3. Generate the operator report.
  */
 async function executeXCampaign() {
   const trends = await scanRadarTrends();
@@ -61,14 +59,15 @@ async function executeXCampaign() {
   };
 
   const reportPath = path.join(__dirname, '../docs/X_AUTOMATION_REPORT.md');
-  let md = '# 🚀 X.com Premium+ Automation Report\n\n';
-  md += `**Subscription Status:** Premium+ Verified (Verified via Screenshot Analysis)\n`;
-  md += `**Leverage Point:** 17M Brand Impressions (+542% velocity)\n\n`;
-  md += `## Discovered Intent Clusters (via Radar)\n`;
+  let md = '# X.com Workflow Hardening Reply Plan\n\n';
+  md += 'Status: current  \n';
+  md += `Updated: ${new Date().toISOString().slice(0, 10)}\n\n`;
+  md += 'This is an operator planning report, not proof that posts were sent or that impressions converted.\n\n';
+  md += '## Discovered Intent Clusters\n';
   trends.forEach(t => md += `- \`${t}\`\n`);
   
-  md += `\n## Automated Displacement Strategy\n`;
-  md += `Using your Premium+ "Reply Boost", we will inject the following Grok-generated pitches into the top 1% of high-traffic threads in these clusters:\n\n`;
+  md += '\n## Reply Drafts\n';
+  md += 'Use these as starting points in high-intent threads where the pain is already visible:\n\n';
   
   for (const t of trends) {
     const pitch = await generateGrokReply(t);

@@ -1,23 +1,71 @@
-# 🚀 First Dollar Outreach Targets
+# Revenue Pipeline Outreach Targets
 
-Send these DMs immediately to capture early adopters:
+Status: current  
+Updated: March 17, 2026
 
-### Target: @taazkareem (Author of clickup-mcp-server)
-**DM Script:**
-> "Hey @taazkareem, saw you're building with MCP on `clickup-mcp-server`. I just launched a Context Gateway that gives MCP agents 'Always-On' memory and stops them from repeating failures across sessions. Thought it might be highly relevant to your stack. Current self-serve offer is Pro at $29/mo: https://rlhf-feedback-loop-production.up.railway.app"
+The goal is not generic awareness. The goal is booked pilots and named pilot agreements for the [Workflow Hardening Sprint](WORKFLOW_HARDENING_SPRINT.md).
 
-### Target: @edgetrade (Author of mcp)
-**DM Script:**
-> "Hey @edgetrade, saw you're building with MCP on `mcp`. I just launched a Context Gateway that gives MCP agents 'Always-On' memory and stops them from repeating failures across sessions. Thought it might be highly relevant to your stack. Current self-serve offer is Pro at $29/mo: https://rlhf-feedback-loop-production.up.railway.app"
+## List A: Claude-First Consultancies
 
-### Target: @vinzyy1 (Author of docker-mcp)
-**DM Script:**
-> "Hey @vinzyy1, saw you're building with MCP on `docker-mcp`. I just launched a Context Gateway that gives MCP agents 'Always-On' memory and stops them from repeating failures across sessions. Thought it might be highly relevant to your stack. Current self-serve offer is Pro at $29/mo: https://rlhf-feedback-loop-production.up.railway.app"
+Target firms that already deliver:
 
-### Target: @CoplayDev (Author of unity-mcp)
-**DM Script:**
-> "Hey @CoplayDev, saw you're building with MCP on `unity-mcp`. I just launched a Context Gateway that gives MCP agents 'Always-On' memory and stops them from repeating failures across sessions. Thought it might be highly relevant to your stack. Current self-serve offer is Pro at $29/mo: https://rlhf-feedback-loop-production.up.railway.app"
+- code modernization
+- AI-assisted delivery
+- platform engineering engagements
+- long-running refactor or migration work
 
-### Target: @Excaliber9271 (Author of asterdex-mcp-server)
-**DM Script:**
-> "Hey @Excaliber9271, saw you're building with MCP on `asterdex-mcp-server`. I just launched a Context Gateway that gives MCP agents 'Always-On' memory and stops them from repeating failures across sessions. Thought it might be highly relevant to your stack. Current self-serve offer is Pro at $29/mo: https://rlhf-feedback-loop-production.up.railway.app"
+Opening line:
+
+> You already have Claude in delivery. The problem is not access to the model. It is making one workflow safe enough to ship and defend to the client.
+
+## List B: Platform Engineering Leaders
+
+Target teams with:
+
+- one repeated AI workflow failure pattern
+- ownership of coding standards or delivery controls
+- visible Claude, Copilot, or internal-agent rollout
+
+Opening line:
+
+> I am not pitching another agent platform. I am pitching a Workflow Hardening Sprint for one workflow your team already runs, with a proof pack behind it.
+
+## List C: AI Product Teams
+
+Target teams with:
+
+- a real business workflow already using Claude or a coding agent
+- one operator or workflow owner
+- a rollout blocker tied to trust, auditability, or repeated mistakes
+
+Opening line:
+
+> If one workflow already has business value, the fastest way to widen adoption is not more prompting. It is memory, gates, and proof around that workflow.
+
+## Qualification Rules
+
+Only book the call if the target has:
+
+1. one workflow with business value
+2. one buyer or champion
+3. one repeated failure pattern or rollout blocker
+
+## First-Touch Template
+
+> We help teams harden one Claude-first workflow so it is safe enough to ship team-wide. The offer is a Workflow Hardening Sprint: one workflow, one owner, one proof review. If you already have a workflow that keeps repeating the same mistakes, I can send the sprint brief and the proof pack.
+
+## Call Goal
+
+The goal of the first call is not a generic product demo.
+
+The goal is to determine:
+
+1. whether the workflow qualifies
+2. whether the buyer needs proof or implementation support
+3. whether the next step is a pilot proposal
+
+## Core Links
+
+- Product: https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake
+- Sprint brief: [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md)
+- Proof pack: [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md)

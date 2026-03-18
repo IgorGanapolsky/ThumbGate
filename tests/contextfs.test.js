@@ -66,6 +66,16 @@ test('register feedback and construct pack', () => {
   assert.ok(pack.packId);
   assert.ok(pack.items.length >= 1);
   assert.equal(Object.prototype.hasOwnProperty.call(pack.items[0], 'filePath'), false);
+  assert.equal(pack.visibility.itemCount, pack.items.length);
+  assert.ok(pack.visibility.sourceCandidateCount >= pack.items.length);
+  assert.deepEqual(
+    pack.visibility.visibleTitles,
+    pack.items.slice(0, 5).map((item) => item.title)
+  );
+  assert.equal(pack.visibility.hiddenCount, pack.visibility.sourceCandidateCount - pack.visibility.itemCount);
+  assert.equal(pack.visibility.maxItemsHit, false);
+  assert.equal(pack.visibility.maxCharsHit, false);
+  assert.equal(pack.visibility.remainingCharBudget, pack.maxChars - pack.usedChars);
 
   const evaluation = evaluateContextPack({
     packId: pack.packId,
@@ -219,10 +229,30 @@ test('constructMemexPack builds pack via index then dereference', () => {
 });
 
 test('constructMemexPack respects maxChars budget', () => {
+  registerFeedback(
+    {
+      id: 'fb_memex_budget',
+      signal: 'negative',
+      context: 'Need unique oversized readiness breadcrumb for memex budget test',
+      tags: ['readiness', 'budget'],
+      actionType: 'store-mistake',
+    },
+    {
+      title: 'MISTAKE: Unique oversized readiness breadcrumb for memex budget test',
+      content: 'What went wrong: oversized breadcrumb for memex budget test\nHow to avoid: keep readiness evidence scoped',
+      category: 'error',
+      tags: ['feedback', 'negative', 'readiness', 'budget'],
+      sourceFeedbackId: 'fb_memex_budget',
+    }
+  );
+
   const pack = constructMemexPack({
-    query: 'verification testing rules prevention',
-    maxItems: 100,
-    maxChars: 50,
+    query: 'oversized readiness breadcrumb',
+    maxItems: 5,
+    maxChars: 10,
   });
-  assert.ok(pack.usedChars <= 50, 'total chars within budget');
+  assert.ok(pack.usedChars <= 10, 'total chars within budget');
+  assert.ok(pack.visibility.sourceCandidateCount >= 1);
+  assert.equal(pack.visibility.maxCharsHit, true);
+  assert.ok(pack.visibility.skippedByMaxChars >= 1);
 });

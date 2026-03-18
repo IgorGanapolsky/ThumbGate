@@ -18,9 +18,40 @@ const {
   summarizeDelegation,
 } = require('../scripts/delegation-runtime');
 
+function emptyDir(dirPath) {
+  if (!fs.existsSync(dirPath)) return;
+
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    fs.rmSync(path.join(dirPath, entry.name), {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 50,
+    });
+  }
+}
+function removeDirWithRetry(targetPath, attempts = 5) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      emptyDir(targetPath);
+      fs.rmSync(targetPath, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 50,
+      });
+      return;
+    } catch (error) {
+      if (attempt === attempts - 1 || error.code !== 'ENOTEMPTY') {
+        throw error;
+      }
+    }
+  }
+}
 function resetFeedbackDir() {
-  fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+  removeDirWithRetry(tmpFeedbackDir);
   fs.mkdirSync(tmpFeedbackDir, { recursive: true });
+  emptyDir(tmpFeedbackDir);
 }
 
 function buildEligiblePlan() {
@@ -37,7 +68,11 @@ test.beforeEach(() => {
 });
 
 test.after(() => {
-  fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+  try {
+    removeDirWithRetry(tmpFeedbackDir);
+  } catch {
+    // Best-effort cleanup for temp coverage directories.
+  }
 });
 
 test('planIntent returns deterministic delegation defaults when feature is off', () => {

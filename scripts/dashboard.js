@@ -9,6 +9,7 @@ const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-anal
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { summarizeDelegation } = require('./delegation-runtime');
 const { resolveHostedBillingConfig } = require('./hosted-config');
+const { generateAgentReadinessReport } = require('./agent-readiness');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -462,6 +463,7 @@ function generateDashboard(feedbackDir) {
   const observability = computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, analytics.telemetry);
   const instrumentation = computeInstrumentationReadiness(analytics, getBillingSummary());
   const delegation = summarizeDelegation(feedbackDir);
+  const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
 
   return {
     approval,
@@ -475,6 +477,7 @@ function generateDashboard(feedbackDir) {
     analytics,
     observability,
     instrumentation,
+    readiness,
   };
 }
 
@@ -495,6 +498,7 @@ function printDashboard(data) {
     analytics,
     observability,
     instrumentation,
+    readiness,
   } = data;
 
   const trendArrow = approval.trendDirection === 'improving' ? '\u2191'
@@ -564,6 +568,16 @@ function printDashboard(data) {
   console.log(`  Buyer Loss       : ${instrumentation.buyerLossSignalsPresent ? analytics.buyerLoss.totalSignals : 0}`);
   console.log(`  Attribution      : ${Math.round((instrumentation.trafficAttributionCoverage || 0) * 100)}% page-view coverage`);
   console.log(`  Revenue Tracking : ${instrumentation.bookedRevenueTrackingEnabled ? 'booked revenue enabled' : 'disabled'}`);
+
+  console.log('');
+  console.log('🧭 Agent Readiness');
+  console.log(`  Overall          : ${readiness.overallStatus}`);
+  console.log(`  Runtime          : ${readiness.runtime.mode}`);
+  console.log(`  Bootstrap        : ${readiness.bootstrap.requiredPresent}/${readiness.bootstrap.requiredCount} required files`);
+  console.log(`  MCP Tier         : ${readiness.permissions.profile} (${readiness.permissions.tier})`);
+  if (readiness.warnings[0]) {
+    console.log(`  Top Warning      : ${readiness.warnings[0]}`);
+  }
 
   console.log('');
   console.log('\uD83D\uDD10 Secret Guard');

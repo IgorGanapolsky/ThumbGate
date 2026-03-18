@@ -1,3 +1,53 @@
+## March 17, 2026: Workflow hardening sprint intake and commercial-truth operator metrics
+
+Scope:
+
+- Replaced the public Workflow Hardening Sprint `mailto:` dependency with a hosted sprint-intake form on the landing page, including structured CTA tracking and success/failure handling.
+- Added `scripts/workflow-sprint-intake.js` as the single owner for sprint-intake lead capture, writing contactable workflow leads to the active local feedback runtime as `workflow-sprint-leads.jsonl`.
+- Added `POST /v1/intake/workflow-sprint` to the hosted API and wired the landing form to it.
+- Strengthened public machine-readable positioning with `Organization`, `SoftwareApplication`, `BuyAction`, and `CommunicateAction` schema on the public landing page.
+- Routed active outreach and social assets to the hosted sprint-intake path instead of stale email-first or legacy-growth messaging.
+- Integrated workflow-sprint lead counts into the admin billing/CFO summary so pipeline capture is visible in the same truth surface as booked revenue, while explicitly keeping leads separate from revenue claims.
+- Corrected operator scripts so `pulse.js` and `money-watcher.js` key off booked revenue and paid orders instead of unreconciled paid-stage funnel events.
+- Hardened `tests/delegation-runtime.test.js` temp-dir cleanup so clean-worktree coverage runs no longer fail with transient `ENOTEMPTY` teardown errors.
+
+Commands run in the dedicated clean verification worktree at `/tmp/rlhf-verify-first-dollar-20260317` on exact branch head `ba83de2`:
+
+```bash
+npm ci
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-adapters npm run prove:adapters
+env RLHF_AUTOMATION_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-automation npm run prove:automation
+npm run self-heal:check
+git status --short
+```
+
+Additional targeted GTM/commercial regressions run in the implementation worktree:
+
+```bash
+node --test tests/public-landing.test.js tests/api-server.test.js tests/workflow-hardening-sprint.test.js tests/social-marketing-assets.test.js tests/version-metadata.test.js tests/commercial-signals.test.js tests/billing.test.js tests/cli.test.js
+```
+
+Observed result:
+
+- `npm ci` completed with `0` vulnerabilities.
+- `npm test` passed end-to-end on exact branch head `ba83de2`.
+- `npm run test:coverage` passed with `1108` passed, `0` failed, `1` skipped.
+- All-files coverage on the verified tree: `90.18%` lines, `76.29%` branches, `93.55%` functions.
+- `env RLHF_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-adapters npm run prove:adapters`: `46` passed, `0` failed.
+- `env RLHF_AUTOMATION_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-automation npm run prove:automation`: `55` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `git status --short` remained empty after the full clean-worktree suite.
+- Targeted GTM/commercial regression pack passed with `98` tests passed, `0` failed.
+
+Requirements verified:
+
+- The public sprint offer now has a direct hosted intake path for qualified workflow demand instead of forcing an email handoff.
+- Sprint-intake leads are captured as structured local runtime records and exposed in the admin billing/CFO summary without being misrepresented as revenue.
+- Public positioning, outreach assets, billing truth surfaces, and operator scripts now agree on the same commercial story: Workflow Hardening Sprint for pipeline, Pro for self-serve recurring revenue.
+- Clean-worktree verification is stable again after hardening the delegation test teardown.
+
 ## March 16, 2026: Databricks post-merge safety follow-up
 
 Scope:
@@ -862,6 +912,62 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-17 Workflow Hardening Sprint Revenue-Motion Verification
+
+Scope:
+
+- Tightened the landing page around the Workflow Hardening Sprint as the front-line commercial motion.
+- Added a current sprint brief for one workflow, one owner, and one proof review.
+- Aligned README, pitch, Anthropic partner strategy, outreach targets, cold outreach, LinkedIn, Reddit, and X assets to the same workflow-hardening story.
+- Added regression coverage so the public and sales surfaces do not drift back to generic AI-employee or infrastructure-first language.
+
+Commands run:
+
+```bash
+npm ci
+node --test tests/public-landing.test.js tests/api-server.test.js tests/social-marketing-assets.test.js tests/version-metadata.test.js tests/anthropic-partner-strategy.test.js tests/workflow-hardening-sprint.test.js
+npm test
+npm run test:coverage
+RLHF_PROOF_DIR=/tmp/rlhf-workflow-hardening-20260317T133407/proof/compatibility npm run prove:adapters
+RLHF_AUTOMATION_PROOF_DIR=/tmp/rlhf-workflow-hardening-20260317T133407/proof/automation npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- Targeted GTM regression suite: `58` pass, `0` fail.
+- `npm test`: pass.
+- `npm run test:coverage`: pass with Node test runner coverage summary:
+  - line coverage: `84.39%`
+  - branch coverage: `70.73%`
+  - function coverage: `87.26%`
+- `npm run prove:adapters`: pass with `46` passed, `0` failed.
+- `npm run prove:automation`: pass with `55` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+- Proof artifacts for adapter and automation verification were redirected to `/tmp/rlhf-workflow-hardening-20260317T133407/proof` so the clean worktree did not churn tracked `proof/` artifacts.
+
+Behavioral proof points:
+
+- `public/index.html` now sells the Workflow Hardening Sprint first, keeps Pro truthful and secondary, exposes a proof CTA, and adds Sprint FAQ/schema support without fake partner claims.
+- `docs/WORKFLOW_HARDENING_SPRINT.md` now defines the actual service offer, qualification rules, deliverables, contact path, and proof-pack requirement.
+- `docs/PITCH.md`, `docs/ANTHROPIC_MARKETPLACE_STRATEGY.md`, `docs/OUTREACH_TARGETS.md`, and `docs/marketing/cold-outreach-sequence.md` now align on the same 30-day revenue motion: founder-led outbound, one workflow, one owner, one proof review.
+- `docs/marketing/social-posts.md`, `docs/marketing/linkedin-ai-reliability-post.md`, `docs/marketing/reddit-posts.md`, and `docs/marketing/x-launch-thread.md` now frame the product as workflow hardening instead of generic AI-employee hype.
+- `tests/public-landing.test.js`, `tests/api-server.test.js`, `tests/social-marketing-assets.test.js`, `tests/version-metadata.test.js`, `tests/anthropic-partner-strategy.test.js`, and `tests/workflow-hardening-sprint.test.js` now guard the new commercial story against future drift.
+
+Artifacts updated:
+
+- `README.md`
+- `docs/WORKFLOW_HARDENING_SPRINT.md`
+- `docs/PITCH.md`
+- `docs/ANTHROPIC_MARKETPLACE_STRATEGY.md`
+- `docs/OUTREACH_TARGETS.md`
+- `docs/marketing/cold-outreach-sequence.md`
+- `docs/marketing/social-posts.md`
+- `docs/marketing/linkedin-ai-reliability-post.md`
+- `docs/marketing/reddit-posts.md`
+- `docs/marketing/x-launch-thread.md`
+- `public/index.html`
+
 ## 2026-03-17 Self-Heal Proof Isolation Verification
 
 Scope:
@@ -941,6 +1047,47 @@ Behavioral proof points:
 - The dashboard now reports whether traffic analytics, SEO verification, buyer-loss capture, and revenue attribution are configured and actually receiving events.
 - Public and active product copy now lead with AI reliability without orchestration tax instead of drifting back toward generic memory-layer framing.
 
+## 2026-03-17 Claude Workflow Hardening GTM Verification
+
+Scope:
+
+- Repositioned the public landing page around Claude workflow hardening, code modernization, and consultancy/platform-team use cases while keeping the no-orchestration-tax core message intact.
+- Added a proof-forward hero CTA and explicit proof-pack link to `VERIFICATION_EVIDENCE.md`.
+- Rewrote `docs/ANTHROPIC_MARKETPLACE_STRATEGY.md` as the current Anthropic partner strategy for Claude workflow hardening with packaged offers, buyer story, proof-pack rules, and claim hygiene.
+- Updated `docs/marketing/x-launch-thread.md` to a role-based workflow-hardening thread aligned with the public landing message.
+- Added regression coverage for the new partner strategy, landing copy, API root rendering, social-marketing messaging, and version-metadata expectations.
+
+Commands run:
+
+```bash
+npm ci
+node --test tests/public-landing.test.js tests/api-server.test.js tests/anthropic-partner-strategy.test.js
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- Targeted partner/landing/API tests: pass (`43` pass, `0` fail).
+- `npm test`: pass.
+- `npm run test:coverage`: pass with overall coverage:
+  - line coverage: `84.35%`
+  - branch coverage: `70.74%`
+  - function coverage: `87.14%`
+- `npm run prove:adapters`: pass with `46` pass, `0` fail.
+- `npm run prove:automation`: pass with `55` pass, `0` fail.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+
+Behavioral proof points:
+
+- `public/index.html` now sells the product as Claude workflow hardening with seven concrete buyer/use-case cards, three packaged offers, and a proof-pack CTA instead of generic continuity-only framing.
+- `public/index.html` preserves `SoftwareApplication` and `FAQPage` JSON-LD while adding consultancy/code-modernization FAQ coverage and keeping the no-orchestration-tax contract intact.
+- `docs/ANTHROPIC_MARKETPLACE_STRATEGY.md` is now a current-state partner strategy doc, not a stale historical note, and explicitly forbids false partner-membership claims while linking commercial truth and proof.
+- `docs/marketing/x-launch-thread.md` now aligns the social message with workflow hardening and code modernization instead of generic "AI employee" hype.
+- `tests/public-landing.test.js`, `tests/api-server.test.js`, `tests/anthropic-partner-strategy.test.js`, `tests/social-marketing-assets.test.js`, and `tests/version-metadata.test.js` enforce the new GTM messaging and claim-hygiene contracts.
 ## 2026-03-17 AI Reliability Social Asset Verification
 
 Scope:
@@ -1217,6 +1364,60 @@ Behavioral proof points:
 Artifacts updated:
 
 - `docs/REDDIT_GTM_PLAYBOOK.md`
+
+## 2026-03-17 Agent Readiness Diagnostics Verification
+
+Scope:
+
+- Added `scripts/agent-readiness.js` to audit runtime isolation, bootstrap context, and MCP permission tiers.
+- Added `doctor` CLI support in `bin/cli.js`.
+- Surfaced readiness data in `scripts/dashboard.js`.
+- Added context-pack visibility metadata in `scripts/contextfs.js`.
+- Hardened memex indexing so `constructMemexPack()` preserves namespace-aware results.
+- Fixed the coverage teardown race in `tests/delegation-runtime.test.js`.
+
+Commands run:
+
+```bash
+npm ci
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- `npm ci`: passed, `0` vulnerabilities.
+- `npm test`: passed.
+- `npm run test:coverage`: passed with Node test runner coverage summary:
+  - line coverage: `90.25%`
+  - branch coverage: `76.67%`
+  - function coverage: `93.68%`
+- `npm run prove:adapters`: passed with `46 passed`, `0 failed`.
+- `npm run prove:automation`: passed with `55 passed`, `0 failed`.
+- `self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+
+Behavioral proof points:
+
+- `doctor --json` reports `overallStatus`, runtime mode, bootstrap readiness, MCP tier, and article-alignment flags.
+- `generateDashboard()` exposes readiness truth instead of guessing bootstrap state; the dashboard reflects the repo's actual `.mcp.json` presence.
+- `constructContextPack()` and `constructMemexPack()` expose visibility metadata including hidden candidate counts, char-budget hits, and visible titles.
+- Memex pack construction no longer drops relevant entries because namespace metadata is preserved in indexed documents and recovered from `stableRef` when needed.
+
+Artifacts updated:
+
+- `README.md`
+- `bin/cli.js`
+- `scripts/agent-readiness.js`
+- `scripts/contextfs.js`
+- `scripts/dashboard.js`
+- `tests/agent-readiness.test.js`
+- `tests/cli.test.js`
+- `tests/contextfs.test.js`
+- `tests/dashboard.test.js`
+- `tests/delegation-runtime.test.js`
 
 ## 2026-03-09 Technical Debt Audit Cleanup Verification
 

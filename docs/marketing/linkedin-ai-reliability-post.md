@@ -1,38 +1,28 @@
-# LinkedIn Post -- AI Reliability System
+# LinkedIn Post -- Workflow Hardening Sprint
 
 ## Long-Form Founder Post
 
 ```md
-# Memory Is Not the Product. The System Is.
+# One Workflow Safe Enough to Ship Beats Generic AI Hype
 
-I think most people are building the wrong layer for AI coding tools.
+I think most teams are selling the wrong story for AI coding tools.
 
-They are building **memory**.
-What they actually need is a **system**.
+They are trying to sell an **AI employee**.
+What buyers actually need is **one workflow that stops repeating the same mistake**.
 
-A notes file is not a system.
-A vector store is not a system.
-A long context window is not a system.
+That is a workflow hardening problem.
 
-The real problem is not just that coding agents forget.
-It is that they **repeat the same operational mistakes** across sessions, across tasks, and across teams.
+The failure is not just forgetting.
+It is repeated mistakes across sessions, repos, and teams.
 
-That is a workflow problem.
+The sellable unit is not a generic agent.
+It is:
 
-When I look at products like **Orchids** and **Replit**, the lesson is not "add more AI."
-The lesson is that the winning products feel **complete**.
+- one workflow
+- one owner
+- one proof review
 
-They do not feel like a bag of primitives.
-They feel like a place where work moves from:
-
-**idea -> build -> review -> ship**
-
-That is the direction I think agent tooling needs to go.
-
-For me, the key shift has been this:
-
-> **Memory alone is persistence.
-> System design is behavior change.**
+That is why our front-line offer is a **Workflow Hardening Sprint**.
 
 What actually helps is a loop:
 
@@ -42,59 +32,36 @@ What actually helps is a loop:
 4. Turn repeated failures into prevention rules
 5. Prove the result with tests and verification
 
-That is very different from just appending another note to `MEMORY.md`.
+That is very different from just appending another note to `MEMORY.md` or promising that the model will magically self-correct.
 
-I have been building a **local-first** version of this for coding-agent workflows.
+The buyer conversation becomes much simpler:
 
-The goal is simple:
+- What is the workflow?
+- What keeps breaking?
+- What proof would make wider rollout easier?
 
-> Make the agent less likely to repeat a known mistake, while keeping the full process auditable.
-
-The product direction I now believe in is:
-
-- One place to prompt, plan, and execute
-- Visible task and agent coordination
-- Persistent lessons that are actually retrieved at the right time
-- Prevention rules that block known bad patterns
-- Proof surfaces that show what was tested and verified
-- Simple deployment and integration, not setup tax
-
-In other words:
-
-> Less **"AI feature"**
-> More **"operating system for agentic work"**
-
-That is also why I think the next generation of tools will not win by having the cleverest prompt.
-
-They will win by making the whole loop feel complete.
-
-Not just **build**.
-**Build, learn, verify, and improve.**
+If you already have one Claude-first workflow with business value, that is usually enough to start.
 
 If you are using **Claude Code**, **Codex**, **Cursor**, **Replit**, or **Orchids**, I am curious:
 
-**What breaks more often for you today?**
+**Which workflow still is not safe enough to ship team-wide?**
 
-1. The model forgets context
-2. The workflow around the model is still too fragmented
-
-My bet is **#2**.
+That is the conversation I want to have more often.
 ```
 
 ## First Comment
 
 ```text
-I’m building this around a local-first feedback loop for coding agents.
+Workflow Hardening Sprint intake + proof pack:
 
-Project / self-hosted setup:
-https://rlhf-feedback-loop-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=founder_post&campaign_variant=workflow_not_memory&offer_code=LINKEDIN-EARLY
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=founder_post&campaign_variant=workflow_hardening_sprint&offer_code=LINKEDIN-SPRINT#workflow-sprint-intake
 ```
 
 ## Carousel Caption
 
 ```text
-It is not a memory file.
-It is an AI reliability system for coding agents.
+It is not a generic AI employee pitch.
+It is one workflow with memory, gates, and proof.
 
 Feedback -> retrieval -> prevention rules -> verification.
 
@@ -105,13 +72,13 @@ Local-first. Auditable. Built for Claude Code, Codex, Cursor, and agent-heavy en
 
 ### Slide 1
 
-- Headline: AI Reliability System for Coding Agents
-- Body: Stop repeated mistakes across sessions.
+- Headline: Workflow Hardening Sprint
+- Body: Make one workflow safe enough to ship.
 - Footer: Feedback. Retrieval. Prevention rules. Verification.
 
 ### Slide 2
 
-- Headline: The problem is not just forgetting
+- Headline: The problem is repeated mistakes
 - Body: Agents repeat the same operational mistakes even when the repo docs exist.
 - Footer: Persistence is not behavior change.
 
@@ -123,18 +90,18 @@ Local-first. Auditable. Built for Claude Code, Codex, Cursor, and agent-heavy en
 
 ### Slide 4
 
-- Headline: Who it helps first
-- Body: Solo founders, OSS maintainers, agency teams
-- Footer: Turn lost review comments into durable operating knowledge.
+- Headline: Best first buyers
+- Body: Consultancies, platform teams, AI product teams
+- Footer: One workflow. One owner. One proof review.
 
 ### Slide 5
 
-- Headline: Who it helps next
-- Body: Staff engineers, AI product teams, DevOps and platform teams, power users
+- Headline: Best first workflows
+- Body: Code modernization, PR review hardening, internal ops
 - Footer: Move from vibe-based agent usage to auditable reliability.
 
 ### Slide 6
 
-- Headline: Less memory tool. More operating system.
-- Body: The next generation of agent tooling wins by making the whole loop feel complete.
+- Headline: Less AI hype. More proof.
+- Body: The winning offer is one workflow with memory, gates, and a proof pack.
 - Footer: MCP Memory Gateway

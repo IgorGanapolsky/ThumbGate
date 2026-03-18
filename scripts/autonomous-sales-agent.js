@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
  * autonomous-sales-agent.js
- * 
- * March 2026 Autonomous GTM Strategy:
- * 1. Prospecting: Scans GitHub for developers recently active with MCP (Model Context Protocol).
- * 2. Personalization: Uses an LLM to read their repo description and draft a bespoke DM.
- * 3. Outcome-Based Pitch: Pitches our "Mistake-Free" memory package, driving them to the live Stripe link.
+ *
+ * March 2026 autonomous GTM helper:
+ * 1. Prospect: scan GitHub for recent MCP / coding-agent activity.
+ * 2. Personalize: use an LLM to draft a short founder-style message.
+ * 3. Route: push qualified traffic to the Workflow Hardening Sprint intake.
  */
 
 'use strict';
@@ -16,9 +16,11 @@ const path = require('path');
 const { GoogleGenAI } = require('@google/genai');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 
-const PRODUCT_LINK = resolveHostedBillingConfig({
+const APP_ORIGIN = resolveHostedBillingConfig({
   requestOrigin: 'https://rlhf-feedback-loop-production.up.railway.app',
 }).appOrigin;
+const SPRINT_LINK = `${APP_ORIGIN}/#workflow-sprint-intake`;
+const PROOF_LINK = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md';
 
 // Helper to run gh api
 function runGH(args) {
@@ -68,18 +70,20 @@ async function generateOutreach(targets) {
 
   for (const target of targets) {
     const prompt = `
-You are an expert, highly technical AI sales agent in March 2026. 
-You are selling the "MCP Memory Gateway" to a developer. 
-Our value proposition: We provide an 'Always-On' Context Hub that stops AI agents from repeating failures across sessions using a Thumbs-Up/Down Veto Layer.
-Our Pricing: $29/mo Pro plan with auto-gate promotion, unlimited custom gates, multi-repo sync, and priority support. Link: ${PRODUCT_LINK}
+You are an expert, highly technical GTM operator in March 2026.
+You are selling the "Workflow Hardening Sprint" for mcp-memory-gateway.
+Our value proposition: We help a team harden one Claude-first workflow with recall, prevention rules, pre-action gates, and verification evidence.
+Primary CTA: ${SPRINT_LINK}
+Proof pack: ${PROOF_LINK}
 
 Target Developer: @${target.username}
 Target Repository: ${target.repoName}
 Repository Description: ${target.description}
 
-Write a very short (2-3 sentences max), highly technical direct message (DM) to this developer. 
-Issue a "Live Debugging Challenge": tell them to throw their hardest repeating agent failure at our system, and if the Pro Veto Layer doesn't stop it, zero charge.
-Reference their specific repo. Do not sound like a marketer. Sound like a senior engineer issuing a technical challenge.
+Write a very short (2-3 sentences max), highly technical direct message (DM) to this developer.
+Reference their specific repo. Do not sound like a marketer.
+Sound like a senior engineer who understands long-running coding-agent workflows.
+Focus on one workflow, one owner, one proof review.
 `;
 
     try {
@@ -109,8 +113,8 @@ async function executeGTM() {
   const customizedMessages = await generateOutreach(targets);
   if (customizedMessages.length === 0) return;
 
-  let report = '# 🚀 Autonomous GTM Execution Report (March 2026)\n\n';
-  report += '> **Strategy:** Automated prospecting combined with LLM-driven personalized outreach to drive immediate outcome-based revenue.\n\n';
+  let report = '# Workflow Hardening Sprint Outreach Drafts\n\n';
+  report += '> Strategy: prospect MCP-adjacent builders, personalize with repo context, and route qualified traffic to the hosted sprint intake plus proof pack.\n\n';
   
   customizedMessages.forEach(msg => {
     report += `## Target: @${msg.target}\n`;

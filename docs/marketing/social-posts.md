@@ -1,4 +1,4 @@
-# Social Launch Kit -- AI Reliability System
+# Social Launch Kit -- Claude Workflow Hardening
 
 This is the current canonical social package for March 2026.
 
@@ -6,14 +6,14 @@ Use this kit instead of older memory-first launch copy when posting about the pr
 
 ## Positioning
 
-- Category: AI reliability system for coding agents
-- Wedge: stop repeated mistakes across sessions
+- Category: Claude workflow hardening for AI coding teams
+- Wedge: one workflow, one owner, one proof pack
 - Loop: feedback -> retrieval -> prevention rules -> verification
-- Product promise: build, learn, verify, improve
+- Product promise: make one workflow safe enough to ship
 
 ## Canonical Message
 
-> It is not a memory file. It is an AI reliability system for coding agents.
+> The sellable unit is not a generic AI employee. It is one workflow with memory, gates, and proof.
 
 ## Channel Packages
 
@@ -43,19 +43,20 @@ Local, private-first export-ready assets live under [assets](./assets/README.md)
 
 ### LinkedIn
 
-`https://rlhf-feedback-loop-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=founder_post&campaign_variant=workflow_not_memory&offer_code=LINKEDIN-EARLY`
+`https://rlhf-feedback-loop-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=founder_post&campaign_variant=workflow_hardening_sprint&offer_code=LINKEDIN-SPRINT#workflow-sprint-intake`
 
 ### X
 
-`https://rlhf-feedback-loop-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=thread&campaign_variant=seven_use_cases&offer_code=X-EARLY`
+`https://rlhf-feedback-loop-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=thread&campaign_variant=workflow_hardening_sprint&offer_code=X-SPRINT#workflow-sprint-intake`
 
 ### Reddit
 
-`https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=claudecode_post&community=ClaudeCode&campaign_variant=ai_reliability_system&offer_code=REDDIT-EARLY`
+`https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=claudecode_post&community=ClaudeCode&campaign_variant=workflow_hardening_sprint&offer_code=REDDIT-SPRINT#workflow-sprint-intake`
 
 ## Guardrails
 
-- Lead with reliability, not infrastructure.
+- Lead with one workflow and one failure pattern, not infrastructure.
 - Do not lead with pricing.
+- Keep proof close to the pitch.
 - Use one link only per post unless the channel requires a first comment.
 - Keep the final assets local; do not treat shared Figma as the source of truth.

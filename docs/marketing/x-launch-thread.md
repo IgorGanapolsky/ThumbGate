@@ -1,45 +1,52 @@
-# X Thread -- AI Reliability System
+# X Thread -- Claude Workflow Hardening
 
 ## Thread
 
 ### Tweet 1
 
 ```text
-Most “memory for coding agents” tools are solving the wrong problem.
+The best way to sell Claude Code is not "AI employee."
 
-The problem is not just forgetting.
+It is one workflow that is finally safe enough to ship.
 
-It is repeating the same operational mistakes across sessions.
+We built mcp-memory-gateway as Claude workflow hardening:
 
-I built an AI reliability system for coding agents.
+- recall
+- prevention rules
+- pre-action gates
+- verification evidence
 
-Here is how 7 different people can use it:
+The front-line offer is a Workflow Hardening Sprint.
+
+Here are 7 high-intent use cases:
 ```
 
 ### Tweet 2
 
 ```text
-1. Solo founders
+1. Code modernization partners
 
-Your Claude/Codex workflow keeps losing project-specific lessons.
+Long Claude Code sessions lose migration rules, architecture context, and validation steps.
 
-Use it to:
-- capture what failed
-- retrieve the lesson next session
-- stop re-learning the same mistake over and over
+Use the Gateway to:
+- keep the constraints durable
+- retrieve the right lesson in the next session
+- stop repeating the same modernization mistake
 ```
 
 ### Tweet 3
 
 ```text
-2. OSS maintainers
+2. Platform engineering
 
-PR reviews contain valuable lessons, but they disappear after merge.
+The problem is not "developers need more prompts."
 
-Use it to:
-- turn review feedback into reusable memory
-- generate prevention rules from repeated mistakes
-- keep future contributors from hitting the same issue
+It is repeated failure patterns.
+
+Use the Gateway to:
+- convert review pain into prevention rules
+- block known-bad actions before they land
+- create proof instead of relying on memory
 ```
 
 ### Tweet 4
@@ -47,84 +54,92 @@ Use it to:
 ```text
 3. Agency teams
 
-Each client has different constraints, tone, architecture, and sharp edges.
+Every client has different architecture, tone, compliance, and delivery constraints.
 
-Use it to:
+Use the Gateway to:
 - keep client-specific lessons durable
 - prevent cross-client mistakes
-- make AI workflows less dependent on one person remembering everything
+- make delivery less dependent on one person remembering everything
 ```
 
 ### Tweet 5
 
 ```text
-4. Staff engineers
+4. OSS maintainers
 
-You already know the common failure modes.
+Merged PR review comments should not disappear.
 
-Use it to:
-- convert repeated review comments into prevention rules
-- block known-bad actions before they happen
-- keep agent work auditable instead of vibe-based
+Use the Gateway to:
+- turn review comments into reusable lessons
+- promote repeated mistakes into gates
+- make future agent work sharper
 ```
 
 ### Tweet 6
 
 ```text
-5. AI-heavy product teams
+5. AI product teams
 
-You do not just want memory.
-You want reliability.
+If one workflow has business value, it needs more than memory.
 
-Use it to add:
-- feedback capture
-- retrieval
-- rule generation
-- proof and verification
+It needs:
+- recall
+- guardrails
+- proof
+- a Veto Layer
 
-So agent behavior actually improves over time.
+That is what makes a workflow deployable team-wide.
 ```
 
 ### Tweet 7
 
 ```text
-6. DevOps / platform teams
+6. DevOps and internal ops
 
-The issue is not just code quality.
-It is unsafe repeated actions.
+The expensive failures are repeated unsafe actions.
 
-Use it to:
-- keep infra and tooling lessons persistent
-- add gates before risky actions
-- reduce repeated operational footguns
+Use the Gateway to:
+- persist operational lessons
+- add pre-action gates
+- reduce avoidable incidents across long agent sessions
 ```
 
 ### Tweet 8
 
 ```text
-7. Power users
+7. Founders and power users
 
-If you run long Claude Code / Codex / MCP workflows, this gives you continuity.
+You do not need more orchestration tax.
 
-Not just:
-"here are my notes"
+You need one sharp agent that stops re-learning the same repo constraints every session.
 
-But:
-"here are the exact mistakes to avoid next time"
+That is workflow hardening.
 ```
 
 ### Tweet 9
 
 ```text
-It is not a memory file.
+Not a chatbot.
+Not a swarm.
+Not an "AI employee."
 
-It is an AI reliability system for coding agents.
+One reliability layer for Claude Code, Codex, Gemini, and Amp.
 
 Local-first. Auditable. Built to stop repeated mistakes across sessions.
+```
 
-https://rlhf-feedback-loop-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=thread&campaign_variant=seven_use_cases&offer_code=X-EARLY
+### Tweet 10
 
-#ClaudeCode #MCP
+```text
+If you own one Claude workflow and want it hardened:
+
+- the landing page has the sprint intake
+- the proof pack is one click away
+- the ask stays narrow: one workflow, one proof review
+
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=thread&campaign_variant=workflow_hardening_sprint&offer_code=X-SPRINT#workflow-sprint-intake
+
+#ClaudeCode #MCP #AICoding
 ```
 
 ## Attached Asset

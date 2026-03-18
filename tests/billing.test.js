@@ -18,6 +18,7 @@ const testApiKeysPath = path.join(billingTestRoot, 'api-keys.json');
 const testFunnelLedgerPath = path.join(billingTestRoot, 'funnel-events.jsonl');
 const testRevenueLedgerPath = path.join(billingTestRoot, 'revenue-events.jsonl');
 const testLocalCheckoutSessionsPath = path.join(billingTestRoot, 'local-checkout-sessions.json');
+const testFeedbackDir = path.join(billingTestRoot, 'feedback');
 
 const savedApiKeysPath = process.env._TEST_API_KEYS_PATH;
 const savedFunnelPath = process.env._TEST_FUNNEL_LEDGER_PATH;
@@ -26,12 +27,14 @@ const savedLocalCheckoutSessionsPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS
 const savedGithubPlanPricing = process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
 const savedStripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const savedStripePriceId = process.env.STRIPE_PRICE_ID;
+const savedFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
 
 // Initial setup
 process.env._TEST_API_KEYS_PATH = testApiKeysPath;
 process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
 process.env._TEST_REVENUE_LEDGER_PATH = testRevenueLedgerPath;
 process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = testLocalCheckoutSessionsPath;
+process.env.RLHF_FEEDBACK_DIR = testFeedbackDir;
 process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';
 
@@ -48,6 +51,8 @@ after(() => {
   else process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = savedLocalCheckoutSessionsPath;
   if (savedGithubPlanPricing === undefined) delete process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
   else process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = savedGithubPlanPricing;
+  if (savedFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
+  else process.env.RLHF_FEEDBACK_DIR = savedFeedbackDir;
   fs.rmSync(billingTestRoot, { recursive: true, force: true });
 });
 
@@ -67,9 +72,10 @@ function requireFreshBilling(stripeKey = '') {
 }
 
 function clearBillingArtifacts() {
-  for (const t of [testApiKeysPath, testFunnelLedgerPath, testRevenueLedgerPath, testLocalCheckoutSessionsPath]) {
-    if (fs.existsSync(t)) fs.rmSync(t, { force: true });
+  for (const target of [testApiKeysPath, testFunnelLedgerPath, testRevenueLedgerPath, testLocalCheckoutSessionsPath]) {
+    if (fs.existsSync(target)) fs.rmSync(target, { force: true });
   }
+  fs.rmSync(testFeedbackDir, { recursive: true, force: true });
 }
 
 function readLedgerEvents() {
@@ -154,6 +160,7 @@ describe('billing.js — funnel ledger', () => {
 
   test('getBillingSummary merges funnel ledger and key store state', () => {
     const billing = require('../scripts/billing');
+    const { appendWorkflowSprintLead } = require('../scripts/workflow-sprint-intake');
     const activeKey = billing.provisionApiKey('cus_summary_a', {
       installId: 'inst_summary_a',
       source: 'stripe_webhook_checkout_completed',
@@ -228,11 +235,24 @@ describe('billing.js — funnel ledger', () => {
       },
       metadata: { subscriptionId: 'sub_summary_a' },
     });
+    appendWorkflowSprintLead({
+      email: 'ops@example.com',
+      company: 'Example Co',
+      workflow: 'Claude code modernization approvals',
+      owner: 'Platform lead',
+      blocker: 'Auditors reject deployments without machine-readable proof',
+      runtime: 'Claude Code + MCP',
+      source: 'linkedin',
+      utmSource: 'linkedin',
+      utmCampaign: 'workflow_hardening',
+      community: 'platform',
+    });
 
     const summary = billing.getBillingSummary();
-    assert.equal(summary.coverage.source, 'funnel_ledger+revenue_ledger+key_store');
+    assert.equal(summary.coverage.source, 'funnel_ledger+revenue_ledger+key_store+workflow_sprint_leads');
     assert.equal(summary.coverage.tracksBookedRevenue, true);
     assert.equal(summary.coverage.tracksPaidOrders, true);
+    assert.equal(summary.coverage.tracksWorkflowSprintLeads, true);
     assert.equal(summary.funnel.stageCounts.acquisition, 1);
     assert.equal(summary.funnel.stageCounts.activation, 1);
     assert.equal(summary.funnel.stageCounts.paid, 1);
@@ -240,6 +260,14 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.revenue.paidOrders, 1);
     assert.equal(summary.revenue.bookedRevenueCents, 2900);
     assert.equal(summary.revenue.amountKnownCoverageRate, 1);
+    assert.equal(summary.pipeline.workflowSprintLeads.total, 1);
+    assert.equal(summary.pipeline.workflowSprintLeads.contactable, 1);
+    assert.equal(summary.pipeline.workflowSprintLeads.byStatus.new, 1);
+    assert.equal(summary.pipeline.workflowSprintLeads.bySource.linkedin, 1);
+    assert.equal(summary.pipeline.workflowSprintLeads.byCampaign.workflow_hardening, 1);
+    assert.equal(summary.pipeline.workflowSprintLeads.byCommunity.platform, 1);
+    assert.equal(summary.pipeline.workflowSprintLeads.byRuntime['Claude Code + MCP'], 1);
+    assert.equal(summary.pipeline.workflowSprintLeads.latestLead.email, 'ops@example.com');
     assert.equal(summary.attribution.acquisitionBySource.reddit, 1);
     assert.equal(summary.attribution.acquisitionByCommunity.ClaudeCode, 1);
     assert.equal(summary.attribution.acquisitionByPostId['1rsudq0'], 1);

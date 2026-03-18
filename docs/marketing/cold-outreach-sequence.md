@@ -1,49 +1,54 @@
-# Cold Outreach Sequence: Platform Engineering Leads
+# Cold Outreach Sequence: Workflow Hardening Sprint
 
-**Target Persona:** Head of Platform Engineering, VP of Engineering, CTO at mid-market tech companies using GitHub Copilot / Claude.
+**Target Persona:** consultancy owner, platform lead, or AI product lead already running Claude-first delivery.
 
-## Email 1: The "Revenue-at-Risk" Hook
-**Subject:** The hidden cost of "vibe coding" in your repos
+## Email 1: The Workflow Hook
+**Subject:** One Claude workflow that is still not safe enough to ship
 
 Hi {{First Name}},
 
-I noticed {{Company}} is scaling its AI developer tools. Platform teams I talk to are seeing a massive spike in "vibe coding"—developers letting agents write code without hard constraints.
+I noticed {{Company}} is already investing in Claude or AI-assisted delivery.
 
-The result is usually a spike in repeated agent mistakes (hallucinations, ignored style guides, skipped tests) that senior engineers have to manually fix. 
+The teams I see moving fastest usually do not need another agent platform. They need one workflow that stops repeating the same mistakes and becomes easy to defend internally.
 
-We built the **Agentic Feedback Studio** to solve this. It acts as a "Veto Layer" for your agents. When a developer flags a mistake, our system automatically generates a repository-wide guardrail so the agent NEVER makes that mistake again. 
+That is the offer we are leading with: a **Workflow Hardening Sprint** for one workflow, one owner, and one proof review.
 
-Would you be open to a 10-minute demo to see how we calculate the exact Revenue-at-Risk from these repeated failures?
+If you already have one workflow that keeps hitting the same failure pattern, I can send the sprint brief, proof pack, and direct intake link.
 
 Best,
 Igor
 
-## Email 2: The "Zero-Config" Value Add (3 days later)
-**Subject:** Zero-config guardrails for your AI agents
+## Email 2: Proof + Scope (3 days later)
+**Subject:** Sprint brief + proof pack for Claude workflow hardening
 
 Hi {{First Name}},
 
-Following up on my last email. One of the biggest hurdles to adopting an Agentic Control Plane is the setup.
+Following up with the two assets behind the offer:
 
-That's why we made the Agentic Feedback Studio **Zero-Config**. You literally just drop `npx mcp-memory-gateway install` into a repository, and it auto-discovers the context, integrating directly with Claude, Gemini, or Copilot via MCP. 
+- Sprint brief: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md
+- Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Sprint intake: https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake
 
-For teams that outgrow local-only use, we offer hosted pilot access by direct arrangement. The only public self-serve commercial SKU today is Pro at $29/mo.
+The point is not generic AI governance. The point is to make one workflow safer to ship with recall, prevention rules, pre-action gates, and machine-readable evidence.
 
-If you have 5 minutes, I'd love to show you how our Vibe-to-Verification (V2V) pipeline works.
+If {{Company}} has one workflow owner and one repeated rollout blocker, I can tell you quickly whether it qualifies for the sprint.
 
 Best,
 Igor
 
-## Email 3: The Breakup (7 days later)
-**Subject:** Closing the loop on agentic governance
+## Email 3: The Close Loop (7 days later)
+**Subject:** Closing the loop on workflow hardening
 
 Hi {{First Name}},
 
-Looks like timing isn't right to discuss agentic governance and the Veto Layer. 
+Looks like the timing is probably off, so I will close the loop here.
 
-I'll leave you with our open-source repo. If your team starts feeling the pain of repeated AI hallucinations, you can run our Revenue-at-Risk analyzer locally (`npx mcp-memory-gateway stats`) to see exactly what it's costing you.
+If one Claude-first workflow becomes hard to trust again, these are the two useful links:
 
-Link: https://github.com/IgorGanapolsky/mcp-memory-gateway
+- Sprint brief: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md
+- Product + proof path: https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake
+
+If the pain becomes real, the fastest conversation is still the same: one workflow, one owner, one proof review.
 
 Best,
 Igor

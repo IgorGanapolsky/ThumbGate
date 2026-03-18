@@ -1,25 +1,25 @@
 # One-Line Pitch
 
-Make one AI workflow reliable enough to ship team-wide.
+Make one Claude workflow safe enough to sell and ship team-wide.
 
 # Positioning
 
-MCP Memory Gateway is the hosted AI reliability system behind one workflow with business value. It is not another horizontal agent platform. It gives teams shared memory, guardrails, and proof-ready runs so a workflow can be deployed, audited, and improved over time.
+MCP Memory Gateway is the AI reliability system behind one workflow with business value. It is not another horizontal agent platform. The front-line offer is a **Workflow Hardening Sprint** that gives teams shared memory, guardrails, and proof-ready runs so one workflow can be deployed, audited, and improved over time.
 
-- **Primary Goal:** Turn "vibe coding" into a controlled rollout through an AI reliability system for one sharp agent.
+- **Primary Goal:** Turn "vibe coding" into a controlled rollout for one sharp agent.
 - **Secondary Goal:** Convert real operator feedback into prevention rules, Thompson Sampling signals, and RLHF-ready datasets such as KTO/DPO pairs.
 
 # Buyer Promise
 
-We make one AI workflow measurable enough to justify and safe enough to roll out.
+We make one workflow measurable enough to justify and safe enough to roll out.
 
-- Ship a lead-to-meeting, onboarding, or internal ops workflow without relying on one operator's laptop.
+- Harden one Claude-first workflow without adding orchestration tax.
 - Turn operator complaints into reusable prevention rules instead of repeated incidents.
 - Prove what happened through audit trails, context provenance, and verification evidence.
 
 # Buyer, User, Champion
 
-- **Buyer:** head of ops, head of growth, platform lead, or consultancy owner.
+- **Buyer:** consultancy owner, platform lead, head of ops, or AI product lead.
 - **User:** the operator running the workflow day to day.
 - **Champion:** the engineer or platform owner wiring Context Gateway, the Agentic Feedback Studio, and the Veto Layer into the workflow.
 
@@ -32,11 +32,18 @@ We make one AI workflow measurable enough to justify and safe enough to roll out
 
 # Best First Wedge
 
-Start with one workflow, not a platform migration.
+Start with one workflow, not a platform migration or generic "AI employee" pitch.
 
-- Best first offer: lead-to-meeting with intake, enrichment, drafting, approvals, CRM sync, and auditability.
-- Same operating model: onboarding and internal ops automation.
+- Best first offer: **Workflow Hardening Sprint**.
+- Best fit: code modernization, PR review hardening, and internal ops automation.
+- Qualification: one workflow owner, one repeated failure pattern, one proof review.
 - Technical engine stays the same: feedback capture, context engineering, Thompson Sampling, and DPO export.
+
+# Commercial Motion
+
+- Start with the sprint, not the subscription pitch.
+- Expand into hosted Pro when the buyer needs synced memory, shared rules, and usage analytics.
+- Use [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md) and [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) in every sales conversation.
 
 # ICP (Ideal Customer Profile)
 

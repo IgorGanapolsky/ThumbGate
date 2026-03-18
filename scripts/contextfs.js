@@ -67,6 +67,13 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function inferNamespaceFromPath(filePath) {
+  if (!filePath) return '';
+  const relativeDir = path.relative(CONTEXTFS_ROOT, path.dirname(filePath));
+  if (!relativeDir || relativeDir.startsWith('..')) return '';
+  return relativeDir;
+}
+
 function toSlug(input) {
   return String(input || 'item')
     .toLowerCase()
@@ -253,6 +260,7 @@ function writeContextObject({ namespace, title, content, tags = [], source, ttl 
 
   const doc = {
     id,
+    namespace,
     title,
     content,
     tags,
@@ -475,9 +483,10 @@ function getMemexIndexPath() {
 }
 
 function buildIndexEntry(doc, filePath) {
+  const resolvedNamespace = doc.namespace || inferNamespaceFromPath(filePath);
   return {
     id: doc.id,
-    namespace: doc.namespace || '',
+    namespace: resolvedNamespace,
     title: doc.title || '',
     tags: doc.tags || [],
     digest: String(doc.content || '').slice(0, 120),
@@ -511,13 +520,17 @@ function searchMemexIndex({ query = '', maxResults = 10, namespaces = [] } = {})
   const nsFilter = namespaces.length > 0 ? new Set(normalizeNamespaces(namespaces)) : null;
 
   const scored = index
-    .filter((entry) => !nsFilter || nsFilter.has(entry.namespace))
+    .filter((entry) => {
+      const entryNamespace = entry.namespace || inferNamespaceFromPath(entry.stableRef);
+      return !nsFilter || nsFilter.has(entryNamespace);
+    })
     .map((entry) => {
+      const entryNamespace = entry.namespace || inferNamespaceFromPath(entry.stableRef);
       const haystack = `${entry.title} ${entry.digest} ${(entry.tags || []).join(' ')}`.toLowerCase();
       let score = 0;
       tokens.forEach((t) => { if (t.length > 2 && haystack.includes(t)) score += 3; });
-      if (entry.namespace.includes('memory/error')) score += 1;
-      if (entry.namespace.includes('memory/learning')) score += 1;
+      if (entryNamespace.includes('memory/error')) score += 1;
+      if (entryNamespace.includes('memory/learning')) score += 1;
       if (entry.createdAt) {
         const hours = (Date.now() - new Date(entry.createdAt).getTime()) / 3_600_000;
         if (Number.isFinite(hours)) {
@@ -525,7 +538,7 @@ function searchMemexIndex({ query = '', maxResults = 10, namespaces = [] } = {})
           else if (hours < 168) score += 1;
         }
       }
-      return { entry, score };
+      return { entry: { ...entry, namespace: entryNamespace }, score };
     })
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score)
@@ -541,6 +554,7 @@ function constructMemexPack({ query = '', maxItems = 8, maxChars = 6000, namespa
   const items = [];
   let usedChars = 0;
   const dereferenced = [];
+  let skippedByMaxChars = 0;
 
   for (const hit of hits) {
     if (items.length >= maxItems) break;
@@ -548,7 +562,10 @@ function constructMemexPack({ query = '', maxItems = 8, maxChars = 6000, namespa
     if (!full) continue;
 
     const snippet = `${full.title}\n${full.content || ''}`;
-    if (usedChars + snippet.length > maxChars) continue;
+    if (usedChars + snippet.length > maxChars) {
+      skippedByMaxChars += 1;
+      continue;
+    }
 
     const structuredContext = {
       rawContent: full.content || '',
@@ -578,6 +595,17 @@ function constructMemexPack({ query = '', maxItems = 8, maxChars = 6000, namespa
     dereferenced.push(hit.id);
   }
 
+  const visibility = {
+    itemCount: items.length,
+    sourceCandidateCount: hits.length,
+    hiddenCount: Math.max(hits.length - items.length, 0),
+    maxItemsHit: hits.length > maxItems && items.length >= maxItems,
+    maxCharsHit: skippedByMaxChars > 0,
+    skippedByMaxChars,
+    remainingCharBudget: Math.max(maxChars - usedChars, 0),
+    visibleTitles: items.slice(0, 5).map((item) => item.title),
+  };
+
   const packId = `memex_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const pack = {
     packId,
@@ -590,6 +618,7 @@ function constructMemexPack({ query = '', maxItems = 8, maxChars = 6000, namespa
     items,
     indexHits: hits.length,
     dereferencedCount: dereferenced.length,
+    visibility,
     cache: { hit: false },
   };
 
@@ -653,12 +682,16 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
 
   const selected = [];
   let usedChars = 0;
+  let skippedByMaxChars = 0;
 
   for (const item of candidates) {
     if (selected.length >= maxItems) break;
 
     const snippet = `${item.doc.title}\n${item.doc.content || ''}`;
-    if (usedChars + snippet.length > maxChars) continue;
+    if (usedChars + snippet.length > maxChars) {
+      skippedByMaxChars += 1;
+      continue;
+    }
 
     // Context Structuralizer (EvoSkill Hardening)
     // Parse unstructured text back into a high-density State Document
@@ -689,6 +722,17 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
     usedChars += snippet.length;
   }
 
+  const visibility = {
+    itemCount: selected.length,
+    sourceCandidateCount: candidates.length,
+    hiddenCount: Math.max(candidates.length - selected.length, 0),
+    maxItemsHit: candidates.length > maxItems && selected.length >= maxItems,
+    maxCharsHit: skippedByMaxChars > 0,
+    skippedByMaxChars,
+    remainingCharBudget: Math.max(maxChars - usedChars, 0),
+    visibleTitles: selected.slice(0, 5).map((item) => item.title),
+  };
+
   const packId = `pack_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const pack = {
     packId,
@@ -699,6 +743,7 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
     namespaces: normalizedNamespaces,
     createdAt: nowIso(),
     items: selected,
+    visibility,
     cache: {
       hit: false,
     },

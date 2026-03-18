@@ -19,6 +19,29 @@ Verification evidence for shipped features lives in [docs/VERIFICATION_EVIDENCE.
 
 Continuity tools help you resume work. MCP Memory Gateway keeps the resumed session sharper: recall, reliability rules, pre-action gates, and verification layered on top of that continuity workflow without another planner or swarm.
 
+## Claude Workflow Hardening
+
+If you are selling or deploying Claude-first delivery, the cleanest commercial wedge is not "AI employee" hype. It is a **Workflow Hardening Sprint** for one workflow with enough memory, gates, and proof to ship safely.
+
+Use that motion when a buyer already has:
+
+- one workflow owner
+- one repeated failure pattern or rollout blocker
+- one buyer who needs proof before broader rollout
+
+That maps cleanly to three offers:
+
+- Workflow Hardening Sprint for one production workflow with business value
+- code modernization guardrails for long-running migration and refactor sessions
+- hosted Pro at `$29/mo` when the team only needs synced memory, gates, and usage analytics
+
+Use these assets in sales and partner conversations:
+
+- [Workflow Hardening Sprint](docs/WORKFLOW_HARDENING_SPRINT.md)
+- [Pitch](docs/PITCH.md)
+- [Anthropic Partner Strategy](docs/ANTHROPIC_MARKETPLACE_STRATEGY.md)
+- [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
+
 ## Cursor Marketplace
 
 This repo now ships a submission-ready Cursor plugin bundle:
@@ -108,6 +131,9 @@ npx mcp-memory-gateway init
 npx mcp-memory-gateway init --agent claude-code
 npx mcp-memory-gateway init --agent codex
 npx mcp-memory-gateway init --agent gemini
+
+# Audit readiness before a long-running workflow
+npx mcp-memory-gateway doctor
 ```
 
 > **Profiles:** Set `RLHF_MCP_PROFILE=essential` for the lean 5-tool setup (recommended), or leave unset for the full 12-tool pipeline. See [MCP Tools](#mcp-tools) for details.
@@ -257,6 +283,7 @@ npx mcp-memory-gateway init              # Scaffold .rlhf/ + configure MCP
 npx mcp-memory-gateway init --agent X    # + auto-wire PreToolUse hooks (claude-code/codex/gemini)
 npx mcp-memory-gateway init --wire-hooks # Wire hooks only (auto-detect agent)
 npx mcp-memory-gateway serve             # Start MCP server (stdio) + watcher
+npx mcp-memory-gateway doctor            # Audit runtime isolation, bootstrap context, and MCP permission tier
 npx mcp-memory-gateway dashboard         # Full RLHF dashboard with gate stats
 npx mcp-memory-gateway gate-stats        # Gate enforcement statistics
 npx mcp-memory-gateway status            # Learning curve dashboard

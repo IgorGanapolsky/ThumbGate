@@ -1,40 +1,55 @@
 #!/usr/bin/env node
-const fs = require('fs');
-const path = require('path');
 const { getBillingSummary } = require('./billing');
-async function showPulse() {
-  const summary = getBillingSummary();
-  const now = new Date();
-  console.log('📡 [MISSION CONTROL] MISSION PULSE — ' + now.toLocaleTimeString());
-  console.log('─'.repeat(60));
-  const funnel = summary.funnel;
-  const leadCount = funnel.stageCounts.acquisition || 0;
-  const activeCount = funnel.stageCounts.activation || 0;
-  const paidCount = funnel.stageCounts.paid || 0;
-  console.log(`🚀 GTM VELOCITY: ${leadCount} Leads | ${activeCount} Trials | ${paidCount} Sales`);
-  const roi = (funnel.conversionRates.acquisitionToPaid * 100).toFixed(2);
-  const health = paidCount > 0 ? '🟢 REVENUE ACTIVE' : (leadCount > 0 ? '🟡 WARM FUNNEL' : '🔴 BLIND / COLD');
-  console.log(`📈 HEALTH: ${health} (${roi}% ROI)`);
+
+function getPulseSnapshot(summary, now = new Date()) {
+  const funnel = summary.funnel || {};
+  const revenue = summary.revenue || {};
+  const leadCount = funnel.stageCounts ? funnel.stageCounts.acquisition || 0 : 0;
+  const activeCount = funnel.stageCounts ? funnel.stageCounts.activation || 0 : 0;
+  const paidOrders = revenue.paidOrders || 0;
+  const bookedRevenueCents = revenue.bookedRevenueCents || 0;
+  const conversionRate = leadCount > 0 ? ((paidOrders / leadCount) * 100).toFixed(2) : '0.00';
+  const health = paidOrders > 0 ? '🟢 REVENUE ACTIVE' : (leadCount > 0 ? '🟡 WARM FUNNEL' : '🔴 BLIND / COLD');
+
   let eta = 'N/A';
-  if (paidCount === 0 && leadCount > 0) {
+  if (paidOrders === 0 && leadCount > 0) {
     const hoursRemaining = 4;
     const etaDate = new Date(now.getTime() + hoursRemaining * 60 * 60 * 1000);
-    eta = etaDate.toLocaleTimeString() + ' (Decision Window)';
-  } else if (paidCount > 0) {
+    eta = `${etaDate.toLocaleTimeString()} (Decision Window)`;
+  } else if (paidOrders > 0) {
     eta = 'SUCCESS';
   }
-  console.log(`⏱️ FIRST DOLLAR ETA: ${eta}`);
+
+  return {
+    leadCount,
+    activeCount,
+    paidOrders,
+    bookedRevenueCents,
+    conversionRate,
+    health,
+    eta,
+    topAcquisitionChannels: Object.entries(funnel.eventCounts || {})
+      .filter(([key]) => key.startsWith('acquisition:'))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3),
+  };
+}
+
+async function showPulse() {
+  const now = new Date();
+  const snapshot = getPulseSnapshot(getBillingSummary(), now);
+  console.log('📡 [MISSION CONTROL] MISSION PULSE — ' + now.toLocaleTimeString());
+  console.log('─'.repeat(60));
+  console.log(`🚀 GTM VELOCITY: ${snapshot.leadCount} Leads | ${snapshot.activeCount} Trials | ${snapshot.paidOrders} Paid Orders`);
+  console.log(`💵 BOOKED REVENUE: $${(snapshot.bookedRevenueCents / 100).toFixed(2)}`);
+  console.log(`📈 HEALTH: ${snapshot.health} (${snapshot.conversionRate}% lead-to-paid conversion)`);
+  console.log(`⏱️ FIRST DOLLAR ETA: ${snapshot.eta}`);
   console.log('─'.repeat(60));
   console.log('📊 TOP ACQUISITION CHANNELS:');
-  const counts = funnel.eventCounts || {};
-  Object.entries(counts)
-    .filter(([key]) => key.startsWith('acquisition:'))
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .forEach(([key, count]) => {
+  snapshot.topAcquisitionChannels.forEach(([key, count]) => {
       const name = key.split(':')[1];
       console.log(`   - ${name.padEnd(25)} : ${count} events`);
-    });
+  });
 }
 if (require.main === module) showPulse().catch(console.error);
-module.exports = { showPulse };
+module.exports = { showPulse, getPulseSnapshot };

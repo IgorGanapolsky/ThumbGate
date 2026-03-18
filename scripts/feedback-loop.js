@@ -13,6 +13,7 @@ const {
   resolveFeedbackAction,
   prepareForStorage,
   parseTimestamp,
+  GENERIC_TAGS,
 } = require('./feedback-schema');
 const {
   buildClarificationMessage,
@@ -663,6 +664,26 @@ function captureFeedback(params) {
     sourceFeedbackId: feedbackEvent.id,
     timestamp: now,
   };
+
+  // Bayesian Belief Update (Project Bayes)
+  try {
+    const { updateBelief, shouldPrune } = require('./belief-update');
+    const existingMemories = readJSONL(MEMORY_LOG_PATH);
+    const similarMemory = existingMemories.slice().reverse().find(m => 
+      m.tags && m.tags.some(t => memoryRecord.tags.includes(t) && !GENERIC_TAGS.has(t))
+    );
+
+    if (similarMemory && similarMemory.bayesian) {
+      const likelihood = signal === 'positive' ? 0.9 : 0.1;
+      memoryRecord.bayesian = updateBelief(similarMemory.bayesian, likelihood);
+      memoryRecord.revisedFromId = similarMemory.id;
+      
+      if (shouldPrune(memoryRecord.bayesian)) {
+        memoryRecord.pruned = true;
+        memoryRecord.pruneReason = 'high_entropy_contradiction';
+      }
+    }
+  } catch (_err) { /* bayesian update is non-blocking */ }
 
   appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
   appendJSONL(MEMORY_LOG_PATH, memoryRecord);

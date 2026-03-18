@@ -317,6 +317,16 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'estimate_uncertainty',
+    description: 'Estimate Bayesian uncertainty for a set of tags based on past feedback.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tags: { type: 'array', items: { type: 'string' }, description: 'Tags to analyze for uncertainty' },
+      },
+    },
+  },
 ];
 
 module.exports = {
