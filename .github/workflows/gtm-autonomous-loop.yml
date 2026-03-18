@@ -6,30 +6,40 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   acquisition:
     runs-on: ubuntu-latest
+    env:
+      GTM_ARTIFACT_DIR: .artifacts/gtm
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 20
+          cache: 'npm'
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+      - name: Prepare artifact directory
+        run: mkdir -p "$GTM_ARTIFACT_DIR"
       - name: Run Prospecting & Personalization Agent
-        run: node scripts/autonomous-sales-agent.js
+        run: node scripts/autonomous-sales-agent.js --report-dir "$GTM_ARTIFACT_DIR" --max-targets 8
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Run X.com Premium+ Marketing Loop
-        run: node scripts/x-autonomous-marketing.js
+        run: node scripts/x-autonomous-marketing.js --report-dir "$GTM_ARTIFACT_DIR"
         env:
           X_API_KEY: ${{ secrets.X_API_KEY }}
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
           GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+      - name: Upload GTM artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gtm-revenue-loop
+          path: .artifacts/gtm/
       - name: Post Launch Thread to X.com
         if: github.event_name == 'workflow_dispatch'
         run: node scripts/post-to-x.js --thread
@@ -38,13 +48,3 @@ jobs:
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-      - name: Create Pull Request for Leads
-        uses: peter-evans/create-pull-request@v8
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: hourly leads and marketing dispatch"
-          title: "🤖 GTM: Hourly Prospecting Report"
-          body: "Autonomous GTM agent has generated new leads and marketing reports."
-          branch: "gtm/hourly-leads"
-          base: "main"
-          delete-branch: true

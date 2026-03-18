@@ -16,6 +16,46 @@ const APP_ORIGIN = resolveHostedBillingConfig({
   requestOrigin: 'https://rlhf-feedback-loop-production.up.railway.app',
 }).appOrigin;
 const SPRINT_LINK = `${APP_ORIGIN}/#workflow-sprint-intake`;
+const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
+const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md';
+
+function parseArgs(argv = []) {
+  const options = {
+    reportDir: '',
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--report-dir' && argv[index + 1]) {
+      options.reportDir = String(argv[index + 1]).trim();
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--report-dir=')) {
+      options.reportDir = arg.split('=').slice(1).join('=').trim();
+    }
+  }
+
+  return options;
+}
+
+function resolveReportPaths(options = {}) {
+  const repoRoot = path.resolve(__dirname, '..');
+  if (options.reportDir) {
+    const reportDir = path.resolve(repoRoot, options.reportDir);
+    fs.mkdirSync(reportDir, { recursive: true });
+    return {
+      markdownPath: path.join(reportDir, 'x-automation-report.md'),
+      jsonPath: path.join(reportDir, 'x-automation-report.json'),
+    };
+  }
+
+  return {
+    markdownPath: path.join(repoRoot, 'docs/X_AUTOMATION_REPORT.md'),
+    jsonPath: '',
+  };
+}
 
 /**
  * 1. Discover likely intent clusters around coding-agent reliability.
@@ -44,13 +84,16 @@ async function generateGrokReply(threadContext, model = 'grok-4.1-fast') {
 /**
  * 3. Generate the operator report.
  */
-async function executeXCampaign() {
+async function executeXCampaign(options = {}) {
   const trends = await scanRadarTrends();
   console.log(`🤖 [X Agent] Identified ${trends.length} high-intent clusters.`);
+  const paths = resolveReportPaths(options);
 
   const report = {
     timestamp: new Date().toISOString(),
     campaign: 'X Premium+ Maximizer',
+    commercialTruth: COMMERCIAL_TRUTH_LINK,
+    verificationEvidence: VERIFICATION_EVIDENCE_LINK,
     actions: trends.map(t => ({
       target_keyword: t,
       tactic: 'Reply Boost Automation',
@@ -58,11 +101,12 @@ async function executeXCampaign() {
     }))
   };
 
-  const reportPath = path.join(__dirname, '../docs/X_AUTOMATION_REPORT.md');
   let md = '# X.com Workflow Hardening Reply Plan\n\n';
   md += 'Status: current  \n';
   md += `Updated: ${new Date().toISOString().slice(0, 10)}\n\n`;
   md += 'This is an operator planning report, not proof that posts were sent or that impressions converted.\n\n';
+  md += `Commercial truth: ${COMMERCIAL_TRUTH_LINK}  \n`;
+  md += `Verification evidence: ${VERIFICATION_EVIDENCE_LINK}\n\n`;
   md += '## Discovered Intent Clusters\n';
   trends.forEach(t => md += `- \`${t}\`\n`);
   
@@ -74,8 +118,22 @@ async function executeXCampaign() {
     md += `### Target: ${t}\n> ${pitch}\n\n`;
   }
 
-  fs.writeFileSync(reportPath, md);
-  console.log('\n✅ X.com Automation Logic Deployed. Open docs/X_AUTOMATION_REPORT.md.');
+  fs.writeFileSync(paths.markdownPath, md);
+  if (paths.jsonPath) {
+    fs.writeFileSync(paths.jsonPath, `${JSON.stringify(report, null, 2)}\n`);
+  }
+  console.log(`\n✅ X.com Automation Logic Deployed. Report: ${paths.markdownPath}`);
 }
 
-executeXCampaign();
+if (require.main === module) {
+  executeXCampaign(parseArgs(process.argv.slice(2))).catch((err) => {
+    console.error(err && err.message ? err.message : err);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  executeXCampaign,
+  parseArgs,
+  resolveReportPaths,
+};
