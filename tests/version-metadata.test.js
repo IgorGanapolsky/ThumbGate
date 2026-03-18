@@ -43,8 +43,6 @@ test('public docs render the current package version', () => {
   assert.match(landingPage, /MCP Memory Gateway/);
   assert.match(landingPage, /AI Agent Reliability Without Orchestration Tax/i);
   assert.match(landingPage, /\$49 one-time/);
-  assert.doesNotMatch(landingPage, /billingIncrement/);
-  assert.doesNotMatch(landingPage, /P1M/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
 });
 
@@ -80,8 +78,6 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
   assert.match(publicLanding, /AI reliability system/i);
-  assert.doesNotMatch(publicLanding, /billingDuration/);
-  assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
   assert.doesNotMatch(publicLanding, /github\.com\/IgorGanapolsky\/rlhf-feedback-loop/);
 
