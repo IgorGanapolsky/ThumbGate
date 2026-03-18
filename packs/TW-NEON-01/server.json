@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "twitch-neon-brand-manager": {
+      "command": "node",
+      "args": [
+        "../../../bin/cli.js",
+        "serve",
+        "--pack",
+        "packs/TW-NEON-01"
+      ],
+      "env": {
+        "RLHF_ALLOW_INSECURE": "true"
+      }
+    }
+  }
+}
