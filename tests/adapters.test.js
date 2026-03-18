@@ -18,6 +18,11 @@ test('adapter files exist', () => {
     '.opencode/instructions/rlhf-workflow.md',
     '.opencode/agents/rlhf-review.md',
     '.cursor-plugin/marketplace.json',
+    '.claude-plugin/plugin.json',
+    '.claude-plugin/marketplace.json',
+    '.claude-plugin/README.md',
+    '.claude-plugin/bundle/server/index.js',
+    '.claude-plugin/bundle/icon.png',
     'plugins/opencode-profile/INSTALL.md',
     'plugins/cursor-marketplace/.cursor-plugin/plugin.json',
     'plugins/cursor-marketplace/.mcp.json',
@@ -135,4 +140,31 @@ test('cursor marketplace plugin is pinned to the released package version', () =
   assert.equal(marketplace.plugins[0].name, pluginManifest.name);
   assert.equal(pluginManifest.version, packageVersion);
   assert.deepEqual(pluginConfig.mcpServers.rlhf.args, ['-y', `mcp-memory-gateway@${packageVersion}`, 'serve']);
+});
+
+test('claude plugin metadata stays aligned with the released package and install story', () => {
+  const pluginManifestPath = path.join(root, '.claude-plugin', 'plugin.json');
+  const marketplacePath = path.join(root, '.claude-plugin', 'marketplace.json');
+  const readmePath = path.join(root, '.claude-plugin', 'README.md');
+
+  const pluginManifest = JSON.parse(fs.readFileSync(pluginManifestPath, 'utf-8'));
+  const marketplace = JSON.parse(fs.readFileSync(marketplacePath, 'utf-8'));
+  const readme = fs.readFileSync(readmePath, 'utf-8');
+  const marketplaceEntry = marketplace.plugins[0];
+
+  assert.equal(pluginManifest.version, packageVersion);
+  assert.equal(marketplace.version, packageVersion);
+  assert.equal(marketplaceEntry.name, pluginManifest.name);
+  assert.match(pluginManifest.description, /Claude Desktop|workflow hardening|Veto Layer/i);
+  assert.match(marketplaceEntry.description, /Claude Desktop|workflow hardening|Veto Layer/i);
+  assert.ok(pluginManifest.keywords.includes('claude-desktop'));
+  assert.ok(pluginManifest.keywords.includes('workflow-hardening'));
+  assert.ok(marketplaceEntry.metadata.keywords.includes('claude-desktop'));
+  assert.ok(marketplaceEntry.metadata.keywords.includes('veto-layer'));
+  assert.match(readme, /Privacy Policy/i);
+  assert.match(readme, /Data Collection/i);
+  assert.match(readme, /Support/i);
+  assert.match(readme, /Examples/i);
+  assert.match(readme, /claude mcp add rlhf -- npx -y mcp-memory-gateway serve/i);
+  assert.match(readme, /build:claude-mcpb/i);
 });

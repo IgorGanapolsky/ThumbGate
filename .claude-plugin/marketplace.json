@@ -4,7 +4,7 @@
   "plugins": [
     {
       "name": "mcp-memory-gateway",
-      "description": "RLHF feedback loop for AI agents — capture feedback, block mistakes, export DPO training pairs",
+      "description": "Claude Desktop workflow hardening extension with Veto Layer guardrails, proof-backed memory, and MCP reliability tools",
       "type": "mcp",
       "source": {
         "type": "npm",
@@ -16,7 +16,15 @@
         "author": "Igor Ganapolsky",
         "homepage": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
         "license": "MIT",
-        "keywords": ["rlhf", "feedback", "dpo", "mcp", "prevention-rules", "memory"],
+        "keywords": [
+          "claude-desktop",
+          "desktop-extension",
+          "workflow-hardening",
+          "veto-layer",
+          "agentic-feedback-studio",
+          "mcp",
+          "memory"
+        ],
         "category": "developer-tools"
       }
     }

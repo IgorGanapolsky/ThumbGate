@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>mcp-memory-gateway | Claude Workflow Hardening and AI Reliability</title>
-  <meta name="description" content="Harden Claude Code and other AI workflows. Keep one sharp AI agent with recall, reliability rules, pre-action gates, and verification evidence without adding orchestration or handoff overhead." />
-  <meta name="keywords" content="Claude workflow hardening, AI reliability system, AI agent reliability, AI agent guardrails, MCP server, Claude Code, code modernization, feedback loop, prevention rules, pre-action gates, AI workflow reliability" />
+  <title>mcp-memory-gateway | Claude workflow hardening, Claude Desktop extension, and AI reliability</title>
+  <meta name="description" content="Harden Claude Code and other AI workflows. Install mcp-memory-gateway as a Claude Desktop extension, keep one sharp AI agent with recall, reliability rules, pre-action gates, verification evidence, and a workflow fit checker without orchestration overhead." />
+  <meta name="keywords" content="Claude workflow hardening, Claude Desktop extension, Claude Desktop plugin, AI reliability system, AI agent reliability, AI agent guardrails, workflow hardening checker, AI agent reliability checker, MCP server, Claude Code, code modernization, feedback loop, prevention rules, pre-action gates, AI workflow reliability" />
   <meta property="og:title" content="mcp-memory-gateway - Claude workflow hardening. Keep one sharp agent." />
   <meta property="og:description" content="Use any continuity workflow to regain context, then let mcp-memory-gateway add recall, reliability rules, pre-action gates, and verification evidence in the same agent loop without another orchestration layer." />
   <meta property="og:type" content="website" />
@@ -141,6 +141,22 @@ __GA_BOOTSTRAP__
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "It is the front-line services offer: one workflow, one owner, and one proof review. The goal is to add recall, prevention rules, pre-action gates, and verification evidence so a Claude-first workflow is safer to ship team-wide."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What does the Workflow Hardening Fit Checker do?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It qualifies whether a workflow is a better fit for the Workflow Hardening Sprint, Pro, or the free OSS path by checking for a repeated blocker, a workflow owner, proof requirements, rollout stage, and cross-machine sync needs. It is a qualification aid, not ROI proof."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I install mcp-memory-gateway as a Claude Desktop extension?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. You can install the local MCP server in Claude Desktop today with the portable npm launcher, and this repo ships Claude-specific plugin metadata, privacy policy, support links, and submission docs. Directory inclusion depends on Anthropic review and should not be claimed before approval."
         }
       },
       {
@@ -709,6 +725,149 @@ __GA_BOOTSTRAP__
       flex-shrink: 0;
     }
 
+    /* ── Fit checker ── */
+    .fit-shell {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .fit-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      padding: 28px;
+    }
+
+    .fit-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+
+    .fit-card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
+    .fit-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .fit-field {
+      display: block;
+    }
+
+    .fit-field span {
+      display: block;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+
+    .fit-field select {
+      width: 100%;
+      font: inherit;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .fit-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    .fit-note {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .fit-result-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(34, 211, 238, 0.12);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .fit-metrics {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .fit-metric {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      padding: 14px;
+    }
+
+    .fit-metric-label {
+      display: block;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+
+    .fit-metric-value {
+      display: block;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .fit-result-list {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+      margin: 0 0 18px;
+      padding: 0;
+    }
+
+    .fit-result-list li {
+      font-size: 14px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .fit-result-list li::before {
+      content: "\2192";
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .fit-status-line {
+      min-height: 20px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
     /* ── Pricing ── */
     .pricing-grid {
       display: grid;
@@ -951,6 +1110,8 @@ __GA_BOOTSTRAP__
       .ba-grid,
       .steps-grid,
       .pricing-grid,
+      .fit-shell,
+      .fit-grid,
       .studio-shell,
       .studio-grid {
         grid-template-columns: 1fr;
@@ -973,8 +1134,10 @@ __GA_BOOTSTRAP__
 <body>
   <nav>
     <div class="nav-inner">
-      <div class="brand">mcp-memory-gateway <span>v0.7.0</span></div>
+      <div class="brand">mcp-memory-gateway <span>v0.7.1</span></div>
       <div class="nav-links">
+        <a href="#fit-checker">Fit Check</a>
+        <a href="#claude-desktop">Claude Desktop</a>
         <a href="#use-cases">Use Cases</a>
         <a href="#studio">Studio</a>
         <a href="#offers">Offers</a>
@@ -1000,12 +1163,14 @@ __GA_BOOTSTRAP__
         </div>
         <div class="cta-row">
           <a class="btn btn-primary" data-cta-id="hero_sprint" data-cta-placement="hero" data-plan-id="sprint" href="#workflow-sprint-intake">Start Sprint Intake</a>
+          <a class="btn btn-secondary" data-cta-id="hero_fit" data-cta-placement="hero" data-plan-id="checker" href="#fit-checker">Run Fit Check</a>
           <a class="btn btn-secondary" data-cta-id="hero_proof" data-cta-placement="hero" data-plan-id="proof" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Review Proof Pack</a>
           <a class="btn btn-secondary" data-cta-id="hero_free" data-cta-placement="hero" data-plan-id="free" href="https://github.com/IgorGanapolsky/mcp-memory-gateway#quick-start" target="_blank" rel="noreferrer">Get Started Free</a>
         </div>
         <div class="badges">
           <span class="badge"><span class="dot"></span> CI + proof artifacts published</span>
           <span class="badge">Claude Code / Codex / Gemini / Amp</span>
+          <span class="badge">Claude Desktop extension path ready</span>
           <span class="badge">Code modernization ready</span>
           <span class="badge">Platform + consultancy fit</span>
           <span class="badge">One workflow, one owner, one proof review</span>
@@ -1014,6 +1179,138 @@ __GA_BOOTSTRAP__
           <span class="badge">MIT Licensed</span>
           <span class="badge">Local-first, no cloud required</span>
         </div>
+      </div>
+    </section>
+
+    <section id="fit-checker">
+      <div class="wrap">
+        <div class="section-label">Action Query</div>
+        <div class="section-title">Workflow Hardening Fit Checker</div>
+        <div class="section-desc">Use the exact test from modern AI-search strategy: can AI fully satisfy this query without a click? For buying decisions like workflow hardening, the answer is no. This checker qualifies whether the workflow belongs in the Sprint, Pro, or the free OSS path.</div>
+        <div class="fit-shell">
+          <div class="fit-card">
+            <h3>Qualify the workflow</h3>
+            <p>Answer five buyer-relevant questions. The checker stays honest: it recommends free when the workflow is too early, Pro when the problem is mainly shared sync, and the Sprint when the blocker is repeated failure, proof, or rollout trust.</p>
+            <div class="fit-grid">
+              <label class="fit-field">
+                <span>Workflow stage</span>
+                <select id="fit-stage">
+                  <option value="running">Already running</option>
+                  <option value="pilot">Pilot or staging</option>
+                  <option value="exploring">Still exploring</option>
+                </select>
+              </label>
+              <label class="fit-field">
+                <span>Repeated blocker</span>
+                <select id="fit-blocker">
+                  <option value="repeat">Yes, it keeps coming back</option>
+                  <option value="some">Sometimes, but not every run</option>
+                  <option value="none">No, we mostly need education</option>
+                </select>
+              </label>
+              <label class="fit-field">
+                <span>Workflow owner</span>
+                <select id="fit-owner">
+                  <option value="yes">Yes, one owner is clear</option>
+                  <option value="no">No, ownership is still fuzzy</option>
+                </select>
+              </label>
+              <label class="fit-field">
+                <span>Proof requirement</span>
+                <select id="fit-proof">
+                  <option value="yes">Yes, rollout needs proof</option>
+                  <option value="some">Some proof helps</option>
+                  <option value="no">No, this is still informal</option>
+                </select>
+              </label>
+              <label class="fit-field">
+                <span>Shared sync need</span>
+                <select id="fit-sync">
+                  <option value="no">Single builder or machine is fine</option>
+                  <option value="yes">Yes, multiple machines or repos</option>
+                </select>
+              </label>
+              <label class="fit-field">
+                <span>Primary runtime</span>
+                <select id="fit-runtime">
+                  <option value="claude-code">Claude Code</option>
+                  <option value="codex">Codex</option>
+                  <option value="gemini">Gemini</option>
+                  <option value="amp">Amp</option>
+                  <option value="mixed">Mixed runtimes</option>
+                </select>
+              </label>
+            </div>
+            <div class="fit-actions">
+              <button type="button" class="btn btn-primary" id="fit-checker-run">Run Fit Check</button>
+              <a class="btn btn-secondary" data-cta-id="fit_checker_scope" data-cta-placement="fit_checker" data-plan-id="sprint" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md" target="_blank" rel="noreferrer">Review Sprint Scope</a>
+            </div>
+            <p class="fit-note">Qualification aid only. This does not claim measured savings, buyer results, or historical conversion proof.</p>
+          </div>
+          <div class="fit-card">
+            <div class="fit-result-status" id="fit-result-status">Strong Sprint fit</div>
+            <h3 id="fit-result-label">Best path: Workflow Hardening Sprint</h3>
+            <p id="fit-result-summary">One workflow, one owner, and one repeated blocker is the exact case where the Workflow Hardening Sprint is stronger than another round of prompting.</p>
+            <div class="fit-metrics">
+              <div class="fit-metric">
+                <span class="fit-metric-label">AI Can Fully Satisfy This Query Without A Click?</span>
+                <span class="fit-metric-value" id="fit-ai-answer">No. This decision needs your blocker, owner, and rollout context.</span>
+              </div>
+              <div class="fit-metric">
+                <span class="fit-metric-label">SEO Priority</span>
+                <span class="fit-metric-value" id="fit-seo-priority">High-priority action query</span>
+              </div>
+              <div class="fit-metric">
+                <span class="fit-metric-label">Best Revenue Path</span>
+                <span class="fit-metric-value" id="fit-revenue-path">Workflow Hardening Sprint</span>
+              </div>
+            </div>
+            <ul class="fit-result-list" id="fit-result-reasons">
+              <li>A repeated blocker means you need gates and proof, not just a cleaner prompt.</li>
+              <li>One workflow owner makes the Sprint accountable and easier to defend internally.</li>
+              <li>Proof requirements point toward a proof pack and rollout discipline, not a generic memory tool.</li>
+            </ul>
+            <div class="cta-row">
+              <a class="btn btn-primary" id="fit-primary-cta" data-cta-id="fit_checker_sprint" data-cta-placement="fit_checker" data-plan-id="sprint" href="#workflow-sprint-intake">Start Sprint Intake</a>
+              <a class="btn btn-secondary" id="fit-secondary-cta" data-cta-id="fit_checker_proof" data-cta-placement="fit_checker" data-plan-id="proof" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Review Proof Pack</a>
+            </div>
+            <p class="fit-status-line" id="fit-checker-status" aria-live="polite">The checker updates live. Click Run Fit Check to record the recommendation in telemetry.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="claude-desktop">
+      <div class="wrap">
+        <div class="section-label">Distribution</div>
+        <div class="section-title">Publish the same workflow-hardening story as a Claude Desktop extension.</div>
+        <div class="section-desc">Claude Desktop is now a real discovery surface for Claude-first buyers. This repo already ships the local install path, a buildable `.mcpb`, Claude-specific plugin metadata, privacy policy, support links, and proof-backed docs. Use the extension lane for discoverability, not for fake traction claims.</div>
+        <div class="steps-grid">
+          <div class="step">
+            <div class="step-num">1</div>
+            <h3>Install locally today</h3>
+            <p>Use the portable launcher in Claude Desktop now, without waiting for a marketplace reviewer or changing the product story.</p>
+            <code>claude mcp add rlhf -- npx -y mcp-memory-gateway serve</code>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <h3>Show the trust layer</h3>
+            <p>Point extension evaluators to the proof pack, public privacy policy, and support surface before you claim that the workflow is ready.</p>
+            <code>VERIFICATION_EVIDENCE.md + /privacy + SECURITY.md</code>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <h3>Build the real bundle</h3>
+            <p>Package the actual `.mcpb` before you submit so the extension lane stays aligned with workflow hardening, the Veto Layer, and the Agentic Feedback Studio.</p>
+            <code>npm run build:claude-mcpb</code>
+          </div>
+        </div>
+        <div class="cta-row">
+          <a class="btn btn-primary" data-cta-id="claude_desktop_guide" data-cta-placement="claude_desktop" data-plan-id="free" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/.claude-plugin/README.md" target="_blank" rel="noreferrer">Review Claude Extension Guide</a>
+          <a class="btn btn-secondary" data-cta-id="claude_desktop_packet" data-cta-placement="claude_desktop" data-plan-id="proof" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md" target="_blank" rel="noreferrer">Review Submission Packet</a>
+          <a class="btn btn-secondary" data-cta-id="claude_desktop_free" data-cta-placement="claude_desktop" data-plan-id="free" href="https://github.com/IgorGanapolsky/mcp-memory-gateway#claude-desktop-extensions" target="_blank" rel="noreferrer">Install Free</a>
+        </div>
+        <p class="fit-note">Directory inclusion depends on Anthropic review. Do not market this as an approved or official Claude listing until that approval is real.</p>
       </div>
     </section>
 
@@ -1449,10 +1746,31 @@ __GA_BOOTSTRAP__
       const workflowSprintForm = document.getElementById('workflow-sprint-form');
       const workflowSprintSubmit = document.getElementById('workflow-sprint-submit');
       const workflowSprintStatus = document.getElementById('workflow-sprint-status');
+      const fitStage = document.getElementById('fit-stage');
+      const fitBlocker = document.getElementById('fit-blocker');
+      const fitOwner = document.getElementById('fit-owner');
+      const fitProof = document.getElementById('fit-proof');
+      const fitSync = document.getElementById('fit-sync');
+      const fitRuntime = document.getElementById('fit-runtime');
+      const fitCheckerRun = document.getElementById('fit-checker-run');
+      const fitResultStatus = document.getElementById('fit-result-status');
+      const fitResultLabel = document.getElementById('fit-result-label');
+      const fitResultSummary = document.getElementById('fit-result-summary');
+      const fitResultReasons = document.getElementById('fit-result-reasons');
+      const fitAiAnswer = document.getElementById('fit-ai-answer');
+      const fitSeoPriority = document.getElementById('fit-seo-priority');
+      const fitRevenuePath = document.getElementById('fit-revenue-path');
+      const fitPrimaryCta = document.getElementById('fit-primary-cta');
+      const fitSecondaryCta = document.getElementById('fit-secondary-cta');
+      const fitCheckerStatus = document.getElementById('fit-checker-status');
       const serverVisitorId = '__SERVER_VISITOR_ID__';
       const serverSessionId = '__SERVER_SESSION_ID__';
       const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
       const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
+      const proofPackUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md';
+      const sprintScopeUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md';
+      const quickstartUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway#quick-start';
+      const commercialTruthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
       let selectedLossReason = null;
       let activeCheckoutTraceId = null;
 
@@ -1810,6 +2128,231 @@ __GA_BOOTSTRAP__
         }
       }
 
+      function readFitState() {
+        return {
+          stage: fitStage ? fitStage.value : 'running',
+          blocker: fitBlocker ? fitBlocker.value : 'repeat',
+          owner: fitOwner ? fitOwner.value : 'yes',
+          proof: fitProof ? fitProof.value : 'yes',
+          sync: fitSync ? fitSync.value : 'no',
+          runtime: fitRuntime ? fitRuntime.value : 'claude-code'
+        };
+      }
+
+      function getRuntimeLabel(runtime) {
+        if (runtime === 'codex') return 'Codex';
+        if (runtime === 'gemini') return 'Gemini';
+        if (runtime === 'amp') return 'Amp';
+        if (runtime === 'mixed') return 'mixed runtimes';
+        return 'Claude Code';
+      }
+
+      function computeFitRecommendation(state) {
+        const reasons = [];
+        const runtimeLabel = getRuntimeLabel(state.runtime);
+        let sprintScore = 0;
+        let proScore = 0;
+        let freeScore = 0;
+
+        if (state.stage === 'running') {
+          sprintScore += 2;
+          proScore += 1;
+          reasons.push('The workflow already exists, so you are hardening a real delivery loop instead of inventing one.');
+        } else if (state.stage === 'pilot') {
+          sprintScore += 1;
+          proScore += 1;
+          reasons.push('Pilot-stage workflows can justify a paid path when the blocker is trust, rollout risk, or cross-machine consistency.');
+        } else {
+          freeScore += 3;
+          reasons.push('Exploratory workflows usually need free signal capture first, not a paid rollout motion.');
+        }
+
+        if (state.blocker === 'repeat') {
+          sprintScore += 3;
+          reasons.push('A repeated blocker is a Sprint signal: gates, proof, and memory beat another prompt rewrite.');
+        } else if (state.blocker === 'some') {
+          sprintScore += 1;
+          proScore += 1;
+          reasons.push('The blocker is real but not dominant yet, so shared reliability or a lighter hosted path may be enough.');
+        } else {
+          freeScore += 2;
+          reasons.push('If there is no repeated blocker yet, the paid wedge is weak today.');
+        }
+
+        if (state.owner === 'yes') {
+          sprintScore += 2;
+          reasons.push('One workflow owner makes the Sprint accountable and easier to defend internally.');
+        } else {
+          freeScore += 2;
+          reasons.push('No clear owner means the workflow is not ready for a services-led sprint sale.');
+        }
+
+        if (state.proof === 'yes') {
+          sprintScore += 2;
+          reasons.push('If rollout needs proof or auditability, the Sprint is stronger than a generic self-serve pitch.');
+        } else if (state.proof === 'some') {
+          sprintScore += 1;
+          proScore += 1;
+          reasons.push('Some proof need exists, but it may be satisfied by a lighter hosted path first.');
+        } else {
+          proScore += 1;
+          freeScore += 1;
+        }
+
+        if (state.sync === 'yes') {
+          proScore += 3;
+          reasons.push(runtimeLabel + ' across multiple machines or repos benefits from Pro\'s shared memory and rules.');
+        } else {
+          freeScore += 1;
+        }
+
+        if (state.stage !== 'exploring' && state.owner === 'yes' && state.blocker === 'repeat' && state.proof !== 'no') {
+          return {
+            recommendation: 'sprint',
+            status: 'Strong Sprint fit',
+            label: 'Best path: Workflow Hardening Sprint',
+            summary: 'You already have a real workflow with a repeated blocker. The missing piece is proof, gates, and rollout discipline.',
+            aiAnswer: 'No. This decision needs your blocker, owner, and rollout context.',
+            seoPriority: 'High-priority action query',
+            revenuePath: 'Workflow Hardening Sprint',
+            reasons,
+            primary: {
+              text: 'Start Sprint Intake',
+              href: '#workflow-sprint-intake',
+              ctaId: 'fit_checker_sprint',
+              planId: 'sprint'
+            },
+            secondary: {
+              text: 'Review Proof Pack',
+              href: proofPackUrl,
+              ctaId: 'fit_checker_proof',
+              planId: 'proof'
+            }
+          };
+        }
+
+        if (state.sync === 'yes' && state.owner === 'yes' && state.blocker !== 'repeat' && proScore >= freeScore) {
+          return {
+            recommendation: 'pro',
+            status: 'Best Pro fit',
+            label: 'Best path: Pro first',
+            summary: 'The workflow mostly needs shared memory, synced rules, and a cleaner hosted path across machines.',
+            aiAnswer: 'Not fully. AI can explain the product, but the buyer still needs an account, sync path, and operator setup.',
+            seoPriority: 'High-priority action query',
+            revenuePath: 'Pro at $49 one-time',
+            reasons,
+            primary: {
+              text: 'Compare with Pro',
+              href: '#pricing',
+              ctaId: 'fit_checker_pro',
+              planId: 'pro'
+            },
+            secondary: {
+              text: 'Review Commercial Truth',
+              href: commercialTruthUrl,
+              ctaId: 'fit_checker_truth',
+              planId: 'proof'
+            }
+          };
+        }
+
+        return {
+          recommendation: 'free',
+          status: 'Best OSS fit',
+          label: 'Best path: Start free',
+          summary: 'The workflow is still early. Use the free OSS path to capture signals until a repeated blocker or rollout need becomes concrete.',
+          aiAnswer: 'Mostly yes. This is still closer to education and evaluation than to a paid operational decision.',
+          seoPriority: 'Support content only',
+          revenuePath: 'Free OSS path for now',
+          reasons,
+          primary: {
+            text: 'Get Started Free',
+            href: quickstartUrl,
+            ctaId: 'fit_checker_free',
+            planId: 'free'
+          },
+          secondary: {
+            text: 'Review Sprint Scope',
+            href: sprintScopeUrl,
+            ctaId: 'fit_checker_scope_secondary',
+            planId: 'sprint'
+          }
+        };
+      }
+
+      function renderFitRecommendation(result) {
+        if (!result) return;
+        if (fitResultStatus) fitResultStatus.textContent = result.status;
+        if (fitResultLabel) fitResultLabel.textContent = result.label;
+        if (fitResultSummary) fitResultSummary.textContent = result.summary;
+        if (fitAiAnswer) fitAiAnswer.textContent = result.aiAnswer;
+        if (fitSeoPriority) fitSeoPriority.textContent = result.seoPriority;
+        if (fitRevenuePath) fitRevenuePath.textContent = result.revenuePath;
+        if (fitResultReasons) {
+          fitResultReasons.innerHTML = result.reasons.map(function (reason) {
+            return '<li>' + reason
+              .replaceAll('&', '&amp;')
+              .replaceAll('<', '&lt;')
+              .replaceAll('>', '&gt;') + '</li>';
+          }).join('');
+        }
+        function syncFitCtaLink(link, href) {
+          const isExternalLink = /^https?:\/\//.test(href);
+          link.href = href;
+          if (isExternalLink) {
+            link.target = '_blank';
+            link.rel = 'noreferrer';
+            return;
+          }
+          link.removeAttribute('target');
+          link.removeAttribute('rel');
+        }
+        if (fitPrimaryCta) {
+          fitPrimaryCta.textContent = result.primary.text;
+          syncFitCtaLink(fitPrimaryCta, result.primary.href);
+          fitPrimaryCta.dataset.ctaId = result.primary.ctaId;
+          fitPrimaryCta.dataset.planId = result.primary.planId;
+        }
+        if (fitSecondaryCta) {
+          fitSecondaryCta.textContent = result.secondary.text;
+          syncFitCtaLink(fitSecondaryCta, result.secondary.href);
+          fitSecondaryCta.dataset.ctaId = result.secondary.ctaId;
+          fitSecondaryCta.dataset.planId = result.secondary.planId;
+        }
+      }
+
+      function recordFitRecommendation(result, state) {
+        sendTelemetry('fit_check_completed', {
+          ctaId: 'fit_checker_run',
+          ctaPlacement: 'fit_checker',
+          planId: result.recommendation,
+          recommendation: result.recommendation,
+          workflowStage: state.stage,
+          blockerLevel: state.blocker,
+          workflowOwner: state.owner,
+          proofNeed: state.proof,
+          sharedSyncNeed: state.sync,
+          runtime: state.runtime
+        });
+        trackGaEvent('fit_check_completed', {
+          recommendation: result.recommendation,
+          workflow_stage: state.stage,
+          blocker_level: state.blocker,
+          workflow_owner: state.owner,
+          proof_need: state.proof,
+          shared_sync_need: state.sync,
+          runtime: state.runtime
+        });
+        if (window.plausible) {
+          window.plausible('Fit Checker Completed', {
+            props: {
+              recommendation: result.recommendation,
+              runtime: state.runtime
+            }
+          });
+        }
+      }
+
       function trackGenericCtaClick(target) {
         if (!target || target === checkoutCta) return;
         sendTelemetry('cta_click', {
@@ -1859,6 +2402,28 @@ __GA_BOOTSTRAP__
 
       if (workflowSprintForm) {
         workflowSprintForm.addEventListener('submit', submitWorkflowSprintIntake);
+      }
+
+      if (fitCheckerRun) {
+        renderFitRecommendation(computeFitRecommendation(readFitState()));
+        [fitStage, fitBlocker, fitOwner, fitProof, fitSync, fitRuntime].forEach(function (field) {
+          if (!field) return;
+          field.addEventListener('change', function () {
+            renderFitRecommendation(computeFitRecommendation(readFitState()));
+            if (fitCheckerStatus) {
+              fitCheckerStatus.textContent = 'Recommendation updated. Click Run Fit Check to record the result.';
+            }
+          });
+        });
+        fitCheckerRun.addEventListener('click', function () {
+          const state = readFitState();
+          const result = computeFitRecommendation(state);
+          renderFitRecommendation(result);
+          recordFitRecommendation(result, state);
+          if (fitCheckerStatus) {
+            fitCheckerStatus.textContent = 'Fit check recorded. Follow the recommended path below.';
+          }
+        });
       }
 
       const landingAttribution = buildAttribution(null);

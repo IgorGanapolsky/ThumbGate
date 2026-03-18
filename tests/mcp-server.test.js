@@ -21,6 +21,13 @@ test('tools/list returns all configured tools', async () => {
   const result = await handleRequest({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
   assert.equal(Array.isArray(result.tools), true);
   assert.equal(result.tools.length, TOOLS.length);
+  for (const tool of result.tools) {
+    const annotations = tool.annotations || {};
+    const hasReadOnlyHint = annotations.readOnlyHint === true;
+    const hasDestructiveHint = annotations.destructiveHint === true;
+    assert.equal(hasReadOnlyHint || hasDestructiveHint, true, `${tool.name} must declare a safety annotation`);
+    assert.equal(hasReadOnlyHint && hasDestructiveHint, false, `${tool.name} must not claim both readOnlyHint and destructiveHint`);
+  }
 });
 
 test('capture_feedback tool can be called', async () => {

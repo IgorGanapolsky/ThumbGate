@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title>MCP Memory Gateway</title>
+  <desc>Gateway icon for the Claude Desktop workflow hardening extension.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#1f2937"/>
+    </linearGradient>
+    <linearGradient id="gate" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#fb7185"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <path fill="url(#gate)" d="M152 128h208c17.7 0 32 14.3 32 32v64h-64v-32H184v128h144v-32h64v64c0 17.7-14.3 32-32 32H152c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32Z"/>
+  <path fill="#fff4ed" d="M248 180h96v48h-48v56h48v48h-96z"/>
+  <circle cx="196" cy="256" r="26" fill="#fef3c7"/>
+</svg>

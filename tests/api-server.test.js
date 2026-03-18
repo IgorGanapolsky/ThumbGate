@@ -89,6 +89,9 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Reliability Studio/i);
   assert.match(body, /Import\. Compare\. Deploy\./);
   assert.match(body, /No model fine-tuning required/i);
+  assert.match(body, /Workflow Hardening Fit Checker/i);
+  assert.match(body, /can AI fully satisfy this query without a click\?/i);
+  assert.match(body, /Run Fit Check/i);
   assert.match(body, /PR review threads, CI logs, runbooks, JSONL, and CSV/i);
   assert.match(body, /Start Compare &amp; Deploy/);
   assert.match(body, /same agent session|same reliability layer|No orchestration tax/i);
@@ -102,6 +105,20 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Review Sprint Brief/);
   assert.doesNotMatch(body, /Email Instead/i);
   assert.doesNotMatch(body, /mailto:/i);
+});
+
+test('privacy policy route covers collection, sharing, retention, and contact details', async () => {
+  const res = await fetch(apiUrl('/privacy'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+
+  const body = await res.text();
+  assert.match(body, /Privacy Policy/i);
+  assert.match(body, /Data Collection/i);
+  assert.match(body, /Data Sharing/i);
+  assert.match(body, /Data Retention/i);
+  assert.match(body, /optional CLI telemetry/i);
+  assert.match(body, /igor\.ganapolsky@gmail\.com/i);
 });
 
 test('root seeds journey cookies, injects server telemetry IDs, and records landing telemetry server-side', async () => {

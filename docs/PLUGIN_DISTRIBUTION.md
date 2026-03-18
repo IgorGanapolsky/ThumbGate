@@ -32,6 +32,24 @@ This avoids platform-specific rewrite cost and keeps the product under a `$10/mo
 - Use: `adapters/claude/.mcp.json`
 - Transport: local stdio MCP server launched via `npx -y mcp-memory-gateway@0.7.1 serve`
 
+## Claude Desktop Extensions
+
+- Claude metadata: `.claude-plugin/plugin.json`
+- Claude marketplace metadata: `.claude-plugin/marketplace.json`
+- Claude extension README: `.claude-plugin/README.md`
+- Claude Desktop bundle launcher: `.claude-plugin/bundle/server/index.js`
+- Claude Desktop bundle icon: `.claude-plugin/bundle/icon.png`
+- Internal submission packet: `docs/CLAUDE_DESKTOP_EXTENSION.md`
+- Bundle build command: `npm run build:claude-mcpb`
+- Local install path: `claude mcp add rlhf -- npx -y mcp-memory-gateway@0.7.1 serve`
+- Promotion rule: treat directory inclusion as a discoverability lane, not customer proof
+
+Build the `.mcpb` for Claude Desktop review or direct installation with:
+
+```bash
+npm run build:claude-mcpb
+```
+
 ## Codex (MCP)
 
 - Merge section from `adapters/codex/config.toml`

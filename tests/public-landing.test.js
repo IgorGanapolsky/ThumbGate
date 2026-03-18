@@ -22,6 +22,7 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
   assert.match(landingPage, /Can I pair it with editor continuity tools or resume assistants\?/);
   assert.match(landingPage, /Can consultancies and platform teams use this for Claude workflow hardening or code modernization\?/);
   assert.match(landingPage, /What is the Workflow Hardening Sprint\?/);
+  assert.match(landingPage, /Can I install mcp-memory-gateway as a Claude Desktop extension\?/);
   assert.match(landingPage, /Do I need subagents or an orchestration layer to get value\?/);
   assert.match(landingPage, /optional context inputs/i);
   assert.match(landingPage, /same agent session/i);
@@ -103,11 +104,12 @@ test('public landing page includes a Reddit campaign banner and subreddit-aware 
 test('public landing page positions the gateway as continuity-friendly reliability without orchestration tax', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /Claude Workflow Hardening and AI Reliability/i);
+  assert.match(landingPage, /Claude workflow hardening, Claude Desktop extension, and AI reliability/i);
   assert.match(landingPage, /Harden one Claude workflow\./i);
   assert.match(landingPage, /Keep one sharp agent\./);
   assert.match(landingPage, /Workflow Hardening Sprint/i);
   assert.match(landingPage, /One workflow, one owner, one proof review/i);
+  assert.match(landingPage, /Claude Desktop extension/i);
   assert.match(landingPage, /Seven high-intent use cases for Claude workflow hardening/i);
   assert.match(landingPage, /The sellable unit is not a generic AI employee/i);
   assert.match(landingPage, /Code modernization guardrails/i);
@@ -151,4 +153,42 @@ test('public landing page includes Reliability Studio compare-and-deploy positio
   assert.match(landingPage, /What is Reliability Studio Compare and Deploy\?/);
   assert.doesNotMatch(landingPage, /500\+ LLMs/i);
   assert.doesNotMatch(landingPage, /GGUF/i);
+});
+
+test('public landing page includes an honest workflow fit checker for action-driven queries', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /Workflow Hardening Fit Checker/i);
+  assert.match(landingPage, /can AI fully satisfy this query without a click\?/i);
+  assert.match(landingPage, /workflow belongs in the Sprint, Pro, or the free OSS path/i);
+  assert.match(landingPage, /Qualification aid only\./i);
+  assert.match(landingPage, /id="fit-checker-run"/);
+  assert.match(landingPage, /fit_check_completed/);
+  assert.match(landingPage, /Best path: Workflow Hardening Sprint/i);
+  assert.match(landingPage, /AI Can Fully Satisfy This Query Without A Click\?/i);
+  assert.match(landingPage, /Review Sprint Scope/i);
+  assert.match(landingPage, /data-cta-id="hero_fit"/);
+  assert.match(landingPage, /function syncFitCtaLink\(link, href\)/);
+  assert.match(landingPage, /const isExternalLink = \/\^https\?:\\\/\\\/\//);
+  assert.match(landingPage, /link\.target = '_blank';/);
+  assert.match(landingPage, /link\.removeAttribute\('target'\);/);
+  assert.match(landingPage, /syncFitCtaLink\(fitPrimaryCta, result\.primary\.href\);/);
+  assert.match(landingPage, /syncFitCtaLink\(fitSecondaryCta, result\.secondary\.href\);/);
+  assert.doesNotMatch(landingPage, /live ROI/i);
+  assert.doesNotMatch(landingPage, /customer outcomes/i);
+});
+
+test('public landing page promotes the Claude Desktop extension path without false approval claims', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /id="claude-desktop"/);
+  assert.match(landingPage, /Publish the same workflow-hardening story as a Claude Desktop extension/i);
+  assert.match(landingPage, /Claude Desktop is now a real discovery surface/i);
+  assert.match(landingPage, /claude mcp add rlhf -- npx -y mcp-memory-gateway serve/i);
+  assert.match(landingPage, /buildable `.mcpb`|buildable \.mcpb/i);
+  assert.match(landingPage, /npm run build:claude-mcpb/i);
+  assert.match(landingPage, /Review Claude Extension Guide/i);
+  assert.match(landingPage, /Review Submission Packet/i);
+  assert.match(landingPage, /Directory inclusion depends on Anthropic review/i);
+  assert.doesNotMatch(landingPage, /approved Claude listing/i);
 });
