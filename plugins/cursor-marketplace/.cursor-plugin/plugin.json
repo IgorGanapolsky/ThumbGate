@@ -1,7 +1,7 @@
 {
   "name": "mcp-memory-gateway",
   "displayName": "MCP Memory Gateway",
-  "description": "Stop Cursor agents from repeating mistakes with project memory, pre-action checks, and proof-backed runs.",
+  "description": "Pre-action gates that block Cursor agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.",
   "version": "0.7.1",
   "author": {
     "name": "Igor Ganapolsky"
@@ -12,15 +12,10 @@
   "keywords": [
     "cursor",
     "mcp",
-    "project-memory",
-    "guardrails",
-    "coding-agents",
-    "agent-reliability",
-    "repeated-mistakes",
-    "context-engineering",
-    "workflow-hardening",
-    "pre-action-checks",
-    "proof-backed-runs"
+    "pre-action-gates",
+    "ai-agent-safety",
+    "prevention-rules",
+    "agent-reliability"
   ],
   "logo": "assets/logo-400x400.png"
 }

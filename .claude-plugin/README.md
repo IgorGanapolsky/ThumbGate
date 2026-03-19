@@ -1,14 +1,14 @@
 # MCP Memory Gateway for Claude Desktop
 
-`mcp-memory-gateway` gives Claude Desktop project memory and guardrails for coding agents.
+`mcp-memory-gateway` gives Claude Desktop a local-first **Reliability Gateway** and **Pre-Action Gates** for workflow hardening.
 
 The extension path is useful when a team wants Claude Desktop to keep one workflow sharper over time without adding another orchestration layer. The MCP server captures explicit feedback, recalls past failures, promotes reusable prevention rules, and produces proof-backed rollout artifacts.
 
 ## Features
 
 - Workflow hardening for Claude-first engineering and ops workflows
-- Pre-action checks that block repeated mistakes before tool use
-- Project memory and recall across long sessions
+- Pre-Action Gates that block repeated mistakes before tool use
+- Reliability memory and recall across long sessions
 - Bounded context packs, provenance, and diagnostics
 - DPO export and analytics bundle generation after runtime reliability lands
 - Submission-ready MCPB packaging for Claude Desktop review and local installs
@@ -74,7 +74,7 @@ Optional hosted path:
 **Expected behavior:**
 - Claude Desktop inspects the workflow context instead of relying on one-shot memory
 - The extension recalls prior blocker patterns when they exist
-- The Veto Layer can promote the missed blocker into a reusable gate
+- The Pre-Action Gates can promote the missed blocker into a reusable gate
 
 ### Example 2: Code modernization workflow
 

@@ -36,6 +36,7 @@ const {
 } = require('../../scripts/mcp-policy');
 const {
   evaluateGates,
+  evaluateGatesAsync,
   evaluateSecretGuard,
   satisfyCondition,
   loadStats: loadGateStats,
@@ -305,7 +306,7 @@ function buildEstimateUncertaintyResponse(args = {}) {
 
 async function callTool(name, args = {}) {
   assertToolAllowed(name, getActiveMcpProfile());
-  const firewallResult = evaluateGates(name, args) || evaluateSecretGuard({ tool_name: name, tool_input: args });
+  const firewallResult = (await evaluateGatesAsync(name, args)) || evaluateSecretGuard({ tool_name: name, tool_input: args });
   if (firewallResult && firewallResult.decision === 'deny') {
     const err = new Error(`Action blocked by Semantic Firewall: ${firewallResult.message}`);
     err.errorCategory = 'permission';
@@ -315,9 +316,15 @@ async function callTool(name, args = {}) {
   return callToolInner(name, args);
 }
 
-async function callToolInner(name, args = {}) {
+async function callToolInner(name, args) {
+  // Semantic Aliases for high-level branding alignment
+  if (name === 'capture_memory_feedback') name = 'capture_feedback';
+  if (name === 'get_reliability_rules') name = 'prevention_rules';
+  if (name === 'describe_reliability_entity') name = 'describe_semantic_entity';
+
   switch (name) {
     case 'capture_feedback':
+
       return toTextResult(captureFeedback(args));
     case 'feedback_summary':
       return toTextResult(feedbackSummary(Number(args.recent || 20)));
@@ -416,6 +423,20 @@ async function callToolInner(name, args = {}) {
       return toTextResult(generateDashboard(getFeedbackPaths().FEEDBACK_DIR));
     case 'commerce_recall':
       return buildCommerceRecallResponse(args);
+    case 'get_business_metrics': {
+      const { getBusinessMetrics } = require('../../scripts/semantic-layer');
+      const metrics = await getBusinessMetrics(args);
+      return toTextResult(metrics);
+    }
+    case 'describe_semantic_entity': {
+      const { describeSemanticSchema } = require('../../scripts/semantic-layer');
+      const schema = describeSemanticSchema();
+      const entity = schema.entities[args.type] || schema.metrics[args.type];
+      if (!entity) {
+        throw new Error(`Unknown semantic entity: ${args.type}`);
+      }
+      return toTextResult(entity);
+    }
     case 'estimate_uncertainty':
       return buildEstimateUncertaintyResponse(args);
     case 'bootstrap_internal_agent':

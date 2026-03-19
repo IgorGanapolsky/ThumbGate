@@ -11,9 +11,10 @@
 
 ## 1. Glama.ai — https://glama.ai/mcp/servers
 
-**Status:** NOT YET LISTED
+**Status:** CONTACT INITIATED (March 19, 2026)
 
-**How it works:** Glama automatically indexes MCP servers from GitHub and npm. It crawls repositories that contain MCP server metadata and ranks them by security, compatibility, and ease of use. There is no explicit "submit" form — servers appear once indexed.
+**How it works:** Glama automatically indexes MCP servers from GitHub and npm.
+ It crawls repositories that contain MCP server metadata and ranks them by security, compatibility, and ease of use. There is no explicit "submit" form — servers appear once indexed.
 
 **How to get listed:**
 1. Ensure your GitHub repo has proper MCP metadata in `package.json` (name, description, repository URL, keywords).
@@ -110,7 +111,8 @@ Leave a comment with:
 **mcp-memory-gateway**
 https://github.com/IgorGanapolsky/mcp-memory-gateway
 
-RLHF feedback loop for AI agents. Capture feedback, block mistakes, export DPO training data. Compatible with Claude, GPT-4, Gemini, and multi-agent systems.
+feedback-to-enforcement pipeline for AI agents. Capture feedback, block repeated mistakes, export DPO training data.
+ Compatible with Claude, GPT-4, Gemini, and multi-agent systems.
 
 - npm: https://www.npmjs.com/package/mcp-memory-gateway
 - Transport: stdio
@@ -179,7 +181,7 @@ There are three major lists. Submit to all of them.
 
 ### Entry text (punkpeye format):
 ```markdown
-- [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) - RLHF feedback loop for AI agents. Capture feedback, block repeated mistakes, export DPO training pairs.
+- [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) - feedback-to-enforcement pipeline for AI agents. Capture feedback, block repeated mistakes, export DPO training pairs.
 ```
 
 ### Entry text (appcypher format):
@@ -192,7 +194,7 @@ There are three major lists. Submit to all of them.
 **mcp-memory-gateway**
 https://github.com/IgorGanapolsky/mcp-memory-gateway
 
-RLHF feedback loop for AI agents. Capture feedback, block mistakes, export DPO training data.
+feedback-to-enforcement pipeline for AI agents. Capture feedback, block mistakes, export DPO training data.
 
 - npm: https://www.npmjs.com/package/mcp-memory-gateway
 - MCP Registry: https://registry.modelcontextprotocol.io

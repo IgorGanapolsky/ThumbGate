@@ -487,6 +487,26 @@ function extractAndSetConstraints(context) {
   }
 }
 
+function inferSemanticTags(context = '') {
+  const lower = context.toLowerCase();
+  const tags = new Set();
+  
+  if (lower.includes('revenue') || lower.includes('paid') || lower.includes('dollar') || lower.includes('cent') || lower.includes('price')) {
+    tags.add('entity:Revenue');
+  }
+  if (lower.includes('customer') || lower.includes('user') || lower.includes('pro') || lower.includes('tier')) {
+    tags.add('entity:Customer');
+  }
+  if (lower.includes('funnel') || lower.includes('conversion') || lower.includes('visitor') || lower.includes('checkout') || lower.includes('lead')) {
+    tags.add('entity:Funnel');
+  }
+  if (lower.includes('roi') || lower.includes('campaign') || lower.includes('attribution')) {
+    tags.add('metric:ROI');
+  }
+
+  return Array.from(tags);
+}
+
 function captureFeedback(params) {
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
   const signal = normalizeSignal(params.signal);
@@ -500,12 +520,15 @@ function captureFeedback(params) {
   const context = params.context || '';
   extractAndSetConstraints(context);
 
-  const tags = Array.isArray(params.tags)
+  const providedTags = Array.isArray(params.tags)
     ? params.tags
     : String(params.tags || '')
         .split(',')
         .map((t) => t.trim())
         .filter(Boolean);
+
+  const semanticTags = inferSemanticTags(context);
+  const tags = Array.from(new Set([...providedTags, ...semanticTags]));
 
   let rubricEvaluation = null;
   try {

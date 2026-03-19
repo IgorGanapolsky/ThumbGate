@@ -1,7 +1,7 @@
 {
   "name": "mcp-memory-gateway",
   "version": "0.7.1",
-  "description": "Project memory and guardrails for coding agents. Recall project decisions, block repeated mistakes, and verify runs without orchestration overhead.",
+  "description": "Pre-action gates that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.",
   "homepage": "https://rlhf-feedback-loop-production.up.railway.app",
   "repository": {
     "type": "git",
@@ -90,7 +90,8 @@
     "mcp",
     "ai-agents",
     "context-engineering",
-    "always-on-memory",
+    "pre-action-gates",
+    "ai-agent-safety",
     "guardrails",
     "llmops",
     "dpo",
@@ -99,7 +100,7 @@
     "commerce",
     "prevention-rules",
     "thompson-sampling",
-    "feedback-loop"
+    "feedback-to-enforcement-pipeline"
   ],
   "author": "Igor Ganapolsky",
   "license": "MIT",

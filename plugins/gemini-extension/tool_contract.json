@@ -1,28 +1,45 @@
 {
   "tools": [
     {
-      "name": "capture_feedback",
-      "description": "Capture thumbs feedback and store actionable memory",
+      "name": "capture_memory_feedback",
+      "description": "Capture success/failure feedback to harden future workflows and prevent repeated mistakes.",
       "input_schema": {
         "type": "object",
         "properties": {
-          "signal": { "type": "string", "enum": ["up", "down"] },
-          "context": { "type": "string" },
+          "signal": { "type": "string", "enum": ["up", "down"], "description": "Success (up) or failure (down) signal" },
+          "context": { "type": "string", "description": "Specific detail about what was achieved or what went wrong" },
           "what_went_wrong": { "type": "string" },
           "what_to_change": { "type": "string" },
           "what_worked": { "type": "string" },
-          "tags": { "type": "array", "items": { "type": "string" } }
+          "tags": { "type": "array", "items": { "type": "string" }, "description": "Keywords like 'revenue', 'deployment', 'refactor'" }
         },
         "required": ["signal", "context"]
       }
     },
     {
-      "name": "feedback_summary",
-      "description": "Return compact summary of recent feedback and trends"
+      "name": "get_reliability_rules",
+      "description": "Retrieve active prevention rules and success patterns to ensure high-quality task execution."
     },
     {
-      "name": "prevention_rules",
-      "description": "Generate current prevention rules from repeated mistakes"
+      "name": "get_business_metrics",
+      "description": "Retrieve canonical business metrics (Revenue, Conversion, Customers) from the Reliability Gateway.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "window": { "type": "string", "enum": ["today", "7d", "30d", "lifetime"], "default": "30d" }
+        }
+      }
+    },
+    {
+      "name": "describe_reliability_entity",
+      "description": "Get the definition and state of a business entity (Customer, Revenue, Funnel).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["Customer", "Revenue", "Funnel"] }
+        },
+        "required": ["type"]
+      }
     }
   ]
 }

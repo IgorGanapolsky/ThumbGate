@@ -21,13 +21,12 @@ We make one workflow measurable enough to justify and safe enough to roll out.
 
 - **Buyer:** consultancy owner, platform lead, head of ops, or AI product lead.
 - **User:** the operator running the workflow day to day.
-- **Champion:** the engineer or platform owner wiring Context Gateway, the Agentic Feedback Studio, and the Veto Layer into the workflow.
+- **Champion:** the engineer or platform owner wiring Context Gateway, the Reliability Gateway, and Pre-Action Gates into the workflow.
 
 # High-Signal Features
 
-- **Vibe-to-Verification (V2V):** Capture thumbs up/down and convert them into workflow-level reliability rules.
-- **ShieldCortex Context Packs:** Dynamic semantic assembly of project knowledge for agent boot-up and bounded retrieval.
-- **Agentic Guardrails (The Veto Layer):** Repeated failures trigger non-bypassable `CLAUDE.md` / `AGENTS.md` rules and shared prevention policies.
+- **Context Packs:** Dynamic semantic assembly of project knowledge for agent boot-up and bounded retrieval.
+- **Pre-Action Gates:** Repeated failures trigger non-bypassable `CLAUDE.md` / `AGENTS.md` rules and shared prevention policies.
 - **Proof-Ready Runs:** Machine-readable evidence, audit trails, and hosted workflow artifacts for rollout decisions.
 
 # Best First Wedge

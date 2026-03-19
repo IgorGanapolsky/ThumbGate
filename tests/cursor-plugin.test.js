@@ -14,12 +14,12 @@ test('cursor marketplace manifest points at a valid plugin directory', () => {
   const marketplace = readJson('.cursor-plugin/marketplace.json');
   const pluginManifest = readJson('plugins/cursor-marketplace/.cursor-plugin/plugin.json');
   const pluginEntry = marketplace.plugins.find((plugin) => plugin.name === 'mcp-memory-gateway');
-  const canonicalDescription = 'Stop Cursor agents from repeating mistakes with project memory, pre-action checks, and proof-backed runs.';
+  const canonicalDescription = 'Pre-action gates that block Cursor agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.';
 
   assert.equal(marketplace.name, 'mcp-memory-gateway-marketplace');
   assert.equal(marketplace.owner.name, 'Igor Ganapolsky');
   assert.equal(marketplace.metadata.version, packageJson.version);
-  assert.match(marketplace.metadata.description, /project memory|guardrails|repeating mistakes/i);
+  assert.match(marketplace.metadata.description, /Pre-Action Gates|repeating.*mistakes/i);
   assert.ok(pluginEntry, 'marketplace entry for mcp-memory-gateway should exist');
   assert.equal(pluginEntry.name, pluginManifest.name, 'marketplace entry should match plugin manifest name');
   assert.equal(pluginEntry.source, 'plugins/cursor-marketplace');
@@ -33,7 +33,7 @@ test('cursor plugin manifest uses marketplace-safe metadata and committed assets
   const pluginManifest = readJson('plugins/cursor-marketplace/.cursor-plugin/plugin.json');
   const readmePath = path.join(root, 'plugins/cursor-marketplace/README.md');
   const logoPath = path.join(root, 'plugins/cursor-marketplace', pluginManifest.logo);
-  const canonicalDescription = 'Stop Cursor agents from repeating mistakes with project memory, pre-action checks, and proof-backed runs.';
+  const canonicalDescription = 'Pre-action gates that block Cursor agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.';
 
   assert.match(pluginManifest.name, /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/);
   assert.equal(pluginManifest.name, 'mcp-memory-gateway');
@@ -58,7 +58,7 @@ test('cursor plugin docs explain runtime updates versus listing updates', () => 
   const readme = fs.readFileSync(path.join(root, 'plugins/cursor-marketplace/README.md'), 'utf-8');
   const opsDocPath = path.join(root, 'docs/CURSOR_PLUGIN_OPERATIONS.md');
   const opsDoc = fs.readFileSync(opsDocPath, 'utf-8');
-  const canonicalDescription = 'Stop Cursor agents from repeating mistakes with project memory, pre-action checks, and proof-backed runs.';
+  const canonicalDescription = 'Pre-action gates that block Cursor agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.';
 
   assert.match(readme, /Cursor Directory/i);
   assert.match(readme, /does not refresh|does not auto-refresh/i);

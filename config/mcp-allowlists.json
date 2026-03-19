@@ -23,7 +23,12 @@
       "satisfy_gate",
       "gate_stats",
       "dashboard",
-      "estimate_uncertainty"
+      "estimate_uncertainty",
+      "get_business_metrics",
+      "describe_semantic_entity",
+      "capture_memory_feedback",
+      "get_reliability_rules",
+      "describe_reliability_entity"
     ],
     "essential": [
       "capture_feedback",
@@ -52,7 +57,11 @@
       "complete_handoff",
       "context_provenance",
       "gate_stats",
-      "dashboard"
+      "dashboard",
+      "get_business_metrics",
+      "describe_semantic_entity",
+      "get_reliability_rules",
+      "describe_reliability_entity"
     ],
     "locked": [
       "feedback_summary",

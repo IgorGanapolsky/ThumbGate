@@ -1,4 +1,4 @@
-# I Built an RLHF Feedback Loop That Stops Claude Code From Repeating Mistakes
+# I Built a feedback-to-enforcement pipeline That Stops Claude Code From Repeating Mistakes
 
 If you use Claude Code, Cursor, or any AI coding agent daily, you've probably noticed three recurring problems:
 
@@ -10,7 +10,7 @@ I got frustrated enough to build a solution: [mcp-memory-gateway](https://github
 
 ## What it is
 
-An MCP server that adds a reliability enforcement layer to AI coding agents. It's not just memory storage — it's a feedback loop that learns from mistakes and blocks them from recurring.
+An MCP server that adds a reliability enforcement layer to AI coding agents. It's not just memory storage — it's a feedback-to-enforcement pipeline that learns from mistakes and blocks them from recurring.
 
 ## The four tools
 

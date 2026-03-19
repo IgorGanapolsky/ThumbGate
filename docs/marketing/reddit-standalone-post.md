@@ -1,6 +1,6 @@
 # [Showcase] Stop AI Agents from mass-deleting data: Semantic Firewall for MCP
 
-I built a Veto Layer for MCP servers (Cursor, Claude Code, etc.) that blocks dangerous tool calls before they fire. 
+I built a Pre-Action Gates for MCP servers (Cursor, Claude Code, etc.) that blocks dangerous tool calls before they fire. 
 
 The core issue with agents today is **repetition of known failures**. You thumbs-down a force-push once, and the agent does it again 10 minutes later. 
 

@@ -1,6 +1,6 @@
 {
   "name": "mcp-memory-gateway",
-  "description": "Claude Desktop project memory and guardrails for coding agents, with recall, pre-action checks, and proof-backed runs.",
+  "description": "Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.",
   "version": "0.7.1",
   "author": {
     "name": "Igor Ganapolsky"
@@ -12,9 +12,8 @@
     "claude-desktop",
     "desktop-extension",
     "mcp",
-    "workflow-hardening",
-    "coding-agents",
-    "project-memory",
+    "pre-action-gates",
+    "ai-agent-safety",
     "memory",
     "guardrails",
     "pre-action-checks",

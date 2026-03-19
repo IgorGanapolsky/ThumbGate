@@ -155,12 +155,11 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.equal(pluginManifest.version, packageVersion);
   assert.equal(marketplace.version, packageVersion);
   assert.equal(marketplaceEntry.name, pluginManifest.name);
-  assert.match(pluginManifest.description, /Claude Desktop|project memory|guardrails/i);
-  assert.match(marketplaceEntry.description, /Claude Desktop|project memory|guardrails/i);
-  assert.ok(pluginManifest.keywords.includes('claude-desktop'));
-  assert.ok(pluginManifest.keywords.includes('workflow-hardening'));
-  assert.ok(marketplaceEntry.metadata.keywords.includes('claude-desktop'));
-  assert.ok(marketplaceEntry.metadata.keywords.includes('project-memory'));
+  assert.match(pluginManifest.description, /Pre-Action Gates|pre-action gates|prevention rules/i);
+  assert.match(marketplaceEntry.description, /Pre-Action Gates|pre-action gates|prevention rules/i);
+  assert.ok(pluginManifest.keywords.includes('pre-action-gates'));
+  assert.ok(pluginManifest.keywords.includes('ai-agent-safety'));
+  assert.ok(marketplaceEntry.metadata.keywords.includes('pre-action-gates'));
   assert.match(readme, /Privacy Policy/i);
   assert.match(readme, /Data Collection/i);
   assert.match(readme, /Support/i);

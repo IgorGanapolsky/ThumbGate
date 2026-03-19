@@ -22,7 +22,7 @@ Here’s how we’re stealing a page from LinkedIn’s playbook:
 
 *   **Reliability as a First-Class Citizen:** We don't just index text. We use **Thompson Sampling**—a classic multi-armed bandit algorithm—to rank memories. Every time you give a "thumbs down" to an agent's move, the gateway actually learns. It’s not just retrieving data; it’s ranking reliability in real-time.
 *   **Intent over Keywords:** LinkedIn connects topics even if the words are different. We do the same with our `contextfs` layer, which maps out the actual dependencies and "architectural soul" of a project, rather than just doing a surface-level keyword match.
-*   **The Veto Layer:** Think of this as the "content moderation" for an agent's internal brain. Before an agent can act on a retrieved memory, our **Pre-Action Gates** check it against a set of prevention rules derived from every past failure. 
+*   **Pre-Action Gates:** Think of this as the "content moderation" for an agent's internal brain. Before an agent can act on a retrieved memory, our **Pre-Action Gates** check it against a set of prevention rules derived from every past failure. 
 
 ### Why this matters
 

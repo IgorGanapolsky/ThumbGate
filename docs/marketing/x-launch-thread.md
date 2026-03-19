@@ -13,7 +13,7 @@ We built mcp-memory-gateway as Claude workflow hardening:
 
 - recall
 - prevention rules
-- pre-action gates
+- Pre-Action Gates
 - verification evidence
 
 The front-line offer is a Workflow Hardening Sprint.
@@ -86,7 +86,7 @@ It needs:
 - recall
 - guardrails
 - proof
-- a Veto Layer
+- Pre-Action Gates
 
 That is what makes a workflow deployable team-wide.
 ```

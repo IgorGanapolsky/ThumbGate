@@ -7,7 +7,7 @@
 **Body:**
 Claude Code is strong, but the failure mode I kept seeing was not just forgetting context. It was repeating the same operational mistakes across sessions.
 
-It's called **MCP Memory Gateway**.
+It's called **Reliability Gateway**.
 
 - **Problem:** Project lessons disappear, feedback gets lost, and the same mistakes keep happening.
 - **Solution:** Project memory and guardrails for coding agents. Capture feedback, retrieve the right lesson on the next task, and turn repeated failures into prevention rules.
@@ -31,14 +31,14 @@ Would love to hear how you're reducing repeated agent mistakes without adding mo
 **Title:** Show HN: MCP Memory Gateway – project memory and guardrails for coding agents
 
 **Body:**
-Hi HN, I’m launching MCP Memory Gateway.
+Hi HN, I’m launching the MCP Memory Gateway (Reliability Gateway).
 
 Most developers are now running serious work through coding agents, but the same mistake keeps showing up: the agent has the docs, but not the lesson. That leads to repeated errors, extra review overhead, and brittle workflows.
 
-I built project memory and guardrails for coding agents that implements:
-1. **Vibe-to-Verification (V2V):** Turns operator feedback into repository guardrails.
-2. **Structured Retrieval:** Pulls the right project lesson back into the next task.
-3. **Prevention Rules:** Repeated failures become hard checks instead of recurring incidents.
+I built a local-first reliability layer that implements:
+1. **Structured Retrieval:** Pulls the right project lesson back into the next task.
+2. **Prevention Rules:** Repeated failures become hard checks instead of recurring incidents.
+3. **Pre-Action Gates:** Block known-bad actions before they land.
 4. **DPO/KTO Pipelines:** Automated dataset engineering for model alignment.
 
 It works with any MCP-compatible agent (Claude Code, Codex, Gemini).
@@ -55,7 +55,7 @@ I'm here all day to answer technical questions about project memory, guardrails,
 ## 3. Discord Showcase Post (MCP Official / Claude Code)
 
 **Message:**
-🚀 Just launched **MCP Memory Gateway**. It gives MCP-compatible coding agents project memory, guardrails, and proof-backed runs.
+🚀 Just launched **Reliability Gateway**. It is a local-first AI reliability layer for MCP-compatible coding agents.
 
 If Claude makes a mistake, capture it once and turn it into a reusable lesson, prevention rule, or hard guardrail so the same failure stops repeating.
 

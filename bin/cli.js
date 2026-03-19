@@ -876,7 +876,8 @@ function help() {
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
   console.log('  export-databricks     Export RLHF logs + proof artifacts as a Databricks-ready analytics bundle');
   console.log('  rules                 Generate prevention rules from repeated failures');
-  console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Veto Layer');
+  console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Pre-Action Gates');
+  console.log('  force-gate <PATTERN>  Immediately create a blocking gate from a pattern');
   console.log('  self-heal             Run self-healing check and auto-fix');
   console.log('  pro                   Show Pro plan ($49 one-time) + hosted pilot info');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
@@ -965,6 +966,18 @@ switch (COMMAND) {
   case 'optimize':
     optimize();
     break;
+  case 'force-gate': {
+    const context = process.argv.slice(3).find(a => !a.startsWith('--'));
+    if (!context) {
+      console.error('Error: context string is required for force-gate');
+      process.exit(1);
+    }
+    const { forcePromote } = require('../scripts/auto-promote-gates');
+    const result = forcePromote(context, 'block');
+    console.log(`✅ Forced block gate created: ${result.gateId}`);
+    console.log(`Total auto-promoted gates: ${result.totalGates}`);
+    break;
+  }
   case 'self-heal':
     selfHeal();
     break;

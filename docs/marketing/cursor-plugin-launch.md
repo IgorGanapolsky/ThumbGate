@@ -12,8 +12,8 @@ Lead with the outcome first:
 
 Keep these terms in the body, tags, or follow-up copy:
 
-- Agentic Feedback Studio
-- Veto Layer
+- Reliability Gateway
+- Pre-Action Gates
 - DPO exports
 - Thompson Sampling
 

@@ -585,6 +585,38 @@ async function runProof(options = {}) {
     }
 
     {
+      currentCheck = 'mcp.tools.call.get_business_metrics';
+      const call = await handleRequest({
+        jsonrpc: '2.0',
+        id: 101,
+        method: 'tools/call',
+        params: {
+          name: 'get_business_metrics',
+          arguments: { window: 'lifetime' },
+        },
+      });
+      const metrics = JSON.parse(call.content[0].text);
+      check(metrics.metrics && typeof metrics.metrics.bookedRevenueCents === 'number', 'get_business_metrics should return numeric revenue');
+      addResult('mcp.tools.call.get_business_metrics', true, { generatedAt: metrics.generatedAt });
+    }
+
+    {
+      currentCheck = 'mcp.tools.call.describe_semantic_entity';
+      const call = await handleRequest({
+        jsonrpc: '2.0',
+        id: 102,
+        method: 'tools/call',
+        params: {
+          name: 'describe_semantic_entity',
+          arguments: { type: 'Customer' },
+        },
+      });
+      const entity = JSON.parse(call.content[0].text);
+      check(entity.description && entity.tiers, 'describe_semantic_entity should return Customer definition');
+      addResult('mcp.tools.call.describe_semantic_entity', true, { type: 'Customer' });
+    }
+
+    {
       currentCheck = 'mcp.tools.call.recall.codegraph';
       const call = await handleRequest({
         jsonrpc: '2.0',

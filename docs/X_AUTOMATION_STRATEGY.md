@@ -17,7 +17,7 @@ We will no longer wait for people to find us. We will use the **Radar Beta** API
 
 ## 2. Automated "Reply Boost" Displacement
 Premium+ gives your replies priority. We will automate this to dominate technical conversations.
-- **Tactic**: Inject a "Veto Layer" educational pitch into the top 1% of AI reliability threads.
+- **Tactic**: Inject a "Pre-Action Gates" educational pitch into the top 1% of AI reliability threads.
 - **The Historical Goal**: Capture a percentage of those 17M impressions and direct them to the current commercial truth page and active offer instead of an outdated subscription pitch.
 
 ## 3. Generative SEO/GEO (via X Articles)

@@ -4,26 +4,22 @@
     "name": "Igor Ganapolsky"
   },
   "metadata": {
-    "description": "Project memory and guardrails for coding agents. Stop Cursor agents from repeating mistakes with project memory, pre-action checks, and proof-backed runs.",
+    "description": "Cursor plugin packaging for MCP Memory Gateway. Pre-action gates that block agents from repeating known mistakes.",
     "version": "0.7.1"
   },
   "plugins": [
     {
       "name": "mcp-memory-gateway",
       "source": "plugins/cursor-marketplace",
-      "description": "Stop Cursor agents from repeating mistakes with project memory, pre-action checks, and proof-backed runs.",
+      "description": "Pre-action gates that block Cursor agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.",
       "category": "developer-tools",
       "tags": [
         "mcp",
         "cursor",
-        "project-memory",
-        "guardrails",
-        "coding-agents",
-        "agent-reliability",
-        "repeated-mistakes",
-        "context-engineering",
-        "proof-backed-runs",
-        "workflow-hardening"
+        "pre-action-gates",
+        "ai-agent-safety",
+        "prevention-rules",
+        "agent-reliability"
       ]
     }
   ]

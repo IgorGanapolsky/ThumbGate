@@ -31,22 +31,22 @@
 ## Positioning rules
 
 - Lead with the user problem: stop Cursor agents from repeating mistakes.
-- Lead with outcome before architecture: memory, pre-action gates, proof.
-- Keep `Agentic Feedback Studio`, `Veto Layer`, `DPO`, and `Thompson Sampling` in the body or tags, not the first sentence.
+- Lead with outcome before architecture: memory, Pre-Action Gates, proof.
+- Keep `Reliability Gateway`, `Pre-Action Gates`, `DPO`, and `Thompson Sampling` in the body or tags, not the first sentence.
 - Keep proof near the pitch by linking [VERIFICATION_EVIDENCE.md](./VERIFICATION_EVIDENCE.md).
 - In manual forms, use the display name for `Name` and keep the slug for package/config paths only.
 
 ## Suggested short description
 
-Stop Cursor agents from repeating mistakes with project memory, pre-action checks, and proof-backed runs.
+Pre-action gates that block Cursor agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.
 
 ## Suggested long description
 
-MCP Memory Gateway gives Cursor agents project memory and guardrails. Capture feedback with evidence, recall past failures before repeating them, block known-bad actions with pre-action checks, and keep proof close to every workflow change.
+MCP Memory Gateway gives Cursor agents a local-first reliability loop. Capture feedback with evidence, recall past failures before repeating them, block known-bad actions with Pre-Action Gates, and keep proof close to every workflow change.
 
 ## Suggested manual submission fields
 
 - Name: `MCP Memory Gateway`
-- Description: `Stop Cursor agents from repeating mistakes with project memory, pre-action checks, and proof-backed runs.`
+- Description: `Pre-action gates that block Cursor agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.`
 - Repository URL: `https://github.com/IgorGanapolsky/mcp-memory-gateway`
 - Homepage: `https://rlhf-feedback-loop-production.up.railway.app`
