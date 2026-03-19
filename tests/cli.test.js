@@ -1137,6 +1137,41 @@ describe('bin/cli.js', () => {
     assert.match(content, /\[mcp_servers\.rlhf\]/);
     assert.match(content, /command = "node"/);
     assert.match(content, new RegExp(`args = \\["${HOME_MCP_SERVER_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"\\]`));
+    assert.doesNotMatch(content, /\/tmp\/disposable-worktree\/adapters\/mcp\/server-stdio\.js/);
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+    fs.rmSync(isolatedHome, { recursive: true, force: true });
+  });
+
+  test('init rewrites an existing codex MCP launcher to the stable home path', () => {
+    const isolatedDir = makeTmpDir();
+    const isolatedHome = makeTmpDir();
+    const codexHome = path.join(isolatedHome, '.codex');
+    const configPath = path.join(codexHome, 'config.toml');
+
+    fs.mkdirSync(codexHome, { recursive: true });
+    fs.writeFileSync(
+      configPath,
+      '[mcp_servers.rlhf]\ncommand = "node"\nargs = ["/tmp/disposable-worktree/adapters/mcp/server-stdio.js"]\n'
+    );
+
+    const result = spawnSync(process.execPath, [CLI, 'init'], {
+      encoding: 'utf8',
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        HOME: isolatedHome,
+        USERPROFILE: isolatedHome,
+      },
+    });
+
+    assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
+
+    const content = fs.readFileSync(configPath, 'utf8');
+    assert.match(content, /\[mcp_servers\.rlhf\]/);
+    assert.match(content, /command = "node"/);
+    assert.match(content, new RegExp(`args = \\["${HOME_MCP_SERVER_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"\\]`));
+    assert.doesNotMatch(content, /disposable-worktree/);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     fs.rmSync(isolatedHome, { recursive: true, force: true });

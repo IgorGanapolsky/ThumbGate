@@ -133,11 +133,18 @@ function mcpSectionBlock(name = MCP_SERVER_NAME, scope = 'project') {
   return `[mcp_servers.${name}]\ncommand = "${entry.command}"\nargs = ${formatTomlStringArray(entry.args)}\n`;
 }
 
+function mcpSectionRegex(name) {
+  return new RegExp(
+    `^\\[mcp_servers\\.${escapeRegExp(name)}\\]\\n(?:^(?!\\[).*(?:\\n|$))*`,
+    'm'
+  );
+}
+
 function upsertCodexServerConfig(content) {
-  const canonicalBlock = mcpSectionBlock();
+  const canonicalBlock = mcpSectionBlock(MCP_SERVER_NAME, 'home');
   const sections = LEGACY_MCP_SERVER_NAMES.map((name) => ({
     name,
-    regex: new RegExp(`^\\[mcp_servers\\.${escapeRegExp(name)}\\]\\n[\\s\\S]*?(?=^\\[|$)`, 'm'),
+    regex: mcpSectionRegex(name),
   }));
   const matches = sections
     .map((section) => ({ ...section, match: content.match(section.regex) }))
