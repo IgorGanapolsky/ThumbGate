@@ -412,7 +412,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`\nAPI Key: ${API_KEY.slice(0, 8)}...`);
+  console.log('\nAPI key configured.');
   console.log(`Command: ${cmd}\n`);
 
   try {

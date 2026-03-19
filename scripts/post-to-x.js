@@ -60,6 +60,7 @@ function generateOAuthSignature(method, url, params, consumerSecret, tokenSecret
     .join('&');
   const baseString = `${method}&${percentEncode(url)}&${percentEncode(paramString)}`;
   const signingKey = `${percentEncode(consumerSecret)}&${percentEncode(tokenSecret)}`;
+  // OAuth 1.0a requires HMAC-SHA1 for request signing. This is not password storage.
   return crypto.createHmac('sha1', signingKey).update(baseString).digest('base64');
 }
 

@@ -136,6 +136,22 @@ function pushSymbolCandidate(candidates, candidate) {
   candidates.push(value);
 }
 
+function isCompoundPascalCaseToken(token) {
+  const value = String(token || '').trim();
+  if (!value || !/^[A-Z][A-Za-z0-9]*$/.test(value)) return false;
+
+  let segmentCount = 1;
+  for (let index = 1; index < value.length; index += 1) {
+    const current = value[index];
+    const previous = value[index - 1];
+    if (/[A-Z]/.test(current) && /[a-z0-9]/.test(previous)) {
+      segmentCount += 1;
+    }
+  }
+
+  return segmentCount >= 2;
+}
+
 function extractSymbolHints(context = '') {
   const text = String(context || '');
   const candidates = [];
@@ -152,8 +168,10 @@ function extractSymbolHints(context = '') {
     pushSymbolCandidate(candidates, match[1]);
   }
 
-  for (const match of text.matchAll(/\b([A-Z][A-Za-z0-9]+(?:[A-Z][A-Za-z0-9]+)+)\b/g)) {
-    pushSymbolCandidate(candidates, match[1]);
+  for (const token of text.split(/[^A-Za-z0-9_]+/)) {
+    if (isCompoundPascalCaseToken(token)) {
+      pushSymbolCandidate(candidates, token);
+    }
   }
 
   for (const match of text.matchAll(/\b([a-z][A-Za-z0-9_]{3,})\b/g)) {

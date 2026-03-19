@@ -27,6 +27,11 @@ test('extractSymbolHints prioritizes code-like identifiers', () => {
   assert.ok(symbols.includes('rankActions'));
 });
 
+test('extractSymbolHints safely handles long non-symbol noise before PascalCase tokens', () => {
+  const symbols = extractSymbolHints(`${'0A'.repeat(4000)} review ReliabilityStudioCompareAndDeploy`);
+  assert.ok(symbols.includes('ReliabilityStudioCompareAndDeploy'));
+});
+
 test('analyzeCodeGraphImpact normalizes stub evidence and verification hints', () => {
   const previous = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
   process.env.RLHF_CODEGRAPH_STUB_RESPONSE = STUB_RESPONSE;

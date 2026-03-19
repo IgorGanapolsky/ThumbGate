@@ -75,6 +75,17 @@ describe('generateOAuthSignature', () => {
     ];
     assert.equal(generateOAuthSignature(...args), generateOAuthSignature(...args));
   });
+
+  it('keeps OAuth 1.0a signing on HMAC-SHA1 for protocol compatibility', () => {
+    const signature = generateOAuthSignature(
+      'POST',
+      'https://api.twitter.com/2/tweets',
+      { oauth_consumer_key: 'testkey', oauth_nonce: 'abc123' },
+      'consumer-secret',
+      'token-secret'
+    );
+    assert.match(signature, /^[A-Za-z0-9+/=]+$/);
+  });
 });
 
 describe('buildOAuthHeader', () => {

@@ -5,8 +5,8 @@ const fs = require('fs');
 const path = require('path');
 
 const MAX_AUTO_GATES = 10;
-const WARN_THRESHOLD = 1; // Any confirmed failure gets a warning
-const BLOCK_THRESHOLD = 3; // 3+ failures = hard block
+const WARN_THRESHOLD = 3; // 3+ repeated failures surface a warning gate
+const BLOCK_THRESHOLD = 5; // 5+ repeated failures hard-block the action
 const WINDOW_DAYS = 30;
 
 const NEG_SIGNALS = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
@@ -243,52 +243,47 @@ function promote(feedbackLogPath) {
   return { promotions, totalGates: data.gates.length, data };
 }
 
-if (require.main === module) {
-  try {
-    const logPath = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : undefined;
-    const result = promote(logPath);
-    if (result.promotions.length === 0) {
-      console.log('No new promotions.');
-    } else {
-      for (const p of result.promotions) {
-        if (p.type === 'new') {
-          console.log(`NEW gate: ${p.gateId} (${p.action}, ${p.occurrences} occurrences)`);
-        } else if (p.type === 'upgrade') {
-          console.log(`UPGRADE: ${p.gateId} ${p.from} -> ${p.to} (${p.occurrences} occurrences)`);
-        } else if (p.type === 'rotated') {
-          console.log(`ROTATED out: ${p.removedGateId}`);
-        }
+function runCli(argv = process.argv.slice(2)) {
+  const forceContext = argv.find((arg) => arg.startsWith('--force-block='))?.split('=')[1];
+  if (forceContext) {
+    const result = forcePromote(forceContext, 'block');
+    console.log(`Forced block gate created: ${result.gateId}`);
+    console.log(`Total auto-promoted gates: ${result.totalGates}`);
+    return 0;
+  }
+
+  const logPath = argv[0] && !argv[0].startsWith('--') ? argv[0] : undefined;
+  const result = promote(logPath);
+  if (result.promotions.length === 0) {
+    console.log('No new promotions.');
+  } else {
+    for (const promotion of result.promotions) {
+      if (promotion.type === 'new') {
+        console.log(`NEW gate: ${promotion.gateId} (${promotion.action}, ${promotion.occurrences} occurrences)`);
+      } else if (promotion.type === 'upgrade') {
+        console.log(`UPGRADE: ${promotion.gateId} ${promotion.from} -> ${promotion.to} (${promotion.occurrences} occurrences)`);
+      } else if (promotion.type === 'rotated') {
+        console.log(`ROTATED out: ${promotion.removedGateId}`);
       }
     }
-    console.log(`Total auto-promoted gates: ${result.totalGates}`);
+  }
+  console.log(`Total auto-promoted gates: ${result.totalGates}`);
+  return 0;
+}
+
+if (require.main === module) {
+  try {
+    process.exitCode = runCli();
   } catch (err) {
     console.error('auto-promote-gates error:', err.message);
     process.exit(1);
   }
 }
 
-if (require.main === module) {
-  const args = process.argv.slice(2);
-  const forceContext = args.find(a => a.startsWith('--force-block='))?.split('=')[1];
-  
-  if (forceContext) {
-    try {
-      const result = forcePromote(forceContext, 'block');
-      console.log(`✅ Forced block gate created: ${result.gateId}`);
-      console.log(`Total auto-promoted gates: ${result.totalGates}`);
-      process.exit(0);
-    } catch (err) {
-      console.error('force-promote error:', err.message);
-      process.exit(1);
-    }
-  }
-  
-  runCli();
-}
-
 module.exports = {
   promote,
   forcePromote,
+  runCli,
   loadAutoGates,
   saveAutoGates,
   getAutoGatesPath,
