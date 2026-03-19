@@ -1844,15 +1844,20 @@ function createApiServer() {
 <p><strong>MCP Memory Gateway</strong> (npm: mcp-memory-gateway)</p>
 <p>Last updated: 2026-03-11</p>
 <h2>Data Collection</h2>
-<p>The self-hosted version stores all data locally on your machine. No data is sent to external servers.</p>
-<p>The hosted tier (rlhf-feedback-loop-production.up.railway.app) stores feedback signals and memory entries associated with your API key. We do not sell or share your data with third parties.</p>
+<p>The self-hosted version stores workflow data locally on your machine. Local feedback, memory entries, proof artifacts, and context packs stay in your project files unless you explicitly point the system at a hosted endpoint.</p>
+<p>The hosted tier (rlhf-feedback-loop-production.up.railway.app) stores feedback signals, memory entries, and related workflow metadata associated with your API key.</p>
+<p>Optional CLI telemetry is best-effort and covers install or usage metadata needed to understand adoption and failures. You can disable it with <code>RLHF_NO_TELEMETRY=1</code>.</p>
 <h2>Data Stored</h2><ul>
 <li>Feedback signals (thumbs up/down) with context you provide</li>
 <li>Promoted memory entries</li>
 <li>Prevention rules generated from your feedback</li>
 </ul>
+<h2>Data Sharing</h2>
+<p>We do not sell customer data. Hosted data is used to operate the service and is not shared with third parties except for infrastructure providers needed to run the product.</p>
+<h2>Data Retention</h2>
+<p>Local data is retained until you delete the files. Hosted data is retained while your account or API key remains active, or until you request deletion, subject to operational or legal retention requirements.</p>
 <h2>Data Deletion</h2>
-<p>Contact igor.ganapolsky@gmail.com to request deletion of your data.</p>
+<p>Contact igor.ganapolsky@gmail.com to request deletion of hosted data.</p>
 <h2>Contact</h2><p>igor.ganapolsky@gmail.com</p>
 <p><a href="https://github.com/IgorGanapolsky/mcp-memory-gateway">GitHub</a></p>
 </body></html>`);

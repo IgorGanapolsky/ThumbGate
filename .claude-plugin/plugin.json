@@ -1,6 +1,6 @@
 {
   "name": "mcp-memory-gateway",
-  "description": "Local-first memory and RLHF feedback pipeline for AI agents — capture feedback, promote memories, generate prevention rules, export DPO/KTO training pairs",
+  "description": "Claude Desktop extension for workflow hardening, Veto Layer guardrails, reliability memory, and proof-backed AI agent delivery",
   "version": "0.7.1",
   "author": {
     "name": "Igor Ganapolsky"
@@ -8,5 +8,14 @@
   "homepage": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
   "repository": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
   "license": "MIT",
-  "keywords": ["rlhf", "mcp", "memory", "feedback", "dpo", "guardrails", "ai-agents"]
+  "keywords": [
+    "claude-desktop",
+    "desktop-extension",
+    "mcp",
+    "workflow-hardening",
+    "veto-layer",
+    "agentic-feedback-studio",
+    "memory",
+    "guardrails"
+  ]
 }

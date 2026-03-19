@@ -37,6 +37,13 @@ Observed result:
   - `16` changed paths in the worktree
   - `14` tracked files changed with `1050` insertions and `20` deletions
   - `2` new files: `scripts/internal-agent-bootstrap.js` and `tests/internal-agent-bootstrap.test.js`
+- Post-sync verification after merging `origin/main` into `codex/open-swe-adoption-plan` for PR `#258` also passed:
+  - `npm ci` exited `0`. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.l6cgkKKJVv/npm-ci-merge.log`
+  - `npm test` exited `0`. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.RRXVoXMSMg/npm-test-merge.log`
+  - `npm run test:coverage` exited `0` with all-files coverage at `89.57%` lines, `75.72%` branches, and `93.10%` functions. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.S5vGznS7oW/test-coverage-merge.log`
+  - `env RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.0QvYuLywFK/prove-adapters-merge.log`
+  - `env RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.LIxnkdcu80/prove-automation-merge.log`
+  - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.Xr81UMZGaf/self-heal-check-merge.log`
 
 Requirements verified:
 

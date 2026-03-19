@@ -22,6 +22,7 @@ node_modules/
 .rlhf/reminder-state.json
 .rlhf/reminder_*.json
 .rlhf/
+.artifacts/
 .npmrc
 .mcpregistry_github_token
 .mcpregistry_registry_token

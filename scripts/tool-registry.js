@@ -1,8 +1,26 @@
 #!/usr/bin/env node
 'use strict';
 
+function readOnlyTool(tool) {
+  return {
+    ...tool,
+    annotations: {
+      readOnlyHint: true,
+    },
+  };
+}
+
+function destructiveTool(tool) {
+  return {
+    ...tool,
+    annotations: {
+      destructiveHint: true,
+    },
+  };
+}
+
 const TOOLS = [
-  {
+  destructiveTool({
     name: 'capture_feedback',
     description: 'Capture an up/down signal plus one line of why. Vague feedback is logged, then returned with a clarification prompt instead of memory promotion.',
     inputSchema: {
@@ -38,8 +56,8 @@ const TOOLS = [
         },
       },
     },
-  },
-  {
+  }),
+  readOnlyTool({
     name: 'feedback_summary',
     description: 'Get summary of recent feedback',
     inputSchema: {
@@ -48,16 +66,16 @@ const TOOLS = [
         recent: { type: 'number' },
       },
     },
-  },
-  {
+  }),
+  readOnlyTool({
     name: 'feedback_stats',
     description: 'Get feedback stats and recommendations',
     inputSchema: {
       type: 'object',
       properties: {},
     },
-  },
-  {
+  }),
+  readOnlyTool({
     name: 'diagnose_failure',
     description: 'Diagnose a failed or suspect workflow step using MCP schema, workflow, gate, and approval constraints.',
     inputSchema: {
@@ -96,8 +114,8 @@ const TOOLS = [
         },
       },
     },
-  },
-  {
+  }),
+  readOnlyTool({
     name: 'list_intents',
     description: 'List available intent plans and whether each requires human approval in the active profile',
     inputSchema: {
@@ -108,8 +126,8 @@ const TOOLS = [
         partnerProfile: { type: 'string' },
       },
     },
-  },
-  {
+  }),
+  readOnlyTool({
     name: 'plan_intent',
     description: 'Generate an intent execution plan with policy checkpoints',
     inputSchema: {
@@ -126,8 +144,8 @@ const TOOLS = [
         repoPath: { type: 'string' },
       },
     },
-  },
-  {
+  }),
+  destructiveTool({
     name: 'start_handoff',
     description: 'Start a sequential delegation handoff from a delegation-eligible intent plan',
     inputSchema: {
@@ -145,8 +163,8 @@ const TOOLS = [
         plannedChecks: { type: 'array', items: { type: 'string' } },
       },
     },
-  },
-  {
+  }),
+  destructiveTool({
     name: 'complete_handoff',
     description: 'Complete a sequential delegation handoff and record verification outcomes',
     inputSchema: {
@@ -163,8 +181,10 @@ const TOOLS = [
         summary: { type: 'string' },
       },
     },
-  },
-  {
+  }),
+  destructiveTool({
+  }),
+  destructiveTool({
     name: 'bootstrap_internal_agent',
     description: 'Normalize a GitHub/Slack/Linear trigger into startup context, construct a recall pack, prepare a git worktree sandbox, and emit an execution plus reviewer-lane plan.',
     inputSchema: {
@@ -232,8 +252,8 @@ const TOOLS = [
         },
       },
     },
-  },
-  {
+  }),
+  destructiveTool({
     name: 'prevention_rules',
     description: 'Generate prevention rules from repeated mistake patterns',
     inputSchema: {
@@ -243,8 +263,8 @@ const TOOLS = [
         outputPath: { type: 'string' },
       },
     },
-  },
-  {
+  }),
+  destructiveTool({
     name: 'export_dpo_pairs',
     description: 'Export DPO preference pairs from local memory log',
     inputSchema: {
@@ -253,8 +273,8 @@ const TOOLS = [
         memoryLogPath: { type: 'string' },
       },
     },
-  },
-  {
+  }),
+  destructiveTool({
     name: 'export_databricks_bundle',
     description: 'Export RLHF logs and proof artifacts as a Databricks-ready analytics bundle',
     inputSchema: {
@@ -263,8 +283,8 @@ const TOOLS = [
         outputPath: { type: 'string' },
       },
     },
-  },
-  {
+  }),
+  destructiveTool({
     name: 'construct_context_pack',
     description: 'Construct a bounded context pack from contextfs',
     inputSchema: {
@@ -276,8 +296,8 @@ const TOOLS = [
         namespaces: { type: 'array', items: { type: 'string' } },
       },
     },
-  },
-  {
+  }),
+  destructiveTool({
     name: 'evaluate_context_pack',
     description: 'Record evaluation outcome for a context pack',
     inputSchema: {
@@ -310,8 +330,8 @@ const TOOLS = [
         },
       },
     },
-  },
-  {
+  }),
+  readOnlyTool({
     name: 'context_provenance',
     description: 'Get recent context/provenance events',
     inputSchema: {
@@ -320,8 +340,8 @@ const TOOLS = [
         limit: { type: 'number' },
       },
     },
-  },
-  {
+  }),
+  destructiveTool({
     name: 'generate_skill',
     description: 'Auto-generate Claude skills from repeated feedback patterns. Clusters failure patterns by tags and produces SKILL.md files with DO/INSTEAD rules.',
     inputSchema: {
@@ -331,8 +351,8 @@ const TOOLS = [
         tags: { type: 'array', items: { type: 'string' }, description: 'Filter to specific tags' },
       },
     },
-  },
-  {
+  }),
+  readOnlyTool({
     name: 'recall',
     description: 'Recall relevant past feedback, memories, and prevention rules for the current task. Call this at the start of any task to inject past learnings into the conversation.',
     inputSchema: {
@@ -344,8 +364,8 @@ const TOOLS = [
         repoPath: { type: 'string', description: 'Optional repository path for structural impact analysis on coding tasks' },
       },
     },
-  },
-  {
+  }),
+  destructiveTool({
     name: 'satisfy_gate',
     description: 'Satisfy a gate condition (e.g., after checking PR threads). Evidence is stored with a 5-minute TTL.',
     inputSchema: {
@@ -356,24 +376,24 @@ const TOOLS = [
         evidence: { type: 'string', description: 'Evidence text (e.g., \"0 unresolved threads\")' },
       },
     },
-  },
-  {
+  }),
+  readOnlyTool({
     name: 'gate_stats',
     description: 'Get gate enforcement statistics -- blocked count, warned count, top gates',
     inputSchema: {
       type: 'object',
       properties: {},
     },
-  },
-  {
+  }),
+  readOnlyTool({
     name: 'dashboard',
     description: 'Get full RLHF dashboard -- approval rate, gate stats, prevention impact, system health',
     inputSchema: {
       type: 'object',
       properties: {},
     },
-  },
-  {
+  }),
+  readOnlyTool({
     name: 'commerce_recall',
     description: 'Recall past feedback filtered by commerce categories (product_recommendation, brand_compliance, sizing, pricing, regulatory). Returns quality scores alongside memories for agentic commerce agents.',
     inputSchema: {
@@ -385,8 +405,8 @@ const TOOLS = [
         limit: { type: 'number', description: 'Max memories to return (default 5)' },
       },
     },
-  },
-  {
+  }),
+  readOnlyTool({
     name: 'estimate_uncertainty',
     description: 'Estimate Bayesian uncertainty for a set of tags based on past feedback.',
     inputSchema: {
@@ -395,7 +415,7 @@ const TOOLS = [
         tags: { type: 'array', items: { type: 'string' }, description: 'Tags to analyze for uncertainty' },
       },
     },
-  },
+  }),
 ];
 
 module.exports = {

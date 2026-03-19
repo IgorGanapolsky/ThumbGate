@@ -3,10 +3,10 @@
 <head>
   <meta charset='UTF-8' />
   <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-  <title>MCP Memory Gateway | AI Agent Reliability Without Orchestration Tax</title>
+  <title>MCP Memory Gateway | Claude Desktop extension and AI agent reliability</title>
   <meta
     name='description'
-    content='Keep one sharp AI agent. Add recall, reliability rules, and verification without adding orchestration or handoff overhead.'
+    content='Keep one sharp AI agent. Add recall, reliability rules, verification, and a Claude Desktop extension path without adding orchestration or handoff overhead.'
   />
   <script type='application/ld+json'>
   {
@@ -65,6 +65,30 @@
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "Yes, it's designed as local-first, running via npm without cloud dependencies. It integrates with MCP servers for resources like reusable memories and prompts, mimicking gateway flows for caching and routing."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is Reliability Studio Compare and Deploy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Reliability Studio is the buyer-facing workflow for importing workflow evidence, comparing the baseline agent run against the hardened run, and deploying the resulting rule pack and proof links without requiring model fine-tuning."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What does the Workflow Hardening Fit Checker do?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It qualifies whether a workflow is a better fit for the Workflow Hardening Sprint, Pro, or the free OSS path by checking for a repeated blocker, a workflow owner, proof requirements, rollout stage, and cross-machine sync needs."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I install MCP Memory Gateway as a Claude Desktop extension?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The local Claude install path is available now via npm, and the repo ships Claude-specific plugin metadata, privacy policy links, support docs, and a submission packet. Directory inclusion depends on Anthropic review and should not be claimed before approval."
         }
       }
     ]
@@ -574,8 +598,11 @@
     <div class='nav-inner'>
       <div class='brand'>RLHF <span>Context Gateway</span></div>
       <div class='nav-links'>
+        <a href='#fit-checker'>Fit check</a>
+        <a href='#claude-desktop'>Claude Desktop</a>
         <a href='#why'>Why buy</a>
         <a href='#north-star'>North Star</a>
+        <a href='#studio'>Studio</a>
         <a href='#faq'>FAQ</a>
         <a href='#pricing'>Pricing</a>
         <a href='__VERIFICATION_URL__'>Proof</a>
@@ -600,6 +627,7 @@
           </div>
           <div class='cta-row'>
             <a class='button primary' href='https://iganapolsky.gumroad.com/l/tjovof?utm_source=landing_page&utm_medium=cta_button&utm_campaign=pro_pack' target='_blank' rel='noreferrer'>Get Pro — $49 one-time</a>
+            <a class='button secondary' href='#fit-checker'>Run fit checker</a>
             <a class='button secondary' href='https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md'>Current commercial truth</a>
             <a class='button secondary' href='https://rlhf-feedback-loop-production.up.railway.app'>View hosted demo</a>
           </div>
@@ -634,6 +662,63 @@
             </div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section id='fit-checker'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Action query</span>
+          <h2>Workflow Hardening Fit Checker</h2>
+          <p>Use the same AI-search filter that matters commercially: can AI fully satisfy this query without a click? For workflow hardening, the answer is no. The buyer still has to qualify blocker, owner, proof need, and sync scope.</p>
+        </div>
+        <div class='grid-2'>
+          <div class='card'>
+            <h3>What the checker evaluates</h3>
+            <ul>
+              <li>Whether the workflow is already running, in pilot, or still exploratory.</li>
+              <li>Whether there is a repeated blocker instead of a one-off annoyance.</li>
+              <li>Whether one workflow owner can actually carry the rollout.</li>
+              <li>Whether the buyer needs proof, auditability, or cross-machine consistency.</li>
+            </ul>
+          </div>
+          <div class='card'>
+            <h3>How it routes the buyer</h3>
+            <ul>
+              <li><strong>Sprint:</strong> repeated blocker, one owner, and proof needed before wider rollout.</li>
+              <li><strong>Pro:</strong> the main need is shared memory, synced rules, and multi-machine reliability.</li>
+              <li><strong>Free OSS:</strong> the workflow is still educational or too early for a paid path.</li>
+            </ul>
+            <p><a href='__APP_ORIGIN__/#fit-checker'>Run the hosted fit checker</a> and use the result to decide whether to sell the Sprint, point to Pro, or keep the user on the OSS path first.</p>
+          </div>
+        </div>
+        <p class='note'>Qualification aid only. It does not claim measured savings, buyer validation, or conversion evidence.</p>
+      </div>
+    </section>
+
+    <section id='claude-desktop'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Distribution</span>
+          <h2>Claude Desktop extension path: install now, submit cleanly, market honestly.</h2>
+          <p>Claude Desktop is a real discovery surface for Claude-first buyers. This repo already carries the local install path, a buildable `.mcpb`, Claude plugin metadata, privacy policy, support links, and proof-backed docs needed to market the extension lane without pretending approval already happened.</p>
+        </div>
+        <div class='grid-3'>
+          <div class='card'>
+            <h3>Install locally today</h3>
+            <p>Use the portable npm launcher in Claude Desktop immediately instead of waiting on a directory decision.</p>
+            <p><code>claude mcp add rlhf -- npx -y mcp-memory-gateway serve</code></p>
+          </div>
+          <div class='card'>
+            <h3>Carry the trust layer</h3>
+            <p>Point reviewers to the public privacy policy, security policy, and verification evidence before you widen distribution.</p>
+          </div>
+          <div class='card'>
+            <h3>Build, then pitch honestly</h3>
+            <p>Use <code>npm run build:claude-mcpb</code> to package the real bundle, then market Claude workflow hardening, the Veto Layer, and proof-backed reliability without claiming approval before it exists.</p>
+          </div>
+        </div>
+        <p class='note'><a href='__GITHUB_URL__/blob/main/.claude-plugin/README.md'>Claude extension guide</a> • <a href='__GITHUB_URL__/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md'>Submission packet</a> • <a href='https://rlhf-feedback-loop-production.up.railway.app/privacy'>Privacy policy</a></p>
       </div>
     </section>
 
@@ -682,6 +767,31 @@
             <li>More than one operator can run the same system without local-only knowledge.</li>
           </ul>
         </div>
+      </div>
+    </section>
+
+    <section id='studio'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Reliability Studio</span>
+          <h2>Import workflow evidence, compare the baseline, deploy the rule pack.</h2>
+          <p>Make the product legible to buyers. Reliability Studio explains how PR threads, CI logs, runbooks, JSONL, and CSV inputs become a hardened workflow with proof links and deployable rules. No model fine-tuning required.</p>
+        </div>
+        <div class='grid-3'>
+          <div class='card'>
+            <h3>Import</h3>
+            <p>Use the workflow artifacts you already have: PR review threads, CI logs, runbooks, JSONL, and CSV. These become candidate memories, gates, and approval boundaries.</p>
+          </div>
+          <div class='card'>
+            <h3>Compare</h3>
+            <p>Show the before and after state for one workflow: fewer late review loops, stronger proof surfaces, and less tribal operator drift.</p>
+          </div>
+          <div class='card'>
+            <h3>Deploy</h3>
+            <p>Ship a shared rule pack for Claude Code, Codex, Gemini, and Amp, then attach the verification evidence and machine-readable reports buyers can inspect.</p>
+          </div>
+        </div>
+        <p class='note'>Product walkthrough only. This section describes the Compare and Deploy flow; it does not claim live customer telemetry or ROI proof.</p>
       </div>
     </section>
 

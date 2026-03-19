@@ -50,3 +50,21 @@ test('launch-content variants align with reliability-over-orchestration position
   assert.doesNotMatch(launchContent, /persistent memory layer that fixes this/i);
   assert.doesNotMatch(launchContent, /persistent memory for Claude Code/i);
 });
+
+test('GEO demand engine prioritizes action queries and proof-backed fan-out surfaces', () => {
+  const geoDemandEngine = readText(path.join('docs', 'GEO_DEMAND_ENGINE_MAR2026.md'));
+
+  assert.match(geoDemandEngine, /Workflow Hardening Fit Checker/i);
+  assert.match(geoDemandEngine, /Can AI fully satisfy this query without a click\?/i);
+  assert.match(geoDemandEngine, /Workflow Hardening Sprint/i);
+  assert.match(geoDemandEngine, /Pro at \$49 one-time/i);
+  assert.match(geoDemandEngine, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(geoDemandEngine, /COMMERCIAL_TRUTH\.md/);
+  assert.match(geoDemandEngine, /bannerbear\.com/i);
+  assert.match(geoDemandEngine, /mcpserverspot\.com/i);
+  assert.match(geoDemandEngine, /bestofthemcp\.com/i);
+  assert.match(geoDemandEngine, /digitalocean\.com/i);
+  assert.match(geoDemandEngine, /medium\.com/i);
+  assert.doesNotMatch(geoDemandEngine, /founding members/i);
+  assert.doesNotMatch(geoDemandEngine, /customer proof/i);
+});
