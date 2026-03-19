@@ -143,12 +143,29 @@ jobs:
           DEPLOY_EXIT_CODE: ${{ steps.railway-deploy.outputs.exit_code }}
         run: |
           DEPLOY_EXIT_CODE="${DEPLOY_EXIT_CODE:-0}"
-          echo "Waiting 30s for deploy to stabilise..."
-          sleep 30
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$RAILWAY_HEALTHCHECK_URL")
-          echo "Health check status: $STATUS"
+          MAX_ATTEMPTS=8
+          SLEEP_SECONDS=10
+          STATUS=""
+          RESPONSE_FILE="$(mktemp)"
+
+          echo "Waiting for deploy to stabilise with up to $MAX_ATTEMPTS health checks..."
+          for ATTEMPT in $(seq 1 "$MAX_ATTEMPTS"); do
+            STATUS=$(curl -sS -o "$RESPONSE_FILE" -w "%{http_code}" "$RAILWAY_HEALTHCHECK_URL" || true)
+            echo "Health check attempt $ATTEMPT/$MAX_ATTEMPTS: $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              break
+            fi
+            if [ -s "$RESPONSE_FILE" ]; then
+              echo "Health response body:"
+              sed -n '1,20p' "$RESPONSE_FILE"
+            fi
+            if [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ]; then
+              sleep "$SLEEP_SECONDS"
+            fi
+          done
+
           if [ "$STATUS" != "200" ]; then
-            echo "Health check failed with status $STATUS"
+            echo "Health check failed with status $STATUS after $MAX_ATTEMPTS attempts"
             if [ "$DEPLOY_EXIT_CODE" != "0" ]; then
               echo "Railway deploy also exited with $DEPLOY_EXIT_CODE."
             fi
