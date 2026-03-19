@@ -1,6 +1,6 @@
 {
   "name": "mcp-memory-gateway",
-  "version": "0.7.1",
+  "version": "0.7.3",
   "plugins": [
     {
       "name": "mcp-memory-gateway",
@@ -10,7 +10,11 @@
         "type": "npm",
         "package": "mcp-memory-gateway",
         "command": "npx",
-        "args": ["-y", "mcp-memory-gateway", "serve"]
+        "args": [
+          "-y",
+          "mcp-memory-gateway",
+          "serve"
+        ]
       },
       "metadata": {
         "author": "Igor Ganapolsky",
