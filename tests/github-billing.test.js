@@ -122,6 +122,69 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     billing = require('../scripts/billing');
   });
 
+  test('handleGithubWebhook — purchased uses webhook pricing when present', () => {
+    const event = {
+      action: 'purchased',
+      marketplace_purchase: {
+        billing_cycle: 'monthly',
+        account: {
+          type: 'Organization',
+          id: 2027,
+          login: 'gates'
+        },
+        plan: {
+          id: 12,
+          name: 'Pro',
+          monthly_price_in_cents: 4900,
+          yearly_price_in_cents: 49000,
+          price_model: 'FLAT_RATE'
+        }
+      }
+    };
+
+    const result = billing.handleGithubWebhook(event);
+    assert.equal(result.handled, true);
+
+    const revenueEvents = readRevenueEvents();
+    const latest = revenueEvents[revenueEvents.length - 1];
+    assert.equal(latest.amountKnown, true);
+    assert.equal(latest.amountCents, 4900);
+    assert.equal(latest.currency, 'USD');
+    assert.equal(latest.recurringInterval, 'month');
+  });
+
+  test('handleGithubWebhook — purchased multiplies per-unit webhook pricing by unit count', () => {
+    const event = {
+      action: 'purchased',
+      marketplace_purchase: {
+        billing_cycle: 'monthly',
+        unit_count: 3,
+        account: {
+          type: 'Organization',
+          id: 2028,
+          login: 'gates-team'
+        },
+        plan: {
+          id: 13,
+          name: 'Team',
+          monthly_price_in_cents: 1500,
+          yearly_price_in_cents: 15000,
+          price_model: 'PER_UNIT'
+        }
+      }
+    };
+
+    const result = billing.handleGithubWebhook(event);
+    assert.equal(result.handled, true);
+
+    const revenueEvents = readRevenueEvents();
+    const latest = revenueEvents[revenueEvents.length - 1];
+    assert.equal(latest.amountKnown, true);
+    assert.equal(latest.amountCents, 4500);
+    assert.equal(latest.currency, 'USD');
+    assert.equal(latest.recurringInterval, 'month');
+  });
+
   test('handleGithubWebhook — cancelled disables API keys', () => {
     // Fire cancelled webhook
     const event = {

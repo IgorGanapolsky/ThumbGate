@@ -380,6 +380,31 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(revenueEvents[0].recurringInterval, null);
   });
 
+  test('handleGithubWebhook records booked revenue from webhook plan pricing before env mapping', () => {
+    const billing = requireFreshBilling('');
+    billing.handleGithubWebhook({
+      action: 'purchased',
+      marketplace_purchase: {
+        billing_cycle: 'monthly',
+        account: { type: 'Organization', id: 78, login: 'webhook-priced' },
+        plan: {
+          id: 8,
+          name: 'Pro',
+          monthly_price_in_cents: 4900,
+          yearly_price_in_cents: 49000,
+          price_model: 'FLAT_RATE'
+        },
+      },
+    });
+
+    const revenueEvents = readRevenueEvents();
+    assert.equal(revenueEvents.length, 1);
+    assert.equal(revenueEvents[0].amountKnown, true);
+    assert.equal(revenueEvents[0].amountCents, 4900);
+    assert.equal(revenueEvents[0].currency, 'USD');
+    assert.equal(revenueEvents[0].recurringInterval, 'month');
+  });
+
   test('getBillingSummary derives paid orders from paid provider events when revenue ledger is missing', () => {
     const billing = require('../scripts/billing');
     billing.appendFunnelEvent({

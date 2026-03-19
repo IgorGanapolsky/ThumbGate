@@ -558,7 +558,59 @@ function parseGithubPlanPricing() {
   }
 }
 
-function resolveGithubPlanPricing(planId) {
+function resolveGithubWebhookPlanPricing(marketplacePurchase) {
+  if (!marketplacePurchase || typeof marketplacePurchase !== 'object') {
+    return { amountKnown: false, amountCents: null, currency: null, recurringInterval: null };
+  }
+
+  const plan = marketplacePurchase.plan && typeof marketplacePurchase.plan === 'object'
+    ? marketplacePurchase.plan
+    : {};
+  const billingCycle = normalizeText(marketplacePurchase.billing_cycle ?? marketplacePurchase.billingCycle);
+  const monthlyPriceCents = normalizeInteger(plan.monthly_price_in_cents ?? plan.monthlyPriceInCents);
+  const yearlyPriceCents = normalizeInteger(plan.yearly_price_in_cents ?? plan.yearlyPriceInCents);
+  const priceModel = normalizeText(plan.price_model ?? plan.priceModel);
+  const unitCount = normalizeInteger(marketplacePurchase.unit_count ?? marketplacePurchase.unitCount);
+
+  let amountCents = null;
+  let recurringInterval = null;
+  const normalizedCycle = billingCycle ? billingCycle.toLowerCase() : null;
+
+  if (normalizedCycle === 'monthly' || normalizedCycle === 'month') {
+    amountCents = monthlyPriceCents;
+    recurringInterval = 'month';
+  } else if (normalizedCycle === 'yearly' || normalizedCycle === 'annual' || normalizedCycle === 'year') {
+    amountCents = yearlyPriceCents;
+    recurringInterval = 'year';
+  } else if (monthlyPriceCents !== null && yearlyPriceCents === null) {
+    amountCents = monthlyPriceCents;
+    recurringInterval = 'month';
+  } else if (yearlyPriceCents !== null && monthlyPriceCents === null) {
+    amountCents = yearlyPriceCents;
+    recurringInterval = 'year';
+  }
+
+  if (amountCents !== null && priceModel && priceModel.toUpperCase() === 'PER_UNIT') {
+    if (unitCount === null) {
+      return { amountKnown: false, amountCents: null, currency: null, recurringInterval };
+    }
+    amountCents *= unitCount;
+  }
+
+  return {
+    amountKnown: amountCents !== null,
+    amountCents,
+    currency: amountCents !== null ? 'USD' : null,
+    recurringInterval,
+  };
+}
+
+function resolveGithubPlanPricing(planId, marketplacePurchase = null) {
+  const webhookPricing = resolveGithubWebhookPlanPricing(marketplacePurchase);
+  if (webhookPricing.amountKnown) {
+    return webhookPricing;
+  }
+
   const pricing = parseGithubPlanPricing();
   const raw = pricing[String(planId)];
   if (raw === undefined) {
@@ -1702,7 +1754,7 @@ function handleGithubWebhook(event) {
   if (!action || !mp || !mp.account?.id) return { handled: false, reason: 'missing_payload_data' };
   const customerId = `github_${String(mp.account.type).toLowerCase()}_${mp.account.id}`;
   const marketplaceOrderId = normalizeText(mp.id) || `github_marketplace_${String(mp.account.id)}_${String(mp.plan?.id || 'unknown')}`;
-  const planPricing = resolveGithubPlanPricing(mp.plan?.id);
+  const planPricing = resolveGithubPlanPricing(mp.plan?.id, mp);
   switch (action) {
     case 'purchased': {
       const result = provisionApiKey(customerId, { source: 'github_marketplace_purchased' });
