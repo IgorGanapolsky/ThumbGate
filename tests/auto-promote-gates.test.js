@@ -9,6 +9,7 @@ const os = require('os');
 
 const {
   promote,
+  runCli,
   loadAutoGates,
   saveAutoGates,
   groupNegativeFeedback,
@@ -90,6 +91,11 @@ test('getAutoGatesPath: resolves inside the active feedback directory', () => {
     delete process.env.RLHF_FEEDBACK_DIR;
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
+});
+
+test('threshold constants preserve the 3 warn / 5 block contract', () => {
+  assert.strictEqual(WARN_THRESHOLD, 3);
+  assert.strictEqual(BLOCK_THRESHOLD, 5);
 });
 
 // -- patternToGateId --
@@ -361,4 +367,26 @@ test('buildGateRule: count at block threshold produces block action', () => {
   const gate = buildGateRule(group);
   assert.strictEqual(gate.action, 'block');
   assert.strictEqual(gate.severity, 'critical');
+});
+
+test('runCli: supports force-block without falling through to a second entrypoint', (t) => {
+  const tmpDir = makeTmpDir();
+  const lines = [];
+  const originalLog = console.log;
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  console.log = (line) => lines.push(line);
+  t.after(() => {
+    console.log = originalLog;
+    delete process.env.RLHF_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+  });
+
+  const exitCode = runCli(['--force-block=pipeline-regression']);
+  assert.strictEqual(exitCode, 0);
+  assert.ok(lines.some((line) => line.includes('Forced block gate created')));
+
+  const data = loadAutoGates();
+  const gate = data.gates.find((entry) => entry.pattern === 'pipeline-regression');
+  assert.ok(gate);
+  assert.strictEqual(gate.action, 'block');
 });

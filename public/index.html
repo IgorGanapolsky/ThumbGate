@@ -1599,7 +1599,7 @@ __GA_BOOTSTRAP__
       <div class="wrap">
         <div class="section-label">How It Works</div>
         <div class="section-title">Three steps. No orchestration tax.</div>
-        <div class="section-desc">Set up in under a minute. The system learns from your feedback and auto-promotes repeated failures into blocking rules while staying out of the agent's way.</div>
+        <div class="section-desc">Set up in under a minute. The system learns from your feedback and auto-promotes repeated failures into warning and blocking rules while staying out of the agent's way.</div>
         <div class="steps-grid">
           <div class="step">
             <div class="step-num">1</div>
@@ -1616,8 +1616,8 @@ __GA_BOOTSTRAP__
           <div class="step">
             <div class="step-num">3</div>
             <h3>Gates auto-promote</h3>
-            <p>When a failure pattern appears 3+ times, it automatically becomes a blocking rule. No manual config needed.</p>
-            <code>3+ failures &rarr; auto-promoted to blocking gate</code>
+            <p>When a failure pattern repeats 3 times, it warns. At 5, it blocks. No manual config needed.</p>
+            <code>3 failures &rarr; warn gate, 5 failures &rarr; blocking gate</code>
           </div>
         </div>
 
@@ -1790,12 +1790,25 @@ __GA_BOOTSTRAP__
         }
       }
 
+      function secureRandomHex(byteLength) {
+        const cryptoApi = window.crypto || window.msCrypto;
+        if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
+          return cryptoApi.randomUUID().replace(/-/g, '');
+        }
+        if (cryptoApi && typeof cryptoApi.getRandomValues === 'function') {
+          const bytes = new Uint8Array(byteLength);
+          cryptoApi.getRandomValues(bytes);
+          return Array.from(bytes, function(byte) {
+            return byte.toString(16).padStart(2, '0');
+          }).join('');
+        }
+        throw new Error('Secure randomness unavailable');
+      }
+
       function getStoredId(storage, storageKey, prefix, seedValue) {
         const existing = getStorageValue(storage, storageKey);
         if (existing) return existing;
-        const generated = seedValue || (window.crypto && window.crypto.randomUUID
-          ? window.crypto.randomUUID()
-          : prefix + Math.random().toString(16).slice(2));
+        const generated = seedValue || (prefix + secureRandomHex(16));
         setStorageValue(storage, storageKey, generated);
         return generated;
       }
@@ -1817,9 +1830,7 @@ __GA_BOOTSTRAP__
       }
 
       function createEphemeralId(prefix) {
-        return window.crypto && window.crypto.randomUUID
-          ? prefix + window.crypto.randomUUID().replace(/-/g, '')
-          : prefix + Math.random().toString(16).slice(2) + Date.now().toString(16);
+        return prefix + secureRandomHex(16);
       }
 
       function parseReferrerHost(referrer) {

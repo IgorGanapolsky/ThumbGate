@@ -17,6 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
+const { escapeMarkdownTableCell } = require('./markdown-escape');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -304,7 +305,7 @@ async function runProof(options = {}) {
     '|-------------|--------|----------|',
     ...Object.entries(report.requirements).map(
       ([reqId, { status: s, evidence }]) =>
-        `| ${reqId} | ${s.toUpperCase()} | ${evidence.replace(/\|/g, '\\|').replace(/\n/g, ' ')} |`
+        `| ${reqId} | ${s.toUpperCase()} | ${escapeMarkdownTableCell(evidence)} |`
     ),
     '',
     '## Requirement Details',

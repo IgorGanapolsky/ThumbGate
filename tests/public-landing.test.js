@@ -54,6 +54,15 @@ test('public landing page enriches fallback checkout links with first-party attr
   assert.match(landingPage, /sendTelemetry\('checkout_fallback_redirect'/);
 });
 
+test('public landing page uses secure browser randomness for generated identifiers', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /function secureRandomHex\(byteLength\)/);
+  assert.match(landingPage, /cryptoApi\.getRandomValues\(bytes\)/);
+  assert.match(landingPage, /prefix \+ secureRandomHex\(16\)/);
+  assert.doesNotMatch(landingPage, /Math\.random\(/);
+});
+
 test('public landing page keeps optional GA4 and Search Console hooks available for runtime injection', () => {
   const landingPage = readLandingPage();
 
@@ -120,6 +129,7 @@ test('public landing page positions the gateway as continuity-friendly reliabili
   assert.match(landingPage, /same agent session/i);
   assert.match(landingPage, /AI reliability system, not orchestration layer\./);
   assert.match(landingPage, /reliability rules/i);
+  assert.match(landingPage, /3 failures .* warn gate, 5 failures .* blocking gate/i);
   assert.match(landingPage, /Review Proof Pack/);
   assert.match(landingPage, /See Sprint Scope/);
   assert.match(landingPage, /Start Sprint Intake/);
