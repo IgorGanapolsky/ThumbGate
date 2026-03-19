@@ -1,3 +1,148 @@
+## March 19, 2026: Evidence-first intent ranking hardening after CI flake
+
+Scope:
+
+- Hardened `scripts/intent-router.js` so the `strict_reviewer` partner profile deterministically front-loads evidence-producing actions (`construct_context_pack`, `context_provenance`) ahead of `evaluate_context_pack` when `verificationMode` is `evidence_first`.
+- Added regression coverage in `tests/intent-router.test.js` for the evidence-first ordering contract without overconstraining the relative order between the two evidence producers.
+- Re-ran the full required verification suite after GitHub CI exposed the probabilistic ordering bug.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-fix-prod-analytics`:
+
+```bash
+node --test tests/intent-router.test.js
+npm test
+npm run test:coverage
+tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed result:
+
+- `node --test tests/intent-router.test.js` exited `0`: `21` passed, `0` failed.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with all-files coverage at `89.49%` lines, `75.89%` branches, and `93.05%` functions.
+- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `git diff --check` exited `0`.
+
+Requirements verified:
+
+- The evidence-first reviewer strategy now matches its contract under repeated runs instead of relying on Thompson-sampling luck.
+- The original PR failure mode is closed: `evaluate_context_pack` no longer outranks the evidence-producing actions for strict-reviewer incident plans.
+
+## March 19, 2026: Production durable analytics volume and live Stripe checkout fix
+
+Scope:
+
+- Added a Railway-aware default in `scripts/feedback-loop.js` so hosted deployments automatically persist telemetry under `RAILWAY_VOLUME_MOUNT_PATH/feedback` when `RLHF_FEEDBACK_DIR` is not explicitly set.
+- Fixed `scripts/billing.js` so hosted Stripe checkout session creation omits `customer_email` unless a real email is present, instead of passing `null` and triggering live Stripe API failures.
+- Added targeted regression coverage for the Railway volume fallback and the hosted checkout payload contract.
+- Provisioned a real Railway production volume mounted at `/data`, set `RLHF_FEEDBACK_DIR=/data/feedback`, and redeployed production so funnel and memory logs survive restarts.
+- Verified the live hosted `/checkout/pro` route now creates a real Stripe Checkout Session redirect and that live attribution events persist to the durable telemetry ledger.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-fix-prod-analytics`:
+
+```bash
+npm ci
+node --test tests/billing.test.js tests/feedback-loop.test.js
+npm test
+npm run test:coverage
+tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+npm run self-heal:check
+git diff --check
+railway volume add -m /data --json
+railway variable set RLHF_FEEDBACK_DIR=/data/feedback RAILWAY_RUN_UID=0 --json
+railway up -d -m "fix(billing): omit null stripe customer_email and default Railway feedback volume"
+python3 - <<'PY'
+import json, urllib.request
+req = urllib.request.Request(
+    'https://rlhf-feedback-loop-production.up.railway.app/checkout/pro',
+    headers={'User-Agent': 'codex'},
+    method='GET'
+)
+opener = urllib.request.build_opener(urllib.request.HTTPRedirectHandler)
+try:
+    opener.open(req)
+except urllib.error.HTTPError as exc:
+    print(json.dumps({
+        'status': exc.code,
+        'location': exc.headers.get('Location')
+    }, indent=2))
+PY
+railway run -- python3 - <<'PY'
+import json, os, urllib.request
+req = urllib.request.Request(
+    'https://rlhf-feedback-loop-production.up.railway.app/v1/billing/summary',
+    headers={
+        'Authorization': f"Bearer {os.environ['RLHF_API_KEY']}",
+        'User-Agent': 'codex'
+    }
+)
+with urllib.request.urlopen(req) as resp:
+    data = json.load(resp)
+print(json.dumps({
+    'status': 'ok',
+    'paidOrders': data['revenue']['paidOrders'],
+    'bookedRevenueCents': data['revenue']['bookedRevenueCents'],
+    'bookedRevenueTodayCents': data['revenue']['bookedRevenueTodayCents'],
+    'paidOrdersToday': data['revenue']['paidOrdersToday'],
+    'funnelTotalEvents': data['funnel']['totalEvents'],
+    'acquisitionBySource': data['funnel']['acquisitionBySource'],
+    'acquisitionByCampaign': data['funnel']['acquisitionByCampaign'],
+    'acquisitionByCommunity': data['funnel']['acquisitionByCommunity'],
+    'acquisitionByPostId': data['funnel']['acquisitionByPostId'],
+    'acquisitionByCommentId': data['funnel']['acquisitionByCommentId'],
+    'acquisitionByCampaignVariant': data['funnel']['acquisitionByCampaignVariant'],
+    'acquisitionByOfferCode': data['funnel']['acquisitionByOfferCode']
+}, indent=2))
+PY
+```
+
+Observed result:
+
+- `npm ci` exited `0`.
+- `node --test tests/billing.test.js tests/feedback-loop.test.js` exited `0`: `32` passed, `0` failed.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with all-files coverage at `89.46%` lines, `75.83%` branches, and `93.05%` functions.
+- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `git diff --check` exited `0`.
+- Railway production volume `cd9d854e-4925-4c53-9b41-8f8840ebc889` was created and mounted at `/data`.
+- Railway production variables now include:
+  - `RLHF_FEEDBACK_DIR=/data/feedback`
+  - `RAILWAY_RUN_UID=0`
+  - `RAILWAY_VOLUME_MOUNT_PATH=/data`
+- Railway deployment `a8c3e0cb-9d0a-4018-8f1a-60984ea44929` succeeded for the exact code fix.
+- Live `GET /healthz` reports:
+  - `feedbackLogPath: /data/feedback/feedback-log.jsonl`
+  - `memoryLogPath: /data/feedback/memory-log.jsonl`
+- Live `GET /checkout/pro` now returns `302` with `Location: https://checkout.stripe.com/c/pay/cs_live_...`, proving hosted checkout session creation is working again instead of falling back after a Stripe API failure.
+- Live billing summary after a fresh attributed visit reports:
+  - `paidOrders: 2`
+  - `bookedRevenueCents: 2000`
+  - `bookedRevenueTodayCents: 0`
+  - `paidOrdersToday: 0`
+  - `funnelTotalEvents: 1`
+  - `acquisitionBySource.ai_search: 1`
+  - `acquisitionByCampaign.prod_checkout_fix: 1`
+  - `acquisitionByCommunity.ClaudeCode: 1`
+  - `acquisitionByPostId.prod-checkout-fix: 1`
+  - `acquisitionByCommentId.proof-final: 1`
+  - `acquisitionByCampaignVariant.durable_volume: 1`
+  - `acquisitionByOfferCode.OPS-FINAL: 1`
+
+Requirements verified:
+
+- Production analytics are now durable across Railway restarts because telemetry writes to the mounted volume instead of ephemeral container storage.
+- Hosted Stripe checkout no longer fails on missing buyer email; the backend now omits `customer_email` rather than sending `null`.
+- Live attribution analytics are now persisted and queryable from the admin billing summary.
+- The MCP has verified historical booked revenue (`$20.00`), but booked revenue for March 19, 2026 remains truthfully `0`; the fix restores the purchase path and analytics instead of fabricating a same-day sale.
+
 ## March 19, 2026: Stripe revenue reconciliation, live checkout cutover, and production billing proof
 
 Scope:

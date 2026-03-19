@@ -145,6 +145,29 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(acq.metadata.utmCampaign, 'test');
   });
 
+  test('checkout session payload omits null customer email', () => {
+    const billing = require('../scripts/billing');
+    const withoutEmail = billing._buildCheckoutSessionPayload({
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+      customerEmail: null,
+      checkoutMetadata: {
+        traceId: 'trace_checkout_payload',
+      },
+    });
+    assert.equal(Object.prototype.hasOwnProperty.call(withoutEmail, 'customer_email'), false);
+
+    const withEmail = billing._buildCheckoutSessionPayload({
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+      customerEmail: 'buyer@example.com',
+      checkoutMetadata: {
+        traceId: 'trace_checkout_payload_email',
+      },
+    });
+    assert.equal(withEmail.customer_email, 'buyer@example.com');
+  });
+
   test('checkout session status preserves trace id for cross-service lookup', async () => {
     const billing = require('../scripts/billing');
     const checkout = await billing.createCheckoutSession({ installId: 'inst_trace_lookup' });

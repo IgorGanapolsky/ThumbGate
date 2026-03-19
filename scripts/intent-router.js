@@ -256,6 +256,18 @@ function getDefaultModelPath() {
   return path.join(feedbackDir, 'feedback_model.json');
 }
 
+function getPartnerActionPriority(action, partnerStrategy) {
+  if (!action || !partnerStrategy || partnerStrategy.verificationMode !== 'evidence_first') {
+    return 1;
+  }
+
+  if (action.name === 'construct_context_pack' || action.name === 'context_provenance') {
+    return 0;
+  }
+
+  return 1;
+}
+
 function scoreActions(actions, modelPath, options = {}) {
   const partnerStrategy = options.partnerStrategy || buildPartnerStrategy({
     partnerProfile: options.partnerProfile,
@@ -279,10 +291,16 @@ function scoreActions(actions, modelPath, options = {}) {
       partnerCategory: partnerStrategy.partnerCategory,
       partnerScore,
       partnerBias,
+      partnerPriority: getPartnerActionPriority(action, partnerStrategy),
       score,
       index,
     };
-  }).sort((a, b) => b.score - a.score || a.index - b.index);
+  }).sort((a, b) => {
+    if (a.partnerPriority !== b.partnerPriority) {
+      return a.partnerPriority - b.partnerPriority;
+    }
+    return b.score - a.score || a.index - b.index;
+  });
 }
 
 function rankActions(actions, options = {}) {
@@ -301,6 +319,7 @@ function rankActions(actions, options = {}) {
       actionScore: s.actionScore,
       partnerScore: s.partnerScore,
       partnerBias: s.partnerBias,
+      partnerPriority: s.partnerPriority,
       score: s.score,
     })),
   };

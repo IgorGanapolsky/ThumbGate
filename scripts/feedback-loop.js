@@ -53,6 +53,18 @@ function getFeedbackPaths() {
     };
   }
 
+  if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+    const d = path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'feedback');
+    return {
+      FEEDBACK_DIR: d,
+      FEEDBACK_LOG_PATH: path.join(d, 'feedback-log.jsonl'),
+      DIAGNOSTIC_LOG_PATH: path.join(d, 'diagnostic-log.jsonl'),
+      MEMORY_LOG_PATH: path.join(d, 'memory-log.jsonl'),
+      SUMMARY_PATH: path.join(d, 'feedback-summary.json'),
+      PREVENTION_RULES_PATH: path.join(d, 'prevention-rules.md'),
+    };
+  }
+
   // Auto-discovery order:
   // 1. .rlhf/ (Standard)
   // 2. .claude/memory/feedback/ (Legacy Claude)

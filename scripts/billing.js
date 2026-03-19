@@ -1414,15 +1414,13 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
   }
 
   const stripe = getStripeClient();
-  const session = await stripe.checkout.sessions.create({
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    customer_email: customerEmail,
-    payment_method_types: ['card', 'link'],
-    mode: 'payment',
-    line_items: [{ price: CONFIG.STRIPE_PRICE_ID, quantity: 1 }],
-    metadata: serializeStripeMetadata(checkoutMetadata),
+  const sessionPayload = buildCheckoutSessionPayload({
+    successUrl,
+    cancelUrl,
+    customerEmail,
+    checkoutMetadata,
   });
+  const session = await stripe.checkout.sessions.create(sessionPayload);
 
   appendFunnelEvent({
     stage: 'acquisition',
@@ -1433,6 +1431,22 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     metadata: checkoutMetadata,
   });
   return { sessionId: session.id, url: session.url, localMode: false, traceId: resolvedTraceId, metadata: checkoutMetadata };
+}
+
+function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata } = {}) {
+  const sessionPayload = {
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    payment_method_types: ['card', 'link'],
+    mode: 'payment',
+    line_items: [{ price: CONFIG.STRIPE_PRICE_ID, quantity: 1 }],
+    metadata: serializeStripeMetadata(checkoutMetadata),
+  };
+  const normalizedCustomerEmail = normalizeText(customerEmail);
+  if (normalizedCustomerEmail) {
+    sessionPayload.customer_email = normalizedCustomerEmail;
+  }
+  return sessionPayload;
 }
 
 async function getCheckoutSessionStatus(sessionId) {
@@ -1806,6 +1820,7 @@ function handleGithubWebhook(event) {
 
 module.exports = {
   createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents,
+  _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,
   _REVENUE_LEDGER_PATH: () => CONFIG.REVENUE_LEDGER_PATH,

@@ -239,6 +239,35 @@ test('planIntent applies partner-aware token budget and action scoring', () => {
   }
 });
 
+test('rankActions front-loads evidence producers for strict reviewers', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ir-rank-partner-'));
+  const modelPath = path.join(tmpDir, 'feedback_model.json');
+  try {
+    saveModel(createInitialModel(), modelPath);
+    const result = rankActions([
+      { kind: 'mcp_tool', name: 'evaluate_context_pack' },
+      { kind: 'mcp_tool', name: 'construct_context_pack' },
+      { kind: 'mcp_tool', name: 'context_provenance' },
+    ], {
+      modelPath,
+      partnerProfile: 'strict-reviewer',
+    });
+
+    const rankedNames = result.ranked.map((action) => action.name);
+    assert.equal(rankedNames[2], 'evaluate_context_pack');
+    assert.deepEqual(
+      new Set(rankedNames.slice(0, 2)),
+      new Set(['construct_context_pack', 'context_provenance']),
+    );
+    assert.deepEqual(
+      result.scores.map((score) => score.partnerPriority),
+      [0, 0, 1],
+    );
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test('planIntent adds codegraph impact and structural verification checks for coding workflows', () => {
   const previous = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
   process.env.RLHF_CODEGRAPH_STUB_RESPONSE = JSON.stringify({

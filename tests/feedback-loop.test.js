@@ -167,6 +167,22 @@ test('analyzeFeedback: returns correct counts on populated log', (t) => {
   assert.equal(stats.diagnostics.totalDiagnosed, 0);
 });
 
+test('getFeedbackPaths prefers Railway volume mount when explicit feedback dir is absent', () => {
+  const savedFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+  const savedRailwayVolumeMountPath = process.env.RAILWAY_VOLUME_MOUNT_PATH;
+  delete process.env.RLHF_FEEDBACK_DIR;
+  process.env.RAILWAY_VOLUME_MOUNT_PATH = '/data';
+
+  const paths = getFeedbackPaths();
+  assert.equal(paths.FEEDBACK_DIR, path.join('/data', 'feedback'));
+  assert.equal(paths.FEEDBACK_LOG_PATH, path.join('/data', 'feedback', 'feedback-log.jsonl'));
+
+  if (savedFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
+  else process.env.RLHF_FEEDBACK_DIR = savedFeedbackDir;
+  if (savedRailwayVolumeMountPath === undefined) delete process.env.RAILWAY_VOLUME_MOUNT_PATH;
+  else process.env.RAILWAY_VOLUME_MOUNT_PATH = savedRailwayVolumeMountPath;
+});
+
 // -- buildPreventionRules --
 
 test('buildPreventionRules: returns markdown string with header', (t) => {
