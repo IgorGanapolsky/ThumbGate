@@ -577,6 +577,16 @@ function cfo() {
     });
 }
 
+function repairGithubMarketplace() {
+  const args = parseArgs(process.argv.slice(3));
+  const { repairGithubMarketplaceRevenueLedger } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
+  const result = repairGithubMarketplaceRevenueLedger({
+    write: Boolean(args.write),
+  });
+  console.log(JSON.stringify(result, null, 2));
+  process.exit(0);
+}
+
 function northStar() {
   const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { summarizeWorkflowRuns } = require(path.join(PKG_ROOT, 'scripts', 'workflow-runs'));
@@ -868,6 +878,7 @@ function help() {
   console.log('  capture [flags]       Capture feedback (--feedback=up|down --context="..." --tags="...")');
   console.log('  stats                 Show feedback analytics + Revenue-at-Risk');
   console.log('  cfo                   Show hosted billing summary when configured, else local fallback JSON');
+  console.log('  repair-github-marketplace  Dry-run or apply legacy GitHub Marketplace amount repairs (--write)');
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  summary               Human-readable feedback summary');
   console.log('  model-fit             Detect the current local embedding profile and write evidence report');
@@ -894,6 +905,7 @@ function help() {
   console.log('  npx mcp-memory-gateway init');
   console.log('  npx mcp-memory-gateway stats');
   console.log('  npx mcp-memory-gateway cfo');
+  console.log('  npx mcp-memory-gateway repair-github-marketplace --write');
   console.log('  npx mcp-memory-gateway model-fit');
   console.log('  npx mcp-memory-gateway risk');
   console.log('  npx mcp-memory-gateway pro');
@@ -924,6 +936,9 @@ switch (COMMAND) {
   case 'cfo':
   case 'revenue':
     cfo();
+    break;
+  case 'repair-github-marketplace':
+    repairGithubMarketplace();
     break;
   case 'north-star':
     northStar();

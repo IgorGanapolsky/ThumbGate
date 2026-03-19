@@ -42,6 +42,7 @@
     "aider:verify:full": "node scripts/aider-verify.js full",
     "budget:status": "node scripts/budget-guard.js --status",
     "revenue:status": "node bin/cli.js cfo",
+    "revenue:repair:github-marketplace": "node bin/cli.js repair-github-marketplace --write",
     "cfo:report": "node bin/cli.js cfo",
     "stripe:live": "node scripts/stripe-live-status.js",
     "gtm:revenue-loop": "node scripts/autonomous-sales-agent.js",

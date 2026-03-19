@@ -414,6 +414,7 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('init'), 'Help should mention init');
     assert.ok(result.stdout.includes('capture'), 'Help should mention capture');
     assert.ok(result.stdout.includes('cfo'), 'Help should mention cfo');
+    assert.ok(result.stdout.includes('repair-github-marketplace'), 'Help should mention repair-github-marketplace');
     assert.ok(result.stdout.includes('model-fit'), 'Help should mention model-fit');
     assert.ok(result.stdout.includes('risk'), 'Help should mention risk');
     assert.ok(result.stdout.includes('export-dpo'), 'Help should mention export-dpo');
@@ -869,6 +870,73 @@ describe('bin/cli.js', () => {
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
+
+  test('repair-github-marketplace previews and writes legacy marketplace amount repairs', () => {
+    const isolatedDir = makeTmpDir();
+    const revenuePath = path.join(isolatedDir, 'revenue-events.jsonl');
+    fs.writeFileSync(revenuePath, `${JSON.stringify({
+      timestamp: '2026-03-19T12:00:00.000Z',
+      provider: 'github_marketplace',
+      event: 'github_marketplace_purchased',
+      status: 'paid',
+      orderId: 'marketplace_cli_repair',
+      evidence: 'marketplace_cli_repair',
+      customerId: 'github_org_cli_repair',
+      amountCents: null,
+      currency: null,
+      amountKnown: false,
+      recurringInterval: null,
+      attribution: { source: 'github_marketplace' },
+      metadata: {
+        planId: 80,
+        planName: 'CLI Pro',
+        marketplaceOrderId: 'marketplace_cli_repair',
+      },
+    })}\n`, 'utf8');
+
+    const env = {
+      ...process.env,
+      _TEST_REVENUE_LEDGER_PATH: revenuePath,
+      RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON: JSON.stringify({
+        80: { amountCents: 4900, currency: 'USD', recurringInterval: 'month' },
+      }),
+    };
+
+    const preview = spawnSync(process.execPath, [CLI, 'repair-github-marketplace'], {
+      encoding: 'utf8',
+      cwd: isolatedDir,
+      env,
+    });
+    assert.equal(preview.status, 0, `repair-github-marketplace preview failed:\n${preview.stderr}`);
+    const previewPayload = JSON.parse(preview.stdout);
+    assert.equal(previewPayload.write, false);
+    assert.equal(previewPayload.wrote, false);
+    assert.equal(previewPayload.repaired, 1);
+    assert.equal(previewPayload.repairs[0].amountCents, 4900);
+
+    const beforeWrite = JSON.parse(fs.readFileSync(revenuePath, 'utf8').trim());
+    assert.equal(beforeWrite.amountKnown, false);
+
+    const write = spawnSync(process.execPath, [CLI, 'repair-github-marketplace', '--write'], {
+      encoding: 'utf8',
+      cwd: isolatedDir,
+      env,
+    });
+    assert.equal(write.status, 0, `repair-github-marketplace --write failed:\n${write.stderr}`);
+    const writePayload = JSON.parse(write.stdout);
+    assert.equal(writePayload.write, true);
+    assert.equal(writePayload.wrote, true);
+    assert.equal(writePayload.repaired, 1);
+
+    const afterWrite = JSON.parse(fs.readFileSync(revenuePath, 'utf8').trim());
+    assert.equal(afterWrite.amountKnown, true);
+    assert.equal(afterWrite.amountCents, 4900);
+    assert.equal(afterWrite.metadata.githubMarketplaceAmountSource, 'configured_plan_price');
+    assert.ok(afterWrite.metadata.githubMarketplaceAmountResolvedAt);
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  });
+
   test('cfo prefers hosted billing summary when a live billing API base and admin key are configured', async () => {
     const { startServer } = require('../src/api/server');
     const remoteDir = makeTmpDir();

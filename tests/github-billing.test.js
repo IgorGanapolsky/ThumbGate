@@ -116,6 +116,7 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     assert.equal(latest.amountCents, 4900);
     assert.equal(latest.currency, 'USD');
     assert.equal(latest.recurringInterval, null);
+    assert.equal(latest.metadata.githubMarketplaceAmountSource, 'configured_plan_price');
 
     delete process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
     delete require.cache[require.resolve('../scripts/billing')];
@@ -151,6 +152,11 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     assert.equal(latest.amountCents, 4900);
     assert.equal(latest.currency, 'USD');
     assert.equal(latest.recurringInterval, 'month');
+    assert.equal(latest.metadata.billingCycle, 'monthly');
+    assert.equal(latest.metadata.monthlyPriceInCents, 4900);
+    assert.equal(latest.metadata.yearlyPriceInCents, 49000);
+    assert.equal(latest.metadata.priceModel, 'FLAT_RATE');
+    assert.equal(latest.metadata.githubMarketplaceAmountSource, 'webhook');
   });
 
   test('handleGithubWebhook — purchased multiplies per-unit webhook pricing by unit count', () => {
@@ -183,6 +189,8 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     assert.equal(latest.amountCents, 4500);
     assert.equal(latest.currency, 'USD');
     assert.equal(latest.recurringInterval, 'month');
+    assert.equal(latest.metadata.unitCount, 3);
+    assert.equal(latest.metadata.priceModel, 'PER_UNIT');
   });
 
   test('handleGithubWebhook — cancelled disables API keys', () => {

@@ -1351,6 +1351,38 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-19 GitHub Marketplace Legacy Amount Repair Verification
+
+Scope:
+
+- Read-time GitHub Marketplace amount reconciliation for legacy paid revenue rows that were previously persisted with `amountKnown: false`.
+- Explicit dry-run/write repair command for the local gitignored revenue ledger.
+- Marketplace pricing metadata capture on new webhook writes so future repairs are auditable.
+
+Commands run:
+
+```bash
+node --test tests/billing.test.js
+node --test tests/github-billing.test.js
+node --test tests/cli.test.js
+npx mcp-memory-gateway repair-github-marketplace
+npx mcp-memory-gateway repair-github-marketplace --write
+```
+
+Observed results:
+
+- `tests/billing.test.js` passes the new backfill coverage:
+  - summary books revenue from a legacy GitHub Marketplace row at read time when configured pricing is available
+  - `repairGithubMarketplaceRevenueLedger({ write: true })` rewrites the local ledger with amount, currency, interval, and repair metadata
+- `tests/github-billing.test.js` confirms new Marketplace writes now persist billing cycle, unit count, price model, and pricing source metadata
+- `tests/cli.test.js` confirms `repair-github-marketplace` supports both preview mode and `--write`
+
+Behavioral proof points:
+
+- Legacy GitHub Marketplace rows no longer stay stranded as permanent `amountKnown: false` entries when a trusted plan-price mapping exists.
+- The billing summary can surface booked revenue truth immediately from reconciled legacy Marketplace rows before a write-back is applied.
+- The explicit repair command materializes that truth into the local `.rlhf` or legacy feedback ledger without fabricating prices.
+
 ## 2026-03-17 Workflow Hardening Sprint Revenue-Motion Verification
 
 Scope:

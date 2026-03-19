@@ -412,6 +412,86 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.coverage.providerCoverage.githubMarketplace, 'webhook_or_configured_plan_prices');
   });
 
+  test('getBillingSummary backfills legacy github marketplace amounts from configured plan pricing at read time', () => {
+    process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
+      70: { amountCents: 4900, currency: 'USD', recurringInterval: 'month' },
+    });
+    const billing = requireFreshBilling('');
+    fs.writeFileSync(testRevenueLedgerPath, `${JSON.stringify({
+      timestamp: '2026-03-19T12:00:00.000Z',
+      provider: 'github_marketplace',
+      event: 'github_marketplace_purchased',
+      status: 'paid',
+      orderId: 'marketplace_order_backfill_preview',
+      evidence: 'marketplace_order_backfill_preview',
+      customerId: 'github_org_70',
+      amountCents: null,
+      currency: null,
+      amountKnown: false,
+      recurringInterval: null,
+      attribution: { source: 'github_marketplace' },
+      metadata: {
+        planId: 70,
+        planName: 'Pro',
+        marketplaceOrderId: 'marketplace_order_backfill_preview',
+      },
+    })}\n`, 'utf-8');
+
+    const preview = billing.repairGithubMarketplaceRevenueLedger();
+    const summary = billing.getBillingSummary();
+    const revenueEvents = readRevenueEvents();
+
+    assert.equal(preview.write, false);
+    assert.equal(preview.wrote, false);
+    assert.equal(preview.repaired, 1);
+    assert.equal(preview.repairs[0].amountCents, 4900);
+    assert.equal(preview.repairs[0].pricingSource, 'configured_plan_price');
+    assert.equal(summary.revenue.bookedRevenueCents, 4900);
+    assert.equal(summary.revenue.amountKnownOrders, 1);
+    assert.equal(summary.revenue.amountUnknownOrders, 0);
+    assert.equal(revenueEvents[0].amountKnown, false);
+    assert.equal(revenueEvents[0].amountCents, null);
+  });
+
+  test('repairGithubMarketplaceRevenueLedger writes repaired github marketplace amounts into the local ledger', () => {
+    process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
+      71: { amountCents: 9900, currency: 'USD', recurringInterval: 'year' },
+    });
+    const billing = requireFreshBilling('');
+    fs.writeFileSync(testRevenueLedgerPath, `${JSON.stringify({
+      timestamp: '2026-03-19T12:30:00.000Z',
+      provider: 'github_marketplace',
+      event: 'github_marketplace_purchased',
+      status: 'paid',
+      orderId: 'marketplace_order_backfill_write',
+      evidence: 'marketplace_order_backfill_write',
+      customerId: 'github_org_71',
+      amountCents: null,
+      currency: null,
+      amountKnown: false,
+      recurringInterval: null,
+      attribution: { source: 'github_marketplace' },
+      metadata: {
+        planId: 71,
+        planName: 'Annual Pro',
+        marketplaceOrderId: 'marketplace_order_backfill_write',
+      },
+    })}\n`, 'utf-8');
+
+    const repair = billing.repairGithubMarketplaceRevenueLedger({ write: true });
+    const revenueEvents = readRevenueEvents();
+
+    assert.equal(repair.write, true);
+    assert.equal(repair.wrote, true);
+    assert.equal(repair.repaired, 1);
+    assert.equal(revenueEvents[0].amountKnown, true);
+    assert.equal(revenueEvents[0].amountCents, 9900);
+    assert.equal(revenueEvents[0].currency, 'USD');
+    assert.equal(revenueEvents[0].recurringInterval, 'year');
+    assert.equal(revenueEvents[0].metadata.githubMarketplaceAmountSource, 'configured_plan_price');
+    assert.ok(revenueEvents[0].metadata.githubMarketplaceAmountResolvedAt);
+  });
+
   test('getBillingSummary derives paid orders from paid provider events when revenue ledger is missing', () => {
     const billing = require('../scripts/billing');
     billing.appendFunnelEvent({

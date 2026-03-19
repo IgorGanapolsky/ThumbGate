@@ -151,6 +151,40 @@ function loadJsonlRecords(filePath, legacyPath = null) {
   } catch { return []; }
 }
 
+function loadJsonlFile(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return [];
+    return fs.readFileSync(filePath, 'utf-8')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        try {
+          return JSON.parse(line);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function writeJsonlRecords(filePath, rows = []) {
+  try {
+    ensureParentDir(filePath);
+    const serialized = rows
+      .filter(Boolean)
+      .map((row) => JSON.stringify(row))
+      .join('\n');
+    fs.writeFileSync(filePath, serialized ? `${serialized}\n` : '', 'utf-8');
+    return { written: true, rowCount: rows.filter(Boolean).length };
+  } catch (err) {
+    return { written: false, reason: 'write_failed', error: err.message };
+  }
+}
+
 function normalizeText(value) {
   if (value === undefined || value === null) return null;
   const text = String(value).trim();
@@ -408,6 +442,18 @@ function loadRevenueLedger() {
   );
 }
 
+function resolveRevenueLedgerFilePath() {
+  const primary = CONFIG.REVENUE_LEDGER_PATH;
+  const legacy = resolveLegacyBillingPath('revenue-events.jsonl');
+  if (fs.existsSync(primary) || IS_TEST) {
+    return primary;
+  }
+  if (legacy !== primary && fs.existsSync(legacy)) {
+    return legacy;
+  }
+  return primary;
+}
+
 function deriveRevenueEventFromPaidProviderEvent(entry = {}) {
   const metadata = sanitizeMetadata(entry.metadata);
   const provider = normalizeText(metadata.provider || entry.provider || entry.utmSource || entry.source);
@@ -455,7 +501,7 @@ function loadResolvedRevenueEvents(options = {}) {
     loadRevenueLedger(),
     analyticsWindow,
     (entry) => entry && entry.timestamp
-  );
+  ).map((entry) => resolveGithubMarketplaceRevenueEntry(entry, { annotate: false }).entry);
   const paidProviderEvents = filterEntriesForWindow(
     loadFunnelLedger(),
     analyticsWindow,
@@ -471,6 +517,49 @@ function loadResolvedRevenueEvents(options = {}) {
   }
 
   return mergeRevenueEvents(resolved, extraRevenueEvents);
+}
+
+function repairGithubMarketplaceRevenueLedger(options = {}) {
+  const write = Boolean(options.write);
+  const ledgerPath = resolveRevenueLedgerFilePath();
+  const rows = loadJsonlFile(ledgerPath);
+  const resolvedAt = new Date().toISOString();
+  const repairs = [];
+  const updatedRows = rows.map((entry) => {
+    const result = resolveGithubMarketplaceRevenueEntry(entry, {
+      annotate: true,
+      resolvedAt,
+    });
+    if (!result.changed) {
+      return entry;
+    }
+    const metadata = sanitizeMetadata(result.entry.metadata);
+    repairs.push({
+      orderId: normalizeText(result.entry.orderId),
+      customerId: normalizeText(result.entry.customerId),
+      planId: normalizeText(metadata.planId ?? result.entry.planId),
+      amountCents: normalizeInteger(result.entry.amountCents),
+      currency: normalizeCurrency(result.entry.currency),
+      recurringInterval: normalizeText(result.entry.recurringInterval),
+      pricingSource: normalizeText(metadata.githubMarketplaceAmountSource),
+    });
+    return result.entry;
+  });
+
+  const writeResult = write && repairs.length > 0
+    ? writeJsonlRecords(ledgerPath, updatedRows)
+    : { written: false, rowCount: rows.length };
+
+  return {
+    ledgerPath,
+    write,
+    wrote: Boolean(writeResult.written),
+    scanned: rows.length,
+    repaired: repairs.length,
+    unchanged: rows.length - repairs.length,
+    repairs,
+    writeResult,
+  };
 }
 
 function appendRevenueEvent({
@@ -560,7 +649,7 @@ function parseGithubPlanPricing() {
 
 function resolveGithubWebhookPlanPricing(marketplacePurchase) {
   if (!marketplacePurchase || typeof marketplacePurchase !== 'object') {
-    return { amountKnown: false, amountCents: null, currency: null, recurringInterval: null };
+    return { amountKnown: false, amountCents: null, currency: null, recurringInterval: null, pricingSource: 'unknown' };
   }
 
   const plan = marketplacePurchase.plan && typeof marketplacePurchase.plan === 'object'
@@ -592,7 +681,7 @@ function resolveGithubWebhookPlanPricing(marketplacePurchase) {
 
   if (amountCents !== null && priceModel && priceModel.toUpperCase() === 'PER_UNIT') {
     if (unitCount === null) {
-      return { amountKnown: false, amountCents: null, currency: null, recurringInterval };
+      return { amountKnown: false, amountCents: null, currency: null, recurringInterval, pricingSource: 'unknown' };
     }
     amountCents *= unitCount;
   }
@@ -602,6 +691,7 @@ function resolveGithubWebhookPlanPricing(marketplacePurchase) {
     amountCents,
     currency: amountCents !== null ? 'USD' : null,
     recurringInterval,
+    pricingSource: amountCents !== null ? 'webhook' : 'unknown',
   };
 }
 
@@ -614,7 +704,7 @@ function resolveGithubPlanPricing(planId, marketplacePurchase = null) {
   const pricing = parseGithubPlanPricing();
   const raw = pricing[String(planId)];
   if (raw === undefined) {
-    return { amountKnown: false, amountCents: null, currency: null, recurringInterval: null };
+    return { amountKnown: false, amountCents: null, currency: null, recurringInterval: null, pricingSource: 'unknown' };
   }
 
   if (typeof raw === 'number') {
@@ -623,11 +713,12 @@ function resolveGithubPlanPricing(planId, marketplacePurchase = null) {
       amountCents: normalizeInteger(raw),
       currency: 'USD',
       recurringInterval: null,
+      pricingSource: 'configured_plan_price',
     };
   }
 
   if (!raw || typeof raw !== 'object') {
-    return { amountKnown: false, amountCents: null, currency: null, recurringInterval: null };
+    return { amountKnown: false, amountCents: null, currency: null, recurringInterval: null, pricingSource: 'unknown' };
   }
 
   const amountCents = normalizeInteger(raw.amountCents ?? raw.amount ?? raw.priceCents);
@@ -636,6 +727,97 @@ function resolveGithubPlanPricing(planId, marketplacePurchase = null) {
     amountCents,
     currency: normalizeCurrency(raw.currency) || 'USD',
     recurringInterval: normalizeText(raw.recurringInterval || raw.interval),
+    pricingSource: amountCents !== null ? 'configured_plan_price' : 'unknown',
+  };
+}
+
+function buildGithubMarketplacePurchaseFromMetadata(entry = {}) {
+  const metadata = sanitizeMetadata(entry.metadata);
+  const billingCycle = normalizeText(
+    metadata.billingCycle ??
+    metadata.billing_cycle ??
+    entry.billingCycle ??
+    entry.billing_cycle
+  );
+  const unitCount = normalizeInteger(metadata.unitCount ?? metadata.unit_count ?? entry.unitCount ?? entry.unit_count);
+  const monthlyPriceInCents = normalizeInteger(
+    metadata.monthlyPriceInCents ??
+    metadata.monthly_price_in_cents ??
+    entry.monthlyPriceInCents ??
+    entry.monthly_price_in_cents
+  );
+  const yearlyPriceInCents = normalizeInteger(
+    metadata.yearlyPriceInCents ??
+    metadata.yearly_price_in_cents ??
+    entry.yearlyPriceInCents ??
+    entry.yearly_price_in_cents
+  );
+  const priceModel = normalizeText(
+    metadata.priceModel ??
+    metadata.price_model ??
+    entry.priceModel ??
+    entry.price_model
+  );
+  const planId = normalizeText(metadata.planId ?? entry.planId);
+  const planName = normalizeText(metadata.planName ?? entry.planName);
+
+  if (!billingCycle && unitCount === null && monthlyPriceInCents === null && yearlyPriceInCents === null && !priceModel && !planId && !planName) {
+    return null;
+  }
+
+  return {
+    billing_cycle: billingCycle,
+    unit_count: unitCount,
+    plan: {
+      id: planId,
+      name: planName,
+      monthly_price_in_cents: monthlyPriceInCents,
+      yearly_price_in_cents: yearlyPriceInCents,
+      price_model: priceModel,
+    },
+  };
+}
+
+function resolveGithubMarketplaceRevenueEntry(entry = {}, options = {}) {
+  if (!entry || normalizeText(entry.provider) !== 'github_marketplace') {
+    return { changed: false, entry };
+  }
+
+  if (normalizeText(entry.status) !== 'paid') {
+    return { changed: false, entry };
+  }
+
+  if (Boolean(entry.amountKnown) && normalizeInteger(entry.amountCents) !== null) {
+    return { changed: false, entry };
+  }
+
+  const metadata = sanitizeMetadata(entry.metadata);
+  const marketplacePurchase = buildGithubMarketplacePurchaseFromMetadata(entry);
+  const planPricing = resolveGithubPlanPricing(metadata.planId ?? entry.planId, marketplacePurchase);
+  if (!planPricing.amountKnown) {
+    return { changed: false, entry };
+  }
+
+  const resolvedAt = options.resolvedAt || new Date().toISOString();
+  const updatedMetadata = {
+    ...metadata,
+    githubMarketplaceAmountSource: planPricing.pricingSource,
+  };
+  if (options.annotate !== false) {
+    updatedMetadata.githubMarketplaceAmountResolvedAt = resolvedAt;
+  }
+
+  return {
+    changed: true,
+    entry: {
+      ...entry,
+      amountCents: planPricing.amountCents,
+      currency: planPricing.currency || normalizeCurrency(entry.currency),
+      amountKnown: true,
+      recurringInterval: planPricing.recurringInterval || normalizeText(entry.recurringInterval),
+      metadata: updatedMetadata,
+    },
+    pricingSource: planPricing.pricingSource,
   };
 }
 
@@ -1748,6 +1930,25 @@ function verifyGithubWebhookSignature(rawBody, signature) {
   return checksum.length === digest.length && crypto.timingSafeEqual(digest, checksum);
 }
 
+function buildGithubMarketplaceRevenueMetadata(marketplacePurchase = {}, marketplaceOrderId, planPricing = {}) {
+  const plan = marketplacePurchase && typeof marketplacePurchase.plan === 'object'
+    ? marketplacePurchase.plan
+    : {};
+  return {
+    accountId: normalizeText(marketplacePurchase.account && marketplacePurchase.account.id),
+    accountType: normalizeText(marketplacePurchase.account && marketplacePurchase.account.type),
+    planId: normalizeText(plan.id),
+    planName: normalizeText(plan.name),
+    marketplaceOrderId: normalizeText(marketplaceOrderId),
+    billingCycle: normalizeText(marketplacePurchase.billing_cycle ?? marketplacePurchase.billingCycle),
+    unitCount: normalizeInteger(marketplacePurchase.unit_count ?? marketplacePurchase.unitCount),
+    priceModel: normalizeText(plan.price_model ?? plan.priceModel),
+    monthlyPriceInCents: normalizeInteger(plan.monthly_price_in_cents ?? plan.monthlyPriceInCents),
+    yearlyPriceInCents: normalizeInteger(plan.yearly_price_in_cents ?? plan.yearlyPriceInCents),
+    githubMarketplaceAmountSource: normalizeText(planPricing.pricingSource),
+  };
+}
+
 function handleGithubWebhook(event) {
   if (!event) return { handled: false, reason: 'missing_payload_data' };
   const { action, marketplace_purchase: mp } = event;
@@ -1755,6 +1956,7 @@ function handleGithubWebhook(event) {
   const customerId = `github_${String(mp.account.type).toLowerCase()}_${mp.account.id}`;
   const marketplaceOrderId = normalizeText(mp.id) || `github_marketplace_${String(mp.account.id)}_${String(mp.plan?.id || 'unknown')}`;
   const planPricing = resolveGithubPlanPricing(mp.plan?.id, mp);
+  const githubMetadata = buildGithubMarketplaceRevenueMetadata(mp, marketplaceOrderId, planPricing);
   switch (action) {
     case 'purchased': {
       const result = provisionApiKey(customerId, { source: 'github_marketplace_purchased' });
@@ -1765,12 +1967,8 @@ function handleGithubWebhook(event) {
         metadata: {
           provider: 'github_marketplace',
           customerId,
-          accountId: String(mp.account.id),
-          accountType: String(mp.account.type),
           source: 'github_marketplace',
-          planId: mp.plan?.id || null,
-          planName: mp.plan?.name || null,
-          marketplaceOrderId,
+          ...githubMetadata,
         },
       };
       if (!hasFunnelEventMatch(loadFunnelLedger(), funnelRecord)) {
@@ -1782,13 +1980,7 @@ function handleGithubWebhook(event) {
         status: 'paid',
         customerId,
         orderId: marketplaceOrderId,
-        metadata: {
-          accountId: String(mp.account.id),
-          accountType: String(mp.account.type),
-          planId: mp.plan?.id || null,
-          planName: mp.plan?.name || null,
-          marketplaceOrderId,
-        },
+        metadata: githubMetadata,
       };
       if (!hasRevenueEventMatch(loadRevenueLedger(), revenueRecord)) {
         appendRevenueEvent({
@@ -1799,6 +1991,7 @@ function handleGithubWebhook(event) {
           amountKnown: planPricing.amountKnown,
           recurringInterval: planPricing.recurringInterval,
           attribution: { source: 'github_marketplace' },
+          metadata: githubMetadata,
         });
       }
       return { handled: true, action: 'provisioned_api_key', result };
@@ -1824,13 +2017,7 @@ function handleGithubWebhook(event) {
           amountKnown: planPricing.amountKnown,
           recurringInterval: planPricing.recurringInterval,
           attribution: { source: 'github_marketplace' },
-          metadata: {
-            accountId: String(mp.account.id),
-            accountType: String(mp.account.type),
-            planId: mp.plan?.id || null,
-            planName: mp.plan?.name || null,
-            marketplaceOrderId,
-          },
+          metadata: githubMetadata,
         });
       }
       return { handled: true, action: 'disabled_customer_keys', result: disableCustomerKeys(customerId) };
@@ -1855,13 +2042,7 @@ function handleGithubWebhook(event) {
           amountKnown: planPricing.amountKnown,
           recurringInterval: planPricing.recurringInterval,
           attribution: { source: 'github_marketplace' },
-          metadata: {
-            accountId: String(mp.account.id),
-            accountType: String(mp.account.type),
-            planId: mp.plan?.id || null,
-            planName: mp.plan?.name || null,
-            marketplaceOrderId,
-          },
+          metadata: githubMetadata,
         });
       }
       return { handled: true, action: 'plan_changed', result: provisionApiKey(customerId, { source: 'github_marketplace_changed' }) };
@@ -1871,7 +2052,7 @@ function handleGithubWebhook(event) {
 }
 
 module.exports = {
-  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents,
+  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,
