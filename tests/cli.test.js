@@ -671,6 +671,138 @@ describe('bin/cli.js', () => {
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
 
+  test('cfo supports today window and timezone arguments', () => {
+    const isolatedDir = makeTmpDir();
+    const apiKeysPath = path.join(isolatedDir, 'api-keys.json');
+    const ledgerPath = path.join(isolatedDir, 'funnel-events.jsonl');
+    const revenuePath = path.join(isolatedDir, 'revenue-events.jsonl');
+    const feedbackDir = path.join(isolatedDir, 'feedback');
+    const leadsPath = path.join(feedbackDir, 'workflow-sprint-leads.jsonl');
+    fs.writeFileSync(apiKeysPath, JSON.stringify({ keys: {} }, null, 2));
+    fs.writeFileSync(ledgerPath, [
+      JSON.stringify({
+        timestamp: '2026-03-18T23:30:00.000Z',
+        stage: 'acquisition',
+        event: 'checkout_session_created',
+        evidence: 'sess_cli_old',
+        traceId: 'trace_cli_old',
+      }),
+      JSON.stringify({
+        timestamp: '2026-03-19T12:00:00.000Z',
+        stage: 'acquisition',
+        event: 'checkout_session_created',
+        evidence: 'sess_cli_today',
+        traceId: 'trace_cli_today',
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(revenuePath, [
+      JSON.stringify({
+        timestamp: '2026-03-18T23:45:00.000Z',
+        provider: 'stripe',
+        event: 'stripe_checkout_completed',
+        status: 'paid',
+        orderId: 'cs_cli_old',
+        evidence: 'cs_cli_old',
+        customerId: 'cus_cli_old',
+        amountCents: 9900,
+        currency: 'USD',
+        amountKnown: true,
+        recurringInterval: null,
+        attribution: { source: 'reddit' },
+        metadata: {},
+      }),
+      JSON.stringify({
+        timestamp: '2026-03-19T12:05:00.000Z',
+        provider: 'stripe',
+        event: 'stripe_checkout_completed',
+        status: 'paid',
+        orderId: 'cs_cli_today',
+        evidence: 'cs_cli_today',
+        customerId: 'cus_cli_today',
+        amountCents: 4900,
+        currency: 'USD',
+        amountKnown: true,
+        recurringInterval: null,
+        attribution: { source: 'website' },
+        metadata: {},
+      }),
+      '',
+    ].join('\n'));
+    fs.mkdirSync(feedbackDir, { recursive: true });
+    fs.writeFileSync(leadsPath, [
+      JSON.stringify({
+        leadId: 'lead_cli_old',
+        submittedAt: '2026-03-18T09:00:00.000Z',
+        status: 'new',
+        offer: 'workflow_hardening_sprint',
+        contact: {
+          email: 'old-cli@example.com',
+          company: 'Old CLI Co',
+        },
+        qualification: {
+          workflow: 'Old CLI workflow',
+          owner: 'Old CLI owner',
+          blocker: 'Old blocker',
+          runtime: 'Claude Code',
+          note: null,
+        },
+        attribution: {
+          source: 'reddit',
+        },
+      }),
+      JSON.stringify({
+        leadId: 'lead_cli_today',
+        submittedAt: '2026-03-19T13:00:00.000Z',
+        status: 'new',
+        offer: 'workflow_hardening_sprint',
+        contact: {
+          email: 'today-cli@example.com',
+          company: 'Today CLI Co',
+        },
+        qualification: {
+          workflow: 'Today CLI workflow',
+          owner: 'Today CLI owner',
+          blocker: 'Today blocker',
+          runtime: 'Claude Code',
+          note: null,
+        },
+        attribution: {
+          source: 'linkedin',
+        },
+      }),
+      '',
+    ].join('\n'));
+
+    const result = spawnSync(process.execPath, [
+      CLI,
+      'cfo',
+      '--window=today',
+      '--timezone=UTC',
+      '--now=2026-03-19T18:00:00.000Z',
+    ], {
+      encoding: 'utf8',
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        _TEST_API_KEYS_PATH: apiKeysPath,
+        _TEST_FUNNEL_LEDGER_PATH: ledgerPath,
+        _TEST_REVENUE_LEDGER_PATH: revenuePath,
+        RLHF_FEEDBACK_DIR: feedbackDir,
+      },
+    });
+    assert.equal(result.status, 0, `cfo failed:\n${result.stderr}`);
+
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.summary.window.window, 'today');
+    assert.equal(payload.summary.window.timeZone, 'UTC');
+    assert.equal(payload.summary.revenue.bookedRevenueCents, 4900);
+    assert.equal(payload.summary.revenue.paidOrders, 1);
+    assert.equal(payload.summary.pipeline.workflowSprintLeads.total, 1);
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  });
+
   test('cfo prefers hosted billing summary when a live billing API base and admin key are configured', async () => {
     const { startServer } = require('../src/api/server');
     const remoteDir = makeTmpDir();

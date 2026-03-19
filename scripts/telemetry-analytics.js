@@ -3,6 +3,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const {
+  filterEntriesForWindow,
+  resolveAnalyticsWindow,
+  serializeAnalyticsWindow,
+} = require('./analytics-window');
 
 const TELEMETRY_FILE_NAME = 'telemetry-pings.jsonl';
 
@@ -248,8 +253,13 @@ function summarizeRecentEvents(events) {
     }));
 }
 
-function getTelemetrySummary(feedbackDir) {
-  const events = loadTelemetryEvents(feedbackDir);
+function getTelemetrySummary(feedbackDir, options = {}) {
+  const analyticsWindow = resolveAnalyticsWindow(options);
+  const events = filterEntriesForWindow(
+    loadTelemetryEvents(feedbackDir),
+    analyticsWindow,
+    (entry) => entry && (entry.receivedAt || entry.timestamp)
+  );
   const byClientType = {};
   const byEventType = {};
   const webVisitors = new Set();
@@ -279,6 +289,8 @@ function getTelemetrySummary(feedbackDir) {
   const byReferrerHost = {};
   const checkoutFailuresByCode = {};
   const checkoutFailuresByStatus = {};
+  const sessionLookupFailuresByCode = {};
+  const sessionLookupFailuresByStatus = {};
   const cancellationsByReason = {};
   const abandonmentsByReason = {};
   const buyerLossReasons = {};
@@ -293,6 +305,11 @@ function getTelemetrySummary(feedbackDir) {
   let checkoutFailures = 0;
   let checkoutCancelled = 0;
   let checkoutAbandoned = 0;
+  let checkoutSuccessPageViews = 0;
+  let checkoutCancelPageViews = 0;
+  let checkoutPaidConfirmations = 0;
+  let checkoutPending = 0;
+  let checkoutLookupFailures = 0;
   let buyerLossSignals = 0;
   let pricingInterestEvents = 0;
   let seoLandingViews = 0;
@@ -372,6 +389,31 @@ function getTelemetrySummary(feedbackDir) {
         );
       }
 
+      if ((entry.eventType || entry.event) === 'checkout_success_page_view') {
+        checkoutSuccessPageViews += 1;
+      }
+
+      if ((entry.eventType || entry.event) === 'checkout_cancel_page_view') {
+        checkoutCancelPageViews += 1;
+      }
+
+      if ((entry.eventType || entry.event) === 'checkout_paid_confirmed') {
+        checkoutPaidConfirmations += 1;
+      }
+
+      if ((entry.eventType || entry.event) === 'checkout_session_pending') {
+        checkoutPending += 1;
+      }
+
+      if ((entry.eventType || entry.event) === 'checkout_session_lookup_failed') {
+        checkoutLookupFailures += 1;
+        incrementCounter(sessionLookupFailuresByCode, entry.failureCode);
+        incrementCounter(
+          sessionLookupFailuresByStatus,
+          entry.httpStatus === null ? null : String(entry.httpStatus)
+        );
+      }
+
       if ((entry.eventType || entry.event) === 'checkout_cancelled') {
         checkoutCancelled += 1;
         incrementCounter(cancellationsByReason, entry.reasonCode);
@@ -435,6 +477,7 @@ function getTelemetrySummary(feedbackDir) {
   }
 
   return {
+    window: serializeAnalyticsWindow(analyticsWindow),
     totalEvents: events.length,
     latestSeenAt,
     byClientType,
@@ -450,6 +493,11 @@ function getTelemetrySummary(feedbackDir) {
       checkoutFailures,
       checkoutCancelled,
       checkoutAbandoned,
+      checkoutSuccessPageViews,
+      checkoutCancelPageViews,
+      checkoutPaidConfirmations,
+      checkoutPending,
+      checkoutLookupFailures,
       buyerLossSignals,
       pricingInterestEvents,
       seoLandingViews,
@@ -492,6 +540,8 @@ function getTelemetrySummary(feedbackDir) {
       byReferrerHost,
       checkoutFailuresByCode,
       checkoutFailuresByStatus,
+      sessionLookupFailuresByCode,
+      sessionLookupFailuresByStatus,
       cancellationsByReason,
       abandonmentsByReason,
       buyerLossReasons,
@@ -511,8 +561,8 @@ function getTopCounterEntry(counter) {
     .sort((a, b) => b[1] - a[1])[0] || null;
 }
 
-function getTelemetryAnalytics(feedbackDir) {
-  const summary = getTelemetrySummary(feedbackDir);
+function getTelemetryAnalytics(feedbackDir, options = {}) {
+  const summary = getTelemetrySummary(feedbackDir, options);
   const topSource = getTopCounterEntry(summary.marketing.pageViewsBySource);
   const topCampaign = getTopCounterEntry(summary.marketing.pageViewsByCampaign);
   const topCta = getTopCounterEntry(summary.marketing.byCtaId);
@@ -527,6 +577,7 @@ function getTelemetryAnalytics(feedbackDir) {
   const topSeoQuery = getTopCounterEntry(summary.marketing.seoLandingViewsByQuery);
 
   return {
+    window: summary.window,
     totalEvents: summary.totalEvents,
     latestSeenAt: summary.latestSeenAt,
     byClientType: summary.byClientType,
@@ -565,8 +616,15 @@ function getTelemetryAnalytics(feedbackDir) {
       checkoutFailures: summary.web.checkoutFailures,
       checkoutCancelled: summary.web.checkoutCancelled,
       checkoutAbandoned: summary.web.checkoutAbandoned,
+      successPageViews: summary.web.checkoutSuccessPageViews,
+      cancelPageViews: summary.web.checkoutCancelPageViews,
+      paidConfirmations: summary.web.checkoutPaidConfirmations,
+      sessionPending: summary.web.checkoutPending,
+      lookupFailures: summary.web.checkoutLookupFailures,
       failuresByCode: summary.marketing.checkoutFailuresByCode,
       failuresByStatus: summary.marketing.checkoutFailuresByStatus,
+      lookupFailuresByCode: summary.marketing.sessionLookupFailuresByCode,
+      lookupFailuresByStatus: summary.marketing.sessionLookupFailuresByStatus,
       cancellationReasons: summary.marketing.cancellationsByReason,
       abandonmentReasons: summary.marketing.abandonmentsByReason,
       bySource: summary.marketing.ctaClicksBySource,
@@ -588,6 +646,8 @@ function getTelemetryAnalytics(feedbackDir) {
       clickToCheckoutRate: safeRate(summary.web.checkoutStarts, summary.web.ctaClicks),
       cancellationRate: safeRate(summary.web.checkoutCancelled, summary.web.checkoutStarts),
       abandonmentRate: safeRate(summary.web.checkoutAbandoned, summary.web.checkoutStarts),
+      paidConfirmationRate: safeRate(summary.web.checkoutPaidConfirmations, summary.web.checkoutStarts),
+      successPageViewRate: safeRate(summary.web.checkoutSuccessPageViews, summary.web.checkoutStarts),
       conversionByTrafficChannel: summary.marketing.checkoutConversionByTrafficChannel,
     },
     buyerLoss: {

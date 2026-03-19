@@ -279,8 +279,8 @@ test('journey cookies are marked secure on forwarded HTTPS requests', async () =
   }
 });
 
-test('success page serves hosted onboarding shell', async () => {
-  const res = await fetch(apiUrl('/success'));
+test('success page serves hosted onboarding shell and records first-party telemetry', async () => {
+  const res = await fetch(apiUrl('/success?session_id=test_checkout_success&trace_id=trace_success_page&acquisition_id=acq_success_page&visitor_id=visitor_success_page&visitor_session_id=session_success_page&install_id=inst_success_page&utm_source=reddit&utm_medium=organic_social&utm_campaign=success_launch&community=ClaudeCode&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing&referrer_host=www.reddit.com'));
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
@@ -288,10 +288,26 @@ test('success page serves hosted onboarding shell', async () => {
   assert.match(body, /Your hosted API key is ready\./);
   assert.match(body, /const sessionEndpoint = "https:\/\/billing\.example\.com\/v1\/billing\/session";/);
   assert.match(body, /\+ '\?sessionId=' \+ encodeURIComponent\(sessionId\)/);
+  assert.match(body, /sendTelemetryOnce\('checkout_session_lookup_started'/);
+  assert.match(body, /sendTelemetryOnce\('checkout_paid_confirmed'/);
+  assert.match(body, /sendTelemetryOnce\('checkout_session_pending'/);
+  assert.match(body, /sendTelemetryOnce\('checkout_session_lookup_failed'/);
+
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  const successPageView = telemetryEvents.find((entry) => (
+    entry.eventType === 'checkout_success_page_view' &&
+    entry.traceId === 'trace_success_page'
+  ));
+  assert.ok(successPageView);
+  assert.equal(successPageView.acquisitionId, 'acq_success_page');
+  assert.equal(successPageView.visitorId, 'visitor_success_page');
+  assert.equal(successPageView.sessionId, 'session_success_page');
+  assert.equal(successPageView.ctaId, 'pricing_pro');
+  assert.equal(successPageView.landingPath, '/pricing');
 });
 
-test('cancel page serves retry message', async () => {
-  const res = await fetch(apiUrl('/cancel?trace_id=trace_test&acquisition_id=acq_test&visitor_id=visitor_test&session_id=session_test&install_id=inst_test&utm_source=google&utm_medium=organic&utm_campaign=seo_launch&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2F&referrer_host=www.google.com'));
+test('cancel page serves retry message and records first-party telemetry', async () => {
+  const res = await fetch(apiUrl('/cancel?trace_id=trace_cancel_page&acquisition_id=acq_cancel_page&visitor_id=visitor_cancel_page&session_id=session_cancel_page&install_id=inst_cancel_page&utm_source=google&utm_medium=organic&utm_campaign=seo_launch&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2F&referrer_host=www.google.com'));
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
@@ -303,6 +319,16 @@ test('cancel page serves retry message', async () => {
   assert.match(body, /sendTelemetry\('reason_not_buying'/);
   assert.match(body, /retryUrl\.searchParams\.set\(key, value\)/);
   assert.match(body, /Return to Context Gateway/);
+
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  const cancelPageView = telemetryEvents.find((entry) => (
+    entry.eventType === 'checkout_cancel_page_view' &&
+    entry.traceId === 'trace_cancel_page'
+  ));
+  assert.ok(cancelPageView);
+  assert.equal(cancelPageView.acquisitionId, 'acq_cancel_page');
+  assert.equal(cancelPageView.visitorId, 'visitor_cancel_page');
+  assert.equal(cancelPageView.sessionId, 'session_cancel_page');
 });
 
 test('checkout fallback URLs preserve Stripe session placeholders while carrying visitor-session attribution', () => {
@@ -1081,6 +1107,181 @@ test('billing summary returns admin-only operational proxy', async () => {
   assert.ok(Array.isArray(body.customers));
 });
 
+test('billing summary applies today window query params for admin users', async () => {
+  const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-api-window-'));
+  const savedEnv = {
+    feedbackDir: process.env.RLHF_FEEDBACK_DIR,
+    apiKeysPath: process.env._TEST_API_KEYS_PATH,
+    funnelPath: process.env._TEST_FUNNEL_LEDGER_PATH,
+    revenuePath: process.env._TEST_REVENUE_LEDGER_PATH,
+    checkoutSessionsPath: process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH,
+  };
+
+  process.env.RLHF_FEEDBACK_DIR = isolatedFeedbackDir;
+  process.env._TEST_API_KEYS_PATH = path.join(isolatedFeedbackDir, 'api-keys.json');
+  process.env._TEST_FUNNEL_LEDGER_PATH = path.join(isolatedFeedbackDir, 'funnel-events.jsonl');
+  process.env._TEST_REVENUE_LEDGER_PATH = path.join(isolatedFeedbackDir, 'revenue-events.jsonl');
+  process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = path.join(isolatedFeedbackDir, 'local-checkout-sessions.json');
+
+  try {
+    fs.writeFileSync(process.env._TEST_API_KEYS_PATH, JSON.stringify({ keys: {} }, null, 2));
+    fs.writeFileSync(process.env._TEST_FUNNEL_LEDGER_PATH, [
+      JSON.stringify({
+        timestamp: '2026-03-18T23:30:00.000Z',
+        stage: 'acquisition',
+        event: 'checkout_session_created',
+        evidence: 'sess_api_old',
+        traceId: 'trace_api_old',
+        metadata: {
+          customerId: 'cus_api_old',
+          source: 'reddit',
+          utmCampaign: 'api_window_old',
+        },
+      }),
+      JSON.stringify({
+        timestamp: '2026-03-19T14:30:00.000Z',
+        stage: 'acquisition',
+        event: 'checkout_session_created',
+        evidence: 'sess_api_today',
+        traceId: 'trace_api_today',
+        metadata: {
+          customerId: 'cus_api_today',
+          source: 'website',
+          utmCampaign: 'api_window_today',
+        },
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(process.env._TEST_REVENUE_LEDGER_PATH, [
+      JSON.stringify({
+        timestamp: '2026-03-18T23:30:00.000Z',
+        provider: 'stripe',
+        event: 'stripe_checkout_completed',
+        status: 'paid',
+        orderId: 'cs_api_old',
+        evidence: 'cs_api_old',
+        customerId: 'cus_api_old',
+        amountCents: 9900,
+        currency: 'USD',
+        amountKnown: true,
+        recurringInterval: null,
+        attribution: {
+          source: 'reddit',
+          utmCampaign: 'api_window_old',
+        },
+        metadata: {},
+      }),
+      JSON.stringify({
+        timestamp: '2026-03-19T15:00:00.000Z',
+        provider: 'stripe',
+        event: 'stripe_checkout_completed',
+        status: 'paid',
+        orderId: 'cs_api_today',
+        evidence: 'cs_api_today',
+        customerId: 'cus_api_today',
+        amountCents: 4900,
+        currency: 'USD',
+        amountKnown: true,
+        recurringInterval: null,
+        attribution: {
+          source: 'website',
+          utmCampaign: 'api_window_today',
+        },
+        metadata: {},
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(path.join(isolatedFeedbackDir, 'workflow-sprint-leads.jsonl'), [
+      JSON.stringify({
+        leadId: 'lead_api_old',
+        submittedAt: '2026-03-18T20:00:00.000Z',
+        status: 'new',
+        offer: 'workflow_hardening_sprint',
+        contact: {
+          email: 'old-api@example.com',
+          company: 'Old API Co',
+        },
+        qualification: {
+          workflow: 'Old workflow',
+          owner: 'Old owner',
+          blocker: 'Old blocker',
+          runtime: 'Claude Code',
+          note: null,
+        },
+        attribution: {
+          source: 'reddit',
+          utmCampaign: 'api_window_old',
+        },
+      }),
+      JSON.stringify({
+        leadId: 'lead_api_today',
+        submittedAt: '2026-03-19T16:00:00.000Z',
+        status: 'new',
+        offer: 'workflow_hardening_sprint',
+        contact: {
+          email: 'today-api@example.com',
+          company: 'Today API Co',
+        },
+        qualification: {
+          workflow: 'Today workflow',
+          owner: 'Today owner',
+          blocker: 'Today blocker',
+          runtime: 'Claude Code',
+          note: null,
+        },
+        attribution: {
+          source: 'linkedin',
+          utmCampaign: 'api_window_today',
+        },
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(path.join(isolatedFeedbackDir, 'telemetry-pings.jsonl'), [
+      JSON.stringify({
+        receivedAt: '2026-03-18T22:00:00.000Z',
+        eventType: 'landing_page_view',
+        clientType: 'web',
+        acquisitionId: 'acq_api_old',
+        visitorId: 'visitor_api_old',
+        sessionId: 'session_api_old',
+        source: 'reddit',
+        page: '/',
+      }),
+      JSON.stringify({
+        receivedAt: '2026-03-19T14:55:00.000Z',
+        eventType: 'landing_page_view',
+        clientType: 'web',
+        acquisitionId: 'acq_api_today',
+        visitorId: 'visitor_api_today',
+        sessionId: 'session_api_today',
+        source: 'website',
+        page: '/',
+      }),
+      '',
+    ].join('\n'));
+
+    const res = await fetch(apiUrl('/v1/billing/summary?window=today&timezone=UTC&now=2026-03-19T18:00:00.000Z'), {
+      headers: authHeader,
+    });
+    assert.equal(res.status, 200);
+
+    const body = await res.json();
+    assert.equal(body.window.window, 'today');
+    assert.equal(body.window.timeZone, 'UTC');
+    assert.equal(body.revenue.bookedRevenueCents, 4900);
+    assert.equal(body.revenue.paidOrders, 1);
+    assert.equal(body.pipeline.workflowSprintLeads.total, 1);
+    assert.equal(body.trafficMetrics.pageViews, 1);
+  } finally {
+    process.env.RLHF_FEEDBACK_DIR = savedEnv.feedbackDir;
+    process.env._TEST_API_KEYS_PATH = savedEnv.apiKeysPath;
+    process.env._TEST_FUNNEL_LEDGER_PATH = savedEnv.funnelPath;
+    process.env._TEST_REVENUE_LEDGER_PATH = savedEnv.revenuePath;
+    process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = savedEnv.checkoutSessionsPath;
+    fs.rmSync(isolatedFeedbackDir, { recursive: true, force: true });
+  }
+});
+
 test('billing summary rejects billing keys', async () => {
   const billingKey = billing.provisionApiKey('cus_non_admin_summary').key;
   const res = await fetch(apiUrl('/v1/billing/summary'), {
@@ -1089,6 +1290,15 @@ test('billing summary rejects billing keys', async () => {
     },
   });
   assert.equal(res.status, 403);
+});
+
+test('billing summary rejects invalid analytics window queries', async () => {
+  const res = await fetch(apiUrl('/v1/billing/summary?window=bad-window'), {
+    headers: authHeader,
+  });
+  assert.equal(res.status, 400);
+  const body = await res.json();
+  assert.match(body.detail, /Invalid analytics window/i);
 });
 
 test('rejects external output path by default', async () => {

@@ -82,6 +82,9 @@ const {
   appendTelemetryPing,
 } = require('../../scripts/telemetry-analytics');
 const {
+  resolveAnalyticsWindow,
+} = require('../../scripts/analytics-window');
+const {
   appendWorkflowSprintLead,
 } = require('../../scripts/workflow-sprint-intake');
 const {
@@ -415,6 +418,52 @@ function buildCheckoutAttributionMetadata(body, req, traceId) {
     ctaPlacement: pickFirstText(rawMetadata.ctaPlacement, body.ctaPlacement),
     planId: pickFirstText(rawMetadata.planId, body.planId, 'pro'),
   };
+}
+
+function buildCheckoutPageTelemetryMetadata(parsed, req, journeyState, page) {
+  const params = parsed.searchParams;
+  const referrer = pickFirstText(
+    params.get('referrer'),
+    req.headers.referer,
+    req.headers.referrer
+  );
+  const referrerHost = pickFirstText(params.get('referrer_host'), parseReferrerHost(referrer));
+  const source = pickFirstText(params.get('source'), params.get('utm_source'), inferSource(referrerHost));
+
+  return {
+    clientType: 'web',
+    installId: pickFirstText(params.get('install_id')),
+    acquisitionId: journeyState.acquisitionId,
+    visitorId: journeyState.visitorId,
+    sessionId: journeyState.sessionId,
+    traceId: pickFirstText(params.get('trace_id')),
+    source,
+    utmSource: pickFirstText(params.get('utm_source'), source),
+    utmMedium: pickFirstText(params.get('utm_medium'), page === '/cancel' ? 'checkout_cancel' : 'checkout_success'),
+    utmCampaign: pickFirstText(params.get('utm_campaign')),
+    utmContent: pickFirstText(params.get('utm_content')),
+    utmTerm: pickFirstText(params.get('utm_term')),
+    community: pickFirstText(params.get('community'), params.get('subreddit')),
+    postId: pickFirstText(params.get('post_id')),
+    commentId: pickFirstText(params.get('comment_id')),
+    campaignVariant: pickFirstText(params.get('campaign_variant')),
+    offerCode: pickFirstText(params.get('offer_code')),
+    ctaId: pickFirstText(params.get('cta_id')),
+    ctaPlacement: pickFirstText(params.get('cta_placement')),
+    planId: pickFirstText(params.get('plan_id'), 'pro'),
+    landingPath: pickFirstText(params.get('landing_path'), '/'),
+    page,
+    referrer,
+    referrerHost,
+  };
+}
+
+function resolveBillingSummaryOptions(parsed) {
+  return resolveAnalyticsWindow({
+    window: parsed.searchParams.get('window'),
+    timeZone: parsed.searchParams.get('timezone'),
+    now: parsed.searchParams.get('now'),
+  });
 }
 
 function createJourneyId(prefix) {
@@ -817,11 +866,88 @@ function renderCheckoutSuccessPage(runtimeConfig) {
     const sessionId = params.get('session_id');
     const traceId = params.get('trace_id');
     const sessionEndpoint = ${JSON.stringify(runtimeConfig.sessionEndpoint)};
+    const telemetryEndpoint = '/v1/telemetry/ping';
     const statusEl = document.getElementById('status');
     const summaryEl = document.getElementById('summary');
     const keyBlock = document.getElementById('key-block');
     const envBlock = document.getElementById('env-block');
     const curlBlock = document.getElementById('curl-block');
+    const acquisitionId = params.get('acquisition_id');
+    const visitorId = params.get('visitor_id');
+    const visitorSessionId = params.get('visitor_session_id') || sessionId;
+    const installId = params.get('install_id');
+    const utmSource = params.get('utm_source');
+    const utmMedium = params.get('utm_medium');
+    const utmCampaign = params.get('utm_campaign');
+    const utmContent = params.get('utm_content');
+    const utmTerm = params.get('utm_term');
+    const community = params.get('community');
+    const postId = params.get('post_id');
+    const commentId = params.get('comment_id');
+    const campaignVariant = params.get('campaign_variant');
+    const offerCode = params.get('offer_code');
+    const ctaId = params.get('cta_id');
+    const ctaPlacement = params.get('cta_placement');
+    const planId = params.get('plan_id');
+    const landingPath = params.get('landing_path') || '/';
+    const referrerHost = params.get('referrer_host');
+
+    function sendTelemetry(eventType, extra = {}) {
+      const payload = {
+        eventType,
+        clientType: 'web',
+        page: '/success',
+        traceId,
+        acquisitionId,
+        visitorId,
+        sessionId: visitorSessionId,
+        installId,
+        source: utmSource || 'website',
+        utmSource,
+        utmMedium,
+        utmCampaign,
+        utmContent,
+        utmTerm,
+        community,
+        postId,
+        commentId,
+        campaignVariant,
+        offerCode,
+        ctaId,
+        ctaPlacement,
+        planId,
+        landingPath,
+        referrerHost,
+        ...extra,
+      };
+      const body = JSON.stringify(payload);
+      if (navigator.sendBeacon) {
+        const blob = new Blob([body], { type: 'application/json' });
+        navigator.sendBeacon(telemetryEndpoint, blob);
+        return;
+      }
+      fetch(telemetryEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        keepalive: true,
+      }).catch(() => {});
+    }
+
+    function sendTelemetryOnce(eventType, extra = {}) {
+      const marker = ['rlhf', eventType, sessionId || traceId || 'unknown'].join(':');
+      try {
+        if (window.sessionStorage && window.sessionStorage.getItem(marker)) {
+          return;
+        }
+        sendTelemetry(eventType, extra);
+        if (window.sessionStorage) {
+          window.sessionStorage.setItem(marker, '1');
+        }
+      } catch (_) {
+        sendTelemetry(eventType, extra);
+      }
+    }
 
     async function run() {
       if (!sessionId) {
@@ -832,22 +958,29 @@ function renderCheckoutSuccessPage(runtimeConfig) {
       }
 
       try {
+        sendTelemetryOnce('checkout_session_lookup_started');
         const sessionLookupUrl = sessionEndpoint
           + '?sessionId=' + encodeURIComponent(sessionId)
           + (traceId ? '&traceId=' + encodeURIComponent(traceId) : '');
         const res = await fetch(sessionLookupUrl);
-        const body = await res.json();
+        const body = await res.json().catch(() => ({}));
         if (!res.ok) {
+          sendTelemetryOnce('checkout_session_lookup_failed', {
+            failureCode: body.error || 'checkout_session_lookup_failed',
+            httpStatus: res.status,
+          });
           throw new Error(body.error || 'Unable to load checkout session.');
         }
 
         if (!body.paid) {
+          sendTelemetryOnce('checkout_session_pending');
           statusEl.textContent = 'Payment is still processing.';
           summaryEl.textContent = 'Refresh this page in a few seconds if Stripe has already confirmed payment.';
           keyBlock.textContent = JSON.stringify(body, null, 2);
           return;
         }
 
+        sendTelemetryOnce('checkout_paid_confirmed');
         statusEl.textContent = 'Context Gateway activated.';
         const resolvedTraceId = body.traceId || traceId || '';
         summaryEl.textContent = resolvedTraceId
@@ -857,6 +990,9 @@ function renderCheckoutSuccessPage(runtimeConfig) {
         envBlock.textContent = body.nextSteps && body.nextSteps.env ? body.nextSteps.env : 'Environment snippet unavailable.';
         curlBlock.textContent = body.nextSteps && body.nextSteps.curl ? body.nextSteps.curl : 'curl snippet unavailable.';
       } catch (err) {
+        sendTelemetryOnce('checkout_session_lookup_failed', {
+          failureCode: err && err.message ? err.message : 'checkout_session_lookup_failed',
+        });
         statusEl.textContent = 'Provisioning lookup failed.';
         summaryEl.textContent = traceId
           ? 'You can retry this page. If it keeps failing, inspect the hosted API logs with trace ' + traceId + '.'
@@ -1560,12 +1696,34 @@ function createApiServer() {
     }
 
     if (req.method === 'GET' && pathname === '/success') {
-      sendHtml(res, 200, renderCheckoutSuccessPage(hostedConfig));
+      const { FEEDBACK_DIR } = getFeedbackPaths();
+      const journeyState = resolveJourneyState(req, parsed);
+      appendBestEffortTelemetry(FEEDBACK_DIR, {
+        eventType: 'checkout_success_page_view',
+        ...buildCheckoutPageTelemetryMetadata(parsed, req, journeyState, '/success'),
+      }, req.headers, 'checkout_success_page_view');
+      sendHtml(
+        res,
+        200,
+        renderCheckoutSuccessPage(hostedConfig),
+        journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}
+      );
       return;
     }
 
     if (req.method === 'GET' && pathname === '/cancel') {
-      sendHtml(res, 200, renderCheckoutCancelledPage(hostedConfig));
+      const { FEEDBACK_DIR } = getFeedbackPaths();
+      const journeyState = resolveJourneyState(req, parsed);
+      appendBestEffortTelemetry(FEEDBACK_DIR, {
+        eventType: 'checkout_cancel_page_view',
+        ...buildCheckoutPageTelemetryMetadata(parsed, req, journeyState, '/cancel'),
+      }, req.headers, 'checkout_cancel_page_view');
+      sendHtml(
+        res,
+        200,
+        renderCheckoutCancelledPage(hostedConfig),
+        journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}
+      );
       return;
     }
 
@@ -2455,7 +2613,20 @@ function createApiServer() {
           return;
         }
 
-        const summary = getBillingSummary();
+        let summaryOptions;
+        try {
+          summaryOptions = resolveBillingSummaryOptions(parsed);
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INVALID_REQUEST,
+            title: 'Invalid billing summary query',
+            status: 400,
+            detail: err && err.message ? err.message : 'Invalid analytics window request.',
+          });
+          return;
+        }
+
+        const summary = getBillingSummary(summaryOptions);
         sendJson(res, 200, summary);
         return;
       }
