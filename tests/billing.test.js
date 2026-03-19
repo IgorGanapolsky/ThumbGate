@@ -28,6 +28,7 @@ const savedGithubPlanPricing = process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_J
 const savedStripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const savedStripePriceId = process.env.STRIPE_PRICE_ID;
 const savedFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+const savedTestStripeReconciledRevenueEvents = process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
 
 // Initial setup
 process.env._TEST_API_KEYS_PATH = testApiKeysPath;
@@ -53,6 +54,8 @@ after(() => {
   else process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = savedGithubPlanPricing;
   if (savedFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
   else process.env.RLHF_FEEDBACK_DIR = savedFeedbackDir;
+  if (savedTestStripeReconciledRevenueEvents === undefined) delete process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
+  else process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = savedTestStripeReconciledRevenueEvents;
   fs.rmSync(billingTestRoot, { recursive: true, force: true });
 });
 
@@ -76,6 +79,7 @@ function clearBillingArtifacts() {
     if (fs.existsSync(target)) fs.rmSync(target, { force: true });
   }
   fs.rmSync(testFeedbackDir, { recursive: true, force: true });
+  delete process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
 }
 
 function readLedgerEvents() {
@@ -374,6 +378,253 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.revenue.amountKnownCoverageRate, 0);
     assert.equal(summary.revenue.derivedPaidOrders, 1);
     assert.equal(summary.dataQuality.unreconciledPaidEvents, 0);
+  });
+  test('getBillingSummary applies today window across revenue, telemetry, and sprint leads', () => {
+    const billing = require('../scripts/billing');
+    const telemetryPath = path.join(testFeedbackDir, 'telemetry-pings.jsonl');
+    const leadsPath = path.join(testFeedbackDir, 'workflow-sprint-leads.jsonl');
+
+    billing.provisionApiKey('cus_window_summary', {
+      installId: 'inst_window_summary',
+      source: 'stripe_webhook_checkout_completed',
+    });
+
+    fs.mkdirSync(testFeedbackDir, { recursive: true });
+    fs.writeFileSync(testFunnelLedgerPath, [
+      JSON.stringify({
+        timestamp: '2026-03-18T23:30:00.000Z',
+        stage: 'acquisition',
+        event: 'checkout_session_created',
+        installId: 'inst_old_summary',
+        traceId: 'trace_old_summary',
+        evidence: 'sess_old_summary',
+        metadata: {
+          customerId: 'cus_old_summary',
+          source: 'reddit',
+          utmSource: 'reddit',
+          utmCampaign: 'old_launch',
+        },
+      }),
+      JSON.stringify({
+        timestamp: '2026-03-19T10:00:00.000Z',
+        stage: 'acquisition',
+        event: 'checkout_session_created',
+        installId: 'inst_window_summary',
+        traceId: 'trace_window_summary',
+        evidence: 'sess_window_summary',
+        metadata: {
+          customerId: 'cus_window_summary',
+          source: 'website',
+          utmSource: 'website',
+          utmCampaign: 'today_launch',
+        },
+      }),
+      JSON.stringify({
+        timestamp: '2026-03-19T10:05:00.000Z',
+        stage: 'paid',
+        event: 'stripe_checkout_completed',
+        installId: 'inst_window_summary',
+        traceId: 'trace_window_summary',
+        evidence: 'cs_window_summary',
+        metadata: {
+          customerId: 'cus_window_summary',
+          source: 'website',
+          utmSource: 'website',
+          utmCampaign: 'today_launch',
+        },
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(testRevenueLedgerPath, [
+      JSON.stringify({
+        timestamp: '2026-03-18T23:40:00.000Z',
+        provider: 'stripe',
+        event: 'stripe_checkout_completed',
+        status: 'paid',
+        orderId: 'cs_old_summary',
+        evidence: 'cs_old_summary',
+        customerId: 'cus_old_summary',
+        installId: 'inst_old_summary',
+        traceId: 'trace_old_summary',
+        amountCents: 9900,
+        currency: 'USD',
+        amountKnown: true,
+        recurringInterval: null,
+        attribution: {
+          source: 'reddit',
+          utmSource: 'reddit',
+          utmCampaign: 'old_launch',
+        },
+        metadata: {},
+      }),
+      JSON.stringify({
+        timestamp: '2026-03-19T10:05:00.000Z',
+        provider: 'stripe',
+        event: 'stripe_checkout_completed',
+        status: 'paid',
+        orderId: 'cs_window_summary',
+        evidence: 'cs_window_summary',
+        customerId: 'cus_window_summary',
+        installId: 'inst_window_summary',
+        traceId: 'trace_window_summary',
+        amountCents: 4900,
+        currency: 'USD',
+        amountKnown: true,
+        recurringInterval: null,
+        attribution: {
+          source: 'website',
+          utmSource: 'website',
+          utmCampaign: 'today_launch',
+        },
+        metadata: {},
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(leadsPath, [
+      JSON.stringify({
+        leadId: 'lead_old_summary',
+        submittedAt: '2026-03-18T20:00:00.000Z',
+        status: 'new',
+        offer: 'workflow_hardening_sprint',
+        contact: {
+          email: 'old@example.com',
+          company: 'Old Co',
+        },
+        qualification: {
+          workflow: 'Old workflow',
+          owner: 'Old owner',
+          blocker: 'Old blocker',
+          runtime: 'Claude Code',
+          note: null,
+        },
+        attribution: {
+          source: 'reddit',
+          utmSource: 'reddit',
+          utmCampaign: 'old_launch',
+        },
+      }),
+      JSON.stringify({
+        leadId: 'lead_window_summary',
+        submittedAt: '2026-03-19T11:00:00.000Z',
+        status: 'new',
+        offer: 'workflow_hardening_sprint',
+        contact: {
+          email: 'today@example.com',
+          company: 'Today Co',
+        },
+        qualification: {
+          workflow: 'Today workflow',
+          owner: 'Today owner',
+          blocker: 'Today blocker',
+          runtime: 'Claude Code',
+          note: null,
+        },
+        attribution: {
+          source: 'linkedin',
+          utmSource: 'linkedin',
+          utmCampaign: 'today_launch',
+        },
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(telemetryPath, [
+      JSON.stringify({
+        receivedAt: '2026-03-18T22:00:00.000Z',
+        eventType: 'landing_page_view',
+        clientType: 'web',
+        acquisitionId: 'acq_old_summary',
+        visitorId: 'visitor_old_summary',
+        sessionId: 'session_old_summary',
+        source: 'reddit',
+        page: '/',
+      }),
+      JSON.stringify({
+        receivedAt: '2026-03-19T09:55:00.000Z',
+        eventType: 'landing_page_view',
+        clientType: 'web',
+        acquisitionId: 'acq_window_summary',
+        visitorId: 'visitor_window_summary',
+        sessionId: 'session_window_summary',
+        source: 'website',
+        page: '/',
+      }),
+      JSON.stringify({
+        receivedAt: '2026-03-19T10:00:00.000Z',
+        eventType: 'checkout_start',
+        clientType: 'web',
+        acquisitionId: 'acq_window_summary',
+        visitorId: 'visitor_window_summary',
+        sessionId: 'session_window_summary',
+        source: 'website',
+        ctaId: 'pricing_pro',
+      }),
+      JSON.stringify({
+        receivedAt: '2026-03-19T10:06:00.000Z',
+        eventType: 'checkout_paid_confirmed',
+        clientType: 'web',
+        acquisitionId: 'acq_window_summary',
+        visitorId: 'visitor_window_summary',
+        sessionId: 'session_window_summary',
+        traceId: 'trace_window_summary',
+      }),
+      '',
+    ].join('\n'));
+
+    const summary = billing.getBillingSummary({
+      window: 'today',
+      timeZone: 'UTC',
+      now: '2026-03-19T18:00:00.000Z',
+    });
+
+    assert.equal(summary.window.window, 'today');
+    assert.equal(summary.window.startLocalDate, '2026-03-19');
+    assert.equal(summary.signups.total, 1);
+    assert.equal(summary.revenue.paidOrders, 1);
+    assert.equal(summary.revenue.bookedRevenueCents, 4900);
+    assert.equal(summary.pipeline.workflowSprintLeads.total, 1);
+    assert.equal(summary.pipeline.workflowSprintLeads.bySource.linkedin, 1);
+    assert.equal(summary.trafficMetrics.pageViews, 1);
+    assert.equal(summary.trafficMetrics.checkoutStarts, 1);
+    assert.equal(summary.trafficMetrics.checkoutPaidConfirmations, 1);
+    assert.equal(summary.keys.scope, 'current_state');
+    assert.equal(summary.keys.windowed, false);
+  });
+
+  test('getBillingSummaryLive includes Stripe-reconciled historical revenue without claiming money today', async () => {
+    process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = JSON.stringify([
+      {
+        timestamp: '2025-11-18T10:36:00.000Z',
+        provider: 'stripe',
+        event: 'stripe_charge_reconciled',
+        status: 'paid',
+        orderId: 'ch_hist_001',
+        evidence: 'ch_hist_001',
+        customerId: 'cus_hist_001',
+        amountCents: 1000,
+        currency: 'USD',
+        amountKnown: true,
+        recurringInterval: 'month',
+        attribution: {
+          source: 'stripe_reconciled',
+        },
+        metadata: {
+          stripeReconciled: true,
+          priceId: 'price_hist_001',
+          productId: 'prod_hist_001',
+        },
+      },
+    ]);
+
+    const billing = requireFreshBilling('');
+    const summary = await billing.getBillingSummaryLive();
+
+    assert.equal(summary.revenue.bookedRevenueCents, 1000);
+    assert.equal(summary.revenue.bookedRevenueTodayCents, 0);
+    assert.equal(summary.revenue.paidOrders, 1);
+    assert.equal(summary.revenue.paidOrdersToday, 0);
+    assert.equal(summary.revenue.processorReconciledOrders, 1);
+    assert.equal(summary.revenue.processorReconciledRevenueCents, 1000);
+    assert.equal(summary.coverage.providerCoverage.stripe, 'booked_revenue+processor_reconciled');
   });
 });
 

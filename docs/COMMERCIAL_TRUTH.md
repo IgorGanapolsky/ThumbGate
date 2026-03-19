@@ -1,14 +1,16 @@
 # Commercial Truth
 
 Status: current
-Updated: March 13, 2026
+Updated: March 19, 2026
 
 This document is the source of truth for product, pricing, traction, and proof claims in this repository.
 
 ## What is true today
 
 - The open-source `mcp-memory-gateway` package is free and MIT licensed.
-- The current public self-serve commercial offer is **Pro at $49 one-time**, hosted on Cloudflare Workers.
+- The current public self-serve commercial offer is **Pro at $49 one-time** via the hosted checkout at `https://rlhf-feedback-loop-production.up.railway.app/checkout/pro`.
+- Verified booked revenue as of March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product.
+- Verified booked revenue for March 19, 2026 is **$0.00**; there is no evidence of a new paid charge today.
 - Engineering verification is strong and should be cited through `docs/VERIFICATION_EVIDENCE.md` and machine-readable proof reports.
 
 ## Product Tiers
@@ -21,7 +23,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - DPO/KTO export for fine-tuning
 - CLI dashboard
 
-### Pro ($49 one-time, hosted on Cloudflare Workers)
+### Pro ($49 one-time, hosted checkout on Railway)
 
 - Cloud-synced memories accessible from any machine
 - Unlimited memories and retrievals
@@ -41,6 +43,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 - Use booked revenue, paid orders, or named pilot agreements for commercial proof.
 - Use the admin billing summary and CLI CFO output to distinguish `bookedRevenueCents` from `paidOrders`; not every paid provider event carries a verifiable amount by default.
+- Treat Stripe-reconciled charges as booked revenue proof; treat GitHub Marketplace paid events as paid-order proof until plan pricing is configured or invoice amounts are reconciled.
 - Treat `workflowSprintLeads` as pipeline evidence only; qualified intake volume is useful for selling, but it is not revenue.
 - Use `docs/VERIFICATION_EVIDENCE.md`, `proof/compatibility/report.json`, and `proof/automation/report.json` for engineering proof.
 - When in doubt, prefer "early-stage" or "pilot" language over unverified traction claims.

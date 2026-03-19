@@ -136,7 +136,7 @@ function buildRecallResponse(args = {}) {
     text += '\n\n---\n';
     text += 'Upgrade to Context Gateway for unlimited recall, shared workflow memory, and hosted rollout.\n';
     text += 'Hosted API: https://rlhf-feedback-loop-production.up.railway.app\n';
-    text += 'Pro pack: https://iganapolsky.gumroad.com/l/tjovof';
+    text += 'Pro pack: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro';
   }
 
   return toTextResult(text);

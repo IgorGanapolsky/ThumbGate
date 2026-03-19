@@ -572,8 +572,13 @@ function stats() {
 }
 
 function cfo() {
+  const args = parseArgs(process.argv.slice(3));
   const { getOperationalBillingSummary } = require(path.join(PKG_ROOT, 'scripts', 'operational-summary'));
-  getOperationalBillingSummary()
+  getOperationalBillingSummary({
+    window: args.window,
+    timeZone: args.timezone,
+    now: args.now,
+  })
     .then(({ source, summary, fallbackReason }) => {
       console.log(JSON.stringify({
         source,

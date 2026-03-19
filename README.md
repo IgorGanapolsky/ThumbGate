@@ -7,7 +7,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-Gumroad-FF90E8?logo=gumroad)](https://iganapolsky.gumroad.com/l/tjovof)
+[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro)
 
 **Local-first AI reliability system for coding agents.** Keeps one sharp agent on task: persist decisions, surface reliability rules, and inject relevant history without adding orchestration or subagent handoff overhead.
 
@@ -426,7 +426,7 @@ Curated configuration pack for teams that want a faster production setup without
 | **Hook Templates** | Ready-to-install Stop, UserPromptSubmit, PostToolUse hooks |
 | **Reminder Templates** | 8 production reminder templates with priority levels |
 
-**[Buy Pro ($49 one-time) →](https://iganapolsky.gumroad.com/l/tjovof)**
+**[Buy Pro ($49 one-time) →](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro)**
 
 Current pricing and traction policy: [Commercial Truth](docs/COMMERCIAL_TRUTH.md)
 

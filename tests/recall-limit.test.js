@@ -48,7 +48,7 @@ describe('recall limit', { concurrency: false }, () => {
     const result = await callTool('recall', { query: 'test task 6' });
     const text = result.content[0].text;
     assert.ok(text.includes('Upgrade to Context Gateway'), 'Call 6 should show upgrade nudge');
-    assert.ok(text.includes('gumroad.com'), 'Should include Gumroad link');
+    assert.ok(text.includes('/checkout/pro'), 'Should include hosted checkout link');
     assert.ok(text.includes('rlhf-feedback-loop-production'), 'Should include hosted API link');
   });
 

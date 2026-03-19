@@ -30,7 +30,7 @@ const PRODUCT = {
   name: 'MCP Memory Gateway',
   npm: 'mcp-memory-gateway',
   repo: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
-  gumroad: 'https://gumroad.com/igorganapolsky',
+  checkout: 'https://rlhf-feedback-loop-production.up.railway.app/checkout/pro',
   sponsor: 'https://github.com/sponsors/IgorGanapolsky',
   coffee: 'https://buymeacoffee.com/igorganapolsky',
   tagline: 'Local-first memory and feedback pipeline for AI agents. Captures thumbs-up/down signals, promotes reusable memories, generates prevention rules from repeated failures, and exports KTO/DPO pairs for fine-tuning.',
@@ -188,7 +188,7 @@ async function generatePosts() {
 Product: ${PRODUCT.tagline}
 npm: npx ${PRODUCT.npm} init
 GitHub: ${PRODUCT.repo}
-Pro Pack: ${PRODUCT.proPrice} on Gumroad
+Pro Pack: ${PRODUCT.proPrice} via hosted checkout (${PRODUCT.checkout})
 
 Requirements:
 - Title must start with "Show HN:"
@@ -213,7 +213,7 @@ Also generate 3 alternative titles to A/B test.`,
 Product: ${PRODUCT.tagline}
 npm: npx ${PRODUCT.npm} init
 GitHub: ${PRODUCT.repo}
-Pro Pack: ${PRODUCT.proPrice} on Gumroad (${PRODUCT.gumroad})
+Pro Pack: ${PRODUCT.proPrice} via hosted checkout (${PRODUCT.checkout})
 
 For each subreddit, write:
 - A title
@@ -249,7 +249,7 @@ Requirements:
 Product: ${PRODUCT.tagline}
 npm: npx ${PRODUCT.npm} init
 GitHub: ${PRODUCT.repo}
-Pro Pack: ${PRODUCT.proPrice} at ${PRODUCT.gumroad}
+Pro Pack: ${PRODUCT.proPrice} at ${PRODUCT.checkout}
 
 Requirements:
 - First tweet must hook attention (problem statement)
@@ -286,7 +286,7 @@ Requirements:
 Product: ${PRODUCT.tagline}
 npm: npx ${PRODUCT.npm} init
 GitHub: ${PRODUCT.repo}
-Pro Pack: ${PRODUCT.proPrice} at ${PRODUCT.gumroad}
+Pro Pack: ${PRODUCT.proPrice} at ${PRODUCT.checkout}
 
 Requirements:
 - Tagline (under 60 chars)

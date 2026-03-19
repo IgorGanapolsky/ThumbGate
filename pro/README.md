@@ -47,6 +47,6 @@ npm run self-heal:check
 
 ## License
 
-Commercial license. Single-team use. See purchase terms on Gumroad.
+Commercial license. Single-team use. See purchase terms on the hosted checkout.
 
 Current pricing and traction policy: [Commercial Truth](../docs/COMMERCIAL_TRUTH.md)

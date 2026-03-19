@@ -31,7 +31,7 @@ MCP Memory Gateway v0.7.0 introduces **Pre-Action Gates** — configurable check
 > Pro ($49 one-time): auto-gate promotion, unlimited custom gates, multi-repo sync
 >
 > OSS core: https://github.com/IgorGanapolsky/mcp-memory-gateway
-> Pro: https://iganapolsky.gumroad.com/l/tjovof"
+> Pro: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro"
 
 ### LinkedIn
 

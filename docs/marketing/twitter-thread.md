@@ -84,7 +84,7 @@ npm install mcp-memory-gateway
 
 GitHub: github.com/IgorGanapolsky/mcp-memory-gateway
 npm: npmjs.com/package/mcp-memory-gateway
-Pro ($49 one-time): https://iganapolsky.gumroad.com/l/tjovof
+Pro ($49 one-time): https://rlhf-feedback-loop-production.up.railway.app/checkout/pro
 Hosted demo: rlhf-feedback-loop-production.up.railway.app
 
 #DevTools #MCP

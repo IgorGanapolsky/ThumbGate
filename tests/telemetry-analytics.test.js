@@ -374,3 +374,89 @@ test('getTelemetryAnalytics summarizes reddit community and offer performance', 
   assert.equal(analytics.ctas.byCommunity.ClaudeCode, 1);
   assert.equal(analytics.ctas.byOfferCode['REDDIT-EARLY'], 1);
 });
+
+test('getTelemetryAnalytics applies daily windows and summarizes checkout success telemetry', () => {
+  fs.writeFileSync(path.join(tmpDir, 'telemetry-pings.jsonl'), [
+    JSON.stringify({
+      receivedAt: '2026-03-18T23:55:00.000Z',
+      eventType: 'landing_page_view',
+      clientType: 'web',
+      acquisitionId: 'acq_old',
+      visitorId: 'visitor_old',
+      sessionId: 'session_old',
+      source: 'website',
+      page: '/',
+    }),
+    JSON.stringify({
+      receivedAt: '2026-03-19T10:00:00.000Z',
+      eventType: 'checkout_start',
+      clientType: 'web',
+      acquisitionId: 'acq_today',
+      visitorId: 'visitor_today',
+      sessionId: 'session_today',
+      ctaId: 'pricing_pro',
+      source: 'website',
+      utmCampaign: 'launch_today',
+    }),
+    JSON.stringify({
+      receivedAt: '2026-03-19T10:01:00.000Z',
+      eventType: 'checkout_success_page_view',
+      clientType: 'web',
+      acquisitionId: 'acq_today',
+      visitorId: 'visitor_today',
+      sessionId: 'session_today',
+      traceId: 'trace_today',
+    }),
+    JSON.stringify({
+      receivedAt: '2026-03-19T10:02:00.000Z',
+      eventType: 'checkout_paid_confirmed',
+      clientType: 'web',
+      acquisitionId: 'acq_today',
+      visitorId: 'visitor_today',
+      sessionId: 'session_today',
+      traceId: 'trace_today',
+    }),
+    JSON.stringify({
+      receivedAt: '2026-03-19T10:03:00.000Z',
+      eventType: 'checkout_session_lookup_failed',
+      clientType: 'web',
+      acquisitionId: 'acq_today',
+      visitorId: 'visitor_today',
+      sessionId: 'session_today',
+      traceId: 'trace_today',
+      failureCode: 'session_lookup_timeout',
+      httpStatus: 504,
+    }),
+    JSON.stringify({
+      receivedAt: '2026-03-19T10:04:00.000Z',
+      eventType: 'checkout_cancel_page_view',
+      clientType: 'web',
+      acquisitionId: 'acq_today',
+      visitorId: 'visitor_today',
+      sessionId: 'session_today',
+      traceId: 'trace_today',
+    }),
+    '',
+  ].join('\n'));
+
+  const analytics = getTelemetryAnalytics(tmpDir, {
+    window: 'today',
+    timeZone: 'UTC',
+    now: '2026-03-19T18:00:00.000Z',
+  });
+
+  assert.equal(analytics.window.window, 'today');
+  assert.equal(analytics.window.timeZone, 'UTC');
+  assert.equal(analytics.window.startLocalDate, '2026-03-19');
+  assert.equal(analytics.totalEvents, 5);
+  assert.equal(analytics.visitors.pageViews, 0);
+  assert.equal(analytics.ctas.checkoutStarts, 1);
+  assert.equal(analytics.ctas.successPageViews, 1);
+  assert.equal(analytics.ctas.cancelPageViews, 1);
+  assert.equal(analytics.ctas.paidConfirmations, 1);
+  assert.equal(analytics.ctas.lookupFailures, 1);
+  assert.equal(analytics.ctas.lookupFailuresByCode.session_lookup_timeout, 1);
+  assert.equal(analytics.ctas.lookupFailuresByStatus['504'], 1);
+  assert.equal(analytics.ctas.paidConfirmationRate, 1);
+  assert.equal(analytics.ctas.successPageViewRate, 1);
+});

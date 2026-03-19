@@ -1,3 +1,74 @@
+## March 19, 2026: Stripe revenue reconciliation, live checkout cutover, and production billing proof
+
+Scope:
+
+- Added live Stripe revenue reconciliation to `scripts/billing.js` so historical successful charges tied to the current product are included in the billing summary without fabricating same-day revenue.
+- Switched the admin billing summary surfaces in `scripts/operational-summary.js` and `src/api/server.js` to the live reconciliation path.
+- Replaced buyer-facing Gumroad links on active repo and runtime surfaces with the hosted `/checkout/pro` route, while changing the fallback checkout URL default to the direct Stripe payment link.
+- Updated the live Railway production environment so `/checkout/pro` now falls back to Stripe instead of Gumroad.
+- Deployed the exact worktree diff to Railway and verified the hosted billing summary now reports the reconciled Stripe revenue truth surface.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/rlhf-revenue-proof`:
+
+```bash
+node --test tests/billing.test.js tests/api-server.test.js tests/cli.test.js tests/version-metadata.test.js tests/recall-limit.test.js tests/public-landing.test.js
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+git diff --check
+railway variable set RLHF_CHECKOUT_FALLBACK_URL=https://buy.stripe.com/bJe28rfCY6zc4lH7mb3sI04
+railway up -d -m "revenue proof analytics + stripe checkout fallback"
+railway run node - <<'NODE'
+const https = require('https');
+const options = {
+  hostname: 'rlhf-feedback-loop-production.up.railway.app',
+  path: '/v1/billing/summary',
+  headers: {
+    authorization: `Bearer ${process.env.RLHF_API_KEY}`,
+    'user-agent': 'codex'
+  }
+};
+const req = https.request(options, (res) => {
+  let body = '';
+  res.on('data', (chunk) => body += chunk);
+  res.on('end', () => {
+    console.log(JSON.stringify({ statusCode: res.statusCode, body: body ? JSON.parse(body) : null }, null, 2));
+  });
+});
+req.on('error', (err) => { console.error(err); process.exit(1); });
+req.end();
+NODE
+```
+
+Observed result:
+
+- Targeted monetization/runtime regression pack exited `0`: `116` passed, `0` failed.
+- `npm test` exited `0` in the dedicated worktree after the final checkout and analytics edits.
+- `npm run test:coverage` exited `0` with all-files coverage at `89.27%` lines, `75.79%` branches, and `93.01%` functions.
+- `npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `git diff --check` exited `0`.
+- Railway env-only redeploy `32717506-102b-4316-88d6-eddb6fdf7150` succeeded after setting `RLHF_CHECKOUT_FALLBACK_URL` to the Stripe payment link.
+- Production `GET /checkout/pro` now returns `302` to `https://buy.stripe.com/bJe28rfCY6zc4lH7mb3sI04...` instead of the old Gumroad URL.
+- Railway code deployment `a5fbff33-c410-46bf-b795-ced4163495ac` succeeded for the exact worktree diff.
+- The live admin billing summary now returns `200` and reports:
+  - `paidOrders: 2`
+  - `bookedRevenueCents: 2000`
+  - `bookedRevenueTodayCents: 0`
+  - `paidOrdersToday: 0`
+  - `processorReconciledOrders: 2`
+  - `processorReconciledRevenueCents: 2000`
+  - `coverage.providerCoverage.stripe: booked_revenue+processor_reconciled`
+
+Requirements verified:
+
+- Historical product revenue is now proven through live Stripe reconciliation instead of being hidden behind a false-zero billing summary.
+- The production checkout fallback no longer leaks buyers to Gumroad; the hosted `/checkout/pro` route now falls back to Stripe.
+- The repo truth surface now matches live production: the MCP has made money historically, but it is not making booked money on March 19, 2026.
+
 ## March 18, 2026: Open SWE-style internal-agent bootstrap, sandbox lane, and MCP/API parity
 
 Scope:
