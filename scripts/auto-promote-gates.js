@@ -5,8 +5,8 @@ const fs = require('fs');
 const path = require('path');
 
 const MAX_AUTO_GATES = 10;
-const WARN_THRESHOLD = 3;
-const BLOCK_THRESHOLD = 5;
+const WARN_THRESHOLD = 1; // Any confirmed failure gets a warning
+const BLOCK_THRESHOLD = 3; // 3+ failures = hard block
 const WINDOW_DAYS = 30;
 
 const NEG_SIGNALS = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
@@ -132,27 +132,63 @@ function patternToGateId(key) {
 }
 
 function buildGateRule(group) {
-  const action = group.count >= BLOCK_THRESHOLD ? 'block' : 'warn';
-  const severity = group.count >= BLOCK_THRESHOLD ? 'critical' : 'medium';
+  const action = group.count === 'MANUAL' ? group.manualAction || 'block' : (group.count >= BLOCK_THRESHOLD ? 'block' : 'warn');
+  const severity = action === 'block' ? 'critical' : 'medium';
   const context = group.latestContext.slice(0, 120);
   const kind = group.key.startsWith('diagnosis:')
     ? 'repeated diagnosis'
     : group.key.startsWith('constraint:')
       ? 'repeated constraint violation'
       : 'repeated pattern';
-  const suggestedMessage = `Auto-promoted ${kind}: "${context}" (${group.count} occurrences in ${WINDOW_DAYS} days)`;
+  
+  const occurrencesText = group.count === 'MANUAL' ? 'manual' : `${group.count} occurrences`;
+  const suggestedMessage = `Auto-promoted ${kind}: "${context}" (${occurrencesText} in ${WINDOW_DAYS} days)`;
 
   return {
     id: patternToGateId(group.key),
     trigger: `auto:${group.key}`,
-    pattern: group.key,
+    pattern: group.key.replace(/^diagnosis:|constraint:/, ''),
     action,
     message: suggestedMessage,
     severity,
     occurrences: group.count,
     promotedAt: new Date().toISOString(),
-    source: 'auto-promote',
+    source: group.source || 'auto-promote',
   };
+}
+
+function forcePromote(context, action = 'block') {
+  if (!context) throw new Error('context is required for force-promote');
+  const data = loadAutoGates();
+  const gateId = patternToGateId(context);
+  
+  // Remove existing if any
+  data.gates = data.gates.filter(g => g.id !== gateId);
+  
+  const gate = buildGateRule({
+    key: context,
+    latestContext: context,
+    count: 'MANUAL',
+    manualAction: action,
+    source: 'force-promote'
+  });
+  data.gates.unshift(gate);
+  
+  if (data.gates.length > MAX_AUTO_GATES) {
+    data.gates = data.gates.slice(0, MAX_AUTO_GATES);
+  }
+
+  data.promotionLog = data.promotionLog || [];
+  data.promotionLog.push({
+    gateId,
+    context,
+    action,
+    promotedAt: new Date().toISOString(),
+    source: 'force-promote'
+  });
+
+  saveAutoGates(data);
+  return { gateId, action, totalGates: data.gates.length };
 }
 
 function promote(feedbackLogPath) {
@@ -231,8 +267,28 @@ if (require.main === module) {
   }
 }
 
+if (require.main === module) {
+  const args = process.argv.slice(2);
+  const forceContext = args.find(a => a.startsWith('--force-block='))?.split('=')[1];
+  
+  if (forceContext) {
+    try {
+      const result = forcePromote(forceContext, 'block');
+      console.log(`✅ Forced block gate created: ${result.gateId}`);
+      console.log(`Total auto-promoted gates: ${result.totalGates}`);
+      process.exit(0);
+    } catch (err) {
+      console.error('force-promote error:', err.message);
+      process.exit(1);
+    }
+  }
+  
+  runCli();
+}
+
 module.exports = {
   promote,
+  forcePromote,
   loadAutoGates,
   saveAutoGates,
   getAutoGatesPath,

@@ -36,6 +36,7 @@ const {
 } = require('../../scripts/mcp-policy');
 const {
   evaluateGates,
+  evaluateGatesAsync,
   evaluateSecretGuard,
   satisfyCondition,
   loadStats: loadGateStats,
@@ -305,7 +306,7 @@ function buildEstimateUncertaintyResponse(args = {}) {
 
 async function callTool(name, args = {}) {
   assertToolAllowed(name, getActiveMcpProfile());
-  const firewallResult = evaluateGates(name, args) || evaluateSecretGuard({ tool_name: name, tool_input: args });
+  const firewallResult = (await evaluateGatesAsync(name, args)) || evaluateSecretGuard({ tool_name: name, tool_input: args });
   if (firewallResult && firewallResult.decision === 'deny') {
     const err = new Error(`Action blocked by Semantic Firewall: ${firewallResult.message}`);
     err.errorCategory = 'permission';

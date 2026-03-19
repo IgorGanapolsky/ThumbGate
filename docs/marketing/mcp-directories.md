@@ -11,9 +11,10 @@
 
 ## 1. Glama.ai — https://glama.ai/mcp/servers
 
-**Status:** NOT YET LISTED
+**Status:** CONTACT INITIATED (March 19, 2026)
 
-**How it works:** Glama automatically indexes MCP servers from GitHub and npm. It crawls repositories that contain MCP server metadata and ranks them by security, compatibility, and ease of use. There is no explicit "submit" form — servers appear once indexed.
+**How it works:** Glama automatically indexes MCP servers from GitHub and npm.
+ It crawls repositories that contain MCP server metadata and ranks them by security, compatibility, and ease of use. There is no explicit "submit" form — servers appear once indexed.
 
 **How to get listed:**
 1. Ensure your GitHub repo has proper MCP metadata in `package.json` (name, description, repository URL, keywords).

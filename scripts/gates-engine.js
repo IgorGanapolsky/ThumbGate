@@ -167,6 +167,78 @@ function matchesGate(gate, _toolName, toolInput) {
   }
 }
 
+async function checkMetricCondition(metricCondition) {
+  if (!metricCondition) return true;
+  const { getBusinessMetrics } = require('./semantic-layer');
+  const metrics = await getBusinessMetrics({ window: metricCondition.window || '30d' });
+  const value = metrics.metrics[metricCondition.name];
+  
+  if (value === undefined) return true;
+
+  if (metricCondition.min !== undefined && value < metricCondition.min) return false;
+  if (metricCondition.max !== undefined && value > metricCondition.max) return false;
+  
+  return true;
+}
+
+async function evaluateGatesAsync(toolName, toolInput, configPath) {
+  let config;
+  try {
+    config = loadGatesConfig(configPath);
+  } catch {
+    return null;
+  }
+
+  const constraints = loadConstraints();
+
+  for (const gate of config.gates) {
+    if (!matchesGate(gate, toolName, toolInput)) continue;
+
+    // EvoSkill Hardening: check contextual 'when' clause
+    if (gate.when && !checkWhenClause(gate.when, constraints)) {
+      continue;
+    }
+
+    // Metric-aware gates: check business metrics from Semantic Layer
+    if (gate.metrics) {
+      const metricsPassed = await checkMetricCondition(gate.metrics);
+      if (!metricsPassed) {
+        // If metrics don't pass, the gate matches and we take the action (block/warn)
+      } else {
+        // If metrics pass, the gate doesn't apply
+        continue;
+      }
+    }
+
+    // Check unless condition
+    if (gate.unless && isConditionSatisfied(gate.unless)) {
+      continue;
+    }
+
+    if (gate.action === 'block') {
+      recordStat(gate.id, 'block');
+      return {
+        decision: 'deny',
+        gate: gate.id,
+        message: gate.message,
+        severity: gate.severity,
+      };
+    }
+
+    if (gate.action === 'warn') {
+      recordStat(gate.id, 'warn');
+      return {
+        decision: 'warn',
+        gate: gate.id,
+        message: gate.message,
+        severity: gate.severity,
+      };
+    }
+  }
+
+  return null;
+}
+
 function evaluateGates(toolName, toolInput, configPath) {
   let config;
   try {
@@ -336,6 +408,18 @@ function formatOutput(result) {
   return JSON.stringify({});
 }
 
+async function runAsync(input) {
+  const secretGuard = evaluateSecretGuard(input);
+  if (secretGuard) {
+    return formatOutput(secretGuard);
+  }
+
+  const toolName = input.tool_name || '';
+  const toolInput = input.tool_input || {};
+  const result = await evaluateGatesAsync(toolName, toolInput);
+  return formatOutput(result);
+}
+
 function run(input) {
   const secretGuard = evaluateSecretGuard(input);
   if (secretGuard) {
@@ -368,8 +452,10 @@ module.exports = {
   buildSecretGuardResult,
   matchesGate,
   evaluateGates,
+  evaluateGatesAsync,
   formatOutput,
   run,
+  runAsync,
   DEFAULT_CONFIG_PATH,
   STATE_PATH,
   CONSTRAINTS_PATH,
@@ -385,10 +471,10 @@ if (require.main === module) {
   let data = '';
   process.stdin.setEncoding('utf8');
   process.stdin.on('data', (chunk) => { data += chunk; });
-  process.stdin.on('end', () => {
+  process.stdin.on('end', async () => {
     try {
       const input = JSON.parse(data);
-      const output = run(input);
+      const output = await runAsync(input);
       process.stdout.write(output + '\n');
       process.exit(0);
     } catch (err) {

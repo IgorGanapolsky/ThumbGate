@@ -78,39 +78,6 @@ async function getBusinessMetrics(options = {}) {
   };
 }
 
-async function getEntityDetails(type, id, options = {}) {
-  const summary = await getBusinessMetrics(options);
-  
-  if (type === 'customer' || type === 'Customer') {
-    const { loadKeyStore } = require('./billing');
-    const store = loadKeyStore();
-    const customerKeys = Object.entries(store.keys).filter(([, m]) => m.customerId === id);
-    if (!customerKeys.length) return null;
-
-    return {
-      type: 'Customer',
-      id,
-      active: customerKeys.some(([, m]) => m.active),
-      totalKeys: customerKeys.length,
-      usageCount: customerKeys.reduce((sum, [, m]) => sum + (m.usageCount || 0), 0),
-      createdAt: customerKeys.map(([, m]) => m.createdAt).sort()[0],
-    };
-  }
-
-  if (type === 'campaign' || type === 'Campaign') {
-    const attr = summary.attribution;
-    return {
-      type: 'Campaign',
-      id,
-      leads: attr.acquisitionByCampaign[id] || 0,
-      paidOrders: attr.paidByCampaign[id] || 0,
-      revenueCents: attr.bookedRevenueByCampaignCents[id] || 0,
-    };
-  }
-
-  return null;
-}
-
 function safeRate(num, den) {
   if (!den) return 0;
   return Number((num / den).toFixed(4));
@@ -122,7 +89,6 @@ function describeSemanticSchema() {
 
 module.exports = {
   getBusinessMetrics,
-  getEntityDetails,
   describeSemanticSchema,
   SemanticSchema,
 };

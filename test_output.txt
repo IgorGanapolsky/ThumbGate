@@ -1,0 +1,3428 @@
+
+> mcp-memory-gateway@0.7.1 test
+> npm run test:schema && npm run test:loop && npm run test:dpo && npm run test:kto && npm run test:api && npm run test:proof && npm run test:e2e && npm run test:rlaif && npm run test:attribution && npm run test:quality && npm run test:intelligence && npm run test:training-export && npm run test:deployment && npm run test:workflow && npm run test:billing && npm run test:cli && npm run test:watcher && npm run test:autoresearch && npm run test:gates && npm run test:evoskill && npm run test:gates-hardening && npm run test:workers
+
+
+> mcp-memory-gateway@0.7.1 test:schema
+> node scripts/feedback-schema.js --test
+
+
+feedback-schema.js tests
+
+  PASS valid error memory passes
+  PASS short content fails
+  PASS bare negative feedback becomes no-action
+  PASS generic positive context becomes no-action
+  PASS negative feedback creates store-mistake action
+  PASS store-mistake memory passes storage validation
+  PASS positive feedback creates store-learning action
+  PASS rubric gate blocks unsafe positive promotion
+
+Results: 8 passed, 0 failed
+
+
+> mcp-memory-gateway@0.7.1 test:loop
+> node scripts/feedback-loop.js --test
+
+  PASS analyzeFeedback counts total events
+  PASS analyzeFeedback counts positives
+  PASS analyzeFeedback counts negatives
+  PASS analyzeFeedback tracks tags
+  PASS captureFeedback accepts valid positive feedback
+  PASS captureFeedback blocks unsafe positive promotion via rubric gate
+  PASS captureFeedback rejects vague negative feedback
+  PASS captureFeedback requests clarification for vague negative feedback
+  PASS feedbackSummary returns text output
+  PASS writePreventionRules writes markdown rules
+  PASS analyzeFeedback tracks blocked rubric promotions
+
+Results: 11 passed, 0 failed
+
+
+> mcp-memory-gateway@0.7.1 test:dpo
+> node scripts/export-dpo-pairs.js --test
+
+
+export-dpo-pairs.js tests
+
+  PASS one pair built from overlapping domain keys
+  PASS unpaired error left when no match exists
+  PASS no unpaired learnings
+  PASS JSONL output ends with newline
+  PASS inferred prompt includes shared domain
+  PASS rubric delta metadata is attached
+
+Results: 6 passed, 0 failed
+
+
+> mcp-memory-gateway@0.7.1 test:kto
+> node --test tests/export-kto.test.js
+
+TAP version 13
+# Subtest: export-kto-pairs
+    # Subtest: buildKtoRecord
+        # Subtest: positive signal produces label: true
+        ok 1 - positive signal produces label: true
+          ---
+          duration_ms: 0.441958
+          ...
+        # Subtest: negative signal produces label: false
+        ok 2 - negative signal produces label: false
+          ---
+          duration_ms: 0.226792
+          ...
+        # Subtest: missing context is handled gracefully
+        ok 3 - missing context is handled gracefully
+          ---
+          duration_ms: 0.259459
+          ...
+        # Subtest: completely empty entry with valid signal still works
+        ok 4 - completely empty entry with valid signal still works
+          ---
+          duration_ms: 0.058625
+          ...
+        # Subtest: invalid signal returns null
+        ok 5 - invalid signal returns null
+          ---
+          duration_ms: 0.050958
+          ...
+        1..5
+    ok 1 - buildKtoRecord
+      ---
+      duration_ms: 1.452208
+      type: 'suite'
+      ...
+    # Subtest: metadata
+        # Subtest: includes signal source and timestamp
+        ok 1 - includes signal source and timestamp
+          ---
+          duration_ms: 0.283542
+          ...
+        # Subtest: includes domain from richContext
+        ok 2 - includes domain from richContext
+          ---
+          duration_ms: 0.062875
+          ...
+        # Subtest: includes rubric score when present
+        ok 3 - includes rubric score when present
+          ---
+          duration_ms: 0.061042
+          ...
+        # Subtest: rubric score is null when absent
+        ok 4 - rubric score is null when absent
+          ---
+          duration_ms: 0.078583
+          ...
+        1..4
+    ok 2 - metadata
+      ---
+      duration_ms: 0.687042
+      type: 'suite'
+      ...
+    # Subtest: toJSONL
+        # Subtest: output is valid JSONL
+        ok 1 - output is valid JSONL
+          ---
+          duration_ms: 0.177333
+          ...
+        # Subtest: ends with newline
+        ok 2 - ends with newline
+          ---
+          duration_ms: 0.508833
+          ...
+        # Subtest: empty input produces empty string
+        ok 3 - empty input produces empty string
+          ---
+          duration_ms: 0.36775
+          ...
+        1..3
+    ok 3 - toJSONL
+      ---
+      duration_ms: 1.270166
+      type: 'suite'
+      ...
+    # Subtest: buildKtoPairs
+        # Subtest: filters entries with invalid signals
+        ok 1 - filters entries with invalid signals
+          ---
+          duration_ms: 0.187292
+          ...
+        1..1
+    ok 4 - buildKtoPairs
+      ---
+      duration_ms: 0.241417
+      type: 'suite'
+      ...
+    # Subtest: exportKtoFromFeedback
+        # Subtest: deduplicates entries by id
+        ok 1 - deduplicates entries by id
+          ---
+          duration_ms: 0.630125
+          ...
+        # Subtest: merges feedback and memory entries
+        ok 2 - merges feedback and memory entries
+          ---
+          duration_ms: 0.084709
+          ...
+        # Subtest: produces valid jsonl field
+        ok 3 - produces valid jsonl field
+          ---
+          duration_ms: 0.074625
+          ...
+        1..3
+    ok 5 - exportKtoFromFeedback
+      ---
+      duration_ms: 0.9295
+      type: 'suite'
+      ...
+    # Subtest: file I/O
+        # Subtest: readJSONL returns empty array for missing file
+        ok 1 - readJSONL returns empty array for missing file
+          ---
+          duration_ms: 0.589041
+          ...
+        # Subtest: readJSONL parses valid JSONL
+        ok 2 - readJSONL parses valid JSONL
+          ---
+          duration_ms: 1.261291
+          ...
+        # Subtest: readJSONL skips malformed lines
+        ok 3 - readJSONL skips malformed lines
+          ---
+          duration_ms: 0.922625
+          ...
+        1..3
+    ok 6 - file I/O
+      ---
+      duration_ms: 4.664167
+      type: 'suite'
+      ...
+    1..6
+ok 1 - export-kto-pairs
+  ---
+  duration_ms: 10.961583
+  type: 'suite'
+  ...
+1..1
+# tests 19
+# suites 7
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 81.973625
+
+> mcp-memory-gateway@0.7.1 test:api
+> node --test --test-concurrency=1 tests/api-server.test.js tests/api-auth-config.test.js tests/mcp-server.test.js tests/adapters.test.js tests/openapi-parity.test.js tests/budget-guard.test.js tests/contextfs.test.js tests/dashboard.test.js tests/agent-readiness.test.js tests/mcp-policy.test.js tests/subagent-profiles.test.js tests/intent-router.test.js tests/internal-agent-bootstrap.test.js tests/rubric-engine.test.js tests/self-healing-check.test.js tests/self-heal.test.js tests/feedback-schema.test.js tests/thompson-sampling.test.js tests/feedback-sequences.test.js tests/diversity-tracking.test.js tests/vector-store.test.js tests/feedback-attribution.test.js tests/hybrid-feedback-context.test.js tests/loop-closure.test.js tests/code-reasoning.test.js tests/feedback-loop.test.js tests/feedback-inbox-read.test.js tests/feedback-to-memory.test.js tests/test-coverage.test.js tests/version-metadata.test.js tests/claude-mcpb.test.js tests/cursor-plugin.test.js tests/telemetry-analytics.test.js tests/public-landing.test.js tests/local-model-profile.test.js tests/risk-scorer.test.js tests/context-compaction.test.js tests/reminder-engine.test.js tests/post-to-x.test.js tests/verification-loop.test.js tests/async-job-runner.test.js tests/commerce-quality.test.js tests/recall-limit.test.js tests/problem-detail.test.js
+
+TAP version 13
+# Subtest: adapter files exist
+ok 1 - adapter files exist
+  ---
+  duration_ms: 0.761291
+  ...
+# Subtest: gemini tool declarations are valid JSON with tools array
+ok 2 - gemini tool declarations are valid JSON with tools array
+  ---
+  duration_ms: 0.560875
+  ...
+# Subtest: claude .mcp.json is valid JSON with mcpServers key
+ok 3 - claude .mcp.json is valid JSON with mcpServers key
+  ---
+  duration_ms: 0.551791
+  ...
+# Subtest: codex config.toml contains mcp_servers section
+ok 4 - codex config.toml contains mcp_servers section
+  ---
+  duration_ms: 0.453583
+  ...
+# Subtest: opencode adapter is valid JSON with a version-pinned local MCP server
+ok 5 - opencode adapter is valid JSON with a version-pinned local MCP server
+  ---
+  duration_ms: 0.871583
+  ...
+# Subtest: repo opencode.json enforces worktree-safe defaults
+ok 6 - repo opencode.json enforces worktree-safe defaults
+  ---
+  duration_ms: 0.424417
+  ...
+# Subtest: opencode review agent remains read-only and verification-focused
+ok 7 - opencode review agent remains read-only and verification-focused
+  ---
+  duration_ms: 0.673541
+  ...
+# Subtest: amp SKILL.md contains capture-feedback reference
+ok 8 - amp SKILL.md contains capture-feedback reference
+  ---
+  duration_ms: 0.248166
+  ...
+# Subtest: chatgpt openapi.yaml contains /v1/feedback/capture path
+ok 9 - chatgpt openapi.yaml contains /v1/feedback/capture path
+  ---
+  duration_ms: 0.414625
+  ...
+# Subtest: cursor marketplace plugin keeps metadata versioned while runtime tracks the latest npm tag
+ok 10 - cursor marketplace plugin keeps metadata versioned while runtime tracks the latest npm tag
+  ---
+  duration_ms: 0.553167
+  ...
+# Subtest: claude plugin metadata stays aligned with the released package and install story
+ok 11 - claude plugin metadata stays aligned with the released package and install story
+  ---
+  duration_ms: 1.084792
+  ...
+# Subtest: collectBootstrapFiles reports missing required context files
+ok 12 - collectBootstrapFiles reports missing required context files
+  ---
+  duration_ms: 4.347292
+  ...
+# Subtest: summarizePermissionTier exposes write-capable default profile
+ok 13 - summarizePermissionTier exposes write-capable default profile
+  ---
+  duration_ms: 0.380875
+  ...
+# Subtest: summarizePermissionTier warns when locked profile is too restrictive
+ok 14 - summarizePermissionTier warns when locked profile is too restrictive
+  ---
+  duration_ms: 0.111375
+  ...
+# Subtest: generateAgentReadinessReport aligns bootstrap and permission findings
+ok 15 - generateAgentReadinessReport aligns bootstrap and permission findings
+  ---
+  duration_ms: 5.556375
+  ...
+# Subtest: createApiServer requires RLHF_API_KEY unless insecure mode is enabled
+ok 16 - createApiServer requires RLHF_API_KEY unless insecure mode is enabled
+  ---
+  duration_ms: 66.71525
+  ...
+# Subtest: missing RLHF_API_KEY with RLHF_ALLOW_INSECURE unset throws
+ok 17 - missing RLHF_API_KEY with RLHF_ALLOW_INSECURE unset throws
+  ---
+  duration_ms: 0.084333
+  ...
+# Subtest: RLHF_ALLOW_INSECURE=true allows creation without key
+ok 18 - RLHF_ALLOW_INSECURE=true allows creation without key
+  ---
+  duration_ms: 0.1295
+  ...
+# Subtest: setting RLHF_API_KEY allows creation
+ok 19 - setting RLHF_API_KEY allows creation
+  ---
+  duration_ms: 0.148792
+  ...
+# Subtest: server created with key returns http.Server with listen method
+ok 20 - server created with key returns http.Server with listen method
+  ---
+  duration_ms: 0.087667
+  ...
+# Subtest: api servers 2026 pricing
+ok 21 - api servers 2026 pricing
+  ---
+  duration_ms: 0.939458
+  ...
+# Subtest: health endpoint returns ok
+ok 22 - health endpoint returns ok
+  ---
+  duration_ms: 78.70075
+  ...
+# Subtest: root serves the landing page by default
+ok 23 - root serves the landing page by default
+  ---
+  duration_ms: 26.727459
+  ...
+# Subtest: privacy policy route covers collection, sharing, retention, and contact details
+ok 24 - privacy policy route covers collection, sharing, retention, and contact details
+  ---
+  duration_ms: 4.122209
+  ...
+# Subtest: root seeds journey cookies, injects server telemetry IDs, and records landing telemetry server-side
+ok 25 - root seeds journey cookies, injects server telemetry IDs, and records landing telemetry server-side
+  ---
+  duration_ms: 48.916292
+  ...
+# Subtest: root reuses journey cookies and records SEO landing telemetry from search referrers
+ok 26 - root reuses journey cookies and records SEO landing telemetry from search referrers
+  ---
+  duration_ms: 58.179625
+  ...
+# Subtest: robots and sitemap endpoints publish crawl metadata for the canonical app origin
+ok 27 - robots and sitemap endpoints publish crawl metadata for the canonical app origin
+  ---
+  duration_ms: 16.095875
+  ...
+# Subtest: provisioning endpoint works
+ok 28 - provisioning endpoint works
+  ---
+  duration_ms: 19.768875
+  ...
+# Subtest: root still serves JSON status when explicitly requested
+ok 29 - root still serves JSON status when explicitly requested
+  ---
+  duration_ms: 5.949083
+  ...
+# Subtest: root JSON mode does not emit landing telemetry or journey cookies
+ok 30 - root JSON mode does not emit landing telemetry or journey cookies
+  ---
+  duration_ms: 9.7955
+  ...
+# Subtest: journey cookies are marked secure on forwarded HTTPS requests
+ok 31 - journey cookies are marked secure on forwarded HTTPS requests
+  ---
+  duration_ms: 6.73075
+  ...
+# Subtest: success page serves hosted onboarding shell and records first-party telemetry
+ok 32 - success page serves hosted onboarding shell and records first-party telemetry
+  ---
+  duration_ms: 8.774583
+  ...
+# Subtest: cancel page serves retry message and records first-party telemetry
+ok 33 - cancel page serves retry message and records first-party telemetry
+  ---
+  duration_ms: 17.287667
+  ...
+# Subtest: checkout fallback URLs preserve Stripe session placeholders while carrying visitor-session attribution
+ok 34 - checkout fallback URLs preserve Stripe session placeholders while carrying visitor-session attribution
+  ---
+  duration_ms: 1.200667
+  ...
+# Subtest: checkout bootstrap route preserves attribution and records first-party telemetry in local mode
+ok 35 - checkout bootstrap route preserves attribution and records first-party telemetry in local mode
+  ---
+  duration_ms: 16.002375
+  ...
+# Subtest: checkout bootstrap falls back to seeded journey cookies when query IDs are absent
+ok 36 - checkout bootstrap falls back to seeded journey cookies when query IDs are absent
+  ---
+  duration_ms: 5.46525
+  ...
+# Subtest: feedback capture accepts valid payload
+ok 37 - feedback capture accepts valid payload
+  ---
+  duration_ms: 91.113584
+  ...
+# Subtest: feedback capture blocks positive memory promotion when rubric guardrail fails
+ok 38 - feedback capture blocks positive memory promotion when rubric guardrail fails
+  ---
+  duration_ms: 11.769167
+  ...
+# Subtest: feedback capture returns clarification_required for vague positive signal
+ok 39 - feedback capture returns clarification_required for vague positive signal
+  ---
+  duration_ms: 233.907958
+  ...
+# Subtest: intent catalog endpoint returns configured intents
+ok 40 - intent catalog endpoint returns configured intents
+  ---
+  duration_ms: 7.98425
+  ...
+# Subtest: intent catalog endpoint accepts partner profile
+ok 41 - intent catalog endpoint accepts partner profile
+  ---
+  duration_ms: 5.305375
+  ...
+# Subtest: intent catalog rejects invalid mcp profile
+ok 42 - intent catalog rejects invalid mcp profile
+  ---
+  duration_ms: 3.265833
+  ...
+# Subtest: intent plan returns checkpoint for unapproved high-risk action
+ok 43 - intent plan returns checkpoint for unapproved high-risk action
+  ---
+  duration_ms: 44.58375
+  ...
+# Subtest: intent plan returns partner-aware strategy metadata
+ok 44 - intent plan returns partner-aware strategy metadata
+  ---
+  duration_ms: 3.917334
+  ...
+# Subtest: handoff endpoints expose sequential delegation over HTTP
+ok 45 - handoff endpoints expose sequential delegation over HTTP
+  ---
+  duration_ms: 55.405417
+  ...
+# Subtest: intent plan returns codegraph impact for coding workflows
+ok 46 - intent plan returns codegraph impact for coding workflows
+  ---
+  duration_ms: 51.080084
+  ...
+# Subtest: summary endpoint returns markdown text payload
+ok 47 - summary endpoint returns markdown text payload
+  ---
+  duration_ms: 11.47325
+  ...
+# Subtest: dpo export endpoint works with local memory log
+ok 48 - dpo export endpoint works with local memory log
+  ---
+  duration_ms: 6.94475
+  ...
+# Subtest: databricks export endpoint writes analytics bundle
+ok 49 - databricks export endpoint writes analytics bundle
+  ---
+  duration_ms: 274.720417
+  ...
+# Subtest: databricks export endpoint defaults bundle path inside the safe feedback dir
+ok 50 - databricks export endpoint defaults bundle path inside the safe feedback dir
+  ---
+  duration_ms: 8.7855
+  ...
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# Subtest: context construct/evaluate/provenance endpoints work
+ok 51 - context construct/evaluate/provenance endpoints work
+  ---
+  duration_ms: 214.338125
+  ...
+# Subtest: context construct rejects invalid namespaces
+ok 52 - context construct rejects invalid namespaces
+  ---
+  duration_ms: 1.124792
+  ...
+# Subtest: unauthorized without bearer token
+ok 53 - unauthorized without bearer token
+  ---
+  duration_ms: 0.648625
+  ...
+# Subtest: billing checkout endpoint is public
+ok 54 - billing checkout endpoint is public
+  ---
+  duration_ms: 2.791417
+  ...
+# Subtest: workflow sprint intake endpoint captures a contactable lead
+ok 55 - workflow sprint intake endpoint captures a contactable lead
+  ---
+  duration_ms: 3.29275
+  ...
+# Subtest: workflow sprint intake falls back to journey cookies when IDs are omitted from the payload
+ok 56 - workflow sprint intake falls back to journey cookies when IDs are omitted from the payload
+  ---
+  duration_ms: 3.004584
+  ...
+# Subtest: workflow sprint intake accepts form posts, seeds journey cookies, and returns an HTML confirmation page
+ok 57 - workflow sprint intake accepts form posts, seeds journey cookies, and returns an HTML confirmation page
+  ---
+  duration_ms: 5.050375
+  ...
+# Subtest: workflow sprint intake validation failure records failure telemetry and writes no lead
+ok 58 - workflow sprint intake validation failure records failure telemetry and writes no lead
+  ---
+  duration_ms: 2.716042
+  ...
+# Subtest: billing session endpoint returns provisioned local checkout details
+ok 59 - billing session endpoint returns provisioned local checkout details
+  ---
+  duration_ms: 5.872417
+  ...
+# Subtest: billing checkout supports CORS preflight
+ok 60 - billing checkout supports CORS preflight
+  ---
+  duration_ms: 0.650042
+  ...
+# Subtest: billing session endpoint rejects missing session ids
+ok 61 - billing session endpoint rejects missing session ids
+  ---
+  duration_ms: 0.648041
+  ...
+# Subtest: billing provision requires static admin key and rejects billing keys
+ok 62 - billing provision requires static admin key and rejects billing keys
+  ---
+  duration_ms: 5.3755
+  ...
+# Subtest: billing summary returns admin-only operational proxy
+ok 63 - billing summary returns admin-only operational proxy
+  ---
+  duration_ms: 16.802916
+  ...
+# Subtest: billing summary applies today window query params for admin users
+ok 64 - billing summary applies today window query params for admin users
+  ---
+  duration_ms: 9.57225
+  ...
+# Subtest: billing summary includes Stripe-reconciled revenue when live processor events are available
+ok 65 - billing summary includes Stripe-reconciled revenue when live processor events are available
+  ---
+  duration_ms: 6.677334
+  ...
+# Subtest: billing summary rejects billing keys
+ok 66 - billing summary rejects billing keys
+  ---
+  duration_ms: 3.499917
+  ...
+# Subtest: billing summary rejects invalid analytics window queries
+ok 67 - billing summary rejects invalid analytics window queries
+  ---
+  duration_ms: 1.168
+  ...
+# Subtest: rejects external output path by default
+ok 68 - rejects external output path by default
+  ---
+  duration_ms: 3.273834
+  ...
+# Subtest: funnel analytics returns counts and conversion rates
+ok 69 - funnel analytics returns counts and conversion rates
+  ---
+  duration_ms: 11.14025
+  ...
+# Subtest: async-job-runner
+    # Subtest: exports JOB_LOG_FILENAME
+    ok 1 - exports JOB_LOG_FILENAME
+      ---
+      duration_ms: 1.495
+      ...
+    # Subtest: recallContext returns analysis structure
+    ok 2 - recallContext returns analysis structure
+      ---
+      duration_ms: 14.406958
+      ...
+    # Subtest: recallContext works with no tags
+    ok 3 - recallContext works with no tags
+      ---
+      duration_ms: 1.78325
+      ...
+    # Subtest: executeJob runs full pipeline and returns result
+    ok 4 - executeJob runs full pipeline and returns result
+      ---
+      duration_ms: 81.570458
+      ...
+    # Subtest: executeJob generates jobId when not provided
+    ok 5 - executeJob generates jobId when not provided
+      ---
+      duration_ms: 50.941375
+      ...
+    # Subtest: executeJob calls taskFn with recall context
+    ok 6 - executeJob calls taskFn with recall context
+      ---
+      duration_ms: 48.495333
+      ...
+    # Subtest: executeJob carries partner profile through verification
+    ok 7 - executeJob carries partner profile through verification
+      ---
+      duration_ms: 33.003292
+      ...
+    # Subtest: executeJob writes to job log
+    ok 8 - executeJob writes to job log
+      ---
+      duration_ms: 39.157041
+      ...
+    # Subtest: readJobLog respects limit
+    ok 9 - readJobLog respects limit
+      ---
+      duration_ms: 101.245
+      ...
+    # Subtest: runBatch processes multiple jobs
+    ok 10 - runBatch processes multiple jobs
+      ---
+      duration_ms: 29.833875
+      ...
+    # Subtest: runBatch handles empty array
+    ok 11 - runBatch handles empty array
+      ---
+      duration_ms: 0.082583
+      ...
+    # Subtest: getJobStats returns correct aggregates
+    ok 12 - getJobStats returns correct aggregates
+      ---
+      duration_ms: 0.28125
+      ...
+    # Subtest: getJobStats handles empty log
+    ok 13 - getJobStats handles empty log
+      ---
+      duration_ms: 3.138583
+      ...
+    # Subtest: appendJobLog creates dir if missing
+    ok 14 - appendJobLog creates dir if missing
+      ---
+      duration_ms: 3.492042
+      ...
+    1..14
+ok 70 - async-job-runner
+  ---
+  duration_ms: 437.953084
+  type: 'suite'
+  ...
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# Subtest: budget ledger adds spend and reports status
+ok 71 - budget ledger adds spend and reports status
+  ---
+  duration_ms: 5.559125
+  ...
+# Subtest: budget guard blocks overspend
+ok 72 - budget guard blocks overspend
+  ---
+  duration_ms: 1.0405
+  ...
+# Subtest: invalid budget env value is rejected
+ok 73 - invalid budget env value is rejected
+  ---
+  duration_ms: 0.070209
+  ...
+# Subtest: parseMonthlyBudget returns default (10) for undefined
+ok 74 - parseMonthlyBudget returns default (10) for undefined
+  ---
+  duration_ms: 0.070292
+  ...
+# Subtest: parseMonthlyBudget parses valid number string
+ok 75 - parseMonthlyBudget parses valid number string
+  ---
+  duration_ms: 0.050791
+  ...
+# Subtest: getMonthlyBudget returns number greater than 0
+ok 76 - getMonthlyBudget returns number greater than 0
+  ---
+  duration_ms: 0.06025
+  ...
+# Subtest: getBudgetStatus on fresh ledger shows full remaining budget
+ok 77 - getBudgetStatus on fresh ledger shows full remaining budget
+  ---
+  duration_ms: 1.028834
+  ...
+# Subtest: claude mcpb manifest stays aligned with the package metadata and tool registry
+ok 78 - claude mcpb manifest stays aligned with the package metadata and tool registry
+  ---
+  duration_ms: 2.6835
+  ...
+# Subtest: claude mcpb staging writes a submission-ready bundle directory
+ok 79 - claude mcpb staging writes a submission-ready bundle directory
+  ---
+  duration_ms: 162.466083
+  ...
+# Subtest: createTrace produces valid structure
+ok 80 - createTrace produces valid structure
+  ---
+  duration_ms: 2.729084
+  ...
+# Subtest: addStep validates required fields
+ok 81 - addStep validates required fields
+  ---
+  duration_ms: 0.227959
+  ...
+# Subtest: addStep appends to trace steps
+ok 82 - addStep appends to trace steps
+  ---
+  duration_ms: 0.116167
+  ...
+# Subtest: addEdgeCase appends descriptions
+ok 83 - addEdgeCase appends descriptions
+  ---
+  duration_ms: 0.085333
+  ...
+# Subtest: finalizeTrace computes correct summary
+ok 84 - finalizeTrace computes correct summary
+  ---
+  duration_ms: 0.143625
+  ...
+# Subtest: finalizeTrace passes when confidence meets threshold
+ok 85 - finalizeTrace passes when confidence meets threshold
+  ---
+  duration_ms: 0.057
+  ...
+# Subtest: finalizeTrace fails if any step refuted even with high confidence
+ok 86 - finalizeTrace fails if any step refuted even with high confidence
+  ---
+  duration_ms: 0.063792
+  ...
+# Subtest: finalizeTrace handles empty trace
+ok 87 - finalizeTrace handles empty trace
+  ---
+  duration_ms: 0.089292
+  ...
+# Subtest: finalizeTrace accepts custom threshold
+ok 88 - finalizeTrace accepts custom threshold
+  ---
+  duration_ms: 0.134125
+  ...
+# Subtest: DEFAULT_CONFIDENCE_THRESHOLD is 0.7
+ok 89 - DEFAULT_CONFIDENCE_THRESHOLD is 0.7
+  ---
+  duration_ms: 0.124125
+  ...
+# Subtest: traceForSelfHealFix — successful fix with changes
+ok 90 - traceForSelfHealFix — successful fix with changes
+  ---
+  duration_ms: 0.166875
+  ...
+# Subtest: traceForSelfHealFix — failed fix
+ok 91 - traceForSelfHealFix — failed fix
+  ---
+  duration_ms: 0.393375
+  ...
+# Subtest: traceForSelfHealFix — success with error keywords in output
+ok 92 - traceForSelfHealFix — success with error keywords in output
+  ---
+  duration_ms: 0.092542
+  ...
+# Subtest: traceForDpoPair — well-formed pair with rubric
+ok 93 - traceForDpoPair — well-formed pair with rubric
+  ---
+  duration_ms: 0.1565
+  ...
+# Subtest: traceForDpoPair — pair without rubric
+ok 94 - traceForDpoPair — pair without rubric
+  ---
+  duration_ms: 0.096709
+  ...
+# Subtest: traceForDpoPair — pair with zero overlap is refuted
+ok 95 - traceForDpoPair — pair with zero overlap is refuted
+  ---
+  duration_ms: 0.09225
+  ...
+# Subtest: traceForProofCheck — passing check
+ok 96 - traceForProofCheck — passing check
+  ---
+  duration_ms: 0.112291
+  ...
+# Subtest: traceForProofCheck — failing check
+ok 97 - traceForProofCheck — failing check
+  ---
+  duration_ms: 0.105125
+  ...
+# Subtest: computeControllability — empty trace scores 0
+ok 98 - computeControllability — empty trace scores 0
+  ---
+  duration_ms: 0.05175
+  ...
+# Subtest: computeControllability — all-verified + no edge cases flags suspicion
+ok 99 - computeControllability — all-verified + no edge cases flags suspicion
+  ---
+  duration_ms: 0.091542
+  ...
+# Subtest: computeControllability — identical evidence is flagged
+ok 100 - computeControllability — identical evidence is flagged
+  ---
+  duration_ms: 0.039916
+  ...
+# Subtest: computeControllability — thin evidence is flagged
+ok 101 - computeControllability — thin evidence is flagged
+  ---
+  duration_ms: 0.035375
+  ...
+# Subtest: computeControllability — well-formed trace has low score
+ok 102 - computeControllability — well-formed trace has low score
+  ---
+  duration_ms: 0.036708
+  ...
+# Subtest: finalizeTrace includes controllability in summary
+ok 103 - finalizeTrace includes controllability in summary
+  ---
+  duration_ms: 0.032625
+  ...
+# Subtest: aggregateTraces — mixed results
+ok 104 - aggregateTraces — mixed results
+  ---
+  duration_ms: 0.094166
+  ...
+# Subtest: aggregateTraces — empty input
+ok 105 - aggregateTraces — empty input
+  ---
+  duration_ms: 0.028083
+  ...
+# Subtest: self-heal integration — runSelfHeal includes reasoning
+ok 106 - self-heal integration — runSelfHeal includes reasoning
+  ---
+  duration_ms: 225.316834
+  ...
+# Subtest: dpo-export integration — exported pairs include reasoning traces
+ok 107 - dpo-export integration — exported pairs include reasoning traces
+  ---
+  duration_ms: 1.030375
+  ...
+# Subtest: DEFAULT_CATEGORIES includes commerce categories
+ok 108 - DEFAULT_CATEGORIES includes commerce categories
+  ---
+  duration_ms: 0.454625
+  ...
+# Subtest: loadModel initializes commerce categories with uniform priors
+ok 109 - loadModel initializes commerce categories with uniform priors
+  ---
+  duration_ms: 1.658791
+  ...
+# Subtest: updateModel applies feedback to commerce categories
+ok 110 - updateModel applies feedback to commerce categories
+  ---
+  duration_ms: 0.190458
+  ...
+# Subtest: getReliability returns scores for commerce categories
+ok 111 - getReliability returns scores for commerce categories
+  ---
+  duration_ms: 0.205333
+  ...
+# Subtest: GET /v1/quality/scores returns all categories
+ok 112 - GET /v1/quality/scores returns all categories
+  ---
+  duration_ms: 30.365333
+  ...
+# Subtest: GET /v1/quality/scores?category=sizing returns single category
+ok 113 - GET /v1/quality/scores?category=sizing returns single category
+  ---
+  duration_ms: 3.446125
+  ...
+# Subtest: GET /v1/quality/scores?category=nonexistent returns 404
+ok 114 - GET /v1/quality/scores?category=nonexistent returns 404
+  ---
+  duration_ms: 1.297458
+  ...
+# Subtest: GET /v1/quality/rules returns structured rules
+ok 115 - GET /v1/quality/rules returns structured rules
+  ---
+  duration_ms: 1.540167
+  ...
+# Subtest: GET /v1/quality/rules returns empty when no rules exist
+ok 116 - GET /v1/quality/rules returns empty when no rules exist
+  ---
+  duration_ms: 1.124792
+  ...
+# Subtest: GET /v1/quality/posteriors returns sampled posteriors
+ok 117 - GET /v1/quality/posteriors returns sampled posteriors
+  ---
+  duration_ms: 1.550208
+  ...
+# Subtest: quality endpoints require auth
+ok 118 - quality endpoints require auth
+  ---
+  duration_ms: 3.960833
+  ...
+# Subtest: commerce_recall tool is registered in MCP server
+ok 119 - commerce_recall tool is registered in MCP server
+  ---
+  duration_ms: 0.758333
+  ...
+# Subtest: commerce_recall is in default and commerce MCP profiles
+ok 120 - commerce_recall is in default and commerce MCP profiles
+  ---
+  duration_ms: 0.173667
+  ...
+# Subtest: commerce MCP profile has the right tools
+ok 121 - commerce MCP profile has the right tools
+  ---
+  duration_ms: 0.355541
+  ...
+# Subtest: commerce_recall MCP tool returns quality scores
+not ok 122 - commerce_recall MCP tool returns quality scores
+  ---
+  duration_ms: 0.668792
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/commerce-quality.test.js:214:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/commerce-quality.test.js:230:24)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: compactContext returns entries unchanged when under limits
+ok 123 - compactContext returns entries unchanged when under limits
+  ---
+  duration_ms: 0.635167
+  ...
+# Subtest: stage 1 caps each signal group to 10 entries
+ok 124 - stage 1 caps each signal group to 10 entries
+  ---
+  duration_ms: 0.152833
+  ...
+# Subtest: stage 2 truncates fields exceeding perEntryMaxChars
+ok 125 - stage 2 truncates fields exceeding perEntryMaxChars
+  ---
+  duration_ms: 0.064209
+  ...
+# Subtest: stage 3 drops entries with empty context and whatWentWrong
+ok 126 - stage 3 drops entries with empty context and whatWentWrong
+  ---
+  duration_ms: 0.054125
+  ...
+# Subtest: stage 4 windows to most recent windowSize entries
+ok 127 - stage 4 windows to most recent windowSize entries
+  ---
+  duration_ms: 0.136084
+  ...
+# Subtest: stage 5 deduplicates entries with identical whatWentWrong
+ok 128 - stage 5 deduplicates entries with identical whatWentWrong
+  ---
+  duration_ms: 0.062292
+  ...
+# Subtest: anchor entries are always preserved regardless of compaction
+ok 129 - anchor entries are always preserved regardless of compaction
+  ---
+  duration_ms: 0.087583
+  ...
+# Subtest: compactContext handles empty entries array
+ok 130 - compactContext handles empty entries array
+  ---
+  duration_ms: 0.040666
+  ...
+# Subtest: contextfs initializes required directories
+ok 131 - contextfs initializes required directories
+  ---
+  duration_ms: 2.503458
+  ...
+# Subtest: register feedback and construct pack
+ok 132 - register feedback and construct pack
+  ---
+  duration_ms: 9.012875
+  ...
+# Subtest: registerFeedback dedupes exact feedback-memory repeats
+ok 133 - registerFeedback dedupes exact feedback-memory repeats
+  ---
+  duration_ms: 3.8135
+  ...
+# Subtest: normalizeNamespaces rejects path traversal attempts
+ok 134 - normalizeNamespaces rejects path traversal attempts
+  ---
+  duration_ms: 0.205208
+  ...
+# Subtest: constructContextPack returns semantic cache hit on similar query
+ok 135 - constructContextPack returns semantic cache hit on similar query
+  ---
+  duration_ms: 5.130125
+  ...
+# Subtest: querySimilarity computes jaccard overlap
+ok 136 - querySimilarity computes jaccard overlap
+  ---
+  duration_ms: 0.071084
+  ...
+# Subtest: writeContextObject auto-indexes into memex
+ok 137 - writeContextObject auto-indexes into memex
+  ---
+  duration_ms: 0.148958
+  ...
+# Subtest: dereferenceEntry loads full document from stableRef
+ok 138 - dereferenceEntry loads full document from stableRef
+  ---
+  duration_ms: 0.245791
+  ...
+# Subtest: dereferenceEntry returns null for missing file
+ok 139 - dereferenceEntry returns null for missing file
+  ---
+  duration_ms: 0.127584
+  ...
+# Subtest: dereferenceEntry returns null for null input
+ok 140 - dereferenceEntry returns null for null input
+  ---
+  duration_ms: 0.093125
+  ...
+# Subtest: searchMemexIndex returns ranked results without loading full content
+ok 141 - searchMemexIndex returns ranked results without loading full content
+  ---
+  duration_ms: 0.290834
+  ...
+# Subtest: searchMemexIndex filters by namespace
+ok 142 - searchMemexIndex filters by namespace
+  ---
+  duration_ms: 0.143708
+  ...
+# Subtest: constructMemexPack builds pack via index then dereference
+ok 143 - constructMemexPack builds pack via index then dereference
+  ---
+  duration_ms: 0.955041
+  ...
+# Subtest: constructMemexPack respects maxChars budget
+ok 144 - constructMemexPack respects maxChars budget
+  ---
+  duration_ms: 5.019833
+  ...
+# Subtest: cursor marketplace manifest points at a valid plugin directory
+ok 145 - cursor marketplace manifest points at a valid plugin directory
+  ---
+  duration_ms: 1.393792
+  ...
+# Subtest: cursor plugin manifest uses marketplace-safe metadata and committed assets
+ok 146 - cursor plugin manifest uses marketplace-safe metadata and committed assets
+  ---
+  duration_ms: 0.200458
+  ...
+# Subtest: cursor plugin MCP config uses the latest npm tag instead of local absolute paths
+ok 147 - cursor plugin MCP config uses the latest npm tag instead of local absolute paths
+  ---
+  duration_ms: 0.362916
+  ...
+# Subtest: cursor plugin docs explain runtime updates versus listing updates
+ok 148 - cursor plugin docs explain runtime updates versus listing updates
+  ---
+  duration_ms: 0.540375
+  ...
+# Subtest: generateDashboard handles empty state (no files)
+ok 149 - generateDashboard handles empty state (no files)
+  ---
+  duration_ms: 19.082083
+  ...
+# Subtest: generateDashboard surfaces tracking readiness and instrumentation truth
+ok 150 - generateDashboard surfaces tracking readiness and instrumentation truth
+  ---
+  duration_ms: 3.800583
+  ...
+# Subtest: computeApprovalStats calculates correct rates
+ok 151 - computeApprovalStats calculates correct rates
+  ---
+  duration_ms: 0.811291
+  ...
+# Subtest: computeApprovalStats handles all-negative entries
+ok 152 - computeApprovalStats handles all-negative entries
+  ---
+  duration_ms: 0.674917
+  ...
+# Subtest: computeApprovalStats detects improving trend
+ok 153 - computeApprovalStats detects improving trend
+  ---
+  duration_ms: 0.632167
+  ...
+# Subtest: computeSessionTrend generates bars for sufficient data
+ok 154 - computeSessionTrend generates bars for sufficient data
+  ---
+  duration_ms: 0.479084
+  ...
+# Subtest: computeSessionTrend returns empty for insufficient data
+ok 155 - computeSessionTrend returns empty for insufficient data
+  ---
+  duration_ms: 0.928375
+  ...
+# Subtest: generateDashboard returns complete structure with data
+ok 156 - generateDashboard returns complete structure with data
+  ---
+  duration_ms: 3.643833
+  ...
+# Subtest: generateDashboard aggregates persisted diagnostics beyond feedback capture
+ok 157 - generateDashboard aggregates persisted diagnostics beyond feedback capture
+  ---
+  duration_ms: 3.821875
+  ...
+# Subtest: generateDashboard reports secret guard violations separately
+ok 158 - generateDashboard reports secret guard violations separately
+  ---
+  duration_ms: 3.361959
+  ...
+# Subtest: generateDashboard includes visitor funnel and booked revenue analytics
+ok 159 - generateDashboard includes visitor funnel and booked revenue analytics
+  ---
+  duration_ms: 7.079209
+  ...
+# Subtest: generateDashboard separates repeated CTA clicks from unique checkout starters and flags orphan revenue
+ok 160 - generateDashboard separates repeated CTA clicks from unique checkout starters and flags orphan revenue
+  ---
+  duration_ms: 6.578959
+  ...
+# Subtest: generateDashboard surfaces telemetry ingest errors and checkout failure codes
+ok 161 - generateDashboard surfaces telemetry ingest errors and checkout failure codes
+  ---
+  duration_ms: 3.333584
+  ...
+# Subtest: readJSONL returns empty array for missing file
+ok 162 - readJSONL returns empty array for missing file
+  ---
+  duration_ms: 0.8555
+  ...
+# Subtest: readJsonFile returns null for missing file
+ok 163 - readJsonFile returns null for missing file
+  ---
+  duration_ms: 0.443042
+  ...
+# Subtest: readJsonFile returns null for invalid JSON
+ok 164 - readJsonFile returns null for invalid JSON
+  ---
+  duration_ms: 0.610167
+  ...
+# Subtest: Diversity Tracking (ML-04)
+    # Subtest: accepted captureFeedback() creates diversity-tracking.json
+    ok 1 - accepted captureFeedback() creates diversity-tracking.json
+      ---
+      duration_ms: 27.264625
+      ...
+    # Subtest: diversity-tracking.json has diversityScore field
+    ok 2 - diversity-tracking.json has diversityScore field
+      ---
+      duration_ms: 0.206166
+      ...
+    # Subtest: diversityScore is a numeric value in [0, 100]
+    ok 3 - diversityScore is a numeric value in [0, 100]
+      ---
+      duration_ms: 0.134542
+      ...
+    # Subtest: domains object is populated
+    ok 4 - domains object is populated
+      ---
+      duration_ms: 0.12025
+      ...
+    # Subtest: domain count matches feedback domain (testing tag -> testing domain)
+    ok 5 - domain count matches feedback domain (testing tag -> testing domain)
+      ---
+      duration_ms: 0.144417
+      ...
+    # Subtest: lastUpdated is set
+    ok 6 - lastUpdated is set
+      ---
+      duration_ms: 0.529333
+      ...
+    # Subtest: diversityScore updates after second feedback with different domain
+    ok 7 - diversityScore updates after second feedback with different domain
+      ---
+      duration_ms: 23.747875
+      ...
+    # Subtest: diversityScore is not NaN or Infinity on first entry (edge case)
+    ok 8 - diversityScore is not NaN or Infinity on first entry (edge case)
+      ---
+      duration_ms: 14.943875
+      ...
+    1..8
+ok 165 - Diversity Tracking (ML-04)
+  ---
+  duration_ms: 73.322625
+  type: 'suite'
+  ...
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# Subtest: recordAction
+    # Subtest: writes action-log.jsonl and returns ok:true with valid action_id
+    ok 1 - writes action-log.jsonl and returns ok:true with valid action_id
+      ---
+      duration_ms: 8.624917
+      ...
+    # Subtest: sets intent to shell-command for Bash tool
+    ok 2 - sets intent to shell-command for Bash tool
+      ---
+      duration_ms: 2.86325
+      ...
+    # Subtest: sets intent to git-risk for git push --force command
+    ok 3 - sets intent to git-risk for git push --force command
+      ---
+      duration_ms: 2.327167
+      ...
+    # Subtest: sets intent to file-change for Edit tool
+    ok 4 - sets intent to file-change for Edit tool
+      ---
+      duration_ms: 0.706417
+      ...
+    # Subtest: risk_score is higher for destructive commands than safe commands
+    ok 5 - risk_score is higher for destructive commands than safe commands
+      ---
+      duration_ms: 0.596917
+      ...
+    1..5
+ok 166 - recordAction
+  ---
+  duration_ms: 20.00825
+  type: 'suite'
+  ...
+# Subtest: attributeFeedback
+    # Subtest: returns ok:true for positive signal
+    ok 1 - returns ok:true for positive signal
+      ---
+      duration_ms: 0.9995
+      ...
+    # Subtest: returns skipped:true for unsupported signal
+    ok 2 - returns skipped:true for unsupported signal
+      ---
+      duration_ms: 0.071
+      ...
+    # Subtest: negative signal writes to attributions file
+    ok 3 - negative signal writes to attributions file
+      ---
+      duration_ms: 0.792625
+      ...
+    # Subtest: negative signal writes to attributed-feedback.jsonl when confidence threshold met
+    ok 4 - negative signal writes to attributed-feedback.jsonl when confidence threshold met
+      ---
+      duration_ms: 0.743459
+      ...
+    # Subtest: positive signal does NOT write to attributed-feedback.jsonl
+    ok 5 - positive signal does NOT write to attributed-feedback.jsonl
+      ---
+      duration_ms: 0.503708
+      ...
+    1..5
+ok 167 - attributeFeedback
+  ---
+  duration_ms: 5.221292
+  type: 'suite'
+  ...
+# Subtest: loadCursor: returns lastLineIndex=-1 for missing file
+ok 168 - loadCursor: returns lastLineIndex=-1 for missing file
+  ---
+  duration_ms: 1.827291
+  ...
+# Subtest: saveCursor: writes cursor to file
+ok 169 - saveCursor: writes cursor to file
+  ---
+  duration_ms: 2.126125
+  ...
+# Subtest: saveCursor then loadCursor round-trips correctly
+ok 170 - saveCursor then loadCursor round-trips correctly
+  ---
+  duration_ms: 0.830333
+  ...
+# Subtest: readInbox: returns empty array for missing file
+ok 171 - readInbox: returns empty array for missing file
+  ---
+  duration_ms: 1.5365
+  ...
+# Subtest: readInbox: returns parsed JSONL entries
+ok 172 - readInbox: returns parsed JSONL entries
+  ---
+  duration_ms: 1.764
+  ...
+# Subtest: getNewEntries: cursor=-1 returns all entries
+ok 173 - getNewEntries: cursor=-1 returns all entries
+  ---
+  duration_ms: 1.010542
+  ...
+# Subtest: getNewEntries: cursor at last entry returns empty
+ok 174 - getNewEntries: cursor at last entry returns empty
+  ---
+  duration_ms: 0.961
+  ...
+# Subtest: inferDomain: tags=["testing"] returns "testing"
+ok 175 - inferDomain: tags=["testing"] returns "testing"
+  ---
+  duration_ms: 0.980375
+  ...
+# Subtest: inferDomain: tags=["security"] returns "security"
+ok 176 - inferDomain: tags=["security"] returns "security"
+  ---
+  duration_ms: 0.066416
+  ...
+# Subtest: inferDomain: empty tags, context mentions performance returns "performance"
+ok 177 - inferDomain: empty tags, context mentions performance returns "performance"
+  ---
+  duration_ms: 0.075417
+  ...
+# Subtest: inferOutcome: positive signal with "quick fix" includes "success"
+ok 178 - inferOutcome: positive signal with "quick fix" includes "success"
+  ---
+  duration_ms: 0.196625
+  ...
+# Subtest: inferOutcome: negative signal with "wrong assumption" returns a string
+ok 179 - inferOutcome: negative signal with "wrong assumption" returns a string
+  ---
+  duration_ms: 0.112
+  ...
+# Subtest: enrichFeedbackContext: returns object with richContext
+ok 180 - enrichFeedbackContext: returns object with richContext
+  ---
+  duration_ms: 0.450917
+  ...
+# Subtest: captureFeedback: valid negative feedback returns accepted=true
+ok 181 - captureFeedback: valid negative feedback returns accepted=true
+  ---
+  duration_ms: 145.341041
+  ...
+# Subtest: captureFeedback: valid positive feedback returns accepted=true
+ok 182 - captureFeedback: valid positive feedback returns accepted=true
+  ---
+  duration_ms: 159.416083
+  ...
+# Subtest: captureFeedback: rejects vague negative (no context/whatWentWrong/whatToChange)
+ok 183 - captureFeedback: rejects vague negative (no context/whatWentWrong/whatToChange)
+  ---
+  duration_ms: 8.900167
+  ...
+# Subtest: captureFeedback: rejects generic positive context and requests clarification
+ok 184 - captureFeedback: rejects generic positive context and requests clarification
+  ---
+  duration_ms: 4.626709
+  ...
+# Subtest: analyzeFeedback: returns correct counts on populated log
+ok 185 - analyzeFeedback: returns correct counts on populated log
+  ---
+  duration_ms: 6.515208
+  ...
+# Subtest: getFeedbackPaths prefers Railway volume mount when explicit feedback dir is absent
+ok 186 - getFeedbackPaths prefers Railway volume mount when explicit feedback dir is absent
+  ---
+  duration_ms: 0.160417
+  ...
+# Subtest: buildPreventionRules: returns markdown string with header
+ok 187 - buildPreventionRules: returns markdown string with header
+  ---
+  duration_ms: 0.749667
+  ...
+# Subtest: buildPreventionRules: includes diagnostic sections for repeated root causes
+ok 188 - buildPreventionRules: includes diagnostic sections for repeated root causes
+  ---
+  duration_ms: 40.834917
+  ...
+# Subtest: feedbackSummary: returns string with "Positive:"
+ok 189 - feedbackSummary: returns string with "Positive:"
+  ---
+  duration_ms: 23.659792
+  ...
+# Subtest: analyzeFeedback: includes boosted risk summary after sequence training rows exist
+ok 190 - analyzeFeedback: includes boosted risk summary after sequence training rows exist
+  ---
+  duration_ms: 104.305458
+  ...
+# Subtest: analyzeFeedback and prevention rules include persisted diagnostic records outside feedback capture
+ok 191 - analyzeFeedback and prevention rules include persisted diagnostic records outside feedback capture
+  ---
+  duration_ms: 2.577667
+  ...
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# Subtest: captureFeedback: waitForBackgroundSideEffects drains deferred vector writes
+ok 192 - captureFeedback: waitForBackgroundSideEffects drains deferred vector writes
+  ---
+  duration_ms: 3805.559458
+  ...
+# Subtest: parseTimestamp: Z-suffix returns valid Date
+ok 193 - parseTimestamp: Z-suffix returns valid Date
+  ---
+  duration_ms: 1.118416
+  ...
+# Subtest: parseTimestamp: no-suffix (Python-stripped) returns valid Date
+ok 194 - parseTimestamp: no-suffix (Python-stripped) returns valid Date
+  ---
+  duration_ms: 1.58475
+  ...
+# Subtest: parseTimestamp: UTC offset returns valid Date
+ok 195 - parseTimestamp: UTC offset returns valid Date
+  ---
+  duration_ms: 0.094417
+  ...
+# Subtest: parseTimestamp: null returns null
+ok 196 - parseTimestamp: null returns null
+  ---
+  duration_ms: 0.063583
+  ...
+# Subtest: parseTimestamp: undefined returns null
+ok 197 - parseTimestamp: undefined returns null
+  ---
+  duration_ms: 0.102833
+  ...
+# Subtest: parseTimestamp: garbage string returns null
+ok 198 - parseTimestamp: garbage string returns null
+  ---
+  duration_ms: 0.042084
+  ...
+# Subtest: Sequence Tracking (ML-03)
+    # Subtest: accepted captureFeedback() creates feedback-sequences.jsonl
+    ok 1 - accepted captureFeedback() creates feedback-sequences.jsonl
+      ---
+      duration_ms: 35.697208
+      ...
+    # Subtest: sequence entry has correct schema
+    ok 2 - sequence entry has correct schema
+      ---
+      duration_ms: 17.01625
+      ...
+    # Subtest: targetReward is 1 for positive signal
+    ok 3 - targetReward is 1 for positive signal
+      ---
+      duration_ms: 15.056
+      ...
+    # Subtest: targetReward is -1 for negative signal
+    ok 4 - targetReward is -1 for negative signal
+      ---
+      duration_ms: 19.245042
+      ...
+    # Subtest: features.rewardSequence is an array
+    ok 5 - features.rewardSequence is an array
+      ---
+      duration_ms: 15.911
+      ...
+    # Subtest: features.tagFrequency is an object
+    ok 6 - features.tagFrequency is an object
+      ---
+      duration_ms: 20.964834
+      ...
+    # Subtest: invalid signal does NOT create sequence entry
+    ok 7 - invalid signal does NOT create sequence entry
+      ---
+      duration_ms: 2.585042
+      ...
+    # Subtest: rubric-blocked positive capture still creates a training row with high-risk label
+    ok 8 - rubric-blocked positive capture still creates a training row with high-risk label
+      ---
+      duration_ms: 14.30325
+      ...
+    # Subtest: multiple accepted calls append multiple sequence entries
+    ok 9 - multiple accepted calls append multiple sequence entries
+      ---
+      duration_ms: 52.512
+      ...
+    1..9
+ok 199 - Sequence Tracking (ML-03)
+  ---
+  duration_ms: 203.786
+  type: 'suite'
+  ...
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+# Subtest: valid negative feedback: ok=true, category=error, title starts with MISTAKE
+ok 200 - valid negative feedback: ok=true, category=error, title starts with MISTAKE
+  ---
+  duration_ms: 3.604
+  ...
+# Subtest: valid positive feedback: ok=true, category=learning, title starts with SUCCESS
+ok 201 - valid positive feedback: ok=true, category=learning, title starts with SUCCESS
+  ---
+  duration_ms: 0.421875
+  ...
+# Subtest: bare thumbs down (no context): ok=false
+ok 202 - bare thumbs down (no context): ok=false
+  ---
+  duration_ms: 0.165083
+  ...
+# Subtest: bare thumbs up (no context): ok=false
+ok 203 - bare thumbs up (no context): ok=false
+  ---
+  duration_ms: 0.058209
+  ...
+# Subtest: generic positive context requires clarification instead of promotion
+ok 204 - generic positive context requires clarification instead of promotion
+  ---
+  duration_ms: 0.235334
+  ...
+# Subtest: unknown signal: ok=false
+ok 205 - unknown signal: ok=false
+  ---
+  duration_ms: 0.117417
+  ...
+# Subtest: tags preserved in output
+ok 206 - tags preserved in output
+  ---
+  duration_ms: 0.1785
+  ...
+# Subtest: evaluatePretool — no prior data
+    # Subtest: returns mode:allow for never-seen tool+input
+    ok 1 - returns mode:allow for never-seen tool+input
+      ---
+      duration_ms: 1.715042
+      ...
+    # Subtest: returns mode:allow via state with empty negative patterns
+    ok 2 - returns mode:allow via state with empty negative patterns
+      ---
+      duration_ms: 0.146625
+      ...
+    1..2
+ok 207 - evaluatePretool — no prior data
+  ---
+  duration_ms: 4.5405
+  type: 'suite'
+  ...
+# Subtest: evaluatePretool — with seeded negative patterns
+    # Subtest: returns mode:block for critical recurring pattern (count >= 3)
+    ok 1 - returns mode:block for critical recurring pattern (count >= 3)
+      ---
+      duration_ms: 1.057125
+      ...
+    # Subtest: returns mode:warn for medium recurring pattern (count == 2)
+    ok 2 - returns mode:warn for medium recurring pattern (count == 2)
+      ---
+      duration_ms: 2.171166
+      ...
+    # Subtest: returns mode:allow for different tool even with negatives on other tool
+    ok 3 - returns mode:allow for different tool even with negatives on other tool
+      ---
+      duration_ms: 1.716583
+      ...
+    1..3
+ok 208 - evaluatePretool — with seeded negative patterns
+  ---
+  duration_ms: 9.104167
+  type: 'suite'
+  ...
+# Subtest: compileGuardArtifact + writeGuardArtifact + readGuardArtifact
+    # Subtest: compile produces valid artifact with guards array
+    ok 1 - compile produces valid artifact with guards array
+      ---
+      duration_ms: 0.886417
+      ...
+    # Subtest: write + read round-trip returns identical artifact
+    ok 2 - write + read round-trip returns identical artifact
+      ---
+      duration_ms: 1.09925
+      ...
+    # Subtest: evaluateCompiledGuards returns allow for empty guards
+    ok 3 - evaluateCompiledGuards returns allow for empty guards
+      ---
+      duration_ms: 0.1395
+      ...
+    # Subtest: evaluateCompiledGuards returns block for matching block guard
+    ok 4 - evaluateCompiledGuards returns block for matching block guard
+      ---
+      duration_ms: 0.113542
+      ...
+    1..4
+ok 209 - compileGuardArtifact + writeGuardArtifact + readGuardArtifact
+  ---
+  duration_ms: 3.999834
+  type: 'suite'
+  ...
+# Subtest: buildHybridState
+    # Subtest: returns total count from seeded feedback-log.jsonl
+    ok 1 - returns total count from seeded feedback-log.jsonl
+      ---
+      duration_ms: 1.759958
+      ...
+    # Subtest: recurringNegativePatterns is empty when no negatives
+    ok 2 - recurringNegativePatterns is empty when no negatives
+      ---
+      duration_ms: 1.47625
+      ...
+    1..2
+ok 210 - buildHybridState
+  ---
+  duration_ms: 4.921959
+  type: 'suite'
+  ...
+# Subtest: loads default policy bundle
+ok 211 - loads default policy bundle
+  ---
+  duration_ms: 1.083834
+  ...
+# Subtest: listIntents returns approval metadata for profile
+ok 212 - listIntents returns approval metadata for profile
+  ---
+  duration_ms: 0.893833
+  ...
+# Subtest: listIntents normalizes partner profile and exposes partner strategy
+ok 213 - listIntents normalizes partner profile and exposes partner strategy
+  ---
+  duration_ms: 1.478375
+  ...
+# Subtest: high-risk intent requires approval by default profile
+ok 214 - high-risk intent requires approval by default profile
+  ---
+  duration_ms: 7.09075
+  ...
+# Subtest: approved high-risk intent becomes ready
+ok 215 - approved high-risk intent becomes ready
+  ---
+  duration_ms: 0.951209
+  ...
+# Subtest: unknown intent throws
+ok 216 - unknown intent throws
+  ---
+  duration_ms: 0.292417
+  ...
+# Subtest: invalid mcp profile is rejected
+ok 217 - invalid mcp profile is rejected
+  ---
+  duration_ms: 0.157416
+  ...
+# Subtest: ACTION_CATEGORY_MAP covers known action names
+ok 218 - ACTION_CATEGORY_MAP covers known action names
+  ---
+  duration_ms: 0.079209
+  ...
+# Subtest: scoreActions returns scored and sorted actions
+ok 219 - scoreActions returns scored and sorted actions
+  ---
+  duration_ms: 2.253083
+  ...
+# Subtest: rankActions returns ranked array and scores metadata
+ok 220 - rankActions returns ranked array and scores metadata
+  ---
+  duration_ms: 1.163583
+  ...
+# Subtest: scoreActions handles unknown action name gracefully
+ok 221 - scoreActions handles unknown action name gracefully
+  ---
+  duration_ms: 0.996333
+  ...
+# Subtest: decomposeActions groups same-kind actions into phases
+ok 222 - decomposeActions groups same-kind actions into phases
+  ---
+  duration_ms: 0.121042
+  ...
+# Subtest: decomposeActions returns empty array for no actions
+ok 223 - decomposeActions returns empty array for no actions
+  ---
+  duration_ms: 0.251834
+  ...
+# Subtest: planIntent includes phases and tokenBudget
+ok 224 - planIntent includes phases and tokenBudget
+  ---
+  duration_ms: 0.548458
+  ...
+# Subtest: planIntent accepts custom token budget
+ok 225 - planIntent accepts custom token budget
+  ---
+  duration_ms: 0.682
+  ...
+# Subtest: planIntent applies partner-aware token budget and action scoring
+ok 226 - planIntent applies partner-aware token budget and action scoring
+  ---
+  duration_ms: 2.257791
+  ...
+# Subtest: rankActions front-loads evidence producers for strict reviewers
+ok 227 - rankActions front-loads evidence producers for strict reviewers
+  ---
+  duration_ms: 1.552084
+  ...
+# Subtest: planIntent adds codegraph impact and structural verification checks for coding workflows
+ok 228 - planIntent adds codegraph impact and structural verification checks for coding workflows
+  ---
+  duration_ms: 18.956042
+  ...
+# Subtest: resolveTokenBudget returns defaults when no overrides
+ok 229 - resolveTokenBudget returns defaults when no overrides
+  ---
+  duration_ms: 0.07825
+  ...
+# Subtest: resolveTokenBudget merges partial overrides
+ok 230 - resolveTokenBudget merges partial overrides
+  ---
+  duration_ms: 0.101792
+  ...
+# Subtest: resolveTokenBudget ignores invalid values
+ok 231 - resolveTokenBudget ignores invalid values
+  ---
+  duration_ms: 0.045416
+  ...
+# Subtest: normalizeInvocation derives stable thread and intent defaults
+ok 232 - normalizeInvocation derives stable thread and intent defaults
+  ---
+  duration_ms: 1.090625
+  ...
+# Subtest: buildStartupContext assembles trigger, task, and history sections
+ok 233 - buildStartupContext assembles trigger, task, and history sections
+  ---
+  duration_ms: 0.274375
+  ...
+# Subtest: ensureWorktreeSandbox creates and reuses a git worktree sandbox
+ok 234 - ensureWorktreeSandbox creates and reuses a git worktree sandbox
+  ---
+  duration_ms: 241.424375
+  ...
+# Subtest: bootstrapInternalAgent returns recall, sandbox, and reviewer-lane plan
+ok 235 - bootstrapInternalAgent returns recall, sandbox, and reviewer-lane plan
+  ---
+  duration_ms: 332.341917
+  ...
+# Subtest: detectHardware respects env overrides
+ok 236 - detectHardware respects env overrides
+  ---
+  duration_ms: 1.581917
+  ...
+# Subtest: resolveEmbeddingProfile chooses compact profile on low-memory hardware
+ok 237 - resolveEmbeddingProfile chooses compact profile on low-memory hardware
+  ---
+  duration_ms: 0.431958
+  ...
+# Subtest: resolveEmbeddingProfile honors explicit env overrides
+ok 238 - resolveEmbeddingProfile honors explicit env overrides
+  ---
+  duration_ms: 0.337291
+  ...
+# Subtest: writeModelFitReport persists machine-readable evidence
+ok 239 - writeModelFitReport persists machine-readable evidence
+  ---
+  duration_ms: 5.203791
+  ...
+# Subtest: resolveModelRole returns correct model for each role
+ok 240 - resolveModelRole returns correct model for each role
+  ---
+  duration_ms: 0.162959
+  ...
+# Subtest: resolveModelRole compaction role uses lighter model than normal
+ok 241 - resolveModelRole compaction role uses lighter model than normal
+  ---
+  duration_ms: 0.282667
+  ...
+# Subtest: resolveModelRole respects env override
+ok 242 - resolveModelRole respects env override
+  ---
+  duration_ms: 0.062167
+  ...
+# Subtest: resolveModelRole throws on unknown role
+ok 243 - resolveModelRole throws on unknown role
+  ---
+  duration_ms: 0.462917
+  ...
+# Subtest: feedback-to-rules
+    # Subtest: parseFeedbackFile returns [] for missing file
+    ok 1 - parseFeedbackFile returns [] for missing file
+      ---
+      duration_ms: 1.166167
+      ...
+    # Subtest: parseFeedbackFile reads and parses entries from JSONL
+    ok 2 - parseFeedbackFile reads and parses entries from JSONL
+      ---
+      duration_ms: 0.93925
+      ...
+    # Subtest: parseFeedbackFile skips malformed lines
+    ok 3 - parseFeedbackFile skips malformed lines
+      ---
+      duration_ms: 0.511041
+      ...
+    # Subtest: classifySignal: negative maps to negative
+    ok 4 - classifySignal: negative maps to negative
+      ---
+      duration_ms: 0.073292
+      ...
+    # Subtest: classifySignal: positive maps to positive
+    ok 5 - classifySignal: positive maps to positive
+      ---
+      duration_ms: 0.058792
+      ...
+    # Subtest: classifySignal: unknown signal returns null
+    ok 6 - classifySignal: unknown signal returns null
+      ---
+      duration_ms: 0.133084
+      ...
+    # Subtest: normalize strips /Users paths and port numbers, lowercases
+    ok 7 - normalize strips /Users paths and port numbers, lowercases
+      ---
+      duration_ms: 0.158542
+      ...
+    # Subtest: analyze counts positive/negative/categories correctly
+    ok 8 - analyze counts positive/negative/categories correctly
+      ---
+      duration_ms: 2.535125
+      ...
+    # Subtest: analyze produces recurringIssues for context appearing >= 2 times
+    ok 9 - analyze produces recurringIssues for context appearing >= 2 times
+      ---
+      duration_ms: 0.637667
+      ...
+    # Subtest: analyze assigns severity: count>=4 critical, >=3 high, else medium
+    ok 10 - analyze assigns severity: count>=4 critical, >=3 high, else medium
+      ---
+      duration_ms: 1.222166
+      ...
+    # Subtest: toRules emits CLAUDE.md-compatible markdown with NEVER bullets
+    ok 11 - toRules emits CLAUDE.md-compatible markdown with NEVER bullets
+      ---
+      duration_ms: 0.218166
+      ...
+    # Subtest: toRules emits no-issues message when no recurring issues
+    ok 12 - toRules emits no-issues message when no recurring issues
+      ---
+      duration_ms: 0.121042
+      ...
+    1..12
+ok 244 - feedback-to-rules
+  ---
+  duration_ms: 11.645
+  type: 'suite'
+  ...
+# Subtest: plan-gate
+    # Subtest: countTableRows returns 0 for missing section
+    ok 1 - countTableRows returns 0 for missing section
+      ---
+      duration_ms: 0.198917
+      ...
+    # Subtest: countTableRows counts data rows excluding header and separator
+    ok 2 - countTableRows counts data rows excluding header and separator
+      ---
+      duration_ms: 0.178208
+      ...
+    # Subtest: countContracts returns 0 for missing Contracts section
+    ok 3 - countContracts returns 0 for missing Contracts section
+      ---
+      duration_ms: 0.165167
+      ...
+    # Subtest: countContracts counts interface/type keywords in Contracts section code blocks
+    ok 4 - countContracts counts interface/type keywords in Contracts section code blocks
+      ---
+      duration_ms: 0.114
+      ...
+    # Subtest: countValidationScenarios counts unchecked [ ] items in Validation Checklist
+    ok 5 - countValidationScenarios counts unchecked [ ] items in Validation Checklist
+      ---
+      duration_ms: 0.099667
+      ...
+    # Subtest: getStatus returns null for missing Status section
+    ok 6 - getStatus returns null for missing Status section
+      ---
+      duration_ms: 0.052291
+      ...
+    # Subtest: getStatus extracts status value
+    ok 7 - getStatus extracts status value
+      ---
+      duration_ms: 0.092542
+      ...
+    # Subtest: validatePlan fails when Clarifying Questions < 3
+    ok 8 - validatePlan fails when Clarifying Questions < 3
+      ---
+      duration_ms: 0.107416
+      ...
+    # Subtest: validatePlan fails when Contracts = 0
+    ok 9 - validatePlan fails when Contracts = 0
+      ---
+      duration_ms: 0.052541
+      ...
+    # Subtest: validatePlan fails when Validation Checklist < 2
+    ok 10 - validatePlan fails when Validation Checklist < 2
+      ---
+      duration_ms: 0.0425
+      ...
+    # Subtest: validatePlan fails when Status = COMPLETE
+    ok 11 - validatePlan fails when Status = COMPLETE
+      ---
+      duration_ms: 0.053125
+      ...
+    # Subtest: validatePlan passes when all gates satisfied and status is not COMPLETE
+    ok 12 - validatePlan passes when all gates satisfied and status is not COMPLETE
+      ---
+      duration_ms: 0.03875
+      ...
+    # Subtest: formatReport emits RESULT: PASS for allPass=true
+    ok 13 - formatReport emits RESULT: PASS for allPass=true
+      ---
+      duration_ms: 0.05075
+      ...
+    # Subtest: formatReport emits RESULT: BLOCKED for allPass=false
+    ok 14 - formatReport emits RESULT: BLOCKED for allPass=false
+      ---
+      duration_ms: 0.034792
+      ...
+    1..14
+ok 245 - plan-gate
+  ---
+  duration_ms: 2.15625
+  type: 'suite'
+  ...
+# Subtest: feedback-inbox-read
+    # Subtest: readInbox returns [] when inbox file does not exist
+    ok 1 - readInbox returns [] when inbox file does not exist
+      ---
+      duration_ms: 0.208291
+      ...
+    # Subtest: loadCursor returns { lastLineIndex: -1 } when cursor file missing
+    ok 2 - loadCursor returns { lastLineIndex: -1 } when cursor file missing
+      ---
+      duration_ms: 0.161792
+      ...
+    # Subtest: getNewEntries returns [] when inbox is empty
+    ok 3 - getNewEntries returns [] when inbox is empty
+      ---
+      duration_ms: 2.71075
+      ...
+    # Subtest: getNewEntries filters by cursor position — only returns entries after lastLineIndex
+    ok 4 - getNewEntries filters by cursor position — only returns entries after lastLineIndex
+      ---
+      duration_ms: 0.254459
+      ...
+    # Subtest: cursor at lastLineIndex=-1 returns all entries
+    ok 5 - cursor at lastLineIndex=-1 returns all entries
+      ---
+      duration_ms: 0.152
+      ...
+    # Subtest: cursor at lastLineIndex=last returns no entries
+    ok 6 - cursor at lastLineIndex=last returns no entries
+      ---
+      duration_ms: 0.145333
+      ...
+    # Subtest: saveCursor + loadCursor round-trip persists correctly
+    ok 7 - saveCursor + loadCursor round-trip persists correctly
+      ---
+      duration_ms: 1.398334
+      ...
+    # Subtest: strips _lineIndex from returned entries
+    ok 8 - strips _lineIndex from returned entries
+      ---
+      duration_ms: 0.181083
+      ...
+    # Subtest: INBOX_PATH and CURSOR_PATH are exported strings
+    ok 9 - INBOX_PATH and CURSOR_PATH are exported strings
+      ---
+      duration_ms: 0.044458
+      ...
+    1..9
+ok 246 - feedback-inbox-read
+  ---
+  duration_ms: 6.092458
+  type: 'suite'
+  ...
+# Subtest: feedback-to-memory
+    # Subtest: convertFeedbackToMemory: valid negative returns ok=true, store-mistake, MISTAKE: prefix
+    ok 1 - convertFeedbackToMemory: valid negative returns ok=true, store-mistake, MISTAKE: prefix
+      ---
+      duration_ms: 0.614041
+      ...
+    # Subtest: convertFeedbackToMemory: valid positive returns ok=true, store-learning, SUCCESS: prefix
+    ok 2 - convertFeedbackToMemory: valid positive returns ok=true, store-learning, SUCCESS: prefix
+      ---
+      duration_ms: 0.144167
+      ...
+    # Subtest: convertFeedbackToMemory: bare negative (no context) returns ok=false
+    ok 3 - convertFeedbackToMemory: bare negative (no context) returns ok=false
+      ---
+      duration_ms: 0.122333
+      ...
+    # Subtest: convertFeedbackToMemory: bare positive (no context) returns ok=false
+    ok 4 - convertFeedbackToMemory: bare positive (no context) returns ok=false
+      ---
+      duration_ms: 0.036583
+      ...
+    # Subtest: convertFeedbackToMemory: unknown signal returns ok=false
+    ok 5 - convertFeedbackToMemory: unknown signal returns ok=false
+      ---
+      duration_ms: 0.216709
+      ...
+    # Subtest: convertFeedbackToMemory: context-only negative returns ok=true
+    ok 6 - convertFeedbackToMemory: context-only negative returns ok=true
+      ---
+      duration_ms: 0.183125
+      ...
+    # Subtest: convertFeedbackToMemory: context-only positive returns ok=true
+    ok 7 - convertFeedbackToMemory: context-only positive returns ok=true
+      ---
+      duration_ms: 0.096791
+      ...
+    # Subtest: convertFeedbackToMemory: preserves domain tags in output memory
+    ok 8 - convertFeedbackToMemory: preserves domain tags in output memory
+      ---
+      duration_ms: 0.046583
+      ...
+    # Subtest: convertFeedbackToMemory: memory has required fields (title, content, category, tags)
+    ok 9 - convertFeedbackToMemory: memory has required fields (title, content, category, tags)
+      ---
+      duration_ms: 0.1335
+      ...
+    1..9
+ok 247 - feedback-to-memory
+  ---
+  duration_ms: 2.865084
+  type: 'suite'
+  ...
+# Subtest: loads mcp policy and profiles
+ok 248 - loads mcp policy and profiles
+  ---
+  duration_ms: 0.91475
+  ...
+# Subtest: profile allowlists differentiate permissions
+ok 249 - profile allowlists differentiate permissions
+  ---
+  duration_ms: 0.273125
+  ...
+# Subtest: assertToolAllowed throws for denied tools
+ok 250 - assertToolAllowed throws for denied tools
+  ---
+  duration_ms: 0.5385
+  ...
+# Subtest: subagent profile resolves mcp profile and conflicts are rejected
+ok 251 - subagent profile resolves mcp profile and conflicts are rejected
+  ---
+  duration_ms: 0.609584
+  ...
+# Subtest: tools/list returns all configured tools
+ok 252 - tools/list returns all configured tools
+  ---
+  duration_ms: 0.884541
+  ...
+# Subtest: capture_feedback tool can be called
+not ok 253 - capture_feedback tool can be called
+  ---
+  duration_ms: 0.387417
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:52:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:53:24)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: capture_feedback applies rubric anti-hacking gate
+not ok 254 - capture_feedback applies rubric anti-hacking gate
+  ---
+  duration_ms: 0.195625
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:72:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:73:24)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: capture_feedback returns clarification_required for vague positive feedback
+not ok 255 - capture_feedback returns clarification_required for vague positive feedback
+  ---
+  duration_ms: 0.107625
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:97:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:98:24)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: intent tools list and plan enforce checkpoint flow
+not ok 256 - intent tools list and plan enforce checkpoint flow
+  ---
+  duration_ms: 0.241416
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:120:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:121:28)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: plan_intent exposes partner-aware strategy over MCP
+not ok 257 - plan_intent exposes partner-aware strategy over MCP
+  ---
+  duration_ms: 0.139791
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:156:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:157:28)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: start_handoff and complete_handoff expose sequential delegation over MCP
+not ok 258 - start_handoff and complete_handoff expose sequential delegation over MCP
+  ---
+  duration_ms: 0.128125
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:176:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:177:28)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: bootstrap_internal_agent creates a sandbox and reviewer plan over MCP
+not ok 259 - bootstrap_internal_agent creates a sandbox and reviewer plan over MCP
+  ---
+  duration_ms: 134.141583
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:238:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:251:26)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: diagnose_failure exposes compiled constraints and root cause over MCP
+not ok 260 - diagnose_failure exposes compiled constraints and root cause over MCP
+  ---
+  duration_ms: 0.351333
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:291:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:292:24)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: diagnose_failure honors MCP profile allowlists
+not ok 261 - diagnose_failure honors MCP profile allowlists
+  ---
+  duration_ms: 0.269416
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:314:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:315:24)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: plan_intent includes codegraph impact for coding workflows
+not ok 262 - plan_intent includes codegraph impact for coding workflows
+  ---
+  duration_ms: 0.163875
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:339:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:350:30)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: recall includes code graph impact section for coding workflows
+not ok 263 - recall includes code graph impact section for coding workflows
+  ---
+  duration_ms: 0.130792
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:373:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:384:26)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: prevention_rules blocks external output paths
+not ok 264 - prevention_rules blocks external output paths
+  ---
+  duration_ms: 2.039458
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:404:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /Path must stay within/. Input:
+    
+    'ReferenceError: evaluateGatesAsync is not defined'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'evaluateGatesAsync is not defined'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    /Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:406:11
+    waitForActual (node:assert:519:21)
+    Function.rejects (node:assert:654:31)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:405:16)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:405:3)
+    async Test.run (node:internal/test_runner/test:797:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: export_databricks_bundle writes manifest and sql template over MCP
+not ok 265 - export_databricks_bundle writes manifest and sql template over MCP
+  ---
+  duration_ms: 0.52525
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:420:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:427:24)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: export_databricks_bundle defaults bundle path inside SAFE_DATA_DIR
+not ok 266 - export_databricks_bundle defaults bundle path inside SAFE_DATA_DIR
+  ---
+  duration_ms: 0.289958
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:445:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:446:24)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: construct/evaluate context pack tools work
+not ok 267 - construct/evaluate context pack tools work
+  ---
+  duration_ms: 0.202541
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:461:1'
+  failureType: 'testCodeFailure'
+  error: 'evaluateGatesAsync is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:462:27)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: construct_context_pack rejects invalid namespaces
+not ok 268 - construct_context_pack rejects invalid namespaces
+  ---
+  duration_ms: 0.251708
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:511:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /Unsupported namespace/. Input:
+    
+    'ReferenceError: evaluateGatesAsync is not defined'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'evaluateGatesAsync is not defined'
+  name: 'ReferenceError'
+  stack: |-
+    callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+    handleRequest (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:457:47)
+    /Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:513:11
+    waitForActual (node:assert:519:21)
+    Function.rejects (node:assert:654:31)
+    TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:512:16)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/mcp-server.test.js:512:3)
+    async Test.run (node:internal/test_runner/test:797:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: safe data dir resolves inside test feedback root
+ok 269 - safe data dir resolves inside test feedback root
+  ---
+  duration_ms: 0.052291
+  ...
+# Subtest: chatgpt openapi includes all core API routes
+ok 270 - chatgpt openapi includes all core API routes
+  ---
+  duration_ms: 1.627209
+  ...
+# Subtest: canonical openapi includes monetization and funnel analytics routes
+ok 271 - canonical openapi includes monetization and funnel analytics routes
+  ---
+  duration_ms: 0.223833
+  ...
+# Subtest: canonical openapi.yaml exists and has more than 50 lines
+ok 272 - canonical openapi.yaml exists and has more than 50 lines
+  ---
+  duration_ms: 0.4845
+  ...
+# Subtest: all core routes present in canonical openapi
+ok 273 - all core routes present in canonical openapi
+  ---
+  duration_ms: 0.250375
+  ...
+# Subtest: chatgpt adapter preserves core endpoint parity with canonical openapi
+ok 274 - chatgpt adapter preserves core endpoint parity with canonical openapi
+  ---
+  duration_ms: 0.218792
+  ...
+# Subtest: openapi file contains version header
+ok 275 - openapi file contains version header
+  ---
+  duration_ms: 0.146416
+  ...
+# Subtest: percentEncode
+    # Subtest: encodes special chars (!, *, ', (, ))
+    ok 1 - encodes special chars (!, *, ', (, ))
+      ---
+      duration_ms: 0.338375
+      ...
+    # Subtest: passes through alphanumeric and standard URI-safe chars
+    ok 2 - passes through alphanumeric and standard URI-safe chars
+      ---
+      duration_ms: 0.217958
+      ...
+    1..2
+ok 276 - percentEncode
+  ---
+  duration_ms: 1.238791
+  type: 'suite'
+  ...
+# Subtest: generateOAuthSignature
+    # Subtest: produces a valid HMAC-SHA1 base64 signature
+    ok 1 - produces a valid HMAC-SHA1 base64 signature
+      ---
+      duration_ms: 1.099709
+      ...
+    # Subtest: is deterministic for the same inputs
+    ok 2 - is deterministic for the same inputs
+      ---
+      duration_ms: 0.083916
+      ...
+    1..2
+ok 277 - generateOAuthSignature
+  ---
+  duration_ms: 1.307125
+  type: 'suite'
+  ...
+# Subtest: buildOAuthHeader
+    # Subtest: returns a string starting with "OAuth " with all required params
+    ok 1 - returns a string starting with "OAuth " with all required params
+      ---
+      duration_ms: 0.945125
+      ...
+    1..1
+ok 278 - buildOAuthHeader
+  ---
+  duration_ms: 1.056292
+  type: 'suite'
+  ...
+# Subtest: postTweet
+    # Subtest: returns tweet ID on 201
+    ok 1 - returns tweet ID on 201
+      ---
+      duration_ms: 0.427791
+      ...
+    # Subtest: returns null on error status
+    ok 2 - returns null on error status
+      ---
+      duration_ms: 0.676333
+      ...
+    # Subtest: handles 429 rate limit and eventually returns null
+    ok 3 - handles 429 rate limit and eventually returns null
+      ---
+      duration_ms: 4.027375
+      ...
+    1..3
+ok 279 - postTweet
+  ---
+  duration_ms: 5.28525
+  type: 'suite'
+  ...
+# Subtest: searchTweets
+    # Subtest: returns array of tweets on success
+    ok 1 - returns array of tweets on success
+      ---
+      duration_ms: 0.539458
+      ...
+    # Subtest: returns empty array on error
+    ok 2 - returns empty array on error
+      ---
+      duration_ms: 0.656125
+      ...
+    1..2
+ok 280 - searchTweets
+  ---
+  duration_ms: 1.35925
+  type: 'suite'
+  ...
+# Subtest: postThread
+    # Subtest: posts multiple tweets in sequence with reply threading
+    ok 1 - posts multiple tweets in sequence with reply threading
+      ---
+      duration_ms: 4015.073083
+      ...
+    # Subtest: stops thread when a tweet fails
+    ok 2 - stops thread when a tweet fails
+      ---
+      duration_ms: 2006.633459
+      ...
+    1..2
+ok 281 - postThread
+  ---
+  duration_ms: 6023.461958
+  type: 'suite'
+  ...
+# Subtest: --dry-run mode
+    # Subtest: parseTweetsFromThread extracts tweets without posting
+    ok 1 - parseTweetsFromThread extracts tweets without posting
+      ---
+      duration_ms: 3.044917
+      ...
+    1..1
+ok 282 - --dry-run mode
+  ---
+  duration_ms: 3.182667
+  type: 'suite'
+  ...
+# Subtest: RFC 9457 Problem Detail
+    # Subtest: problemDetail includes required fields
+    ok 1 - problemDetail includes required fields
+      ---
+      duration_ms: 0.944791
+      ...
+    # Subtest: problemDetail includes optional detail
+    ok 2 - problemDetail includes optional detail
+      ---
+      duration_ms: 0.084708
+      ...
+    # Subtest: problemDetail passes through extensions
+    ok 3 - problemDetail passes through extensions
+      ---
+      duration_ms: 0.251833
+      ...
+    # Subtest: all PROBLEM_TYPES are URN strings
+    ok 4 - all PROBLEM_TYPES are URN strings
+      ---
+      duration_ms: 0.283917
+      ...
+    # Subtest: problemDetail Content-Type should be application/problem+json
+    ok 5 - problemDetail Content-Type should be application/problem+json
+      ---
+      duration_ms: 0.245292
+      ...
+    1..5
+ok 283 - RFC 9457 Problem Detail
+  ---
+  duration_ms: 2.930125
+  type: 'suite'
+  ...
+# Subtest: public landing page keeps FAQPage JSON-LD parity for SEO and GEO
+ok 284 - public landing page keeps FAQPage JSON-LD parity for SEO and GEO
+  ---
+  duration_ms: 3.638166
+  ...
+# Subtest: public landing page uses the injected checkout fallback token
+ok 285 - public landing page uses the injected checkout fallback token
+  ---
+  duration_ms: 0.663
+  ...
+# Subtest: public landing page enriches fallback checkout links with first-party attribution fields
+ok 286 - public landing page enriches fallback checkout links with first-party attribution fields
+  ---
+  duration_ms: 0.676916
+  ...
+# Subtest: public landing page keeps optional GA4 and Search Console hooks available for runtime injection
+ok 287 - public landing page keeps optional GA4 and Search Console hooks available for runtime injection
+  ---
+  duration_ms: 0.488167
+  ...
+# Subtest: public landing page includes buyer-loss capture wired to telemetry and Plausible
+ok 288 - public landing page includes buyer-loss capture wired to telemetry and Plausible
+  ---
+  duration_ms: 0.376875
+  ...
+# Subtest: public landing page auto-detects search traffic and records SEO landing telemetry
+ok 289 - public landing page auto-detects search traffic and records SEO landing telemetry
+  ---
+  duration_ms: 2.140583
+  ...
+# Subtest: public landing page includes a Reddit campaign banner and subreddit-aware attribution logic
+ok 290 - public landing page includes a Reddit campaign banner and subreddit-aware attribution logic
+  ---
+  duration_ms: 0.539542
+  ...
+# Subtest: public landing page positions the gateway as continuity-friendly reliability without orchestration tax
+ok 291 - public landing page positions the gateway as continuity-friendly reliability without orchestration tax
+  ---
+  duration_ms: 1.62875
+  ...
+# Subtest: public landing page includes Reliability Studio compare-and-deploy positioning without training drift
+ok 292 - public landing page includes Reliability Studio compare-and-deploy positioning without training drift
+  ---
+  duration_ms: 0.726208
+  ...
+# Subtest: public landing page includes an honest workflow fit checker for action-driven queries
+ok 293 - public landing page includes an honest workflow fit checker for action-driven queries
+  ---
+  duration_ms: 0.7535
+  ...
+# Subtest: public landing page promotes the Claude Desktop extension path without false approval claims
+ok 294 - public landing page promotes the Claude Desktop extension path without false approval claims
+  ---
+  duration_ms: 1.365667
+  ...
+# Subtest: recall limit
+    # Subtest: recall returns results without upgrade nudge for first 5 calls
+    not ok 1 - recall returns results without upgrade nudge for first 5 calls
+      ---
+      duration_ms: 6.258917
+      location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/recall-limit.test.js:35:3'
+      failureType: 'testCodeFailure'
+      error: 'evaluateGatesAsync is not defined'
+      code: 'ERR_TEST_FAILURE'
+      name: 'ReferenceError'
+      stack: |-
+        callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+        TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/recall-limit.test.js:37:28)
+        Test.runInAsyncScope (node:async_hooks:206:9)
+        Test.run (node:internal/test_runner/test:796:25)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:1135:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+      ...
+    # Subtest: recall shows upgrade nudge after 5 calls in a day
+    not ok 2 - recall shows upgrade nudge after 5 calls in a day
+      ---
+      duration_ms: 0.853416
+      location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/recall-limit.test.js:44:3'
+      failureType: 'testCodeFailure'
+      error: 'evaluateGatesAsync is not defined'
+      code: 'ERR_TEST_FAILURE'
+      name: 'ReferenceError'
+      stack: |-
+        callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+        TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/recall-limit.test.js:46:13)
+        Test.runInAsyncScope (node:async_hooks:206:9)
+        Test.run (node:internal/test_runner/test:796:25)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:526:7)
+      ...
+    # Subtest: recall still returns actual results even when over limit
+    not ok 3 - recall still returns actual results even when over limit
+      ---
+      duration_ms: 0.941791
+      location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/recall-limit.test.js:55:3'
+      failureType: 'testCodeFailure'
+      error: 'evaluateGatesAsync is not defined'
+      code: 'ERR_TEST_FAILURE'
+      name: 'ReferenceError'
+      stack: |-
+        callTool (/Users/ganapolsky_i/workspace/git/igor/rlhf/adapters/mcp/server-stdio.js:308:26)
+        TestContext.<anonymous> (/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/recall-limit.test.js:57:13)
+        Test.runInAsyncScope (node:async_hooks:206:9)
+        Test.run (node:internal/test_runner/test:796:25)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:526:7)
+      ...
+    1..3
+not ok 295 - recall limit
+  ---
+  duration_ms: 9.565083
+  type: 'suite'
+  location: '/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/recall-limit.test.js:30:1'
+  failureType: 'subtestsFailed'
+  error: '3 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: REMINDER_TEMPLATES covers all DEFAULT_THRESHOLDS event types
+ok 296 - REMINDER_TEMPLATES covers all DEFAULT_THRESHOLDS event types
+  ---
+  duration_ms: 1.885875
+  ...
+# Subtest: trackEvent increments count and persists state
+ok 297 - trackEvent increments count and persists state
+  ---
+  duration_ms: 5.053334
+  ...
+# Subtest: getEventCount returns 0 for unknown events
+ok 298 - getEventCount returns 0 for unknown events
+  ---
+  duration_ms: 0.964292
+  ...
+# Subtest: shouldInjectReminder returns false below threshold
+ok 299 - shouldInjectReminder returns false below threshold
+  ---
+  duration_ms: 5.954
+  ...
+# Subtest: shouldInjectReminder returns true at or above threshold
+ok 300 - shouldInjectReminder returns true at or above threshold
+  ---
+  duration_ms: 7.801583
+  ...
+# Subtest: shouldInjectReminder uses DEFAULT_THRESHOLDS when threshold arg omitted
+ok 301 - shouldInjectReminder uses DEFAULT_THRESHOLDS when threshold arg omitted
+  ---
+  duration_ms: 6.332708
+  ...
+# Subtest: renderTemplate substitutes context variables
+ok 302 - renderTemplate substitutes context variables
+  ---
+  duration_ms: 0.934333
+  ...
+# Subtest: renderTemplate returns fallback for unknown event type
+ok 303 - renderTemplate returns fallback for unknown event type
+  ---
+  duration_ms: 2.310917
+  ...
+# Subtest: renderTemplate leaves placeholder when context key missing
+ok 304 - renderTemplate leaves placeholder when context key missing
+  ---
+  duration_ms: 0.544666
+  ...
+# Subtest: injectReminder appends a user-role reminder to turns
+ok 305 - injectReminder appends a user-role reminder to turns
+  ---
+  duration_ms: 16.223625
+  ...
+# Subtest: injectReminder does not mutate the original turns array
+ok 306 - injectReminder does not mutate the original turns array
+  ---
+  duration_ms: 1.52325
+  ...
+# Subtest: resetEvent resets count to zero
+ok 307 - resetEvent resets count to zero
+  ---
+  duration_ms: 7.508833
+  ...
+# Subtest: trainRiskModel ranks clearly negative-like row above positive-like row
+ok 308 - trainRiskModel ranks clearly negative-like row above positive-like row
+  ---
+  duration_ms: 46.155959
+  ...
+# Subtest: saved risk model reloads and predicts consistently
+ok 309 - saved risk model reloads and predicts consistently
+  ---
+  duration_ms: 17.957542
+  ...
+# Subtest: trainAndPersistRiskModel writes a file-based artifact from sequence log
+ok 310 - trainAndPersistRiskModel writes a file-based artifact from sequence log
+  ---
+  duration_ms: 12.448333
+  ...
+# Subtest: loads rubric config with expected criteria
+ok 311 - loads rubric config with expected criteria
+  ---
+  duration_ms: 3.465042
+  ...
+# Subtest: rubric config criteria have required fields
+ok 312 - rubric config criteria have required fields
+  ---
+  duration_ms: 1.30125
+  ...
+# Subtest: rubric config weights sum to 1.0
+ok 313 - rubric config weights sum to 1.0
+  ---
+  duration_ms: 0.648583
+  ...
+# Subtest: rubric config has expected criteria IDs
+ok 314 - rubric config has expected criteria IDs
+  ---
+  duration_ms: 0.396375
+  ...
+# Subtest: normalizes rubric scores and validates criterion names
+ok 315 - normalizes rubric scores and validates criterion names
+  ---
+  duration_ms: 0.525458
+  ...
+# Subtest: normalizeRubricScores rejects unknown criterion
+ok 316 - normalizeRubricScores rejects unknown criterion
+  ---
+  duration_ms: 1.184417
+  ...
+# Subtest: normalizeRubricScores handles multiple scores for same criterion
+ok 317 - normalizeRubricScores handles multiple scores for same criterion
+  ---
+  duration_ms: 0.888625
+  ...
+# Subtest: normalizeRubricScores rejects out-of-range scores
+ok 318 - normalizeRubricScores rejects out-of-range scores
+  ---
+  duration_ms: 0.302708
+  ...
+# Subtest: buildRubricEvaluation flags disagreement and failed guardrails
+ok 319 - buildRubricEvaluation flags disagreement and failed guardrails
+  ---
+  duration_ms: 1.654167
+  ...
+# Subtest: buildRubricEvaluation passes when all criteria met with evidence
+ok 320 - buildRubricEvaluation passes when all criteria met with evidence
+  ---
+  duration_ms: 0.62525
+  ...
+# Subtest: buildRubricEvaluation includes weighted score
+ok 321 - buildRubricEvaluation includes weighted score
+  ---
+  duration_ms: 0.695209
+  ...
+# Subtest: buildRubricEvaluation detects failing criteria
+ok 322 - buildRubricEvaluation detects failing criteria
+  ---
+  duration_ms: 0.441792
+  ...
+# Subtest: buildRubricEvaluation returns rubricId
+ok 323 - buildRubricEvaluation returns rubricId
+  ---
+  duration_ms: 0.349542
+  ...
+# Subtest: evaluateGuardrails detects all failed guardrails
+ok 324 - evaluateGuardrails detects all failed guardrails
+  ---
+  duration_ms: 0.354292
+  ...
+# Subtest: evaluateGuardrails handles all passing
+ok 325 - evaluateGuardrails handles all passing
+  ---
+  duration_ms: 0.163875
+  ...
+# Subtest: KNOWN_FIX_SCRIPTS contains expected scripts
+ok 326 - KNOWN_FIX_SCRIPTS contains expected scripts
+  ---
+  duration_ms: 1.179125
+  ...
+# Subtest: buildFixPlan selects known fix scripts in priority order
+ok 327 - buildFixPlan selects known fix scripts in priority order
+  ---
+  duration_ms: 0.341959
+  ...
+# Subtest: buildFixPlan returns empty array when no known scripts exist
+ok 328 - buildFixPlan returns empty array when no known scripts exist
+  ---
+  duration_ms: 0.111958
+  ...
+# Subtest: buildFixPlan preserves KNOWN_FIX_SCRIPTS ordering
+ok 329 - buildFixPlan preserves KNOWN_FIX_SCRIPTS ordering
+  ---
+  duration_ms: 0.054333
+  ...
+# Subtest: runFixPlan tracks successful and failed runs
+ok 330 - runFixPlan tracks successful and failed runs
+  ---
+  duration_ms: 135.163375
+  ...
+# Subtest: runFixPlan handles empty plan
+ok 331 - runFixPlan handles empty plan
+  ---
+  duration_ms: 0.322625
+  ...
+# Subtest: runFixPlan captures error messages
+ok 332 - runFixPlan captures error messages
+  ---
+  duration_ms: 62.812667
+  ...
+# Subtest: runFixPlan tracks per-script changed files
+ok 333 - runFixPlan tracks per-script changed files
+  ---
+  duration_ms: 142.257292
+  ...
+# Subtest: runFixPlan records timing per script
+ok 334 - runFixPlan records timing per script
+  ---
+  duration_ms: 87.490333
+  ...
+# Subtest: loadPackageScripts returns scripts object
+ok 335 - loadPackageScripts returns scripts object
+  ---
+  duration_ms: 0.475333
+  ...
+# Subtest: runSelfHeal returns complete report structure
+ok 336 - runSelfHeal returns complete report structure
+  ---
+  duration_ms: 846.569583
+  ...
+# Subtest: runSelfHeal includes reasoning traces
+ok 337 - runSelfHeal includes reasoning traces
+  ---
+  duration_ms: 547.338416
+  ...
+# Subtest: runSelfHeal traces have correct type and structure
+ok 338 - runSelfHeal traces have correct type and structure
+  ---
+  duration_ms: 566.621041
+  ...
+# Subtest: quickHealthCheck returns healthy boolean
+ok 339 - quickHealthCheck returns healthy boolean
+  ---
+  duration_ms: 1.609458
+  ...
+# Subtest: quickHealthCheck returns unhealthy on failure
+ok 340 - quickHealthCheck returns unhealthy on failure
+  ---
+  duration_ms: 0.6525
+  ...
+# Subtest: adaptive runFixPlan skips remaining scripts when healthy
+ok 341 - adaptive runFixPlan skips remaining scripts when healthy
+  ---
+  duration_ms: 65.853584
+  ...
+# Subtest: adaptive runFixPlan continues when health check fails
+ok 342 - adaptive runFixPlan continues when health check fails
+  ---
+  duration_ms: 107.233167
+  ...
+# Subtest: non-adaptive runFixPlan has empty skipped array
+ok 343 - non-adaptive runFixPlan has empty skipped array
+  ---
+  duration_ms: 95.9925
+  ...
+# Subtest: DEFAULT_CHECKS delegates verification through npm test
+ok 344 - DEFAULT_CHECKS delegates verification through npm test
+  ---
+  duration_ms: 0.812042
+  ...
+# Subtest: DEFAULT_CHECKS isolates proof artifacts for prove checks
+ok 345 - DEFAULT_CHECKS isolates proof artifacts for prove checks
+  ---
+  duration_ms: 0.075417
+  ...
+# Subtest: collectHealthReport marks overall healthy when all checks pass
+ok 346 - collectHealthReport marks overall healthy when all checks pass
+  ---
+  duration_ms: 3.917417
+  ...
+# Subtest: collectHealthReport marks overall unhealthy when one check fails
+ok 347 - collectHealthReport marks overall unhealthy when one check fails
+  ---
+  duration_ms: 3.801083
+  ...
+# Subtest: collectHealthReport records duration for each check
+ok 348 - collectHealthReport records duration for each check
+  ---
+  duration_ms: 0.444458
+  ...
+# Subtest: collectHealthReport injects and cleans temp proof dirs for proof checks
+ok 349 - collectHealthReport injects and cleans temp proof dirs for proof checks
+  ---
+  duration_ms: 2.443916
+  ...
+# Subtest: collectHealthReport captures output tail on failure
+ok 350 - collectHealthReport captures output tail on failure
+  ---
+  duration_ms: 2.466208
+  ...
+# Subtest: collectHealthReport can persist unhealthy diagnoses for shared analytics
+ok 351 - collectHealthReport can persist unhealthy diagnoses for shared analytics
+  ---
+  duration_ms: 4.384209
+  ...
+# Subtest: collectHealthReport handles empty checks array
+ok 352 - collectHealthReport handles empty checks array
+  ---
+  duration_ms: 0.450584
+  ...
+# Subtest: collectHealthReport has timestamp
+ok 353 - collectHealthReport has timestamp
+  ---
+  duration_ms: 0.912208
+  ...
+# Subtest: collectHealthReport includes total duration
+ok 354 - collectHealthReport includes total duration
+  ---
+  duration_ms: 0.619541
+  ...
+# Subtest: reportToText includes overall status and check names
+ok 355 - reportToText includes overall status and check names
+  ---
+  duration_ms: 0.367125
+  ...
+# Subtest: reportToText shows unhealthy status
+ok 356 - reportToText shows unhealthy status
+  ---
+  duration_ms: 0.341917
+  ...
+# Subtest: reportToText includes multiple checks
+ok 357 - reportToText includes multiple checks
+  ---
+  duration_ms: 0.323209
+  ...
+# Subtest: lists and loads subagent profiles
+ok 358 - lists and loads subagent profiles
+  ---
+  duration_ms: 2.277333
+  ...
+# Subtest: subagent profiles validate against mcp policy
+ok 359 - subagent profiles validate against mcp policy
+  ---
+  duration_ms: 0.339792
+  ...
+# Subtest: listSubagentProfiles returns array with length >= 2
+ok 360 - listSubagentProfiles returns array with length >= 2
+  ---
+  duration_ms: 0.320834
+  ...
+# Subtest: loadSubagentProfiles returns object with profiles
+ok 361 - loadSubagentProfiles returns object with profiles
+  ---
+  duration_ms: 0.2555
+  ...
+# Subtest: getSubagentProfile pr_workflow has mcpProfile field
+ok 362 - getSubagentProfile pr_workflow has mcpProfile field
+  ---
+  duration_ms: 0.456792
+  ...
+# Subtest: validateSubagentProfiles returns valid true when profiles are correct
+ok 363 - validateSubagentProfiles returns valid true when profiles are correct
+  ---
+  duration_ms: 0.342208
+  ...
+# Subtest: unknown profile throws error
+ok 364 - unknown profile throws error
+  ---
+  duration_ms: 0.673625
+  ...
+# Subtest: sanitizeTelemetryPayload normalizes modern web payloads
+ok 365 - sanitizeTelemetryPayload normalizes modern web payloads
+  ---
+  duration_ms: 7.213875
+  ...
+# Subtest: sanitizeTelemetryPayload normalizes buyer-loss and SEO fields
+ok 366 - sanitizeTelemetryPayload normalizes buyer-loss and SEO fields
+  ---
+  duration_ms: 0.553583
+  ...
+# Subtest: inferTrafficChannel prefers explicit source and deterministic referrer heuristics
+ok 367 - inferTrafficChannel prefers explicit source and deterministic referrer heuristics
+  ---
+  duration_ms: 1.025959
+  ...
+# Subtest: sanitizeTelemetryPayload preserves reddit campaign metadata
+ok 368 - sanitizeTelemetryPayload preserves reddit campaign metadata
+  ---
+  duration_ms: 0.672916
+  ...
+# Subtest: loadTelemetryEvents upgrades legacy event/client fields
+ok 369 - loadTelemetryEvents upgrades legacy event/client fields
+  ---
+  duration_ms: 2.228416
+  ...
+# Subtest: getTelemetryAnalytics summarizes visitors, CTAs, and CLI installs
+ok 370 - getTelemetryAnalytics summarizes visitors, CTAs, and CLI installs
+  ---
+  duration_ms: 42.471583
+  ...
+# Subtest: getTelemetryAnalytics summarizes buyer-loss, abandonment, and SEO telemetry
+ok 371 - getTelemetryAnalytics summarizes buyer-loss, abandonment, and SEO telemetry
+  ---
+  duration_ms: 9.095292
+  ...
+# Subtest: getTelemetryAnalytics keeps generic CTA clicks separate from checkout starts and counts checkout bootstrap
+ok 372 - getTelemetryAnalytics keeps generic CTA clicks separate from checkout starts and counts checkout bootstrap
+  ---
+  duration_ms: 2.863917
+  ...
+# Subtest: getTelemetryAnalytics summarizes reddit community and offer performance
+ok 373 - getTelemetryAnalytics summarizes reddit community and offer performance
+  ---
+  duration_ms: 4.430417
+  ...
+# Subtest: getTelemetryAnalytics applies daily windows and summarizes checkout success telemetry
+ok 374 - getTelemetryAnalytics applies daily windows and summarizes checkout success telemetry
+  ---
+  duration_ms: 3.140709
+  ...
+# Subtest: findCoverageTestFiles returns sorted nested test files
+ok 375 - findCoverageTestFiles returns sorted nested test files
+  ---
+  duration_ms: 5.088333
+  ...
+# Subtest: buildCoverageArgs prepends Node coverage flags
+ok 376 - buildCoverageArgs prepends Node coverage flags
+  ---
+  duration_ms: 0.242959
+  ...
+# Subtest: runCoverage returns error when no test files are provided
+ok 377 - runCoverage returns error when no test files are provided
+  ---
+  duration_ms: 0.305
+  ...
+# Subtest: runCoverage delegates to Node with test coverage flags
+ok 378 - runCoverage delegates to Node with test coverage flags
+  ---
+  duration_ms: 0.571666
+  ...
+# Subtest: timeDecayWeight
+    # Subtest: fresh timestamp returns ~1.0
+    ok 1 - fresh timestamp returns ~1.0
+      ---
+      duration_ms: 5.765375
+      ...
+    # Subtest: 7-day-old timestamp returns ~0.5
+    ok 2 - 7-day-old timestamp returns ~0.5
+      ---
+      duration_ms: 0.108875
+      ...
+    # Subtest: invalid string returns DECAY_FLOOR
+    ok 3 - invalid string returns DECAY_FLOOR
+      ---
+      duration_ms: 0.060459
+      ...
+    # Subtest: null returns DECAY_FLOOR
+    ok 4 - null returns DECAY_FLOOR
+      ---
+      duration_ms: 0.410041
+      ...
+    # Subtest: 365-day-old timestamp still >= DECAY_FLOOR
+    ok 5 - 365-day-old timestamp still >= DECAY_FLOOR
+      ---
+      duration_ms: 0.228167
+      ...
+    1..5
+ok 379 - timeDecayWeight
+  ---
+  duration_ms: 7.383083
+  type: 'suite'
+  ...
+# Subtest: createInitialModel
+    # Subtest: has all DEFAULT_CATEGORIES with alpha=1.0 beta=1.0 samples=0
+    ok 1 - has all DEFAULT_CATEGORIES with alpha=1.0 beta=1.0 samples=0
+      ---
+      duration_ms: 0.163792
+      ...
+    1..1
+ok 380 - createInitialModel
+  ---
+  duration_ms: 0.215916
+  type: 'suite'
+  ...
+# Subtest: updateModel
+    # Subtest: positive signal increments alpha
+    ok 1 - positive signal increments alpha
+      ---
+      duration_ms: 0.3935
+      ...
+    # Subtest: negative signal increments beta
+    ok 2 - negative signal increments beta
+      ---
+      duration_ms: 0.13525
+      ...
+    # Subtest: empty categories falls back to uncategorized
+    ok 3 - empty categories falls back to uncategorized
+      ---
+      duration_ms: 0.072792
+      ...
+    # Subtest: unknown category auto-created
+    ok 4 - unknown category auto-created
+      ---
+      duration_ms: 0.115792
+      ...
+    # Subtest: total_entries increments
+    ok 5 - total_entries increments
+      ---
+      duration_ms: 0.153334
+      ...
+    # Subtest: weightMultiplier scales posterior updates
+    ok 6 - weightMultiplier scales posterior updates
+      ---
+      duration_ms: 0.092959
+      ...
+    1..6
+ok 381 - updateModel
+  ---
+  duration_ms: 1.098667
+  type: 'suite'
+  ...
+# Subtest: getReliability
+    # Subtest: reliability = alpha/(alpha+beta)
+    ok 1 - reliability = alpha/(alpha+beta)
+      ---
+      duration_ms: 0.500125
+      ...
+    1..1
+ok 382 - getReliability
+  ---
+  duration_ms: 0.766209
+  type: 'suite'
+  ...
+# Subtest: samplePosteriors
+    # Subtest: each posterior in [0,1]
+    ok 1 - each posterior in [0,1]
+      ---
+      duration_ms: 1.511542
+      ...
+    1..1
+ok 383 - samplePosteriors
+  ---
+  duration_ms: 2.35525
+  type: 'suite'
+  ...
+# Subtest: loadModel
+    # Subtest: missing file returns initial model
+    ok 1 - missing file returns initial model
+      ---
+      duration_ms: 0.437375
+      ...
+    # Subtest: reads existing file
+    ok 2 - reads existing file
+      ---
+      duration_ms: 3.108708
+      ...
+    1..2
+ok 384 - loadModel
+  ---
+  duration_ms: 3.682459
+  type: 'suite'
+  ...
+# Subtest: vector-store — upsertFeedback()
+    # Subtest: creates lancedb dir and resolves without error on first call
+    ok 1 - creates lancedb dir and resolves without error on first call
+      ---
+      duration_ms: 12.595375
+      ...
+    1..1
+ok 385 - vector-store — upsertFeedback()
+  ---
+  duration_ms: 14.097958
+  type: 'suite'
+  ...
+# Subtest: vector-store — embedding config
+    # Subtest: exposes hardware-aware embedding config
+    ok 1 - exposes hardware-aware embedding config
+      ---
+      duration_ms: 5.410125
+      ...
+    1..1
+ok 386 - vector-store — embedding config
+  ---
+  duration_ms: 5.591125
+  type: 'suite'
+  ...
+# Subtest: vector-store — searchSimilar() on empty store
+    # Subtest: returns empty array when table does not exist
+    ok 1 - returns empty array when table does not exist
+      ---
+      duration_ms: 4.374208
+      ...
+    1..1
+ok 387 - vector-store — searchSimilar() on empty store
+  ---
+  duration_ms: 4.565125
+  type: 'suite'
+  ...
+# Subtest: vector-store — upsert then search returns inserted record
+    # Subtest: retrieves fb_001 after upsert with matching query
+    ok 1 - retrieves fb_001 after upsert with matching query
+      ---
+      duration_ms: 5.519834
+      ...
+    1..1
+ok 388 - vector-store — upsert then search returns inserted record
+  ---
+  duration_ms: 5.81025
+  type: 'suite'
+  ...
+# Subtest: vector-store — multiple upserts, top-k returns nearest
+    # Subtest: fb_001 (test coverage) ranked above fb_002 (budget limit) for test-related query
+    ok 1 - fb_001 (test coverage) ranked above fb_002 (budget limit) for test-related query
+      ---
+      duration_ms: 9.029083
+      ...
+    1..1
+ok 389 - vector-store — multiple upserts, top-k returns nearest
+  ---
+  duration_ms: 9.3035
+  type: 'suite'
+  ...
+# Subtest: vector-store — fallback profile
+    # Subtest: falls back to the safe profile when the primary profile load fails
+    ok 1 - falls back to the safe profile when the primary profile load fails
+      ---
+      duration_ms: 7.714083
+      ...
+    1..1
+ok 390 - vector-store — fallback profile
+  ---
+  duration_ms: 9.707625
+  type: 'suite'
+  ...
+# Subtest: verification-loop
+    # Subtest: exports MAX_RETRIES as 3
+    ok 1 - exports MAX_RETRIES as 3
+      ---
+      duration_ms: 1.04375
+      ...
+    # Subtest: exports DEFAULT_MODEL_PATH as a string
+    ok 2 - exports DEFAULT_MODEL_PATH as a string
+      ---
+      duration_ms: 0.123875
+      ...
+    # Subtest: extractKeywords returns 4+ char words excluding stopwords
+    ok 3 - extractKeywords returns 4+ char words excluding stopwords
+      ---
+      duration_ms: 0.379083
+      ...
+    # Subtest: extractKeywords returns empty array for empty string
+    ok 4 - extractKeywords returns empty array for empty string
+      ---
+      duration_ms: 1.040708
+      ...
+    # Subtest: extractKeywords strips non-alphanumeric chars
+    ok 5 - extractKeywords strips non-alphanumeric chars
+      ---
+      duration_ms: 0.154083
+      ...
+    # Subtest: verifyAgainstRules passes with no error memories
+    ok 6 - verifyAgainstRules passes with no error memories
+      ---
+      duration_ms: 0.39
+      ...
+    # Subtest: verifyAgainstRules detects violations from error memories
+    ok 7 - verifyAgainstRules detects violations from error memories
+      ---
+      duration_ms: 1.28175
+      ...
+    # Subtest: verifyAgainstRules requires 2+ keyword matches to trigger
+    ok 8 - verifyAgainstRules requires 2+ keyword matches to trigger
+      ---
+      duration_ms: 1.092417
+      ...
+    # Subtest: runVerificationLoop accepts clean context on first attempt
+    ok 9 - runVerificationLoop accepts clean context on first attempt
+      ---
+      duration_ms: 6.459333
+      ...
+    # Subtest: runVerificationLoop retries and calls onRetry
+    ok 10 - runVerificationLoop retries and calls onRetry
+      ---
+      duration_ms: 5.198292
+      ...
+    # Subtest: runVerificationLoop fails after exhausting retries
+    ok 11 - runVerificationLoop fails after exhausting retries
+      ---
+      duration_ms: 9.282208
+      ...
+    # Subtest: runVerificationLoop updates Thompson model on disk
+    ok 12 - runVerificationLoop updates Thompson model on disk
+      ---
+      duration_ms: 4.502208
+      ...
+    # Subtest: runVerificationLoop records partner-aware strategy and model updates
+    ok 13 - runVerificationLoop records partner-aware strategy and model updates
+      ---
+      duration_ms: 2.4455
+      ...
+    # Subtest: getVerificationReliability returns per-category reliability
+    ok 14 - getVerificationReliability returns per-category reliability
+      ---
+      duration_ms: 2.232834
+      ...
+    # Subtest: sampleVerificationPosteriors returns samples and recommendations
+    ok 15 - sampleVerificationPosteriors returns samples and recommendations
+      ---
+      duration_ms: 3.509083
+      ...
+    1..15
+ok 391 - verification-loop
+  ---
+  duration_ms: 58.184333
+  type: 'suite'
+  ...
+# Subtest: pricing matches 2026 standard
+ok 392 - pricing matches 2026 standard
+  ---
+  duration_ms: 0.641208
+  ...
+# Subtest: package version matches MCP manifests
+ok 393 - package version matches MCP manifests
+  ---
+  duration_ms: 2.204917
+  ...
+# Subtest: public docs render the current package version
+ok 394 - public docs render the current package version
+  ---
+  duration_ms: 2.071875
+  ...
+# Subtest: landing page keeps GTM and schema assets wired
+ok 395 - landing page keeps GTM and schema assets wired
+  ---
+  duration_ms: 0.702042
+  ...
+# Subtest: hosted origin and repository metadata stay canonical across live-facing artifacts
+ok 396 - hosted origin and repository metadata stay canonical across live-facing artifacts
+  ---
+  duration_ms: 1.615041
+  ...
+# Subtest: runtime hosted billing config defaults to the live pro price label
+ok 397 - runtime hosted billing config defaults to the live pro price label
+  ---
+  duration_ms: 0.418
+  ...
+# Subtest: runtime hosted billing config preserves absolute fallback checkout urls
+ok 398 - runtime hosted billing config preserves absolute fallback checkout urls
+  ---
+  duration_ms: 0.124
+  ...
+# Subtest: runtime hosted billing config accepts valid analytics tracking identifiers
+ok 399 - runtime hosted billing config accepts valid analytics tracking identifiers
+  ---
+  duration_ms: 0.239709
+  ...
+# Subtest: active GTM scripts and reports point to the canonical offer without founding-language drift
+ok 400 - active GTM scripts and reports point to the canonical offer without founding-language drift
+  ---
+  duration_ms: 1.570417
+  ...
+# Subtest: commercial truth sources stay aligned across public and historical docs
+ok 401 - commercial truth sources stay aligned across public and historical docs
+  ---
+  duration_ms: 3.050334
+  ...
+1..401
+# tests 520
+# suites 35
+# pass 500
+# fail 20
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 33030.806708
