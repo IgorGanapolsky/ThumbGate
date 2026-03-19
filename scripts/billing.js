@@ -13,6 +13,11 @@ const { createTraceId } = require('./hosted-config');
 const { getFeedbackPaths } = require('./feedback-loop');
 const { getTelemetryAnalytics } = require('./telemetry-analytics');
 const { loadWorkflowSprintLeads } = require('./workflow-sprint-intake');
+const {
+  filterEntriesForWindow,
+  resolveAnalyticsWindow,
+  serializeAnalyticsWindow,
+} = require('./analytics-window');
 
 // ---------------------------------------------------------------------------
 // Config
@@ -434,9 +439,18 @@ function deriveRevenueEventFromPaidProviderEvent(entry = {}) {
   };
 }
 
-function loadResolvedRevenueEvents() {
-  const revenueEvents = loadRevenueLedger();
-  const paidProviderEvents = loadFunnelLedger().filter((entry) => entry && entry.stage === 'paid');
+function loadResolvedRevenueEvents(options = {}) {
+  const analyticsWindow = resolveAnalyticsWindow(options);
+  const revenueEvents = filterEntriesForWindow(
+    loadRevenueLedger(),
+    analyticsWindow,
+    (entry) => entry && entry.timestamp
+  );
+  const paidProviderEvents = filterEntriesForWindow(
+    loadFunnelLedger(),
+    analyticsWindow,
+    (entry) => entry && entry.timestamp
+  ).filter((entry) => entry && entry.stage === 'paid');
   const resolved = [...revenueEvents];
 
   for (const entry of paidProviderEvents) {
@@ -563,9 +577,14 @@ function resolveGithubPlanPricing(planId) {
   };
 }
 
-function getFunnelAnalytics() {
-  const events = loadFunnelLedger();
-  const paidOrders = loadResolvedRevenueEvents().filter((entry) => entry && entry.status === 'paid');
+function getFunnelAnalytics(options = {}) {
+  const analyticsWindow = resolveAnalyticsWindow(options);
+  const events = filterEntriesForWindow(
+    loadFunnelLedger(),
+    analyticsWindow,
+    (entry) => entry && entry.timestamp
+  );
+  const paidOrders = loadResolvedRevenueEvents(analyticsWindow).filter((entry) => entry && entry.status === 'paid');
   const stageCounts = { acquisition: 0, activation: 0, paid: 0 };
   const eventCounts = {};
   for (const entry of events) {
@@ -576,6 +595,7 @@ function getFunnelAnalytics() {
     }
   }
   return {
+    window: serializeAnalyticsWindow(analyticsWindow),
     totalEvents: events.length,
     stageCounts,
     eventCounts,
@@ -588,13 +608,22 @@ function getFunnelAnalytics() {
   };
 }
 
-function getBusinessAnalytics() {
+function getBusinessAnalytics(options = {}) {
+  const analyticsWindow = resolveAnalyticsWindow(options);
   const { FEEDBACK_DIR } = getFeedbackPaths();
-  const telemetry = getTelemetryAnalytics(FEEDBACK_DIR);
-  const events = loadFunnelLedger();
-  const revenueEvents = loadResolvedRevenueEvents();
-  const workflowSprintLeads = loadWorkflowSprintLeads();
-  const funnel = getFunnelAnalytics();
+  const telemetry = getTelemetryAnalytics(FEEDBACK_DIR, analyticsWindow);
+  const events = filterEntriesForWindow(
+    loadFunnelLedger(),
+    analyticsWindow,
+    (entry) => entry && entry.timestamp
+  );
+  const revenueEvents = loadResolvedRevenueEvents(analyticsWindow);
+  const workflowSprintLeads = filterEntriesForWindow(
+    loadWorkflowSprintLeads(),
+    analyticsWindow,
+    (entry) => entry && entry.submittedAt
+  );
+  const funnel = getFunnelAnalytics(analyticsWindow);
   const acquisitionEvents = events.filter((entry) => entry && entry.stage === 'acquisition');
   const paidEvents = events.filter((entry) => entry && entry.stage === 'paid');
   const paidOrders = revenueEvents.filter((entry) => entry && entry.status === 'paid');
@@ -826,6 +855,11 @@ function getBusinessAnalytics() {
     pageViews: telemetry.visitors ? telemetry.visitors.pageViews || 0 : 0,
     ctaClicks: telemetry.ctas ? telemetry.ctas.totalClicks || 0 : 0,
     checkoutStarts: telemetry.ctas ? telemetry.ctas.checkoutStarts || 0 : 0,
+    checkoutSuccessPageViews: telemetry.ctas ? telemetry.ctas.successPageViews || 0 : 0,
+    checkoutCancelPageViews: telemetry.ctas ? telemetry.ctas.cancelPageViews || 0 : 0,
+    checkoutPaidConfirmations: telemetry.ctas ? telemetry.ctas.paidConfirmations || 0 : 0,
+    checkoutPendingSessions: telemetry.ctas ? telemetry.ctas.sessionPending || 0 : 0,
+    checkoutLookupFailures: telemetry.ctas ? telemetry.ctas.lookupFailures || 0 : 0,
     buyerLossFeedback: telemetry.buyerLoss ? telemetry.buyerLoss.totalSignals || 0 : 0,
     seoLandingViews: telemetry.seo ? telemetry.seo.landingViews || 0 : 0,
   };
@@ -849,6 +883,7 @@ function getBusinessAnalytics() {
 
   return {
     generatedAt: new Date().toISOString(),
+    window: serializeAnalyticsWindow(analyticsWindow),
     coverage: {
       source: 'funnel_ledger+revenue_ledger+workflow_sprint_leads',
       tracksBookedRevenue: true,
@@ -957,8 +992,8 @@ function getBusinessAnalytics() {
   };
 }
 
-function getBillingSummary() {
-  const business = getBusinessAnalytics();
+function getBillingSummary(options = {}) {
+  const business = getBusinessAnalytics(options);
   const store = loadKeyStore();
   const keyEntries = Object.values(store.keys || {});
   const customers = new Map();
@@ -1025,6 +1060,7 @@ function getBillingSummary() {
 
   return {
     generatedAt: business.generatedAt,
+    window: business.window,
     coverage: {
       ...business.coverage,
       source: 'funnel_ledger+revenue_ledger+key_store+workflow_sprint_leads',
@@ -1038,6 +1074,8 @@ function getBillingSummary() {
     operatorGeneratedAcquisition: business.operatorGeneratedAcquisition,
     dataQuality: business.dataQuality,
     keys: {
+      scope: 'current_state',
+      windowed: false,
       total: keyEntries.length,
       active: activeKeys,
       disabled: disabledKeys,

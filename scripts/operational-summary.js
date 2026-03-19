@@ -1,6 +1,7 @@
 'use strict';
 
 const { getBillingSummary } = require('./billing');
+const { resolveAnalyticsWindow } = require('./analytics-window');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 
 function normalizeText(value) {
@@ -23,7 +24,8 @@ function resolveHostedSummaryConfig() {
   };
 }
 
-async function fetchHostedBillingSummary(config = resolveHostedSummaryConfig()) {
+async function fetchHostedBillingSummary(options = {}, config = resolveHostedSummaryConfig()) {
+  const analyticsWindow = resolveAnalyticsWindow(options);
   if (!shouldPreferHostedSummary()) {
     const err = new Error('Hosted operational summary is disabled.');
     err.code = 'hosted_summary_disabled';
@@ -35,7 +37,14 @@ async function fetchHostedBillingSummary(config = resolveHostedSummaryConfig()) 
     throw err;
   }
 
-  const response = await fetch(new URL('/v1/billing/summary', config.apiBaseUrl), {
+  const requestUrl = new URL('/v1/billing/summary', config.apiBaseUrl);
+  requestUrl.searchParams.set('window', analyticsWindow.window);
+  requestUrl.searchParams.set('timezone', analyticsWindow.timeZone);
+  if (options.now !== undefined && options.now !== null && options.now !== '') {
+    requestUrl.searchParams.set('now', analyticsWindow.now);
+  }
+
+  const response = await fetch(requestUrl, {
     method: 'GET',
     headers: {
       authorization: `Bearer ${config.apiKey}`,
@@ -54,9 +63,10 @@ async function fetchHostedBillingSummary(config = resolveHostedSummaryConfig()) 
   return response.json();
 }
 
-async function getOperationalBillingSummary() {
+async function getOperationalBillingSummary(options = {}) {
+  const analyticsWindow = resolveAnalyticsWindow(options);
   try {
-    const summary = await fetchHostedBillingSummary();
+    const summary = await fetchHostedBillingSummary(analyticsWindow);
     return {
       source: 'hosted',
       summary,
@@ -65,7 +75,7 @@ async function getOperationalBillingSummary() {
   } catch (err) {
     return {
       source: 'local',
-      summary: getBillingSummary(),
+      summary: getBillingSummary(analyticsWindow),
       fallbackReason: err && err.message ? err.message : 'hosted_summary_unavailable',
     };
   }
