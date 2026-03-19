@@ -30,7 +30,7 @@ The portable profile stays version-pinned to `mcp-memory-gateway@0.7.1`, and `sc
 
 ## Why This Is High ROI
 
-- OpenCode is another client surface for the same local-first Agentic Feedback Studio.
+- OpenCode is another client surface for the same local-first Reliability Gateway.
 - The repo-local profile encodes worktree safety and runtime-state boundaries directly in the client config.
 - The read-only `rlhf-review` agent gives a cheap verification pass without creating another edit-capable worker.
 

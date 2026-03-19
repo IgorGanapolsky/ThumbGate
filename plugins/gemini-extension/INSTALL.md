@@ -30,10 +30,10 @@ const model = genAI.getGenerativeModel({
 
 | Function | Description |
 |---|---|
-| `capture_feedback` | Capture thumbs-up/down with context — POST `/v1/feedback/capture` |
-| `feedback_summary` | Compact summary of recent feedback — GET `/v1/feedback/summary` |
-| `prevention_rules` | Generate prevention rules from mistakes — POST `/v1/feedback/rules` |
-| `plan_intent` | Policy-aware execution plan — POST `/v1/intents/plan` |
+| `capture_memory_feedback` | Capture success/failure feedback — POST `/v1/feedback/capture` |
+| `get_reliability_rules` | Retrieve active prevention rules — POST `/v1/feedback/rules` |
+| `get_business_metrics` | Retrieve high-level metrics — GET `/v1/billing/summary` |
+| `describe_reliability_entity` | Get canonical definitions — GET `/v1/semantic/describe` |
 
 ## Point to Your API
 
@@ -45,13 +45,20 @@ const RLHF_API_KEY = process.env.RLHF_API_KEY;
 
 async function callRlhfTool(name, params) {
   const endpoints = {
-    capture_feedback: { method: 'POST', path: '/v1/feedback/capture' },
-    feedback_summary: { method: 'GET', path: '/v1/feedback/summary' },
-    prevention_rules: { method: 'POST', path: '/v1/feedback/rules' },
-    plan_intent:      { method: 'POST', path: '/v1/intents/plan' },
+    capture_memory_feedback:    { method: 'POST', path: '/v1/feedback/capture' },
+    get_reliability_rules:      { method: 'POST', path: '/v1/feedback/rules' },
+    get_business_metrics:       { method: 'GET',  path: '/v1/billing/summary' },
+    describe_reliability_entity: { method: 'GET',  path: '/v1/semantic/describe' },
+    plan_intent:                { method: 'POST', path: '/v1/intents/plan' },
   };
   const { method, path } = endpoints[name];
-  const res = await fetch(`${RLHF_API_URL}${path}`, {
+  
+  const url = new URL(`${RLHF_API_URL}${path}`);
+  if (method === 'GET' && params) {
+    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+  }
+
+  const res = await fetch(url.toString(), {
     method,
     headers: { Authorization: `Bearer ${RLHF_API_KEY}`, 'Content-Type': 'application/json' },
     body: method === 'POST' ? JSON.stringify(params) : undefined,
@@ -66,9 +73,20 @@ async function callRlhfTool(name, params) {
 - Node.js 18+ or Python 3.9+
 - RLHF API running (local or hosted)
 
+## Branding Alignment (Google Cloud)
+
+When setting up your Google Cloud Project for this extension:
+1.  **Project Name:** Use `mcp-reliability-gateway` or similar. Avoid placeholder names.
+2.  **OAuth Consent Screen:**
+    - **App Name:** Enter `MCP Reliability Gateway`.
+    - **Support Email:** Use your professional email.
+    - **Logo:** Use the provided asset in `docs/logo-400x400.png`.
+
+This ensures that the "App Asking for Consent" matches the product name, providing a professional experience for the CEO and users.
+
 ## Verify
 
 ```bash
 node -e "const t = require('./adapters/gemini/function-declarations.json'); console.log('Tools:', t.tools.map(x=>x.name))"
-# Expected: Tools: [ 'capture_feedback', 'feedback_summary', 'prevention_rules', 'plan_intent' ]
+# Expected: Tools: [ 'capture_memory_feedback', 'get_reliability_rules', 'get_business_metrics', 'describe_reliability_entity', ... ]
 ```

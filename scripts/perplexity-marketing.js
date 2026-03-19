@@ -34,7 +34,7 @@ const PRODUCT = {
   sponsor: 'https://github.com/sponsors/IgorGanapolsky',
   coffee: 'https://buymeacoffee.com/igorganapolsky',
   tagline: 'Local-first memory and feedback pipeline for AI agents. Captures thumbs-up/down signals, promotes reusable memories, generates prevention rules from repeated failures, and exports KTO/DPO pairs for fine-tuning.',
-  keywords: ['MCP', 'RLHF', 'DPO', 'KTO', 'Thompson Sampling', 'AI agent memory', 'Claude Code', 'Amp', 'Gemini CLI', 'context engineering', 'prevention rules', 'Veto Layer'],
+  keywords: ['MCP', 'RLHF', 'DPO', 'KTO', 'Thompson Sampling', 'AI agent memory', 'Claude Code', 'Amp', 'Gemini CLI', 'context engineering', 'prevention rules', 'Pre-Action Gates'],
   proPrice: '$49 one-time',
 };
 
@@ -130,7 +130,7 @@ async function findThreads() {
 
   const queries = [
     'MCP Model Context Protocol memory tools discussion site:reddit.com OR site:news.ycombinator.com 2025 2026',
-    'RLHF feedback loop AI agents local-first tools discussion',
+    'feedback-to-enforcement pipeline AI agents local-first tools discussion',
     'Claude Code Amp agent memory context engineering tips',
     'AI coding agent prevention rules guardrails DPO training',
   ];

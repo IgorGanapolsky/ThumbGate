@@ -41,7 +41,7 @@ When a feedback signal is given, Amp calls a designated MCP tool (e.g., `capture
 
 ## Use Cases
 
-1. **Local RLHF feedback loops** — Track approval rates per skill, action type, and session
+1. **Local feedback-to-enforcement pipelines** — Track approval rates per skill, action type, and session
 2. **DPO training pair export** — Pair positive/negative signals with agent outputs for preference optimization
 3. **Autonomy calibration** — Adjust agent confidence thresholds based on user satisfaction trends
 4. **Team quality dashboards** — Aggregate feedback across workspace members

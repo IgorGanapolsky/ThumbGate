@@ -5,7 +5,7 @@
 
 The canonical short description is:
 
-> Stop Cursor agents from repeating mistakes with local memory, pre-action gates, and proof-backed feedback.
+> Pre-action gates that block Cursor agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.
 
 The plugin installs the project MCP server so Cursor agents can:
 
@@ -70,11 +70,10 @@ Or copy the plugin MCP config into `.cursor/mcp.json`:
 
 MCP Memory Gateway gives Cursor agents a local-first reliability loop:
 
-- **Repeated-mistake prevention** keeps the same repo failures from coming back every session
-- **Veto Layer** gates block known-bad actions before tool use
-- **Context engineering** keeps relevant project history in scope
-- **Thompson Sampling** and attribution logs improve action ranking
-- **DPO exports** let you warehouse and fine-tune downstream
+- **Pre-Action Gates** block known-bad actions before tool use
+- **Prevention rules** auto-generated from repeated failures
+- **Context packs** keep relevant project history in scope
+- **Feedback capture** with structured up/down signals
 
 Verification evidence for shipped behavior lives in `docs/VERIFICATION_EVIDENCE.md`.
 Release and promotion rules live in `docs/CURSOR_PLUGIN_OPERATIONS.md`.

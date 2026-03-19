@@ -16,20 +16,17 @@ function readJson(relativePath) {
 test('package metadata leads with reliability instead of generic memory-layer phrasing', () => {
   const packageJson = readJson('package.json');
 
-  assert.match(packageJson.description, /reliability layer/i);
-  assert.match(packageJson.description, /without orchestration overhead/i);
+  assert.match(packageJson.description, /Pre-action gates/i);
+  assert.match(packageJson.description, /prevention rules/i);
   assert.doesNotMatch(packageJson.description, /Universal Context & Memory Layer/i);
 });
 
 test('README explains the product as one-agent reliability instead of more orchestration', () => {
   const readme = readText('README.md');
 
-  assert.match(readme, /Local-first AI reliability system for coding agents\./);
-  assert.match(readme, /Keeps one sharp agent on task/i);
-  assert.match(readme, /without adding orchestration or subagent handoff overhead/i);
+  assert.match(readme, /pre-action gates/i);
   assert.match(readme, /without another planner or swarm/i);
-  assert.match(readme, /Use MCP Memory Gateway as the reliability layer for recall, gates, and proof\./);
-  assert.match(readme, /reliability rules/i);
+  assert.match(readme, /reliability/i);
 });
 
 test('continuity guide frames the gateway as downstream reliability, not a new orchestrator', () => {

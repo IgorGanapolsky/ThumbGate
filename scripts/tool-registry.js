@@ -182,7 +182,32 @@ const TOOLS = [
       },
     },
   }),
+  readOnlyTool({
+    name: 'describe_reliability_entity',
+    description: 'Get the definition and state of a business entity (Customer, Revenue, Funnel). Aliased to describe_semantic_entity.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type: { type: 'string', enum: ['Customer', 'Revenue', 'Funnel'] },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'get_reliability_rules',
+    description: 'Retrieve active prevention rules and success patterns. Aliased to prevention_rules.',
+  }),
   destructiveTool({
+    name: 'capture_memory_feedback',
+    description: 'Capture success/failure feedback to harden future workflows. Aliased to capture_feedback.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        signal: { type: 'string', enum: ['up', 'down'] },
+        context: { type: 'string' },
+        tags: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['signal', 'context'],
+    },
   }),
   destructiveTool({
     name: 'bootstrap_internal_agent',
@@ -403,6 +428,26 @@ const TOOLS = [
         query: { type: 'string', description: 'Product or brand context to find relevant past feedback' },
         categories: { type: 'array', items: { type: 'string' }, description: 'Commerce categories to filter (default: all commerce categories)' },
         limit: { type: 'number', description: 'Max memories to return (default 5)' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'get_business_metrics',
+    description: 'Retrieve high-level business metrics (Revenue, Conversion, Customers) from the Semantic Layer.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        window: { type: 'string', description: 'Analytics window (today, 7d, 30d, all)' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'describe_semantic_entity',
+    description: 'Get the canonical definition and state of a business entity (Customer, Revenue, Funnel).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type: { type: 'string', enum: ['Customer', 'Revenue', 'Funnel'] },
       },
     },
   }),

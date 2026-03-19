@@ -1,8 +1,8 @@
 {
   "tools": [
     {
-      "name": "capture_feedback",
-      "description": "Capture an up/down signal plus one line of why. Vague feedback is logged and returned with a clarification prompt instead of memory promotion.",
+      "name": "capture_memory_feedback",
+      "description": "Capture success/failure feedback to harden future workflows and prevent repeated mistakes.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -46,22 +46,8 @@
       }
     },
     {
-      "name": "feedback_summary",
-      "description": "Get a compact summary of recent feedback performance",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "recent": { "type": "integer" }
-        }
-      },
-      "http": {
-        "method": "GET",
-        "path": "/v1/feedback/summary"
-      }
-    },
-    {
-      "name": "prevention_rules",
-      "description": "Generate prevention rules from repeated mistakes",
+      "name": "get_reliability_rules",
+      "description": "Retrieve active prevention rules and success patterns to ensure high-quality task execution.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -71,6 +57,35 @@
       "http": {
         "method": "POST",
         "path": "/v1/feedback/rules"
+      }
+    },
+    {
+      "name": "get_business_metrics",
+      "description": "Retrieve high-level business metrics (Revenue, Conversion, Customers) from the Semantic Layer.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "window": { "type": "string", "enum": ["today", "7d", "30d", "lifetime"], "default": "lifetime" }
+        }
+      },
+      "http": {
+        "method": "GET",
+        "path": "/v1/billing/summary"
+      }
+    },
+    {
+      "name": "describe_reliability_entity",
+      "description": "Get the canonical definition and state of a business entity (Customer, Revenue, Funnel).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["Customer", "Revenue", "Funnel"] }
+        },
+        "required": ["type"]
+      },
+      "http": {
+        "method": "GET",
+        "path": "/v1/semantic/describe"
       }
     },
     {

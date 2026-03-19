@@ -1,6 +1,6 @@
 # Show HN Post
 
-**Title:** Show HN: MCP Memory Gateway – RLHF feedback loops and pre-action gates for AI coding agents
+**Title:** Show HN: MCP Memory Gateway – feedback-to-enforcement pipelines and Pre-Action Gates for AI coding agents
 
 **URL:** https://github.com/IgorGanapolsky/mcp-memory-gateway
 
@@ -8,7 +8,7 @@
 
 MCP Memory Gateway is an open-source MCP server that adds persistent memory and behavioral guardrails to AI coding agents (Claude Code, Codex, Gemini CLI, Amp).
 
-The core idea: capture explicit feedback (up/down with structured context), auto-generate prevention rules from recurring mistakes, and enforce them as pre-action gates that physically block the agent before it repeats a known failure.
+The core idea: capture explicit feedback (up/down with structured context), auto-generate prevention rules from recurring mistakes, and enforce them as Pre-Action Gates that physically block the agent before it repeats a known failure.
 
 Technical details:
 - Thompson Sampling for adaptive gate selection (balances exploration vs exploitation of prevention rules)

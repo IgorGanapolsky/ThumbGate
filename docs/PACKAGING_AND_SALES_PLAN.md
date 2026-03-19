@@ -54,7 +54,7 @@ Current note:
 
 - Buyer: head of ops, head of growth, platform lead, or consultancy owner funding the rollout.
 - User: the operator running the workflow.
-- Champion: the engineer or platform owner wiring the Veto Layer and proof path.
+- Champion: the engineer or platform owner wiring the Pre-Action Gates and proof path.
 
 ## Distribution Channels By Intent
 

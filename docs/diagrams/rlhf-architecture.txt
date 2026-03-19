@@ -10,4 +10,4 @@ PREVENT PHASE: An Analytics layer tracks quality trends and recurrence patterns.
 
 EXPORT PHASE: DPO training pairs export as JSONL for model fine-tuning. Code Reasoning Traces capture confidence scores and evidence chains.
 
-Storage technologies shown explicitly: JSONL files for logs, LanceDB for vector search, ShieldCortex for context assembly.
+Storage technologies shown explicitly: JSONL files for logs, LanceDB for vector search, Context Packs for context assembly.

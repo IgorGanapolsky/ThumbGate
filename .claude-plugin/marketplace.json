@@ -4,7 +4,7 @@
   "plugins": [
     {
       "name": "mcp-memory-gateway",
-      "description": "Claude Desktop workflow hardening extension with Veto Layer guardrails, proof-backed memory, and MCP reliability tools",
+      "description": "Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.",
       "type": "mcp",
       "source": {
         "type": "npm",
@@ -19,9 +19,8 @@
         "keywords": [
           "claude-desktop",
           "desktop-extension",
-          "workflow-hardening",
-          "veto-layer",
-          "agentic-feedback-studio",
+          "pre-action-gates",
+          "ai-agent-safety",
           "mcp",
           "memory"
         ],

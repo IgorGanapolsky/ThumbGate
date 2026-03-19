@@ -24,7 +24,7 @@ We are not selling a generic "AI employee."
 We are selling **Claude workflow hardening**:
 
 - one workflow with business value
-- one Veto Layer
+- Pre-Action Gates
 - one proof pack
 - one delivery story a buyer can defend
 
@@ -45,7 +45,7 @@ Our angle:
 
 1. **Claude workflow hardening** for teams that already use Claude Code and need safer delivery.
 2. **Code modernization guardrails** for long-running migration and refactor work where context loss and repeated mistakes are expensive.
-3. **Proof-ready rollout** for buyers who need recall, prevention rules, pre-action gates, and machine-readable evidence before they widen adoption.
+3. **Proof-ready rollout** for buyers who need recall, prevention rules, Pre-Action Gates, and machine-readable evidence before they widen adoption.
 
 ## Packaged Offers
 
@@ -95,7 +95,7 @@ Best fit:
 The buyer does not need a lecture about RLHF internals. The buyer needs a clear before-and-after:
 
 - before: Claude work is sharp some days, chaotic on others, and repeated mistakes drain senior engineering time
-- after: one workflow has memory, pre-action gates, prevention rules, and proof artifacts that reduce repeated failures
+- after: one workflow has memory, Pre-Action Gates, prevention rules, and proof artifacts that reduce repeated failures
 
 That is the sellable story.
 
@@ -126,8 +126,8 @@ Say:
 - Claude workflow hardening
 - code modernization guardrails
 - one workflow safe enough to ship team-wide
-- Veto Layer
-- Agentic Feedback Studio
+- Pre-Action Gates
+- Reliability Gateway
 - proof-ready rollout
 
 Do not say:
@@ -159,7 +159,7 @@ Always include:
 
 Recent SaaS GTM research reinforced four moves that fit this product:
 
-1. **Explain the mechanism, not just the promise.** Lead with recall, prevention rules, pre-action gates, and verification evidence instead of generic AI outcomes.
+1. **Explain the mechanism, not just the promise.** Lead with recall, prevention rules, Pre-Action Gates, and verification evidence instead of generic AI outcomes.
 2. **Track revenue, not just traffic.** Use the existing attribution and billing surfaces to see which channels create booked revenue or paid orders, not just visits.
 3. **Use intent-based outreach.** Target consultancies, platform teams, and Claude-first buyers who already feel the pain of repeated agent mistakes.
 4. **Reduce time to value.** The first experience should show one workflow becoming safer or sharper quickly, not bury the buyer in platform language.

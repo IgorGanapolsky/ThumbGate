@@ -1735,7 +1735,7 @@ function createApiServer() {
           version: pkg.version,
         },
         name: 'mcp-memory-gateway',
-        description: 'RLHF feedback loop for AI agents. Capture feedback, block mistakes, export DPO data, and warehouse analytics bundles.',
+        description: 'feedback-to-enforcement pipeline for AI agents. Capture feedback, block mistakes, export DPO data, and warehouse analytics bundles.',
         version: pkg.version,
         tools: getServerCardTools(),
         repository: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
@@ -2550,6 +2550,32 @@ function createApiServer() {
         const model = loadModel(modelPath);
         const posteriors = samplePosteriors(model);
         sendJson(res, 200, { posteriors });
+        return;
+      }
+
+      // ----------------------------------------------------------------
+      // Semantic routes
+      // ----------------------------------------------------------------
+
+      // GET /v1/semantic/describe — get canonical definition of a business entity
+      if (req.method === 'GET' && pathname === '/v1/semantic/describe') {
+        const { describeSemanticSchema } = require('../../scripts/semantic-layer');
+        const type = parsed.query.type;
+        if (!type) {
+          throw createHttpError(400, 'type query parameter is required');
+        }
+        const schema = describeSemanticSchema();
+        const entity = schema.entities[type] || schema.metrics[type];
+        if (!entity) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.NOT_FOUND,
+            title: 'Entity Not Found',
+            status: 404,
+            detail: `Semantic entity or metric "${type}" not found in schema.`,
+          });
+          return;
+        }
+        sendJson(res, 200, entity);
         return;
       }
 

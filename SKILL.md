@@ -1,17 +1,17 @@
 ---
 name: mcp-memory-gateway
-description: The Agentic Feedback Studio & Veto Layer. Persistent agent memory, high-density context packs, and Agentic Guardrails (V2V) for Claude Code, Codex, and Gemini.
+description: Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.
 ---
 
-# Agentic Feedback Studio Skill
+# Reliability Gateway Skill
 
-This skill provides a production-grade **Agentic Control Plane** for AI workflows. It allows the agent to learn from user vibes in real-time and enforce verifiable guardrails.
+This skill provides **Pre-Action Gates** for AI coding agents. It captures feedback, auto-generates prevention rules from repeated failures, and enforces them before tool calls execute.
 
 ## Capabilities
-- **Vibe-to-Verification (V2V)**: Records up/down signals and converts them into repository-level architectural constraints (The Veto Layer).
-- **Agentic Guardrails**: Automatically generates and enforces `CLAUDE.md` / `AGENTS.md` rules derived from recurring failure modes.
-- **Context Engineering**: Packages high-density proprietary knowledge into "Context Packs" for improved agent reliability.
-- **RLHF Dataset Engineering**: Exports preference pairs (Chosen vs. Rejected) for model fine-tuning.
+- **Pre-Action Gates**: Blocks known-bad tool calls before they execute. Gates are auto-promoted from repeated failure patterns.
+- **Prevention Rules**: Auto-generated from recurring mistakes. Injected into agent context before every action.
+- **Context Packs**: Bounded retrieval of relevant feedback history and decisions for the current task.
+- **Feedback Capture**: Structured up/down signals with context, rubric scores, and guardrail flags.
 
 ## Activation
 The model should activate this skill whenever:

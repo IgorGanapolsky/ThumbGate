@@ -16,4 +16,4 @@ Below the API, show the internal modules as a horizontal row:
 Below the modules, show the storage layer:
 - JSONL Files: feedback-log.jsonl, memory-log.jsonl, feedback-sequences.jsonl
 - LanceDB: vector embeddings for semantic search
-- ShieldCortex: context pack assembly from multiple sources
+- Context Packs: context pack assembly from multiple sources

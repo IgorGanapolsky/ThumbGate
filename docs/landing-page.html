@@ -16,8 +16,8 @@
     "url": "__APP_ORIGIN__",
     "operatingSystem": "Node.js, Cross-platform",
     "applicationCategory": "DeveloperApplication",
-    "description": "Local-first AI reliability system for coding agents using Model Context Protocol (MCP). Captures RLHF feedback, promotes reusable memories, generates reliability rules, and blocks dangerous tool calls before they execute.",
-    "keywords": "MCP Memory Gateway, AI reliability system, RLHF, DPO, KTO, AI agent reliability, context engineering, prevention rules, Pre-Action Gates, Veto Layer",
+    "description": "Local-first AI reliability system for coding agents using Model Context Protocol (MCP). Captures feedback, promotes reusable memories, generates reliability rules, and blocks dangerous tool calls with Pre-Action Gates.",
+    "keywords": "MCP Memory Gateway, AI reliability system, DPO, KTO, AI agent reliability, context engineering, prevention rules, Pre-Action Gates",
     "offers": {
       "@type": "Offer",
       "price": "49",
@@ -30,7 +30,7 @@
     ],
     "featureList": [
       "Pre-Action Gates",
-      "RLHF thumbs-up/down capture",
+      "Thumbs-up/down feedback capture",
       "MCP reusable memories and prompts",
       "Auto-prevention rules from failures",
       "KTO/DPO export for fine-tuning",
@@ -53,7 +53,7 @@
       },
       {
         "@type": "Question",
-        "name": "How does MCP Memory Gateway handle RLHF feedback loops?",
+        "name": "How does MCP Memory Gateway handle feedback-to-enforcement pipelines?",
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "It implements an npm package 'mcp-memory-gateway' that captures thumbs-up/down signals locally, stores them as reusable MCP resources or prompts, and automates generation of prevention rules to avoid repeated agent failures."
@@ -615,7 +615,7 @@
     <section class='hero'>
       <div class='hero-inner'>
         <div class='panel hero-copy'>
-          <span class='eyebrow'>Hosted Agentic Feedback Studio for workflow teams</span>
+          <span class='eyebrow'>Hosted Reliability Gateway for workflow teams</span>
           <h1>Roll out one revenue or ops workflow with proof, not hope.</h1>
           <p>Context Gateway gives RevOps, growth, platform, and engineering teams hosted API keys, shared memory, and verification evidence so one workflow like lead-to-meeting can run across operators without drift.</p>
           <p>Start where pain is already real: lead-to-meeting, onboarding, or internal ops. Context Gateway is the hosted AI reliability system behind that workflow, not another dashboard full of vague AI claims.</p>
@@ -715,7 +715,7 @@
           </div>
           <div class='card'>
             <h3>Build, then pitch honestly</h3>
-            <p>Use <code>npm run build:claude-mcpb</code> to package the real bundle, then market Claude workflow hardening, the Veto Layer, and proof-backed reliability without claiming approval before it exists.</p>
+            <p>Use <code>npm run build:claude-mcpb</code> to package the real bundle, then market Claude workflow hardening, Pre-Action Gates, and proof-backed reliability without claiming approval before it exists.</p>
           </div>
         </div>
         <p class='note'><a href='__GITHUB_URL__/blob/main/.claude-plugin/README.md'>Claude extension guide</a> • <a href='__GITHUB_URL__/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md'>Submission packet</a> • <a href='https://rlhf-feedback-loop-production.up.railway.app/privacy'>Privacy policy</a></p>

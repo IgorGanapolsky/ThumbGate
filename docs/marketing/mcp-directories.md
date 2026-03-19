@@ -110,7 +110,8 @@ Leave a comment with:
 **mcp-memory-gateway**
 https://github.com/IgorGanapolsky/mcp-memory-gateway
 
-RLHF feedback loop for AI agents. Capture feedback, block mistakes, export DPO training data. Compatible with Claude, GPT-4, Gemini, and multi-agent systems.
+feedback-to-enforcement pipeline for AI agents. Capture feedback, block repeated mistakes, export DPO training data.
+ Compatible with Claude, GPT-4, Gemini, and multi-agent systems.
 
 - npm: https://www.npmjs.com/package/mcp-memory-gateway
 - Transport: stdio
@@ -179,7 +180,7 @@ There are three major lists. Submit to all of them.
 
 ### Entry text (punkpeye format):
 ```markdown
-- [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) - RLHF feedback loop for AI agents. Capture feedback, block repeated mistakes, export DPO training pairs.
+- [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) - feedback-to-enforcement pipeline for AI agents. Capture feedback, block repeated mistakes, export DPO training pairs.
 ```
 
 ### Entry text (appcypher format):
@@ -192,7 +193,7 @@ There are three major lists. Submit to all of them.
 **mcp-memory-gateway**
 https://github.com/IgorGanapolsky/mcp-memory-gateway
 
-RLHF feedback loop for AI agents. Capture feedback, block mistakes, export DPO training data.
+feedback-to-enforcement pipeline for AI agents. Capture feedback, block mistakes, export DPO training data.
 
 - npm: https://www.npmjs.com/package/mcp-memory-gateway
 - MCP Registry: https://registry.modelcontextprotocol.io

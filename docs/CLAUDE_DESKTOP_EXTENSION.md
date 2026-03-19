@@ -63,8 +63,8 @@ Use:
 
 - Claude Desktop extension
 - Claude workflow hardening
-- Veto Layer
-- Agentic Feedback Studio
+- Pre-Action Gates
+- Reliability Gateway
 - proof-backed reliability
 
 Do not use:
@@ -156,7 +156,7 @@ Keep `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` aligned 
 
 - package version
 - current product description
-- keywords for `claude-desktop`, `workflow-hardening`, and `veto-layer`
+- keywords for `claude-desktop`, `workflow-hardening`, and `pre-action-gates`
 
 Keep the generated MCPB manifest aligned with:
 

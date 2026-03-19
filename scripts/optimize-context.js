@@ -11,7 +11,7 @@ function optimize() {
   if (!fs.existsSync(RLHF_DIR)) fs.mkdirSync(RLHF_DIR, { recursive: true });
   const migrationHeader = '\n### [MIGRATED] Rules from CLAUDE.md\n';
   fs.appendFileSync(RULES_PATH, migrationHeader + content.slice(0, 500) + '\n');
-  console.log('✅ Migrated rules to the Veto Layer.');
+  console.log('✅ Migrated rules to the Pre-Action Gates.');
 }
 if (require.main === module) optimize();
 module.exports = { optimize };
