@@ -1,4 +1,4 @@
-# The "Vibe Coding" Crisis: Why Your Agents Need Pre-Action Gates
+# I built pre-action gates that physically block Claude Code from repeating mistakes
 
 *Target: Dev.to / Hashnode / Medium*
 
@@ -13,19 +13,19 @@ And it stops... for that session. But the next day, or the next week, or when a 
 
 Prompts are subjective. They are suggestions, not constraints. 
 
-## Enter the Agentic Control Plane
+## Enter Pre-Action Gates
 To move from "cool demos" to "merging 1,000+ PRs per week," you need infrastructure. Specifically, you need **Pre-Action Gates**.
 
-Pre-Action Gates sit between the LLM and your codebase. They enforce hard boundaries that the agent cannot cross, regardless of the prompt. 
+Pre-Action Gates sit between the LLM and your codebase. They enforce hard boundaries that the agent cannot cross, regardless of the prompt.
 
-Today, we are open-sourcing the **Reliability Gateway**. It is an operational layer designed specifically to capture human preference data and enforce these kernel-level guardrails.
+I built **MCP Memory Gateway** to capture human feedback, auto-promote recurring failures into prevention rules, and enforce those rules before risky tool calls execute.
 
-## From Frustration to Verification
-The Reliability Gateway turns subjective human frustration into verifiable constraints:
+## Feedback-to-Enforcement Pipeline
+The core loop in MCP Memory Gateway turns subjective human frustration into verifiable constraints:
 
 1. **The Signal:** An agent does something wrong. You hit "thumbs down" or type "this failed."
-2. **The Capture:** The Gateway intercepts this signal, grabbing the exact context, the tool used, and the repository state.
-3. **The Verification:** It generates a non-bypassable architectural rule (stored in `CLAUDE.md` or `AGENTS.md`) that blocks the agent from repeating the action.
+2. **The Capture:** MCP Memory Gateway intercepts this signal, grabbing the exact context, the tool used, and the repository state.
+3. **The Gate:** It generates a non-bypassable architectural rule (stored in `CLAUDE.md` or `AGENTS.md`) that blocks the agent from repeating the action.
 
 ## Run the Revenue-at-Risk Analyzer
 Every time an agent repeats a mistake, it costs you developer time. We built a Revenue-at-Risk analyzer directly into the CLI. 

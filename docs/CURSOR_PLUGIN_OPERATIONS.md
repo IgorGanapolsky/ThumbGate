@@ -30,23 +30,23 @@
 
 ## Positioning rules
 
-- Lead with the user problem: stop Cursor agents from repeating mistakes.
-- Lead with outcome before architecture: memory, Pre-Action Gates, proof.
-- Keep `Reliability Gateway`, `Pre-Action Gates`, `DPO`, and `Thompson Sampling` in the body or tags, not the first sentence.
+- Lead with the user problem: known mistakes repeating in agent workflows.
+- Lead with outcome before architecture: Pre-Action Gates, prevention rules, proof.
+- Keep `DPO` and `Thompson Sampling` in the body or tags, not the first sentence.
 - Keep proof near the pitch by linking [VERIFICATION_EVIDENCE.md](./VERIFICATION_EVIDENCE.md).
 - In manual forms, use the display name for `Name` and keep the slug for package/config paths only.
 
 ## Suggested short description
 
-Pre-action gates that block Cursor agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.
+Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
 ## Suggested long description
 
-MCP Memory Gateway gives Cursor agents a local-first reliability loop. Capture feedback with evidence, recall past failures before repeating them, block known-bad actions with Pre-Action Gates, and keep proof close to every workflow change.
+Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
 ## Suggested manual submission fields
 
 - Name: `MCP Memory Gateway`
-- Description: `Pre-action gates that block Cursor agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.`
+- Description: `Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.`
 - Repository URL: `https://github.com/IgorGanapolsky/mcp-memory-gateway`
 - Homepage: `https://rlhf-feedback-loop-production.up.railway.app`

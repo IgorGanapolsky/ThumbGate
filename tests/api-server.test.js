@@ -84,10 +84,10 @@ test('root serves the landing page by default', async () => {
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
   const body = await res.text();
-  assert.match(body, /mcp.memory.gateway/i);
+  assert.match(body, /MCP Memory Gateway \| Pre-Action Gates for AI coding agents/i);
+  assert.match(body, /Pre-Action Gates for AI coding agents/i);
   assert.match(body, /Keep one sharp agent/i);
-  assert.match(body, /Pre-action gates that physically block AI coding agents from repeating known mistakes/i);
-  assert.match(body, /Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks/i);
+  assert.match(body, /Pre-action gates that physically block AI coding agents from repeating known mistakes\./i);
   assert.match(body, /Workflow Hardening Sprint/i);
   assert.match(body, /Start Sprint Intake/i);
   assert.match(body, /Code modernization guardrails/i);

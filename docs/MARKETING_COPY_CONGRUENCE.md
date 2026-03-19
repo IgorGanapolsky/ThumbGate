@@ -28,8 +28,8 @@
 |---|---|
 | RLHF feedback loop | feedback-to-enforcement pipeline |
 | Veto Layer | Pre-Action Gates |
-| Agentic Feedback Studio | Reliability Gateway |
-| ShieldCortex | Context Packs |
+| Agentic Feedback Studio | [DROP] |
+| ShieldCortex | [DROP] |
 | Vibe-to-Verification | [DROP] |
 
 ## GitHub Metadata

@@ -4,14 +4,14 @@
     "name": "Igor Ganapolsky"
   },
   "metadata": {
-    "description": "Cursor plugin packaging for MCP Memory Gateway. Pre-action gates that block agents from repeating known mistakes.",
+    "description": "Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.",
     "version": "0.7.1"
   },
   "plugins": [
     {
       "name": "mcp-memory-gateway",
       "source": "plugins/cursor-marketplace",
-      "description": "Pre-action gates that block Cursor agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.",
+      "description": "Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.",
       "category": "developer-tools",
       "tags": [
         "mcp",

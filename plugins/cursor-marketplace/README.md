@@ -5,12 +5,12 @@
 
 The canonical short description is:
 
-> Pre-action gates that block Cursor agents from repeating known mistakes. Captures feedback, generates prevention rules, enforces them via PreToolUse hooks.
+> Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
 The plugin installs the project MCP server so Cursor agents can:
 
 - keep project memory across sessions
-- run pre-action checks before risky tool use
+- run Pre-Action Gates before risky tool use
 - capture proof-backed runs and feedback with evidence
 - promote repeated failures into prevention rules
 - export analytics bundles and DPO-style preference pairs

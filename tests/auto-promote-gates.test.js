@@ -154,9 +154,9 @@ test('groupNegativeFeedback: also groups repeated diagnostic categories', () => 
   assert.strictEqual(groups['constraint:rubric:verification_evidence'].count, 2);
 });
 
-// -- promote: threshold triggers warn gate --
+// -- promote: repeated failures below block threshold trigger warn gate --
 
-test('promote: 3 occurrences triggers warn gate', (t) => {
+test('promote: repeated failures below block threshold trigger warn gate', (t) => {
   const tmpDir = makeTmpDir();
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
   process.env.RLHF_FEEDBACK_DIR = tmpDir;
@@ -165,7 +165,8 @@ test('promote: 3 occurrences triggers warn gate', (t) => {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
-  for (let i = 0; i < 3; i++) {
+  const warnCount = BLOCK_THRESHOLD - 1;
+  for (let i = 0; i < warnCount; i++) {
     appendJSONL(logPath, makeNegativeEntry(['pr-review'], 'forgot thread check', i));
   }
 
@@ -182,9 +183,9 @@ test('promote: 3 occurrences triggers warn gate', (t) => {
   assert.strictEqual(gate.action, 'warn');
 });
 
-// -- promote: 5 occurrences upgrades to block --
+// -- promote: block threshold upgrades an existing warn gate --
 
-test('promote: 5 occurrences upgrades gate from warn to block', (t) => {
+test('promote: block threshold upgrades gate from warn to block', (t) => {
   const tmpDir = makeTmpDir();
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
   process.env.RLHF_FEEDBACK_DIR = tmpDir;
@@ -193,14 +194,15 @@ test('promote: 5 occurrences upgrades gate from warn to block', (t) => {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
-  // First create 3 entries -> warn gate
-  for (let i = 0; i < 3; i++) {
+  const warnCount = BLOCK_THRESHOLD - 1;
+  // First create a warn gate below the block threshold.
+  for (let i = 0; i < warnCount; i++) {
     appendJSONL(logPath, makeNegativeEntry(['execution-gap'], 'did not push', i));
   }
   promote(logPath);
 
-  // Add 2 more -> 5 total -> should upgrade to block
-  for (let i = 0; i < 2; i++) {
+  // Add enough additional failures to reach the block threshold.
+  for (let i = warnCount; i < BLOCK_THRESHOLD; i++) {
     appendJSONL(logPath, makeNegativeEntry(['execution-gap'], 'did not push again', i));
   }
   const result = promote(logPath);
@@ -268,9 +270,9 @@ test('promote: rotates oldest when exceeding MAX_AUTO_GATES', (t) => {
   assert.ok(rotated.length > 0, 'should have rotated at least one gate');
 });
 
-// -- promote: below threshold does not create gate --
+// -- promote: below warn threshold does not create gate --
 
-test('promote: fewer than 3 occurrences does not create a gate', (t) => {
+test('promote: fewer than WARN_THRESHOLD occurrences does not create a gate', (t) => {
   const tmpDir = makeTmpDir();
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
   process.env.RLHF_FEEDBACK_DIR = tmpDir;
@@ -291,8 +293,9 @@ test('promote: fewer than 3 occurrences does not create a gate', (t) => {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
-  appendJSONL(logPath, makeNegativeEntry(['rare-error'], 'happened once', 1));
-  appendJSONL(logPath, makeNegativeEntry(['rare-error'], 'happened twice', 2));
+  for (let i = 0; i < WARN_THRESHOLD - 1; i++) {
+    appendJSONL(logPath, makeNegativeEntry(['rare-error'], `happened ${i + 1} times`, i + 1));
+  }
 
   const result = promote(logPath);
   assert.strictEqual(result.promotions.length, 0);
@@ -311,8 +314,9 @@ test('promote: called from feedback-loop on negative capture', (t) => {
 
   const { captureFeedback } = require('../scripts/feedback-loop');
 
-  // Capture 3 negative feedbacks with the same tag
-  for (let i = 0; i < 3; i++) {
+  const warnCount = BLOCK_THRESHOLD - 1;
+  // Capture repeated negative feedback without crossing the block threshold.
+  for (let i = 0; i < warnCount; i++) {
     captureFeedback({
       signal: 'down',
       context: `Pipeline integration test failure ${i}`,
@@ -321,10 +325,10 @@ test('promote: called from feedback-loop on negative capture', (t) => {
     });
   }
 
-  // The auto-promote should have been triggered by the 3rd capture
+  // The auto-promote should create a warn gate before the hard block threshold.
   const data = loadAutoGates();
   const gate = data.gates.find((g) => g.pattern === 'pipeline-integration-test');
-  assert.ok(gate, 'auto-promoted gate should exist after 3 negative captures');
+  assert.ok(gate, 'auto-promoted gate should exist before the block threshold is reached');
   assert.strictEqual(gate.action, 'warn');
 });
 
@@ -333,7 +337,7 @@ test('promote: called from feedback-loop on negative capture', (t) => {
 test('buildGateRule: returns gate object with correct fields', () => {
   const group = {
     key: 'testing',
-    count: 4,
+    count: BLOCK_THRESHOLD - 1,
     entries: [],
     latestContext: 'Test failure context',
     latestTimestamp: new Date().toISOString(),
@@ -342,14 +346,14 @@ test('buildGateRule: returns gate object with correct fields', () => {
   assert.ok(gate.id.startsWith('auto-'));
   assert.strictEqual(gate.action, 'warn');
   assert.strictEqual(gate.severity, 'medium');
-  assert.ok(gate.message.includes('4 occurrences'));
+  assert.ok(gate.message.includes(`${BLOCK_THRESHOLD - 1} occurrences`));
   assert.strictEqual(gate.source, 'auto-promote');
 });
 
-test('buildGateRule: count >= 5 produces block action', () => {
+test('buildGateRule: count at block threshold produces block action', () => {
   const group = {
     key: 'critical-error',
-    count: 5,
+    count: BLOCK_THRESHOLD,
     entries: [],
     latestContext: 'Critical failure',
     latestTimestamp: new Date().toISOString(),

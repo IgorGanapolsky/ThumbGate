@@ -80,14 +80,14 @@ After the agent queries PR threads (and records that it did), the push gate open
 
 The manual gates handle known failure patterns. But what about new ones?
 
-The auto-promotion engine scans the feedback log -- every thumbs-down from the developer gets recorded with context about what went wrong. When the same pattern appears 3+ times in 30 days, it automatically becomes a gate:
+The auto-promotion engine scans the feedback log -- every thumbs-down from the developer gets recorded with context about what went wrong. The first confirmed failure becomes a warning gate, and repeated failures escalate into a hard block:
 
-- **3 occurrences** = `warn` (agent sees a warning but can proceed)
-- **5 occurrences** = `block` (agent is physically stopped)
+- **1 occurrence** = `warn` (agent sees a warning but can proceed)
+- **3 occurrences** = `block` (agent is physically stopped)
 
 ```javascript
-const WARN_THRESHOLD = 3;
-const BLOCK_THRESHOLD = 5;
+const WARN_THRESHOLD = 1;
+const BLOCK_THRESHOLD = 3;
 const MAX_AUTO_GATES = 10; // Rotate oldest when full
 
 function buildGateRule(group) {
@@ -103,7 +103,7 @@ function buildGateRule(group) {
 
 The system maintains a maximum of 10 auto-promoted gates, rotating out the oldest when new ones are added. This prevents unbounded growth while keeping the most relevant failure patterns active.
 
-In my case, the "execution-gap" pattern -- announcing completion without actually pushing -- hit 5 occurrences and auto-upgraded from `warn` to `block`. Now the agent literally cannot claim it's done without the push having happened.
+In my case, the "execution-gap" pattern -- announcing completion without actually pushing -- hit 3 occurrences and auto-upgraded from `warn` to `block`. Now the agent literally cannot claim it's done without the push having happened.
 
 ## The result
 

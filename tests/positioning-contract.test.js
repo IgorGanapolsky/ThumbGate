@@ -13,7 +13,7 @@ function readJson(relativePath) {
   return JSON.parse(readText(relativePath));
 }
 
-test('package metadata leads with project memory and guardrails instead of generic memory-layer phrasing', () => {
+test('package metadata leads with Pre-Action Gates instead of generic memory-layer phrasing', () => {
   const packageJson = readJson('package.json');
 
   assert.match(packageJson.description, /Pre-action gates/i);
@@ -43,8 +43,8 @@ test('launch-content variants align with reliability-over-orchestration position
   const launchContent = readText(path.join('docs', 'marketing', 'LAUNCH_CONTENT.md'));
 
   assert.match(launchContent, /MCP Memory Gateway/i);
-  assert.match(launchContent, /project memory and guardrails for coding agents/i);
-  assert.match(launchContent, /one sharp agent|repeated mistakes/i);
+  assert.match(launchContent, /Pre-Action Gates/i);
+  assert.match(launchContent, /feedback-to-enforcement pipeline|repeated mistakes/i);
   assert.doesNotMatch(launchContent, /Agentic Feedback Studio/i);
   assert.doesNotMatch(launchContent, /persistent memory layer that fixes this/i);
 });

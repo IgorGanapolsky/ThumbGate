@@ -141,7 +141,7 @@ There are three major lists. Submit to all of them.
 1. Fork the repo
 2. Edit `README.md`
 3. Add entry under the appropriate category (likely "AI/LLM Integration" or "Data & Analytics")
-4. Format: `- [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) - RLHF feedback loop for AI agents. Capture feedback, block repeated mistakes, export DPO training pairs.`
+4. Format: `- [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) - Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.`
 5. Submit PR with title: `Add mcp-memory-gateway`
 
 ### 5b. appcypher/awesome-mcp-servers (well-established)
@@ -151,7 +151,7 @@ There are three major lists. Submit to all of them.
 1. Fork the repo
 2. Edit `README.md`
 3. Add entry under appropriate category
-4. Format: `- **[mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)** - RLHF feedback loop for AI agents. Capture feedback, block repeated mistakes, export DPO training data. (Node.js)`
+4. Format: `- **[mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)** - Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. (Node.js)`
 5. Submit PR
 
 ### 5c. wong2/awesome-mcp-servers → mcpservers.org
@@ -181,12 +181,12 @@ There are three major lists. Submit to all of them.
 
 ### Entry text (punkpeye format):
 ```markdown
-- [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) - feedback-to-enforcement pipeline for AI agents. Capture feedback, block repeated mistakes, export DPO training pairs.
+- [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) - Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
 ```
 
 ### Entry text (appcypher format):
 ```markdown
-- **[mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)** - RLHF feedback loop for AI agents with feedback capture, mistake prevention, and DPO data export. (Node.js)
+- **[mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)** - Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. (Node.js)
 ```
 
 ### mcp.so comment (ready to paste):
@@ -194,7 +194,7 @@ There are three major lists. Submit to all of them.
 **mcp-memory-gateway**
 https://github.com/IgorGanapolsky/mcp-memory-gateway
 
-feedback-to-enforcement pipeline for AI agents. Capture feedback, block mistakes, export DPO training data.
+Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
 
 - npm: https://www.npmjs.com/package/mcp-memory-gateway
 - MCP Registry: https://registry.modelcontextprotocol.io

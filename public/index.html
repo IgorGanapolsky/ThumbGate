@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MCP Memory Gateway | Project memory and guardrails for coding agents</title>
-  <meta name="description" content="Stop coding agents from repeating mistakes with persistent project memory, pre-action checks, and proof-backed runs for Claude, Cursor, Codex, Gemini, and Amp." />
-  <meta name="keywords" content="project memory for coding agents, AI agent guardrails, pre-action checks, proof-backed runs, MCP server, Claude Code, Cursor, Codex, Gemini, workflow hardening" />
-  <meta property="og:title" content="MCP Memory Gateway | Project memory and guardrails for coding agents" />
-  <meta property="og:description" content="MCP Memory Gateway gives coding agents persistent project memory, pre-action checks, and proof-backed runs without another orchestration layer." />
+  <title>MCP Memory Gateway | Pre-Action Gates for AI coding agents</title>
+  <meta name="description" content="Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor." />
+  <meta name="keywords" content="Pre-Action Gates, AI coding agents, workflow hardening, AI agent guardrails, prevention rules, feedback-to-enforcement pipeline, MCP server, Claude Code, Cursor, Codex, Gemini, Amp" />
+  <meta property="og:title" content="MCP Memory Gateway | Pre-Action Gates for AI coding agents" />
+  <meta property="og:description" content="Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://rlhf-feedback-loop-production.up.railway.app" />
   <link rel="canonical" href="https://rlhf-feedback-loop-production.up.railway.app" />
@@ -45,8 +45,8 @@ __GA_BOOTSTRAP__
     "publisher": {
       "@id": "https://rlhf-feedback-loop-production.up.railway.app/#organization"
     },
-    "description": "Stop coding agents from repeating mistakes with persistent project memory, pre-action checks, and proof-backed runs without adding another orchestration layer.",
-    "keywords": "project memory for coding agents, AI agent guardrails, pre-action checks, proof-backed runs, MCP server, Claude Code, Cursor, Codex, Gemini, workflow hardening",
+    "description": "Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor.",
+    "keywords": "Pre-Action Gates, AI coding agents, workflow hardening, AI agent guardrails, prevention rules, feedback-to-enforcement pipeline, MCP server, Claude Code, Cursor, Codex, Gemini, Amp",
     "offers": [
       {
         "@type": "Offer",
@@ -132,7 +132,7 @@ __GA_BOOTSTRAP__
         "name": "Can consultancies and platform teams use this for Claude workflow hardening or code modernization?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. The strongest services fit is one Claude-first workflow with business value, such as code modernization, PR review hardening, or internal ops automation. The Gateway adds recall, prevention rules, pre-action gates, and verification evidence so the workflow is safer to ship and easier to defend to buyers."
+          "text": "Yes. The strongest services fit is one Claude-first workflow with business value, such as code modernization, PR review hardening, or internal ops automation. MCP Memory Gateway adds recall, prevention rules, Pre-Action Gates, and verification evidence so the workflow is safer to ship and easier to defend to buyers."
         }
       },
       {
@@ -172,7 +172,7 @@ __GA_BOOTSTRAP__
         "name": "Do I need subagents or an orchestration layer to get value?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. The Gateway is meant to keep one sharp agent on task. It adds recall, prevention rules, and pre-action gates without introducing extra agent handoffs or planner overhead."
+          "text": "No. MCP Memory Gateway is meant to keep one sharp agent on task. It adds recall, prevention rules, and Pre-Action Gates without introducing extra agent handoffs or planner overhead."
         }
       }
     ]
@@ -1154,8 +1154,8 @@ __GA_BOOTSTRAP__
     <section class="hero">
       <div class="wrap">
         
-        <h1>Stop coding agents from repeating mistakes. <em>Keep one sharp agent.</em></h1>
-        <p class="sub">Built for platform teams, consultancies, and AI-heavy engineering groups. MCP Memory Gateway gives Claude Code, Cursor, Codex, Gemini, and Amp persistent project memory, pre-action checks, and proof-backed runs without introducing another orchestration layer or subagent handoff tax.</p>
+        <h1>Pre-Action Gates for AI coding agents. <em>Keep one sharp agent.</em></h1>
+        <p class="sub">Built for platform teams, consultancies, and AI-heavy engineering groups. MCP Memory Gateway physically blocks known mistakes before tool use, captures feedback, auto-promotes failures into prevention rules, and keeps verification evidence close without introducing another orchestration layer or subagent handoff tax.</p>
         <p class="sub-note">Best first commercial motion: the <strong>Workflow Hardening Sprint</strong> for one workflow, one owner, and one proof review.</p>
         <div class="campaign-banner" id="campaign-banner" hidden>
           <strong>Coming from Reddit?</strong>
@@ -1301,7 +1301,7 @@ __GA_BOOTSTRAP__
           <div class="step">
             <div class="step-num">3</div>
             <h3>Build the real bundle</h3>
-            <p>Package the actual `.mcpb` before you submit so the extension lane stays aligned with workflow hardening, the Pre-Action Gates, and the Reliability Gateway.</p>
+            <p>Package the actual `.mcpb` before you submit so the extension lane stays aligned with workflow hardening, Pre-Action Gates, and the feedback-to-enforcement pipeline.</p>
             <code>npm run build:claude-mcpb</code>
           </div>
         </div>
@@ -1364,7 +1364,7 @@ __GA_BOOTSTRAP__
       <div class="wrap">
         <div class="section-label">The Problem</div>
         <div class="section-title">Resuming is not enough if the agent still repeats the same mistake.</div>
-        <div class="section-desc">Continuity gets you back into the project. The Gateway keeps one sharp agent on task and makes the workflow more sellable by adding proof, gates, and repeatable behavior instead of more handoffs, planners, or orchestration layers.</div>
+        <div class="section-desc">Continuity gets you back into the project. Pre-Action Gates keep one sharp agent on task and make the workflow more sellable by adding proof, gates, and repeatable behavior instead of more handoffs, planners, or orchestration layers.</div>
         <div class="ba-grid">
           <div class="ba-card before">
             <span class="ba-tag">Before</span>
@@ -1408,17 +1408,17 @@ __GA_BOOTSTRAP__
       <div class="wrap">
         <div class="section-label">Why It Lands</div>
         <div class="section-title">AI reliability system, not orchestration layer.</div>
-        <div class="section-desc">Keep the base agent that already feels sharp. Put continuity upstream, let the Gateway sit underneath the session, and sell the result as workflow hardening for code modernization, PR review, and internal ops.</div>
+        <div class="section-desc">Keep the base agent that already feels sharp. Put continuity upstream, let Pre-Action Gates sit underneath the session, and sell the result as workflow hardening for code modernization, PR review, and internal ops.</div>
         <div class="steps-grid">
           <div class="step">
             <div class="step-num">1</div>
             <h3>Keep one sharp agent</h3>
-            <p>No swarm required. The Gateway improves one agent's continuity and safety instead of adding subagent coordination overhead.</p>
+            <p>No swarm required. Pre-Action Gates improve one agent's continuity and safety instead of adding subagent coordination overhead.</p>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <h3>Pair continuity upstream</h3>
-            <p>Use your editor or resume assistant to reload context. The Gateway consumes that context and turns it into actionable recall, reliability rules, and proof.</p>
+            <p>Use your editor or resume assistant to reload context. MCP Memory Gateway consumes that context and turns it into actionable recall, prevention rules, and proof.</p>
           </div>
           <div class="step">
             <div class="step-num">3</div>

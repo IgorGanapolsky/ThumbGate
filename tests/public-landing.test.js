@@ -104,8 +104,9 @@ test('public landing page includes a Reddit campaign banner and subreddit-aware 
 test('public landing page positions the gateway as continuity-friendly reliability without orchestration tax', () => {
   const landingPage = readLandingPage();
 
+  assert.match(landingPage, /MCP Memory Gateway \| Pre-Action Gates for AI coding agents/i);
+  assert.match(landingPage, /Pre-Action Gates for AI coding agents\./i);
   assert.match(landingPage, /Pre-action gates that physically block AI coding agents from repeating known mistakes\./i);
-  assert.match(landingPage, /Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks\./i);
   assert.match(landingPage, /Keep one sharp agent\./);
   assert.match(landingPage, /Workflow Hardening Sprint/i);
   assert.match(landingPage, /One workflow, one owner, one proof review/i);

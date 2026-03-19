@@ -1735,7 +1735,7 @@ function createApiServer() {
           version: pkg.version,
         },
         name: 'mcp-memory-gateway',
-        description: 'feedback-to-enforcement pipeline for AI agents. Capture feedback, block mistakes, export DPO data, and warehouse analytics bundles.',
+        description: 'Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor.',
         version: pkg.version,
         tools: getServerCardTools(),
         repository: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
