@@ -405,6 +405,13 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(revenueEvents[0].recurringInterval, 'month');
   });
 
+  test('getBillingSummary reports github marketplace webhook pricing coverage', () => {
+    const billing = requireFreshBilling('');
+    const summary = billing.getBillingSummary();
+
+    assert.equal(summary.coverage.providerCoverage.githubMarketplace, 'webhook_or_configured_plan_prices');
+  });
+
   test('getBillingSummary derives paid orders from paid provider events when revenue ledger is missing', () => {
     const billing = require('../scripts/billing');
     billing.appendFunnelEvent({

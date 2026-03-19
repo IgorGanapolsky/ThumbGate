@@ -1216,7 +1216,7 @@ function getBusinessAnalytics(options = {}) {
       tracksWorkflowSprintLeads: true,
       providerCoverage: {
         stripe: processorReconciledOrders > 0 ? 'booked_revenue+processor_reconciled' : 'booked_revenue',
-        githubMarketplace: CONFIG.GITHUB_MARKETPLACE_PLAN_PRICES_JSON ? 'configured_plan_prices' : 'paid_orders_only',
+        githubMarketplace: 'webhook_or_configured_plan_prices',
       },
     },
     funnel: {
