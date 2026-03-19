@@ -1,3 +1,38 @@
+## March 19, 2026: Evidence-first intent ranking hardening after CI flake
+
+Scope:
+
+- Hardened `scripts/intent-router.js` so the `strict_reviewer` partner profile deterministically front-loads evidence-producing actions (`construct_context_pack`, `context_provenance`) ahead of `evaluate_context_pack` when `verificationMode` is `evidence_first`.
+- Added regression coverage in `tests/intent-router.test.js` for the evidence-first ordering contract without overconstraining the relative order between the two evidence producers.
+- Re-ran the full required verification suite after GitHub CI exposed the probabilistic ordering bug.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-fix-prod-analytics`:
+
+```bash
+node --test tests/intent-router.test.js
+npm test
+npm run test:coverage
+tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed result:
+
+- `node --test tests/intent-router.test.js` exited `0`: `21` passed, `0` failed.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with all-files coverage at `89.49%` lines, `75.89%` branches, and `93.05%` functions.
+- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `git diff --check` exited `0`.
+
+Requirements verified:
+
+- The evidence-first reviewer strategy now matches its contract under repeated runs instead of relying on Thompson-sampling luck.
+- The original PR failure mode is closed: `evaluate_context_pack` no longer outranks the evidence-producing actions for strict-reviewer incident plans.
+
 ## March 19, 2026: Production durable analytics volume and live Stripe checkout fix
 
 Scope:
