@@ -1,3 +1,42 @@
+## March 19, 2026: Railway deploy health verification retry hardening
+
+Scope:
+
+- Replaced the single-shot Railway health check in `.github/workflows/ci.yml` with bounded retry logic so transient cold-start `502` responses do not fail a healthy deployment.
+- Replaced the same brittle single-shot health check in `.github/workflows/deploy-railway.yml` with the same bounded retry logic and response-body logging.
+- Hardened post-deploy verification without changing the actual production app contract.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-fix-prod-analytics`:
+
+```bash
+node --test tests/deployment.test.js tests/deploy-policy.test.js
+npm test
+npm run test:coverage
+tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed result:
+
+- `node --test tests/deployment.test.js tests/deploy-policy.test.js` exited `0`: `17` passed, `0` failed.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with all-files coverage at `89.49%` lines, `75.89%` branches, and `93.11%` functions.
+- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `git diff --check` exited `0`.
+- Root-cause proof from the failed post-merge deploy run on `main`:
+  - Railway variable sync timed out once at `https://backboard.railway.com/graphql/v2`, then succeeded on rerun.
+  - The remaining deploy failure was the health verifier receiving a transient `502` from `https://rlhf-feedback-loop-production.up.railway.app/health` after a single 30-second wait.
+  - The production app still reported healthy via `/healthz` with durable feedback paths under `/data/feedback`.
+
+Requirements verified:
+
+- Deployment verification now retries through transient warmup responses instead of failing on a single `502`.
+- The hardening is isolated to workflow verification logic; no product-runtime behavior changed.
+
 ## March 19, 2026: Evidence-first intent ranking hardening after CI flake
 
 Scope:
