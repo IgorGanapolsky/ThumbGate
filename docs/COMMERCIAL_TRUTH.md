@@ -43,7 +43,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 - Use booked revenue, paid orders, or named pilot agreements for commercial proof.
 - Use the admin billing summary and CLI CFO output to distinguish `bookedRevenueCents` from `paidOrders`; not every paid provider event carries a verifiable amount by default.
-- Treat Stripe-reconciled charges as booked revenue proof; treat GitHub Marketplace paid events as paid-order proof until plan pricing is configured or invoice amounts are reconciled.
+- Treat Stripe-reconciled charges as booked revenue proof; treat GitHub Marketplace paid events as booked revenue only when the webhook carries plan pricing or plan pricing is configured, otherwise treat them as paid-order proof until invoice amounts are reconciled.
 - Treat `workflowSprintLeads` as pipeline evidence only; qualified intake volume is useful for selling, but it is not revenue.
 - Use `docs/VERIFICATION_EVIDENCE.md`, `proof/compatibility/report.json`, and `proof/automation/report.json` for engineering proof.
 - When in doubt, prefer "early-stage" or "pilot" language over unverified traction claims.

@@ -1656,7 +1656,7 @@ Requirements verified:
 Scope:
 
 - Added a dedicated revenue ledger to separate booked revenue from generic paid-stage funnel telemetry.
-- Preserved honest provider coverage: Stripe records booked revenue; GitHub Marketplace records paid orders and only records booked revenue when plan pricing is explicitly configured.
+- Preserved honest provider coverage: Stripe records booked revenue; GitHub Marketplace records paid orders by default and records booked revenue when the webhook payload carries plan pricing or plan pricing is explicitly configured.
 - Threaded attribution metadata (`source`, UTM fields, referrer, landing path, CTA id) through public checkout creation, funnel events, revenue events, API summaries, CLI CFO output, and the hosted landing page.
 - Replaced hardcoded marketing proof-strip vanity numbers with stable evidence-backed claims on the public landing page.
 
@@ -1687,10 +1687,10 @@ Observed results:
 Behavioral proof points:
 
 - `scripts/billing.js` now emits `bookedRevenueCents`, `paidOrders`, `amountKnownCoverageRate`, `unreconciledPaidEvents`, and attribution breakdowns from a dedicated revenue ledger instead of inferring money from stage counts.
-- `tests/billing.test.js` proves Stripe booked revenue is summarized truthfully and GitHub Marketplace remains amount-unknown unless plan pricing is configured.
+- `tests/billing.test.js` proves Stripe booked revenue is summarized truthfully and GitHub Marketplace becomes amount-known when webhook plan pricing is present or explicit plan pricing is configured.
 - `tests/api-server.test.js` proves checkout attribution survives the API path and shows up in the admin billing summary.
 - `tests/cli.test.js` proves `node bin/cli.js cfo` emits the richer revenue + attribution summary shape.
-- `tests/github-billing.test.js` proves GitHub Marketplace purchase events create paid-order records and optionally booked revenue when plan pricing config is present.
+- `tests/github-billing.test.js` proves GitHub Marketplace purchase events create paid-order records and promote to booked revenue when webhook pricing or plan-pricing config is present.
 - `tests/openapi-parity.test.js` and `tests/adapters.test.js` prove the machine-readable adapter surface stayed in sync after the summary shape expansion.
 
 Artifacts updated:
