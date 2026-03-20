@@ -194,6 +194,22 @@ test('public HEAD routes stay unauthenticated and side-effect free', async () =>
   assert.equal(checkoutSessionsAfter, checkoutSessionsBefore);
 });
 
+test('public server card exposes MCP tool schemas for directory scanners', async () => {
+  const res = await fetch(apiUrl('/.well-known/mcp/server-card.json'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /application\/json/);
+
+  const body = await res.json();
+  assert.equal(body.name, 'mcp-memory-gateway');
+  assert.ok(Array.isArray(body.tools));
+  assert.ok(body.tools.length > 0);
+
+  const captureFeedbackTool = body.tools.find((tool) => tool.name === 'capture_feedback');
+  assert.ok(captureFeedbackTool);
+  assert.equal(captureFeedbackTool.inputSchema.type, 'object');
+  assert.ok(captureFeedbackTool.inputSchema.required.includes('signal'));
+});
+
 test('root seeds journey cookies, injects server telemetry IDs, and records landing telemetry server-side', async () => {
   const res = await fetch(apiUrl('/'));
   assert.equal(res.status, 200);

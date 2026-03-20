@@ -1423,6 +1423,52 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-20 Smithery Capability Metadata Fix
+
+Scope:
+
+- Fixed the public `/.well-known/mcp/server-card.json` route to include full MCP `inputSchema` metadata for every tool, instead of only name and description.
+- Added an HTTP-level regression test proving the server card exposes tool schemas for directory scanners.
+
+Problem verified before the fix:
+
+- The public Smithery page for `rlhf-loop/mcp-memory-gateway-v2` was live, but showed `No capabilities found` and `No deployments found`.
+- Production already exposed unauthenticated metadata endpoints:
+  - `GET https://rlhf-feedback-loop-production.up.railway.app/.well-known/mcp/server-card.json` -> `200`
+  - `GET https://rlhf-feedback-loop-production.up.railway.app/mcp` -> `200`
+  - `POST https://rlhf-feedback-loop-production.up.railway.app/mcp` with `initialize` -> `200`
+  - `POST https://rlhf-feedback-loop-production.up.railway.app/mcp` with `tools/list` -> `200`
+- The bug was that the live server-card route stripped `inputSchema`, which made the static server card materially weaker than `tools/list`.
+
+Commands run:
+
+```bash
+npm ci
+npm --prefix workers ci
+node --test tests/api-server.test.js
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
+env RLHF_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed results:
+
+- `node --test tests/api-server.test.js`: `54/54` passing
+- `npm test`: exit `0`
+- `npm run test:coverage`: exit `0` with `89.58%` lines, `75.61%` branches, `93.07%` functions
+- `npm run prove:adapters`: `48/48` passing
+- `npm run prove:automation`: `55/55` passing
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks
+- `git diff --check`: exit `0`
+
+Artifacts updated:
+
+- `src/api/server.js`
+- `tests/api-server.test.js`
+
 ## 2026-03-20 Technical Debt Audit Verification
 
 Scope:

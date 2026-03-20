@@ -119,6 +119,7 @@ function getServerCardTools() {
   return MCP_TOOLS.map((tool) => ({
     name: tool.name,
     description: tool.description,
+    inputSchema: tool.inputSchema,
   }));
 }
 
