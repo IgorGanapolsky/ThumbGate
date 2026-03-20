@@ -1791,6 +1791,7 @@ function createApiServer() {
       sendJson(res, 200, {
         status: 'ok',
         version: pkg.version,
+        buildSha: normalizeNullableText(process.env.RLHF_BUILD_SHA),
         uptime: process.uptime(),
         deployment: {
           appOrigin: hostedConfig.appOrigin,

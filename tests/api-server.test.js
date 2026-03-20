@@ -21,6 +21,7 @@ process.env.RLHF_PUBLIC_APP_ORIGIN = 'https://app.example.com';
 process.env.RLHF_BILLING_API_BASE_URL = 'https://billing.example.com';
 process.env.RLHF_GA_MEASUREMENT_ID = 'G-TEST1234';
 process.env.RLHF_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
+process.env.RLHF_BUILD_SHA = 'test-build-sha';
 
 const { startServer, __test__ } = require('../src/api/server');
 const billing = require('../scripts/billing');
@@ -72,10 +73,11 @@ test.after(async () => {
 });
 
 test('health endpoint returns ok', async () => {
-  const res = await fetch(apiUrl('/healthz'), { headers: authHeader });
+  const res = await fetch(apiUrl('/health'), { headers: authHeader });
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.status, 'ok');
+  assert.equal(body.buildSha, 'test-build-sha');
 });
 
 test('root serves the landing page by default', async () => {

@@ -1469,6 +1469,48 @@ Artifacts updated:
 - `src/api/server.js`
 - `tests/api-server.test.js`
 
+## 2026-03-20 Railway Build SHA Deployment Verification
+
+Scope:
+
+- Exposed `buildSha` on `GET /health` from `RLHF_BUILD_SHA`.
+- Updated the Railway deploy workflow to set `RLHF_BUILD_SHA` for each deploy and wait until the live `/health` payload reports the exact `GITHUB_SHA`.
+- Closed the observed blind spot where a healthy old revision could satisfy the deploy job before the new revision was actually serving traffic.
+
+Problem verified before the fix:
+
+- PR `#285` merged cleanly and GitHub marked `Deploy to Railway` successful.
+- The live public endpoint still served the pre-fix server-card shape immediately after that success signal.
+- Railway runtime proof showed a new deployment existed, but the GitHub workflow only checked for HTTP `200`, not revision identity.
+
+Commands run:
+
+```bash
+node --test tests/api-server.test.js
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
+env RLHF_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed results:
+
+- `node --test tests/api-server.test.js`: `54/54` passing
+- `npm test`: exit `0`
+- `npm run test:coverage`: exit `0` with `89.58%` lines, `75.59%` branches, `93.07%` functions
+- `npm run prove:adapters`: `48/48` passing
+- `npm run prove:automation`: `55/55` passing
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks
+- `git diff --check`: exit `0`
+
+Artifacts updated:
+
+- `.github/workflows/deploy-railway.yml`
+- `src/api/server.js`
+- `tests/api-server.test.js`
+
 ## 2026-03-20 Technical Debt Audit Verification
 
 Scope:

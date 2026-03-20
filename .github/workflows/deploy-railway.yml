@@ -22,6 +22,7 @@ jobs:
       RLHF_FEEDBACK_DIR: ${{ vars.RLHF_FEEDBACK_DIR }}
       RLHF_GA_MEASUREMENT_ID: ${{ vars.RLHF_GA_MEASUREMENT_ID }}
       RLHF_GOOGLE_SITE_VERIFICATION: ${{ vars.RLHF_GOOGLE_SITE_VERIFICATION }}
+      RLHF_BUILD_SHA: ${{ github.sha }}
       RAILWAY_TOKEN_ROTATED_AT: ${{ vars.RAILWAY_TOKEN_ROTATED_AT }}
       RLHF_API_KEY_ROTATED_AT: ${{ vars.RLHF_API_KEY_ROTATED_AT }}
       STRIPE_SECRET_KEY_ROTATED_AT: ${{ vars.STRIPE_SECRET_KEY_ROTATED_AT }}
@@ -65,6 +66,7 @@ jobs:
           if [ -n "$RLHF_GOOGLE_SITE_VERIFICATION" ]; then
             railway variables set RLHF_GOOGLE_SITE_VERIFICATION="$RLHF_GOOGLE_SITE_VERIFICATION" "${SERVICE_ARGS[@]}"
           fi
+          railway variables set RLHF_BUILD_SHA="$RLHF_BUILD_SHA" "${SERVICE_ARGS[@]}"
       - name: Deploy to Railway
         if: steps.railway-config.outputs.enabled == 'true'
         run: |
@@ -80,13 +82,18 @@ jobs:
           SLEEP_SECONDS=10
           STATUS=""
           RESPONSE_FILE="$(mktemp)"
+          LIVE_SHA=""
 
-          echo "Waiting for deploy to stabilise with up to $MAX_ATTEMPTS health checks..."
+          echo "Waiting for deploy to stabilise with up to $MAX_ATTEMPTS health checks and build SHA verification..."
           for ATTEMPT in $(seq 1 "$MAX_ATTEMPTS"); do
             STATUS=$(curl -sS -o "$RESPONSE_FILE" -w "%{http_code}" "$RAILWAY_HEALTHCHECK_URL" || true)
             echo "Health check attempt $ATTEMPT/$MAX_ATTEMPTS: $STATUS"
             if [ "$STATUS" = "200" ]; then
-              break
+              LIVE_SHA=$(node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(String(data.buildSha || ''));" "$RESPONSE_FILE" || true)
+              echo "Observed build SHA: ${LIVE_SHA:-<missing>}"
+              if [ "$LIVE_SHA" = "$GITHUB_SHA" ]; then
+                break
+              fi
             fi
             if [ -s "$RESPONSE_FILE" ]; then
               echo "Health response body:"
@@ -97,7 +104,10 @@ jobs:
             fi
           done
 
-          if [ "$STATUS" != "200" ]; then
-            echo "Health check failed with status $STATUS after $MAX_ATTEMPTS attempts"
+          if [ "$STATUS" != "200" ] || [ "$LIVE_SHA" != "$GITHUB_SHA" ]; then
+            echo "Deployment verification failed after $MAX_ATTEMPTS attempts"
+            echo "Final health status: $STATUS"
+            echo "Expected build SHA: $GITHUB_SHA"
+            echo "Observed build SHA: ${LIVE_SHA:-<missing>}"
             exit 1
           fi
