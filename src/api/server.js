@@ -83,6 +83,9 @@ const {
   appendTelemetryPing,
 } = require('../../scripts/telemetry-analytics');
 const {
+  resolveBuildMetadata,
+} = require('../../scripts/build-metadata');
+const {
   resolveAnalyticsWindow,
 } = require('../../scripts/analytics-window');
 const {
@@ -101,6 +104,7 @@ const VISITOR_COOKIE_NAME = 'rlhf_visitor_id';
 const SESSION_COOKIE_NAME = 'rlhf_session_id';
 const ACQUISITION_COOKIE_NAME = 'rlhf_acquisition_id';
 const VISITOR_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
+const BUILD_METADATA = resolveBuildMetadata();
 
 function getSafeDataDir() {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
@@ -1364,8 +1368,7 @@ function getExpectedApiKey() {
 
 function isAuthorized(req, expected) {
   if (!expected) return true;
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  const token = extractApiKey(req);
 
   // Check static RLHF_API_KEY first
   if (token === expected) return true;
@@ -1387,13 +1390,31 @@ function extractBearerToken(req) {
   return auth.startsWith('Bearer ') ? auth.slice(7) : '';
 }
 
+function extractApiKey(req) {
+  const bearerToken = extractBearerToken(req);
+  if (bearerToken) {
+    return bearerToken;
+  }
+
+  const alternateHeader = req.headers['x-api-key'];
+  if (Array.isArray(alternateHeader)) {
+    return String(alternateHeader[0] || '').trim();
+  }
+
+  if (typeof alternateHeader === 'string') {
+    return alternateHeader.trim();
+  }
+
+  return '';
+}
+
 /**
  * Admin-only guard for static RLHF_API_KEY.
  * Billing keys are intentionally excluded from admin actions.
  */
 function isStaticAdminAuthorized(req, expected) {
   if (!expected) return true;
-  return extractBearerToken(req) === expected;
+  return extractApiKey(req) === expected;
 }
 
 function extractTags(input) {
@@ -1791,7 +1812,7 @@ function createApiServer() {
       sendJson(res, 200, {
         status: 'ok',
         version: pkg.version,
-        buildSha: normalizeNullableText(process.env.RLHF_BUILD_SHA),
+        buildSha: BUILD_METADATA.buildSha,
         uptime: process.uptime(),
         deployment: {
           appOrigin: hostedConfig.appOrigin,

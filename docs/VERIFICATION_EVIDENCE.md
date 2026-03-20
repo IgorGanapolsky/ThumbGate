@@ -1,3 +1,48 @@
+## March 20, 2026: Immutable Railway build identity and Smithery capability scan hardening
+
+Scope:
+
+- Added `scripts/build-metadata.js` plus tracked `config/build-metadata.json` so deploys stamp an immutable build SHA into the shipped artifact instead of trusting mutable Railway runtime variables.
+- Updated `.github/workflows/deploy-railway.yml` to generate build metadata during the deploy workflow and removed the old `RLHF_BUILD_SHA` runtime-variable sync.
+- Updated `src/api/server.js` so `/health` reads the stamped build metadata and protected endpoints accept `x-api-key` as an alternate auth header in addition to `Authorization: Bearer ...`.
+- Added regression coverage in `tests/api-server.test.js` and `tests/deployment.test.js` for stamped build metadata, alternate auth headers, and the public server-card schema contract.
+- Added the missing empty-object `inputSchema` to `get_reliability_rules` in `scripts/tool-registry.js` so Smithery and other directory scanners can enumerate the tool list without schema errors.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-immutable-buildsha`:
+
+```bash
+npm ci
+node --test tests/api-server.test.js tests/deployment.test.js tests/mcp-server.test.js
+npm test
+npm run test:coverage
+tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed result:
+
+- `npm ci` exited `0`.
+- `node --test tests/api-server.test.js tests/deployment.test.js tests/mcp-server.test.js` exited `0`: `86` passed, `0` failed.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with all-files coverage at `89.67` lines, `75.73` branches, and `93.14` functions.
+- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
+- Local targeted proof confirmed the new behavior directly:
+  - `/health` returned the stamped `buildSha` from the metadata file instead of reading a mutable env var.
+  - admin-protected endpoints accepted `x-api-key` as an alternate auth header.
+  - every public MCP tool entry exposed an `inputSchema` object, including `get_reliability_rules`.
+- `git diff --check` exited `0`.
+
+Requirements verified:
+
+- Railway deploy proof can now compare `/health.buildSha` against the actual shipped revision instead of a mutable runtime variable that can drift across deploys.
+- Smithery and other public MCP scanners now have a complete `inputSchema` for every exposed tool.
+- Header-based API key clients can authenticate without having to reformat credentials into bearer-token syntax.
+- The fix is low debt: no new dependencies, no duplicate health endpoint, and no product-runtime feature fork.
+
 ## March 20, 2026: Hosted analytics and revenue audit hardening
 
 Scope:

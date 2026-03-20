@@ -10,6 +10,11 @@ const fs = require('node:fs');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-deploy-test-'));
 process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.RLHF_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
+fs.writeFileSync(
+  process.env.RLHF_BUILD_METADATA_PATH,
+  JSON.stringify({ buildSha: 'deploy-test-build-sha', generatedAt: '2026-03-20T00:00:00.000Z' }, null, 2)
+);
 // Use insecure mode so auth doesn't interfere with /health unauthenticated check
 process.env.RLHF_ALLOW_INSECURE = 'true';
 
@@ -32,6 +37,7 @@ test.before(async () => {
 test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+  delete process.env.RLHF_BUILD_METADATA_PATH;
 });
 
 test('GET /health returns 200 without authentication', async () => {
@@ -53,6 +59,12 @@ test('GET /health returns package version', async () => {
   const res = await fetch(deployUrl('/health'));
   const body = await res.json();
   assert.equal(body.version, pkg.version);
+});
+
+test('GET /health returns stamped build metadata', async () => {
+  const res = await fetch(deployUrl('/health'));
+  const body = await res.json();
+  assert.equal(body.buildSha, 'deploy-test-build-sha');
 });
 
 test('GET /health returns numeric uptime', async () => {

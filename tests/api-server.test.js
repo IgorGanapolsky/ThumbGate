@@ -21,7 +21,11 @@ process.env.RLHF_PUBLIC_APP_ORIGIN = 'https://app.example.com';
 process.env.RLHF_BILLING_API_BASE_URL = 'https://billing.example.com';
 process.env.RLHF_GA_MEASUREMENT_ID = 'G-TEST1234';
 process.env.RLHF_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
-process.env.RLHF_BUILD_SHA = 'test-build-sha';
+process.env.RLHF_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
+fs.writeFileSync(
+  process.env.RLHF_BUILD_METADATA_PATH,
+  JSON.stringify({ buildSha: 'test-build-sha', generatedAt: '2026-03-20T00:00:00.000Z' }, null, 2)
+);
 
 const { startServer, __test__ } = require('../src/api/server');
 const billing = require('../scripts/billing');
@@ -64,6 +68,7 @@ test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
   delete process.env.RLHF_PUBLIC_APP_ORIGIN;
   delete process.env.RLHF_BILLING_API_BASE_URL;
+  delete process.env.RLHF_BUILD_METADATA_PATH;
   try {
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
     fs.rmSync(tmpProofDir, { recursive: true, force: true });
@@ -78,6 +83,15 @@ test('health endpoint returns ok', async () => {
   const body = await res.json();
   assert.equal(body.status, 'ok');
   assert.equal(body.buildSha, 'test-build-sha');
+});
+
+test('protected endpoints accept x-api-key as an alternate auth header', async () => {
+  const res = await fetch(apiUrl('/v1/feedback/summary'), {
+    headers: { 'x-api-key': 'test-api-key' },
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(typeof body.summary, 'string');
 });
 
 test('root serves the landing page by default', async () => {
@@ -210,6 +224,12 @@ test('public server card exposes MCP tool schemas for directory scanners', async
   assert.ok(captureFeedbackTool);
   assert.equal(captureFeedbackTool.inputSchema.type, 'object');
   assert.ok(captureFeedbackTool.inputSchema.required.includes('signal'));
+  for (const tool of body.tools) {
+    assert.equal(typeof tool.name, 'string');
+    assert.equal(typeof tool.description, 'string');
+    assert.equal(typeof tool.inputSchema, 'object');
+    assert.ok(tool.inputSchema);
+  }
 });
 
 test('root seeds journey cookies, injects server telemetry IDs, and records landing telemetry server-side', async () => {

@@ -22,7 +22,6 @@ jobs:
       RLHF_FEEDBACK_DIR: ${{ vars.RLHF_FEEDBACK_DIR }}
       RLHF_GA_MEASUREMENT_ID: ${{ vars.RLHF_GA_MEASUREMENT_ID }}
       RLHF_GOOGLE_SITE_VERIFICATION: ${{ vars.RLHF_GOOGLE_SITE_VERIFICATION }}
-      RLHF_BUILD_SHA: ${{ github.sha }}
       RAILWAY_TOKEN_ROTATED_AT: ${{ vars.RAILWAY_TOKEN_ROTATED_AT }}
       RLHF_API_KEY_ROTATED_AT: ${{ vars.RLHF_API_KEY_ROTATED_AT }}
       STRIPE_SECRET_KEY_ROTATED_AT: ${{ vars.STRIPE_SECRET_KEY_ROTATED_AT }}
@@ -45,6 +44,9 @@ jobs:
       - name: Enforce deploy policy
         if: steps.railway-config.outputs.enabled == 'true'
         run: node scripts/deploy-policy.js --profiles=runtime,billing,deploy
+      - name: Stamp immutable build metadata
+        if: steps.railway-config.outputs.enabled == 'true'
+        run: node scripts/build-metadata.js --sha "$GITHUB_SHA" --output config/build-metadata.json
       - name: Install Railway CLI
         if: steps.railway-config.outputs.enabled == 'true'
         run: npm install -g @railway/cli
@@ -66,7 +68,6 @@ jobs:
           if [ -n "$RLHF_GOOGLE_SITE_VERIFICATION" ]; then
             railway variables set RLHF_GOOGLE_SITE_VERIFICATION="$RLHF_GOOGLE_SITE_VERIFICATION" "${SERVICE_ARGS[@]}"
           fi
-          railway variables set RLHF_BUILD_SHA="$RLHF_BUILD_SHA" "${SERVICE_ARGS[@]}"
       - name: Deploy to Railway
         if: steps.railway-config.outputs.enabled == 'true'
         run: |

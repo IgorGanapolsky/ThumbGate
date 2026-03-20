@@ -195,6 +195,10 @@ const TOOLS = [
   readOnlyTool({
     name: 'get_reliability_rules',
     description: 'Retrieve active prevention rules and success patterns. Aliased to prevention_rules.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
   }),
   destructiveTool({
     name: 'capture_memory_feedback',
