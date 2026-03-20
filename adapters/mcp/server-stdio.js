@@ -19,6 +19,8 @@ const {
   constructContextPack,
   evaluateContextPack,
   getProvenance,
+  writeSessionHandoff,
+  readSessionHandoff,
 } = require('../../scripts/contextfs');
 const { buildRubricEvaluation } = require('../../scripts/rubric-engine');
 const {
@@ -61,7 +63,7 @@ const { checkLimit } = require('../../scripts/rate-limiter');
 const { TOOLS } = require('../../scripts/tool-registry');
 const { bootstrapInternalAgent } = require('../../scripts/internal-agent-bootstrap');
 
-const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.7.2' };
+const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.7.4' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -441,6 +443,13 @@ async function callToolInner(name, args) {
       return buildEstimateUncertaintyResponse(args);
     case 'bootstrap_internal_agent':
       return toTextResult(bootstrapInternalAgent(args));
+    case 'session_handoff':
+      return toTextResult(writeSessionHandoff(args));
+    case 'session_primer': {
+      const primer = readSessionHandoff();
+      if (!primer) return toTextResult({ message: 'No session primer found. This is the first session.' });
+      return toTextResult(primer);
+    }
     default:
       throw new Error(`Unsupported tool: ${name}`);
   }

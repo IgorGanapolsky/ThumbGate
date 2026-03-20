@@ -22,7 +22,7 @@ Repo-local operator guides:
 - [Aider with OpenAI-compatible backends](docs/guides/aider-openai-compatible.md)
 - [OpenCode integration](docs/guides/opencode-integration.md)
 
-MCP Memory Gateway keeps one sharp agent on task. Continuity tools help you resume work. The resumed session stays sharper with recall, reliability rules, pre-action gates, and verification layered on top of that continuity workflow without another planner or swarm.
+MCP Memory Gateway keeps one sharp agent on task. Continuity tools help you resume work. The resumed session stays sharper with recall, reliability rules, pre-action gates, session handoff primers, and verification layered on top of that continuity workflow without another planner or swarm.
 
 ## Claude Workflow Hardening
 
@@ -137,15 +137,17 @@ npx mcp-memory-gateway capture --feedback=down \
 4. **Prevent** — Repeated failures auto-generate prevention rules (the actual value — agents follow these when loaded)
 5. **Gate** — Pre-action blocking via PreToolUse hooks — physically prevents known mistakes before they happen
 6. **Recall** — `recall` tool injects relevant past context into current session (this is the mechanism that works)
-7. **Export** — DPO/KTO pairs for optional downstream fine-tuning (separate from runtime behavior)
-8. **Bridge** — JSONL file watcher auto-ingests signals from external sources (Amp plugins, hooks, scripts)
+7. **Session Handoff** — `session_handoff` captures git state, last task, next step, and blockers; `session_primer` restores it at next session start
+8. **Export** — DPO/KTO pairs for optional downstream fine-tuning (separate from runtime behavior)
+9. **Bridge** — JSONL file watcher auto-ingests signals from external sources (Amp plugins, hooks, scripts)
 
 ### What Works vs. What Doesn't
 
 | ✅ Actually works | ❌ Does not work |
 |---|---|
 | `recall` injects past context — agent reads and uses it | Thumbs up/down changing agent behavior mid-session |
-| `remember` persists decisions across sessions | LLM weight updates from feedback signals |
+| `session_handoff` / `session_primer` — seamless cross-session context | LLM weight updates from feedback signals |
+| `remember` persists decisions across sessions | Agents magically knowing what happened last session |
 | Prevention rules — followed when loaded at session start | Feedback stats improving agent performance automatically |
 | **Pre-action gates — physically block known mistakes** | "Learning curve" implying the agent itself learns |
 | **Auto-promotion — 3+ failures become blocking rules** | Agents self-correcting without context injection |
@@ -310,6 +312,8 @@ These tools support fine-tuning workflows, context engineering, and audit trails
 | `gate_stats` | Gate enforcement statistics (blocked/warned counts) | Monitoring gate effectiveness |
 | `dashboard` | Full RLHF dashboard (approval rate, gates, prevention) | Overview of system health |
 | `diagnose_failure` | Compile workflow, gate, approval, and MCP-tool constraints into a root-cause report | Systematic debugging for failed or suspect agent runs |
+| `session_handoff` | Write session primer with git state, last task, next step, blockers | Seamless context continuity across sessions |
+| `session_primer` | Read the most recent session handoff primer | Restoring context at session start |
 
 ## CLI
 

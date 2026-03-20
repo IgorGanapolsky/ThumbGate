@@ -1,6 +1,6 @@
 {
   "name": "mcp-memory-gateway",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "plugins": [
     {
       "name": "mcp-memory-gateway",

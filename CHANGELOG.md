@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.4 - 2026-03-20
+
+- Added `session_handoff` and `session_primer` MCP tools for seamless cross-session context continuity.
+- New `session` namespace in ContextFS stores primer.json with auto-captured git state (branch, last 5 commits, modified files, working tree status), last completed task, next step, and blockers.
+- `session_handoff` records provenance events for full audit trail of session transitions.
+- Closes Layer 2 (primer.md) of the 5-layer memory stack — no manual primer file needed.
+
 ## 0.6.11 - 2026-03-10
 
 - Added Inverse Sink Weighting and Anchor-Memory management to prevent runaway negative memory accumulation and stabilize agent behavior over long sessions.

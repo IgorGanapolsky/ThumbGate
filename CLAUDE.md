@@ -109,8 +109,17 @@ Feedback and context data are local and git-ignored:
 
 ## Session Directive: PR Management & System Hygiene
 
+### Session Handoff Protocol
+Before ending any session, the CTO MUST:
+1. Update `primer.md` with:
+   - Latest revenue truth from `node bin/cli.js cfo --today`.
+   - The last completed task and the exact next step.
+   - Any new blockers or identified high-intent leads.
+2. Run `./bin/memory.sh` to refresh the live Git context in the primer.
+3. Confirm operational readiness for the next session.
+
 ### CTO Protocol
-1. **Research & Recall:** Read directives and query RAG/RLHF memory for lessons before starting.
+1. **Research & Recall:** Read `primer.md` first to bypass auto-compaction amnesia. Read directives and query RLHF memory for lessons before starting.
 2. **PR Inspection:** Use `npm run pr:manage` to review all open PRs for merge readiness and diagnose blockers.
 3. **Orphan Cleanup:** Evaluate branches/worktrees without PRs. Merge, archive, or delete regressive/stale state.
 4. **Main Integrity:** Ensure `main` is 100% green after all merges. Fix regressions before claiming completion.

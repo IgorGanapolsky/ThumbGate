@@ -12,6 +12,7 @@ Root:
 - `contextfs/rules/`
 - `contextfs/tools/`
 - `contextfs/provenance/`
+- `contextfs/session/`
 
 By default this lives under `.claude/memory/feedback/contextfs`.
 Override with `RLHF_CONTEXTFS_DIR`.
@@ -48,3 +49,5 @@ Provenance includes `context_pack_cache_hit` events.
 - `construct_context_pack`
 - `evaluate_context_pack`
 - `context_provenance`
+- `session_handoff` — write session primer (git state, last task, next step, blockers)
+- `session_primer` — read most recent session handoff for context restoration

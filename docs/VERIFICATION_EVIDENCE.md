@@ -38,7 +38,7 @@ Observed result:
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
 - `npm run revenue:status -- --json` exited `0` with `source: hosted-via-railway-env`.
 - The live public probes inside `npm run revenue:status -- --json` reported:
-  - `/health` returned `200` with `version: 0.7.3`.
+  - `/health` returned `200` with `version: 0.7.4`.
   - `/health` deployment metadata matched the canonical hosted origin for both `appOrigin` and `billingApiBaseUrl`.
   - `/` returned `200` and exposed `plausibleScript: true`, `telemetryEndpoint: true`, and `workflowSprintIntake: true`.
   - `/` still exposed `gaEventHook: true` but `gaLoaderScript: false`, which matches the known GA runtime gap rather than a broken page.
@@ -1099,7 +1099,7 @@ Evidence artifacts:
 Requirements verified:
 
 - Source checkouts now install canonical MCP entries that launch the local stdio server directly via `node adapters/mcp/server-stdio.js`.
-- Portable docs and adapter examples now use the version-pinned launcher `npx -y mcp-memory-gateway@0.7.3 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
+- Portable docs and adapter examples now use the version-pinned launcher `npx -y mcp-memory-gateway@0.7.4 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
 - Re-running the MCP installer upgrades stale config entries instead of treating them as already configured.
 - Adapter and LanceDB proof cleanup now uses retry-capable recursive removal so ephemeral filesystem contention no longer flakes CI.
 - Transient `.rlhf` reminder/A2UI/test-run files are now ignored as local runtime state and do not pollute git hygiene during verification.
@@ -1996,7 +1996,7 @@ Scope:
 
 - Added a repo-root Cursor marketplace manifest at `.cursor-plugin/marketplace.json`.
 - Added a dedicated Cursor plugin bundle in `plugins/cursor-marketplace/` with `.cursor-plugin/plugin.json`, `.mcp.json`, README, and committed logo asset.
-- Switched the Cursor launcher to the portable published package entrypoint `npx -y mcp-memory-gateway@0.7.3 serve` instead of any checkout-local absolute path.
+- Switched the Cursor launcher to the portable published package entrypoint `npx -y mcp-memory-gateway@0.7.4 serve` instead of any checkout-local absolute path.
 - Removed the stale `.mcp.json.plugin` legacy config file so the repo has one canonical Cursor packaging path.
 - Extended `scripts/sync-version.js` so Cursor manifests and all pinned launcher docs stay version-synced on future releases.
 - Added regression coverage for the repo-level marketplace contract, manifest/version consistency, and MCP launcher safety.

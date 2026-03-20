@@ -35,6 +35,7 @@ const SEQUENCE_WINDOW = 10;
 const DOMAIN_CATEGORIES = [
   'testing', 'security', 'performance', 'ui-components', 'api-integration',
   'git-workflow', 'documentation', 'debugging', 'architecture', 'data-modeling',
+  'behavioral',
 ];
 
 const HOME = process.env.HOME || process.env.USERPROFILE || '';
@@ -1302,6 +1303,7 @@ module.exports = {
   enrichFeedbackContext,
   waitForBackgroundSideEffects,
   getPendingBackgroundSideEffectCount,
+  getFeedbackPaths,
   get FEEDBACK_LOG_PATH() {
     return getFeedbackPaths().FEEDBACK_LOG_PATH;
   },

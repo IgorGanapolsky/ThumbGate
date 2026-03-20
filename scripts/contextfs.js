@@ -39,6 +39,7 @@ const NAMESPACES = {
   rules: 'rules',
   tools: 'tools',
   provenance: 'provenance',
+  session: 'session',
 };
 const DEFAULT_SEARCH_NAMESPACES = [
   NAMESPACES.memoryError,
@@ -805,6 +806,89 @@ function getProvenance(limit = 50) {
   return events.slice(-limit);
 }
 
+/**
+ * Write a session handoff primer to contextfs/session/primer.json.
+ * Captures git state, last task, next step, and blockers so the next
+ * session starts with full context — no manual primer.md needed.
+ */
+function writeSessionHandoff({ project, branch, lastTask, nextStep, blockers, openFiles, customContext } = {}) {
+  ensureDir(path.join(CONTEXTFS_ROOT, NAMESPACES.session));
+
+  let gitContext = {};
+  try {
+    const { execSync } = require('child_process');
+    const cwd = process.cwd();
+    gitContext = {
+      branch: branch || execSync('git rev-parse --abbrev-ref HEAD', { cwd, encoding: 'utf8' }).trim(),
+      lastCommits: execSync('git log --oneline -5', { cwd, encoding: 'utf8' }).trim().split('\n'),
+      modifiedFiles: execSync('git diff --name-only HEAD~1 2>/dev/null || echo ""', { cwd, encoding: 'utf8' }).trim().split('\n').filter(Boolean),
+      status: execSync('git status --short', { cwd, encoding: 'utf8' }).trim().split('\n').filter(Boolean),
+    };
+  } catch (_) {
+    gitContext = { branch: branch || 'unknown', lastCommits: [], modifiedFiles: [], status: [] };
+  }
+
+  const primer = {
+    id: `session_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
+    timestamp: nowIso(),
+    project: project || path.basename(process.cwd()),
+    git: gitContext,
+    lastTask: lastTask || null,
+    nextStep: nextStep || null,
+    blockers: Array.isArray(blockers) ? blockers : (blockers ? [blockers] : []),
+    openFiles: Array.isArray(openFiles) ? openFiles : [],
+    customContext: customContext || null,
+  };
+
+  const primerPath = path.join(CONTEXTFS_ROOT, NAMESPACES.session, 'primer.json');
+  fs.writeFileSync(primerPath, JSON.stringify(primer, null, 2));
+
+  // Sync to primer.md if it exists
+  const mdPrimerPath = path.join(process.cwd(), 'primer.md');
+  if (fs.existsSync(mdPrimerPath)) {
+    try {
+      let md = fs.readFileSync(mdPrimerPath, 'utf8');
+      if (primer.lastTask) {
+        md = md.replace(/## Last Completed Task\n- .*/, `## Last Completed Task\n- ${primer.lastTask}`);
+      }
+      if (primer.nextStep) {
+        md = md.replace(/## Exact Next Step\n- .*/, `## Exact Next Step\n- ${primer.nextStep}`);
+      }
+      if (primer.blockers.length > 0) {
+        md = md.replace(/## Open Blockers\n(?:- .*\n)*/, `## Open Blockers\n${primer.blockers.map(b => `- ${b}`).join('\n')}\n`);
+      }
+      fs.writeFileSync(mdPrimerPath, md);
+      
+      // Trigger full memory refresh (Layer 3, 4, 5)
+      const { execSync } = require('child_process');
+      execSync('./bin/memory.sh', { stdio: 'ignore' });
+    } catch (e) {
+      console.error('Warning: Failed to sync to primer.md:', e.message);
+    }
+  }
+
+  recordProvenance({
+    action: 'session_handoff',
+    source: 'session',
+    detail: `Handoff: ${primer.lastTask || 'no task'} → ${primer.nextStep || 'no next step'}`,
+  });
+
+  return primer;
+}
+
+/**
+ * Read the most recent session handoff primer.
+ */
+function readSessionHandoff() {
+  const primerPath = path.join(CONTEXTFS_ROOT, NAMESPACES.session, 'primer.json');
+  if (!fs.existsSync(primerPath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(primerPath, 'utf8'));
+  } catch (_) {
+    return null;
+  }
+}
+
 module.exports = {
   CONTEXTFS_ROOT,
   NAMESPACES,
@@ -828,6 +912,8 @@ module.exports = {
   dereferenceEntry,
   searchMemexIndex,
   constructMemexPack,
+  writeSessionHandoff,
+  readSessionHandoff,
 };
 
 if (require.main === module) {

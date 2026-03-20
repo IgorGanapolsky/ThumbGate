@@ -261,13 +261,13 @@ function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotio
   const repoRef = `\`${target.repoName}\``;
   if (selectedMotion.key === motionCatalog.sprint.key) {
     return [
-      `Hey @${target.username}, saw you're shipping ${repoRef}. If the pain is one workflow repeating the same failure pattern, I am not pitching another agent platform; I am pitching a Workflow Hardening Sprint for one workflow, one owner, and one proof review: ${motion.cta}`,
+      `Hey @${target.username}, saw you're shipping ${repoRef}. If your production workflows are losing critical architectural context to auto-compaction, I am pitching a Workflow Hardening Sprint for one workflow, one owner, and one proof review: ${motion.cta}`,
       `Commercial truth: ${motion.truth}. Proof pack: ${motion.proof}.`
     ].join(' ');
   }
 
   return [
-    `Hey @${target.username}, saw you're building around ${repoRef}. If the pain is repeated agent mistakes or lost context between sessions, the self-serve path is MCP Memory Gateway ${motionCatalog.pro.label}: ${motion.cta}`,
+    `Hey @${target.username}, saw you're building around ${repoRef}. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with MCP Memory Gateway ${motionCatalog.pro.label}: ${motion.cta}`,
     `Commercial truth: ${motion.truth}. Proof pack: ${motion.proof}.`
   ].join(' ');
 }

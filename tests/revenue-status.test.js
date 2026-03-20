@@ -205,7 +205,7 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
     fetchPublicProbe: async () => ({
       health: {
         status: 200,
-        version: '0.7.3',
+        version: '0.7.4',
       },
       root: {
         status: 200,

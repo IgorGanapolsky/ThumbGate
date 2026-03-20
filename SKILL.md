@@ -11,6 +11,7 @@ This skill provides **Pre-Action Gates** for AI coding agents. It captures feedb
 - **Pre-Action Gates**: Blocks known-bad tool calls before they execute. Gates are auto-promoted from repeated failure patterns.
 - **Prevention Rules**: Auto-generated from recurring mistakes. Injected into agent context before every action.
 - **Context Packs**: Bounded retrieval of relevant feedback history and decisions for the current task.
+- **Session Handoff**: Auto-captures git state, last task, next step, and blockers at session end; restores context at next session start via `session_primer`.
 - **Feedback Capture**: Structured up/down signals with context, rubric scores, and guardrail flags.
 
 ## Activation

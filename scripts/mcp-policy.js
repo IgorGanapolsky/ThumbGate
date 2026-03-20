@@ -30,11 +30,18 @@ function loadSubagentProfiles() {
   return parsed;
 }
 
-function getActiveMcpProfile() {
+function getActiveMcpProfile(toolName) {
   const explicitProfile = process.env.RLHF_MCP_PROFILE || null;
   const runtimeSubagentProfile = process.env.RLHF_SUBAGENT_PROFILE || null;
+  const autoRoute = process.env.RLHF_AUTO_PROFILE_ROUTING !== 'false';
 
   if (!runtimeSubagentProfile) {
+    // Auto-route when no explicit profile and auto-routing is enabled
+    if (!explicitProfile && autoRoute && toolName) {
+      const { routeProfile } = require('./profile-router');
+      const routing = routeProfile({ toolName });
+      return routing.profile;
+    }
     return explicitProfile || 'default';
   }
 

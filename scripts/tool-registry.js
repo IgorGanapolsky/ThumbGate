@@ -461,6 +461,29 @@ const TOOLS = [
       },
     },
   }),
+  destructiveTool({
+    name: 'session_handoff',
+    description: 'Write a session handoff primer that auto-captures git state (branch, last 5 commits, modified files), last completed task, next step, and blockers. The next session reads this automatically for seamless context continuity.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        lastTask: { type: 'string', description: 'What was completed this session' },
+        nextStep: { type: 'string', description: 'Exact next action for the next session' },
+        blockers: { type: 'array', items: { type: 'string' }, description: 'Open blockers or unresolved issues' },
+        openFiles: { type: 'array', items: { type: 'string' }, description: 'Key files being worked on' },
+        project: { type: 'string', description: 'Project name (auto-detected from cwd if omitted)' },
+        customContext: { type: 'string', description: 'Any additional context for the next session' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'session_primer',
+    description: 'Read the most recent session handoff primer to restore context from the previous session. Call at session start.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  }),
 ];
 
 module.exports = {

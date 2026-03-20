@@ -2,7 +2,7 @@
   "name": "mcp-memory-gateway",
   "displayName": "MCP Memory Gateway",
   "description": "Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "author": {
     "name": "Igor Ganapolsky"
   },
