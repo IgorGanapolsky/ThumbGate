@@ -41,6 +41,7 @@ Source of truth for Gemini declarations:
 - Use context-pack cache metadata (`cache.hit`, `cache.similarity`) to reduce repetitive retrieval work.
 - Prefer clean worktrees for verification and branch maintenance rather than a dirty primary checkout.
 - Do not report PR completion until the exact merge commit is green on `main`.
+- Pending CI checks and `REVIEW_REQUIRED` are blockers, not mergeable states; do not admin-merge around them.
 - Archive unique orphan branches before deletion and remove clean redundant worktrees once they are no longer needed.
 
 ## Suggested Runtime Mapping

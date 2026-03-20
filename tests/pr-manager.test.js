@@ -64,6 +64,24 @@ test('PR Manager - Detects CI Failure', async () => {
   assert.deepEqual(result.checks, ['CI/test']);
 });
 
+test('PR Manager - Detects Pending Checks', async () => {
+  const mockPr = {
+    number: 127,
+    title: 'Pending CI PR',
+    mergeable: 'MERGEABLE',
+    mergeStateStatus: 'CLEAN',
+    isDraft: false,
+    statusCheckRollup: [
+      { name: 'CI/test', status: 'IN_PROGRESS', conclusion: null }
+    ]
+  };
+
+  const result = await resolveBlockers(mockPr);
+  assert.equal(result.status, 'blocked', 'Pending CI should block the PR');
+  assert.equal(result.reason, 'ci_pending');
+  assert.deepEqual(result.checks, ['CI/test']);
+});
+
 test('PR Manager - Detects Conflicts', async () => {
   const mockPr = {
     number: 126,
@@ -76,6 +94,24 @@ test('PR Manager - Detects Conflicts', async () => {
   const result = await resolveBlockers(mockPr);
   assert.equal(result.status, 'blocked', 'Dirty state should be blocked');
   assert.equal(result.reason, 'conflicts');
+});
+
+test('PR Manager - Detects Required Review', async () => {
+  const mockPr = {
+    number: 128,
+    title: 'Awaiting review PR',
+    mergeable: 'MERGEABLE',
+    mergeStateStatus: 'BLOCKED',
+    isDraft: false,
+    reviewDecision: 'REVIEW_REQUIRED',
+    statusCheckRollup: [
+      { name: 'CI/test', status: 'COMPLETED', conclusion: 'SUCCESS' }
+    ]
+  };
+
+  const result = await resolveBlockers(mockPr);
+  assert.equal(result.status, 'blocked', 'Required review should block the PR');
+  assert.equal(result.reason, 'review_required');
 });
 
 test('PR Manager - getPrStatus returns null when current branch has no PR', () => {
@@ -167,4 +203,34 @@ test('PR Manager - managePrs merges ready open PRs discovered from the repo list
   assert.equal(result.prs[0].number, 282);
   assert.equal(result.prs[0].outcome.status, 'ready');
   assert.equal(result.prs[0].outcome.merged, true);
+});
+
+test('PR Manager - managePrs leaves pending-check PRs unmerged', async () => {
+  const mockPr = {
+    number: 283,
+    title: 'Repo-wide pending PR',
+    mergeable: 'MERGEABLE',
+    mergeStateStatus: 'CLEAN',
+    isDraft: false,
+    statusCheckRollup: [{ name: 'CI', status: 'IN_PROGRESS', conclusion: null }]
+  };
+  const runner = createRunner([
+    {
+      status: 1,
+      stdout: '',
+      stderr: 'no pull requests found for branch "codex/tech-debt-audit-20260320"\n'
+    },
+    {
+      status: 0,
+      stdout: JSON.stringify([mockPr]),
+      stderr: ''
+    }
+  ]);
+
+  const result = await managePrs('', runner);
+  assert.equal(result.status, 'ok');
+  assert.equal(result.prs.length, 1);
+  assert.equal(result.prs[0].number, 283);
+  assert.equal(result.prs[0].outcome.status, 'blocked');
+  assert.equal(result.prs[0].outcome.reason, 'ci_pending');
 });

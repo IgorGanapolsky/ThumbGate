@@ -48,6 +48,7 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 
 - Start PR work by checking open PRs, review state, branch status, and CI.
 - Merge ready PRs autonomously once required checks are green and no actionable comments remain.
+- Pending CI checks and `REVIEW_REQUIRED` are blockers, not mergeable states; do not admin-merge around them.
 - Verify `main` CI on the exact merge commit before claiming the work is finished.
 - Delete disposable worktrees and stale merged local branches after merge.
 - If a closed-unmerged branch still contains unique local commits, archive it before deletion.

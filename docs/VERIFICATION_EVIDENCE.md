@@ -1423,6 +1423,46 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-20 Technical Debt Audit Verification
+
+Scope:
+
+- Repo-wide technical debt sweep from a dedicated worktree rooted at `origin/main`.
+- PR manager merge gate hardening for pending CI and required-review blockers.
+- Python trainer cleanup plus new CI smoke coverage for the tracked Python script.
+- Direct dependency drift reduction for `@google/genai`.
+
+Commands run:
+
+```bash
+npm ci
+node --test tests/pr-manager.test.js tests/train-from-feedback.test.js
+python3 -m py_compile scripts/train_from_feedback.py
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- `npm ci`: clean install, `0 vulnerabilities`.
+- `node --test tests/pr-manager.test.js tests/train-from-feedback.test.js`: `12` passed, `0` failed.
+- `python3 -m py_compile scripts/train_from_feedback.py`: exit `0`.
+- `npm test`: exit `0`.
+- `npm run test:coverage`: exit `0`, `all files | 89.60 | 75.65 | 93.07`.
+- `npm run prove:adapters`: `48/48` passed.
+- `npm run prove:automation`: `55/55` passed.
+- `npm run self-heal:check`: `Overall: HEALTHY`, `4/4 healthy`.
+
+Behavioral proof points:
+
+- Autonomous PR merges now stop on pending checks instead of treating them as ready.
+- `REVIEW_REQUIRED` is now treated as an explicit blocker for autonomous merging.
+- The tracked Python trainer is CI-smoke-tested so syntax regressions fail fast.
+- The Python trainer no longer repeats category initialization logic or carries stale repository guidance.
+
 ## 2026-03-20 Technical Debt Audit + Test-Gate Hardening Verification
 
 Scope:

@@ -10,6 +10,15 @@
 
 const { spawnSync } = require('child_process');
 const PR_FIELDS = 'number,mergeable,mergeStateStatus,statusCheckRollup,reviewDecision,isDraft,title';
+const SUCCESSFUL_CHECK_CONCLUSIONS = new Set(['SUCCESS', 'SKIPPED', 'NEUTRAL']);
+const FAILING_CHECK_CONCLUSIONS = new Set([
+  'ACTION_REQUIRED',
+  'CANCELLED',
+  'FAILURE',
+  'STALE',
+  'STARTUP_FAILURE',
+  'TIMED_OUT',
+]);
 
 function runGh(args) {
   return spawnSync('gh', args, { encoding: 'utf-8' });
@@ -68,6 +77,33 @@ function loadManagedPrs(prNumber = '', runner = runGh) {
   return listOpenPrs(runner);
 }
 
+function summarizeChecks(checks = []) {
+  const failing = [];
+  const pending = [];
+
+  for (const check of checks) {
+    const name = check.name || 'unknown-check';
+    const conclusion = check.conclusion || null;
+    const status = check.status || (conclusion ? 'COMPLETED' : 'UNKNOWN');
+
+    if (status !== 'COMPLETED') {
+      pending.push(name);
+      continue;
+    }
+
+    if (conclusion && FAILING_CHECK_CONCLUSIONS.has(conclusion)) {
+      failing.push(name);
+      continue;
+    }
+
+    if (conclusion && !SUCCESSFUL_CHECK_CONCLUSIONS.has(conclusion)) {
+      pending.push(name);
+    }
+  }
+
+  return { failing, pending };
+}
+
 /**
  * Diagnose and resolve blockers autonomously
  */
@@ -100,18 +136,28 @@ async function resolveBlockers(pr, runner = runGh) {
   }
 
   // 3. Handle CI Failures
-  const failingChecks = (pr.statusCheckRollup || [])
-    .filter(check => check.conclusion === 'FAILURE' || check.conclusion === 'ACTION_REQUIRED');
-  
+  const checkSummary = summarizeChecks(pr.statusCheckRollup || []);
+  const failingChecks = checkSummary.failing;
+
   if (failingChecks.length > 0) {
     console.log(`[PR Manager] BLOCKED: ${failingChecks.length} failing CI checks.`);
-    return { status: 'blocked', reason: 'ci_failure', checks: failingChecks.map(c => c.name) };
+    return { status: 'blocked', reason: 'ci_failure', checks: failingChecks };
+  }
+
+  if (checkSummary.pending.length > 0) {
+    console.log(`[PR Manager] BLOCKED: ${checkSummary.pending.length} CI checks still pending.`);
+    return { status: 'blocked', reason: 'ci_pending', checks: checkSummary.pending };
   }
 
   // 4. Handle Review Blockers
   if (pr.reviewDecision === 'CHANGES_REQUESTED') {
     console.log('[PR Manager] BLOCKED: Changes requested by reviewer.');
     return { status: 'blocked', reason: 'changes_requested' };
+  }
+
+  if (pr.reviewDecision === 'REVIEW_REQUIRED') {
+    console.log('[PR Manager] BLOCKED: Required review is still outstanding.');
+    return { status: 'blocked', reason: 'review_required' };
   }
 
   // 5. Ready to Merge
