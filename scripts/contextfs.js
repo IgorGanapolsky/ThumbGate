@@ -843,6 +843,30 @@ function writeSessionHandoff({ project, branch, lastTask, nextStep, blockers, op
   const primerPath = path.join(CONTEXTFS_ROOT, NAMESPACES.session, 'primer.json');
   fs.writeFileSync(primerPath, JSON.stringify(primer, null, 2));
 
+  // Sync to primer.md if it exists
+  const mdPrimerPath = path.join(process.cwd(), 'primer.md');
+  if (fs.existsSync(mdPrimerPath)) {
+    try {
+      let md = fs.readFileSync(mdPrimerPath, 'utf8');
+      if (primer.lastTask) {
+        md = md.replace(/## Last Completed Task\n- .*/, `## Last Completed Task\n- ${primer.lastTask}`);
+      }
+      if (primer.nextStep) {
+        md = md.replace(/## Exact Next Step\n- .*/, `## Exact Next Step\n- ${primer.nextStep}`);
+      }
+      if (primer.blockers.length > 0) {
+        md = md.replace(/## Open Blockers\n(?:- .*\n)*/, `## Open Blockers\n${primer.blockers.map(b => `- ${b}`).join('\n')}\n`);
+      }
+      fs.writeFileSync(mdPrimerPath, md);
+      
+      // Trigger full memory refresh (Layer 3, 4, 5)
+      const { execSync } = require('child_process');
+      execSync('./bin/memory.sh', { stdio: 'ignore' });
+    } catch (e) {
+      console.error('Warning: Failed to sync to primer.md:', e.message);
+    }
+  }
+
   recordProvenance({
     action: 'session_handoff',
     source: 'session',

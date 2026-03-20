@@ -11,6 +11,7 @@ const {
   redactText,
 } = require('./secret-scanner');
 const { getAutoGatesPath } = require('./auto-promote-gates');
+const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'default.json');
 const STATE_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'gate-state.json');
@@ -217,25 +218,24 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 
     if (gate.action === 'block') {
       recordStat(gate.id, 'block');
-      return {
-        decision: 'deny',
-        gate: gate.id,
-        message: gate.message,
-        severity: gate.severity,
-      };
+      const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity };
+      // Audit trail: record + auto-feed into RLHF pipeline
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord);
+      return result;
     }
 
     if (gate.action === 'warn') {
       recordStat(gate.id, 'warn');
-      return {
-        decision: 'warn',
-        gate: gate.id,
-        message: gate.message,
-        severity: gate.severity,
-      };
+      const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord);
+      return result;
     }
   }
 
+  // Audit trail: record allow (no gate matched)
+  recordAuditEvent({ toolName, toolInput, decision: 'allow', source: 'gates-engine' });
   return null;
 }
 
@@ -265,25 +265,23 @@ function evaluateGates(toolName, toolInput, configPath) {
 
     if (gate.action === 'block') {
       recordStat(gate.id, 'block');
-      return {
-        decision: 'deny',
-        gate: gate.id,
-        message: gate.message,
-        severity: gate.severity,
-      };
+      const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord);
+      return result;
     }
 
     if (gate.action === 'warn') {
       recordStat(gate.id, 'warn');
-      return {
-        decision: 'warn',
-        gate: gate.id,
-        message: gate.message,
-        severity: gate.severity,
-      };
+      const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord);
+      return result;
     }
   }
 
+  // Audit trail: record allow
+  recordAuditEvent({ toolName, toolInput, decision: 'allow', source: 'gates-engine' });
   return null;
 }
 
@@ -375,7 +373,19 @@ function evaluateSecretGuard(input = {}) {
   }
   recordStat('secret-exfiltration', 'block');
   recordSecretViolation(input, scanResult);
-  return buildSecretGuardResult(scanResult);
+  const result = buildSecretGuardResult(scanResult);
+  // Audit trail: record secret guard denial
+  const auditRecord = recordAuditEvent({
+    toolName: input.tool_name || input.toolName || 'unknown',
+    toolInput: input.tool_input || {},
+    decision: 'deny',
+    gateId: 'secret-exfiltration',
+    message: 'Secret material detected in tool input',
+    severity: 'critical',
+    source: 'secret-guard',
+  });
+  auditToFeedback(auditRecord);
+  return result;
 }
 
 // ---------------------------------------------------------------------------

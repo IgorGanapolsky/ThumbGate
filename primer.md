@@ -12,42 +12,45 @@
 - **Billing:** Credit-based wallet system verified and live.
 
 ## Last Completed Task
-- Executed 10 outreach messages via GitHub issues with updated "Anti-Amnesia" messaging.
+- Implemented dependency cooldown check
 
 ## Exact Next Step
-- Monitor GitHub issues for conversion and click-through from the 10 sent leads.
+- Wire cooldown into CI pipeline
 - If conversion is low (<10%), initiate Reddit/X "Compaction Pain" reply loop.
 
 ## Open Blockers
-- Top-of-funnel discovery is still low (waiting for outreach traction).
+- Need Chainguard API key
+
+## Behavioral Traits
+
+_No strong behavioral patterns identified yet._
 
 ## Live Git Context
 
-### Branch: main
+### Branch: chore/sync-unstaged-work
 
 ### Last 5 Commits:
 ```
-fb78e8a feat: host north star dashboard and sprint pipeline (#281)
-8026317 feat: add credit pack billing, gate layers, kill-switch enrichment, and GSD revenue loop (#280) (#280)
-0adae0b fix(billing): repair legacy github marketplace amounts (#279)
-f5e4786 fix: reflect webhook pricing coverage in billing summary (#278)
-9d84013 fix: add safe head handling for public routes (#277)
+df33294 ci: retrigger CI checks
+921ff19 fix: register session-handoff.test.js in test:ops to pass suite parity check
+7c23f35 fix: bump version refs 0.7.3 → 0.7.4 across manifests, adapters, docs, and tests
+36e56eb chore: sync unstaged work — CLAUDE.md, gitops docs, revenue loop, memory helper, launch content, primer
+e06c15a feat: add session_handoff and session_primer MCP tools for cross-session context continuity
 ```
 
 ### Modified Files:
 ```
- M CHANGELOG.md
- M CLAUDE.md
- M README.md
- M SKILL.md
- M adapters/mcp/server-stdio.js
- M docs/AUTONOMOUS_GITOPS.md
- M docs/CONTEXTFS.md
+ M bin/memory.sh
+ M config/gates/default.json
+ M primer.md
  M scripts/contextfs.js
- M scripts/gtm-revenue-loop.js
- M scripts/tool-registry.js
-?? bin/memory.sh
-?? docs/marketing/launch-content.md
-?? primer.md
-?? tests/session-handoff.test.js
+ M scripts/feedback-loop.js
+ M scripts/gates-engine.js
+ M scripts/mcp-policy.js
+ M tests/session-handoff.test.js
+?? bin/obsidian-sync.sh
+?? scripts/audit-trail.js
+?? scripts/behavioral-extraction.js
+?? scripts/profile-router.js
+?? tests/audit-trail.test.js
 ```
