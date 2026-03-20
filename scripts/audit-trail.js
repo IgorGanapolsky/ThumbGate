@@ -154,6 +154,150 @@ function auditStats(logPath) {
 }
 
 // ---------------------------------------------------------------------------
+// Skill Adherence Measurement (M2.7-inspired)
+// ---------------------------------------------------------------------------
+
+/**
+ * Computes skill adherence rate per tool from audit trail data.
+ * Adherence = allow / (allow + deny + warn) per tool.
+ * M2.7 tracks "97% skill adherence across 40+ skills" — this gives us the same metric.
+ *
+ * @param {string} [logPath]
+ * @returns {{ overall: number, byTool: Object<string, { allow: number, deny: number, warn: number, adherence: number }>, totalTools: number }}
+ */
+function skillAdherence(logPath) {
+  const entries = readAuditLog(logPath);
+  const byTool = {};
+
+  for (const entry of entries) {
+    const tool = entry.toolName || 'unknown';
+    if (!byTool[tool]) byTool[tool] = { allow: 0, deny: 0, warn: 0 };
+    byTool[tool][entry.decision] = (byTool[tool][entry.decision] || 0) + 1;
+  }
+
+  let totalAllow = 0;
+  let totalAll = 0;
+  for (const [, counts] of Object.entries(byTool)) {
+    const all = counts.allow + counts.deny + counts.warn;
+    counts.adherence = all > 0 ? Math.round((counts.allow / all) * 10000) / 100 : 100;
+    totalAllow += counts.allow;
+    totalAll += all;
+  }
+
+  return {
+    overall: totalAll > 0 ? Math.round((totalAllow / totalAll) * 10000) / 100 : 100,
+    byTool,
+    totalTools: Object.keys(byTool).length,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Deny-triggered self-heal (M2.7 self-evolution loop)
+// ---------------------------------------------------------------------------
+
+/**
+ * Checks if recent audit denials exceed a threshold, triggering autonomous self-heal.
+ * This closes the M2.7-inspired loop: audit deny → self-heal → eval → keep/revert.
+ *
+ * @param {object} [opts]
+ * @param {number} [opts.windowMs=300000] — lookback window (default 5 min)
+ * @param {number} [opts.denyThreshold=3] — denials in window to trigger heal
+ * @param {string} [opts.logPath]
+ * @returns {{ triggered: boolean, recentDenials: number, threshold: number, healResult?: object }}
+ */
+function evaluateSelfHealTrigger(opts = {}) {
+  const windowMs = opts.windowMs || 5 * 60 * 1000;
+  const denyThreshold = opts.denyThreshold || 3;
+  const entries = readAuditLog(opts.logPath);
+  const cutoff = Date.now() - windowMs;
+
+  const recentDenials = entries.filter(e =>
+    e.decision === 'deny' && new Date(e.timestamp).getTime() > cutoff
+  );
+
+  if (recentDenials.length < denyThreshold) {
+    return { triggered: false, recentDenials: recentDenials.length, threshold: denyThreshold };
+  }
+
+  // Threshold exceeded — trigger self-heal
+  let healResult = null;
+  try {
+    const { runSelfHeal } = require('./self-heal');
+    const uniqueGates = [...new Set(recentDenials.map(d => d.gateId).filter(Boolean))];
+    healResult = runSelfHeal({
+      reason: `audit-trail: ${recentDenials.length} denials in ${windowMs / 1000}s (gates: ${uniqueGates.join(', ')})`,
+    });
+  } catch {
+    healResult = { error: 'self-heal module unavailable' };
+  }
+
+  return {
+    triggered: true,
+    recentDenials: recentDenials.length,
+    threshold: denyThreshold,
+    gates: [...new Set(recentDenials.map(d => d.gateId).filter(Boolean))],
+    healResult,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Semantic cache threshold auto-tuning
+// ---------------------------------------------------------------------------
+
+const CACHE_TUNE_STATE_FILENAME = 'cache-tune-state.json';
+
+/**
+ * Auto-tunes RLHF_SEMANTIC_CACHE_THRESHOLD based on audit trail feedback.
+ * If deny rate is high → tighten cache (raise threshold, fewer false hits).
+ * If deny rate is low → loosen cache (lower threshold, more cache hits).
+ *
+ * @param {string} [logPath]
+ * @returns {{ currentThreshold: number, recommendedThreshold: number, denyRate: number, applied: boolean }}
+ */
+function tuneCacheThreshold(logPath) {
+  const stats = auditStats(logPath);
+  const total = stats.total || 1;
+  const denyRate = stats.deny / total;
+
+  const currentThreshold = parseFloat(process.env.RLHF_SEMANTIC_CACHE_THRESHOLD || '0.7');
+  const MIN_THRESHOLD = 0.5;
+  const MAX_THRESHOLD = 0.95;
+  const STEP = 0.02;
+
+  // High deny rate (>20%) → agent is hitting gates often → tighten cache to reduce hallucinated recalls
+  // Low deny rate (<5%) → agent is compliant → loosen cache for more hits and cost savings
+  let recommended = currentThreshold;
+  if (denyRate > 0.20) {
+    recommended = Math.min(currentThreshold + STEP, MAX_THRESHOLD);
+  } else if (denyRate < 0.05 && total > 10) {
+    recommended = Math.max(currentThreshold - STEP, MIN_THRESHOLD);
+  }
+  recommended = Math.round(recommended * 100) / 100;
+
+  // Persist tuning state
+  const statePath = path.join(path.dirname(getAuditLogPath()), CACHE_TUNE_STATE_FILENAME);
+  const tuneRecord = {
+    timestamp: new Date().toISOString(),
+    currentThreshold,
+    recommendedThreshold: recommended,
+    denyRate: Math.round(denyRate * 10000) / 100,
+    totalEvents: stats.total,
+  };
+
+  try {
+    ensureDir(path.dirname(statePath));
+    fs.writeFileSync(statePath, JSON.stringify(tuneRecord, null, 2) + '\n');
+  } catch { /* non-critical */ }
+
+  return {
+    currentThreshold,
+    recommendedThreshold: recommended,
+    denyRate: Math.round(denyRate * 10000) / 100,
+    applied: recommended !== currentThreshold,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -162,9 +306,13 @@ module.exports = {
   auditToFeedback,
   readAuditLog,
   auditStats,
+  skillAdherence,
+  evaluateSelfHealTrigger,
+  tuneCacheThreshold,
   getAuditLogPath,
   sanitizeToolInput,
   AUDIT_LOG_FILENAME,
+  CACHE_TUNE_STATE_FILENAME,
 };
 
 // ---------------------------------------------------------------------------
@@ -175,10 +323,18 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   if (args.includes('--stats')) {
     console.log(JSON.stringify(auditStats(), null, 2));
+  } else if (args.includes('--adherence')) {
+    console.log(JSON.stringify(skillAdherence(), null, 2));
+  } else if (args.includes('--self-heal')) {
+    console.log(JSON.stringify(evaluateSelfHealTrigger(), null, 2));
+  } else if (args.includes('--tune-cache')) {
+    console.log(JSON.stringify(tuneCacheThreshold(), null, 2));
   } else {
     const entries = readAuditLog();
+    const adherence = skillAdherence();
     console.log(`Audit trail: ${entries.length} entries`);
     const stats = auditStats();
     console.log(`  allow: ${stats.allow}  warn: ${stats.warn}  deny: ${stats.deny}`);
+    console.log(`  skill adherence: ${adherence.overall}% across ${adherence.totalTools} tools`);
   }
 }
