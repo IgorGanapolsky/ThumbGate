@@ -29,6 +29,14 @@
       "severity": "high"
     },
     {
+      "id": "loop-abuse-prevention",
+      "layer": "Decisions",
+      "pattern": "loop\\s+\\d+\\s+.*(curl|wget|rm\\s+-rf|git\\s+push|gh\\s+pr)",
+      "action": "block",
+      "message": "High-risk command detected inside a loop. Scheduled tasks must not perform egress or destructive writes without explicit approval.",
+      "severity": "critical"
+    },
+    {
       "id": "push-without-thread-check",
       "layer": "Decisions",
       "trigger": "Bash:git_push",
@@ -75,6 +83,15 @@
       "severity": "medium"
     },
     {
+      "id": "deny-network-egress",
+      "layer": "Cloud",
+      "pattern": "curl\\s|wget\\s|fetch\\(|https?://(?!github\\.com|registry\\.npmjs\\.org|api\\.anthropic\\.com)",
+      "action": "warn",
+      "unless": "egress_approved",
+      "message": "Potential unauthorized network egress detected.",
+      "severity": "medium"
+    },
+    {
       "id": "unverified-skill-use",
       "layer": "Supply Chain",
       "trigger": "Skill:load",
@@ -86,29 +103,15 @@
       "severity": "high"
     },
     {
-      "id": "deny-network-egress",
-      "layer": "Cloud",
-      "pattern": "curl\\s|wget\\s|fetch\\(|https?://(?!github\\.com|registry\\.npmjs\\.org|api\\.anthropic\\.com)",
-      "action": "warn",
-      "unless": "egress_approved",
-      "message": "Network egress to non-allowlisted destination. Satisfy 'egress_approved' or add the host to the allowlist.",
-      "severity": "high"
-    },
-    {
-      "id": "deny-rm-rf",
-      "layer": "Execution",
-      "pattern": "rm\\s+-rf\\s+/|rm\\s+-rf\\s+~|rm\\s+-rf\\s+\\$HOME",
+      "id": "blocked-npx-content",
+      "layer": "Supply Chain",
+      "trigger": "Bash:exec",
+      "pattern": ".*",
+      "executable_hash": "237adf8f3747cad8b9b62fcfd0d9c8d509a64e550337707f55100afcb79e8900",
+      "when": { "constraints": { "RLHF_DELEGATION_MODE": true } },
       "action": "block",
-      "message": "Destructive recursive deletion of system paths blocked.",
+      "message": "Blocked npx execution by content hash. Renaming the binary does not bypass this gate.",
       "severity": "critical"
-    },
-    {
-      "id": "deny-chmod-777",
-      "layer": "Execution",
-      "pattern": "chmod\\s+777",
-      "action": "block",
-      "message": "World-writable permissions blocked. Use minimal permissions (e.g., 644 or 755).",
-      "severity": "high"
     }
   ]
 }

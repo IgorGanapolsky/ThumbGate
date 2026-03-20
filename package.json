@@ -86,7 +86,9 @@
     "prove:adapters": "node --test tests/prove-adapters.test.js",
     "prove:automation": "node --test tests/prove-automation.test.js",
     "prove:workflow-contract": "node --test tests/prove-workflow-contract.test.js",
-    "prove:autoresearch": "node scripts/prove-autoresearch.js"
+    "prove:autoresearch": "node scripts/prove-autoresearch.js",
+    "audit:stats": "node scripts/audit-trail.js --stats",
+    "profile:route": "node scripts/profile-router.js"
   },
   "keywords": [
     "rlhf",

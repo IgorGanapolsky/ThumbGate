@@ -3,8 +3,38 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const { execSync } = require('child_process');
 
 const { isProTier, FREE_TIER_MAX_GATES } = require('./rate-limiter');
+
+/**
+ * Computes the SHA-256 hash of an executable binary to prevent path-based bypasses.
+ * (Layer 5: Supply Chain / Layer 3: Execution)
+ */
+function computeExecutableHash(command) {
+  try {
+    if (!command) return null;
+    const firstWord = command.trim().split(/\s+/)[0];
+    if (!firstWord) return null;
+
+    // Resolve absolute path using 'which'
+    let fullPath;
+    try {
+      fullPath = execSync(`which ${firstWord}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    } catch (e) {
+      // If 'which' fails, it might be an absolute path or a non-existent command
+      fullPath = path.isAbsolute(firstWord) ? firstWord : null;
+    }
+    
+    if (!fullPath || !fs.existsSync(fullPath) || !fs.lstatSync(fullPath).isFile()) return null;
+
+    const buffer = fs.readFileSync(fullPath);
+    return crypto.createHash('sha256').update(buffer).digest('hex');
+  } catch (e) {
+    return null;
+  }
+}
 const {
   scanHookInput,
   buildSafeSummary,
@@ -160,12 +190,23 @@ function checkWhenClause(when, constraints) {
 function matchesGate(gate, _toolName, toolInput) {
   // Build the text to match against: for Bash it's the command, for Edit it's the file path
   const text = toolInput.command || toolInput.file_path || toolInput.path || '';
+  
+  // 1. Check Regex Pattern
   try {
     const regex = new RegExp(gate.pattern);
-    return regex.test(text);
+    if (!regex.test(text)) return false;
   } catch {
     return false;
   }
+
+  // 2. Check Executable Hash (New: Layer 5 Anti-Bypass)
+  // If a hash is specified, we must verify the content of the binary
+  if (gate.executable_hash && toolInput.command) {
+    const actualHash = computeExecutableHash(toolInput.command);
+    if (actualHash !== gate.executable_hash) return false;
+  }
+
+  return true;
 }
 
 async function checkMetricCondition(metricCondition) {
@@ -463,6 +504,7 @@ module.exports = {
   matchesGate,
   evaluateGates,
   evaluateGatesAsync,
+  computeExecutableHash,
   formatOutput,
   run,
   runAsync,
