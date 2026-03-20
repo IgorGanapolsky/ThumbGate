@@ -42,6 +42,15 @@ const CONFIG = {
   },
   get LOCAL_CHECKOUT_SESSIONS_PATH() {
     return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'local-checkout-sessions.json');
+  },
+  CREDIT_PACKS: {
+    'mistake-free-starter': {
+      id: 'mistake-free-starter',
+      name: 'Mistake-Free Starter Pack',
+      amountCents: 4900,
+      credits: 500,
+      currency: 'USD',
+    }
   }
 };
 
@@ -1626,14 +1635,21 @@ function saveKeyStore(store) {
 // Core Exports
 // ---------------------------------------------------------------------------
 
-async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, metadata = {} } = {}) {
+async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, packId = null, metadata = {} } = {}) {
   const resolvedTraceId = traceId || metadata.traceId || createTraceId('checkout');
   const checkoutMetadata = sanitizeMetadata({ ...metadata, installId: installId || 'unknown', traceId: resolvedTraceId });
 
   if (LOCAL_MODE()) {
     const localSessionId = `test_session_${crypto.randomBytes(8).toString('hex')}`;
     const store = loadLocalCheckoutSessions();
-    store.sessions[localSessionId] = { id: localSessionId, customer: `local_cus_${crypto.randomBytes(4).toString('hex')}`, metadata: checkoutMetadata, payment_status: 'paid', status: 'complete' };
+    const pack = packId ? CONFIG.CREDIT_PACKS[packId] : null;
+    store.sessions[localSessionId] = {
+      id: localSessionId,
+      customer: `local_cus_${crypto.randomBytes(4).toString('hex')}`,
+      metadata: { ...checkoutMetadata, packId: pack ? pack.id : null, credits: pack ? pack.credits : null },
+      payment_status: 'paid',
+      status: 'complete'
+    };
     saveLocalCheckoutSessions(store);
 
     appendFunnelEvent({
@@ -1642,7 +1658,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
       installId,
       traceId: resolvedTraceId,
       evidence: 'local_mode_manual',
-      metadata: checkoutMetadata,
+      metadata: { ...checkoutMetadata, packId: pack ? pack.id : null },
     });
     return { sessionId: localSessionId, url: null, localMode: true, traceId: resolvedTraceId, metadata: checkoutMetadata };
   }
@@ -1653,6 +1669,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     cancelUrl,
     customerEmail,
     checkoutMetadata,
+    packId,
   });
   const session = await stripe.checkout.sessions.create(sessionPayload);
 
@@ -1662,20 +1679,37 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     installId,
     traceId: resolvedTraceId,
     evidence: session.id,
-    metadata: checkoutMetadata,
+    metadata: { ...checkoutMetadata, packId },
   });
   return { sessionId: session.id, url: session.url, localMode: false, traceId: resolvedTraceId, metadata: checkoutMetadata };
 }
 
-function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata } = {}) {
+function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null } = {}) {
+  const pack = packId ? CONFIG.CREDIT_PACKS[packId] : null;
+  const lineItems = pack
+    ? [{
+        price_data: {
+          currency: pack.currency.toLowerCase(),
+          product_data: { name: pack.name },
+          unit_amount: pack.amountCents,
+        },
+        quantity: 1,
+      }]
+    : [{ price: CONFIG.STRIPE_PRICE_ID, quantity: 1 }];
+
   const sessionPayload = {
     success_url: successUrl,
     cancel_url: cancelUrl,
     payment_method_types: ['card', 'link'],
-    mode: 'payment',
-    line_items: [{ price: CONFIG.STRIPE_PRICE_ID, quantity: 1 }],
-    metadata: serializeStripeMetadata(checkoutMetadata),
+    mode: pack ? 'payment' : 'subscription',
+    line_items: lineItems,
+    metadata: serializeStripeMetadata({
+      ...checkoutMetadata,
+      packId: pack ? pack.id : null,
+      credits: pack ? pack.credits : null,
+    }),
   };
+
   const normalizedCustomerEmail = normalizeText(customerEmail);
   if (normalizedCustomerEmail) {
     sessionPayload.customer_email = normalizedCustomerEmail;
@@ -1688,7 +1722,11 @@ async function getCheckoutSessionStatus(sessionId) {
     const store = loadLocalCheckoutSessions();
     const session = store.sessions[sessionId];
     if (!session) return { found: false };
-    const provisioned = provisionApiKey(session.customer, { installId: session.metadata?.installId, source: 'local_checkout_lookup' });
+    const provisioned = provisionApiKey(session.customer, {
+      installId: session.metadata?.installId,
+      credits: session.metadata?.credits,
+      source: 'local_checkout_lookup'
+    });
     return {
       found: true,
       localMode: true,
@@ -1704,10 +1742,11 @@ async function getCheckoutSessionStatus(sessionId) {
       visitorSessionId: session.metadata?.sessionId || null,
       ctaId: session.metadata?.ctaId || null,
       ctaPlacement: session.metadata?.ctaPlacement || null,
-      planId: session.metadata?.planId || null,
+      planId: session.metadata?.planId || session.metadata?.packId || null,
       landingPath: session.metadata?.landingPath || null,
       referrerHost: session.metadata?.referrerHost || null,
       apiKey: provisioned.key,
+      remainingCredits: provisioned.remainingCredits,
     };
   }
 
@@ -1720,7 +1759,8 @@ async function getCheckoutSessionStatus(sessionId) {
     if (!isPaid) return { found: true, localMode: false, sessionId, paid: false, paymentStatus: session.payment_status, status: session.status };
 
     const installId = session.metadata?.installId || null;
-    const provisioned = provisionApiKey(session.customer, { installId, source: 'stripe_checkout_session_lookup' });
+    const credits = session.metadata?.credits ? parseInt(session.metadata.credits, 10) : null;
+    const provisioned = provisionApiKey(session.customer, { installId, credits, source: 'stripe_checkout_session_lookup' });
 
     return {
       found: true,
@@ -1737,10 +1777,11 @@ async function getCheckoutSessionStatus(sessionId) {
       visitorSessionId: session.metadata?.sessionId || null,
       ctaId: session.metadata?.ctaId || null,
       ctaPlacement: session.metadata?.ctaPlacement || null,
-      planId: session.metadata?.planId || null,
+      planId: session.metadata?.planId || session.metadata?.packId || null,
       landingPath: session.metadata?.landingPath || null,
       referrerHost: session.metadata?.referrerHost || null,
       apiKey: provisioned.key,
+      remainingCredits: provisioned.remainingCredits,
     };
   } catch {
     return { found: false };
@@ -1752,16 +1793,32 @@ function provisionApiKey(customerId, opts = {}) {
   const store = loadKeyStore();
   const existing = Object.entries(store.keys).find(([, m]) => m.customerId === customerId && m.active);
 
+  const creditsToAdd = normalizeInteger(opts.credits);
+
   if (existing) {
-    if (opts.installId && !existing[1].installId) { existing[1].installId = opts.installId; saveKeyStore(store); }
-    return { key: existing[0], customerId, createdAt: existing[1].createdAt, installId: existing[1].installId || null, reused: true };
+    const key = existing[0];
+    const meta = existing[1];
+    if (opts.installId && !meta.installId) { meta.installId = opts.installId; }
+    if (creditsToAdd !== null) {
+      meta.remainingCredits = (meta.remainingCredits || 0) + creditsToAdd;
+    }
+    saveKeyStore(store);
+    return { key, customerId, createdAt: meta.createdAt, installId: meta.installId || null, reused: true, remainingCredits: meta.remainingCredits };
   }
 
   const key = `rlhf_${crypto.randomBytes(16).toString('hex')}`;
   const createdAt = new Date().toISOString();
-  store.keys[key] = { customerId, active: true, usageCount: 0, createdAt, installId: opts.installId || null, source: opts.source || 'provision' };
+  store.keys[key] = {
+    customerId,
+    active: true,
+    usageCount: 0,
+    createdAt,
+    installId: opts.installId || null,
+    source: opts.source || 'provision',
+    remainingCredits: creditsToAdd // null means unlimited (standard subscription)
+  };
   saveKeyStore(store);
-  return { key, customerId, createdAt, installId: opts.installId || null };
+  return { key, customerId, createdAt, installId: opts.installId || null, remainingCredits: creditsToAdd };
 }
 
 function rotateApiKey(oldKey) {
@@ -1773,7 +1830,16 @@ function rotateApiKey(oldKey) {
   meta.active = false;
   meta.disabledAt = new Date().toISOString();
   const newKey = `rlhf_${crypto.randomBytes(16).toString('hex')}`;
-  store.keys[newKey] = { customerId: meta.customerId, active: true, usageCount: 0, createdAt: new Date().toISOString(), installId: meta.installId, source: 'rotation', replacedKey: oldKey };
+  store.keys[newKey] = {
+    customerId: meta.customerId,
+    active: true,
+    usageCount: 0,
+    createdAt: new Date().toISOString(),
+    installId: meta.installId,
+    source: 'rotation',
+    replacedKey: oldKey,
+    remainingCredits: meta.remainingCredits
+  };
   saveKeyStore(store);
   return { rotated: true, key: newKey, oldKey };
 }
@@ -1783,6 +1849,12 @@ function validateApiKey(key) {
   const store = loadKeyStore();
   const meta = store.keys[key];
   if (!meta || !meta.active) return { valid: false };
+
+  // Check if credits are exhausted
+  if (meta.remainingCredits !== undefined && meta.remainingCredits !== null && meta.remainingCredits <= 0) {
+    return { valid: false, reason: 'credits_exhausted' };
+  }
+
   return {
     valid: true,
     customerId: meta.customerId,
@@ -1799,9 +1871,15 @@ function recordUsage(key) {
   if (meta && meta.active) {
     const oldVal = meta.usageCount || 0;
     meta.usageCount = oldVal + 1;
+
+    // Decrement credits if applicable
+    if (meta.remainingCredits !== undefined && meta.remainingCredits !== null) {
+      meta.remainingCredits = Math.max(0, meta.remainingCredits - 1);
+    }
+
     if (oldVal === 0) appendFunnelEvent({ stage: 'activation', event: 'api_key_first_usage', installId: meta.installId, evidence: key, metadata: { customerId: meta.customerId } });
     saveKeyStore(store);
-    return { recorded: true, usageCount: meta.usageCount };
+    return { recorded: true, usageCount: meta.usageCount, remainingCredits: meta.remainingCredits };
   }
   return { recorded: false };
 }
@@ -1861,8 +1939,15 @@ async function handleWebhook(rawBody, signature) {
       const customerId = session.customer;
       const installId = session.metadata?.installId;
       const traceId = session.metadata?.traceId || null;
+      const credits = session.metadata?.credits ? parseInt(session.metadata.credits, 10) : null;
+      const packId = session.metadata?.packId || null;
+
       const attribution = extractAttribution(session.metadata);
-      const result = provisionApiKey(customerId, { installId, source: 'stripe_webhook_checkout_completed' });
+      const result = provisionApiKey(customerId, {
+        installId,
+        credits,
+        source: 'stripe_webhook_checkout_completed'
+      });
       const funnelRecord = {
         stage: 'paid',
         event: 'stripe_checkout_completed',
@@ -1871,6 +1956,7 @@ async function handleWebhook(rawBody, signature) {
           customerId,
           sessionId: session.id,
           traceId,
+          packId,
           ...extractJourneyFields(session.metadata),
           ...attribution,
         },
@@ -1896,6 +1982,7 @@ async function handleWebhook(rawBody, signature) {
           sessionId: session.id,
           mode: session.mode || null,
           paymentStatus: session.payment_status || null,
+          packId,
         },
       };
       if (!hasRevenueEventMatch(loadRevenueLedger(), revenueRecord)) {
@@ -2052,7 +2139,7 @@ function handleGithubWebhook(event) {
 }
 
 module.exports = {
-  createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,

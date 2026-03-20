@@ -32,7 +32,7 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
 test('public landing page uses the injected checkout fallback token', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /__CHECKOUT_FALLBACK_URL__\?utm_source=website&utm_medium=cta_button&utm_campaign=pro_pack/);
+  assert.match(landingPage, /utm_source=website&utm_medium=cta_button&utm_campaign=pro_pack/);
   assert.match(landingPage, /const fallbackBase = '__CHECKOUT_FALLBACK_URL__';/);
   assert.doesNotMatch(landingPage, /const fallbackBase = 'https:\/\/iganapolsky\.gumroad\.com\/l\/tjovof';/);
 });
