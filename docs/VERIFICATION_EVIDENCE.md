@@ -1,3 +1,51 @@
+## March 20, 2026: Railway rollout verification wait-budget hardening
+
+Scope:
+
+- Removed `--detach` from the Railway deploy commands in `.github/workflows/ci.yml` and `.github/workflows/deploy-railway.yml` so GitHub Actions waits for the Railway build stream instead of queueing a deploy and immediately polling the old live app.
+- Increased the health-verification wait budget from `8` attempts to `12` in CI and to `18` in the main deploy workflow so rollout activation has enough time to promote the new build before the SHA check fails.
+- Added regression coverage in `tests/deployment.test.js` to lock the workflow contract: no detached Railway deploys, stamped build metadata, and a longer SHA-verification budget.
+- Verified the root cause against production: merge commit `ebd5189d290b73c24b6b9cdc9f5181042e225171` eventually reached Railway successfully even though workflow run `23355558359` failed early while `/health` still reported the previous build SHA.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-railway-verifier-wait`:
+
+```bash
+npm ci
+node --test tests/deployment.test.js
+npm test
+npm run test:coverage
+tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+npm run self-heal:check
+git diff --check
+gh run view 23355558359 --repo IgorGanapolsky/mcp-memory-gateway --log-failed
+curl -sS https://rlhf-feedback-loop-production.up.railway.app/health
+sleep 90 && curl -sS https://rlhf-feedback-loop-production.up.railway.app/health
+```
+
+Observed result:
+
+- `npm ci` exited `0`.
+- `node --test tests/deployment.test.js` exited `0`: `14` passed, `0` failed.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with all-files coverage at `89.68` lines, `75.72` branches, and `93.16` functions.
+- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `git diff --check` exited `0`.
+- Root-cause evidence from GitHub Actions run `23355558359`:
+  - the deploy step stamped `config/build-metadata.json` with `ebd5189d290b73c24b6b9cdc9f5181042e225171`;
+  - the Railway deploy queued successfully and returned build logs for deployment `f5e4a9ab-92a5-41b9-9537-8862d529c4c3`;
+  - the health verifier then polled the live app too early and saw the still-healthy previous build `93daccdd7f5ac7efa3bf53e75d90b854976cb337` for all `8/8` attempts.
+- Live production proof after the failed workflow showed the new build did eventually promote:
+  - immediate `/health`: `buildSha: 93daccdd7f5ac7efa3bf53e75d90b854976cb337`
+  - after ~90 seconds: `buildSha: ebd5189d290b73c24b6b9cdc9f5181042e225171`
+
+Requirements verified:
+
+- The broken `main` signal was a false-negative workflow verifier, not a failure of the immutable build-metadata implementation or the Railway rollout itself.
+- The workflow repair is low debt: it removes premature detachment, increases the rollout wait budget, and locks the contract with tests instead of adding ad hoc manual retries.
+
 ## March 20, 2026: Immutable Railway build identity and Smithery capability scan hardening
 
 Scope:

@@ -180,7 +180,20 @@ test('CI Railway deploy is gated by explicit repo configuration', () => {
   assert.match(workflow, /STRIPE_WEBHOOK_SECRET_ROTATED_AT/);
   assert.match(workflow, /railway up/);
   assert.match(workflow, /--ci/);
+  assert.doesNotMatch(workflow, /--detach/);
   assert.match(workflow, /--project "\$RAILWAY_PROJECT_ID"/);
   assert.match(workflow, /--environment "\$RAILWAY_ENVIRONMENT_ID"/);
   assert.doesNotMatch(workflow, /https:\/\/rlhf-feedback-loop-710216278770\.us-central1\.run\.app\/health/);
+});
+
+test('Deploy to Railway workflow waits long enough to verify the promoted build SHA', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+
+  assert.match(workflow, /Stamp immutable build metadata/);
+  assert.match(workflow, /node scripts\/build-metadata\.js --sha "\$GITHUB_SHA" --output config\/build-metadata\.json/);
+  assert.match(workflow, /railway up --ci --project "\$RAILWAY_PROJECT_ID" --environment "\$RAILWAY_ENVIRONMENT_ID"/);
+  assert.doesNotMatch(workflow, /--detach/);
+  assert.match(workflow, /MAX_ATTEMPTS=18/);
+  assert.match(workflow, /Observed build SHA/);
+  assert.match(workflow, /Expected build SHA/);
 });

@@ -75,11 +75,11 @@ jobs:
           if [ -n "$RAILWAY_SERVICE" ]; then
             SERVICE_ARGS+=(--service "$RAILWAY_SERVICE")
           fi
-          railway up --ci --detach --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT_ID" "${SERVICE_ARGS[@]}"
+          railway up --ci --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT_ID" "${SERVICE_ARGS[@]}"
       - name: Verify deployment health
         if: steps.railway-config.outputs.enabled == 'true'
         run: |
-          MAX_ATTEMPTS=8
+          MAX_ATTEMPTS=18
           SLEEP_SECONDS=10
           STATUS=""
           RESPONSE_FILE="$(mktemp)"
