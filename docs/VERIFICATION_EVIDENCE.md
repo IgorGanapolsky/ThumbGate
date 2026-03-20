@@ -1516,6 +1516,49 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-20 Railway deploy workflow deduplication and SHA-verification hardening
+
+Scope:
+
+- Removed the duplicate Railway deploy job from `.github/workflows/ci.yml` so `main` no longer triggers two concurrent deploy lanes.
+- Kept `.github/workflows/deploy-railway.yml` as the single authoritative Railway deploy workflow.
+- Preserved the dedicated deploy workflow's `18`-attempt SHA verification budget from `main` instead of reintroducing a stale forked verifier contract.
+- Added workflow regression coverage so CI stays test-only and the dedicated deploy workflow keeps the Railway-specific logic.
+
+Problem verified before the fix:
+
+- PR `#287` merged as commit `df5f93d`, but Railway kept serving the previous build SHA `93daccd` for the full `8 x 10s` verification window.
+- Failed deploy run `23354231413` died in `Verify deployment health`, not in `railway up`.
+- The same merge SHA still passed `CI`, `CodeQL`, and `Publish to NPM`, which isolated the issue to deployment orchestration rather than application correctness.
+
+Commands run:
+
+```bash
+node --test tests/deployment.test.js
+npm test
+npm run test:coverage
+RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+RLHF_AUTOMATION_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed results:
+
+- `node --test tests/deployment.test.js` exited `0`: `15/15` pass.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with all-files coverage at `89.69%` statements, `75.76%` branches, and `93.14%` functions.
+- `npm run prove:adapters` exited `0`: `48/48` pass.
+- `npm run prove:automation` exited `0`: `55/55` pass.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `git diff --check` exited `0`.
+
+Artifacts updated:
+
+- `.github/workflows/ci.yml`
+- `docs/VERIFICATION_EVIDENCE.md`
+- `tests/deployment.test.js`
+
 ## 2026-03-20 Smithery Capability Metadata Fix
 
 Scope:

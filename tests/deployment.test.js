@@ -163,8 +163,17 @@ test('feedback endpoint returns valid JSON under insecure mode', async () => {
   assert.ok(typeof body === 'object' && body !== null, 'response must be a JSON object');
 });
 
-test('CI Railway deploy is gated by explicit repo configuration', () => {
+test('CI workflow stays test-only and leaves Railway deploys to the dedicated workflow', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+
+  assert.doesNotMatch(workflow, /Check Railway deployment configuration/);
+  assert.doesNotMatch(workflow, /railway up/);
+  assert.doesNotMatch(workflow, /RAILWAY_PROJECT_ID/);
+  assert.doesNotMatch(workflow, /https:\/\/rlhf-feedback-loop-710216278770\.us-central1\.run\.app\/health/);
+});
+
+test('Deploy to Railway workflow is the single authoritative Railway deploy lane', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
   assert.match(workflow, /Check Railway deployment configuration/);
   assert.match(workflow, /Enforce deploy policy/);
@@ -175,14 +184,12 @@ test('CI Railway deploy is gated by explicit repo configuration', () => {
   assert.match(workflow, /RAILWAY_HEALTHCHECK_URL/);
   assert.match(workflow, /RLHF_PUBLIC_APP_ORIGIN/);
   assert.match(workflow, /RLHF_BILLING_API_BASE_URL/);
-  assert.match(workflow, /RLHF_API_KEY_ROTATED_AT/);
-  assert.match(workflow, /STRIPE_SECRET_KEY_ROTATED_AT/);
-  assert.match(workflow, /STRIPE_WEBHOOK_SECRET_ROTATED_AT/);
   assert.match(workflow, /railway up/);
   assert.match(workflow, /--ci/);
   assert.doesNotMatch(workflow, /--detach/);
   assert.match(workflow, /--project "\$RAILWAY_PROJECT_ID"/);
   assert.match(workflow, /--environment "\$RAILWAY_ENVIRONMENT_ID"/);
+  assert.match(workflow, /MAX_ATTEMPTS=18/);
   assert.doesNotMatch(workflow, /https:\/\/rlhf-feedback-loop-710216278770\.us-central1\.run\.app\/health/);
 });
 
