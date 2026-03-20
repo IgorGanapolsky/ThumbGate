@@ -15,15 +15,15 @@ Usage:
     python train_from_feedback.py --dpo-train          # DPO batch optimization (Feb 2026)
     python train_from_feedback.py --config config.json # Use custom categories
 
-LOCAL ONLY - Do not commit to repository
+This script only reads and writes local feedback artifacts under .claude/memory/feedback.
+Those runtime outputs are git-ignored even though this utility is intentionally versioned.
 """
 
-import sys
 import json
 import math
 import random
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 
@@ -85,6 +85,20 @@ HALF_LIFE_DAYS = 7.0
 USE_EXPONENTIAL_DECAY = True  # Toggle between step and exponential
 
 
+def ensure_category(model: Dict[str, Any], category_name: str) -> None:
+    """Ensure a category exists with uniform Beta priors."""
+    categories = model.setdefault("categories", {})
+    if category_name in categories:
+        return
+
+    categories[category_name] = {
+        "alpha": 1.0,
+        "beta": 1.0,
+        "samples": 0,
+        "last_updated": None,
+    }
+
+
 def load_config(config_path: Optional[str]) -> Dict:
     """Load category configuration from file or use defaults."""
     if config_path:
@@ -114,12 +128,7 @@ def create_initial_model(categories: Dict) -> Dict:
         "categories": {},
     }
     for cat_name in categories:
-        model["categories"][cat_name] = {
-            "alpha": 1.0,   # Prior successes + 1
-            "beta": 1.0,    # Prior failures + 1
-            "samples": 0,
-            "last_updated": None,
-        }
+        ensure_category(model, cat_name)
     return model
 
 
@@ -227,10 +236,7 @@ def train_full(categories: Dict) -> Dict:
     model["total_entries"] = len(entries)
 
     # Ensure uncategorized exists
-    if "uncategorized" not in model["categories"]:
-        model["categories"]["uncategorized"] = {
-            "alpha": 1.0, "beta": 1.0, "samples": 0, "last_updated": None
-        }
+    ensure_category(model, "uncategorized")
 
     for entry in entries:
         weight = time_decay_weight(entry.get("timestamp", ""))
@@ -238,10 +244,7 @@ def train_full(categories: Dict) -> Dict:
         positive = is_positive(entry)
 
         for cat in cats:
-            if cat not in model["categories"]:
-                model["categories"][cat] = {
-                    "alpha": 1.0, "beta": 1.0, "samples": 0, "last_updated": None
-                }
+            ensure_category(model, cat)
 
             if positive:
                 model["categories"][cat]["alpha"] += weight
@@ -265,14 +268,8 @@ def train_incremental(categories: Dict) -> Dict:
 
     # Ensure all categories exist
     for cat_name in categories:
-        if cat_name not in model["categories"]:
-            model["categories"][cat_name] = {
-                "alpha": 1.0, "beta": 1.0, "samples": 0, "last_updated": None
-            }
-    if "uncategorized" not in model["categories"]:
-        model["categories"]["uncategorized"] = {
-            "alpha": 1.0, "beta": 1.0, "samples": 0, "last_updated": None
-        }
+        ensure_category(model, cat_name)
+    ensure_category(model, "uncategorized")
 
     latest = entries[-1]
     weight = time_decay_weight(latest.get("timestamp", ""))
@@ -280,10 +277,7 @@ def train_incremental(categories: Dict) -> Dict:
     positive = is_positive(latest)
 
     for cat in cats:
-        if cat not in model["categories"]:
-            model["categories"][cat] = {
-                "alpha": 1.0, "beta": 1.0, "samples": 0, "last_updated": None
-            }
+        ensure_category(model, cat)
 
         if positive:
             model["categories"][cat]["alpha"] += weight

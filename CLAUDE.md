@@ -43,6 +43,7 @@ capture explicit feedback, convert valid memories, prevent repeated failures, an
 ## PR and CI Protocol
 
 - Review open PRs first. Merge only after required CI passes and there are no actionable review comments.
+- Pending CI checks and `REVIEW_REQUIRED` are blockers, not mergeable states; do not admin-merge around them.
 - After merging, verify the `main` branch CI run on the exact merge commit before reporting completion.
 - Delete disposable worktrees and stale merged local branches after merge.
 - If a closed-unmerged branch still has unique commits, archive it before deletion instead of silently discarding it.
