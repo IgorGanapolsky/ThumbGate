@@ -47,6 +47,10 @@ const MCP_PROFILE_TIERS = {
     tier: 'review',
     description: 'Read-heavy review mode with no context-pack or memory writes.',
   },
+  dispatch: {
+    tier: 'dispatch',
+    description: 'Phone-safe remote ops mode for metrics, diagnostics, planning, and recall without writes or handoffs.',
+  },
   locked: {
     tier: 'locked',
     description: 'Minimal planning-only profile for constrained environments.',
@@ -131,6 +135,8 @@ function summarizePermissionTier(profileName = getActiveMcpProfile()) {
     ready: profileName !== 'locked',
     recommendation: profileName === 'locked'
       ? 'Use readonly for review or default for active coding workflows that need memory and context writes.'
+      : profileName === 'dispatch'
+        ? 'Dispatch is safe for remote metrics, planning, and diagnosis. Switch to default in a dedicated worktree before making code or memory changes.'
       : profileName === 'readonly'
         ? 'Readonly is safe for analysis, but switch to default when you want the system to persist lessons or build context packs.'
         : 'Permission tier is sufficient for active workflows.',

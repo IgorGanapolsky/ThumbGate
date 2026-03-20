@@ -11,16 +11,23 @@ const {
 test('loads mcp policy and profiles', () => {
   const policy = loadMcpPolicy();
   assert.ok(policy.profiles.default);
+  assert.ok(policy.profiles.dispatch);
   assert.ok(policy.profiles.locked);
 });
 
 test('profile allowlists differentiate permissions', () => {
   const defaultTools = getAllowedTools('default');
+  const dispatchTools = getAllowedTools('dispatch');
   const lockedTools = getAllowedTools('locked');
   assert.ok(defaultTools.length > lockedTools.length);
+  assert.ok(dispatchTools.length > lockedTools.length);
+  assert.ok(defaultTools.length > dispatchTools.length);
   assert.ok(isToolAllowed('feedback_summary', 'locked'));
   assert.equal(isToolAllowed('capture_feedback', 'locked'), false);
   assert.ok(isToolAllowed('plan_intent', 'locked'));
+  assert.ok(isToolAllowed('dashboard', 'dispatch'));
+  assert.equal(isToolAllowed('capture_feedback', 'dispatch'), false);
+  assert.equal(isToolAllowed('start_handoff', 'dispatch'), false);
 });
 
 test('assertToolAllowed throws for denied tools', () => {

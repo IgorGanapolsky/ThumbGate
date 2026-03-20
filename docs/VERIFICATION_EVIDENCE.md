@@ -1511,6 +1511,52 @@ Artifacts updated:
 - `src/api/server.js`
 - `tests/api-server.test.js`
 
+## 2026-03-20 Dispatch-Safe Remote Ops Verification
+
+Scope:
+
+- Added a least-privilege `dispatch` MCP profile for remote review, recall, planning, diagnostics, and metrics.
+- Blocked handoff and write workflows when `RLHF_MCP_PROFILE=dispatch`.
+- Added a `dispatch` CLI brief so paired-device operators can get a phone-safe operational snapshot without opening write-capable surfaces.
+- Updated docs so Dispatch usage routes code and memory mutations back into a dedicated worktree with the `default` profile.
+
+Commands run:
+
+```bash
+npm ci
+node --test tests/mcp-policy.test.js tests/agent-readiness.test.js tests/delegation-runtime.test.js tests/dispatch-brief.test.js tests/cli.test.js
+npm run test:cli
+npm test
+npm run test:coverage
+RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+RLHF_AUTOMATION_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- Targeted Dispatch lane tests: `55/55` pass, `0` fail.
+- `npm run test:cli`: `82/82` pass, `0` fail.
+- `npm test`: exit `0`.
+- `npm run test:coverage`: exit `0`.
+  - all files: `89.63%` statements, `75.35%` branches, `93.03%` functions.
+- `npm run prove:adapters`: `48/48` pass, `0` fail.
+- `npm run prove:automation`: `55/55` pass, `0` fail.
+- `npm run self-heal:check`: `Overall: HEALTHY`, `4/4` healthy.
+
+Behavioral proof points:
+
+- `dispatch` profile exposes metrics, diagnostics, recall, rule inspection, and planning tools while denying `capture_feedback` and `start_handoff`.
+- Permission readiness reports `dispatch` as `writeCapable: false` with explicit guidance to switch back to `default` in a dedicated worktree before edits.
+- Delegation runtime treats `dispatch` as a single-agent review profile and rejects handoff starts with a `dispatch_profile` block reason.
+- `dispatch --json` emits a remote brief with allowed tasks, blocked tasks, key metrics, and prompt templates for phone-safe usage.
+
+Artifacts updated:
+
+- `docs/guides/dispatch-ops.md`
+- `docs/guides/mcp-use-integration.md`
+- `docs/PLUGIN_DISTRIBUTION.md`
+- `docs/marketing/mcp-directories.md`
 ## 2026-03-20 Technical Debt Audit Verification
 
 Scope:

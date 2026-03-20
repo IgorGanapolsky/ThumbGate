@@ -40,6 +40,18 @@ test('summarizePermissionTier warns when locked profile is too restrictive', () 
   assert.equal(summary.writeCapable, false);
 });
 
+test('summarizePermissionTier exposes dispatch as a safe remote ops tier', () => {
+  const summary = summarizePermissionTier('dispatch');
+
+  assert.equal(summary.profile, 'dispatch');
+  assert.equal(summary.tier, 'dispatch');
+  assert.equal(summary.ready, true);
+  assert.equal(summary.writeCapable, false);
+  assert.ok(summary.allowedTools.includes('dashboard'));
+  assert.ok(summary.allowedTools.includes('get_business_metrics'));
+  assert.ok(!summary.allowedTools.includes('start_handoff'));
+});
+
 test('generateAgentReadinessReport aligns bootstrap and permission findings', () => {
   const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-bootstrap-ready-'));
   for (const fileName of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {

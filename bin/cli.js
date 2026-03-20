@@ -806,6 +806,33 @@ function pulse() {
   });
 }
 
+function dispatchBrief() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    getDispatchBrief,
+    formatDispatchBrief,
+  } = require(path.join(PKG_ROOT, 'scripts', 'dispatch-brief'));
+
+  getDispatchBrief({
+    window: args.window,
+    timeZone: args.timezone,
+    now: args.now,
+    profile: args.profile || 'dispatch',
+  })
+    .then((brief) => {
+      if (args.json) {
+        console.log(JSON.stringify(brief, null, 2));
+      } else {
+        process.stdout.write(formatDispatchBrief(brief));
+      }
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error(err && err.message ? err.message : err);
+      process.exit(1);
+    });
+}
+
 function gateStats() {
   const { calculateStats, formatStats } = require(path.join(PKG_ROOT, 'scripts', 'gate-stats'));
   const stats = calculateStats();
@@ -908,6 +935,7 @@ function help() {
   console.log('  model-fit             Detect the current local embedding profile and write evidence report');
   console.log('  risk [flags]          Train or query the boosted local risk scorer');
   console.log('  doctor                Audit runtime isolation, bootstrap context, and permission tier');
+  console.log('  dispatch              Print a Dispatch-safe remote ops brief for phone-driven review sessions');
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
   console.log('  export-databricks     Export RLHF logs + proof artifacts as a Databricks-ready analytics bundle');
   console.log('  rules                 Generate prevention rules from repeated failures');
@@ -921,6 +949,7 @@ function help() {
   console.log('  dashboard               Full RLHF dashboard — approval rate, gate stats, prevention impact');
   console.log('  funnel                  Show marketing & revenue conversion funnel analytics');
   console.log('  pulse                   Show real-time GTM velocity and Mission Control summary');
+  console.log('  dispatch                Dispatch-safe brief — metrics, gates, and read-only prompt templates');
   console.log('  gate-stats              Show gate statistics — active gates, blocks, warns, time saved');
   console.log('  start-api             Start the Memory Gateway HTTPS API server');
   console.log('  help                  Show this help message');
@@ -1037,6 +1066,10 @@ switch (COMMAND) {
     break;
   case 'pulse':
     pulse();
+    break;
+  case 'dispatch':
+  case 'dispatch-brief':
+    dispatchBrief();
     break;
   case 'gate-stats':
     gateStats();

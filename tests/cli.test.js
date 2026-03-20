@@ -425,6 +425,7 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('self-heal'), 'Help should mention self-heal');
     assert.ok(result.stdout.includes('prove'), 'Help should mention prove');
     assert.ok(result.stdout.includes('doctor'), 'Help should mention doctor');
+    assert.ok(result.stdout.includes('dispatch'), 'Help should mention dispatch');
   });
 
   test('pro command prints truthful commercial offer info', () => {
@@ -561,6 +562,61 @@ describe('bin/cli.js', () => {
     assert.equal(payload.articleAlignment.permissionEnvelope, true);
 
     fs.rmSync(doctorDir, { recursive: true, force: true });
+  });
+
+  test('dispatch --json emits a phone-safe remote ops brief', () => {
+    const isolatedDir = makeTmpDir();
+    const feedbackDir = path.join(isolatedDir, 'feedback');
+    const apiKeysPath = path.join(isolatedDir, 'api-keys.json');
+    const ledgerPath = path.join(isolatedDir, 'funnel-events.jsonl');
+    const revenuePath = path.join(isolatedDir, 'revenue-events.jsonl');
+    fs.mkdirSync(feedbackDir, { recursive: true });
+    fs.writeFileSync(apiKeysPath, JSON.stringify({ keys: {} }, null, 2));
+    fs.writeFileSync(ledgerPath, `${JSON.stringify({
+      timestamp: '2026-03-20T12:00:00.000Z',
+      stage: 'acquisition',
+      event: 'checkout_session_created',
+      visitorId: 'visitor_dispatch_1',
+      metadata: {},
+    })}\n`);
+    fs.writeFileSync(revenuePath, `${JSON.stringify({
+      timestamp: '2026-03-20T12:15:00.000Z',
+      provider: 'stripe',
+      event: 'stripe_checkout_completed',
+      status: 'paid',
+      orderId: 'cs_dispatch_1',
+      amountCents: 4900,
+      currency: 'USD',
+      amountKnown: true,
+      attribution: {},
+      metadata: {},
+    })}\n`);
+
+    const result = spawnSync(process.execPath, [CLI, 'dispatch', '--json'], {
+      encoding: 'utf8',
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        RLHF_NO_NUDGE: '1',
+        RLHF_METRICS_SOURCE: 'local',
+        RLHF_MCP_PROFILE: 'dispatch',
+        RLHF_FEEDBACK_DIR: feedbackDir,
+        _TEST_API_KEYS_PATH: apiKeysPath,
+        _TEST_FUNNEL_LEDGER_PATH: ledgerPath,
+        _TEST_REVENUE_LEDGER_PATH: revenuePath,
+      },
+    });
+
+    assert.equal(result.status, 0, `dispatch failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.profile, 'dispatch');
+    assert.equal(payload.tier, 'dispatch');
+    assert.equal(payload.writeCapable, false);
+    assert.equal(payload.metrics.bookedRevenueUsd, 49);
+    assert.ok(payload.allowedTasks.some((task) => task.tool === 'dashboard'));
+    assert.ok(payload.blockedTasks.some((task) => /handoffs/i.test(task)));
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
 
   test('cfo emits local operational billing summary JSON when hosted summary is not configured', () => {

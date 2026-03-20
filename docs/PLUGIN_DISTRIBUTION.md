@@ -89,7 +89,7 @@ Promotion and release operations are tracked in [CURSOR_PLUGIN_OPERATIONS.md](CU
 1. Set `RLHF_API_KEY` in hosted deployments.
 2. Keep `RLHF_ALLOW_EXTERNAL_PATHS` unset in production.
 3. Keep monthly spend bounded with budget guard scripts (`npm run budget:status`).
-4. Enforce MCP least-privilege with `RLHF_MCP_PROFILE` (`default`, `readonly`, `locked`).
+4. Enforce MCP least-privilege with `RLHF_MCP_PROFILE` (`default`, `essential`, `commerce`, `readonly`, `dispatch`, `locked`).
 
 ## Sales-ready evidence checklist
 

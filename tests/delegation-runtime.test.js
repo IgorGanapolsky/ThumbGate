@@ -134,6 +134,41 @@ test('evaluateDelegation never escalates readonly callers into write-capable pro
   assert.equal(evaluation.delegateProfile, 'review_workflow');
 });
 
+test('evaluateDelegation keeps dispatch sessions single-agent and blocks handoffs', () => {
+  const evaluation = evaluateDelegation({
+    delegationMode: 'auto',
+    mcpProfile: 'dispatch',
+    context: 'Review metrics and plan the next hardening sprint from the phone',
+    plan: {
+      mcpProfile: 'dispatch',
+      status: 'ready',
+      intent: {
+        id: 'improve_response_quality',
+        description: 'Improve the response with evidence and prevention rules',
+        risk: 'low',
+      },
+      context: 'Review metrics and plan the next hardening sprint from the phone',
+      actions: [
+        { kind: 'mcp_tool', name: 'dashboard' },
+        { kind: 'mcp_tool', name: 'gate_stats' },
+        { kind: 'mcp_tool', name: 'plan_intent' },
+      ],
+      partnerStrategy: {
+        recommendedChecks: ['Keep this remote review read-only'],
+      },
+      codegraphImpact: {
+        enabled: true,
+        verificationHints: ['Do not mutate the repo from Dispatch'],
+      },
+    },
+  });
+
+  assert.equal(evaluation.executionMode, 'single_agent');
+  assert.equal(evaluation.delegationEligible, false);
+  assert.equal(evaluation.reasonCode, 'dispatch_profile');
+  assert.match(evaluation.delegationReason, /remote handoffs stay disabled/i);
+});
+
 test('startHandoff blocks unresolved handoffs and active state is derived from log replay', () => {
   const plan = buildEligiblePlan();
   const started = startHandoff({

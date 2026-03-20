@@ -212,6 +212,9 @@ function getProfileCandidates(mcpProfile, hasMutation) {
   if (mcpProfile === 'readonly') {
     return hasMutation ? ['secure_runtime', 'review_workflow'] : ['review_workflow', 'secure_runtime'];
   }
+  if (mcpProfile === 'dispatch') {
+    return ['review_workflow'];
+  }
   if (mcpProfile === 'locked') {
     return ['secure_runtime'];
   }
@@ -392,6 +395,9 @@ function evaluateDelegation(params = {}) {
     if (plan.status !== 'ready') {
       reasonCode = 'checkpoint_required';
       delegationReason = 'Delegation is blocked until the required approval checkpoint is cleared.';
+    } else if (mcpProfile === 'dispatch') {
+      reasonCode = 'dispatch_profile';
+      delegationReason = 'Dispatch MCP profile may inspect plans and metrics, but remote handoffs stay disabled.';
     } else if (mcpProfile === 'locked') {
       reasonCode = 'locked_profile';
       delegationReason = 'Locked MCP profile may inspect the plan but cannot start a handoff.';
@@ -530,6 +536,21 @@ function startHandoff(params = {}) {
     repoPath: params.repoPath,
     plannedChecks: params.plannedChecks,
   });
+
+  if (String(params.mcpProfile || '').trim() === 'dispatch') {
+    persistRejectedStart({
+      taskKey: evaluation.taskKey,
+      intentId: params.plan && params.plan.intent ? params.plan.intent.id : null,
+      delegateProfile: null,
+      mcpProfile: params.mcpProfile,
+      partnerProfile: params.partnerProfile,
+      reasonCode: 'dispatch_profile',
+      reason: 'Dispatch MCP profile may not start handoffs.',
+      context: params.context,
+      repoPath: params.repoPath,
+    });
+    throw createDelegationError('Dispatch MCP profile may not start handoffs.', 403);
+  }
 
   if (String(params.mcpProfile || '').trim() === 'locked') {
     persistRejectedStart({

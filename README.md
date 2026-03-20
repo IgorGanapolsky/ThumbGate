@@ -73,6 +73,15 @@ npm run build:claude-mcpb
 
 Treat Anthropic directory inclusion as a discoverability and trust lane, not as revenue proof or partner proof.
 
+For paired phone + desktop workflows, keep Dispatch in a constrained remote-ops lane:
+
+```bash
+RLHF_MCP_PROFILE=dispatch claude mcp add rlhf -- npx -y mcp-memory-gateway serve
+npx mcp-memory-gateway dispatch
+```
+
+That profile stays read-only: metrics, gates, diagnostics, planning, and recall. Use a dedicated worktree plus `RLHF_MCP_PROFILE=default` when the task graduates into code edits or memory writes. Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md).
+
 ## Cursor Marketplace
 
 This repo now ships a submission-ready Cursor plugin bundle:
@@ -173,7 +182,7 @@ npx mcp-memory-gateway init --agent gemini
 npx mcp-memory-gateway doctor
 ```
 
-> **Profiles:** Set `RLHF_MCP_PROFILE=essential` for the lean 5-tool setup (recommended), or leave unset for the full 12-tool pipeline. See [MCP Tools](#mcp-tools) for details.
+> **Profiles:** Set `RLHF_MCP_PROFILE=essential` for the lean 6-tool setup, `RLHF_MCP_PROFILE=dispatch` for phone-safe remote ops, or leave unset for the full policy + observability surface. See [MCP Tools](#mcp-tools) for details.
 
 ## Pair It With Continuity Tools
 
@@ -281,7 +290,7 @@ npx mcp-memory-gateway dashboard
 
 ### Essential (high-ROI — start here)
 
-These 5 tools deliver ~80% of the value. Use the `essential` profile for a lean setup:
+These 6 tools deliver the fastest path to feedback, recall, and prevention. Use the `essential` profile for a lean setup:
 
 ```bash
 RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y mcp-memory-gateway serve
@@ -294,10 +303,35 @@ RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y mcp-memory-gateway serv
 | `prevention_rules` | Generate prevention rules from repeated mistakes |
 | `feedback_stats` | Approval rate, per-skill/tag breakdown, trend analysis |
 | `feedback_summary` | Human-readable recent feedback summary |
+| `estimate_uncertainty` | Bayesian uncertainty estimate for risky tags before acting |
+
+### Dispatch (remote ops, phone-safe)
+
+Use the `dispatch` profile when Claude Dispatch or another remote desktop lane needs live business metrics, failure diagnosis, and sprint planning without code or memory mutations:
+
+```bash
+RLHF_MCP_PROFILE=dispatch claude mcp add rlhf -- npx -y mcp-memory-gateway serve
+```
+
+| Tool | Description | When you need it |
+|------|-------------|------------------|
+| `recall` | Recall relevant past failures and prevention rules | Remote planning before a desk session |
+| `feedback_summary` | Summarize recent feedback and operator notes | Quick remote review |
+| `feedback_stats` | Approval trend and failure-domain summary | Health checks from the phone |
+| `diagnose_failure` | Root-cause report for blocked or failed runs | Incident triage away from the desk |
+| `list_intents` | Available workflow plans and approval requirements | Choose the next workflow safely |
+| `plan_intent` | Generate a checkpointed plan without executing it | Prepare the next worktree session |
+| `context_provenance` | Inspect recent context-pack and evidence decisions | Retrieval debugging |
+| `gate_stats` | Gate enforcement statistics | Review what Pre-Action Gates are catching |
+| `dashboard` | Full RLHF dashboard | One-command system snapshot |
+| `get_business_metrics` | Revenue, conversion, and customer metrics | Remote commercial readout |
+| `describe_semantic_entity` | Explain Customer, Revenue, or Funnel state | Metrics interpretation |
+| `get_reliability_rules` | Read active prevention rules and success patterns | Review the current rule set |
+| `describe_reliability_entity` | Alias for semantic entity definitions | Compatibility surface |
 
 ### Full pipeline (advanced)
 
-These tools support fine-tuning workflows, context engineering, and audit trails. Use the `default` profile to enable all tools:
+These highlighted tools support the broader local-first builder workflow. Use the `default` profile to enable the complete policy, context, and observability surface:
 
 | Tool | Description | When you need it |
 |------|-------------|------------------|
@@ -323,6 +357,7 @@ npx mcp-memory-gateway init --agent X    # + auto-wire PreToolUse hooks (claude-
 npx mcp-memory-gateway init --wire-hooks # Wire hooks only (auto-detect agent)
 npx mcp-memory-gateway serve             # Start MCP server (stdio) + watcher
 npx mcp-memory-gateway doctor            # Audit runtime isolation, bootstrap context, and MCP permission tier
+npx mcp-memory-gateway dispatch          # Dispatch-safe remote ops brief
 npx mcp-memory-gateway dashboard         # Full RLHF dashboard with gate stats
 npx mcp-memory-gateway north-star        # North Star progress: proof-backed workflow runs
 npx mcp-memory-gateway gate-stats        # Gate enforcement statistics

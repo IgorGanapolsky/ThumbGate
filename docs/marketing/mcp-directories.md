@@ -61,7 +61,7 @@ startCommand:
     properties:
       mcpProfile:
         type: "string"
-        description: "MCP profile to use (default, readonly, locked)"
+        description: "MCP profile to use (default, essential, commerce, readonly, dispatch, locked)"
         default: "default"
     required: []
   commandFunction:

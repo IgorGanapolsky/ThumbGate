@@ -93,6 +93,16 @@ RLHF_MCP_PROFILE=commerce npx mcp-memory-gateway serve
 
 This exposes `commerce_recall` with quality scores for: product_recommendation, brand_compliance, sizing, pricing, regulatory.
 
+## Remote review agents
+
+For paired phone + desktop review sessions, use the `dispatch` MCP profile:
+
+```bash
+RLHF_MCP_PROFILE=dispatch npx mcp-memory-gateway serve
+```
+
+This keeps the surface read-only for metrics, diagnostics, recall, planning, and dashboard access. It intentionally excludes handoffs and mutation tools.
+
 ## Links
 
 - [MCP Memory Gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)
