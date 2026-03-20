@@ -60,7 +60,7 @@ test('routeProfile auto-routes to readonly for subagent review_workflow', () => 
 });
 
 test('routeProfile defaults to essential for least privilege', () => {
-  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined }, () => {
+  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined, CI: undefined, GITHUB_EVENT_NAME: undefined }, () => {
     const result = routeProfile({});
     assert.equal(result.profile, 'essential');
     assert.equal(result.wasAutoRouted, true);
@@ -68,7 +68,7 @@ test('routeProfile defaults to essential for least privilege', () => {
 });
 
 test('routeProfile selects most restrictive profile for a known tool', () => {
-  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined }, () => {
+  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined, CI: undefined, GITHUB_EVENT_NAME: undefined }, () => {
     // 'diagnose_failure' is in locked (4 tools), readonly (14), default (31)
     // Most restrictive = locked
     const result = routeProfile({ toolName: 'diagnose_failure' });
