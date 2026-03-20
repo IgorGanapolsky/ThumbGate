@@ -328,6 +328,43 @@ components:
         sprintBriefUrl:
           type: string
           format: uri
+    WorkflowSprintAdvanceRequest:
+      type: object
+      required: [leadId, status]
+      properties:
+        leadId:
+          type: string
+        status:
+          type: string
+          enum: [new, qualified, named_pilot, proof_backed_run, paid_team]
+        actor:
+          type: string
+        note:
+          type: string
+        reviewedBy:
+          type: string
+        workflowId:
+          type: string
+        teamId:
+          type: string
+        proofArtifacts:
+          type: array
+          items:
+            type: string
+    WorkflowSprintAdvanceResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        unchanged:
+          type: boolean
+        lead:
+          type: object
+          additionalProperties: true
+        workflowRun:
+          type: object
+          nullable: true
+          additionalProperties: true
     FunnelAnalyticsResponse:
       type: object
       properties:
@@ -700,6 +737,21 @@ paths:
   /v1/dashboard:
     get:
       operationId: getDashboard
+      parameters:
+        - in: query
+          name: window
+          schema:
+            type: string
+            enum: [today, 7d, 30d, lifetime]
+        - in: query
+          name: timezone
+          schema:
+            type: string
+        - in: query
+          name: now
+          schema:
+            type: string
+            format: date-time
       responses:
         '200':
           description: Full RLHF dashboard with feedback, telemetry, funnel, and observability analytics
@@ -742,6 +794,26 @@ paths:
                 $ref: '#/components/schemas/WorkflowSprintIntakeResponse'
         '400':
           description: Invalid sprint intake request
+  /v1/intake/workflow-sprint/advance:
+    post:
+      operationId: advanceWorkflowSprintLead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowSprintAdvanceRequest'
+      responses:
+        '200':
+          description: Workflow Hardening Sprint lead advanced to the next state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowSprintAdvanceResponse'
+        '400':
+          description: Invalid sprint advancement request
+        '403':
+          description: Forbidden
   /v1/intents/catalog:
     get:
       operationId: listIntentCatalog

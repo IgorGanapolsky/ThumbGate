@@ -1172,6 +1172,97 @@ describe('bin/cli.js', () => {
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
 
+  test('north-star prefers hosted operational dashboard when configured', async () => {
+    const { startServer } = require('../src/api/server');
+    const remoteDir = makeTmpDir();
+    const remoteFeedbackDir = path.join(remoteDir, 'feedback');
+    const remoteApiKeysPath = path.join(remoteDir, 'api-keys.json');
+    const remoteFunnelPath = path.join(remoteDir, 'funnel-events.jsonl');
+    const remoteRevenuePath = path.join(remoteDir, 'revenue-events.jsonl');
+    fs.mkdirSync(remoteFeedbackDir, { recursive: true });
+    fs.writeFileSync(remoteApiKeysPath, JSON.stringify({ keys: {} }, null, 2));
+    fs.writeFileSync(remoteFunnelPath, `${JSON.stringify({
+      timestamp: '2026-03-18T12:00:00.000Z',
+      stage: 'acquisition',
+      event: 'checkout_session_created',
+      evidence: 'sess_remote_north_star',
+      traceId: 'trace_remote_north_star',
+    })}\n`);
+    fs.writeFileSync(remoteRevenuePath, `${JSON.stringify({
+      timestamp: '2026-03-18T12:05:00.000Z',
+      provider: 'stripe',
+      event: 'stripe_checkout_completed',
+      status: 'paid',
+      orderId: 'cs_remote_north_star',
+      evidence: 'cs_remote_north_star',
+      customerId: 'cus_remote_north_star',
+      traceId: 'trace_remote_north_star',
+      amountCents: 4900,
+      currency: 'USD',
+      amountKnown: true,
+      recurringInterval: null,
+      attribution: { source: 'website' },
+      metadata: {},
+    })}\n`);
+    fs.writeFileSync(path.join(remoteFeedbackDir, 'workflow-runs.jsonl'), `${JSON.stringify({
+      timestamp: new Date().toISOString(),
+      workflowId: 'remote_proof_run',
+      workflowName: 'Remote proof run',
+      owner: 'ops',
+      runtime: 'claude+mcp',
+      proofBacked: true,
+      reviewedBy: 'buyer@example.com',
+      customerType: 'named_pilot',
+      teamId: 'remote_team',
+      metadata: {
+        leadId: 'lead_remote_north_star',
+      },
+    })}\n`);
+
+    const savedEnv = {
+      RLHF_FEEDBACK_DIR: process.env.RLHF_FEEDBACK_DIR,
+      RLHF_API_KEY: process.env.RLHF_API_KEY,
+      _TEST_API_KEYS_PATH: process.env._TEST_API_KEYS_PATH,
+      _TEST_FUNNEL_LEDGER_PATH: process.env._TEST_FUNNEL_LEDGER_PATH,
+      _TEST_REVENUE_LEDGER_PATH: process.env._TEST_REVENUE_LEDGER_PATH,
+    };
+
+    process.env.RLHF_FEEDBACK_DIR = remoteFeedbackDir;
+    process.env.RLHF_API_KEY = 'remote-admin-key';
+    process.env._TEST_API_KEYS_PATH = remoteApiKeysPath;
+    process.env._TEST_FUNNEL_LEDGER_PATH = remoteFunnelPath;
+    process.env._TEST_REVENUE_LEDGER_PATH = remoteRevenuePath;
+
+    const handle = await startServer({ port: 0 });
+    try {
+      const remoteBaseUrl = `http://127.0.0.1:${handle.port}`;
+
+      const result = await runCliCommand(['north-star'], {
+        cwd: makeTmpDir(),
+        env: {
+          ...process.env,
+          RLHF_BILLING_API_BASE_URL: remoteBaseUrl,
+          RLHF_API_KEY: 'remote-admin-key',
+          RLHF_METRICS_SOURCE: 'hosted',
+        },
+      });
+
+      assert.equal(result.status, 0, `north-star failed:\n${result.stderr}`);
+      assert.match(result.stdout, /Metrics source\s*:\s*hosted/);
+      assert.match(result.stdout, /Weekly proof-backed workflow runs\s*:\s*1/);
+      assert.match(result.stdout, /Named pilot agreements\s*:\s*1/);
+      assert.match(result.stdout, /Booked revenue\s*:\s*\$49\.00/);
+    } finally {
+      await new Promise((resolve) => handle.server.close(resolve));
+      process.env.RLHF_FEEDBACK_DIR = savedEnv.RLHF_FEEDBACK_DIR;
+      process.env.RLHF_API_KEY = savedEnv.RLHF_API_KEY;
+      process.env._TEST_API_KEYS_PATH = savedEnv._TEST_API_KEYS_PATH;
+      process.env._TEST_FUNNEL_LEDGER_PATH = savedEnv._TEST_FUNNEL_LEDGER_PATH;
+      process.env._TEST_REVENUE_LEDGER_PATH = savedEnv._TEST_REVENUE_LEDGER_PATH;
+      fs.rmSync(remoteDir, { recursive: true, force: true });
+    }
+  });
+
   test('init creates .mcp.json with server entry', () => {
     const mcpPath = path.join(tmpDir, '.mcp.json');
     assert.ok(fs.existsSync(mcpPath), '.mcp.json should be created');

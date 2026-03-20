@@ -8,6 +8,7 @@ const { getBillingSummary, loadFunnelLedger, loadResolvedRevenueEvents } = requi
 const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-analytics');
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { summarizeDelegation } = require('./delegation-runtime');
+const { filterEntriesForWindow, resolveAnalyticsWindow } = require('./analytics-window');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { generateAgentReadinessReport } = require('./agent-readiness');
 const { summarizeWorkflowRuns } = require('./workflow-runs');
@@ -245,12 +246,25 @@ function countCoverage(entries, resolver) {
   return safeRate(matched, entries.length);
 }
 
-function computeAnalyticsSummary(feedbackDir) {
-  const telemetryEntries = loadTelemetryEvents(feedbackDir);
-  const telemetry = getTelemetryAnalytics(feedbackDir);
-  const billing = getBillingSummary();
-  const funnelEntries = loadFunnelLedger();
-  const paidOrderEntries = loadResolvedRevenueEvents().filter((entry) => entry && entry.status === 'paid');
+function computeAnalyticsSummary(feedbackDir, options = {}) {
+  const analyticsWindow = resolveAnalyticsWindow(options.analyticsWindow || options);
+  const telemetryEntries = filterEntriesForWindow(
+    loadTelemetryEvents(feedbackDir),
+    analyticsWindow,
+    (entry) => entry && (entry.receivedAt || entry.timestamp)
+  );
+  const telemetry = getTelemetryAnalytics(feedbackDir, analyticsWindow);
+  const billing = options.billingSummary || getBillingSummary(analyticsWindow);
+  const funnelEntries = filterEntriesForWindow(
+    loadFunnelLedger(),
+    analyticsWindow,
+    (entry) => entry && entry.timestamp
+  );
+  const paidOrderEntries = filterEntriesForWindow(
+    loadResolvedRevenueEvents(),
+    analyticsWindow,
+    (entry) => entry && entry.timestamp
+  ).filter((entry) => entry && entry.status === 'paid');
   const northStar = summarizeWorkflowRuns(feedbackDir);
   const uniqueVisitors = telemetry.visitors.uniqueVisitors;
   const ctaClicks = telemetry.ctas.totalClicks;
@@ -280,6 +294,7 @@ function computeAnalyticsSummary(feedbackDir) {
   const stitchedJourneyEntries = [...checkoutStartEntries, ...acquisitionEntries, ...paidOrderEntries];
 
   return {
+    window: telemetry.window || analyticsWindow,
     telemetry,
     funnel: {
       visitors: uniqueVisitors,
@@ -481,11 +496,13 @@ function computeInstrumentationReadiness(analytics, billing) {
 // Full dashboard data
 // ---------------------------------------------------------------------------
 
-function generateDashboard(feedbackDir) {
+function generateDashboard(feedbackDir, options = {}) {
+  const analyticsWindow = resolveAnalyticsWindow(options.analyticsWindow || options);
   const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
   const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');
   const entries = readJSONL(feedbackLogPath);
   const diagnosticEntries = readJSONL(diagnosticLogPath);
+  const billingSummary = options.billingSummary || getBillingSummary(analyticsWindow);
 
   const approval = computeApprovalStats(entries);
   const gateStats = computeGateStats();
@@ -494,13 +511,21 @@ function generateDashboard(feedbackDir) {
   const health = computeSystemHealth(feedbackDir, gateStats);
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
   const secretGuard = computeSecretGuardStats(diagnosticEntries);
-  const analytics = computeAnalyticsSummary(feedbackDir);
+  const analytics = computeAnalyticsSummary(feedbackDir, {
+    analyticsWindow,
+    billingSummary,
+  });
   const observability = computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, analytics.telemetry);
-  const instrumentation = computeInstrumentationReadiness(analytics, getBillingSummary());
+  const instrumentation = computeInstrumentationReadiness(analytics, billingSummary);
   const delegation = summarizeDelegation(feedbackDir);
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
 
   return {
+    operational: {
+      source: options.billingSource || 'local',
+      fallbackReason: options.billingFallbackReason || null,
+      window: analytics.window || analyticsWindow,
+    },
     approval,
     gateStats,
     prevention,

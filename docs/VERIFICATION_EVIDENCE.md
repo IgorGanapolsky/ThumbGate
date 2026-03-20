@@ -1,3 +1,75 @@
+## March 20, 2026: Hosted analytics and revenue audit hardening
+
+Scope:
+
+- Added `scripts/revenue-status.js` and repointed `npm run revenue:status` to prefer hosted Railway-backed truth before falling back to the local CFO summary.
+- Preserved the old local-only operator path as `npm run revenue:status:local` instead of deleting it, so the change removes a blind spot without breaking existing local workflows.
+- Added targeted regression coverage in `tests/revenue-status.test.js` for GitHub variable parsing, public landing signal detection, hosted diagnosis, and the hosted-audit happy path.
+- Set Railway production runtime vars `RLHF_PUBLIC_APP_ORIGIN` and `RLHF_BILLING_API_BASE_URL` explicitly to the canonical hosted origin so the deployed app no longer relies on implicit defaults.
+- Verified the live public app, live telemetry ingress, live hosted billing summary, and the repo-standard verification suite from a dedicated clean worktree.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-analytics-revenue-audit`:
+
+```bash
+npm ci
+node --check scripts/revenue-status.js
+node --test tests/revenue-status.test.js
+npm test
+npm run test:coverage
+tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+npm run self-heal:check
+npm run revenue:status -- --json
+railway variable set -s rlhf-feedback-loop -e production \
+  RLHF_PUBLIC_APP_ORIGIN=https://rlhf-feedback-loop-production.up.railway.app \
+  RLHF_BILLING_API_BASE_URL=https://rlhf-feedback-loop-production.up.railway.app --json
+git diff --check
+```
+
+Observed result:
+
+- `npm ci` exited `0`.
+- `node --check scripts/revenue-status.js` exited `0`.
+- `node --test tests/revenue-status.test.js` exited `0`: `4` passed, `0` failed.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with all-files coverage at `89.37`, `75.65`, and `92.99` on the tool's aggregate line.
+- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `npm run revenue:status -- --json` exited `0` with `source: hosted-via-railway-env`.
+- The live public probes inside `npm run revenue:status -- --json` reported:
+  - `/health` returned `200` with `version: 0.7.3`.
+  - `/health` deployment metadata matched the canonical hosted origin for both `appOrigin` and `billingApiBaseUrl`.
+  - `/` returned `200` and exposed `plausibleScript: true`, `telemetryEndpoint: true`, and `workflowSprintIntake: true`.
+  - `/` still exposed `gaEventHook: true` but `gaLoaderScript: false`, which matches the known GA runtime gap rather than a broken page.
+  - `/v1/telemetry/ping` accepted the live probe and returned `204`.
+- The hosted Railway-backed billing summary reported truthfully:
+  - `today`: `13` visitors, `8` page views, `2` checkout starts, `2` unique leads, `2` paid orders, `$20.00` booked historical revenue, and `$0.00` booked today.
+  - `30d`: `28` visitors, `19` page views, `9` checkout starts, `6` unique leads, `2` paid orders, and `$20.00` booked revenue.
+  - `lifetime`: the same counts as `30d` at verification time.
+  - `dataQuality.telemetryCoverage`, `dataQuality.attributionCoverage`, and `dataQuality.amountKnownCoverage` were all `1`.
+  - `diagnosis.primaryIssue` was `operator_blind_spot_local_fallback`, not missing analytics or missing revenue data.
+- Live runtime presence in Railway reported:
+  - `RLHF_FEEDBACK_DIR: true`
+  - `RLHF_API_KEY: true`
+  - `RLHF_PUBLIC_APP_ORIGIN: true`
+  - `RLHF_BILLING_API_BASE_URL: true`
+  - `RLHF_GA_MEASUREMENT_ID: false`
+  - `RLHF_CHECKOUT_FALLBACK_URL: true`
+  - `STRIPE_SECRET_KEY: true`
+- Live container inspection over Railway SSH confirmed durable analytics persistence under `/data/feedback`:
+  - `telemetry-pings.jsonl` existed and contained `850` lines.
+  - `funnel-events.jsonl` existed and contained `6` lines.
+- `railway variable set ... --json` succeeded for `RLHF_PUBLIC_APP_ORIGIN` and `RLHF_BILLING_API_BASE_URL`, and Railway redeployed the production service with the explicit canonical values.
+- `git diff --check` exited `0`.
+
+Requirements verified:
+
+- Production analytics and tracking are implemented and live; the earlier zeroed local output was a local operator fallback, not evidence that nobody uses the system.
+- Production revenue evidence exists and is queryable from the hosted admin surface; the truthful statement for March 20, 2026 is still `$0.00` booked today and `$20.00` booked historically.
+- The no-tech-debt path is in place: the repo now has a hosted-first operator audit command with no new dependencies, no duplicate billing logic, and a preserved local fallback.
+- The remaining live gap is external configuration, not product logic: GA4 is still missing a Railway `RLHF_GA_MEASUREMENT_ID`, so the page exposes GA hooks but does not load the GA script.
+
 ## March 19, 2026: Railway deploy health verification retry hardening
 
 Scope:
@@ -1350,6 +1422,81 @@ Artifacts updated:
 - `proof/compatibility/report.md`
 - `proof/automation/report.json`
 - `proof/automation/report.md`
+
+## 2026-03-20 Hosted North Star + Sprint Pipeline Verification
+
+Scope:
+
+- Hosted-first operator truth for `north-star` and `dashboard`.
+- Admin-only workflow sprint state advancement from `new -> qualified -> named_pilot -> proof_backed_run -> paid_team`.
+- Pricing-decision Sprint CTA at the same moment buyers currently choose Pro.
+- OpenAPI parity for the new sprint advancement route and dashboard window parameters.
+
+Key files changed:
+
+- `scripts/operational-dashboard.js`
+- `scripts/dashboard.js`
+- `src/api/server.js`
+- `scripts/workflow-sprint-intake.js`
+- `scripts/workflow-runs.js`
+- `bin/cli.js`
+- `public/index.html`
+- `openapi/openapi.yaml`
+- `adapters/chatgpt/openapi.yaml`
+
+Targeted proof commands:
+
+```bash
+node --test tests/workflow-runs.test.js tests/workflow-sprint-intake.test.js tests/public-landing.test.js
+node --test --test-concurrency=1 tests/api-server.test.js tests/openapi-parity.test.js tests/telemetry-analytics.test.js
+node --test tests/cli.test.js tests/revenue-status.test.js
+```
+
+Targeted proof results:
+
+- Workflow + landing batch: `17` tests passed, `0` failed.
+- API + OpenAPI + telemetry batch: `69` tests passed, `0` failed.
+- CLI + revenue-status batch: `41` tests passed, `0` failed.
+
+Behavioral proof points:
+
+- `POST /v1/intake/workflow-sprint/advance` is admin-only and rejects non-static billing keys with `403`.
+- Sprint lead advancement appends immutable lead snapshots, creates workflow-run evidence for `named_pilot`, `proof_backed_run`, and `paid_team`, and preserves deduplicated North Star counts.
+- `GET /v1/dashboard` now accepts `window`, `timezone`, and `now`, and its revenue/traffic numbers follow the live billing-summary path for that window.
+- `north-star` now prefers the hosted operational dashboard when `RLHF_BILLING_API_BASE_URL`, `RLHF_API_KEY`, and `RLHF_METRICS_SOURCE=hosted` are configured.
+- The pricing section now includes `data-cta-id="pricing_sprint"` pointing directly to `#workflow-sprint-intake`.
+- Canonical OpenAPI and ChatGPT adapter specs stay byte-aligned after adding `/v1/intake/workflow-sprint/advance`.
+
+Full verification protocol:
+
+```bash
+npm ci
+npm test
+npm run test:coverage
+env RLHF_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
+env RLHF_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed results:
+
+- `npm ci`: exit `0`; audit reported `0` vulnerabilities.
+- `npm test`: exit `0`.
+- `npm run test:coverage`: exit `0` with aggregate coverage:
+  - line coverage: `89.53%`
+  - branch coverage: `75.73%`
+  - function coverage: `93.02%`
+- `npm run prove:adapters`: exit `0` with `48` passed, `0` failed.
+- `npm run prove:automation`: exit `0` with `55` passed, `0` failed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+- `git diff --check`: exit `0`.
+
+Low-debt implementation notes:
+
+- No new dependencies were added.
+- Hosted metrics reuse `getBillingSummaryLive()` plus the existing dashboard generator rather than creating a second analytics stack.
+- Sprint state transitions reuse the existing append-only lead ledger and workflow-run ledger rather than introducing a new database path.
 
 ## 2026-03-19 GitHub Marketplace Legacy Amount Repair Verification
 

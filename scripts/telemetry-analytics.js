@@ -187,6 +187,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     ctaId: pickFirstText(raw.ctaId),
     ctaPlacement: pickFirstText(raw.ctaPlacement),
     planId: pickFirstText(raw.planId),
+    pipelineStatus: pickFirstText(raw.pipelineStatus, raw.workflowSprintStatus, raw.status),
     reasonCode,
     reasonDetail: pickFirstText(raw.reasonDetail, raw.reasonText, raw.otherReason, raw.notes),
     pricingInterest: pickFirstText(raw.pricingInterest, raw.interestLevel),
