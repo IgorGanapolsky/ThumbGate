@@ -86,3 +86,58 @@ test('summarizeWorkflowRuns reports weekly proof-backed workflow activity', () =
   assert.equal(summary.northStarReached, true);
   assert.equal(summary.latestRun.workflowId, 'repo_self_dogfood_aider_verify');
 });
+
+test('summarizeWorkflowRuns deduplicates named pilots and paid teams across append-only state transitions', () => {
+  appendWorkflowRun({
+    timestamp: new Date().toISOString(),
+    workflowId: 'pilot_transition_workflow',
+    workflowName: 'Pilot transition workflow',
+    owner: 'ops',
+    runtime: 'hosted',
+    proofBacked: false,
+    reviewed: false,
+    customerType: 'named_pilot',
+    teamId: 'pilot_team',
+    metadata: {
+      leadId: 'lead_transition',
+      pipelineStatus: 'named_pilot',
+    },
+  }, tmpDir);
+
+  appendWorkflowRun({
+    timestamp: new Date().toISOString(),
+    workflowId: 'pilot_transition_workflow',
+    workflowName: 'Pilot transition workflow',
+    owner: 'ops',
+    runtime: 'hosted',
+    proofBacked: true,
+    reviewedBy: 'buyer@example.com',
+    customerType: 'named_pilot',
+    teamId: 'pilot_team',
+    metadata: {
+      leadId: 'lead_transition',
+      pipelineStatus: 'proof_backed_run',
+    },
+  }, tmpDir);
+
+  appendWorkflowRun({
+    timestamp: new Date().toISOString(),
+    workflowId: 'pilot_transition_workflow',
+    workflowName: 'Pilot transition workflow',
+    owner: 'ops',
+    runtime: 'hosted',
+    proofBacked: true,
+    reviewedBy: 'buyer@example.com',
+    customerType: 'paid_team',
+    teamId: 'pilot_team',
+    metadata: {
+      leadId: 'lead_transition',
+      pipelineStatus: 'paid_team',
+    },
+  }, tmpDir);
+
+  const summary = summarizeWorkflowRuns(tmpDir, new Date());
+  assert.equal(summary.namedPilotAgreements, 1);
+  assert.equal(summary.paidTeamRuns, 1);
+  assert.equal(summary.weeklyActiveProofBackedWorkflowRuns, 1);
+});

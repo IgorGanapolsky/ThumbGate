@@ -87,6 +87,7 @@ const {
 } = require('../../scripts/analytics-window');
 const {
   appendWorkflowSprintLead,
+  advanceWorkflowSprintLead,
 } = require('../../scripts/workflow-sprint-intake');
 const {
   checkLimit,
@@ -2711,6 +2712,62 @@ function createApiServer() {
         return;
       }
 
+      // POST /v1/intake/workflow-sprint/advance — admin-only workflow sprint progression
+      if (req.method === 'POST' && pathname === '/v1/intake/workflow-sprint/advance') {
+        if (!isStaticAdminAuthorized(req, expectedApiKey)) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.FORBIDDEN,
+            title: 'Forbidden',
+            status: 403,
+            detail: 'Admin API key required for this endpoint.',
+          });
+          return;
+        }
+
+        const { FEEDBACK_DIR } = getFeedbackPaths();
+        try {
+          const body = await parseJsonBody(req, 24 * 1024);
+          const result = advanceWorkflowSprintLead(body, { feedbackDir: FEEDBACK_DIR });
+
+          appendBestEffortTelemetry(FEEDBACK_DIR, {
+            eventType: 'workflow_sprint_lead_advanced',
+            clientType: 'server',
+            traceId: result.lead.attribution.traceId,
+            acquisitionId: result.lead.attribution.acquisitionId,
+            visitorId: result.lead.attribution.visitorId,
+            sessionId: result.lead.attribution.sessionId,
+            installId: result.lead.attribution.installId,
+            source: result.lead.attribution.source,
+            utmSource: result.lead.attribution.utmSource,
+            utmMedium: result.lead.attribution.utmMedium,
+            utmCampaign: result.lead.attribution.utmCampaign,
+            community: result.lead.attribution.community,
+            ctaId: result.lead.attribution.ctaId,
+            ctaPlacement: result.lead.attribution.ctaPlacement,
+            planId: result.lead.attribution.planId,
+            page: result.lead.attribution.page,
+            landingPath: result.lead.attribution.landingPath,
+            pipelineStatus: result.lead.status,
+            workflowRunKey: result.workflowRun ? result.workflowRun.workflowRunKey : null,
+          }, req.headers, 'workflow_sprint_lead_advanced');
+
+          sendJson(res, 200, {
+            ok: true,
+            unchanged: result.unchanged,
+            lead: result.lead,
+            workflowRun: result.workflowRun,
+          });
+        } catch (err) {
+          sendProblem(res, {
+            type: err && err.statusCode === 404 ? PROBLEM_TYPES.NOT_FOUND : PROBLEM_TYPES.BAD_REQUEST,
+            title: err && err.statusCode === 404 ? 'Lead Not Found' : 'Request Error',
+            status: err && err.statusCode ? err.statusCode : 400,
+            detail: err && err.message ? err.message : 'Unable to advance workflow sprint lead.',
+          });
+        }
+        return;
+      }
+
       // POST /v1/billing/rotate-key — rotate the authenticated key, preserving customer access
       if (req.method === 'POST' && pathname === '/v1/billing/rotate-key') {
         const currentKey = extractBearerToken(req);
@@ -2768,8 +2825,26 @@ function createApiServer() {
 
       // GET /v1/dashboard -- Full RLHF dashboard JSON
       if (req.method === 'GET' && pathname === '/v1/dashboard') {
+        let summaryOptions;
+        try {
+          summaryOptions = resolveBillingSummaryOptions(parsed);
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INVALID_REQUEST,
+            title: 'Invalid dashboard query',
+            status: 400,
+            detail: err && err.message ? err.message : 'Invalid analytics window request.',
+          });
+          return;
+        }
+
         const { FEEDBACK_DIR } = getFeedbackPaths();
-        const data = generateDashboard(FEEDBACK_DIR);
+        const billingSummary = await getBillingSummaryLive(summaryOptions);
+        const data = generateDashboard(FEEDBACK_DIR, {
+          analyticsWindow: summaryOptions,
+          billingSummary,
+          billingSource: 'live',
+        });
         sendJson(res, 200, data);
         return;
       }

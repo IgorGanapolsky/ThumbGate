@@ -588,28 +588,40 @@ function repairGithubMarketplace() {
 }
 
 function northStar() {
-  const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
-  const { summarizeWorkflowRuns } = require(path.join(PKG_ROOT, 'scripts', 'workflow-runs'));
-  const { getBillingSummary } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
-  const { FEEDBACK_DIR } = getFeedbackPaths();
-  const summary = summarizeWorkflowRuns(FEEDBACK_DIR);
-  const billing = getBillingSummary();
+  const args = parseArgs(process.argv.slice(3));
+  const { getOperationalDashboard } = require(path.join(PKG_ROOT, 'scripts', 'operational-dashboard'));
 
-  console.log('\nNorth Star');
-  console.log('─'.repeat(40));
-  console.log(`Weekly proof-backed workflow runs : ${summary.weeklyActiveProofBackedWorkflowRuns}`);
-  console.log(`Weekly teams on proof-backed runs : ${summary.weeklyTeamsRunningProofBackedWorkflows}`);
-  console.log(`Reviewed workflow runs            : ${summary.reviewedRuns}`);
-  console.log(`Named pilot agreements            : ${summary.namedPilotAgreements}`);
-  console.log(`Paid team runs                    : ${summary.paidTeamRuns}`);
-  console.log(`Paid orders                       : ${billing.revenue.paidOrders}`);
-  console.log(`Booked revenue                    : $${(billing.revenue.bookedRevenueCents / 100).toFixed(2)}`);
-  console.log(`Customer proof                    : ${summary.customerProofReached ? 'present' : 'missing'}`);
-  console.log(`North Star status                 : ${summary.northStarReached ? 'tracking' : 'not_started'}`);
-  if (summary.latestRun) {
-    console.log(`Latest proof-backed run           : ${summary.latestRun.workflowId} @ ${summary.latestRun.timestamp}`);
-  }
-  console.log('');
+  getOperationalDashboard({
+    window: args.window,
+    timeZone: args.timezone,
+    now: args.now,
+  })
+    .then(({ source, data, fallbackReason }) => {
+      const summary = data.analytics.northStar || {};
+      const revenue = data.analytics.revenue || {};
+
+      console.log('\nNorth Star');
+      console.log('─'.repeat(40));
+      console.log(`Metrics source                    : ${source}${fallbackReason ? ` (${fallbackReason})` : ''}`);
+      console.log(`Weekly proof-backed workflow runs : ${summary.weeklyActiveProofBackedWorkflowRuns || 0}`);
+      console.log(`Weekly teams on proof-backed runs : ${summary.weeklyTeamsRunningProofBackedWorkflows || 0}`);
+      console.log(`Reviewed workflow runs            : ${summary.reviewedRuns || 0}`);
+      console.log(`Named pilot agreements            : ${summary.namedPilotAgreements || 0}`);
+      console.log(`Paid team runs                    : ${summary.paidTeamRuns || 0}`);
+      console.log(`Paid orders                       : ${revenue.paidOrders || 0}`);
+      console.log(`Booked revenue                    : $${(Number(revenue.bookedRevenueCents || 0) / 100).toFixed(2)}`);
+      console.log(`Customer proof                    : ${summary.customerProofReached ? 'present' : 'missing'}`);
+      console.log(`North Star status                 : ${summary.northStarReached ? 'tracking' : 'not_started'}`);
+      if (summary.latestRun) {
+        console.log(`Latest proof-backed run           : ${summary.latestRun.workflowId} @ ${summary.latestRun.timestamp}`);
+      }
+      console.log('');
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error(err && err.message ? err.message : err);
+      process.exit(1);
+    });
 }
 
 function pro() {
@@ -842,11 +854,23 @@ function installMcp() {
 }
 
 function dashboard() {
-  const { generateDashboard, printDashboard } = require(path.join(PKG_ROOT, 'scripts', 'dashboard'));
-  const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
-  const { FEEDBACK_DIR } = getFeedbackPaths();
-  const data = generateDashboard(FEEDBACK_DIR);
-  printDashboard(data);
+  const args = parseArgs(process.argv.slice(3));
+  const { printDashboard } = require(path.join(PKG_ROOT, 'scripts', 'dashboard'));
+  const { getOperationalDashboard } = require(path.join(PKG_ROOT, 'scripts', 'operational-dashboard'));
+
+  getOperationalDashboard({
+    window: args.window,
+    timeZone: args.timezone,
+    now: args.now,
+  })
+    .then(({ data }) => {
+      printDashboard(data);
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error(err && err.message ? err.message : err);
+      process.exit(1);
+    });
 }
 
 function gateStats() {

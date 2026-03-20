@@ -1034,6 +1034,134 @@ test('workflow sprint intake validation failure records failure telemetry and wr
   assert.equal(failure.ctaId, 'workflow_sprint_intake');
 });
 
+test('workflow sprint advance endpoint requires the static admin key', async () => {
+  const intakeRes = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      email: 'advance-auth@example.com',
+      workflow: 'Release hardening',
+      owner: 'Platform lead',
+      blocker: 'Need an admin-only transition path.',
+      runtime: 'Claude Code',
+    }),
+  });
+  assert.equal(intakeRes.status, 201);
+  const intakeBody = await intakeRes.json();
+
+  const billingKey = billing.provisionApiKey('cus_sprint_non_admin', {
+    installId: 'inst_sprint_non_admin',
+    source: 'stripe_webhook_checkout_completed',
+  }).key;
+
+  const res = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${billingKey}`,
+    },
+    body: JSON.stringify({
+      leadId: intakeBody.leadId,
+      status: 'qualified',
+    }),
+  });
+
+  assert.equal(res.status, 403);
+});
+
+test('workflow sprint advance endpoint appends pipeline snapshots and workflow run evidence', async () => {
+  const intakeRes = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      email: 'advance@example.com',
+      company: 'North Star Systems',
+      workflow: 'PR review hardening',
+      owner: 'Platform lead',
+      blocker: 'Need proof-backed pilot promotion.',
+      runtime: 'Claude Code',
+      utmSource: 'linkedin',
+    }),
+  });
+  assert.equal(intakeRes.status, 201);
+  const intakeBody = await intakeRes.json();
+
+  const qualifiedRes = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...authHeader,
+    },
+    body: JSON.stringify({
+      leadId: intakeBody.leadId,
+      status: 'qualified',
+      actor: 'ops',
+      note: 'Qualified for pilot review.',
+    }),
+  });
+  assert.equal(qualifiedRes.status, 200);
+  const qualifiedBody = await qualifiedRes.json();
+  assert.equal(qualifiedBody.ok, true);
+  assert.equal(qualifiedBody.lead.status, 'qualified');
+  assert.equal(qualifiedBody.workflowRun, null);
+
+  const pilotRes = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...authHeader,
+    },
+    body: JSON.stringify({
+      leadId: intakeBody.leadId,
+      status: 'named_pilot',
+      actor: 'ops',
+      workflowId: 'pr_review_hardening',
+      teamId: 'north_star_systems',
+    }),
+  });
+  assert.equal(pilotRes.status, 200);
+  const pilotBody = await pilotRes.json();
+  assert.equal(pilotBody.lead.status, 'named_pilot');
+  assert.ok(pilotBody.workflowRun);
+  assert.equal(pilotBody.workflowRun.customerType, 'named_pilot');
+
+  const proofRes = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...authHeader,
+    },
+    body: JSON.stringify({
+      leadId: intakeBody.leadId,
+      status: 'proof_backed_run',
+      actor: 'ops',
+      reviewedBy: 'buyer@example.com',
+      proofArtifacts: ['docs/VERIFICATION_EVIDENCE.md'],
+    }),
+  });
+  assert.equal(proofRes.status, 200);
+  const proofBody = await proofRes.json();
+  assert.equal(proofBody.lead.status, 'proof_backed_run');
+  assert.ok(proofBody.workflowRun);
+  assert.equal(proofBody.workflowRun.proofBacked, true);
+
+  const leads = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'));
+  assert.equal(leads.filter((entry) => entry.leadId === intakeBody.leadId).length, 3 + 1);
+  assert.equal(leads.at(-1).status, 'proof_backed_run');
+  assert.equal(leads.at(-1).statusHistory.length, 4);
+
+  const runs = readJsonl(path.join(tmpFeedbackDir, 'workflow-runs.jsonl'));
+  assert.equal(runs.length >= 2, true);
+  assert.equal(runs.at(-1).proofBacked, true);
+  assert.equal(runs.at(-1).metadata.leadId, intakeBody.leadId);
+
+  const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  assert.ok(telemetry.some((entry) => (
+    entry.eventType === 'workflow_sprint_lead_advanced' &&
+    entry.pipelineStatus === 'proof_backed_run'
+  )));
+});
+
 test('billing session endpoint returns provisioned local checkout details', async () => {
   const checkoutRes = await fetch(apiUrl('/v1/billing/checkout'), {
     method: 'POST',
@@ -1341,6 +1469,166 @@ test('billing summary applies today window query params for admin users', async 
     assert.equal(body.revenue.paidOrders, 1);
     assert.equal(body.pipeline.workflowSprintLeads.total, 1);
     assert.equal(body.trafficMetrics.pageViews, 1);
+  } finally {
+    process.env.RLHF_FEEDBACK_DIR = savedEnv.feedbackDir;
+    process.env._TEST_API_KEYS_PATH = savedEnv.apiKeysPath;
+    process.env._TEST_FUNNEL_LEDGER_PATH = savedEnv.funnelPath;
+    process.env._TEST_REVENUE_LEDGER_PATH = savedEnv.revenuePath;
+    process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = savedEnv.checkoutSessionsPath;
+    fs.rmSync(isolatedFeedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('dashboard applies analytics window query params with live billing truth', async () => {
+  const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-dashboard-window-'));
+  const savedEnv = {
+    feedbackDir: process.env.RLHF_FEEDBACK_DIR,
+    apiKeysPath: process.env._TEST_API_KEYS_PATH,
+    funnelPath: process.env._TEST_FUNNEL_LEDGER_PATH,
+    revenuePath: process.env._TEST_REVENUE_LEDGER_PATH,
+    checkoutSessionsPath: process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH,
+  };
+
+  process.env.RLHF_FEEDBACK_DIR = isolatedFeedbackDir;
+  process.env._TEST_API_KEYS_PATH = path.join(isolatedFeedbackDir, 'api-keys.json');
+  process.env._TEST_FUNNEL_LEDGER_PATH = path.join(isolatedFeedbackDir, 'funnel-events.jsonl');
+  process.env._TEST_REVENUE_LEDGER_PATH = path.join(isolatedFeedbackDir, 'revenue-events.jsonl');
+  process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = path.join(isolatedFeedbackDir, 'local-checkout-sessions.json');
+
+  try {
+    fs.writeFileSync(process.env._TEST_API_KEYS_PATH, JSON.stringify({ keys: {} }, null, 2));
+    fs.writeFileSync(process.env._TEST_FUNNEL_LEDGER_PATH, [
+      JSON.stringify({
+        timestamp: '2026-03-18T13:00:00.000Z',
+        stage: 'acquisition',
+        event: 'checkout_session_created',
+        evidence: 'sess_dashboard_old',
+        metadata: { customerId: 'cus_dashboard_old' },
+      }),
+      JSON.stringify({
+        timestamp: '2026-03-19T14:00:00.000Z',
+        stage: 'acquisition',
+        event: 'checkout_session_created',
+        evidence: 'sess_dashboard_today',
+        metadata: { customerId: 'cus_dashboard_today' },
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(process.env._TEST_REVENUE_LEDGER_PATH, [
+      JSON.stringify({
+        timestamp: '2026-03-18T13:05:00.000Z',
+        provider: 'stripe',
+        event: 'stripe_checkout_completed',
+        status: 'paid',
+        orderId: 'cs_dashboard_old',
+        evidence: 'cs_dashboard_old',
+        customerId: 'cus_dashboard_old',
+        amountCents: 9900,
+        currency: 'USD',
+        amountKnown: true,
+        recurringInterval: null,
+        attribution: { source: 'reddit' },
+        metadata: {},
+      }),
+      JSON.stringify({
+        timestamp: '2026-03-19T14:05:00.000Z',
+        provider: 'stripe',
+        event: 'stripe_checkout_completed',
+        status: 'paid',
+        orderId: 'cs_dashboard_today',
+        evidence: 'cs_dashboard_today',
+        customerId: 'cus_dashboard_today',
+        amountCents: 4900,
+        currency: 'USD',
+        amountKnown: true,
+        recurringInterval: null,
+        attribution: { source: 'website' },
+        metadata: {},
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(path.join(isolatedFeedbackDir, 'workflow-sprint-leads.jsonl'), [
+      JSON.stringify({
+        leadId: 'lead_dashboard_old',
+        submittedAt: '2026-03-18T10:00:00.000Z',
+        status: 'new',
+        offer: 'workflow_hardening_sprint',
+        contact: {
+          email: 'old-dashboard@example.com',
+          company: 'Old Dashboard Co',
+        },
+        qualification: {
+          workflow: 'Old workflow',
+          owner: 'Old owner',
+          blocker: 'Old blocker',
+          runtime: 'Claude Code',
+          note: null,
+        },
+        attribution: {
+          source: 'reddit',
+          utmCampaign: 'dashboard_window_old',
+        },
+      }),
+      JSON.stringify({
+        leadId: 'lead_dashboard_today',
+        submittedAt: '2026-03-19T15:00:00.000Z',
+        status: 'new',
+        offer: 'workflow_hardening_sprint',
+        contact: {
+          email: 'today-dashboard@example.com',
+          company: 'Today Dashboard Co',
+        },
+        qualification: {
+          workflow: 'Today workflow',
+          owner: 'Today owner',
+          blocker: 'Today blocker',
+          runtime: 'Claude Code',
+          note: null,
+        },
+        attribution: {
+          source: 'linkedin',
+          utmCampaign: 'dashboard_window_today',
+        },
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(path.join(isolatedFeedbackDir, 'telemetry-pings.jsonl'), [
+      JSON.stringify({
+        receivedAt: '2026-03-18T12:00:00.000Z',
+        eventType: 'landing_page_view',
+        clientType: 'web',
+        acquisitionId: 'acq_dashboard_old',
+        visitorId: 'visitor_dashboard_old',
+        sessionId: 'session_dashboard_old',
+        source: 'reddit',
+        page: '/',
+      }),
+      JSON.stringify({
+        receivedAt: '2026-03-19T14:30:00.000Z',
+        eventType: 'landing_page_view',
+        clientType: 'web',
+        acquisitionId: 'acq_dashboard_today',
+        visitorId: 'visitor_dashboard_today',
+        sessionId: 'session_dashboard_today',
+        source: 'website',
+        page: '/',
+      }),
+      '',
+    ].join('\n'));
+
+    const res = await fetch(apiUrl('/v1/dashboard?window=today&timezone=America/New_York&now=2026-03-19T18:00:00.000Z'), {
+      headers: authHeader,
+    });
+    assert.equal(res.status, 200);
+
+    const body = await res.json();
+    assert.equal(body.operational.source, 'live');
+    assert.equal(body.analytics.window.window, 'today');
+    assert.equal(body.analytics.trafficMetrics.visitors, 1);
+    assert.equal(body.analytics.trafficMetrics.pageViews, 1);
+    assert.equal(body.analytics.funnel.acquisitionLeads, 1);
+    assert.equal(body.analytics.revenue.bookedRevenueCents, 4900);
+    assert.equal(body.analytics.revenue.paidOrders, 1);
   } finally {
     process.env.RLHF_FEEDBACK_DIR = savedEnv.feedbackDir;
     process.env._TEST_API_KEYS_PATH = savedEnv.apiKeysPath;

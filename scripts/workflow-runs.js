@@ -57,6 +57,32 @@ function sanitizeWorkflowRun(entry = {}) {
   };
 }
 
+function resolveBusinessKey(entry = {}) {
+  const metadata = entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
+  return normalizeText(
+    metadata.leadId ||
+    metadata.pipelineLeadId ||
+    entry.teamId ||
+    entry.workflowId ||
+    entry.workflowName
+  );
+}
+
+function countUniqueBusinessStates(entries = [], predicate) {
+  const keys = new Set();
+  let fallbackCount = 0;
+  for (const entry of entries) {
+    if (!predicate(entry)) continue;
+    const businessKey = resolveBusinessKey(entry);
+    if (businessKey) {
+      keys.add(businessKey);
+      continue;
+    }
+    fallbackCount += 1;
+  }
+  return keys.size + fallbackCount;
+}
+
 function appendWorkflowRun(entry = {}, feedbackDir = getFeedbackPaths().FEEDBACK_DIR) {
   const target = getWorkflowRunsPath(feedbackDir);
   const sanitized = sanitizeWorkflowRun(entry);
@@ -94,8 +120,14 @@ function summarizeWorkflowRuns(feedbackDir = getFeedbackPaths().FEEDBACK_DIR, no
       .map((entry) => entry.teamId || `${entry.customerType}:${entry.workflowId}`)
       .filter(Boolean)
   );
-  const namedPilotAgreements = entries.filter((entry) => entry.customerType === 'named_pilot').length;
-  const paidTeamRuns = entries.filter((entry) => entry.customerType === 'paid_team').length;
+  const namedPilotAgreements = countUniqueBusinessStates(
+    entries,
+    (entry) => entry.customerType === 'named_pilot'
+  );
+  const paidTeamRuns = countUniqueBusinessStates(
+    entries,
+    (entry) => entry.customerType === 'paid_team'
+  );
   const latestRun = entries.length ? entries[entries.length - 1] : null;
 
   return {
