@@ -3,6 +3,7 @@
   "gates": [
     {
       "id": "local-only-git-writes",
+      "layer": "Identity",
       "pattern": "^(git\\s+(add|commit|push)|gh\\s+pr\\s+)",
       "action": "block",
       "when": { "constraints": { "local_only": true } },
@@ -11,6 +12,7 @@
     },
     {
       "id": "gh-pr-create-restricted",
+      "layer": "Identity",
       "pattern": "gh\\s+pr\\s+create",
       "action": "block",
       "unless": "pr_create_allowed",
@@ -19,6 +21,7 @@
     },
     {
       "id": "gh-pr-merge-restricted",
+      "layer": "Identity",
       "pattern": "gh\\s+pr\\s+merge",
       "action": "block",
       "unless": "pr_merge_allowed",
@@ -27,6 +30,7 @@
     },
     {
       "id": "push-without-thread-check",
+      "layer": "Decisions",
       "trigger": "Bash:git_push",
       "pattern": "git\\s+push",
       "action": "block",
@@ -36,6 +40,7 @@
     },
     {
       "id": "package-lock-reset",
+      "layer": "Execution",
       "trigger": "Bash:package_lock",
       "pattern": "git\\s+checkout\\s+\\S+\\s+--\\s+package-lock\\.json",
       "action": "block",
@@ -44,6 +49,7 @@
     },
     {
       "id": "force-push",
+      "layer": "Execution",
       "trigger": "Bash:git_force_push",
       "pattern": "git\\s+push\\s+(--force|-f)",
       "action": "block",
@@ -52,6 +58,7 @@
     },
     {
       "id": "protected-branch-push",
+      "layer": "Execution",
       "trigger": "Bash:protected_push",
       "pattern": "git\\s+push\\s+(?:\\S+\\s+)?(?:develop|main|master)\\b",
       "action": "block",
@@ -60,11 +67,23 @@
     },
     {
       "id": "env-file-edit",
+      "layer": "Cloud",
       "trigger": "Edit:env_file",
       "pattern": "\\.env",
       "action": "warn",
       "message": "Editing .env file — verify you are not deleting existing tokens",
       "severity": "medium"
+    },
+    {
+      "id": "unverified-skill-use",
+      "layer": "Supply Chain",
+      "trigger": "Skill:load",
+      "pattern": ".*",
+      "when": { "constraints": { "RLHF_DELEGATION_MODE": true } },
+      "action": "warn",
+      "unless": "skill_verified",
+      "message": "Skill provenance check failed. Run 'npm run skill:verify' or satisfy 'skill_verified' with a valid signature to proceed.",
+      "severity": "high"
     }
   ]
 }

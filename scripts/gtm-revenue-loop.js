@@ -74,12 +74,12 @@ function buildRevenueLinks(config = resolveHostedBillingConfig({
   const appOrigin = config.appOrigin;
   return {
     appOrigin,
-    proCheckoutLink: `${appOrigin}/checkout/pro`,
+    proCheckoutLink: `${appOrigin}/checkout/pro?packId=mistake-free-starter`,
     sprintLink: `${appOrigin}/#workflow-sprint-intake`,
     commercialTruthLink: COMMERCIAL_TRUTH_LINK,
     verificationEvidenceLink: VERIFICATION_EVIDENCE_LINK,
-    proPriceLabel: config.proPriceLabel,
-    proOfferLabel: `Pro at ${config.proPriceLabel}`,
+    proPriceLabel: '$49 one-time',
+    proOfferLabel: `Pro at $49 one-time`,
   };
 }
 

@@ -1,55 +1,75 @@
-# Autonomous GitOps
+# GSD Revenue Loop
 
-This repo uses PR-gated autonomous automation. No direct merge-to-main shortcuts.
+Status: post-first-dollar
+Updated: 2026-03-20T13:49:39.930Z
 
-## Workflows
+This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 
-- `.github/workflows/ci.yml`
-  - Runs `npm test`, `npm run prove:adapters`, `npm run prove:automation`
-  - Uploads proof artifacts
-- `.github/workflows/agent-automerge.yml`
-  - Auto-approves and auto-merges eligible agent branches (`claude/*`, `codex/*`, `auto/*`, `agent/*`) after required checks pass
-- `.github/workflows/dependabot-automerge.yml`
-  - Auto-approves Dependabot PRs and merges when required checks pass
-- `.github/workflows/self-healing-monitor.yml`
-  - Runs scheduled health checks
-  - Opens/updates self-healing issue on failure
-  - Closes alert issue when healthy again
-  - Creates remediation PR when `scripts/self-heal.js` generates a safe fix
-- `.github/workflows/self-healing-auto-fix.yml`
-  - Runs scheduled self-heal attempts
-  - Opens remediation PR when fix scripts produce changes
-- `.github/workflows/merge-branch.yml`
-  - Manual fallback to create PR and enable auto-merge (still policy-compliant)
+## Current Truth
+- Public self-serve offer: Pro at $49 one-time
+- Team/pilot motion: Workflow Hardening Sprint
+- Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md
+- Verification evidence: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-## Required Repository Settings
+## Revenue Snapshot
+- Paid orders: 2
+- Booked revenue: $20.00
+- Checkout starts: 0
+- Unique leads: 0
+- Workflow sprint leads: 0
+- Qualified sprint leads: 0
+- Billing source: local (Hosted operational summary is not configured.)
 
-- Branch protection on `main`
-- Required status check: `test`
-- Required approvals: `1`
-- Required linear history and conversation resolution
-- Auto-merge enabled
-- Delete branch on merge enabled
+## GSD Directive
+- Objective: Scale the first-10-customers loop with proof-backed self-serve follow-up.
+- Headline: Revenue is proven. Double down on the self-serve Pro CTA and use the sprint motion for expansion deals.
+- Primary motion: pro
+- Secondary motion: sprint
 
-## Secrets
+## Immediate Actions
+- Reply to every qualified builder lead with the Pro checkout path and the proof pack.
+- Use the Workflow Hardening Sprint only when a team already has one workflow owner and a rollout blocker.
+- Publish only booked revenue and paid-order proof from the billing summary or named pilot agreements.
 
-- Required for full automation: `GH_PAT`
-- Optional telemetry: `SENTRY_AUTH_TOKEN`, `SENTRY_DSN`
-- Optional gateway routing: `LLM_GATEWAY_BASE_URL`, `LLM_GATEWAY_API_KEY`, `TETRATE_API_KEY`
+## Target Queue
+### @mc5eamus — skills-integrate-mcp-with-copilot
+- Repo: https://github.com/mc5eamus/skills-integrate-mcp-with-copilot
+- Motion: Pro at $49 one-time
+- Why: Target looks builder-led, so the self-serve Pro CTA is the lowest-friction path.
+- CTA: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter
+- Outreach draft: Hey @mc5eamus, saw you're building around `skills-integrate-mcp-with-copilot`. If the pain is repeated agent mistakes or lost context between sessions, the self-serve path is MCP Memory Gateway Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
 
-## Secret Sync Helper
+### @moisesbritez92 — autocad-mcp
+- Repo: https://github.com/moisesbritez92/autocad-mcp
+- Motion: Pro at $49 one-time
+- Why: Target looks builder-led, so the self-serve Pro CTA is the lowest-friction path.
+- CTA: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter
+- Outreach draft: Hey @moisesbritez92, saw you're building around `autocad-mcp`. If the pain is repeated agent mistakes or lost context between sessions, the self-serve path is MCP Memory Gateway Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
 
-```bash
-bash scripts/sync-gh-secrets-from-env.sh IgorGanapolsky/mcp-memory-gateway
-```
+### @gunbun33 — mcp-servers
+- Repo: https://github.com/gunbun33/mcp-servers
+- Motion: Workflow Hardening Sprint
+- Why: Target language suggests a team workflow or production rollout problem.
+- CTA: https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake
+- Outreach draft: Hey @gunbun33, saw you're shipping `mcp-servers`. If the pain is one workflow repeating the same failure pattern, I am not pitching another agent platform; I am pitching a Workflow Hardening Sprint for one workflow, one owner, and one proof review: https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
 
-The helper only sets keys present in your local environment.
+### @mpress001 — mcp-claude-hackernews
+- Repo: https://github.com/mpress001/mcp-claude-hackernews
+- Motion: Pro at $49 one-time
+- Why: Target looks builder-led, so the self-serve Pro CTA is the lowest-friction path.
+- CTA: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter
+- Outreach draft: Hey @mpress001, saw you're building around `mcp-claude-hackernews`. If the pain is repeated agent mistakes or lost context between sessions, the self-serve path is MCP Memory Gateway Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
 
-## Self-Healing Commands
+### @jo99112 — sg-ai-dev-tools
+- Repo: https://github.com/jo99112/sg-ai-dev-tools
+- Motion: Pro at $49 one-time
+- Why: Target looks builder-led, so the self-serve Pro CTA is the lowest-friction path.
+- CTA: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter
+- Outreach draft: Hey @jo99112, saw you're building around `sg-ai-dev-tools`. If the pain is repeated agent mistakes or lost context between sessions, the self-serve path is MCP Memory Gateway Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
 
-```bash
-npm run self-heal:check
-npm run self-heal:run
-```
-
-`self-heal:run` only executes known safe fix scripts present in `package.json` (`lint:fix`, `format`, `fix`, `feedback:rules`).
+### @containers — kubernetes-mcp-server
+- Repo: https://github.com/containers/kubernetes-mcp-server
+- Motion: Pro at $49 one-time
+- Why: Target looks builder-led, so the self-serve Pro CTA is the lowest-friction path.
+- CTA: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter
+- Outreach draft: Hey @containers, saw you're building around `kubernetes-mcp-server`. If the pain is repeated agent mistakes or lost context between sessions, the self-serve path is MCP Memory Gateway Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.

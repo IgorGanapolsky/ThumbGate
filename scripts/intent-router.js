@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { getActiveMcpProfile, getAllowedTools } = require('./mcp-policy');
+const { loadGatesConfig } = require('./gates-engine');
 const { loadModel, samplePosteriors } = require('./thompson-sampling');
 const { analyzeCodeGraphImpact } = require('./codegraph-context');
 const {
@@ -219,6 +220,20 @@ function planIntent(options = {}) {
     partnerStrategy: enrichedPartnerStrategy,
     actionScores: rankedActions.scores,
     codegraphImpact,
+    killSwitches: loadGatesConfig().gates
+      .filter((g) => {
+        const isHighRisk = ['high', 'critical'].includes(intent.risk);
+        if (isHighRisk && (g.severity === 'high' || g.severity === 'critical')) return true;
+
+        const actionNames = plannedActions.map((a) => a.name);
+        return g.trigger && actionNames.some((name) => g.trigger.toLowerCase().includes(name.toLowerCase()));
+      })
+      .map((g) => ({
+        id: g.id,
+        layer: g.layer || 'Execution',
+        action: g.action,
+        severity: g.severity,
+      })),
   };
   const delegation = evaluateDelegation({
     delegationMode,

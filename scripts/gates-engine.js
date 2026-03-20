@@ -47,14 +47,14 @@ function loadGatesConfig(configPath) {
     }
   };
 
-  const primaryGates = loadOne(primaryPath, true);
+  const primaryGates = loadOne(primaryPath, true).map(g => ({ ...g, layer: g.layer || 'Execution' }));
   mergedConfig.gates.push(...primaryGates);
 
   // Always preserve the full primary/default safety policy. Free tier limits apply
   // only to auto-promoted add-on gates so core protections never disappear.
   const autoConfigPath = getAutoGatesPath();
   if (!configPath && fs.existsSync(autoConfigPath)) {
-    const autoGates = loadOne(autoConfigPath, false);
+    const autoGates = loadOne(autoConfigPath, false).map(g => ({ ...g, layer: g.layer || 'Execution' }));
     const limitedAutoGates = isProTier()
       ? autoGates
       : autoGates.slice(0, FREE_TIER_MAX_GATES);

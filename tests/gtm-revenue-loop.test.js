@@ -15,7 +15,7 @@ test('motion catalog stays aligned with current commercial truth and proof links
   const catalog = buildMotionCatalog(links);
 
   assert.match(catalog.pro.label, /Pro at \$49 one-time/);
-  assert.match(catalog.pro.cta, /\/checkout\/pro$/);
+  assert.match(catalog.pro.cta, /\/checkout\/pro(\?packId=.+)?$/);
   assert.match(catalog.sprint.cta, /#workflow-sprint-intake$/);
   assert.match(catalog.pro.truth, /COMMERCIAL_TRUTH\.md/);
   assert.match(catalog.pro.proof, /VERIFICATION_EVIDENCE\.md/);
