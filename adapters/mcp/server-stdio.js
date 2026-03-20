@@ -539,6 +539,9 @@ function writeNdjsonResponse(id, payload, error = null) {
 function startStdioServer() {
   process.stdin.resume();
   let buffer = Buffer.alloc(0);
+  // Auto-detect transport from first request and lock it for the session.
+  // mcp-proxy (Glama) sends NDJSON and expects NDJSON back.
+  let sessionTransport = process.env.MCP_TRANSPORT || null;
 
   process.stdin.on('data', async (chunk) => {
     buffer = Buffer.concat([buffer, Buffer.from(chunk)]);
@@ -552,7 +555,7 @@ function startStdioServer() {
           code: err.jsonrpcCode || -32700,
           message: err.message,
         };
-        if (err.transport === 'ndjson') {
+        if (err.transport === 'ndjson' || sessionTransport === 'ndjson') {
           writeNdjsonResponse(null, null, error);
         } else {
           writeResponse(null, null, error);
@@ -565,11 +568,18 @@ function startStdioServer() {
       buffer = parsed.remaining;
       if (!parsed.request) continue;
 
+      // Lock transport on first successful parse
+      if (!sessionTransport && parsed.transport) {
+        sessionTransport = parsed.transport;
+      }
+
+      const respond = sessionTransport === 'ndjson' ? writeNdjsonResponse : writeResponse;
+
       try {
         const result = await handleRequest(parsed.request);
-        writeResponse(parsed.request.id ?? null, result);
+        respond(parsed.request.id ?? null, result);
       } catch (err) {
-        writeResponse(parsed.request.id ?? null, null, {
+        respond(parsed.request.id ?? null, null, {
           code: -32603,
           message: err.message,
         });
