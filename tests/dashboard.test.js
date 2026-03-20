@@ -81,6 +81,13 @@ function writeWorkflowRuns(entries) {
   fs.writeFileSync(runsPath, lines + '\n');
 }
 
+function writeContextPacks(entries) {
+  const packsPath = path.join(tmpDir, 'contextfs', 'provenance', 'packs.jsonl');
+  fs.mkdirSync(path.dirname(packsPath), { recursive: true });
+  const lines = entries.map((entry) => JSON.stringify(entry)).join('\n');
+  fs.writeFileSync(packsPath, lines + '\n');
+}
+
 // ---------------------------------------------------------------------------
 // Empty state
 // ---------------------------------------------------------------------------
@@ -477,6 +484,42 @@ test('generateDashboard includes visitor funnel and booked revenue analytics', (
   assert.equal(data.analytics.dataQuality.unreconciledPaidEvents, 0);
   assert.equal(data.analytics.northStar.weeklyActiveProofBackedWorkflowRuns, 1);
   assert.equal(data.analytics.northStar.weeklyTeamsRunningProofBackedWorkflows, 1);
+});
+
+test('generateDashboard reports semantic cache efficiency from context pack provenance', () => {
+  writeContextPacks([
+    {
+      packId: 'pack_base',
+      query: 'verification testing evidence',
+      usedChars: 1200,
+      createdAt: '2026-03-20T12:00:00.000Z',
+      cache: { hit: false },
+    },
+    {
+      packId: 'pack_hit_1',
+      query: 'testing verification evidence',
+      usedChars: 1200,
+      createdAt: '2026-03-20T12:01:00.000Z',
+      cache: { hit: true, similarity: 1, sourcePackId: 'pack_base' },
+    },
+    {
+      packId: 'pack_hit_2',
+      query: 'proof verification loop',
+      usedChars: 800,
+      createdAt: '2026-03-20T12:02:00.000Z',
+      cache: { hit: true, similarity: 0.8, sourcePackId: 'pack_base' },
+    },
+  ]);
+
+  const data = generateDashboard(tmpDir);
+
+  assert.equal(data.analytics.efficiency.semanticCacheEnabled, true);
+  assert.equal(data.analytics.efficiency.contextPackRequests, 3);
+  assert.equal(data.analytics.efficiency.semanticCacheHits, 2);
+  assert.equal(data.analytics.efficiency.semanticCacheHitRate, 0.6667);
+  assert.equal(data.analytics.efficiency.averageSemanticSimilarity, 0.9);
+  assert.equal(data.analytics.efficiency.estimatedContextCharsReused, 2000);
+  assert.equal(data.analytics.efficiency.estimatedContextTokensReused, 500);
 });
 
 test('generateDashboard separates repeated CTA clicks from unique checkout starters and flags orphan revenue', () => {

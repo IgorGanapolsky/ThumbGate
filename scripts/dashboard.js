@@ -220,6 +220,31 @@ function safeRate(numerator, denominator) {
   return Number((numerator / denominator).toFixed(4));
 }
 
+function computeEfficiencyMetrics(feedbackDir) {
+  const provenanceDir = path.join(feedbackDir, 'contextfs', 'provenance');
+  const packs = readJSONL(path.join(provenanceDir, 'packs.jsonl'));
+  const cacheHits = packs.filter((pack) => pack && pack.cache && pack.cache.hit === true);
+  const similarities = cacheHits
+    .map((pack) => Number(pack.cache && pack.cache.similarity))
+    .filter((value) => Number.isFinite(value));
+  const estimatedContextCharsReused = cacheHits.reduce((sum, pack) => {
+    const usedChars = Number(pack && pack.usedChars);
+    return sum + (Number.isFinite(usedChars) ? usedChars : 0);
+  }, 0);
+
+  return {
+    semanticCacheEnabled: process.env.RLHF_SEMANTIC_CACHE_ENABLED !== 'false',
+    contextPackRequests: packs.length,
+    semanticCacheHits: cacheHits.length,
+    semanticCacheHitRate: safeRate(cacheHits.length, packs.length),
+    averageSemanticSimilarity: similarities.length > 0
+      ? Number((similarities.reduce((sum, value) => sum + value, 0) / similarities.length).toFixed(4))
+      : 0,
+    estimatedContextCharsReused,
+    estimatedContextTokensReused: Math.round(estimatedContextCharsReused / 4),
+  };
+}
+
 function resolveJourneyKey(entry = {}) {
   const metadata = entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
   const attribution = entry.attribution && typeof entry.attribution === 'object' ? entry.attribution : {};
@@ -265,6 +290,7 @@ function computeAnalyticsSummary(feedbackDir, options = {}) {
     analyticsWindow,
     (entry) => entry && entry.timestamp
   ).filter((entry) => entry && entry.status === 'paid');
+  const efficiency = computeEfficiencyMetrics(feedbackDir);
   const northStar = summarizeWorkflowRuns(feedbackDir);
   const uniqueVisitors = telemetry.visitors.uniqueVisitors;
   const ctaClicks = telemetry.ctas.totalClicks;
@@ -329,6 +355,7 @@ function computeAnalyticsSummary(feedbackDir, options = {}) {
       topSurface: null,
       topQuery: null,
     },
+    efficiency,
     revenue: billing.revenue || {
       paidProviderEvents: 0,
       paidOrders: 0,
@@ -602,6 +629,14 @@ function printDashboard(data) {
   }
 
   console.log('');
+  console.log('⚙️ Efficiency');
+  console.log(`  Context Packs    : ${analytics.efficiency.contextPackRequests}`);
+  console.log(`  Cache Hits       : ${analytics.efficiency.semanticCacheHits}`);
+  console.log(`  Hit Rate         : ${analytics.efficiency.semanticCacheHitRate}`);
+  console.log(`  Avg Similarity   : ${analytics.efficiency.averageSemanticSimilarity}`);
+  console.log(`  Tokens Reused    : ${analytics.efficiency.estimatedContextTokensReused} (heuristic)`);
+
+  console.log('');
   console.log('\uD83E\uDD1D Delegation');
   console.log(`  Attempts         : ${delegation.attemptCount}`);
   console.log(`  Outcomes         : ${delegation.acceptedCount} accepted / ${delegation.rejectedCount} rejected / ${delegation.abortedCount} aborted`);
@@ -714,6 +749,7 @@ module.exports = {
   computePreventionImpact,
   computeSessionTrend,
   computeSystemHealth,
+  computeEfficiencyMetrics,
   computeAnalyticsSummary,
   computeSecretGuardStats,
   computeObservabilityStats,

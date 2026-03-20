@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
+const { spawnSync } = require('node:child_process');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-session-test-'));
 process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
@@ -119,3 +120,17 @@ test('behavioral extraction finds patterns', () => {
   assert.ok(traits.some(t => t.id === 'concise-over-verbose'));
 });
 
+test('obsidian sync exits cleanly when vault env is missing', () => {
+  const result = spawnSync('bash', ['bin/obsidian-sync.sh'], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      RLHF_OBSIDIAN_VAULT_PATH: '',
+    },
+    encoding: 'utf8',
+  });
+
+  assert.equal(result.status, 0);
+  assert.equal(result.stderr, '');
+  assert.match(result.stdout, /RLHF_OBSIDIAN_VAULT_PATH not set\. Skipping sync\./);
+});

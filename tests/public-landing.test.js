@@ -116,6 +116,8 @@ test('public landing page positions the gateway as continuity-friendly reliabili
   assert.match(landingPage, /MCP Memory Gateway \| Pre-Action Gates for AI coding agents/i);
   assert.match(landingPage, /Pre-Action Gates for AI coding agents\./i);
   assert.match(landingPage, /Pre-action gates that physically block AI coding agents from repeating known mistakes\./i);
+  assert.match(landingPage, /AI workflow control plane/i);
+  assert.match(landingPage, /generic memory server/i);
   assert.match(landingPage, /Keep one sharp agent\./);
   assert.match(landingPage, /Workflow Hardening Sprint/i);
   assert.match(landingPage, /One workflow, one owner, one proof review/i);
@@ -128,6 +130,12 @@ test('public landing page positions the gateway as continuity-friendly reliabili
   assert.match(landingPage, /No orchestration tax/);
   assert.match(landingPage, /same agent session/i);
   assert.match(landingPage, /AI reliability system, not orchestration layer\./);
+  assert.match(landingPage, /Not just another memory server\. An AI workflow control plane\./i);
+  assert.match(landingPage, /Memory servers/i);
+  assert.match(landingPage, /Agentic RAG/i);
+  assert.match(landingPage, /workflow control plane/i);
+  assert.match(landingPage, /semantic cache hit rate/i);
+  assert.match(landingPage, /reused context tokens/i);
   assert.match(landingPage, /reliability rules/i);
   assert.match(landingPage, /3 failures .* warn gate, 5 failures .* blocking gate/i);
   assert.match(landingPage, /Review Proof Pack/);

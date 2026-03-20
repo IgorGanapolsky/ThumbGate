@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MCP Memory Gateway | Pre-Action Gates for AI coding agents</title>
-  <meta name="description" content="Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor." />
-  <meta name="keywords" content="Pre-Action Gates, AI coding agents, workflow hardening, AI agent guardrails, prevention rules, feedback-to-enforcement pipeline, MCP server, Claude Code, Cursor, Codex, Gemini, Amp" />
+  <meta name="description" content="Pre-action gates that physically block AI coding agents from repeating known mistakes. MCP Memory Gateway acts as an AI workflow control plane with recall, prevention rules, semantic cache reporting, and proof-backed rollout for Claude Code, Codex, Gemini, Amp, and Cursor." />
+  <meta name="keywords" content="Pre-Action Gates, AI workflow control plane, AI coding agents, workflow hardening, AI agent guardrails, prevention rules, feedback-to-enforcement pipeline, MCP server, Claude Code, Cursor, Codex, Gemini, Amp, agentic RAG, memory server comparison" />
   <meta property="og:title" content="MCP Memory Gateway | Pre-Action Gates for AI coding agents" />
-  <meta property="og:description" content="Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor." />
+  <meta property="og:description" content="Pre-action gates that physically block AI coding agents from repeating known mistakes. MCP Memory Gateway acts as an AI workflow control plane with recall, prevention rules, semantic cache reporting, and proof-backed rollout for Claude Code, Codex, Gemini, Amp, and Cursor." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://rlhf-feedback-loop-production.up.railway.app" />
   <link rel="canonical" href="https://rlhf-feedback-loop-production.up.railway.app" />
@@ -45,8 +45,8 @@ __GA_BOOTSTRAP__
     "publisher": {
       "@id": "https://rlhf-feedback-loop-production.up.railway.app/#organization"
     },
-    "description": "Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor.",
-    "keywords": "Pre-Action Gates, AI coding agents, workflow hardening, AI agent guardrails, prevention rules, feedback-to-enforcement pipeline, MCP server, Claude Code, Cursor, Codex, Gemini, Amp",
+    "description": "Pre-action gates that physically block AI coding agents from repeating known mistakes. MCP Memory Gateway acts as an AI workflow control plane with recall, prevention rules, semantic cache reporting, and proof-backed rollout for Claude Code, Codex, Gemini, Amp, and Cursor.",
+    "keywords": "Pre-Action Gates, AI workflow control plane, AI coding agents, workflow hardening, AI agent guardrails, prevention rules, feedback-to-enforcement pipeline, MCP server, Claude Code, Cursor, Codex, Gemini, Amp, agentic RAG, memory server comparison",
     "offers": [
       {
         "@type": "Offer",
@@ -1155,7 +1155,7 @@ __GA_BOOTSTRAP__
       <div class="wrap">
         
         <h1>Pre-Action Gates for AI coding agents. <em>Keep one sharp agent.</em></h1>
-        <p class="sub">Built for platform teams, consultancies, and AI-heavy engineering groups. MCP Memory Gateway physically blocks known mistakes before tool use, captures feedback, auto-promotes failures into prevention rules, and keeps verification evidence close without introducing another orchestration layer or subagent handoff tax.</p>
+        <p class="sub">Built for platform teams, consultancies, and AI-heavy engineering groups. MCP Memory Gateway physically blocks known mistakes before tool use, captures feedback, auto-promotes failures into prevention rules, and keeps verification evidence close without introducing another orchestration layer or subagent handoff tax. It acts as the AI workflow control plane when one workflow needs recall, gates, and proof instead of another generic memory server.</p>
         <p class="sub-note">Best first commercial motion: the <strong>Workflow Hardening Sprint</strong> for one workflow, one owner, and one proof review.</p>
         <div class="campaign-banner" id="campaign-banner" hidden>
           <strong>Coming from Reddit?</strong>
@@ -1429,6 +1429,31 @@ __GA_BOOTSTRAP__
       </div>
     </section>
 
+    <section id="category">
+      <div class="wrap">
+        <div class="section-label">Category</div>
+        <div class="section-title">Not just another memory server. An AI workflow control plane.</div>
+        <div class="section-desc">Memory recall, agentic RAG, and workflow control solve different layers of the problem. MCP Memory Gateway adds the control layer: recall when it helps, pre-action gates when the same failure returns, and proof-backed rollout when a team has to trust the workflow.</div>
+        <div class="steps-grid">
+          <div class="step">
+            <div class="step-num">1</div>
+            <h3>Memory servers</h3>
+            <p>Good at persistence and retrieval. They store facts and prior context, but they do not stop the next bad tool call or prove rollout behavior.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <h3>Agentic RAG</h3>
+            <p>Good at assembling better context. It improves what the agent sees, but it still relies on the model to follow instructions under pressure.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <h3>MCP Memory Gateway</h3>
+            <p>Acts as the workflow control plane: semantic recall, pre-action gates, proof-backed runs, and hosted team rollout in the same reliability system.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="offers">
       <div class="wrap">
         <div class="section-label">What We Sell</div>
@@ -1697,7 +1722,7 @@ __GA_BOOTSTRAP__
               <li>NVIDIA Five-Vendor Framework alignment</li>
               <li>Cloud-synced memories from any machine</li>
               <li>Team sharing of prevention rules</li>
-              <li>Usage dashboard (Credits, retrievals, cache hits)</li>
+              <li>Usage dashboard (Credits, retrievals, semantic cache hit rate, reused context tokens)</li>
               <li>Unlimited custom gates with auto-gate promotion</li>
               <li>Priority support</li>
             </ul>

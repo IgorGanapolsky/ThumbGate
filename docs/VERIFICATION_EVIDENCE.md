@@ -1,3 +1,69 @@
+## March 20, 2026: AI workflow control-plane positioning + semantic cache efficiency proof
+
+Scope:
+
+- Repositioned the public landing page away from generic "memory server" framing and toward "AI workflow control plane" language, while preserving the existing Pre-Action Gates product contract.
+- Added a comparison section that clarifies the difference between memory servers, agentic RAG, and the workflow control layer this product actually sells.
+- Surfaced semantic cache efficiency metrics in the dashboard/API by reusing existing ContextFS provenance (`contextfs/provenance/packs.jsonl`) rather than introducing a new ledger or duplicate write path.
+- Updated the commercial truth copy so the Pro package promises concrete efficiency metrics: semantic cache hit rate and reused context tokens.
+- Fixed the required session handoff hook by cleaning `bin/obsidian-sync.sh` and adding a regression test so `./bin/memory.sh` exits cleanly when no Obsidian vault env is configured.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-llm-efficiency-roi`:
+
+```bash
+npm ci
+node --test tests/dashboard.test.js
+node --test tests/api-server.test.js
+node --test tests/public-landing.test.js
+node --test tests/session-handoff.test.js
+./bin/memory.sh
+npm test
+npm run test:coverage
+tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp" npm run prove:adapters
+tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp" npm run prove:automation
+npm run self-heal:check
+git diff --check
+npm run revenue:status -- --json
+```
+
+Observed result:
+
+- `npm ci` exited `0`.
+- `node --test tests/dashboard.test.js` exited `0`: `17` passed, `0` failed.
+- `node --test tests/api-server.test.js` exited `0`: `55` passed, `0` failed.
+- `node --test tests/public-landing.test.js` exited `0`: `12` passed, `0` failed.
+- `node --test tests/session-handoff.test.js` exited `0`: `10` passed, `0` failed.
+- `./bin/memory.sh` exited `0` and now cleanly reports `RLHF_OBSIDIAN_VAULT_PATH not set. Skipping sync.` with no shell errors.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with all-files coverage at `89.68` lines, `75.72` branches, and `93.16` functions.
+- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks on a serial rerun (`tests 99171ms`, `prove_adapters 7235ms`, `prove_automation 3873ms`).
+- `git diff --check` exited `0`.
+- `npm run revenue:status -- --json` exited `0` with `source: hosted-via-railway-env`; public probes returned `/health 200`, `/ 200`, and `/v1/telemetry/ping 204`.
+
+Behavioral proof points:
+
+- The public landing page now explicitly says the product acts as an "AI workflow control plane" and is "not another generic memory server."
+- The new category section contrasts `Memory servers`, `Agentic RAG`, and `MCP Memory Gateway`, so buyers can place the product correctly before evaluating pricing.
+- The Pro offer now exposes concrete efficiency metrics in public copy: semantic cache hit rate and reused context tokens.
+- The session handoff path is cleaner than before: `./bin/memory.sh` refreshes `primer.md` without the broken shell-comment noise that previously leaked from `bin/obsidian-sync.sh`.
+- `generateDashboard()` now computes efficiency from existing context-pack provenance:
+  - `contextPackRequests`
+  - `semanticCacheHits`
+  - `semanticCacheHitRate`
+  - `averageSemanticSimilarity`
+  - `estimatedContextCharsReused`
+  - `estimatedContextTokensReused`
+- `/v1/dashboard` now returns those efficiency metrics alongside funnel and revenue analytics, and regression tests verify the API contract.
+- Hosted-first operational truth still reports `bookedRevenueTodayCents: 0`, so this change improves positioning and measurement clarity, not current-day revenue by itself.
+
+No-tech-debt notes:
+
+- No new dependencies were added.
+- No new runtime ledger was introduced.
+- Efficiency reporting reuses existing ContextFS provenance instead of creating a second telemetry path.
+
 ## March 20, 2026: Railway rollout verification wait-budget hardening
 
 Scope:

@@ -28,7 +28,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - Cloud-synced memories accessible from any machine
 - Unlimited memories and retrievals
 - Team sharing of prevention rules
-- Usage dashboard (memories, retrievals, cache hits, cost savings)
+- Usage dashboard (memories, retrievals, semantic cache hit rate, reused context tokens)
 - Unlimited custom gates with auto-gate promotion
 - Priority support
 

@@ -6,20 +6,21 @@
 - **Target Audience:** Developers hitting "Claude amnesia" and context compaction.
 
 ## Current State (2026-03-20)
-- **Revenue Today:** $0.00
-- **Outreach Sent:** 10 high-intent builder leads (Potential: $490).
-- **Hardening:** NVIDIA Five-Vendor Governance mapping complete.
-- **Billing:** Credit-based wallet system verified and live.
+- **Revenue Today:** $0.00 booked today; hosted-first status still shows $20.00 lifetime with 2 reconciled paid orders.
+- **Traffic Today:** Hosted production shows 36 visitors, 24 page views, 6 checkout starts, and 2 signups.
+- **Positioning:** Landing page now frames MCP Memory Gateway as an AI workflow control plane, not a generic memory server.
+- **Efficiency Proof:** Dashboard/API now expose semantic cache hit rate, similarity, and reused context-token estimates from existing ContextFS provenance.
 
 ## Last Completed Task
-- Implemented dependency cooldown check
+- Implemented the high-ROI positioning and efficiency-reporting slice from the LLM cost/efficiency review, with proof-backed tests and full verification.
 
 ## Exact Next Step
-- Wire cooldown into CI pipeline
-- If conversion is low (<10%), initiate Reddit/X "Compaction Pain" reply loop.
+- Merge the verified control-plane/efficiency PR, then watch whether sprint CTA clicks and fit-check usage improve from the clearer category framing.
+- If lift is flat, add one pricing-adjacent proof block that shows concrete semantic cache savings from live hosted usage.
 
 ## Open Blockers
-- Need Chainguard API key
+- `RLHF_GA_MEASUREMENT_ID` is still missing in Railway, so GA hooks exist but the GA loader is absent.
+- Workflow Hardening Sprint lead volume is still `0`, so commercial validation remains the main business gap.
 
 ## Behavioral Traits
 
@@ -27,30 +28,27 @@ _No strong behavioral patterns identified yet._
 
 ## Live Git Context
 
-### Branch: chore/sync-unstaged-work
+### Branch: codex/llm-efficiency-roi
 
 ### Last 5 Commits:
 ```
-df33294 ci: retrigger CI checks
-921ff19 fix: register session-handoff.test.js in test:ops to pass suite parity check
-7c23f35 fix: bump version refs 0.7.3 → 0.7.4 across manifests, adapters, docs, and tests
-36e56eb chore: sync unstaged work — CLAUDE.md, gitops docs, revenue loop, memory helper, launch content, primer
-e06c15a feat: add session_handoff and session_primer MCP tools for cross-session context continuity
+c8b9976 fix: wait for promoted railway deploys (#289)
+ebd5189 fix: harden deploy build identity and smithery scans (#288)
+df5f93d feat: add dispatch-safe remote ops profile (#287)
+93daccd fix: verify Railway deploy revisions (#286)
+0287301 chore: sync unstaged work, version bump, and new modules (#283)
 ```
 
 ### Modified Files:
 ```
- M bin/memory.sh
- M config/gates/default.json
+ M bin/obsidian-sync.sh
+ M docs/COMMERCIAL_TRUTH.md
+ M docs/VERIFICATION_EVIDENCE.md
  M primer.md
- M scripts/contextfs.js
- M scripts/feedback-loop.js
- M scripts/gates-engine.js
- M scripts/mcp-policy.js
+ M public/index.html
+ M scripts/dashboard.js
+ M tests/api-server.test.js
+ M tests/dashboard.test.js
+ M tests/public-landing.test.js
  M tests/session-handoff.test.js
-?? bin/obsidian-sync.sh
-?? scripts/audit-trail.js
-?? scripts/behavioral-extraction.js
-?? scripts/profile-router.js
-?? tests/audit-trail.test.js
 ```

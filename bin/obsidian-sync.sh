@@ -1,17 +1,16 @@
 #!/bin/bash
-/**
- * obsidian-sync.sh
- * 
- * Layer 5: Obsidian Knowledge Bridge
- * Syncs the local memory logs and primer to an Obsidian vault for long-term storage and search.
- */
+
+# obsidian-sync.sh
+#
+# Layer 5: Obsidian Knowledge Bridge
+# Syncs the local memory logs and primer to an Obsidian vault for long-term storage and search.
 
 VAULT_PATH=$RLHF_OBSIDIAN_VAULT_PATH
-PROJECT_NAME=$(basename $(pwd))
+PROJECT_NAME=$(basename "$(pwd)")
 TARGET_DIR="$VAULT_PATH/AI-Memories/$PROJECT_NAME"
 
 if [ -z "$VAULT_PATH" ]; then
-  echo "🤖 [Layer 5] OBSIDIAN_VAULT_PATH not set. Skipping sync."
+  echo "🤖 [Layer 5] RLHF_OBSIDIAN_VAULT_PATH not set. Skipping sync."
   exit 0
 fi
 

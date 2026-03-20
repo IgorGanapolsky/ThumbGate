@@ -104,12 +104,17 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Pre-Action Gates for AI coding agents/i);
   assert.match(body, /Keep one sharp agent/i);
   assert.match(body, /Pre-action gates that physically block AI coding agents from repeating known mistakes\./i);
+  assert.match(body, /AI workflow control plane/i);
+  assert.match(body, /generic memory server/i);
   assert.match(body, /Workflow Hardening Sprint/i);
   assert.match(body, /Start Sprint Intake/i);
   assert.match(body, /Code modernization guardrails/i);
   assert.match(body, /Reliability Studio/i);
   assert.match(body, /Import\. Compare\. Deploy\./);
   assert.match(body, /No model fine-tuning required/i);
+  assert.match(body, /Not just another memory server\. An AI workflow control plane\./i);
+  assert.match(body, /Memory servers/i);
+  assert.match(body, /Agentic RAG/i);
   assert.match(body, /Workflow Hardening Fit Checker/i);
   assert.match(body, /can AI fully satisfy this query without a click\?/i);
   assert.match(body, /Run Fit Check/i);
@@ -117,6 +122,8 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Start Compare &amp; Deploy/);
   assert.match(body, /same agent session|same reliability layer|No orchestration tax/i);
   assert.match(body, /\$49 one-time/);
+  assert.match(body, /semantic cache hit rate/i);
+  assert.match(body, /reused context tokens/i);
   assert.match(body, /plausible\.io\/js\/script\.js/);
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
   assert.match(body, /google-site-verification" content="test-verification-token"/);
@@ -1653,6 +1660,24 @@ test('dashboard applies analytics window query params with live billing truth', 
       }),
       '',
     ].join('\n'));
+    fs.mkdirSync(path.join(isolatedFeedbackDir, 'contextfs', 'provenance'), { recursive: true });
+    fs.writeFileSync(path.join(isolatedFeedbackDir, 'contextfs', 'provenance', 'packs.jsonl'), [
+      JSON.stringify({
+        packId: 'pack_dashboard_base',
+        query: 'verification testing evidence',
+        usedChars: 1200,
+        createdAt: '2026-03-19T14:00:00.000Z',
+        cache: { hit: false },
+      }),
+      JSON.stringify({
+        packId: 'pack_dashboard_hit',
+        query: 'testing verification evidence',
+        usedChars: 1200,
+        createdAt: '2026-03-19T14:01:00.000Z',
+        cache: { hit: true, similarity: 1, sourcePackId: 'pack_dashboard_base' },
+      }),
+      '',
+    ].join('\n'));
 
     const res = await fetch(apiUrl('/v1/dashboard?window=today&timezone=America/New_York&now=2026-03-19T18:00:00.000Z'), {
       headers: authHeader,
@@ -1667,6 +1692,9 @@ test('dashboard applies analytics window query params with live billing truth', 
     assert.equal(body.analytics.funnel.acquisitionLeads, 1);
     assert.equal(body.analytics.revenue.bookedRevenueCents, 4900);
     assert.equal(body.analytics.revenue.paidOrders, 1);
+    assert.equal(body.analytics.efficiency.contextPackRequests, 2);
+    assert.equal(body.analytics.efficiency.semanticCacheHits, 1);
+    assert.equal(body.analytics.efficiency.estimatedContextTokensReused, 300);
   } finally {
     process.env.RLHF_FEEDBACK_DIR = savedEnv.feedbackDir;
     process.env._TEST_API_KEYS_PATH = savedEnv.apiKeysPath;
