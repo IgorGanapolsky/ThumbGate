@@ -15,7 +15,7 @@
 - Hardened the zero-filming social automation lane: fixed self-heal output buffering, removed copied-profile teardown flake, widened Chrome CDP startup budget, made TikTok preflight failures explicit, and made Instagram draft creation recover from the discard-confirmation modal.
 
 ## Exact Next Step
-- Push and merge the `codex/social-archive-recovery` branch once PR checks are green.
+- Push and merge the `codex/social-proof-hardening` branch once PR checks are green.
 - After merge, authenticate TikTok in a Chrome profile and rerun the combined `social:publish` lane to capture the first true dual-platform no-share proof, then switch to an actual publish.
 
 ## Open Blockers
@@ -28,15 +28,15 @@ _No strong behavioral patterns identified yet._
 
 ## Live Git Context
 
-### Branch: codex/social-archive-recovery
+### Branch: codex/social-proof-hardening
 
 ### Last 5 Commits:
 ```
+f1a1a06 fix: harden social publish verification
 328ca92 docs: refresh social verification evidence
 a73e426 feat: harden social publish automation
 37bc326 fix: handle ping and notifications in MCP stdio transport for Glama compatibility (#295)
 beec535 feat: add zero-filming social automation pipeline (#294)
-4deccf6 fix: match stdio response transport to request transport (NDJSON support) (#293)
 ```
 
 ### Modified Files:
@@ -44,9 +44,6 @@ beec535 feat: add zero-filming social automation pipeline (#294)
  M docs/VERIFICATION_EVIDENCE.md
  M docs/marketing/social-automation.md
  M primer.md
- M scripts/self-healing-check.js
  M scripts/social-pipeline.js
- M tests/cli.test.js
- M tests/self-healing-check.test.js
  M tests/social-pipeline.test.js
 ```

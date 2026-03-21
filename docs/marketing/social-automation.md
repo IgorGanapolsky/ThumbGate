@@ -22,17 +22,9 @@ It exists so we can ship founder-style IG and TikTok content without filming, ma
 ## Prerequisites
 
 - macOS
-- `npm ci` run in the active worktree so `playwright-core` is installed
-- Google Chrome with the target Instagram account already logged in
-- Optional only for the AppleScript backend: `View -> Developer -> Allow JavaScript from Apple Events` enabled in Chrome
+- Google Chrome with the target IG/TikTok accounts already logged in
+- `View -> Developer -> Allow JavaScript from Apple Events` enabled in Chrome
 - `ffmpeg` installed and available on `PATH`
-
-Current profile reality on this machine:
-
-- `Default instagram=7 tiktok=0`
-- `Profile 1 instagram=0 tiktok=0`
-
-That means the verified browser-publish lane can create Instagram drafts from the copied-profile backend today, but the combined Instagram+TikTok lane still halts before partial publish because TikTok is not authenticated in the available Chrome profiles.
 
 ## Commands
 
@@ -89,18 +81,6 @@ npm run social:publish -- \
   --cleanup-drafts
 ```
 
-Run the same no-share proof directly against an already-built bundle:
-
-```bash
-npm run social:publish -- \
-  --bundle .artifacts/social/live-combined-preflight-proof-20260321c/bundle.json \
-  --platforms instagram \
-  --no-share \
-  --cleanup-drafts \
-  --backend playwright \
-  --profile-dir Default
-```
-
 Publish immediately:
 
 ```bash
@@ -143,7 +123,7 @@ npm run social:scheduler:install -- --dry-run
 - Queue state lives under `.rlhf/` and is intentionally local-only.
 - Publish history also lives under `.rlhf/` and is intentionally local-only.
 - The pipeline supports `--dry-run` and `--no-share` so browser automation can be verified without pushing duplicate live posts.
-- The verified live backend for this branch is the copied-profile Playwright lane (`--backend playwright`), not AppleScript.
+- The currently verified backend in this worktree is the copied-profile Playwright lane (`--backend playwright`), not AppleScript.
 - March 21, 2026 proof from this branch:
   - `.artifacts/social/live-combined-preflight-proof-20260321c/` contains a deterministic 5-slide bundle sourced from `/Users/ganapolsky_i/Downloads/instagram-carousel-slides.html`.
   - `social:publish --platforms instagram --no-share --cleanup-drafts --backend playwright --profile-dir Default` returned `draft-ready` with `assetCount: 5`.

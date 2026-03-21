@@ -144,74 +144,6 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function removeDirectoryWithRetries(
-  dirPath,
-  {
-    attempts = DEFAULT_DIRECTORY_RETRY_ATTEMPTS,
-    delayMs = DEFAULT_DIRECTORY_RETRY_DELAY_MS,
-  } = {}
-) {
-  if (!dirPath) {
-    return;
-  }
-
-  let lastError = null;
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      fs.rmSync(dirPath, { recursive: true, force: true });
-      return;
-    } catch (error) {
-      lastError = error;
-      if (!['EBUSY', 'EMFILE', 'ENFILE', 'ENOTEMPTY', 'EPERM'].includes(error.code) || attempt === attempts) {
-        throw error;
-      }
-      await sleep(delayMs);
-    }
-  }
-
-  if (lastError) {
-    throw lastError;
-  }
-}
-
-async function waitForProcessExit(processHandle, timeoutMs = DEFAULT_CHROME_EXIT_TIMEOUT_MS) {
-  if (!processHandle) {
-    return 0;
-  }
-  if (processHandle.exitCode !== null || processHandle.signalCode !== null) {
-    return processHandle.exitCode;
-  }
-
-  await Promise.race([
-    Promise.race([
-      once(processHandle, 'exit'),
-      once(processHandle, 'close'),
-    ]),
-    sleep(timeoutMs).then(() => {
-      throw new Error(`Timed out waiting for process ${processHandle.pid || 'unknown'} to exit.`);
-    }),
-  ]);
-  return processHandle.exitCode;
-}
-
-async function stopChromeProcess(processHandle, timeoutMs = DEFAULT_CHROME_EXIT_TIMEOUT_MS) {
-  if (!processHandle || processHandle.exitCode !== null || processHandle.signalCode !== null) {
-    return;
-  }
-
-  processHandle.kill('SIGTERM');
-  try {
-    await waitForProcessExit(processHandle, timeoutMs);
-  } catch (error) {
-    if (processHandle.exitCode !== null || processHandle.signalCode !== null) {
-      return;
-    }
-    processHandle.kill('SIGKILL');
-    await waitForProcessExit(processHandle, timeoutMs);
-    throw error;
-  }
-}
-
 function hashText(value) {
   return crypto.createHash('sha256').update(String(value || ''), 'utf8').digest('hex');
 }
@@ -772,6 +704,96 @@ function writePublishAttemptRecord(recordPath, payload) {
   writeJson(recordPath, payload);
 }
 
+function appendPublishAttemptEvent(recordPath, event) {
+  const existing = readJson(recordPath, {});
+  const events = Array.isArray(existing.events) ? existing.events.slice() : [];
+  events.push(event);
+  writeJson(recordPath, {
+    ...existing,
+    lastEventAt: event.recordedAt || new Date().toISOString(),
+    events,
+  });
+}
+
+async function removeDirectoryWithRetries(
+  dirPath,
+  {
+    attempts = DEFAULT_DIRECTORY_RETRY_ATTEMPTS,
+    delayMs = DEFAULT_DIRECTORY_RETRY_DELAY_MS,
+  } = {}
+) {
+  if (!dirPath) {
+    return;
+  }
+
+  let lastError = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      fs.rmSync(dirPath, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!['EBUSY', 'EMFILE', 'ENFILE', 'ENOTEMPTY', 'EPERM'].includes(error.code) || attempt === attempts) {
+        throw error;
+      }
+      await sleep(delayMs);
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+}
+
+async function waitForProcessExit(processHandle, timeoutMs = DEFAULT_CHROME_EXIT_TIMEOUT_MS) {
+  if (!processHandle) {
+    return 0;
+  }
+  if (processHandle.exitCode !== null || processHandle.signalCode !== null) {
+    return processHandle.exitCode;
+  }
+
+  await Promise.race([
+    Promise.race([
+      once(processHandle, 'exit'),
+      once(processHandle, 'close'),
+    ]),
+    sleep(timeoutMs).then(() => {
+      throw new Error(`Timed out waiting for process ${processHandle.pid || 'unknown'} to exit.`);
+    }),
+  ]);
+  return processHandle.exitCode;
+}
+
+async function stopChromeProcess(processHandle, timeoutMs = DEFAULT_CHROME_EXIT_TIMEOUT_MS) {
+  if (!processHandle || processHandle.exitCode !== null || processHandle.signalCode !== null) {
+    return;
+  }
+
+  processHandle.kill('SIGTERM');
+  try {
+    await waitForProcessExit(processHandle, timeoutMs);
+  } catch (error) {
+    if (processHandle.exitCode !== null || processHandle.signalCode !== null) {
+      return;
+    }
+    processHandle.kill('SIGKILL');
+    await waitForProcessExit(processHandle, timeoutMs);
+    throw error;
+  }
+}
+
+async function waitForChildExit(child, timeoutMs = DEFAULT_CHROME_EXIT_TIMEOUT_MS) {
+  return waitForProcessExit(child, timeoutMs);
+}
+
+async function removeDirWithRetries(dirPath, {
+  retries = DEFAULT_DIRECTORY_RETRY_ATTEMPTS,
+  delayMs = DEFAULT_DIRECTORY_RETRY_DELAY_MS,
+} = {}) {
+  return removeDirectoryWithRetries(dirPath, { attempts: retries, delayMs });
+}
+
 function resolveTikTokPublishTarget(bundle, readyState = {}) {
   const photoAssetPaths = bundle.platforms?.tiktok?.photoAssetPaths || bundle.slideImagePaths || [];
   const videoAssetPath = bundle.platforms?.tiktok?.videoAssetPath || bundle.platforms?.tiktok?.assetPath || bundle.tiktokVideoPath;
@@ -805,6 +827,25 @@ function parseBrowserResult(raw) {
   } catch {
     return raw;
   }
+}
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildClickByTextScript(label) {
+  return `
+    (() => {
+      const pattern = new RegExp('^\\\\s*' + ${JSON.stringify(escapeRegex(label))} + '\\\\s*$', 'i');
+      const text = (element) => (element.innerText || element.getAttribute('aria-label') || '').trim();
+      const target = [...document.querySelectorAll('button,[role=button],a')].find((element) => pattern.test(text(element)));
+      if (!target) {
+        return JSON.stringify({ clicked: false });
+      }
+      target.click();
+      return JSON.stringify({ clicked: true, label: text(target) });
+    })()
+  `;
 }
 
 function shouldCopyChromePath(relativePath) {
@@ -911,6 +952,13 @@ function createAppleScriptBrowserSession() {
     async setInputFiles() {
       return null;
     },
+    async clickText({ urlPrefix, openUrl, text }) {
+      return parseBrowserResult(executeChromeJavaScript({
+        urlPrefix,
+        openUrl,
+        js: buildClickByTextScript(text),
+      }));
+    },
     async close() {
       return null;
     },
@@ -1013,6 +1061,26 @@ async function createPlaywrightBrowserSession({
     };
   }
 
+  async function clickText({ urlPrefix, openUrl, text }) {
+    const page = await getPage({ urlPrefix, openUrl });
+    const exactPattern = new RegExp(`^\\s*${escapeRegex(text)}\\s*$`, 'i');
+    const locatorCandidates = [
+      page.getByRole('button', { name: exactPattern }).first(),
+      page.locator('button,[role=button],a').filter({ hasText: exactPattern }).first(),
+    ];
+
+    for (const locator of locatorCandidates) {
+      const count = await locator.count().catch(() => 0);
+      if (!count) {
+        continue;
+      }
+      await locator.click();
+      return { clicked: true, label: text };
+    }
+
+    return { clicked: false, label: text };
+  }
+
   return {
     name: 'playwright',
     async healthCheck() {
@@ -1046,25 +1114,31 @@ async function createPlaywrightBrowserSession({
     async setInputFiles(spec) {
       return setInputFiles(spec);
     },
+    async clickText(spec) {
+      return clickText(spec);
+    },
     async close() {
-      let cleanupError = null;
+      const closeErrors = [];
       try {
         await browser.close();
       } catch (error) {
-        cleanupError = error;
+        closeErrors.push(new Error(`browser.close failed: ${error.message}`));
       }
+
       try {
         await stopChromeProcess(chromeProcess);
       } catch (error) {
-        cleanupError = cleanupError || error;
+        closeErrors.push(new Error(`chromeProcess.kill failed: ${error.message}`));
       }
+
       try {
         await removeDirectoryWithRetries(tempRoot);
       } catch (error) {
-        cleanupError = cleanupError || error;
+        closeErrors.push(new Error(`temp profile cleanup failed: ${error.message}`));
       }
-      if (cleanupError) {
-        throw new Error(`Failed to clean up copied-profile Chrome automation session: ${cleanupError.message}`);
+
+      if (closeErrors.length > 0) {
+        throw new Error(closeErrors.map((error) => error.message).join('; '));
       }
     },
   };
@@ -1280,12 +1354,14 @@ const INSTAGRAM_EDITOR_JS = `
     const share = [...document.querySelectorAll('button,[role=button],a')].find((element) => /^share$/i.test(text(element)));
     const next = [...document.querySelectorAll('button,[role=button],a')].find((element) => /^next$/i.test(text(element)));
     const cancel = [...document.querySelectorAll('button,[role=button],a')].find((element) => /^cancel$/i.test(text(element)));
+    const body = document.body ? document.body.innerText.slice(0, 2400) : '';
     return JSON.stringify({
       hasEditor: Boolean(editor),
       shareVisible: Boolean(share),
       nextVisible: Boolean(next),
-      discardModalVisible: Boolean(cancel) && Boolean(document.body && /discard post\?/i.test(document.body.innerText || '')),
-      body: document.body ? document.body.innerText.slice(0, 2400) : ''
+      discardModalVisible: Boolean(cancel) && /discard post\?/i.test(body),
+      hasError: /something went wrong|try again/i.test(body),
+      body,
     });
   })()
 `;
@@ -1361,6 +1437,18 @@ const INSTAGRAM_NEXT_JS = `
   })()
 `;
 
+const INSTAGRAM_DISMISS_DISCARD_MODAL_JS = `
+  (() => {
+    const text = (element) => (element.innerText || element.getAttribute('aria-label') || '').trim();
+    const discard = [...document.querySelectorAll('button,[role=button],a')].find((element) => /^discard$/i.test(text(element)));
+    if (!discard) {
+      return JSON.stringify({ clicked: false });
+    }
+    discard.click();
+    return JSON.stringify({ clicked: true });
+  })()
+`;
+
 const INSTAGRAM_SHARE_JS = `
   (() => {
     const text = (element) => (element.innerText || element.getAttribute('aria-label') || '').trim();
@@ -1387,18 +1475,6 @@ const INSTAGRAM_CLOSE_JS = `
       return JSON.stringify({ discarded: true });
     }
     return JSON.stringify({ closed: false });
-  })()
-`;
-
-const INSTAGRAM_DISMISS_DISCARD_MODAL_JS = `
-  (() => {
-    const text = (element) => (element.innerText || element.getAttribute('aria-label') || '').trim();
-    const cancel = [...document.querySelectorAll('button,[role=button],a')].find((element) => /^cancel$/i.test(text(element)));
-    if (!cancel) {
-      return JSON.stringify({ dismissed: false });
-    }
-    cancel.click();
-    return JSON.stringify({ dismissed: true });
   })()
 `;
 
@@ -1537,9 +1613,9 @@ async function preflightInstagramSession(session, attempt = null) {
 }
 
 async function preflightTikTokSession(session, attempt = null) {
-  let state;
+  const startedAt = new Date().toISOString();
   try {
-    state = await session.poll({
+    const state = await session.poll({
       urlPrefix: 'https://www.tiktok.com/tiktokstudio/',
       openUrl: TIKTOK_UPLOAD_URL,
       js: TIKTOK_PREFLIGHT_JS,
@@ -1550,44 +1626,63 @@ async function preflightTikTokSession(session, attempt = null) {
         value.state === 'video-upload-ready'
       ),
     });
-  } catch (error) {
-    if (/Timed out waiting for browser state/.test(error.message || '')) {
-      let observedState = null;
-      try {
-        observedState = parseBrowserResult(await session.evaluate({
-          urlPrefix: 'https://www.tiktok.com/tiktokstudio/',
-          openUrl: TIKTOK_UPLOAD_URL,
-          js: TIKTOK_PREFLIGHT_JS,
-        }));
-      } catch {
-        observedState = null;
-      }
-      if (attempt && observedState) {
-        writePublishAttemptRecord(attempt.recordPath, {
-          attemptId: attempt.attemptId,
-          platform: 'tiktok',
-          status: 'preflight-timeout',
-          recordedAt: new Date().toISOString(),
-          state: observedState,
-        });
-      }
-      throw new Error(`TikTok did not reach an authenticated upload surface: ${JSON.stringify(observedState || { error: error.message })}`);
+    if (attempt) {
+      writePublishAttemptRecord(attempt.recordPath, {
+        attemptId: attempt.attemptId,
+        platform: 'tiktok',
+        status: 'preflight',
+        recordedAt: new Date().toISOString(),
+        state,
+      });
     }
+    if (state.loggedOut) {
+      throw new Error('TikTok session unavailable in the selected Chrome profile.');
+    }
+    return state;
+  } catch (error) {
+    let fallbackState = null;
+    const timedOut = /Timed out waiting for browser state/.test(error.message || '');
+    try {
+      fallbackState = parseBrowserResult(await session.evaluate({
+        urlPrefix: 'https://www.tiktok.com/tiktokstudio/',
+        openUrl: TIKTOK_UPLOAD_URL,
+        js: TIKTOK_PREFLIGHT_JS,
+      }));
+    } catch {
+      // Preserve the original error if the page is unavailable.
+    }
+
+    if (attempt) {
+      writePublishAttemptRecord(attempt.recordPath, {
+        attemptId: attempt.attemptId,
+        platform: 'tiktok',
+        status: timedOut ? 'preflight-timeout' : 'preflight-failed',
+        recordedAt: new Date().toISOString(),
+        startedAt,
+        error: error.message,
+        state: fallbackState,
+      });
+    }
+
+    if (fallbackState && fallbackState.loggedOut) {
+      throw new Error('TikTok session unavailable in the selected Chrome profile.');
+    }
+
+    if (fallbackState) {
+      throw new Error(`TikTok did not reach an authenticated upload surface: ${JSON.stringify(timedOut ? fallbackState : {
+        url: fallbackState.url,
+        title: fallbackState.title,
+        state: fallbackState.state,
+        body: fallbackState.body,
+      })}`);
+    }
+
+    if (timedOut) {
+      throw new Error(`TikTok did not reach an authenticated upload surface: ${JSON.stringify({ error: error.message })}`);
+    }
+
     throw error;
   }
-  if (attempt) {
-    writePublishAttemptRecord(attempt.recordPath, {
-      attemptId: attempt.attemptId,
-      platform: 'tiktok',
-      status: 'preflight',
-      recordedAt: new Date().toISOString(),
-      state,
-    });
-  }
-  if (state.loggedOut) {
-    throw new Error('TikTok session unavailable in the selected Chrome profile.');
-  }
-  return state;
 }
 
 async function prepareInstagramDraft(bundle, session, { dryRun = false, attempt = null }) {
@@ -1628,18 +1723,42 @@ async function prepareInstagramDraft(bundle, session, { dryRun = false, attempt 
   if (!uploadState.ok || uploadState.filesLength !== instagramAssets.length) {
     throw new Error(`Instagram upload failed: ${JSON.stringify(uploadState)}`);
   }
+  if (attempt) {
+    appendPublishAttemptEvent(attempt.recordPath, {
+      platform: 'instagram',
+      type: 'upload-complete',
+      recordedAt: new Date().toISOString(),
+      uploadState,
+    });
+  }
   await captureAttemptScreenshot(session, attempt, 'instagram-uploaded', {
     urlPrefix: INSTAGRAM_URL,
     openUrl: INSTAGRAM_URL,
   });
 
+  await sleep(5000);
+
   let editorState = null;
+  const editorStepStates = [];
   for (let index = 0; index < 5; index += 1) {
     editorState = parseBrowserResult(await session.evaluate({
       urlPrefix: INSTAGRAM_URL,
       openUrl: INSTAGRAM_URL,
       js: INSTAGRAM_EDITOR_JS,
     }));
+    const stepState = {
+      step: index + 1,
+      recordedAt: new Date().toISOString(),
+      state: editorState,
+    };
+    editorStepStates.push(stepState);
+    if (attempt) {
+      appendPublishAttemptEvent(attempt.recordPath, {
+        platform: 'instagram',
+        type: 'editor-state',
+        ...stepState,
+      });
+    }
     if (editorState.hasEditor || editorState.shareVisible) {
       break;
     }
@@ -1649,22 +1768,64 @@ async function prepareInstagramDraft(bundle, session, { dryRun = false, attempt 
         openUrl: INSTAGRAM_URL,
         js: INSTAGRAM_DISMISS_DISCARD_MODAL_JS,
       });
+      if (attempt) {
+        appendPublishAttemptEvent(attempt.recordPath, {
+          platform: 'instagram',
+          type: 'editor-discard-dismissed',
+          recordedAt: new Date().toISOString(),
+          step: index + 1,
+        });
+      }
       await sleep(750);
       continue;
     }
+    if (editorState.hasError) {
+      break;
+    }
     if (!editorState.nextVisible) {
-      await sleep(1000);
+      await sleep(2000);
       continue;
     }
-    await session.evaluate({
+    const clickState = session.clickText
+      ? await session.clickText({
+        urlPrefix: INSTAGRAM_URL,
+        openUrl: INSTAGRAM_URL,
+        text: 'Next',
+      })
+      : parseBrowserResult(await session.evaluate({
+        urlPrefix: INSTAGRAM_URL,
+        openUrl: INSTAGRAM_URL,
+        js: INSTAGRAM_NEXT_JS,
+      }));
+    if (attempt) {
+      appendPublishAttemptEvent(attempt.recordPath, {
+        platform: 'instagram',
+        type: 'editor-next-click',
+        recordedAt: new Date().toISOString(),
+        step: index + 1,
+        clickState,
+      });
+    }
+    await captureAttemptScreenshot(session, attempt, `instagram-step-${index + 1}`, {
       urlPrefix: INSTAGRAM_URL,
       openUrl: INSTAGRAM_URL,
-      js: INSTAGRAM_NEXT_JS,
     });
-    await sleep(1500);
+    await sleep(4000);
   }
 
   if (!editorState || (!editorState.hasEditor && !editorState.shareVisible)) {
+    if (attempt) {
+      writePublishAttemptRecord(attempt.recordPath, {
+        attemptId: attempt.attemptId,
+        platform: 'instagram',
+        status: editorState && editorState.hasError ? 'editor-error' : 'editor-timeout',
+        recordedAt: new Date().toISOString(),
+        uploadState,
+        editorState,
+        editorStepStates,
+        events: readJson(attempt.recordPath, {}).events || [],
+      });
+    }
     throw new Error(`Instagram editor did not become ready: ${JSON.stringify(editorState)}`);
   }
 
@@ -1708,11 +1869,17 @@ async function publishInstagram(bundle, session, { dryRun = false, noShare = fal
     return draftState;
   }
 
-  const shareState = parseBrowserResult(await session.evaluate({
-    urlPrefix: INSTAGRAM_URL,
-    openUrl: INSTAGRAM_URL,
-    js: INSTAGRAM_SHARE_JS,
-  }));
+  const shareState = session.clickText
+    ? await session.clickText({
+      urlPrefix: INSTAGRAM_URL,
+      openUrl: INSTAGRAM_URL,
+      text: 'Share',
+    })
+    : parseBrowserResult(await session.evaluate({
+      urlPrefix: INSTAGRAM_URL,
+      openUrl: INSTAGRAM_URL,
+      js: INSTAGRAM_SHARE_JS,
+    }));
 
   if (!shareState.clicked) {
     throw new Error('Instagram share button was not available.');
@@ -1982,7 +2149,7 @@ async function publishBundle(bundlePath, options = {}) {
   const completedPlatforms = new Set();
   const results = [];
   let session = null;
-  let fatalError = null;
+  let publishError = null;
 
   if (platformSet.has('instagram')) {
     attempts.instagram = createPublishAttempt(bundle, 'instagram');
@@ -2128,7 +2295,7 @@ async function publishBundle(bundlePath, options = {}) {
 
     return results;
   } catch (error) {
-    fatalError = error;
+    publishError = error;
     if (platformSet.has('instagram') && !completedPlatforms.has('instagram')) {
       appendJsonLine(historyPath, {
         platform: 'instagram',
@@ -2155,23 +2322,19 @@ async function publishBundle(bundlePath, options = {}) {
         error: error.message,
       });
     }
+    throw error;
   } finally {
     if (session) {
       try {
         await session.close();
       } catch (closeError) {
-        if (!fatalError) {
-          fatalError = closeError;
+        if (!publishError) {
+          throw closeError;
         }
+        console.error(`[social-pipeline] session cleanup warning: ${closeError.message}`);
       }
     }
   }
-
-  if (fatalError) {
-    throw fatalError;
-  }
-
-  return results;
 }
 
 async function publishDueQueueEntries({
@@ -2431,6 +2594,7 @@ module.exports = {
   buildLaunchAgentPlist,
   buildBrowserUploadScript,
   buildContentEditableCaptionScript,
+  appendPublishAttemptEvent,
   enqueueBundle,
   extractHeadContent,
   extractSlideBlocks,
@@ -2440,8 +2604,8 @@ module.exports = {
   normalizePlatformList,
   mimeTypeForPath,
   normalizeTikTokCaption,
-  prepareBundle,
   preflightTikTokSession,
+  prepareBundle,
   publishBundle,
   resolveChromeProfileRoot,
   removeDirectoryWithRetries,
