@@ -456,6 +456,10 @@ async function callToolInner(name, args) {
 }
 
 async function handleRequest(message) {
+  // Notifications have no id and expect no response
+  if (message.id === undefined || message.id === null) {
+    return null;
+  }
   if (message.method === 'initialize') {
     return {
       protocolVersion: '2024-11-05',
@@ -463,6 +467,7 @@ async function handleRequest(message) {
       serverInfo: SERVER_INFO,
     };
   }
+  if (message.method === 'ping') return {};
   if (message.method === 'tools/list') return { tools: TOOLS };
   if (message.method === 'tools/call') return callTool(message.params.name, message.params.arguments);
   throw new Error(`Unsupported method: ${message.method}`);
@@ -577,7 +582,9 @@ function startStdioServer() {
 
       try {
         const result = await handleRequest(parsed.request);
-        respond(parsed.request.id ?? null, result);
+        if (result !== null) {
+          respond(parsed.request.id ?? null, result);
+        }
       } catch (err) {
         respond(parsed.request.id ?? null, null, {
           code: -32603,
