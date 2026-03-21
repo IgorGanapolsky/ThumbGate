@@ -11,6 +11,7 @@ const {
   DEFAULT_ASSET_HTML,
   DEFAULT_CAPTION_PATH,
   DEFAULT_HISTORY_PATH,
+  appendPublishAttemptEvent,
   assertPublishNotDuplicated,
   buildPublishFingerprint,
   buildChromeJavaScriptAppleScript,
@@ -22,6 +23,7 @@ const {
   loadQueueState,
   loadPublishHistory,
   normalizeTikTokCaption,
+  preflightTikTokSession,
   prepareBundle,
   publishBundle,
   resolveTikTokPublishTarget,
@@ -276,6 +278,54 @@ test('duplicate publish protection blocks an already-published matching payload'
     /Duplicate instagram publish blocked/
   );
   assert.equal(loadPublishHistory(historyPath).length, 1);
+});
+
+test('appendPublishAttemptEvent preserves prior attempt metadata and appends events', () => {
+  const tempDir = makeTempDir('social-attempt-events-');
+  const recordPath = path.join(tempDir, 'attempt.json');
+
+  fs.writeFileSync(recordPath, JSON.stringify({
+    attemptId: 'instagram-123',
+    platform: 'instagram',
+    status: 'started',
+  }, null, 2));
+
+  appendPublishAttemptEvent(recordPath, {
+    type: 'upload-complete',
+    recordedAt: '2026-03-21T18:00:00.000Z',
+  });
+  appendPublishAttemptEvent(recordPath, {
+    type: 'editor-state',
+    recordedAt: '2026-03-21T18:00:01.000Z',
+  });
+
+  const attempt = JSON.parse(fs.readFileSync(recordPath, 'utf8'));
+  assert.equal(attempt.attemptId, 'instagram-123');
+  assert.equal(attempt.status, 'started');
+  assert.equal(attempt.lastEventAt, '2026-03-21T18:00:01.000Z');
+  assert.deepEqual(attempt.events.map((event) => event.type), ['upload-complete', 'editor-state']);
+});
+
+test('preflightTikTokSession reports a precise unauthenticated failure instead of a bare timeout', async () => {
+  const session = {
+    async poll() {
+      throw new Error('Timed out waiting for browser state on https://www.tiktok.com/tiktokstudio/');
+    },
+    async evaluate() {
+      return JSON.stringify({
+        url: 'https://www.tiktok.com/login',
+        title: 'Log in | TikTok',
+        body: 'Log in to TikTok',
+        state: 'waiting',
+        loggedOut: true,
+      });
+    },
+  };
+
+  await assert.rejects(
+    () => preflightTikTokSession(session),
+    /TikTok session unavailable in the selected Chrome profile\./
+  );
 });
 
 test('contenteditable caption script embeds the caption without requiring System Events', () => {
