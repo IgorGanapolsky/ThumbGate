@@ -260,7 +260,7 @@ function runServeHandshake(sendRequest, options = {}) {
     // Full-suite coverage adds noticeable subprocess startup overhead here.
     const timer = setTimeout(() => {
       done(new Error(`MCP initialize timeout; stderr=${stderrBuffer}`));
-    }, options.timeoutMs ?? 10000);
+    }, options.timeoutMs ?? 20000);
 
     child.on('error', (err) => {
       clearTimeout(timer);

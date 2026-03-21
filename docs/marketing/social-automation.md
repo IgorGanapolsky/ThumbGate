@@ -40,6 +40,8 @@ One-command prepare + publish with the default dual-platform lane:
 npm run social:post -- \
   --source /Users/ganapolsky_i/Downloads/instagram-carousel-slides.html \
   --caption-text "Every AI memory tool asks the agent to cooperate. Pre-Action Gates don't ask - they enforce." \
+  --backend playwright \
+  --profile-dir Default \
   --slug first-live-social-post
 ```
 
@@ -121,5 +123,11 @@ npm run social:scheduler:install -- --dry-run
 - Queue state lives under `.rlhf/` and is intentionally local-only.
 - Publish history also lives under `.rlhf/` and is intentionally local-only.
 - The pipeline supports `--dry-run` and `--no-share` so browser automation can be verified without pushing duplicate live posts.
-- March 21, 2026 proof: the authenticated Instagram session published the carousel at `/igorganapolsky/p/DWJ5ajRDW7h/`, while the authenticated TikTok Studio session published the same content as video fallback at `https://www.tiktok.com/@igorg0285/video/7619760352628165919` with privacy set to `Followers`.
+- The currently verified backend in this worktree is the copied-profile Playwright lane (`--backend playwright`), not AppleScript.
+- March 21, 2026 proof from this branch:
+  - `.artifacts/social/live-combined-preflight-proof-20260321c/` contains a deterministic 5-slide bundle sourced from `/Users/ganapolsky_i/Downloads/instagram-carousel-slides.html`.
+  - `social:publish --platforms instagram --no-share --cleanup-drafts --backend playwright --profile-dir Default` returned `draft-ready` with `assetCount: 5`.
+  - The corresponding attempt directory is `.artifacts/social/live-combined-preflight-proof-20260321c/publish-attempts/instagram-1774117555400-pccxyr/`.
+  - The combined dual-platform lane halted before a partial publish with `TikTok did not reach an authenticated upload surface: {"error":"Timed out waiting for browser state on https://www.tiktok.com/tiktokstudio/"}`.
+- No actual TikTok post was published from this branch because the available Chrome profiles do not contain an authenticated TikTok session.
 - Install the `launchd` agent only from a durable checkout path you intend to keep, because the plist points at the repo path that installed it.

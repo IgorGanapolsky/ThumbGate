@@ -2,6 +2,7 @@
 
 const cp = require('child_process');
 const crypto = require('crypto');
+const { once } = require('events');
 const fs = require('fs');
 const net = require('net');
 const os = require('os');
@@ -39,6 +40,10 @@ const DEFAULT_CHROME_PROFILE_DIR = 'Default';
 const DEFAULT_EXPECTED_SLIDE_COUNT = 5;
 const DEFAULT_EXPECTED_SLIDE_WIDTH = 1080;
 const DEFAULT_EXPECTED_SLIDE_HEIGHT = 1080;
+const DEFAULT_CHROME_CDP_TIMEOUT_MS = 60_000;
+const DEFAULT_CHROME_EXIT_TIMEOUT_MS = 5000;
+const DEFAULT_DIRECTORY_RETRY_ATTEMPTS = 12;
+const DEFAULT_DIRECTORY_RETRY_DELAY_MS = 250;
 const INSTAGRAM_URL = 'https://www.instagram.com/';
 const TIKTOK_UPLOAD_URL = 'https://www.tiktok.com/tiktokstudio/upload?lang=en';
 const TIKTOK_CONTENT_URL = 'https://www.tiktok.com/tiktokstudio/content';
@@ -710,51 +715,83 @@ function appendPublishAttemptEvent(recordPath, event) {
   });
 }
 
-async function waitForChildExit(child, timeoutMs = 5000) {
-  if (!child || child.exitCode !== null || child.killed) {
+async function removeDirectoryWithRetries(
+  dirPath,
+  {
+    attempts = DEFAULT_DIRECTORY_RETRY_ATTEMPTS,
+    delayMs = DEFAULT_DIRECTORY_RETRY_DELAY_MS,
+  } = {}
+) {
+  if (!dirPath) {
     return;
   }
 
-  await new Promise((resolve) => {
-    let settled = false;
-    const finish = () => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      clearTimeout(timeout);
-      resolve();
-    };
-    const timeout = setTimeout(() => {
-      if (child.exitCode === null && !child.killed) {
-        try {
-          child.kill('SIGKILL');
-        } catch {
-          // Process already exited.
-        }
-      }
-      finish();
-    }, timeoutMs);
-    child.once('exit', finish);
-    child.once('error', finish);
-  });
-}
-
-async function removeDirWithRetries(dirPath, {
-  retries = 8,
-  delayMs = 250,
-} = {}) {
-  for (let attempt = 0; attempt < retries; attempt += 1) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       fs.rmSync(dirPath, { recursive: true, force: true });
       return;
     } catch (error) {
-      if (!['ENOTEMPTY', 'EBUSY', 'EPERM'].includes(error.code) || attempt === retries - 1) {
+      lastError = error;
+      if (!['EBUSY', 'EMFILE', 'ENFILE', 'ENOTEMPTY', 'EPERM'].includes(error.code) || attempt === attempts) {
         throw error;
       }
       await sleep(delayMs);
     }
   }
+
+  if (lastError) {
+    throw lastError;
+  }
+}
+
+async function waitForProcessExit(processHandle, timeoutMs = DEFAULT_CHROME_EXIT_TIMEOUT_MS) {
+  if (!processHandle) {
+    return 0;
+  }
+  if (processHandle.exitCode !== null || processHandle.signalCode !== null) {
+    return processHandle.exitCode;
+  }
+
+  await Promise.race([
+    Promise.race([
+      once(processHandle, 'exit'),
+      once(processHandle, 'close'),
+    ]),
+    sleep(timeoutMs).then(() => {
+      throw new Error(`Timed out waiting for process ${processHandle.pid || 'unknown'} to exit.`);
+    }),
+  ]);
+  return processHandle.exitCode;
+}
+
+async function stopChromeProcess(processHandle, timeoutMs = DEFAULT_CHROME_EXIT_TIMEOUT_MS) {
+  if (!processHandle || processHandle.exitCode !== null || processHandle.signalCode !== null) {
+    return;
+  }
+
+  processHandle.kill('SIGTERM');
+  try {
+    await waitForProcessExit(processHandle, timeoutMs);
+  } catch (error) {
+    if (processHandle.exitCode !== null || processHandle.signalCode !== null) {
+      return;
+    }
+    processHandle.kill('SIGKILL');
+    await waitForProcessExit(processHandle, timeoutMs);
+    throw error;
+  }
+}
+
+async function waitForChildExit(child, timeoutMs = DEFAULT_CHROME_EXIT_TIMEOUT_MS) {
+  return waitForProcessExit(child, timeoutMs);
+}
+
+async function removeDirWithRetries(dirPath, {
+  retries = DEFAULT_DIRECTORY_RETRY_ATTEMPTS,
+  delayMs = DEFAULT_DIRECTORY_RETRY_DELAY_MS,
+} = {}) {
+  return removeDirectoryWithRetries(dirPath, { attempts: retries, delayMs });
 }
 
 function resolveTikTokPublishTarget(bundle, readyState = {}) {
@@ -877,7 +914,7 @@ function getAvailablePort() {
   });
 }
 
-async function waitForChromeCdp(port, timeoutMs = 20000) {
+async function waitForChromeCdp(port, timeoutMs = DEFAULT_CHROME_CDP_TIMEOUT_MS) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {
@@ -970,19 +1007,15 @@ async function createPlaywrightBrowserSession({
     await waitForChromeCdp(port);
     browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
   } catch (error) {
-    if (!chromeProcess.killed) {
-      chromeProcess.kill('SIGTERM');
-    }
-    fs.rmSync(tempRoot, { recursive: true, force: true });
+    await stopChromeProcess(chromeProcess).catch(() => {});
+    await removeDirectoryWithRetries(tempRoot).catch(() => {});
     throw new Error(`Failed to launch copied-profile Chrome automation session: ${error.message}${stderr ? `\n${stderr.trim()}` : ''}`);
   }
   const context = browser.contexts()[0];
   if (!context) {
     await browser.close();
-    if (!chromeProcess.killed) {
-      chromeProcess.kill('SIGTERM');
-    }
-    fs.rmSync(tempRoot, { recursive: true, force: true });
+    await stopChromeProcess(chromeProcess).catch(() => {});
+    await removeDirectoryWithRetries(tempRoot).catch(() => {});
     throw new Error(`Chrome launched without a CDP context. stderr: ${stderr.trim()}`);
   }
 
@@ -1092,18 +1125,14 @@ async function createPlaywrightBrowserSession({
         closeErrors.push(new Error(`browser.close failed: ${error.message}`));
       }
 
-      if (chromeProcess.exitCode === null && !chromeProcess.killed) {
-        try {
-          chromeProcess.kill('SIGTERM');
-        } catch (error) {
-          closeErrors.push(new Error(`chromeProcess.kill failed: ${error.message}`));
-        }
+      try {
+        await stopChromeProcess(chromeProcess);
+      } catch (error) {
+        closeErrors.push(new Error(`chromeProcess.kill failed: ${error.message}`));
       }
 
-      await waitForChildExit(chromeProcess);
-
       try {
-        await removeDirWithRetries(tempRoot);
+        await removeDirectoryWithRetries(tempRoot);
       } catch (error) {
         closeErrors.push(new Error(`temp profile cleanup failed: ${error.message}`));
       }
@@ -1324,11 +1353,13 @@ const INSTAGRAM_EDITOR_JS = `
     const editor = document.querySelector('textarea,[contenteditable=true]');
     const share = [...document.querySelectorAll('button,[role=button],a')].find((element) => /^share$/i.test(text(element)));
     const next = [...document.querySelectorAll('button,[role=button],a')].find((element) => /^next$/i.test(text(element)));
+    const cancel = [...document.querySelectorAll('button,[role=button],a')].find((element) => /^cancel$/i.test(text(element)));
     const body = document.body ? document.body.innerText.slice(0, 2400) : '';
     return JSON.stringify({
       hasEditor: Boolean(editor),
       shareVisible: Boolean(share),
       nextVisible: Boolean(next),
+      discardModalVisible: Boolean(cancel) && /discard post\?/i.test(body),
       hasError: /something went wrong|try again/i.test(body),
       body,
     });
@@ -1402,6 +1433,18 @@ const INSTAGRAM_NEXT_JS = `
       return JSON.stringify({ clicked: false });
     }
     next.click();
+    return JSON.stringify({ clicked: true });
+  })()
+`;
+
+const INSTAGRAM_DISMISS_DISCARD_MODAL_JS = `
+  (() => {
+    const text = (element) => (element.innerText || element.getAttribute('aria-label') || '').trim();
+    const discard = [...document.querySelectorAll('button,[role=button],a')].find((element) => /^discard$/i.test(text(element)));
+    if (!discard) {
+      return JSON.stringify({ clicked: false });
+    }
+    discard.click();
     return JSON.stringify({ clicked: true });
   })()
 `;
@@ -1570,6 +1613,7 @@ async function preflightInstagramSession(session, attempt = null) {
 }
 
 async function preflightTikTokSession(session, attempt = null) {
+  const startedAt = new Date().toISOString();
   try {
     const state = await session.poll({
       urlPrefix: 'https://www.tiktok.com/tiktokstudio/',
@@ -1597,6 +1641,7 @@ async function preflightTikTokSession(session, attempt = null) {
     return state;
   } catch (error) {
     let fallbackState = null;
+    const timedOut = /Timed out waiting for browser state/.test(error.message || '');
     try {
       fallbackState = parseBrowserResult(await session.evaluate({
         urlPrefix: 'https://www.tiktok.com/tiktokstudio/',
@@ -1611,8 +1656,9 @@ async function preflightTikTokSession(session, attempt = null) {
       writePublishAttemptRecord(attempt.recordPath, {
         attemptId: attempt.attemptId,
         platform: 'tiktok',
-        status: 'preflight-failed',
+        status: timedOut ? 'preflight-timeout' : 'preflight-failed',
         recordedAt: new Date().toISOString(),
+        startedAt,
         error: error.message,
         state: fallbackState,
       });
@@ -1623,12 +1669,16 @@ async function preflightTikTokSession(session, attempt = null) {
     }
 
     if (fallbackState) {
-      throw new Error(`TikTok did not reach an authenticated upload surface: ${JSON.stringify({
+      throw new Error(`TikTok did not reach an authenticated upload surface: ${JSON.stringify(timedOut ? fallbackState : {
         url: fallbackState.url,
         title: fallbackState.title,
         state: fallbackState.state,
         body: fallbackState.body,
       })}`);
+    }
+
+    if (timedOut) {
+      throw new Error(`TikTok did not reach an authenticated upload surface: ${JSON.stringify({ error: error.message })}`);
     }
 
     throw error;
@@ -1711,6 +1761,23 @@ async function prepareInstagramDraft(bundle, session, { dryRun = false, attempt 
     }
     if (editorState.hasEditor || editorState.shareVisible) {
       break;
+    }
+    if (editorState.discardModalVisible) {
+      await session.evaluate({
+        urlPrefix: INSTAGRAM_URL,
+        openUrl: INSTAGRAM_URL,
+        js: INSTAGRAM_DISMISS_DISCARD_MODAL_JS,
+      });
+      if (attempt) {
+        appendPublishAttemptEvent(attempt.recordPath, {
+          platform: 'instagram',
+          type: 'editor-discard-dismissed',
+          recordedAt: new Date().toISOString(),
+          step: index + 1,
+        });
+      }
+      await sleep(750);
+      continue;
     }
     if (editorState.hasError) {
       break;
@@ -2541,12 +2608,15 @@ module.exports = {
   prepareBundle,
   publishBundle,
   resolveChromeProfileRoot,
+  removeDirectoryWithRetries,
   renderSlides,
   renderTikTokVideo,
   resolveTikTokPublishTarget,
   saveQueueState,
   slugify,
+  stopChromeProcess,
   validateSlideImages,
+  waitForProcessExit,
   writeIsolatedSlideDocuments,
 };
 

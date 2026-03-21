@@ -7,6 +7,7 @@ const { diagnoseFailure } = require('./failure-diagnostics');
 const { appendDiagnosticRecord } = require('./feedback-loop');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
+const DEFAULT_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
 
 const DEFAULT_CHECKS = [
   { name: 'budget_status', command: ['npm', 'run', 'budget:status'], timeoutMs: 60_000 },
@@ -19,6 +20,7 @@ function runCommand(command, {
   cwd = PROJECT_ROOT,
   timeoutMs = 5 * 60_000,
   env = process.env,
+  maxBufferBytes = DEFAULT_MAX_BUFFER_BYTES,
 } = {}) {
   const [cmd, ...args] = command;
   const started = Date.now();
@@ -27,6 +29,7 @@ function runCommand(command, {
     env,
     encoding: 'utf-8',
     timeout: timeoutMs,
+    maxBuffer: maxBufferBytes,
     shell: false,
   });
 
@@ -48,6 +51,9 @@ function createCheckEnvironment(check) {
   if (check.useTempProofDir) {
     const proofDir = fs.mkdtempSync(path.join(os.tmpdir(), `rlhf-${check.name}-`));
     environment.RLHF_PROOF_DIR = proofDir;
+    if (check.name === 'prove_automation') {
+      environment.RLHF_AUTOMATION_PROOF_DIR = proofDir;
+    }
     cleanup = () => {
       fs.rmSync(proofDir, { recursive: true, force: true });
     };
@@ -169,6 +175,7 @@ function runCli() {
 
 module.exports = {
   DEFAULT_CHECKS,
+  DEFAULT_MAX_BUFFER_BYTES,
   runCommand,
   collectHealthReport,
   reportToText,

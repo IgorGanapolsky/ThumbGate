@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const cp = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -26,8 +27,11 @@ const {
   preflightTikTokSession,
   prepareBundle,
   publishBundle,
+  removeDirectoryWithRetries,
   resolveTikTokPublishTarget,
+  stopChromeProcess,
   validateSlideImages,
+  waitForProcessExit,
   writeIsolatedSlideDocuments,
 } = require('../scripts/social-pipeline');
 
@@ -326,6 +330,73 @@ test('preflightTikTokSession reports a precise unauthenticated failure instead o
     () => preflightTikTokSession(session),
     /TikTok session unavailable in the selected Chrome profile\./
   );
+});
+
+test('preflightTikTokSession reports the last observed page state on timeout', async () => {
+  const tempDir = makeTempDir('social-tiktok-preflight-');
+  const attempt = {
+    attemptId: 'tiktok-timeout',
+    recordPath: path.join(tempDir, 'attempt.json'),
+  };
+  const session = {
+    async poll() {
+      throw new Error('Timed out waiting for browser state on https://www.tiktok.com/tiktokstudio/');
+    },
+    async evaluate() {
+      return JSON.stringify({
+        url: 'https://www.tiktok.com/tiktokstudio/upload?lang=en',
+        title: 'TikTok Studio',
+        state: 'waiting',
+        body: '',
+      });
+    },
+  };
+
+  await assert.rejects(
+    () => preflightTikTokSession(session, attempt),
+    /TikTok did not reach an authenticated upload surface/
+  );
+
+  const record = JSON.parse(fs.readFileSync(attempt.recordPath, 'utf8'));
+  assert.equal(record.status, 'preflight-timeout');
+  assert.equal(record.state.state, 'waiting');
+});
+
+test('removeDirectoryWithRetries recovers from a transient ENOTEMPTY cleanup error', async () => {
+  const tempDir = makeTempDir('social-cleanup-');
+  fs.writeFileSync(path.join(tempDir, 'proof.txt'), 'ok');
+
+  const originalRmSync = fs.rmSync;
+  let calls = 0;
+  fs.rmSync = function patchedRmSync(targetPath, options) {
+    calls += 1;
+    if (calls === 1) {
+      const error = new Error('directory not empty');
+      error.code = 'ENOTEMPTY';
+      throw error;
+    }
+    return originalRmSync.call(fs, targetPath, options);
+  };
+
+  try {
+    await removeDirectoryWithRetries(tempDir, { attempts: 3, delayMs: 0 });
+  } finally {
+    fs.rmSync = originalRmSync;
+  }
+
+  assert.ok(calls >= 2);
+  assert.equal(fs.existsSync(tempDir), false);
+});
+
+test('stopChromeProcess terminates a spawned child before temp-profile cleanup', async () => {
+  const child = cp.spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000);'], {
+    stdio: 'ignore',
+  });
+
+  await stopChromeProcess(child, 2000);
+  await waitForProcessExit(child, 2000);
+
+  assert.ok(child.exitCode !== null || child.signalCode !== null);
 });
 
 test('contenteditable caption script embeds the caption without requiring System Events', () => {
