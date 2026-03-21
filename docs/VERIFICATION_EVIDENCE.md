@@ -1,49 +1,81 @@
-## March 21, 2026: Social pipeline hardening + archive-WIP retirement decision
+## March 21, 2026: Social publish hardening + self-heal reliability fix + archive-WIP retirement decision
 
 Scope:
 
-- Hardened `scripts/social-pipeline.js` so bundle preparation now validates exactly `5` non-empty `1080x1080` PNG slides and records slide/caption/video SHA-256 hashes in the manifest.
-- Added inline caption support, publish-history-backed duplicate protection, and publish attempt proof records under each bundle output.
-- Upgraded TikTok publishing to prefer a photo carousel when the live surface exposes image uploads, while still falling back to MP4 when TikTok Studio remains `video/*` only.
-- Confirmed the archived local WIP commit `2063a6e` remains intentionally unshipped because it deletes `scripts/behavioral-extraction.js`, adds a broken `scripts/gsd-final-verification.js`, and duplicates behavior already superseded on `main`.
+- Hardened `scripts/self-healing-check.js` so the standard health gate survives large command output and gives `prove:automation` its own isolated proof directory.
+- Hardened `scripts/social-pipeline.js` so copied-profile Chrome automation now retries temp-profile cleanup, waits longer for DevTools startup, reports TikTok preflight timeouts as an authenticated-upload-surface failure, and dismisses Instagram's discard-confirmation modal while advancing to the draft editor.
+- Confirmed the archived local WIP commit `2063a6e57a37663603245298716c24dd32de0982` remains intentionally unshipped because it deletes `scripts/behavioral-extraction.js`, adds a scratch verifier, and diverges from the hardened social-pipeline lane.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-social-archive`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-social-archive-recovered`:
 
 ```bash
 npm ci
+node --check scripts/self-healing-check.js
+node --test tests/self-healing-check.test.js
+node --check scripts/social-pipeline.js
+node --test tests/social-pipeline.test.js tests/social-marketing-assets.test.js
+for db in "$HOME/Library/Application Support/Google/Chrome"/*/Cookies; do profile=$(basename "$(dirname "$db")"); ig=$(sqlite3 "$db" "select count(*) from cookies where host_key like '%instagram%';" 2>/dev/null || echo err); tt=$(sqlite3 "$db" "select count(*) from cookies where host_key like '%tiktok%';" 2>/dev/null || echo err); echo "$profile instagram=$ig tiktok=$tt"; done
+npm run social:publish -- \
+  --bundle .artifacts/social/live-combined-preflight-proof-20260321c/bundle.json \
+  --platforms instagram,tiktok \
+  --no-share \
+  --cleanup-drafts \
+  --backend playwright \
+  --profile-dir Default \
+  --headless
+npm run social:publish -- \
+  --bundle .artifacts/social/live-combined-preflight-proof-20260321c/bundle.json \
+  --platforms instagram \
+  --no-share \
+  --cleanup-drafts \
+  --backend playwright \
+  --profile-dir Default
 npm test
 npm run test:coverage
 tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
 tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
 npm run self-heal:check
-node --test tests/social-pipeline.test.js
-npm run social:prepare -- \
-  --source /Users/ganapolsky_i/Downloads/instagram-carousel-slides.html \
-  --caption-text "Every AI memory tool asks the agent to cooperate. Pre-Action Gates don't ask - they enforce.\nThe only MCP tool that learns from failures AND enforces what it learns.\nFree + MIT: npx mcp-memory-gateway init\n#ClaudeCode #AIcoding #MCP #DevTools #PreActionGates #VibeCoding #BuildInPublic #OpenSource" \
-  --slug first-live-social-post
+git diff --check
 git cherry -v main codex/archive-primary-dirty-20260320
-git show --stat --summary 2063a6e57a37663603245298716c24dd32de0982
+git show --stat --summary --format=medium 2063a6e57a37663603245298716c24dd32de0982
 ```
 
 Observed result:
 
 - `npm ci` exited `0`.
-- `npm test` exited `0` on the clean rerun after `npm ci`. A prior parallelized local run produced a shared-state false negative in `tests/gates-engine.test.js`, so the final repo-standard verification was repeated sequentially before shipping.
-- `npm run test:coverage` exited `0` with all-files coverage at `88.02` lines, `75.62` branches, and `92.47` functions on the rebased branch head.
+- `node --check scripts/self-healing-check.js` exited `0`.
+- `node --test tests/self-healing-check.test.js` exited `0`: `15` passed, `0` failed.
+- `node --check scripts/social-pipeline.js` exited `0`.
+- `node --test tests/social-pipeline.test.js tests/social-marketing-assets.test.js` exited `0`: `19` passed, `0` failed.
+- `npm test` exited `0`.
+- The first `npm run test:coverage` run exposed a full-suite CLI handshake timeout in `tests/cli.test.js`; widening the helper timeout from `10s` to `20s` removed that flake. The rerun then exited `0` with all-files coverage at `88.01` lines, `75.59` branches, and `92.54` functions.
 - `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
 - `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
-- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks (`budget_status 127ms`, `tests 58606ms`, `prove_adapters 1714ms`, `prove_automation 1824ms`).
-- `node --test tests/social-pipeline.test.js` passed with the hardened bundle-validation, duplicate-protection, inline-caption, and adaptive-TikTok cases.
-- `npm run social:prepare ... --slug first-live-social-post` wrote a bundle rooted at `.artifacts/social/first-live-social-post/` with `5` slide PNGs, `instagram.txt`, `tiktok.txt`, `tiktok-fallback.mp4`, and a manifest containing per-slide metadata plus SHA-256 hashes.
-- The prepared bundle recorded these immutable hashes:
-  - caption SHA-256: `419176eedb316a4d88c75159fcda7a63134aee7d10c277fed53036576c4d602c`
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks (`budget_status 150ms`, `tests 61973ms`, `prove_adapters 1151ms`, `prove_automation 1159ms`).
+- `git diff --check` exited `0`.
+- The Chrome cookie scan on this machine showed:
+  - `Default instagram=7 tiktok=0`
+  - `Profile 1 instagram=0 tiktok=0`
+- The prepared bundle at `.artifacts/social/live-combined-preflight-proof-20260321c/` contains exactly `5` slide PNGs, `instagram.txt`, `tiktok.txt`, `tiktok-fallback.mp4`, and attempt-proof subdirectories.
+- `sips` verified `.artifacts/social/live-combined-preflight-proof-20260321c/slides/slide-01.png` at `1080x1080`.
+- The bundle manifest recorded these immutable hashes:
+  - caption SHA-256: `834ec9b32f36d082998cd74a1af3c1ce50fc1ec568f83415c1196d0b2d489e44`
   - TikTok fallback MP4 SHA-256: `1d9ab0a7cb237e750907c88b68eed1d0d909269a858deb90fa65f7a86260d693`
   - slide SHA-256 values: `d2dfd30faefab16a2e5280a35233d761a4b45ee27c611ba1120abc817071bb7c`, `3b87cce4a311d8a77b005ed4c98b98988a60213514b4b576edc7dd49f9e86eac`, `ed1c8bef64842219744f1146693ed02335812182ec94fcafb41aa37c5de6eb9c`, `0d5dcbacdafecff4c73f035286e9e852e16adfb6de55ebc519149e9550a92a71`, `aaf7b3c8a0e97fd9d2fa02b6d65ad0a2e586bcee577eae889954810df3b458fb`.
-- Live Instagram verification on March 21, 2026 confirmed the new carousel is visible on the authenticated profile at `/igorganapolsky/p/DWJ5ajRDW7h/`.
-- Live TikTok Studio verification on March 21, 2026 confirmed the newest published item is `/@igorg0285/video/7619760352628165919`, timestamp `Mar 21, 1:22 PM`, with privacy set to `Followers`.
-- Live TikTok Studio inspection on March 21, 2026 showed the current authenticated web surface still exposes a single hidden `input[type=file]` with `accept="video/*"` and no image uploader, so same-image photo carousel publishing is not truthfully available from this web surface at this time.
-- `git cherry -v main codex/archive-primary-dirty-20260320` showed only one unique local archive commit, `2063a6e`.
-- `git show --stat --summary 2063a6e...` proved that archive commit is not a safe promotion candidate: it deletes `scripts/behavioral-extraction.js`, adds a scratch verifier, and does not represent shippable repo state.
+- The combined headless publish lane halted before any partial post with:
+  - `TikTok did not reach an authenticated upload surface: {"error":"Timed out waiting for browser state on https://www.tiktok.com/tiktokstudio/"}`
+- The Instagram-only no-share publish lane succeeded on the same prepared bundle:
+  - CLI result: `[{"platform":"instagram","mode":"draft-ready","assetCount":5}]`
+  - Attempt record: `.artifacts/social/live-combined-preflight-proof-20260321c/publish-attempts/instagram-1774117555400-pccxyr/attempt.json`
+  - Attempt screenshots: `instagram-preflight.png`, `instagram-uploaded.png`, `instagram-draft-ready.png`
+- The latest local publish-history rows show the repaired sequence truthfully:
+  - earlier copied-profile failures (`playwright-core` missing, DevTools startup budget too short, generic TikTok timeout, Instagram discard modal)
+  - final successful Instagram draft-ready row for attempt `instagram-1774117555400-pccxyr`
+- `git cherry -v main codex/archive-primary-dirty-20260320` showed one unique archive commit, `2063a6e...`.
+- `git show --stat --summary --format=medium 2063a6e...` proved the archive commit is not a safe promotion candidate:
+  - deletes `scripts/behavioral-extraction.js`
+  - adds scratch-only `scripts/gsd-final-verification.js`
+  - changes `bin/memory.sh`, `bin/obsidian-sync.sh`, `primer.md`, and adds `docs/OPERATIONAL_LOOPS.md` without a coherent verification lane
 
 ## March 20, 2026: Zero-filming Instagram + TikTok automation pipeline
 

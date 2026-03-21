@@ -7,6 +7,7 @@ const path = require('node:path');
 const {
   DEFAULT_CHECKS,
   collectHealthReport,
+  runCommand,
   reportToText,
 } = require('../scripts/self-healing-check');
 
@@ -79,11 +80,14 @@ test('collectHealthReport records duration for each check', () => {
 
 test('collectHealthReport injects and cleans temp proof dirs for proof checks', () => {
   let capturedProofDir = null;
+  let capturedAutomationProofDir = null;
   const report = collectHealthReport({
     checks: [{ name: 'prove_automation', command: ['npm', 'run', 'prove:automation'], useTempProofDir: true }],
     runner: (_command, options) => {
       capturedProofDir = options.env.RLHF_PROOF_DIR;
+      capturedAutomationProofDir = options.env.RLHF_AUTOMATION_PROOF_DIR;
       assert.ok(capturedProofDir);
+      assert.equal(capturedProofDir, capturedAutomationProofDir);
       assert.equal(fs.existsSync(capturedProofDir), true);
       return { exitCode: 0, durationMs: 1, stdout: 'ok', stderr: '', error: null };
     },
@@ -91,7 +95,20 @@ test('collectHealthReport injects and cleans temp proof dirs for proof checks', 
 
   assert.equal(report.overall_status, 'healthy');
   assert.ok(capturedProofDir);
+  assert.ok(capturedAutomationProofDir);
   assert.equal(fs.existsSync(capturedProofDir), false);
+});
+
+test('runCommand handles large stdout without buffer overflow', () => {
+  const result = runCommand([
+    process.execPath,
+    '-e',
+    "process.stdout.write('x'.repeat(2_000_000));",
+  ]);
+
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.error, null);
+  assert.ok(result.stdout.length >= 2_000_000);
 });
 
 test('collectHealthReport captures output tail on failure', () => {

@@ -22,9 +22,17 @@ It exists so we can ship founder-style IG and TikTok content without filming, ma
 ## Prerequisites
 
 - macOS
-- Google Chrome with the target IG/TikTok accounts already logged in
-- `View -> Developer -> Allow JavaScript from Apple Events` enabled in Chrome
+- `npm ci` run in the active worktree so `playwright-core` is installed
+- Google Chrome with the target Instagram account already logged in
+- Optional only for the AppleScript backend: `View -> Developer -> Allow JavaScript from Apple Events` enabled in Chrome
 - `ffmpeg` installed and available on `PATH`
+
+Current profile reality on this machine:
+
+- `Default instagram=7 tiktok=0`
+- `Profile 1 instagram=0 tiktok=0`
+
+That means the verified browser-publish lane can create Instagram drafts from the copied-profile backend today, but the combined Instagram+TikTok lane still halts before partial publish because TikTok is not authenticated in the available Chrome profiles.
 
 ## Commands
 
@@ -40,6 +48,8 @@ One-command prepare + publish with the default dual-platform lane:
 npm run social:post -- \
   --source /Users/ganapolsky_i/Downloads/instagram-carousel-slides.html \
   --caption-text "Every AI memory tool asks the agent to cooperate. Pre-Action Gates don't ask - they enforce." \
+  --backend playwright \
+  --profile-dir Default \
   --slug first-live-social-post
 ```
 
@@ -77,6 +87,18 @@ npm run social:publish -- \
   --platforms instagram,tiktok \
   --no-share \
   --cleanup-drafts
+```
+
+Run the same no-share proof directly against an already-built bundle:
+
+```bash
+npm run social:publish -- \
+  --bundle .artifacts/social/live-combined-preflight-proof-20260321c/bundle.json \
+  --platforms instagram \
+  --no-share \
+  --cleanup-drafts \
+  --backend playwright \
+  --profile-dir Default
 ```
 
 Publish immediately:
@@ -121,5 +143,11 @@ npm run social:scheduler:install -- --dry-run
 - Queue state lives under `.rlhf/` and is intentionally local-only.
 - Publish history also lives under `.rlhf/` and is intentionally local-only.
 - The pipeline supports `--dry-run` and `--no-share` so browser automation can be verified without pushing duplicate live posts.
-- March 21, 2026 proof: the authenticated Instagram session published the carousel at `/igorganapolsky/p/DWJ5ajRDW7h/`, while the authenticated TikTok Studio session published the same content as video fallback at `https://www.tiktok.com/@igorg0285/video/7619760352628165919` with privacy set to `Followers`.
+- The verified live backend for this branch is the copied-profile Playwright lane (`--backend playwright`), not AppleScript.
+- March 21, 2026 proof from this branch:
+  - `.artifacts/social/live-combined-preflight-proof-20260321c/` contains a deterministic 5-slide bundle sourced from `/Users/ganapolsky_i/Downloads/instagram-carousel-slides.html`.
+  - `social:publish --platforms instagram --no-share --cleanup-drafts --backend playwright --profile-dir Default` returned `draft-ready` with `assetCount: 5`.
+  - The corresponding attempt directory is `.artifacts/social/live-combined-preflight-proof-20260321c/publish-attempts/instagram-1774117555400-pccxyr/`.
+  - The combined dual-platform lane halted before a partial publish with `TikTok did not reach an authenticated upload surface: {"error":"Timed out waiting for browser state on https://www.tiktok.com/tiktokstudio/"}`.
+- No actual TikTok post was published from this branch because the available Chrome profiles do not contain an authenticated TikTok session.
 - Install the `launchd` agent only from a durable checkout path you intend to keep, because the plist points at the repo path that installed it.
