@@ -40,11 +40,13 @@ a82c6d7 fix: harden social publish verification (#300)
 
 ### Modified Files:
 ```
+ M package.json
  M primer.md
 ?? :memory:
 ?? docs/CLAUDE_AMNESIA_FIX.md
 ?? docs/G_STACK_PLAN.md
 ?? docs/OBSIDIAN_CONTRACT.md
+?? docs/marketing/AMBASSADOR_PROGRAM.md
 ?? docs/marketing/demo-scripts-keshavsuki.sh
 ?? docs/marketing/flow-science/KOTLER_OUTREACH.md
 ?? docs/marketing/flow-science/STRATEGY.md

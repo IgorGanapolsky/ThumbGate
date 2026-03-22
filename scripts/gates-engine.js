@@ -259,17 +259,20 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 
     if (gate.action === 'block') {
       recordStat(gate.id, 'block');
-      const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity };
-      // Audit trail: record + auto-feed into RLHF pipeline
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
+      const { PRINCIPLES } = require('./persona-primer');
+      const reasoning = PRINCIPLES.reliability.gates;
+      const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine', reasoning });
       auditToFeedback(auditRecord);
       return result;
     }
 
     if (gate.action === 'warn') {
       recordStat(gate.id, 'warn');
-      const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
+      const { PRINCIPLES } = require('./persona-primer');
+      const reasoning = PRINCIPLES.reliability.gates;
+      const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine', reasoning });
       auditToFeedback(auditRecord);
       return result;
     }
@@ -306,16 +309,20 @@ function evaluateGates(toolName, toolInput, configPath) {
 
     if (gate.action === 'block') {
       recordStat(gate.id, 'block');
-      const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
+      const { PRINCIPLES } = require('./persona-primer');
+      const reasoning = PRINCIPLES.reliability.gates;
+      const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine', reasoning });
       auditToFeedback(auditRecord);
       return result;
     }
 
     if (gate.action === 'warn') {
       recordStat(gate.id, 'warn');
-      const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
+      const { PRINCIPLES } = require('./persona-primer');
+      const reasoning = PRINCIPLES.reliability.gates;
+      const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine', reasoning });
       auditToFeedback(auditRecord);
       return result;
     }

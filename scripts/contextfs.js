@@ -460,6 +460,13 @@ function scoreDocument(doc, queryTokens) {
     }
   });
 
+  // Hybrid RAFT: Prioritize high-quality memories
+  if (doc.metadata && doc.metadata.rubricSummary) {
+    const weightedScore = Number(doc.metadata.rubricSummary.weightedScore);
+    if (weightedScore > 0.8) score += 5; // Success high-quality
+    else if (weightedScore < 0.4) score += 3; // Critical failure patterns
+  }
+
   if (doc.namespace.includes('memory/error')) score += 1;
   if (doc.namespace.includes('memory/learning')) score += 1;
 
@@ -530,6 +537,15 @@ function searchMemexIndex({ query = '', maxResults = 10, namespaces = [] } = {})
       const haystack = `${entry.title} ${entry.digest} ${(entry.tags || []).join(' ')}`.toLowerCase();
       let score = 0;
       tokens.forEach((t) => { if (t.length > 2 && haystack.includes(t)) score += 3; });
+
+      // Hybrid RAFT: Prioritize high-quality memories
+      const full = dereferenceEntry(entry);
+      if (full && full.metadata && full.metadata.rubricSummary) {
+        const weightedScore = Number(full.metadata.rubricSummary.weightedScore);
+        if (weightedScore > 0.8) score += 5; // Success high-quality
+        else if (weightedScore < 0.4) score += 3; // Critical failure patterns
+      }
+
       if (entryNamespace.includes('memory/error')) score += 1;
       if (entryNamespace.includes('memory/learning')) score += 1;
       if (entry.createdAt) {
@@ -556,6 +572,36 @@ function constructMemexPack({ query = '', maxItems = 8, maxChars = 6000, namespa
   let usedChars = 0;
   const dereferenced = [];
   let skippedByMaxChars = 0;
+
+  // Hybrid RAFT: Inject Persona Primer as a high-ROI behavioral weight
+  try {
+    const { generatePrimer } = require('./persona-primer');
+    const primerContent = generatePrimer();
+    const primerId = 'primer-stable-weights';
+    const snippet = `Stable Behavioral Principles (Persona Primer)\n${primerContent}`;
+
+    if (usedChars + snippet.length <= maxChars) {
+      items.push({
+        id: primerId,
+        namespace: 'persona',
+        title: 'Stable Behavioral Principles (Persona Primer)',
+        structuredContext: {
+          rawContent: primerContent,
+          reasoning: 'Stable CTO Principles',
+          whatWentWrong: null,
+          whatToChange: null,
+          rubricFailure: null
+        },
+        tags: ['persona', 'cto', 'principles'],
+        score: 100, // Highest priority
+      });
+      usedChars += snippet.length;
+    } else {
+      skippedByMaxChars += 1;
+    }
+  } catch (err) {
+    // Fallback if primer script is missing or fails
+  }
 
   for (const hit of hits) {
     if (items.length >= maxItems) break;
@@ -684,6 +730,36 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
   const selected = [];
   let usedChars = 0;
   let skippedByMaxChars = 0;
+
+  // Hybrid RAFT: Inject Persona Primer as a high-ROI behavioral weight
+  try {
+    const { generatePrimer } = require('./persona-primer');
+    const primerContent = generatePrimer();
+    const primerId = 'primer-stable-weights';
+    const snippet = `Stable Behavioral Principles (Persona Primer)\n${primerContent}`;
+    
+    if (usedChars + snippet.length <= maxChars) {
+      selected.push({
+        id: primerId,
+        namespace: 'persona',
+        title: 'Stable Behavioral Principles (Persona Primer)',
+        structuredContext: {
+          rawContent: primerContent,
+          reasoning: 'Stable CTO Principles',
+          whatWentWrong: null,
+          whatToChange: null,
+          rubricFailure: null
+        },
+        tags: ['persona', 'cto', 'principles'],
+        score: 100, // Highest priority
+      });
+      usedChars += snippet.length;
+    } else {
+      skippedByMaxChars += 1;
+    }
+  } catch (err) {
+    // Fallback if primer script is missing or fails
+  }
 
   for (const item of candidates) {
     if (selected.length >= maxItems) break;

@@ -352,28 +352,18 @@ test('captureFeedback: waitForBackgroundSideEffects drains deferred vector write
   process.env.RLHF_FEEDBACK_DIR = tmpDir;
   await waitForBackgroundSideEffects();
 
-  // Patch upsertFeedback on BOTH modules so whichever getVectorStoreModule()
-  // returns will use the patched version.
+  let searchModule;
+  try { searchModule = require('../scripts/filesystem-search'); } catch { searchModule = require('../scripts/vector-store'); }
+  const originalUpsertFeedback = searchModule.upsertFeedback;
   let flushed = false;
-  const patchedUpsert = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 25));
+
+  searchModule.upsertFeedback = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
     flushed = true;
   };
 
-  const fsSearch = require('../scripts/filesystem-search');
-  const origFsUpsert = fsSearch.upsertFeedback;
-  fsSearch.upsertFeedback = patchedUpsert;
-
-  let vectorStore, origVsUpsert;
-  try {
-    vectorStore = require('../scripts/vector-store');
-    origVsUpsert = vectorStore.upsertFeedback;
-    vectorStore.upsertFeedback = patchedUpsert;
-  } catch { vectorStore = null; }
-
   t.after(() => {
-    fsSearch.upsertFeedback = origFsUpsert;
-    if (vectorStore) vectorStore.upsertFeedback = origVsUpsert;
+    searchModule.upsertFeedback = originalUpsertFeedback;
     delete process.env.RLHF_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });

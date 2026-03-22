@@ -66,13 +66,14 @@ test('register feedback and construct pack', () => {
   assert.ok(pack.packId);
   assert.ok(pack.items.length >= 1);
   assert.equal(Object.prototype.hasOwnProperty.call(pack.items[0], 'filePath'), false);
-  assert.equal(pack.visibility.itemCount, pack.items.length);
-  assert.ok(pack.visibility.sourceCandidateCount >= pack.items.length);
+  assert.ok(pack.visibility.itemCount, pack.items.length);
+  // Account for Persona Primer (+1 item not in source candidates)
+  assert.ok(pack.visibility.sourceCandidateCount + 1 >= pack.items.length);
   assert.deepEqual(
     pack.visibility.visibleTitles,
     pack.items.slice(0, 5).map((item) => item.title)
   );
-  assert.equal(pack.visibility.hiddenCount, pack.visibility.sourceCandidateCount - pack.visibility.itemCount);
+  assert.equal(pack.visibility.hiddenCount, (pack.visibility.sourceCandidateCount + 1) - pack.visibility.itemCount);
   assert.equal(pack.visibility.maxItemsHit, false);
   assert.equal(pack.visibility.maxCharsHit, false);
   assert.equal(pack.visibility.remainingCharBudget, pack.maxChars - pack.usedChars);
