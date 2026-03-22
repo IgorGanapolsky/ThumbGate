@@ -28,3 +28,7 @@ node_modules/
 .mcpregistry_registry_token
 .omx/
 scripts/social-analytics/db/social-analytics.db
+:memory:
+__pycache__/
+*.pyc
+test-vault-*/

@@ -91,6 +91,7 @@
     "test:evoskill": "node --test tests/evoskill.test.js",
     "test:gates-hardening": "node --test tests/gates-hardening.test.js",
     "test:social-analytics": "node --test tests/social-analytics.test.js",
+    "test:filesystem-search": "node --test tests/filesystem-search.test.js",
     "test:coverage": "node scripts/test-coverage.js",
     "start:api": "node src/api/server.js",
     "start:mcp": "node adapters/mcp/server-stdio.js",

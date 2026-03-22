@@ -36,7 +36,7 @@ const THREADS_BASE = 'https://graph.threads.net/v1.0';
 async function createThreadContainer(token, userId, { text, mediaType, imageUrl, linkAttachment } = {}) {
   const resolvedMediaType = (mediaType ?? 'TEXT').toUpperCase();
 
-  console.log(`[threads:publisher] Creating ${resolvedMediaType} container for user ${userId}…`);
+  console.log(`[threads:publisher] Creating ${resolvedMediaType} container…`);
 
   const params = new URLSearchParams({
     media_type: resolvedMediaType,
@@ -74,7 +74,7 @@ async function createThreadContainer(token, userId, { text, mediaType, imageUrl,
  */
 async function publishThread(token, userId, containerId) {
   console.log(
-    `[threads:publisher] Publishing container ${containerId} for user ${userId}…`
+    `[threads:publisher] Publishing container ${containerId}…`
   );
 
   const params = new URLSearchParams({
