@@ -154,5 +154,8 @@
     "playwright-core": "^1.58.2",
     "stripe": "^20.4.1"
   },
-  "mcpName": "io.github.IgorGanapolsky/mcp-memory-gateway"
+  "mcpName": "io.github.IgorGanapolsky/mcp-memory-gateway",
+  "optionalDependencies": {
+    "shieldcortex": "^3.4.27"
+  }
 }

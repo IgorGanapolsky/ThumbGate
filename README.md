@@ -142,14 +142,21 @@ npx mcp-memory-gateway capture --feedback=down \
 
 1. **Capture** — `capture_feedback` MCP tool accepts signals with structured context (vague "thumbs down" is rejected)
 2. **Validate** — Rubric engine gates promotion — requires specific failure descriptions, not vibes
-3. **Remember** — Promoted memories stored in JSONL + LanceDB vectors for semantic search
-4. **Distill** — Principle extraction distills NL feedback into reusable semantic principles (MemAlign-inspired)
-5. **Prevent** — Repeated failures auto-generate prevention rules (the actual value — agents follow these when loaded)
-6. **Gate** — Pre-action blocking via PreToolUse hooks — physically prevents known mistakes before they happen
-7. **Recall** — `recall` tool injects relevant past context into current session (this is the mechanism that works)
-8. **Session Handoff** — `session_handoff` captures git state, last task, next step, and blockers; `session_primer` restores it at next session start
-9. **Export** — DPO/KTO pairs for optional downstream fine-tuning (separate from runtime behavior)
-10. **Bridge** — JSONL file watcher auto-ingests signals from external sources (Amp plugins, hooks, scripts)
+3. **Screen** — Memory-ingress firewall blocks secret-bearing or hostile feedback before any JSONL write (local scanner by default, ShieldCortex when installed)
+4. **Remember** — Promoted memories stored in local JSONL + LanceDB vectors for semantic search
+5. **Distill** — Principle extraction distills NL feedback into reusable semantic principles (MemAlign-inspired)
+6. **Prevent** — Repeated failures auto-generate prevention rules (the actual value — agents follow these when loaded)
+7. **Gate** — Pre-action blocking via PreToolUse hooks — physically prevents known mistakes before they happen
+8. **Recall** — `recall` tool injects relevant past context into current session (this is the mechanism that works)
+9. **Session Handoff** — `session_handoff` captures git state, last task, next step, and blockers; `session_primer` restores it at next session start
+10. **Export** — DPO/KTO pairs for optional downstream fine-tuning (separate from runtime behavior)
+11. **Bridge** — JSONL file watcher auto-ingests signals from external sources (Amp plugins, hooks, scripts)
+
+Optional ingress hardening:
+
+- `RLHF_MEMORY_FIREWALL_PROVIDER=auto` prefers ShieldCortex when the optional package is installed, then falls back to the local secret scanner.
+- `RLHF_MEMORY_FIREWALL_PROVIDER=shieldcortex` forces the ShieldCortex path and degrades to the local scanner only if the package is unavailable.
+- `RLHF_MEMORY_FIREWALL_MODE=strict|balanced|permissive` controls the ShieldCortex defence mode.
 
 ### What Works vs. What Doesn't
 

@@ -21,6 +21,7 @@ const {
   enrichFeedbackContext,
   waitForBackgroundSideEffects,
 } = require('../scripts/feedback-loop');
+const { evaluateMemoryIngress } = require('../scripts/memory-firewall');
 
 function makeTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-loop-test-'));
@@ -107,6 +108,53 @@ test('captureFeedback: valid positive feedback returns accepted=true', (t) => {
     tags: ['verification', 'testing'],
   });
   assert.strictEqual(result.accepted, true);
+});
+
+test('evaluateMemoryIngress: ShieldCortex blocks secret-bearing payload when explicitly enabled', () => {
+  const decision = evaluateMemoryIngress({
+    feedbackEvent: {
+      signal: 'up',
+      context: 'Do not persist sk-ant-abcdefghijklmnopqrstuvwxyz123456 in memory.',
+      tags: ['security'],
+    },
+    provider: 'shieldcortex',
+  });
+
+  assert.strictEqual(decision.allowed, false);
+  assert.strictEqual(decision.provider, 'shieldcortex');
+  assert.ok(
+    decision.threatIndicators.includes('credential_leak'),
+    `expected credential_leak in ${JSON.stringify(decision.threatIndicators)}`
+  );
+});
+
+test('captureFeedback: blocks secret-bearing feedback before any raw memory write', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.RLHF_MEMORY_FIREWALL_PROVIDER = 'local';
+  t.after(() => {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.RLHF_MEMORY_FIREWALL_PROVIDER;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const secret = 'sk-ant-abcdefghijklmnopqrstuvwxyz123456';
+  const result = captureFeedback({
+    signal: 'up',
+    context: `Never store ${secret} in durable memory.`,
+    whatWorked: 'It caught a secret before persistence.',
+    tags: ['security'],
+  });
+
+  assert.strictEqual(result.accepted, false);
+  assert.strictEqual(result.status, 'blocked');
+  assert.strictEqual(fs.existsSync(path.join(tmpDir, 'feedback-log.jsonl')), false);
+  assert.strictEqual(fs.existsSync(path.join(tmpDir, 'memory-log.jsonl')), false);
+
+  const diagnostics = readJSONL(path.join(tmpDir, 'diagnostic-log.jsonl'));
+  assert.strictEqual(diagnostics.length, 1);
+  assert.match(diagnostics[0].context, /\[REDACTED:/);
+  assert.doesNotMatch(JSON.stringify(diagnostics[0]), new RegExp(secret));
 });
 
 test('captureFeedback: rejects vague negative (no context/whatWentWrong/whatToChange)', (t) => {

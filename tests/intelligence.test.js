@@ -227,6 +227,26 @@ describe('context-engine: routeQuery (INTL-01)', () => {
   });
 });
 
+describe('context-engine: TOOL_CONSOLIDATION', () => {
+  let m;
+  before(() => {
+    delete require.cache[require.resolve('../scripts/context-engine.js')];
+    m = require('../scripts/context-engine.js');
+  });
+
+  it('uses local RLHF storage labels for memory query sources', () => {
+    assert.deepEqual(
+      m.TOOL_CONSOLIDATION['memory:query'].sources,
+      ['jsonl-memory', 'lancedb-vectors']
+    );
+  });
+
+  it('does not leak dropped ShieldCortex terminology into the runtime manifest', () => {
+    const sources = m.TOOL_CONSOLIDATION['memory:query'].sources.join(' ');
+    assert.equal(/shieldcortex/i.test(sources), false);
+  });
+});
+
 describe('context-engine: scoreRetrievalQuality', () => {
   let m;
   let tmpDir;

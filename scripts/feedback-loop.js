@@ -133,6 +133,14 @@ function getDelegationRuntimeModule() {
   }
 }
 
+function getMemoryFirewallModule() {
+  try {
+    return require('./memory-firewall');
+  } catch {
+    return null;
+  }
+}
+
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
@@ -174,6 +182,92 @@ function appendDiagnosticRecord(params = {}) {
   };
   appendJSONL(DIAGNOSTIC_LOG_PATH, record);
   return record;
+}
+
+function buildMemoryFirewallViolations(decision = {}) {
+  const findingViolations = Array.isArray(decision.findings)
+    ? decision.findings.map((finding) => ({
+        constraintId: `security:${finding.id || 'credential_leak'}`,
+        description: finding.reason || finding.label || 'Blocked by memory-ingress firewall',
+        metadata: {
+          label: finding.label || finding.id || null,
+          line: finding.line || null,
+          source: finding.source || null,
+        },
+      }))
+    : [];
+
+  if (findingViolations.length > 0) {
+    return findingViolations;
+  }
+
+  return (decision.threatIndicators || []).map((indicator) => ({
+    constraintId: `security:${indicator}`,
+    description: `Blocked by memory-ingress firewall (${indicator})`,
+    metadata: {
+      provider: decision.provider || null,
+      mode: decision.mode || null,
+    },
+  }));
+}
+
+function maybeBlockMemoryIngress({ feedbackEvent, memoryRecord = null, summary, now }) {
+  const memoryFirewall = getMemoryFirewallModule();
+  if (!memoryFirewall || typeof memoryFirewall.evaluateMemoryIngress !== 'function') {
+    return null;
+  }
+
+  const decision = memoryFirewall.evaluateMemoryIngress({
+    feedbackEvent,
+    memoryRecord,
+    sourceIdentifier: 'feedback-loop',
+  });
+
+  if (!decision || decision.allowed) {
+    return null;
+  }
+
+  appendDiagnosticRecord({
+    source: 'memory_firewall',
+    step: 'memory_ingress',
+    context: decision.redactedPreview || '',
+    metadata: {
+      provider: decision.provider || 'unknown',
+      mode: decision.mode || null,
+      degraded: Boolean(decision.degraded),
+      firewallResult: decision.firewallResult || null,
+      blockedPatterns: Array.isArray(decision.blockedPatterns) ? decision.blockedPatterns : [],
+      requestedProvider: decision.requestedProvider || null,
+    },
+    diagnosis: {
+      diagnosed: true,
+      rootCauseCategory: 'guardrail_triggered',
+      criticalFailureStep: 'memory_ingress',
+      violations: buildMemoryFirewallViolations(decision),
+      evidence: [
+        decision.reason || 'Memory ingress blocked',
+        ...(decision.threatIndicators || []),
+      ].filter(Boolean),
+    },
+  });
+
+  summary.rejected += 1;
+  summary.lastUpdated = now;
+  saveSummary(summary);
+
+  return {
+    accepted: false,
+    status: 'blocked',
+    reason: decision.reason,
+    message: 'Feedback blocked by memory-ingress security checks.',
+    feedbackEvent,
+    security: {
+      provider: decision.provider || 'unknown',
+      mode: decision.mode || null,
+      threatIndicators: decision.threatIndicators || [],
+      degraded: Boolean(decision.degraded),
+    },
+  };
 }
 
 function readDiagnosticEntries(logPath) {
@@ -627,6 +721,10 @@ function captureFeedback(params) {
   summary[signal] += 1;
 
   if (action.type === 'no-action') {
+    const firewallBlocked = maybeBlockMemoryIngress({ feedbackEvent, summary, now });
+    if (firewallBlocked) {
+      return firewallBlocked;
+    }
     const clarification = buildClarificationMessage({
       signal,
       context: params.context || '',
@@ -663,6 +761,10 @@ function captureFeedback(params) {
 
   const prepared = prepareForStorage(action.memory);
   if (!prepared.ok) {
+    const firewallBlocked = maybeBlockMemoryIngress({ feedbackEvent, summary, now });
+    if (firewallBlocked) {
+      return firewallBlocked;
+    }
     summary.rejected += 1;
     summary.lastUpdated = now;
     saveSummary(summary);
@@ -720,6 +822,16 @@ function captureFeedback(params) {
       }
     }
   } catch (_err) { /* bayesian update is non-blocking */ }
+
+  const firewallBlocked = maybeBlockMemoryIngress({
+    feedbackEvent,
+    memoryRecord,
+    summary,
+    now,
+  });
+  if (firewallBlocked) {
+    return firewallBlocked;
+  }
 
   appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
   appendJSONL(MEMORY_LOG_PATH, memoryRecord);

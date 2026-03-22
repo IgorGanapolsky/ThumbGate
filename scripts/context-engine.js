@@ -57,7 +57,7 @@ const TOOL_CONSOLIDATION = {
     description: 'Unified context retrieval',
   },
   'memory:query': {
-    sources: ['shieldcortex', 'memory-files'],
+    sources: ['jsonl-memory', 'lancedb-vectors'],
     description: 'Unified memory access',
   },
   'quality:check': {

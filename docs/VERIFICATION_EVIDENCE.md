@@ -1,3 +1,93 @@
+## March 21, 2026: ShieldCortex-backed memory ingress hardening and runtime source label cleanup
+
+Scope:
+
+- Added `scripts/memory-firewall.js` as the single ingress decision point for feedback/memory writes, with provider selection for `auto`, `shieldcortex`, `local`, and `off`.
+- Added `scripts/shieldcortex-memory-firewall-runner.mjs` so the gateway can use the optional `shieldcortex` package without making it a hard runtime dependency.
+- Hardened `scripts/feedback-loop.js` to block secret-bearing feedback before any raw write to `feedback-log.jsonl` or `memory-log.jsonl`, while recording only redacted diagnostics.
+- Replaced the stale runtime source label `shieldcortex` in `scripts/context-engine.js` with the truthful live storage labels `jsonl-memory` and `lancedb-vectors`.
+- Added regression coverage in `tests/feedback-loop.test.js` and `tests/intelligence.test.js`.
+- Documented the optional ingress firewall controls in `README.md` and `.env.example`.
+- Added `shieldcortex` as an optional dependency, not a required runtime dependency.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/mcp-memory-gateway/.worktrees/fix-rlhf-source-labels`:
+
+```bash
+npm ci
+node --check scripts/memory-firewall.js
+node --check scripts/feedback-loop.js
+node - <<'PY'
+const { evaluateMemoryIngress } = require('./scripts/memory-firewall');
+(async () => {
+  const decision = await evaluateMemoryIngress({
+    feedbackEvent: {
+      signal: 'down',
+      context: 'Accidentally pasted anthropic API key sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890 into feedback.'
+    },
+    memoryRecord: {
+      title: 'Dangerous memory',
+      text: 'anthropic api key sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890 leaked'
+    },
+    options: { provider: 'shieldcortex', mode: 'strict' }
+  });
+  console.log(JSON.stringify({
+    allowed: decision.allowed,
+    provider: decision.provider,
+    mode: decision.mode,
+    degraded: decision.degraded,
+    reason: decision.reason,
+    threatIndicators: decision.threatIndicators,
+    blockedPatterns: decision.blockedPatterns
+  }, null, 2));
+})();
+PY
+node --test tests/feedback-loop.test.js tests/intelligence.test.js
+npm test >/tmp/mcp_npm_test_fix_rlhf_source_labels.log 2>&1
+npm run test:coverage >/tmp/mcp_test_coverage_fix_rlhf_source_labels.log 2>&1
+RLHF_PROOF_DIR=/tmp/mcp_proof_adapters_fix_rlhf npm run prove:adapters >/tmp/mcp_prove_adapters_fix_rlhf.log 2>&1
+RLHF_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_rlhf npm run prove:automation >/tmp/mcp_prove_automation_fix_rlhf.log 2>&1
+npm run self-heal:check >/tmp/mcp_self_heal_check_fix_rlhf.log 2>&1
+git diff --check
+```
+
+Observed result:
+
+- `npm ci` exited `0`: `added 296 packages` and `found 0 vulnerabilities`.
+- `node --check scripts/memory-firewall.js` exited `0`.
+- `node --check scripts/feedback-loop.js` exited `0`.
+- The direct ShieldCortex ingress probe exited `0` and returned:
+  - `allowed: false`
+  - `provider: "shieldcortex"`
+  - `mode: "strict"`
+  - `reason: "Blocked: credential leak detected (anthropic api_key)"`
+  - `threatIndicators: ["credential_leak"]`
+- `node --test tests/feedback-loop.test.js tests/intelligence.test.js` exited `0`: `74` passed, `0` failed.
+- `npm test` exited `0` on the patched worktree (`/tmp/mcp_npm_test_fix_rlhf_source_labels.log`).
+- The full-suite rerun included the new RLHF/security checks:
+  - `evaluateMemoryIngress: ShieldCortex blocks secret-bearing payload when explicitly enabled`
+  - `captureFeedback: blocks secret-bearing feedback before any raw memory write`
+- `npm run test:coverage` exited `0` with all-files coverage at:
+  - `89.71` lines
+  - `75.40` branches
+  - `93.21` functions
+- `RLHF_PROOF_DIR=/tmp/mcp_proof_adapters_fix_rlhf npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `RLHF_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_rlhf npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4 healthy` checks.
+- `git diff --check` exited `0`.
+
+Evidence caveat:
+
+- The `prove:adapters` and `prove:automation` commands in this repo are test harnesses (`node --test ...`), not a fresh tracked-artifact publisher.
+- The current run proved those contracts through the green harness output and exit codes above.
+- The checked-in `proof/compatibility/report.json` and `proof/automation/report.json` files still carry older `generatedAt` timestamps, so they must not be claimed as freshly regenerated evidence for this specific run.
+
+Requirements verified:
+
+- Secret-bearing or hostile feedback can now be blocked before any raw memory promotion write.
+- When ShieldCortex is installed, the ingress firewall can use it directly; when it is absent, the gateway falls back to the local secret scanner without breaking runtime operation.
+- The runtime memory manifest no longer falsely claims `shieldcortex` as a live memory source.
+- The change did not break the RLHF feedback loop, adapter contracts, automation contracts, or self-healing checks.
+
 ## March 21, 2026: Social publish hardening + self-heal reliability fix + archive-WIP retirement decision
 
 Scope:
@@ -76,68 +166,6 @@ Observed result:
   - deletes `scripts/behavioral-extraction.js`
   - adds scratch-only `scripts/gsd-final-verification.js`
   - changes `bin/memory.sh`, `bin/obsidian-sync.sh`, `primer.md`, and adds `docs/OPERATIONAL_LOOPS.md` without a coherent verification lane
-
-## March 20, 2026: Zero-filming Instagram + TikTok automation pipeline
-
-Scope:
-
-- Added a repo-owned social pipeline in `scripts/social-pipeline.js` that renders canonical carousel HTML into Instagram PNG slides, generates a TikTok-safe MP4 fallback, writes a bundle manifest, queues local scheduled posts, and can publish through an authenticated Chrome session.
-- Added canonical local source assets at `docs/marketing/assets/pre-action-gates-instagram-carousel.html` and `docs/marketing/assets/pre-action-gates-caption.txt`.
-- Added operational docs in `docs/marketing/social-automation.md` and linked them from the marketing launch kit and asset inventory.
-- Added regression coverage in `tests/social-pipeline.test.js` and `tests/social-marketing-assets.test.js`.
-- Hardened the queue to be idempotent for the same pending bundle/schedule/platform tuple, so repeated scheduling commands do not create duplicate posts.
-- Hardened Chrome tab focus logic so the AppleScript path no longer tries to re-focus a tab that is already frontmost.
-
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-social-pipeline-automation`:
-
-```bash
-npm ci
-npm run pr:manage
-npm test
-npm test > .artifacts/social/final-npm-test.log 2>&1
-npm run test:coverage
-tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
-tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
-npm run self-heal:check
-node --test tests/social-pipeline.test.js tests/social-marketing-assets.test.js
-node --test tests/social-pipeline.test.js
-npm run social:prepare -- --slug pre-action-gates-proof --output .artifacts/social/pre-action-gates-proof
-sips -g pixelWidth -g pixelHeight .artifacts/social/pre-action-gates-proof/slides/slide-01.png
-ffprobe -v error -select_streams v:0 -show_entries stream=width,height -show_entries format=duration -of default=noprint_wrappers=1:nokey=0 .artifacts/social/pre-action-gates-proof/video/tiktok-fallback.mp4
-npm run social:queue -- --bundle .artifacts/social/pre-action-gates-proof/bundle.json --when 2026-03-21T09:00:00-04:00 --platforms instagram,tiktok
-npm run social:status
-npm run social:scheduler:install -- --dry-run
-npm run social:publish -- --bundle .artifacts/social/pre-action-gates-proof/bundle.json --platforms instagram,tiktok --dry-run
-npm run social:publish -- --bundle .artifacts/social/pre-action-gates-proof/bundle.json --platforms instagram --no-share --cleanup-drafts
-npm audit --json
-git diff --check
-```
-
-Observed result:
-
-- `npm ci` exited `0`.
-- `npm run pr:manage` exited `0`: `No open pull requests found.`
-- `npm test` exited `0`. The final rerun on the post-fix tree was captured via `.artifacts/social/final-npm-test.log`.
-- `npm run test:coverage` exited `0` with all-files coverage at `88.85` lines, `75.71` branches, and `92.63` functions.
-- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
-- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks (`budget_status 216ms`, `tests 60478ms`, `prove_adapters 1223ms`, `prove_automation 1096ms`).
-- `node --test tests/social-pipeline.test.js tests/social-marketing-assets.test.js` exited `0`: `12` passed, `0` failed.
-- `node --test tests/social-pipeline.test.js` exited `0`: `7` passed, `0` failed after the idempotent queue fix.
-- `npm run social:prepare -- --slug pre-action-gates-proof --output .artifacts/social/pre-action-gates-proof` exited `0` and wrote:
-  - `5` isolated slide source documents under `.artifacts/social/pre-action-gates-proof/source/`
-  - `5` Instagram PNG slides under `.artifacts/social/pre-action-gates-proof/slides/`
-  - `instagram.txt` and `tiktok.txt` captions under `.artifacts/social/pre-action-gates-proof/captions/`
-  - `tiktok-fallback.mp4` under `.artifacts/social/pre-action-gates-proof/video/`
-  - `bundle.json` manifest under `.artifacts/social/pre-action-gates-proof/`
-- `sips` verified `slide-01.png` at `1080x1080`.
-- `ffprobe` verified `tiktok-fallback.mp4` at `1080x1920` with `duration=12.500000`.
-- `npm run social:queue ...` exited `0` and returned a pending queue entry for `pre-action-gates-proof` scheduled at `2026-03-21T13:00:00.000Z`.
-- `npm run social:status` exited `0` and showed exactly `1` pending queue entry after local dedupe cleanup.
-- `npm run social:scheduler:install -- --dry-run` exited `0` and generated a valid `launchd` plist targeting `publish-queue` on a `900` second interval at `/Users/ganapolsky_i/Library/LaunchAgents/io.github.IgorGanapolsky.mcp-memory-gateway.social.plist`.
-- `npm run social:publish -- --bundle .artifacts/social/pre-action-gates-proof/bundle.json --platforms instagram,tiktok --dry-run` exited `0` and resolved:
-  - Instagram payload: `assetCount = 5`
-  - TikTok payload: `assetPath = .../video/tiktok-fallback.mp4`
 - A stronger live browser proof was attempted with `npm run social:publish -- --bundle .artifacts/social/pre-action-gates-proof/bundle.json --platforms instagram --no-share --cleanup-drafts`. The repo-side tab-focus bug was fixed first, but the live attempt still failed outside repo control because Google Chrome returned: `Executing JavaScript through AppleScript is turned off. To turn it on, from the menu bar, go to View > Developer > Allow JavaScript from Apple Events.`
 - `npm audit --json` exited `0` with `0` vulnerabilities.
 - `git diff --check` exited `0`.
