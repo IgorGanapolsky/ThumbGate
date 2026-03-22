@@ -27,20 +27,26 @@
 
 ## Live Git Context
 
-### Branch: feat/filesystem-search-v2
+### Branch: feat/filesystem-search
 
 ### Last 5 Commits:
 ```
-3940b27 fix: yield in upsertFeedback to fix background side-effect tracking test
-fc6d2da feat: add filesystem-based search replacing LanceDB vector store
+3264b70 feat: add filesystem-based search replacing LanceDB vector store
 421ad42 feat: unified social analytics pipeline (9 platforms) (#301)
 a82c6d7 fix: harden social publish verification (#300)
 0740b58 fix: harden social publish runtime cleanup (#299)
+8e25c22 feat: harden social publish automation (#298)
 ```
 
 ### Modified Files:
 ```
+ M package.json
  M primer.md
+ M scripts/contextfs.js
+ M scripts/gates-engine.js
+ M scripts/social-analytics/publishers/threads.js
+ M tests/contextfs.test.js
+ M tests/feedback-loop.test.js
 ?? :memory:
 ?? docs/CLAUDE_AMNESIA_FIX.md
 ?? docs/G_STACK_PLAN.md
@@ -52,13 +58,23 @@ a82c6d7 fix: harden social publish verification (#300)
 ?? docs/marketing/flow-science/instagram-carousel-flow-science.html
 ?? docs/marketing/flow-science/instagram-carousel-flow-science_1.html
 ?? docs/marketing/flow-science/instagram-carousel-slides.html
-?? docs/marketing/hybrid-raft-launch.md
 ?? docs/marketing/instagram-response-keshavsuki.md
 ?? docs/marketing/reel-scripts.md
+?? instagram-post-shared.png
+?? instagram-pre-share.png
 ?? scripts/__pycache__/
 ?? scripts/fabric-sync.js
+?? scripts/memalign-recall.js
 ?? scripts/memory-firewall.js
+?? scripts/persona-primer.js
+?? scripts/principle-extractor.js
+?? scripts/revenue-sentry.js
 ?? test-vault-gsd/
 ?? tests/gtc-2026-features.test.js
+?? tests/hybrid-raft-proof.test.js
+?? tests/memalign.test.js
 ?? tests/memory-firewall.test.js
+?? tiktok-followers-updated.png
+?? tiktok-pre-post.png
+?? tiktok-video-published.png
 ```

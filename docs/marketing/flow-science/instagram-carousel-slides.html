@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instagram Carousel — MCP Memory Gateway</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #111;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  padding: 40px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.slide-label {
+  color: #666;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  margin-bottom: -30px;
+}
+
+.slide {
+  width: 1080px;
+  height: 1080px;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* ===== SLIDE 1: HOOK ===== */
+.slide-1 {
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+}
+
+.slide-1 .content {
+  padding: 100px 80px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.slide-1 h1 {
+  font-size: 82px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.05;
+  margin-bottom: 40px;
+}
+
+.slide-1 h1 .accent {
+  color: #ff4d4d;
+}
+
+.slide-1 .subtitle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 26px;
+  color: rgba(255,255,255,0.5);
+  font-weight: 500;
+}
+
+.slide-1 .badge {
+  position: absolute;
+  top: 60px;
+  right: 60px;
+  background: rgba(255,77,77,0.15);
+  border: 1px solid rgba(255,77,77,0.3);
+  color: #ff4d4d;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 8px;
+  letter-spacing: 0.05em;
+}
+
+.dots {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+.dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+}
+.dot.active { background: #fff; }
+
+/* ===== SLIDE 2: THE PROBLEM ===== */
+.slide-2 {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+.slide-2 .content {
+  padding: 80px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.slide-2 h2 {
+  font-size: 52px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 50px;
+  line-height: 1.15;
+}
+
+.slide-2 .stats {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.stat-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 22px;
+  color: rgba(255,255,255,0.7);
+  min-width: 340px;
+}
+
+.stat-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 22px;
+  color: #ffd700;
+  font-weight: 600;
+}
+
+.stat-label {
+  font-size: 18px;
+  color: rgba(255,255,255,0.35);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* ===== SLIDE 3: WHY MEMORY FAILS ===== */
+.slide-3 {
+  background: linear-gradient(135deg, #2d1b3d 0%, #1a0a2e 50%, #0d0221 100%);
+}
+
+.slide-3 .content {
+  padding: 80px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.slide-3 h2 {
+  font-size: 48px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 50px;
+  line-height: 1.15;
+}
+
+.fail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.fail-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.fail-text {
+  font-size: 26px;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.4;
+}
+
+.fail-text strong {
+  color: #ff6b6b;
+}
+
+/* ===== SLIDE 4: THE SOLUTION ===== */
+.slide-4 {
+  background: linear-gradient(135deg, #0a2e1a 0%, #0d3b2e 50%, #1a4d3e 100%);
+}
+
+.slide-4 .content {
+  padding: 80px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.slide-4 h2 {
+  font-size: 48px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 50px;
+}
+
+.gate-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.gate-step {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 20px 28px;
+}
+
+.step-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  font-size: 18px;
+  color: #0d3b2e;
+  background: #00d67e;
+  width: 38px; height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.step-text {
+  font-size: 24px;
+  color: rgba(255,255,255,0.9);
+}
+
+.step-text .hl {
+  color: #00d67e;
+  font-weight: 700;
+}
+
+.gate-step.blocked {
+  background: rgba(255,59,59,0.12);
+  border: 1px solid rgba(255,59,59,0.25);
+}
+
+.gate-step.blocked .step-num {
+  background: #ff3b3b;
+  color: #fff;
+}
+
+.gate-step.blocked .hl {
+  color: #ff3b3b;
+}
+
+/* ===== SLIDE 5: CTA ===== */
+.slide-5 {
+  background: linear-gradient(135deg, #1a0a0a 0%, #2d1414 40%, #3d0a0a 100%);
+}
+
+.slide-5 .content {
+  padding: 80px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.slide-5 h2 {
+  font-size: 52px;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 20px;
+  line-height: 1.15;
+}
+
+.slide-5 .tagline {
+  font-size: 24px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 60px;
+  max-width: 700px;
+}
+
+.cmd-box {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 30px 50px;
+  margin-bottom: 40px;
+}
+
+.cmd-box code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 26px;
+  color: #00d67e;
+  font-weight: 600;
+}
+
+.slide-5 .links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.slide-5 .link {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 20px;
+  color: rgba(255,255,255,0.4);
+}
+
+.slide-5 .link strong {
+  color: rgba(255,255,255,0.7);
+}
+
+.slide-5 .free-badge {
+  background: rgba(0,214,126,0.12);
+  border: 1px solid rgba(0,214,126,0.3);
+  color: #00d67e;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 20px;
+  font-weight: 600;
+  padding: 12px 28px;
+  border-radius: 10px;
+  margin-top: 30px;
+}
+
+.agents-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 40px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.agent-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 16px;
+  color: rgba(255,255,255,0.45);
+  background: rgba(255,255,255,0.05);
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+</style>
+</head>
+<body>
+
+<p class="slide-label">SLIDE 1 / 5 — HOOK</p>
+<div class="slide slide-1">
+  <div class="badge">FREE + OPEN SOURCE</div>
+  <div class="content">
+    <h1>15 Memory Tools.<br>Zero <span class="accent">Enforcement</span><br>Tools.</h1>
+    <p class="subtitle">Until now.</p>
+  </div>
+  <div class="dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+</div>
+
+<p class="slide-label">SLIDE 2 / 5 — THE LANDSCAPE</p>
+<div class="slide slide-2">
+  <div class="content">
+    <h2>Every MCP memory tool does the same thing.</h2>
+    <div class="stats">
+      <div class="stat-row">
+        <span class="stat-name">claude-mem</span>
+        <span class="stat-val">37,200 ⭐</span>
+        <span class="stat-label">— memory</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-name">Mem0 OpenMemory</span>
+        <span class="stat-val">VC-funded</span>
+        <span class="stat-label">— memory</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-name">Official Anthropic server</span>
+        <span class="stat-val">61K downloads</span>
+        <span class="stat-label">— memory</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-name">15+ others</span>
+        <span class="stat-val">store → recall</span>
+        <span class="stat-label">— memory</span>
+      </div>
+      <div class="stat-row" style="margin-top: 30px; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.1);">
+        <span class="stat-name" style="color: #ffd700;">They all require the agent<br>to cooperate.</span>
+      </div>
+    </div>
+  </div>
+  <div class="dots"><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+</div>
+
+<p class="slide-label">SLIDE 3 / 5 — THE PROBLEM</p>
+<div class="slide slide-3">
+  <div class="content">
+    <h2>What happens when Claude<br>doesn't cooperate?</h2>
+    <div class="fail-item">
+      <span class="fail-icon">❌</span>
+      <span class="fail-text">Context gets <strong>compacted</strong> → rules forgotten</span>
+    </div>
+    <div class="fail-item">
+      <span class="fail-icon">❌</span>
+      <span class="fail-text">Agent doesn't call <strong>recall()</strong> → memory unused</span>
+    </div>
+    <div class="fail-item">
+      <span class="fail-icon">❌</span>
+      <span class="fail-text">New session → <strong>blank slate</strong>, same mistakes</span>
+    </div>
+    <div class="fail-item">
+      <span class="fail-icon">❌</span>
+      <span class="fail-text">CLAUDE.md → <strong>ignored</strong> under context pressure</span>
+    </div>
+    <div style="margin-top: 40px; font-size: 30px; color: rgba(255,255,255,0.5); font-weight: 700;">
+      Memory says "please remember."<br>
+      <span style="color: #ff6b6b;">Nothing stops the bad action.</span>
+    </div>
+  </div>
+  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+</div>
+
+<p class="slide-label">SLIDE 4 / 5 — THE SOLUTION</p>
+<div class="slide slide-4">
+  <div class="content">
+    <h2>Pre-Action Gates<br>don't ask. They enforce.</h2>
+    <div class="gate-flow">
+      <div class="gate-step">
+        <span class="step-num">1</span>
+        <span class="step-text"><span class="hl">1st failure</span> → feedback captured</span>
+      </div>
+      <div class="gate-step">
+        <span class="step-num">2</span>
+        <span class="step-text"><span class="hl">2nd failure</span> → pattern noted</span>
+      </div>
+      <div class="gate-step">
+        <span class="step-num">3</span>
+        <span class="step-text"><span class="hl">3rd failure</span> → prevention rule auto-generated</span>
+      </div>
+      <div class="gate-step blocked">
+        <span class="step-num">5</span>
+        <span class="step-text"><span class="hl">5th failure</span> → BLOCKING GATE 🛑</span>
+      </div>
+    </div>
+    <div style="margin-top: 40px; font-size: 22px; color: rgba(255,255,255,0.4); font-family: 'IBM Plex Mono', monospace;">
+      No agent cooperation. Survives compaction. Hooks fire regardless.
+    </div>
+  </div>
+  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div></div>
+</div>
+
+<p class="slide-label">SLIDE 5 / 5 — CTA</p>
+<div class="slide slide-5">
+  <div class="content">
+    <h2>The only MCP tool that<br>learns AND enforces.</h2>
+    <p class="tagline">Memory + Enforcement > Memory alone</p>
+    <div class="cmd-box">
+      <code>npx mcp-memory-gateway init</code>
+    </div>
+    <div class="links">
+      <span class="link"><strong>GitHub:</strong> github.com/IgorGanapolsky/mcp-memory-gateway</span>
+    </div>
+    <div class="free-badge">FREE + MIT LICENSED</div>
+    <div class="agents-row">
+      <span class="agent-tag">Claude Code</span>
+      <span class="agent-tag">Codex</span>
+      <span class="agent-tag">Gemini</span>
+      <span class="agent-tag">Cursor</span>
+      <span class="agent-tag">Amp</span>
+    </div>
+  </div>
+  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
+</div>
+
+</body>
+</html>

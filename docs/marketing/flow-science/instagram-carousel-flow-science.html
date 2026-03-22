@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flow × Gates Carousel</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800;900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #111; display: flex; flex-direction: column; align-items: center; gap: 40px; padding: 40px; font-family: 'Outfit', sans-serif; }
+.label { color: #666; font-family: 'IBM Plex Mono', monospace; font-size: 14px; margin-bottom: -30px; }
+.slide { width: 1080px; height: 1080px; position: relative; overflow: hidden; flex-shrink: 0; }
+.dots { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.dot.active { background: #fff; }
+
+/* SLIDE 1 */
+.s1 { background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 40%, #2d0a3d 100%); }
+.s1 .c { padding: 90px 80px; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+.s1 h1 { font-size: 72px; font-weight: 900; color: #fff; line-height: 1.08; margin-bottom: 30px; }
+.s1 h1 em { font-style: normal; color: #c084fc; }
+.s1 .sub { font-size: 26px; color: rgba(255,255,255,0.45); max-width: 700px; line-height: 1.5; }
+.s1 .quote-box { position: absolute; bottom: 100px; left: 80px; right: 80px; background: rgba(192,132,252,0.08); border-left: 3px solid #c084fc; padding: 24px 30px; border-radius: 0 12px 12px 0; }
+.s1 .quote-box q { font-size: 22px; color: rgba(255,255,255,0.7); font-style: italic; display: block; margin-bottom: 8px; }
+.s1 .quote-box cite { font-size: 16px; color: rgba(255,255,255,0.35); font-family: 'IBM Plex Mono', monospace; font-style: normal; }
+
+/* SLIDE 2 */
+.s2 { background: linear-gradient(135deg, #1a0a0a 0%, #2d1414 50%, #3d0a0a 100%); }
+.s2 .c { padding: 80px; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+.s2 h2 { font-size: 48px; font-weight: 800; color: #fff; margin-bottom: 50px; line-height: 1.15; }
+.s2 .triggers { display: flex; flex-direction: column; gap: 20px; }
+.trigger { display: flex; align-items: center; gap: 24px; }
+.trigger .icon { font-size: 36px; width: 60px; text-align: center; flex-shrink: 0; }
+.trigger .t-name { font-size: 24px; color: rgba(255,255,255,0.85); font-weight: 700; min-width: 300px; }
+.trigger .t-break { font-size: 20px; color: #ff6b6b; font-family: 'IBM Plex Mono', monospace; }
+
+/* SLIDE 3 */
+.s3 { background: linear-gradient(135deg, #1a0c00 0%, #2d1800 50%, #3d2200 100%); }
+.s3 .c { padding: 80px; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+.s3 h2 { font-size: 48px; font-weight: 800; color: #fff; margin-bottom: 20px; line-height: 1.15; }
+.s3 .sub { font-size: 22px; color: rgba(255,255,255,0.4); margin-bottom: 50px; }
+.cycle { display: flex; flex-direction: column; gap: 16px; }
+.cycle-step { display: flex; align-items: center; gap: 20px; background: rgba(255,255,255,0.04); padding: 22px 28px; border-radius: 12px; }
+.cycle-step .arrow { font-size: 28px; color: #fbbf24; flex-shrink: 0; }
+.cycle-step .phase { font-size: 22px; font-weight: 700; color: #fbbf24; min-width: 140px; }
+.cycle-step .desc { font-size: 20px; color: rgba(255,255,255,0.7); }
+.cycle-step.broken { border: 1px solid rgba(255,59,59,0.3); background: rgba(255,59,59,0.06); }
+.cycle-step.broken .phase { color: #ff6b6b; }
+.cycle-step.broken .desc { color: #ff6b6b; }
+
+/* SLIDE 4 */
+.s4 { background: linear-gradient(135deg, #001a0a 0%, #002d1a 50%, #003d2a 100%); }
+.s4 .c { padding: 80px; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+.s4 h2 { font-size: 46px; font-weight: 800; color: #fff; margin-bottom: 50px; line-height: 1.15; }
+.restore { display: flex; flex-direction: column; gap: 20px; }
+.restore-item { display: flex; align-items: flex-start; gap: 20px; }
+.restore-item .check { font-size: 32px; color: #00d67e; flex-shrink: 0; margin-top: 2px; }
+.restore-item .r-trigger { font-size: 22px; font-weight: 700; color: #00d67e; min-width: 280px; }
+.restore-item .r-how { font-size: 20px; color: rgba(255,255,255,0.65); line-height: 1.4; }
+
+/* SLIDE 5 */
+.s5 { background: linear-gradient(135deg, #0a0a1a 0%, #0d1a2e 40%, #0a2d3d 100%); }
+.s5 .c { padding: 80px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.s5 h2 { font-size: 54px; font-weight: 900; color: #fff; margin-bottom: 16px; line-height: 1.1; }
+.s5 .tagline { font-size: 26px; color: #c084fc; margin-bottom: 50px; font-weight: 700; }
+.s5 .cmd { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 28px 48px; margin-bottom: 30px; }
+.s5 .cmd code { font-family: 'IBM Plex Mono', monospace; font-size: 26px; color: #00d67e; font-weight: 600; }
+.s5 .link { font-family: 'IBM Plex Mono', monospace; font-size: 18px; color: rgba(255,255,255,0.4); margin-bottom: 30px; }
+.s5 .badge { background: rgba(0,214,126,0.1); border: 1px solid rgba(0,214,126,0.3); color: #00d67e; font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 600; padding: 12px 28px; border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<p class="label">SLIDE 1 — HOOK</p>
+<div class="slide s1">
+  <div class="c">
+    <h1>Your AI agent is <em>destroying</em> your flow state.</h1>
+    <p class="sub">And neuroscience explains exactly why.</p>
+  </div>
+  <div class="quote-box">
+    <q>The best way to maximize the power of human-AI cooperation is flow.</q>
+    <cite>— Steven Kotler, Flow Research Collective</cite>
+  </div>
+  <div class="dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+</div>
+
+<p class="label">SLIDE 2 — THE 4 TRIGGERS</p>
+<div class="slide s2">
+  <div class="c">
+    <h2>Flow requires 4 triggers.<br>AI agents break all 4.</h2>
+    <div class="triggers">
+      <div class="trigger">
+        <span class="icon">⚖️</span>
+        <span class="t-name">Challenge-skills balance</span>
+        <span class="t-break">→ broken by repetitive failures</span>
+      </div>
+      <div class="trigger">
+        <span class="icon">🎯</span>
+        <span class="t-name">Clear goals</span>
+        <span class="t-break">→ broken when agent goes off-track</span>
+      </div>
+      <div class="trigger">
+        <span class="icon">⚡</span>
+        <span class="t-name">Immediate feedback</span>
+        <span class="t-break">→ broken by silent context loss</span>
+      </div>
+      <div class="trigger">
+        <span class="icon">🎮</span>
+        <span class="t-name">Sense of control</span>
+        <span class="t-break">→ broken when rules are ignored</span>
+      </div>
+    </div>
+  </div>
+  <div class="dots"><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+</div>
+
+<p class="label">SLIDE 3 — THE CYCLE BREAKS</p>
+<div class="slide s3">
+  <div class="c">
+    <h2>The flow cycle, interrupted.</h2>
+    <p class="sub">Kotler's 4-stage cycle: struggle → release → flow → recovery</p>
+    <div class="cycle">
+      <div class="cycle-step">
+        <span class="arrow">→</span>
+        <span class="phase">Struggle</span>
+        <span class="desc">Hard focus on a real problem</span>
+      </div>
+      <div class="cycle-step">
+        <span class="arrow">→</span>
+        <span class="phase">Release</span>
+        <span class="desc">Step back, let subconscious work</span>
+      </div>
+      <div class="cycle-step">
+        <span class="arrow">→</span>
+        <span class="phase">Flow</span>
+        <span class="desc">Deep performance, time dissolves</span>
+      </div>
+      <div class="cycle-step broken">
+        <span class="arrow">💥</span>
+        <span class="phase">INTERRUPTED</span>
+        <span class="desc">Claude repeats yesterday's mistake. You rage-fix it. Cycle resets.</span>
+      </div>
+    </div>
+    <div style="margin-top: 40px; font-size: 24px; color: rgba(255,255,255,0.5);">
+      This isn't productive struggle.<br><span style="color: #ff6b6b; font-weight: 700;">It's learned helplessness.</span>
+    </div>
+  </div>
+  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+</div>
+
+<p class="label">SLIDE 4 — THE FIX</p>
+<div class="slide s4">
+  <div class="c">
+    <h2>Pre-Action Gates restore<br>all 4 flow triggers.</h2>
+    <div class="restore">
+      <div class="restore-item">
+        <span class="check">✓</span>
+        <span class="r-trigger">Challenge-skills balance</span>
+        <span class="r-how">Gates handle repetitive failures. You focus on hard problems.</span>
+      </div>
+      <div class="restore-item">
+        <span class="check">✓</span>
+        <span class="r-trigger">Clear goals</span>
+        <span class="r-how">Agent stays on track — known-bad paths are blocked.</span>
+      </div>
+      <div class="restore-item">
+        <span class="check">✓</span>
+        <span class="r-trigger">Immediate feedback</span>
+        <span class="r-how">Gate fires instantly — "BLOCKED" tells you the system works.</span>
+      </div>
+      <div class="restore-item">
+        <span class="check">✓</span>
+        <span class="r-trigger">Sense of control</span>
+        <span class="r-how">Your rules are enforced even after context compaction.</span>
+      </div>
+    </div>
+  </div>
+  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div></div>
+</div>
+
+<p class="label">SLIDE 5 — CTA</p>
+<div class="slide s5">
+  <div class="c">
+    <h2>Stop babysitting.<br>Start flowing.</h2>
+    <p class="tagline">The flow-preservation layer for AI coding.</p>
+    <div class="cmd"><code>npx mcp-memory-gateway init</code></div>
+    <span class="link">github.com/IgorGanapolsky/mcp-memory-gateway</span>
+    <div class="badge">FREE + MIT LICENSED</div>
+  </div>
+  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
+</div>
+
+</body>
+</html>

@@ -43,7 +43,9 @@
 - LangChain Hub — publish to smith.langchain.com
 
 ### Community (post/comment)
-- r/ClaudeCode, r/ChatGPTCoding, r/LocalLLaMA, r/SideProject
+- r/ClaudeCode, r/ClaudeAI, r/ChatGPTCoding, r/LocalLLaMA, r/SideProject
+- **OpenAI Codex Community Page** — Sign up for Ambassador program (via developers.openai.com)
+- **OpenClaw (ClawFather)** — Integrate as reliability layer for community agents
 - Hacker News (Show HN)
 - Product Hunt
 - DEV.to, Hashnode, Medium, HackerNoon
