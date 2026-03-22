@@ -357,7 +357,7 @@ test('captureFeedback: waitForBackgroundSideEffects drains deferred vector write
   let flushed = false;
 
   vectorStore.upsertFeedback = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 25));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     flushed = true;
   };
 
