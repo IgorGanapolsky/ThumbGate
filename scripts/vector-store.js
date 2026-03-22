@@ -20,6 +20,8 @@ const _pipelineCache = new Map();
 let _lastEmbeddingProfile = null;
 let _pipelineLoader = null;
 const TABLE_NAME = 'rlhf_memories';
+const TABLE_PREVENTION_RULES = 'prevention_rules';
+const TABLE_CONTEXT_PACKS = 'context_packs';
 
 async function getLanceDB() {
   if (!_lancedb) {
@@ -151,7 +153,7 @@ async function upsertFeedback(feedbackEvent) {
   }
 }
 
-async function searchSimilar(queryText, limit = 5) {
+async function searchSimilar(queryText, limit = 5, options = {}) {
   const lanceDir = getLanceDir();
   ensureDir(lanceDir);
 
@@ -163,8 +165,180 @@ async function searchSimilar(queryText, limit = 5) {
 
   const vector = await embed(queryText);
   const table = await db.openTable(TABLE_NAME);
-  const results = await table.search(vector).limit(limit).toArray();
+
+  let query = table.search(vector).limit(limit);
+
+  if (options.where) {
+    query = query.where(options.where);
+  }
+
+  const results = await query.toArray();
   return results;
+}
+
+// ---------------------------------------------------------------------------
+// Multi-table: Prevention Rules
+// ---------------------------------------------------------------------------
+
+async function upsertPreventionRule(rule) {
+  const lanceDir = getLanceDir();
+  ensureDir(lanceDir);
+
+  const { connect } = await getLanceDB();
+  const db = await connect(lanceDir);
+
+  const textForEmbedding = [
+    rule.pattern || '',
+    rule.message || '',
+    (rule.tags || []).join(' '),
+  ].filter(Boolean).join('. ');
+
+  const vector = await embed(textForEmbedding);
+
+  const record = {
+    id: rule.id,
+    text: textForEmbedding,
+    vector,
+    pattern: rule.pattern || '',
+    action: rule.action || 'warn',
+    message: rule.message || '',
+    tags: (rule.tags || []).join(','),
+    source: rule.source || 'auto',
+    timestamp: rule.timestamp || new Date().toISOString(),
+  };
+
+  const tableNames = await db.tableNames();
+  if (tableNames.includes(TABLE_PREVENTION_RULES)) {
+    const table = await db.openTable(TABLE_PREVENTION_RULES);
+    await table.add([record]);
+  } else {
+    await db.createTable(TABLE_PREVENTION_RULES, [record]);
+  }
+}
+
+async function searchPreventionRules(queryText, limit = 5, options = {}) {
+  const lanceDir = getLanceDir();
+  ensureDir(lanceDir);
+
+  const { connect } = await getLanceDB();
+  const db = await connect(lanceDir);
+
+  const tableNames = await db.tableNames();
+  if (!tableNames.includes(TABLE_PREVENTION_RULES)) return [];
+
+  const vector = await embed(queryText);
+  const table = await db.openTable(TABLE_PREVENTION_RULES);
+
+  let query = table.search(vector).limit(limit);
+  if (options.where) {
+    query = query.where(options.where);
+  }
+
+  return query.toArray();
+}
+
+// ---------------------------------------------------------------------------
+// Multi-table: Context Packs
+// ---------------------------------------------------------------------------
+
+async function upsertContextPack(pack) {
+  const lanceDir = getLanceDir();
+  ensureDir(lanceDir);
+
+  const { connect } = await getLanceDB();
+  const db = await connect(lanceDir);
+
+  const textForEmbedding = [
+    pack.query || '',
+    (pack.namespaces || []).join(' '),
+    pack.outcome || '',
+  ].filter(Boolean).join('. ');
+
+  const vector = await embed(textForEmbedding);
+
+  const record = {
+    id: pack.id,
+    text: textForEmbedding,
+    vector,
+    query: pack.query || '',
+    namespaces: (pack.namespaces || []).join(','),
+    outcome: pack.outcome || '',
+    signal: pack.signal || '',
+    itemCount: pack.itemCount || 0,
+    timestamp: pack.timestamp || new Date().toISOString(),
+  };
+
+  const tableNames = await db.tableNames();
+  if (tableNames.includes(TABLE_CONTEXT_PACKS)) {
+    const table = await db.openTable(TABLE_CONTEXT_PACKS);
+    await table.add([record]);
+  } else {
+    await db.createTable(TABLE_CONTEXT_PACKS, [record]);
+  }
+}
+
+async function searchContextPacks(queryText, limit = 5, options = {}) {
+  const lanceDir = getLanceDir();
+  ensureDir(lanceDir);
+
+  const { connect } = await getLanceDB();
+  const db = await connect(lanceDir);
+
+  const tableNames = await db.tableNames();
+  if (!tableNames.includes(TABLE_CONTEXT_PACKS)) return [];
+
+  const vector = await embed(queryText);
+  const table = await db.openTable(TABLE_CONTEXT_PACKS);
+
+  let query = table.search(vector).limit(limit);
+  if (options.where) {
+    query = query.where(options.where);
+  }
+
+  return query.toArray();
+}
+
+// ---------------------------------------------------------------------------
+// Version tracking — Lance format append-only versioning
+// ---------------------------------------------------------------------------
+
+async function getTableVersion(tableName) {
+  const lanceDir = getLanceDir();
+  ensureDir(lanceDir);
+
+  const { connect } = await getLanceDB();
+  const db = await connect(lanceDir);
+
+  const tableNames = await db.tableNames();
+  if (!tableNames.includes(tableName)) return null;
+
+  const table = await db.openTable(tableName);
+  const version = await table.version();
+  return version;
+}
+
+async function listTableVersions(tableName) {
+  const lanceDir = getLanceDir();
+  ensureDir(lanceDir);
+
+  const { connect } = await getLanceDB();
+  const db = await connect(lanceDir);
+
+  const tableNames = await db.tableNames();
+  if (!tableNames.includes(tableName)) return [];
+
+  const table = await db.openTable(tableName);
+  const versions = await table.listVersions();
+  return versions;
+}
+
+async function getVersionSnapshot() {
+  const tables = [TABLE_NAME, TABLE_PREVENTION_RULES, TABLE_CONTEXT_PACKS];
+  const snapshot = {};
+  for (const t of tables) {
+    snapshot[t] = await getTableVersion(t);
+  }
+  return snapshot;
 }
 
 function getEmbeddingConfig() {
@@ -189,7 +363,16 @@ function setLanceLoaderForTests(loader) {
 module.exports = {
   upsertFeedback,
   searchSimilar,
+  upsertPreventionRule,
+  searchPreventionRules,
+  upsertContextPack,
+  searchContextPacks,
+  getTableVersion,
+  listTableVersions,
+  getVersionSnapshot,
   TABLE_NAME,
+  TABLE_PREVENTION_RULES,
+  TABLE_CONTEXT_PACKS,
   getEmbeddingConfig,
   getLastEmbeddingProfile,
   setPipelineLoaderForTests,

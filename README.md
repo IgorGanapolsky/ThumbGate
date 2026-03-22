@@ -409,6 +409,40 @@ External sources write entries with a `source` field:
 
 The watcher tracks its position via `.rlhf/.watcher-offset` for crash-safe, idempotent processing.
 
+## LanceDB Vector Architecture
+
+The vector memory layer uses [LanceDB](https://lancedb.com) with hardware-aware embeddings for semantic search over historical feedback.
+
+### Multi-table architecture
+
+| Table | Purpose | Schema |
+|-------|---------|--------|
+| `rlhf_memories` | Feedback events (up/down signals with context) | id, text, vector, signal, tags, context, timestamp |
+| `prevention_rules` | Auto-promoted blocking rules from repeated failures | id, text, vector, pattern, action, message, tags, source, timestamp |
+| `context_packs` | Context pack evaluation outcomes for retrieval quality tracking | id, text, vector, query, namespaces, outcome, signal, itemCount, timestamp |
+
+### Metadata-filtered search
+
+Every search function accepts an `options.where` SQL filter to narrow results by metadata:
+
+```javascript
+// Find only negative feedback about authentication
+searchSimilar('auth flow', 5, { where: "signal = 'negative'" });
+
+// Find only blocking prevention rules
+searchPreventionRules('git push', 5, { where: "action = 'block'" });
+```
+
+### Version tracking
+
+Lance format provides append-only zero-copy data evolution. Every table write increments the version, enabling drift detection and rollback:
+
+```javascript
+const version = await getTableVersion('rlhf_memories');    // current version number
+const versions = await listTableVersions('rlhf_memories');  // full version history
+const snapshot = await getVersionSnapshot();                 // all tables at once
+```
+
 ## Architecture
 
 ### Value tiers
