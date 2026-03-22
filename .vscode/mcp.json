@@ -6,6 +6,13 @@
       "env": {
         "NODE_ENV": "production"
       }
+    },
+    "social-analytics": {
+      "command": "node",
+      "args": ["./scripts/social-analytics/mcp-server.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
     }
   }
 }
