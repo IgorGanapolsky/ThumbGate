@@ -156,6 +156,6 @@
   },
   "mcpName": "io.github.IgorGanapolsky/mcp-memory-gateway",
   "optionalDependencies": {
-    "shieldcortex": "^3.4.27"
+    "shieldcortex": "^3.4.32"
   }
 }
