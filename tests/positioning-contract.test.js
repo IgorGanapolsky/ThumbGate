@@ -29,6 +29,18 @@ test('README explains the product as one-agent reliability instead of more orche
   assert.match(readme, /reliability/i);
 });
 
+test('README exposes the actual shipped tech stack', () => {
+  const readme = readText('README.md');
+
+  assert.match(readme, /## Tech Stack/);
+  assert.match(readme, /Node\.js/i);
+  assert.match(readme, /MCP stdio/i);
+  assert.match(readme, /JSONL/i);
+  assert.match(readme, /LanceDB/i);
+  assert.match(readme, /Stripe/i);
+  assert.match(readme, /Railway/i);
+});
+
 test('README exposes lesson search as a free self-hosted MCP surface', () => {
   const readme = readText('README.md');
 

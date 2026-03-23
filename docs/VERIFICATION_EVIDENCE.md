@@ -1844,6 +1844,42 @@ Behavioral proof points:
 - `search_lessons` call semantics remain unchanged while `search_rlhf` adds broader retrieval over raw RLHF state.
 - ContextFS pack templates are exported, enumerable, and validated by dedicated tests.
 
+## 2026-03-23 README trim + explicit tech stack verification
+
+Scope:
+
+- Reduced the root README from a long narrative sales page into a shorter operator-facing overview.
+- Added an explicit `Tech Stack` section covering runtime, interfaces, storage, retrieval, enforcement, billing, and hosting.
+- Preserved the repo contract requirements for `WORKFLOW.md`, the `ready-for-agent` intake template, `Commercial Truth`, and the free/self-hosted `search_lessons` surface.
+
+Commands run:
+
+```bash
+wc -l README.md
+node --test tests/positioning-contract.test.js tests/version-metadata.test.js tests/prove-workflow-contract.test.js
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- `README.md` line count reduced from `506` to `201`.
+- Targeted contract/version/docs checks passed `23/23`.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with `all files | 88.43 | 74.12 | 92.48`.
+- `npm run prove:adapters` exited `0` with `48/48` checks passing.
+- `npm run prove:automation` exited `0` with `55/55` checks passing.
+- `npm run self-heal:check` reported `Overall: HEALTHY` and `4/4 healthy`.
+
+Behavioral proof points:
+
+- The root README now leads with the shipped product behavior instead of a long narrative sales page.
+- The public docs now expose the actual technology stack directly in the README instead of forcing buyers to infer it from `package.json`.
+- Required operator-contract links and free/self-hosted lesson-search messaging remain covered by automated tests.
+
 ## 2026-03-23 Lesson Search Verification
 
 Scope:
