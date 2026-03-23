@@ -66,7 +66,7 @@
     "social:poll:plausible": "node scripts/social-analytics/pollers/plausible.js",
     "social:digest": "node scripts/social-analytics/run-digest.js",
     "social:mcp": "node scripts/social-analytics/mcp-server.js",
-    "test": "npm run test:schema && npm run test:loop && npm run test:dpo && npm run test:kto && npm run test:api && npm run test:proof && npm run test:e2e && npm run test:rlaif && npm run test:attribution && npm run test:quality && npm run test:intelligence && npm run test:training-export && npm run test:deployment && npm run test:workflow && npm run test:billing && npm run test:cli && npm run test:watcher && npm run test:autoresearch && npm run test:ops && npm run test:gates && npm run test:evoskill && npm run test:gates-hardening && npm run test:workers && npm run test:social-analytics && npm run test:memalign && npm run test:filesystem-search",
+    "test": "npm run test:schema && npm run test:loop && npm run test:dpo && npm run test:kto && npm run test:api && npm run test:proof && npm run test:e2e && npm run test:rlaif && npm run test:attribution && npm run test:quality && npm run test:intelligence && npm run test:training-export && npm run test:deployment && npm run test:workflow && npm run test:billing && npm run test:cli && npm run test:watcher && npm run test:autoresearch && npm run test:ops && npm run test:gates && npm run test:evoskill && npm run test:gates-hardening && npm run test:workers && npm run test:social-analytics && npm run test:memalign && npm run test:filesystem-search && npm run test:zernio",
     "test:schema": "node scripts/feedback-schema.js --test",
     "test:loop": "node scripts/feedback-loop.js --test",
     "test:dpo": "node scripts/export-dpo-pairs.js --test",
@@ -110,7 +110,10 @@
     "prove:workflow-contract": "node --test tests/prove-workflow-contract.test.js",
     "prove:autoresearch": "node scripts/prove-autoresearch.js",
     "audit:stats": "node scripts/audit-trail.js --stats",
-    "profile:route": "node scripts/profile-router.js"
+    "profile:route": "node scripts/profile-router.js",
+    "social:poll:zernio": "node scripts/social-analytics/pollers/zernio.js",
+    "social:publish:zernio": "node scripts/social-analytics/publishers/zernio.js",
+    "test:zernio": "node --test tests/zernio-integration.test.js"
   },
   "keywords": [
     "rlhf",

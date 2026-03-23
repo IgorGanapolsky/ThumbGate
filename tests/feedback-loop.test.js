@@ -12,6 +12,7 @@ const {
   analyzeFeedback,
   buildPreventionRules,
   feedbackSummary,
+  listEnforcementMatrix,
   appendDiagnosticRecord,
   getPendingBackgroundSideEffectCount,
   readJSONL,
@@ -441,4 +442,73 @@ test('captureFeedback: waitForBackgroundSideEffects drains deferred vector write
 
   assert.equal(flushed, true);
   assert.equal(getPendingBackgroundSideEffectCount(), 0);
+});
+
+// -- Rejection Ledger --
+
+test('rejected feedback is written to rejection-ledger.jsonl with revival condition', () => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+
+  const result = captureFeedback({ signal: 'down' });
+  assert.equal(result.accepted, false);
+
+  const ledgerPath = path.join(tmpDir, 'rejection-ledger.jsonl');
+  assert.ok(fs.existsSync(ledgerPath), 'rejection-ledger.jsonl should exist');
+
+  const entries = fs.readFileSync(ledgerPath, 'utf-8').trim().split('\n').map(JSON.parse);
+  assert.ok(entries.length >= 1, 'at least one rejection entry');
+  assert.ok(entries[0].reason, 'rejection entry has reason');
+  assert.ok(entries[0].revivalCondition, 'rejection entry has revivalCondition');
+  assert.equal(entries[0].signal, 'negative');
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  delete process.env.RLHF_FEEDBACK_DIR;
+});
+
+test('rejected positive feedback is also recorded in rejection ledger', () => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+
+  const result = captureFeedback({ signal: 'up' });
+  assert.equal(result.accepted, false);
+
+  const ledgerPath = path.join(tmpDir, 'rejection-ledger.jsonl');
+  const entries = fs.readFileSync(ledgerPath, 'utf-8').trim().split('\n').map(JSON.parse);
+  assert.ok(entries.length >= 1);
+  assert.equal(entries[0].signal, 'positive');
+  assert.ok(entries[0].revivalCondition.includes('whatWorked'));
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  delete process.env.RLHF_FEEDBACK_DIR;
+});
+
+// -- Enforcement Matrix --
+
+test('listEnforcementMatrix returns pipeline, gates, and rejectionLedger', () => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+
+  captureFeedback({
+    signal: 'up',
+    context: 'Tests passed with full evidence',
+    whatWorked: 'Evidence-first verification flow',
+    tags: ['verification', 'testing'],
+  });
+  captureFeedback({ signal: 'down' });
+
+  const matrix = listEnforcementMatrix();
+  assert.ok(matrix.pipeline, 'matrix has pipeline section');
+  assert.ok(matrix.gates, 'matrix has gates section');
+  assert.ok(matrix.rejectionLedger, 'matrix has rejectionLedger section');
+  assert.equal(typeof matrix.pipeline.totalFeedback, 'number');
+  assert.equal(typeof matrix.pipeline.promoted, 'number');
+  assert.equal(typeof matrix.pipeline.rejected, 'number');
+  assert.equal(typeof matrix.pipeline.promotionRate, 'number');
+  assert.ok(matrix.rejectionLedger.total >= 1, 'at least 1 rejection');
+  assert.ok(Array.isArray(matrix.rejectionLedger.topReasons));
+  assert.ok(Array.isArray(matrix.rejectionLedger.recentRejections));
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  delete process.env.RLHF_FEEDBACK_DIR;
 });

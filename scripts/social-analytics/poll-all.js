@@ -13,6 +13,7 @@ const POLLERS = [
   { name: 'threads', module: './pollers/threads', envRequired: ['THREADS_ACCESS_TOKEN', 'THREADS_USER_ID'] },
   { name: 'youtube', module: './pollers/youtube', envRequired: ['YOUTUBE_API_KEY', 'YOUTUBE_CHANNEL_ID'] },
   { name: 'plausible', module: './pollers/plausible', envRequired: ['PLAUSIBLE_API_KEY', 'PLAUSIBLE_SITE_ID'] },
+  { name: 'zernio', module: './pollers/zernio', envRequired: ['ZERNIO_API_KEY'] },
 ];
 
 function hasEnv(keys) {
@@ -35,7 +36,7 @@ async function pollAll(options = {}) {
       const fn = mod[`poll${poller.name.charAt(0).toUpperCase()}${poller.name.slice(1)}`]
         || mod.pollGitHub || mod.pollInstagram || mod.pollTikTok
         || mod.pollLinkedIn || mod.pollX || mod.pollReddit
-        || mod.pollThreads || mod.pollPlausible;
+        || mod.pollThreads || mod.pollPlausible || mod.pollZernio;
 
       if (!fn) {
         console.log(`⚠  ${poller.name}: no poll function found in module`);

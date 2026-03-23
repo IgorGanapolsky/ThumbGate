@@ -320,8 +320,8 @@ describe('social-analytics UTM builder', () => {
 describe('social-analytics poll-all', () => {
   const { POLLERS } = require('../scripts/social-analytics/poll-all');
 
-  it('registers all 9 platform pollers', () => {
-    assert.equal(POLLERS.length, 9);
+  it('registers all 10 platform pollers', () => {
+    assert.equal(POLLERS.length, 10);
     const names = POLLERS.map((p) => p.name);
     assert.ok(names.includes('github'));
     assert.ok(names.includes('instagram'));
@@ -332,6 +332,7 @@ describe('social-analytics poll-all', () => {
     assert.ok(names.includes('threads'));
     assert.ok(names.includes('youtube'));
     assert.ok(names.includes('plausible'));
+    assert.ok(names.includes('zernio'));
   });
 
   it('each poller has envRequired array', () => {

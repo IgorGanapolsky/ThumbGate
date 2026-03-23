@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-03-23 - Completed quick task 1: Wire up Obsidian integration with MCP Memory Gateway
+Last activity: 2026-03-23 - Completed quick task 2: Integrate Zernio unified publishing API
 
 ## Accumulated Context
 
@@ -47,3 +47,4 @@ Last activity: 2026-03-23 - Completed quick task 1: Wire up Obsidian integration
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | Wire up Obsidian integration with MCP Memory Gateway | 2026-03-23 | 6e9efa3 | [1-wire-up-obsidian-integration-with-mcp-me](./quick/1-wire-up-obsidian-integration-with-mcp-me/) |
+| 2 | Integrate Zernio unified publishing API | 2026-03-23 | 1d99964 | [2-integrate-zernio-unified-publishing-api](./quick/2-integrate-zernio-unified-publishing-api/) |
