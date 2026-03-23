@@ -500,6 +500,73 @@ function normalizeYouTubeMetric(raw) {
   };
 }
 
+/**
+ * Normalizes a raw Zernio unified API metric response into the
+ * engagement_metrics schema shape.
+ *
+ * Zernio returns a platform-agnostic structure with consistent field names
+ * across all connected social accounts.
+ *
+ * Expected raw fields:
+ *   raw.postId | raw.id           — Zernio or platform post ID (required)
+ *   raw.platform                  — Platform string (e.g. 'twitter', 'instagram')
+ *   raw.impressions               — number
+ *   raw.reach                     — number
+ *   raw.likes                     — number
+ *   raw.comments                  — number
+ *   raw.shares                    — number
+ *   raw.saves                     — number
+ *   raw.clicks                    — number
+ *   raw.videoViews                — number
+ *   raw.contentType | raw.content_type — content type string
+ *   raw.metricDate | raw.date     — YYYY-MM-DD
+ *   raw.postUrl | raw.url         — post URL
+ *   raw.publishedAt               — ISO publish datetime
+ *   raw.accountId                 — Zernio account ID (stored in extra_json)
+ *   raw.platformPostId            — Platform-native post ID (stored in extra_json)
+ *
+ * @param {object} raw
+ * @returns {object} Record matching engagement_metrics schema.
+ */
+function normalizeZernioMetric(raw) {
+  if (!raw || typeof raw !== 'object') {
+    throw new TypeError('normalizeZernioMetric: raw must be a non-null object');
+  }
+
+  const postId = String(raw.postId || raw.id || '');
+  if (!postId) throw new Error('normalizeZernioMetric: raw.postId (or raw.id) is required');
+
+  const metricDate =
+    raw.metricDate ||
+    raw.date ||
+    raw.metric_date ||
+    new Date().toISOString().slice(0, 10);
+
+  const extraPayload = {};
+  if (raw.accountId) extraPayload.accountId = raw.accountId;
+  if (raw.platformPostId) extraPayload.platformPostId = raw.platformPostId;
+
+  return {
+    platform: raw.platform || 'zernio',
+    content_type: raw.contentType || raw.content_type || 'post',
+    post_id: postId,
+    post_url: raw.postUrl || raw.url || null,
+    published_at: raw.publishedAt || null,
+    metric_date: metricDate,
+    impressions: toInt(raw.impressions),
+    reach: toInt(raw.reach),
+    likes: toInt(raw.likes),
+    comments: toInt(raw.comments),
+    shares: toInt(raw.shares),
+    saves: toInt(raw.saves),
+    clicks: toInt(raw.clicks),
+    video_views: toInt(raw.videoViews ?? raw.video_views),
+    followers_delta: toInt(raw.followersCount ?? raw.followers_delta ?? 0),
+    extra_json: Object.keys(extraPayload).length ? JSON.stringify(extraPayload) : null,
+    fetched_at: nowIso(),
+  };
+}
+
 module.exports = {
   normalizeInstagramMetric,
   normalizeTikTokMetric,
@@ -509,4 +576,5 @@ module.exports = {
   normalizeRedditMetric,
   normalizeThreadsMetric,
   normalizeYouTubeMetric,
+  normalizeZernioMetric,
 };
