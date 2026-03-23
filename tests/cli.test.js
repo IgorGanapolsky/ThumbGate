@@ -419,6 +419,7 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('risk'), 'Help should mention risk');
     assert.ok(result.stdout.includes('export-dpo'), 'Help should mention export-dpo');
     assert.ok(result.stdout.includes('export-databricks'), 'Help should mention export-databricks');
+    assert.ok(result.stdout.includes('lessons'), 'Help should mention lessons');
     assert.ok(result.stdout.includes('stats'), 'Help should mention stats');
     assert.ok(result.stdout.includes('north-star'), 'Help should mention north-star');
     assert.ok(result.stdout.includes('rules'), 'Help should mention rules');
@@ -435,6 +436,61 @@ describe('bin/cli.js', () => {
     assert.match(result.stdout, /pilot\/by-request/);
     assert.match(result.stdout, /COMMERCIAL_TRUTH\.md/);
     assert.doesNotMatch(result.stdout, /\$10\/mo|38 spots remaining|first 50 users|Founding Member/i);
+  });
+
+  test('lessons command prints linked corrective actions', () => {
+    const feedbackDir = makeTmpDir();
+    fs.writeFileSync(
+      path.join(feedbackDir, 'feedback-log.jsonl'),
+      `${JSON.stringify({
+        id: 'fb_cli_lesson',
+        signal: 'negative',
+        context: 'Skipped proof before release',
+        tags: ['release', 'verification'],
+        timestamp: '2026-03-23T17:00:00.000Z',
+      })}\n`
+    );
+    fs.writeFileSync(
+      path.join(feedbackDir, 'memory-log.jsonl'),
+      `${JSON.stringify({
+        id: 'mem_cli_lesson',
+        title: 'MISTAKE: Skipped proof before release',
+        content: 'What went wrong: Skipped proof before release\nHow to avoid: Attach proof before shipping',
+        category: 'error',
+        importance: 'high',
+        tags: ['feedback', 'negative', 'release', 'verification'],
+        sourceFeedbackId: 'fb_cli_lesson',
+        timestamp: '2026-03-23T17:00:01.000Z',
+      })}\n`
+    );
+    fs.writeFileSync(path.join(feedbackDir, 'prevention-rules.md'), '# Shipping proof\nAttach proof before shipping.\n');
+    fs.writeFileSync(path.join(feedbackDir, 'auto-promoted-gates.json'), JSON.stringify({
+      version: 1,
+      gates: [{
+        id: 'auto-cli-proof',
+        action: 'warn',
+        pattern: 'release+verification',
+        message: 'Warn when proof is missing before shipping',
+        occurrences: 3,
+        promotedAt: '2026-03-23T17:10:00.000Z',
+      }],
+      promotionLog: [],
+    }, null, 2));
+
+    const result = spawnSync(process.execPath, [CLI, 'lessons', '--query=shipping'], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        RLHF_FEEDBACK_DIR: feedbackDir,
+        RLHF_NO_NUDGE: '1',
+      },
+    });
+
+    assert.strictEqual(result.status, 0, `lessons command failed:\n${result.stderr}`);
+    assert.match(result.stdout, /Lesson Search/);
+    assert.match(result.stdout, /Corrective actions/);
+    assert.match(result.stdout, /Attach proof before shipping/);
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
   test('help command shows Pro nudge on stderr', () => {

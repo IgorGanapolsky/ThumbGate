@@ -68,6 +68,19 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'search_lessons',
+    description: 'Search promoted lessons and show the corrective actions, prevention rules, and gates linked to each result.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query. Leave empty to list the most recent lessons.' },
+        limit: { type: 'number', description: 'Maximum results to return (default 10)' },
+        category: { type: 'string', enum: ['error', 'learning', 'preference'] },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Require all tags to be present on a lesson' },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'feedback_stats',
     description: 'Get feedback stats and recommendations',
     inputSchema: {

@@ -646,6 +646,28 @@ function summary() {
   console.log(feedbackSummary(Number(args.recent || 20)));
 }
 
+function lessons() {
+  const args = parseArgs(process.argv.slice(3));
+  const { searchLessons, formatLessonSearchResults } = require(path.join(PKG_ROOT, 'scripts', 'lesson-search'));
+  const tags = String(args.tags || '')
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+  const query = args.query || process.argv.slice(3).find((arg) => !arg.startsWith('--')) || '';
+  const result = searchLessons(query, {
+    limit: Number(args.limit || 10),
+    category: args.category,
+    tags,
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatLessonSearchResults(result));
+}
+
 function modelFit() {
   const { writeModelFitReport } = require(path.join(PKG_ROOT, 'scripts', 'local-model-profile'));
   const { reportPath, report } = writeModelFitReport();
@@ -932,6 +954,7 @@ function help() {
   console.log('  repair-github-marketplace  Dry-run or apply legacy GitHub Marketplace amount repairs (--write)');
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  summary               Human-readable feedback summary');
+  console.log('  lessons [flags]       Search promoted lessons and show linked corrective actions');
   console.log('  model-fit             Detect the current local embedding profile and write evidence report');
   console.log('  risk [flags]          Train or query the boosted local risk scorer');
   console.log('  doctor                Audit runtime isolation, bootstrap context, and permission tier');
@@ -959,6 +982,7 @@ function help() {
   console.log('  npx mcp-memory-gateway stats');
   console.log('  npx mcp-memory-gateway cfo');
   console.log('  npx mcp-memory-gateway repair-github-marketplace --write');
+  console.log('  npx mcp-memory-gateway lessons --query="verification" --limit=5');
   console.log('  npx mcp-memory-gateway model-fit');
   console.log('  npx mcp-memory-gateway risk');
   console.log('  npx mcp-memory-gateway pro');
@@ -998,6 +1022,10 @@ switch (COMMAND) {
     break;
   case 'summary':
     summary();
+    break;
+  case 'lessons':
+  case 'search-lessons':
+    lessons();
     break;
   case 'model-fit':
     modelFit();

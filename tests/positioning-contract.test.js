@@ -29,6 +29,14 @@ test('README explains the product as one-agent reliability instead of more orche
   assert.match(readme, /reliability/i);
 });
 
+test('README exposes lesson search as a free self-hosted MCP surface', () => {
+  const readme = readText('README.md');
+
+  assert.match(readme, /search_lessons/i);
+  assert.match(readme, /self-hosted users can invoke `search_lessons` directly through MCP/i);
+  assert.match(readme, /npx mcp-memory-gateway lessons/i);
+});
+
 test('continuity guide frames the gateway as downstream reliability, not a new orchestrator', () => {
   const guide = readText(path.join('docs', 'guides', 'continuity-tools-integration.md'));
 

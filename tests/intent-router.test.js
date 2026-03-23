@@ -85,6 +85,7 @@ test('invalid mcp profile is rejected', () => {
 test('ACTION_CATEGORY_MAP covers known action names', () => {
   assert.ok(ACTION_CATEGORY_MAP.capture_feedback);
   assert.ok(ACTION_CATEGORY_MAP.feedback_summary);
+  assert.ok(ACTION_CATEGORY_MAP.search_lessons);
   assert.ok(ACTION_CATEGORY_MAP.export_dpo_pairs);
   assert.ok(ACTION_CATEGORY_MAP.export_databricks_bundle);
 });
