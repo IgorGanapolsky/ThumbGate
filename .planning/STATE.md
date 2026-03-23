@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-03-18 — Milestone v3.1 started
+Last activity: 2026-03-23 - Completed quick task 1: Wire up Obsidian integration with MCP Memory Gateway
 
 ## Accumulated Context
 
@@ -41,3 +41,9 @@ Last activity: 2026-03-18 — Milestone v3.1 started
 
 - Cursor Marketplace may have review process delays
 - Reddit may flag multiple replies as spam — pace outreach
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 1 | Wire up Obsidian integration with MCP Memory Gateway | 2026-03-23 | 6e9efa3 | [1-wire-up-obsidian-integration-with-mcp-me](./quick/1-wire-up-obsidian-integration-with-mcp-me/) |
