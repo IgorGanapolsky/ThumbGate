@@ -16,6 +16,7 @@ const DISPATCH_TASK_DESCRIPTIONS = {
   dashboard: 'Summarize health, proof, gates, and pipeline metrics.',
   get_business_metrics: 'Read revenue, conversion, and customer metrics.',
   describe_semantic_entity: 'Explain Customer, Revenue, or Funnel state.',
+  enforcement_matrix: 'Full pipeline state: feedback counts, promotion rate, active gates, rejection ledger.',
   get_reliability_rules: 'Review active prevention rules and success patterns.',
   describe_reliability_entity: 'Alias for semantic entity definitions.',
 };

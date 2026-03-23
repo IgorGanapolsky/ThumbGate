@@ -145,12 +145,14 @@ npx mcp-memory-gateway capture --feedback=down \
 3. **Screen** — Memory-ingress firewall blocks secret-bearing or hostile feedback before any JSONL write (local scanner by default, ShieldCortex when installed)
 4. **Remember** — Promoted memories stored in local JSONL + LanceDB vectors for semantic search
 5. **Distill** — Principle extraction distills NL feedback into reusable semantic principles (MemAlign-inspired)
-6. **Prevent** — Repeated failures auto-generate prevention rules (the actual value — agents follow these when loaded)
-7. **Gate** — Pre-action blocking via PreToolUse hooks — physically prevents known mistakes before they happen
-8. **Recall** — `recall` tool injects relevant past context into current session (this is the mechanism that works)
-9. **Session Handoff** — `session_handoff` captures git state, last task, next step, and blockers; `session_primer` restores it at next session start
-10. **Export** — DPO/KTO pairs for optional downstream fine-tuning (separate from runtime behavior)
-11. **Bridge** — JSONL file watcher auto-ingests signals from external sources (Amp plugins, hooks, scripts)
+6. **Reject** — Vague or invalid signals are logged to the **Rejection Ledger** (`rejection-ledger.jsonl`) with the reason and a revival condition so you know exactly how to re-submit
+7. **Prevent** — Repeated failures auto-generate prevention rules (the actual value — agents follow these when loaded)
+8. **Gate** — Pre-action blocking via PreToolUse hooks — physically prevents known mistakes before they happen
+9. **Recall** — `recall` tool injects relevant past context into current session (this is the mechanism that works)
+10. **Matrix** — `enforcement_matrix` tool exposes the full pipeline state: feedback counts, promotion rate, active gates, and top rejection reasons
+11. **Session Handoff** — `session_handoff` captures git state, last task, next step, and blockers; `session_primer` restores it at next session start
+12. **Export** — DPO/KTO pairs for optional downstream fine-tuning (separate from runtime behavior)
+13. **Bridge** — JSONL file watcher auto-ingests signals from external sources (Amp plugins, hooks, scripts)
 
 Optional ingress hardening:
 
@@ -168,6 +170,8 @@ Optional ingress hardening:
 | Prevention rules — followed when loaded at session start | Feedback stats improving agent performance automatically |
 | **Pre-action gates — physically block known mistakes** | "Learning curve" implying the agent itself learns |
 | **Auto-promotion — 3+ failures become blocking rules** | Agents self-correcting without context injection |
+| **Rejection Ledger — tracks why feedback was rejected + how to fix it** | Vague signals silently disappearing |
+| **Enforcement Matrix — one-call view of pipeline, gates, and rejections** | Guessing whether the system is actually enforcing |
 
 ## Quick Start
 
@@ -309,6 +313,7 @@ RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y mcp-memory-gateway serv
 | `capture_feedback` | Accept up/down signal + context, validate, promote to memory |
 | `recall` | Vector-search past feedback and prevention rules for current task |
 | `prevention_rules` | Generate prevention rules from repeated mistakes |
+| `enforcement_matrix` | Full pipeline state: feedback counts, promotion rate, active gates, rejection ledger |
 | `feedback_stats` | Approval rate, per-skill/tag breakdown, trend analysis |
 | `feedback_summary` | Human-readable recent feedback summary |
 | `estimate_uncertainty` | Bayesian uncertainty estimate for risky tags before acting |

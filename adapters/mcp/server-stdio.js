@@ -9,6 +9,7 @@ const {
   feedbackSummary,
   analyzeFeedback,
   writePreventionRules,
+  listEnforcementMatrix,
   FEEDBACK_LOG_PATH,
   readJSONL,
   getFeedbackPaths,
@@ -381,6 +382,8 @@ async function callToolInner(name, args) {
         latencyMs: args.latencyMs,
         summary: args.summary || '',
       }));
+    case 'enforcement_matrix':
+      return toTextResult(listEnforcementMatrix());
     case 'prevention_rules': {
       const outputPath = args.outputPath ? resolveSafePath(args.outputPath) : undefined;
       return toTextResult(writePreventionRules(outputPath, Number(args.minOccurrences || 2)));

@@ -41,29 +41,25 @@ const DOMAIN_CATEGORIES = [
 const HOME = process.env.HOME || process.env.USERPROFILE || '';
 const pendingBackgroundSideEffects = new Set();
 
+function buildPathsFromDir(d) {
+  return {
+    FEEDBACK_DIR: d,
+    FEEDBACK_LOG_PATH: path.join(d, 'feedback-log.jsonl'),
+    DIAGNOSTIC_LOG_PATH: path.join(d, 'diagnostic-log.jsonl'),
+    MEMORY_LOG_PATH: path.join(d, 'memory-log.jsonl'),
+    REJECTION_LEDGER_PATH: path.join(d, 'rejection-ledger.jsonl'),
+    SUMMARY_PATH: path.join(d, 'feedback-summary.json'),
+    PREVENTION_RULES_PATH: path.join(d, 'prevention-rules.md'),
+  };
+}
+
 function getFeedbackPaths() {
   if (process.env.RLHF_FEEDBACK_DIR) {
-    const d = process.env.RLHF_FEEDBACK_DIR;
-    return {
-      FEEDBACK_DIR: d,
-      FEEDBACK_LOG_PATH: path.join(d, 'feedback-log.jsonl'),
-      DIAGNOSTIC_LOG_PATH: path.join(d, 'diagnostic-log.jsonl'),
-      MEMORY_LOG_PATH: path.join(d, 'memory-log.jsonl'),
-      SUMMARY_PATH: path.join(d, 'feedback-summary.json'),
-      PREVENTION_RULES_PATH: path.join(d, 'prevention-rules.md'),
-    };
+    return buildPathsFromDir(process.env.RLHF_FEEDBACK_DIR);
   }
 
   if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
-    const d = path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'feedback');
-    return {
-      FEEDBACK_DIR: d,
-      FEEDBACK_LOG_PATH: path.join(d, 'feedback-log.jsonl'),
-      DIAGNOSTIC_LOG_PATH: path.join(d, 'diagnostic-log.jsonl'),
-      MEMORY_LOG_PATH: path.join(d, 'memory-log.jsonl'),
-      SUMMARY_PATH: path.join(d, 'feedback-summary.json'),
-      PREVENTION_RULES_PATH: path.join(d, 'prevention-rules.md'),
-    };
+    return buildPathsFromDir(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'feedback'));
   }
 
   // Auto-discovery order:
@@ -83,14 +79,7 @@ function getFeedbackPaths() {
     baseDir = path.join(HOME, '.rlhf', 'projects', projectName);
   }
 
-  return {
-    FEEDBACK_DIR: baseDir,
-    FEEDBACK_LOG_PATH: path.join(baseDir, 'feedback-log.jsonl'),
-    DIAGNOSTIC_LOG_PATH: path.join(baseDir, 'diagnostic-log.jsonl'),
-    MEMORY_LOG_PATH: path.join(baseDir, 'memory-log.jsonl'),
-    SUMMARY_PATH: path.join(baseDir, 'feedback-summary.json'),
-    PREVENTION_RULES_PATH: path.join(baseDir, 'prevention-rules.md'),
-  };
+  return buildPathsFromDir(baseDir);
 }
 
 function getContextFsModule() {
@@ -167,6 +156,71 @@ function toStoredDiagnosis(diagnosis) {
     criticalFailureStep: diagnosis.criticalFailureStep,
     violations: Array.isArray(diagnosis.violations) ? diagnosis.violations : [],
     evidence: Array.isArray(diagnosis.evidence) ? diagnosis.evidence : [],
+  };
+}
+
+function appendRejectionLedger(feedbackEvent, reason) {
+  const { REJECTION_LEDGER_PATH } = getFeedbackPaths();
+  appendJSONL(REJECTION_LEDGER_PATH, {
+    id: feedbackEvent.id,
+    signal: feedbackEvent.signal,
+    context: feedbackEvent.context || '',
+    reason,
+    tags: feedbackEvent.tags || [],
+    revivalCondition: feedbackEvent.signal === 'negative'
+      ? 'Re-submit with whatWentWrong and whatToChange fields populated'
+      : 'Re-submit with whatWorked field and at least one domain-specific tag',
+    timestamp: feedbackEvent.timestamp || new Date().toISOString(),
+  });
+}
+
+function listEnforcementMatrix() {
+  const paths = getFeedbackPaths();
+  const feedbackEntries = readJSONL(paths.FEEDBACK_LOG_PATH);
+  const memoryEntries = readJSONL(paths.MEMORY_LOG_PATH);
+  const rejections = readJSONL(paths.REJECTION_LEDGER_PATH);
+
+  let autoGates = { gates: [], promotionLog: [] };
+  try {
+    const apg = require('./auto-promote-gates');
+    autoGates = apg.loadAutoGates();
+  } catch { /* auto-promote-gates not available */ }
+
+  const totalFeedback = feedbackEntries.length;
+  const promoted = memoryEntries.length;
+  const rejected = rejections.length;
+
+  const reasonCounts = {};
+  for (const r of rejections) {
+    const key = r.reason || 'unknown';
+    reasonCounts[key] = (reasonCounts[key] || 0) + 1;
+  }
+  const topRejections = Object.entries(reasonCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([reason, count]) => ({ reason, count }));
+
+  return {
+    pipeline: {
+      totalFeedback,
+      promoted,
+      rejected,
+      promotionRate: totalFeedback > 0 ? Math.round((promoted / totalFeedback) * 100) : 0,
+    },
+    gates: {
+      active: autoGates.gates.length,
+      blocking: autoGates.gates.filter((g) => g.action === 'block').length,
+      warning: autoGates.gates.filter((g) => g.action === 'warn').length,
+      rules: autoGates.gates.map((g) => ({
+        id: g.id, action: g.action, pattern: g.pattern,
+        occurrences: g.occurrences, promotedAt: g.promotedAt,
+      })),
+    },
+    rejectionLedger: {
+      total: rejected,
+      topReasons: topRejections,
+      recentRejections: rejections.slice(-5).reverse(),
+    },
   };
 }
 
@@ -742,6 +796,7 @@ function captureFeedback(params) {
     summary.lastUpdated = now;
     saveSummary(summary);
     appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
+    try { appendRejectionLedger(feedbackEvent, action.reason); } catch { /* non-critical */ }
     try {
       appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(), { accepted: false });
     } catch {
@@ -778,6 +833,7 @@ function captureFeedback(params) {
       ...feedbackEvent,
       validationIssues: prepared.issues,
     });
+    try { appendRejectionLedger(feedbackEvent, `Schema validation failed: ${prepared.issues.join('; ')}`); } catch { /* non-critical */ }
     try {
       appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(), { accepted: false });
     } catch {
@@ -1412,6 +1468,7 @@ module.exports = {
   buildPreventionRules,
   writePreventionRules,
   feedbackSummary,
+  listEnforcementMatrix,
   readJSONL,
   appendDiagnosticRecord,
   readDiagnosticEntries,

@@ -200,6 +200,14 @@ const TOOLS = [
       properties: {},
     },
   }),
+  readOnlyTool({
+    name: 'enforcement_matrix',
+    description: 'Show the full Enforcement Matrix: feedback pipeline stats, active pre-action gates, and rejection ledger with revival conditions.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  }),
   destructiveTool({
     name: 'capture_memory_feedback',
     description: 'Capture success/failure feedback to harden future workflows. Aliased to capture_feedback.',
