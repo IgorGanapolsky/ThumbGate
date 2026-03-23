@@ -302,7 +302,7 @@ npx mcp-memory-gateway dashboard
 
 ### Essential (high-ROI — start here)
 
-These 7 tools deliver the fastest path to feedback, recall, lesson search, and prevention. Use the `essential` profile for a lean setup:
+These 9 tools deliver the fastest path to feedback, recall, lesson search, and prevention. Use the `essential` profile for a lean setup:
 
 ```bash
 RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y mcp-memory-gateway serve
@@ -313,6 +313,7 @@ RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y mcp-memory-gateway serv
 | `capture_feedback` | Accept up/down signal + context, validate, promote to memory |
 | `recall` | Vector-search past feedback and prevention rules for current task |
 | `search_lessons` | Search promoted lessons and inspect the corrective action, prevention rules, and gates linked to each result |
+| `search_rlhf` | Search raw feedback logs, ContextFS memory, and prevention rules across local RLHF state |
 | `prevention_rules` | Generate prevention rules from repeated mistakes |
 | `enforcement_matrix` | Full pipeline state: feedback counts, promotion rate, active gates, rejection ledger |
 | `feedback_stats` | Approval rate, per-skill/tag breakdown, trend analysis |
@@ -320,6 +321,7 @@ RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y mcp-memory-gateway serv
 | `estimate_uncertainty` | Bayesian uncertainty estimate for risky tags before acting |
 
 Free and self-hosted users can invoke `search_lessons` directly through MCP to search their RLHF memory and see what corrective action the system took in response to each lesson.
+For broader retrieval across local feedback logs, ContextFS memory, and prevention rules, free and self-hosted users can also invoke `search_rlhf` through MCP or the authenticated `GET /v1/search` API surface.
 
 ### Dispatch (remote ops, phone-safe)
 
@@ -333,6 +335,7 @@ RLHF_MCP_PROFILE=dispatch claude mcp add rlhf -- npx -y mcp-memory-gateway serve
 |------|-------------|------------------|
 | `recall` | Recall relevant past failures and prevention rules | Remote planning before a desk session |
 | `feedback_summary` | Summarize recent feedback and operator notes | Quick remote review |
+| `search_rlhf` | Search raw RLHF state across feedback, ContextFS, and prevention rules | Cross-check local lessons before acting |
 | `feedback_stats` | Approval trend and failure-domain summary | Health checks from the phone |
 | `diagnose_failure` | Root-cause report for blocked or failed runs | Incident triage away from the desk |
 | `list_intents` | Available workflow plans and approval requirements | Choose the next workflow safely |

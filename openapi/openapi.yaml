@@ -942,6 +942,64 @@ paths:
           description: Searchable promoted lessons with linked corrective actions, prevention rules, and auto-gates
         '401':
           description: Unauthorized
+  /v1/search:
+    get:
+      operationId: searchRlhf
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search query for raw RLHF state.
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: source
+          schema:
+            type: string
+            enum: [all, feedback, context, rules]
+            default: all
+        - in: query
+          name: signal
+          schema:
+            type: string
+            enum: [up, down, positive, negative]
+      responses:
+        '200':
+          description: Search results across feedback logs, ContextFS, and prevention rules
+        '401':
+          description: Unauthorized
+    post:
+      operationId: searchRlhfPost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                q:
+                  type: string
+                limit:
+                  type: integer
+                  default: 10
+                source:
+                  type: string
+                  enum: [all, feedback, context, rules]
+                  default: all
+                signal:
+                  type: string
+                  enum: [up, down, positive, negative]
+      responses:
+        '200':
+          description: Search results across feedback logs, ContextFS, and prevention rules
+        '401':
+          description: Unauthorized
   /v1/feedback/rules:
     post:
       operationId: generatePreventionRules

@@ -1763,6 +1763,43 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-23 RLHF raw search + pack template verification
+
+Scope:
+
+- Added `search_rlhf` as a read-only MCP tool for raw RLHF search across feedback logs, ContextFS memory, and prevention rules.
+- Added authenticated `GET /v1/search` and `POST /v1/search` API routes with OpenAPI parity.
+- Restored reusable ContextFS pack templates for bug investigation, session resume, sales-call prep, and competitor scans.
+- Preserved `search_lessons` as the canonical promoted-lesson search surface while salvaging the broader raw-search lane.
+
+Commands run:
+
+```bash
+npm ci
+node --test --test-concurrency=1 tests/pack-templates.test.js tests/rlhf-search.test.js tests/openapi-parity.test.js tests/commerce-quality.test.js tests/profile-router.test.js tests/intent-router.test.js
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- Targeted RLHF search suite: `75/75` passing.
+- `npm test`: exit `0`.
+- `npm run test:coverage`: exit `0` with `all files | 88.44 | 74.11 | 92.50`.
+- `npm run prove:adapters`: exit `0` with `48/48` passing.
+- `npm run prove:automation`: exit `0` with `55/55` passing.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4 healthy`.
+
+Behavioral proof points:
+
+- `search_rlhf` is registered as read-only in the MCP tool registry and returns merged or source-filtered RLHF search results.
+- `/v1/search` is present in the API root JSON listing and in both canonical and ChatGPT OpenAPI specs.
+- `search_lessons` call semantics remain unchanged while `search_rlhf` adds broader retrieval over raw RLHF state.
+- ContextFS pack templates are exported, enumerable, and validated by dedicated tests.
+
 ## 2026-03-23 Lesson Search Verification
 
 Scope:

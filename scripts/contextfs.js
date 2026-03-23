@@ -52,6 +52,33 @@ const NAMESPACE_ALIAS_MAP = new Map([
   ...Object.values(NAMESPACES).map((value) => [value, value]),
 ]);
 
+const PACK_TEMPLATES = {
+  'bug-investigation': {
+    namespaces: ['memoryError', 'rules'],
+    maxItems: 10,
+    maxChars: 8000,
+    queryPrefix: 'bug failure error crash',
+  },
+  'session-resume': {
+    namespaces: ['session', 'memoryLearning', 'rules'],
+    maxItems: 8,
+    maxChars: 6000,
+    queryPrefix: 'session context resume',
+  },
+  'sales-call-prep': {
+    namespaces: ['memoryLearning', 'rules'],
+    maxItems: 6,
+    maxChars: 4000,
+    queryPrefix: 'value proof evidence workflow',
+  },
+  'competitor-scan': {
+    namespaces: ['memoryLearning', 'memoryError'],
+    maxItems: 8,
+    maxChars: 6000,
+    queryPrefix: 'competitor comparison alternative',
+  },
+};
+
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
@@ -889,6 +916,33 @@ function readSessionHandoff() {
   }
 }
 
+function constructTemplatedPack({ template, query } = {}) {
+  const config = PACK_TEMPLATES[template];
+  if (!config) {
+    throw new Error(`Unknown pack template: "${template}". Available: ${Object.keys(PACK_TEMPLATES).join(', ')}`);
+  }
+
+  const fullQuery = `${config.queryPrefix} ${query || ''}`.trim();
+  const pack = constructContextPack({
+    query: fullQuery,
+    namespaces: config.namespaces,
+    maxItems: config.maxItems,
+    maxChars: config.maxChars,
+  });
+  pack.template = template;
+  return pack;
+}
+
+function listPackTemplates() {
+  return Object.entries(PACK_TEMPLATES).map(([name, config]) => ({
+    name,
+    namespaces: config.namespaces,
+    maxItems: config.maxItems,
+    maxChars: config.maxChars,
+    queryPrefix: config.queryPrefix,
+  }));
+}
+
 module.exports = {
   CONTEXTFS_ROOT,
   NAMESPACES,
@@ -914,6 +968,9 @@ module.exports = {
   constructMemexPack,
   writeSessionHandoff,
   readSessionHandoff,
+  PACK_TEMPLATES,
+  constructTemplatedPack,
+  listPackTemplates,
 };
 
 if (require.main === module) {

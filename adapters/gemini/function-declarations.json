@@ -60,6 +60,41 @@
       }
     },
     {
+      "name": "search_lessons",
+      "description": "Search promoted lessons and inspect the corrective action, prevention rules, and gates linked to each result.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "q": { "type": "string", "description": "Search query. Leave empty to list recent lessons." },
+          "limit": { "type": "integer", "default": 10 },
+          "category": { "type": "string", "enum": ["error", "learning", "preference"] },
+          "tags": { "type": "string", "description": "Comma-separated tags that must all be present on a lesson." }
+        }
+      },
+      "http": {
+        "method": "GET",
+        "path": "/v1/lessons/search"
+      }
+    },
+    {
+      "name": "search_rlhf",
+      "description": "Search raw RLHF state across feedback logs, ContextFS memory, and prevention rules.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "q": { "type": "string", "description": "Search query for RLHF state." },
+          "limit": { "type": "integer", "default": 10 },
+          "source": { "type": "string", "enum": ["all", "feedback", "context", "rules"], "default": "all" },
+          "signal": { "type": "string", "enum": ["up", "down", "positive", "negative"] }
+        },
+        "required": ["q"]
+      },
+      "http": {
+        "method": "GET",
+        "path": "/v1/search"
+      }
+    },
+    {
       "name": "get_business_metrics",
       "description": "Retrieve high-level business metrics (Revenue, Conversion, Customers) from the Semantic Layer.",
       "parameters": {

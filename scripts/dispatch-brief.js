@@ -8,6 +8,7 @@ const DISPATCH_TASK_DESCRIPTIONS = {
   recall: 'Recall prior mistakes and prevention rules before planning.',
   feedback_summary: 'Summarize recent wins, failures, and operator notes.',
   search_lessons: 'Search promoted lessons and inspect what corrective action the system linked to each one.',
+  search_rlhf: 'Search raw RLHF feedback, ContextFS memory, and prevention rules.',
   feedback_stats: 'Inspect approval trends and failure domains.',
   diagnose_failure: 'Explain why a run failed or was blocked.',
   list_intents: 'List available workflow plans without executing them.',

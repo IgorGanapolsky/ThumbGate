@@ -258,6 +258,7 @@ const ACTION_CATEGORY_MAP = {
   capture_feedback: 'code_edit',
   feedback_summary: 'debugging',
   search_lessons: 'search',
+  search_rlhf: 'search',
   prevention_rules: 'security',
   construct_context_pack: 'architecture',
   export_dpo_pairs: 'testing',

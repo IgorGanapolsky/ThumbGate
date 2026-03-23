@@ -63,6 +63,9 @@ const {
 const {
   searchLessons,
 } = require('../../scripts/lesson-search');
+const {
+  searchRlhf,
+} = require('../../scripts/rlhf-search');
 const { checkLimit } = require('../../scripts/rate-limiter');
 const { TOOLS } = require('../../scripts/tool-registry');
 const { bootstrapInternalAgent } = require('../../scripts/internal-agent-bootstrap');
@@ -339,6 +342,13 @@ async function callToolInner(name, args) {
         limit: Number(args.limit || 10),
         category: args.category,
         tags: Array.isArray(args.tags) ? args.tags : [],
+      }));
+    case 'search_rlhf':
+      return toTextResult(searchRlhf({
+        query: args.query,
+        limit: args.limit,
+        source: args.source,
+        signal: args.signal,
       }));
     case 'feedback_stats':
       return toTextResult(analyzeFeedback());

@@ -6,6 +6,7 @@
       "capture_feedback",
       "feedback_summary",
       "search_lessons",
+      "search_rlhf",
       "feedback_stats",
       "diagnose_failure",
       "list_intents",
@@ -35,6 +36,7 @@
       "capture_feedback",
       "recall",
       "search_lessons",
+      "search_rlhf",
       "prevention_rules",
       "feedback_stats",
       "feedback_summary",
@@ -43,6 +45,7 @@
     "commerce": [
       "capture_feedback",
       "recall",
+      "search_rlhf",
       "commerce_recall",
       "prevention_rules",
       "feedback_stats",
@@ -52,6 +55,7 @@
       "recall",
       "feedback_summary",
       "search_lessons",
+      "search_rlhf",
       "feedback_stats",
       "diagnose_failure",
       "list_intents",
@@ -70,6 +74,7 @@
       "recall",
       "feedback_summary",
       "search_lessons",
+      "search_rlhf",
       "feedback_stats",
       "diagnose_failure",
       "list_intents",
@@ -85,6 +90,7 @@
     "locked": [
       "feedback_summary",
       "search_lessons",
+      "search_rlhf",
       "diagnose_failure",
       "list_intents",
       "plan_intent"

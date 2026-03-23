@@ -83,6 +83,9 @@ const {
   searchLessons,
 } = require('../../scripts/lesson-search');
 const {
+  searchRlhf,
+} = require('../../scripts/rlhf-search');
+const {
   appendTelemetryPing,
 } = require('../../scripts/telemetry-analytics');
 const {
@@ -1545,7 +1548,7 @@ function createApiServer() {
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
-          endpoints: ['/health', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/dpo/export', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dpo/export', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -2442,6 +2445,43 @@ function createApiServer() {
           category,
           tags,
         });
+        sendJson(res, 200, results);
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/search') {
+        const query = parsed.searchParams.get('q') || parsed.searchParams.get('query') || '';
+        const limit = Number(parsed.searchParams.get('limit') || 10);
+        const source = parsed.searchParams.get('source') || 'all';
+        const signal = parsed.searchParams.get('signal') || null;
+        let results;
+        try {
+          results = searchRlhf({
+            query,
+            limit: Number.isFinite(limit) ? limit : 10,
+            source,
+            signal,
+          });
+        } catch (err) {
+          throw createHttpError(400, err.message || 'Invalid RLHF search request');
+        }
+        sendJson(res, 200, results);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/search') {
+        const body = await parseJsonBody(req);
+        let results;
+        try {
+          results = searchRlhf({
+            query: body.query || body.q || '',
+            limit: body.limit,
+            source: body.source,
+            signal: body.signal,
+          });
+        } catch (err) {
+          throw createHttpError(400, err.message || 'Invalid RLHF search request');
+        }
         sendJson(res, 200, results);
         return;
       }

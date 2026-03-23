@@ -90,13 +90,18 @@ test('routeProfile routes to readonly when no write intent', () => {
 // ---------------------------------------------------------------------------
 
 test('findMostRestrictiveProfile returns smallest profile with the tool', () => {
-  // 'feedback_summary' is in locked(4), essential(6), commerce(6), readonly(14), default(31)
+  // 'feedback_summary' is in locked(5), essential(8), commerce(7), readonly(15), default(32)
   const profile = findMostRestrictiveProfile('feedback_summary');
   assert.equal(profile, 'locked');
 });
 
 test('findMostRestrictiveProfile returns locked for search_lessons', () => {
   const profile = findMostRestrictiveProfile('search_lessons');
+  assert.equal(profile, 'locked');
+});
+
+test('findMostRestrictiveProfile returns locked for search_rlhf', () => {
+  const profile = findMostRestrictiveProfile('search_rlhf');
   assert.equal(profile, 'locked');
 });
 

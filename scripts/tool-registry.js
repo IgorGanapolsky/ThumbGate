@@ -81,6 +81,20 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'search_rlhf',
+    description: 'Search raw RLHF state across feedback logs, ContextFS memory, and prevention rules.',
+    inputSchema: {
+      type: 'object',
+      required: ['query'],
+      properties: {
+        query: { type: 'string', description: 'Search query for RLHF state.' },
+        limit: { type: 'number', description: 'Maximum results to return (default 10)' },
+        source: { type: 'string', enum: ['all', 'feedback', 'context', 'rules'], description: 'Restrict search to a single RLHF source.' },
+        signal: { type: 'string', enum: ['up', 'down', 'positive', 'negative'], description: 'Optional feedback-signal filter when searching feedback data.' },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'feedback_stats',
     description: 'Get feedback stats and recommendations',
     inputSchema: {
