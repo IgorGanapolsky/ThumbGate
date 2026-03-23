@@ -5,6 +5,7 @@
       "recall",
       "capture_feedback",
       "feedback_summary",
+      "search_lessons",
       "feedback_stats",
       "diagnose_failure",
       "list_intents",
@@ -33,6 +34,7 @@
     "essential": [
       "capture_feedback",
       "recall",
+      "search_lessons",
       "prevention_rules",
       "feedback_stats",
       "feedback_summary",
@@ -49,6 +51,7 @@
     "readonly": [
       "recall",
       "feedback_summary",
+      "search_lessons",
       "feedback_stats",
       "diagnose_failure",
       "list_intents",
@@ -66,6 +69,7 @@
     "dispatch": [
       "recall",
       "feedback_summary",
+      "search_lessons",
       "feedback_stats",
       "diagnose_failure",
       "list_intents",
@@ -80,6 +84,7 @@
     ],
     "locked": [
       "feedback_summary",
+      "search_lessons",
       "diagnose_failure",
       "list_intents",
       "plan_intent"

@@ -143,7 +143,7 @@ npx mcp-memory-gateway capture --feedback=down \
 1. **Capture** — `capture_feedback` MCP tool accepts signals with structured context (vague "thumbs down" is rejected)
 2. **Validate** — Rubric engine gates promotion — requires specific failure descriptions, not vibes
 3. **Screen** — Memory-ingress firewall blocks secret-bearing or hostile feedback before any JSONL write (local scanner by default, ShieldCortex when installed)
-4. **Remember** — Promoted memories stored in local JSONL + LanceDB vectors for semantic search
+4. **Remember** — Promoted memories stored in local JSONL and kept searchable through the MCP layer
 5. **Distill** — Principle extraction distills NL feedback into reusable semantic principles (MemAlign-inspired)
 6. **Reject** — Vague or invalid signals are logged to the **Rejection Ledger** (`rejection-ledger.jsonl`) with the reason and a revival condition so you know exactly how to re-submit
 7. **Prevent** — Repeated failures auto-generate prevention rules (the actual value — agents follow these when loaded)
@@ -302,7 +302,7 @@ npx mcp-memory-gateway dashboard
 
 ### Essential (high-ROI — start here)
 
-These 6 tools deliver the fastest path to feedback, recall, and prevention. Use the `essential` profile for a lean setup:
+These 7 tools deliver the fastest path to feedback, recall, lesson search, and prevention. Use the `essential` profile for a lean setup:
 
 ```bash
 RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y mcp-memory-gateway serve
@@ -312,11 +312,14 @@ RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y mcp-memory-gateway serv
 |------|-------------|
 | `capture_feedback` | Accept up/down signal + context, validate, promote to memory |
 | `recall` | Vector-search past feedback and prevention rules for current task |
+| `search_lessons` | Search promoted lessons and inspect the corrective action, prevention rules, and gates linked to each result |
 | `prevention_rules` | Generate prevention rules from repeated mistakes |
 | `enforcement_matrix` | Full pipeline state: feedback counts, promotion rate, active gates, rejection ledger |
 | `feedback_stats` | Approval rate, per-skill/tag breakdown, trend analysis |
 | `feedback_summary` | Human-readable recent feedback summary |
 | `estimate_uncertainty` | Bayesian uncertainty estimate for risky tags before acting |
+
+Free and self-hosted users can invoke `search_lessons` directly through MCP to search their RLHF memory and see what corrective action the system took in response to each lesson.
 
 ### Dispatch (remote ops, phone-safe)
 
@@ -377,6 +380,7 @@ npx mcp-memory-gateway gate-stats        # Gate enforcement statistics
 npx mcp-memory-gateway status            # Learning curve dashboard
 npx mcp-memory-gateway watch             # Watch .rlhf/ for external signals
 npx mcp-memory-gateway capture           # Capture feedback via CLI
+npx mcp-memory-gateway lessons           # Search lessons + linked corrective actions
 npx mcp-memory-gateway stats             # Analytics + Revenue-at-Risk
 npx mcp-memory-gateway rules             # Generate prevention rules
 npx mcp-memory-gateway export-dpo        # Export DPO training pairs

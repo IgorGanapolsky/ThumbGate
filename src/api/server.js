@@ -80,6 +80,9 @@ const {
   generateDashboard,
 } = require('../../scripts/dashboard');
 const {
+  searchLessons,
+} = require('../../scripts/lesson-search');
+const {
   appendTelemetryPing,
 } = require('../../scripts/telemetry-analytics');
 const {
@@ -1542,7 +1545,7 @@ function createApiServer() {
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
-          endpoints: ['/health', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/dpo/export', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/dpo/export', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -2423,6 +2426,23 @@ function createApiServer() {
         const recent = Number(parsed.searchParams.get('recent') || 20);
         const summary = feedbackSummary(Number.isFinite(recent) ? recent : 20);
         sendJson(res, 200, { summary });
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/lessons/search') {
+        const query = parsed.searchParams.get('q') || parsed.searchParams.get('query') || '';
+        const limit = Number(parsed.searchParams.get('limit') || 10);
+        const category = parsed.searchParams.get('category') || '';
+        const tags = (parsed.searchParams.get('tags') || '')
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean);
+        const results = searchLessons(query, {
+          limit: Number.isFinite(limit) ? limit : 10,
+          category,
+          tags,
+        });
+        sendJson(res, 200, results);
         return;
       }
 

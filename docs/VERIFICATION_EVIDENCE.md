@@ -1763,6 +1763,74 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-23 Lesson Search Verification
+
+Scope:
+
+- Added a first-class lesson search surface so any MCP-compatible free or self-hosted agent can search promoted lessons and inspect the corrective action linked to each result.
+- Exposed the feature through MCP (`search_lessons`), HTTP (`GET /v1/lessons/search`), and CLI (`npx mcp-memory-gateway lessons` / `search-lessons`).
+- Linked each lesson result to its source feedback, matching prevention rules, and matching auto-promoted gates.
+- Updated public docs so the essential profile now advertises lesson search as a free/self-hosted MCP surface.
+
+Commands run:
+
+```bash
+npm ci
+node --test tests/lesson-search.test.js tests/test-suite-parity.test.js
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- `node --test tests/lesson-search.test.js tests/test-suite-parity.test.js`: pass (`4/4`).
+- `npm test`: pass.
+- `npm run test:coverage`: pass with Node coverage summary:
+  - line coverage: `88.34%`
+  - branch coverage: `74.23%`
+  - function coverage: `92.40%`
+- `npm run prove:adapters`: pass (`48/48`).
+- `npm run prove:automation`: pass (`55/55`).
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+  - `budget_status`: healthy (`567ms`)
+  - `tests`: healthy (`295323ms`)
+  - `prove_adapters`: healthy (`200474ms`)
+  - `prove_automation`: healthy (`119678ms`)
+
+Behavioral proof points:
+
+- `search_lessons` is available in the `default`, `essential`, `readonly`, `dispatch`, and `locked` MCP profiles.
+- Empty queries list recent lessons; text queries rank lessons by query overlap plus recency.
+- Search responses expose `correctiveActions` derived from lesson content plus linked prevention rules and auto-gates.
+- `GET /v1/lessons/search` and the ChatGPT adapter OpenAPI both include the new search route.
+- The CLI `lessons` command prints lesson summaries together with linked corrective actions.
+
+Artifacts updated:
+
+- `README.md`
+- `adapters/chatgpt/openapi.yaml`
+- `adapters/mcp/server-stdio.js`
+- `bin/cli.js`
+- `config/mcp-allowlists.json`
+- `openapi/openapi.yaml`
+- `package.json`
+- `scripts/dispatch-brief.js`
+- `scripts/intent-router.js`
+- `scripts/lesson-search.js`
+- `scripts/tool-registry.js`
+- `src/api/server.js`
+- `tests/api-server.test.js`
+- `tests/cli.test.js`
+- `tests/intent-router.test.js`
+- `tests/lesson-search.test.js`
+- `tests/mcp-server.test.js`
+- `tests/openapi-parity.test.js`
+- `tests/positioning-contract.test.js`
+- `tests/profile-router.test.js`
+
 ## 2026-03-20 Railway deploy workflow deduplication and SHA-verification hardening
 
 Scope:

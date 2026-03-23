@@ -60,6 +60,9 @@ const {
   loadModel,
   getReliability,
 } = require('../../scripts/thompson-sampling');
+const {
+  searchLessons,
+} = require('../../scripts/lesson-search');
 const { checkLimit } = require('../../scripts/rate-limiter');
 const { TOOLS } = require('../../scripts/tool-registry');
 const { bootstrapInternalAgent } = require('../../scripts/internal-agent-bootstrap');
@@ -331,6 +334,12 @@ async function callToolInner(name, args) {
       return toTextResult(captureFeedback(args));
     case 'feedback_summary':
       return toTextResult(feedbackSummary(Number(args.recent || 20)));
+    case 'search_lessons':
+      return toTextResult(searchLessons(args.query || '', {
+        limit: Number(args.limit || 10),
+        category: args.category,
+        tags: Array.isArray(args.tags) ? args.tags : [],
+      }));
     case 'feedback_stats':
       return toTextResult(analyzeFeedback());
     case 'diagnose_failure':

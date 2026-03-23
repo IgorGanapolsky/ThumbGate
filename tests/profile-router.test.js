@@ -95,6 +95,11 @@ test('findMostRestrictiveProfile returns smallest profile with the tool', () => 
   assert.equal(profile, 'locked');
 });
 
+test('findMostRestrictiveProfile returns locked for search_lessons', () => {
+  const profile = findMostRestrictiveProfile('search_lessons');
+  assert.equal(profile, 'locked');
+});
+
 test('findMostRestrictiveProfile returns null for unknown tool', () => {
   const profile = findMostRestrictiveProfile('nonexistent_tool_xyz');
   assert.equal(profile, null);

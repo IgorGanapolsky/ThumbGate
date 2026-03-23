@@ -913,6 +913,35 @@ paths:
           description: Feedback summary text
         '401':
           description: Unauthorized
+  /v1/lessons/search:
+    get:
+      operationId: searchLessons
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search query. Leave empty to list recent lessons.
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum: [error, learning, preference]
+        - in: query
+          name: tags
+          schema:
+            type: string
+          description: Comma-separated tags that must all be present on a lesson.
+      responses:
+        '200':
+          description: Searchable promoted lessons with linked corrective actions, prevention rules, and auto-gates
+        '401':
+          description: Unauthorized
   /v1/feedback/rules:
     post:
       operationId: generatePreventionRules

@@ -778,6 +778,69 @@ test('summary endpoint returns markdown text payload', async () => {
   assert.match(body.summary, /Feedback Summary/);
 });
 
+test('lesson search endpoint returns promoted lessons with linked corrective actions', async () => {
+  const feedbackLogPath = path.join(tmpFeedbackDir, 'feedback-log.jsonl');
+  const memoryLogPath = path.join(tmpFeedbackDir, 'memory-log.jsonl');
+  const rulesPath = path.join(tmpFeedbackDir, 'prevention-rules.md');
+  const autoGatesPath = path.join(tmpFeedbackDir, 'auto-promoted-gates.json');
+  const backups = [
+    [feedbackLogPath, fs.existsSync(feedbackLogPath) ? fs.readFileSync(feedbackLogPath, 'utf8') : null],
+    [memoryLogPath, fs.existsSync(memoryLogPath) ? fs.readFileSync(memoryLogPath, 'utf8') : null],
+    [rulesPath, fs.existsSync(rulesPath) ? fs.readFileSync(rulesPath, 'utf8') : null],
+    [autoGatesPath, fs.existsSync(autoGatesPath) ? fs.readFileSync(autoGatesPath, 'utf8') : null],
+  ];
+
+  try {
+    fs.writeFileSync(feedbackLogPath, `${JSON.stringify({
+      id: 'fb_api_lesson',
+      signal: 'negative',
+      context: 'Skipped rollback proof during release',
+      tags: ['release', 'verification'],
+      timestamp: '2026-03-23T15:00:00.000Z',
+    })}\n`);
+    fs.writeFileSync(memoryLogPath, `${JSON.stringify({
+      id: 'mem_api_lesson',
+      title: 'MISTAKE: Skipped rollback proof during release',
+      content: 'What went wrong: Skipped rollback proof during release\nHow to avoid: Attach rollback notes before shipping',
+      category: 'error',
+      importance: 'high',
+      tags: ['feedback', 'negative', 'release', 'verification'],
+      sourceFeedbackId: 'fb_api_lesson',
+      timestamp: '2026-03-23T15:00:01.000Z',
+    })}\n`);
+    fs.writeFileSync(rulesPath, '# Rollback proof\nAlways attach rollback notes before shipping.\n');
+    fs.writeFileSync(autoGatesPath, JSON.stringify({
+      version: 1,
+      gates: [{
+        id: 'auto-release-verification',
+        action: 'warn',
+        pattern: 'release+verification',
+        message: 'Warn when release verification proof is missing',
+        occurrences: 3,
+        promotedAt: '2026-03-23T15:10:00.000Z',
+      }],
+      promotionLog: [],
+    }, null, 2));
+
+    const res = await fetch(apiUrl('/v1/lessons/search?q=rollback&limit=5'), { headers: authHeader });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.returned, 1);
+    assert.equal(body.results[0].id, 'mem_api_lesson');
+    assert.equal(body.results[0].lesson.howToAvoid, 'Attach rollback notes before shipping');
+    assert.equal(body.results[0].systemResponse.linkedPreventionRules[0].title, 'Rollback proof');
+    assert.equal(body.results[0].systemResponse.linkedAutoGates[0].id, 'auto-release-verification');
+  } finally {
+    backups.forEach(([filePath, content]) => {
+      if (content === null) {
+        fs.rmSync(filePath, { force: true });
+      } else {
+        fs.writeFileSync(filePath, content);
+      }
+    });
+  }
+});
+
 test('dpo export endpoint works with local memory log', async () => {
   const outputPath = path.join(tmpFeedbackDir, 'dpo.jsonl');
   const res = await fetch(apiUrl('/v1/dpo/export'), {

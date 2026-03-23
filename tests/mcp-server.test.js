@@ -401,6 +401,78 @@ test('recall includes code graph impact section for coding workflows', async () 
   }
 });
 
+test('search_lessons returns promoted lessons with corrective actions over MCP', async () => {
+  const feedbackLogPath = path.join(tmpFeedbackDir, 'feedback-log.jsonl');
+  const memoryLogPath = path.join(tmpFeedbackDir, 'memory-log.jsonl');
+  const rulesPath = path.join(tmpFeedbackDir, 'prevention-rules.md');
+  const autoGatesPath = path.join(tmpFeedbackDir, 'auto-promoted-gates.json');
+  const backups = [
+    [feedbackLogPath, fs.existsSync(feedbackLogPath) ? fs.readFileSync(feedbackLogPath, 'utf8') : null],
+    [memoryLogPath, fs.existsSync(memoryLogPath) ? fs.readFileSync(memoryLogPath, 'utf8') : null],
+    [rulesPath, fs.existsSync(rulesPath) ? fs.readFileSync(rulesPath, 'utf8') : null],
+    [autoGatesPath, fs.existsSync(autoGatesPath) ? fs.readFileSync(autoGatesPath, 'utf8') : null],
+  ];
+
+  try {
+    fs.writeFileSync(feedbackLogPath, `${JSON.stringify({
+      id: 'fb_mcp_lesson',
+      signal: 'negative',
+      context: 'Skipped release verification proof',
+      tags: ['release', 'verification'],
+      timestamp: '2026-03-23T16:00:00.000Z',
+    })}\n`);
+    fs.writeFileSync(memoryLogPath, `${JSON.stringify({
+      id: 'mem_mcp_lesson',
+      title: 'MISTAKE: Skipped release verification proof',
+      content: 'What went wrong: Skipped release verification proof\nHow to avoid: Run the release checklist before publishing',
+      category: 'error',
+      importance: 'high',
+      tags: ['feedback', 'negative', 'release', 'verification'],
+      sourceFeedbackId: 'fb_mcp_lesson',
+      timestamp: '2026-03-23T16:00:01.000Z',
+    })}\n`);
+    fs.writeFileSync(rulesPath, '# Release checklist\nAlways run the release checklist before publishing.\n');
+    fs.writeFileSync(autoGatesPath, JSON.stringify({
+      version: 1,
+      gates: [{
+        id: 'auto-release-checklist',
+        action: 'block',
+        pattern: 'release+verification',
+        message: 'Block publish flows without the release checklist',
+        occurrences: 6,
+        promotedAt: '2026-03-23T16:10:00.000Z',
+      }],
+      promotionLog: [],
+    }, null, 2));
+
+    const result = await handleRequest({
+      jsonrpc: '2.0',
+      id: 311,
+      method: 'tools/call',
+      params: {
+        name: 'search_lessons',
+        arguments: {
+          query: 'release checklist',
+          limit: 5,
+        },
+      },
+    });
+    const payload = JSON.parse(result.content[0].text);
+    assert.equal(payload.returned, 1);
+    assert.equal(payload.results[0].id, 'mem_mcp_lesson');
+    assert.equal(payload.results[0].systemResponse.linkedAutoGates[0].id, 'auto-release-checklist');
+    assert.ok(payload.results[0].systemResponse.correctiveActions.some((action) => action.type === 'pre_action_block'));
+  } finally {
+    backups.forEach(([filePath, content]) => {
+      if (content === null) {
+        fs.rmSync(filePath, { force: true });
+      } else {
+        fs.writeFileSync(filePath, content);
+      }
+    });
+  }
+});
+
 test('prevention_rules blocks external output paths', async () => {
   await assert.rejects(async () => {
     await handleRequest({
