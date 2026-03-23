@@ -102,10 +102,16 @@ function getContextFsModule() {
 }
 
 function getVectorStoreModule() {
+  // Prefer filesystem search (no embeddings, no LanceDB binary dependency).
+  // Falls back to vector-store.js if filesystem-search.js is missing.
   try {
-    return require('./vector-store');
+    return require('./filesystem-search');
   } catch {
-    return null;
+    try {
+      return require('./vector-store');
+    } catch {
+      return null;
+    }
   }
 }
 
