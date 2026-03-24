@@ -1,2609 +1,382 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MCP Memory Gateway | Pre-Action Gates for AI coding agents</title>
-  <meta name="description" content="Pre-action gates that physically block AI coding agents from repeating known mistakes. MCP Memory Gateway acts as an AI workflow control plane with recall, prevention rules, semantic cache reporting, and proof-backed rollout for Claude Code, Codex, Gemini, Amp, and Cursor." />
-  <meta name="keywords" content="Pre-Action Gates, AI workflow control plane, AI coding agents, workflow hardening, AI agent guardrails, prevention rules, feedback-to-enforcement pipeline, MCP server, Claude Code, Cursor, Codex, Gemini, Amp, agentic RAG, memory server comparison" />
-  <meta property="og:title" content="MCP Memory Gateway | Pre-Action Gates for AI coding agents" />
-  <meta property="og:description" content="Pre-action gates that physically block AI coding agents from repeating known mistakes. MCP Memory Gateway acts as an AI workflow control plane with recall, prevention rules, semantic cache reporting, and proof-backed rollout for Claude Code, Codex, Gemini, Amp, and Cursor." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://rlhf-feedback-loop-production.up.railway.app" />
-  <link rel="canonical" href="https://rlhf-feedback-loop-production.up.railway.app" />
-  <script defer data-domain="rlhf-feedback-loop-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<!--
+   ______                            __
+  / ____/___  ____ ___  ____  __  __/ /____  _____
+ / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ ___/
+/ /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /
+\____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_/
+                    /_/
+        Created with Perplexity Computer
+        https://www.perplexity.ai/computer
+-->
+<meta name="generator" content="Perplexity Computer">
+<meta name="author" content="Perplexity Computer">
+<meta property="og:see_also" content="https://www.perplexity.ai/computer">
+<link rel="author" href="https://www.perplexity.ai/computer">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
+<title>MCP Memory Gateway — Stop Your AI Agent From Repeating Mistakes</title>
+<meta name="description" content="Pre-Action Gates for AI coding agents. Capture feedback, auto-generate rules, and block mistakes before they happen. Works with Claude Code, Cursor, Codex, Gemini.">
+<meta property="og:title" content="MCP Memory Gateway — Pre-Action Gates for AI Agents">
+<meta property="og:description" content="Stop your AI agent from making the same mistake twice. One command install. Works with Claude Code, Cursor, Codex, Gemini.">
+<meta property="og:type" content="website">
+
+<script defer data-domain="rlhf-feedback-loop-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 __GA_BOOTSTRAP__
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "@id": "https://rlhf-feedback-loop-production.up.railway.app/#organization",
-    "name": "mcp-memory-gateway",
-    "url": "https://rlhf-feedback-loop-production.up.railway.app",
-    "sameAs": [
-      "https://github.com/IgorGanapolsky/mcp-memory-gateway",
-      "https://www.npmjs.com/package/mcp-memory-gateway"
-    ],
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "contactType": "sales",
-      "email": "igor.ganapolsky@gmail.com",
-      "url": "https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake"
-    }
-  }
-  </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "MCP Memory Gateway",
+  "description": "Pre-Action Gates for AI coding agents. Captures feedback, auto-generates prevention rules, and blocks agents before they repeat mistakes.",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Cross-platform",
+  "license": "https://opensource.org/licenses/MIT",
+  "url": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
+  "creator": {
     "@type": "SoftwareApplication",
-    "@id": "https://rlhf-feedback-loop-production.up.railway.app/#software",
-    "name": "mcp-memory-gateway",
-    "url": "https://rlhf-feedback-loop-production.up.railway.app",
-    "operatingSystem": "Cross-platform",
-    "applicationCategory": "DeveloperApplication",
-    "publisher": {
-      "@id": "https://rlhf-feedback-loop-production.up.railway.app/#organization"
+    "name": "Perplexity Computer",
+    "url": "https://www.perplexity.ai/computer"
+  },
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "Free",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Local use, 500 memories, 100 retrievals/day, 5 built-in gates"
     },
-    "description": "Pre-action gates that physically block AI coding agents from repeating known mistakes. MCP Memory Gateway acts as an AI workflow control plane with recall, prevention rules, semantic cache reporting, and proof-backed rollout for Claude Code, Codex, Gemini, Amp, and Cursor.",
-    "keywords": "Pre-Action Gates, AI workflow control plane, AI coding agents, workflow hardening, AI agent guardrails, prevention rules, feedback-to-enforcement pipeline, MCP server, Claude Code, Cursor, Codex, Gemini, Amp, agentic RAG, memory server comparison",
-    "offers": [
-      {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD",
-        "url": "https://rlhf-feedback-loop-production.up.railway.app/#pricing",
-        "description": "Free local tier: 500 memories, 100 retrievals/day, 5 built-in gates, single user, DPO/KTO export, CLI dashboard."
-      },
-      {
-        "@type": "Offer",
-        "price": "49",
-        "priceCurrency": "USD",
-        "url": "https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter",
-        "description": "Mistake-Free Starter Pack: 500 verified consolidations, cloud-synced memories, team sharing, NVIDIA Five-Vendor Framework alignment, and priority support."
-      }
-    ],
-    "sameAs": [
-      "https://github.com/IgorGanapolsky/mcp-memory-gateway",
-      "https://www.npmjs.com/package/mcp-memory-gateway"
-    ],
-    "featureList": [
-      "Pre-action gates that block known failure patterns",
-      "Auto-gate promotion from repeated feedback",
-      "Thompson Sampling for adaptive steering",
-      "Works with Claude Code, Codex, Gemini CLI, and Amp",
-      "Claude workflow hardening for platform teams, consultancies, and code modernization delivery",
-      "Runs inside the agent loop you already use; no orchestration or subagent routing required",
-      "Pairs cleanly with continuity tools and IDE re-entry workflows",
-      "Local-first, MIT licensed, no cloud required"
-    ],
-    "potentialAction": [
-      {
-        "@type": "BuyAction",
-        "target": "https://rlhf-feedback-loop-production.up.railway.app/checkout/pro"
-      },
-      {
-        "@type": "CommunicateAction",
-        "name": "Start Workflow Hardening Sprint intake",
-        "target": "https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake"
-      }
-    ]
+    {
+      "@type": "Offer",
+      "name": "Pro",
+      "price": "49",
+      "priceCurrency": "USD",
+      "description": "Cloud-synced memories, unlimited everything, team sharing",
+      "url": "https://buy.stripe.com/bJe28rfCY6zc4lH7mb3sI04"
+    }
+  ]
+}
+</script>
+
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0b;
+    --bg-raised: #111113;
+    --bg-card: #161618;
+    --border: #222225;
+    --text: #e8e8ec;
+    --text-muted: #8b8b96;
+    --cyan: #22d3ee;
+    --cyan-dim: rgba(34, 211, 238, 0.12);
+    --cyan-glow: rgba(34, 211, 238, 0.25);
+    --green: #4ade80;
+    --red: #f87171;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
   }
-  </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "What does mcp-memory-gateway stop?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "It turns repeated failures into reliability rules and Pre-Action Gates that block known AI agent mistakes before they execute."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Who should upgrade to Pro?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Teams that need cloud-synced memory, shared prevention rules, usage analytics, and unlimited custom gates across multiple machines and repos."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What is the first workflow this product fits?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "The strongest first fit is a repeated coding or operations workflow where the same mistakes recur and the Pre-Action Gates can block them before they waste more engineering time."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Can I pair it with editor continuity tools or resume assistants?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes. Continuity tools are optional context inputs, not a required orchestration layer. mcp-memory-gateway adds recall, reliability rules, and pre-action gates in the same agent session. External tools can also append structured JSONL events for watcher-based ingestion."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Can consultancies and platform teams use this for Claude workflow hardening or code modernization?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes. The strongest services fit is one Claude-first workflow with business value, such as code modernization, PR review hardening, or internal ops automation. MCP Memory Gateway adds recall, prevention rules, Pre-Action Gates, and verification evidence so the workflow is safer to ship and easier to defend to buyers."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What is the Workflow Hardening Sprint?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "It is the front-line services offer: one workflow, one owner, and one proof review. The goal is to add recall, prevention rules, pre-action gates, and verification evidence so a Claude-first workflow is safer to ship team-wide."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What does the Workflow Hardening Fit Checker do?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "It qualifies whether a workflow is a better fit for the Workflow Hardening Sprint, Pro, or the free OSS path by checking for a repeated blocker, a workflow owner, proof requirements, rollout stage, and cross-machine sync needs. It is a qualification aid, not ROI proof."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Can I install mcp-memory-gateway as a Claude Desktop extension?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes. You can install the local MCP server in Claude Desktop today with the portable npm launcher, and this repo ships Claude-specific plugin metadata, privacy policy, support links, and submission docs. Directory inclusion depends on Anthropic review and should not be claimed before approval."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What is Reliability Studio Compare and Deploy?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Reliability Studio is the buyer-facing workflow for importing PR threads, CI logs, runbooks, JSONL, and CSV evidence, comparing the baseline agent run against the hardened run, and deploying the resulting rule pack and proof links without requiring model fine-tuning."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Do I need subagents or an orchestration layer to get value?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "No. MCP Memory Gateway is meant to keep one sharp agent on task. It adds recall, prevention rules, and Pre-Action Gates without introducing extra agent handoffs or planner overhead."
-        }
-      }
-    ]
+
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  /* NAV */
+  nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
+  nav .container { display: flex; justify-content: space-between; align-items: center; }
+  .nav-logo { font-weight: 700; font-size: 15px; letter-spacing: -0.02em; color: var(--text); text-decoration: none; }
+  .nav-logo span { color: var(--cyan); }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; transition: color 0.15s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta { background: var(--cyan); color: var(--bg); padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; text-decoration: none; transition: opacity 0.15s; }
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* HERO */
+  .hero { padding: 100px 0 72px; text-align: center; }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.2); padding: 4px 12px; border-radius: 100px; margin-bottom: 24px; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
+  .hero h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; max-width: 700px; margin: 0 auto 16px; }
+  .hero p { font-size: 17px; color: var(--text-muted); max-width: 520px; margin: 0 auto 36px; line-height: 1.6; }
+  .hero-install { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 14px 24px; display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 15px; margin-bottom: 40px; cursor: pointer; transition: border-color 0.2s; position: relative; max-width: 100%; overflow-x: auto; }
+  .hero-install:hover { border-color: var(--cyan); }
+  .hero-install .prompt { color: var(--text-muted); user-select: none; }
+  .hero-install .cmd { color: var(--cyan); }
+  .hero-install .copy-hint { font-size: 11px; color: var(--text-muted); font-family: var(--font); margin-left: 8px; }
+  .hero-install .copied { color: var(--green); }
+
+  /* SOCIAL PROOF BAR */
+  .proof-bar { display: flex; justify-content: center; flex-wrap: wrap; gap: 24px; font-size: 13px; color: var(--text-muted); padding: 0 0 8px; }
+  .proof-bar span { display: inline-flex; align-items: center; gap: 6px; }
+  .proof-bar .dot { width: 4px; height: 4px; background: var(--border); border-radius: 50%; }
+
+  /* HOW IT WORKS */
+  .how-it-works { padding: 80px 0; }
+  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--cyan); font-weight: 600; margin-bottom: 12px; text-align: center; }
+  .section-title { font-size: clamp(24px, 3vw, 32px); font-weight: 700; letter-spacing: -0.025em; text-align: center; margin-bottom: 48px; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .step { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 28px 24px; position: relative; transition: border-color 0.2s; }
+  .step:hover { border-color: rgba(34,211,238,0.3); }
+  .step-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: var(--cyan-dim); color: var(--cyan); font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+  .step h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.01em; }
+  .step p { font-size: 14px; color: var(--text-muted); line-height: 1.55; }
+  .step code { font-family: var(--mono); font-size: 12px; background: rgba(34,211,238,0.08); color: var(--cyan); padding: 2px 6px; border-radius: 4px; }
+
+  /* CODE EXAMPLE */
+  .code-section { padding: 0 0 80px; }
+  .code-block { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; max-width: 640px; margin: 0 auto; }
+  .code-header { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .code-dot.red { background: #f87171; }
+  .code-dot.yellow { background: #fbbf24; }
+  .code-dot.green { background: #4ade80; }
+  .code-header span { font-size: 12px; color: var(--text-muted); margin-left: 8px; }
+  .code-body { padding: 20px; font-family: var(--mono); font-size: 13px; line-height: 1.7; overflow-x: auto; }
+  .code-body .comment { color: #6b7280; }
+  .code-body .keyword { color: #c084fc; }
+  .code-body .string { color: #4ade80; }
+  .code-body .fn { color: var(--cyan); }
+
+  /* PRICING */
+  .pricing { padding: 80px 0; }
+  .pricing-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 720px; margin: 0 auto; }
+  .price-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px 28px; }
+  .price-card.pro { border-color: var(--cyan); box-shadow: 0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15); }
+  .price-card .tier { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
+  .price-card.pro .tier { color: var(--cyan); }
+  .price-card .price { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 4px; }
+  .price-card .price-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+  .price-card ul { list-style: none; margin-bottom: 28px; }
+  .price-card li { font-size: 14px; color: var(--text-muted); padding: 6px 0; display: flex; align-items: flex-start; gap: 8px; }
+  .price-card li::before { content: "✓"; color: var(--cyan); font-weight: 700; flex-shrink: 0; }
+  .price-card.pro li::before { color: var(--cyan); }
+  .btn-free { display: block; text-align: center; padding: 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; transition: border-color 0.15s; }
+  .btn-free:hover { border-color: var(--text-muted); }
+  .btn-pro { display: block; text-align: center; padding: 10px; background: var(--cyan); color: var(--bg); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: opacity 0.15s; }
+  .btn-pro:hover { opacity: 0.85; }
+
+  /* FAQ */
+  .faq { padding: 80px 0; }
+  .faq-list { max-width: 640px; margin: 0 auto; }
+  .faq-item { border-bottom: 1px solid var(--border); }
+  .faq-q { padding: 20px 0; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+  .faq-q::after { content: "+"; font-size: 18px; color: var(--text-muted); transition: transform 0.2s; }
+  .faq-item.open .faq-q::after { transform: rotate(45deg); }
+  .faq-a { font-size: 14px; color: var(--text-muted); line-height: 1.65; padding-bottom: 20px; display: none; }
+  .faq-item.open .faq-a { display: block; }
+
+  /* CTA SECTION */
+  .final-cta { padding: 80px 0; text-align: center; }
+  .final-cta h2 { font-size: clamp(24px, 3vw, 32px); font-weight: 700; letter-spacing: -0.025em; margin-bottom: 12px; }
+  .final-cta p { font-size: 15px; color: var(--text-muted); margin-bottom: 28px; }
+  .final-cta .btn-pro { display: inline-block; padding: 12px 32px; font-size: 15px; border-radius: 8px; }
+
+  /* FOOTER */
+  footer { border-top: 1px solid var(--border); padding: 32px 0; }
+  footer .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .footer-links { display: flex; gap: 20px; }
+  .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; transition: color 0.15s; }
+  .footer-links a:hover { color: var(--text); }
+  .footer-copy { font-size: 12px; color: var(--text-muted); }
+
+  /* RESPONSIVE */
+  @media (max-width: 700px) {
+    .steps { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .hero { padding: 72px 0 56px; }
+    .nav-links a:not(.nav-cta) { display: none; }
+    .proof-bar { gap: 16px; }
+    .proof-bar .dot { display: none; }
   }
-  </script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg: #0a0a0b;
-      --bg-raised: #111113;
-      --bg-card: #161618;
-      --border: #27272a;
-      --border-bright: #3f3f46;
-      --text: #fafafa;
-      --text-muted: #a1a1aa;
-      --text-dim: #71717a;
-      --accent: #22d3ee;
-      --accent-dim: rgba(34, 211, 238, 0.12);
-      --green: #4ade80;
-      --green-dim: rgba(74, 222, 128, 0.12);
-      --red: #f87171;
-      --red-dim: rgba(248, 113, 113, 0.12);
-      --orange: #fb923c;
-      --purple: #a78bfa;
-      --radius: 12px;
-      --max-w: 1080px;
-    }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-
-    .wrap {
-      max-width: var(--max-w);
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-
-    /* ── Nav ── */
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: rgba(10, 10, 11, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .nav-inner {
-      max-width: var(--max-w);
-      margin: 0 auto;
-      padding: 0 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 56px;
-    }
-
-    .brand {
-      font-weight: 700;
-      font-size: 16px;
-      letter-spacing: -0.02em;
-      color: var(--text);
-    }
-
-    .brand span { color: var(--accent); }
-
-    .nav-links {
-      display: flex;
-      gap: 24px;
-      font-size: 14px;
-    }
-
-    .nav-links a {
-      color: var(--text-muted);
-      transition: color 0.15s;
-    }
-
-    .nav-links a:hover {
-      color: var(--text);
-      text-decoration: none;
-    }
-
-    /* ── Hero ── */
-    .hero {
-      padding: 80px 0 64px;
-      text-align: center;
-    }
-
-    .hero h1 {
-      font-size: clamp(32px, 5.5vw, 56px);
-      line-height: 1.1;
-      letter-spacing: -0.04em;
-      font-weight: 800;
-      max-width: 780px;
-      margin: 0 auto 20px;
-    }
-
-    .hero h1 em {
-      font-style: normal;
-      color: var(--accent);
-    }
-
-    .hero .sub {
-      font-size: 18px;
-      color: var(--text-muted);
-      max-width: 640px;
-      margin: 0 auto 36px;
-      line-height: 1.6;
-    }
-
-    .hero .sub-note {
-      margin: -12px auto 28px;
-      max-width: 640px;
-      font-size: 14px;
-      color: var(--text-dim);
-    }
-
-    .cta-row {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .campaign-banner {
-      max-width: 720px;
-      margin: 0 auto 24px;
-      padding: 14px 18px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      background: linear-gradient(135deg, rgba(255, 69, 0, 0.12), rgba(34, 211, 238, 0.08));
-      color: var(--text);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .campaign-banner strong {
-      color: #ff8a5c;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 28px;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.15s;
-    }
-
-    .btn:hover { text-decoration: none; }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #000;
-    }
-
-    .btn-primary:hover {
-      background: #67e8f9;
-    }
-
-    .btn-secondary {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border-bright);
-    }
-
-    .btn-secondary:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .badges {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-top: 32px;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 500;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      background: var(--bg-raised);
-    }
-
-    .badge .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--green);
-    }
-
-    /* ── Section base ── */
-    section {
-      padding: 64px 0;
-    }
-
-    .section-label {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 12px;
-    }
-
-    .section-title {
-      font-size: clamp(24px, 3.5vw, 40px);
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin-bottom: 16px;
-    }
-
-    .section-desc {
-      color: var(--text-muted);
-      font-size: 17px;
-      max-width: 600px;
-      margin-bottom: 40px;
-    }
-
-    /* ── Before / After ── */
-    .ba-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-
-    .ba-card {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      background: var(--bg-card);
-    }
-
-    .ba-card.before { border-color: rgba(248, 113, 113, 0.3); }
-    .ba-card.after { border-color: rgba(74, 222, 128, 0.3); }
-
-    .ba-tag {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 4px 10px;
-      border-radius: 4px;
-      margin-bottom: 16px;
-    }
-
-    .ba-card.before .ba-tag {
-      background: var(--red-dim);
-      color: var(--red);
-    }
-
-    .ba-card.after .ba-tag {
-      background: var(--green-dim);
-      color: var(--green);
-    }
-
-    .ba-card h3 {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 12px;
-      letter-spacing: -0.02em;
-    }
-
-    .ba-card .flow {
-      font-size: 14px;
-      color: var(--text-muted);
-      line-height: 1.8;
-      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    }
-
-    .flow .arrow { color: var(--text-dim); }
-
-    /* ── How it works ── */
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    }
-
-    .step {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      background: var(--bg-card);
-      position: relative;
-    }
-
-    .step-num {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: var(--accent-dim);
-      color: var(--accent);
-      font-size: 14px;
-      font-weight: 700;
-      margin-bottom: 16px;
-    }
-
-    .step h3 {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-
-    .step p {
-      font-size: 14px;
-      color: var(--text-muted);
-    }
-
-    .step code {
-      display: block;
-      margin-top: 12px;
-      padding: 10px 14px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 12px;
-      color: var(--green);
-      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-      overflow-x: auto;
-      white-space: nowrap;
-    }
-
-    /* ── Dashboard preview ── */
-    .dashboard {
-      margin-top: 48px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--bg-card);
-      overflow: hidden;
-    }
-
-    .dashboard-header {
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border);
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .dashboard-header .dot-row {
-      display: flex;
-      gap: 6px;
-    }
-
-    .dashboard-header .dot-row span {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-
-    .dashboard-header .dot-row span:nth-child(1) { background: #ef4444; }
-    .dashboard-header .dot-row span:nth-child(2) { background: #eab308; }
-    .dashboard-header .dot-row span:nth-child(3) { background: #22c55e; }
-
-    .dashboard-body {
-      padding: 24px;
-      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-      font-size: 14px;
-      line-height: 2;
-      color: var(--text-muted);
-    }
-
-    .dashboard-body .metric {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .dashboard-body .val { color: var(--text); font-weight: 600; }
-    .dashboard-body .up { color: var(--green); }
-    .dashboard-body .label { color: var(--text-dim); }
-
-    /* ── Reliability Studio ── */
-    .studio-shell {
-      display: grid;
-      grid-template-columns: 0.95fr 1.05fr;
-      gap: 20px;
-      align-items: stretch;
-    }
-
-    .studio-card {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--bg-card);
-      padding: 28px;
-    }
-
-    .studio-card h3 {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 10px;
-    }
-
-    .studio-card p {
-      font-size: 14px;
-      color: var(--text-muted);
-      margin-bottom: 18px;
-    }
-
-    .studio-flow {
-      display: grid;
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-
-    .studio-step {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
-      background: var(--bg);
-    }
-
-    .studio-step strong {
-      display: block;
-      font-size: 13px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 4px;
-    }
-
-    .studio-step span {
-      display: block;
-      font-size: 14px;
-      color: var(--text);
-    }
-
-    .studio-proof-note {
-      border-left: 3px solid var(--accent);
-      padding: 12px 14px;
-      border-radius: 8px;
-      background: rgba(34, 211, 238, 0.08);
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .studio-compare {
-      display: grid;
-      gap: 14px;
-      margin-bottom: 18px;
-    }
-
-    .studio-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .studio-kpi {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--bg);
-      padding: 14px;
-    }
-
-    .studio-kpi-label {
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 8px;
-    }
-
-    .studio-kpi-value {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-    }
-
-    .studio-kpi-value .from {
-      color: var(--red);
-    }
-
-    .studio-kpi-value .to {
-      color: var(--green);
-    }
-
-    .studio-kpi-detail {
-      margin-top: 8px;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .studio-deploy {
-      border: 1px solid rgba(34, 211, 238, 0.25);
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(34, 211, 238, 0.08) 0%, rgba(17, 17, 19, 0.92) 100%);
-      padding: 18px;
-    }
-
-    .studio-deploy h4 {
-      font-size: 15px;
-      margin-bottom: 10px;
-    }
-
-    .studio-deploy ul {
-      list-style: none;
-      display: grid;
-      gap: 8px;
-    }
-
-    .studio-deploy li {
-      font-size: 14px;
-      color: var(--text-muted);
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-    }
-
-    .studio-deploy li::before {
-      content: "\2192";
-      color: var(--accent);
-      flex-shrink: 0;
-    }
-
-    /* ── Fit checker ── */
-    .fit-shell {
-      display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 20px;
-      align-items: stretch;
-    }
-
-    .fit-card {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--bg-card);
-      padding: 28px;
-    }
-
-    .fit-card h3 {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 10px;
-    }
-
-    .fit-card p {
-      font-size: 14px;
-      color: var(--text-muted);
-      margin-bottom: 18px;
-    }
-
-    .fit-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .fit-field {
-      display: block;
-    }
-
-    .fit-field span {
-      display: block;
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 6px;
-    }
-
-    .fit-field select {
-      width: 100%;
-      font: inherit;
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .fit-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-      margin-top: 18px;
-    }
-
-    .fit-note {
-      margin-top: 12px;
-      font-size: 13px;
-      color: var(--text-dim);
-    }
-
-    .fit-result-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(34, 211, 238, 0.12);
-      color: var(--accent);
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
-
-    .fit-metrics {
-      display: grid;
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-
-    .fit-metric {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--bg);
-      padding: 14px;
-    }
-
-    .fit-metric-label {
-      display: block;
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 8px;
-    }
-
-    .fit-metric-value {
-      display: block;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .fit-result-list {
-      list-style: none;
-      display: grid;
-      gap: 10px;
-      margin: 0 0 18px;
-      padding: 0;
-    }
-
-    .fit-result-list li {
-      font-size: 14px;
-      color: var(--text-muted);
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-    }
-
-    .fit-result-list li::before {
-      content: "\2192";
-      color: var(--accent);
-      flex-shrink: 0;
-    }
-
-    .fit-status-line {
-      min-height: 20px;
-      font-size: 13px;
-      color: var(--text-dim);
-    }
-
-    /* ── Pricing ── */
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-
-    .price-card {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 32px;
-      background: var(--bg-card);
-    }
-
-    .price-card.pro {
-      border-color: var(--accent);
-      background: linear-gradient(180deg, rgba(34, 211, 238, 0.04) 0%, var(--bg-card) 100%);
-      position: relative;
-    }
-
-    .price-card .tier-label {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 8px;
-    }
-
-    .price-card.pro .tier-label { color: var(--accent); }
-
-    .price-card h3 {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .price-amount {
-      font-size: 48px;
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      line-height: 1.1;
-      margin: 12px 0;
-    }
-
-    .price-amount small {
-      font-size: 16px;
-      font-weight: 400;
-      color: var(--text-dim);
-    }
-
-    .price-card ul {
-      list-style: none;
-      margin: 20px 0;
-    }
-
-    .price-card li {
-      font-size: 14px;
-      color: var(--text-muted);
-      padding: 6px 0;
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
-    .price-card li::before {
-      content: "\2713";
-      color: var(--green);
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
-    .price-card .btn {
-      width: 100%;
-      justify-content: center;
-      margin-top: 8px;
-    }
-
-    .buyer-feedback {
-      margin-top: 20px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      background: rgba(34, 211, 238, 0.04);
-    }
-
-    .buyer-feedback h3 {
-      font-size: 16px;
-      margin-bottom: 6px;
-    }
-
-    .buyer-feedback p {
-      font-size: 14px;
-      color: var(--text-muted);
-    }
-
-    .buyer-feedback-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .buyer-feedback button,
-    .buyer-feedback textarea {
-      font: inherit;
-    }
-
-    .intake-form input,
-    .intake-form textarea {
-      width: 100%;
-      font: inherit;
-      margin-top: 6px;
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .intake-form textarea {
-      min-height: 100px;
-      resize: vertical;
-    }
-
-    .intake-grid {
-      display: grid;
-      gap: 14px;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    }
-
-    .buyer-feedback button {
-      border: 1px solid var(--border-bright);
-      border-radius: 999px;
-      padding: 10px 14px;
-      background: var(--bg-card);
-      color: var(--text);
-      cursor: pointer;
-      transition: border-color 120ms ease, transform 120ms ease;
-    }
-
-    .buyer-feedback button:hover {
-      border-color: var(--accent);
-      transform: translateY(-1px);
-    }
-
-    .buyer-feedback textarea {
-      width: 100%;
-      min-height: 88px;
-      margin-top: 14px;
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      resize: vertical;
-    }
-
-    .buyer-feedback-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-      margin-top: 12px;
-    }
-
-    .buyer-feedback-submit {
-      background: var(--accent-dim);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .intake-form label {
-      display: block;
-      color: var(--text-muted);
-      font-size: 14px;
-    }
-
-    .buyer-feedback-status {
-      min-height: 20px;
-      font-size: 13px;
-      color: var(--text-dim);
-    }
-
-    /* ── Social proof ── */
-    .proof-strip {
-      display: flex;
-      gap: 32px;
-      justify-content: center;
-      flex-wrap: wrap;
-      padding: 40px 0;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .proof-item {
-      font-size: 14px;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .proof-item strong {
-      color: var(--text);
-    }
-
-    /* ── Footer ── */
-    footer {
-      padding: 32px 0 48px;
-    }
-
-    .footer-inner {
-      max-width: var(--max-w);
-      margin: 0 auto;
-      padding: 0 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 16px;
-      font-size: 13px;
-      color: var(--text-dim);
-    }
-
-    .footer-links {
-      display: flex;
-      gap: 20px;
-    }
-
-    .footer-links a {
-      color: var(--text-dim);
-      transition: color 0.15s;
-    }
-
-    .footer-links a:hover { color: var(--text); }
-
-    /* ── Responsive ── */
-    @media (max-width: 768px) {
-      .ba-grid,
-      .steps-grid,
-      .pricing-grid,
-      .fit-shell,
-      .fit-grid,
-      .studio-shell,
-      .studio-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .hero { padding: 56px 0 40px; }
-
-      .nav-links { gap: 16px; font-size: 13px; }
-
-      .proof-strip { gap: 20px; }
-
-      .dashboard-body { font-size: 13px; }
-    }
-
-    @media (max-width: 480px) {
-      .nav-links { display: none; }
-    }
-  </style>
+</style>
 </head>
 <body>
-  <nav>
-    <div class="nav-inner">
-      <div class="brand">mcp-memory-gateway <span>v0.7.1</span></div>
-      <div class="nav-links">
-        <a href="#fit-checker">Fit Check</a>
-        <a href="#claude-desktop">Claude Desktop</a>
-        <a href="#use-cases">Use Cases</a>
-        <a href="#studio">Studio</a>
-        <a href="#offers">Offers</a>
-        <a href="#how">How It Works</a>
-        <a href="#pricing">Pricing</a>
-        <a href="https://github.com/IgorGanapolsky/mcp-memory-gateway" target="_blank" rel="noreferrer">GitHub</a>
-        <a href="https://www.npmjs.com/package/mcp-memory-gateway" target="_blank" rel="noreferrer">npm</a>
+
+<!-- NAV -->
+<nav>
+  <div class="container">
+    <a href="#" class="nav-logo"><span>⬡</span> mcp-memory-gateway</a>
+    <div class="nav-links">
+      <a href="#how-it-works">How It Works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/IgorGanapolsky/mcp-memory-gateway" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://buy.stripe.com/bJe28rfCY6zc4lH7mb3sI04" class="nav-cta">Get Pro — $49</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">● Pre-Action Gates for AI Agents</div>
+    <h1>Stop your AI agent from making the same mistake twice</h1>
+    <p>Capture feedback on AI actions. Auto-generate prevention rules. Block mistakes before they happen.</p>
+    <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
+      <span class="prompt">$</span>
+      <span class="cmd">npx mcp-memory-gateway init</span>
+      <span class="copy-hint">click to copy</span>
+    </div>
+    <div class="proof-bar">
+      <span>1,000+ npm downloads</span>
+      <span class="dot"></span>
+      <span>329+ tests passing</span>
+      <span class="dot"></span>
+      <span>MIT licensed</span>
+      <span class="dot"></span>
+      <span>Claude Code · Cursor · Codex · Gemini</span>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-it-works" id="how-it-works">
+  <div class="container">
+    <div class="section-label">How It Works</div>
+    <h2 class="section-title">Three steps to mistake-proof AI</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Feedback</h3>
+        <p>Give <code>👍</code> or <code>👎</code> on your AI agent's actions. Feedback is stored locally as structured memories.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Rules</h3>
+        <p>Repeated failures auto-promote into prevention rules. Thompson Sampling adapts which rules fire.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Gates</h3>
+        <p>Rules become Pre-Action Gates that <strong>block</strong> your agent before it repeats the same mistake. No more fix-loops.</p>
       </div>
     </div>
-  </nav>
+  </div>
+</section>
 
-  <main>
-    <!-- ── Hero ── -->
-    <section class="hero">
-      <div class="wrap">
-        
-        <h1>Pre-Action Gates for AI coding agents. <em>Keep one sharp agent.</em></h1>
-        <p class="sub">Built for platform teams, consultancies, and AI-heavy engineering groups. MCP Memory Gateway physically blocks known mistakes before tool use, captures feedback, auto-promotes failures into prevention rules, and keeps verification evidence close without introducing another orchestration layer or subagent handoff tax. It acts as the AI workflow control plane when one workflow needs recall, gates, and proof instead of another generic memory server.</p>
-        <p class="sub-note">Best first commercial motion: the <strong>Workflow Hardening Sprint</strong> for one workflow, one owner, and one proof review.</p>
-        <div class="campaign-banner" id="campaign-banner" hidden>
-          <strong>Coming from Reddit?</strong>
-          <span id="campaign-banner-copy">Self-hosted is free. If this thread includes an early-access code, it will flow through checkout attribution automatically.</span>
-        </div>
-        <div class="cta-row">
-          <a class="btn btn-primary" data-cta-id="hero_sprint" data-cta-placement="hero" data-plan-id="sprint" href="#workflow-sprint-intake">Start Sprint Intake</a>
-          <a class="btn btn-secondary" data-cta-id="hero_fit" data-cta-placement="hero" data-plan-id="checker" href="#fit-checker">Run Fit Check</a>
-          <a class="btn btn-secondary" data-cta-id="hero_proof" data-cta-placement="hero" data-plan-id="proof" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Review Proof Pack</a>
-          <a class="btn btn-secondary" data-cta-id="hero_free" data-cta-placement="hero" data-plan-id="free" href="https://github.com/IgorGanapolsky/mcp-memory-gateway#quick-start" target="_blank" rel="noreferrer">Get Started Free</a>
-        </div>
-        <div class="badges">
-          <span class="badge"><span class="dot"></span> CI + proof artifacts published</span>
-          <span class="badge">Claude Code / Codex / Gemini / Amp</span>
-          <span class="badge">Claude Desktop extension path ready</span>
-          <span class="badge">Code modernization ready</span>
-          <span class="badge">Platform + consultancy fit</span>
-          <span class="badge">One workflow, one owner, one proof review</span>
-          <span class="badge">No orchestration tax</span>
-          <span class="badge">Pairs with continuity tools</span>
-          <span class="badge">MIT Licensed</span>
-          <span class="badge">Local-first, no cloud required</span>
-        </div>
+<!-- CODE EXAMPLE -->
+<section class="code-section">
+  <div class="container">
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dot red"></div>
+        <div class="code-dot yellow"></div>
+        <div class="code-dot green"></div>
+        <span>terminal</span>
       </div>
-    </section>
-
-    <section id="fit-checker">
-      <div class="wrap">
-        <div class="section-label">Action Query</div>
-        <div class="section-title">Workflow Hardening Fit Checker</div>
-        <div class="section-desc">Use the exact test from modern AI-search strategy: can AI fully satisfy this query without a click? For buying decisions like workflow hardening, the answer is no. This checker qualifies whether the workflow belongs in the Sprint, Pro, or the free OSS path.</div>
-        <div class="fit-shell">
-          <div class="fit-card">
-            <h3>Qualify the workflow</h3>
-            <p>Answer five buyer-relevant questions. The checker stays honest: it recommends free when the workflow is too early, Pro when the problem is mainly shared sync, and the Sprint when the blocker is repeated failure, proof, or rollout trust.</p>
-            <div class="fit-grid">
-              <label class="fit-field">
-                <span>Workflow stage</span>
-                <select id="fit-stage">
-                  <option value="running">Already running</option>
-                  <option value="pilot">Pilot or staging</option>
-                  <option value="exploring">Still exploring</option>
-                </select>
-              </label>
-              <label class="fit-field">
-                <span>Repeated blocker</span>
-                <select id="fit-blocker">
-                  <option value="repeat">Yes, it keeps coming back</option>
-                  <option value="some">Sometimes, but not every run</option>
-                  <option value="none">No, we mostly need education</option>
-                </select>
-              </label>
-              <label class="fit-field">
-                <span>Workflow owner</span>
-                <select id="fit-owner">
-                  <option value="yes">Yes, one owner is clear</option>
-                  <option value="no">No, ownership is still fuzzy</option>
-                </select>
-              </label>
-              <label class="fit-field">
-                <span>Proof requirement</span>
-                <select id="fit-proof">
-                  <option value="yes">Yes, rollout needs proof</option>
-                  <option value="some">Some proof helps</option>
-                  <option value="no">No, this is still informal</option>
-                </select>
-              </label>
-              <label class="fit-field">
-                <span>Shared sync need</span>
-                <select id="fit-sync">
-                  <option value="no">Single builder or machine is fine</option>
-                  <option value="yes">Yes, multiple machines or repos</option>
-                </select>
-              </label>
-              <label class="fit-field">
-                <span>Primary runtime</span>
-                <select id="fit-runtime">
-                  <option value="claude-code">Claude Code</option>
-                  <option value="codex">Codex</option>
-                  <option value="gemini">Gemini</option>
-                  <option value="amp">Amp</option>
-                  <option value="mixed">Mixed runtimes</option>
-                </select>
-              </label>
-            </div>
-            <div class="fit-actions">
-              <button type="button" class="btn btn-primary" id="fit-checker-run">Run Fit Check</button>
-              <a class="btn btn-secondary" data-cta-id="fit_checker_scope" data-cta-placement="fit_checker" data-plan-id="sprint" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md" target="_blank" rel="noreferrer">Review Sprint Scope</a>
-            </div>
-            <p class="fit-note">Qualification aid only. This does not claim measured savings, buyer results, or historical conversion proof.</p>
-          </div>
-          <div class="fit-card">
-            <div class="fit-result-status" id="fit-result-status">Strong Sprint fit</div>
-            <h3 id="fit-result-label">Best path: Workflow Hardening Sprint</h3>
-            <p id="fit-result-summary">One workflow, one owner, and one repeated blocker is the exact case where the Workflow Hardening Sprint is stronger than another round of prompting.</p>
-            <div class="fit-metrics">
-              <div class="fit-metric">
-                <span class="fit-metric-label">AI Can Fully Satisfy This Query Without A Click?</span>
-                <span class="fit-metric-value" id="fit-ai-answer">No. This decision needs your blocker, owner, and rollout context.</span>
-              </div>
-              <div class="fit-metric">
-                <span class="fit-metric-label">SEO Priority</span>
-                <span class="fit-metric-value" id="fit-seo-priority">High-priority action query</span>
-              </div>
-              <div class="fit-metric">
-                <span class="fit-metric-label">Best Revenue Path</span>
-                <span class="fit-metric-value" id="fit-revenue-path">Workflow Hardening Sprint</span>
-              </div>
-            </div>
-            <ul class="fit-result-list" id="fit-result-reasons">
-              <li>A repeated blocker means you need gates and proof, not just a cleaner prompt.</li>
-              <li>One workflow owner makes the Sprint accountable and easier to defend internally.</li>
-              <li>Proof requirements point toward a proof pack and rollout discipline, not a generic memory tool.</li>
-            </ul>
-            <div class="cta-row">
-              <a class="btn btn-primary" id="fit-primary-cta" data-cta-id="fit_checker_sprint" data-cta-placement="fit_checker" data-plan-id="sprint" href="#workflow-sprint-intake">Start Sprint Intake</a>
-              <a class="btn btn-secondary" id="fit-secondary-cta" data-cta-id="fit_checker_proof" data-cta-placement="fit_checker" data-plan-id="proof" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Review Proof Pack</a>
-            </div>
-            <p class="fit-status-line" id="fit-checker-status" aria-live="polite">The checker updates live. Click Run Fit Check to record the recommendation in telemetry.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="claude-desktop">
-      <div class="wrap">
-        <div class="section-label">Distribution</div>
-        <div class="section-title">Publish the same workflow-hardening story as a Claude Desktop extension.</div>
-        <div class="section-desc">Claude Desktop is now a real discovery surface for Claude-first buyers. This repo already ships the local install path, a buildable `.mcpb`, Claude-specific plugin metadata, privacy policy, support links, and proof-backed docs. Use the extension lane for discoverability, not for fake traction claims.</div>
-        <div class="steps-grid">
-          <div class="step">
-            <div class="step-num">1</div>
-            <h3>Install locally today</h3>
-            <p>Use the portable launcher in Claude Desktop now, without waiting for a marketplace reviewer or changing the product story.</p>
-            <code>claude mcp add rlhf -- npx -y mcp-memory-gateway serve</code>
-          </div>
-          <div class="step">
-            <div class="step-num">2</div>
-            <h3>Show the trust layer</h3>
-            <p>Point extension evaluators to the proof pack, public privacy policy, and support surface before you claim that the workflow is ready.</p>
-            <code>VERIFICATION_EVIDENCE.md + /privacy + SECURITY.md</code>
-          </div>
-          <div class="step">
-            <div class="step-num">3</div>
-            <h3>Build the real bundle</h3>
-            <p>Package the actual `.mcpb` before you submit so the extension lane stays aligned with workflow hardening, Pre-Action Gates, and the feedback-to-enforcement pipeline.</p>
-            <code>npm run build:claude-mcpb</code>
-          </div>
-        </div>
-        <div class="cta-row">
-          <a class="btn btn-primary" data-cta-id="claude_desktop_guide" data-cta-placement="claude_desktop" data-plan-id="free" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/.claude-plugin/README.md" target="_blank" rel="noreferrer">Review Claude Extension Guide</a>
-          <a class="btn btn-secondary" data-cta-id="claude_desktop_packet" data-cta-placement="claude_desktop" data-plan-id="proof" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md" target="_blank" rel="noreferrer">Review Submission Packet</a>
-          <a class="btn btn-secondary" data-cta-id="claude_desktop_free" data-cta-placement="claude_desktop" data-plan-id="free" href="https://github.com/IgorGanapolsky/mcp-memory-gateway#claude-desktop-extensions" target="_blank" rel="noreferrer">Install Free</a>
-        </div>
-        <p class="fit-note">Directory inclusion depends on Anthropic review. Do not market this as an approved or official Claude listing until that approval is real.</p>
-      </div>
-    </section>
-
-    <section id="use-cases">
-      <div class="wrap">
-        <div class="section-label">Who Buys This</div>
-        <div class="section-title">Seven high-intent use cases for Claude workflow hardening.</div>
-        <div class="section-desc">The sellable unit is not a generic AI employee. It is one workflow with memory, gates, and proof that a buyer can actually defend in production.</div>
-        <div class="steps-grid">
-          <div class="step">
-            <div class="step-num">1</div>
-            <h3>Code modernization partners</h3>
-            <p>Keep migration rules, repository sharp edges, and verification checks durable across long Claude Code sessions instead of re-explaining them on every repo.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">2</div>
-            <h3>Platform engineering</h3>
-            <p>Turn repeated review pain into repo-wide prevention rules and pre-action gates that make AI delivery safer at team scale.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">3</div>
-            <h3>Agency teams</h3>
-            <p>Keep client-specific constraints, tone, architecture, and approval rules durable so one consultant is not the only person who remembers the landmines.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">4</div>
-            <h3>OSS maintainers</h3>
-            <p>Convert merged PR review comments into reusable lessons so contributors and agents stop hitting the same issue in different files.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">5</div>
-            <h3>AI product teams</h3>
-            <p>Add recall, guardrails, and proof to one real workflow instead of shipping vibe-based agent behavior that nobody can audit later.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">6</div>
-            <h3>DevOps and internal ops</h3>
-            <p>Persist operational lessons and block repeated unsafe actions before they touch production infrastructure or compliance-sensitive systems.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">7</div>
-            <h3>Founders and power users</h3>
-            <p>Resume faster, stop re-teaching the same repo context, and keep one sharp agent aligned through long sessions and repeated delivery loops.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── Before / After ── -->
-    <section>
-      <div class="wrap">
-        <div class="section-label">The Problem</div>
-        <div class="section-title">Resuming is not enough if the agent still repeats the same mistake.</div>
-        <div class="section-desc">Continuity gets you back into the project. Pre-Action Gates keep one sharp agent on task and make the workflow more sellable by adding proof, gates, and repeatable behavior instead of more handoffs, planners, or orchestration layers.</div>
-        <div class="ba-grid">
-          <div class="ba-card before">
-            <span class="ba-tag">Before</span>
-            <h3>Infinite review loop</h3>
-            <div class="flow">
-              Agent pushes broken code<br>
-              <span class="arrow">&darr;</span><br>
-              Bot comments on the PR<br>
-              <span class="arrow">&darr;</span><br>
-              You fix it manually<br>
-              <span class="arrow">&darr;</span><br>
-              Agent pushes again<br>
-              <span class="arrow">&darr;</span><br>
-              Same mistake, different file<br>
-              <span class="arrow">&darr;</span><br>
-              Repeat forever
-            </div>
-          </div>
-          <div class="ba-card after">
-            <span class="ba-tag">After</span>
-            <h3>Gate blocks it first</h3>
-            <div class="flow">
-              Agent tries git push<br>
-              <span class="arrow">&darr;</span><br>
-              Gate blocks the action<br>
-              <span class="arrow">&darr;</span><br>
-              Shows why it was blocked<br>
-              <span class="arrow">&darr;</span><br>
-              Agent fixes the issue<br>
-              <span class="arrow">&darr;</span><br>
-              Clean push, no review cycle<br>
-              <span class="arrow">&darr;</span><br>
-              You save 20 minutes
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="wrap">
-        <div class="section-label">Why It Lands</div>
-        <div class="section-title">AI reliability system, not orchestration layer.</div>
-        <div class="section-desc">Keep the base agent that already feels sharp. Put continuity upstream, let Pre-Action Gates sit underneath the session, and sell the result as workflow hardening for code modernization, PR review, and internal ops.</div>
-        <div class="steps-grid">
-          <div class="step">
-            <div class="step-num">1</div>
-            <h3>Keep one sharp agent</h3>
-            <p>No swarm required. Pre-Action Gates improve one agent's continuity and safety instead of adding subagent coordination overhead.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">2</div>
-            <h3>Pair continuity upstream</h3>
-            <p>Use your editor or resume assistant to reload context. MCP Memory Gateway consumes that context and turns it into actionable recall, prevention rules, and proof.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">3</div>
-            <h3>Block repeat mistakes downstream</h3>
-            <p>Repeated failures become gates and reminders. The system stays out of the way until evidence says the pattern is recurring.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="category">
-      <div class="wrap">
-        <div class="section-label">Category</div>
-        <div class="section-title">Not just another memory server. An AI workflow control plane.</div>
-        <div class="section-desc">Memory recall, agentic RAG, and workflow control solve different layers of the problem. MCP Memory Gateway adds the control layer: recall when it helps, pre-action gates when the same failure returns, and proof-backed rollout when a team has to trust the workflow.</div>
-        <div class="steps-grid">
-          <div class="step">
-            <div class="step-num">1</div>
-            <h3>Memory servers</h3>
-            <p>Good at persistence and retrieval. They store facts and prior context, but they do not stop the next bad tool call or prove rollout behavior.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">2</div>
-            <h3>Agentic RAG</h3>
-            <p>Good at assembling better context. It improves what the agent sees, but it still relies on the model to follow instructions under pressure.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">3</div>
-            <h3>MCP Memory Gateway</h3>
-            <p>Acts as the workflow control plane: semantic recall, pre-action gates, proof-backed runs, and hosted team rollout in the same reliability system.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="offers">
-      <div class="wrap">
-        <div class="section-label">What We Sell</div>
-        <div class="section-title">Start with the Workflow Hardening Sprint. Expand only after the workflow proves out.</div>
-        <div class="section-desc">Start with one workflow, one owner, one proof pack. That keeps the commercial story specific and avoids the generic 'AI employee' trap.</div>
-        <div class="steps-grid">
-          <div class="step">
-            <div class="step-num">A</div>
-            <h3>Claude workflow hardening sprint</h3>
-            <p>Wire memory, gates, and verification into one production workflow so repeated agent failures become prevention rules instead of recurring support tickets. This is the front-line offer.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">B</div>
-            <h3>Code modernization guardrails</h3>
-            <p>Carry migration notes, architecture constraints, and validation checks across long refactor sessions so Claude Code delivery survives real repositories.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">C</div>
-            <h3>Proof-ready rollout pilot</h3>
-            <p>Ship one workflow with machine-readable evidence, buyer-facing diagnostics, and a Pre-Action Gates that can be defended in security and platform reviews.</p>
-          </div>
-        </div>
-        <div class="cta-row">
-          <a class="btn btn-primary" data-cta-id="offers_sprint" data-cta-placement="offers" data-plan-id="sprint" href="#workflow-sprint-intake">Start Sprint Intake</a>
-          <a class="btn btn-secondary" data-cta-id="offers_scope" data-cta-placement="offers" data-plan-id="sprint" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md" target="_blank" rel="noreferrer">See Sprint Scope</a>
-        </div>
-      </div>
-    </section>
-
-    <section id="studio">
-      <div class="wrap">
-        <div class="section-label">Reliability Studio</div>
-        <div class="section-title">Import. Compare. Deploy.</div>
-        <div class="section-desc">Turn the abstract parts of the product into one buyer-legible flow: import workflow evidence, compare the baseline run against the hardened run, then deploy the rule pack and proof links. No model fine-tuning required.</div>
-        <div class="studio-shell">
-          <div class="studio-card">
-            <h3>Import workflow evidence</h3>
-            <p>Start with the artifacts the team already has instead of asking buyers to imagine a new process from scratch.</p>
-            <div class="studio-flow">
-              <div class="studio-step">
-                <strong>Import</strong>
-                <span>PR review threads, CI logs, runbooks, JSONL, and CSV become candidate memories, rules, and proof references.</span>
-              </div>
-              <div class="studio-step">
-                <strong>Normalize</strong>
-                <span>Repeated failures are grouped into workflow blockers, approval boundaries, and candidate pre-action gates.</span>
-              </div>
-              <div class="studio-step">
-                <strong>Score</strong>
-                <span>Commercial truth stays clean because pipeline noise stays separate from actual proof artifacts.</span>
-              </div>
-            </div>
-            <div class="studio-proof-note">Product walkthrough only. This explains the Compare and Deploy flow; it is not live customer telemetry or claimed ROI.</div>
-          </div>
-          <div class="studio-card">
-            <h3>Compare baseline vs hardened run</h3>
-            <p>Show what changes after the Gateway is wired into one workflow, then deploy the resulting rule pack to the runtimes the team already uses.</p>
-            <div class="studio-compare">
-              <div class="studio-grid">
-                <div class="studio-kpi">
-                  <div class="studio-kpi-label">Review Loops</div>
-                  <div class="studio-kpi-value"><span class="from">3</span><span>&rarr;</span><span class="to">0 blocked late</span></div>
-                  <div class="studio-kpi-detail">Pushes get blocked before the same PR failure returns in a different file.</div>
-                </div>
-                <div class="studio-kpi">
-                  <div class="studio-kpi-label">Proof Surface</div>
-                  <div class="studio-kpi-value"><span class="from">none</span><span>&rarr;</span><span class="to">evidence pack</span></div>
-                  <div class="studio-kpi-detail">Reviewers get verification links, machine-readable reports, and a cleaner rollout story.</div>
-                </div>
-                <div class="studio-kpi">
-                  <div class="studio-kpi-label">Operator Drift</div>
-                  <div class="studio-kpi-value"><span class="from">tribal</span><span>&rarr;</span><span class="to">shared pack</span></div>
-                  <div class="studio-kpi-detail">Rules, memory, and gates become portable across Claude Code, Codex, Gemini, and Amp.</div>
-                </div>
-              </div>
-              <div class="studio-deploy">
-                <h4>Deploy outputs</h4>
-                <ul>
-                  <li>Shared reliability rule pack for Claude Code, Codex, Gemini, and Amp.</li>
-                  <li>Workflow proof pack with `VERIFICATION_EVIDENCE.md` and machine-readable reports.</li>
-                  <li>Optional DPO export later, but runtime reliability lands first.</li>
-                </ul>
-              </div>
-            </div>
-            <div class="cta-row">
-              <a class="btn btn-secondary" data-cta-id="studio_proof" data-cta-placement="studio" data-plan-id="proof" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Review Proof Pack</a>
-              <a class="btn btn-secondary" data-cta-id="studio_pro" data-cta-placement="studio" data-plan-id="pro" href="#pricing">Compare with Pro</a>
-              <a class="btn btn-primary" data-cta-id="studio_sprint" data-cta-placement="studio" data-plan-id="sprint" href="#workflow-sprint-intake">Start Compare &amp; Deploy</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="workflow-sprint-intake">
-      <div class="wrap">
-        <div class="section-label">Sprint Intake</div>
-        <div class="section-title">Qualify one workflow in under two minutes.</div>
-        <div class="section-desc">Tell us the workflow, the owner, and the repeated blocker. This writes into a contactable sprint-intake queue instead of disappearing into generic telemetry.</div>
-        <div class="pricing-grid">
-          <div class="price-card pro">
-            <div class="tier-label">Workflow Hardening Sprint</div>
-            <h3>One workflow, one owner, one proof review</h3>
-            <p>Best fit when one Claude-first workflow already matters and the problem is repeated mistakes, rollout hesitation, or weak proof.</p>
-            <form class="intake-form" id="workflow-sprint-form" action="/v1/intake/workflow-sprint" method="post">
-              <input name="ctaId" type="hidden" value="workflow_sprint_intake" />
-              <input name="ctaPlacement" type="hidden" value="workflow_sprint" />
-              <input name="planId" type="hidden" value="sprint" />
-              <input name="page" type="hidden" value="/#workflow-sprint-intake" />
-              <input name="landingPath" type="hidden" value="/" />
-              <div class="intake-grid">
-                <label>
-                  Work email
-                  <input id="sprint-email" name="email" type="email" autocomplete="email" required />
-                </label>
-                <label>
-                  Company
-                  <input id="sprint-company" name="company" type="text" autocomplete="organization" />
-                </label>
-              </div>
-              <label>
-                Workflow
-                <input id="sprint-workflow" name="workflow" type="text" placeholder="Example: PR review, code modernization, incident ops" required />
-              </label>
-              <div class="intake-grid">
-                <label>
-                  Workflow owner
-                  <input id="sprint-owner" name="owner" type="text" placeholder="Who owns the outcome?" required />
-                </label>
-                <label>
-                  Current agent or runtime
-                  <input id="sprint-runtime" name="runtime" type="text" placeholder="Claude Code, Codex, Gemini, Amp" required />
-                </label>
-              </div>
-              <label>
-                Biggest repeated failure or rollout blocker
-                <textarea id="sprint-blocker" name="blocker" maxlength="1000" placeholder="Describe the failure pattern, approval problem, or trust gap that keeps this workflow from shipping." required></textarea>
-              </label>
-              <label>
-                Optional detail
-                <textarea id="sprint-note" name="note" maxlength="1000" placeholder="Anything else that would help us qualify the sprint quickly: compliance constraints, rollout pressure, current workaround, or proof requirement."></textarea>
-              </label>
-              <div class="buyer-feedback-actions">
-                <button type="submit" class="btn btn-primary" id="workflow-sprint-submit" data-cta-id="workflow_sprint_intake" data-cta-placement="workflow_sprint" data-plan-id="sprint">Submit Sprint Intake</button>
-                <a class="btn btn-secondary" data-cta-id="workflow_sprint_brief" data-cta-placement="workflow_sprint" data-plan-id="sprint" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md" target="_blank" rel="noreferrer">Review Sprint Brief</a>
-                <a class="btn btn-secondary" id="workflow-sprint-proof" data-cta-id="workflow_sprint_proof" data-cta-placement="workflow_sprint" data-plan-id="proof" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Review Proof Pack</a>
-              </div>
-              <p class="buyer-feedback-status" id="workflow-sprint-status" aria-live="polite">No sprint intake submitted yet.</p>
-            </form>
-          </div>
-          <div class="price-card">
-            <div class="tier-label">Need immediate access?</div>
-            <h3>Start with Pro today</h3>
-            <p>Self-serve Pro is still the fastest paid path if you want hosted synced memory right now. Use the sprint when the blocker is workflow reliability, buyer proof, or rollout discipline.</p>
-            <ul>
-              <li>Use Pro when you need hosted synced memory immediately.</li>
-              <li>Use the sprint when one workflow needs proof, gates, and rollout support.</li>
-              <li>Both paths point to the same commercial truth and verification evidence.</li>
-            </ul>
-            <a class="btn btn-secondary" href="#pricing">Compare with Pro</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── How it works ── -->
-    <section id="how">
-      <div class="wrap">
-        <div class="section-label">How It Works</div>
-        <div class="section-title">Three steps. No orchestration tax.</div>
-        <div class="section-desc">Set up in under a minute. The system learns from your feedback and auto-promotes repeated failures into warning and blocking rules while staying out of the agent's way.</div>
-        <div class="steps-grid">
-          <div class="step">
-            <div class="step-num">1</div>
-            <h3>One command setup</h3>
-            <p>Initialize the gateway for your agent. Creates the MCP config, hooks, and local reliability layer without adding another planner or swarm.</p>
-            <code>npx mcp-memory-gateway init --agent claude-code</code>
-          </div>
-          <div class="step">
-            <div class="step-num">2</div>
-            <h3>Give feedback</h3>
-            <p>Thumbs up or down on agent actions. The system captures what worked and what failed, building your pattern library.</p>
-            <code>mcp__rlhf__capture_feedback(signal=down, context="pushed without tests")</code>
-          </div>
-          <div class="step">
-            <div class="step-num">3</div>
-            <h3>Gates auto-promote</h3>
-            <p>When a failure pattern repeats 3 times, it warns. At 5, it blocks. No manual config needed.</p>
-            <code>3 failures &rarr; warn gate, 5 failures &rarr; blocking gate</code>
-          </div>
-        </div>
-
-        <!-- Dashboard preview -->
-        <div class="dashboard">
-          <div class="dashboard-header">
-            <div class="dot-row"><span></span><span></span><span></span></div>
-            mcp-memory-gateway dashboard
-          </div>
-          <div class="dashboard-body">
-            <div class="metric">
-              <span class="label">Approval Rate:</span>
-              <span class="val">26%</span>
-              <span class="arrow">&rarr;</span>
-              <span class="val up">45%</span>
-              <span class="label">(7-day trend)</span>
-            </div>
-            <div class="metric">
-              <span class="label">Active Gates:</span>
-              <span class="val">7</span>
-              <span class="label">(4 manual, 3 auto-promoted)</span>
-            </div>
-            <div class="metric">
-              <span class="label">Actions Blocked:</span>
-              <span class="val">12</span>
-              <span class="label">this week</span>
-            </div>
-            <div class="metric">
-              <span class="label">Estimated Time Saved:</span>
-              <span class="val up">3.2 hours</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── Social proof strip ── -->
-    <div class="proof-strip">
-      <div class="wrap" style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;">
-        <a class="proof-item" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer"><strong>Verification</strong> evidence published</a>
-        <span class="proof-item"><strong>CLI + API + MCP</strong> same reliability layer</span>
-        <span class="proof-item"><strong>Claude, Codex, Gemini, Amp</strong> supported</span>
-        <span class="proof-item"><strong>Code modernization</strong> and workflow hardening fit</span>
-        <span class="proof-item"><strong>No subagent handoff tax</strong> by default</span>
-        <span class="proof-item"><strong>Continuity tools</strong> pair cleanly upstream</span>
-        <span class="proof-item"><strong>MIT</strong> licensed</span>
-        <span class="proof-item"><strong>Local-first</strong> or hosted Pro</span>
+      <div class="code-body">
+        <div><span class="comment"># Install in 30 seconds</span></div>
+        <div><span class="fn">npx</span> mcp-memory-gateway init</div>
+        <div>&nbsp;</div>
+        <div><span class="comment"># Your agent tries to delete production db...</span></div>
+        <div><span class="keyword">⛔ Gate blocked:</span> <span class="string">"Never run DROP on production tables"</span></div>
+        <div><span class="comment"># Rule auto-generated from your previous 👎</span></div>
+        <div>&nbsp;</div>
+        <div><span class="comment"># Works with your existing setup</span></div>
+        <div><span class="fn">claude</span> <span class="string">--mcp mcp-memory-gateway</span></div>
       </div>
     </div>
+  </div>
+</section>
 
-    <!-- ── Pricing ── -->
-    <section class="pricing" id="pricing">
-      <div class="wrap">
-        <div class="section-label">Pricing</div>
-        <div class="section-title">Free forever. Pro when you need it.</div>
-        <div class="section-desc">The local CLI handles single-machine use without another coordination stack. The self-serve Starter Pack covers verified consolidations and cloud sync. Workflow Hardening Sprint is the named-pilot path when a team needs proof-backed rollout hardening for one critical workflow.</div>
-        <div class="pricing-grid">
-          <div class="price-card">
-            <div class="tier-label">Free</div>
-            <h3>Local</h3>
-            <div class="price-amount">$0 <small>/ forever</small></div>
-            <ul>
-              <li>500 memories, 100 retrievals/day</li>
-              <li>5 built-in gates</li>
-              <li>Single user, single machine</li>
-              <li>DPO/KTO export for fine-tuning</li>
-              <li>CLI dashboard</li>
-            </ul>
-            <a class="btn btn-secondary" data-cta-id="pricing_free" data-cta-placement="pricing" data-plan-id="free" href="https://github.com/IgorGanapolsky/mcp-memory-gateway#quick-start" target="_blank" rel="noreferrer">Get Started</a>
-          </div>
-          <div class="price-card pro">
-            <div class="tier-label">One-Time</div>
-            <h3>Mistake-Free Starter Pack</h3>
-            <div class="price-amount">$49 <small>/ one-time</small></div>
-            <ul>
-              <li><strong>500 "Mistake-Free" Credits</strong> (Verified Consolidations)</li>
-              <li>NVIDIA Five-Vendor Framework alignment</li>
-              <li>Cloud-synced memories from any machine</li>
-              <li>Team sharing of prevention rules</li>
-              <li>Usage dashboard (Credits, retrievals, semantic cache hit rate, reused context tokens)</li>
-              <li>Unlimited custom gates with auto-gate promotion</li>
-              <li>Priority support</li>
-            </ul>
-            <a class="btn btn-primary" id="pro-cta" data-cta-id="pricing_pro" data-cta-placement="pricing" data-plan-id="pro" href="/checkout/pro?packId=mistake-free-starter&utm_source=website&utm_medium=cta_button&utm_campaign=pro_pack" target="_blank" rel="noreferrer">Get Starter Pack &mdash; $49</a>
-            <a class="btn btn-secondary" data-cta-id="pricing_sprint" data-cta-placement="pricing" data-plan-id="sprint" href="#workflow-sprint-intake">Start Sprint Intake</a>
-          </div>
-        </div>
-        <div class="buyer-feedback" id="buyer-feedback">
-          <h3>Not buying yet?</h3>
-          <p>Tell us what is blocking the decision. This feeds the buyer-diagnostics layer so pricing, proof, and onboarding can be tightened with evidence instead of guesses.</p>
-          <div class="buyer-feedback-grid">
-            <button type="button" data-loss-reason="too_expensive">Too expensive</button>
-            <button type="button" data-loss-reason="not_ready">Not ready yet</button>
-            <button type="button" data-loss-reason="need_team_features">Need team features</button>
-            <button type="button" data-loss-reason="missing_trust">Need more proof</button>
-            <button type="button" data-loss-reason="using_oss">OSS is enough for now</button>
-          </div>
-          <textarea id="buyer-feedback-note" maxlength="280" placeholder="Optional context: workflow, blocker, team size, or what would make the purchase a yes."></textarea>
-          <div class="buyer-feedback-actions">
-            <button type="button" class="buyer-feedback-submit" id="buyer-feedback-submit">Send buyer feedback</button>
-            <span class="buyer-feedback-status" id="buyer-feedback-status" aria-live="polite"></span>
-          </div>
-          <noscript><p>JavaScript is off, so this quick buyer-feedback capture is unavailable. The direct checkout link still works.</p></noscript>
-        </div>
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="container">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title">Start free. Go Pro when you're ready.</h2>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="tier">Free</div>
+        <div class="price">$0</div>
+        <div class="price-sub">Forever free · Local only</div>
+        <ul>
+          <li>500 memories</li>
+          <li>100 retrievals / day</li>
+          <li>5 built-in gates</li>
+          <li>All MCP integrations</li>
+          <li>Local storage only</li>
+        </ul>
+        <a href="https://www.npmjs.com/package/mcp-memory-gateway" target="_blank" rel="noopener" class="btn-free">Install Free</a>
       </div>
-    </section>
-  </main>
-
-  <footer>
-    <div class="footer-inner">
-      <div>mcp-memory-gateway v0.7.0 &middot; MIT License</div>
-      <div class="footer-links">
-        <a href="https://github.com/IgorGanapolsky/mcp-memory-gateway" target="_blank" rel="noreferrer">GitHub</a>
-        <a href="https://www.npmjs.com/package/mcp-memory-gateway" target="_blank" rel="noreferrer">npm</a>
-        <a href="https://github.com/sponsors/IgorGanapolsky" target="_blank" rel="noreferrer">Sponsor</a>
+      <div class="price-card pro">
+        <div class="tier">Pro</div>
+        <div class="price">$49</div>
+        <div class="price-sub">One-time payment · Lifetime access</div>
+        <ul>
+          <li>Unlimited memories</li>
+          <li>Unlimited retrievals</li>
+          <li>Unlimited custom gates</li>
+          <li>Cloud-synced memories</li>
+          <li>Team sharing</li>
+          <li>Priority support</li>
+        </ul>
+        <a href="https://buy.stripe.com/bJe28rfCY6zc4lH7mb3sI04" class="btn-pro">Get Pro — $49</a>
       </div>
     </div>
-  </footer>
-  <script>
-    (function () {
-      const checkoutCta = document.getElementById('pro-cta');
-      const trackedCtas = Array.prototype.slice.call(document.querySelectorAll('[data-cta-id]'));
-      const fallbackBase = '__CHECKOUT_FALLBACK_URL__';
-      const buyerFeedback = document.getElementById('buyer-feedback');
-      const buyerFeedbackNote = document.getElementById('buyer-feedback-note');
-      const buyerFeedbackSubmit = document.getElementById('buyer-feedback-submit');
-      const buyerFeedbackStatus = document.getElementById('buyer-feedback-status');
-      const workflowSprintForm = document.getElementById('workflow-sprint-form');
-      const workflowSprintSubmit = document.getElementById('workflow-sprint-submit');
-      const workflowSprintStatus = document.getElementById('workflow-sprint-status');
-      const fitStage = document.getElementById('fit-stage');
-      const fitBlocker = document.getElementById('fit-blocker');
-      const fitOwner = document.getElementById('fit-owner');
-      const fitProof = document.getElementById('fit-proof');
-      const fitSync = document.getElementById('fit-sync');
-      const fitRuntime = document.getElementById('fit-runtime');
-      const fitCheckerRun = document.getElementById('fit-checker-run');
-      const fitResultStatus = document.getElementById('fit-result-status');
-      const fitResultLabel = document.getElementById('fit-result-label');
-      const fitResultSummary = document.getElementById('fit-result-summary');
-      const fitResultReasons = document.getElementById('fit-result-reasons');
-      const fitAiAnswer = document.getElementById('fit-ai-answer');
-      const fitSeoPriority = document.getElementById('fit-seo-priority');
-      const fitRevenuePath = document.getElementById('fit-revenue-path');
-      const fitPrimaryCta = document.getElementById('fit-primary-cta');
-      const fitSecondaryCta = document.getElementById('fit-secondary-cta');
-      const fitCheckerStatus = document.getElementById('fit-checker-status');
-      const serverVisitorId = '__SERVER_VISITOR_ID__';
-      const serverSessionId = '__SERVER_SESSION_ID__';
-      const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
-      const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
-      const proofPackUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md';
-      const sprintScopeUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md';
-      const quickstartUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway#quick-start';
-      const commercialTruthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
-      let selectedLossReason = null;
-      let activeCheckoutTraceId = null;
-
-      function getStorageValue(storage, storageKey) {
-        try {
-          return storage.getItem(storageKey);
-        } catch (err) {
-          return null;
-        }
-      }
-
-      function setStorageValue(storage, storageKey, value) {
-        try {
-          storage.setItem(storageKey, value);
-        } catch (err) {
-          // Storage can be unavailable in hardened browsers; keep operating with in-memory values.
-        }
-      }
-
-      function secureRandomHex(byteLength) {
-        const cryptoApi = window.crypto || window.msCrypto;
-        if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
-          return cryptoApi.randomUUID().replace(/-/g, '');
-        }
-        if (cryptoApi && typeof cryptoApi.getRandomValues === 'function') {
-          const bytes = new Uint8Array(byteLength);
-          cryptoApi.getRandomValues(bytes);
-          return Array.from(bytes, function(byte) {
-            return byte.toString(16).padStart(2, '0');
-          }).join('');
-        }
-        throw new Error('Secure randomness unavailable');
-      }
-
-      function getStoredId(storage, storageKey, prefix, seedValue) {
-        const existing = getStorageValue(storage, storageKey);
-        if (existing) return existing;
-        const generated = seedValue || (prefix + secureRandomHex(16));
-        setStorageValue(storage, storageKey, generated);
-        return generated;
-      }
-
-      function getInstallId() {
-        return getStoredId(window.localStorage, 'rlhf_install_id', 'inst_');
-      }
-
-      function getVisitorId() {
-        return getStoredId(window.localStorage, 'rlhf_visitor_id', 'visitor_', serverVisitorId || null);
-      }
-
-      function getSessionId() {
-        return getStoredId(window.sessionStorage, 'rlhf_session_id', 'session_', serverSessionId || null);
-      }
-
-      function getAcquisitionId() {
-        return getStoredId(window.sessionStorage, 'rlhf_acquisition_id', 'acq_', serverAcquisitionId || null);
-      }
-
-      function createEphemeralId(prefix) {
-        return prefix + secureRandomHex(16);
-      }
-
-      function parseReferrerHost(referrer) {
-        if (!referrer) return null;
-        try {
-          return new URL(referrer).host || null;
-        } catch (err) {
-          return null;
-        }
-      }
-
-      function parseRedditCommunity(referrer) {
-        if (!referrer) return null;
-        try {
-          const ref = new URL(referrer);
-          const parts = ref.pathname.split('/').filter(Boolean);
-          const index = parts.findIndex(function (part) { return part.toLowerCase() === 'r'; });
-          if (index !== -1 && parts[index + 1]) {
-            return parts[index + 1];
-          }
-        } catch (err) {
-          return null;
-        }
-        return null;
-      }
-
-      function inferSearchSurface(referrerHost) {
-        if (!referrerHost) return null;
-        const normalizedHost = referrerHost.toLowerCase();
-        if (/(^|\.)reddit\.com$/.test(normalizedHost) || normalizedHost === 'redd.it') return 'reddit';
-        if (/(^|\.)google\.com$/.test(normalizedHost)) return 'google_search';
-        if (/(^|\.)bing\.com$/.test(normalizedHost)) return 'bing_search';
-        if (/(^|\.)duckduckgo\.com$/.test(normalizedHost)) return 'duckduckgo_search';
-        if (/(^|\.)search\.yahoo\.com$/.test(normalizedHost)) return 'yahoo_search';
-        if (/(^|\.)search\.brave\.com$/.test(normalizedHost)) return 'brave_search';
-        if (/(^|\.)ecosia\.org$/.test(normalizedHost)) return 'ecosia_search';
-        if (/(^|\.)perplexity\.ai$/.test(normalizedHost)) return 'perplexity';
-        if (normalizedHost === 'chat.openai.com' || normalizedHost === 'chatgpt.com' || /(^|\.)chatgpt\.com$/.test(normalizedHost)) return 'chatgpt';
-        if (normalizedHost === 'claude.ai' || /(^|\.)claude\.ai$/.test(normalizedHost)) return 'claude';
-        if (normalizedHost === 'gemini.google.com' || /(^|\.)gemini\.google\.com$/.test(normalizedHost)) return 'gemini';
-        return null;
-      }
-
-      function inferSource(referrerHost) {
-        const surface = inferSearchSurface(referrerHost);
-        if (surface === 'reddit') return 'reddit';
-        if (surface && /_search$/.test(surface)) return 'organic_search';
-        if (surface) return 'ai_search';
-        return 'website';
-      }
-
-      function inferSearchQuery(referrer) {
-        if (!referrer) return null;
-        try {
-          const ref = new URL(referrer);
-          const keys = ['q', 'query', 'p'];
-          for (const key of keys) {
-            const value = ref.searchParams.get(key);
-            if (value && value.trim()) {
-              return value.trim().slice(0, 160);
-            }
-          }
-        } catch (err) {
-          return null;
-        }
-        return null;
-      }
-
-      function getAttributionValue(params, key, fallbackValue) {
-        const value = params.get(key);
-        return value && value.trim() ? value.trim() : fallbackValue;
-      }
-
-      function buildAttribution(ctaId, defaults) {
-        const params = new URLSearchParams(window.location.search);
-        const safeDefaults = defaults && typeof defaults === 'object' ? defaults : {};
-        const referrer = document.referrer || null;
-        const referrerHost = parseReferrerHost(referrer);
-        const seoSurface = inferSearchSurface(referrerHost);
-        const inferredSource = inferSource(referrerHost);
-        const utmSource = getAttributionValue(params, 'utm_source', safeDefaults.source || safeDefaults.utmSource || inferredSource);
-        const community = getAttributionValue(
-          params,
-          'community',
-          getAttributionValue(params, 'subreddit', parseRedditCommunity(referrer))
-        );
-        return {
-          source: utmSource,
-          utmSource: utmSource,
-          utmMedium: getAttributionValue(params, 'utm_medium', safeDefaults.utmMedium || (utmSource === 'reddit' ? 'organic_social' : 'cta_button')),
-          utmCampaign: getAttributionValue(params, 'utm_campaign', safeDefaults.utmCampaign || (utmSource === 'reddit' ? 'reddit_organic' : 'pro_pack')),
-          utmContent: getAttributionValue(params, 'utm_content', safeDefaults.utmContent || ctaId),
-          utmTerm: getAttributionValue(params, 'utm_term', safeDefaults.utmTerm || null),
-          community: community,
-          postId: getAttributionValue(params, 'post_id', safeDefaults.postId || null),
-          commentId: getAttributionValue(params, 'comment_id', safeDefaults.commentId || null),
-          campaignVariant: getAttributionValue(params, 'campaign_variant', safeDefaults.campaignVariant || null),
-          offerCode: getAttributionValue(params, 'offer_code', safeDefaults.offerCode || null),
-          referrer: referrer,
-          referrerHost: referrerHost,
-          seoSurface: getAttributionValue(params, 'seo_surface', safeDefaults.seoSurface || seoSurface),
-          seoQuery: getAttributionValue(params, 'seo_query', safeDefaults.seoQuery || inferSearchQuery(referrer)),
-          landingPath: window.location.pathname,
-          ctaId: ctaId
-        };
-      }
-
-      const gaMeasurementId = '__GA_MEASUREMENT_ID__';
-
-      function trackGaEvent(eventName, payload) {
-        if (!gaMeasurementId || typeof window.gtag !== 'function') {
-          return;
-        }
-
-        window.gtag('event', eventName, Object.assign({
-          page_path: window.location.pathname,
-          page_title: document.title
-        }, payload || {}));
-      }
-
-      function sendTelemetry(eventName, extra) {
-        const payload = Object.assign({
-          eventType: eventName,
-          clientType: 'web',
-          installId: getInstallId(),
-          visitorId: getVisitorId(),
-          sessionId: getSessionId(),
-          acquisitionId: getAcquisitionId(),
-          version: '__PACKAGE_VERSION__',
-          pageTitle: document.title,
-          page: window.location.pathname,
-          userAgent: navigator.userAgent
-        }, buildAttribution(extra && extra.ctaId ? extra.ctaId : null), extra || {});
-
-        const body = JSON.stringify(payload);
-        if (navigator.sendBeacon) {
-          const blob = new Blob([body], { type: 'application/json' });
-          navigator.sendBeacon('/v1/telemetry/ping', blob);
-          return;
-        }
-
-        fetch('/v1/telemetry/ping', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: body,
-          keepalive: true
-        }).catch(function () {});
-      }
-
-      function buildFallbackUrl(attribution, checkoutTraceId) {
-        const url = new URL(fallbackBase);
-        url.searchParams.set('utm_source', attribution.utmSource || attribution.source || 'website');
-        url.searchParams.set('utm_medium', attribution.utmMedium || 'cta_button');
-        url.searchParams.set('utm_campaign', attribution.utmCampaign || 'pro_pack');
-        if (attribution.utmContent) url.searchParams.set('utm_content', attribution.utmContent);
-        if (attribution.utmTerm) url.searchParams.set('utm_term', attribution.utmTerm);
-        if (attribution.community) url.searchParams.set('community', attribution.community);
-        if (attribution.postId) url.searchParams.set('post_id', attribution.postId);
-        if (attribution.commentId) url.searchParams.set('comment_id', attribution.commentId);
-        if (attribution.campaignVariant) url.searchParams.set('campaign_variant', attribution.campaignVariant);
-        if (attribution.offerCode) url.searchParams.set('offer_code', attribution.offerCode);
-        if (checkoutTraceId) url.searchParams.set('trace_id', checkoutTraceId);
-        url.searchParams.set('acquisition_id', getAcquisitionId());
-        url.searchParams.set('visitor_id', getVisitorId());
-        url.searchParams.set('session_id', getSessionId());
-        url.searchParams.set('install_id', getInstallId());
-        if (attribution.landingPath) url.searchParams.set('landing_path', attribution.landingPath);
-        if (attribution.referrerHost) url.searchParams.set('referrer_host', attribution.referrerHost);
-        if (attribution.ctaId) url.searchParams.set('cta_id', attribution.ctaId);
-        return url.toString();
-      }
-
-      function updateCampaignBanner(attribution) {
-        const banner = document.getElementById('campaign-banner');
-        const copy = document.getElementById('campaign-banner-copy');
-        if (!banner || !copy || attribution.utmSource !== 'reddit') return;
-
-        const communityLabel = attribution.community ? 'r/' + attribution.community : 'this Reddit thread';
-        const offerLabel = attribution.offerCode ? ' Use code ' + attribution.offerCode + ' if the thread includes it.' : '';
-        copy.textContent = 'You came from ' + communityLabel + '. Self-hosted is free, and hosted attribution for this thread will flow through checkout.' + offerLabel;
-        banner.hidden = false;
-      }
-
-      function recordBuyerReason(reasonCode, reasonText) {
-        sendTelemetry('reason_not_buying', {
-          ctaId: checkoutCta && checkoutCta.dataset ? checkoutCta.dataset.ctaId || 'pricing_pro' : 'pricing_pro',
-          ctaPlacement: checkoutCta && checkoutCta.dataset ? checkoutCta.dataset.ctaPlacement || 'pricing' : 'pricing',
-          planId: checkoutCta && checkoutCta.dataset ? checkoutCta.dataset.planId || 'pro' : 'pro',
-          reasonCode: reasonCode || 'unspecified',
-          reasonText: reasonText && reasonText.trim() ? reasonText.trim() : null,
-          traceId: activeCheckoutTraceId
-        });
-        trackGaEvent('reason_not_buying', {
-          reason_code: reasonCode || 'unspecified',
-          reason_detail: reasonText && reasonText.trim() ? reasonText.trim().slice(0, 120) : null,
-          cta_id: checkoutCta && checkoutCta.dataset ? checkoutCta.dataset.ctaId || 'pricing_pro' : 'pricing_pro'
-        });
-
-        if (window.plausible) {
-          window.plausible('Buyer Feedback Submitted', {
-            props: {
-              reasonCode: reasonCode || 'unspecified',
-              ctaId: checkoutCta && checkoutCta.dataset ? checkoutCta.dataset.ctaId || 'pricing_pro' : 'pricing_pro'
-            }
-          });
-        }
-      }
-
-      function setWorkflowSprintStatus(message) {
-        if (workflowSprintStatus) {
-          workflowSprintStatus.textContent = message;
-        }
-      }
-
-      async function submitWorkflowSprintIntake(event) {
-        event.preventDefault();
-        if (!workflowSprintForm || !workflowSprintSubmit) return;
-
-        const formData = new FormData(workflowSprintForm);
-        const ctaId = workflowSprintSubmit.dataset.ctaId || 'workflow_sprint_intake';
-        const attribution = buildAttribution(ctaId, {
-          source: 'website',
-          utmMedium: 'workflow_sprint_intake',
-          utmCampaign: 'workflow_hardening_sprint',
-          utmContent: 'workflow_sprint_form'
-        });
-        const traceId = createEphemeralId('sprint_');
-        const payload = {
-          email: formData.get('email'),
-          company: formData.get('company'),
-          workflow: formData.get('workflow'),
-          owner: formData.get('owner'),
-          runtime: formData.get('runtime'),
-          blocker: formData.get('blocker'),
-          note: formData.get('note'),
-          installId: getInstallId(),
-          visitorId: getVisitorId(),
-          sessionId: getSessionId(),
-          acquisitionId: getAcquisitionId(),
-          traceId: traceId,
-          ctaId: ctaId,
-          ctaPlacement: workflowSprintSubmit.dataset.ctaPlacement || 'workflow_sprint',
-          planId: workflowSprintSubmit.dataset.planId || 'sprint',
-          page: window.location.pathname,
-          landingPath: attribution.landingPath,
-          referrer: attribution.referrer,
-          referrerHost: attribution.referrerHost,
-          source: attribution.source,
-          utmSource: attribution.utmSource,
-          utmMedium: attribution.utmMedium || 'workflow_sprint_intake',
-          utmCampaign: attribution.utmCampaign || 'workflow_hardening_sprint',
-          utmContent: attribution.utmContent || 'workflow_sprint_form',
-          utmTerm: attribution.utmTerm,
-          community: attribution.community,
-          postId: attribution.postId,
-          commentId: attribution.commentId,
-          campaignVariant: attribution.campaignVariant,
-          offerCode: attribution.offerCode
-        };
-
-        workflowSprintSubmit.disabled = true;
-        workflowSprintSubmit.setAttribute('aria-busy', 'true');
-        setWorkflowSprintStatus('Submitting sprint intake...');
-
-        try {
-          const response = await fetch('/v1/intake/workflow-sprint', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          const result = await response.json().catch(function () { return {}; });
-          if (!response.ok) {
-            throw new Error(result && result.detail ? result.detail : 'Unable to submit sprint intake.');
-          }
-
-          workflowSprintForm.reset();
-          setWorkflowSprintStatus('Sprint intake captured. Review the proof pack while we follow up.');
-          trackGaEvent('generate_lead', {
-            lead_type: 'workflow_sprint',
-            cta_id: ctaId,
-            cta_placement: payload.ctaPlacement,
-            traffic_channel: attribution.source || 'website'
-          });
-          if (window.plausible) {
-            window.plausible('Workflow Sprint Intake Submitted', {
-              props: {
-                source: attribution.source || 'website',
-                ctaId: ctaId
-              }
-            });
-          }
-        } catch (err) {
-          sendTelemetry('workflow_sprint_lead_failed', {
-            ctaId: ctaId,
-            ctaPlacement: workflowSprintSubmit.dataset.ctaPlacement || 'workflow_sprint',
-            planId: workflowSprintSubmit.dataset.planId || 'sprint',
-            traceId: traceId,
-            failureCode: err && err.message ? err.message : 'workflow_sprint_lead_failed',
-            httpStatus: err && err.httpStatus ? err.httpStatus : null
-          });
-          setWorkflowSprintStatus(err && err.message ? err.message : 'Unable to submit sprint intake right now.');
-        } finally {
-          workflowSprintSubmit.disabled = false;
-          workflowSprintSubmit.removeAttribute('aria-busy');
-        }
-      }
-
-      function readFitState() {
-        return {
-          stage: fitStage ? fitStage.value : 'running',
-          blocker: fitBlocker ? fitBlocker.value : 'repeat',
-          owner: fitOwner ? fitOwner.value : 'yes',
-          proof: fitProof ? fitProof.value : 'yes',
-          sync: fitSync ? fitSync.value : 'no',
-          runtime: fitRuntime ? fitRuntime.value : 'claude-code'
-        };
-      }
-
-      function getRuntimeLabel(runtime) {
-        if (runtime === 'codex') return 'Codex';
-        if (runtime === 'gemini') return 'Gemini';
-        if (runtime === 'amp') return 'Amp';
-        if (runtime === 'mixed') return 'mixed runtimes';
-        return 'Claude Code';
-      }
-
-      function computeFitRecommendation(state) {
-        const reasons = [];
-        const runtimeLabel = getRuntimeLabel(state.runtime);
-        let sprintScore = 0;
-        let proScore = 0;
-        let freeScore = 0;
-
-        if (state.stage === 'running') {
-          sprintScore += 2;
-          proScore += 1;
-          reasons.push('The workflow already exists, so you are hardening a real delivery loop instead of inventing one.');
-        } else if (state.stage === 'pilot') {
-          sprintScore += 1;
-          proScore += 1;
-          reasons.push('Pilot-stage workflows can justify a paid path when the blocker is trust, rollout risk, or cross-machine consistency.');
-        } else {
-          freeScore += 3;
-          reasons.push('Exploratory workflows usually need free signal capture first, not a paid rollout motion.');
-        }
-
-        if (state.blocker === 'repeat') {
-          sprintScore += 3;
-          reasons.push('A repeated blocker is a Sprint signal: gates, proof, and memory beat another prompt rewrite.');
-        } else if (state.blocker === 'some') {
-          sprintScore += 1;
-          proScore += 1;
-          reasons.push('The blocker is real but not dominant yet, so shared reliability or a lighter hosted path may be enough.');
-        } else {
-          freeScore += 2;
-          reasons.push('If there is no repeated blocker yet, the paid wedge is weak today.');
-        }
-
-        if (state.owner === 'yes') {
-          sprintScore += 2;
-          reasons.push('One workflow owner makes the Sprint accountable and easier to defend internally.');
-        } else {
-          freeScore += 2;
-          reasons.push('No clear owner means the workflow is not ready for a services-led sprint sale.');
-        }
-
-        if (state.proof === 'yes') {
-          sprintScore += 2;
-          reasons.push('If rollout needs proof or auditability, the Sprint is stronger than a generic self-serve pitch.');
-        } else if (state.proof === 'some') {
-          sprintScore += 1;
-          proScore += 1;
-          reasons.push('Some proof need exists, but it may be satisfied by a lighter hosted path first.');
-        } else {
-          proScore += 1;
-          freeScore += 1;
-        }
-
-        if (state.sync === 'yes') {
-          proScore += 3;
-          reasons.push(runtimeLabel + ' across multiple machines or repos benefits from Pro\'s shared memory and rules.');
-        } else {
-          freeScore += 1;
-        }
-
-        if (state.stage !== 'exploring' && state.owner === 'yes' && state.blocker === 'repeat' && state.proof !== 'no') {
-          return {
-            recommendation: 'sprint',
-            status: 'Strong Sprint fit',
-            label: 'Best path: Workflow Hardening Sprint',
-            summary: 'You already have a real workflow with a repeated blocker. The missing piece is proof, gates, and rollout discipline.',
-            aiAnswer: 'No. This decision needs your blocker, owner, and rollout context.',
-            seoPriority: 'High-priority action query',
-            revenuePath: 'Workflow Hardening Sprint',
-            reasons,
-            primary: {
-              text: 'Start Sprint Intake',
-              href: '#workflow-sprint-intake',
-              ctaId: 'fit_checker_sprint',
-              planId: 'sprint'
-            },
-            secondary: {
-              text: 'Review Proof Pack',
-              href: proofPackUrl,
-              ctaId: 'fit_checker_proof',
-              planId: 'proof'
-            }
-          };
-        }
-
-        if (state.sync === 'yes' && state.owner === 'yes' && state.blocker !== 'repeat' && proScore >= freeScore) {
-          return {
-            recommendation: 'pro',
-            status: 'Best Pro fit',
-            label: 'Best path: Pro first',
-            summary: 'The workflow mostly needs shared memory, synced rules, and a cleaner hosted path across machines.',
-            aiAnswer: 'Not fully. AI can explain the product, but the buyer still needs an account, sync path, and operator setup.',
-            seoPriority: 'High-priority action query',
-            revenuePath: 'Pro at $49 one-time',
-            reasons,
-            primary: {
-              text: 'Compare with Pro',
-              href: '#pricing',
-              ctaId: 'fit_checker_pro',
-              planId: 'pro'
-            },
-            secondary: {
-              text: 'Review Commercial Truth',
-              href: commercialTruthUrl,
-              ctaId: 'fit_checker_truth',
-              planId: 'proof'
-            }
-          };
-        }
-
-        return {
-          recommendation: 'free',
-          status: 'Best OSS fit',
-          label: 'Best path: Start free',
-          summary: 'The workflow is still early. Use the free OSS path to capture signals until a repeated blocker or rollout need becomes concrete.',
-          aiAnswer: 'Mostly yes. This is still closer to education and evaluation than to a paid operational decision.',
-          seoPriority: 'Support content only',
-          revenuePath: 'Free OSS path for now',
-          reasons,
-          primary: {
-            text: 'Get Started Free',
-            href: quickstartUrl,
-            ctaId: 'fit_checker_free',
-            planId: 'free'
-          },
-          secondary: {
-            text: 'Review Sprint Scope',
-            href: sprintScopeUrl,
-            ctaId: 'fit_checker_scope_secondary',
-            planId: 'sprint'
-          }
-        };
-      }
-
-      function renderFitRecommendation(result) {
-        if (!result) return;
-        if (fitResultStatus) fitResultStatus.textContent = result.status;
-        if (fitResultLabel) fitResultLabel.textContent = result.label;
-        if (fitResultSummary) fitResultSummary.textContent = result.summary;
-        if (fitAiAnswer) fitAiAnswer.textContent = result.aiAnswer;
-        if (fitSeoPriority) fitSeoPriority.textContent = result.seoPriority;
-        if (fitRevenuePath) fitRevenuePath.textContent = result.revenuePath;
-        if (fitResultReasons) {
-          fitResultReasons.innerHTML = result.reasons.map(function (reason) {
-            return '<li>' + reason
-              .replaceAll('&', '&amp;')
-              .replaceAll('<', '&lt;')
-              .replaceAll('>', '&gt;') + '</li>';
-          }).join('');
-        }
-        function syncFitCtaLink(link, href) {
-          const isExternalLink = /^https?:\/\//.test(href);
-          link.href = href;
-          if (isExternalLink) {
-            link.target = '_blank';
-            link.rel = 'noreferrer';
-            return;
-          }
-          link.removeAttribute('target');
-          link.removeAttribute('rel');
-        }
-        if (fitPrimaryCta) {
-          fitPrimaryCta.textContent = result.primary.text;
-          syncFitCtaLink(fitPrimaryCta, result.primary.href);
-          fitPrimaryCta.dataset.ctaId = result.primary.ctaId;
-          fitPrimaryCta.dataset.planId = result.primary.planId;
-        }
-        if (fitSecondaryCta) {
-          fitSecondaryCta.textContent = result.secondary.text;
-          syncFitCtaLink(fitSecondaryCta, result.secondary.href);
-          fitSecondaryCta.dataset.ctaId = result.secondary.ctaId;
-          fitSecondaryCta.dataset.planId = result.secondary.planId;
-        }
-      }
-
-      function recordFitRecommendation(result, state) {
-        sendTelemetry('fit_check_completed', {
-          ctaId: 'fit_checker_run',
-          ctaPlacement: 'fit_checker',
-          planId: result.recommendation,
-          recommendation: result.recommendation,
-          workflowStage: state.stage,
-          blockerLevel: state.blocker,
-          workflowOwner: state.owner,
-          proofNeed: state.proof,
-          sharedSyncNeed: state.sync,
-          runtime: state.runtime
-        });
-        trackGaEvent('fit_check_completed', {
-          recommendation: result.recommendation,
-          workflow_stage: state.stage,
-          blocker_level: state.blocker,
-          workflow_owner: state.owner,
-          proof_need: state.proof,
-          shared_sync_need: state.sync,
-          runtime: state.runtime
-        });
-        if (window.plausible) {
-          window.plausible('Fit Checker Completed', {
-            props: {
-              recommendation: result.recommendation,
-              runtime: state.runtime
-            }
-          });
-        }
-      }
-
-      function trackGenericCtaClick(target) {
-        if (!target || target === checkoutCta) return;
-        sendTelemetry('cta_click', {
-          ctaId: target.dataset.ctaId || null,
-          ctaPlacement: target.dataset.ctaPlacement || null,
-          planId: target.dataset.planId || null
-        });
-      }
-
-      trackedCtas.forEach(function (target) {
-        target.addEventListener('click', function () {
-          trackGenericCtaClick(target);
-        });
-      });
-
-      if (buyerFeedback) {
-        Array.prototype.slice.call(buyerFeedback.querySelectorAll('[data-loss-reason]')).forEach(function (button) {
-          button.addEventListener('click', function () {
-            selectedLossReason = button.getAttribute('data-loss-reason');
-            sendTelemetry('pricing_interest', {
-              ctaId: checkoutCta && checkoutCta.dataset ? checkoutCta.dataset.ctaId || 'pricing_pro' : 'pricing_pro',
-              reasonCode: selectedLossReason
-            });
-            trackGaEvent('pricing_interest', {
-              reason_code: selectedLossReason || 'unspecified',
-              cta_id: checkoutCta && checkoutCta.dataset ? checkoutCta.dataset.ctaId || 'pricing_pro' : 'pricing_pro'
-            });
-            if (buyerFeedbackStatus) {
-              buyerFeedbackStatus.textContent = 'Selected: ' + selectedLossReason.replace(/_/g, ' ') + '. Add optional context and send.';
-            }
-          });
-        });
-      }
-
-      if (buyerFeedbackSubmit) {
-        buyerFeedbackSubmit.addEventListener('click', function () {
-          recordBuyerReason(selectedLossReason, buyerFeedbackNote ? buyerFeedbackNote.value : '');
-          if (buyerFeedbackStatus) {
-            buyerFeedbackStatus.textContent = 'Thanks. Buyer feedback recorded.';
-          }
-          if (buyerFeedbackNote) {
-            buyerFeedbackNote.value = '';
-          }
-          selectedLossReason = null;
-        });
-      }
-
-      if (workflowSprintForm) {
-        workflowSprintForm.addEventListener('submit', submitWorkflowSprintIntake);
-      }
-
-      if (fitCheckerRun) {
-        renderFitRecommendation(computeFitRecommendation(readFitState()));
-        [fitStage, fitBlocker, fitOwner, fitProof, fitSync, fitRuntime].forEach(function (field) {
-          if (!field) return;
-          field.addEventListener('change', function () {
-            renderFitRecommendation(computeFitRecommendation(readFitState()));
-            if (fitCheckerStatus) {
-              fitCheckerStatus.textContent = 'Recommendation updated. Click Run Fit Check to record the result.';
-            }
-          });
-        });
-        fitCheckerRun.addEventListener('click', function () {
-          const state = readFitState();
-          const result = computeFitRecommendation(state);
-          renderFitRecommendation(result);
-          recordFitRecommendation(result, state);
-          if (fitCheckerStatus) {
-            fitCheckerStatus.textContent = 'Fit check recorded. Follow the recommended path below.';
-          }
-        });
-      }
-
-      const landingAttribution = buildAttribution(null);
-      updateCampaignBanner(landingAttribution);
-      if (!serverTelemetryCaptured) {
-        sendTelemetry('landing_page_view', landingAttribution);
-      }
-      trackGaEvent('landing_page_view', {
-        traffic_channel: landingAttribution.source || 'website',
-        seo_surface: landingAttribution.seoSurface || null,
-        community: landingAttribution.community || null
-      });
-      if (landingAttribution.source === 'organic_search' || landingAttribution.source === 'ai_search') {
-        if (!serverTelemetryCaptured) {
-          sendTelemetry('seo_landing_view', {
-            seoSurface: landingAttribution.seoSurface || landingAttribution.source,
-            seoQuery: landingAttribution.seoQuery || null
-          });
-        }
-        trackGaEvent('seo_landing_view', {
-          seo_surface: landingAttribution.seoSurface || landingAttribution.source,
-          seo_query: landingAttribution.seoQuery || null
-        });
-      }
-      if (!checkoutCta) return;
-
-      const originalLabel = checkoutCta.textContent;
-
-      async function startCheckout(event) {
-        event.preventDefault();
-        const ctaId = checkoutCta.dataset.ctaId || 'pricing_pro';
-        const ctaPlacement = checkoutCta.dataset.ctaPlacement || 'pricing';
-        const planId = checkoutCta.dataset.planId || 'pro';
-        const attribution = buildAttribution(ctaId);
-        const checkoutTraceId = createEphemeralId('checkout_');
-        activeCheckoutTraceId = checkoutTraceId;
-        const fallbackUrl = buildFallbackUrl(attribution, checkoutTraceId);
-        checkoutCta.href = fallbackUrl;
-        checkoutCta.setAttribute('aria-busy', 'true');
-        checkoutCta.textContent = 'Opening checkout...';
-
-        sendTelemetry('checkout_start', {
-          ctaId: ctaId,
-          ctaPlacement: ctaPlacement,
-          planId: planId,
-          traceId: checkoutTraceId
-        });
-        trackGaEvent('begin_checkout', {
-          currency: 'USD',
-          value: Number('__PRO_PRICE_DOLLARS__'),
-          cta_id: ctaId,
-          cta_placement: ctaPlacement,
-          plan_id: planId,
-          traffic_channel: attribution.source || 'website'
-        });
-
-        if (window.plausible) {
-          window.plausible('Checkout Started', {
-            props: {
-              source: attribution.source || 'website',
-              campaign: attribution.utmCampaign || 'pro_pack',
-              ctaId: ctaId
-            }
-          });
-        }
-
-        try {
-          const response = await fetch('/v1/billing/checkout', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-              installId: getInstallId(),
-              acquisitionId: getAcquisitionId(),
-              visitorId: getVisitorId(),
-              sessionId: getSessionId(),
-              ctaId: ctaId,
-              ctaPlacement: ctaPlacement,
-              planId: planId,
-              traceId: checkoutTraceId,
-              page: window.location.pathname,
-              metadata: attribution
-            })
-          });
-
-          if (!response.ok) {
-            const error = new Error('checkout_request_failed');
-            error.httpStatus = response.status;
-            throw error;
-          }
-
-          const payload = await response.json();
-          if (payload.url) {
-            window.location.assign(payload.url);
-            return;
-          }
-
-          if (payload.sessionId) {
-            const successUrl = new URL('/success', window.location.origin);
-            successUrl.searchParams.set('sessionId', payload.sessionId);
-            if (payload.traceId) successUrl.searchParams.set('traceId', payload.traceId);
-            window.location.assign(successUrl.toString());
-            return;
-          }
-
-          throw new Error('missing_checkout_redirect');
-        } catch (err) {
-          sendTelemetry('checkout_api_failed', {
-            ctaId: ctaId,
-            ctaPlacement: ctaPlacement,
-            planId: planId,
-            traceId: checkoutTraceId,
-            failureCode: err && err.message ? err.message : 'checkout_api_failed',
-            httpStatus: err && err.httpStatus ? err.httpStatus : null
-          });
-          trackGaEvent('checkout_api_failed', {
-            cta_id: ctaId,
-            cta_placement: ctaPlacement,
-            plan_id: planId,
-            failure_code: err && err.message ? err.message : 'checkout_api_failed',
-            http_status: err && err.httpStatus ? err.httpStatus : null
-          });
-          sendTelemetry('checkout_fallback_redirect', {
-            ctaId: ctaId,
-            ctaPlacement: ctaPlacement,
-            planId: planId,
-            traceId: checkoutTraceId
-          });
-          trackGaEvent('checkout_fallback_redirect', {
-            cta_id: ctaId,
-            cta_placement: ctaPlacement,
-            plan_id: planId
-          });
-          window.location.assign(fallbackUrl);
-        } finally {
-          checkoutCta.removeAttribute('aria-busy');
-          checkoutCta.textContent = originalLabel;
-        }
-      }
-
-      checkoutCta.href = buildFallbackUrl(buildAttribution(checkoutCta.dataset.ctaId || 'pricing_pro'));
-      checkoutCta.addEventListener('click', startCheckout);
-    }());
-  </script>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="container">
+    <div class="section-label">FAQ</div>
+    <h2 class="section-title">Common questions</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What AI agents does this work with?</div>
+        <div class="faq-a">MCP Memory Gateway works with any MCP-compatible agent: Claude Code, Cursor, Codex, Gemini CLI, and Amp. If your tool supports MCP, it works.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Do I need a cloud account?</div>
+        <div class="faq-a">No. The free tier runs entirely locally — no cloud, no account, no signup. Pro adds optional cloud sync and team sharing, but local-first is always available.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">How are gates different from prompt rules?</div>
+        <div class="faq-a">Prompt rules are suggestions that agents can ignore. Pre-Action Gates are enforcement — they block the action before execution. Gates are auto-generated from your feedback and use Thompson Sampling to adapt over time.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Is the $49 a subscription?</div>
+        <div class="faq-a">No. It's a one-time payment for lifetime Pro access. No recurring charges, no hidden fees.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final-cta">
+  <div class="container">
+    <h2>Ready to stop fixing the same AI mistakes?</h2>
+    <p>Install in 30 seconds. Free tier included. No account required.</p>
+    <a href="https://buy.stripe.com/bJe28rfCY6zc4lH7mb3sI04" class="btn-pro">Get Pro — $49</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="https://github.com/IgorGanapolsky/mcp-memory-gateway" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.npmjs.com/package/mcp-memory-gateway" target="_blank" rel="noopener">npm</a>
+      <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer">Created with Perplexity Computer</a>
+    </div>
+    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License</span>
+  </div>
+</footer>
+
+<script>
+function copyInstall(el) {
+  navigator.clipboard.writeText('npx mcp-memory-gateway init').then(function() {
+    var hint = el.querySelector('.copy-hint');
+    hint.textContent = 'copied!';
+    hint.classList.add('copied');
+    setTimeout(function() { hint.textContent = 'click to copy'; hint.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
 </body>
 </html>

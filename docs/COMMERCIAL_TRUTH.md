@@ -1,14 +1,14 @@
 # Commercial Truth
 
 Status: current
-Updated: March 19, 2026
+Updated: March 24, 2026
 
 This document is the source of truth for product, pricing, traction, and proof claims in this repository.
 
 ## What is true today
 
 - The open-source `mcp-memory-gateway` package is free and MIT licensed.
-- The current public self-serve commercial offer is **Pro at $49 one-time** via the hosted checkout at `https://rlhf-feedback-loop-production.up.railway.app/checkout/pro`.
+- The current public self-serve commercial offer is **Pro at $49 one-time** via Stripe checkout link.
 - Verified booked revenue as of March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product.
 - Verified booked revenue for March 19, 2026 is **$0.00**; there is no evidence of a new paid charge today.
 - Engineering verification is strong and should be cited through `docs/VERIFICATION_EVIDENCE.md` and machine-readable proof reports.
