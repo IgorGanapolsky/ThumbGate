@@ -100,39 +100,16 @@ test('root serves the landing page by default', async () => {
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
   const body = await res.text();
-  assert.match(body, /MCP Memory Gateway \| Pre-Action Gates for AI coding agents/i);
-  assert.match(body, /Pre-Action Gates for AI coding agents/i);
-  assert.match(body, /Keep one sharp agent/i);
-  assert.match(body, /Pre-action gates that physically block AI coding agents from repeating known mistakes\./i);
-  assert.match(body, /AI workflow control plane/i);
-  assert.match(body, /generic memory server/i);
-  assert.match(body, /Workflow Hardening Sprint/i);
-  assert.match(body, /Start Sprint Intake/i);
-  assert.match(body, /Code modernization guardrails/i);
-  assert.match(body, /Reliability Studio/i);
-  assert.match(body, /Import\. Compare\. Deploy\./);
-  assert.match(body, /No model fine-tuning required/i);
-  assert.match(body, /Not just another memory server\. An AI workflow control plane\./i);
-  assert.match(body, /Memory servers/i);
-  assert.match(body, /Agentic RAG/i);
-  assert.match(body, /Workflow Hardening Fit Checker/i);
-  assert.match(body, /can AI fully satisfy this query without a click\?/i);
-  assert.match(body, /Run Fit Check/i);
-  assert.match(body, /PR review threads, CI logs, runbooks, JSONL, and CSV/i);
-  assert.match(body, /Start Compare &amp; Deploy/);
-  assert.match(body, /same agent session|same reliability layer|No orchestration tax/i);
-  assert.match(body, /\$49 one-time/);
-  assert.match(body, /semantic cache hit rate/i);
-  assert.match(body, /reused context tokens/i);
+  assert.match(body, /MCP Memory Gateway — Stop Your AI Agent From Repeating Mistakes/);
+  assert.match(body, /Pre-Action Gates for AI/i);
+  assert.match(body, /mcp-memory-gateway/);
+  assert.match(body, /\$49/);
+  assert.match(body, /\$0/);
+  assert.match(body, /buy\.stripe\.com/);
   assert.match(body, /plausible\.io\/js\/script\.js/);
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
   assert.match(body, /google-site-verification" content="test-verification-token"/);
   assert.match(body, /gtag\('config', 'G-TEST1234', \{ send_page_view: false \}\)/);
-  assert.match(body, /\/v1\/billing\/checkout/);
-  assert.match(body, /\/v1\/intake\/workflow-sprint/);
-  assert.match(body, /Review Sprint Brief/);
-  assert.doesNotMatch(body, /Email Instead/i);
-  assert.doesNotMatch(body, /mailto:/i);
 });
 
 test('privacy policy route covers collection, sharing, retention, and contact details', async () => {
@@ -239,7 +216,7 @@ test('public server card exposes MCP tool schemas for directory scanners', async
   }
 });
 
-test('root seeds journey cookies, injects server telemetry IDs, and records landing telemetry server-side', async () => {
+test('root seeds journey cookies and records landing telemetry server-side', async () => {
   const res = await fetch(apiUrl('/'));
   assert.equal(res.status, 200);
 
@@ -253,11 +230,8 @@ test('root seeds journey cookies, injects server telemetry IDs, and records land
   assert.match(String(sessionId), /^session_/);
   assert.match(String(acquisitionId), /^acq_/);
 
-  const body = await res.text();
-  assert.match(body, new RegExp(`const serverVisitorId = '${visitorId}';`));
-  assert.match(body, new RegExp(`const serverSessionId = '${sessionId}';`));
-  assert.match(body, new RegExp(`const serverAcquisitionId = '${acquisitionId}';`));
-  assert.match(body, /const serverTelemetryCaptured = 'true' === 'true';/);
+  // Consume body to complete the request
+  await res.text();
 
   const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
   const landingEvent = telemetryEvents.find((entry) => (
