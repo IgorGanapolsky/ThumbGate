@@ -71,7 +71,9 @@ async function main() {
   console.log(`Skipped:   ${results.skipped.join(', ') || 'none'}`);
   console.log(`Failed:    ${results.failed.map((f) => f.name).join(', ') || 'none'}`);
 
-  if (results.failed.length > 0) {
+  // Exit non-zero only if nothing succeeded AND there were failures.
+  // Partial success (some pollers skipped/failed but at least one succeeded) is OK.
+  if (results.succeeded.length === 0 && results.failed.length > 0) {
     process.exitCode = 1;
   }
 }
