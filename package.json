@@ -1,6 +1,6 @@
 {
   "name": "mcp-memory-gateway",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "Pre-action gates that block AI coding agents from repeating known mistakes. Dual-memory recall (MemAlign-inspired principles + episodic context). Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.",
   "homepage": "https://rlhf-feedback-loop-production.up.railway.app",
   "repository": {
