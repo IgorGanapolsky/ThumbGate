@@ -20,7 +20,7 @@ Works with Claude Code, Codex, Gemini, Amp, Cursor, OpenCode, and any MCP-compat
 Most memory tools only help an agent remember. MCP Memory Gateway also enforces.
 
 - `recall` injects the right context at session start.
-- `search_lessons` shows promoted lessons plus the corrective action, linked rules, and linked gates.
+- `search_lessons` shows promoted lessons plus the corrective action, lifecycle state, linked rules, linked gates, and the next harness fix the system should make.
 - `search_rlhf` searches raw RLHF state across feedback logs, ContextFS memory, and prevention rules.
 - Pre-action gates physically block tool calls that match known failure patterns.
 - Session handoff and primer keep continuity across sessions without adding an extra orchestrator.
@@ -91,7 +91,7 @@ npx mcp-memory-gateway dashboard
 |---|---|
 | `recall` injects past context into the next session | Thumbs up/down changing model weights |
 | `session_handoff` and `session_primer` preserve continuity | Agents magically remembering what happened last session |
-| `search_lessons` exposes corrective actions, linked rules, and linked gates | Feedback stats automatically improving behavior by themselves |
+| `search_lessons` exposes corrective actions, lifecycle state, linked rules, linked gates, and next harness fixes | Feedback stats automatically improving behavior by themselves |
 | Pre-action gates block known-bad tool calls before execution | Agents self-correcting without context injection or gates |
 | Auto-promotion turns repeated failures into warn/block rules | Calling this “RLHF” in the strict training sense |
 | Rejection ledger shows why vague feedback was rejected | Vague signals silently helping the system |
@@ -117,7 +117,7 @@ These tools are the shortest path to value:
 |---|---|
 | `capture_feedback` | Accept up/down signal + context, validate, promote to memory |
 | `recall` | Recall relevant past failures and rules for the current task |
-| `search_lessons` | Search promoted lessons with corrective action, rules, and gates |
+| `search_lessons` | Search promoted lessons with corrective action, lifecycle state, rules, gates, and next harness fixes |
 | `search_rlhf` | Search raw RLHF state across feedback logs, ContextFS, and rules |
 | `prevention_rules` | Generate prevention rules from repeated mistakes |
 | `enforcement_matrix` | Inspect promotion rate, active gates, and rejection ledger |

@@ -1,8 +1,25 @@
 'use strict';
 
+const path = require('node:path');
 const { readJSONL, getFeedbackPaths } = require('./feedback-loop');
-const { loadAutoGates } = require('./auto-promote-gates');
-const { searchPreventionRulesSync } = require('./filesystem-search');
+
+const HIGH_RISK_TAGS = new Set([
+  'billing',
+  'data-loss',
+  'deployment',
+  'git',
+  'production',
+  'release',
+  'security',
+  'verification',
+]);
+
+const PRIORITY_WEIGHT = {
+  critical: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
+};
 
 function tokenize(text) {
   return String(text || '')
@@ -127,13 +144,65 @@ function buildLessonQuery(memory, parsed, sourceFeedback) {
   ].filter(Boolean).join(' ');
 }
 
-function buildRuleMatches(queryText, limit = 3) {
-  return searchPreventionRulesSync(queryText, limit)
+function resolveLessonPaths(options = {}) {
+  if (options.feedbackDir) {
+    const feedbackDir = path.resolve(String(options.feedbackDir));
+    return {
+      FEEDBACK_DIR: feedbackDir,
+      FEEDBACK_LOG_PATH: path.join(feedbackDir, 'feedback-log.jsonl'),
+      MEMORY_LOG_PATH: path.join(feedbackDir, 'memory-log.jsonl'),
+      PREVENTION_RULES_PATH: path.join(feedbackDir, 'prevention-rules.md'),
+      AUTO_GATES_PATH: path.join(feedbackDir, 'auto-promoted-gates.json'),
+    };
+  }
+
+  const paths = getFeedbackPaths();
+  return {
+    ...paths,
+    PREVENTION_RULES_PATH: path.join(paths.FEEDBACK_DIR, 'prevention-rules.md'),
+    AUTO_GATES_PATH: path.join(paths.FEEDBACK_DIR, 'auto-promoted-gates.json'),
+  };
+}
+
+function readPreventionRuleMatches(queryText, limit = 3, options = {}) {
+  const { PREVENTION_RULES_PATH } = resolveLessonPaths(options);
+  if (!PREVENTION_RULES_PATH) return [];
+  let content = '';
+  try {
+    content = require('node:fs').readFileSync(PREVENTION_RULES_PATH, 'utf-8');
+  } catch {
+    return [];
+  }
+
+  const blocks = content.split(/^#{1,3}\s+/m).filter(Boolean);
+  const queryTokens = tokenize(queryText);
+
+  return blocks
+    .map((block) => {
+      const lines = block.trim().split('\n');
+      const title = lines[0] || '';
+      const body = lines.slice(1).join('\n').trim();
+      const text = `${title} ${body}`;
+      const score = jaccardSimilarity(queryTokens, tokenize(text)) + substringBoost(queryText, text);
+      return { title, body, score };
+    })
+    .filter((rule) => rule.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
     .map((rule) => ({
       title: rule.title,
       summary: String(rule.body || '').split('\n')[0] || '',
-      score: Number((rule._score || 0).toFixed(4)),
+      score: Number((rule.score || 0).toFixed(4)),
     }));
+}
+
+function readAutoGates(options = {}) {
+  const { AUTO_GATES_PATH } = resolveLessonPaths(options);
+  try {
+    return JSON.parse(require('node:fs').readFileSync(AUTO_GATES_PATH, 'utf-8'));
+  } catch {
+    return { version: 1, gates: [], promotionLog: [] };
+  }
 }
 
 function scoreGateMatch(gate, queryText, tags = [], diagnosis = null) {
@@ -157,8 +226,8 @@ function scoreGateMatch(gate, queryText, tags = [], diagnosis = null) {
   return score + tagScore + diagnosisScore;
 }
 
-function buildGateMatches(memory, parsed, limit = 3) {
-  const autoGates = loadAutoGates();
+function buildGateMatches(memory, parsed, limit = 3, options = {}) {
+  const autoGates = readAutoGates(options);
   const lessonQuery = buildLessonQuery(memory, parsed, null);
   return (autoGates.gates || [])
     .map((gate) => ({
@@ -177,6 +246,126 @@ function buildGateMatches(memory, parsed, limit = 3) {
       promotedAt: gate.promotedAt,
       score: Number(score.toFixed(4)),
     }));
+}
+
+function inferPriority(memory, tags = []) {
+  if (String(memory.importance || '').toLowerCase() === 'critical') return 'critical';
+  if (String(memory.importance || '').toLowerCase() === 'high') return 'high';
+  if ((tags || []).some((tag) => HIGH_RISK_TAGS.has(String(tag).toLowerCase()))) return 'high';
+  return 'medium';
+}
+
+function inferVerificationState(parsed, memory, sourceFeedback, ruleMatches, gateMatches) {
+  const lessonText = [
+    memory.title,
+    parsed.whatWentWrong,
+    parsed.howToAvoid,
+    parsed.actionNeeded,
+    parsed.whatWorked,
+    parsed.reasoning,
+    sourceFeedback && sourceFeedback.context,
+  ].filter(Boolean).join(' ');
+  const verificationPattern = /\b(attach|check|proof|review|rollback|test|validate|verification|verify)\b/i;
+  const ruleText = ruleMatches.map((rule) => `${rule.title} ${rule.summary}`).join(' ');
+  const gateText = gateMatches.map((gate) => `${gate.id} ${gate.pattern} ${gate.message}`).join(' ');
+  const mentionsVerification = verificationPattern.test(lessonText);
+  const enforcedVerification = verificationPattern.test(`${ruleText} ${gateText}`);
+
+  if (parsed.whatWorked && enforcedVerification) return 'closed_loop';
+  if (enforcedVerification) return 'enforced';
+  if (mentionsVerification) return 'specified';
+  return 'missing';
+}
+
+function buildHarnessRecommendations(memory, parsed, sourceFeedback, ruleMatches, gateMatches) {
+  const recommendations = [];
+  const tags = Array.isArray(memory.tags) ? memory.tags : [];
+  const lessonQuery = buildLessonQuery(memory, parsed, sourceFeedback);
+  const priority = inferPriority(memory, tags);
+  const diagnosis = memory.diagnosis || {};
+  const correctiveText = parsed.howToAvoid || parsed.actionNeeded || parsed.summary || '';
+  const hasRule = ruleMatches.length > 0;
+  const hasGate = gateMatches.length > 0;
+  const verificationLike = /\b(attach|proof|review|rollback|test|validate|verification|verify)\b/i.test(lessonQuery);
+  const highRisk = tags.some((tag) => HIGH_RISK_TAGS.has(String(tag).toLowerCase()))
+    || ['pre_tool_use', 'release', 'security', 'verification'].includes(String(diagnosis.criticalFailureStep || '').toLowerCase())
+    || /\b(deploy|publish|push|release|ship)\b/i.test(lessonQuery);
+
+  if (memory.category === 'error' && correctiveText && !hasRule) {
+    recommendations.push({
+      type: 'prevention_rule',
+      priority,
+      reason: 'lesson captured a corrective action but no linked prevention rule exists yet',
+      action: correctiveText,
+    });
+  }
+
+  if (memory.category === 'error' && highRisk && !hasGate) {
+    recommendations.push({
+      type: 'pre_action_gate',
+      priority,
+      reason: 'high-risk lesson has no linked gate, so the failure is still relying on agent cooperation',
+      action: 'Promote a warning or blocking gate before the risky tool call executes.',
+    });
+  }
+
+  if (memory.category === 'error' && verificationLike && !(hasRule || hasGate)) {
+    recommendations.push({
+      type: 'verification_harness',
+      priority: priority === 'critical' ? 'critical' : 'high',
+      reason: 'verification or proof failed, but there is no upstream test or proof contract linked to the lesson',
+      action: 'Add a proof step or automated test that runs before merge, publish, or deploy.',
+    });
+  }
+
+  if (memory.category === 'error' && !diagnosis.rootCauseCategory && !parsed.reasoning) {
+    recommendations.push({
+      type: 'diagnostic_capture',
+      priority: 'medium',
+      reason: 'future automation will be stronger if this failure records a root cause and failed step',
+      action: 'Capture rootCauseCategory, criticalFailureStep, and reasoning on the next occurrence.',
+    });
+  }
+
+  const seen = new Set();
+  return recommendations.filter((recommendation) => {
+    const key = `${recommendation.type}:${recommendation.action}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function buildLifecycle(memory, parsed, sourceFeedback, ruleMatches, gateMatches, recommendations) {
+  const correctiveActionCaptured = Boolean(parsed.howToAvoid || parsed.actionNeeded || parsed.whatWorked || parsed.approach);
+  const preventionRuleLinked = ruleMatches.length > 0;
+  const gateLinked = gateMatches.length > 0;
+  const verificationState = inferVerificationState(parsed, memory, sourceFeedback, ruleMatches, gateMatches);
+  const enforcementState = gateMatches.some((gate) => gate.action === 'block')
+    ? 'blocking'
+    : gateLinked
+      ? 'warning'
+      : preventionRuleLinked
+        ? 'rule_only'
+        : 'memory_only';
+
+  let stage = 'detected';
+  if (memory.id) stage = 'promoted';
+  if (preventionRuleLinked || gateLinked) stage = 'enforced';
+  if (verificationState === 'closed_loop') stage = 'measured';
+
+  return {
+    feedbackCaptured: Boolean(sourceFeedback || memory.sourceFeedbackId),
+    promotedToMemory: true,
+    correctiveActionCaptured,
+    preventionRuleLinked,
+    gateLinked,
+    enforcementState,
+    verificationState,
+    impactMeasured: verificationState === 'closed_loop',
+    openRecommendations: recommendations.length,
+    stage,
+  };
 }
 
 function buildSystemActions(parsed, ruleMatches, gateMatches) {
@@ -232,9 +421,11 @@ function scoreLesson(queryText, memory, parsed, sourceFeedback) {
 function buildLessonResult(memory, sourceFeedback, options = {}) {
   const parsed = parseLessonContent(memory.content);
   const lessonQuery = buildLessonQuery(memory, parsed, sourceFeedback);
-  const ruleMatches = buildRuleMatches(lessonQuery, Number(options.ruleLimit || 3));
-  const gateMatches = buildGateMatches(memory, parsed, Number(options.gateLimit || 3));
+  const ruleMatches = readPreventionRuleMatches(lessonQuery, Number(options.ruleLimit || 3), options);
+  const gateMatches = buildGateMatches(memory, parsed, Number(options.gateLimit || 3), options);
   const { score, matchedTokens } = scoreLesson(options.query || '', memory, parsed, sourceFeedback);
+  const harnessRecommendations = buildHarnessRecommendations(memory, parsed, sourceFeedback, ruleMatches, gateMatches);
+  const lifecycle = buildLifecycle(memory, parsed, sourceFeedback, ruleMatches, gateMatches, harnessRecommendations);
 
   return {
     id: memory.id,
@@ -259,6 +450,7 @@ function buildLessonResult(memory, sourceFeedback, options = {}) {
     },
     systemResponse: {
       promotedToMemory: true,
+      lifecycle,
       diagnosis: memory.diagnosis || null,
       sourceFeedback: sourceFeedback
         ? {
@@ -272,14 +464,15 @@ function buildLessonResult(memory, sourceFeedback, options = {}) {
       linkedPreventionRules: ruleMatches,
       linkedAutoGates: gateMatches,
       correctiveActions: buildSystemActions(parsed, ruleMatches, gateMatches),
+      harnessRecommendations,
     },
   };
 }
 
 function searchLessons(query = '', options = {}) {
-  const { MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
+  const { MEMORY_LOG_PATH, FEEDBACK_DIR, FEEDBACK_LOG_PATH } = resolveLessonPaths(options);
   const memories = readJSONL(MEMORY_LOG_PATH);
-  const feedbackEntries = readJSONL(getFeedbackPaths().FEEDBACK_LOG_PATH);
+  const feedbackEntries = readJSONL(FEEDBACK_LOG_PATH);
   const feedbackById = new Map(feedbackEntries.map((entry) => [entry.id, entry]));
   const parsedLimit = Number(options.limit || 10);
   const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
@@ -361,6 +554,13 @@ function formatLessonSearchResults(payload) {
     if (result.systemResponse.diagnosis && result.systemResponse.diagnosis.rootCauseCategory) {
       lines.push(`   Diagnosis: ${result.systemResponse.diagnosis.rootCauseCategory}`);
     }
+    const recommendations = result.systemResponse.harnessRecommendations || [];
+    if (recommendations.length > 0) {
+      lines.push('   Harness recommendations:');
+      recommendations.slice(0, 3).forEach((recommendation) => {
+        lines.push(`   - [${recommendation.priority}] ${recommendation.type}: ${recommendation.action}`);
+      });
+    }
   });
 
   return `${lines.join('\n')}\n`;
@@ -368,6 +568,7 @@ function formatLessonSearchResults(payload) {
 
 module.exports = {
   parseLessonContent,
+  resolveLessonPaths,
   searchLessons,
   formatLessonSearchResults,
 };

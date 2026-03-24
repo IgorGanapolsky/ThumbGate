@@ -489,6 +489,7 @@ describe('bin/cli.js', () => {
     assert.strictEqual(result.status, 0, `lessons command failed:\n${result.stderr}`);
     assert.match(result.stdout, /Lesson Search/);
     assert.match(result.stdout, /Corrective actions/);
+    assert.match(result.stdout, /Harness recommendations/);
     assert.match(result.stdout, /Attach proof before shipping/);
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });

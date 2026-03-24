@@ -105,6 +105,9 @@ test('generateDashboard handles empty state (no files)', () => {
   assert.equal(data.health.feedbackCount, 0);
   assert.equal(data.health.memoryCount, 0);
   assert.equal(data.diagnostics.totalDiagnosed, 0);
+  assert.equal(data.harness.score, 20);
+  assert.equal(data.harness.status, 'bootstrapping');
+  assert.equal(data.harness.lessonCount, 0);
   assert.ok(data.delegation);
   assert.equal(data.delegation.attemptCount, 0);
   assert.equal(data.secretGuard.blocked, 0);
@@ -291,6 +294,7 @@ test('generateDashboard returns complete structure with data', () => {
   assert.ok(data.prevention);
   assert.ok(data.trend);
   assert.ok(data.health);
+  assert.ok(data.harness);
   assert.ok(data.diagnostics);
   assert.ok(data.delegation);
   assert.ok(data.secretGuard);
@@ -301,6 +305,8 @@ test('generateDashboard returns complete structure with data', () => {
   assert.equal(data.approval.negative, 10);
   assert.equal(data.health.feedbackCount, 30);
   assert.equal(data.health.memoryCount, 2);
+  assert.equal(data.harness.errorLessonCount, 0);
+  assert.equal(data.harness.topRecommendations.length, 0);
   assert.equal(data.diagnostics.totalDiagnosed, 10);
   assert.equal(data.delegation.attemptCount, 0);
   assert.equal(data.diagnostics.categories[0].key, 'tool_output_misread');
@@ -520,6 +526,67 @@ test('generateDashboard reports semantic cache efficiency from context pack prov
   assert.equal(data.analytics.efficiency.averageSemanticSimilarity, 0.9);
   assert.equal(data.analytics.efficiency.estimatedContextCharsReused, 2000);
   assert.equal(data.analytics.efficiency.estimatedContextTokensReused, 500);
+});
+
+test('generateDashboard computes a harness score and top next fix recommendations from lessons', () => {
+  writeFeedbackLog([
+    {
+      id: 'fb_harness_repeat_1',
+      signal: 'negative',
+      context: 'Skipped proof before release',
+      tags: ['release', 'verification'],
+      timestamp: new Date().toISOString(),
+      diagnosis: {
+        rootCauseCategory: 'verification_failure',
+        criticalFailureStep: 'release',
+      },
+    },
+    {
+      id: 'fb_harness_repeat_2',
+      signal: 'negative',
+      context: 'Skipped proof before release',
+      tags: ['release', 'verification'],
+      timestamp: new Date().toISOString(),
+      diagnosis: {
+        rootCauseCategory: 'verification_failure',
+        criticalFailureStep: 'release',
+      },
+    },
+  ]);
+  writeMemoryLog([
+    {
+      id: 'mem_harness_repeat_1',
+      title: 'MISTAKE: Skipped proof before release',
+      content: 'What went wrong: Skipped proof before release\nHow to avoid: Attach proof before shipping',
+      category: 'error',
+      importance: 'high',
+      tags: ['feedback', 'negative', 'release', 'verification'],
+      sourceFeedbackId: 'fb_harness_repeat_1',
+      timestamp: '2026-03-23T16:00:01.000Z',
+    },
+    {
+      id: 'mem_harness_repeat_2',
+      title: 'MISTAKE: Merge shipped without rollback notes',
+      content: 'Action needed: add rollback notes before shipping',
+      category: 'error',
+      importance: 'high',
+      tags: ['feedback', 'negative', 'release', 'verification'],
+      sourceFeedbackId: 'fb_harness_repeat_2',
+      timestamp: '2026-03-23T16:10:01.000Z',
+    },
+  ]);
+
+  const data = generateDashboard(tmpDir);
+
+  assert.equal(data.harness.lessonCount, 2);
+  assert.equal(data.harness.errorLessonCount, 2);
+  assert.equal(data.harness.correctionCoverage, 1);
+  assert.equal(data.harness.enforcementCoverage, 0);
+  assert.equal(data.harness.diagnosticCoverage, 1);
+  assert.equal(data.harness.repeatFailureRate, 1);
+  assert.equal(data.harness.status, 'weak');
+  assert.ok(data.harness.topRecommendations.some((recommendation) => recommendation.type === 'pre_action_gate'));
+  assert.ok(data.harness.topRecommendations.some((recommendation) => recommendation.type === 'prevention_rule'));
 });
 
 test('generateDashboard separates repeated CTA clicks from unique checkout starters and flags orphan revenue', () => {

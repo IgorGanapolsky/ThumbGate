@@ -96,8 +96,11 @@ test('searchLessons returns linked corrective actions, prevention rules, and gat
     assert.equal(result.results[0].systemResponse.sourceFeedback.id, 'fb_publish');
     assert.equal(result.results[0].systemResponse.linkedPreventionRules[0].title, 'Verify before publishing');
     assert.equal(result.results[0].systemResponse.linkedAutoGates[0].id, 'auto-verification-release');
+    assert.equal(result.results[0].systemResponse.lifecycle.enforcementState, 'blocking');
+    assert.equal(result.results[0].systemResponse.lifecycle.stage, 'enforced');
     assert.ok(result.results[0].systemResponse.correctiveActions.some((action) => action.type === 'avoid_repeat'));
     assert.ok(result.results[0].systemResponse.correctiveActions.some((action) => action.type === 'pre_action_block'));
+    assert.equal(result.results[0].systemResponse.harnessRecommendations.length, 0);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
@@ -136,6 +139,9 @@ test('searchLessons can list recent lessons and filter by category/tags', () => 
     assert.equal(filtered.returned, 1);
     assert.equal(filtered.results[0].id, 'mem_new');
     assert.match(formatLessonSearchResults(filtered), /Corrective actions/);
+    assert.match(formatLessonSearchResults(filtered), /Harness recommendations/);
+    assert.ok(filtered.results[0].systemResponse.harnessRecommendations.some((recommendation) => recommendation.type === 'prevention_rule'));
+    assert.ok(filtered.results[0].systemResponse.harnessRecommendations.some((recommendation) => recommendation.type === 'pre_action_gate'));
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }

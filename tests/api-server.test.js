@@ -828,8 +828,10 @@ test('lesson search endpoint returns promoted lessons with linked corrective act
     assert.equal(body.returned, 1);
     assert.equal(body.results[0].id, 'mem_api_lesson');
     assert.equal(body.results[0].lesson.howToAvoid, 'Attach rollback notes before shipping');
+    assert.equal(body.results[0].systemResponse.lifecycle.enforcementState, 'warning');
     assert.equal(body.results[0].systemResponse.linkedPreventionRules[0].title, 'Rollback proof');
     assert.equal(body.results[0].systemResponse.linkedAutoGates[0].id, 'auto-release-verification');
+    assert.ok(body.results[0].systemResponse.harnessRecommendations.some((recommendation) => recommendation.type === 'diagnostic_capture'));
   } finally {
     backups.forEach(([filePath, content]) => {
       if (content === null) {

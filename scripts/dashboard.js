@@ -12,6 +12,7 @@ const { filterEntriesForWindow, resolveAnalyticsWindow } = require('./analytics-
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { generateAgentReadinessReport } = require('./agent-readiness');
 const { summarizeWorkflowRuns } = require('./workflow-runs');
+const { searchLessons } = require('./lesson-search');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -519,6 +520,149 @@ function computeInstrumentationReadiness(analytics, billing) {
   };
 }
 
+function priorityWeight(priority) {
+  return ({
+    critical: 4,
+    high: 3,
+    medium: 2,
+    low: 1,
+  })[String(priority || '').toLowerCase()] || 0;
+}
+
+function detectRepeatFailurePressure(entries) {
+  const negativeEntries = entries.filter((entry) => entry && entry.signal === 'negative');
+  if (!negativeEntries.length) {
+    return {
+      negativeCount: 0,
+      repeatedCount: 0,
+      repeatFailureRate: 0,
+      topPattern: null,
+    };
+  }
+
+  const buckets = new Map();
+  for (const entry of negativeEntries) {
+    const tags = Array.isArray(entry.tags) ? entry.tags.filter(Boolean).map((tag) => String(tag).toLowerCase()).sort() : [];
+    const diagnosis = entry.diagnosis && entry.diagnosis.rootCauseCategory
+      ? String(entry.diagnosis.rootCauseCategory).toLowerCase()
+      : '';
+    const context = pickFirstText(entry.context, entry.whatWentWrong, entry.whatToChange) || '';
+    const normalizedContext = context.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 80);
+    const key = diagnosis || (tags.length ? tags.join('|') : normalizedContext || 'uncategorized-negative');
+    const bucket = buckets.get(key) || { key, count: 0 };
+    bucket.count += 1;
+    buckets.set(key, bucket);
+  }
+
+  const repeated = [...buckets.values()].filter((bucket) => bucket.count >= 2);
+  const repeatedCount = repeated.reduce((sum, bucket) => sum + bucket.count, 0);
+  const topPattern = repeated.sort((a, b) => b.count - a.count)[0] || null;
+
+  return {
+    negativeCount: negativeEntries.length,
+    repeatedCount,
+    repeatFailureRate: safeRate(repeatedCount, negativeEntries.length),
+    topPattern,
+  };
+}
+
+function aggregateHarnessRecommendations(lessons, limit = 3) {
+  const grouped = new Map();
+
+  for (const lesson of lessons) {
+    for (const recommendation of lesson.systemResponse && lesson.systemResponse.harnessRecommendations || []) {
+      const key = recommendation.type;
+      const current = grouped.get(key) || {
+        type: recommendation.type,
+        count: 0,
+        priority: recommendation.priority,
+        priorityScore: 0,
+        action: recommendation.action,
+        reason: recommendation.reason,
+        exampleLessonId: lesson.id,
+        exampleLessonTitle: lesson.title,
+      };
+      current.count += 1;
+      const score = priorityWeight(recommendation.priority);
+      if (score >= current.priorityScore) {
+        current.priority = recommendation.priority;
+        current.priorityScore = score;
+        current.action = recommendation.action;
+        current.reason = recommendation.reason;
+        current.exampleLessonId = lesson.id;
+        current.exampleLessonTitle = lesson.title;
+      }
+      grouped.set(key, current);
+    }
+  }
+
+  return [...grouped.values()]
+    .sort((a, b) => {
+      if (b.priorityScore !== a.priorityScore) return b.priorityScore - a.priorityScore;
+      if (b.count !== a.count) return b.count - a.count;
+      return String(a.type).localeCompare(String(b.type));
+    })
+    .slice(0, limit)
+    .map(({ priorityScore, ...recommendation }) => recommendation);
+}
+
+function computeHarnessOverview(feedbackDir, entries) {
+  const lessons = searchLessons('', { feedbackDir, limit: 1000 }).results || [];
+  const errorLessons = lessons.filter((lesson) => lesson.category === 'error');
+  const negativeEntries = entries.filter((entry) => entry && entry.signal === 'negative');
+  const diagnosticsCovered = negativeEntries.filter((entry) => entry && entry.diagnosis && entry.diagnosis.rootCauseCategory);
+  const repeatPressure = detectRepeatFailurePressure(entries);
+  const lifecycleCounts = lessons.reduce((acc, lesson) => {
+    const stage = lesson.systemResponse && lesson.systemResponse.lifecycle
+      ? lesson.systemResponse.lifecycle.stage
+      : 'detected';
+    acc[stage] = (acc[stage] || 0) + 1;
+    return acc;
+  }, {
+    detected: 0,
+    promoted: 0,
+    enforced: 0,
+    measured: 0,
+  });
+
+  const correctionCoverage = safeRate(
+    errorLessons.filter((lesson) => lesson.systemResponse.lifecycle.correctiveActionCaptured).length,
+    errorLessons.length
+  );
+  const enforcementCoverage = safeRate(
+    errorLessons.filter((lesson) => lesson.systemResponse.lifecycle.preventionRuleLinked || lesson.systemResponse.lifecycle.gateLinked).length,
+    errorLessons.length
+  );
+  const diagnosticCoverage = safeRate(diagnosticsCovered.length, negativeEntries.length);
+  const repeatResistance = 1 - repeatPressure.repeatFailureRate;
+  const score = Math.round(100 * (
+    (correctionCoverage * 0.3)
+    + (enforcementCoverage * 0.3)
+    + (diagnosticCoverage * 0.2)
+    + (repeatResistance * 0.2)
+  ));
+
+  let status = 'bootstrapping';
+  if (score >= 80) status = 'strong';
+  else if (score >= 60) status = 'improving';
+  else if (score >= 40) status = 'weak';
+
+  return {
+    score,
+    status,
+    lessonCount: lessons.length,
+    errorLessonCount: errorLessons.length,
+    correctionCoverage,
+    enforcementCoverage,
+    diagnosticCoverage,
+    repeatFailureRate: repeatPressure.repeatFailureRate,
+    repeatedFailureCount: repeatPressure.repeatedCount,
+    topRepeatedPattern: repeatPressure.topPattern,
+    lifecycleCounts,
+    topRecommendations: aggregateHarnessRecommendations(errorLessons),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Full dashboard data
 // ---------------------------------------------------------------------------
@@ -546,6 +690,7 @@ function generateDashboard(feedbackDir, options = {}) {
   const instrumentation = computeInstrumentationReadiness(analytics, billingSummary);
   const delegation = summarizeDelegation(feedbackDir);
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
+  const harness = computeHarnessOverview(feedbackDir, entries);
 
   return {
     operational: {
@@ -562,6 +707,7 @@ function generateDashboard(feedbackDir, options = {}) {
     delegation,
     secretGuard,
     analytics,
+    harness,
     observability,
     instrumentation,
     readiness,
@@ -583,6 +729,7 @@ function printDashboard(data) {
     delegation,
     secretGuard,
     analytics,
+    harness,
     observability,
     instrumentation,
     readiness,
@@ -613,6 +760,18 @@ function printDashboard(data) {
   console.log(`  Rules Active     : ${prevention.ruleCount} prevention rules`);
   if (prevention.lastPromotion) {
     console.log(`  Last Promotion   : ${prevention.lastPromotion.id} (${prevention.lastPromotion.daysAgo} days ago)`);
+  }
+
+  console.log('');
+  console.log('🧰 Harness');
+  console.log(`  Score            : ${harness.score}/100 (${harness.status})`);
+  console.log(`  Correction Cov.  : ${Math.round((harness.correctionCoverage || 0) * 100)}%`);
+  console.log(`  Enforcement Cov. : ${Math.round((harness.enforcementCoverage || 0) * 100)}%`);
+  console.log(`  Diagnostic Cov.  : ${Math.round((harness.diagnosticCoverage || 0) * 100)}%`);
+  console.log(`  Repeat Pressure  : ${Math.round((harness.repeatFailureRate || 0) * 100)}%`);
+  console.log(`  Error Lessons    : ${harness.errorLessonCount}/${harness.lessonCount}`);
+  if (harness.topRecommendations[0]) {
+    console.log(`  Top Next Fix     : ${harness.topRecommendations[0].type} (${harness.topRecommendations[0].count} lessons)`);
   }
 
   console.log('');
@@ -750,6 +909,7 @@ module.exports = {
   computeSessionTrend,
   computeSystemHealth,
   computeEfficiencyMetrics,
+  computeHarnessOverview,
   computeAnalyticsSummary,
   computeSecretGuardStats,
   computeObservabilityStats,

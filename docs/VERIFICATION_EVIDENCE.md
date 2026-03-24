@@ -1807,6 +1807,56 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-03-24 Harness Score + Lesson Lifecycle Verification
+
+Scope:
+
+- Harness Score added to the dashboard so operators can see correction coverage, enforcement coverage, diagnostic coverage, repeat-failure pressure, and top next harness fixes in one place.
+- `search_lessons` upgraded to expose lifecycle state, linked corrective actions, linked prevention rules, linked auto-gates, and next harness recommendations for each lesson.
+- MCP/CLI/tool metadata updated so the new harness-improvement surface is discoverable to agents.
+
+Commands run:
+
+```bash
+npm ci
+node --test tests/dashboard.test.js tests/lesson-search.test.js tests/api-server.test.js tests/cli.test.js tests/mcp-server.test.js tests/mcp-tools-gates.test.js tests/positioning-contract.test.js
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+```
+
+Observed results:
+
+- Focused harness suite: `152 passed`, `0 failed`.
+- `npm test`: pass. Final test aggregate completed cleanly with `558 pass`, `0 fail`.
+- `npm run test:coverage`: pass with:
+  - statements: `88.50%`
+  - branches: `74.32%`
+  - functions: `92.54%`
+- `npm run prove:adapters`: `48/48` passed.
+- `npm run prove:automation`: `55/55` passed.
+- `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
+
+Behavioral proof points:
+
+- Dashboard empty-state now reports a bootstrapping Harness Score instead of omitting harness-health entirely.
+- Repeated negative lessons now surface concrete next actions such as `pre_action_gate`, `prevention_rule`, `verification_harness`, and `diagnostic_capture`.
+- Fully enforced lessons with linked rules and gates report zero open harness recommendations.
+- API and CLI lesson-search output now includes lifecycle state and harness recommendations, not just memory text.
+
+Files changed:
+
+- `README.md`
+- `scripts/dashboard.js`
+- `scripts/lesson-search.js`
+- `scripts/tool-registry.js`
+- `tests/api-server.test.js`
+- `tests/cli.test.js`
+- `tests/dashboard.test.js`
+- `tests/lesson-search.test.js`
+
 ## 2026-03-23 RLHF raw search + pack template verification
 
 Scope:

@@ -69,7 +69,7 @@ const TOOLS = [
   }),
   readOnlyTool({
     name: 'search_lessons',
-    description: 'Search promoted lessons and show the corrective actions, prevention rules, and gates linked to each result.',
+    description: 'Search promoted lessons and show the corrective actions, lifecycle state, prevention rules, gates, and next harness fixes linked to each result.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -451,7 +451,7 @@ const TOOLS = [
   }),
   readOnlyTool({
     name: 'dashboard',
-    description: 'Get full RLHF dashboard -- approval rate, gate stats, prevention impact, system health',
+    description: 'Get full RLHF dashboard -- Harness Score, gate stats, prevention impact, proof, and system health',
     inputSchema: {
       type: 'object',
       properties: {},
