@@ -755,6 +755,42 @@ function exportDatabricks() {
   }
 }
 
+function obsidianExport() {
+  const args = parseArgs(process.argv.slice(3));
+  const { exportAll } = require(path.join(PKG_ROOT, 'scripts', 'obsidian-export'));
+  const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+
+  const vaultPath = args['vault-path'] || process.env.RLHF_OBSIDIAN_VAULT_PATH || '';
+  const outputSubdir = args['output-dir'] || 'AI-Memories/rlhf';
+  let outputDir;
+  if (vaultPath) {
+    outputDir = path.join(vaultPath, outputSubdir);
+  } else {
+    outputDir = path.join(CWD, 'obsidian-export');
+  }
+
+  const { FEEDBACK_DIR } = getFeedbackPaths();
+  const gatesConfigPath = path.join(PKG_ROOT, 'config', 'gates', 'default.json');
+
+  const stats = exportAll({
+    feedbackDir: FEEDBACK_DIR,
+    outputDir,
+    gatesConfigPath,
+    includeIndex: true,
+  });
+
+  console.log(
+    `Exported ${stats.feedback} feedback, ${stats.memories} memories, ` +
+    `${stats.rules} rules, ${stats.gates} gates, ${stats.lessons} lessons`
+  );
+  if (stats.packs > 0) console.log(`  + ${stats.packs} context packs`);
+  if (stats.errors.length > 0) {
+    console.error(`  ${stats.errors.length} error(s) during export`);
+  }
+  console.log(`Output: ${outputDir}`);
+  process.exit(stats.errors.length > 0 ? 1 : 0);
+}
+
 function rules() {
   const args = parseArgs(process.argv.slice(3));
   const { writePreventionRules } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
@@ -961,6 +997,9 @@ function help() {
   console.log('  dispatch              Print a Dispatch-safe remote ops brief for phone-driven review sessions');
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
   console.log('  export-databricks     Export RLHF logs + proof artifacts as a Databricks-ready analytics bundle');
+  console.log('  obsidian-export       Export all RLHF data as interlinked Obsidian markdown notes');
+  console.log('    --vault-path=PATH   Obsidian vault path (or set RLHF_OBSIDIAN_VAULT_PATH)');
+  console.log('    --output-dir=DIR    Output subdirectory (default: AI-Memories/rlhf)');
   console.log('  rules                 Generate prevention rules from repeated failures');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Pre-Action Gates');
   console.log('  force-gate <PATTERN>  Immediately create a blocking gate from a pattern');
@@ -1055,6 +1094,9 @@ switch (COMMAND) {
   case 'export-databricks':
   case 'databricks':
     exportDatabricks();
+    break;
+  case 'obsidian-export':
+    obsidianExport();
     break;
   case 'rules':
     rules();
