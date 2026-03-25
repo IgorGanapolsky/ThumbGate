@@ -1,11 +1,11 @@
-# Never Twice — for Cursor
+# ThumbGate — for Cursor
 
-`Never Twice` is the human-facing plugin name in Cursor listings.
+`ThumbGate` is the human-facing plugin name in Cursor listings.
 `mcp-memory-gateway` stays the plugin slug, npm package, and launcher target.
 
 The canonical short description is:
 
-> Your AI agent made a mistake? Thumbs down. It won't happen again. 👍👎 feedback that teaches your coding agent to stop repeating errors.
+> 👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.
 
 How it works:
 

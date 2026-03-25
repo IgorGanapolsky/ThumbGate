@@ -4,24 +4,24 @@
     "name": "Igor Ganapolsky"
   },
   "metadata": {
-    "description": "Your AI agent made a mistake? Thumbs down. It won't happen again. 👍👎 feedback that teaches your coding agent to stop repeating errors.",
+    "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
     "version": "0.8.0"
   },
   "plugins": [
     {
       "name": "mcp-memory-gateway",
       "source": "plugins/cursor-marketplace",
-      "description": "Your AI agent made a mistake? Thumbs down. It won't happen again. 👍👎 feedback that teaches your coding agent to stop repeating errors.",
+      "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
       "category": "agent-orchestration",
       "tags": [
         "cursor",
         "cursor-plugin",
-        "mcp",
-        "agent-orchestration",
-        "pre-action-gates",
-        "ai-agent-safety",
-        "guardrails",
-        "prevention-rules"
+        "thumbgate",
+        "thumbs-up-down",
+        "feedback",
+        "ai-agent-memory",
+        "mistake-prevention",
+        "coding-agent"
       ]
     }
   ]

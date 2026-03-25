@@ -20,12 +20,12 @@ Keep these terms in the body, tags, or follow-up copy:
 
 ## Directory blurb
 
-Your AI agent made a mistake? Thumbs down. It won't happen again. 👍👎 feedback that teaches your coding agent to stop repeating errors.
+👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.
 
 ## Manual submission fields
 
-- Name: `Never Twice`
-- Description: `Your AI agent made a mistake? Thumbs down. It won't happen again. 👍👎 feedback that teaches your coding agent to stop repeating errors.`
+- Name: `ThumbGate`
+- Description: `👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.`
 - Repository URL: `https://github.com/IgorGanapolsky/mcp-memory-gateway`
 - Homepage: `https://rlhf-feedback-loop-production.up.railway.app`
 

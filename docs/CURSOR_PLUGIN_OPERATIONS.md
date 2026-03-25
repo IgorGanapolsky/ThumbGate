@@ -8,7 +8,7 @@
 
 ## Canonical identity
 
-- Display name: `Never Twice`
+- Display name: `ThumbGate`
 - Plugin slug: `mcp-memory-gateway`
 - npm package: `mcp-memory-gateway`
 - MCP server label inside the plugin config: `rlhf`
@@ -38,15 +38,15 @@
 
 ## Suggested short description
 
-Your AI agent made a mistake? Thumbs down. It won't happen again. 👍👎 feedback that teaches your coding agent to stop repeating errors.
+👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.
 
 ## Suggested long description
 
-Your AI agent made a mistake? Thumbs down. It won't happen again. 👍👎 feedback that teaches your coding agent to stop repeating errors.
+👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.
 
 ## Suggested manual submission fields
 
-- Name: `MCP Memory Gateway`
-- Description: `Your AI agent made a mistake? Thumbs down. It won't happen again. 👍👎 feedback that teaches your coding agent to stop repeating errors.`
+- Name: `ThumbGate`
+- Description: `👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.`
 - Repository URL: `https://github.com/IgorGanapolsky/mcp-memory-gateway`
 - Homepage: `https://rlhf-feedback-loop-production.up.railway.app`

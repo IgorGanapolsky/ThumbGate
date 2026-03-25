@@ -1,7 +1,7 @@
 {
   "name": "mcp-memory-gateway",
-  "displayName": "Never Twice",
-  "description": "Your AI agent made a mistake? Thumbs down. It won't happen again. 👍👎 feedback that teaches your coding agent to stop repeating errors.",
+  "displayName": "ThumbGate",
+  "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
   "version": "0.8.0",
   "author": {
     "name": "Igor Ganapolsky"
@@ -14,7 +14,7 @@
     "cursor-plugin",
     "feedback",
     "thumbs-up-down",
-    "never-twice",
+    "thumbgate",
     "ai-agent-memory",
     "mistake-prevention",
     "coding-agent"
