@@ -27,6 +27,19 @@ const {
   aggregateFailureDiagnostics,
 } = require('./failure-diagnostics');
 
+// Lesson DB — SQLite+FTS5 backing store (dual-write alongside JSONL)
+let _lessonDB = null;
+function getLessonDB() {
+  if (_lessonDB) return _lessonDB;
+  try {
+    const { initDB } = require('./lesson-db');
+    _lessonDB = initDB();
+    return _lessonDB;
+  } catch (_err) {
+    return null; // SQLite unavailable — degrade gracefully
+  }
+}
+
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_FEEDBACK_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
 
@@ -898,6 +911,21 @@ function captureFeedback(params) {
   appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
   appendJSONL(MEMORY_LOG_PATH, memoryRecord);
 
+  // Dual-write to SQLite lesson DB (non-blocking — JSONL is source of truth)
+  let correctiveActions = [];
+  try {
+    const lessonDB = getLessonDB();
+    if (lessonDB) {
+      const { upsertLesson, inferCorrectiveActions } = require('./lesson-db');
+      upsertLesson(lessonDB, feedbackEvent, memoryRecord);
+      if (feedbackEvent.signal === 'negative') {
+        correctiveActions = inferCorrectiveActions(lessonDB, feedbackEvent, 3);
+      }
+    }
+  } catch (_err) {
+    // Lesson DB write is non-critical — never fail the capture pipeline
+  }
+
   const contextFs = getContextFsModule();
   if (contextFs && typeof contextFs.registerFeedback === 'function') {
     try {
@@ -974,6 +1002,7 @@ function captureFeedback(params) {
     message: 'Feedback promoted to reusable memory.',
     feedbackEvent,
     memoryRecord,
+    ...(correctiveActions.length > 0 && { correctiveActions }),
   };
 }
 

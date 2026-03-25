@@ -45,8 +45,10 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 ### Storage and retrieval
 
 - **Local memory:** JSONL logs in `.claude/memory/feedback` or `.rlhf/*`
+- **Lesson DB (v0.8.0):** SQLite + FTS5 full-text search via `better-sqlite3` — dual-written alongside JSONL. Indexed by signal, domain, tags, importance. Replaces linear Jaccard token-overlap with sub-millisecond ranked search.
+- **Corrective actions (v0.8.0):** On negative feedback, `capture_feedback` returns `correctiveActions[]` — top 3 remediation steps inferred from similar past failures by tag/domain overlap.
 - **Context assembly:** ContextFS packs and provenance logs
-- **Default retrieval path:** deterministic filesystem search over JSONL + ContextFS
+- **Default retrieval path:** SQLite FTS5 (primary) with JSONL Jaccard fallback
 - **Semantic/vector lane:** LanceDB + Apache Arrow + local embeddings via Hugging Face Transformers
 
 ### Enforcement and automation
