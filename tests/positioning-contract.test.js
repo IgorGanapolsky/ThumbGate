@@ -69,6 +69,23 @@ test('launch-content variants align with reliability-over-orchestration position
   assert.doesNotMatch(launchContent, /persistent memory layer that fixes this/i);
 });
 
+test('public landing copy stays vendor-neutral and honest about editor support', () => {
+  const congruence = readText(path.join('docs', 'MARKETING_COPY_CONGRUENCE.md'));
+  const landingPage = readText(path.join('public', 'index.html'));
+
+  assert.match(congruence, /Root landing page stays vendor-neutral/i);
+  assert.match(congruence, /Do not claim a standalone VS Code extension/i);
+  assert.match(landingPage, /Claude Code/i);
+  assert.match(landingPage, /Cursor/i);
+  assert.match(landingPage, /Codex/i);
+  assert.match(landingPage, /Gemini/i);
+  assert.match(landingPage, /Amp/i);
+  assert.match(landingPage, /OpenCode/i);
+  assert.match(landingPage, /VS Code works when you run an MCP-compatible agent inside it/i);
+  assert.doesNotMatch(landingPage, /auto-detects supported local agent installs/i);
+  assert.doesNotMatch(landingPage, /claude --mcp mcp-memory-gateway/i);
+});
+
 test('GEO demand engine prioritizes action queries and proof-backed fan-out surfaces', () => {
   const geoDemandEngine = readText(path.join('docs', 'GEO_DEMAND_ENGINE_MAR2026.md'));
 

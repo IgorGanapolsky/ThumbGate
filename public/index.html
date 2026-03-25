@@ -19,10 +19,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
-<title>ThumbGate — Train Your AI Agent With 👍👎</title>
-<meta name="description" content="Pre-Action Gates for AI coding agents. Capture feedback, auto-generate rules, and block mistakes before they happen. Works with Claude Code, Cursor, Codex, Gemini.">
+<title>ThumbGate — Stop AI Coding Agents From Repeating Mistakes</title>
+<meta name="description" content="Pre-Action Gates for AI coding agents. Capture feedback, auto-generate rules, and block mistakes before they happen. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.">
 <meta property="og:title" content="ThumbGate — Pre-Action Gates for AI Agents">
-<meta property="og:description" content="Train your AI agent with 👍👎. One command install. Works with Claude Code, Cursor, Codex, Gemini.">
+<meta property="og:description" content="Stop AI coding agents from making the same mistake twice. One command install. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.">
 <meta property="og:type" content="website">
 
 <script defer data-domain="rlhf-feedback-loop-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
@@ -115,6 +115,14 @@ __GA_BOOTSTRAP__
   .proof-bar span { display: inline-flex; align-items: center; gap: 6px; }
   .proof-bar .dot { width: 4px; height: 4px; background: var(--border); border-radius: 50%; }
 
+  /* COMPATIBILITY */
+  .compatibility { padding: 0 0 80px; }
+  .compatibility-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .compat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .compat-card h3 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 10px; }
+  .compat-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+  .compat-card code { font-family: var(--mono); font-size: 12px; background: rgba(34,211,238,0.08); color: var(--cyan); padding: 2px 6px; border-radius: 4px; }
+
   /* HOW IT WORKS */
   .how-it-works { padding: 80px 0; }
   .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--cyan); font-weight: 600; margin-bottom: 12px; text-align: center; }
@@ -187,6 +195,7 @@ __GA_BOOTSTRAP__
   /* RESPONSIVE */
   @media (max-width: 700px) {
     .steps { grid-template-columns: 1fr; }
+    .compatibility-grid { grid-template-columns: 1fr; }
     .pricing-grid { grid-template-columns: 1fr; }
     .hero { padding: 72px 0 56px; }
     .nav-links a:not(.nav-cta) { display: none; }
@@ -203,6 +212,7 @@ __GA_BOOTSTRAP__
     <a href="#" class="nav-logo"><span>⬡</span> mcp-memory-gateway</a>
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
+      <a href="#compatibility">Compatibility</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
       <a href="https://github.com/IgorGanapolsky/mcp-memory-gateway" target="_blank" rel="noopener">GitHub</a>
@@ -215,8 +225,8 @@ __GA_BOOTSTRAP__
 <section class="hero">
   <div class="container">
     <div class="hero-badge">● Pre-Action Gates for AI Agents</div>
-    <h1>Train your AI agent with 👍👎</h1>
-    <p>Capture feedback on AI actions. Auto-generate prevention rules. Block mistakes before they happen. <strong>New in v0.8.0:</strong> SQLite+FTS5 lesson DB with corrective-action inference on every thumbs-down.</p>
+    <h1>Stop AI coding agents from repeating known mistakes</h1>
+    <p>Capture feedback on AI actions. Auto-generate prevention rules. Block mistakes before they happen across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and other MCP-compatible agents. <strong>New in v0.8.0:</strong> SQLite+FTS5 lesson DB with corrective-action inference on every thumbs-down.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx mcp-memory-gateway init</span>
@@ -229,7 +239,28 @@ __GA_BOOTSTRAP__
       <span class="dot"></span>
       <span>MIT licensed</span>
       <span class="dot"></span>
-      <span>Claude Code · Cursor · Codex · Gemini</span>
+      <span>Claude Code · Cursor Plugin · Codex · Gemini · Amp · OpenCode</span>
+    </div>
+  </div>
+</section>
+
+<section class="compatibility" id="compatibility">
+  <div class="container">
+    <div class="section-label">Compatibility</div>
+    <h2 class="section-title">One gateway across the agent surfaces you already use</h2>
+    <div class="compatibility-grid">
+      <div class="compat-card">
+        <h3>AI CLIs</h3>
+        <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode all use the same gateway and memory model instead of separate rule systems, with surface-specific setup guides where needed.</p>
+      </div>
+      <div class="compat-card">
+        <h3>Editor workflows</h3>
+        <p>Cursor ships with a bundled marketplace plugin. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</p>
+      </div>
+      <div class="compat-card">
+        <h3>Install path</h3>
+        <p><code>npx mcp-memory-gateway init</code> bootstraps the shared gateway files, and the repo carries surface-specific guides when a CLI or editor needs its own profile, hook, or plugin bundle.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -278,7 +309,8 @@ __GA_BOOTSTRAP__
         <div><span class="comment"># Rule auto-generated from your previous 👎</span></div>
         <div>&nbsp;</div>
         <div><span class="comment"># Works with your existing setup</span></div>
-        <div><span class="fn">claude</span> <span class="string">--mcp mcp-memory-gateway</span></div>
+        <div><span class="fn">npx</span> mcp-memory-gateway init <span class="comment"># bootstraps .rlhf and .mcp.json</span></div>
+        <div><span class="comment"># Use repo guides for Claude Code, Cursor plugin, and OpenCode profiles</span></div>
       </div>
     </div>
   </div>
@@ -328,8 +360,8 @@ __GA_BOOTSTRAP__
     <h2 class="section-title">Common questions</h2>
     <div class="faq-list">
       <div class="faq-item">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What AI agents does this work with?</div>
-        <div class="faq-a">ThumbGate works with any MCP-compatible agent: Claude Code, Cursor, Codex, Gemini CLI, and Amp. If your tool supports MCP, it works.</div>
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What AI agents and editors does this work with?</div>
+        <div class="faq-a">ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any other MCP-compatible agent. Cursor ships with a plugin bundle in this repo. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Do I need a cloud account?</div>

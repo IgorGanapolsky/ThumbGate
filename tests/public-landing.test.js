@@ -24,8 +24,9 @@ test('public landing page includes SoftwareApplication JSON-LD with pricing offe
 test('public landing page has correct title and meta description', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /ThumbGate — Train Your AI Agent With/);
+  assert.match(landingPage, /ThumbGate — Stop AI Coding Agents From Repeating Mistakes/);
   assert.match(landingPage, /Pre-Action Gates for AI coding agents/);
+  assert.match(landingPage, /Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent/);
   assert.match(landingPage, /mcp-memory-gateway/);
 });
 
@@ -38,6 +39,20 @@ test('public landing page links to Stripe checkout and shows pricing tiers', () 
   assert.match(landingPage, /Free/);
   assert.match(landingPage, /Pro/);
   assert.match(landingPage, /One-time payment/);
+});
+
+test('public landing page promotes multi-agent support and honest editor compatibility', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /Claude Code · Cursor Plugin · Codex · Gemini · Amp · OpenCode/);
+  assert.match(landingPage, /One gateway across the agent surfaces you already use/);
+  assert.match(landingPage, /Cursor ships with a bundled marketplace plugin\./);
+  assert.match(landingPage, /VS Code works when you run an MCP-compatible agent inside it/);
+  assert.match(landingPage, /does not ship a standalone VS Code extension today/);
+  assert.match(landingPage, /bootstraps the shared gateway files/);
+  assert.match(landingPage, /Use repo guides for Claude Code, Cursor plugin, and OpenCode profiles/);
+  assert.doesNotMatch(landingPage, /auto-detects supported local agent installs/);
+  assert.doesNotMatch(landingPage, /claude --mcp mcp-memory-gateway/);
 });
 
 test('public landing page includes Plausible analytics and template placeholders', () => {
