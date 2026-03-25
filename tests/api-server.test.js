@@ -100,7 +100,7 @@ test('root serves the landing page by default', async () => {
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
   const body = await res.text();
-  assert.match(body, /MCP Memory Gateway — Stop Your AI Agent From Repeating Mistakes/);
+  assert.match(body, /MCP Memory Gateway — Stop AI Coding Agents From Repeating Mistakes/);
   assert.match(body, /Pre-Action Gates for AI/i);
   assert.match(body, /mcp-memory-gateway/);
   assert.match(body, /\$49/);
