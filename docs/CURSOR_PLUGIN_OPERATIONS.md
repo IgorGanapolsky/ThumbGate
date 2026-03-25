@@ -22,7 +22,7 @@
 
 ## Release workflow
 
-1. Publish the npm package when runtime code changes.
+1. Merge the version bump to `main`; `publish-npm.yml` auto-publishes unpublished versions and creates the matching `vX.Y.Z` GitHub Release.
 2. Verify the latest package is available with `npm view mcp-memory-gateway version`.
 3. Bump plugin manifests when plugin copy, assets, or packaging changed.
 4. Refresh the public Marketplace submission or Team Marketplace repo when metadata changed.

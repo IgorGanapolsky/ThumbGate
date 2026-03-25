@@ -31,15 +31,37 @@ function makeTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-install-mcp-test-'));
 }
 
+const savedPublishState = process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE;
+
+function withPublishState(value, run) {
+  const previous = process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE;
+  process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE = value;
+  try {
+    return run();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE;
+    } else {
+      process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE = previous;
+    }
+  }
+}
+
 describe('install-mcp', () => {
   let tmpDir;
 
   before(() => {
     tmpDir = makeTmpDir();
+    process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE = 'published';
   });
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
+    if (savedPublishState === undefined) {
+      delete process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE;
+    } else {
+      process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE = savedPublishState;
+    }
   });
 
   test('buildMcpConfig generates correct MCP config JSON', () => {
@@ -60,6 +82,28 @@ describe('install-mcp', () => {
     assert.equal(projectConfig.command, 'node');
     assert.equal(projectConfig.args.length, 1);
     assert.match(projectConfig.args[0], /adapters[\\/]mcp[\\/]server-stdio\.js$/);
+  });
+
+  test('resolveMcpServerConfig uses a portable launcher for external project installs', () => {
+    const isolatedDir = makeTmpDir();
+    const projectConfig = resolveMcpServerConfig({ project: true, cwd: isolatedDir });
+
+    assert.equal(projectConfig.command, 'npx');
+    assert.deepStrictEqual(projectConfig.args, ['-y', `mcp-memory-gateway@${require('../package.json').version}`, 'serve']);
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  });
+
+  test('resolveMcpServerConfig keeps a local launcher for unpublished external project installs', () => {
+    const isolatedDir = makeTmpDir();
+
+    const projectConfig = withPublishState('unpublished', () => resolveMcpServerConfig({ project: true, cwd: isolatedDir }));
+
+    assert.equal(projectConfig.command, 'node');
+    assert.equal(projectConfig.args.length, 1);
+    assert.match(projectConfig.args[0], /adapters[\\/]mcp[\\/]server-stdio\.js$/);
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
 
   test('parseFlags detects --project flag', () => {
@@ -171,7 +215,13 @@ describe('install-mcp', () => {
       assert.ok(fs.existsSync(settingsPath), 'project settings.json should be created');
 
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      assert.deepStrictEqual(settings.mcpServers[MCP_SERVER_KEY], resolveMcpServerConfig({ project: true }));
+      assert.deepStrictEqual(
+        settings.mcpServers[MCP_SERVER_KEY],
+        {
+          command: 'npx',
+          args: ['-y', `mcp-memory-gateway@${require('../package.json').version}`, 'serve'],
+        }
+      );
     } finally {
       process.chdir(origCwd);
       fs.rmSync(isolatedDir, { recursive: true, force: true });

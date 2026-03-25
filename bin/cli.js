@@ -125,6 +125,7 @@ function canonicalMcpEntry(scope = 'project') {
     pkgRoot: PKG_ROOT,
     pkgVersion: pkgVersion(),
     scope,
+    targetDir: CWD,
   });
 }
 
@@ -412,7 +413,9 @@ function init() {
   // ChatGPT — cannot be automated
   const chatgptSpec = path.join(PKG_ROOT, 'adapters', 'chatgpt', 'openapi.yaml');
   if (fs.existsSync(chatgptSpec)) {
-    console.log(`  ChatGPT: import ${path.relative(CWD, chatgptSpec)} in GPT Builder > Actions`);
+    const projectChatgptSpec = path.join(rlhfDir, 'chatgpt-openapi.yaml');
+    fs.copyFileSync(chatgptSpec, projectChatgptSpec);
+    console.log(`  ChatGPT: import ${path.relative(CWD, projectChatgptSpec)} in GPT Builder > Actions`);
   }
 
   if (configured === 0) console.log('  All detected platforms already configured.');
