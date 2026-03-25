@@ -8,7 +8,7 @@
 
 ## Canonical identity
 
-- Display name: `MCP Memory Gateway`
+- Display name: `ThumbGate`
 - Plugin slug: `mcp-memory-gateway`
 - npm package: `mcp-memory-gateway`
 - MCP server label inside the plugin config: `rlhf`
@@ -46,7 +46,7 @@ Pre-action gates that block AI agents from repeating known mistakes. Captures fe
 
 ## Suggested manual submission fields
 
-- Name: `MCP Memory Gateway`
+- Name: `ThumbGate`
 - Description: `Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.`
 - Repository URL: `https://github.com/IgorGanapolsky/mcp-memory-gateway`
 - Homepage: `https://rlhf-feedback-loop-production.up.railway.app`

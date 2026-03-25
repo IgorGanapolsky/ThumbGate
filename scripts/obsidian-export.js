@@ -655,13 +655,13 @@ function exportAll(options) {
 
   if (includeIndex) {
     const indexFm = buildFrontmatter({
-      title: 'MCP Memory Gateway',
+      title: 'ThumbGate',
       type: 'master-index',
       exported: new Date().toISOString(),
     });
 
     const indexBody = [
-      '# MCP Memory Gateway',
+      '# ThumbGate',
       '',
       '## Export Summary',
       '',
@@ -685,7 +685,7 @@ function exportAll(options) {
       new Date().toISOString(),
     ].join('\n');
 
-    writeNote(path.join(outputDir, 'MCP Memory Gateway.md'), indexFm, indexBody);
+    writeNote(path.join(outputDir, 'ThumbGate.md'), indexFm, indexBody);
   }
 
   return stats;

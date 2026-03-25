@@ -62,7 +62,7 @@ test('continuity guide frames the gateway as downstream reliability, not a new o
 test('launch-content variants align with reliability-over-orchestration positioning', () => {
   const launchContent = readText(path.join('docs', 'marketing', 'LAUNCH_CONTENT.md'));
 
-  assert.match(launchContent, /MCP Memory Gateway/i);
+  assert.match(launchContent, /ThumbGate/i);
   assert.match(launchContent, /Pre-Action Gates/i);
   assert.match(launchContent, /feedback-to-enforcement pipeline|repeated mistakes/i);
   assert.doesNotMatch(launchContent, /Agentic Feedback Studio/i);

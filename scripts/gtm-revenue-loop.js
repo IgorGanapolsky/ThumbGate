@@ -267,7 +267,7 @@ function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotio
   }
 
   return [
-    `Hey @${target.username}, saw you're building around ${repoRef}. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with MCP Memory Gateway ${motionCatalog.pro.label}: ${motion.cta}`,
+    `Hey @${target.username}, saw you're building around ${repoRef}. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate ${motionCatalog.pro.label}: ${motion.cta}`,
     `Commercial truth: ${motion.truth}. Proof pack: ${motion.proof}.`
   ].join(' ');
 }
@@ -275,7 +275,7 @@ function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotio
 function buildGeminiPrompt(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
   const motion = motionCatalog[selectedMotion.key];
   return `
-You are a highly technical founder doing outbound for MCP Memory Gateway.
+You are a highly technical founder doing outbound for ThumbGate.
 Stay inside current commercial truth. Never invent traction, partners, or scarcity.
 
 Current public self-serve offer: ${motionCatalog.pro.label}

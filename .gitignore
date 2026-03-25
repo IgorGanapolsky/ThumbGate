@@ -32,3 +32,4 @@ scripts/social-analytics/db/social-analytics.db
 __pycache__/
 *.pyc
 test-vault-*/
+.claude/memory/lessons.sqlite

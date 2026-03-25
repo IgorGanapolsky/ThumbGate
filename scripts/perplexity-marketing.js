@@ -5,7 +5,7 @@
  *
  * Uses Perplexity Sonar APIs to:
  * 1. Deep Research — find buyers, competitors, distribution channels
- * 2. Search API — find live discussions where MCP Memory Gateway is relevant
+ * 2. Search API — find live discussions where ThumbGate is relevant
  * 3. Sonar Pro — generate SEO-optimized launch posts for HN, Reddit, dev.to, Twitter
  * 4. Generate ready-to-post content with links to purchase channels
  *
@@ -27,7 +27,7 @@ const OUTPUT_DIR = path.join(__dirname, '..', '.amp', 'in', 'artifacts', 'market
 const SONAR_URL = 'https://api.perplexity.ai/chat/completions';
 
 const PRODUCT = {
-  name: 'MCP Memory Gateway',
+  name: 'ThumbGate',
   npm: 'mcp-memory-gateway',
   repo: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
   checkout: 'https://rlhf-feedback-loop-production.up.railway.app/checkout/pro',
@@ -110,7 +110,7 @@ Be specific with URLs, community names, and actionable steps.`,
   const content = result.choices[0].message.content;
   const citations = result.citations || [];
 
-  let output = `# Market Research Report — MCP Memory Gateway\n\nGenerated: ${new Date().toISOString()}\n\n`;
+  let output = `# Market Research Report — ThumbGate\n\nGenerated: ${new Date().toISOString()}\n\n`;
   output += content;
   if (citations.length) {
     output += '\n\n## Sources\n\n';
@@ -349,7 +349,7 @@ Generate:
 1. **FAQ Page Content** — 10 Q&As that match high-intent developer searches (format as JSON-LD FAQPage schema)
 2. **Meta Descriptions** — for GitHub README, npm page, landing page
 3. **Long-tail Keyword Targets** — 20 specific phrases developers search for
-4. **Comparison Content** — "MCP Memory Gateway vs LangSmith", "MCP Memory Gateway vs custom RLHF", "MCP Memory Gateway vs Weights & Biases"
+4. **Comparison Content** — "ThumbGate vs LangSmith", "ThumbGate vs custom RLHF", "ThumbGate vs Weights & Biases"
 5. **Structured Data** — JSON-LD SoftwareApplication schema for the product
 
 Make all content factually accurate and technically specific.`,
@@ -402,7 +402,7 @@ async function main() {
 
   console.log('╔══════════════════════════════════════════════════════╗');
   console.log('║  Perplexity Max Marketing Engine                    ║');
-  console.log('║  MCP Memory Gateway — First Dollar Campaign         ║');
+  console.log('║  ThumbGate — First Dollar Campaign         ║');
   console.log('╚══════════════════════════════════════════════════════╝');
 
   if (!API_KEY) {

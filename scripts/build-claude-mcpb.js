@@ -76,7 +76,7 @@ function buildClaudeMcpbManifest() {
   return {
     manifest_version: '0.3',
     name: pluginManifest.name,
-    display_name: 'MCP Memory Gateway',
+    display_name: 'ThumbGate',
     version: packageJson.version,
     description: marketplaceEntry.description,
     long_description: readme,

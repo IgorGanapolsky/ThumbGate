@@ -14,7 +14,7 @@ test('public landing page includes SoftwareApplication JSON-LD with pricing offe
 
   assert.match(landingPage, /"@context": "https:\/\/schema\.org"/);
   assert.match(landingPage, /"@type": "SoftwareApplication"/);
-  assert.match(landingPage, /"name": "MCP Memory Gateway"/);
+  assert.match(landingPage, /"name": "ThumbGate"/);
   assert.match(landingPage, /"applicationCategory": "DeveloperApplication"/);
   assert.match(landingPage, /"price": "0"/);
   assert.match(landingPage, /"price": "49"/);
@@ -24,7 +24,7 @@ test('public landing page includes SoftwareApplication JSON-LD with pricing offe
 test('public landing page has correct title and meta description', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /MCP Memory Gateway — Stop Your AI Agent From Repeating Mistakes/);
+  assert.match(landingPage, /ThumbGate — Stop Your AI Agent From Repeating Mistakes/);
   assert.match(landingPage, /Pre-Action Gates for AI coding agents/);
   assert.match(landingPage, /mcp-memory-gateway/);
 });

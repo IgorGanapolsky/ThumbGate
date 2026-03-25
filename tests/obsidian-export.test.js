@@ -589,7 +589,7 @@ test('exportAll: orchestrates all exports and creates master index', () => {
     assert.deepEqual(stats.errors, []);
 
     // Master index
-    const masterIndex = path.join(outputDir, 'MCP Memory Gateway.md');
+    const masterIndex = path.join(outputDir, 'ThumbGate.md');
     assert.ok(fs.existsSync(masterIndex), 'Master index should exist');
     const content = readFile(masterIndex);
     assert.ok(content.includes('Export Summary'), 'Should have summary');
@@ -625,7 +625,7 @@ test('exportAll: handles empty data gracefully', () => {
     assert.equal(stats.lessons, 0);
 
     // Master index should still be created
-    assert.ok(fs.existsSync(path.join(outputDir, 'MCP Memory Gateway.md')));
+    assert.ok(fs.existsSync(path.join(outputDir, 'ThumbGate.md')));
   } finally {
     cleanDir(tmpDir);
   }

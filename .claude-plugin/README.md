@@ -1,4 +1,4 @@
-# MCP Memory Gateway for Claude Desktop
+# ThumbGate for Claude Desktop
 
 `mcp-memory-gateway` gives Claude Desktop a local-first **Reliability Gateway** and **Pre-Action Gates** for workflow hardening.
 

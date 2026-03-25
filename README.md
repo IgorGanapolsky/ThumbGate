@@ -1,4 +1,4 @@
-# MCP Memory Gateway
+# ThumbGate
 
 [![CI](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/ci.yml)
 [![Self-Healing](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/self-healing-monitor.yml/badge.svg)](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/self-healing-monitor.yml)
@@ -9,7 +9,7 @@
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
 [![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro)
 
-**Pre-action gates that physically block AI coding agents from repeating known mistakes.** Capture feedback, auto-promote repeated failures into prevention rules, and enforce them via PreToolUse hooks. This is a reliability layer for one sharp agent, without another planner or swarm.
+**👍👎 feedback that teaches your AI agent. Thumbs down a mistake — it never happens again. Thumbs up good work — it remembers the pattern. This is a reliability layer for one sharp agent, without another planner or swarm.
 
 > **Honest disclaimer:** this is not RLHF weight training. It is context engineering plus enforcement. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions before they execute.
 
@@ -17,7 +17,7 @@ Works with Claude Code, Codex, Gemini, Amp, Cursor, OpenCode, and any MCP-compat
 
 ## Why it exists
 
-Most memory tools only help an agent remember. MCP Memory Gateway also enforces.
+Most memory tools only help an agent remember. ThumbGate also enforces.
 
 - `recall` injects the right context at session start.
 - `search_lessons` shows promoted lessons plus the corrective action, lifecycle state, linked rules, linked gates, and the next harness fix the system should make.
