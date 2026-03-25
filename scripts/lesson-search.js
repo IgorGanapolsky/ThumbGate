@@ -471,6 +471,11 @@ function buildLessonResult(memory, sourceFeedback, options = {}) {
 
 function searchLessons(query = '', options = {}) {
   const { MEMORY_LOG_PATH, FEEDBACK_DIR, FEEDBACK_LOG_PATH } = resolveLessonPaths(options);
+
+  // Try SQLite FTS5 first — falls back to JSONL Jaccard if unavailable
+  const sqliteResults = tryFts5Search(query, options);
+  if (sqliteResults) return sqliteResults;
+
   const memories = readJSONL(MEMORY_LOG_PATH);
   const feedbackEntries = readJSONL(FEEDBACK_LOG_PATH);
   const feedbackById = new Map(feedbackEntries.map((entry) => [entry.id, entry]));
@@ -517,7 +522,66 @@ function searchLessons(query = '', options = {}) {
     totalLessons: memories.length,
     returned: Math.min(limit, results.length),
     results: results.slice(0, limit),
+    backend: 'jsonl-jaccard',
   };
+}
+
+/**
+ * Try FTS5 search via lesson-db. Returns null if SQLite is unavailable
+ * or not opted in. Set LESSON_DB_SEARCH=1 to enable FTS5 as primary backend.
+ */
+function tryFts5Search(query, options) {
+  if (!process.env.LESSON_DB_SEARCH && !options.useFts5) return null;
+  try {
+    const { initDB, searchLessons: fts5Search, getStats } = require('./lesson-db');
+    const db = initDB();
+    const stats = getStats(db);
+
+    // If DB is empty, skip (not yet backfilled)
+    if (stats.total === 0) return null;
+
+    const parsedLimit = Number(options.limit || 10);
+    const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
+    const signal = options.category === 'error' ? 'negative' : undefined;
+    const requiredTags = Array.isArray(options.tags)
+      ? options.tags.filter(Boolean).map(String)
+      : String(options.tags || '')
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+
+    const rows = fts5Search(db, query || '', {
+      limit,
+      signal,
+      tags: requiredTags.length > 0 ? requiredTags : undefined,
+    });
+
+    return {
+      query: String(query || ''),
+      limit,
+      filters: {
+        category: options.category || null,
+        tags: requiredTags,
+      },
+      totalLessons: stats.total,
+      returned: rows.length,
+      results: rows.map((row) => ({
+        id: row.id,
+        signal: row.signal,
+        context: row.context,
+        whatWentWrong: row.whatWentWrong,
+        whatToChange: row.whatToChange,
+        whatWorked: row.whatWorked,
+        domain: row.domain,
+        tags: row.tags,
+        importance: row.importance,
+        timestamp: row.timestamp,
+      })),
+      backend: 'sqlite-fts5',
+    };
+  } catch (_err) {
+    return null; // SQLite unavailable — fall through to JSONL
+  }
 }
 
 function formatLessonSearchResults(payload) {
