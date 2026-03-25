@@ -1,7 +1,7 @@
 {
   "name": "mcp-memory-gateway",
-  "version": "0.7.5",
-  "description": "Production RLHF & DPO data pipeline for AI agents. Capture human preference signals, generate automated guardrails, and export DPO training pairs.",
+  "version": "0.8.0",
+  "description": "ThumbGate — 👍👎 feedback that teaches your AI agent. Thumbs down a mistake, it never happens again.",
   "homepage": "https://github.com/IgorGanapolsky/thumbgate",
   "transport": "stdio",
   "configSchema": {
