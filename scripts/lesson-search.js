@@ -527,9 +527,11 @@ function searchLessons(query = '', options = {}) {
 }
 
 /**
- * Try FTS5 search via lesson-db. Returns null if SQLite is unavailable.
+ * Try FTS5 search via lesson-db. Returns null if SQLite is unavailable
+ * or not opted in. Set LESSON_DB_SEARCH=1 to enable FTS5 as primary backend.
  */
 function tryFts5Search(query, options) {
+  if (!process.env.LESSON_DB_SEARCH && !options.useFts5) return null;
   try {
     const { initDB, searchLessons: fts5Search, getStats } = require('./lesson-db');
     const db = initDB();
