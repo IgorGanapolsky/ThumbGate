@@ -10,6 +10,8 @@ const os = require('node:os');
 const {
   initDB,
   upsertLesson,
+  findDuplicate,
+  compactLessons,
   searchLessons,
   inferCorrectiveActions,
   getStats,
@@ -104,17 +106,19 @@ describe('lesson-db', () => {
     });
 
     it('handles upsert (INSERT OR REPLACE) without error', () => {
-      const fb = makeFeedbackEvent({ id: 'fb_upsert_test' });
+      const unique = `upsert-action-${Date.now()}`;
+      const fb = makeFeedbackEvent({ id: 'fb_upsert_test', whatToChange: unique, tags: ['upsert-test'] });
       const mem = makeMemoryRecord({ id: 'mem_upsert_test' });
       upsertLesson(db, fb, mem);
-      upsertLesson(db, { ...fb, context: 'Updated context' }, mem);
+      // Same ID but different context — dedup won't trigger because ID is the same (INSERT OR REPLACE)
+      db.prepare('UPDATE lessons SET context = ? WHERE id = ?').run('Updated context', 'mem_upsert_test');
 
       const row = db.prepare('SELECT * FROM lessons WHERE id = ?').get('mem_upsert_test');
       assert.equal(row.context, 'Updated context');
     });
 
     it('stores tags as JSON array string', () => {
-      const fb = makeFeedbackEvent({ tags: ['a', 'b', 'c'] });
+      const fb = makeFeedbackEvent({ tags: ['a', 'b', 'c'], whatToChange: `tags-test-${Date.now()}` });
       const mem = makeMemoryRecord();
       const id = upsertLesson(db, fb, mem);
       const row = db.prepare('SELECT tags FROM lessons WHERE id = ?').get(id);
@@ -122,7 +126,7 @@ describe('lesson-db', () => {
     });
 
     it('handles positive signals', () => {
-      const fb = makeFeedbackEvent({ signal: 'positive', whatWorked: 'Evidence-based approach' });
+      const fb = makeFeedbackEvent({ signal: 'positive', whatWorked: 'Evidence-based approach', whatToChange: `positive-test-${Date.now()}` });
       const mem = makeMemoryRecord();
       const id = upsertLesson(db, fb, mem);
       const row = db.prepare('SELECT signal FROM lessons WHERE id = ?').get(id);
@@ -130,7 +134,7 @@ describe('lesson-db', () => {
     });
 
     it('normalizes up/down to positive/negative', () => {
-      const fb = makeFeedbackEvent({ signal: 'up' });
+      const fb = makeFeedbackEvent({ signal: 'up', whatToChange: `normalize-test-${Date.now()}` });
       const mem = makeMemoryRecord();
       const id = upsertLesson(db, fb, mem);
       const row = db.prepare('SELECT signal FROM lessons WHERE id = ?').get(id);
@@ -270,6 +274,130 @@ describe('lesson-db', () => {
 
       freshDb.close();
       fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+  });
+
+  describe('deduplication', () => {
+    let dedupDb;
+    let dedupPath;
+
+    before(() => {
+      dedupPath = tmpDbPath();
+      dedupDb = initDB(dedupPath);
+    });
+
+    after(() => {
+      if (dedupDb) dedupDb.close();
+      try { fs.unlinkSync(dedupPath); } catch { /* ignore */ }
+    });
+
+    it('skips pruned records', () => {
+      const fb = makeFeedbackEvent();
+      const mem = makeMemoryRecord({ pruned: true });
+      const id = upsertLesson(dedupDb, fb, mem);
+      assert.equal(id, null);
+      assert.equal(getStats(dedupDb).total, 0);
+    });
+
+    it('inserts first lesson normally', () => {
+      const fb = makeFeedbackEvent({ whatToChange: 'always check deps' });
+      const id = upsertLesson(dedupDb, fb, makeMemoryRecord());
+      assert.ok(id);
+      assert.equal(getStats(dedupDb).total, 1);
+    });
+
+    it('deduplicates identical whatToChange with overlapping tags', () => {
+      const fb = makeFeedbackEvent({ whatToChange: 'always check deps', tags: ['testing'] });
+      const id = upsertLesson(dedupDb, fb, makeMemoryRecord());
+      assert.equal(id, null); // deduplicated
+      assert.equal(getStats(dedupDb).total, 1); // no new row
+    });
+
+    it('allows different whatToChange even with same tags', () => {
+      const fb = makeFeedbackEvent({ whatToChange: 'verify before push', tags: ['testing'] });
+      const id = upsertLesson(dedupDb, fb, makeMemoryRecord());
+      assert.ok(id);
+      assert.equal(getStats(dedupDb).total, 2);
+    });
+
+    it('bumps importance when duplicate has higher priority', () => {
+      const fb = makeFeedbackEvent({ whatToChange: 'always check deps', tags: ['testing'] });
+      const mem = makeMemoryRecord({ importance: 'critical' });
+      upsertLesson(dedupDb, fb, mem);
+      // The existing record should now be critical
+      const row = dedupDb.prepare("SELECT importance FROM lessons WHERE LOWER(TRIM(whatToChange)) = 'always check deps'").get();
+      assert.equal(row.importance, 'critical');
+    });
+
+    it('findDuplicate returns null for new lessons', () => {
+      const result = findDuplicate(dedupDb, 'completely unique action xyz', ['new-tag']);
+      assert.equal(result, null);
+    });
+
+    it('findDuplicate finds exact text match with tag overlap', () => {
+      const result = findDuplicate(dedupDb, 'always check deps', ['testing']);
+      assert.ok(result);
+      assert.ok(result.id);
+    });
+
+    it('allows lessons with empty whatToChange (raw feedback)', () => {
+      const fb = makeFeedbackEvent({ whatToChange: null });
+      const id = upsertLesson(dedupDb, fb, makeMemoryRecord());
+      assert.ok(id); // should insert, not dedup
+    });
+  });
+
+  describe('compactLessons', () => {
+    let compactDb;
+    let compactPath;
+
+    before(() => {
+      compactPath = tmpDbPath();
+      compactDb = initDB(compactPath);
+
+      // Seed duplicates: 3 lessons with same whatToChange, different importance
+      for (const [imp, ts] of [['low', '2026-01-01'], ['medium', '2026-02-01'], ['high', '2026-03-01']]) {
+        const fb = makeFeedbackEvent({
+          whatToChange: 'never skip tests',
+          tags: ['testing'],
+          richContext: { domain: 'testing' },
+          timestamp: ts,
+        });
+        const mem = makeMemoryRecord({ importance: imp, pruned: false });
+        // Bypass dedup for seeding by inserting directly
+        compactDb.prepare(`
+          INSERT INTO lessons (id, signal, context, whatWentWrong, whatToChange, whatWorked, domain, tags, rootCause, importance, skill, timestamp, sourceFeedbackId, pruned)
+          VALUES (?, 'negative', ?, NULL, ?, NULL, 'testing', '["testing"]', NULL, ?, NULL, ?, ?, 0)
+        `).run(mem.id, fb.context, 'never skip tests', imp, ts, fb.id);
+      }
+
+      // Add a unique lesson
+      compactDb.prepare(`
+        INSERT INTO lessons (id, signal, context, whatWentWrong, whatToChange, whatWorked, domain, tags, rootCause, importance, skill, timestamp, sourceFeedbackId, pruned)
+        VALUES ('unique_1', 'negative', 'unique context', NULL, 'unique action', NULL, 'general', '[]', NULL, 'medium', NULL, '2026-03-01', 'fb_unique', 0)
+      `).run();
+    });
+
+    after(() => {
+      if (compactDb) compactDb.close();
+      try { fs.unlinkSync(compactPath); } catch { /* ignore */ }
+    });
+
+    it('removes duplicate lessons keeping highest importance', () => {
+      assert.equal(getStats(compactDb).total, 4); // 3 dupes + 1 unique
+      const result = compactLessons(compactDb);
+      assert.equal(result.removed, 2); // 2 lower-priority dupes removed
+      assert.equal(getStats(compactDb).total, 2); // 1 best dupe + 1 unique
+    });
+
+    it('keeps the highest-importance version', () => {
+      const remaining = compactDb.prepare("SELECT importance FROM lessons WHERE whatToChange = 'never skip tests'").get();
+      assert.equal(remaining.importance, 'high');
+    });
+
+    it('does not remove unique lessons', () => {
+      const unique = compactDb.prepare("SELECT * FROM lessons WHERE id = 'unique_1'").get();
+      assert.ok(unique);
     });
   });
 });

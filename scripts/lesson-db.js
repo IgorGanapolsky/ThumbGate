@@ -93,16 +93,41 @@ function initDB(dbPath) {
 /**
  * Upsert a lesson (feedback event + optional memory record) into SQLite.
  * Idempotent — uses INSERT OR REPLACE on the primary key.
+ *
+ * Dedup rules:
+ * 1. Skip pruned records (Bayesian entropy indicates contradictory signal)
+ * 2. Skip if an existing lesson has identical whatToChange + overlapping tags
+ *    (bumps the existing record's importance instead)
+ * 3. Always store if whatToChange is empty (raw feedback, not actionable yet)
  */
 function upsertLesson(db, feedbackEvent, memoryRecord) {
+  // Rule 1: skip pruned records — they add noise, not signal
+  if (memoryRecord?.pruned) {
+    return null;
+  }
+
   const id = memoryRecord?.id || feedbackEvent.id;
   const signal = feedbackEvent.signal === 'positive' || feedbackEvent.signal === 'up' ? 'positive' : 'negative';
-  const tags = Array.isArray(feedbackEvent.tags) ? JSON.stringify(feedbackEvent.tags) : '[]';
+  const tags = Array.isArray(feedbackEvent.tags) ? feedbackEvent.tags : [];
+  const tagsJson = JSON.stringify(tags);
   const domain = feedbackEvent.richContext?.domain || 'general';
   const rootCause = feedbackEvent.diagnosis?.rootCauseCategory || null;
   const importance = memoryRecord?.importance || (signal === 'negative' ? 'high' : 'medium');
   const skill = feedbackEvent.skill || null;
-  const pruned = memoryRecord?.pruned ? 1 : 0;
+  const whatToChange = feedbackEvent.whatToChange || null;
+
+  // Rule 2: dedup — if an existing lesson has the same whatToChange and shares tags, skip
+  if (whatToChange && whatToChange.trim()) {
+    const duplicate = findDuplicate(db, whatToChange, tags);
+    if (duplicate) {
+      // Bump importance if the new one is higher priority
+      const PRIORITY = { critical: 4, high: 3, medium: 2, low: 1 };
+      if ((PRIORITY[importance] || 0) > (PRIORITY[duplicate.importance] || 0)) {
+        db.prepare('UPDATE lessons SET importance = ? WHERE id = ?').run(importance, duplicate.id);
+      }
+      return null; // deduplicated
+    }
+  }
 
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO lessons
@@ -116,19 +141,92 @@ function upsertLesson(db, feedbackEvent, memoryRecord) {
     signal,
     feedbackEvent.context || null,
     feedbackEvent.whatWentWrong || memoryRecord?.content || null,
-    feedbackEvent.whatToChange || null,
+    whatToChange,
     feedbackEvent.whatWorked || null,
     domain,
-    tags,
+    tagsJson,
     rootCause,
     importance,
     skill,
     feedbackEvent.timestamp || new Date().toISOString(),
     feedbackEvent.id,
-    pruned,
+    0, // not pruned (we skip pruned above)
   );
 
   return id;
+}
+
+/**
+ * Find an existing lesson with identical whatToChange and overlapping tags.
+ * Returns the existing row or null.
+ */
+function findDuplicate(db, whatToChange, tags) {
+  if (!whatToChange || !whatToChange.trim()) return null;
+
+  // Exact match on whatToChange text (normalized)
+  const normalized = whatToChange.trim().toLowerCase();
+  const candidates = db.prepare(
+    `SELECT id, importance, tags FROM lessons WHERE LOWER(TRIM(whatToChange)) = ?`,
+  ).all(normalized);
+
+  if (candidates.length === 0) return null;
+
+  // If any candidate shares at least one tag, it's a duplicate
+  for (const c of candidates) {
+    if (tags.length === 0) return c; // no tags to compare = text match is enough
+    const cTags = safeParseTags(c.tags);
+    if (tags.some((t) => cTags.includes(t))) return c;
+  }
+
+  return null;
+}
+
+/**
+ * Compact the lesson DB — merge near-duplicate lessons and remove stale entries.
+ *
+ * Strategy:
+ * - Group lessons by normalized whatToChange text
+ * - Keep only the most recent + highest importance per group
+ * - Delete the rest
+ *
+ * @returns {{ removed: number, kept: number }}
+ */
+function compactLessons(db) {
+  const all = db.prepare('SELECT id, whatToChange, importance, timestamp, tags FROM lessons ORDER BY timestamp DESC').all();
+  const seen = new Map(); // normalized whatToChange → best record
+  const toDelete = [];
+  const PRIORITY = { critical: 4, high: 3, medium: 2, low: 1 };
+
+  for (const row of all) {
+    if (!row.whatToChange || !row.whatToChange.trim()) continue;
+    const key = row.whatToChange.trim().toLowerCase();
+
+    if (!seen.has(key)) {
+      seen.set(key, row);
+    } else {
+      const existing = seen.get(key);
+      const existingPri = PRIORITY[existing.importance] || 0;
+      const newPri = PRIORITY[row.importance] || 0;
+      if (newPri > existingPri) {
+        toDelete.push(existing.id);
+        seen.set(key, row);
+      } else {
+        toDelete.push(row.id);
+      }
+    }
+  }
+
+  if (toDelete.length > 0) {
+    const deleteStmt = db.prepare('DELETE FROM lessons WHERE id = ?');
+    const deleteAll = db.transaction(() => {
+      for (const id of toDelete) {
+        deleteStmt.run(id);
+      }
+    });
+    deleteAll();
+  }
+
+  return { removed: toDelete.length, kept: all.length - toDelete.length };
 }
 
 /**
@@ -405,6 +503,8 @@ function readJsonlSafe(filePath) {
 module.exports = {
   initDB,
   upsertLesson,
+  findDuplicate,
+  compactLessons,
   searchLessons,
   inferCorrectiveActions,
   getStats,
