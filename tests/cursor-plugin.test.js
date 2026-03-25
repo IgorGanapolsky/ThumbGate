@@ -31,7 +31,7 @@ function parseFrontmatter(filePath) {
   return fm;
 }
 
-const canonicalDescription = 'Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.';
+const canonicalDescription = '👍👎 feedback that teaches your AI agent. Thumbs down a mistake — it never happens again.';
 
 test('cursor marketplace manifest points at a valid plugin directory', () => {
   const packageJson = readJson('package.json');

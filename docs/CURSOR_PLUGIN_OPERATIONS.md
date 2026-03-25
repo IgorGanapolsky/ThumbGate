@@ -38,15 +38,15 @@
 
 ## Suggested short description
 
-Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
+👍👎 feedback that teaches your AI agent. Thumbs down a mistake — it never happens again.
 
 ## Suggested long description
 
-Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
+👍👎 feedback that teaches your AI agent. Thumbs down a mistake — it never happens again.
 
 ## Suggested manual submission fields
 
 - Name: `ThumbGate`
-- Description: `Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.`
+- Description: `👍👎 feedback that teaches your AI agent. Thumbs down a mistake — it never happens again.`
 - Repository URL: `https://github.com/IgorGanapolsky/mcp-memory-gateway`
 - Homepage: `https://rlhf-feedback-loop-production.up.railway.app`

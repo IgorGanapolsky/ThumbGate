@@ -5,7 +5,7 @@
 
 The canonical short description is:
 
-> Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
+> 👍👎 feedback that teaches your AI agent. Thumbs down a mistake — it never happens again.
 
 The plugin gives Cursor agents a full reliability layer:
 

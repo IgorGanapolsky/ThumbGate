@@ -24,7 +24,7 @@ test('public landing page includes SoftwareApplication JSON-LD with pricing offe
 test('public landing page has correct title and meta description', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /ThumbGate — Stop Your AI Agent From Repeating Mistakes/);
+  assert.match(landingPage, /ThumbGate — Train Your AI Agent With/);
   assert.match(landingPage, /Pre-Action Gates for AI coding agents/);
   assert.match(landingPage, /mcp-memory-gateway/);
 });
