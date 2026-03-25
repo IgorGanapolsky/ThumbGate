@@ -3,7 +3,7 @@ title: "I Built Persistent Memory for Claude Code — Here's What I Learned"
 published: false
 tags: ai, mcp, rlhf, devtools
 cover_image:
-canonical_url: https://github.com/IgorGanapolsky/mcp-memory-gateway
+canonical_url: https://github.com/IgorGanapolsky/thumbgate
 ---
 
 Every AI coding agent has the same defect, and it has nothing to do with intelligence.
@@ -30,7 +30,7 @@ None of these worked reliably. The missing piece was not retrieval — it was **
 
 The breakthrough came when I stopped treating feedback as passive context and started treating it as active control flow.
 
-[mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) is an MCP server that sits inside your agent's tool chain. The core loop:
+[mcp-memory-gateway](https://github.com/IgorGanapolsky/thumbgate) is an MCP server that sits inside your agent's tool chain. The core loop:
 
 1. You rate agent actions (thumbs up or down) with a brief note
 2. Feedback gets stored in JSONL and indexed in LanceDB
@@ -96,7 +96,7 @@ The core is open source under MIT:
 npx mcp-memory-gateway serve
 ```
 
-GitHub: [github.com/IgorGanapolsky/mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)
+GitHub: [github.com/IgorGanapolsky/thumbgate](https://github.com/IgorGanapolsky/thumbgate)
 npm: [mcp-memory-gateway](https://www.npmjs.com/package/mcp-memory-gateway)
 
 If you want a hosted dashboard with auto-gate promotion, multi-repo sync, and CI webhook ingestion, there is a [Pro tier at $49 one-time](https://rlhf-feedback-loop-production.up.railway.app). But the local version handles the full feedback loop on its own.

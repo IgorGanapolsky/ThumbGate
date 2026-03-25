@@ -16,7 +16,7 @@ Every Cursor user has experienced this — the agent makes the same mistake it m
 
 **What it is**
 
-[mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) gives Cursor agents a reliability layer with Pre-Action Gates that physically block known-bad tool calls. It's a full Cursor plugin — not just an MCP server.
+[mcp-memory-gateway](https://github.com/IgorGanapolsky/thumbgate) gives Cursor agents a reliability layer with Pre-Action Gates that physically block known-bad tool calls. It's a full Cursor plugin — not just an MCP server.
 
 **What's included in the plugin**
 
@@ -51,7 +51,7 @@ npx mcp-memory-gateway init
 
 It follows the official `cursor/plugin-template` structure. MIT licensed. 329+ tests.
 
-**Link:** https://github.com/IgorGanapolsky/mcp-memory-gateway
+**Link:** https://github.com/IgorGanapolsky/thumbgate
 
 **What this is NOT**
 

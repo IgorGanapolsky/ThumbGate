@@ -2,7 +2,7 @@
 
 **Title:** Show HN: ThumbGate – feedback-to-enforcement pipelines and Pre-Action Gates for AI coding agents
 
-**URL:** https://github.com/IgorGanapolsky/mcp-memory-gateway
+**URL:** https://github.com/IgorGanapolsky/thumbgate
 
 **Body:**
 

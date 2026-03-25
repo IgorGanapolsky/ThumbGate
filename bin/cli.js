@@ -643,7 +643,7 @@ function northStar() {
 
 function pro() {
   const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
-  const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
+  const truthUrl = 'https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/COMMERCIAL_TRUTH.md';
   console.log('\nThumbGate — Commercial Truth');
   console.log('─'.repeat(50));
   console.log('Self-serve offer today: Pro ($49 one-time).');

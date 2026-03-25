@@ -82,7 +82,7 @@ To import into GPT Builder:
 2. Paste the contents of `adapters/chatgpt/openapi.yaml`
 3. Set authentication to: **API Key** → Header name: `Authorization` → Format: `Bearer {key}`
 4. Server URL: `https://rlhf-feedback-loop-production.up.railway.app`
-5. Verification evidence: `https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md`
+5. Verification evidence: `https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/VERIFICATION_EVIDENCE.md`
 
 ### Inline Schema (minimal version for quick submission)
 
@@ -205,7 +205,7 @@ A simple icon: blue feedback loop arrow (circular) with a thumbs-up/thumbs-down 
 ## Privacy Policy URL
 
 ```
-https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/SECURITY.md
+https://github.com/IgorGanapolsky/thumbgate/blob/main/SECURITY.md
 ```
 
 ---

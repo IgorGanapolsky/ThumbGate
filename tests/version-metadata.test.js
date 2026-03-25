@@ -10,7 +10,7 @@ const {
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const CANONICAL_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
-const CURRENT_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/mcp-memory-gateway';
+const CURRENT_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/thumbgate';
 
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, relativePath), 'utf8'));

@@ -152,4 +152,4 @@ The gates config is just JSON. Add your own patterns, set your own thresholds, d
 
 MIT licensed. Early-stage project.
 
-GitHub: [github.com/IgorGanapolsky/mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)
+GitHub: [github.com/IgorGanapolsky/thumbgate](https://github.com/IgorGanapolsky/thumbgate)

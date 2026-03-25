@@ -19,7 +19,7 @@ It's called **ThumbGate**.
 - **Open Source:** Totally free for solo devs.
 - **Commercial:** The public self-serve offer today is the **$49 one-time Pro plan**. Hosted pilots are by request.
 
-Check it out on GitHub: [https://github.com/IgorGanapolsky/mcp-memory-gateway]
+Check it out on GitHub: [https://github.com/IgorGanapolsky/thumbgate]
 Demo/Hosted: [https://rlhf-feedback-loop-production.up.railway.app]
 
 Would love to hear how you're reducing repeated agent mistakes without adding more orchestration overhead.
@@ -45,7 +45,7 @@ It works with any MCP-compatible agent (Claude Code, Codex, Gemini).
 
 **Zero-Config:** Drop it into any repo with one command: `npx mcp-memory-gateway init`
 
-GitHub: [https://github.com/IgorGanapolsky/mcp-memory-gateway]
+GitHub: [https://github.com/IgorGanapolsky/thumbgate]
 Landing Page: [https://rlhf-feedback-loop-production.up.railway.app]
 
 I'm here all day to answer technical questions about project memory, guardrails, and proof loops for coding agents.
@@ -64,7 +64,7 @@ If Claude makes a mistake, capture it once and turn it into a reusable lesson, p
 - ⚡ **Global Skill:** Install once, use across all your repos.
 
 OSS is free. The public self-serve offer is Pro at $49 one-time.
-Repo: https://github.com/IgorGanapolsky/mcp-memory-gateway
+Repo: https://github.com/IgorGanapolsky/thumbgate
 Live: https://rlhf-feedback-loop-production.up.railway.app
 
 ---

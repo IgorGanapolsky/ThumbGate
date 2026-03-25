@@ -29,7 +29,7 @@ const SONAR_URL = 'https://api.perplexity.ai/chat/completions';
 const PRODUCT = {
   name: 'ThumbGate',
   npm: 'mcp-memory-gateway',
-  repo: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
+  repo: 'https://github.com/IgorGanapolsky/thumbgate',
   checkout: 'https://rlhf-feedback-loop-production.up.railway.app/checkout/pro',
   sponsor: 'https://github.com/sponsors/IgorGanapolsky',
   coffee: 'https://buymeacoffee.com/igorganapolsky',

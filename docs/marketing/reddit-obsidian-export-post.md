@@ -16,7 +16,7 @@ I use Obsidian as my second brain and Claude Code as my coding agent. Problem: t
 
 **What's new**
 
-I added an `obsidian-export` command to [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) that converts ALL the agent's memory state into well-formatted, interlinked Obsidian markdown notes.
+I added an `obsidian-export` command to [mcp-memory-gateway](https://github.com/IgorGanapolsky/thumbgate) that converts ALL the agent's memory state into well-formatted, interlinked Obsidian markdown notes.
 
 **What gets exported**
 
@@ -47,7 +47,7 @@ That's it. One command, full snapshot.
 
 The [petersolopov/obsidian-claude-ide](https://github.com/petersolopov/obsidian-claude-ide) plugin lets you invoke Claude Code directly from an Obsidian note via `/ide`. Export your agent's memory, browse it in the vault, then open any note and feed it back as context. Full circle.
 
-**Link:** https://github.com/IgorGanapolsky/mcp-memory-gateway
+**Link:** https://github.com/IgorGanapolsky/thumbgate
 
 **What this is NOT**
 

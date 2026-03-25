@@ -16,8 +16,8 @@ const APP_ORIGIN = resolveHostedBillingConfig({
   requestOrigin: 'https://rlhf-feedback-loop-production.up.railway.app',
 }).appOrigin;
 const SPRINT_LINK = `${APP_ORIGIN}/#workflow-sprint-intake`;
-const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
-const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md';
+const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/COMMERCIAL_TRUTH.md';
+const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/VERIFICATION_EVIDENCE.md';
 
 function parseArgs(argv = []) {
   const options = {

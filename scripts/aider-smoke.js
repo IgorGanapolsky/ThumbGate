@@ -30,7 +30,7 @@ function buildSmokeRequest(targetName, env = process.env) {
     headers: {
       authorization: `Bearer ${config.apiKey}`,
       'content-type': 'application/json',
-      'http-referer': 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
+      'http-referer': 'https://github.com/IgorGanapolsky/thumbgate',
       'x-title': 'ThumbGate Aider Smoke',
     },
     body: {

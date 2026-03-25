@@ -22,7 +22,7 @@ Every Claude Code session starts from zero. Same mistakes, same "oh I see, let m
 
 **What mcp-memory-gateway does**
 
-[mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) is an MCP server that gives Claude Code persistent memory:
+[mcp-memory-gateway](https://github.com/IgorGanapolsky/thumbgate) is an MCP server that gives Claude Code persistent memory:
 
 - You give thumbs up/down feedback on what the agent does
 - It auto-promotes repeated failures into **prevention rules** — structured constraints the agent checks before executing any tool call
@@ -83,7 +83,7 @@ It's a personal knowledge loop, not a SaaS product pretending to be one.
 Open source, MIT licensed. Core is free. There's a $49 one-time Pro tier for hosted dashboard
 and multi-repo sync, but the memory system works fully offline.
 
-GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
+GitHub: https://github.com/IgorGanapolsky/thumbgate
 
 Happy to answer questions about the prevention rules system or the Obsidian setup — this is
 genuinely how I use it daily.

@@ -195,6 +195,6 @@ Ensure the BRAT-installed plugin is enabled in Settings > Community Plugins.
 
 ## Further Reading
 
-- [ThumbGate on GitHub](https://github.com/IgorGanapolsky/mcp-memory-gateway)
+- [ThumbGate on GitHub](https://github.com/IgorGanapolsky/thumbgate)
 - [obsidian-claude-ide plugin](https://github.com/petersolopov/obsidian-claude-ide)
 - [Claude Code MCP documentation](https://docs.anthropic.com/en/docs/claude-code)

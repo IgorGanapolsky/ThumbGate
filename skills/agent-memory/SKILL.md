@@ -92,6 +92,6 @@ This is the core value. The agent doesn't learn — but it reads the rules and f
 
 ## Links
 
-- [GitHub](https://github.com/IgorGanapolsky/mcp-memory-gateway)
+- [GitHub](https://github.com/IgorGanapolsky/thumbgate)
 - [npm](https://www.npmjs.com/package/mcp-memory-gateway)
 - [MCP Registry](https://registry.modelcontextprotocol.io)

@@ -6,7 +6,7 @@
 
 I've been using Claude Code full-time for about 6 months. Love it, but one thing kept driving me crazy: it forgets everything between sessions. Same bugs, same wrong approaches, same "oh sorry, I'll fix that" — over and over.
 
-So I built [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) — an MCP server that gives your AI agent persistent memory with a feedback loop.
+So I built [mcp-memory-gateway](https://github.com/IgorGanapolsky/thumbgate) — an MCP server that gives your AI agent persistent memory with a feedback loop.
 
 **How it works:**
 
@@ -34,4 +34,4 @@ It's open source and free for local use. There's a [$49 one-time Pro tier](https
 
 314 tests, 12 proof reports, MIT licensed. Would love feedback from other Claude Code users on what failure patterns you'd want gates for.
 
-GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
+GitHub: https://github.com/IgorGanapolsky/thumbgate

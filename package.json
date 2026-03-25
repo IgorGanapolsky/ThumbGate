@@ -5,10 +5,10 @@
   "homepage": "https://rlhf-feedback-loop-production.up.railway.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/IgorGanapolsky/mcp-memory-gateway.git"
+    "url": "https://github.com/IgorGanapolsky/thumbgate.git"
   },
   "bugs": {
-    "url": "https://github.com/IgorGanapolsky/mcp-memory-gateway/issues"
+    "url": "https://github.com/IgorGanapolsky/thumbgate/issues"
   },
   "main": "scripts/feedback-loop.js",
   "bin": {

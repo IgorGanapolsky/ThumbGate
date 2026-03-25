@@ -50,6 +50,6 @@ This does all three.
 
 **7/7:** Free self-hosted: npx mcp-memory-gateway serve
 Pro ($49 one-time): https://rlhf-feedback-loop-production.up.railway.app/checkout/pro
-GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
+GitHub: https://github.com/IgorGanapolsky/thumbgate
 
 npm install mcp-memory-gateway

@@ -39,7 +39,7 @@ npx mcp-memory-gateway init --agent claude-code
 
 MIT licensed. $49 one-time Mistake-Free Starter Pack (500 credits) available for teams that want hosted analytics, but the core is fully open source.
 
-GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
+GitHub: https://github.com/IgorGanapolsky/thumbgate
 
 Happy to answer questions about the gate engine or how prevention rules are generated.
 
@@ -83,7 +83,7 @@ Works with Claude Code, Codex, Gemini, Amp, and Cursor. MIT licensed, fully open
 
 There's an optional Pro tier ($49 one-time, 500 credits) for hosted memory sync and usage analytics, but everything described above works locally for free.
 
-GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
+GitHub: https://github.com/IgorGanapolsky/thumbgate
 
 ---
 
@@ -111,7 +111,7 @@ npx mcp-memory-gateway init
 
 The core is open source and MIT licensed. There's a $49 one-time Starter Pack if you want hosted analytics.
 
-GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
+GitHub: https://github.com/IgorGanapolsky/thumbgate
 
 ---
 
@@ -160,7 +160,7 @@ Optional: $49 one-time Mistake-Free Starter Pack (500 credits) for teams that wa
 
 But the gate engine, prevention rules, and local memory all work for free.
 
-GitHub: github.com/IgorGanapolsky/mcp-memory-gateway
+GitHub: github.com/IgorGanapolsky/thumbgate
 Landing: rlhf-feedback-loop-production.up.railway.app
 
 #MCP #AIcoding

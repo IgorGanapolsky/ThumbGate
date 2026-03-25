@@ -89,7 +89,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 
 Hosted API access is currently pilot/by-request rather than a public self-serve monthly subscription.
 Current self-serve commercial offer: Pro ($49 one-time): https://rlhf-feedback-loop-production.up.railway.app/checkout/pro
-Verification evidence: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md
+Verification evidence: https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ---
 
@@ -132,7 +132,7 @@ Verification evidence: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob
 ## Repository
 
 ```
-https://github.com/IgorGanapolsky/mcp-memory-gateway
+https://github.com/IgorGanapolsky/thumbgate
 ```
 
 ---
@@ -190,7 +190,7 @@ npm test
 - [ ] Fork https://github.com/modelcontextprotocol/servers
 - [ ] Add entry to `README.md` under **Community Servers** in alphabetical order:
   ```markdown
-  - **[ThumbGate](https://github.com/IgorGanapolsky/mcp-memory-gateway)** — Capture feedback from AI coding agents, prevent repeated mistakes, export DPO training pairs. Works with Claude Code, ChatGPT, Gemini, Codex, and Amp.
+  - **[ThumbGate](https://github.com/IgorGanapolsky/thumbgate)** — Capture feedback from AI coding agents, prevent repeated mistakes, export DPO training pairs. Works with Claude Code, ChatGPT, Gemini, Codex, and Amp.
   ```
 - [ ] Open PR titled: `Add mcp-memory-gateway community server`
 - [ ] Verify CI passes on the PR
@@ -198,7 +198,7 @@ npm test
 ## Submission Checklist (mcp.so)
 
 - [ ] Go to https://mcp.so/submit
-- [ ] Paste GitHub URL: `https://github.com/IgorGanapolsky/mcp-memory-gateway`
+- [ ] Paste GitHub URL: `https://github.com/IgorGanapolsky/thumbgate`
 - [ ] Verify auto-populated fields (name, description, tools)
 - [ ] Add tags: `rlhf`, `feedback`, `dpo`, `coding-agent`
 - [ ] Submit

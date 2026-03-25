@@ -289,12 +289,12 @@ async function main() {
     }
   } else if (command === '--scheduled') {
     const tips = [
-      '🧠 Did you know? ThumbGate uses Thompson Sampling to decide which feedback signals matter most. Less noise, better training data.\n\nhttps://github.com/IgorGanapolsky/mcp-memory-gateway',
+      '🧠 Did you know? ThumbGate uses Thompson Sampling to decide which feedback signals matter most. Less noise, better training data.\n\nhttps://github.com/IgorGanapolsky/thumbgate',
       '🛡️ AI agents repeat the same mistakes because they have no memory across sessions. ThumbGate fixes that with local-first feedback loops.\n\nnpx mcp-memory-gateway init',
-      '📊 The learning curve dashboard shows your agent actually getting smarter — approval rate climbing, failure domains shrinking, prevention rules firing.\n\nhttps://github.com/IgorGanapolsky/mcp-memory-gateway',
+      '📊 The learning curve dashboard shows your agent actually getting smarter — approval rate climbing, failure domains shrinking, prevention rules firing.\n\nhttps://github.com/IgorGanapolsky/thumbgate',
       '🔄 Capture → Validate → Remember → Prevent → Export. Five phases to turn agent mistakes into training data.\n\nThumbGate — local-first RLHF for AI agents.\n\nnpx mcp-memory-gateway init',
       '💡 Prevention rules generated from repeated failures = an immune system for your AI agent. No cloud required.\n\nPro $49 one-time → https://rlhf-feedback-loop-production.up.railway.app/checkout/pro',
-      '⚡ Works with Claude Code, Amp, Codex, Gemini CLI, Cursor. One install, all agents learn.\n\nnpx mcp-memory-gateway init\n\nhttps://github.com/IgorGanapolsky/mcp-memory-gateway',
+      '⚡ Works with Claude Code, Amp, Codex, Gemini CLI, Cursor. One install, all agents learn.\n\nnpx mcp-memory-gateway init\n\nhttps://github.com/IgorGanapolsky/thumbgate',
     ];
     const dayIndex = Math.floor(Date.now() / 86400000) % tips.length;
     const tip = tips[dayIndex];
@@ -341,7 +341,7 @@ Works with Claude, Codex, Amp, Gemini.
 npm: npx mcp-memory-gateway init
 Pro: $49 one-time
 
-⭐ https://github.com/IgorGanapolsky/mcp-memory-gateway`;
+⭐ https://github.com/IgorGanapolsky/thumbgate`;
 
     const id = await postTweet(tweet, null, { dryRun });
     if (id) {

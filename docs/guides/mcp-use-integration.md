@@ -105,6 +105,6 @@ This keeps the surface read-only for metrics, diagnostics, recall, planning, and
 
 ## Links
 
-- [ThumbGate](https://github.com/IgorGanapolsky/mcp-memory-gateway)
+- [ThumbGate](https://github.com/IgorGanapolsky/thumbgate)
 - [mcp-use SDK](https://github.com/mcp-use/mcp-use)
 - [npm package](https://www.npmjs.com/package/mcp-memory-gateway)

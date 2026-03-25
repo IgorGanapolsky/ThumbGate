@@ -6,8 +6,8 @@
   "author": {
     "name": "Igor Ganapolsky"
   },
-  "homepage": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
-  "repository": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
+  "homepage": "https://github.com/IgorGanapolsky/thumbgate",
+  "repository": "https://github.com/IgorGanapolsky/thumbgate",
   "license": "MIT",
   "keywords": [
     "cursor",

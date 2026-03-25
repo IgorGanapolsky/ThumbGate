@@ -105,9 +105,9 @@ For complete privacy information, see: https://rlhf-feedback-loop-production.up.
 
 ## Support
 
-- GitHub Issues: https://github.com/IgorGanapolsky/mcp-memory-gateway/issues
-- Security Advisories: https://github.com/IgorGanapolsky/mcp-memory-gateway/security
-- Verification evidence: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md
+- GitHub Issues: https://github.com/IgorGanapolsky/thumbgate/issues
+- Security Advisories: https://github.com/IgorGanapolsky/thumbgate/security
+- Verification evidence: https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ## Notes For Submission
 

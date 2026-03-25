@@ -19,7 +19,7 @@ workspace:
   root: $SYMPHONY_WORKSPACE_ROOT
 hooks:
   after_create: |
-    git clone --depth 1 https://github.com/IgorGanapolsky/mcp-memory-gateway.git .
+    git clone --depth 1 https://github.com/IgorGanapolsky/thumbgate.git .
     npm ci
   before_run: |
     git fetch origin --prune

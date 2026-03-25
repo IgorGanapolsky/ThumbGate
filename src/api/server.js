@@ -713,11 +713,11 @@ function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
     '__SERVER_SESSION_ID__': pageContext.serverSessionId || '',
     '__SERVER_ACQUISITION_ID__': pageContext.serverAcquisitionId || '',
     '__SERVER_TELEMETRY_CAPTURED__': pageContext.serverTelemetryCaptured ? 'true' : 'false',
-    '__VERIFICATION_URL__': 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md',
-    '__COMPATIBILITY_REPORT_URL__': 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/proof/compatibility/report.json',
-    '__AUTOMATION_REPORT_URL__': 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/proof/automation/report.json',
-    '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
-    '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
+    '__VERIFICATION_URL__': 'https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/VERIFICATION_EVIDENCE.md',
+    '__COMPATIBILITY_REPORT_URL__': 'https://github.com/IgorGanapolsky/thumbgate/blob/main/proof/compatibility/report.json',
+    '__AUTOMATION_REPORT_URL__': 'https://github.com/IgorGanapolsky/thumbgate/blob/main/proof/automation/report.json',
+    '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
+    '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/thumbgate',
   });
 }
 
@@ -872,7 +872,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
       <pre id="curl-block">Waiting for provisioning...</pre>
       <div class="actions">
         <a class="button" href="/">Back to landing page</a>
-        <a class="button secondary" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Verification evidence</a>
+        <a class="button secondary" href="https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Verification evidence</a>
       </div>
     </div>
   </main>
@@ -1226,8 +1226,8 @@ function renderCheckoutCancelledPage(runtimeConfig) {
 function renderWorkflowSprintIntakeResultPage(runtimeConfig, { title, detail, leadId = null }) {
   const safeTitle = escapeHtmlAttribute(title || 'Sprint intake received');
   const safeDetail = escapeHtmlAttribute(detail || 'We have your workflow details and will review the proof path next.');
-  const proofPackUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md';
-  const sprintBriefUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md';
+  const proofPackUrl = 'https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/VERIFICATION_EVIDENCE.md';
+  const sprintBriefUrl = 'https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md';
   const safeLeadId = leadId ? `<p><strong>Lead ID:</strong> ${escapeHtmlAttribute(leadId)}</p>` : '';
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1547,7 +1547,7 @@ function createApiServer() {
           name: 'mcp-memory-gateway',
           version: pkg.version,
           status: 'ok',
-          docs: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
+          docs: 'https://github.com/IgorGanapolsky/thumbgate',
           endpoints: ['/health', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dpo/export', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
@@ -1806,7 +1806,7 @@ function createApiServer() {
         description: 'Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor.',
         version: pkg.version,
         tools: getServerCardTools(),
-        repository: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
+        repository: 'https://github.com/IgorGanapolsky/thumbgate',
         homepage: hostedConfig.appOrigin,
       }, {}, {
         headOnly: isHeadRequest,
@@ -1985,8 +1985,8 @@ function createApiServer() {
           status: lead.status,
           offer: lead.offer,
           nextStep: 'review_proof_pack',
-          proofPackUrl: 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md',
-          sprintBriefUrl: 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md',
+          proofPackUrl: 'https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/VERIFICATION_EVIDENCE.md',
+          sprintBriefUrl: 'https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md',
         }, {
           ...getPublicBillingHeaders(lead.attribution.traceId),
           ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
@@ -2099,7 +2099,7 @@ function createApiServer() {
 <h2>Data Deletion</h2>
 <p>Contact igor.ganapolsky@gmail.com to request deletion of hosted data.</p>
 <h2>Contact</h2><p>igor.ganapolsky@gmail.com</p>
-<p><a href="https://github.com/IgorGanapolsky/mcp-memory-gateway">GitHub</a></p>
+<p><a href="https://github.com/IgorGanapolsky/thumbgate">GitHub</a></p>
 </body></html>`, {}, {
         headOnly: isHeadRequest,
       });
