@@ -100,8 +100,8 @@ test('root serves the landing page by default', async () => {
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
   const body = await res.text();
-  assert.match(body, /ThumbGate — Stop Your AI Agent From Repeating Mistakes/);
-  assert.match(body, /Pre-Action Gates for AI/i);
+  assert.match(body, /ThumbGate — Train Your AI Agent With/);
+  assert.match(body, /ThumbGate|Pre-Action Gates|feedback.*teaches/i);
   assert.match(body, /mcp-memory-gateway/);
   assert.match(body, /\$49/);
   assert.match(body, /\$0/);

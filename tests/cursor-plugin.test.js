@@ -42,7 +42,7 @@ test('cursor marketplace manifest points at a valid plugin directory', () => {
   assert.equal(marketplace.name, 'mcp-memory-gateway-marketplace');
   assert.equal(marketplace.owner.name, 'Igor Ganapolsky');
   assert.equal(marketplace.metadata.version, packageJson.version);
-  assert.match(marketplace.metadata.description, /Pre-Action Gates|repeating.*mistakes/i);
+  assert.match(marketplace.metadata.description, /feedback.*teaches|thumbs down.*never.*again/i);
   assert.ok(pluginEntry, 'marketplace entry for mcp-memory-gateway should exist');
   assert.equal(pluginEntry.name, pluginManifest.name, 'marketplace entry should match plugin manifest name');
   assert.equal(pluginEntry.source, 'plugins/cursor-marketplace');
