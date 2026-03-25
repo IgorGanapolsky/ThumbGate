@@ -45,7 +45,29 @@ function syncVersion(opts) {
   const targets = [];
   const drifted = [];
 
-  // 1. server.json — top-level version + packages[0].version
+  // 1. package-lock.json — top-level version metadata
+  const packageLockPath = 'package-lock.json';
+  if (fs.existsSync(path.join(PROJECT_ROOT, packageLockPath))) {
+    const packageLock = readJson(packageLockPath);
+    if (packageLock.version !== version) {
+      drifted.push({ file: packageLockPath, field: 'version', current: packageLock.version });
+      if (!checkOnly) {
+        packageLock.version = version;
+      }
+    }
+    if (packageLock.packages && packageLock.packages[''] && packageLock.packages[''].version !== version) {
+      drifted.push({ file: packageLockPath, field: 'packages[""].version', current: packageLock.packages[''].version });
+      if (!checkOnly) {
+        packageLock.packages[''].version = version;
+      }
+    }
+    if (!checkOnly && drifted.some((entry) => entry.file === packageLockPath)) {
+      writeJson(packageLockPath, packageLock);
+    }
+    targets.push(packageLockPath);
+  }
+
+  // 2. server.json — top-level version + packages[0].version
   const serverJson = readJson('server.json');
   if (serverJson.version !== version) {
     drifted.push({ file: 'server.json', field: 'version', current: serverJson.version });
@@ -65,7 +87,7 @@ function syncVersion(opts) {
   }
   targets.push('server.json');
 
-  // 2. .well-known/mcp/server-card.json
+  // 3. .well-known/mcp/server-card.json
   const cardPath = '.well-known/mcp/server-card.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, cardPath))) {
     const card = readJson(cardPath);
@@ -79,7 +101,7 @@ function syncVersion(opts) {
     targets.push(cardPath);
   }
 
-  // 3. .claude-plugin/plugin.json
+  // 4. .claude-plugin/plugin.json
   const claudePluginPath = '.claude-plugin/plugin.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, claudePluginPath))) {
     const claudePlugin = readJson(claudePluginPath);
@@ -93,7 +115,7 @@ function syncVersion(opts) {
     targets.push(claudePluginPath);
   }
 
-  // 4. .claude-plugin/marketplace.json
+  // 5. .claude-plugin/marketplace.json
   const claudeMarketplacePath = '.claude-plugin/marketplace.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, claudeMarketplacePath))) {
     const claudeMarketplace = readJson(claudeMarketplacePath);
@@ -107,7 +129,7 @@ function syncVersion(opts) {
     targets.push(claudeMarketplacePath);
   }
 
-  // 5. root Cursor marketplace manifest
+  // 6. root Cursor marketplace manifest
   const cursorMarketplacePath = '.cursor-plugin/marketplace.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, cursorMarketplacePath))) {
     const cursorMarketplace = readJson(cursorMarketplacePath);
@@ -123,7 +145,7 @@ function syncVersion(opts) {
     targets.push(cursorMarketplacePath);
   }
 
-  // 6. plugin Cursor manifest
+  // 7. plugin Cursor manifest
   const cursorPluginManifestPath = 'plugins/cursor-marketplace/.cursor-plugin/plugin.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, cursorPluginManifestPath))) {
     const cursorPlugin = readJson(cursorPluginManifestPath);
@@ -137,7 +159,7 @@ function syncVersion(opts) {
     targets.push(cursorPluginManifestPath);
   }
 
-  // 7. plugin Cursor MCP config
+  // 8. plugin Cursor MCP config
   const cursorPluginConfigPath = 'plugins/cursor-marketplace/mcp.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, cursorPluginConfigPath))) {
     const cursorPluginConfig = readJson(cursorPluginConfigPath);
@@ -154,11 +176,12 @@ function syncVersion(opts) {
     targets.push(cursorPluginConfigPath);
   }
 
-  // 8. docs/install files that pin the npm package version
+  // 9. docs/install files that pin the npm package version
   const pinnedPackageTargets = [
     'docs/PLUGIN_DISTRIBUTION.md',
     'adapters/README.md',
     'adapters/opencode/opencode.json',
+    'docs/guides/opencode-integration.md',
     'docs/mcp-hub-submission.md',
     'docs/VERIFICATION_EVIDENCE.md',
     'plugins/codex-profile/INSTALL.md',
@@ -180,7 +203,7 @@ function syncVersion(opts) {
     targets.push(relPath);
   }
 
-  // 9. docs/landing-page.html — hero badge + JSON snippet
+  // 10. docs/landing-page.html — hero badge + JSON snippet
   const landingPath = 'docs/landing-page.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, landingPath))) {
     const landingContent = fs.readFileSync(path.join(PROJECT_ROOT, landingPath), 'utf-8');
@@ -203,7 +226,7 @@ function syncVersion(opts) {
     targets.push(landingPath);
   }
 
-  // 10. docs/mcp-hub-submission.md
+  // 11. docs/mcp-hub-submission.md
   const mcpSubmPath = 'docs/mcp-hub-submission.md';
   if (fs.existsSync(path.join(PROJECT_ROOT, mcpSubmPath))) {
     const mcpContent = fs.readFileSync(path.join(PROJECT_ROOT, mcpSubmPath), 'utf-8');
@@ -217,7 +240,7 @@ function syncVersion(opts) {
     targets.push(mcpSubmPath);
   }
 
-  // 11. public/index.html — static landing proof pill + footer version
+  // 12. public/index.html — static landing proof pill + footer version
   const publicIndexPath = 'public/index.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, publicIndexPath))) {
     const publicContent = fs.readFileSync(path.join(PROJECT_ROOT, publicIndexPath), 'utf-8');

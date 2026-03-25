@@ -44,6 +44,30 @@ function resolveStableSourceRoot(pkgRoot) {
   return pkgRoot;
 }
 
+function resolveGitCommonDir(dirPath) {
+  try {
+    return execFileSync('git', ['-C', dirPath, 'rev-parse', '--path-format=absolute', '--git-common-dir'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch (_) {
+    return null;
+  }
+}
+
+function isSameCheckoutFamily(pkgRoot, targetDir) {
+  const packageCommonDir = resolveGitCommonDir(pkgRoot);
+  const targetCommonDir = resolveGitCommonDir(targetDir);
+
+  if (packageCommonDir && targetCommonDir) {
+    return packageCommonDir === targetCommonDir;
+  }
+
+  const resolvedPkgRoot = path.resolve(pkgRoot);
+  const resolvedTargetDir = path.resolve(targetDir);
+  return resolvedTargetDir === resolvedPkgRoot || resolvedTargetDir.startsWith(`${resolvedPkgRoot}${path.sep}`);
+}
+
 function resolveLocalServerPath(pkgRoot, scope = 'project') {
   const baseRoot = scope === 'home' ? resolveStableSourceRoot(pkgRoot) || pkgRoot : pkgRoot;
   return path.join(baseRoot, 'adapters', 'mcp', 'server-stdio.js');
@@ -63,18 +87,62 @@ function localMcpEntry(pkgRoot, scope = 'project') {
   };
 }
 
-function resolveMcpEntry({ pkgRoot, pkgVersion, scope = 'project' }) {
+const publicationCache = new Map();
+
+function publishedVersionOverride() {
+  const override = String(process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE || '').trim().toLowerCase();
+  if (override === 'published') {
+    return true;
+  }
+  if (override === 'unpublished') {
+    return false;
+  }
+  return null;
+}
+
+function isVersionPublished(pkgVersion) {
+  const override = publishedVersionOverride();
+  if (override !== null) {
+    return override;
+  }
+  if (publicationCache.has(pkgVersion)) {
+    return publicationCache.get(pkgVersion);
+  }
+
+  let published = false;
+  try {
+    execFileSync('npm', ['view', `mcp-memory-gateway@${pkgVersion}`, 'version'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 5000,
+    });
+    published = true;
+  } catch (_) {
+    published = false;
+  }
+
+  publicationCache.set(pkgVersion, published);
+  return published;
+}
+
+function resolveMcpEntry({ pkgRoot, pkgVersion, scope = 'project', targetDir = pkgRoot }) {
   if (!isSourceCheckout(pkgRoot)) {
+    return portableMcpEntry(pkgVersion);
+  }
+  if (scope === 'project' && !isSameCheckoutFamily(pkgRoot, targetDir) && isVersionPublished(pkgVersion)) {
     return portableMcpEntry(pkgVersion);
   }
   return localMcpEntry(pkgRoot, scope);
 }
 
 module.exports = {
+  isVersionPublished,
   isSourceCheckout,
+  isSameCheckoutFamily,
   localMcpEntry,
   parseWorktreePaths,
   portableMcpEntry,
+  resolveGitCommonDir,
   resolveLocalServerPath,
   resolveMcpEntry,
   resolveStableSourceRoot,

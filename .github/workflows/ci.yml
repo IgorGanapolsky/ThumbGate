@@ -41,6 +41,9 @@ jobs:
       - name: Install deps
         run: npm ci
 
+      - name: Check version sync
+        run: node scripts/sync-version.js --check
+
       - name: Run tests
         run: npm test
 

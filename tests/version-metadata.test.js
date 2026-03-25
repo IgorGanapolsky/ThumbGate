@@ -26,17 +26,46 @@ test('pricing matches 2026 standard', () => {
 
 test('package version matches MCP manifests', () => {
   const packageJson = readJson('package.json');
+  const packageLock = readJson('package-lock.json');
   const serverManifest = readJson('server.json');
   const claudePlugin = readJson('.claude-plugin/plugin.json');
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
   const cursorMarketplace = readJson('.cursor-plugin/marketplace.json');
   const cursorPlugin = readJson('plugins/cursor-marketplace/.cursor-plugin/plugin.json');
 
+  assert.equal(packageLock.version, packageJson.version);
+  assert.equal(packageLock.packages[''].version, packageJson.version);
   assert.equal(serverManifest.version, packageJson.version);
   assert.equal(claudePlugin.version, packageJson.version);
   assert.equal(claudeMarketplace.version, packageJson.version);
   assert.equal(cursorMarketplace.metadata.version, packageJson.version);
   assert.equal(cursorPlugin.version, packageJson.version);
+});
+
+test('version-pinned install docs match the current package release line', () => {
+  const packageJson = readJson('package.json');
+  const expectedPackageRef = `mcp-memory-gateway@${packageJson.version}`;
+  const pinnedPaths = [
+    'adapters/README.md',
+    'adapters/opencode/opencode.json',
+    'docs/guides/opencode-integration.md',
+    'docs/mcp-hub-submission.md',
+    'docs/PLUGIN_DISTRIBUTION.md',
+    'docs/VERIFICATION_EVIDENCE.md',
+    'plugins/codex-profile/INSTALL.md',
+    'plugins/opencode-profile/INSTALL.md',
+  ];
+
+  for (const relativePath of pinnedPaths) {
+    const content = readText(relativePath);
+    const matches = content.match(/mcp-memory-gateway@\d+\.\d+\.\d+/g) || [];
+    assert.ok(matches.length > 0, `${relativePath} should contain a version-pinned launcher`);
+    assert.deepEqual(
+      [...new Set(matches)],
+      [expectedPackageRef],
+      `${relativePath} should only reference ${expectedPackageRef}`
+    );
+  }
 });
 
 test('public docs render the current package version', () => {

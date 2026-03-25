@@ -25,6 +25,7 @@ function resolveMcpServerConfig(flags = {}) {
     pkgRoot: PKG_ROOT,
     pkgVersion: PKG_VERSION,
     scope: flags.project ? 'project' : 'home',
+    targetDir: flags.cwd || process.cwd(),
   });
 }
 
