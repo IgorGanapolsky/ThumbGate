@@ -165,7 +165,7 @@ describe('social-analytics normalizer', () => {
       id: 'yt_abc123',
       publishedAt: '2026-03-21T14:00:00Z',
       isShort: true,
-      title: 'MCP Memory Gateway in 60s',
+      title: 'ThumbGate in 60s',
       statistics: {
         viewCount: '5000',
         likeCount: '120',

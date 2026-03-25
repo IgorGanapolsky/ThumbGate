@@ -64,7 +64,7 @@ How it works:
 
 ### Cursor Marketplace
 
-Search for **MCP Memory Gateway** in the Cursor marketplace and install.
+Search for **ThumbGate** in the Cursor marketplace and install.
 
 ### Team Marketplace
 
@@ -74,7 +74,7 @@ Cursor Teams and Enterprise can import this repository through `Dashboard -> Set
 
 Treat Cursor Directory as a discoverability surface, not the runtime distribution channel. It helps people find the plugin, but npm releases do not rewrite directory copy on their own. The Cursor Directory does not auto-refresh from npm.
 
-If a manual submission form asks for `Name`, use `MCP Memory Gateway` instead of the slug.
+If a manual submission form asks for `Name`, use `ThumbGate` instead of the slug.
 
 ### Manual setup
 
@@ -109,7 +109,7 @@ Use the `/capture-feedback` command or the `capture_feedback` MCP tool to send s
 
 ## What makes this useful in Cursor
 
-MCP Memory Gateway gives Cursor agents a practical guardrail layer:
+ThumbGate gives Cursor agents a practical guardrail layer:
 
 - **Pre-Action Gates** block known-bad actions before tool use
 - **Prevention rules** auto-generated from repeated failures

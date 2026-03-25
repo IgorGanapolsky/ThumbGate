@@ -2079,9 +2079,9 @@ function createApiServer() {
 
     // Public privacy policy — required for GPT Store and marketplace listings
     if (isGetLikeRequest && pathname === '/privacy') {
-      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Privacy Policy — MCP Memory Gateway</title></head><body>
+      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Privacy Policy — ThumbGate</title></head><body>
 <h1>Privacy Policy</h1>
-<p><strong>MCP Memory Gateway</strong> (npm: mcp-memory-gateway)</p>
+<p><strong>ThumbGate</strong> (npm: mcp-memory-gateway)</p>
 <p>Last updated: 2026-03-11</p>
 <h2>Data Collection</h2>
 <p>The self-hosted version stores workflow data locally on your machine. Local feedback, memory entries, proof artifacts, and context packs stay in your project files unless you explicitly point the system at a hosted endpoint.</p>

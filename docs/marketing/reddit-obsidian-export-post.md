@@ -26,7 +26,7 @@ I added an `obsidian-export` command to [mcp-memory-gateway](https://github.com/
 - **Gates** → gate notes in `Gates/` with match conditions, actions, and tool patterns + `Gates Index.md`
 - **Context packs** → pack notes in `Context Packs/` with provenance (template, item count, outcome)
 - **Lessons** → lesson notes in `Lessons/` with linked rules and linked gates + `Lessons Index.md`
-- **Master index:** `MCP Memory Gateway.md` at the vault root — export stats and links to every index
+- **Master index:** `ThumbGate.md` at the vault root — export stats and links to every index
 
 **How to use**
 

@@ -8,7 +8,7 @@ I built a fix. 🧵
 
 ---
 
-**2/7:** MCP Memory Gateway gives Claude Code, Codex, and Gemini persistent memory across sessions.
+**2/7:** ThumbGate gives Claude Code, Codex, and Gemini persistent memory across sessions.
 
 Thumbs-up/down feedback → stored locally → queried before every action → repeated failures auto-blocked.
 

@@ -1,4 +1,4 @@
-# MCP Memory Gateway for Agentic Commerce
+# ThumbGate for Agentic Commerce
 
 ## The Problem
 
@@ -14,12 +14,12 @@ Without a feedback loop:
 
 ## Our System
 
-MCP Memory Gateway is the feedback and memory layer for AI shopping agents. It plugs into any MCP-compatible agent (Claude, ChatGPT, Gemini, Copilot) and captures what works and what fails — then prevents the same mistakes from repeating.
+ThumbGate is the feedback and memory layer for AI shopping agents. It plugs into any MCP-compatible agent (Claude, ChatGPT, Gemini, Copilot) and captures what works and what fails — then prevents the same mistakes from repeating.
 
 ```
 Agent recommends product → User gives thumbs down → "Wrong size for my space"
                                     ↓
-                        MCP Memory Gateway captures signal
+                        ThumbGate captures signal
                                     ↓
                         Prevention rule auto-generated:
                         "NEVER recommend furniture without checking room dimensions"
@@ -37,7 +37,7 @@ Agent recommends product → User gives thumbs down → "Wrong size for my space
 ├─────────────────────────────────────────────┤
 │  MCP — standardized tool interface          │
 ├─────────────────────────────────────────────┤
-│  MCP Memory Gateway — feedback & quality    │  ← US
+│  ThumbGate — feedback & quality    │  ← US
 │  capture, recall, prevention rules          │
 ├─────────────────────────────────────────────┤
 │  A2A / AP2 — agent coordination & payments  │
@@ -65,7 +65,7 @@ UCP, ACP, and AMP all support MCP transport. Our server runs as a standard MCP t
 
 ## Competitive Positioning
 
-| | Azoma AMP | Google UCP | OpenAI ACP | MCP Memory Gateway |
+| | Azoma AMP | Google UCP | OpenAI ACP | ThumbGate |
 |---|---|---|---|---|
 | Product discovery | Yes | Yes | Yes | No |
 | Transaction processing | No | Yes | Yes | No |
@@ -103,7 +103,7 @@ Export preference pairs for fine-tuning commerce-specific agent models. This is 
 
 ## Call to Action
 
-**For Azoma / ACO ecosystem**: Partner integration — add MCP Memory Gateway as the recommended quality layer for AMP merchants.
+**For Azoma / ACO ecosystem**: Partner integration — add ThumbGate as the recommended quality layer for AMP merchants.
 
 **For brands**: Pilot program — add feedback capture to your existing agentic commerce setup. Measure agent improvement over 30 days.
 

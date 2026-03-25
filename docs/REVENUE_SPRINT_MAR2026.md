@@ -176,7 +176,7 @@ mcpize deploy
 ### 2. Create "Founding Member $5/mo Forever" Stripe Link (30 min, HIGH impact)
 ```bash
 # In Stripe Dashboard:
-# 1. Create product "MCP Memory Gateway — Founding Member"
+# 1. Create product "ThumbGate — Founding Member"
 # 2. Price: $5/mo recurring
 # 3. Create promotion code: FOUNDING50 (limits to 50 redemptions)
 # 4. Generate payment link
@@ -190,7 +190,7 @@ Title: "I built persistent memory for Claude Code — never lose context between
 
 Body:
 - Problem: Claude forgets everything between sessions
-- Solution: MCP Memory Gateway captures feedback, prevents repeated mistakes
+- Solution: ThumbGate captures feedback, prevents repeated mistakes
 - Free: npx mcp-memory-gateway serve
 - Hosted: $5/mo founding member (50 spots)
 - Demo: [Railway URL]
@@ -201,7 +201,7 @@ Body:
 
 ### 4. Show HN Post (1 hour, HIGH impact)
 ```
-Title: "Show HN: MCP Memory Gateway – Persistent memory and guardrails for AI coding agents"
+Title: "Show HN: ThumbGate – Persistent memory and guardrails for AI coding agents"
 
 Body: Technical, concise. Focus on:
 - DPO/KTO export pairs (HN loves ML infrastructure)

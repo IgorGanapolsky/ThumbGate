@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title>MCP Memory Gateway</title>
+  <title>ThumbGate</title>
   <desc>Gateway icon for the Claude Desktop workflow hardening extension.</desc>
   <defs>
     <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">

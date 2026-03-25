@@ -39,7 +39,7 @@ Keep these terms in the body, tags, or follow-up copy:
 ```text
 Cursor is fast until it repeats the same repo mistake for the third time.
 
-We shipped MCP Memory Gateway to give Cursor agents:
+We shipped ThumbGate to give Cursor agents:
 - local memory for repo lessons
 - pre-action gates before tool use
 - proof-backed feedback
@@ -57,7 +57,7 @@ The weak point in many Cursor workflows is not speed. It is repetition.
 
 An agent gets corrected, the session ends, and the same repo mistake comes back in the next run.
 
-MCP Memory Gateway is our fix for that:
+ThumbGate is our fix for that:
 - capture feedback with evidence
 - recall the right lesson in the next task
 - block known-bad actions with pre-action gates

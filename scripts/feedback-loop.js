@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MCP Memory Gateway (local-first)
+ * ThumbGate (local-first)
  *
  * Pipeline:
  *   thumbs up/down -> resolve action -> validate memory -> append logs

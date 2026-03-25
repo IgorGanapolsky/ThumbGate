@@ -644,7 +644,7 @@ function northStar() {
 function pro() {
   const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
   const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
-  console.log('\nMCP Memory Gateway — Commercial Truth');
+  console.log('\nThumbGate — Commercial Truth');
   console.log('─'.repeat(50));
   console.log('Self-serve offer today: Pro ($49 one-time).');
   console.log('Hosted Context Gateway access is pilot/by-request.');
@@ -932,7 +932,7 @@ function serve() {
 }
 
 function install() {
-  console.log('Installing MCP Memory Gateway as a global MCP skill...');
+  console.log('Installing ThumbGate as a global MCP skill...');
   const results = [
     setupClaude(),
     setupCodex(),
@@ -942,10 +942,10 @@ function install() {
   ];
   const success = results.some(r => r === true);
   if (success) {
-    console.log('\nSuccess! MCP Memory Gateway is now available to your agents.');
+    console.log('\nSuccess! ThumbGate is now available to your agents.');
     console.log('Try asking your agent: "Capture positive feedback for this task"');
   } else {
-    console.log('\nMCP Memory Gateway is already configured.');
+    console.log('\nThumbGate is already configured.');
   }
 }
 

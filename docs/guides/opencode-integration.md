@@ -1,6 +1,6 @@
 # OpenCode Integration
 
-This repository now includes a repo-local OpenCode profile plus a portable adapter profile for the MCP Memory Gateway.
+This repository now includes a repo-local OpenCode profile plus a portable adapter profile for the ThumbGate.
 
 ## What Ships
 

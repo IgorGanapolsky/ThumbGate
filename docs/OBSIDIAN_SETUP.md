@@ -1,6 +1,6 @@
-# Obsidian + MCP Memory Gateway Integration Guide
+# Obsidian + ThumbGate Integration Guide
 
-Connect your Obsidian vault to MCP Memory Gateway so Claude Code's persistent RLHF memory
+Connect your Obsidian vault to ThumbGate so Claude Code's persistent RLHF memory
 is browsable, searchable, and linkable inside Obsidian.
 
 ---
@@ -28,7 +28,7 @@ a Claude Code session with your current vault note as context.
 
 ---
 
-## Step 2: Connect Claude Code to MCP Memory Gateway
+## Step 2: Connect Claude Code to ThumbGate
 
 Add the following to your Claude Code MCP configuration
 (typically `~/.claude/claude_desktop_config.json` or the Claude Code settings file):
@@ -195,6 +195,6 @@ Ensure the BRAT-installed plugin is enabled in Settings > Community Plugins.
 
 ## Further Reading
 
-- [MCP Memory Gateway on GitHub](https://github.com/IgorGanapolsky/mcp-memory-gateway)
+- [ThumbGate on GitHub](https://github.com/IgorGanapolsky/mcp-memory-gateway)
 - [obsidian-claude-ide plugin](https://github.com/petersolopov/obsidian-claude-ide)
 - [Claude Code MCP documentation](https://docs.anthropic.com/en/docs/claude-code)

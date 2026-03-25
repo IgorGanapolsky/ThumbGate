@@ -1,5 +1,5 @@
 {
-  "name": "MCP Memory Gateway",
+  "name": "ThumbGate",
   "description": "Persistent memory for AI coding agents — stops Claude Code from repeating mistakes",
   "url": "https://rlhf-feedback-loop-production.up.railway.app",
   "hook_attributes": {

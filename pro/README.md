@@ -1,4 +1,4 @@
-# MCP Memory Gateway — Pro Configuration Pack
+# ThumbGate — Pro Configuration Pack
 
 Production-ready RLHF configurations for AI agent teams.
 
@@ -40,7 +40,7 @@ Production reminder templates for:
 ## Installation
 
 ```bash
-# Copy pro configs into your MCP Memory Gateway installation
+# Copy pro configs into your ThumbGate installation
 cp -r pro/ /path/to/your/mcp-memory-gateway/
 npm run self-heal:check
 ```

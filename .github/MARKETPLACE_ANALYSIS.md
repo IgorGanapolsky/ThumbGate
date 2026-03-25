@@ -1,7 +1,7 @@
-# GitHub Marketplace & MCP Memory Gateway Analysis
+# GitHub Marketplace & ThumbGate Analysis
 
 **Date**: 2026-03-11
-**Product**: MCP Memory Gateway
+**Product**: ThumbGate
 **npm**: mcp-memory-gateway
 **Repo**: IgorGanapolsky/mcp-memory-gateway
 **Live URL**: https://rlhf-feedback-loop-production.up.railway.app
@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-GitHub Marketplace is **not** the right distribution channel for MCP Memory Gateway. While we've created a valid GitHub App manifest, GitHub Marketplace is explicitly designed for GitHub Actions and GitHub Apps/OAuth apps—not for general developer tools or MCP servers.
+GitHub Marketplace is **not** the right distribution channel for ThumbGate. While we've created a valid GitHub App manifest, GitHub Marketplace is explicitly designed for GitHub Actions and GitHub Apps/OAuth apps—not for general developer tools or MCP servers.
 
 The **correct marketplace** for MCP servers is the **MCP Marketplace ecosystem** (including official registries and community platforms), which is where this product should be submitted.
 
@@ -29,7 +29,7 @@ A properly structured GitHub App manifest that could be used to programmatically
 - Setup URL redirects
 
 **Manifest Structure**:
-- Name: MCP Memory Gateway
+- Name: ThumbGate
 - Description: Persistent memory for AI coding agents
 - Webhook: GitHub event notifications
 - OAuth Redirect: Post-authorization setup
@@ -41,7 +41,7 @@ A properly structured GitHub App manifest that could be used to programmatically
 
 | Field | Value | Purpose |
 |-------|-------|---------|
-| `name` | MCP Memory Gateway | App display name (max 34 chars) |
+| `name` | ThumbGate | App display name (max 34 chars) |
 | `url` | Railway production URL | Homepage/docs |
 | `hook_attributes.url` | /webhooks/github | Where GitHub sends events |
 | `redirect_url` | /github/callback | Post-auth redirect |
@@ -70,9 +70,9 @@ GitHub Marketplace supports **only two categories**:
 - ❌ API services
 - ❌ Developer tools that don't hook into GitHub workflows
 
-### Why MCP Memory Gateway Doesn't Fit
+### Why ThumbGate Doesn't Fit
 
-MCP Memory Gateway is:
+ThumbGate is:
 - A protocol server (Model Context Protocol)
 - An npm package (`mcp-memory-gateway`)
 - An agent integration tool
@@ -82,7 +82,7 @@ None of these are GitHub-native workflows. While we *could* create a GitHub App 
 
 ---
 
-## Correct Distribution Channels for MCP Memory Gateway
+## Correct Distribution Channels for ThumbGate
 
 ### Primary: MCP Marketplace Ecosystem
 
@@ -130,12 +130,12 @@ The `mcp-memory-gateway` package is already on npm and discoverable.
 
 1. **Scope Mismatch**
    - GitHub Marketplace = GitHub workflow automation
-   - MCP Memory Gateway = LLM agent memory layer
+   - ThumbGate = LLM agent memory layer
    - No integration point
 
 2. **Wrong Audience**
    - GitHub Marketplace users = DevOps/automation engineers
-   - MCP Memory Gateway users = AI/ML engineers, prompt engineers, agent builders
+   - ThumbGate users = AI/ML engineers, prompt engineers, agent builders
    - Audience doesn't overlap
 
 3. **Distribution Paradox**
@@ -174,7 +174,7 @@ The `mcp-memory-gateway` package is already on npm and discoverable.
 
 The manifest we created **is valid** and follows GitHub's official schema. If you decide to:
 
-- Build a GitHub App that wraps MCP Memory Gateway
+- Build a GitHub App that wraps ThumbGate
 - Create a PR feedback analyzer that uses the memory service
 - Build GitHub Actions that invoke the memory service
 

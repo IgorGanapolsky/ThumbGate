@@ -74,7 +74,7 @@ TXT
 budget_check "$PB_ESTIMATE_PER_DIAGRAM"
 paperbanana generate \
   --input docs/diagrams/rlhf-architecture.txt \
-  --caption "MCP Memory Gateway architecture for AI coding agents with schema gate, memory store, prevention rules, and DPO export" \
+  --caption "ThumbGate architecture for AI coding agents with schema gate, memory store, prevention rules, and DPO export" \
   --vlm-provider gemini \
   --vlm-model "$PB_VLM_MODEL" \
   --image-provider google_imagen \

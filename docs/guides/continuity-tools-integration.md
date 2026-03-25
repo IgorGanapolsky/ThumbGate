@@ -1,6 +1,6 @@
 # Pair Continuity Tools With The Gateway
 
-Continuity tools help you reopen a project and remember where you left off. MCP Memory Gateway solves the next problem: making the resumed AI session safer and more repeatable without adding an extra orchestrator, planner, or subagent layer.
+Continuity tools help you reopen a project and remember where you left off. ThumbGate solves the next problem: making the resumed AI session safer and more repeatable without adding an extra orchestrator, planner, or subagent layer.
 
 Use the continuity layer to regain human context.
 Use the Gateway as the reliability layer for:
@@ -38,7 +38,7 @@ That reuses the existing capture pipeline:
 
 - Base agent: does the actual work
 - Continuity tool: what was I doing, what changed, what is next
-- MCP Memory Gateway: what mistakes keep repeating, what should be blocked, what evidence proves the run was safe
+- ThumbGate: what mistakes keep repeating, what should be blocked, what evidence proves the run was safe
 
 ## What this is not
 

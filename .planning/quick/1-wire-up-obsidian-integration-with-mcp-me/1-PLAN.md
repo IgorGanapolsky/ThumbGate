@@ -18,7 +18,7 @@ must_haves:
     - "Verification script proves every claim in both docs maps to real artifacts"
   artifacts:
     - path: "docs/OBSIDIAN_SETUP.md"
-      provides: "Step-by-step Obsidian + MCP Memory Gateway integration guide"
+      provides: "Step-by-step Obsidian + ThumbGate integration guide"
       min_lines: 60
     - path: "docs/marketing/reddit-obsidian-post.md"
       provides: "r/ObsidianMD post draft with real feature references"
@@ -37,7 +37,7 @@ must_haves:
 ---
 
 <objective>
-Create an Obsidian integration guide for MCP Memory Gateway and a Reddit marketing post for r/ObsidianMD, with automated verification that every claim is factual.
+Create an Obsidian integration guide for ThumbGate and a Reddit marketing post for r/ObsidianMD, with automated verification that every claim is factual.
 
 Purpose: Enable Obsidian users to browse RLHF memory via the petersolopov/obsidian-claude-ide plugin, and draft a marketing post to drive awareness on r/ObsidianMD.
 Output: Setup doc, Reddit post draft, and a verification script proving both are factually correct.
@@ -65,7 +65,7 @@ Create `docs/OBSIDIAN_SETUP.md` with these sections:
 
 1. **Prerequisites** — Obsidian installed, BRAT plugin installed, Claude Code installed
 2. **Install obsidian-claude-ide plugin** — Add `petersolopov/obsidian-claude-ide` via BRAT (Settings > BRAT > Add Beta Plugin > paste repo URL). Explain the `/ide` command it adds.
-3. **Connect to MCP Memory Gateway** — Show MCP config JSON snippet to add to Claude Code settings:
+3. **Connect to ThumbGate** — Show MCP config JSON snippet to add to Claude Code settings:
    ```json
    {
      "mcpServers": {
@@ -104,7 +104,7 @@ Structure:
 - **Title:** Something like "I connected Obsidian to Claude Code's persistent memory — here's the setup" (under 300 chars, genuine tone)
 - **Body:**
   - Hook: Obsidian is great for personal knowledge, but AI agents forget everything between sessions. What if your AI's memory lived in your vault?
-  - What it does: MCP Memory Gateway gives Claude Code persistent memory (feedback capture, prevention rules, memory logs). The obsidian-claude-ide plugin lets Obsidian talk to Claude Code via `/ide`.
+  - What it does: ThumbGate gives Claude Code persistent memory (feedback capture, prevention rules, memory logs). The obsidian-claude-ide plugin lets Obsidian talk to Claude Code via `/ide`.
   - Setup summary: Install BRAT > add obsidian-claude-ide > configure MCP server > create AI-Memories folder > symlink memory files
   - What you see: Prevention rules as browsable notes, feedback stats, memory graph in Obsidian's graph view
   - Link to full setup: `docs/OBSIDIAN_SETUP.md` in the repo

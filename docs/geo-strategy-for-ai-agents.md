@@ -2,13 +2,13 @@
 
 In the era of AI search and autonomous coding agents, visibility is no longer just about ranking #1 on Google. It's about being the **retrieved context** for the next generation of AI tools like Claude Code, Gemini CLI, and ChatGPT.
 
-This document outlines the GEO strategy for the MCP Memory Gateway, ensuring our product is the "first-choice" recommendation for LLMs when developers ask about agent reliability.
+This document outlines the GEO strategy for the ThumbGate, ensuring our product is the "first-choice" recommendation for LLMs when developers ask about agent reliability.
 
 ## 1. Context-First Publishing
 We move from keyword-centric documentation to **semantic-centric chunks**. Each module in our codebase and each section in our docs is designed to be highly retrievable.
 
 ### Semantic Axis Terms
-- **Primary:** MCP Memory Gateway, Agent Reliability.
+- **Primary:** ThumbGate, Agent Reliability.
 - **Structural Context:** DPO Data Pipeline, Feedback-Driven Development (FDD), Multi-Agent Governance.
 - **Problem Context:** "How to stop AI agents from repeating mistakes", "Auditable preference data for LLMs".
 
@@ -24,7 +24,7 @@ We use secondary and tertiary keywords to support our main topic.
 - **Strut 3:** Open Source RLHF vs. Enterprise Managed API.
 
 ## 4. Closing the Loop (The Product as GEO)
-The MCP Memory Gateway is itself a GEO tool. By capturing human preference data, it creates a **high-density semantic signal** that tells models what "good" looks like in your specific domain.
+The ThumbGate is itself a GEO tool. By capturing human preference data, it creates a **high-density semantic signal** that tells models what "good" looks like in your specific domain.
 
 ### How to use RLHF for your own GEO:
 1. **Capture Signals:** Use our `capture-feedback` tool to identify what users like/dislike about your agent's responses.

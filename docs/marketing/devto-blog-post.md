@@ -18,13 +18,13 @@ To move from "cool demos" to "merging 1,000+ PRs per week," you need infrastruct
 
 Pre-Action Gates sit between the LLM and your codebase. They enforce hard boundaries that the agent cannot cross, regardless of the prompt.
 
-I built **MCP Memory Gateway** to capture human feedback, auto-promote recurring failures into prevention rules, and enforce those rules before risky tool calls execute.
+I built **ThumbGate** to capture human feedback, auto-promote recurring failures into prevention rules, and enforce those rules before risky tool calls execute.
 
 ## Feedback-to-Enforcement Pipeline
-The core loop in MCP Memory Gateway turns subjective human frustration into verifiable constraints:
+The core loop in ThumbGate turns subjective human frustration into verifiable constraints:
 
 1. **The Signal:** An agent does something wrong. You hit "thumbs down" or type "this failed."
-2. **The Capture:** MCP Memory Gateway intercepts this signal, grabbing the exact context, the tool used, and the repository state.
+2. **The Capture:** ThumbGate intercepts this signal, grabbing the exact context, the tool used, and the repository state.
 3. **The Gate:** It generates a non-bypassable architectural rule (stored in `CLAUDE.md` or `AGENTS.md`) that blocks the agent from repeating the action.
 
 ## Run the Revenue-at-Risk Analyzer

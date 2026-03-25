@@ -1,6 +1,6 @@
 # Zero-Filming IG + TikTok Automation
 
-This is the local-first social pipeline for MCP Memory Gateway.
+This is the local-first social pipeline for ThumbGate.
 
 It exists so we can ship founder-style IG and TikTok content without filming, manual screenshotting, or manual posting.
 

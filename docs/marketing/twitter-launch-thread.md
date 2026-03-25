@@ -1,4 +1,4 @@
-# Twitter / X Launch Thread — MCP Memory Gateway
+# Twitter / X Launch Thread — ThumbGate
 
 ---
 
@@ -12,7 +12,7 @@ I built a fix. Thread 🧵
 ---
 
 **Tweet 2 (product + live URL):**
-MCP Memory Gateway gives Claude Code, Codex, and Gemini persistent memory across sessions.
+ThumbGate gives Claude Code, Codex, and Gemini persistent memory across sessions.
 
 Thumbs-up/down feedback → stored locally → queried before every action → repeated failures auto-blocked.
 

@@ -9,7 +9,7 @@
 - **Revenue Today:** `node bin/cli.js cfo --today --timezone=America/New_York` still falls back to local operator truth. It shows `6` GitHub Marketplace paid events today, but `$0.00` booked revenue because all `6` orders still have unknown amounts in the local ledger.
 - **RLHF Hardening:** ShieldCortex-backed memory-ingress blocking is implemented and verified in the `fix/rlhf-source-labels` worktree.
 - **Publish Reality:** The social pipeline remains on `main`, with Instagram draft creation verified and TikTok still blocked by unauthenticated Chrome profiles (`Default instagram=7 tiktok=0`, `Profile 1 instagram=0 tiktok=0`).
-- **Positioning:** Landing page still frames MCP Memory Gateway as an AI workflow control plane, not a generic memory server.
+- **Positioning:** Landing page still frames ThumbGate as an AI workflow control plane, not a generic memory server.
 
 ## Last Completed Task
 - Implemented dependency cooldown check

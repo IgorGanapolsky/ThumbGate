@@ -7,7 +7,7 @@
 **Body:**
 Claude Code is strong, but the failure mode I kept seeing was not just forgetting context. It was repeating the same operational mistakes across sessions.
 
-It's called **MCP Memory Gateway**.
+It's called **ThumbGate**.
 
 - **Problem:** Project lessons disappear, feedback gets lost, and the same mistakes keep happening.
 - **Solution:** Pre-Action Gates for AI coding agents. Capture feedback, retrieve the right lesson on the next task, and turn repeated failures into prevention rules.
@@ -28,10 +28,10 @@ Would love to hear how you're reducing repeated agent mistakes without adding mo
 
 ## 2. Show HN Post
 
-**Title:** Show HN: MCP Memory Gateway – pre-action gates for AI coding agents
+**Title:** Show HN: ThumbGate – pre-action gates for AI coding agents
 
 **Body:**
-Hi HN, I’m launching MCP Memory Gateway.
+Hi HN, I’m launching ThumbGate.
 
 Most developers are now running serious work through coding agents, but the same mistake keeps showing up: the agent has the docs, but not the lesson. That leads to repeated errors, extra review overhead, and brittle workflows.
 
@@ -55,7 +55,7 @@ I'm here all day to answer technical questions about project memory, guardrails,
 ## 3. Discord Showcase Post (MCP Official / Claude Code)
 
 **Message:**
-🚀 Just launched **MCP Memory Gateway**. It gives MCP-compatible coding agents Pre-Action Gates that block repeated mistakes before risky tool calls execute.
+🚀 Just launched **ThumbGate**. It gives MCP-compatible coding agents Pre-Action Gates that block repeated mistakes before risky tool calls execute.
 
 If Claude makes a mistake, capture it once and turn it into a reusable lesson, prevention rule, or hard guardrail so the same failure stops repeating.
 

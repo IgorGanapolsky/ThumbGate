@@ -1,6 +1,6 @@
 # Research Spec: Project Bayes (Bayesian Agentic Memory)
 
-This document maps Google's **Bayesian Teaching** approach to our local MCP Memory Gateway. It transitions our memory layer from a static database of "facts" to a dynamic system of **probabilistic beliefs**.
+This document maps Google's **Bayesian Teaching** approach to our local ThumbGate. It transitions our memory layer from a static database of "facts" to a dynamic system of **probabilistic beliefs**.
 
 ## 1. The Core Problem: Memory Over-Confidence
 Standard RAG treats all retrieved memories as equally "true." If a user changes their mind or a tool returns a different result, the agent is stuck with conflicting context. Standard LLMs lack a formal mechanism for **belief revision**.

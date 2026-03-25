@@ -1,4 +1,4 @@
-# mcpize configuration for MCP Memory Gateway
+# mcpize configuration for ThumbGate
 project: "mcp-memory-gateway"
 version: "0.7.1"
 start_command: "npx -y mcp-memory-gateway serve"

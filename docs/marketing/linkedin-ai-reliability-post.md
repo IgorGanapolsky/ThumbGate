@@ -104,4 +104,4 @@ Local-first. Auditable. Built for Claude Code, Codex, Cursor, and agent-heavy en
 
 - Headline: Less AI hype. More proof.
 - Body: The winning offer is one workflow with memory, gates, and a proof pack.
-- Footer: MCP Memory Gateway
+- Footer: ThumbGate

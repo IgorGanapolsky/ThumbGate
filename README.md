@@ -1,4 +1,4 @@
-# MCP Memory Gateway
+# ThumbGate
 
 [![CI](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/ci.yml)
 [![Self-Healing](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/self-healing-monitor.yml/badge.svg)](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/self-healing-monitor.yml)
@@ -17,7 +17,7 @@ Works with Claude Code, Codex, Gemini, Amp, Cursor, OpenCode, and any MCP-compat
 
 ## Why it exists
 
-Most memory tools only help an agent remember. MCP Memory Gateway also enforces.
+Most memory tools only help an agent remember. ThumbGate also enforces.
 
 - `recall` injects the right context at session start.
 - `search_lessons` shows promoted lessons plus the corrective action, lifecycle state, linked rules, linked gates, and the next harness fix the system should make.

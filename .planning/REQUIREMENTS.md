@@ -1,4 +1,4 @@
-# Requirements: MCP Memory Gateway v3.1 First Dollar
+# Requirements: ThumbGate v3.1 First Dollar
 
 **Defined:** 2026-03-18
 **Core Value:** Every feature must have tests, pass CI, and produce verification evidence

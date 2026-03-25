@@ -1,7 +1,7 @@
 # Marketing Copy Congruence
 
 ## Core Identity
-**Product Name:** MCP Memory Gateway
+**Product Name:** ThumbGate
 **Primary Value Proposition:** Pre-Action Gates
 
 ## Surface Descriptions
@@ -16,8 +16,8 @@
 > Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor.
 
 ### Gumroad Pro Product
-**Title:** MCP Memory Gateway Pro — Unlimited Pre-Action Gates + Cloud Sync
-**Description:** Your AI coding agent keeps making the same mistake. MCP Memory Gateway's Pre-Action Gates physically block known-bad tool calls before they execute. Pro unlocks unlimited custom gates, auto-gate promotion, cloud-synced memory, team-shared prevention rules, and usage analytics. One-time purchase, no subscription.
+**Title:** ThumbGate Pro — Unlimited Pre-Action Gates + Cloud Sync
+**Description:** Your AI coding agent keeps making the same mistake. ThumbGate's Pre-Action Gates physically block known-bad tool calls before they execute. Pro unlocks unlimited custom gates, auto-gate promotion, cloud-synced memory, team-shared prevention rules, and usage analytics. One-time purchase, no subscription.
 
 ### DEV.TO Blog Post
 **Title:** I built pre-action gates that physically block Claude Code from repeating mistakes

@@ -46,7 +46,7 @@ test('public docs render the current package version', () => {
   const claudePluginReadme = readText('.claude-plugin/README.md');
   const claudeDesktopPacket = readText('docs/CLAUDE_DESKTOP_EXTENSION.md');
 
-  assert.match(landingPage, /MCP Memory Gateway/);
+  assert.match(landingPage, /ThumbGate/);
   assert.match(landingPage, /AI agent reliability/i);
   assert.match(landingPage, /Claude Desktop extension/i);
   assert.match(landingPage, /\$49 one-time/);
