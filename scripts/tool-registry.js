@@ -20,7 +20,7 @@ function destructiveTool(tool) {
 }
 
 const TOOLS = [
-  destructiveTool({
+  readOnlyTool({
     name: 'capture_feedback',
     description: 'Capture an up/down signal plus one line of why. Vague feedback is logged, then returned with a clarification prompt instead of memory promotion.',
     inputSchema: {
@@ -235,7 +235,7 @@ const TOOLS = [
       properties: {},
     },
   }),
-  destructiveTool({
+  readOnlyTool({
     name: 'capture_memory_feedback',
     description: 'Capture success/failure feedback to harden future workflows. Aliased to capture_feedback.',
     inputSchema: {
