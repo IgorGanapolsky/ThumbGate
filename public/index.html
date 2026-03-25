@@ -216,7 +216,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="hero-badge">● Pre-Action Gates for AI Agents</div>
     <h1>Stop your AI agent from making the same mistake twice</h1>
-    <p>Capture feedback on AI actions. Auto-generate prevention rules. Block mistakes before they happen.</p>
+    <p>Capture feedback on AI actions. Auto-generate prevention rules. Block mistakes before they happen. <strong>New in v0.8.0:</strong> SQLite+FTS5 lesson DB with corrective-action inference on every thumbs-down.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx mcp-memory-gateway init</span>
@@ -225,7 +225,7 @@ __GA_BOOTSTRAP__
     <div class="proof-bar">
       <span>1,000+ npm downloads</span>
       <span class="dot"></span>
-      <span>329+ tests passing</span>
+      <span>1,500+ tests passing</span>
       <span class="dot"></span>
       <span>MIT licensed</span>
       <span class="dot"></span>
@@ -243,7 +243,7 @@ __GA_BOOTSTRAP__
       <div class="step">
         <div class="step-num">1</div>
         <h3>Feedback</h3>
-        <p>Give <code>👍</code> or <code>👎</code> on your AI agent's actions. Feedback is stored locally as structured memories.</p>
+        <p>Give <code>👍</code> or <code>👎</code> on your AI agent's actions. Feedback is stored in a SQLite+FTS5 lesson DB. On <code>👎</code>, get corrective actions from similar past failures.</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
