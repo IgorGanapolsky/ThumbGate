@@ -147,10 +147,10 @@
 
   <!-- STATS -->
   <div class="stats-grid" id="statsGrid">
-    <div class="stat-card" onclick="filterBySignal('all')" style="cursor:pointer;" title="Show all feedback"><div class="stat-label">Total Feedback</div><div class="stat-value cyan" id="statTotal">—</div></div>
-    <div class="stat-card" onclick="filterBySignal('up')" style="cursor:pointer;" title="Show positive feedback"><div class="stat-label">👍 Positive</div><div class="stat-value green" id="statPositive">—</div></div>
-    <div class="stat-card" onclick="filterBySignal('down')" style="cursor:pointer;" title="Show negative feedback"><div class="stat-label">👎 Negative</div><div class="stat-value red" id="statNegative">—</div></div>
-    <div class="stat-card" onclick="switchTab('gates')" style="cursor:pointer;" title="View active gates"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></div>
+    <div class="stat-card" onclick="selectCard(this,'all')" style="cursor:pointer;" title="Show all feedback"><div class="stat-label">Total Feedback</div><div class="stat-value cyan" id="statTotal">—</div></div>
+    <div class="stat-card" onclick="selectCard(this,'up')" style="cursor:pointer;" title="Show positive feedback"><div class="stat-label">👍 Positive</div><div class="stat-value green" id="statPositive">—</div></div>
+    <div class="stat-card" onclick="selectCard(this,'down')" style="cursor:pointer;" title="Show negative feedback"><div class="stat-label">👎 Negative</div><div class="stat-value red" id="statNegative">—</div></div>
+    <div class="stat-card" onclick="selectCard(this,'gates')" style="cursor:pointer;" title="View active gates"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></div>
   </div>
 
   <!-- TABS -->
@@ -314,22 +314,22 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function filterBySignal(signal) {
-  // Switch to search tab
+function selectCard(el, action) {
+  // Highlight clicked card, clear all others
+  document.querySelectorAll('.stat-card').forEach(function(c) { c.style.borderColor = ''; });
+  el.style.borderColor = 'var(--cyan)';
+
+  if (action === 'gates') {
+    switchTab('gates');
+    return;
+  }
+
+  // Filter memories by signal
   switchTab('search');
   var container = document.getElementById('searchResults');
   if (!isDemo || !demoData.length) return;
-  var results;
-  if (signal === 'all') {
-    results = demoData;
-  } else {
-    results = demoData.filter(function(r) { return r.signal === signal; });
-  }
-  container.innerHTML = results.length ? results.map(renderResult).join('') : '<div class="empty">No ' + signal + ' feedback in demo</div>';
-  // Highlight active card
-  document.querySelectorAll('.stat-card').forEach(function(c) { c.style.borderColor = ''; });
-  var idx = signal === 'all' ? 0 : signal === 'up' ? 1 : 2;
-  document.querySelectorAll('.stat-card')[idx].style.borderColor = 'var(--cyan)';
+  var results = action === 'all' ? demoData : demoData.filter(function(r) { return r.signal === action; });
+  container.innerHTML = results.length ? results.map(renderResult).join('') : '<div class="empty">No ' + action + ' feedback in demo</div>';
 }
 
 function setSource(el, source) {
