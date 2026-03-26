@@ -209,7 +209,7 @@ __GA_BOOTSTRAP__
 <!-- NAV -->
 <nav>
   <div class="container">
-    <a href="#" class="nav-logo"><span>⬡</span> mcp-memory-gateway</a>
+    <a href="#" class="nav-logo"><span>⬡</span> ThumbGate</a>
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
       <a href="#compatibility">Compatibility</a>
@@ -226,7 +226,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="hero-badge">● Pre-Action Gates for AI Agents</div>
     <h1>Stop AI coding agents from repeating known mistakes</h1>
-    <p>Capture feedback on AI actions. Auto-generate prevention rules. Block mistakes before they happen across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and other MCP-compatible agents. <strong>New in v0.8.0:</strong> SQLite+FTS5 lesson DB with corrective-action inference on every thumbs-down.</p>
+    <p>Capture feedback on AI actions. Auto-generate prevention rules. Block mistakes before they happen across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and other MCP-compatible agents. <strong>New in v0.8.1:</strong> SQLite+FTS5 lesson DB, MemAlign-inspired dual recall, Thompson Sampling for adaptive gates, LanceDB vector search, and corrective-action inference on every thumbs-down.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx mcp-memory-gateway init</span>
@@ -359,6 +359,14 @@ __GA_BOOTSTRAP__
     <div class="section-label">FAQ</div>
     <h2 class="section-title">Common questions</h2>
     <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Is this real RLHF?</div>
+        <div class="faq-a">Honest answer: no. This is context engineering plus enforcement, not RLHF weight training. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions. Your model's weights are never changed. What actually works: recall injects past context, search_lessons exposes corrective actions, and pre-action gates block known-bad tool calls. What does not work: thumbs up/down changing model weights, or agents self-correcting without context injection.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What's the tech stack?</div>
+        <div class="faq-a">SQLite+FTS5 lesson DB for fast full-text search. MemAlign-inspired dual recall (principle-based rules + episodic context). Thompson Sampling for adaptive gate sensitivity per failure domain. LanceDB + Apache Arrow for local vector search with Hugging Face embeddings. ContextFS for context assembly. Bayesian belief updates on each memory. All local-first — no cloud required.</div>
+      </div>
       <div class="faq-item">
         <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What AI agents and editors does this work with?</div>
         <div class="faq-a">ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any other MCP-compatible agent. Cursor ships with a plugin bundle in this repo. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</div>
