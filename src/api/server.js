@@ -106,6 +106,7 @@ const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
 const { TOOLS: MCP_TOOLS } = require('../../scripts/tool-registry');
 
 const LANDING_PAGE_PATH = path.resolve(__dirname, '../../public/index.html');
+const DASHBOARD_PAGE_PATH = path.resolve(__dirname, '../../public/dashboard.html');
 const VISITOR_COOKIE_NAME = 'rlhf_visitor_id';
 const SESSION_COOKIE_NAME = 'rlhf_session_id';
 const ACQUISITION_COOKIE_NAME = 'rlhf_acquisition_id';
@@ -1541,6 +1542,16 @@ function createApiServer() {
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/dashboard') {
+      try {
+        const html = fs.readFileSync(DASHBOARD_PAGE_PATH, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'Dashboard page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/') {
       if (wantsJson(req, parsed)) {
         sendJson(res, 200, {
@@ -1548,7 +1559,7 @@ function createApiServer() {
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
-          endpoints: ['/health', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dpo/export', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dpo/export', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });

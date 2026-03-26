@@ -141,6 +141,7 @@ __GA_BOOTSTRAP__
 
   /* HERO */
   .hero { padding: 100px 0 72px; text-align: center; }
+  .hero-thumbs { font-size: 72px; margin-bottom: 20px; line-height: 1; filter: drop-shadow(0 0 24px rgba(34,211,238,0.3)); }
   .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.2); padding: 4px 12px; border-radius: 100px; margin-bottom: 24px; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
   .hero h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; max-width: 700px; margin: 0 auto 16px; }
   .hero p { font-size: 17px; color: var(--text-muted); max-width: 520px; margin: 0 auto 36px; line-height: 1.6; }
@@ -153,14 +154,17 @@ __GA_BOOTSTRAP__
 
   /* SOCIAL PROOF BAR */
   .proof-bar { display: flex; justify-content: center; flex-wrap: wrap; gap: 24px; font-size: 13px; color: var(--text-muted); padding: 0 0 8px; }
-  .proof-bar span { display: inline-flex; align-items: center; gap: 6px; }
-  .proof-bar .dot { width: 4px; height: 4px; background: var(--border); border-radius: 50%; }
+  .proof-bar a { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+  .proof-bar a:hover { color: var(--cyan); }
+  .proof-bar .dot { width: 4px; height: 4px; background: var(--border); border-radius: 50%; display: inline-block; }
 
   /* COMPATIBILITY */
   .compatibility { padding: 0 0 80px; }
   .compatibility-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  .compat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .compat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; display: block; transition: border-color 0.2s, transform 0.15s; cursor: pointer; }
+  .compat-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-2px); }
   .compat-card h3 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 10px; }
+  .compat-card .card-arrow { font-size: 13px; color: var(--cyan); margin-top: 12px; font-weight: 500; }
   .compat-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
   .compat-card code { font-family: var(--mono); font-size: 12px; background: rgba(34,211,238,0.08); color: var(--cyan); padding: 2px 6px; border-radius: 4px; }
 
@@ -250,7 +254,7 @@ __GA_BOOTSTRAP__
 <!-- NAV -->
 <nav>
   <div class="container">
-    <a href="#" class="nav-logo"><span>⬡</span> ThumbGate</a>
+    <a href="#" class="nav-logo"><span>👍👎</span> ThumbGate</a>
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
       <a href="#compatibility">Compatibility</a>
@@ -265,22 +269,23 @@ __GA_BOOTSTRAP__
 <!-- HERO -->
 <section class="hero">
   <div class="container">
+    <div class="hero-thumbs">👍👎</div>
     <div class="hero-badge">● Human-in-the-Loop Enforcement for AI Agents</div>
-    <h1>Stop AI coding agents from repeating known mistakes</h1>
-    <p>The safety net for vibe coding. Capture feedback, auto-generate prevention rules, and block mistakes before they happen — across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent. <strong>New in v0.8.2:</strong> SQLite+FTS5 lesson DB, MemAlign dual recall, Thompson Sampling, LanceDB vector search, and corrective-action inference on every thumbs-down.</p>
+    <h1>Thumbs down a mistake.<br>It never happens again.</h1>
+    <p>The safety net for vibe coding. Give your AI agent a 👎 and it auto-generates a prevention rule. Give a 👍 and it reinforces good behavior. Works across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent. <strong>New in v0.8.2:</strong> SQLite+FTS5 lesson DB, corrective-action inference, and Thompson Sampling.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx mcp-memory-gateway init</span>
       <span class="copy-hint">click to copy</span>
     </div>
     <div class="proof-bar">
-      <span>1,000+ npm downloads</span>
+      <a href="https://www.npmjs.com/package/mcp-memory-gateway" target="_blank" rel="noopener">1,000+ npm downloads →</a>
       <span class="dot"></span>
-      <span>1,500+ tests passing</span>
+      <a href="https://github.com/IgorGanapolsky/mcp-memory-gateway/actions" target="_blank" rel="noopener">1,500+ tests passing →</a>
       <span class="dot"></span>
-      <span>MIT licensed</span>
+      <a href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/LICENSE" target="_blank" rel="noopener">MIT licensed</a>
       <span class="dot"></span>
-      <span>Claude Code · Cursor Plugin · Codex · Gemini · Amp · OpenCode</span>
+      <a href="#compatibility">Claude Code · Cursor · Codex · Gemini · Amp · OpenCode</a>
     </div>
   </div>
 </section>
@@ -290,18 +295,21 @@ __GA_BOOTSTRAP__
     <div class="section-label">Compatibility</div>
     <h2 class="section-title">One gateway across the agent surfaces you already use</h2>
     <div class="compatibility-grid">
-      <div class="compat-card">
-        <h3>AI CLIs</h3>
-        <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode all use the same gateway and memory model instead of separate rule systems, with surface-specific setup guides where needed.</p>
-      </div>
-      <div class="compat-card">
-        <h3>Editor workflows</h3>
-        <p>Cursor ships with a bundled marketplace plugin. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</p>
-      </div>
-      <div class="compat-card">
-        <h3>Install path</h3>
-        <p><code>npx mcp-memory-gateway init</code> bootstraps the shared gateway files, and the repo carries surface-specific guides when a CLI or editor needs its own profile, hook, or plugin bundle.</p>
-      </div>
+      <a class="compat-card" href="https://github.com/IgorGanapolsky/mcp-memory-gateway#quick-start" target="_blank" rel="noopener">
+        <h3>🤖 AI CLIs</h3>
+        <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode all use the same gateway and memory model instead of separate rule systems.</p>
+        <div class="card-arrow">View setup guide →</div>
+      </a>
+      <a class="compat-card" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/tree/main/plugins" target="_blank" rel="noopener">
+        <h3>✏️ Editor workflows</h3>
+        <p>Cursor ships with a bundled marketplace plugin. VS Code works when you run an MCP-compatible agent inside it.</p>
+        <div class="card-arrow">Browse plugins →</div>
+      </a>
+      <a class="compat-card" href="https://www.npmjs.com/package/mcp-memory-gateway" target="_blank" rel="noopener">
+        <h3>⚡ Install in 30 seconds</h3>
+        <p><code>npx mcp-memory-gateway init</code> bootstraps everything — gates, memory, and MCP config. One command, zero config.</p>
+        <div class="card-arrow">View on npm →</div>
+      </a>
     </div>
   </div>
 </section>
@@ -368,8 +376,8 @@ __GA_BOOTSTRAP__
         <div class="price">$0</div>
         <div class="price-sub">Forever free · Local only</div>
         <ul>
-          <li>500 memories</li>
-          <li>100 retrievals / day</li>
+          <li>5 feedback captures / day</li>
+          <li>5 memory recalls / day</li>
           <li>5 built-in gates</li>
           <li>All MCP integrations</li>
           <li>Local storage only</li>
@@ -381,12 +389,12 @@ __GA_BOOTSTRAP__
         <div class="price">$49</div>
         <div class="price-sub">One-time payment · Lifetime access</div>
         <ul>
-          <li>Unlimited memories</li>
-          <li>Unlimited retrievals</li>
+          <li>Unlimited feedback captures</li>
+          <li>Unlimited memory recalls</li>
           <li>Unlimited custom gates</li>
-          <li>Cloud-synced memories</li>
-          <li>Team sharing</li>
-          <li>Priority support</li>
+          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">Searchable memory dashboard →</a></li>
+          <li>API key for hosted access</li>
+          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">DPO training data export →</a></li>
         </ul>
         <a href="https://buy.stripe.com/bJe28rfCY6zc4lH7mb3sI04" class="btn-pro">Get Pro — $49</a>
       </div>
