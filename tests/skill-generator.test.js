@@ -10,6 +10,9 @@ const os = require('os');
 const {
   generateSkills,
   generateSkillFromCluster,
+  classifySignal,
+  extractTags,
+  parseFeedbackFile,
 } = require('../scripts/skill-generator');
 
 function makeTmpDir() {
@@ -304,4 +307,100 @@ test('generateSkillFromCluster: produces valid SKILL.md content from cluster', (
   assert.match(content, /description:/i, 'should have description in frontmatter');
   assert.match(content, /DO/i, 'should have DO rules');
   assert.match(content, /INSTEAD/i, 'should have INSTEAD rules');
+});
+
+test('generateSkillFromCluster: no positive entries gives "No positive patterns" DO rule', () => {
+  const cluster = {
+    tags: ['security', 'secrets'],
+    entries: [
+      makeNegativeEntry(['security', 'secrets'], { whatWentWrong: 'Leaked key', whatToChange: 'Scan before commit' }),
+      makeNegativeEntry(['security', 'secrets'], { whatWentWrong: 'Hard-coded token', whatToChange: 'Use env vars' }),
+      makeNegativeEntry(['security', 'secrets'], { whatWentWrong: 'Secret in PR', whatToChange: 'Add git hooks' }),
+    ],
+    positiveEntries: [],
+  };
+
+  const content = generateSkillFromCluster(cluster);
+  assert.match(content, /No positive patterns recorded/, 'should show no positive patterns message');
+  assert.match(content, /INSTEAD/i, 'should still have INSTEAD rules');
+});
+
+// -- classifySignal branch coverage --
+
+test('classifySignal: "down" returns "negative"', () => {
+  assert.strictEqual(classifySignal({ signal: 'down' }), 'negative');
+});
+
+test('classifySignal: "up" returns "positive"', () => {
+  assert.strictEqual(classifySignal({ signal: 'up' }), 'positive');
+});
+
+test('classifySignal: "thumbs_down" returns "negative"', () => {
+  assert.strictEqual(classifySignal({ signal: 'thumbs_down' }), 'negative');
+});
+
+test('classifySignal: "thumbs_up" returns "positive"', () => {
+  assert.strictEqual(classifySignal({ signal: 'thumbs_up' }), 'positive');
+});
+
+test('classifySignal: unknown signal returns null', () => {
+  assert.strictEqual(classifySignal({ signal: 'neutral' }), null);
+});
+
+test('classifySignal: missing signal returns null', () => {
+  assert.strictEqual(classifySignal({}), null);
+});
+
+test('classifySignal: uses feedback field as fallback', () => {
+  assert.strictEqual(classifySignal({ feedback: 'positive' }), 'positive');
+});
+
+// -- extractTags branch coverage --
+
+test('extractTags: basic tags array', () => {
+  const tags = extractTags({ tags: ['Testing', 'Security'] });
+  assert.deepStrictEqual(tags, ['testing', 'security']);
+});
+
+test('extractTags: includes richContext.domain', () => {
+  const tags = extractTags({ tags: ['testing'], richContext: { domain: 'Performance' } });
+  assert.ok(tags.includes('testing'));
+  assert.ok(tags.includes('performance'));
+});
+
+test('extractTags: includes task_category', () => {
+  const tags = extractTags({ tags: [], task_category: 'Deployment' });
+  assert.ok(tags.includes('deployment'));
+});
+
+test('extractTags: includes category field', () => {
+  const tags = extractTags({ tags: [], category: 'error' });
+  assert.ok(tags.includes('error'));
+});
+
+test('extractTags: skips null/non-string tags', () => {
+  const tags = extractTags({ tags: [null, 123, 'valid'] });
+  assert.deepStrictEqual(tags, ['valid']);
+});
+
+test('extractTags: empty entry returns empty array', () => {
+  const tags = extractTags({});
+  assert.deepStrictEqual(tags, []);
+});
+
+// -- parseFeedbackFile branch coverage --
+
+test('parseFeedbackFile: non-existent file returns empty array', () => {
+  const result = parseFeedbackFile('/tmp/nonexistent-' + Date.now() + '.jsonl');
+  assert.deepStrictEqual(result, []);
+});
+
+test('parseFeedbackFile: file with malformed lines skips them', (t) => {
+  const tmpDir = makeTmpDir();
+  const tmpFile = path.join(tmpDir, 'test.jsonl');
+  t.after(() => { try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {} });
+
+  fs.writeFileSync(tmpFile, '{"valid": true}\nnot json\n{"also": "valid"}\n');
+  const result = parseFeedbackFile(tmpFile);
+  assert.strictEqual(result.length, 2, 'should skip malformed lines');
 });
