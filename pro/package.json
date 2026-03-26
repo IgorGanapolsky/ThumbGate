@@ -1,0 +1,29 @@
+{
+  "name": "mcp-memory-gateway-pro",
+  "version": "0.8.2",
+  "description": "ThumbGate Pro — hosted dashboard, auto-gate promotion, unlimited gates. Extends mcp-memory-gateway.",
+  "bin": {
+    "mcp-memory-gateway-pro": "bin/cli.js"
+  },
+  "dependencies": {
+    "mcp-memory-gateway": ">=0.8.0"
+  },
+  "keywords": [
+    "rlhf",
+    "mcp",
+    "ai-agents",
+    "pre-action-gates",
+    "dashboard",
+    "pro"
+  ],
+  "author": "Igor Ganapolsky",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IgorGanapolsky/mcp-memory-gateway.git",
+    "directory": "pro"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}

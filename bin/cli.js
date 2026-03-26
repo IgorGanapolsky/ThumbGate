@@ -686,7 +686,8 @@ function pro() {
   console.log('\nLinks:');
   console.log(`  Pro             : ${hostedUrl}`);
   console.log(`  Commercial truth: ${truthUrl}\n`);
-  console.log('  Run: npx mcp-memory-gateway pro --upgrade   to install Pro configs locally\n');
+  console.log('  Dashboard       : npx mcp-memory-gateway-pro');
+  console.log('  Install configs : npx mcp-memory-gateway pro --upgrade\n');
 }
 
 function summary() {

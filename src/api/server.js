@@ -1543,6 +1543,10 @@ function createApiServer() {
     }
 
     if (isGetLikeRequest && pathname === '/dashboard') {
+      if (process.env.RLHF_PRO_MODE !== '1') {
+        sendJson(res, 402, { error: 'Dashboard requires Pro. Run: npx mcp-memory-gateway-pro' });
+        return;
+      }
       try {
         const html = fs.readFileSync(DASHBOARD_PAGE_PATH, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
