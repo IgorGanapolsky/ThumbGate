@@ -647,6 +647,41 @@ function northStar() {
 function pro() {
   const args = parseArgs(process.argv.slice(3));
 
+  if (args.activate) {
+    const os = require('os');
+    const licensePath = path.join(os.homedir(), '.thumbgate', 'license.json');
+    const licenseDir = path.dirname(licensePath);
+    if (!fs.existsSync(licenseDir)) fs.mkdirSync(licenseDir, { recursive: true });
+
+    const key = args.key || process.argv.slice(3).find((a) => !a.startsWith('--'));
+    if (!key) {
+      console.error('❌ License key required. Usage: npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
+      console.error('   You received your key by email after purchasing Pro.');
+      process.exit(1);
+    }
+
+    // Validate key format (RLHF_API_KEY prefix)
+    if (!key.startsWith('rlhf_') && !key.startsWith('tg_')) {
+      console.error('❌ Invalid license key format. Keys start with "rlhf_" or "tg_".');
+      process.exit(1);
+    }
+
+    const license = {
+      key,
+      activatedAt: new Date().toISOString(),
+      version: pkgVersion(),
+    };
+
+    fs.writeFileSync(licensePath, JSON.stringify(license, null, 2));
+    console.log('\n✅ Pro license activated!');
+    console.log(`   Key saved to: ${licensePath}`);
+    console.log('   Pro features are now unlocked.\n');
+    console.log('   Run: npx mcp-memory-gateway pro --upgrade  to install Pro config files\n');
+
+    appendLocalTelemetry({ eventType: 'pro_activate', version: pkgVersion(), timestamp: new Date().toISOString() });
+    return;
+  }
+
   if (args.upgrade) {
     const proDir = path.join(PKG_ROOT, 'pro');
     const rlhfDir = path.join(CWD, '.rlhf');
@@ -687,6 +722,7 @@ function pro() {
   console.log(`  Pro             : ${hostedUrl}`);
   console.log(`  Commercial truth: ${truthUrl}\n`);
   console.log('  Dashboard       : npx mcp-memory-gateway-pro');
+  console.log('  Activate license: npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
   console.log('  Install configs : npx mcp-memory-gateway pro --upgrade\n');
 }
 
