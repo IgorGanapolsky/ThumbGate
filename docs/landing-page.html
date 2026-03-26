@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>ThumbGate | Claude Desktop extension and AI agent reliability</title>
+  <meta
+    name='description'
+    content='Keep one sharp AI agent. Add recall, reliability rules, verification, and a Claude Desktop extension path without adding orchestration or handoff overhead.'
+  />
+  <script type='application/ld+json'>
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ThumbGate",
+    "url": "__APP_ORIGIN__",
+    "operatingSystem": "Node.js, Cross-platform",
+    "applicationCategory": "DeveloperApplication",
+    "description": "Local-first AI reliability system for coding agents using Model Context Protocol (MCP). Captures feedback, promotes reusable memories, generates reliability rules, and blocks dangerous tool calls with Pre-Action Gates.",
+    "keywords": "ThumbGate, AI reliability system, DPO, KTO, AI agent reliability, context engineering, prevention rules, Pre-Action Gates",
+    "offers": {
+      "@type": "Offer",
+      "price": "49",
+      "priceCurrency": "USD"
+    },
+    "sameAs": [
+      "https://github.com/IgorGanapolsky/mcp-memory-gateway",
+      "https://smithery.ai/server/mcp-memory-gateway",
+      "https://www.npmjs.com/package/mcp-memory-gateway"
+    ],
+    "featureList": [
+      "Pre-Action Gates",
+      "Thumbs-up/down feedback capture",
+      "MCP reusable memories and prompts",
+      "Auto-prevention rules from failures",
+      "KTO/DPO export for fine-tuning",
+      "Local-first, offline capable"
+    ]
+  }
+  </script>
+  <script type='application/ld+json'>
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is ThumbGate for AI agents?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ThumbGate is a local-first memory and feedback pipeline for AI agents using the Model Context Protocol (MCP). It captures thumbs-up/down RLHF signals, promotes reusable memories as MCP resources, generates prevention rules from repeated failures, and exports KTO/DPO pairs for fine-tuning."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does ThumbGate handle feedback-to-enforcement pipelines?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It implements an npm package 'mcp-memory-gateway' that captures thumbs-up/down signals locally, stores them as reusable MCP resources or prompts, and automates generation of prevention rules to avoid repeated agent failures."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is ThumbGate compatible with local AI agent setups?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, it's designed as local-first, running via npm without cloud dependencies. It integrates with MCP servers for resources like reusable memories and prompts, mimicking gateway flows for caching and routing."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is Reliability Studio Compare and Deploy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Reliability Studio is the buyer-facing workflow for importing workflow evidence, comparing the baseline agent run against the hardened run, and deploying the resulting rule pack and proof links without requiring model fine-tuning."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What does the Workflow Hardening Fit Checker do?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It qualifies whether a workflow is a better fit for the Workflow Hardening Sprint, Pro, or the free OSS path by checking for a repeated blocker, a workflow owner, proof requirements, rollout stage, and cross-machine sync needs."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I install ThumbGate as a Claude Desktop extension?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The local Claude install path is available now via npm, and the repo ships Claude-specific plugin metadata, privacy policy links, support docs, and a submission packet. Directory inclusion depends on Anthropic review and should not be claimed before approval."
+        }
+      }
+    ]
+  }
+  </script>
+  <script defer data-domain="rlhf-feedback-loop-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #f6f1e8;
+      --bg-strong: #efe6d8;
+      --surface: #fffdf9;
+      --surface-strong: #fff8ee;
+      --ink: #191612;
+      --muted: #655c4f;
+      --line: #d8cfbf;
+      --accent: #b85c2d;
+      --accent-dark: #8f451f;
+      --accent-soft: #f2dfcf;
+      --success: #2f7d4b;
+      --shadow: 0 18px 50px rgba(25, 22, 18, 0.08);
+      --radius: 18px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, 'Times New Roman', serif;
+      background:
+        radial-gradient(circle at top, #fff9ef 0%, rgba(255, 249, 239, 0.4) 20%, transparent 50%),
+        linear-gradient(180deg, #fbf7ef 0%, var(--bg) 100%);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(14px);
+      background: rgba(251, 247, 239, 0.82);
+      border-bottom: 1px solid rgba(216, 207, 191, 0.9);
+    }
+
+    .nav-inner,
+    .section-inner,
+    .hero-inner,
+    .footer-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 68px;
+      gap: 20px;
+    }
+
+    .brand {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .brand span {
+      color: var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 14px;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .nav-links a:hover {
+      color: var(--ink);
+    }
+
+    .hero {
+      padding: 64px 0 48px;
+    }
+
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: rgba(255, 253, 249, 0.86);
+      border: 1px solid var(--line);
+      border-radius: calc(var(--radius) + 4px);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-copy {
+      padding: 42px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-copy::after {
+      content: '';
+      position: absolute;
+      inset: auto -120px -140px auto;
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, rgba(184, 92, 45, 0.18) 0%, rgba(184, 92, 45, 0) 72%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 20px 0 14px;
+      font-size: clamp(38px, 6vw, 68px);
+      line-height: 0.98;
+      letter-spacing: -0.05em;
+    }
+
+    .hero-copy p {
+      margin: 0 0 18px;
+      font-size: 20px;
+      color: var(--muted);
+      max-width: 720px;
+    }
+
+    .hero-proof {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 22px 0 26px;
+    }
+
+    .proof-pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      background: var(--surface);
+      color: var(--muted);
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 15px;
+      font-family: inherit;
+    }
+
+    .button.primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 14px 28px rgba(184, 92, 45, 0.22);
+    }
+
+    .button.primary:hover {
+      background: var(--accent-dark);
+    }
+
+    .button.secondary {
+      background: var(--surface);
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    .button.secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+
+    .note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .hero-card {
+      display: flex;
+      flex-direction: column;
+      padding: 28px;
+      background: linear-gradient(180deg, var(--surface-strong) 0%, var(--surface) 100%);
+    }
+
+    .hero-card h2 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    .hero-card p,
+    .hero-card li {
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    .hero-card ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .mini {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.65);
+    }
+
+    .mini strong {
+      display: block;
+      font-size: 13px;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    section {
+      padding: 34px 0 28px;
+    }
+
+    .section-head {
+      margin-bottom: 22px;
+    }
+
+    .section-head .eyebrow {
+      margin-bottom: 12px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      letter-spacing: -0.04em;
+      line-height: 1.04;
+    }
+
+    .section-head p {
+      max-width: 760px;
+      margin: 12px 0 0;
+      font-size: 18px;
+      color: var(--muted);
+    }
+
+    .grid-3,
+    .grid-2 {
+      display: grid;
+      gap: 18px;
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .card {
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 249, 0.84);
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 24px;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+    }
+
+    .card p,
+    .card li {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .card ul,
+    .steps ol {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .steps {
+      padding: 28px;
+      border-radius: 22px;
+      background: #171411;
+      color: #f6f1e8;
+      box-shadow: var(--shadow);
+    }
+
+    .steps h3 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      letter-spacing: -0.04em;
+    }
+
+    .steps li {
+      margin-bottom: 14px;
+      color: #d8cec1;
+    }
+
+    .steps strong {
+      color: #fff;
+    }
+
+    .pricing {
+      padding-bottom: 52px;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .pricing .card.featured {
+      border-color: var(--accent);
+      background: linear-gradient(180deg, #fff7ef 0%, #fffdf9 100%);
+      position: relative;
+    }
+
+    .badge {
+      display: inline-block;
+      margin-bottom: 12px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .price {
+      font-size: 54px;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      margin: 8px 0 12px;
+    }
+
+    .price small {
+      font-size: 18px;
+      color: var(--muted);
+      letter-spacing: normal;
+    }
+
+    .pricing .card .button {
+      width: 100%;
+      margin-top: 18px;
+    }
+
+    .table-card {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+
+    .comparison-table thead {
+      background: var(--surface-strong);
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      color: var(--muted);
+    }
+
+    .comparison-table th {
+      color: var(--accent-dark);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .comparison-table td strong {
+      color: var(--ink);
+    }
+
+    .footer {
+      padding: 30px 0 60px;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer-inner a {
+      color: var(--muted);
+    }
+
+    code {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    @media (max-width: 920px) {
+      .hero-inner,
+      .grid-3,
+      .grid-2,
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-top: 40px;
+      }
+
+      .hero-copy,
+      .hero-card {
+        padding: 26px;
+      }
+
+      .comparison-table,
+      .comparison-table thead,
+      .comparison-table tbody,
+      .comparison-table tr,
+      .comparison-table th,
+      .comparison-table td {
+        display: block;
+      }
+
+      .comparison-table thead {
+        display: none;
+      }
+
+      .comparison-table td {
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+
+      .nav-inner {
+        padding-top: 12px;
+        padding-bottom: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class='nav-inner'>
+      <div class='brand'>RLHF <span>Context Gateway</span></div>
+      <div class='nav-links'>
+        <a href='#fit-checker'>Fit check</a>
+        <a href='#claude-desktop'>Claude Desktop</a>
+        <a href='#why'>Why buy</a>
+        <a href='#north-star'>North Star</a>
+        <a href='#studio'>Studio</a>
+        <a href='#faq'>FAQ</a>
+        <a href='#pricing'>Pricing</a>
+        <a href='__VERIFICATION_URL__'>Proof</a>
+        <a href='__GITHUB_URL__'>OSS core</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <section class='hero'>
+      <div class='hero-inner'>
+        <div class='panel hero-copy'>
+          <span class='eyebrow'>Pre-Action Gate for coding agents</span>
+          <h1>Your AI agent keeps making the same mistakes. ThumbGate blocks them.</h1>
+          <p>ThumbGate captures thumbs-up/down signals from every agent run, converts repeated failures into prevention rules, and gates dangerous actions before they cause damage — locally, offline, with no cloud dependency.</p>
+          <p>Stop losing time to avoidable agent errors. ThumbGate enforces the lessons your agent should have already learned.</p>
+          <div class='hero-proof'>
+            <span class='proof-pill'>North Star: one workflow live and auditable</span>
+            <span class='proof-pill'>Self-serve offer: Pro at $49 one-time</span>
+            <span class='proof-pill'>Versioned proof: v__PACKAGE_VERSION__</span>
+            <span class='proof-pill'>Hosted onboarding at https://rlhf-feedback-loop-production.up.railway.app</span>
+          </div>
+          <div class='cta-row'>
+            <a class='button primary' href='https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=landing_page&utm_medium=cta_button&utm_campaign=pro_pack' target='_blank' rel='noreferrer'>Get Pro — $49 one-time</a>
+            <a class='button secondary' href='#fit-checker'>Run fit checker</a>
+            <a class='button secondary' href='https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md'>Current commercial truth</a>
+            <a class='button secondary' href='https://rlhf-feedback-loop-production.up.railway.app'>View hosted demo</a>
+          </div>
+          <p class='note'>Early-stage product. Engineering proof is real, but GitHub stars, npm downloads, and solo-maintainer activity are not customer proof.</p>
+          <p class='note'>Hosted Context Gateway access is pilot/by-request. The public self-serve commercial SKU today is Pro at $49 one-time.</p>
+        </div>
+
+        <div class='panel hero-card'>
+          <h2>Why teams evaluate it, not just install it</h2>
+          <p>Most teams can use the OSS package. The Pro Pack speeds up local production setup, and hosted pilots make sense when one workflow needs to survive handoffs, approvals, and multiple operators instead of living in scattered local files.</p>
+          <ul>
+            <li>Replace self-hosted feedback sprawl with a shared operational layer.</li>
+            <li>Run the same workflow with shared memory, prevention rules, and hosted keys.</li>
+            <li>Link rollout decisions to verification evidence instead of gut feel.</li>
+          </ul>
+          <div class='mini-grid'>
+            <div class='mini'>
+              <strong>Best fit</strong>
+              RevOps, growth, platform, and engineering leaders accountable for one workflow outcome.
+            </div>
+            <div class='mini'>
+              <strong>Daily users</strong>
+              Operators and agent runners executing intake, drafting, approval, and sync steps every day.
+            </div>
+            <div class='mini'>
+              <strong>Best First Workflow</strong>
+              Lead-to-meeting with intake, enrichment, drafting, approval, CRM sync, and auditability.
+            </div>
+            <div class='mini'>
+              <strong>What is public today</strong>
+              OSS remains free with 5 built-in gates. Pro is $49 one-time for auto-gate promotion, unlimited custom gates, and multi-repo sync.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id='gate-demo'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Gate in action</span>
+          <h2>See what gets blocked. See what gets through.</h2>
+          <p>ThumbGate intercepts agent tool calls before execution. Blocked operations never run. Passing operations leave an auditable trace.</p>
+        </div>
+        <div class='steps'>
+          <h3>Terminal</h3>
+          <pre style='margin:0;font-family:"SFMono-Regular",Consolas,monospace;font-size:15px;line-height:1.7;color:#d8cec1;'><span style='color:#e06c75;'>[gate] &#x26D4; Blocked: git push --force main</span>
+          <span style='color:#abb2bf;'>         rule: no-force-push &bull; severity: critical &bull; action: abort</span>
+<span style='color:#98c379;'>[gate] &#x2705; Passed:  npm test &amp;&amp; git push origin feature-branch</span>
+          <span style='color:#abb2bf;'>         rule: test-before-push &bull; evidence: logged</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id='fit-checker'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Action query</span>
+          <h2>Workflow Hardening Fit Checker</h2>
+          <p>Use the same AI-search filter that matters commercially: can AI fully satisfy this query without a click? For workflow hardening, the answer is no. The buyer still has to qualify blocker, owner, proof need, and sync scope.</p>
+        </div>
+        <div class='grid-2'>
+          <div class='card'>
+            <h3>What the checker evaluates</h3>
+            <ul>
+              <li>Whether the workflow is already running, in pilot, or still exploratory.</li>
+              <li>Whether there is a repeated blocker instead of a one-off annoyance.</li>
+              <li>Whether one workflow owner can actually carry the rollout.</li>
+              <li>Whether the buyer needs proof, auditability, or cross-machine consistency.</li>
+            </ul>
+          </div>
+          <div class='card'>
+            <h3>How it routes the buyer</h3>
+            <ul>
+              <li><strong>Sprint:</strong> repeated blocker, one owner, and proof needed before wider rollout.</li>
+              <li><strong>Pro:</strong> the main need is shared memory, synced rules, and multi-machine reliability.</li>
+              <li><strong>Free OSS:</strong> the workflow is still educational or too early for a paid path.</li>
+            </ul>
+            <p><a href='__APP_ORIGIN__/#fit-checker'>Run the hosted fit checker</a> and use the result to decide whether to sell the Sprint, point to Pro, or keep the user on the OSS path first.</p>
+          </div>
+        </div>
+        <p class='note'>Qualification aid only. It does not claim measured savings, buyer validation, or conversion evidence.</p>
+      </div>
+    </section>
+
+    <section id='claude-desktop'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Distribution</span>
+          <h2>Claude Desktop extension path: install now, submit cleanly, market honestly.</h2>
+          <p>Claude Desktop is a real discovery surface for Claude-first buyers. This repo already carries the local install path, a buildable `.mcpb`, Claude plugin metadata, privacy policy, support links, and proof-backed docs needed to market the extension lane without pretending approval already happened.</p>
+        </div>
+        <div class='grid-3'>
+          <div class='card'>
+            <h3>Install locally today</h3>
+            <p>Use the portable npm launcher in Claude Desktop immediately instead of waiting on a directory decision.</p>
+            <p><code>claude mcp add rlhf -- npx -y mcp-memory-gateway serve</code></p>
+          </div>
+          <div class='card'>
+            <h3>Carry the trust layer</h3>
+            <p>Point reviewers to the public privacy policy, security policy, and verification evidence before you widen distribution.</p>
+          </div>
+          <div class='card'>
+            <h3>Build, then pitch honestly</h3>
+            <p>Use <code>npm run build:claude-mcpb</code> to package the real bundle, then market Claude workflow hardening, Pre-Action Gates, and proof-backed reliability without claiming approval before it exists.</p>
+          </div>
+        </div>
+        <p class='note'><a href='__GITHUB_URL__/blob/main/.claude-plugin/README.md'>Claude extension guide</a> • <a href='__GITHUB_URL__/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md'>Submission packet</a> • <a href='https://rlhf-feedback-loop-production.up.railway.app/privacy'>Privacy policy</a></p>
+      </div>
+    </section>
+
+    <section id='why'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>What changes</span>
+          <h2>Sell the workflow outcome. Use Context Gateway as the control layer behind it.</h2>
+          <p>Context Gateway is not the hero product by itself. The hero is the workflow outcome. Context Gateway is the hosted reliability layer that makes the workflow safe to roll out across a team.</p>
+        </div>
+        <div class='grid-3'>
+          <div class='card'>
+            <h3>Shared memory</h3>
+            <p>Local-only feedback logs are useful for one operator. Teams pay when those learnings need to survive handoffs, shifts, and multiple agent surfaces.</p>
+          </div>
+          <div class='card'>
+            <h3>Hosted guardrails</h3>
+            <p>Provisioned API keys, usage metering, and centralized prevention rules let you run the same workflow across repos and operators without duct tape.</p>
+          </div>
+          <div class='card'>
+            <h3>Proof-ready runs</h3>
+            <p>Verification evidence, machine-readable endpoints, and auditable funnel events make it easier to prove the workflow is actually improving.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id='north-star'>
+      <div class='section-inner grid-2'>
+        <div class='steps'>
+          <h3>How the first paid wedge works</h3>
+          <ol>
+            <li><strong>Choose one workflow.</strong> Lead intake, enrichment, drafting, approval, CRM sync.</li>
+            <li><strong>Run through Context Gateway.</strong> Every step can capture feedback and produce evidence.</li>
+            <li><strong>Use the feedback loop.</strong> Repeat failures become prevention rules instead of recurring incidents.</li>
+            <li><strong>Roll out team-wide.</strong> Shared API keys and hosted memory remove the single-laptop bottleneck.</li>
+          </ol>
+        </div>
+        <div class='card'>
+          <h3>North Star</h3>
+          <p>One workflow is live, bought by a team, and backed by proof links that survive handoffs.</p>
+          <ul>
+            <li>One workflow outcome is clearly defined and in production.</li>
+            <li>Every rollout step can point to verification evidence.</li>
+            <li>Repeat mistakes turn into prevention rules instead of recurring incidents.</li>
+            <li>More than one operator can run the same system without local-only knowledge.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id='studio'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Reliability Studio</span>
+          <h2>Import workflow evidence, compare the baseline, deploy the rule pack.</h2>
+          <p>Make the product legible to buyers. Reliability Studio explains how PR threads, CI logs, runbooks, JSONL, and CSV inputs become a hardened workflow with proof links and deployable rules. No model fine-tuning required.</p>
+        </div>
+        <div class='grid-3'>
+          <div class='card'>
+            <h3>Import</h3>
+            <p>Use the workflow artifacts you already have: PR review threads, CI logs, runbooks, JSONL, and CSV. These become candidate memories, gates, and approval boundaries.</p>
+          </div>
+          <div class='card'>
+            <h3>Compare</h3>
+            <p>Show the before and after state for one workflow: fewer late review loops, stronger proof surfaces, and less tribal operator drift.</p>
+          </div>
+          <div class='card'>
+            <h3>Deploy</h3>
+            <p>Ship a shared rule pack for Claude Code, Codex, Gemini, and Amp, then attach the verification evidence and machine-readable reports buyers can inspect.</p>
+          </div>
+        </div>
+        <p class='note'>Product walkthrough only. This section describes the Compare and Deploy flow; it does not claim live customer telemetry or ROI proof.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Buyer Translation</span>
+          <h2>What buyers worry about, what Context Gateway changes, and where the proof lives.</h2>
+          <p>Use this language in deals, workshops, and AI-search content. It translates product mechanics into buyer concerns and proof surfaces.</p>
+        </div>
+        <div class='card table-card'>
+          <table class='comparison-table'>
+            <thead>
+              <tr>
+                <th>Buyer Concern</th>
+                <th>What Context Gateway Changes</th>
+                <th>Proof Surface</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Can one workflow survive handoffs?</strong></td>
+                <td>Hosted API keys, shared memory, and prevention rules replace single-laptop tribal knowledge.</td>
+                <td>Verification evidence, auditable runs, and machine-readable reports.</td>
+              </tr>
+              <tr>
+                <td><strong>Can we trust the rollout?</strong></td>
+                <td>Context Gateway adds hosted guardrails and explicit feedback handling so drift is visible instead of hidden.</td>
+                <td>Proof-ready runs plus versioned verification artifacts.</td>
+              </tr>
+              <tr>
+                <td><strong>Why not stay on the OSS package?</strong></td>
+                <td>OSS is great for a single builder. Context Gateway is for a team that needs one workflow to run consistently.</td>
+                <td>Hosted onboarding, shared state, and team-safe workflow execution.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id='faq'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>FAQ</span>
+          <h2>Answer the buyer questions before they stall the deal.</h2>
+          <p>Visible FAQ content keeps the landing page aligned with the JSON-LD schema and makes the pitch easier to quote in AI search.</p>
+        </div>
+        <div class='grid-2'>
+          <div class='card'>
+            <h3>Who should buy Context Gateway?</h3>
+            <p>Teams running agentic workflows who need hosted API keys, shared memory, and auditable runs without self-hosting the feedback and guardrail layer.</p>
+          </div>
+          <div class='card'>
+            <h3>Who uses it every day?</h3>
+            <p>Operators and agent runners doing lead intake, research, drafting, approvals, and sync steps inside the workflow.</p>
+          </div>
+          <div class='card'>
+            <h3>What is the best first workflow?</h3>
+            <p>Lead-to-meeting is the clearest wedge because the value chain is easy to explain: intake, enrichment, drafting, approval, CRM sync, and auditability.</p>
+          </div>
+          <div class='card'>
+            <h3>What does Context Gateway prove?</h3>
+            <p>It proves what changed, what passed, and how the workflow is being controlled so rollout decisions are based on evidence instead of vibes.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Proof Surface</span>
+          <h2>Publish the authority evidence where buyers and AI systems can inspect it.</h2>
+          <p>The public proof surface should be explicit. These links anchor claims to human-readable verification evidence and machine-readable reports.</p>
+        </div>
+        <div class='grid-3'>
+          <div class='card'>
+            <h3>Verification evidence</h3>
+            <p>Command history, observed results, and report paths for product and workflow claims.</p>
+            <p><a href='__VERIFICATION_URL__'>Open <code>VERIFICATION_EVIDENCE.md</code></a></p>
+          </div>
+          <div class='card'>
+            <h3>Compatibility proof JSON</h3>
+            <p>Machine-readable adapter and API compatibility evidence for AI runtimes.</p>
+            <p><a href='__COMPATIBILITY_REPORT_URL__'>Open <code>proof/compatibility/report.json</code></a></p>
+          </div>
+          <div class='card'>
+            <h3>Automation proof JSON</h3>
+            <p>Machine-readable automation evidence for rubric gates, prevention rules, and workflow checks.</p>
+            <p><a href='__AUTOMATION_REPORT_URL__'>Open <code>proof/automation/report.json</code></a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id='who'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Who is this for?</span>
+          <h2>Three people who stop wasting time on avoidable agent mistakes.</h2>
+          <p>ThumbGate fits wherever an AI coding agent runs unsupervised and where repeated failures are costing real time.</p>
+        </div>
+        <div class='grid-3'>
+          <div class='card'>
+            <h3>Solo dev using Claude Code or Cursor</h3>
+            <p>You run AI agents all day. Sometimes they force-push to main, skip tests, or repeat a mistake you fixed last week. ThumbGate captures the lesson and enforces it automatically — no manual rules to write.</p>
+            <p><strong style='color:var(--success);'>Free tier.</strong> Everything you need, no limits that matter.</p>
+          </div>
+          <div class='card'>
+            <h3>Team lead managing multiple agents</h3>
+            <p>Your team runs different agents across different repos. Rules learned in one repo need to apply everywhere. ThumbGate Pro syncs prevention rules across machines so one bad pattern can't surface in two different repos on the same day.</p>
+            <p><strong style='color:var(--accent-dark);'>Pro tier.</strong> Multi-repo sync, unlimited custom gates, $49 one-time.</p>
+          </div>
+          <div class='card'>
+            <h3>Engineering manager wanting CI integration</h3>
+            <p>You want agent failures to feed back into the pipeline automatically — not live in someone's local notes. ThumbGate's CI webhook auto-ingest and machine-readable proof reports make agent reliability auditable without extra tooling.</p>
+            <p><strong style='color:var(--accent-dark);'>Pro tier.</strong> CI webhook ingest, priority support, $49 one-time.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class='pricing' id='pricing'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Pricing</span>
+          <h2>Free for solo developers. Pro for teams and multi-repo workflows.</h2>
+          <p>The OSS core is free and always will be. Pro is a one-time $49 payment — no subscription, no seat pricing.</p>
+        </div>
+        <div class='pricing-grid'>
+          <div class='card'>
+            <h3>Free</h3>
+            <p style='margin:0 0 8px;font-size:15px;color:var(--muted);font-style:italic;'>Everything a solo developer needs. No limits that matter.</p>
+            <div class='price'>$0 <small>/ forever</small></div>
+            <ul>
+              <li>Feedback capture and recall</li>
+              <li>Prevention rules</li>
+              <li>5 built-in gates</li>
+              <li>Dashboard CLI</li>
+              <li>DPO/KTO export</li>
+            </ul>
+            <a class='button secondary' href='__GITHUB_URL__'>Use the open-source package</a>
+          </div>
+          <div class='card featured'>
+            <span class='badge'>Self-serve</span>
+            <h3>Pro</h3>
+            <div class='price'>$49 <small>/ one-time</small></div>
+          <p style='margin:0 0 8px;font-size:15px;color:var(--muted);font-style:italic;'>For teams and multi-repo workflows. Sync rules across machines. $49 one-time.</p>
+            <ul>
+              <li>Auto-gate promotion</li>
+              <li>Unlimited custom gates</li>
+              <li>Multi-repo sync</li>
+              <li>CI webhook auto-ingest</li>
+              <li>Priority support</li>
+            </ul>
+            <a class='button primary' href='https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=landing_page&utm_medium=cta_button&utm_campaign=pro_pack' target='_blank' rel='noreferrer'>Get Pro — $49 one-time</a>
+          </div>
+        </div>
+        <p class='note'>Need hosted team workflows? Evaluate the demo or request a pilot.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class='footer'>
+    <div class='footer-inner'>
+      <div>ThumbGate Context Gateway • v__PACKAGE_VERSION__</div>
+      <div>
+        <a href='__VERIFICATION_URL__'>Verification evidence</a>
+        •
+        <a href='https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md'>Commercial truth</a>
+        •
+        <a href='__GTM_PLAN_URL__'>GTM plan</a>
+        •
+        <a href='__GITHUB_URL__'>GitHub</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

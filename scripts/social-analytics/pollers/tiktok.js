@@ -120,7 +120,7 @@ async function pollTikTok(db) {
   ]);
 
   // Lazy-require sibling modules so they can be built/tested independently.
-  const { normalizeMetric } = require('../normalizer');
+  const { normalizeTikTokMetric: normalizeMetric } = require('../normalizer');
   const { upsertMetric, upsertFollowerSnapshot } = require('../store');
 
   const fetchedAt = new Date().toISOString();

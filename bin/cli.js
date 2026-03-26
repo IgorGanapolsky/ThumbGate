@@ -66,8 +66,8 @@ function proNudge() {
   if (process.env.RLHF_NO_NUDGE === '1') return;
   // Write to stderr so it never contaminates MCP stdio JSON on stdout
   process.stderr.write(
-    '\n💡 Like this? Go Pro — hosted dashboard, auto-gate promotion, unlimited gates. $49 one-time.\n' +
-    `   → ${PRO_URL}\n\n`
+    '\n💡 After a week of use, run: npx mcp-memory-gateway checkin\n' +
+    '   We\'d love to hear what\'s working and what\'s not.\n\n'
   );
 }
 
@@ -1208,6 +1208,36 @@ switch (COMMAND) {
   case 'compact':
     compact();
     break;
+  case 'checkin': {
+    // User check-in command — asks how it's going after install
+    const rlhfDir = path.join(CWD, '.rlhf');
+    const configPath = path.join(rlhfDir, 'config.json');
+    let installAge = 'unknown';
+    if (fs.existsSync(configPath)) {
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (config.installedAt) {
+          const days = Math.floor((Date.now() - new Date(config.installedAt).getTime()) / 86400000);
+          installAge = `${days} day${days !== 1 ? 's' : ''}`;
+        }
+      } catch { /* ignore */ }
+    }
+    console.log(`\n🔔 mcp-memory-gateway check-in (installed ${installAge} ago)\n`);
+    console.log('Quick questions to help improve this tool:\n');
+    console.log('1. Is the gate engine catching real mistakes for you? (y/n/haven\'t tried)');
+    console.log('2. What failure pattern do you wish it caught but doesn\'t?');
+    console.log('3. Anything confusing or broken?\n');
+    console.log('Reply to any of these at: https://github.com/IgorGanapolsky/mcp-memory-gateway/discussions');
+    console.log('Or email: iganapolsky@gmail.com\n');
+
+    // Log the check-in event
+    const checkinLog = path.join(rlhfDir, 'checkin-log.jsonl');
+    if (fs.existsSync(rlhfDir)) {
+      const event = { event: 'checkin_shown', at: new Date().toISOString(), installAge };
+      fs.appendFileSync(checkinLog, JSON.stringify(event) + '\n');
+    }
+    break;
+  }
   default:
     if (COMMAND) {
       console.error(`Unknown command: ${COMMAND}`);

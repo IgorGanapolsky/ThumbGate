@@ -9,7 +9,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro)
+[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro) — Solo dev? Free tier has everything you need. Team or multi-repo? Pro syncs prevention rules across machines and team members. $49 one-time.
 
 **Pre-action gates that physically block AI coding agents from repeating known mistakes.** Capture feedback, auto-promote repeated failures into prevention rules, and enforce them via PreToolUse hooks. This is a reliability layer for one sharp agent, without another planner or swarm.
 
@@ -20,6 +20,12 @@ Works with Claude Code, Codex, Gemini, Amp, Cursor, OpenCode, and any MCP-compat
 ## Why it exists
 
 Most memory tools only help an agent remember. ThumbGate also enforces.
+
+**The problem without it:**
+> BEFORE: Agent force-pushes to main. You correct it. Next session, it force-pushes again.
+
+**With ThumbGate (`mcp-memory-gateway`):**
+> AFTER: Gate blocks the force-push before it executes. Agent can't repeat the mistake.
 
 - `recall` injects the right context at session start.
 - `search_lessons` shows promoted lessons plus the corrective action, lifecycle state, linked rules, linked gates, and the next harness fix the system should make.
@@ -72,6 +78,14 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 - **Billing:** Stripe
 - **Hosted API / landing page:** Railway
 - **Worker lane:** Cloudflare Workers in [`workers/`](workers)
+
+## See it in action
+
+```
+$ npx mcp-memory-gateway serve
+[gate] ⛔ Blocked: git push --force (rule: no-force-push, confidence: 0.94)
+[gate] ✅ Passed: git push origin feature-branch
+```
 
 ## Quick Start
 
@@ -205,7 +219,7 @@ If you are running autonomous agents against this repo or another repo that uses
 - [Workflow Hardening Sprint](docs/WORKFLOW_HARDENING_SPRINT.md)
 - [Pitch](docs/PITCH.md)
 - [Anthropic Marketplace Strategy](docs/ANTHROPIC_MARKETPLACE_STRATEGY.md)
-- [Pro Pack ($49 one-time)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro)
+- [Pro Pack ($49 one-time)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro) — Solo dev? Free tier has everything you need. Team or multi-repo? Pro syncs prevention rules across machines and team members.
 
 ## License
 

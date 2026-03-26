@@ -211,7 +211,7 @@ async function pollReddit(db) {
   ]);
 
   // Lazy-require sibling modules so they can be built/tested independently.
-  const { normalizeMetric } = require('../normalizer');
+  const { normalizeRedditMetric: normalizeMetric } = require('../normalizer');
   const { upsertMetric, upsertFollowerSnapshot } = require('../store');
 
   const fetchedAt = new Date().toISOString();
@@ -235,6 +235,7 @@ async function pollReddit(db) {
     if (post.url) extraPayload.url = post.url;
 
     const raw = {
+      id: postId,
       platform: 'reddit',
       content_type: post.is_self === false ? 'link' : 'post',
       post_id: postId,

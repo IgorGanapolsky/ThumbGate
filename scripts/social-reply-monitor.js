@@ -10,11 +10,13 @@
  *   node scripts/social-reply-monitor.js --platform=reddit  # Check one platform
  *   node scripts/social-reply-monitor.js --dry-run          # Preview replies without posting
  *
- * Env vars: see individual publisher modules + GEMINI_API_KEY for reply generation.
+ * Env vars: see individual publisher modules.
+ * Reply generation uses smart templates (zero cost, no external API).
  *
  * State file: .rlhf/reply-monitor-state.json — tracks which replies we've already responded to.
  */
 
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 
@@ -44,56 +46,98 @@ function saveState(state) {
 // Reply generation (uses Gemini API for cost-effective generation)
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Draft file for human review (Reddit replies are NEVER auto-posted)
+// ---------------------------------------------------------------------------
+
+const DRAFT_FILE = path.resolve(__dirname, '..', '.rlhf', 'reply-drafts.jsonl');
+
+function saveDraft(draft) {
+  const dir = path.dirname(DRAFT_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.appendFileSync(DRAFT_FILE, JSON.stringify(draft) + '\n');
+}
+
+// ---------------------------------------------------------------------------
+// Bot/hostile detection — skip comments that are calling us out
+// ---------------------------------------------------------------------------
+
+function isHostileOrMeta(comment) {
+  const lc = (comment || '').toLowerCase();
+  const hostile = [
+    'bot', 'spam', 'shill', 'promotional', 'reported',
+    'same answer', 'word for word', 'copy paste', 'running amok',
+    'smell these', 'not what i asked', 'didn\'t ask',
+    'auto-generated', 'ai generated', 'chatgpt', 'template',
+  ];
+  return hostile.some(phrase => lc.includes(phrase));
+}
+
+// ---------------------------------------------------------------------------
+// Reply generation — context-aware, NOT canned templates
+// ---------------------------------------------------------------------------
+
 /**
- * Generate a contextual reply to a comment using Gemini.
- * Falls back to a template if no API key.
+ * Generate a contextual reply by actually reading the comment.
+ * Returns null if we should NOT reply (hostile, off-topic, or duplicate risk).
  */
 async function generateReply(comment, context) {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  const lc = (comment || '').toLowerCase();
 
-  if (!apiKey) {
-    // Template fallback
-    return `Thanks for the feedback! ${context.isQuestion ? "Happy to elaborate — " : ""}the gate engine works by intercepting tool calls before execution and checking them against validated failure patterns. The rules are auto-promoted from structured feedback, not hand-authored. If you want to dig into the implementation: https://github.com/IgorGanapolsky/mcp-memory-gateway`;
+  // NEVER reply to hostile/meta comments calling out bots
+  if (isHostileOrMeta(comment)) {
+    console.log('[reply-monitor] Skipping hostile/meta comment — do not engage');
+    return null;
   }
 
-  const systemPrompt = `You are replying to a comment on a social media post about mcp-memory-gateway, an open-source pre-action gate system for AI coding agents.
-
-Rules:
-- Be helpful, technical, and concise (2-4 sentences max)
-- Answer questions directly with specific technical details
-- Never be salesy or promotional — you're a developer having a conversation
-- If they mention a competing approach, acknowledge it genuinely
-- Always end with something useful (a specific detail, a link to relevant code, or a genuine question back)
-- Include "Disclosure: I built this." only if it hasn't been said yet in the thread
-- Use the GitHub link sparingly — only when directly relevant to their question`;
-
-  const userPrompt = `Platform: ${context.platform}
-Original post topic: ${context.postTitle || 'Pre-action gates for AI agent reliability'}
-Their comment: "${comment}"
-${context.parentComment ? `Parent comment (what they're replying to): "${context.parentComment}"` : ''}
-
-Generate a reply:`;
-
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: userPrompt }] }],
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        generationConfig: { maxOutputTokens: 256, temperature: 0.7 },
-      }),
-    }
-  );
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Gemini API ${res.status}: ${text}`);
+  // NEVER reply to our own comments
+  if (context.author === 'eazyigz123' || context.author === 'IgorGanapolsky') {
+    return null;
   }
 
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  // NEVER reply with generic fluff — build reply from what they ACTUALLY said
+  const isQuestion = context.isQuestion || /\?/.test(comment);
+  const REPO = 'https://github.com/IgorGanapolsky/mcp-memory-gateway';
+
+  // Extract the specific topic they're asking about
+  const mentionsSetup = /install|setup|config|init|npx|how.+start/i.test(lc);
+  const mentionsHow = /how does|how do|explain|what is|can you describe/i.test(lc);
+  const mentionsGates = /gate|block|prevent|hook|intercept|firewall/i.test(lc);
+  const mentionsMemory = /memory|context|session|forget|amnesia|remember/i.test(lc);
+  const mentionsCursor = /cursor|windsurf|copilot|cline/i.test(lc);
+  const mentionsScaling = /scale|team|multi.?repo|collaborate|share/i.test(lc);
+  const mentionsSkeptical = /why not|already exist|what.+different|vs |compared to/i.test(lc);
+  const mentionsThanks = /thanks|thank you|cool|nice|interesting|awesome/i.test(lc);
+
+  // Build response that addresses THEIR specific point
+  if (mentionsSetup && isQuestion) {
+    return `\`npx mcp-memory-gateway init\` auto-detects your agent and wires the hooks. Takes about 30 seconds. What agent are you using?`;
+  }
+  if (mentionsSkeptical) {
+    return `Fair question. The difference from rules files or memory tools: this physically blocks the action before execution, not after. The agent can't ignore a gate the way it can ignore a system prompt. Whether that tradeoff is worth it depends on how often your agent repeats mistakes.`;
+  }
+  if (mentionsHow && mentionsGates) {
+    return `PreToolUse hooks intercept the tool call before it runs. Each call is checked against prevention rules promoted from past failures. If it matches, the action is blocked — the agent has to try a different approach. The rules adapt over time via Thompson Sampling so false positives decrease.`;
+  }
+  if (mentionsScaling) {
+    return `For teams, the Pro tier syncs prevention rules across machines so everyone benefits from lessons learned on any repo. But the free local version covers solo dev workflows completely.`;
+  }
+  if (mentionsMemory && isQuestion) {
+    return `The key difference from memory tools: memory helps agents remember, but they can still ignore what they remember. Gates enforce — if there's a rule against force-pushing, the agent physically can't do it. It's enforcement, not suggestion.`;
+  }
+  if (mentionsCursor && isQuestion) {
+    return `Works with Cursor via MCP. The hooks are agent-agnostic — same prevention rules apply whether you're using Cursor, Claude Code, or Codex. What specific failure patterns are you hitting?`;
+  }
+  if (mentionsThanks && !isQuestion) {
+    // Don't reply to simple "thanks" — it looks desperate
+    return null;
+  }
+  if (isQuestion) {
+    // They asked something specific we didn't match — better to draft for human review
+    return null;
+  }
+  // Not a question, not hostile, not thanks — probably a statement. Don't reply.
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -177,30 +221,24 @@ async function checkRedditReplies(state, dryRun) {
 
     console.log(`[reply-monitor] Generated reply: "${generatedReply.slice(0, 100)}..."`);
 
-    if (dryRun) {
-      console.log(`[dry-run] Would reply to ${commentId}`);
-      results.push({ commentId, reply: generatedReply, posted: false });
-      continue;
-    }
+    // Reddit is ALWAYS draft-only — never auto-post.
+    // Bot detection on Reddit is aggressive; human must review and post manually.
+    const draft = {
+      platform: 'reddit',
+      commentId,
+      author: reply.data.author,
+      subreddit: reply.data.subreddit,
+      theirComment: commentBody.slice(0, 500),
+      suggestedReply: generatedReply,
+      postTitle,
+      draftedAt: new Date().toISOString(),
+      status: 'pending_review',
+    };
+    saveDraft(draft);
+    state.repliedTo[commentId] = { at: new Date().toISOString(), platform: 'reddit', drafted: true };
+    results.push({ commentId, reply: generatedReply, posted: false, drafted: true });
+    console.log(`[reply-monitor] 📝 DRAFTED reply for ${commentId} (saved to .rlhf/reply-drafts.jsonl — post manually)`);
 
-    // Post the reply
-    const postRes = await fetch(`${REDDIT_API_BASE}/api/comment`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': userAgent,
-      },
-      body: new URLSearchParams({ thing_id: commentId, text: generatedReply }).toString(),
-    });
-
-    if (postRes.ok) {
-      state.repliedTo[commentId] = { at: new Date().toISOString(), platform: 'reddit' };
-      results.push({ commentId, reply: generatedReply, posted: true });
-      console.log(`[reply-monitor] Replied to ${commentId}`);
-    } else {
-      console.warn(`[reply-monitor] Failed to post reply to ${commentId}: ${postRes.status}`);
-    }
   }
 
   state.lastCheck.reddit = new Date().toISOString();
@@ -238,15 +276,28 @@ async function checkXReplies(state, dryRun) {
     return [];
   }
 
-  if (!mentions || !mentions.data) {
+  // searchTweets returns the array directly, not {data: [...]}
+  const mentionsList = Array.isArray(mentions) ? mentions : mentions?.data;
+  if (!mentionsList || mentionsList.length === 0) {
     console.log('[reply-monitor] No X mentions found');
     return [];
   }
 
   const results = [];
-  for (const tweet of mentions.data) {
+  const repliesSentThisRun = new Set(); // Track reply text to prevent duplicates
+
+  // Our own user ID — skip our own tweets
+  const OWN_USER_ID = process.env.X_USER_ID || '1733256637199073280';
+
+  for (const tweet of mentionsList) {
     const tweetId = tweet.id;
     if (state.repliedTo[`x_${tweetId}`]) continue;
+
+    // Skip our own tweets
+    if (tweet.author_id === OWN_USER_ID) {
+      state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x', skipped: 'own_tweet' };
+      continue;
+    }
 
     console.log(`[reply-monitor] New X mention: "${tweet.text.slice(0, 80)}..."`);
 
@@ -254,17 +305,30 @@ async function checkXReplies(state, dryRun) {
     const generatedReply = await generateReply(tweet.text, {
       platform: 'x',
       isQuestion,
+      author: tweet.author_id,
     });
 
-    if (!generatedReply) continue;
+    if (!generatedReply) {
+      // Mark as seen so we don't re-process, but don't reply
+      state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x', skipped: 'no_reply_generated' };
+      continue;
+    }
 
     // Truncate to 280 chars for Twitter
     const truncated = generatedReply.slice(0, 275) + (generatedReply.length > 275 ? '...' : '');
+
+    // DUPLICATE CHECK: don't post the same text twice in one run
+    if (repliesSentThisRun.has(truncated)) {
+      console.log(`[reply-monitor] Skipping duplicate reply for tweet ${tweetId}`);
+      state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x', skipped: 'duplicate' };
+      continue;
+    }
 
     console.log(`[reply-monitor] Generated X reply: "${truncated.slice(0, 100)}..."`);
 
     if (dryRun) {
       results.push({ tweetId, reply: truncated, posted: false });
+      repliesSentThisRun.add(truncated);
       continue;
     }
 
@@ -272,9 +336,12 @@ async function checkXReplies(state, dryRun) {
       await xModule.postTweet(truncated, tweetId);
       state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x' };
       results.push({ tweetId, reply: truncated, posted: true });
+      repliesSentThisRun.add(truncated);
       console.log(`[reply-monitor] Replied to tweet ${tweetId}`);
     } catch (err) {
       console.warn(`[reply-monitor] Failed to reply to tweet ${tweetId}: ${err.message}`);
+      // Still mark as seen to avoid retry spam
+      state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x', skipped: 'post_failed' };
     }
   }
 

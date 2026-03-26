@@ -1,5 +1,6 @@
 'use strict';
 
+require('dotenv').config({ path: require('node:path').resolve(__dirname, '..', '..', '.env') });
 const path = require('node:path');
 const fs = require('node:fs');
 
