@@ -1,6 +1,6 @@
-# v0.8.1 LAUNCH PLAN — ThumbGate (Updated March 26, 2026)
+# v0.8.2 LAUNCH PLAN — ThumbGate (Updated March 26, 2026)
 
-> Originally v0.7.0 Pre-Action Gates launch (March 13, 2026). Updated for v0.8.1 with MemAlign, Thompson Sampling, and SEO positioning.
+> Originally v0.7.0 Pre-Action Gates launch (March 13, 2026). Updated for v0.8.2 with MemAlign, Thompson Sampling, and SEO positioning.
 
 The engineering proof is real. The commercial surface must stay honest.
 

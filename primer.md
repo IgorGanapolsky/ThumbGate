@@ -23,7 +23,7 @@
 
 ## Behavioral Traits
 
-- User prefers surgical edits over full file rewrites.
+_No strong behavioral patterns identified yet._
 
 ## Live Git Context
 
@@ -31,15 +31,37 @@
 
 ### Last 5 Commits:
 ```
-6f5cd31 docs: add summary header to Verification Evidence proof pack (#320)
-c829e40 feat: reconcile RLHF raw search lane (#318)
-c6d8ea5 feat(rlhf): add searchable lessons with corrective actions (#319)
-ff06051 fix: GitHub poller normalizer import and Zernio account ID parsing (#317)
-1458103 feat: Zernio unified publishing API integration (#315)
+a80988a test: improve branch coverage for 10 lowest-coverage files (#360)
+49bf01a test: add tests for 15 previously untested scripts (#358)
+53fe964 feat: prep Cursor marketplace submission (#357)
+4825407 fix: fill audit gaps — CHANGELOG, LAUNCH.md, 5 new test files, 23 new assertions (#356)
+bb14078 chore: remove dead code — 3 orphan files + stale landing page (#355)
 ```
 
 ### Modified Files:
 ```
+ M .claude-plugin/marketplace.json
+ M .claude-plugin/plugin.json
+ M .cursor-plugin/marketplace.json
+ M .well-known/mcp/server-card.json
+ M LAUNCH.md
+ M adapters/README.md
+ M adapters/claude/.mcp.json
+ M adapters/mcp/server-stdio.js
+ M adapters/opencode/opencode.json
+ M docs/PLUGIN_DISTRIBUTION.md
+ M docs/VERIFICATION_EVIDENCE.md
+ M docs/guides/opencode-integration.md
+ M docs/mcp-hub-submission.md
+ M mcpize.yaml
+ M package-lock.json
+ M package.json
+ M plugins/codex-profile/INSTALL.md
+ M plugins/cursor-marketplace/.cursor-plugin/plugin.json
+ M plugins/opencode-profile/INSTALL.md
  M primer.md
- M tests/feedback-loop.test.js
+ M public/index.html
+ M server.json
+?? .claude/memory/lessons.sqlite-shm
+?? .claude/memory/lessons.sqlite-wal
 ```

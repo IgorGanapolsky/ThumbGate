@@ -1,6 +1,6 @@
 # mcpize configuration for ThumbGate
 project: "mcp-memory-gateway"
-version: "0.8.1"
+version: "0.8.2"
 start_command: "npx -y mcp-memory-gateway serve"
 mcp_profile: "default"
 description: "Agent quality feedback loop with Pre-Action Gates engine — blocks dangerous tool calls before execution, generates prevention rules from failures, and captures RLHF signals."
