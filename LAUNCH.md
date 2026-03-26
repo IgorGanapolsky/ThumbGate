@@ -1,12 +1,16 @@
-# v0.7.0 LAUNCH PLAN — Pre-Action Gates (March 13, 2026)
+# v0.8.1 LAUNCH PLAN — ThumbGate (Updated March 26, 2026)
+
+> Originally v0.7.0 Pre-Action Gates launch (March 13, 2026). Updated for v0.8.1 with MemAlign, Thompson Sampling, and SEO positioning.
 
 The engineering proof is real. The commercial surface must stay honest.
 
 ## 1. The Product
 
-ThumbGate v0.7.0 introduces **Pre-Action Gates** — configurable checkpoints that fire before every tool call, blocking dangerous actions based on learned failure patterns.
+ThumbGate is a **human-in-the-loop enforcement layer** for AI coding agents — the safety net for vibe coding. Pre-Action Gates block dangerous tool calls before they execute, based on learned failure patterns.
 
-- **Free tier**: Feedback capture, recall, prevention rules, 5 built-in gates, dashboard CLI, DPO/KTO export.
+**Core tech:** SQLite+FTS5 lesson DB, MemAlign-inspired dual recall, Thompson Sampling for adaptive gates, LanceDB vector search, Bayesian belief updates, PreToolUse hook enforcement.
+
+- **Free tier**: Feedback capture, recall, search_lessons, prevention rules, 5 built-in gates, dashboard CLI, DPO/KTO export.
 - **Pro tier ($49 one-time)**: Auto-gate promotion, unlimited custom gates, multi-repo sync, CI webhook auto-ingest, priority support.
 
 ## 2. Distribution Channels
