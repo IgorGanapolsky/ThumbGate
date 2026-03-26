@@ -1554,8 +1554,20 @@ function createApiServer() {
     }
 
     if (isGetLikeRequest && pathname === '/dashboard') {
-      if (process.env.RLHF_PRO_MODE !== '1') {
-        sendJson(res, 402, { error: 'Dashboard requires Pro. Run: npx mcp-memory-gateway-pro' });
+      const hasProMode = process.env.RLHF_PRO_MODE === '1';
+      const apiKey = extractApiKey(req);
+      const hasValidKey = apiKey && isStaticAdminAuthorized(req, process.env.RLHF_API_KEY);
+      if (!hasProMode && !hasValidKey) {
+        if (wantsJson(req, parsed)) {
+          sendJson(res, 402, {
+            error: 'Dashboard requires Pro.',
+            upgrade: '/checkout/pro',
+            local: 'npx mcp-memory-gateway-pro',
+          });
+        } else {
+          res.writeHead(302, { Location: '/?upgrade=pro' });
+          res.end();
+        }
         return;
       }
       try {

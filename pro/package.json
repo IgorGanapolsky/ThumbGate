@@ -20,7 +20,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/IgorGanapolsky/mcp-memory-gateway.git",
+    "url": "git+https://github.com/IgorGanapolsky/mcp-memory-gateway.git",
     "directory": "pro"
   },
   "engines": {

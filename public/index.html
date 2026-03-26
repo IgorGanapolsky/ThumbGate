@@ -466,6 +466,13 @@ function copyInstall(el) {
     setTimeout(function() { hint.textContent = 'click to copy'; hint.classList.remove('copied'); }, 2000);
   });
 }
+if (new URLSearchParams(window.location.search).get('upgrade') === 'pro') {
+  var b = document.createElement('div');
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#f59e0b;color:#000;text-align:center;padding:12px 16px;font-weight:600;z-index:9999;font-size:15px;';
+  b.innerHTML = 'The Dashboard requires Pro. <a href="/checkout/pro" style="color:#000;text-decoration:underline;margin-left:8px;">Upgrade for $49 (one-time)</a> or run <code style="background:rgba(0,0,0,.15);padding:2px 6px;border-radius:4px;">npx mcp-memory-gateway-pro</code> locally.';
+  document.body.prepend(b);
+  history.replaceState(null, '', '/');
+}
 </script>
 </body>
 </html>
