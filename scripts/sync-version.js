@@ -270,7 +270,7 @@ function syncVersion(opts) {
     const mcpizeVersionRegex = /^version:\s*"[^"]+"/m;
     const mcpizeExpected = `version: "${version}"`;
     if (!mcpizeContent.includes(mcpizeExpected)) {
-      drifted.push({ path: mcpizePath, field: 'version', expected: version, actual: mcpizeContent.match(/version:\s*"([^"]+)"/)?.[1] || 'unknown' });
+      drifted.push({ file: mcpizePath, field: 'version', current: mcpizeContent.match(/version:\s*"([^"]+)"/)?.[1] || 'unknown' });
       if (!checkOnly) {
         fs.writeFileSync(mcpizeFile, mcpizeContent.replace(mcpizeVersionRegex, mcpizeExpected));
       }
