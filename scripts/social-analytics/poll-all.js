@@ -1,6 +1,24 @@
 'use strict';
 
 const path = require('node:path');
+const fs = require('node:fs');
+
+// Load .env if available
+const envPath = path.resolve(__dirname, '..', '..', '.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx > 0) {
+      const key = trimmed.slice(0, eqIdx);
+      const value = trimmed.slice(eqIdx + 1);
+      if (!process.env[key]) process.env[key] = value;
+    }
+  }
+}
+
 const { initDb } = require('./store');
 
 const POLLERS = [
