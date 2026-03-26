@@ -863,7 +863,14 @@ function renderCheckoutSuccessPage(runtimeConfig) {
     </div>
 
     <div class="card">
-      <h2>Next steps</h2>
+      <h2>Activate Pro locally</h2>
+      <p>Run this command to save your license key and unlock Pro features:</p>
+      <pre id="activate-block">Waiting for provisioning...</pre>
+      <p class="muted">Your key is saved to <code>~/.thumbgate/license.json</code> and persists across sessions.</p>
+    </div>
+
+    <div class="card">
+      <h2>Hosted API setup (optional)</h2>
       <ol>
         <li>Copy the environment block below into your workflow runner.</li>
         <li>Use the curl example to confirm the hosted API captures an event.</li>
@@ -873,7 +880,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
       <pre id="curl-block">Waiting for provisioning...</pre>
       <div class="actions">
         <a class="button" href="/">Back to landing page</a>
-        <a class="button secondary" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Verification evidence</a>
+        <a class="button secondary" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Verification evidence</a>
       </div>
     </div>
   </main>
@@ -889,6 +896,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
     const keyBlock = document.getElementById('key-block');
     const envBlock = document.getElementById('env-block');
     const curlBlock = document.getElementById('curl-block');
+    const activateBlock = document.getElementById('activate-block');
     const acquisitionId = params.get('acquisition_id');
     const visitorId = params.get('visitor_id');
     const visitorSessionId = params.get('visitor_session_id') || sessionId;
@@ -1004,6 +1012,9 @@ function renderCheckoutSuccessPage(runtimeConfig) {
           ? 'Your API key is ready. Copy the snippets below into your workflow project. Trace: ' + resolvedTraceId + '.'
           : 'Your API key is ready. Copy the snippets below into your workflow project.';
         keyBlock.textContent = body.apiKey || 'Provisioned, but no key was returned.';
+        activateBlock.textContent = body.apiKey
+          ? 'npx mcp-memory-gateway pro --activate --key=' + body.apiKey
+          : 'Key not available yet — refresh this page.';
         envBlock.textContent = body.nextSteps && body.nextSteps.env ? body.nextSteps.env : 'Environment snippet unavailable.';
         curlBlock.textContent = body.nextSteps && body.nextSteps.curl ? body.nextSteps.curl : 'curl snippet unavailable.';
       } catch (err) {
