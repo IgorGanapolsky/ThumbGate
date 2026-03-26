@@ -68,8 +68,8 @@ function saveState(state) {
 async function generateReply(comment, context) {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
-  // Always use template fallback if Gemini key is missing or known-invalid
-  if (!apiKey || apiKey === 'REDACTED') {
+  // Always use template fallback if Gemini key is missing or looks like a placeholder
+  if (!apiKey || apiKey.startsWith('AIzaSy') && apiKey.length < 40) {
     // Template fallback
     return `Thanks for the feedback! ${context.isQuestion ? "Happy to elaborate — " : ""}the gate engine works by intercepting tool calls before execution and checking them against validated failure patterns. The rules are auto-promoted from structured feedback, not hand-authored. If you want to dig into the implementation: https://github.com/IgorGanapolsky/mcp-memory-gateway`;
   }
