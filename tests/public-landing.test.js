@@ -25,7 +25,7 @@ test('public landing page has correct title and meta description', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /ThumbGate — Stop AI Coding Agents From Repeating Mistakes/);
-  assert.match(landingPage, /Pre-Action Gates for AI coding agents/);
+  assert.match(landingPage, /Human-in-the-loop enforcement for AI coding agents/);
   assert.match(landingPage, /Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent/);
   assert.match(landingPage, /mcp-memory-gateway/);
 });
@@ -68,7 +68,7 @@ test('public landing page does not contain removed old-page features', () => {
 
   assert.doesNotMatch(landingPage, /__PRO_PRICE_DOLLARS__/);
   assert.doesNotMatch(landingPage, /serverVisitorId/);
-  assert.doesNotMatch(landingPage, /"@type": "FAQPage"/);
+  assert.match(landingPage, /"@type": "FAQPage"/);  // FAQPage schema added for Google rich results
   assert.doesNotMatch(landingPage, /"@type": "Organization"/);
   assert.doesNotMatch(landingPage, /buyer-feedback/);
   assert.doesNotMatch(landingPage, /Reliability Studio/i);

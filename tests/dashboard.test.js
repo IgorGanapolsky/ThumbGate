@@ -158,7 +158,7 @@ test('generateDashboard surfaces tracking readiness and instrumentation truth', 
     assert.equal(data.instrumentation.ga4Configured, true);
     assert.equal(data.instrumentation.googleSearchConsoleConfigured, true);
     assert.equal(data.instrumentation.softwareApplicationSchemaPresent, true);
-    assert.equal(data.instrumentation.faqSchemaPresent, false);
+    assert.equal(data.instrumentation.faqSchemaPresent, true);
     assert.equal(data.instrumentation.telemetryEventsPresent, true);
     assert.equal(data.instrumentation.uniqueVisitorsTracked, 1);
     assert.equal(data.instrumentation.seoSignalsPresent, true);
