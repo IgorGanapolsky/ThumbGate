@@ -20,9 +20,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
 <title>ThumbGate — Stop AI Coding Agents From Repeating Mistakes</title>
-<meta name="description" content="Pre-Action Gates for AI coding agents. Capture feedback, auto-generate rules, and block mistakes before they happen. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.">
-<meta property="og:title" content="ThumbGate — Pre-Action Gates for AI Agents">
-<meta property="og:description" content="Stop AI coding agents from making the same mistake twice. One command install. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.">
+<meta name="description" content="Human-in-the-loop enforcement for AI coding agents. The safety net for vibe coding. Pre-action gates block mistakes before they happen. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.">
+<meta property="og:title" content="ThumbGate — Human-in-the-Loop Enforcement for AI Agents">
+<meta property="og:description" content="The safety net for vibe coding. Stop AI coding agents from making the same mistake twice. One command install. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.">
 <meta property="og:type" content="website">
 
 <script defer data-domain="rlhf-feedback-loop-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
@@ -33,7 +33,7 @@ __GA_BOOTSTRAP__
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
-  "description": "Pre-Action Gates for AI coding agents. Captures feedback, auto-generates prevention rules, and blocks agents before they repeat mistakes.",
+  "description": "Human-in-the-loop enforcement for AI coding agents. The safety net for vibe coding. Pre-action gates capture feedback, auto-generate prevention rules, and block agents before they repeat mistakes.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform",
   "license": "https://opensource.org/licenses/MIT",
@@ -58,6 +58,47 @@ __GA_BOOTSTRAP__
       "priceCurrency": "USD",
       "description": "Cloud-synced memories, unlimited everything, team sharing",
       "url": "https://buy.stripe.com/bJe28rfCY6zc4lH7mb3sI04"
+    }
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate real RLHF?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate is context engineering plus enforcement, not RLHF weight training. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions. Your model's weights are never changed."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the ThumbGate tech stack?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "SQLite+FTS5 lesson DB, MemAlign-inspired dual recall, Thompson Sampling for adaptive gates, LanceDB vector search with Hugging Face embeddings, ContextFS context assembly, Bayesian belief updates, and PreToolUse hook enforcement."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What AI agents does ThumbGate work with?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How are pre-action gates different from prompt rules?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Prompt rules are suggestions agents can ignore. Pre-Action Gates are enforcement — they block the action before execution via PreToolUse hooks. Gates are auto-generated from feedback and use Thompson Sampling to adapt."
+      }
     }
   ]
 }
@@ -224,9 +265,9 @@ __GA_BOOTSTRAP__
 <!-- HERO -->
 <section class="hero">
   <div class="container">
-    <div class="hero-badge">● Pre-Action Gates for AI Agents</div>
+    <div class="hero-badge">● Human-in-the-Loop Enforcement for AI Agents</div>
     <h1>Stop AI coding agents from repeating known mistakes</h1>
-    <p>Capture feedback on AI actions. Auto-generate prevention rules. Block mistakes before they happen across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and other MCP-compatible agents. <strong>New in v0.8.1:</strong> SQLite+FTS5 lesson DB, MemAlign-inspired dual recall, Thompson Sampling for adaptive gates, LanceDB vector search, and corrective-action inference on every thumbs-down.</p>
+    <p>The safety net for vibe coding. Capture feedback, auto-generate prevention rules, and block mistakes before they happen — across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent. <strong>New in v0.8.1:</strong> SQLite+FTS5 lesson DB, MemAlign dual recall, Thompson Sampling, LanceDB vector search, and corrective-action inference on every thumbs-down.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx mcp-memory-gateway init</span>
@@ -269,7 +310,7 @@ __GA_BOOTSTRAP__
 <section class="how-it-works" id="how-it-works">
   <div class="container">
     <div class="section-label">How It Works</div>
-    <h2 class="section-title">Three steps to mistake-proof AI</h2>
+    <h2 class="section-title">Three steps to mistake-proof vibe coding</h2>
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>

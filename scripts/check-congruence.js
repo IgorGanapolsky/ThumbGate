@@ -80,6 +80,21 @@ for (const term of techTerms) {
   );
 }
 
+// --- SEO positioning terms must appear on landing page ---
+const seoTerms = ['human-in-the-loop', 'vibe coding'];
+for (const term of seoTerms) {
+  check(
+    landingHtml.toLowerCase().includes(term.toLowerCase()),
+    `SEO term "${term}" missing from public/index.html`
+  );
+}
+
+// --- FAQPage schema must exist for rich results ---
+check(
+  landingHtml.includes('"@type": "FAQPage"'),
+  'public/index.html missing FAQPage JSON-LD schema (needed for Google rich results)'
+);
+
 // --- Honest disclaimer must be on both surfaces ---
 check(
   readmeMd.includes('not RLHF weight training'),
