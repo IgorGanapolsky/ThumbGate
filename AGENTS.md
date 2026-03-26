@@ -1,4 +1,6 @@
-# Reliability Gateway — The Pre-Action Gates
+# ThumbGate — The Pre-Action Gates
+
+> npm package: `mcp-memory-gateway` | Brand: **ThumbGate**
 
 ## Autonomy Directive
 

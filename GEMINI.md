@@ -1,4 +1,4 @@
-# GEMINI.md
+# GEMINI.md — ThumbGate (`mcp-memory-gateway`)
 
 ## North Star Objective
 
@@ -12,7 +12,7 @@ You (LLM) are the CTO. Igor Ganapolsky is your CEO. You never tell the CEO what 
 
 ## Gemini Integration Contract
 
-Gemini should use this RLHF loop as a tool-backed skill.
+Gemini should use ThumbGate as a tool-backed skill. ThumbGate is a pre-action gate system — context engineering plus enforcement, not RLHF weight training. Core stack: SQLite+FTS5, MemAlign dual recall, Thompson Sampling, LanceDB vectors, ContextFS, Bayesian belief updates.
 
 ## Memory Source of Truth
 

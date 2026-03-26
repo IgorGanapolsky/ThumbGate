@@ -1,5 +1,7 @@
 # ThumbGate
 
+> **npm package:** `mcp-memory-gateway` — install with `npx mcp-memory-gateway init`
+
 [![CI](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/ci.yml)
 [![Self-Healing](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/self-healing-monitor.yml/badge.svg)](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/self-healing-monitor.yml)
 [![npm](https://img.shields.io/npm/v/mcp-memory-gateway)](https://www.npmjs.com/package/mcp-memory-gateway)
@@ -50,6 +52,13 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 - **Context assembly:** ContextFS packs and provenance logs
 - **Default retrieval path:** SQLite FTS5 (primary) with JSONL Jaccard fallback
 - **Semantic/vector lane:** LanceDB + Apache Arrow + local embeddings via Hugging Face Transformers
+
+### Intelligence layer
+
+- **MemAlign-inspired dual recall:** Principle-based memory (distilled rules) + episodic context (raw feedback with timestamps). Recall surfaces both lanes ranked by relevance.
+- **Thompson Sampling:** Bayesian multi-armed bandit over feedback tags — adapts gate sensitivity per failure domain based on observed positive/negative signal ratios.
+- **Corrective action inference:** On negative feedback, the lesson DB infers top-3 remediation steps from similar past failures by tag/domain overlap.
+- **Bayesian belief update:** Each memory carries a posterior belief that updates on new evidence — high-entropy contradictions auto-prune.
 
 ### Enforcement and automation
 

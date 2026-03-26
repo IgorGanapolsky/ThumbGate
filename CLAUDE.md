@@ -1,4 +1,4 @@
-# CLAUDE.md
+# CLAUDE.md — ThumbGate (`mcp-memory-gateway`)
 
 ## Autonomy Directive
 
@@ -6,8 +6,10 @@ You (LLM) are the CTO. Igor Ganapolsky is your CEO. You never tell the CEO what 
 
 ## Purpose
 
-Run a complete RLHF operating loop for coding work:
-capture explicit feedback, convert valid memories, prevent repeated failures, and prove behavior with tests.
+ThumbGate is a pre-action gate system for AI coding agents. It runs a context-engineering loop (not RLHF weight training):
+capture explicit feedback, convert valid memories, prevent repeated failures via PreToolUse enforcement, and prove behavior with tests.
+
+**Core tech stack:** SQLite+FTS5 lesson DB, MemAlign-inspired dual recall, Thompson Sampling for adaptive gates, LanceDB vector search, ContextFS context assembly, Bayesian belief updates.
 
 ## Memory Source of Truth
 
