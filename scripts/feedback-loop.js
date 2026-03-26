@@ -692,6 +692,7 @@ function inferSemanticTags(context = '') {
 }
 
 function captureFeedback(params) {
+  const _captureStart = Date.now();
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
   const signal = normalizeSignal(params.signal);
   if (!signal) {
@@ -828,17 +829,11 @@ function captureFeedback(params) {
     try { appendRejectionLedger(feedbackEvent, action.reason); } catch { /* non-critical */ }
     try {
       appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(), { accepted: false });
-    } catch {
-      // Sequence tracking failure is non-critical
-    }
+    } catch { /* non-critical */ }
     try {
       const riskScorer = getRiskScorerModule();
-      if (riskScorer) {
-        riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
-      }
-    } catch {
-      // Risk model refresh is non-critical
-    }
+      if (riskScorer) riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
+    } catch { /* non-critical */ }
     return {
       accepted: false,
       status: clarification ? 'clarification_required' : 'rejected',
@@ -865,17 +860,11 @@ function captureFeedback(params) {
     try { appendRejectionLedger(feedbackEvent, `Schema validation failed: ${prepared.issues.join('; ')}`); } catch { /* non-critical */ }
     try {
       appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(), { accepted: false });
-    } catch {
-      // Sequence tracking failure is non-critical
-    }
+    } catch { /* non-critical */ }
     try {
       const riskScorer = getRiskScorerModule();
-      if (riskScorer) {
-        riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
-      }
-    } catch {
-      // Risk model refresh is non-critical
-    }
+      if (riskScorer) riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
+    } catch { /* non-critical */ }
     return {
       accepted: false,
       status: 'rejected',
@@ -932,7 +921,7 @@ function captureFeedback(params) {
     appendJSONL(MEMORY_LOG_PATH, memoryRecord);
   }
 
-  // Dual-write to SQLite lesson DB (non-blocking — JSONL is source of truth)
+  // Dual-write to SQLite lesson DB — deferred to avoid blocking response
   let correctiveActions = [];
   try {
     const lessonDB = getLessonDB();
@@ -947,49 +936,35 @@ function captureFeedback(params) {
     // Lesson DB write is non-critical — never fail the capture pipeline
   }
 
-  const contextFs = getContextFsModule();
-  if (contextFs && typeof contextFs.registerFeedback === 'function') {
-    try {
-      contextFs.registerFeedback(feedbackEvent, memoryRecord);
-    } catch {
-      // Non-critical; feedback remains in primary logs
-    }
-  }
+  summary.accepted += 1;
+  summary.lastUpdated = now;
+  saveSummary(summary);
 
-  // ML side-effects: sequence tracking and diversity (non-blocking — primary write already succeeded)
+  const _captureMs = Date.now() - _captureStart;
+
+  // Build result immediately — all remaining side-effects are deferred
+  const result = {
+    accepted: true,
+    status: 'promoted',
+    message: 'Feedback promoted to reusable memory.',
+    feedbackEvent,
+    memoryRecord,
+    _captureMs,
+    ...(correctiveActions.length > 0 && { correctiveActions }),
+  };
+
+  // --- Synchronous side-effects (fast, needed by analyzeFeedback) ---
   const mlPaths = getFeedbackPaths();
   try {
     appendSequence(historyEntries, feedbackEvent, mlPaths, { accepted: true });
-  } catch (err) {
-    // Sequence tracking failure is non-critical
-  }
+  } catch { /* Sequence tracking failure is non-critical */ }
   try {
     updateDiversityTracking(feedbackEvent, mlPaths);
-  } catch (err) {
-    // Diversity tracking failure is non-critical
-  }
-
-  // Vector storage side-effect (non-blocking — primary write already succeeded)
-  const vectorStore = getVectorStoreModule();
-  if (vectorStore && typeof vectorStore.upsertFeedback === 'function') {
-    trackBackgroundSideEffect(vectorStore.upsertFeedback(feedbackEvent));
-  }
-
-  // RLAIF self-audit side-effect (non-blocking — 4th enrichment layer)
-  try {
-    const sam = getSelfAuditModule();
-    if (sam) sam.selfAuditAndLog(feedbackEvent, mlPaths);
-  } catch (_err) { /* non-critical */ }
-
-  // Boosted risk model refresh — local, file-based, and non-blocking
+  } catch { /* Diversity tracking failure is non-critical */ }
   try {
     const riskScorer = getRiskScorerModule();
-    if (riskScorer) {
-      riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
-    }
-  } catch (_err) { /* non-critical */ }
-
-  // Attribution side-effects — fire-and-forget, never throw
+    if (riskScorer) riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
+  } catch { /* non-critical */ }
   try {
     const toolName = feedbackEvent.toolName || feedbackEvent.tool_name || 'unknown';
     const toolInput = feedbackEvent.context || feedbackEvent.input || '';
@@ -999,32 +974,38 @@ function captureFeedback(params) {
     } else if (feedbackEvent.signal === 'positive') {
       attributeFeedback('positive', feedbackEvent.context || '');
     }
-  } catch (e) {
-    // attribution is non-blocking
+  } catch { /* attribution is non-blocking */ }
+
+  // Vector storage — track promise synchronously so waitForBackgroundSideEffects works
+  const vectorStore = getVectorStoreModule();
+  if (vectorStore && typeof vectorStore.upsertFeedback === 'function') {
+    trackBackgroundSideEffect(vectorStore.upsertFeedback(feedbackEvent));
   }
 
-  // Auto-promote gates on negative feedback — non-blocking
+  // Auto-promote gates on negative feedback (sync — tests depend on immediate promotion)
   if (feedbackEvent.signal === 'negative') {
     try {
       const autoPromote = require('./auto-promote-gates');
       autoPromote.promote(FEEDBACK_LOG_PATH);
-    } catch (_err) {
-      // Gate promotion is non-critical — never fail the capture pipeline
-    }
+    } catch { /* Gate promotion is non-critical */ }
   }
 
-  summary.accepted += 1;
-  summary.lastUpdated = now;
-  saveSummary(summary);
+  // --- Deferred side-effects (contextFs, RLAIF — non-critical, potentially slow) ---
+  setImmediate(() => {
+    try {
+      const contextFs = getContextFsModule();
+      if (contextFs && typeof contextFs.registerFeedback === 'function') {
+        contextFs.registerFeedback(feedbackEvent, memoryRecord);
+      }
+    } catch { /* Non-critical */ }
 
-  return {
-    accepted: true,
-    status: 'promoted',
-    message: 'Feedback promoted to reusable memory.',
-    feedbackEvent,
-    memoryRecord,
-    ...(correctiveActions.length > 0 && { correctiveActions }),
-  };
+    try {
+      const sam = getSelfAuditModule();
+      if (sam) sam.selfAuditAndLog(feedbackEvent, mlPaths);
+    } catch { /* non-critical */ }
+  });
+
+  return result;
 }
 
 function analyzeFeedback(logPath) {
