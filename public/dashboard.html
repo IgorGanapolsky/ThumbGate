@@ -93,6 +93,13 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
+  .btn-outline { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+  .btn-outline:hover { background: var(--cyan-dim); }
+  .demo-badge { background: var(--cyan-dim); color: var(--cyan); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; margin-left: 10px; }
+  .demo-banner { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .demo-banner a { color: var(--cyan); text-decoration: none; font-weight: 600; }
+  .demo-banner a:hover { text-decoration: underline; }
+
   .empty { text-align: center; padding: 48px; color: var(--text-muted); font-size: 15px; }
   .loading { text-align: center; padding: 24px; color: var(--text-muted); }
   h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.02em; }
@@ -124,12 +131,18 @@
     <div style="display:flex;gap:12px;align-items:center;">
       <input type="password" class="auth-input" id="apiKey" placeholder="Paste your RLHF_API_KEY here..." />
       <button class="btn" id="connectBtn" onclick="connect()">Connect</button>
-      <span class="auth-status" id="authStatus"></span>
+       <button class="btn-outline" onclick="loadDemo()">Try Demo</button>
+       <span class="auth-status" id="authStatus"></span>
     </div>
   </div>
 </div>
 
 <div class="container" id="dashboardContent" style="display:none;">
+
+  <div class="demo-banner" id="demoBanner" style="display:none;">
+    <span>📊 <strong>Demo Mode</strong> — sample data. Buy Pro ($49) for your own dashboard.</span>
+    <a href="https://rlhf-feedback-loop-production.up.railway.app" target="_blank" rel="noopener">Get Pro →</a>
+  </div>
 
   <!-- STATS -->
   <div class="stats-grid" id="statsGrid">
@@ -317,6 +330,40 @@ async function loadGates() {
   } catch (e) {
     document.getElementById('gatesList').innerHTML = '<div class="empty">' + e.message + '</div>';
   }
+}
+
+function loadDemo() {
+  document.querySelector('.auth-bar').style.display = 'none';
+  document.getElementById('dashboardContent').style.display = 'block';
+  document.getElementById('demoBanner').style.display = 'flex';
+  // Demo badge in nav
+  var logo = document.querySelector('.nav-logo');
+  if (!document.getElementById('demoBadge')) {
+    logo.insertAdjacentHTML('afterend', '<span class="demo-badge" id="demoBadge">Demo Mode</span>');
+  }
+  // Stats
+  document.getElementById('statTotal').textContent = '247';
+  document.getElementById('statPositive').textContent = '189';
+  document.getElementById('statNegative').textContent = '58';
+  document.getElementById('statGates').textContent = '12';
+  // Sample memories
+  var demoResults = [
+    { signal: 'up', title: 'Read file before editing', context: 'Always read the target file before making changes. Avoids blind edits that break existing logic or miss surrounding context.', tags: ['code-quality', 'prevention'], timestamp: '2025-03-20T14:30:00Z' },
+    { signal: 'down', title: 'Deployed without running tests', context: 'Pushed a refactor to main without running the test suite. Two integration tests failed in CI, blocking the release for 3 hours.', tags: ['ci', 'testing', 'deployment'], timestamp: '2025-03-18T09:15:00Z' },
+    { signal: 'up', title: 'Atomic commits improved bisect speed', context: 'Splitting a large feature into 8 atomic commits made git bisect find the regression in under 2 minutes instead of manual debugging.', tags: ['git', 'debugging'], timestamp: '2025-03-15T16:45:00Z' }
+  ];
+  document.getElementById('searchResults').innerHTML = demoResults.map(renderResult).join('');
+  // Sample gates
+  var demoGates = [
+    { name: 'read-before-edit', pattern: 'Must read file contents before any edit_file call', action: 'block' },
+    { name: 'evidence-before-claim', pattern: 'Run verification commands before claiming task completion', action: 'block' },
+    { name: 'atomic-commits', pattern: 'Each commit should contain a single logical change', action: 'warn' }
+  ];
+  document.getElementById('gatesList').innerHTML = demoGates.map(function(g) {
+    return '<div class="gate-card"><div><div class="gate-name">' + escHtml(g.name) + '</div>' +
+      '<div class="gate-pattern">' + escHtml(g.pattern) + '</div></div>' +
+      '<span class="gate-action ' + g.action + '">' + g.action.toUpperCase() + '</span></div>';
+  }).join('');
 }
 
 async function exportDpo() {

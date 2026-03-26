@@ -645,6 +645,34 @@ function northStar() {
 }
 
 function pro() {
+  const args = parseArgs(process.argv.slice(3));
+
+  if (args.upgrade) {
+    const proDir = path.join(PKG_ROOT, 'pro');
+    const rlhfDir = path.join(CWD, '.rlhf');
+    if (!fs.existsSync(rlhfDir)) fs.mkdirSync(rlhfDir, { recursive: true });
+
+    const files = [
+      ['constraints-pro.json', '10 RLAIF constraints'],
+      ['prevention-rules-pro.md', 'curated production rules'],
+      ['thompson-presets.json', '4 sampling presets'],
+      ['reminders-pro.json', '8 reminder templates'],
+    ];
+
+    for (const [file] of files) {
+      fs.copyFileSync(path.join(proDir, file), path.join(rlhfDir, file));
+    }
+
+    console.log('\n✅ Pro configs installed to .rlhf/');
+    for (const [file, desc] of files) {
+      console.log(`  - ${file} (${desc})`);
+    }
+    console.log('');
+
+    appendLocalTelemetry({ eventType: 'pro_upgrade', version: pkgVersion(), timestamp: new Date().toISOString() });
+    return;
+  }
+
   const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
   const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
   console.log('\nThumbGate — Commercial Truth');
@@ -658,6 +686,7 @@ function pro() {
   console.log('\nLinks:');
   console.log(`  Pro             : ${hostedUrl}`);
   console.log(`  Commercial truth: ${truthUrl}\n`);
+  console.log('  Run: npx mcp-memory-gateway pro --upgrade   to install Pro configs locally\n');
 }
 
 function summary() {
@@ -1025,6 +1054,7 @@ function help() {
   console.log('  force-gate <PATTERN>  Immediately create a blocking gate from a pattern');
   console.log('  self-heal             Run self-healing check and auto-fix');
   console.log('  pro                   Show Pro plan ($49 one-time) + hosted pilot info');
+  console.log('    --upgrade           Install Pro configs into .rlhf/');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
   console.log('  watch [flags]           Watch .rlhf/ for external signals and ingest through pipeline (--once, --source=X)');
   console.log('  status                  Show feedback tracking dashboard — approval trend + failure domains');
