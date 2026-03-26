@@ -108,3 +108,101 @@ test('skill-materializer materializes pending proposals', (t) => {
   const updatedProposal = JSON.parse(fs.readFileSync(path.join(proposalsDir, 'solve-testing.json'), 'utf8'));
   assert.strictEqual(updatedProposal.status, 'materialized', 'proposal status should be updated');
 });
+
+test('skill-proposer returns empty when no mistakes in memory log', (t) => {
+  const tmpDir = makeTmpDir();
+  const logFile = path.join(tmpDir, 'memory-log.jsonl');
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  appendJSONL(logFile, { id: 'mem_1', title: 'SUCCESS: good job', content: 'All tests passed.', category: 'success', tags: ['testing'], timestamp: new Date().toISOString() });
+
+  const proposals = proposeSkills({ feedbackDir: tmpDir });
+  assert.ok(Array.isArray(proposals));
+  assert.strictEqual(proposals.length, 0, 'should return empty when no mistakes');
+});
+
+test('skill-proposer handles entries without Reasoning trace', (t) => {
+  const tmpDir = makeTmpDir();
+  const logFile = path.join(tmpDir, 'memory-log.jsonl');
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  appendJSONL(logFile, makeNegativeMemory(['testing', 'verification'], { content: 'Agent failed without trace.' }));
+  appendJSONL(logFile, makeNegativeMemory(['testing', 'verification'], { content: 'No reasoning available.' }));
+
+  const proposals = proposeSkills({ feedbackDir: tmpDir });
+  assert.ok(Array.isArray(proposals));
+  if (proposals.length > 0) {
+    assert.ok(proposals[0].diagnosis.length > 0, 'should have a fallback diagnosis');
+  }
+});
+
+test('skill-materializer returns undefined when no proposals directory exists', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.RLHF_SKILLS_DIR = path.join(tmpDir, 'skills');
+  t.after(() => {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.RLHF_SKILLS_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const results = materializeSkills({ feedbackDir: tmpDir, skillsOutDir: path.join(tmpDir, 'skills') });
+  assert.strictEqual(results, undefined, 'should return undefined when no proposals dir');
+});
+
+test('skill-materializer skips non-pending proposals', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.RLHF_SKILLS_DIR = path.join(tmpDir, 'skills');
+  t.after(() => {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.RLHF_SKILLS_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const proposalsDir = path.join(tmpDir, 'skill-proposals');
+  fs.mkdirSync(proposalsDir, { recursive: true });
+
+  const proposal = {
+    id: 'prop_456',
+    status: 'materialized',
+    problem: 'already done',
+    diagnosis: 'already materialized',
+    suggestedSkill: {
+      name: 'already-done',
+      description: 'already materialized',
+      tags: ['testing'],
+      toolSpec: { name: 'handle_done', description: 'N/A', parameters: { type: 'object', properties: {} } }
+    }
+  };
+  fs.writeFileSync(path.join(proposalsDir, 'already-done.json'), JSON.stringify(proposal));
+
+  const results = materializeSkills({ feedbackDir: tmpDir, skillsOutDir: path.join(tmpDir, 'skills') });
+  assert.ok(Array.isArray(results));
+  assert.strictEqual(results.length, 0, 'should skip non-pending proposals');
+});
+
+test('skill-materializer returns empty for empty proposals directory', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.RLHF_SKILLS_DIR = path.join(tmpDir, 'skills');
+  t.after(() => {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.RLHF_SKILLS_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const proposalsDir = path.join(tmpDir, 'skill-proposals');
+  fs.mkdirSync(proposalsDir, { recursive: true });
+
+  const results = materializeSkills({ feedbackDir: tmpDir, skillsOutDir: path.join(tmpDir, 'skills') });
+  assert.strictEqual(results, undefined, 'should return undefined when no pending proposals');
+});

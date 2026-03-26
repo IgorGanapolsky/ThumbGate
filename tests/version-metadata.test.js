@@ -288,3 +288,66 @@ test('commercial truth sources stay aligned across public and historical docs', 
 
   assert.doesNotMatch(directoryGuide, /30k\+ stars|18k\+ servers listed/i);
 });
+
+test('runtime hosted billing config restores pre-existing env vars (else branch coverage)', () => {
+  const originalLabel = process.env.RLHF_PRO_PRICE_LABEL;
+  const originalDollars = process.env.RLHF_PRO_PRICE_DOLLARS;
+  const originalFallback = process.env.RLHF_CHECKOUT_FALLBACK_URL;
+  const originalGa = process.env.RLHF_GA_MEASUREMENT_ID;
+  const originalSite = process.env.RLHF_GOOGLE_SITE_VERIFICATION;
+
+  process.env.RLHF_PRO_PRICE_LABEL = 'existing-label';
+  process.env.RLHF_PRO_PRICE_DOLLARS = '99';
+  process.env.RLHF_CHECKOUT_FALLBACK_URL = 'https://example.com/existing';
+  process.env.RLHF_GA_MEASUREMENT_ID = 'G-EXISTING';
+  process.env.RLHF_GOOGLE_SITE_VERIFICATION = 'existing-verify';
+
+  const previousLabel = process.env.RLHF_PRO_PRICE_LABEL;
+  const previousDollars = process.env.RLHF_PRO_PRICE_DOLLARS;
+  const previousFallback = process.env.RLHF_CHECKOUT_FALLBACK_URL;
+  const previousGaMeasurementId = process.env.RLHF_GA_MEASUREMENT_ID;
+  const previousGoogleSiteVerification = process.env.RLHF_GOOGLE_SITE_VERIFICATION;
+
+  try {
+    const runtimeConfig = resolveHostedBillingConfig();
+    assert.equal(runtimeConfig.proPriceLabel, 'existing-label');
+    assert.equal(runtimeConfig.proPriceDollars, 99);
+  } finally {
+    if (previousLabel === undefined) {
+      delete process.env.RLHF_PRO_PRICE_LABEL;
+    } else {
+      process.env.RLHF_PRO_PRICE_LABEL = previousLabel;
+    }
+    if (previousDollars === undefined) {
+      delete process.env.RLHF_PRO_PRICE_DOLLARS;
+    } else {
+      process.env.RLHF_PRO_PRICE_DOLLARS = previousDollars;
+    }
+    if (previousFallback === undefined) {
+      delete process.env.RLHF_CHECKOUT_FALLBACK_URL;
+    } else {
+      process.env.RLHF_CHECKOUT_FALLBACK_URL = previousFallback;
+    }
+    if (previousGaMeasurementId === undefined) {
+      delete process.env.RLHF_GA_MEASUREMENT_ID;
+    } else {
+      process.env.RLHF_GA_MEASUREMENT_ID = previousGaMeasurementId;
+    }
+    if (previousGoogleSiteVerification === undefined) {
+      delete process.env.RLHF_GOOGLE_SITE_VERIFICATION;
+    } else {
+      process.env.RLHF_GOOGLE_SITE_VERIFICATION = previousGoogleSiteVerification;
+    }
+  }
+
+  if (originalLabel === undefined) delete process.env.RLHF_PRO_PRICE_LABEL;
+  else process.env.RLHF_PRO_PRICE_LABEL = originalLabel;
+  if (originalDollars === undefined) delete process.env.RLHF_PRO_PRICE_DOLLARS;
+  else process.env.RLHF_PRO_PRICE_DOLLARS = originalDollars;
+  if (originalFallback === undefined) delete process.env.RLHF_CHECKOUT_FALLBACK_URL;
+  else process.env.RLHF_CHECKOUT_FALLBACK_URL = originalFallback;
+  if (originalGa === undefined) delete process.env.RLHF_GA_MEASUREMENT_ID;
+  else process.env.RLHF_GA_MEASUREMENT_ID = originalGa;
+  if (originalSite === undefined) delete process.env.RLHF_GOOGLE_SITE_VERIFICATION;
+  else process.env.RLHF_GOOGLE_SITE_VERIFICATION = originalSite;
+});

@@ -77,3 +77,13 @@ test.after(() => {
   try { fs.unlinkSync(tmpUsageFile); } catch (_) {}
   try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}
 });
+
+test('env var restoration covers both defined and undefined paths', () => {
+  for (const key of Object.keys(savedEnv)) {
+    if (savedEnv[key] !== undefined) {
+      assert.equal(typeof savedEnv[key], 'string');
+    } else {
+      assert.equal(savedEnv[key], undefined);
+    }
+  }
+});

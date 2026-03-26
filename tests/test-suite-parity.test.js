@@ -59,3 +59,31 @@ test('npm test includes every repository test file', () => {
 
   assert.deepEqual(missing, []);
 });
+
+test('listRepoTests handles directories recursively', () => {
+  const results = listRepoTests(TESTS_DIR);
+  assert.ok(results.length > 0, 'should find test files');
+  for (const f of results) {
+    assert.ok(f.endsWith('.test.js'), `${f} should end with .test.js`);
+  }
+});
+
+test('collectReachableScriptCommands handles seen set', () => {
+  const seen = new Set();
+  const result = collectReachableScriptCommands('test', seen);
+  assert.ok(seen.has('test'), 'should mark test as seen');
+  const result2 = collectReachableScriptCommands('test', seen);
+  assert.equal(result2, '', 'should return empty for already-seen script');
+});
+
+test('collectReachableScriptCommands returns empty for nonexistent script', () => {
+  const seen = new Set();
+  const result = collectReachableScriptCommands('nonexistent-script-xyz', seen);
+  assert.equal(result, '', 'nonexistent script should return empty');
+});
+
+test('listNpmTestFiles returns a set', () => {
+  const files = listNpmTestFiles();
+  assert.ok(files instanceof Set, 'should return a Set');
+  assert.ok(files.size > 0, 'should find at least one test file');
+});

@@ -167,3 +167,27 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.match(readme, /claude mcp add rlhf -- npx -y mcp-memory-gateway serve/i);
   assert.match(readme, /build:claude-mcpb/i);
 });
+
+test('claude .mcp.json rlhf command is either npx or node', () => {
+  const filePath = path.join(root, 'adapters/claude/.mcp.json');
+  const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  const rlhf = payload.mcpServers.rlhf;
+  assert.ok(
+    rlhf.command === 'npx' || rlhf.command === 'node',
+    'command should be npx or node, got ' + rlhf.command
+  );
+  if (rlhf.command === 'node') {
+    assert.ok(rlhf.args.includes('serve'), 'node command should include serve');
+  }
+});
+
+test('codex config.toml uses either npx or node command', () => {
+  const filePath = path.join(root, 'adapters/codex/config.toml');
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const usesNpx = content.includes('command = "npx"');
+  const usesNode = content.includes('command = "node"');
+  assert.ok(usesNpx || usesNode, 'should use npx or node');
+  if (usesNode) {
+    assert.match(content, /"serve"/, 'node command should include serve');
+  }
+});
