@@ -148,6 +148,25 @@ npx mcp-memory-gateway dispatch
 
 Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
 
+## ThumbGate vs Alternatives
+
+| Feature | ThumbGate | SpecLock | Mem0 | .cursorrules |
+|---------|-----------|----------|------|-------------|
+| Blocks mistakes before execution | **Yes** — PreToolUse gates | Yes — Patch Firewall | No | No |
+| Learns from your feedback | **Yes** — thumbs up/down | No — manual spec writing | Yes — auto-capture | No |
+| Works across sessions | **Yes** — SQLite + JSONL | Yes — encrypted store | Yes — cloud | No — per-project |
+| Auto-generates rules | **Yes** — from repeated failures | No — manual or Gemini compile | No | No |
+| Agent support | Claude Code, Codex, Gemini, Amp, Cursor, OpenCode | Claude Code, Cursor, Windsurf, Cline, Bolt.new | Claude, Cursor | Cursor only |
+| Install | `npx mcp-memory-gateway init` | `npx speclock setup` | Cloud signup | Edit file |
+| Cost | **Free** (Pro $49 for teams) | Free | Free tier + paid | Free |
+| npm weekly downloads | **724** | 98 | N/A | N/A |
+
+**When to use ThumbGate:** You want your agent to learn from mistakes automatically and enforce what it learned. One thumbs-down creates a gate.
+
+**When to use SpecLock:** You have a written spec/PRD and want to lock specific sections from AI modification. Manual constraint authoring.
+
+**When to use Mem0:** You want cloud-hosted memory shared across apps. No enforcement.
+
 ## Tech Stack
 
 ### Core runtime

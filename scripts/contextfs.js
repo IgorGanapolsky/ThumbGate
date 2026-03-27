@@ -40,6 +40,7 @@ const NAMESPACES = {
   tools: 'tools',
   provenance: 'provenance',
   session: 'session',
+  research: 'research',
 };
 const DEFAULT_SEARCH_NAMESPACES = [
   NAMESPACES.memoryError,
@@ -76,6 +77,24 @@ const PACK_TEMPLATES = {
     maxItems: 8,
     maxChars: 6000,
     queryPrefix: 'competitor comparison alternative',
+  },
+  'research-brief': {
+    namespaces: ['research'],
+    maxItems: 10,
+    maxChars: 8000,
+    queryPrefix: 'research paper',
+  },
+  'autoresearch-brief': {
+    namespaces: ['research', 'memoryLearning', 'rules'],
+    maxItems: 12,
+    maxChars: 10000,
+    queryPrefix: 'research benchmark experiment reliability',
+  },
+  'gtm-research': {
+    namespaces: ['research', 'memoryLearning'],
+    maxItems: 10,
+    maxChars: 8000,
+    queryPrefix: 'marketing conversion acquisition research',
   },
 };
 
@@ -317,6 +336,24 @@ function writeContextObject({ namespace, title, content, tags = [], source, ttl 
   };
 }
 
+function mergeMetadata(existingMetadata = {}, incomingMetadata = {}) {
+  const merged = { ...existingMetadata };
+
+  Object.entries(incomingMetadata).forEach(([key, value]) => {
+    if (value === undefined) return;
+
+    const currentValue = merged[key];
+    if (Array.isArray(currentValue) && Array.isArray(value)) {
+      merged[key] = [...new Set([...currentValue, ...value])];
+      return;
+    }
+
+    merged[key] = value;
+  });
+
+  return merged;
+}
+
 function normalizeTagList(tags) {
   return Array.isArray(tags)
     ? [...new Set(tags.map((tag) => String(tag)))]
@@ -354,6 +391,50 @@ function findExistingContextObject({ namespace, title, content, tags = [], sourc
   return null;
 }
 
+function upsertContextObject({ namespace, title, content, tags = [], source, ttl = null, metadata = {} }) {
+  const existing = findExistingContextObject({
+    namespace,
+    title,
+    content,
+    tags,
+    source,
+  });
+
+  if (!existing) {
+    return writeContextObject({
+      namespace,
+      title,
+      content,
+      tags,
+      source,
+      ttl,
+      metadata,
+    });
+  }
+
+  const mergedDocument = {
+    ...existing.document,
+    ttl,
+    metadata: mergeMetadata(existing.document.metadata || {}, metadata),
+  };
+  writeJson(existing.filePath, mergedDocument);
+
+  recordProvenance({
+    type: 'context_object_deduped',
+    namespace,
+    objectId: existing.document.id,
+    source: source || existing.document.source || 'unknown',
+  });
+
+  return {
+    id: mergedDocument.id,
+    namespace,
+    filePath: existing.filePath,
+    document: mergedDocument,
+    deduped: true,
+  };
+}
+
 function registerFeedback(feedbackEvent, memoryRecord = null) {
   ensureContextFs();
 
@@ -374,45 +455,17 @@ function registerFeedback(feedbackEvent, memoryRecord = null) {
     const namespace = memoryRecord.category === 'error'
       ? NAMESPACES.memoryError
       : NAMESPACES.memoryLearning;
-    const existingMemory = findExistingContextObject({
+    memory = upsertContextObject({
       namespace,
       title: memoryRecord.title,
       content: memoryRecord.content,
       tags: memoryRecord.tags || [],
       source: 'feedback-memory',
+      metadata: {
+        category: memoryRecord.category,
+        sourceFeedbackId: memoryRecord.sourceFeedbackId,
+      },
     });
-
-    if (existingMemory) {
-      memory = {
-        id: existingMemory.document.id,
-        namespace,
-        filePath: existingMemory.filePath,
-        document: existingMemory.document,
-        deduped: true,
-      };
-
-      recordProvenance({
-        type: 'context_object_deduped',
-        namespace,
-        objectId: existingMemory.document.id,
-        source: 'feedback-memory',
-        metadata: {
-          sourceFeedbackId: memoryRecord.sourceFeedbackId,
-        },
-      });
-    } else {
-      memory = writeContextObject({
-        namespace,
-        title: memoryRecord.title,
-        content: memoryRecord.content,
-        tags: memoryRecord.tags || [],
-        source: 'feedback-memory',
-        metadata: {
-          category: memoryRecord.category,
-          sourceFeedbackId: memoryRecord.sourceFeedbackId,
-        },
-      });
-    }
   }
 
   return { raw, memory };
@@ -949,6 +1002,7 @@ module.exports = {
   ensureContextFs,
   recordProvenance,
   writeContextObject,
+  upsertContextObject,
   registerFeedback,
   registerPreventionRules,
   normalizeNamespaces,
