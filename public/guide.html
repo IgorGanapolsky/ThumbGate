@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Stop AI Coding Agents From Repeating Mistakes — ThumbGate Guide</title>
+<meta name="description" content="The complete guide to preventing AI coding agent mistakes with pre-action gates. Learn how ThumbGate captures feedback, generates prevention rules, and blocks known-bad actions before they execute.">
+<meta name="keywords" content="AI agent mistakes, Claude Code force push, AI coding agent memory, MCP server guardrails, pre-action gates, vibe coding safety, PreToolUse hooks, ThumbGate, SpecLock alternative, Mem0 alternative">
+<meta property="og:title" content="How to Stop AI Coding Agents From Repeating Mistakes">
+<meta property="og:description" content="Pre-action gates that physically block AI agents from repeating known mistakes. The complete guide.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://rlhf-feedback-loop-production.up.railway.app/guide">
+<link rel="canonical" href="https://rlhf-feedback-loop-production.up.railway.app/guide">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How to Stop AI Coding Agents From Repeating Mistakes",
+  "description": "Complete guide to preventing AI agent mistakes with pre-action gates, feedback capture, and automatic prevention rule generation.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://rlhf-feedback-loop-production.up.railway.app"
+  },
+  "datePublished": "2026-03-27",
+  "dateModified": "2026-03-27",
+  "mainEntityOfPage": "https://rlhf-feedback-loop-production.up.railway.app/guide",
+  "about": [
+    {"@type": "Thing", "name": "AI coding agents"},
+    {"@type": "Thing", "name": "Model Context Protocol"},
+    {"@type": "Thing", "name": "pre-action gates"}
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to install ThumbGate and prevent AI agent mistakes",
+  "description": "Install ThumbGate in one command to stop your AI coding agent from repeating known mistakes.",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Install ThumbGate",
+      "text": "Run npx mcp-memory-gateway init to auto-detect your agent and configure hooks."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Give feedback when your agent makes a mistake",
+      "text": "Say thumbs down with context about what went wrong. ThumbGate captures it as structured feedback."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Feedback auto-promotes to prevention rules",
+      "text": "After repeated failures, ThumbGate generates a prevention rule and wires it as a pre-action gate."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Gates block mistakes before they happen",
+      "text": "PreToolUse hooks intercept tool calls and check them against known failure patterns. Bad actions are blocked before execution."
+    }
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How do I stop my AI coding agent from repeating mistakes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Install ThumbGate (npx mcp-memory-gateway init). When your agent makes a mistake, give it a thumbs-down with context. ThumbGate captures the feedback, and after repeated failures, auto-generates a prevention rule. Pre-action gates then block the same mistake before it executes in future sessions."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does my Claude Code agent keep force-pushing to main?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Because prompt rules are suggestions the agent can ignore. ThumbGate solves this with enforcement: a PreToolUse hook fires before every tool call and checks it against known failure patterns. If the action matches a gate (like git push --force to main), it is physically blocked before execution."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the difference between pre-action gates and prompt rules?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Prompt rules (like CLAUDE.md or .cursorrules) are instructions the agent may ignore. Pre-action gates are enforcement: they intercept the tool call at the PreToolUse hook level and block it before execution. Gates are auto-generated from feedback and use Thompson Sampling to adapt their sensitivity."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does ThumbGate compare to SpecLock?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "SpecLock requires manually writing constraints or compiling them from a PRD. ThumbGate learns automatically from thumbs-up/down feedback and auto-generates prevention rules from repeated failures. SpecLock locks files from modification; ThumbGate blocks specific actions before they execute."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does ThumbGate compare to Mem0?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Mem0 is cloud-hosted memory for AI apps. ThumbGate is local-first enforcement. Mem0 remembers context but cannot block actions. ThumbGate captures feedback, promotes it to prevention rules, and physically blocks tool calls that match known failure patterns."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does AI agent memory persist across sessions?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "With ThumbGate, yes. Feedback is stored in a local SQLite database with FTS5 indexing. Prevention rules and gates persist across sessions. The recall tool injects relevant context at session start, and session handoff preserves continuity."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I set up PreToolUse hooks in Claude Code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Run npx mcp-memory-gateway init --agent claude-code. This auto-configures PreToolUse hooks in your .claude/settings.json. The hooks fire before every tool call and check it against your prevention rules and gates."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What AI coding agents does ThumbGate work with?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent. Install with npx mcp-memory-gateway init to auto-detect your agent."
+      }
+    }
+  ]
+}
+</script>
+
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0b;
+    --bg-card: #161618;
+    --border: #222225;
+    --text: #e8e8ec;
+    --muted: #8b8b94;
+    --cyan: #22d3ee;
+    --green: #34d399;
+    --red: #f87171;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .container { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; gap: 1.5rem; align-items: center; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+  nav a:hover { color: var(--cyan); }
+  nav .brand { color: var(--text); font-weight: 700; font-size: 1.1rem; }
+  h1 { font-size: 2.2rem; line-height: 1.2; margin: 2rem 0 1rem; }
+  h2 { font-size: 1.5rem; margin: 2.5rem 0 1rem; color: var(--cyan); }
+  h3 { font-size: 1.15rem; margin: 1.5rem 0 0.5rem; }
+  p, li { color: var(--text); margin-bottom: 0.75rem; }
+  ul { padding-left: 1.5rem; }
+  li { margin-bottom: 0.5rem; }
+  code { background: #1a1a1e; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.9em; color: var(--cyan); }
+  pre { background: #111113; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 1rem 0; }
+  pre code { background: none; padding: 0; color: var(--text); }
+  .highlight { color: var(--cyan); }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; }
+  .comparison-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
+  .comparison-table th, .comparison-table td { padding: 0.75rem; border: 1px solid var(--border); text-align: left; }
+  .comparison-table th { background: #111113; color: var(--cyan); }
+  .comparison-table td:first-child { font-weight: 600; }
+  .cta { display: inline-block; background: var(--cyan); color: #000; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 1rem 0; }
+  .cta:hover { opacity: 0.9; }
+  .breadcrumb { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .breadcrumb a { color: var(--muted); }
+  @media (max-width: 600px) { h1 { font-size: 1.6rem; } .container { padding: 1rem; } }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Guide</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/mcp-memory-gateway">GitHub</a>
+</nav>
+
+<div class="container">
+<p class="breadcrumb"><a href="/">Home</a> / Guide</p>
+
+<h1>How to Stop AI Coding Agents From Repeating Mistakes</h1>
+<p style="color:var(--muted);">The complete guide to pre-action gates, feedback capture, and automatic prevention rules.</p>
+
+<h2>The Problem</h2>
+<p>Your AI coding agent force-pushes to main. You correct it. Next session, it force-pushes again. You add a rule to CLAUDE.md. It ignores it. You lose an afternoon reverting.</p>
+<p>This happens because <strong>prompt rules are suggestions</strong>. The agent can read them, forget them, or override them. There is no enforcement at the tool-call level.</p>
+
+<h2>The Fix: Pre-Action Gates</h2>
+<p>ThumbGate adds an enforcement layer between your agent and its tools. When the agent tries to execute a tool call, a <code>PreToolUse</code> hook fires <em>before</em> the action runs. The hook checks the call against known failure patterns. If it matches a gate, the action is blocked.</p>
+
+<div class="card">
+<h3>Before ThumbGate</h3>
+<pre><code>Agent: git push --force origin main
+Result: Force-pushed. You lose 3 commits. Again.</code></pre>
+<h3>After ThumbGate</h3>
+<pre><code>Agent: git push --force origin main
+[gate] Blocked: no-force-push (confidence: 0.94)
+Agent: git push origin feature-branch
+[gate] Passed</code></pre>
+</div>
+
+<h2>Install (One Command)</h2>
+<pre><code># Auto-detect your agent and configure hooks
+npx mcp-memory-gateway init
+
+# Or specify your agent directly
+npx mcp-memory-gateway init --agent claude-code
+npx mcp-memory-gateway init --agent codex
+npx mcp-memory-gateway init --agent cursor
+npx mcp-memory-gateway init --agent gemini</code></pre>
+
+<h2>How It Works</h2>
+
+<h3>1. You give feedback</h3>
+<p>When your agent makes a mistake, tell it. ThumbGate captures the feedback as structured data with context, tags, and domain.</p>
+<pre><code># Your agent force-pushed. You say:
+"thumbs down — force-pushed to main, lost commits"
+
+# ThumbGate captures:
+{
+  signal: "negative",
+  context: "force-pushed to main, lost commits",
+  tags: ["git", "force-push", "destructive"],
+  domain: "version-control"
+}</code></pre>
+
+<h3>2. Feedback auto-promotes to prevention rules</h3>
+<p>After repeated failures with the same pattern, ThumbGate generates a prevention rule automatically. No manual rule writing needed.</p>
+
+<h3>3. Rules become gates</h3>
+<p>Prevention rules are enforced as pre-action gates. The gate fires at the <code>PreToolUse</code> hook level — inside the agent's runtime, before the tool call executes.</p>
+
+<h3>4. Gates adapt via Thompson Sampling</h3>
+<p>Gates that block too aggressively (high false-positive rate) get their confidence reduced automatically. Gates that catch real mistakes get reinforced. This is Bayesian multi-armed bandit optimization, not static rules.</p>
+
+<h2>Memory That Persists Across Sessions</h2>
+<p>ThumbGate stores feedback in a local SQLite database with FTS5 full-text indexing. Lookups are sub-millisecond even at tens of thousands of entries. Old entries that contradict newer evidence are auto-pruned via Bayesian belief decay.</p>
+<ul>
+  <li><code>recall</code> — injects relevant context at session start</li>
+  <li><code>search_lessons</code> — finds promoted lessons with corrective actions</li>
+  <li><code>session_handoff</code> — preserves continuity across sessions</li>
+</ul>
+
+<h2>Pre-Action Gates vs Prompt Rules</h2>
+<table class="comparison-table">
+  <tr><th>Feature</th><th>Prompt Rules</th><th>Pre-Action Gates</th></tr>
+  <tr><td>Where they live</td><td>CLAUDE.md, .cursorrules</td><td>PreToolUse hooks</td></tr>
+  <tr><td>Enforcement</td><td>Suggestion (can be ignored)</td><td>Blocks execution</td></tr>
+  <tr><td>When they fire</td><td>At prompt load</td><td>Before every tool call</td></tr>
+  <tr><td>Auto-generated</td><td>No — hand-written</td><td>Yes — from feedback</td></tr>
+  <tr><td>Adaptive</td><td>No</td><td>Yes — Thompson Sampling</td></tr>
+  <tr><td>Persist across sessions</td><td>Only if in a file</td><td>SQLite + JSONL</td></tr>
+</table>
+
+<h2>ThumbGate vs Alternatives</h2>
+<table class="comparison-table">
+  <tr><th>Feature</th><th>ThumbGate</th><th>SpecLock</th><th>Mem0</th></tr>
+  <tr><td>Blocks mistakes before execution</td><td>Yes — PreToolUse gates</td><td>Yes — Patch Firewall</td><td>No</td></tr>
+  <tr><td>Learns from feedback</td><td>Yes — thumbs up/down</td><td>No — manual specs</td><td>Yes — auto-capture</td></tr>
+  <tr><td>Auto-generates rules</td><td>Yes — from repeated failures</td><td>No</td><td>No</td></tr>
+  <tr><td>Agent support</td><td>Claude Code, Codex, Gemini, Amp, Cursor, OpenCode</td><td>Claude Code, Cursor, Windsurf, Cline</td><td>Claude, Cursor</td></tr>
+  <tr><td>Install</td><td><code>npx mcp-memory-gateway init</code></td><td><code>npx speclock setup</code></td><td>Cloud signup</td></tr>
+  <tr><td>Cost</td><td>Free (Pro $49 for teams)</td><td>Free</td><td>Free tier + paid</td></tr>
+</table>
+
+<h2>Common Scenarios</h2>
+
+<h3>Agent keeps deleting files</h3>
+<p>Give a thumbs-down: "deleted production config file." After 2-3 occurrences, ThumbGate generates a gate that blocks <code>rm</code> commands targeting config files.</p>
+
+<h3>Agent ignores test failures</h3>
+<p>Give a thumbs-down: "committed code with failing tests." ThumbGate learns the pattern and gates future commits when test results show failures.</p>
+
+<h3>Agent uses wrong API endpoint</h3>
+<p>Give a thumbs-down: "called staging API in production code." The gate blocks tool calls that reference staging URLs in production contexts.</p>
+
+<h2>Get Started</h2>
+<pre><code>npx mcp-memory-gateway init</code></pre>
+<p>One command. Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.</p>
+<a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" class="cta">Get Pro — $49</a>
+<p style="color:var(--muted); font-size:0.85rem;">Solo dev? Free tier has everything you need. Pro is for teams syncing rules across machines.</p>
+
+</div>
+</body>
+</html>
