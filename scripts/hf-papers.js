@@ -1,12 +1,9 @@
 'use strict';
 
-const fs = require('node:fs');
-const path = require('node:path');
 const { URL, URLSearchParams } = require('node:url');
 const {
-  CONTEXTFS_ROOT,
   NAMESPACES,
-  writeContextObject,
+  upsertContextObject,
   recordProvenance,
   constructTemplatedPack,
 } = require('./contextfs');
@@ -205,24 +202,19 @@ function buildCitation(paper) {
 }
 
 function ingestNormalizedPapers(papers, query) {
-  const researchDir = path.join(CONTEXTFS_ROOT, NAMESPACES.research);
-  const existing = fs.existsSync(researchDir)
-    ? fs.readdirSync(researchDir).filter((f) => f.endsWith('.json'))
-        .map((f) => { try { return JSON.parse(fs.readFileSync(path.join(researchDir, f), 'utf-8')); } catch { return null; } })
-        .filter(Boolean)
-    : [];
-  const existingTitles = new Set(existing.map((e) => e.title));
-
   const ingested = papers.map((paper) => {
-    const title = `Paper: ${paper.title}`;
-    if (existingTitles.has(title)) {
-      return { title, deduped: true };
-    }
-    const result = writeContextObject({
+    const normalizedTags = [...new Set([
+      'research',
+      'paper',
+      'hf-papers',
+      ...paper.tags.map((tag) => String(tag)),
+    ])].sort();
+
+    return upsertContextObject({
       namespace: NAMESPACES.research,
-      title,
+      title: `Paper: ${paper.title}`,
       content: paperToMarkdown(paper),
-      tags: ['research', 'paper', 'hf-papers', ...paper.tags],
+      tags: normalizedTags,
       source: 'hf-papers',
       metadata: {
         provider: 'huggingface',
@@ -233,14 +225,13 @@ function ingestNormalizedPapers(papers, query) {
         query,
       },
     });
-    existingTitles.add(title);
-    return result;
   });
 
   recordProvenance({
     type: 'hf_papers_ingested',
     query,
     count: ingested.length,
+    dedupedCount: ingested.filter((entry) => entry.deduped).length,
     paperIds: papers.map((paper) => paper.paperId).filter(Boolean),
   });
 
