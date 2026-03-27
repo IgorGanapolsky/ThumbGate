@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate — Memory Dashboard</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --border: #222225;
+    --text: #e8e8ec; --text-muted: #8b8b96; --cyan: #22d3ee;
+    --cyan-dim: rgba(34,211,238,0.12); --green: #4ade80; --red: #f87171;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .container { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+
+  /* NAV */
+  nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
+  nav .container { display: flex; justify-content: space-between; align-items: center; }
+  .nav-logo { font-weight: 700; font-size: 15px; color: var(--text); text-decoration: none; }
+  .nav-links { display: flex; gap: 16px; align-items: center; }
+  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; }
+  .nav-links a:hover { color: var(--text); }
+
+  /* AUTH */
+  .auth-bar { padding: 24px 0; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+  .auth-bar .container { display: flex; gap: 12px; align-items: center; }
+  .auth-input { flex: 1; max-width: 400px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: var(--mono); font-size: 13px; }
+  .auth-input:focus { outline: none; border-color: var(--cyan); }
+  .auth-input::placeholder { color: var(--text-muted); }
+  .btn { background: var(--cyan); color: var(--bg); padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .auth-status { font-size: 13px; color: var(--text-muted); }
+  .auth-status.ok { color: var(--green); }
+  .auth-status.err { color: var(--red); }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: border-color 0.15s, transform 0.1s; }
+  .stat-card:hover { border-color: rgba(34,211,238,0.4); transform: translateY(-2px); }
+  .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.red { color: var(--red); }
+  .stat-value.cyan { color: var(--cyan); }
+
+  /* SEARCH */
+  .search-section { margin-bottom: 32px; }
+  .search-bar { display: flex; gap: 12px; margin-bottom: 20px; }
+  .search-input { flex: 1; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text); font-size: 15px; }
+  .search-input:focus { outline: none; border-color: var(--cyan); }
+  .search-input::placeholder { color: var(--text-muted); }
+  .search-filters { display: flex; gap: 8px; margin-bottom: 16px; }
+  .filter-btn { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; color: var(--text-muted); font-size: 12px; cursor: pointer; }
+  .filter-btn:hover, .filter-btn.active { border-color: var(--cyan); color: var(--cyan); }
+
+  /* RESULTS */
+  .results { display: flex; flex-direction: column; gap: 12px; }
+  .result-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; transition: border-color 0.15s; }
+  .result-card:hover { border-color: rgba(34,211,238,0.3); }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .result-signal { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+  .result-signal.up { background: rgba(74,222,128,0.12); color: var(--green); }
+  .result-signal.down { background: rgba(248,113,113,0.12); color: var(--red); }
+  .result-date { font-size: 12px; color: var(--text-muted); }
+  .result-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .result-context { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .result-tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .tag { font-size: 11px; background: var(--cyan-dim); color: var(--cyan); padding: 2px 8px; border-radius: 4px; }
+
+  /* GATES */
+  .gates-section { margin-bottom: 32px; }
+  .gate-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .gate-name { font-size: 14px; font-weight: 600; }
+  .gate-pattern { font-size: 12px; color: var(--text-muted); font-family: var(--mono); margin-top: 4px; }
+  .gate-action { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+  .gate-action.block { background: rgba(248,113,113,0.12); color: var(--red); }
+  .gate-action.warn { background: rgba(251,191,36,0.12); color: #fbbf24; }
+
+  /* EXPORT */
+  .export-section { margin-bottom: 48px; }
+  .export-btn { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; color: var(--text); font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: border-color 0.15s; }
+  .export-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+  /* TABS */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .tab { padding: 12px 20px; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .btn-outline { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+  .btn-outline:hover { background: var(--cyan-dim); }
+  .demo-badge { background: var(--cyan-dim); color: var(--cyan); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; margin-left: 10px; }
+  .demo-banner { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .demo-banner a { color: var(--cyan); text-decoration: none; font-weight: 600; }
+  .demo-banner a:hover { text-decoration: underline; }
+
+  .empty { text-align: center; padding: 48px; color: var(--text-muted); font-size: 15px; }
+  .loading { text-align: center; padding: 24px; color: var(--text-muted); }
+  h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.02em; }
+
+  @media (max-width: 700px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .search-filters { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo">👍👎 ThumbGate Dashboard</a>
+    <div class="nav-links">
+      <a href="/">Landing Page</a>
+      <a href="https://github.com/IgorGanapolsky/mcp-memory-gateway" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="auth-bar">
+  <div class="container">
+    <div style="margin-bottom:10px;">
+      <span style="font-size:14px;font-weight:600;">Connect your API key</span>
+      <span style="font-size:13px;color:var(--text-muted);margin-left:8px;">Your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">RLHF_API_KEY</code> from your environment. After buying Pro, you receive this key via email. For local testing, set <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">RLHF_API_KEY</code> in your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">.env</code> file.</span>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <input type="password" class="auth-input" id="apiKey" placeholder="Paste your RLHF_API_KEY here..." />
+      <button class="btn" id="connectBtn" onclick="connect()">Connect</button>
+       <button class="btn-outline" onclick="loadDemo()">Try Demo</button>
+       <span class="auth-status" id="authStatus"></span>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="dashboardContent" style="display:none;">
+
+  <div class="demo-banner" id="demoBanner" style="display:none;">
+    <span>📊 <strong>Demo Mode</strong> — sample data. Buy Pro ($49) for your own dashboard.</span>
+    <a href="https://rlhf-feedback-loop-production.up.railway.app" target="_blank" rel="noopener">Get Pro →</a>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card" onclick="selectCard(this,'all')" style="cursor:pointer;" title="Show all feedback"><div class="stat-label">Total Feedback</div><div class="stat-value cyan" id="statTotal">—</div></div>
+    <div class="stat-card" onclick="selectCard(this,'up')" style="cursor:pointer;" title="Show positive feedback"><div class="stat-label">👍 Positive</div><div class="stat-value green" id="statPositive">—</div></div>
+    <div class="stat-card" onclick="selectCard(this,'down')" style="cursor:pointer;" title="Show negative feedback"><div class="stat-label">👎 Negative</div><div class="stat-value red" id="statNegative">—</div></div>
+    <div class="stat-card" onclick="selectCard(this,'gates')" style="cursor:pointer;" title="View active gates"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
+    <div class="tab" onclick="switchTab('gates')">🛡️ Active Gates</div>
+    <div class="tab" onclick="switchTab('export')">📦 Export</div>
+  </div>
+
+  <!-- SEARCH TAB -->
+  <div class="tab-content active" id="tab-search">
+    <div class="search-section">
+      <div class="search-bar">
+        <input type="text" class="search-input" id="searchQuery" placeholder="Search memories... (try: git, test, deploy, secrets, database)" onkeydown="if(event.key==='Enter')search()" />
+        <button class="btn" onclick="search()">Search</button>
+      </div>
+      <div class="search-filters">
+        <button class="filter-btn active" data-source="all" onclick="setSource(this,'all')">All</button>
+        <button class="filter-btn" data-source="feedback" onclick="setSource(this,'feedback')">Feedback</button>
+        <button class="filter-btn" data-source="context" onclick="setSource(this,'context')">Context</button>
+        <button class="filter-btn" data-source="rules" onclick="setSource(this,'rules')">Rules</button>
+      </div>
+      <div class="results" id="searchResults">
+        <div class="empty">Enter a query to search your memories</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GATES TAB -->
+  <div class="tab-content" id="tab-gates">
+    <div class="gates-section">
+      <h2>Active Pre-Action Gates</h2>
+      <div id="gatesList"><div class="loading">Loading gates...</div></div>
+    </div>
+  </div>
+
+  <!-- EXPORT TAB -->
+  <div class="tab-content" id="tab-export">
+    <div class="export-section">
+      <h2>Export Training Data (DPO)</h2>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;max-width:640px;">
+        <h3 style="font-size:15px;margin-bottom:8px;">What is DPO?</h3>
+        <p style="color:var(--text-muted);font-size:14px;line-height:1.65;margin-bottom:12px;"><strong style="color:var(--text);">Direct Preference Optimization</strong> is a technique for fine-tuning LLMs using human preference data. Your 👍/👎 feedback is converted into training pairs:</p>
+        <div style="background:var(--bg-raised);border-radius:8px;padding:16px;font-family:var(--mono);font-size:13px;line-height:1.6;margin-bottom:12px;">
+          <div><span style="color:var(--green);">👍 "chosen"</span> — the response that worked</div>
+          <div><span style="color:var(--red);">👎 "rejected"</span> — the response that failed</div>
+        </div>
+        <p style="color:var(--text-muted);font-size:14px;line-height:1.65;">Use these pairs to fine-tune any model (OpenAI, Llama, Mistral) so it <strong style="color:var(--text);">actually learns from your corrections</strong> — not just blocks mistakes, but stops making them.</p>
+      </div>
+      <button class="export-btn" onclick="exportDpo()">📥 Download DPO Pairs (JSON)</button>
+      <div id="exportStatus" style="margin-top:12px;font-size:13px;color:var(--text-muted);"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let API_KEY = '';
+let currentSource = 'all';
+let isDemo = false;
+let demoData = [];
+
+function getHeaders() {
+  return { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
+}
+
+async function connect() {
+  API_KEY = document.getElementById('apiKey').value.trim();
+  if (!API_KEY) return;
+  const status = document.getElementById('authStatus');
+  const btn = document.getElementById('connectBtn');
+  btn.disabled = true;
+  status.className = 'auth-status';
+  status.textContent = 'Connecting...';
+  try {
+    const res = await fetch('/v1/feedback/stats', { headers: getHeaders() });
+    if (!res.ok) throw new Error('Invalid API key');
+    const data = await res.json();
+    status.className = 'auth-status ok';
+    status.textContent = '✓ Connected';
+    document.getElementById('dashboardContent').style.display = 'block';
+    renderStats(data);
+    loadGates();
+  } catch (e) {
+    status.className = 'auth-status err';
+    status.textContent = '✗ ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+function renderStats(data) {
+  const total = (data.totalFeedback || data.total || 0);
+  const pos = (data.positive || data.thumbsUp || 0);
+  const neg = (data.negative || data.thumbsDown || 0);
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statPositive').textContent = pos;
+  document.getElementById('statNegative').textContent = neg;
+}
+
+async function search() {
+  const query = document.getElementById('searchQuery').value.trim();
+  if (!query) return;
+  const container = document.getElementById('searchResults');
+  container.innerHTML = '<div class="loading">Searching...</div>';
+
+  // Demo mode: filter client-side
+  if (isDemo) {
+    var q = query.toLowerCase();
+    var results = demoData.filter(function(r) {
+      return (r.title + ' ' + r.context + ' ' + (r.tags || []).join(' ')).toLowerCase().indexOf(q) !== -1;
+    });
+    if (!results.length) {
+      container.innerHTML = '<div class="empty">No demo results for "' + escHtml(query) + '". Try: git, test, deploy, secrets, database</div>';
+      return;
+    }
+    container.innerHTML = results.map(renderResult).join('');
+    return;
+  }
+
+  try {
+    const res = await fetch('/v1/search', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ query: query, source: currentSource, limit: 20 })
+    });
+    if (!res.ok) throw new Error('Search failed');
+    const data = await res.json();
+    const results = data.results || data.memories || [];
+    if (!results.length) {
+      container.innerHTML = '<div class="empty">No results found</div>';
+      return;
+    }
+    container.innerHTML = results.map(renderResult).join('');
+  } catch (e) {
+    container.innerHTML = '<div class="empty">' + e.message + '</div>';
+  }
+}
+
+function renderResult(r) {
+  const signal = r.signal || r.type || '';
+  const isUp = signal === 'up' || signal === 'positive' || signal === 'thumbs_up';
+  const isDown = signal === 'down' || signal === 'negative' || signal === 'thumbs_down';
+  const signalClass = isUp ? 'up' : isDown ? 'down' : '';
+  const signalLabel = isUp ? '👍 Positive' : isDown ? '👎 Negative' : signal;
+  const title = r.title || r.context || r.text || '';
+  const context = r.context || r.text || r.content || '';
+  const tags = r.tags || [];
+  const date = r.timestamp ? new Date(r.timestamp).toLocaleDateString() : '';
+  return '<div class="result-card">' +
+    '<div class="result-header">' +
+      (signalLabel ? '<span class="result-signal ' + signalClass + '">' + signalLabel + '</span>' : '<span></span>') +
+      '<span class="result-date">' + date + '</span>' +
+    '</div>' +
+    (title ? '<div class="result-title">' + escHtml(title) + '</div>' : '') +
+    (context && context !== title ? '<div class="result-context">' + escHtml(context.slice(0, 300)) + '</div>' : '') +
+    (tags.length ? '<div class="result-tags">' + tags.map(function(t) { return '<span class="tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+  '</div>';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function selectCard(el, action) {
+  // Highlight clicked card, clear all others
+  document.querySelectorAll('.stat-card').forEach(function(c) { c.style.borderColor = ''; });
+  el.style.borderColor = 'var(--cyan)';
+
+  if (action === 'gates') {
+    switchTab('gates');
+    return;
+  }
+
+  // Filter memories by signal
+  switchTab('search');
+  var container = document.getElementById('searchResults');
+  if (!isDemo || !demoData.length) return;
+  var results = action === 'all' ? demoData : demoData.filter(function(r) { return r.signal === action; });
+  container.innerHTML = results.length ? results.map(renderResult).join('') : '<div class="empty">No ' + action + ' feedback in demo</div>';
+}
+
+function setSource(el, source) {
+  currentSource = source;
+  document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+  document.querySelector('[onclick*="' + name + '"]').classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+async function loadGates() {
+  try {
+    const res = await fetch('/v1/dashboard', { headers: getHeaders() });
+    if (!res.ok) throw new Error('Failed to load dashboard');
+    const data = await res.json();
+    const gates = data.gates || data.activeGates || [];
+    const gateStats = data.gateStats || {};
+    document.getElementById('statGates').textContent = gates.length || gateStats.totalGates || 0;
+    if (!gates.length) {
+      document.getElementById('gatesList').innerHTML = '<div class="empty">No active gates</div>';
+      return;
+    }
+    document.getElementById('gatesList').innerHTML = gates.map(function(g) {
+      const action = g.action || 'block';
+      return '<div class="gate-card"><div><div class="gate-name">' + escHtml(g.name || g.id || 'Gate') + '</div>' +
+        '<div class="gate-pattern">' + escHtml(g.pattern || g.match || '') + '</div></div>' +
+        '<span class="gate-action ' + action + '">' + action.toUpperCase() + '</span></div>';
+    }).join('');
+  } catch (e) {
+    document.getElementById('gatesList').innerHTML = '<div class="empty">' + e.message + '</div>';
+  }
+}
+
+function loadDemo() {
+  document.querySelector('.auth-bar').style.display = 'none';
+  document.getElementById('dashboardContent').style.display = 'block';
+  document.getElementById('demoBanner').style.display = 'flex';
+  // Demo badge in nav
+  var logo = document.querySelector('.nav-logo');
+  if (!document.getElementById('demoBadge')) {
+    logo.insertAdjacentHTML('afterend', '<span class="demo-badge" id="demoBadge">Demo Mode</span>');
+  }
+  // Stats
+  document.getElementById('statTotal').textContent = '247';
+  document.getElementById('statPositive').textContent = '189';
+  document.getElementById('statNegative').textContent = '58';
+  document.getElementById('statGates').textContent = '12';
+  // Sample memories — realistic scenarios developers face
+  var demoResults = [
+    { signal: 'down', title: 'Force-pushed to main and lost teammate commits', context: 'Used git push --force on main to fix a rebase. Overwrote 3 commits from another team member. Had to recover from reflog. Gate now blocks all --force pushes to protected branches.', tags: ['git', 'destructive', 'auto-blocked'], timestamp: '2025-03-22T10:20:00Z' },
+    { signal: 'up', title: 'Read file before editing', context: 'Always read the target file before making changes. Avoids blind edits that break existing logic or miss surrounding context.', tags: ['code-quality', 'prevention'], timestamp: '2025-03-20T14:30:00Z' },
+    { signal: 'down', title: 'Deployed without running tests', context: 'Pushed a refactor to main without running the test suite. Two integration tests failed in CI, blocking the release for 3 hours.', tags: ['ci', 'testing', 'deployment'], timestamp: '2025-03-18T09:15:00Z' },
+    { signal: 'down', title: 'Deleted production database table', context: 'AI agent ran DROP TABLE on a staging-named table that was actually aliased to production. Added a gate requiring explicit confirmation for any destructive SQL.', tags: ['database', 'destructive', 'critical'], timestamp: '2025-03-16T08:05:00Z' },
+    { signal: 'up', title: 'Atomic commits improved bisect speed', context: 'Splitting a large feature into 8 atomic commits made git bisect find the regression in under 2 minutes instead of manual debugging.', tags: ['git', 'debugging'], timestamp: '2025-03-15T16:45:00Z' },
+    { signal: 'up', title: 'Pre-action gate caught .env commit', context: 'Gate blocked a git add that included .env with production API keys. Saved from leaking secrets to a public repo.', tags: ['security', 'prevention', 'secrets'], timestamp: '2025-03-12T11:30:00Z' }
+  ];
+  isDemo = true;
+  demoData = demoResults;
+  document.getElementById('searchResults').innerHTML = demoResults.map(renderResult).join('');
+  // Sample gates
+  var demoGates = [
+    { name: 'no-force-push', pattern: 'Block git push --force to main or master branches', action: 'block' },
+    { name: 'read-before-edit', pattern: 'Must read file contents before any edit_file call', action: 'block' },
+    { name: 'test-before-deploy', pattern: 'Run npm test before any deployment or push to main', action: 'block' },
+    { name: 'no-secrets-in-commits', pattern: 'Block git add on .env, credentials, or API key files', action: 'block' },
+    { name: 'evidence-before-claim', pattern: 'Run verification commands before claiming task completion', action: 'block' },
+    { name: 'atomic-commits', pattern: 'Each commit should contain a single logical change', action: 'warn' }
+  ];
+  document.getElementById('gatesList').innerHTML = demoGates.map(function(g) {
+    return '<div class="gate-card"><div><div class="gate-name">' + escHtml(g.name) + '</div>' +
+      '<div class="gate-pattern">' + escHtml(g.pattern) + '</div></div>' +
+      '<span class="gate-action ' + g.action + '">' + g.action.toUpperCase() + '</span></div>';
+  }).join('');
+}
+
+// Auto-load demo on first visit so visitors see the product immediately
+if (!window.location.search.includes('noauto')) {
+  window.addEventListener('DOMContentLoaded', function() { loadDemo(); });
+}
+
+async function exportDpo() {
+  const status = document.getElementById('exportStatus');
+  status.textContent = 'Exporting...';
+  try {
+    const res = await fetch('/v1/dpo/export', { headers: getHeaders() });
+    if (!res.ok) throw new Error('Export failed');
+    const data = await res.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'thumbgate-dpo-pairs-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    const count = data.pairs ? data.pairs.length : Array.isArray(data) ? data.length : 0;
+    status.textContent = '✓ Exported ' + count + ' preference pairs';
+    status.style.color = 'var(--green)';
+  } catch (e) {
+    status.textContent = '✗ ' + e.message;
+    status.style.color = 'var(--red)';
+  }
+}
+</script>
+</body>
+</html>

@@ -106,6 +106,7 @@ const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
 const { TOOLS: MCP_TOOLS } = require('../../scripts/tool-registry');
 
 const LANDING_PAGE_PATH = path.resolve(__dirname, '../../public/index.html');
+const DASHBOARD_PAGE_PATH = path.resolve(__dirname, '../../public/dashboard.html');
 const VISITOR_COOKIE_NAME = 'rlhf_visitor_id';
 const SESSION_COOKIE_NAME = 'rlhf_session_id';
 const ACQUISITION_COOKIE_NAME = 'rlhf_acquisition_id';
@@ -862,7 +863,14 @@ function renderCheckoutSuccessPage(runtimeConfig) {
     </div>
 
     <div class="card">
-      <h2>Next steps</h2>
+      <h2>Activate Pro locally</h2>
+      <p>Run this command to save your license key and unlock Pro features:</p>
+      <pre id="activate-block">Waiting for provisioning...</pre>
+      <p class="muted">Your key is saved to <code>~/.thumbgate/license.json</code> and persists across sessions.</p>
+    </div>
+
+    <div class="card">
+      <h2>Hosted API setup (optional)</h2>
       <ol>
         <li>Copy the environment block below into your workflow runner.</li>
         <li>Use the curl example to confirm the hosted API captures an event.</li>
@@ -872,7 +880,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
       <pre id="curl-block">Waiting for provisioning...</pre>
       <div class="actions">
         <a class="button" href="/">Back to landing page</a>
-        <a class="button secondary" href="https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Verification evidence</a>
+        <a class="button secondary" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noreferrer">Verification evidence</a>
       </div>
     </div>
   </main>
@@ -888,6 +896,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
     const keyBlock = document.getElementById('key-block');
     const envBlock = document.getElementById('env-block');
     const curlBlock = document.getElementById('curl-block');
+    const activateBlock = document.getElementById('activate-block');
     const acquisitionId = params.get('acquisition_id');
     const visitorId = params.get('visitor_id');
     const visitorSessionId = params.get('visitor_session_id') || sessionId;
@@ -1003,6 +1012,9 @@ function renderCheckoutSuccessPage(runtimeConfig) {
           ? 'Your API key is ready. Copy the snippets below into your workflow project. Trace: ' + resolvedTraceId + '.'
           : 'Your API key is ready. Copy the snippets below into your workflow project.';
         keyBlock.textContent = body.apiKey || 'Provisioned, but no key was returned.';
+        activateBlock.textContent = body.apiKey
+          ? 'npx mcp-memory-gateway pro --activate --key=' + body.apiKey
+          : 'Key not available yet — refresh this page.';
         envBlock.textContent = body.nextSteps && body.nextSteps.env ? body.nextSteps.env : 'Environment snippet unavailable.';
         curlBlock.textContent = body.nextSteps && body.nextSteps.curl ? body.nextSteps.curl : 'curl snippet unavailable.';
       } catch (err) {
@@ -1541,6 +1553,19 @@ function createApiServer() {
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/dashboard') {
+      // Always serve the dashboard HTML — it has its own auth flow
+      // and a "Try Demo" button with sample data for non-Pro visitors.
+      // The API endpoints behind the dashboard still require auth.
+      try {
+        const html = fs.readFileSync(DASHBOARD_PAGE_PATH, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'Dashboard page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/') {
       if (wantsJson(req, parsed)) {
         sendJson(res, 200, {
@@ -1548,7 +1573,7 @@ function createApiServer() {
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
-          endpoints: ['/health', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dpo/export', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dpo/export', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -1803,7 +1828,7 @@ function createApiServer() {
           version: pkg.version,
         },
         name: 'mcp-memory-gateway',
-        description: 'Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor.',
+        description: 'Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor, OpenCode, and any MCP-compatible agent.',
         version: pkg.version,
         tools: getServerCardTools(),
         repository: 'https://github.com/IgorGanapolsky/mcp-memory-gateway',
@@ -2079,9 +2104,9 @@ function createApiServer() {
 
     // Public privacy policy — required for GPT Store and marketplace listings
     if (isGetLikeRequest && pathname === '/privacy') {
-      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Privacy Policy — MCP Memory Gateway</title></head><body>
+      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Privacy Policy — ThumbGate</title></head><body>
 <h1>Privacy Policy</h1>
-<p><strong>MCP Memory Gateway</strong> (npm: mcp-memory-gateway)</p>
+<p><strong>ThumbGate</strong> (npm: mcp-memory-gateway)</p>
 <p>Last updated: 2026-03-11</p>
 <h2>Data Collection</h2>
 <p>The self-hosted version stores workflow data locally on your machine. Local feedback, memory entries, proof artifacts, and context packs stay in your project files unless you explicitly point the system at a hosted endpoint.</p>
