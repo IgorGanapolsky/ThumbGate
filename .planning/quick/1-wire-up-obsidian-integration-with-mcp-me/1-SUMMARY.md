@@ -29,7 +29,7 @@ metrics:
   files_modified: 0
 ---
 
-# Quick Plan 01: Obsidian Integration with MCP Memory Gateway Summary
+# Quick Plan 01: Obsidian Integration with ThumbGate Summary
 
 **One-liner:** Obsidian integration guide + r/ObsidianMD post draft with automated fact-checker proving all claims map to real repo artifacts (24/24 checks, exit 0).
 

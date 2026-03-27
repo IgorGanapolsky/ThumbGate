@@ -10,12 +10,27 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hook-verify-before-done.sh"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
           {
             "type": "command",
             "command": "bash scripts/hook-stop-self-score.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/hook-stop-verify-deploy.sh"
           }
         ]
       }

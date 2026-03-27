@@ -1,12 +1,16 @@
-# v0.7.0 LAUNCH PLAN — Pre-Action Gates (March 13, 2026)
+# v0.8.2 LAUNCH PLAN — ThumbGate (Updated March 26, 2026)
+
+> Originally v0.7.0 Pre-Action Gates launch (March 13, 2026). Updated for v0.8.2 with MemAlign, Thompson Sampling, and SEO positioning.
 
 The engineering proof is real. The commercial surface must stay honest.
 
 ## 1. The Product
 
-MCP Memory Gateway v0.7.0 introduces **Pre-Action Gates** — configurable checkpoints that fire before every tool call, blocking dangerous actions based on learned failure patterns.
+ThumbGate is a **human-in-the-loop enforcement layer** for AI coding agents — the safety net for vibe coding. Pre-Action Gates block dangerous tool calls before they execute, based on learned failure patterns.
 
-- **Free tier**: Feedback capture, recall, prevention rules, 5 built-in gates, dashboard CLI, DPO/KTO export.
+**Core tech:** SQLite+FTS5 lesson DB, MemAlign-inspired dual recall, Thompson Sampling for adaptive gates, LanceDB vector search, Bayesian belief updates, PreToolUse hook enforcement.
+
+- **Free tier**: Feedback capture, recall, search_lessons, prevention rules, 5 built-in gates, dashboard CLI, DPO/KTO export.
 - **Pro tier ($49 one-time)**: Auto-gate promotion, unlimited custom gates, multi-repo sync, CI webhook auto-ingest, priority support.
 
 ## 2. Distribution Channels
@@ -37,7 +41,7 @@ MCP Memory Gateway v0.7.0 introduces **Pre-Action Gates** — configurable check
 
 > "Most AI agents run tool calls with no safety net. One bad `rm -rf`, one force-push to main, one leaked secret — and you're cleaning up for hours.
 >
-> We just shipped Pre-Action Gates in MCP Memory Gateway v0.7.0. Gates fire before every tool call and block dangerous actions based on learned failure patterns.
+> We just shipped Pre-Action Gates in ThumbGate v0.7.0. Gates fire before every tool call and block dangerous actions based on learned failure patterns.
 >
 > Free OSS core with 5 built-in gates. Pro at $49 one-time adds auto-gate promotion, unlimited custom gates, and multi-repo sync.
 >
@@ -47,7 +51,7 @@ MCP Memory Gateway v0.7.0 introduces **Pre-Action Gates** — configurable check
 
 > "Show HN: Pre-Action Gates for AI Agents — block dangerous tool calls before they execute
 >
-> MCP Memory Gateway is an open-source MCP server that captures thumbs-up/down feedback, generates prevention rules from repeated failures, and now ships with Pre-Action Gates — configurable checkpoints that fire before tool calls.
+> ThumbGate is an open-source MCP server that captures thumbs-up/down feedback, generates prevention rules from repeated failures, and now ships with Pre-Action Gates — configurable checkpoints that fire before tool calls.
 >
 > Built-in gates block: force-push to protected branches, .env edits, secret commits, destructive git ops, and shell injection patterns. The gates engine learns from your feedback history and auto-promotes new gates in the Pro tier.
 >
@@ -57,7 +61,7 @@ MCP Memory Gateway v0.7.0 introduces **Pre-Action Gates** — configurable check
 
 ## 4. High-Intent Direct Messages
 
-> "Hey, I just shipped Pre-Action Gates in MCP Memory Gateway v0.7.0 — configurable checkpoints that block dangerous AI agent tool calls before they fire. The OSS core has 5 built-in gates and feedback capture for free. Pro is $49 one-time for auto-gate promotion and multi-repo sync. Would love your honest feedback: https://github.com/IgorGanapolsky/mcp-memory-gateway"
+> "Hey, I just shipped Pre-Action Gates in ThumbGate v0.7.0 — configurable checkpoints that block dangerous AI agent tool calls before they fire. The OSS core has 5 built-in gates and feedback capture for free. Pro is $49 one-time for auto-gate promotion and multi-repo sync. Would love your honest feedback: https://github.com/IgorGanapolsky/mcp-memory-gateway"
 
 ## 5. Commercial Truth
 

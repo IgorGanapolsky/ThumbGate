@@ -1,4 +1,4 @@
-# MCP Memory Gateway
+# ThumbGate
 
 ## What This Is
 

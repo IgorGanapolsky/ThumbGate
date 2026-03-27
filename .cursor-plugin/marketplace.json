@@ -4,22 +4,24 @@
     "name": "Igor Ganapolsky"
   },
   "metadata": {
-    "description": "Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.",
-    "version": "0.7.4"
+    "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
+    "version": "0.8.3"
   },
   "plugins": [
     {
       "name": "mcp-memory-gateway",
       "source": "plugins/cursor-marketplace",
-      "description": "Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.",
-      "category": "developer-tools",
+      "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
+      "category": "agent-orchestration",
       "tags": [
-        "mcp",
         "cursor",
-        "pre-action-gates",
-        "ai-agent-safety",
-        "prevention-rules",
-        "agent-reliability"
+        "cursor-plugin",
+        "thumbgate",
+        "thumbs-up-down",
+        "feedback",
+        "ai-agent-memory",
+        "mistake-prevention",
+        "coding-agent"
       ]
     }
   ]

@@ -32,3 +32,7 @@ scripts/social-analytics/db/social-analytics.db
 __pycache__/
 *.pyc
 test-vault-*/
+
+# RLHF local feedback data
+.rlhf/feedback-log.jsonl
+.rlhf/memory-log.jsonl

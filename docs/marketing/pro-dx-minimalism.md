@@ -6,7 +6,7 @@ But here’s the thing: we’re currently in the "ugly phase" of AI infrastructu
 
 Most agentic workflows are held together by messy Python scripts, unorganized vector stores, and "dumb" RAG that hallucinates at the first sign of complexity. It feels like 2005-era email—functional, but painful to scale and impossible to trust.
 
-We’re trying to change that with the **MCP Memory Gateway.**
+We’re trying to change that with the **ThumbGate.**
 
 Inspired by the precision of tools like Resend and Vercel, we’ve built a Design-Driven Context Layer for AI agents. We realized that an agent's memory isn't just a database problem—it's a **Ranking and Reliability** problem.
 

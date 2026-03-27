@@ -32,7 +32,7 @@ No dominant open agentic commerce protocol exists yet. MCP itself is the closest
 | Arize | $50/mo+ | No | No | No |
 | Helicone | $79-799/mo | No | No | No |
 | Sierra AI | Custom enterprise | No | No | No |
-| **MCP Memory Gateway** | **$5-49** | **Yes** | **Yes** | **Yes** |
+| **ThumbGate** | **$5-49** | **Yes** | **Yes** | **Yes** |
 
 ## Distribution Gaps (Critical)
 

@@ -1,11 +1,11 @@
 ---
-title: Claude MCP Hub Submission — MCP Memory Gateway
+title: Claude MCP Hub Submission — ThumbGate
 created: 2026-03-04T00:00:00Z
 updated: 2026-03-04T00:00:00Z
 status: ready-to-submit
 ---
 
-# Claude MCP Hub Submission: MCP Memory Gateway
+# Claude MCP Hub Submission: ThumbGate
 
 Submit to: https://github.com/modelcontextprotocol/servers (official MCP servers list)
 Also submit to: https://mcp.so (community MCP directory)
@@ -31,7 +31,7 @@ Capture thumbs-up/down feedback from Claude coding sessions, enforce schema qual
 ## Full Description
 
 ```
-MCP Memory Gateway gives Claude Code (and any MCP-compatible client) a production-grade feedback capture loop.
+ThumbGate gives Claude Code (and any MCP-compatible client) a production-grade feedback capture loop.
 
 Every interaction can be rated with a thumbs-up or thumbs-down signal plus rich context: rubric scores, guardrails, file paths, error types, and outcome categories. Repeated failures automatically generate prevention rules in CLAUDE.md format so Claude stops making the same mistakes.
 
@@ -51,7 +51,7 @@ Works in local mode (zero config, no API key) or connected to the Context Gatewa
 ### Option A: Local mode (OSS, no API key needed)
 
 ```bash
-claude mcp add rlhf -- npx -y mcp-memory-gateway@0.7.4 serve
+claude mcp add rlhf -- npx -y mcp-memory-gateway@0.8.3 serve
 ```
 
 Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/settings.json`):
@@ -61,7 +61,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
   "mcpServers": {
     "rlhf": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.7.4", "serve"],
+      "args": ["-y", "mcp-memory-gateway@0.8.3", "serve"],
       "env": {
         "RLHF_BASE_URL": "http://localhost:8787"
       }
@@ -77,7 +77,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
   "mcpServers": {
     "rlhf": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.7.4", "serve"],
+      "args": ["-y", "mcp-memory-gateway@0.8.3", "serve"],
       "env": {
         "RLHF_BASE_URL": "https://rlhf-feedback-loop-production.up.railway.app",
         "RLHF_API_KEY": "rlhf_YOUR_KEY_HERE"
@@ -124,7 +124,7 @@ Verification evidence: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob
 
 ## Transport
 
-- **stdio** (primary): `npx -y mcp-memory-gateway@0.7.4 serve` — version-pinned portable MCP launcher for Claude Code desktop and CLI
+- **stdio** (primary): `npx -y mcp-memory-gateway@0.8.3 serve` — version-pinned portable MCP launcher for Claude Code desktop and CLI
 - **HTTP** (secondary): `src/api/server.js` — REST API (`POST /v1/feedback/capture`, `GET /v1/feedback/summary`, `POST /v1/dpo/export`)
 
 ---
@@ -171,7 +171,7 @@ MIT
 
 ## Version
 
-0.7.4
+0.8.3
 
 ---
 
@@ -190,7 +190,7 @@ npm test
 - [ ] Fork https://github.com/modelcontextprotocol/servers
 - [ ] Add entry to `README.md` under **Community Servers** in alphabetical order:
   ```markdown
-  - **[MCP Memory Gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)** — Capture feedback from AI coding agents, prevent repeated mistakes, export DPO training pairs. Works with Claude Code, ChatGPT, Gemini, Codex, and Amp.
+  - **[ThumbGate](https://github.com/IgorGanapolsky/mcp-memory-gateway)** — Capture feedback from AI coding agents, prevent repeated mistakes, export DPO training pairs. Works with Claude Code, ChatGPT, Gemini, Codex, and Amp.
   ```
 - [ ] Open PR titled: `Add mcp-memory-gateway community server`
 - [ ] Verify CI passes on the PR

@@ -14,7 +14,7 @@ At the time, developers in 2026 wanted zero-friction "agentic primitives." We re
 The March 2026 market for agent tooling was operating largely on **consumption-based credit systems** or "per-agent identity" models (like Okta for Agents). This report argued that the flat `$10/month` subscription felt outdated. The thesis was that developers would rather pay for the *inference and storage costs* associated with "Always-On" memory than for a recurring fee on a local tool.
 
 ### 3. Misaligned Positioning (RLHF vs. MCP Gateway)
-We are marketing ourselves as an "MCP Memory Gateway." However, the March 2026 market data shows that the highest revenue growth is in **MCP (Model Context Protocol) Gateways and Observability**. MCP has become the "USB-C of AI." We already have deep MCP integration, but we aren't selling ourselves as an "MCP Memory & Context Hub." 
+We are marketing ourselves as an "ThumbGate." However, the March 2026 market data shows that the highest revenue growth is in **MCP (Model Context Protocol) Gateways and Observability**. MCP has become the "USB-C of AI." We already have deep MCP integration, but we aren't selling ourselves as an "MCP Memory & Context Hub." 
 
 ---
 

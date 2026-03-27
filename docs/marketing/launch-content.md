@@ -1,4 +1,4 @@
-# MCP Memory Gateway — Launch Content
+# ThumbGate — Launch Content
 
 ---
 
@@ -8,7 +8,7 @@
 
 **Body:**
 
-I built an MCP server that prevents AI coding agents from repeating known mistakes. It's called MCP Memory Gateway.
+I built an MCP server that prevents AI coding agents from repeating known mistakes. It's called ThumbGate.
 
 The problem: AI agents lose memory between sessions. You tell Claude "don't push without checking PR threads" on Monday, and by Wednesday it's doing it again. Multiply that by every mistake across every project.
 
@@ -55,7 +55,7 @@ If you use Claude Code daily, you've hit this: Claude makes the same mistake acr
 
 The root cause is simple — Claude has no memory between sessions. Every conversation starts from zero.
 
-I built MCP Memory Gateway to fix this. Here's how it works:
+I built ThumbGate to fix this. Here's how it works:
 
 **Capture:** When Claude does something wrong, you capture structured feedback (not just "bad" — it requires what went wrong and what to change). When it does something right, you capture that too.
 
@@ -99,7 +99,7 @@ After 3 months of data, the pattern was obvious: the same small set of mistakes 
 
 The problem isn't that AI agents are bad at coding. It's that they have zero memory between sessions. Every session starts clean. There's no mechanism to say "you've done this wrong before, don't do it again."
 
-So I built one. MCP Memory Gateway captures explicit feedback, and when the same failure appears 3+ times, it auto-generates a prevention rule. That rule becomes a pre-action gate — a hook that fires before the agent executes a tool call. If the call matches a known failure pattern, it's blocked.
+So I built one. ThumbGate captures explicit feedback, and when the same failure appears 3+ times, it auto-generates a prevention rule. That rule becomes a pre-action gate — a hook that fires before the agent executes a tool call. If the call matches a known failure pattern, it's blocked.
 
 The result: after deploying gates on my top 10 failure patterns, those specific mistakes dropped to near-zero. The agent still finds new ways to mess up (it's creative like that), but it stopped repeating the known ones.
 
@@ -125,7 +125,7 @@ No memory. No learning. You correct them, they apologize, and do it again tomorr
 I built something that fixes this. Thread:
 
 **Tweet 2:**
-MCP Memory Gateway captures structured feedback when your agent fails.
+ThumbGate captures structured feedback when your agent fails.
 
 Not vague "thumbs down" — it requires: what went wrong, what context, what to change.
 
@@ -177,10 +177,10 @@ Landing: rlhf-feedback-loop-production.up.railway.app
 
 ## 6. mcp.so Submission
 
-MCP Memory Gateway is a pre-action gate engine for AI coding agents. Unlike memory servers that store and retrieve context (Mem0, Zep), this server enforces behavior change: repeated failures are auto-promoted into prevention rules, and PreToolUse hooks physically block tool calls that match known failure patterns before they execute. Capture structured up/down feedback, validate it against a rubric engine (vague signals are rejected), promote to searchable JSONL + LanceDB vector memory, and recall relevant context at session start. The gate engine is the differentiator — agents don't just remember past mistakes, they are blocked from repeating them. Works with Claude Code, Codex, Gemini, Amp, Cursor, and any MCP-compatible agent. Install with `npx mcp-memory-gateway init`. MIT licensed.
+ThumbGate is a pre-action gate engine for AI coding agents. Unlike memory servers that store and retrieve context (Mem0, Zep), this server enforces behavior change: repeated failures are auto-promoted into prevention rules, and PreToolUse hooks physically block tool calls that match known failure patterns before they execute. Capture structured up/down feedback, validate it against a rubric engine (vague signals are rejected), promote to searchable JSONL + LanceDB vector memory, and recall relevant context at session start. The gate engine is the differentiator — agents don't just remember past mistakes, they are blocked from repeating them. Works with Claude Code, Codex, Gemini, Amp, Cursor, and any MCP-compatible agent. Install with `npx mcp-memory-gateway init`. MIT licensed.
 
 ---
 
 ## 7. smithery.ai Submission
 
-MCP Memory Gateway captures explicit structured feedback from AI coding agents, validates it against a rubric engine, and auto-promotes repeated failures into prevention rules enforced via PreToolUse hooks. Pre-action gates physically block tool calls matching known failure patterns before execution — turning past mistakes into hard constraints rather than suggestions. Supports semantic recall via LanceDB vectors, DPO/KTO export for downstream fine-tuning, and a file watcher bridge for external signal ingestion. Compatible with Claude Code, Codex, Gemini, Amp, Cursor, and OpenCode. Install with `npx mcp-memory-gateway init` or `claude mcp add rlhf -- npx -y mcp-memory-gateway serve`. MIT licensed, open source.
+ThumbGate captures explicit structured feedback from AI coding agents, validates it against a rubric engine, and auto-promotes repeated failures into prevention rules enforced via PreToolUse hooks. Pre-action gates physically block tool calls matching known failure patterns before execution — turning past mistakes into hard constraints rather than suggestions. Supports semantic recall via LanceDB vectors, DPO/KTO export for downstream fine-tuning, and a file watcher bridge for external signal ingestion. Compatible with Claude Code, Codex, Gemini, Amp, Cursor, and OpenCode. Install with `npx mcp-memory-gateway init` or `claude mcp add rlhf -- npx -y mcp-memory-gateway serve`. MIT licensed, open source.

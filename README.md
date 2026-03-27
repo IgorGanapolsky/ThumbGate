@@ -1,5 +1,7 @@
 # ThumbGate
 
+> **npm package:** `mcp-memory-gateway` — install with `npx mcp-memory-gateway init`
+
 [![CI](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/ci.yml)
 [![Self-Healing](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/self-healing-monitor.yml/badge.svg)](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/self-healing-monitor.yml)
 [![npm](https://img.shields.io/npm/v/mcp-memory-gateway)](https://www.npmjs.com/package/mcp-memory-gateway)
@@ -7,17 +9,41 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro)
+[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro) — Solo dev? Free tier has everything you need. Team or multi-repo? Pro syncs prevention rules across machines and team members. $49 one-time.
 
 **Thumbs down a mistake. It never happens again.**
 
 The safety net for vibe coding. Give your AI agent a thumbs-down and it auto-generates a prevention rule. Give a thumbs-up and it reinforces good behavior. Pre-action gates physically block the agent before it repeats a known mistake — a reliability layer for one sharp agent, without another planner or swarm.
 
-> **Not RLHF weight training.** ThumbGate is context engineering plus enforcement. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions before they execute.
+> **Honest disclaimer: this is not RLHF weight training.** ThumbGate is context engineering plus enforcement. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions before they execute.
 
 Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
 
 **[Live Demo Dashboard](https://rlhf-feedback-loop-production.up.railway.app/dashboard)** | **[Landing Page](https://rlhf-feedback-loop-production.up.railway.app/)** | **[Verification Evidence](docs/VERIFICATION_EVIDENCE.md)**
+
+Most memory tools only help an agent remember. ThumbGate also enforces.
+
+**The problem without it:**
+> BEFORE: Agent force-pushes to main. You correct it. Next session, it force-pushes again.
+
+**With ThumbGate (`mcp-memory-gateway`):**
+> AFTER: Gate blocks the force-push before it executes. Agent can't repeat the mistake.
+
+- `recall` injects the right context at session start.
+- `search_lessons` shows promoted lessons plus the corrective action, lifecycle state, linked rules, linked gates, and the next harness fix the system should make.
+- `search_rlhf` searches raw RLHF state across feedback logs, ContextFS memory, and prevention rules.
+- Pre-action gates physically block tool calls that match known failure patterns.
+- Session handoff and primer keep continuity across sessions without adding an extra orchestrator.
+
+Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx mcp-memory-gateway lessons`.
+
+## See it in action
+
+```
+$ npx mcp-memory-gateway serve
+[gate] ⛔ Blocked: git push --force (rule: no-force-push, confidence: 0.94)
+[gate] ✅ Passed: git push origin feature-branch
+```
 
 ## Quick Start
 
@@ -124,21 +150,47 @@ Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Runtime** | Node.js `>=18.18.0`, CommonJS |
-| **Lesson DB** | SQLite + FTS5 full-text search |
-| **Dual recall** | MemAlign-inspired deterministic + semantic retrieval |
-| **Adaptive gates** | Thompson Sampling (Beta distributions over block/pass history) |
-| **Vector search** | LanceDB + Apache Arrow + local Hugging Face embeddings |
-| **Local memory** | JSONL logs in `.claude/memory/feedback` or `.rlhf/*` |
-| **Context assembly** | ContextFS packs and provenance logs |
-| **Belief updates** | Bayesian uncertainty estimation per failure domain |
-| **MCP stdio** | stdio transport ([adapters/mcp/server-stdio.js](adapters/mcp/server-stdio.js)) |
-| **HTTP API** | Authenticated REST ([src/api/server.js](src/api/server.js)) |
-| **OpenAPI** | [openapi/openapi.yaml](openapi/openapi.yaml), [ChatGPT adapter](adapters/chatgpt/openapi.yaml) |
-| **Billing** | Stripe |
-| **Hosting** | Railway (API + landing page), Cloudflare Workers ([`workers/`](workers)) |
+### Core runtime
+
+- **Node.js** `>=18.18.0`
+- **Module system:** CommonJS CLI/server runtime
+- **Primary entry points:** CLI, MCP stdio server, authenticated HTTP API, OpenAPI adapters
+
+### Interfaces
+
+- **MCP stdio:** [adapters/mcp/server-stdio.js](adapters/mcp/server-stdio.js)
+- **HTTP API:** [src/api/server.js](src/api/server.js)
+- **OpenAPI surfaces:** [openapi/openapi.yaml](openapi/openapi.yaml), [adapters/chatgpt/openapi.yaml](adapters/chatgpt/openapi.yaml)
+- **CLI:** `npx mcp-memory-gateway ...`
+
+### Storage and retrieval
+
+- **Local memory:** JSONL logs in `.claude/memory/feedback` or `.rlhf/*`
+- **Lesson DB (v0.8.0):** SQLite + FTS5 full-text search via `better-sqlite3` — dual-written alongside JSONL. Indexed by signal, domain, tags, importance. Replaces linear Jaccard token-overlap with sub-millisecond ranked search.
+- **Corrective actions (v0.8.0):** On negative feedback, `capture_feedback` returns `correctiveActions[]` — top 3 remediation steps inferred from similar past failures by tag/domain overlap.
+- **Context assembly:** ContextFS packs and provenance logs
+- **Default retrieval path:** SQLite FTS5 (primary) with JSONL Jaccard fallback
+- **Semantic/vector lane:** LanceDB + Apache Arrow + local embeddings via Hugging Face Transformers
+
+### Intelligence layer
+
+- **MemAlign-inspired dual recall:** Principle-based memory (distilled rules) + episodic context (raw feedback with timestamps). Recall surfaces both lanes ranked by relevance.
+- **Thompson Sampling:** Bayesian multi-armed bandit over feedback tags — adapts gate sensitivity per failure domain based on observed positive/negative signal ratios.
+- **Corrective action inference:** On negative feedback, the lesson DB infers top-3 remediation steps from similar past failures by tag/domain overlap.
+- **Bayesian belief update:** Each memory carries a posterior belief that updates on new evidence — high-entropy contradictions auto-prune.
+
+### Enforcement and automation
+
+- **PreToolUse enforcement:** [scripts/gates-engine.js](scripts/gates-engine.js)
+- **Hook wiring:** `init --agent claude-code|codex|gemini`
+- **Browser automation / ops:** `playwright-core`
+- **Social analytics store:** `better-sqlite3`
+
+### Billing and hosting
+
+- **Billing:** Stripe
+- **Hosted API / landing page:** Railway
+- **Worker lane:** Cloudflare Workers in [`workers/`](workers)
 
 ## Agent Integration Guides
 
@@ -163,6 +215,7 @@ For autonomous agent runs against this or any repo using this workflow:
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md)
 - [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
 - [Pitch](docs/PITCH.md)
+- [Anthropic Marketplace Strategy](docs/ANTHROPIC_MARKETPLACE_STRATEGY.md)
 
 ## License
 

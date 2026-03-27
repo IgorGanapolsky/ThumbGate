@@ -1,6 +1,6 @@
 # The Agentic Asset Factory: MCP Implementation
 
-This document maps the node-based visual workflow (like Freepik Spaces) to our headless MCP Memory Gateway architecture. Instead of outputting static images, this factory outputs **"MCP Experience Packs"**—pre-configured agent brains with built-in assets, rules, and contextual memory.
+This document maps the node-based visual workflow (like Freepik Spaces) to our headless ThumbGate architecture. Instead of outputting static images, this factory outputs **"MCP Experience Packs"**—pre-configured agent brains with built-in assets, rules, and contextual memory.
 
 ## 1. Architectural Mapping
 

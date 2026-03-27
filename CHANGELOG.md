@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.8.2 - 2026-03-26
+
+- Bumped all version surfaces to 0.8.2 (package.json, server.json, mcpize.yaml, landing page).
+- Branch coverage improvements: added tests for 10 lowest-coverage files and 15 previously untested scripts.
+- Railway deploy fix: switched to `--detach` mode with health-check polling to avoid intermittent "Failed to retrieve build log" CLI streaming errors.
+
+## 0.8.1 - 2026-03-26
+
+- Unified ThumbGate branding across all public surfaces (README, AGENTS.md, CLAUDE.md, GEMINI.md, landing page, package.json).
+- Landing page SEO: "human-in-the-loop enforcement", "vibe coding" positioning, FAQPage JSON-LD schema for Google rich results.
+- Added congruence CI check (`scripts/check-congruence.js`) — enforces version, branding, tech stack terms, and honest disclaimer across README and landing page on every PR.
+- Performance: deferred non-critical side-effects in `captureFeedback` (contextFs, RLAIF self-audit) via `setImmediate`.
+- Added `_captureMs` timing field to accepted feedback responses for observability.
+- Added `mcpize.yaml` to version sync targets.
+- Dead code removal: -1,551 lines (contract-audit.js, prove-rlaif.js, stale landing-page.html, 3 duplicate docs).
+- Fixed GitGuardian incident #29200799: scrubbed hardcoded Google API key from git history.
+- Social automation pipeline: post-everywhere CLI, reply monitor with AutoMod-safe Reddit posts.
+- TDS article draft: "Beyond Prompt Rules: How Pre-Action Gates Stop AI Coding Agents From Repeating Mistakes".
+
+## 0.8.0 - 2026-03-25
+
+- **Lesson DB:** SQLite + FTS5 full-text search replaces linear Jaccard token-overlap. Sub-millisecond ranked search indexed by signal, domain, tags, importance.
+- **Corrective actions:** On negative feedback, `capture_feedback` returns `correctiveActions[]` — top 3 remediation steps inferred from similar past failures.
+- **search_lessons MCP tool:** Exposes corrective actions, lifecycle state, linked rules, linked gates, and next harness fixes per lesson.
+- **search_rlhf MCP tool:** Searches raw RLHF state across feedback logs, ContextFS memory, and prevention rules.
+- **Rejection ledger:** Tracks why vague feedback was rejected with revival conditions.
+- **Bayesian belief updates:** Each memory carries a posterior that updates on new evidence; high-entropy contradictions auto-prune.
+
 ## 0.7.4 - 2026-03-20
 
 - Added `session_handoff` and `session_primer` MCP tools for seamless cross-session context continuity.

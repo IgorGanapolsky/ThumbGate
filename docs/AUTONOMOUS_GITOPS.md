@@ -37,7 +37,7 @@ This report is an operator artifact for landing the first 10 paying customers. I
 - Motion: Pro at $49 one-time
 - Why: Target looks builder-led, so the self-serve Pro CTA is the lowest-friction path.
 - CTA: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter
-- Outreach draft: Hey @estebamod, saw you're building around `osmmcp`. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with MCP Memory Gateway Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
+- Outreach draft: Hey @estebamod, saw you're building around `osmmcp`. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
 
 ### @milxxyzxc — mcp-boilerplate
 - Repo: https://github.com/milxxyzxc/mcp-boilerplate
@@ -51,21 +51,21 @@ This report is an operator artifact for landing the first 10 paying customers. I
 - Motion: Pro at $49 one-time
 - Why: Target looks builder-led, so the self-serve Pro CTA is the lowest-friction path.
 - CTA: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter
-- Outreach draft: Hey @skyfire-xyz, saw you're building around `skyfire-solutions-demo`. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with MCP Memory Gateway Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
+- Outreach draft: Hey @skyfire-xyz, saw you're building around `skyfire-solutions-demo`. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
 
 ### @danielmonterocr — skills-integrate-mcp-with-copilot
 - Repo: https://github.com/danielmonterocr/skills-integrate-mcp-with-copilot
 - Motion: Pro at $49 one-time
 - Why: Target looks builder-led, so the self-serve Pro CTA is the lowest-friction path.
 - CTA: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter
-- Outreach draft: Hey @danielmonterocr, saw you're building around `skills-integrate-mcp-with-copilot`. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with MCP Memory Gateway Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
+- Outreach draft: Hey @danielmonterocr, saw you're building around `skills-integrate-mcp-with-copilot`. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
 
 ### @princestf01 — skills-integrate-mcp-with-copilot
 - Repo: https://github.com/princestf01/skills-integrate-mcp-with-copilot
 - Motion: Pro at $49 one-time
 - Why: Target looks builder-led, so the self-serve Pro CTA is the lowest-friction path.
 - CTA: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter
-- Outreach draft: Hey @princestf01, saw you're building around `skills-integrate-mcp-with-copilot`. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with MCP Memory Gateway Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
+- Outreach draft: Hey @princestf01, saw you're building around `skills-integrate-mcp-with-copilot`. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $49 one-time: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?packId=mistake-free-starter Commercial truth: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md.
 
 ### @gunbun33 — mcp-servers
 - Repo: https://github.com/gunbun33/mcp-servers

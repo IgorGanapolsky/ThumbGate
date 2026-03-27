@@ -186,10 +186,10 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RLHF_BILLING_API_BASE_URL/);
   assert.match(workflow, /railway up/);
   assert.match(workflow, /--ci/);
-  assert.doesNotMatch(workflow, /--detach/);
+  assert.match(workflow, /--detach/);
   assert.match(workflow, /--project "\$RAILWAY_PROJECT_ID"/);
   assert.match(workflow, /--environment "\$RAILWAY_ENVIRONMENT_ID"/);
-  assert.match(workflow, /MAX_ATTEMPTS=18/);
+  assert.match(workflow, /MAX_ATTEMPTS=30/);
   assert.doesNotMatch(workflow, /https:\/\/rlhf-feedback-loop-710216278770\.us-central1\.run\.app\/health/);
 });
 
@@ -198,9 +198,9 @@ test('Deploy to Railway workflow waits long enough to verify the promoted build 
 
   assert.match(workflow, /Stamp immutable build metadata/);
   assert.match(workflow, /node scripts\/build-metadata\.js --sha "\$GITHUB_SHA" --output config\/build-metadata\.json/);
-  assert.match(workflow, /railway up --ci --project "\$RAILWAY_PROJECT_ID" --environment "\$RAILWAY_ENVIRONMENT_ID"/);
-  assert.doesNotMatch(workflow, /--detach/);
-  assert.match(workflow, /MAX_ATTEMPTS=18/);
+  assert.match(workflow, /railway up --ci --detach --project "\$RAILWAY_PROJECT_ID" --environment "\$RAILWAY_ENVIRONMENT_ID"/);
+  assert.match(workflow, /--detach/);
+  assert.match(workflow, /MAX_ATTEMPTS=30/);
   assert.match(workflow, /Observed build SHA/);
   assert.match(workflow, /Expected build SHA/);
 });

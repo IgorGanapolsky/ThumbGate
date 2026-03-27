@@ -16,7 +16,7 @@ test('claude mcpb manifest stays aligned with the package metadata and tool regi
 
   assert.equal(manifest.manifest_version, '0.3');
   assert.equal(manifest.name, 'mcp-memory-gateway');
-  assert.equal(manifest.display_name, 'MCP Memory Gateway');
+  assert.equal(manifest.display_name, 'ThumbGate');
   assert.equal(manifest.version, packageJson.version);
   assert.match(manifest.description, /Claude Desktop|workflow hardening|Pre-Action Gates/i);
   assert.match(manifest.documentation, /docs\/CLAUDE_DESKTOP_EXTENSION\.md$/);

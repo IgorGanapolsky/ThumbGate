@@ -137,7 +137,7 @@ async function pollX(db) {
   ]);
 
   // Lazy-require sibling modules so they can be built/tested independently.
-  const { normalizeMetric } = require('../normalizer');
+  const { normalizeXMetric: normalizeMetric } = require('../normalizer');
   const { upsertMetric, upsertFollowerSnapshot } = require('../store');
 
   const fetchedAt = new Date().toISOString();
@@ -154,6 +154,7 @@ async function pollX(db) {
     //   shares       = retweet_count + quote_count
     //   saves        = bookmark_count
     const raw = {
+      id: tweet.id,
       platform: 'x',
       content_type: 'tweet',
       post_id: tweet.id,

@@ -1,37 +1,38 @@
 # Reddit Post: r/ClaudeCode
 
-**Title:** My Claude Code agent kept making the same mistakes every session, so I built it a memory
+**Subreddit:** r/ClaudeCode
+**Account:** u/eazyigz123
+**Post type:** Discussion — problem-first, no product links in body
+
+---
+
+**Title:** How do you stop Claude Code from repeating the same mistakes across sessions?
+
+---
 
 **Body:**
 
-I've been using Claude Code full-time for about 6 months. Love it, but one thing kept driving me crazy: it forgets everything between sessions. Same bugs, same wrong approaches, same "oh sorry, I'll fix that" — over and over.
+I've been using Claude Code full-time for about 6 months. The in-session experience is great — you correct it, it adjusts, the rest of the session is smooth.
 
-So I built [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) — an MCP server that gives your AI agent persistent memory with a feedback loop.
+But next session? Complete amnesia. Same force-push to main. Same skipped tests. Same "let me rewrite that helper function that already exists." CLAUDE.md helps for general patterns, but it doesn't prevent the agent from ignoring specific lessons it should have learned.
 
-**How it works:**
+I tried a few things that didn't stick:
+- Longer CLAUDE.md with explicit "never do X" lists — works sometimes, gets ignored when context is tight
+- Saving chat history and re-injecting it — too noisy, the agent can't parse what matters
+- Manual pre-commit hooks — catches some things but can't cover agent-specific patterns
 
-1. You give thumbs up/down on what your agent does
-2. It auto-generates prevention rules from repeated mistakes
-3. Those rules become **pre-action gates** that physically block the agent from repeating known failures
-4. Uses Thompson Sampling to adapt which gates fire, so it gets smarter over time
+What actually worked was shifting from "tell the agent what not to do" to "physically prevent the agent from doing it." Instead of a memory the agent reads, I set up hooks at the tool-call layer that intercept commands before they execute and check them against validated failure patterns. The agent literally can't force-push if there's a rule against it — it's not a suggestion, it's a gate.
 
-**Install in 30 seconds:**
+The rules come from structured feedback — not just "that was wrong" but "what went wrong + what to change." When the same pattern shows up repeatedly, it auto-promotes into an active gate.
 
-```
-npx mcp-memory-gateway serve
-```
+Has this been a pain point for others? How are you handling cross-session reliability — just CLAUDE.md, or have you found something more persistent?
 
-Then add it to your Claude Code MCP config. That's it.
+---
 
-**What it actually does for you:**
+**Comment (post if someone asks for the tool):**
 
-- Captures feedback with schema validation (not just "good/bad" — structured context)
-- Auto-generates prevention rules from repeated failures
-- Exports DPO/KTO training pairs if you want to fine-tune
-- Works with Claude Code, Codex, Gemini CLI, and Amp
+For those asking — I open-sourced the gate system I described: https://github.com/IgorGanapolsky/mcp-memory-gateway
 
-It's open source and free for local use. There's a [$49 one-time Pro tier](https://rlhf-feedback-loop-production.up.railway.app) if you want hosted dashboard, auto-gate promotion, and multi-repo sync for teams — but the core is fully functional without it.
+It's an MCP server that captures feedback, auto-promotes repeated failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Cursor, Codex, Gemini CLI, and Amp. MIT licensed, fully local.
 
-314 tests, 12 proof reports, MIT licensed. Would love feedback from other Claude Code users on what failure patterns you'd want gates for.
-
-GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
+Disclosure: I built this.

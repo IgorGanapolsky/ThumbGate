@@ -40,7 +40,7 @@ codex:
   stall_timeout_ms: 300000
 ---
 
-# MCP Memory Gateway Agent Workflow
+# ThumbGate Agent Workflow
 
 You are implementing work inside the `mcp-memory-gateway` repository. Deliver the ticket outcome with no dead code, no vague completion claims, and proof that the result works.
 

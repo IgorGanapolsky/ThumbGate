@@ -70,7 +70,7 @@ const { checkLimit } = require('../../scripts/rate-limiter');
 const { TOOLS } = require('../../scripts/tool-registry');
 const { bootstrapInternalAgent } = require('../../scripts/internal-agent-bootstrap');
 
-const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.7.4' };
+const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.8.3' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',

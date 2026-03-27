@@ -1,6 +1,25 @@
 'use strict';
 
+require('dotenv').config({ path: require('node:path').resolve(__dirname, '..', '..', '.env') });
 const path = require('node:path');
+const fs = require('node:fs');
+
+// Load .env if available
+const envPath = path.resolve(__dirname, '..', '..', '.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx > 0) {
+      const key = trimmed.slice(0, eqIdx);
+      const value = trimmed.slice(eqIdx + 1);
+      if (!process.env[key]) process.env[key] = value;
+    }
+  }
+}
+
 const { initDb } = require('./store');
 
 const POLLERS = [
@@ -71,7 +90,9 @@ async function main() {
   console.log(`Skipped:   ${results.skipped.join(', ') || 'none'}`);
   console.log(`Failed:    ${results.failed.map((f) => f.name).join(', ') || 'none'}`);
 
-  if (results.failed.length > 0) {
+  // Exit non-zero only if nothing succeeded AND there were failures.
+  // Partial success (some pollers skipped/failed but at least one succeeded) is OK.
+  if (results.succeeded.length === 0 && results.failed.length > 0) {
     process.exitCode = 1;
   }
 }

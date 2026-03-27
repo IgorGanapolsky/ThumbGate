@@ -3,7 +3,7 @@
 <head>
   <meta charset='UTF-8' />
   <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-  <title>MCP Memory Gateway | Claude Desktop extension and AI agent reliability</title>
+  <title>ThumbGate | Claude Desktop extension and AI agent reliability</title>
   <meta
     name='description'
     content='Keep one sharp AI agent. Add recall, reliability rules, verification, and a Claude Desktop extension path without adding orchestration or handoff overhead.'
@@ -12,19 +12,19 @@
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "MCP Memory Gateway",
+    "name": "ThumbGate",
     "url": "__APP_ORIGIN__",
     "operatingSystem": "Node.js, Cross-platform",
     "applicationCategory": "DeveloperApplication",
     "description": "Local-first AI reliability system for coding agents using Model Context Protocol (MCP). Captures feedback, promotes reusable memories, generates reliability rules, and blocks dangerous tool calls with Pre-Action Gates.",
-    "keywords": "MCP Memory Gateway, AI reliability system, DPO, KTO, AI agent reliability, context engineering, prevention rules, Pre-Action Gates",
+    "keywords": "ThumbGate, AI reliability system, DPO, KTO, AI agent reliability, context engineering, prevention rules, Pre-Action Gates",
     "offers": {
       "@type": "Offer",
       "price": "49",
       "priceCurrency": "USD"
     },
     "sameAs": [
-      "https://github.com/IgorGanapolsky/mcp-memory-gateway",
+      "https://github.com/IgorGanapolsky/ThumbGate",
       "https://smithery.ai/server/mcp-memory-gateway",
       "https://www.npmjs.com/package/mcp-memory-gateway"
     ],
@@ -45,15 +45,15 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "What is MCP Memory Gateway for AI agents?",
+        "name": "What is ThumbGate for AI agents?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "MCP Memory Gateway is a local-first memory and feedback pipeline for AI agents using the Model Context Protocol (MCP). It captures thumbs-up/down RLHF signals, promotes reusable memories as MCP resources, generates prevention rules from repeated failures, and exports KTO/DPO pairs for fine-tuning."
+          "text": "ThumbGate is a local-first memory and feedback pipeline for AI agents using the Model Context Protocol (MCP). It captures thumbs-up/down RLHF signals, promotes reusable memories as MCP resources, generates prevention rules from repeated failures, and exports KTO/DPO pairs for fine-tuning."
         }
       },
       {
         "@type": "Question",
-        "name": "How does MCP Memory Gateway handle feedback-to-enforcement pipelines?",
+        "name": "How does ThumbGate handle feedback-to-enforcement pipelines?",
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "It implements an npm package 'mcp-memory-gateway' that captures thumbs-up/down signals locally, stores them as reusable MCP resources or prompts, and automates generation of prevention rules to avoid repeated agent failures."
@@ -61,7 +61,7 @@
       },
       {
         "@type": "Question",
-        "name": "Is MCP Memory Gateway compatible with local AI agent setups?",
+        "name": "Is ThumbGate compatible with local AI agent setups?",
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "Yes, it's designed as local-first, running via npm without cloud dependencies. It integrates with MCP servers for resources like reusable memories and prompts, mimicking gateway flows for caching and routing."
@@ -85,7 +85,7 @@
       },
       {
         "@type": "Question",
-        "name": "Can I install MCP Memory Gateway as a Claude Desktop extension?",
+        "name": "Can I install ThumbGate as a Claude Desktop extension?",
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "Yes. The local Claude install path is available now via npm, and the repo ships Claude-specific plugin metadata, privacy policy links, support docs, and a submission packet. Directory inclusion depends on Anthropic review and should not be claimed before approval."
@@ -615,10 +615,10 @@
     <section class='hero'>
       <div class='hero-inner'>
         <div class='panel hero-copy'>
-          <span class='eyebrow'>Hosted Reliability Gateway for workflow teams</span>
-          <h1>Roll out one revenue or ops workflow with proof, not hope.</h1>
-          <p>Context Gateway gives RevOps, growth, platform, and engineering teams hosted API keys, shared memory, and verification evidence so one workflow like lead-to-meeting can run across operators without drift.</p>
-          <p>Start where pain is already real: lead-to-meeting, onboarding, or internal ops. Context Gateway is the hosted AI reliability system behind that workflow, not another dashboard full of vague AI claims.</p>
+          <span class='eyebrow'>Pre-Action Gate for coding agents</span>
+          <h1>Your AI agent keeps making the same mistakes. ThumbGate blocks them.</h1>
+          <p>ThumbGate captures thumbs-up/down signals from every agent run, converts repeated failures into prevention rules, and gates dangerous actions before they cause damage — locally, offline, with no cloud dependency.</p>
+          <p>Stop losing time to avoidable agent errors. ThumbGate enforces the lessons your agent should have already learned.</p>
           <div class='hero-proof'>
             <span class='proof-pill'>North Star: one workflow live and auditable</span>
             <span class='proof-pill'>Self-serve offer: Pro at $49 one-time</span>
@@ -628,7 +628,7 @@
           <div class='cta-row'>
             <a class='button primary' href='https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=landing_page&utm_medium=cta_button&utm_campaign=pro_pack' target='_blank' rel='noreferrer'>Get Pro — $49 one-time</a>
             <a class='button secondary' href='#fit-checker'>Run fit checker</a>
-            <a class='button secondary' href='https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md'>Current commercial truth</a>
+            <a class='button secondary' href='https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md'>Current commercial truth</a>
             <a class='button secondary' href='https://rlhf-feedback-loop-production.up.railway.app'>View hosted demo</a>
           </div>
           <p class='note'>Early-stage product. Engineering proof is real, but GitHub stars, npm downloads, and solo-maintainer activity are not customer proof.</p>
@@ -661,6 +661,23 @@
               OSS remains free with 5 built-in gates. Pro is $49 one-time for auto-gate promotion, unlimited custom gates, and multi-repo sync.
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id='gate-demo'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Gate in action</span>
+          <h2>See what gets blocked. See what gets through.</h2>
+          <p>ThumbGate intercepts agent tool calls before execution. Blocked operations never run. Passing operations leave an auditable trace.</p>
+        </div>
+        <div class='steps'>
+          <h3>Terminal</h3>
+          <pre style='margin:0;font-family:"SFMono-Regular",Consolas,monospace;font-size:15px;line-height:1.7;color:#d8cec1;'><span style='color:#e06c75;'>[gate] &#x26D4; Blocked: git push --force main</span>
+          <span style='color:#abb2bf;'>         rule: no-force-push &bull; severity: critical &bull; action: abort</span>
+<span style='color:#98c379;'>[gate] &#x2705; Passed:  npm test &amp;&amp; git push origin feature-branch</span>
+          <span style='color:#abb2bf;'>         rule: test-before-push &bull; evidence: logged</span></pre>
         </div>
       </div>
     </section>
@@ -888,16 +905,44 @@
       </div>
     </section>
 
+    <section id='who'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Who is this for?</span>
+          <h2>Three people who stop wasting time on avoidable agent mistakes.</h2>
+          <p>ThumbGate fits wherever an AI coding agent runs unsupervised and where repeated failures are costing real time.</p>
+        </div>
+        <div class='grid-3'>
+          <div class='card'>
+            <h3>Solo dev using Claude Code or Cursor</h3>
+            <p>You run AI agents all day. Sometimes they force-push to main, skip tests, or repeat a mistake you fixed last week. ThumbGate captures the lesson and enforces it automatically — no manual rules to write.</p>
+            <p><strong style='color:var(--success);'>Free tier.</strong> Everything you need, no limits that matter.</p>
+          </div>
+          <div class='card'>
+            <h3>Team lead managing multiple agents</h3>
+            <p>Your team runs different agents across different repos. Rules learned in one repo need to apply everywhere. ThumbGate Pro syncs prevention rules across machines so one bad pattern can't surface in two different repos on the same day.</p>
+            <p><strong style='color:var(--accent-dark);'>Pro tier.</strong> Multi-repo sync, unlimited custom gates, $49 one-time.</p>
+          </div>
+          <div class='card'>
+            <h3>Engineering manager wanting CI integration</h3>
+            <p>You want agent failures to feed back into the pipeline automatically — not live in someone's local notes. ThumbGate's CI webhook auto-ingest and machine-readable proof reports make agent reliability auditable without extra tooling.</p>
+            <p><strong style='color:var(--accent-dark);'>Pro tier.</strong> CI webhook ingest, priority support, $49 one-time.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class='pricing' id='pricing'>
       <div class='section-inner'>
         <div class='section-head'>
           <span class='eyebrow'>Pricing</span>
-          <h2>Keep the public offer honest: free OSS plus Pro at $49 one-time.</h2>
-          <p>The repo remains free. The public self-serve commercial offer is Pro at $49 one-time. Hosted workflow rollouts are pilot/by-request.</p>
+          <h2>Free for solo developers. Pro for teams and multi-repo workflows.</h2>
+          <p>The OSS core is free and always will be. Pro is a one-time $49 payment — no subscription, no seat pricing.</p>
         </div>
         <div class='pricing-grid'>
           <div class='card'>
-            <h3>OSS core</h3>
+            <h3>Free</h3>
+            <p style='margin:0 0 8px;font-size:15px;color:var(--muted);font-style:italic;'>Everything a solo developer needs. No limits that matter.</p>
             <div class='price'>$0 <small>/ forever</small></div>
             <ul>
               <li>Feedback capture and recall</li>
@@ -912,7 +957,7 @@
             <span class='badge'>Self-serve</span>
             <h3>Pro</h3>
             <div class='price'>$49 <small>/ one-time</small></div>
-          <p style='margin:0 0 8px;font-size:13px;color:var(--muted);'>AI reliability system with auto-promotion, unlimited custom gates, and multi-repo sync for teams.</p>
+          <p style='margin:0 0 8px;font-size:15px;color:var(--muted);font-style:italic;'>For teams and multi-repo workflows. Sync rules across machines.</p>
             <ul>
               <li>Auto-gate promotion</li>
               <li>Unlimited custom gates</li>
@@ -921,6 +966,15 @@
               <li>Priority support</li>
             </ul>
             <a class='button primary' href='https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=landing_page&utm_medium=cta_button&utm_campaign=pro_pack' target='_blank' rel='noreferrer'>Get Pro — $49 one-time</a>
+            <div style='margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,0.5);'>
+              <strong style='font-size:13px;color:var(--accent-dark);text-transform:uppercase;letter-spacing:0.06em;'>How it works</strong>
+              <ol style='margin:8px 0 0;padding-left:20px;font-size:14px;color:var(--muted);'>
+                <li style='margin-bottom:4px;'>Pay $49 via Stripe checkout</li>
+                <li style='margin-bottom:4px;'>Receive your license key by email</li>
+                <li style='margin-bottom:4px;'>Run <code>npx mcp-memory-gateway pro --activate</code></li>
+                <li>Key saved locally — Pro features unlock immediately</li>
+              </ol>
+            </div>
           </div>
         </div>
         <p class='note'>Need hosted team workflows? Evaluate the demo or request a pilot.</p>
@@ -930,11 +984,11 @@
 
   <footer class='footer'>
     <div class='footer-inner'>
-      <div>MCP Memory Gateway Context Gateway • v__PACKAGE_VERSION__</div>
+      <div>ThumbGate Context Gateway • v__PACKAGE_VERSION__</div>
       <div>
         <a href='__VERIFICATION_URL__'>Verification evidence</a>
         •
-        <a href='https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md'>Commercial truth</a>
+        <a href='https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md'>Commercial truth</a>
         •
         <a href='__GTM_PLAN_URL__'>GTM plan</a>
         •

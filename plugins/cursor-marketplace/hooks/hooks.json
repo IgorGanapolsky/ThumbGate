@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "./scripts/gate-check.sh",
+        "matcher": "git push|rm -rf|npm publish|deploy"
+      }
+    ]
+  }
+}

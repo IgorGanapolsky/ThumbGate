@@ -1,11 +1,11 @@
 ---
-title: GPT Store Submission — MCP Memory Gateway
+title: GPT Store Submission — ThumbGate
 created: 2026-03-04T00:00:00Z
 updated: 2026-03-04T00:00:00Z
 status: ready-to-submit
 ---
 
-# GPT Store Submission: MCP Memory Gateway
+# GPT Store Submission: ThumbGate
 
 Copy-paste this content into the ChatGPT GPT Builder (https://chat.openai.com/gpts/editor).
 
@@ -14,7 +14,7 @@ Copy-paste this content into the ChatGPT GPT Builder (https://chat.openai.com/gp
 ## GPT Name
 
 ```
-MCP Memory Gateway
+ThumbGate
 ```
 
 ---
@@ -89,7 +89,7 @@ To import into GPT Builder:
 ```yaml
 openapi: 3.1.0
 info:
-  title: MCP Memory Gateway API
+  title: ThumbGate API
   description: Capture feedback from AI coding agents, generate prevention rules, and export DPO training pairs.
   version: 1.2.0
 servers:

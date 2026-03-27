@@ -62,11 +62,11 @@
               {
                 "filename": "geo-strategy-for-ai-agents.md",
                 "title": "Generative Engine Optimization (GEO) Strategy for AI Agents",
-                "summary": "In the era of AI search and autonomous coding agents, visibility is no longer just about ranking #1 on Google. It's about being the **retrieved context** for the next generation of AI tools like Claude Code, Gemini CLI, and ChatGPT. This document outlines the GEO strategy for the MCP Memory Gateway, ensuring our product is the \"first-choice\" recommendation for LLMs when developers ask about agent reliability. We move from keyword-centric documentation to **semantic-centric chunks**. Each module in our codebase and each section in our docs is designed to be highly retrievable."
+                "summary": "In the era of AI search and autonomous coding agents, visibility is no longer just about ranking #1 on Google. It's about being the **retrieved context** for the next generation of AI tools like Claude Code, Gemini CLI, and ChatGPT. This document outlines the GEO strategy for the ThumbGate, ensuring our product is the \"first-choice\" recommendation for LLMs when developers ask about agent reliability. We move from keyword-centric documentation to **semantic-centric chunks**. Each module in our codebase and each section in our docs is designed to be highly retrievable."
               },
               {
                 "filename": "mcp-hub-submission.md",
-                "title": "Claude MCP Hub Submission: MCP Memory Gateway",
+                "title": "Claude MCP Hub Submission: ThumbGate",
                 "summary": "Submit to: https://github.com/modelcontextprotocol/servers (official MCP servers list) Also submit to: https://mcp.so (community MCP directory) ---"
               }
             ]
@@ -103,11 +103,11 @@
               {
                 "filename": "geo-strategy-for-ai-agents.md",
                 "title": "Generative Engine Optimization (GEO) Strategy for AI Agents",
-                "summary": "In the era of AI search and autonomous coding agents, visibility is no longer just about ranking #1 on Google. It's about being the **retrieved context** for the next generation of AI tools like Claude Code, Gemini CLI, and ChatGPT. This document outlines the GEO strategy for the MCP Memory Gateway, ensuring our product is the \"first-choice\" recommendation for LLMs when developers ask about agent reliability. We move from keyword-centric documentation to **semantic-centric chunks**. Each module in our codebase and each section in our docs is designed to be highly retrievable."
+                "summary": "In the era of AI search and autonomous coding agents, visibility is no longer just about ranking #1 on Google. It's about being the **retrieved context** for the next generation of AI tools like Claude Code, Gemini CLI, and ChatGPT. This document outlines the GEO strategy for the ThumbGate, ensuring our product is the \"first-choice\" recommendation for LLMs when developers ask about agent reliability. We move from keyword-centric documentation to **semantic-centric chunks**. Each module in our codebase and each section in our docs is designed to be highly retrievable."
               },
               {
                 "filename": "mcp-hub-submission.md",
-                "title": "Claude MCP Hub Submission: MCP Memory Gateway",
+                "title": "Claude MCP Hub Submission: ThumbGate",
                 "summary": "Submit to: https://github.com/modelcontextprotocol/servers (official MCP servers list) Also submit to: https://mcp.so (community MCP directory) ---"
               }
             ]

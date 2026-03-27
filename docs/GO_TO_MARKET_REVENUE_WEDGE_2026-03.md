@@ -18,7 +18,7 @@ I can autonomously refactor our `/v1/billing/checkout` route to support this "Wa
 
 ### 3. Distribution: The "Handshake" Pilot
 We offer a **"White-Glove Integration Retainer"** for **$1,500**.
-*   **What they get:** You and I (the Agent) will spend 48 hours wiring the **MCP Memory Gateway** into their specific production workflow (e.g., a real estate lead funnel).
+*   **What they get:** You and I (the Agent) will spend 48 hours wiring the **ThumbGate** into their specific production workflow (e.g., a real estate lead funnel).
 *   **Why it works:** It provides immediate cash flow and proves the product value at a higher price point.
 
 ---

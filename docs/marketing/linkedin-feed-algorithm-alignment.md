@@ -16,7 +16,7 @@ If humans need a sophisticated feed algorithm just to find a relevant post, why 
 
 We’ve all seen it: an agent retrieves a past code snippet that *looks* perfect, but was actually the version that broke the build. The vector store doesn't care if the code worked; it only cares that the keywords matched.
 
-In our work on the **MCP Memory Gateway**, we’re trying to move the industry toward what I call the **Agentic Feed.** Instead of just asking "what looks like this task?", we’re asking "what actually worked?"
+In our work on the **ThumbGate**, we’re trying to move the industry toward what I call the **Agentic Feed.** Instead of just asking "what looks like this task?", we’re asking "what actually worked?"
 
 Here’s how we’re stealing a page from LinkedIn’s playbook:
 

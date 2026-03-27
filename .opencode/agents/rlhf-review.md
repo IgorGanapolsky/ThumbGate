@@ -1,5 +1,5 @@
 ---
-description: Read-only review agent for verification gaps, regressions, and evidence quality in MCP Memory Gateway
+description: Read-only review agent for verification gaps, regressions, and evidence quality in ThumbGate
 mode: subagent
 permission:
   edit: deny

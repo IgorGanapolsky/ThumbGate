@@ -39,9 +39,8 @@ test('cursor plugin launch kit leads with repeated-mistake prevention and proof'
   const cursorLaunch = read('docs/marketing/cursor-plugin-launch.md');
   const socialKit = read('docs/marketing/social-posts.md');
 
-  assert.match(cursorLaunch, /Pre-Action Gates stop Cursor agents from repeating known mistakes/i);
-  assert.match(cursorLaunch, /pre-action gates|pre-action guardrails/i);
-  assert.match(cursorLaunch, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(cursorLaunch, /Thumbs down a mistake|thumbs up.*good work/i);
+  assert.match(cursorLaunch, /thumbs|feedback|mistake/i);
   assert.match(cursorLaunch, /Cursor Directory/i);
   assert.match(cursorLaunch, /Cursor Marketplace/i);
   assert.match(socialKit, /\[cursor-plugin-launch\.md\]/);

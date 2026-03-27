@@ -1,4 +1,4 @@
-# ChatGPT GPT Actions: MCP Memory Gateway Install
+# ChatGPT GPT Actions: ThumbGate Install
 
 Import the OpenAPI spec into a Custom GPT in under 5 minutes. No coding required.
 

@@ -1,10 +1,10 @@
 # GitHub App Registration Guide
 
-This document explains how to register the MCP Memory Gateway as a GitHub App (if needed for GitHub integration features).
+This document explains how to register the ThumbGate as a GitHub App (if needed for GitHub integration features).
 
 ## Quick Facts
 
-- **What**: GitHub App manifest for MCP Memory Gateway
+- **What**: GitHub App manifest for ThumbGate
 - **Where**: `.github/github-app-manifest.json`
 - **When to use**: Only if building GitHub-native integrations (PR analysis, etc.)
 - **Marketplace eligible**: No (MCP servers don't qualify for GitHub Marketplace)
@@ -34,7 +34,7 @@ https://github.com/apps/new?state=manifest&manifest=<paste-base64-here>
 
 1. Go to: https://github.com/settings/apps/new
 2. Fill in from manifest:
-   - **GitHub App name**: MCP Memory Gateway
+   - **GitHub App name**: ThumbGate
    - **Homepage URL**: https://rlhf-feedback-loop-production.up.railway.app
    - **Webhook URL**: https://rlhf-feedback-loop-production.up.railway.app/webhooks/github
    - **Webhook active**: ✓ Checked
@@ -90,7 +90,7 @@ GITHUB_CLIENT_SECRET="secret_xyz..."
 Your server needs a `POST /webhooks/github` endpoint that:
 1. Validates signature using webhook secret
 2. Routes events (pull_request, issues, push, workflow_run)
-3. Calls MCP Memory Gateway to analyze feedback
+3. Calls ThumbGate to analyze feedback
 
 Example:
 ```javascript
@@ -106,7 +106,7 @@ async function handleGitHubEvent(req, res) {
   const event = req.headers['x-github-event'];
   const payload = req.body;
 
-  // Route to MCP Memory Gateway
+  // Route to ThumbGate
   switch (event) {
     case 'pull_request':
       await analyzePullRequest(payload);

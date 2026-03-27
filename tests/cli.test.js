@@ -34,6 +34,7 @@ const savedHome = process.env.HOME;
 const savedUserProfile = process.env.USERPROFILE;
 const savedStripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const savedStripePriceId = process.env.STRIPE_PRICE_ID;
+const savedPublishState = process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE;
 
 function makeTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cli-test-'));
@@ -369,6 +370,7 @@ describe('bin/cli.js', () => {
     process.env.USERPROFILE = testHomeDir;
     process.env.STRIPE_SECRET_KEY = '';
     process.env.STRIPE_PRICE_ID = '';
+    process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE = 'published';
   });
 
   after(() => {
@@ -398,6 +400,11 @@ describe('bin/cli.js', () => {
       delete process.env.STRIPE_PRICE_ID;
     } else {
       process.env.STRIPE_PRICE_ID = savedStripePriceId;
+    }
+    if (savedPublishState === undefined) {
+      delete process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE;
+    } else {
+      process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE = savedPublishState;
     }
   });
 
@@ -494,23 +501,22 @@ describe('bin/cli.js', () => {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
-  test('help command shows Pro nudge on stderr', () => {
+  test('help command shows checkin nudge on stderr', () => {
     const result = spawnSync(process.execPath, [CLI, 'help'], {
       encoding: 'utf8',
       env: { ...process.env, RLHF_NO_NUDGE: undefined },
     });
     assert.strictEqual(result.status, 0);
-    assert.ok(result.stderr.includes('Go Pro'), 'Nudge should appear on stderr');
-    assert.ok(result.stderr.includes('railway.app'), 'Nudge should include hosted link');
+    assert.ok(result.stderr.includes('checkin'), 'Nudge should appear on stderr');
   });
 
-  test('RLHF_NO_NUDGE=1 suppresses Pro nudge', () => {
+  test('RLHF_NO_NUDGE=1 suppresses checkin nudge', () => {
     const result = spawnSync(process.execPath, [CLI, 'help'], {
       encoding: 'utf8',
       env: { ...process.env, RLHF_NO_NUDGE: '1' },
     });
     assert.strictEqual(result.status, 0);
-    assert.ok(!result.stderr.includes('Go Pro'), 'Nudge should be suppressed when RLHF_NO_NUDGE=1');
+    assert.ok(!result.stderr.includes('checkin'), 'Nudge should be suppressed when RLHF_NO_NUDGE=1');
   });
 
   test('pro command includes hosted link', () => {
@@ -1382,8 +1388,37 @@ describe('bin/cli.js', () => {
     const mcp = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
     assert.ok(mcp.mcpServers, '.mcp.json should have mcpServers');
     assert.ok(mcp.mcpServers.rlhf, 'Should have canonical rlhf server entry');
-    assert.strictEqual(mcp.mcpServers.rlhf.command, 'node');
+    assert.strictEqual(mcp.mcpServers.rlhf.command, 'npx');
+    assert.deepEqual(mcp.mcpServers.rlhf.args, ['-y', `mcp-memory-gateway@${require('../package.json').version}`, 'serve']);
+  });
+
+  test('init keeps a local source launcher for unpublished external installs', () => {
+    const isolatedDir = makeTmpDir();
+    const result = spawnSync(process.execPath, [CLI, 'init'], {
+      encoding: 'utf8',
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        MCP_MEMORY_GATEWAY_PUBLISH_STATE: 'unpublished',
+      },
+    });
+
+    assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
+
+    const mcpPath = path.join(isolatedDir, '.mcp.json');
+    const mcp = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
+    assert.equal(mcp.mcpServers.rlhf.command, 'node');
     assert.deepEqual(mcp.mcpServers.rlhf.args, [MCP_SERVER_PATH]);
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  });
+
+  test('init writes a stable ChatGPT OpenAPI spec into .rlhf', () => {
+    const specPath = path.join(tmpDir, '.rlhf', 'chatgpt-openapi.yaml');
+    assert.ok(fs.existsSync(specPath), 'chatgpt-openapi.yaml should be created in .rlhf');
+    const spec = fs.readFileSync(specPath, 'utf8');
+    assert.match(spec, /openapi:/);
+    assert.match(spec, /\/v1\/feedback\/capture/);
   });
 
   test('init writes stable codex MCP launcher when running from source checkout', () => {

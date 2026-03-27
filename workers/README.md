@@ -1,4 +1,4 @@
-# MCP Memory Gateway — Cloudflare Workers
+# ThumbGate — Cloudflare Workers
 
 Paid MCP server for mcp-memory-gateway Pro tier ($49 one-time). Runs on Cloudflare Workers with KV storage and Stripe billing.
 

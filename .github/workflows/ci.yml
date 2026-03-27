@@ -41,8 +41,14 @@ jobs:
       - name: Install deps
         run: npm ci
 
+      - name: Check version sync
+        run: node scripts/sync-version.js --check
+
       - name: Run tests
         run: npm test
+
+      - name: Check congruence (branding, tech stack, version across all surfaces)
+        run: npm run test:congruence
 
       - name: Run adapter proof
         run: npm run prove:adapters

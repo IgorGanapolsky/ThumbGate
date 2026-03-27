@@ -25,7 +25,7 @@ test('adapter files exist', () => {
     '.claude-plugin/bundle/icon.png',
     'plugins/opencode-profile/INSTALL.md',
     'plugins/cursor-marketplace/.cursor-plugin/plugin.json',
-    'plugins/cursor-marketplace/.mcp.json',
+    'plugins/cursor-marketplace/mcp.json',
     'plugins/cursor-marketplace/README.md',
     'docs/guides/opencode-integration.md',
   ];
@@ -130,7 +130,7 @@ test('chatgpt openapi.yaml contains /v1/feedback/capture path', () => {
 test('cursor marketplace plugin keeps metadata versioned while runtime tracks the latest npm tag', () => {
   const marketplacePath = path.join(root, '.cursor-plugin', 'marketplace.json');
   const pluginManifestPath = path.join(root, 'plugins', 'cursor-marketplace', '.cursor-plugin', 'plugin.json');
-  const pluginConfigPath = path.join(root, 'plugins', 'cursor-marketplace', '.mcp.json');
+  const pluginConfigPath = path.join(root, 'plugins', 'cursor-marketplace', 'mcp.json');
 
   const marketplace = JSON.parse(fs.readFileSync(marketplacePath, 'utf-8'));
   const pluginManifest = JSON.parse(fs.readFileSync(pluginManifestPath, 'utf-8'));
@@ -166,4 +166,28 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.match(readme, /Examples/i);
   assert.match(readme, /claude mcp add rlhf -- npx -y mcp-memory-gateway serve/i);
   assert.match(readme, /build:claude-mcpb/i);
+});
+
+test('claude .mcp.json rlhf command is either npx or node', () => {
+  const filePath = path.join(root, 'adapters/claude/.mcp.json');
+  const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  const rlhf = payload.mcpServers.rlhf;
+  assert.ok(
+    rlhf.command === 'npx' || rlhf.command === 'node',
+    'command should be npx or node, got ' + rlhf.command
+  );
+  if (rlhf.command === 'node') {
+    assert.ok(rlhf.args.includes('serve'), 'node command should include serve');
+  }
+});
+
+test('codex config.toml uses either npx or node command', () => {
+  const filePath = path.join(root, 'adapters/codex/config.toml');
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const usesNpx = content.includes('command = "npx"');
+  const usesNode = content.includes('command = "node"');
+  assert.ok(usesNpx || usesNode, 'should use npx or node');
+  if (usesNode) {
+    assert.match(content, /"serve"/, 'node command should include serve');
+  }
 });

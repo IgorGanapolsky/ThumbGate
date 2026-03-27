@@ -94,3 +94,66 @@ test('gh pr create requires explicit permission', (t) => {
   result = evaluateGates('Bash', { command: 'gh pr create --title "test"' });
   assert.strictEqual(result, null, 'should allow gh pr create after permission given');
 });
+
+test('evaluateGates returns null for commands that match no gate', (t) => {
+  const tmpDir = makeTmpDir();
+  const statePath = path.join(tmpDir, 'gate-state.json');
+  const constraintsPath = path.join(tmpDir, 'session-constraints.json');
+
+  const originalStatePath = STATE_PATH;
+  const originalConstraintsPath = CONSTRAINTS_PATH;
+  require('../scripts/gates-engine').STATE_PATH = statePath;
+  require('../scripts/gates-engine').CONSTRAINTS_PATH = constraintsPath;
+
+  t.after(() => {
+    require('../scripts/gates-engine').STATE_PATH = originalStatePath;
+    require('../scripts/gates-engine').CONSTRAINTS_PATH = originalConstraintsPath;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+  });
+
+  const result = evaluateGates('Bash', { command: 'echo hello' });
+  assert.strictEqual(result, null, 'should return null for non-matching command');
+});
+
+test('evaluateGates blocks git push when local_only=true', (t) => {
+  const tmpDir = makeTmpDir();
+  const statePath = path.join(tmpDir, 'gate-state.json');
+  const constraintsPath = path.join(tmpDir, 'session-constraints.json');
+
+  const originalStatePath = STATE_PATH;
+  const originalConstraintsPath = CONSTRAINTS_PATH;
+  require('../scripts/gates-engine').STATE_PATH = statePath;
+  require('../scripts/gates-engine').CONSTRAINTS_PATH = constraintsPath;
+
+  t.after(() => {
+    require('../scripts/gates-engine').STATE_PATH = originalStatePath;
+    require('../scripts/gates-engine').CONSTRAINTS_PATH = originalConstraintsPath;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+  });
+
+  setConstraint('local_only', true);
+
+  const result = evaluateGates('Bash', { command: 'git push origin main' });
+  assert.ok(result, 'should block git push when local_only=true');
+  assert.strictEqual(result.decision, 'deny');
+});
+
+test('evaluateGates with Edit tool input uses file_path', (t) => {
+  const tmpDir = makeTmpDir();
+  const statePath = path.join(tmpDir, 'gate-state.json');
+  const constraintsPath = path.join(tmpDir, 'session-constraints.json');
+
+  const originalStatePath = STATE_PATH;
+  const originalConstraintsPath = CONSTRAINTS_PATH;
+  require('../scripts/gates-engine').STATE_PATH = statePath;
+  require('../scripts/gates-engine').CONSTRAINTS_PATH = constraintsPath;
+
+  t.after(() => {
+    require('../scripts/gates-engine').STATE_PATH = originalStatePath;
+    require('../scripts/gates-engine').CONSTRAINTS_PATH = originalConstraintsPath;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+  });
+
+  const result = evaluateGates('Edit', { file_path: '/tmp/safe-file.txt' });
+  assert.strictEqual(result, null, 'should allow editing non-sensitive files');
+});

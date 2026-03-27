@@ -1,4 +1,4 @@
-# Roadmap: MCP Memory Gateway
+# Roadmap: ThumbGate
 
 ## Milestones
 

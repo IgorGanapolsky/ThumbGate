@@ -66,8 +66,8 @@ function proNudge() {
   if (process.env.RLHF_NO_NUDGE === '1') return;
   // Write to stderr so it never contaminates MCP stdio JSON on stdout
   process.stderr.write(
-    '\n💡 Like this? Go Pro — hosted dashboard, auto-gate promotion, unlimited gates. $49 one-time.\n' +
-    `   → ${PRO_URL}\n\n`
+    '\n💡 After a week of use, run: npx mcp-memory-gateway checkin\n' +
+    '   We\'d love to hear what\'s working and what\'s not.\n\n'
   );
 }
 
@@ -125,6 +125,7 @@ function canonicalMcpEntry(scope = 'project') {
     pkgRoot: PKG_ROOT,
     pkgVersion: pkgVersion(),
     scope,
+    targetDir: CWD,
   });
 }
 
@@ -412,7 +413,9 @@ function init() {
   // ChatGPT — cannot be automated
   const chatgptSpec = path.join(PKG_ROOT, 'adapters', 'chatgpt', 'openapi.yaml');
   if (fs.existsSync(chatgptSpec)) {
-    console.log(`  ChatGPT: import ${path.relative(CWD, chatgptSpec)} in GPT Builder > Actions`);
+    const projectChatgptSpec = path.join(rlhfDir, 'chatgpt-openapi.yaml');
+    fs.copyFileSync(chatgptSpec, projectChatgptSpec);
+    console.log(`  ChatGPT: import ${path.relative(CWD, projectChatgptSpec)} in GPT Builder > Actions`);
   }
 
   if (configured === 0) console.log('  All detected platforms already configured.');
@@ -555,6 +558,23 @@ function stats() {
   proNudge();
 }
 
+function compact() {
+  const { compactMemories } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  const result = compactMemories();
+
+  console.log('\n🧹 Memory Compaction Complete');
+  console.log('─'.repeat(50));
+  console.log(`  Before : ${result.before} memories`);
+  console.log(`  After  : ${result.after} memories`);
+  console.log(`  Removed: ${result.removed} duplicates`);
+
+  if (result.removed > 0) {
+    console.log(`\n✅ Eliminated ${Math.round((result.removed / result.before) * 100)}% noise.`);
+  } else {
+    console.log('\n✅ No duplicates found — memory log is clean.');
+  }
+}
+
 function cfo() {
   const args = parseArgs(process.argv.slice(3));
   const { getOperationalBillingSummary } = require(path.join(PKG_ROOT, 'scripts', 'operational-summary'));
@@ -625,9 +645,72 @@ function northStar() {
 }
 
 function pro() {
+  const args = parseArgs(process.argv.slice(3));
+
+  if (args.activate) {
+    const os = require('os');
+    const licensePath = path.join(os.homedir(), '.thumbgate', 'license.json');
+    const licenseDir = path.dirname(licensePath);
+    if (!fs.existsSync(licenseDir)) fs.mkdirSync(licenseDir, { recursive: true });
+
+    const key = args.key || process.argv.slice(3).find((a) => !a.startsWith('--'));
+    if (!key) {
+      console.error('❌ License key required. Usage: npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
+      console.error('   You received your key by email after purchasing Pro.');
+      process.exit(1);
+    }
+
+    // Validate key format (RLHF_API_KEY prefix)
+    if (!key.startsWith('rlhf_') && !key.startsWith('tg_')) {
+      console.error('❌ Invalid license key format. Keys start with "rlhf_" or "tg_".');
+      process.exit(1);
+    }
+
+    const license = {
+      key,
+      activatedAt: new Date().toISOString(),
+      version: pkgVersion(),
+    };
+
+    fs.writeFileSync(licensePath, JSON.stringify(license, null, 2));
+    console.log('\n✅ Pro license activated!');
+    console.log(`   Key saved to: ${licensePath}`);
+    console.log('   Pro features are now unlocked.\n');
+    console.log('   Run: npx mcp-memory-gateway pro --upgrade  to install Pro config files\n');
+
+    appendLocalTelemetry({ eventType: 'pro_activate', version: pkgVersion(), timestamp: new Date().toISOString() });
+    return;
+  }
+
+  if (args.upgrade) {
+    const proDir = path.join(PKG_ROOT, 'pro');
+    const rlhfDir = path.join(CWD, '.rlhf');
+    if (!fs.existsSync(rlhfDir)) fs.mkdirSync(rlhfDir, { recursive: true });
+
+    const files = [
+      ['constraints-pro.json', '10 RLAIF constraints'],
+      ['prevention-rules-pro.md', 'curated production rules'],
+      ['thompson-presets.json', '4 sampling presets'],
+      ['reminders-pro.json', '8 reminder templates'],
+    ];
+
+    for (const [file] of files) {
+      fs.copyFileSync(path.join(proDir, file), path.join(rlhfDir, file));
+    }
+
+    console.log('\n✅ Pro configs installed to .rlhf/');
+    for (const [file, desc] of files) {
+      console.log(`  - ${file} (${desc})`);
+    }
+    console.log('');
+
+    appendLocalTelemetry({ eventType: 'pro_upgrade', version: pkgVersion(), timestamp: new Date().toISOString() });
+    return;
+  }
+
   const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
   const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
-  console.log('\nMCP Memory Gateway — Commercial Truth');
+  console.log('\nThumbGate — Commercial Truth');
   console.log('─'.repeat(50));
   console.log('Self-serve offer today: Pro ($49 one-time).');
   console.log('Hosted Context Gateway access is pilot/by-request.');
@@ -638,6 +721,9 @@ function pro() {
   console.log('\nLinks:');
   console.log(`  Pro             : ${hostedUrl}`);
   console.log(`  Commercial truth: ${truthUrl}\n`);
+  console.log('  Dashboard       : npx mcp-memory-gateway-pro');
+  console.log('  Activate license: npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
+  console.log('  Install configs : npx mcp-memory-gateway pro --upgrade\n');
 }
 
 function summary() {
@@ -753,6 +839,42 @@ function exportDatabricks() {
     process.stderr.write(err.stderr || err.stdout || err.message);
     process.exit(err.status || 1);
   }
+}
+
+function obsidianExport() {
+  const args = parseArgs(process.argv.slice(3));
+  const { exportAll } = require(path.join(PKG_ROOT, 'scripts', 'obsidian-export'));
+  const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+
+  const vaultPath = args['vault-path'] || process.env.RLHF_OBSIDIAN_VAULT_PATH || '';
+  const outputSubdir = args['output-dir'] || 'AI-Memories/rlhf';
+  let outputDir;
+  if (vaultPath) {
+    outputDir = path.join(vaultPath, outputSubdir);
+  } else {
+    outputDir = path.join(CWD, 'obsidian-export');
+  }
+
+  const { FEEDBACK_DIR } = getFeedbackPaths();
+  const gatesConfigPath = path.join(PKG_ROOT, 'config', 'gates', 'default.json');
+
+  const stats = exportAll({
+    feedbackDir: FEEDBACK_DIR,
+    outputDir,
+    gatesConfigPath,
+    includeIndex: true,
+  });
+
+  console.log(
+    `Exported ${stats.feedback} feedback, ${stats.memories} memories, ` +
+    `${stats.rules} rules, ${stats.gates} gates, ${stats.lessons} lessons`
+  );
+  if (stats.packs > 0) console.log(`  + ${stats.packs} context packs`);
+  if (stats.errors.length > 0) {
+    console.error(`  ${stats.errors.length} error(s) during export`);
+  }
+  console.log(`Output: ${outputDir}`);
+  process.exit(stats.errors.length > 0 ? 1 : 0);
 }
 
 function rules() {
@@ -879,7 +1001,7 @@ function serve() {
 }
 
 function install() {
-  console.log('Installing MCP Memory Gateway as a global MCP skill...');
+  console.log('Installing ThumbGate as a global MCP skill...');
   const results = [
     setupClaude(),
     setupCodex(),
@@ -889,10 +1011,10 @@ function install() {
   ];
   const success = results.some(r => r === true);
   if (success) {
-    console.log('\nSuccess! MCP Memory Gateway is now available to your agents.');
+    console.log('\nSuccess! ThumbGate is now available to your agents.');
     console.log('Try asking your agent: "Capture positive feedback for this task"');
   } else {
-    console.log('\nMCP Memory Gateway is already configured.');
+    console.log('\nThumbGate is already configured.');
   }
 }
 
@@ -961,11 +1083,15 @@ function help() {
   console.log('  dispatch              Print a Dispatch-safe remote ops brief for phone-driven review sessions');
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
   console.log('  export-databricks     Export RLHF logs + proof artifacts as a Databricks-ready analytics bundle');
+  console.log('  obsidian-export       Export all RLHF data as interlinked Obsidian markdown notes');
+  console.log('    --vault-path=PATH   Obsidian vault path (or set RLHF_OBSIDIAN_VAULT_PATH)');
+  console.log('    --output-dir=DIR    Output subdirectory (default: AI-Memories/rlhf)');
   console.log('  rules                 Generate prevention rules from repeated failures');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Pre-Action Gates');
   console.log('  force-gate <PATTERN>  Immediately create a blocking gate from a pattern');
   console.log('  self-heal             Run self-healing check and auto-fix');
   console.log('  pro                   Show Pro plan ($49 one-time) + hosted pilot info');
+  console.log('    --upgrade           Install Pro configs into .rlhf/');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
   console.log('  watch [flags]           Watch .rlhf/ for external signals and ingest through pipeline (--once, --source=X)');
   console.log('  status                  Show feedback tracking dashboard — approval trend + failure domains');
@@ -1056,6 +1182,9 @@ switch (COMMAND) {
   case 'databricks':
     exportDatabricks();
     break;
+  case 'obsidian-export':
+    obsidianExport();
+    break;
   case 'rules':
     rules();
     break;
@@ -1113,6 +1242,39 @@ switch (COMMAND) {
   case '-h':
     help();
     break;
+  case 'compact':
+    compact();
+    break;
+  case 'checkin': {
+    // User check-in command — asks how it's going after install
+    const rlhfDir = path.join(CWD, '.rlhf');
+    const configPath = path.join(rlhfDir, 'config.json');
+    let installAge = 'unknown';
+    if (fs.existsSync(configPath)) {
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (config.installedAt) {
+          const days = Math.floor((Date.now() - new Date(config.installedAt).getTime()) / 86400000);
+          installAge = `${days} day${days !== 1 ? 's' : ''}`;
+        }
+      } catch { /* ignore */ }
+    }
+    console.log(`\n🔔 mcp-memory-gateway check-in (installed ${installAge} ago)\n`);
+    console.log('Quick questions to help improve this tool:\n');
+    console.log('1. Is the gate engine catching real mistakes for you? (y/n/haven\'t tried)');
+    console.log('2. What failure pattern do you wish it caught but doesn\'t?');
+    console.log('3. Anything confusing or broken?\n');
+    console.log('Reply to any of these at: https://github.com/IgorGanapolsky/mcp-memory-gateway/discussions');
+    console.log('Or email: iganapolsky@gmail.com\n');
+
+    // Log the check-in event
+    const checkinLog = path.join(rlhfDir, 'checkin-log.jsonl');
+    if (fs.existsSync(rlhfDir)) {
+      const event = { event: 'checkin_shown', at: new Date().toISOString(), installAge };
+      fs.appendFileSync(checkinLog, JSON.stringify(event) + '\n');
+    }
+    break;
+  }
   default:
     if (COMMAND) {
       console.error(`Unknown command: ${COMMAND}`);

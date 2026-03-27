@@ -771,6 +771,7 @@ async function runProof(options = {}) {
       currentCheck = 'adapter.files.present';
       const mustExist = [
         'adapters/claude/.mcp.json',
+        'plugins/cursor-marketplace/mcp.json',
         'adapters/codex/config.toml',
         'adapters/amp/skills/rlhf-feedback/SKILL.md',
       ];
