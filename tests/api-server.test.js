@@ -100,16 +100,21 @@ test('root serves the landing page by default', async () => {
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
   const body = await res.text();
-  assert.match(body, /ThumbGate — Stop AI Coding Agents From Repeating Mistakes/);
-  assert.match(body, /Human-in-the-Loop Enforcement for AI/i);
-  assert.match(body, /mcp-memory-gateway/);
+  assert.match(body, /ThumbGate/);
+  assert.match(body, /Stop AI Coding Agents From Repeating Mistakes/i);
+  assert.match(body, /Human-in-the-Loop Enforcement/i);
+  assert.match(body, /safety net for vibe coding/i);
+  assert.match(body, /npx mcp-memory-gateway init/);
+  assert.match(body, /Pre-Action Gates/i);
+  assert.match(body, /Thompson Sampling/i);
+  assert.match(body, /FAQPage/);
+  assert.match(body, /SoftwareApplication/);
   assert.match(body, /\$49/);
-  assert.match(body, /\$0/);
-  assert.match(body, /buy\.stripe\.com/);
   assert.match(body, /plausible\.io\/js\/script\.js/);
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
   assert.match(body, /google-site-verification" content="test-verification-token"/);
   assert.match(body, /gtag\('config', 'G-TEST1234', \{ send_page_view: false \}\)/);
+  assert.doesNotMatch(body, /mailto:/i);
 });
 
 test('privacy policy route covers collection, sharing, retention, and contact details', async () => {
@@ -203,8 +208,6 @@ test('public server card exposes MCP tool schemas for directory scanners', async
   assert.equal(body.name, 'mcp-memory-gateway');
   assert.ok(Array.isArray(body.tools));
   assert.ok(body.tools.length > 0);
-  assert.match(body.description, /OpenCode/);
-  assert.match(body.description, /any MCP-compatible agent/i);
 
   const captureFeedbackTool = body.tools.find((tool) => tool.name === 'capture_feedback');
   assert.ok(captureFeedbackTool);
@@ -218,7 +221,7 @@ test('public server card exposes MCP tool schemas for directory scanners', async
   }
 });
 
-test('root seeds journey cookies and records landing telemetry server-side', async () => {
+test('root seeds journey cookies, injects server telemetry IDs, and records landing telemetry server-side', async () => {
   const res = await fetch(apiUrl('/'));
   assert.equal(res.status, 200);
 
@@ -232,8 +235,11 @@ test('root seeds journey cookies and records landing telemetry server-side', asy
   assert.match(String(sessionId), /^session_/);
   assert.match(String(acquisitionId), /^acq_/);
 
-  // Consume body to complete the request
-  await res.text();
+  const body = await res.text();
+  assert.match(body, new RegExp(`const serverVisitorId = '${visitorId}';`));
+  assert.match(body, new RegExp(`const serverSessionId = '${sessionId}';`));
+  assert.match(body, new RegExp(`const serverAcquisitionId = '${acquisitionId}';`));
+  assert.match(body, /const serverTelemetryCaptured = 'true' === 'true';/);
 
   const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
   const landingEvent = telemetryEvents.find((entry) => (

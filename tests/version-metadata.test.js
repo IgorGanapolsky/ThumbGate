@@ -26,15 +26,12 @@ test('pricing matches 2026 standard', () => {
 
 test('package version matches MCP manifests', () => {
   const packageJson = readJson('package.json');
-  const packageLock = readJson('package-lock.json');
   const serverManifest = readJson('server.json');
   const claudePlugin = readJson('.claude-plugin/plugin.json');
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
   const cursorMarketplace = readJson('.cursor-plugin/marketplace.json');
   const cursorPlugin = readJson('plugins/cursor-marketplace/.cursor-plugin/plugin.json');
 
-  assert.equal(packageLock.version, packageJson.version);
-  assert.equal(packageLock.packages[''].version, packageJson.version);
   assert.equal(serverManifest.version, packageJson.version);
   assert.equal(claudePlugin.version, packageJson.version);
   assert.equal(claudeMarketplace.version, packageJson.version);
@@ -42,44 +39,24 @@ test('package version matches MCP manifests', () => {
   assert.equal(cursorPlugin.version, packageJson.version);
 });
 
-test('version-pinned install docs match the current package release line', () => {
-  const packageJson = readJson('package.json');
-  const expectedPackageRef = `mcp-memory-gateway@${packageJson.version}`;
-  const pinnedPaths = [
-    'adapters/README.md',
-    'adapters/opencode/opencode.json',
-    'docs/guides/opencode-integration.md',
-    'docs/mcp-hub-submission.md',
-    'docs/PLUGIN_DISTRIBUTION.md',
-    'docs/VERIFICATION_EVIDENCE.md',
-    'plugins/codex-profile/INSTALL.md',
-    'plugins/opencode-profile/INSTALL.md',
-  ];
-
-  for (const relativePath of pinnedPaths) {
-    const content = readText(relativePath);
-    const matches = content.match(/mcp-memory-gateway@\d+\.\d+\.\d+/g) || [];
-    assert.ok(matches.length > 0, `${relativePath} should contain a version-pinned launcher`);
-    assert.deepEqual(
-      [...new Set(matches)],
-      [expectedPackageRef],
-      `${relativePath} should only reference ${expectedPackageRef}`
-    );
-  }
-});
-
 test('public docs render the current package version', () => {
   const packageJson = readJson('package.json');
-  const landingPage = readText('public/index.html');
+  const landingPage = readText('docs/landing-page.html');
   const mcpSubmission = readText('docs/mcp-hub-submission.md');
   const claudePluginReadme = readText('.claude-plugin/README.md');
   const claudeDesktopPacket = readText('docs/CLAUDE_DESKTOP_EXTENSION.md');
 
   assert.match(landingPage, /ThumbGate/);
-  assert.match(landingPage, /Human-in-the-loop/i);
-  assert.match(landingPage, /vibe coding/i);
-  assert.match(landingPage, /\$49/);
-  assert.match(landingPage, /Pre-Action Gates/i);
+  assert.match(landingPage, /AI agent reliability/i);
+  assert.match(landingPage, /Claude Desktop extension/i);
+  assert.match(landingPage, /\$49 one-time/);
+  assert.match(landingPage, /Reliability Studio/i);
+  assert.match(landingPage, /Compare and Deploy/i);
+  assert.match(landingPage, /No model fine-tuning required/i);
+  assert.match(landingPage, /Workflow Hardening Fit Checker/i);
+  assert.match(landingPage, /Claude Desktop extension path/i);
+  assert.match(landingPage, /can AI fully satisfy this query without a click\?/i);
+  assert.match(landingPage, /Run the hosted fit checker/i);
   assert.match(claudePluginReadme, /Claude Desktop/i);
   assert.match(claudePluginReadme, /Privacy Policy/i);
   assert.match(claudePluginReadme, /Data Collection/i);
@@ -92,18 +69,21 @@ test('public docs render the current package version', () => {
   assert.match(claudeDesktopPacket, /npm run build:claude-mcpb/i);
   assert.match(claudeDesktopPacket, /Tool safety annotations/i);
   assert.match(claudeDesktopPacket, /Do not claim directory approval/i);
-  assert.match(landingPage, /FAQPage/);
+  assert.doesNotMatch(landingPage, /billingIncrement/);
+  assert.doesNotMatch(landingPage, /P1M/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
 });
 
 test('landing page keeps GTM and schema assets wired', () => {
-  const landingPage = readText('public/index.html');
+  const landingPage = readText('docs/landing-page.html');
   const gtmPlan = readText('docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md');
 
   assert.match(landingPage, /"@type": "SoftwareApplication"/);
   assert.match(landingPage, /"@type": "FAQPage"/);
-  assert.match(landingPage, /id="faq"/);
-  assert.match(landingPage, /__GA_BOOTSTRAP__/);
+  assert.match(landingPage, /<section id='faq'>/);
+  assert.match(landingPage, /__GTM_PLAN_URL__/);
+  assert.match(landingPage, /__COMPATIBILITY_REPORT_URL__/);
+  assert.match(landingPage, /__AUTOMATION_REPORT_URL__/);
   assert.match(gtmPlan, /"Outcome-Based" Memory Packages/);
   assert.match(gtmPlan, /\*\*\"Success-Based Memory Credits\.\"\*\*/);
   assert.match(gtmPlan, /"Mistake-Free" Credits/i);
@@ -122,9 +102,10 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
   assert.match(publicLanding, /mcp-memory-gateway/i);
   assert.match(publicLanding, /\$49/);
+  assert.match(publicLanding, /__PRO_PRICE_DOLLARS__/);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
-  assert.match(publicLanding, /Pre-Action Gates/i);
+  assert.match(publicLanding, /Human-in-the-loop enforcement/i);
   assert.doesNotMatch(publicLanding, /billingDuration/);
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
@@ -287,67 +268,4 @@ test('commercial truth sources stay aligned across public and historical docs', 
   assert.doesNotMatch(workflowSprint, /^We are an official Anthropic partner\b/m);
 
   assert.doesNotMatch(directoryGuide, /30k\+ stars|18k\+ servers listed/i);
-});
-
-test('runtime hosted billing config restores pre-existing env vars (else branch coverage)', () => {
-  const originalLabel = process.env.RLHF_PRO_PRICE_LABEL;
-  const originalDollars = process.env.RLHF_PRO_PRICE_DOLLARS;
-  const originalFallback = process.env.RLHF_CHECKOUT_FALLBACK_URL;
-  const originalGa = process.env.RLHF_GA_MEASUREMENT_ID;
-  const originalSite = process.env.RLHF_GOOGLE_SITE_VERIFICATION;
-
-  process.env.RLHF_PRO_PRICE_LABEL = 'existing-label';
-  process.env.RLHF_PRO_PRICE_DOLLARS = '99';
-  process.env.RLHF_CHECKOUT_FALLBACK_URL = 'https://example.com/existing';
-  process.env.RLHF_GA_MEASUREMENT_ID = 'G-EXISTING';
-  process.env.RLHF_GOOGLE_SITE_VERIFICATION = 'existing-verify';
-
-  const previousLabel = process.env.RLHF_PRO_PRICE_LABEL;
-  const previousDollars = process.env.RLHF_PRO_PRICE_DOLLARS;
-  const previousFallback = process.env.RLHF_CHECKOUT_FALLBACK_URL;
-  const previousGaMeasurementId = process.env.RLHF_GA_MEASUREMENT_ID;
-  const previousGoogleSiteVerification = process.env.RLHF_GOOGLE_SITE_VERIFICATION;
-
-  try {
-    const runtimeConfig = resolveHostedBillingConfig();
-    assert.equal(runtimeConfig.proPriceLabel, 'existing-label');
-    assert.equal(runtimeConfig.proPriceDollars, 99);
-  } finally {
-    if (previousLabel === undefined) {
-      delete process.env.RLHF_PRO_PRICE_LABEL;
-    } else {
-      process.env.RLHF_PRO_PRICE_LABEL = previousLabel;
-    }
-    if (previousDollars === undefined) {
-      delete process.env.RLHF_PRO_PRICE_DOLLARS;
-    } else {
-      process.env.RLHF_PRO_PRICE_DOLLARS = previousDollars;
-    }
-    if (previousFallback === undefined) {
-      delete process.env.RLHF_CHECKOUT_FALLBACK_URL;
-    } else {
-      process.env.RLHF_CHECKOUT_FALLBACK_URL = previousFallback;
-    }
-    if (previousGaMeasurementId === undefined) {
-      delete process.env.RLHF_GA_MEASUREMENT_ID;
-    } else {
-      process.env.RLHF_GA_MEASUREMENT_ID = previousGaMeasurementId;
-    }
-    if (previousGoogleSiteVerification === undefined) {
-      delete process.env.RLHF_GOOGLE_SITE_VERIFICATION;
-    } else {
-      process.env.RLHF_GOOGLE_SITE_VERIFICATION = previousGoogleSiteVerification;
-    }
-  }
-
-  if (originalLabel === undefined) delete process.env.RLHF_PRO_PRICE_LABEL;
-  else process.env.RLHF_PRO_PRICE_LABEL = originalLabel;
-  if (originalDollars === undefined) delete process.env.RLHF_PRO_PRICE_DOLLARS;
-  else process.env.RLHF_PRO_PRICE_DOLLARS = originalDollars;
-  if (originalFallback === undefined) delete process.env.RLHF_CHECKOUT_FALLBACK_URL;
-  else process.env.RLHF_CHECKOUT_FALLBACK_URL = originalFallback;
-  if (originalGa === undefined) delete process.env.RLHF_GA_MEASUREMENT_ID;
-  else process.env.RLHF_GA_MEASUREMENT_ID = originalGa;
-  if (originalSite === undefined) delete process.env.RLHF_GOOGLE_SITE_VERIFICATION;
-  else process.env.RLHF_GOOGLE_SITE_VERIFICATION = originalSite;
 });

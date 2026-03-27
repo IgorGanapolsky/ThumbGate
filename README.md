@@ -11,13 +11,15 @@
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
 [![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro) — Solo dev? Free tier has everything you need. Team or multi-repo? Pro syncs prevention rules across machines and team members. $49 one-time.
 
-**Pre-action gates that physically block AI coding agents from repeating known mistakes.** Capture feedback, auto-promote repeated failures into prevention rules, and enforce them via PreToolUse hooks. This is a reliability layer for one sharp agent, without another planner or swarm.
+**Thumbs down a mistake. It never happens again.**
 
-> **Honest disclaimer:** this is not RLHF weight training. It is context engineering plus enforcement. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions before they execute.
+The safety net for vibe coding. Give your AI agent a thumbs-down and it auto-generates a prevention rule. Give a thumbs-up and it reinforces good behavior. Pre-action gates physically block the agent before it repeats a known mistake — a reliability layer for one sharp agent, without another planner or swarm.
 
-Works with Claude Code, Codex, Gemini, Amp, Cursor, OpenCode, and any MCP-compatible agent. Verification evidence lives in [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md).
+> **Honest disclaimer: this is not RLHF weight training.** ThumbGate is context engineering plus enforcement. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions before they execute.
 
-## Why it exists
+Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
+
+**[Live Demo Dashboard](https://rlhf-feedback-loop-production.up.railway.app/dashboard)** | **[Landing Page](https://rlhf-feedback-loop-production.up.railway.app/)** | **[Verification Evidence](docs/VERIFICATION_EVIDENCE.md)**
 
 Most memory tools only help an agent remember. ThumbGate also enforces.
 
@@ -34,6 +36,117 @@ Most memory tools only help an agent remember. ThumbGate also enforces.
 - Session handoff and primer keep continuity across sessions without adding an extra orchestrator.
 
 Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx mcp-memory-gateway lessons`.
+
+## See it in action
+
+```
+$ npx mcp-memory-gateway serve
+[gate] ⛔ Blocked: git push --force (rule: no-force-push, confidence: 0.94)
+[gate] ✅ Passed: git push origin feature-branch
+```
+
+## Quick Start
+
+```bash
+# One command install — auto-detects your agent
+npx mcp-memory-gateway init
+
+# Or add the MCP server directly
+claude mcp add rlhf -- npx -y mcp-memory-gateway serve
+codex mcp add rlhf -- npx -y mcp-memory-gateway serve
+amp mcp add rlhf -- npx -y mcp-memory-gateway serve
+gemini mcp add rlhf "npx -y mcp-memory-gateway serve"
+
+# Wire PreToolUse enforcement hooks
+npx mcp-memory-gateway init --agent claude-code
+npx mcp-memory-gateway init --agent codex
+npx mcp-memory-gateway init --agent gemini
+
+# Health check and inspect lessons
+npx mcp-memory-gateway doctor
+npx mcp-memory-gateway lessons
+npx mcp-memory-gateway dashboard
+```
+
+## How It Works
+
+```
+1. You give feedback    →  👎 "Force-pushed and lost commits"
+2. ThumbGate validates  →  Rejects vague signals, promotes actionable ones
+3. Rules auto-generate  →  "Block git push --force to protected branches"
+4. Gates enforce        →  PreToolUse hook fires → BLOCKED before execution
+5. Agent improves       →  Same mistake never happens again
+```
+
+Pipeline: **Capture → Validate → Remember → Distill → Prevent → Gate → Export**
+
+![Context Engineering Architecture](https://raw.githubusercontent.com/IgorGanapolsky/mcp-memory-gateway/main/docs/diagrams/rlhf-architecture-pb.png)
+
+## Pre-Action Gates
+
+Gates are the enforcement layer. They do not ask the agent to cooperate — they physically block the action.
+
+```text
+Agent tries git push --force
+  → PreToolUse hook fires
+  → gates-engine checks rules
+  → BLOCKED: no force pushes to protected branches
+```
+
+Built-in gates:
+
+- `push-without-thread-check` — block push if PR threads unresolved
+- `force-push` — block `git push --force` to protected branches
+- `protected-branch-push` — block direct pushes to main/master
+- `package-lock-reset` — block destructive lock file changes
+- `env-file-edit` — block edits to `.env` files with secrets
+
+Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
+
+## What Actually Works
+
+| Actually works | Does not work |
+|---|---|
+| `recall` injects past context into the next session | Thumbs up/down changing model weights |
+| `session_handoff` and `session_primer` preserve continuity | Agents magically remembering what happened last session |
+| `search_lessons` exposes corrective actions, lifecycle state, linked rules, linked gates, and next harness fixes | Feedback stats automatically improving behavior by themselves |
+| Pre-action gates block known-bad tool calls before execution | Agents self-correcting without context injection or gates |
+| Auto-promotion turns repeated failures into warn/block rules | Calling this "RLHF" in the strict training sense |
+| Rejection ledger shows why vague feedback was rejected | Vague signals silently helping the system |
+
+## Core MCP Tools
+
+### Essential profile
+
+| Tool | Purpose |
+|---|---|
+| `capture_feedback` | Accept up/down signal + context, validate, promote to memory |
+| `recall` | Recall relevant past failures and rules for the current task |
+| `search_lessons` | Search promoted lessons with corrective action, lifecycle state, rules, gates |
+| `search_rlhf` | Search raw RLHF state across feedback logs, ContextFS, and rules |
+| `prevention_rules` | Generate prevention rules from repeated mistakes |
+| `enforcement_matrix` | Inspect promotion rate, active gates, and rejection ledger |
+| `feedback_stats` | Approval rate and failure-domain summary |
+| `estimate_uncertainty` | Bayesian uncertainty estimate for risky tags |
+
+Lean install for recall + gates + lesson search only:
+
+```bash
+RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y mcp-memory-gateway serve
+```
+
+Free and self-hosted users can invoke `search_lessons` directly through MCP to inspect corrective action per lesson. For broader retrieval across feedback logs, ContextFS memory, and prevention rules, use `search_rlhf` through MCP or the authenticated `GET /v1/search` API.
+
+### Dispatch profile
+
+Phone-safe read-only surface for remote ops:
+
+```bash
+RLHF_MCP_PROFILE=dispatch claude mcp add rlhf -- npx -y mcp-memory-gateway serve
+npx mcp-memory-gateway dispatch
+```
+
+Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
 
 ## Tech Stack
 
@@ -79,126 +192,9 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 - **Hosted API / landing page:** Railway
 - **Worker lane:** Cloudflare Workers in [`workers/`](workers)
 
-## See it in action
+## Agent Integration Guides
 
-```
-$ npx mcp-memory-gateway serve
-[gate] ⛔ Blocked: git push --force (rule: no-force-push, confidence: 0.94)
-[gate] ✅ Passed: git push origin feature-branch
-```
-
-## Quick Start
-
-```bash
-# Install MCP server for your agent
-claude mcp add rlhf -- npx -y mcp-memory-gateway serve
-codex mcp add rlhf -- npx -y mcp-memory-gateway serve
-amp mcp add rlhf -- npx -y mcp-memory-gateway serve
-gemini mcp add rlhf "npx -y mcp-memory-gateway serve"
-
-# Or auto-detect supported agents
-npx mcp-memory-gateway init
-
-# Auto-wire PreToolUse hooks
-npx mcp-memory-gateway init --agent claude-code
-npx mcp-memory-gateway init --agent codex
-npx mcp-memory-gateway init --agent gemini
-
-# Health and core workflows
-npx mcp-memory-gateway doctor
-npx mcp-memory-gateway lessons
-npx mcp-memory-gateway dashboard
-```
-
-## What Actually Works
-
-| Actually works | Does not work |
-|---|---|
-| `recall` injects past context into the next session | Thumbs up/down changing model weights |
-| `session_handoff` and `session_primer` preserve continuity | Agents magically remembering what happened last session |
-| `search_lessons` exposes corrective actions, lifecycle state, linked rules, linked gates, and next harness fixes | Feedback stats automatically improving behavior by themselves |
-| Pre-action gates block known-bad tool calls before execution | Agents self-correcting without context injection or gates |
-| Auto-promotion turns repeated failures into warn/block rules | Calling this “RLHF” in the strict training sense |
-| Rejection ledger shows why vague feedback was rejected | Vague signals silently helping the system |
-
-## How it works
-
-1. Capture structured feedback with context, tags, and optional reasoning traces.
-2. Validate signals and reject vague or unsafe entries before promotion.
-3. Promote useful feedback into searchable memory and principle/rule material.
-4. Auto-generate prevention rules from repeated failures.
-5. Enforce those rules through PreToolUse hooks before risky tool calls run.
-6. Expose the full state through MCP tools, the API, dashboards, and verification reports.
-
-The `serve` command also runs a background watcher for external JSONL writes from hooks, CI, or companion tools.
-
-## Core Tools
-
-### Essential profile
-
-These tools are the shortest path to value:
-
-| Tool | Purpose |
-|---|---|
-| `capture_feedback` | Accept up/down signal + context, validate, promote to memory |
-| `recall` | Recall relevant past failures and rules for the current task |
-| `search_lessons` | Search promoted lessons with corrective action, lifecycle state, rules, gates, and next harness fixes |
-| `search_rlhf` | Search raw RLHF state across feedback logs, ContextFS, and rules |
-| `prevention_rules` | Generate prevention rules from repeated mistakes |
-| `enforcement_matrix` | Inspect promotion rate, active gates, and rejection ledger |
-| `feedback_stats` | Approval rate and failure-domain summary |
-| `feedback_summary` | Human-readable recent feedback summary |
-| `estimate_uncertainty` | Bayesian uncertainty estimate for risky tags |
-
-Use the lean install when you want recall, gates, and lesson search first:
-
-```bash
-RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y mcp-memory-gateway serve
-```
-
-Free and self-hosted users can invoke `search_lessons` directly through MCP to inspect corrective action per lesson. For broader retrieval across feedback logs, ContextFS memory, and prevention rules, use `search_rlhf` through MCP or the authenticated `GET /v1/search` API.
-
-### Dispatch profile
-
-For phone-safe remote ops, use the read-only dispatch surface:
-
-```bash
-RLHF_MCP_PROFILE=dispatch claude mcp add rlhf -- npx -y mcp-memory-gateway serve
-npx mcp-memory-gateway dispatch
-```
-
-Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
-
-## Pre-Action Gates
-
-Gates are the enforcement layer. They do not ask the agent to cooperate.
-
-```text
-Agent tries git push
-→ PreToolUse hook fires
-→ gates-engine checks rules
-→ BLOCKED (for example: no PR thread check)
-```
-
-Built-in examples include:
-
-- `push-without-thread-check`
-- `package-lock-reset`
-- `force-push`
-- `protected-branch-push`
-- `env-file-edit`
-
-Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
-
-## Architecture
-
-Pipeline: **Capture → Validate → Remember → Distill → Prevent → Gate → Export**
-
-![Context Engineering Architecture](https://raw.githubusercontent.com/IgorGanapolsky/mcp-memory-gateway/main/docs/diagrams/rlhf-architecture-pb.png)
-
-For deeper packaging and topology details:
-
-- [Claude Desktop extension guide](docs/CLAUDE_DESKTOP_EXTENSION.md)
+- [Claude Desktop extension](docs/CLAUDE_DESKTOP_EXTENSION.md)
 - [Cursor plugin operations](docs/CURSOR_PLUGIN_OPERATIONS.md)
 - [Continuity tools integration](docs/guides/continuity-tools-integration.md)
 - [OpenCode integration](docs/guides/opencode-integration.md)
@@ -206,20 +202,20 @@ For deeper packaging and topology details:
 
 ## Operator Contract
 
-If you are running autonomous agents against this repo or another repo that uses this workflow, keep these entry points visible:
+For autonomous agent runs against this or any repo using this workflow:
 
-- [WORKFLOW.md](WORKFLOW.md): scope, proof-of-work, hard stops, and done criteria for agent runs
-- [.github/ISSUE_TEMPLATE/ready-for-agent.yml](.github/ISSUE_TEMPLATE/ready-for-agent.yml): bounded intake template for ready-for-agent work
-- [.github/pull_request_template.md](.github/pull_request_template.md): proof-first PR handoff format
+- [WORKFLOW.md](WORKFLOW.md) — scope, proof-of-work, hard stops, done criteria
+- [.github/ISSUE_TEMPLATE/ready-for-agent.yml](.github/ISSUE_TEMPLATE/ready-for-agent.yml) — bounded intake template
+- [.github/pull_request_template.md](.github/pull_request_template.md) — proof-first PR handoff
 
-## Commercial and Proof Surfaces
+## Pro Pack
+
+**[$49 one-time](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro)** — hosted dashboard, priority support, commercial license.
 
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md)
 - [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
-- [Workflow Hardening Sprint](docs/WORKFLOW_HARDENING_SPRINT.md)
 - [Pitch](docs/PITCH.md)
 - [Anthropic Marketplace Strategy](docs/ANTHROPIC_MARKETPLACE_STRATEGY.md)
-- [Pro Pack ($49 one-time)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro) — Solo dev? Free tier has everything you need. Team or multi-repo? Pro syncs prevention rules across machines and team members.
 
 ## License
 

@@ -28,6 +28,14 @@ __GOOGLE_SITE_VERIFICATION_META__
 <script defer data-domain="rlhf-feedback-loop-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 __GA_BOOTSTRAP__
 
+<script>
+  const gaMeasurementId = '__GA_MEASUREMENT_ID__';
+  const serverVisitorId = '__SERVER_VISITOR_ID__';
+  const serverSessionId = '__SERVER_SESSION_ID__';
+  const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
+  const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
+</script>
+
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -385,7 +393,7 @@ __GA_BOOTSTRAP__
         </ul>
         <a href="https://www.npmjs.com/package/mcp-memory-gateway" target="_blank" rel="noopener" class="btn-free">Install Free</a>
       </div>
-      <div class="price-card pro">
+      <div class="price-card pro" data-price-dollars="__PRO_PRICE_DOLLARS__">
         <div class="tier">Pro</div>
         <div class="price">$49</div>
         <div class="price-sub">One-time payment · Lifetime access</div>
