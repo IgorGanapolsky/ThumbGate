@@ -4,7 +4,7 @@ compatibility_date = "2024-09-25"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-STRIPE_PRICE_ID = "price_1TCOL1GGBpd520QY8CyhR9Dd"
+STRIPE_PRICE_ID = "price_1TFfD6GGBpd520QYh9J0qGtg"
 FREE_DAILY_LIMIT = "5"
 
 # KV namespace bindings — create with:

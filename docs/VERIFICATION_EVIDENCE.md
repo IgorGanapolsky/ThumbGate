@@ -658,7 +658,7 @@ npm run prove:adapters
 npm run prove:automation
 npm run self-heal:check
 git diff --check
-railway variable set RLHF_CHECKOUT_FALLBACK_URL=https://buy.stripe.com/bJe28rfCY6zc4lH7mb3sI04
+railway variable set RLHF_CHECKOUT_FALLBACK_URL=https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05
 railway up -d -m "revenue proof analytics + stripe checkout fallback"
 railway run node - <<'NODE'
 const https = require('https');
@@ -692,7 +692,7 @@ Observed result:
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
 - `git diff --check` exited `0`.
 - Railway env-only redeploy `32717506-102b-4316-88d6-eddb6fdf7150` succeeded after setting `RLHF_CHECKOUT_FALLBACK_URL` to the Stripe payment link.
-- Production `GET /checkout/pro` now returns `302` to `https://buy.stripe.com/bJe28rfCY6zc4lH7mb3sI04...` instead of the old Gumroad URL.
+- Production `GET /checkout/pro` now returns `302` to `https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05...` instead of the old Gumroad URL.
 - Railway code deployment `a5fbff33-c410-46bf-b795-ced4163495ac` succeeded for the exact worktree diff.
 - The live admin billing summary now returns `200` and reports:
   - `paidOrders: 2`
