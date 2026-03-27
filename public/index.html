@@ -24,6 +24,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <meta property="og:title" content="ThumbGate — Human-in-the-Loop Enforcement for AI Agents">
 <meta property="og:description" content="The safety net for vibe coding. Stop AI coding agents from making the same mistake twice. One command install. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.">
 <meta property="og:type" content="website">
+<meta name="keywords" content="ThumbGate, mcp-memory-gateway, AI agent guardrails, pre-action gates, MCP server, Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, vibe coding safety, SpecLock alternative, Mem0 alternative, AI coding agent memory, PreToolUse hooks, prevention rules, feedback enforcement">
 
 <script defer data-domain="rlhf-feedback-loop-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 __GA_BOOTSTRAP__
@@ -106,6 +107,22 @@ __GA_BOOTSTRAP__
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Prompt rules are suggestions agents can ignore. Pre-Action Gates are enforcement — they block the action before execution via PreToolUse hooks. Gates are auto-generated from feedback and use Thompson Sampling to adapt."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is ThumbGate different from SpecLock?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "SpecLock requires manually writing constraints or compiling them from a PRD. ThumbGate learns automatically from thumbs-up/down feedback and auto-generates prevention rules from repeated failures. SpecLock locks files from modification; ThumbGate blocks specific actions (like force-push) before they execute."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is ThumbGate different from Mem0?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Mem0 is cloud-hosted memory for AI apps. ThumbGate is local-first enforcement. Mem0 remembers context but cannot block actions. ThumbGate captures feedback, promotes it to prevention rules, and physically blocks tool calls that match known failure patterns via PreToolUse hooks."
       }
     }
   ]

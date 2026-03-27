@@ -40,6 +40,7 @@ const NAMESPACES = {
   tools: 'tools',
   provenance: 'provenance',
   session: 'session',
+  research: 'research',
 };
 const DEFAULT_SEARCH_NAMESPACES = [
   NAMESPACES.memoryError,
@@ -76,6 +77,18 @@ const PACK_TEMPLATES = {
     maxItems: 8,
     maxChars: 6000,
     queryPrefix: 'competitor comparison alternative',
+  },
+  'research-brief': {
+    namespaces: ['research'],
+    maxItems: 10,
+    maxChars: 8000,
+    queryPrefix: 'research paper',
+  },
+  'gtm-research': {
+    namespaces: ['research', 'memoryLearning'],
+    maxItems: 8,
+    maxChars: 6000,
+    queryPrefix: 'go-to-market research strategy',
   },
 };
 
