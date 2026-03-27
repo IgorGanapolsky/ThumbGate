@@ -26,6 +26,36 @@ function normalizeTopics(topics) {
   return [...new Set((topics || []).map((topic) => normalizeText(topic).toLowerCase()).filter(Boolean))].sort();
 }
 
+function normalizeUrl(value) {
+  const text = normalizeText(value);
+  if (!text) return '';
+  try {
+    const parsed = new URL(text);
+    return `${parsed.protocol}//${parsed.host}${parsed.pathname.replace(/\/+$/, '')}`;
+  } catch {
+    return text.replace(/\/+$/, '');
+  }
+}
+
+function extractUrls(text) {
+  return (String(text || '').match(/https?:\/\/[^\s"'`<>]+/g) || []).map((url) => normalizeUrl(url));
+}
+
+function hasExactUrl(text, targetUrl) {
+  const normalizedTarget = normalizeUrl(targetUrl);
+  return extractUrls(text).includes(normalizedTarget);
+}
+
+function hasRepositoryUrl(text, targetUrl) {
+  const normalizedTarget = normalizeUrl(targetUrl);
+  return extractUrls(text).some((candidate) => (
+    candidate === normalizedTarget ||
+    candidate.startsWith(`${normalizedTarget}/`) ||
+    candidate.startsWith(`${normalizedTarget}?`) ||
+    candidate.startsWith(`${normalizedTarget}#`)
+  ));
+}
+
 function loadGitHubAboutConfig(root = ROOT) {
   const about = readJson(root, CONFIG_RELATIVE_PATH);
   return {
@@ -121,19 +151,19 @@ function collectLocalGitHubAboutErrors(root = ROOT) {
     `server.json repository.url must match ${about.repositoryUrl}`
   );
   check(
-    landingHtml.includes(canonical.repositoryUrl),
+    hasRepositoryUrl(landingHtml, canonical.repositoryUrl),
     `public/index.html must link to ${canonical.repositoryUrl}`
   );
   check(
-    !landingHtml.includes(LEGACY_REPOSITORY_URL),
+    !hasRepositoryUrl(landingHtml, LEGACY_REPOSITORY_URL),
     'public/index.html still links to the legacy GitHub repo URL'
   );
   check(
-    readme.includes(canonical.repositoryUrl),
+    hasRepositoryUrl(readme, canonical.repositoryUrl),
     `README.md must link to ${canonical.repositoryUrl}`
   );
   check(
-    !readme.includes(LEGACY_REPOSITORY_URL),
+    !hasRepositoryUrl(readme, LEGACY_REPOSITORY_URL),
     'README.md still links to the legacy GitHub repo URL'
   );
   check(
@@ -161,11 +191,11 @@ function collectLocalGitHubAboutErrors(root = ROOT) {
     '.github/github-app-manifest.json description must not use stale persistent-memory positioning'
   );
   check(
-    serverSource.includes(canonical.repositoryUrl),
+    hasRepositoryUrl(serverSource, canonical.repositoryUrl),
     `src/api/server.js must link to ${canonical.repositoryUrl}`
   );
   check(
-    !serverSource.includes(LEGACY_REPOSITORY_URL),
+    !hasRepositoryUrl(serverSource, LEGACY_REPOSITORY_URL),
     'src/api/server.js still links to the legacy GitHub repo URL'
   );
 
@@ -280,8 +310,11 @@ module.exports = {
   compareGitHubAbout,
   extractMetaDescription,
   fetchLiveGitHubAbout,
+  hasExactUrl,
+  hasRepositoryUrl,
   loadGitHubAboutConfig,
   normalizeText,
   normalizeTopics,
+  normalizeUrl,
   updateLiveGitHubAbout,
 };
