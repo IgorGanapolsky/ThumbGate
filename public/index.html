@@ -20,9 +20,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
 <title>ThumbGate — Stop AI Coding Agents From Repeating Mistakes</title>
-<meta name="description" content="Human-in-the-loop enforcement for AI coding agents. The safety net for vibe coding. Pre-action gates block mistakes before they happen. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.">
+<meta name="description" content="👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. ThumbGate turns feedback into pre-action gates for AI coding agents.">
 <meta property="og:title" content="ThumbGate — Human-in-the-Loop Enforcement for AI Agents">
-<meta property="og:description" content="The safety net for vibe coding. Stop AI coding agents from making the same mistake twice. One command install. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.">
+<meta property="og:description" content="👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. ThumbGate turns feedback into pre-action gates for AI coding agents.">
 <meta property="og:type" content="website">
 <meta name="keywords" content="ThumbGate, mcp-memory-gateway, AI agent guardrails, pre-action gates, MCP server, Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, vibe coding safety, SpecLock alternative, Mem0 alternative, AI coding agent memory, PreToolUse hooks, prevention rules, feedback enforcement">
 
@@ -42,7 +42,7 @@ __GA_BOOTSTRAP__
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
-  "description": "Human-in-the-loop enforcement for AI coding agents. The safety net for vibe coding. Pre-action gates capture feedback, auto-generate prevention rules, and block agents before they repeat mistakes.",
+  "description": "👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. ThumbGate turns feedback into pre-action gates for AI coding agents.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform",
   "license": "https://opensource.org/licenses/MIT",
@@ -170,6 +170,10 @@ __GA_BOOTSTRAP__
   .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.2); padding: 4px 12px; border-radius: 100px; margin-bottom: 24px; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
   .hero h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; max-width: 700px; margin: 0 auto 16px; }
   .hero p { font-size: 17px; color: var(--text-muted); max-width: 520px; margin: 0 auto 36px; line-height: 1.6; }
+  .hero-signals { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 28px; max-width: 760px; }
+  .signal-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .signal-pill.signal-up { border-color: rgba(74, 222, 128, 0.28); color: #b8f7c8; background: rgba(74, 222, 128, 0.08); }
+  .signal-pill.signal-down { border-color: rgba(248, 113, 113, 0.28); color: #ffc0c0; background: rgba(248, 113, 113, 0.08); }
   .hero-install { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 14px 24px; display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 15px; margin-bottom: 40px; cursor: pointer; transition: border-color 0.2s; position: relative; max-width: 100%; overflow-x: auto; }
   .hero-install:hover { border-color: var(--cyan); }
   .hero-install .prompt { color: var(--text-muted); user-select: none; }
@@ -297,8 +301,12 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
     <div class="hero-badge">● Human-in-the-Loop Enforcement for AI Agents</div>
-    <h1>Thumbs down a mistake.<br>It never happens again.</h1>
-    <p>The safety net for vibe coding. Give your AI agent a 👎 and it auto-generates a prevention rule. Give a 👍 and it reinforces good behavior. Works across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent. <strong>New in v0.8.4:</strong> SQLite+FTS5 lesson DB, corrective-action inference, and Thompson Sampling.</p>
+    <h1>👍 Reinforce the win.<br>👎 Block the repeat.</h1>
+    <div class="hero-signals">
+      <div class="signal-pill signal-up">👍 Thumbs up reinforces good behavior</div>
+      <div class="signal-pill signal-down">👎 Thumbs down auto-generates a prevention rule</div>
+    </div>
+    <p>ThumbGate turns thumbs-up/down feedback into pre-action gates for AI coding agents. The safety net for vibe coding works across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent. <strong>New in v0.8.4:</strong> SQLite+FTS5 lesson DB, corrective-action inference, and Thompson Sampling.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx mcp-memory-gateway init</span>
