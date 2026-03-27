@@ -217,7 +217,6 @@ Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
 - [Cursor plugin operations](docs/CURSOR_PLUGIN_OPERATIONS.md)
 - [Continuity tools integration](docs/guides/continuity-tools-integration.md)
 - [OpenCode integration](docs/guides/opencode-integration.md)
-- [Aider with OpenAI-compatible backends](docs/guides/aider-openai-compatible.md)
 
 ## Operator Contract
 

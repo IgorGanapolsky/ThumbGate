@@ -1265,10 +1265,10 @@ describe('bin/cli.js', () => {
       path.join(feedbackDir, 'workflow-runs.jsonl'),
       `${JSON.stringify({
         timestamp: new Date().toISOString(),
-        workflowId: 'repo_self_dogfood_aider_verify',
+        workflowId: 'repo_self_dogfood_full_verify',
         workflowName: 'Repo self dogfood verification',
         owner: 'cto',
-        runtime: 'node+aider',
+        runtime: 'node',
         proofBacked: true,
         reviewed: true,
         customerType: 'internal_dogfood',

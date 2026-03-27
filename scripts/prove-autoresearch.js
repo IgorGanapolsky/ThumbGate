@@ -2,7 +2,7 @@
 /**
  * Phase 9: Autoresearch — Proof Gate
  *
- * Validates all AUTORESEARCH-01 through AUTORESEARCH-05 requirements offline.
+ * Validates all AUTORESEARCH-01 through AUTORESEARCH-06 requirements offline.
  * Mirrors the pattern of prove-loop-closure.js.
  *
  * Usage:
@@ -13,7 +13,6 @@
  *   proof/autoresearch-report.md
  */
 
-const { execSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -29,7 +28,7 @@ function resolveProofPaths() {
   };
 }
 
-function run() {
+async function run() {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-autoresearch-proof-'));
   const results = { passed: 0, failed: 0, requirements: {} };
   const { proofDir, reportJson, reportMd } = resolveProofPaths();
@@ -153,6 +152,58 @@ function run() {
         }
       },
     },
+    {
+      id: 'AUTORESEARCH-06',
+      desc: 'research-backed autoresearch ingests paper context, records citations, and preserves score execution flow',
+      fn: async () => {
+        process.env.RLHF_FEEDBACK_DIR = tmpDir;
+        delete require.cache[require.resolve('./contextfs')];
+        delete require.cache[require.resolve('./hf-papers')];
+        delete require.cache[require.resolve('./autoresearch-runner')];
+        delete require.cache[require.resolve('./experiment-tracker')];
+        delete require.cache[require.resolve('./feedback-loop')];
+
+        const runner = require('./autoresearch-runner');
+        const { constructTemplatedPack, NAMESPACES } = require('./contextfs');
+
+        const result = await runner.runIteration({
+          targetName: 'half_life_days',
+          testCommand: 'node -e "console.log(\'ℹ tests 1\\nℹ pass 1\\nℹ fail 0\')"',
+          timeoutMs: 5000,
+          researchQuery: 'rank fusion',
+          searchPapersImpl: async () => [{
+            paperId: '2603.01896',
+            title: 'Agentic Rank Fusion for Research Systems',
+            summary: 'Retrieval fusion for agent workflows.',
+            authors: ['Ada Lovelace'],
+            tags: ['retrieval'],
+            url: 'https://arxiv.org/abs/2603.01896',
+            source: 'huggingface-papers',
+          }],
+        });
+
+        if (result.metrics.researchQuery !== 'rank fusion') {
+          throw new Error('Research query metadata missing from autoresearch result');
+        }
+        if (!result.metrics.researchPackId) {
+          throw new Error('Research pack id missing from autoresearch result');
+        }
+        if (!result.metrics.researchPaperIds.includes('2603.01896')) {
+          throw new Error('Research paper id missing from autoresearch result');
+        }
+        if (result.metrics.baselineDetails.pass !== 1 || result.metrics.mutantDetails.pass !== 1) {
+          throw new Error('Research context changed score execution flow');
+        }
+
+        const pack = constructTemplatedPack({
+          template: 'autoresearch-brief',
+          query: 'rank fusion retrieval',
+        });
+        if (!pack.items.some((item) => item.namespace === NAMESPACES.research)) {
+          throw new Error('Autoresearch pack did not include research namespace content');
+        }
+      },
+    },
   ];
 
   console.log('Phase 9: Autoresearch — Proof Gate\n');
@@ -160,7 +211,7 @@ function run() {
 
   for (const check of checks) {
     try {
-      check.fn();
+      await check.fn();
       results.passed++;
       results.requirements[check.id] = { status: 'pass', desc: check.desc };
       console.log(`  PASS  ${check.id}: ${check.desc}`);
@@ -213,8 +264,9 @@ function run() {
     '',
     '- `scripts/experiment-tracker.js` — Experiment lifecycle: create, record, progress, best',
     '- `scripts/autoresearch-runner.js` — Karpathy-inspired self-optimizing mutation loop',
-    '- `tests/autoresearch.test.js` — Comprehensive node:test suite covering both modules',
-    '- `scripts/prove-autoresearch.js` — This proof gate with 5 requirement checks',
+    '- `scripts/hf-papers.js` — Hugging Face papers ingestion and research-brief builder',
+    '- `tests/autoresearch.test.js` and `tests/hf-papers.test.js` — Node:test coverage for research-backed autoresearch',
+    '- `scripts/prove-autoresearch.js` — This proof gate with 6 requirement checks',
     '',
   ].join('\n');
 
@@ -227,7 +279,10 @@ function run() {
 }
 
 if (require.main === module) {
-  run();
+  run().catch((error) => {
+    console.error(error.message);
+    process.exit(1);
+  });
 }
 
 module.exports = { run };

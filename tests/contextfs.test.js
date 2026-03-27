@@ -13,6 +13,7 @@ const {
   ensureContextFs,
   registerFeedback,
   registerPreventionRules,
+  upsertContextObject,
   normalizeNamespaces,
   constructContextPack,
   evaluateContextPack,
@@ -125,6 +126,40 @@ test('registerFeedback dedupes exact feedback-memory repeats', () => {
   assert.equal(second.memory.deduped, true);
   assert.equal(first.memory.document.id, second.memory.document.id);
   assert.equal(afterFiles, beforeFiles);
+});
+
+test('upsertContextObject dedupes exact context objects and merges metadata', () => {
+  const first = upsertContextObject({
+    namespace: NAMESPACES.research,
+    title: 'Paper: Rank Fusion',
+    content: '# Rank Fusion\n\n## Abstract\n\nResearch summary.',
+    tags: ['research', 'paper', 'hf-papers'],
+    source: 'hf-papers',
+    metadata: {
+      paperId: '2603.01896',
+      authors: ['Ada Lovelace'],
+    },
+  });
+
+  const second = upsertContextObject({
+    namespace: NAMESPACES.research,
+    title: 'Paper: Rank Fusion',
+    content: '# Rank Fusion\n\n## Abstract\n\nResearch summary.',
+    tags: ['paper', 'hf-papers', 'research'],
+    source: 'hf-papers',
+    metadata: {
+      paperId: '2603.01896',
+      authors: ['Ada Lovelace', 'Alan Turing'],
+    },
+  });
+
+  const researchFiles = fs.readdirSync(path.join(CONTEXTFS_ROOT, NAMESPACES.research))
+    .filter((file) => file.endsWith('.json'));
+
+  assert.equal(first.id, second.id);
+  assert.equal(second.deduped, true);
+  assert.deepEqual(second.document.metadata.authors, ['Ada Lovelace', 'Alan Turing']);
+  assert.equal(researchFiles.length, 1);
 });
 
 test('normalizeNamespaces rejects path traversal attempts', () => {

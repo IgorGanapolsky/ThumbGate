@@ -216,6 +216,8 @@ describe('autoresearch-runner', () => {
     delete require.cache[require.resolve('../scripts/autoresearch-runner')];
     delete require.cache[require.resolve('../scripts/experiment-tracker')];
     delete require.cache[require.resolve('../scripts/feedback-loop')];
+    delete require.cache[require.resolve('../scripts/hf-papers')];
+    delete require.cache[require.resolve('../scripts/contextfs')];
     runner = require('../scripts/autoresearch-runner');
   });
 
@@ -332,6 +334,8 @@ describe('autoresearch integration', () => {
     delete require.cache[require.resolve('../scripts/experiment-tracker')];
     delete require.cache[require.resolve('../scripts/autoresearch-runner')];
     delete require.cache[require.resolve('../scripts/feedback-loop')];
+    delete require.cache[require.resolve('../scripts/hf-papers')];
+    delete require.cache[require.resolve('../scripts/contextfs')];
     tracker = require('../scripts/experiment-tracker');
     runner = require('../scripts/autoresearch-runner');
   });
@@ -389,5 +393,29 @@ describe('autoresearch integration', () => {
 
     assert.equal(result.status, 'completed');
     assert.equal(typeof result.score, 'number');
+  });
+
+  it('runIteration records optional research metadata without changing scoring flow', async () => {
+    const result = await runner.runIteration({
+      targetName: 'half_life_days',
+      testCommand: 'node -e "console.log(\'ℹ tests 1\\nℹ pass 1\\nℹ fail 0\')"',
+      timeoutMs: 5000,
+      researchQuery: 'rank fusion',
+      searchPapersImpl: async () => [{
+        paperId: '2603.01896',
+        title: 'Agentic Rank Fusion for Research Systems',
+        summary: 'Retrieval fusion for agent workflows.',
+        authors: ['Ada Lovelace'],
+        tags: ['retrieval'],
+        url: 'https://arxiv.org/abs/2603.01896',
+        source: 'huggingface-papers',
+      }],
+    });
+
+    assert.equal(result.metrics.researchQuery, 'rank fusion');
+    assert.equal(result.metrics.researchPaperIds[0], '2603.01896');
+    assert.ok(result.metrics.researchPackId);
+    assert.equal(result.metrics.baselineDetails.pass, 1);
+    assert.equal(result.metrics.mutantDetails.pass, 1);
   });
 });
