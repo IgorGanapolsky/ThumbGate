@@ -4,7 +4,7 @@
 
 ```
 PROD_URL    = https://rlhf-feedback-loop-production.up.railway.app
-REPO        = IgorGanapolsky/mcp-memory-gateway
+REPO        = IgorGanapolsky/ThumbGate
 NPM_PKG     = mcp-memory-gateway
 NPM_PRO_PKG = mcp-memory-gateway-pro
 VERSION     = 0.8.3  (source of truth: package.json → scripts/sync-version.js propagates)
@@ -57,7 +57,7 @@ curl -s https://rlhf-feedback-loop-production.up.railway.app/dashboard | grep 'T
 ## PR and CI Protocol
 
 1. Branch from `main`. Name: `fix/...`, `feat/...`, `chore/...`.
-2. Push to remote. Create PR via `gh pr create --repo IgorGanapolsky/mcp-memory-gateway`.
+2. Push to remote. Create PR via `gh pr create --repo IgorGanapolsky/ThumbGate`.
 3. Wait for CI (runs on push to `main` and `feat/**` branches).
 4. After push, run: `gh pr view --json reviewDecision,comments,reviewThreads`
 5. If unresolved threads > 0 → fix them → push again → re-check.

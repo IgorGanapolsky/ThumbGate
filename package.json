@@ -5,10 +5,10 @@
   "homepage": "https://rlhf-feedback-loop-production.up.railway.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/IgorGanapolsky/mcp-memory-gateway.git"
+    "url": "https://github.com/IgorGanapolsky/ThumbGate.git"
   },
   "bugs": {
-    "url": "https://github.com/IgorGanapolsky/mcp-memory-gateway/issues"
+    "url": "https://github.com/IgorGanapolsky/ThumbGate/issues"
   },
   "main": "scripts/feedback-loop.js",
   "bin": {
@@ -91,6 +91,9 @@
     "test:marketing-experiment": "node --test tests/marketing-experiment.test.js",
     "test:verify-run": "node --test tests/verify-run.test.js",
     "test:congruence": "node scripts/check-congruence.js",
+    "test:congruence:live": "node scripts/check-congruence.js --check-live",
+    "github:about:check": "node scripts/sync-github-about.js",
+    "github:about:sync": "node scripts/sync-github-about.js --write",
     "test:schema": "node scripts/feedback-schema.js --test",
     "test:loop": "node scripts/feedback-loop.js --test",
     "test:dpo": "node scripts/export-dpo-pairs.js --test",

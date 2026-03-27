@@ -16,7 +16,10 @@
 > Pre-action gates that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
 
 ### GitHub Repo About
-> Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor, OpenCode, and any MCP-compatible agent.
+**Canonical source:** `config/github-about.json`
+> Human-in-the-loop enforcement for AI coding agents. The safety net for vibe coding. Pre-action gates block mistakes before they happen. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.
+
+**Canonical topics:** `thumbgate`, `pre-action-gates`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`
 
 ### Gumroad Pro Product
 **Title:** ThumbGate Pro — Unlimited Pre-Action Gates + Cloud Sync
@@ -36,8 +39,7 @@
 | Vibe-to-Verification | [DROP] |
 
 ## GitHub Metadata
-**Topics to ADD:** `pre-action-gates`, `ai-agent-safety`
-**Topics to REMOVE:** `rlhf-dataset-engine`, `agentic-feedback-studio`, `veto-layer`, `always-on-memory`, `context-hub`
+**Automation:** CI syncs the live GitHub About section from `config/github-about.json` on `main` and verifies it after the write.
 
 ## Surface Rules
 - Root landing page stays vendor-neutral. Claude-first positioning belongs only on Claude-specific distribution pages, extension docs, and Anthropic-facing partner assets.

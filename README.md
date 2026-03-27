@@ -2,8 +2,8 @@
 
 > **npm package:** `mcp-memory-gateway` — install with `npx mcp-memory-gateway init`
 
-[![CI](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/ci.yml)
-[![Self-Healing](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/self-healing-monitor.yml/badge.svg)](https://github.com/IgorGanapolsky/mcp-memory-gateway/actions/workflows/self-healing-monitor.yml)
+[![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
+[![Self-Healing](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/self-healing-monitor.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/self-healing-monitor.yml)
 [![npm](https://img.shields.io/npm/v/mcp-memory-gateway)](https://www.npmjs.com/package/mcp-memory-gateway)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
@@ -80,7 +80,7 @@ npx mcp-memory-gateway dashboard
 
 Pipeline: **Capture → Validate → Remember → Distill → Prevent → Gate → Export**
 
-![Context Engineering Architecture](https://raw.githubusercontent.com/IgorGanapolsky/mcp-memory-gateway/main/docs/diagrams/rlhf-architecture-pb.png)
+![Context Engineering Architecture](https://raw.githubusercontent.com/IgorGanapolsky/ThumbGate/main/docs/diagrams/rlhf-architecture-pb.png)
 
 ## Pre-Action Gates
 

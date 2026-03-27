@@ -10,7 +10,7 @@ const {
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const CANONICAL_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
-const CURRENT_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/mcp-memory-gateway';
+const CURRENT_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate';
 
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, relativePath), 'utf8'));
@@ -110,8 +110,10 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
   assert.doesNotMatch(publicLanding, /github\.com\/IgorGanapolsky\/rlhf-feedback-loop/);
+  assert.doesNotMatch(publicLanding, /github\.com\/IgorGanapolsky\/mcp-memory-gateway/);
 
   assert.match(serverSource, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
+  assert.doesNotMatch(serverSource, /github\.com\/IgorGanapolsky\/mcp-memory-gateway/);
   assert.doesNotMatch(serverSource, /github\.com\/IgorGanapolsky\/rlhf-feedback-loop/);
 
   assert.match(twitterThread, /Hosted demo: rlhf-feedback-loop-production\.up\.railway\.app/);

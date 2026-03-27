@@ -1,6 +1,6 @@
 {
   "name": "ThumbGate",
-  "description": "Persistent memory for AI coding agents — stops Claude Code from repeating mistakes",
+  "description": "Human-in-the-loop enforcement for AI coding agents with pre-action gates that block repeated mistakes.",
   "url": "https://rlhf-feedback-loop-production.up.railway.app",
   "hook_attributes": {
     "url": "https://rlhf-feedback-loop-production.up.railway.app/webhooks/github",
