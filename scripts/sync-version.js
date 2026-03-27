@@ -178,6 +178,7 @@ function syncVersion(opts) {
 
   // 9. docs/install files that pin the npm package version
   const pinnedPackageTargets = [
+    'adapters/claude/.mcp.json',
     'docs/PLUGIN_DISTRIBUTION.md',
     'adapters/README.md',
     'adapters/opencode/opencode.json',
@@ -244,6 +245,14 @@ function syncVersion(opts) {
   const publicIndexPath = 'public/index.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, publicIndexPath))) {
     const publicContent = fs.readFileSync(path.join(PROJECT_ROOT, publicIndexPath), 'utf-8');
+    const heroVersionMatch = publicContent.match(/New in v(\d+\.\d+\.\d+):/);
+    if (heroVersionMatch && heroVersionMatch[1] !== version) {
+      drifted.push({ file: publicIndexPath, field: 'hero-release-note', current: heroVersionMatch[1] });
+      if (!checkOnly) {
+        replaceInFile(publicIndexPath, `New in v${heroVersionMatch[1]}:`, `New in v${version}:`);
+      }
+    }
+
     const proofMatch = publicContent.match(/Versioned proof: v(\d+\.\d+\.\d+)/);
     if (proofMatch && proofMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'proof-pill', current: proofMatch[1] });
@@ -262,7 +271,25 @@ function syncVersion(opts) {
     targets.push(publicIndexPath);
   }
 
-  // mcpize.yaml
+  // 13. adapters/mcp/server-stdio.js — MCP server metadata
+  const serverStdioPath = 'adapters/mcp/server-stdio.js';
+  const serverStdioFile = path.join(PROJECT_ROOT, serverStdioPath);
+  if (fs.existsSync(serverStdioFile)) {
+    const serverStdioContent = fs.readFileSync(serverStdioFile, 'utf-8');
+    const serverInfoMatch = serverStdioContent.match(/version:\s*'(\d+\.\d+\.\d+)'/);
+    if (serverInfoMatch && serverInfoMatch[1] !== version) {
+      drifted.push({ file: serverStdioPath, field: 'server-info-version', current: serverInfoMatch[1] });
+      if (!checkOnly) {
+        fs.writeFileSync(
+          serverStdioFile,
+          serverStdioContent.replace(/version:\s*'\d+\.\d+\.\d+'/, `version: '${version}'`)
+        );
+      }
+    }
+    targets.push(serverStdioPath);
+  }
+
+  // 14. mcpize.yaml
   const mcpizePath = 'mcpize.yaml';
   const mcpizeFile = path.join(PROJECT_ROOT, mcpizePath);
   if (fs.existsSync(mcpizeFile)) {

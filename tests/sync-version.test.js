@@ -26,3 +26,21 @@ test('sync-version covers package-lock.json', () => {
   const hasPackageLock = result.targets.some(t => t.includes('package-lock.json'));
   assert.ok(hasPackageLock, 'package-lock.json should be a sync target');
 });
+
+test('sync-version covers the Claude adapter launcher manifest', () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const result = syncVersion({ checkOnly: true });
+  assert.ok(
+    result.targets.includes('adapters/claude/.mcp.json'),
+    'adapters/claude/.mcp.json should be a sync target'
+  );
+});
+
+test('sync-version covers the MCP stdio server metadata file', () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const result = syncVersion({ checkOnly: true });
+  assert.ok(
+    result.targets.includes('adapters/mcp/server-stdio.js'),
+    'adapters/mcp/server-stdio.js should be a sync target'
+  );
+});

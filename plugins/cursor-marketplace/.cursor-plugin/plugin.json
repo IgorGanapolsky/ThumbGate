@@ -2,7 +2,7 @@
   "name": "mcp-memory-gateway",
   "displayName": "ThumbGate",
   "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "author": {
     "name": "Igor Ganapolsky"
   },
