@@ -18,6 +18,7 @@ const {
 
 test.after(() => {
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+  delete process.env.RLHF_FEEDBACK_DIR;
 });
 
 test('PACK_TEMPLATES has expected template names', () => {
@@ -26,6 +27,9 @@ test('PACK_TEMPLATES has expected template names', () => {
   assert.ok(names.includes('session-resume'));
   assert.ok(names.includes('sales-call-prep'));
   assert.ok(names.includes('competitor-scan'));
+  assert.ok(names.includes('research-brief'));
+  assert.ok(names.includes('autoresearch-brief'));
+  assert.ok(names.includes('gtm-research'));
 });
 
 test('listPackTemplates returns all template names', () => {

@@ -9,7 +9,7 @@ const { execSync } = require('node:child_process');
 
 const ROOT = path.join(__dirname, '..');
 
-test('prove-autoresearch: proof gate passes with 5/5 checks', () => {
+test('prove-autoresearch: proof gate passes with 6/6 checks', () => {
   const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-autoresearch-proof-test-'));
   try {
     const output = execSync('node scripts/prove-autoresearch.js', {
@@ -19,7 +19,7 @@ test('prove-autoresearch: proof gate passes with 5/5 checks', () => {
       env: { ...process.env, RLHF_PROOF_DIR: tmpProofDir },
     });
 
-    assert.ok(output.includes('5 passed, 0 failed'), `Expected 5/5 pass, got: ${output}`);
+    assert.ok(output.includes('6 passed, 0 failed'), `Expected 6/6 pass, got: ${output}`);
   } finally {
     fs.rmSync(tmpProofDir, { recursive: true, force: true });
   }
@@ -39,10 +39,10 @@ test('prove-autoresearch: report.json is valid JSON with all requirements', () =
     assert.ok(fs.existsSync(reportPath), 'report.json must exist');
     const report = JSON.parse(fs.readFileSync(reportPath, 'utf-8'));
     assert.equal(report.phase, '09-autoresearch');
-    assert.equal(report.passed, 5);
+    assert.equal(report.passed, 6);
     assert.equal(report.failed, 0);
     assert.ok(report.requirements['AUTORESEARCH-01']);
-    assert.ok(report.requirements['AUTORESEARCH-05']);
+    assert.ok(report.requirements['AUTORESEARCH-06']);
   } finally {
     fs.rmSync(tmpProofDir, { recursive: true, force: true });
   }
@@ -62,8 +62,8 @@ test('prove-autoresearch: report.md contains all requirement checkboxes', () => 
     assert.ok(fs.existsSync(mdPath), 'report.md must exist');
     const md = fs.readFileSync(mdPath, 'utf-8');
     assert.ok(md.includes('[x] **AUTORESEARCH-01**'));
-    assert.ok(md.includes('[x] **AUTORESEARCH-05**'));
-    assert.ok(md.includes('5/5 passed'));
+    assert.ok(md.includes('[x] **AUTORESEARCH-06**'));
+    assert.ok(md.includes('6/6 passed'));
   } finally {
     fs.rmSync(tmpProofDir, { recursive: true, force: true });
   }

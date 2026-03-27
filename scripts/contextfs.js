@@ -414,7 +414,7 @@ function upsertContextObject({ namespace, title, content, tags = [], source, ttl
 
   const mergedDocument = {
     ...existing.document,
-    ttl,
+    ttl: ttl === null ? existing.document.ttl || null : ttl,
     metadata: mergeMetadata(existing.document.metadata || {}, metadata),
   };
   writeJson(existing.filePath, mergedDocument);

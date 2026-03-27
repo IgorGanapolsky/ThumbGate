@@ -53,10 +53,10 @@ test('appendWorkflowRun persists sanitized proof-backed runs', () => {
 test('summarizeWorkflowRuns reports weekly proof-backed workflow activity', () => {
   appendWorkflowRun({
     timestamp: new Date('2026-03-18T12:00:00.000Z').toISOString(),
-    workflowId: 'repo_self_dogfood_aider_verify',
+    workflowId: 'repo_self_dogfood_full_verify',
     workflowName: 'Repo self dogfood verification',
     owner: 'cto',
-    runtime: 'node+aider',
+    runtime: 'node',
     proofBacked: true,
     reviewed: true,
     customerType: 'internal_dogfood',
@@ -84,7 +84,7 @@ test('summarizeWorkflowRuns reports weekly proof-backed workflow activity', () =
   assert.equal(summary.namedPilotAgreements, 1);
   assert.equal(summary.customerProofReached, true);
   assert.equal(summary.northStarReached, true);
-  assert.equal(summary.latestRun.workflowId, 'repo_self_dogfood_aider_verify');
+  assert.equal(summary.latestRun.workflowId, 'repo_self_dogfood_full_verify');
 });
 
 test('summarizeWorkflowRuns deduplicates named pilots and paid teams across append-only state transitions', () => {
