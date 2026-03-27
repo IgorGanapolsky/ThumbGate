@@ -26,6 +26,7 @@ function read(rel) {
 
 async function main() {
   const errors = [];
+  const githubAbout = loadGitHubAboutConfig(ROOT);
 
   function check(condition, message) {
     if (!condition) errors.push(message);
@@ -115,13 +116,45 @@ async function main() {
     'public/index.html missing honest disclaimer (FAQ or inline)'
   );
 
+  check(
+    landingHtml.includes('👍'),
+    'public/index.html must visibly include the thumbs-up icon'
+  );
+  check(
+    landingHtml.includes('👎'),
+    'public/index.html must visibly include the thumbs-down icon'
+  );
+  check(
+    /thumbs[\s-]?up/i.test(landingHtml),
+    'public/index.html must explain the thumbs-up feedback path'
+  );
+  check(
+    /thumbs[\s-]?down/i.test(landingHtml),
+    'public/index.html must explain the thumbs-down feedback path'
+  );
+  check(
+    githubAbout.description.includes('👍'),
+    'config/github-about.json description must include the thumbs-up icon'
+  );
+  check(
+    githubAbout.description.includes('👎'),
+    'config/github-about.json description must include the thumbs-down icon'
+  );
+  check(
+    /thumbs[\s-]?up/i.test(githubAbout.description),
+    'config/github-about.json description must mention thumbs-up feedback'
+  );
+  check(
+    /thumbs[\s-]?down/i.test(githubAbout.description),
+    'config/github-about.json description must mention thumbs-down feedback'
+  );
+
   errors.push(...collectLocalGitHubAboutErrors(ROOT));
 
   if (checkLiveGitHubAbout) {
     try {
-      const about = loadGitHubAboutConfig(ROOT);
-      const liveAbout = await fetchLiveGitHubAbout({ root: ROOT, repo: about.repo });
-      errors.push(...compareGitHubAbout(about, liveAbout, `Live GitHub About (${about.repo})`));
+      const liveAbout = await fetchLiveGitHubAbout({ root: ROOT, repo: githubAbout.repo });
+      errors.push(...compareGitHubAbout(githubAbout, liveAbout, `Live GitHub About (${githubAbout.repo})`));
     } catch (error) {
       errors.push(`Unable to verify live GitHub About: ${error.message}`);
     }

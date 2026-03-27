@@ -17,7 +17,7 @@
 
 ### GitHub Repo About
 **Canonical source:** `config/github-about.json`
-> Human-in-the-loop enforcement for AI coding agents. The safety net for vibe coding. Pre-action gates block mistakes before they happen. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.
+> 👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. ThumbGate turns feedback into pre-action gates for AI coding agents.
 
 **Canonical topics:** `thumbgate`, `pre-action-gates`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`
 

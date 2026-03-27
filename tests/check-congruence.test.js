@@ -29,6 +29,14 @@ test('GitHub About source-of-truth matches local public surfaces', () => {
   assert.deepEqual(collectLocalGitHubAboutErrors(ROOT), []);
 });
 
+test('GitHub About description highlights both thumbs-up and thumbs-down feedback', () => {
+  const about = loadGitHubAboutConfig(ROOT);
+  assert.match(about.description, /👍/u);
+  assert.match(about.description, /👎/u);
+  assert.match(about.description, /thumbs up/i);
+  assert.match(about.description, /thumbs down/i);
+});
+
 test('GitHub About comparison normalizes topic order and flags real drift', () => {
   const about = loadGitHubAboutConfig(ROOT);
 
