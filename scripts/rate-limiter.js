@@ -7,13 +7,13 @@ const path = require('path');
 const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.rlhf', 'usage-limits.json');
 
 const FREE_TIER_LIMITS = {
-  capture_feedback: 5,
-  recall: 5,
+  // Free tier is fully unlimited — captures, recalls, gates all work without limits.
+  // Pro adds the searchable dashboard (query, edit, delete entries) + DPO export + API key.
 };
 
-const FREE_TIER_MAX_GATES = 5;
+const FREE_TIER_MAX_GATES = Infinity;
 
-const UPGRADE_MESSAGE = 'Free tier limit reached. Upgrade to Pro ($49 one-time) for unlimited: https://rlhf-feedback-loop-production.up.railway.app';
+const UPGRADE_MESSAGE = 'Upgrade to Pro ($49 one-time) for searchable dashboard, DPO export, and API key: https://rlhf-feedback-loop-production.up.railway.app';
 
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;

@@ -16,7 +16,7 @@ const savedEnv = {
   RLHF_MCP_PROFILE: process.env.RLHF_MCP_PROFILE,
 };
 
-// CI exports RLHF_API_KEY for hosted API checks, but this suite verifies free-tier limits.
+// CI exports RLHF_API_KEY for hosted API checks, but this suite verifies free-tier behavior.
 delete process.env.RLHF_API_KEY;
 delete process.env.RLHF_PRO_MODE;
 delete process.env.RLHF_NO_RATE_LIMIT;
@@ -27,39 +27,33 @@ const { callTool } = require('../adapters/mcp/server-stdio');
 const rateLimiter = require('../scripts/rate-limiter');
 rateLimiter.USAGE_FILE = tmpUsageFile;
 
-describe('recall limit', { concurrency: false }, () => {
+describe('recall free tier (unlimited)', { concurrency: false }, () => {
   test.beforeEach(() => {
     try { fs.unlinkSync(tmpUsageFile); } catch (_) {}
   });
 
-  test('recall returns results without upgrade nudge for first 5 calls', async () => {
-    for (let i = 0; i < 5; i++) {
+  test('recall returns results without limit for free tier', async () => {
+    for (let i = 0; i < 10; i++) {
       const result = await callTool('recall', { query: 'test task' });
       const text = result.content[0].text;
-      assert.ok(!text.includes('Upgrade to Context Gateway'), `Call ${i + 1} should not show upgrade nudge`);
-      assert.ok(!text.includes('Free tier limit reached'), `Call ${i + 1} should still return recall content`);
+      assert.ok(!text.includes('Free tier limit reached'), `Call ${i + 1} should not be rate-limited`);
     }
   });
 
-  test('recall shows upgrade nudge after 5 calls in a day', async () => {
-    for (let i = 0; i < 5; i++) {
-      await callTool('recall', { query: `warmup ${i + 1}` });
+  test('recall works on the 6th+ call without upgrade nudge', async () => {
+    for (let i = 0; i < 6; i++) {
+      const result = await callTool('recall', { query: `task ${i + 1}` });
+      const text = result.content[0].text;
+      assert.ok(!text.includes('Free tier limit reached'), `Call ${i + 1} should not be blocked`);
     }
-    const result = await callTool('recall', { query: 'test task 6' });
-    const text = result.content[0].text;
-    assert.ok(text.includes('Upgrade to Context Gateway'), 'Call 6 should show upgrade nudge');
-    assert.ok(text.includes('/checkout/pro'), 'Should include hosted checkout link');
-    assert.ok(text.includes('rlhf-feedback-loop-production'), 'Should include hosted API link');
   });
 
-  test('recall still returns actual results even when over limit', async () => {
-    for (let i = 0; i < 5; i++) {
-      await callTool('recall', { query: `warmup ${i + 1}` });
+  test('recall returns actual content for every call', async () => {
+    for (let i = 0; i < 3; i++) {
+      const result = await callTool('recall', { query: 'test task' });
+      const text = result.content[0].text;
+      assert.ok(text.length > 0, 'Should return content');
     }
-    const result = await callTool('recall', { query: 'test task' });
-    const text = result.content[0].text;
-    // Should have both results AND the nudge
-    assert.ok(text.length > 50, 'Should still return content, not just the nudge');
   });
 });
 
