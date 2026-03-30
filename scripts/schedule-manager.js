@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
+const { buildAgenticDataPipelineJobSpec } = require('./agentic-data-pipeline');
 
 const SCHEDULES_DIR = path.join(os.homedir(), '.rlhf', 'schedules');
 const PLIST_PREFIX = 'com.thumbgate.schedule';
@@ -126,6 +127,31 @@ function buildManagedScheduleCommand(params = {}) {
   ].join(' ');
 }
 
+function buildAgenticDataPipelineSchedule(params = {}) {
+  const id = params.id || params.name || 'agentic-data-pipeline';
+  const jobFile = path.resolve(
+    params.jobFile || path.join(SCHEDULES_DIR, `${id}.job.json`)
+  );
+  const jobSpec = buildAgenticDataPipelineJobSpec({
+    jobId: id,
+    feedbackDir: params.feedbackDir,
+    outDir: params.outDir,
+    window: params.window,
+    liveBilling: params.liveBilling,
+    recordWorkflowRun: params.recordWorkflowRun,
+  });
+
+  return {
+    id,
+    jobFile,
+    jobSpec,
+    command: buildManagedScheduleCommand({
+      jobFile,
+      autoResume: params.autoResume !== false,
+    }),
+  };
+}
+
 function createSchedule(params) {
   ensureDir();
 
@@ -220,4 +246,5 @@ module.exports = {
   generatePlist,
   parseCronSpec,
   buildManagedScheduleCommand,
+  buildAgenticDataPipelineSchedule,
 };

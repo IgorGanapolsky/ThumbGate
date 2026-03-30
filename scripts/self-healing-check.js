@@ -14,6 +14,7 @@ const DEFAULT_CHECKS = [
   { name: 'tests', command: ['npm', 'test'], timeoutMs: 15 * 60_000 },
   { name: 'prove_adapters', command: ['npm', 'run', 'prove:adapters'], timeoutMs: 10 * 60_000, useTempProofDir: true },
   { name: 'prove_automation', command: ['npm', 'run', 'prove:automation'], timeoutMs: 10 * 60_000, useTempProofDir: true },
+  { name: 'prove_data_pipeline', command: ['npm', 'run', 'prove:data-pipeline'], timeoutMs: 10 * 60_000, useTempProofDir: true },
   { name: 'prove_tessl', command: ['npm', 'run', 'prove:tessl'], timeoutMs: 10 * 60_000, useTempProofDir: true },
 ];
 

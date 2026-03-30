@@ -1751,6 +1751,46 @@ Artifacts updated:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+---
+
+## 2026-03-30 — Agentic Data Pipeline Materialization
+
+Implemented a staged internal analytics pipeline so ThumbGate can materialize `raw -> staging -> semantic -> lineage` instead of recomputing business metrics as an ad hoc live join.
+
+Scope:
+
+- Added `scripts/agentic-data-pipeline.js` for snapshot materialization, lineage, reconciliation, and managed job generation.
+- Updated `scripts/semantic-layer.js` to read from the shared staged pipeline contract.
+- Extended `scripts/schedule-manager.js`, `scripts/verify-run.js`, and `scripts/self-healing-check.js` so the lane is automated and proof-backed.
+
+Commands run:
+
+```bash
+npm run test:data-pipeline
+npm run test:semantic-layer
+npm run prove:data-pipeline
+node --test tests/data-pipeline.test.js tests/semantic-layer.test.js tests/schedule-manager.test.js tests/prove-data-pipeline.test.js tests/verify-run.test.js tests/self-healing-check.test.js
+```
+
+Observed results:
+
+- `npm run test:data-pipeline`: `5/5` passing
+- `npm run test:semantic-layer`: `5/5` passing
+- `npm run prove:data-pipeline`: `6 passed, 0 failed`
+- Focused regression bundle: `42/42` passing
+
+Behavioral proof points:
+
+- Identical reruns now hold a stable snapshot id and downgrade lineage to `noop`.
+- Reconciliation warns on unreconciled paid events and attribution drift instead of silently flattening them.
+- Semantic metrics now expose `attributionCoverageRate`, `unreconciledPaidEvents`, and `pipelineWarnings`.
+- Managed schedule specs can materialize the pipeline through the interruptible async-job runner without bespoke shell glue.
+
+Artifacts updated:
+
+- `proof/data-pipeline-report.json`
+- `proof/data-pipeline-report.md`
+
 ## 2026-03-24 Harness Score + Lesson Lifecycle Verification
 
 Scope:
