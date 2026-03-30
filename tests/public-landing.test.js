@@ -126,14 +126,29 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
 
   // Hero big emoji must show BOTH thumbs — not just one
   assert.match(landingPage, /class="hero-thumbs">👍👎</);
-  // Headline must reference both thumbs up and thumbs down
-  assert.match(landingPage, /Thumbs up what works/i);
-  assert.match(landingPage, /Thumbs down what breaks/i);
+  // Headline leads with pain: stop dangerous mistakes
+  assert.match(landingPage, /Stop your AI coding agent from repeating/i);
+  assert.match(landingPage, /dangerous and dumb mistakes/i);
   // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /👍 reinforces good behavior/);
+  assert.match(landingPage, /👍 reinforces what worked/);
   assert.match(landingPage, /👎 blocks the mistake/);
+  // Persona targeting
+  assert.match(landingPage, /class="hero-persona"/);
+  assert.match(landingPage, /power users of Claude Code/i);
+  // Plain-language value prop
+  assert.match(landingPage, /immune system for your AI agent/i);
+});
+
+test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /audit and refine rules across repos/i);
+  assert.match(landingPage, /teams and multiple agents share one central lesson DB/i);
+  assert.match(landingPage, /turn real failures into model-improving datasets/i);
+  assert.match(landingPage, /help wiring gates into your most critical agents/i);
+  assert.match(landingPage, /Upgrade when your experiment becomes a team workflow/i);
 });
 
 test('public landing page includes FAQ section with accordion interaction', () => {
