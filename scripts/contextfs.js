@@ -14,6 +14,12 @@ const crypto = require('crypto');
 const os = require('os');
 const PROJECT_ROOT = path.join(__dirname, '..');
 const HOME = os.homedir();
+const {
+  retrieveHierarchicalDocuments,
+  shouldUseHierarchicalRetrieval,
+} = require('./xmemory-lite');
+
+const CONTEXTFS_RETRIEVAL_VERSION = 'xmemory-lite-v1';
 
 function getFeedbackBaseDir() {
   if (process.env.RLHF_FEEDBACK_DIR) return process.env.RLHF_FEEDBACK_DIR;
@@ -199,6 +205,7 @@ function querySimilarity(tokensA, tokensB) {
 
 function buildSemanticCacheKey({ namespaces, maxItems, maxChars }) {
   return JSON.stringify({
+    retrievalVersion: CONTEXTFS_RETRIEVAL_VERSION,
     namespaces: normalizeNamespaces(namespaces),
     maxItems,
     maxChars,
@@ -555,6 +562,74 @@ function scoreDocument(doc, queryTokens) {
   return score;
 }
 
+function buildStructuredContext(doc) {
+  const structuredContext = {
+    rawContent: doc.content || '',
+    reasoning: null,
+    whatWentWrong: null,
+    whatToChange: null,
+    rubricFailure: null,
+  };
+
+  const lines = (doc.content || '').split('\n');
+  for (const line of lines) {
+    if (line.startsWith('Reasoning:')) structuredContext.reasoning = line.replace('Reasoning:', '').trim();
+    else if (line.startsWith('What went wrong:')) structuredContext.whatWentWrong = line.replace('What went wrong:', '').trim();
+    else if (line.startsWith('How to avoid:')) structuredContext.whatToChange = line.replace('How to avoid:', '').trim();
+    else if (line.startsWith('Rubric failing criteria:')) structuredContext.rubricFailure = line.replace('Rubric failing criteria:', '').trim();
+  }
+
+  return structuredContext;
+}
+
+function measureDocumentChars(doc) {
+  return `${doc.title || ''}\n${doc.content || ''}`.length;
+}
+
+function selectFlatContextItems(candidates, maxItems, maxChars) {
+  const selected = [];
+  let usedChars = 0;
+  let skippedByMaxChars = 0;
+
+  for (const item of candidates) {
+    if (selected.length >= maxItems) break;
+
+    const snippetLength = measureDocumentChars(item.doc);
+    if (usedChars + snippetLength > maxChars) {
+      skippedByMaxChars += 1;
+      continue;
+    }
+
+    selected.push({
+      id: item.doc.id,
+      namespace: item.doc.namespace,
+      title: item.doc.title,
+      structuredContext: buildStructuredContext(item.doc),
+      tags: item.doc.tags || [],
+      score: item.score,
+    });
+    usedChars += snippetLength;
+  }
+
+  return {
+    items: selected,
+    usedChars,
+    skippedByMaxChars,
+    retrieval: {
+      strategy: 'flat',
+      themeCount: 0,
+      semanticCount: 0,
+      selectedThemes: [],
+      selectedSemanticGroups: [],
+      representativeCount: selected.length,
+      expandedEpisodes: 0,
+      queryCoverage: null,
+      initialCoverage: null,
+      coverageTarget: null,
+    },
+  };
+}
+
 /* ── Memex-style Indexed Memory ────────────────────────────────── */
 
 const MEMEX_INDEX_FILE = 'memex-index.jsonl';
@@ -642,37 +717,21 @@ function constructMemexPack({ query = '', maxItems = 8, maxChars = 6000, namespa
     const full = dereferenceEntry(hit);
     if (!full) continue;
 
-    const snippet = `${full.title}\n${full.content || ''}`;
-    if (usedChars + snippet.length > maxChars) {
+    const snippetLength = measureDocumentChars(full);
+    if (usedChars + snippetLength > maxChars) {
       skippedByMaxChars += 1;
       continue;
-    }
-
-    const structuredContext = {
-      rawContent: full.content || '',
-      reasoning: null,
-      whatWentWrong: null,
-      whatToChange: null,
-      rubricFailure: null
-    };
-
-    const lines = (full.content || '').split('\n');
-    for (const line of lines) {
-      if (line.startsWith('Reasoning:')) structuredContext.reasoning = line.replace('Reasoning:', '').trim();
-      else if (line.startsWith('What went wrong:')) structuredContext.whatWentWrong = line.replace('What went wrong:', '').trim();
-      else if (line.startsWith('How to avoid:')) structuredContext.whatToChange = line.replace('How to avoid:', '').trim();
-      else if (line.startsWith('Rubric failing criteria:')) structuredContext.rubricFailure = line.replace('Rubric failing criteria:', '').trim();
     }
 
     items.push({
       id: full.id,
       namespace: hit.namespace,
       title: full.title,
-      structuredContext,
+      structuredContext: buildStructuredContext(full),
       tags: full.tags || [],
       score: hit._score,
     });
-    usedChars += snippet.length;
+    usedChars += snippetLength;
     dereferenced.push(hit.id);
   }
 
@@ -761,47 +820,28 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
     .map((doc) => ({ doc, score: scoreDocument(doc, tokens) }))
     .sort((a, b) => b.score - a.score);
 
-  const selected = [];
-  let usedChars = 0;
-  let skippedByMaxChars = 0;
+  const hierarchicalRetrievalEnabled = shouldUseHierarchicalRetrieval(normalizedNamespaces);
+  const selection = hierarchicalRetrievalEnabled
+    ? retrieveHierarchicalDocuments({
+      documents: candidates.map((candidate) => candidate.doc),
+      query,
+      maxItems,
+      maxChars,
+      scorer: scoreDocument,
+      measureDocument: measureDocumentChars,
+    })
+    : selectFlatContextItems(candidates, maxItems, maxChars);
 
-  for (const item of candidates) {
-    if (selected.length >= maxItems) break;
-
-    const snippet = `${item.doc.title}\n${item.doc.content || ''}`;
-    if (usedChars + snippet.length > maxChars) {
-      skippedByMaxChars += 1;
-      continue;
-    }
-
-    // Context Structuralizer (EvoSkill Hardening)
-    // Parse unstructured text back into a high-density State Document
-    const structuredContext = {
-      rawContent: item.doc.content || '',
-      reasoning: null,
-      whatWentWrong: null,
-      whatToChange: null,
-      rubricFailure: null
-    };
-
-    const lines = (item.doc.content || '').split('\n');
-    for (const line of lines) {
-      if (line.startsWith('Reasoning:')) structuredContext.reasoning = line.replace('Reasoning:', '').trim();
-      else if (line.startsWith('What went wrong:')) structuredContext.whatWentWrong = line.replace('What went wrong:', '').trim();
-      else if (line.startsWith('How to avoid:')) structuredContext.whatToChange = line.replace('How to avoid:', '').trim();
-      else if (line.startsWith('Rubric failing criteria:')) structuredContext.rubricFailure = line.replace('Rubric failing criteria:', '').trim();
-    }
-
-    selected.push({
-      id: item.doc.id,
-      namespace: item.doc.namespace,
-      title: item.doc.title,
-      structuredContext,
-      tags: item.doc.tags || [],
-      score: item.score,
-    });
-    usedChars += snippet.length;
-  }
+  const selected = selection.items.map((doc) => ({
+    id: doc.id,
+    namespace: doc.namespace,
+    title: doc.title,
+    structuredContext: buildStructuredContext(doc),
+    tags: doc.tags || [],
+    score: scoreDocument(doc, tokens),
+  }));
+  const usedChars = selection.usedChars;
+  const skippedByMaxChars = selection.skippedByMaxChars;
 
   const visibility = {
     itemCount: selected.length,
@@ -829,6 +869,7 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
       hit: false,
     },
     sourceHash,
+    retrieval: selection.retrieval,
   };
 
   appendJsonl(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'packs.jsonl'), pack);
@@ -852,6 +893,7 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
     itemCount: selected.length,
     usedChars,
     sourceHash,
+    retrievalStrategy: selection.retrieval.strategy,
   });
 
   return pack;

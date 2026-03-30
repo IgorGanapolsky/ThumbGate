@@ -82,6 +82,15 @@ function formatWorkingMemoryForContext(wm) {
   lines.push('');
   lines.push('## Relevant Past Episodes (Episodic Memory)');
   lines.push('');
+  if (wm.episodes && wm.episodes.retrieval && wm.episodes.retrieval.strategy === 'hierarchical') {
+    const themes = Array.isArray(wm.episodes.retrieval.selectedThemes)
+      ? wm.episodes.retrieval.selectedThemes.map((theme) => theme.replace(/-/g, ' '))
+      : [];
+    if (themes.length > 0) {
+      lines.push(`Themes: ${themes.join(', ')}`);
+      lines.push('');
+    }
+  }
   if (wm.episodes && Array.isArray(wm.episodes.items) && wm.episodes.items.length > 0) {
     for (const item of wm.episodes.items) {
       lines.push(`- **${item.title || item.id}**`);

@@ -54,7 +54,8 @@ test('buildVerifyPlan returns quick and full plans without removed legacy verifi
   assert.equal(Array.isArray(quick), true);
   assert.equal(Array.isArray(full), true);
   assert.ok(quick.length >= 2);
-  assert.ok(full.length >= 6);
+  assert.ok(full.length >= 7);
+  assert.ok(full.some((step) => step.args && step.args.includes('prove:xmemory')));
 
   for (const step of [...quick, ...full]) {
     assert.doesNotMatch([step.command, ...(step.args || [])].join(' '), /\x61\x69\x64\x65\x72/i);
@@ -136,13 +137,14 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.equal(result.mode, 'full');
     assert.equal(result.tempRoot, tempRoot);
     assert.deepEqual(result.workflowRun, stubWorkflowRun);
-    assert.equal(commandCalls.length, 6);
+    assert.equal(commandCalls.length, 7);
     assert.equal(commandCalls[0].options.cwd, '/tmp/verify-run-cwd');
     assert.equal(commandCalls[0].options.env.BASE_ENV, '1');
     assert.equal(commandCalls[0].options.env.RLHF_PROOF_DIR, path.join(tempRoot, 'proof-adapters'));
     assert.equal(commandCalls[0].options.env.RLHF_AUTOMATION_PROOF_DIR, path.join(tempRoot, 'proof-automation'));
     assert.equal(appendCall.entry.source, 'verify:full');
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'seo-gsd-report.json'))));
+    assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'xmemory-report.json'))));
   } finally {
     restore();
   }

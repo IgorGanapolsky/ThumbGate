@@ -184,6 +184,72 @@ test('constructContextPack returns semantic cache hit on similar query', () => {
   assert.equal(second.cache.sourcePackId, first.packId);
 });
 
+test('constructContextPack uses hierarchical retrieval for long-horizon memory namespaces', () => {
+  upsertContextObject({
+    namespace: NAMESPACES.memoryError,
+    title: 'Verification miss before claiming done',
+    content: 'Skipped tests before claiming done on checkout fix.',
+    tags: ['verification', 'testing'],
+    source: 'feedback-memory',
+    metadata: {
+      semanticKey: 'verification-miss',
+      theme: 'verification',
+    },
+  });
+  upsertContextObject({
+    namespace: NAMESPACES.memoryError,
+    title: 'Verification miss before claiming done',
+    content: 'Skipped proof before claiming done on webhook fix.',
+    tags: ['verification', 'testing'],
+    source: 'feedback-memory',
+    metadata: {
+      semanticKey: 'verification-miss',
+      theme: 'verification',
+    },
+  });
+  upsertContextObject({
+    namespace: NAMESPACES.memoryLearning,
+    title: 'Railway deploy health drift',
+    content: 'Verify deployment health and build SHA after Railway deploy.',
+    tags: ['deployment', 'railway'],
+    source: 'feedback-memory',
+    metadata: {
+      semanticKey: 'deploy-health',
+      theme: 'deployment',
+    },
+  });
+
+  const pack = constructContextPack({
+    query: 'verification railway deploy',
+    maxItems: 2,
+    maxChars: 4000,
+    namespaces: ['memoryError', 'memoryLearning'],
+  });
+
+  assert.equal(pack.retrieval.strategy, 'hierarchical');
+  assert.deepEqual(pack.retrieval.selectedThemes.sort(), ['deployment', 'verification']);
+  assert.equal(pack.items.length, 2);
+});
+
+test('constructContextPack keeps research-only namespaces on flat retrieval', () => {
+  upsertContextObject({
+    namespace: NAMESPACES.research,
+    title: 'Paper: Retrieval by Decomposition',
+    content: 'Semantic decomposition and hierarchical retrieval for agent memory.',
+    tags: ['research', 'paper'],
+    source: 'hf-papers',
+  });
+
+  const pack = constructContextPack({
+    query: 'hierarchical retrieval',
+    maxItems: 2,
+    maxChars: 4000,
+    namespaces: ['research'],
+  });
+
+  assert.equal(pack.retrieval.strategy, 'flat');
+});
+
 test('querySimilarity computes jaccard overlap', () => {
   const score = querySimilarity(['a', 'b', 'c'], ['a', 'b', 'd']);
   assert.equal(score, 0.5);

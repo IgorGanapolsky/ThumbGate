@@ -1,17 +1,12 @@
 'use strict';
 
-const { describe, it, before, after } = require('node:test');
+const { describe, it, after } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-
-let tmpDir;
-
-before(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memalign-test-'));
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
-});
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memalign-test-'));
+process.env.RLHF_FEEDBACK_DIR = tmpDir;
 
 after(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -29,6 +24,10 @@ const {
   constructWorkingMemory,
   formatWorkingMemoryForContext,
 } = require('../scripts/memalign-recall');
+const {
+  upsertContextObject,
+  NAMESPACES,
+} = require('../scripts/contextfs');
 
 // --- extractPrinciple ---
 
@@ -179,6 +178,24 @@ describe('constructWorkingMemory', () => {
     assert.equal(wm.charBudget.principles, 200);
     assert.equal(wm.charBudget.episodes, 800);
   });
+
+  it('routes episodic recall through hierarchical context packs', () => {
+    upsertContextObject({
+      namespace: NAMESPACES.memoryLearning,
+      title: 'Railway deploy health drift',
+      content: 'Verify deployment health and build SHA after Railway deploy.',
+      tags: ['deployment', 'railway'],
+      source: 'feedback-memory',
+      metadata: {
+        semanticKey: 'deploy-health',
+        theme: 'deployment',
+      },
+    });
+
+    const wm = constructWorkingMemory({ query: 'railway deploy health', maxChars: 1200 });
+    assert.equal(wm.episodes.retrieval.strategy, 'hierarchical');
+    assert.ok(wm.episodes.retrieval.selectedThemes.includes('deployment'));
+  });
 });
 
 // --- formatWorkingMemoryForContext ---
@@ -188,6 +205,7 @@ describe('formatWorkingMemoryForContext', () => {
     const wm = {
       principles: [{ text: 'ALWAYS: verify first' }],
       episodes: {
+        retrieval: { strategy: 'hierarchical', selectedThemes: ['deployment-health'] },
         items: [{ id: 'ep1', title: 'Test Episode', structuredContext: { rawContent: 'Some context' } }],
       },
     };
@@ -196,6 +214,7 @@ describe('formatWorkingMemoryForContext', () => {
     assert.ok(md.includes('## Relevant Past Episodes (Episodic Memory)'));
     assert.ok(md.includes('ALWAYS: verify first'));
     assert.ok(md.includes('Test Episode'));
+    assert.ok(md.includes('Themes: deployment health'));
   });
 
   it('handles empty principles and episodes', () => {
