@@ -214,6 +214,33 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /steps\.plan\.outputs\.publish_npm == 'true'/);
 });
 
+test('CI workflow runs Tessl proof and uploads Tessl evidence artifacts', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+
+  assert.match(workflow, /npm run prove:tessl/);
+  assert.match(workflow, /proof\/tessl-report\.json/);
+  assert.match(workflow, /proof\/tessl-report\.md/);
+});
+
+test('Publish Tessl workflow verifies exports and only publishes when a Tessl token exists', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'publish-tessl.yml'), 'utf8');
+
+  assert.match(workflow, /name: Publish Tessl Tiles/);
+  assert.match(workflow, /npm run tessl:verify/);
+  assert.match(workflow, /npm run prove:tessl/);
+  assert.match(workflow, /npm run tessl:export -- --out-dir=.artifacts\/tessl/);
+  assert.match(workflow, /name: Plan Tessl publish action/);
+  assert.match(workflow, /TESSL_API_TOKEN: \$\{\{ secrets\.TESSL_API_TOKEN \}\}/);
+  assert.match(workflow, /should_publish=true/);
+  assert.match(workflow, /should_publish=false/);
+  assert.match(workflow, /if: \$\{\{ needs\.plan_publish\.outputs\.should_publish == 'true' \}\}/);
+  assert.match(workflow, /uses: tesslio\/publish@main/);
+  assert.match(workflow, /token: \$\{\{ env\.TESSL_API_TOKEN \}\}/);
+  assert.match(workflow, /matrix:\s+tile:/s);
+  assert.match(workflow, /agent-memory/);
+  assert.match(workflow, /rlhf-feedback/);
+});
+
 test('GitHub Actions workflows never use bare npm ci for onnxruntime installs', () => {
   const workflowsDir = path.join(PROJECT_ROOT, '.github', 'workflows');
   const workflowFiles = fs.readdirSync(workflowsDir).filter((name) => name.endsWith('.yml'));

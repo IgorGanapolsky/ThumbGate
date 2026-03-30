@@ -1,0 +1,105 @@
+name: Publish Tessl Tiles
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'config/tessl-tiles.json'
+      - 'scripts/tessl-export.js'
+      - 'scripts/prove-tessl.js'
+      - 'tests/tessl-export.test.js'
+      - '.github/workflows/publish-tessl.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'docs/VERIFICATION_EVIDENCE.md'
+      - 'proof/**'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Verify Tessl tiles
+        run: npm run tessl:verify
+
+      - name: Run Tessl proof
+        run: env RLHF_PROOF_DIR=.artifacts/proof npm run prove:tessl
+
+      - name: Export Tessl tiles
+        run: npm run tessl:export -- --out-dir=.artifacts/tessl
+
+      - name: Upload Tessl artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tessl-tiles
+          path: |
+            .artifacts/tessl/
+            .artifacts/proof/tessl-report.json
+            .artifacts/proof/tessl-report.md
+
+  plan_publish:
+    needs: export
+    runs-on: ubuntu-latest
+    env:
+      TESSL_API_TOKEN: ${{ secrets.TESSL_API_TOKEN }}
+    outputs:
+      should_publish: ${{ steps.gate.outputs.should_publish }}
+    steps:
+      - id: gate
+        name: Plan Tessl publish action
+        run: |
+          if [ -n "$TESSL_API_TOKEN" ]; then
+            echo 'should_publish=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'should_publish=false' >> "$GITHUB_OUTPUT"
+          fi
+
+  publish:
+    needs: [export, plan_publish]
+    if: ${{ needs.plan_publish.outputs.should_publish == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      TESSL_API_TOKEN: ${{ secrets.TESSL_API_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        tile:
+          - agent-memory
+          - rlhf-feedback
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Export Tessl tiles
+        run: npm run tessl:export -- --out-dir=.artifacts/tessl
+
+      - uses: tesslio/publish@main
+        with:
+          token: ${{ env.TESSL_API_TOKEN }}
+          path: ./.artifacts/tessl/${{ matrix.tile }}
+          review: 'true'
+          review-threshold: '70'
