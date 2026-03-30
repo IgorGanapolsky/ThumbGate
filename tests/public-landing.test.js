@@ -126,14 +126,16 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
 
   // Hero big emoji must show BOTH thumbs — not just one
   assert.match(landingPage, /class="hero-thumbs">👍👎</);
-  // Headline leads with pain: stop dangerous mistakes
-  assert.match(landingPage, /Stop your AI coding agent from repeating/i);
+  // Headline: problem/resolution antithesis (Mem0-style, under 8 words)
+  assert.match(landingPage, /AI agents repeat mistakes/i);
+  assert.match(landingPage, /Yours won't/i);
+  // "dangerous and dumb" moved to signal pill
   assert.match(landingPage, /dangerous and dumb mistakes/i);
   // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
   assert.match(landingPage, /👍 reinforces what worked/);
-  assert.match(landingPage, /👎 blocks the mistake/);
+  assert.match(landingPage, /👎 blocks dangerous and dumb mistakes/);
   // Persona targeting
   assert.match(landingPage, /class="hero-persona"/);
   assert.match(landingPage, /power users of Claude Code/i);
