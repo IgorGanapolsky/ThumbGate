@@ -1,6 +1,13 @@
-# Codex: RLHF MCP Plugin Install
+# ThumbGate for Codex
 
-Install the MCP plugin in under 60 seconds. Copy-paste the config block — no manual editing required.
+ThumbGate now ships a repo-local Codex app plugin surface plus the version-pinned MCP profile. Use the plugin files when you want a distributable Codex artifact, or copy the TOML block for a manual install.
+
+## Shipped plugin files
+
+- Codex plugin manifest: `plugins/codex-profile/.codex-plugin/plugin.json`
+- Codex MCP config: `plugins/codex-profile/.mcp.json`
+- Codex marketplace entry: `.agents/plugins/marketplace.json`
+- Manual install profile: `adapters/codex/config.toml`
 
 ## One-Command Install
 
@@ -26,6 +33,8 @@ The following block is appended to `~/.codex/config.toml`:
 command = "npx"
 args = ["-y", "mcp-memory-gateway@0.8.4", "serve"]
 ```
+
+The repo-local Codex app plugin ships the same runtime path through `plugins/codex-profile/.mcp.json`, so the manual config and plugin metadata stay aligned.
 
 ## Verify
 

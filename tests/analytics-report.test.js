@@ -62,6 +62,20 @@ test('formatReport includes honest metrics and share links', () => {
         modified: '2026-03-25T00:00:00.000Z',
         '0.8.4': '2026-03-24T10:00:00.000Z',
       },
+    },
+    {
+      latestSeenAt: '2026-03-30T19:40:00.000Z',
+      window: 'all',
+      visitors: {
+        bySource: { producthunt: 3 },
+        byTrafficChannel: { producthunt: 3 },
+      },
+      ctas: {
+        bySource: { producthunt: 2 },
+        byTrafficChannel: { producthunt: 2 },
+        checkoutStartsBySource: { producthunt: 1 },
+        checkoutStartsByTrafficChannel: { producthunt: 1 },
+      },
     }
   );
 
@@ -71,6 +85,10 @@ test('formatReport includes honest metrics and share links', () => {
   assert.match(report, /Twitter:\s+https:\/\/rlhf-feedback-loop-production\.up\.railway\.app\?utm_source=twitter/);
   assert.match(report, /Real npm traction:\s+~77 downloads\/week/);
   assert.match(report, /GitHub stars:\s+9/);
+  assert.match(report, /Tracked:\s+utm_source=producthunt/);
+  assert.match(report, /Visitors:\s+3/);
+  assert.match(report, /CTA clicks:\s+2/);
+  assert.match(report, /Checkouts:\s+1/);
 });
 
 test('run emits formatted analytics snapshot from injected fetchers without network access', async () => {
@@ -92,6 +110,17 @@ test('run emits formatted analytics snapshot from injected fetchers without netw
           modified: '2026-03-25T00:00:00.000Z',
         },
       }),
+      fetchTelemetry: async () => ({
+        latestSeenAt: '2026-03-30T19:40:00.000Z',
+        window: 'all',
+        visitors: { bySource: {}, byTrafficChannel: {} },
+        ctas: {
+          bySource: {},
+          byTrafficChannel: {},
+          checkoutStartsBySource: {},
+          checkoutStartsByTrafficChannel: {},
+        },
+      }),
     },
   });
 
@@ -100,6 +129,7 @@ test('run emits formatted analytics snapshot from injected fetchers without netw
   assert.equal(logs.length, 1);
   assert.match(logs[0], /Weekly downloads:\s+42/);
   assert.match(logs[0], /ThumbGate — Unified Analytics Snapshot/);
+  assert.match(logs[0], /ProductHunt/);
 });
 
 test('run reports fetch failures and exits 1', async () => {
@@ -116,6 +146,7 @@ test('run reports fetch failures and exits 1', async () => {
       fetchNpmWeekly: async () => ({ downloads: 0 }),
       fetchGitHub: async () => ({ stargazers_count: 0, forks_count: 0, open_issues_count: 0, subscribers_count: 0 }),
       fetchNpmVersions: async () => ({ time: {} }),
+      fetchTelemetry: async () => null,
     },
   });
 

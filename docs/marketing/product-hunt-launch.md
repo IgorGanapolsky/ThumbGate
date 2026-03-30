@@ -152,6 +152,9 @@ https://rlhf-feedback-loop-production.up.railway.app/?utm_source=producthunt&utm
 ### ProductHunt → GitHub
 https://github.com/IgorGanapolsky/ThumbGate?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch
 
+### ProductHunt → Codex Plugin Docs
+https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/INSTALL.md?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch
+
 ### ProductHunt → Claude Plugin Guide
 https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch
 
@@ -169,3 +172,7 @@ https://rlhf-feedback-loop-production.up.railway.app/?utm_source=npm&utm_medium=
 
 ### Direct / Newsletter
 https://rlhf-feedback-loop-production.up.railway.app/?utm_source=email&utm_medium=newsletter&utm_campaign=thumbgate-launch
+
+## Attribution note
+
+`utm_source=producthunt` now resolves to a dedicated `producthunt` traffic channel in the local telemetry analytics pipeline. Product Hunt visitors, CTA clicks, and checkout starts show up explicitly instead of being buried under generic referral traffic.

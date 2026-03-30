@@ -773,6 +773,9 @@ async function runProof(options = {}) {
         'adapters/claude/.mcp.json',
         'plugins/cursor-marketplace/mcp.json',
         'adapters/codex/config.toml',
+        'plugins/codex-profile/.codex-plugin/plugin.json',
+        'plugins/codex-profile/.mcp.json',
+        '.agents/plugins/marketplace.json',
         'adapters/amp/skills/rlhf-feedback/SKILL.md',
       ];
       mustExist.forEach((file) => {
