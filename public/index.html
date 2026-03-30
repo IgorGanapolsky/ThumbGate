@@ -171,6 +171,7 @@ __GA_BOOTSTRAP__
   .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.2); padding: 4px 12px; border-radius: 100px; margin-bottom: 24px; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
   .hero h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; max-width: 700px; margin: 0 auto 16px; }
   .hero p { font-size: 17px; color: var(--text-muted); max-width: 520px; margin: 0 auto 36px; line-height: 1.6; }
+  .hero-persona { font-size: 15px; color: var(--cyan); max-width: 600px; margin: 0 auto 20px; line-height: 1.5; font-weight: 500; }
   .hero-signals { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 28px; max-width: 760px; }
   .signal-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
   .signal-pill.signal-up { border-color: rgba(74, 222, 128, 0.28); color: #b8f7c8; background: rgba(74, 222, 128, 0.08); }
@@ -333,12 +334,13 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
     <div class="hero-badge">● Human-in-the-Loop Enforcement for AI Agents</div>
-    <h1>Thumbs up what works. Thumbs down what breaks.<br>Your agent never repeats the mistake.</h1>
+    <h1>Stop your AI coding agent from repeating<br>dangerous and dumb mistakes.</h1>
     <div class="hero-signals">
-      <div class="signal-pill signal-up">👍 reinforces good behavior across sessions</div>
-      <div class="signal-pill signal-down">👎 blocks the mistake from ever repeating</div>
+      <div class="signal-pill signal-down">👎 blocks the mistake before it runs</div>
+      <div class="signal-pill signal-up">👍 reinforces what worked across sessions</div>
     </div>
-    <p>ThumbGate turns thumbs-up/down feedback into pre-action gates for AI coding agents. The safety net for vibe coding works across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent. <strong>New in v0.8.4:</strong> SQLite+FTS5 lesson DB, corrective-action inference, and Thompson Sampling.</p>
+    <p class="hero-persona">For power users of Claude Code, Cursor, Codex, Gemini, Amp, and any MCP agent who are tired of fixing the same mistakes every session.</p>
+    <p>ThumbGate turns thumbs-up/down feedback into hard gates that block bad actions before they execute. Think of it as an immune system for your AI agent — it learns from your corrections and enforces them automatically. The safety net for vibe coding works across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent. <strong>New in v0.8.4:</strong> SQLite+FTS5 lesson DB, corrective-action inference, and Thompson Sampling.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx mcp-memory-gateway init</span>
@@ -429,7 +431,7 @@ __GA_BOOTSTRAP__
       <div class="step">
         <div class="step-num">1</div>
         <h3>Feedback</h3>
-        <p>Give <code>👍</code> or <code>👎</code> on your AI agent's actions. Feedback is stored in a SQLite+FTS5 lesson DB. On <code>👎</code>, get corrective actions from similar past failures.</p>
+        <p>Give <code>👍</code> or <code>👎</code> on your AI agent's actions. Feedback is stored in a SQLite+FTS5 lesson DB. On <code>👎</code>, get corrective actions from similar past failures. Example: you 👎 a risky migration → it auto-promotes to a "never run DROP on prod" gate.</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
@@ -439,7 +441,7 @@ __GA_BOOTSTRAP__
       <div class="step">
         <div class="step-num">3</div>
         <h3>Gates</h3>
-        <p>Rules become Pre-Action Gates that <strong>block</strong> your agent before it repeats the same mistake. No more fix-loops.</p>
+        <p>Rules become Pre-Action Gates that <strong>block</strong> your agent before it repeats the same mistake. Your agent can't force-push, skip tests, or repeat a refactor you already rejected. No more fix-loops.</p>
       </div>
     </div>
   </div>
@@ -495,12 +497,13 @@ __GA_BOOTSTRAP__
         <div class="tier">Pro</div>
         <div class="price">$49</div>
         <div class="price-sub">One-time payment · Lifetime access</div>
+        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">Upgrade when your experiment becomes a team workflow.</p>
         <ul>
           <li>Everything in Free, plus:</li>
-          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">Searchable dashboard →</a> (query, edit, delete)</li>
-          <li>API key for hosted access</li>
-          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">DPO training data export →</a></li>
-          <li>Priority support</li>
+          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">Searchable dashboard →</a> audit and refine rules across repos</li>
+          <li>Hosted API key — teams and multiple agents share one central lesson DB</li>
+          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">DPO training data export →</a> turn real failures into model-improving datasets</li>
+          <li>Priority support — help wiring gates into your most critical agents</li>
         </ul>
         <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" class="btn-pro">Get Pro — $49</a>
       </div>
