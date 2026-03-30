@@ -229,8 +229,13 @@ test('Publish Tessl workflow verifies exports and only publishes when a Tessl to
   assert.match(workflow, /npm run tessl:verify/);
   assert.match(workflow, /npm run prove:tessl/);
   assert.match(workflow, /npm run tessl:export -- --out-dir=.artifacts\/tessl/);
-  assert.match(workflow, /if: \$\{\{ secrets\.TESSL_API_TOKEN != '' \}\}/);
+  assert.match(workflow, /name: Plan Tessl publish action/);
+  assert.match(workflow, /TESSL_API_TOKEN: \$\{\{ secrets\.TESSL_API_TOKEN \}\}/);
+  assert.match(workflow, /should_publish=true/);
+  assert.match(workflow, /should_publish=false/);
+  assert.match(workflow, /if: \$\{\{ needs\.plan_publish\.outputs\.should_publish == 'true' \}\}/);
   assert.match(workflow, /uses: tesslio\/publish@main/);
+  assert.match(workflow, /token: \$\{\{ env\.TESSL_API_TOKEN \}\}/);
   assert.match(workflow, /matrix:\s+tile:/s);
   assert.match(workflow, /agent-memory/);
   assert.match(workflow, /rlhf-feedback/);

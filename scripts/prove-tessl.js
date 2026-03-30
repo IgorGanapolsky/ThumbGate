@@ -138,8 +138,14 @@ async function run() {
         if (!/npm run tessl:export -- --out-dir=.artifacts\/tessl/.test(workflow)) {
           throw new Error('Workflow must export Tessl tiles before publish');
         }
-        if (!/if:\s*\$\{\{\s*secrets\.TESSL_API_TOKEN != ''\s*\}\}/.test(workflow)) {
-          throw new Error('Workflow publish job must be gated on TESSL_API_TOKEN');
+        if (!/Plan Tessl publish action/.test(workflow)) {
+          throw new Error('Workflow must plan Tessl publish before publish matrix runs');
+        }
+        if (!/TESSL_API_TOKEN:\s*\$\{\{\s*secrets\.TESSL_API_TOKEN\s*\}\}/.test(workflow)) {
+          throw new Error('Workflow gate must source TESSL_API_TOKEN from secrets');
+        }
+        if (!/if:\s*\$\{\{\s*needs\.plan_publish\.outputs\.should_publish == 'true'\s*\}\}/.test(workflow)) {
+          throw new Error('Workflow publish job must be gated on the plan_publish output');
         }
         if (!/uses:\s*tesslio\/publish@main/.test(workflow)) {
           throw new Error('Workflow must use the official Tessl publish action');
