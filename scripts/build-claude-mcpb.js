@@ -4,6 +4,9 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const {
+  getClaudePluginVersionedAssetName,
+} = require('./distribution-surfaces');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_OUTPUT_DIR = path.join(PROJECT_ROOT, '.artifacts', 'claude-desktop');
@@ -115,7 +118,7 @@ function buildClaudeMcpbManifest() {
 function stageClaudeMcpbBundle(outputDir = DEFAULT_OUTPUT_DIR) {
   const packageJson = readJson('package.json');
   const stageDir = path.join(outputDir, 'bundle');
-  const outputFile = path.join(outputDir, `mcp-memory-gateway-${packageJson.version}.mcpb`);
+  const outputFile = path.join(outputDir, getClaudePluginVersionedAssetName(packageJson.version));
 
   fs.rmSync(outputDir, { recursive: true, force: true });
   fs.mkdirSync(path.join(stageDir, 'server'), { recursive: true });

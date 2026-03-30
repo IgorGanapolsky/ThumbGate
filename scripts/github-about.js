@@ -4,6 +4,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const {
+  getClaudePluginLatestDownloadUrl,
+} = require('./distribution-surfaces');
 
 const ROOT = path.join(__dirname, '..');
 const CONFIG_RELATIVE_PATH = path.join('config', 'github-about.json');
@@ -120,6 +123,9 @@ function collectLocalGitHubAboutErrors(root = ROOT) {
   const marketingCopy = readText(root, path.join('docs', 'MARKETING_COPY_CONGRUENCE.md'));
   const claude = readText(root, 'CLAUDE.md');
   const serverSource = readText(root, path.join('src', 'api', 'server.js'));
+  const claudePluginManifest = readJson(root, path.join('.claude-plugin', 'plugin.json'));
+  const claudePluginMarketplace = readJson(root, path.join('.claude-plugin', 'marketplace.json'));
+  const claudePluginReadme = readText(root, path.join('.claude-plugin', 'README.md'));
   const errors = [];
 
   function check(condition, message) {
@@ -197,6 +203,30 @@ function collectLocalGitHubAboutErrors(root = ROOT) {
   check(
     !hasRepositoryUrl(serverSource, LEGACY_REPOSITORY_URL),
     'src/api/server.js still links to the legacy GitHub repo URL'
+  );
+  check(
+    normalizeUrl(claudePluginManifest.homepage) === about.homepageUrl,
+    `.claude-plugin/plugin.json homepage must match ${about.homepageUrl}`
+  );
+  check(
+    normalizeUrl(claudePluginManifest.repository) === about.repositoryUrl,
+    `.claude-plugin/plugin.json repository must match ${about.repositoryUrl}`
+  );
+  check(
+    normalizeUrl(claudePluginMarketplace.plugins[0].metadata.homepage) === about.homepageUrl,
+    `.claude-plugin/marketplace.json metadata.homepage must match ${about.homepageUrl}`
+  );
+  check(
+    hasRepositoryUrl(claudePluginReadme, canonical.repositoryUrl),
+    `.claude-plugin/README.md must link to ${canonical.repositoryUrl}`
+  );
+  check(
+    !hasRepositoryUrl(claudePluginReadme, LEGACY_REPOSITORY_URL),
+    '.claude-plugin/README.md still links to the legacy GitHub repo URL'
+  );
+  check(
+    hasExactUrl(claudePluginReadme, getClaudePluginLatestDownloadUrl(root)),
+    '.claude-plugin/README.md must link to the latest Claude plugin bundle download'
   );
 
   return errors;

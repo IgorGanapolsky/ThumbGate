@@ -37,4 +37,4 @@ Works with Claude, ChatGPT, Gemini, Codex, Cursor.
 
 The agent quality gap in agentic commerce is a $1.9B-$3.8B problem. We're the fix.
 
-github.com/IgorGanapolsky/mcp-memory-gateway
+github.com/IgorGanapolsky/ThumbGate

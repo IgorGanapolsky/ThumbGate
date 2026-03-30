@@ -2,12 +2,20 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  DEFAULT_REPO,
+  parseArgs,
   parseGhVariableList,
   parseHtmlSignals,
   buildDiagnosis,
   formatReport,
   generateRevenueStatusReport,
 } = require('../scripts/revenue-status');
+
+test('parseArgs defaults to the ThumbGate repo slug', () => {
+  const options = parseArgs([]);
+  assert.equal(options.repo, DEFAULT_REPO);
+  assert.equal(DEFAULT_REPO, 'IgorGanapolsky/ThumbGate');
+});
 
 test('parseGhVariableList reads gh variable output', () => {
   const parsed = parseGhVariableList([
@@ -88,7 +96,7 @@ test('buildDiagnosis identifies local fallback blind spot and runtime gaps', () 
 test('generateRevenueStatusReport uses hosted railway audit when available', async () => {
   const runCalls = [];
   const report = await generateRevenueStatusReport({
-    repo: 'IgorGanapolsky/mcp-memory-gateway',
+    repo: 'IgorGanapolsky/ThumbGate',
     timeZone: 'America/New_York',
     runCommandFn(command, args) {
       runCalls.push([command, ...args]);

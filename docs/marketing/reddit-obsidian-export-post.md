@@ -35,6 +35,6 @@ Anyone else pulling AI agent data into their vault? Curious what formats and str
 
 **Comment (post if someone asks for the tool):**
 
-Here's the repo if useful: https://github.com/IgorGanapolsky/mcp-memory-gateway — the `obsidian-export` command handles the full conversion. MIT licensed, fully local.
+Here's the repo if useful: https://github.com/IgorGanapolsky/ThumbGate — the `obsidian-export` command handles the full conversion. MIT licensed, fully local.
 
 Disclosure: I built this.

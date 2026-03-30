@@ -241,6 +241,21 @@ test('Publish Tessl workflow verifies exports and only publishes when a Tessl to
   assert.match(workflow, /rlhf-feedback/);
 });
 
+test('Publish Claude Plugin workflow builds the MCPB and uploads stable release assets', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'publish-claude-plugin.yml'), 'utf8');
+
+  assert.match(workflow, /name: Publish Claude Plugin/);
+  assert.match(workflow, /npm ci --onnxruntime-node-install-cuda=skip/);
+  assert.match(workflow, /npm run build:claude-mcpb/);
+  assert.match(workflow, /scripts\/distribution-surfaces/);
+  assert.match(workflow, /claude-plugin-mcpb/);
+  assert.match(workflow, /gh release create/);
+  assert.match(workflow, /gh release upload/);
+  assert.match(workflow, /--clobber/);
+  assert.match(workflow, /CLAUDE_PLUGIN_LATEST_ASSET_NAME/);
+  assert.match(workflow, /steps\.assets\.outputs\.latest_asset/);
+});
+
 test('GitHub Actions workflows never use bare npm ci for onnxruntime installs', () => {
   const workflowsDir = path.join(PROJECT_ROOT, '.github', 'workflows');
   const workflowFiles = fs.readdirSync(workflowsDir).filter((name) => name.endsWith('.yml'));

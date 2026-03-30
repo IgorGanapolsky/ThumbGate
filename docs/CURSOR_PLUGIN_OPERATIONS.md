@@ -48,5 +48,5 @@
 
 - Name: `ThumbGate`
 - Description: `👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.`
-- Repository URL: `https://github.com/IgorGanapolsky/mcp-memory-gateway`
+- Repository URL: `https://github.com/IgorGanapolsky/ThumbGate`
 - Homepage: `https://rlhf-feedback-loop-production.up.railway.app`

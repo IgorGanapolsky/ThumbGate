@@ -97,7 +97,7 @@ async function generateReply(comment, context) {
 
   // NEVER reply with generic fluff — build reply from what they ACTUALLY said
   const isQuestion = context.isQuestion || /\?/.test(comment);
-  const REPO = 'https://github.com/IgorGanapolsky/mcp-memory-gateway';
+  const REPO = 'https://github.com/IgorGanapolsky/ThumbGate';
 
   // Extract the specific topic they're asking about
   const mentionsSetup = /install|setup|config|init|npx|how.+start/i.test(lc);

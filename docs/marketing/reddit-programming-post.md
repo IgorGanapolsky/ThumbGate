@@ -42,6 +42,6 @@ Curious if others have explored enforcement-based feedback (not just context/mem
 
 **Comment (post alongside or when asked):**
 
-Implementation is open source: https://github.com/IgorGanapolsky/mcp-memory-gateway — 👍 reinforces, 👎 blocks. Works with Claude Code, Cursor, Codex, Gemini, Amp. MIT licensed.
+Implementation is open source: https://github.com/IgorGanapolsky/ThumbGate — 👍 reinforces, 👎 blocks. Works with Claude Code, Cursor, Codex, Gemini, Amp. MIT licensed.
 
 Disclosure: I built this.

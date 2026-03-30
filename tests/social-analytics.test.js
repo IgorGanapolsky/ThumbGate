@@ -64,7 +64,7 @@ describe('social-analytics normalizer', () => {
 
   it('normalizes GitHub repo traffic metric', () => {
     const result = normalizeGitHubMetric({
-      repo_full_name: 'IgorGanapolsky/mcp-memory-gateway',
+      repo_full_name: 'IgorGanapolsky/ThumbGate',
       content_type: 'repo_traffic',
       count: 200,
       uniques: 50,
@@ -254,7 +254,7 @@ describe('social-analytics store', () => {
     const record = {
       platform: 'github',
       content_type: 'repo_traffic',
-      post_id: 'IgorGanapolsky/mcp-memory-gateway',
+      post_id: 'IgorGanapolsky/ThumbGate',
       metric_date: '2026-03-21',
       impressions: 100,
       reach: 50,

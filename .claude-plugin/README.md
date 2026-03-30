@@ -29,6 +29,14 @@ Or use the project bootstrap:
 npx mcp-memory-gateway init
 ```
 
+### Direct bundle download
+
+Download the latest packaged Claude Desktop bundle from GitHub Releases:
+
+https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb
+
+That bundle is built from the same `.claude-plugin` metadata in this repo and is meant for people who want a ready-to-install artifact instead of building locally.
+
 ### Anthropic directory path
 
 If Anthropic approves the listing, install from Claude Desktop via `Settings -> Extensions`.
@@ -105,9 +113,10 @@ For complete privacy information, see: https://rlhf-feedback-loop-production.up.
 
 ## Support
 
-- GitHub Issues: https://github.com/IgorGanapolsky/mcp-memory-gateway/issues
-- Security Advisories: https://github.com/IgorGanapolsky/mcp-memory-gateway/security
-- Verification evidence: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md
+- GitHub Issues: https://github.com/IgorGanapolsky/ThumbGate/issues
+- Security Advisories: https://github.com/IgorGanapolsky/ThumbGate/security
+- Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Product Hunt: https://www.producthunt.com/products/mcp-memory-gateway
 
 ## Notes For Submission
 

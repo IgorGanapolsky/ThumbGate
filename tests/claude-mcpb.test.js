@@ -7,6 +7,9 @@ const path = require('node:path');
 const packageJson = require('../package.json');
 const { TOOLS } = require('../scripts/tool-registry');
 const {
+  getClaudePluginVersionedAssetName,
+} = require('../scripts/distribution-surfaces');
+const {
   buildClaudeMcpbManifest,
   stageClaudeMcpbBundle,
 } = require('../scripts/build-claude-mcpb');
@@ -47,6 +50,7 @@ test('claude mcpb staging writes a submission-ready bundle directory', () => {
     assert.equal(fs.existsSync(launcherPath), true);
     assert.equal(fs.existsSync(iconPath), true);
     assert.equal(fs.existsSync(outputFile), false);
+    assert.equal(path.basename(outputFile), getClaudePluginVersionedAssetName(packageJson.version));
 
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     const readme = fs.readFileSync(readmePath, 'utf8');

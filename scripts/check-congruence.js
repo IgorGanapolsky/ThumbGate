@@ -15,6 +15,10 @@ const {
   fetchLiveGitHubAbout,
   loadGitHubAboutConfig,
 } = require('./github-about');
+const {
+  PRODUCTHUNT_URL,
+  getClaudePluginLatestDownloadUrl,
+} = require('./distribution-surfaces');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -44,6 +48,10 @@ async function main() {
   const claudeMd = read('CLAUDE.md') || '';
   const geminiMd = read('GEMINI.md') || '';
   const serverStdio = read('adapters/mcp/server-stdio.js') || '';
+  const productHuntKit = read('docs/marketing/product-hunt-launch.md') || '';
+  const claudePluginReadme = read('.claude-plugin/README.md') || '';
+  const claudeDesktopPacket = read('docs/CLAUDE_DESKTOP_EXTENSION.md') || '';
+  const latestClaudePluginUrl = getClaudePluginLatestDownloadUrl(ROOT);
 
   check(
     landingHtml.includes(`v${version}`),
@@ -125,6 +133,14 @@ async function main() {
     'public/index.html must visibly include the thumbs-down icon'
   );
   check(
+    landingHtml.includes(PRODUCTHUNT_URL),
+    'public/index.html must link to the live Product Hunt listing'
+  );
+  check(
+    /Claude Desktop plugin/i.test(landingHtml),
+    'public/index.html must promote the Claude Desktop plugin install lane'
+  );
+  check(
     /thumbs[\s-]?up/i.test(landingHtml),
     'public/index.html must explain the thumbs-up feedback path'
   );
@@ -147,6 +163,30 @@ async function main() {
   check(
     /thumbs[\s-]?down/i.test(githubAbout.description),
     'config/github-about.json description must mention thumbs-down feedback'
+  );
+  check(
+    productHuntKit.includes(PRODUCTHUNT_URL),
+    'docs/marketing/product-hunt-launch.md must include the live Product Hunt URL'
+  );
+  check(
+    /thumbs[\s-]?up|👍/i.test(productHuntKit),
+    'docs/marketing/product-hunt-launch.md must mention the thumbs-up path'
+  );
+  check(
+    /thumbs[\s-]?down|👎/i.test(productHuntKit),
+    'docs/marketing/product-hunt-launch.md must mention the thumbs-down path'
+  );
+  check(
+    productHuntKit.includes(latestClaudePluginUrl),
+    'docs/marketing/product-hunt-launch.md must link to the Claude plugin bundle'
+  );
+  check(
+    claudePluginReadme.includes(latestClaudePluginUrl),
+    '.claude-plugin/README.md must link to the latest Claude plugin bundle'
+  );
+  check(
+    claudeDesktopPacket.includes(latestClaudePluginUrl),
+    'docs/CLAUDE_DESKTOP_EXTENSION.md must link to the latest Claude plugin bundle'
   );
 
   errors.push(...collectLocalGitHubAboutErrors(ROOT));

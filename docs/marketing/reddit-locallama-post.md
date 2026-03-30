@@ -28,6 +28,6 @@ Has anyone used bandit approaches (UCB1, EXP3, contextual bandits) for rule enfo
 
 **Comment (post if someone asks to see the implementation):**
 
-Implementation is here: https://github.com/IgorGanapolsky/mcp-memory-gateway — the 👍/👎 feedback pipeline, Thompson Sampling, and gate engine are all in there. MIT licensed.
+Implementation is here: https://github.com/IgorGanapolsky/ThumbGate — the 👍/👎 feedback pipeline, Thompson Sampling, and gate engine are all in there. MIT licensed.
 
 Disclosure: I built this.

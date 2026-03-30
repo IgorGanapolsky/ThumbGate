@@ -3,8 +3,8 @@
 > Research note: external repo stars, directory size, and community reach numbers in this file are time-bound research snapshots, not current product proof. Use `docs/COMMERCIAL_TRUTH.md` for current traction language.
 
 **Package:** `mcp-memory-gateway` (npm)
-**GitHub:** https://github.com/IgorGanapolsky/mcp-memory-gateway
-**Registry name:** `io.github.IgorGanapolsky/mcp-memory-gateway`
+**GitHub:** https://github.com/IgorGanapolsky/ThumbGate
+**Registry name:** `io.github.IgorGanapolsky/ThumbGate`
 **Already listed:** [registry.modelcontextprotocol.io](https://registry.modelcontextprotocol.io)
 
 ---
@@ -28,7 +28,7 @@
 - Valid `package.json` with `repository` field
 - MCP-compatible server implementation
 
-**URL pattern once listed:** `https://glama.ai/mcp/servers/@IgorGanapolsky/mcp-memory-gateway`
+**URL pattern once listed:** `https://glama.ai/mcp/servers/@IgorGanapolsky/ThumbGate`
 
 ---
 
@@ -43,12 +43,12 @@
 ### Option A: Web UI (simplest)
 1. Go to https://smithery.ai/new
 2. Sign in with GitHub
-3. Provide your GitHub repo URL: `https://github.com/IgorGanapolsky/mcp-memory-gateway`
+3. Provide your GitHub repo URL: `https://github.com/IgorGanapolsky/ThumbGate`
 4. Follow the guided setup
 
 ### Option B: CLI
 1. Install: `npm i -g @smithery/cli`
-2. Publish: `smithery mcp publish "https://github.com/IgorGanapolsky/mcp-memory-gateway" -n IgorGanapolsky/mcp-memory-gateway`
+2. Publish: `smithery mcp publish "https://github.com/IgorGanapolsky/ThumbGate" -n IgorGanapolsky/ThumbGate`
 
 ### Required: Add `smithery.yaml` to repo root
 
@@ -109,7 +109,7 @@ Go to: https://github.com/chatmcp/mcpso/issues/1
 Leave a comment with:
 ```
 **mcp-memory-gateway**
-https://github.com/IgorGanapolsky/mcp-memory-gateway
+https://github.com/IgorGanapolsky/ThumbGate
 
 feedback-to-enforcement pipeline for AI agents. Capture feedback, block repeated mistakes, export DPO training data.
  Compatible with Claude, GPT-4, Gemini, and multi-agent systems.
@@ -141,7 +141,7 @@ There are three major lists. Submit to all of them.
 1. Fork the repo
 2. Edit `README.md`
 3. Add entry under the appropriate category (likely "AI/LLM Integration" or "Data & Analytics")
-4. Format: `- [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) - Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.`
+4. Format: `- [mcp-memory-gateway](https://github.com/IgorGanapolsky/ThumbGate) - Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.`
 5. Submit PR with title: `Add mcp-memory-gateway`
 
 ### 5b. appcypher/awesome-mcp-servers (well-established)
@@ -151,7 +151,7 @@ There are three major lists. Submit to all of them.
 1. Fork the repo
 2. Edit `README.md`
 3. Add entry under appropriate category
-4. Format: `- **[mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)** - Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. (Node.js)`
+4. Format: `- **[mcp-memory-gateway](https://github.com/IgorGanapolsky/ThumbGate)** - Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. (Node.js)`
 5. Submit PR
 
 ### 5c. wong2/awesome-mcp-servers → mcpservers.org
@@ -181,18 +181,18 @@ There are three major lists. Submit to all of them.
 
 ### Entry text (punkpeye format):
 ```markdown
-- [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) - Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
+- [mcp-memory-gateway](https://github.com/IgorGanapolsky/ThumbGate) - Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
 ```
 
 ### Entry text (appcypher format):
 ```markdown
-- **[mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)** - Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. (Node.js)
+- **[mcp-memory-gateway](https://github.com/IgorGanapolsky/ThumbGate)** - Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. (Node.js)
 ```
 
 ### mcp.so comment (ready to paste):
 ```
 **mcp-memory-gateway**
-https://github.com/IgorGanapolsky/mcp-memory-gateway
+https://github.com/IgorGanapolsky/ThumbGate
 
 Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
 

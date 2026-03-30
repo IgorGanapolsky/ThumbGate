@@ -1,11 +1,11 @@
 'use strict';
 
 const https = require('https');
+const { PRODUCTHUNT_URL } = require('./distribution-surfaces');
 
 const NPM_PACKAGE = 'mcp-memory-gateway';
 const GITHUB_REPO = 'IgorGanapolsky/ThumbGate';
 const PLAUSIBLE_URL = 'https://plausible.io/rlhf-feedback-loop-production.up.railway.app';
-const PRODUCTHUNT_URL = 'https://www.producthunt.com/products/mcp-memory-gateway';
 const LANDING_PAGE = 'https://rlhf-feedback-loop-production.up.railway.app';
 
 function httpsGet(url) {

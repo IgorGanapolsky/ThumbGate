@@ -6,7 +6,7 @@ If you use Claude Code, Cursor, or any AI coding agent daily, you've probably no
 2. **Hallucinated completions** — Claude says "Done, all tests passing" when nothing actually passes.
 3. **Repeated mistakes** — You fix the same bug three times this week because the agent keeps making the same error.
 
-I got frustrated enough to build a solution: [mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway).
+I got frustrated enough to build a solution: [mcp-memory-gateway](https://github.com/IgorGanapolsky/ThumbGate).
 
 ## What it is
 
@@ -96,7 +96,7 @@ Works with Claude Code, Cursor, Codex, Gemini CLI, and any MCP client.
 - How do you handle the compaction problem in your workflow?
 - What's your current workaround for session amnesia?
 
-Repo: [github.com/IgorGanapolsky/mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)
+Repo: [github.com/IgorGanapolsky/ThumbGate](https://github.com/IgorGanapolsky/ThumbGate)
 
 ---
 *Disclosure: I'm the creator of this project.*
