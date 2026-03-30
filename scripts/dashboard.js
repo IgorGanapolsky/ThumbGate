@@ -501,7 +501,7 @@ function computeInstrumentationReadiness(analytics, billing) {
   const cli = telemetry.cli || {};
 
   return {
-    plausibleConfigured: /plausible\.io\/js\/script\.js/.test(landingPage),
+    plausibleConfigured: /\/js\/analytics\.js/.test(landingPage),
     ga4Configured: Boolean(runtimeConfig.gaMeasurementId),
     googleSearchConsoleConfigured: Boolean(runtimeConfig.googleSiteVerification),
     softwareApplicationSchemaPresent: /"@type": "SoftwareApplication"/.test(landingPage),

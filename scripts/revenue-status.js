@@ -58,7 +58,7 @@ function parseGhVariableList(stdout = '') {
 function parseHtmlSignals(html = '') {
   const body = String(html);
   return {
-    plausibleScript: body.includes('plausible.io/js/script.js'),
+    plausibleScript: body.includes('/js/analytics.js'),
     gaLoaderScript: body.includes('googletagmanager.com/gtag/js'),
     gaEventHook: body.includes('window.gtag('),
     gaPlaceholderPresent: body.includes('__GA_MEASUREMENT_ID__'),

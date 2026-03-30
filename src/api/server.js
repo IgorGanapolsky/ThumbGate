@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const pkg = require('../../package.json');
@@ -1630,6 +1631,56 @@ function createApiServer() {
         });
         return;
       }
+    }
+
+    // Plausible analytics proxy — bypasses ad blockers for accurate tracking
+    if (isGetLikeRequest && pathname === '/js/analytics.js') {
+      const proxyReq = https.get('https://plausible.io/js/script.js', (proxyRes) => {
+        const chunks = [];
+        proxyRes.on('data', (chunk) => chunks.push(chunk));
+        proxyRes.on('end', () => {
+          let body = Buffer.concat(chunks).toString();
+          // Rewrite the API endpoint to go through our proxy
+          body = body.replace(
+            'new URL(i.src).origin+"/api/event"',
+            '"/api/event"'
+          );
+          res.writeHead(proxyRes.statusCode, {
+            'Content-Type': 'application/javascript; charset=utf-8',
+            'Cache-Control': 'public, max-age=86400',
+            ...corsHeaders,
+          });
+          res.end(body);
+        });
+      });
+      proxyReq.on('error', () => sendJson(res, 502, { error: 'Analytics proxy failed' }));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/event') {
+      const chunks = [];
+      req.on('data', (chunk) => chunks.push(chunk));
+      req.on('end', () => {
+        const body = Buffer.concat(chunks);
+        const proxyReq = https.request('https://plausible.io/api/event', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain',
+            'User-Agent': req.headers['user-agent'] || '',
+            'X-Forwarded-For': req.headers['x-forwarded-for'] || req.socket.remoteAddress || '',
+          },
+        }, (proxyRes) => {
+          const rChunks = [];
+          proxyRes.on('data', (c) => rChunks.push(c));
+          proxyRes.on('end', () => {
+            res.writeHead(proxyRes.statusCode, { ...corsHeaders });
+            res.end(Buffer.concat(rChunks));
+          });
+        });
+        proxyReq.on('error', () => sendJson(res, 502, { error: 'Event proxy failed' }));
+        proxyReq.end(body);
+      });
+      return;
     }
 
     // Public endpoints — no auth required
