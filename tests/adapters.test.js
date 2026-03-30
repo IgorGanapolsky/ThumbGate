@@ -22,12 +22,16 @@ test('adapter files exist', () => {
     '.opencode/instructions/rlhf-workflow.md',
     '.opencode/agents/rlhf-review.md',
     '.cursor-plugin/marketplace.json',
+    '.agents/plugins/marketplace.json',
     '.claude-plugin/plugin.json',
     '.claude-plugin/marketplace.json',
     '.claude-plugin/README.md',
     '.claude-plugin/bundle/server/index.js',
     '.claude-plugin/bundle/icon.png',
     'plugins/opencode-profile/INSTALL.md',
+    'plugins/codex-profile/.codex-plugin/plugin.json',
+    'plugins/codex-profile/.mcp.json',
+    'plugins/codex-profile/README.md',
     'plugins/cursor-marketplace/.cursor-plugin/plugin.json',
     'plugins/cursor-marketplace/mcp.json',
     'plugins/cursor-marketplace/README.md',
@@ -144,6 +148,8 @@ test('cursor marketplace plugin keeps metadata versioned while runtime tracks th
   assert.equal(marketplace.plugins[0].name, pluginManifest.name);
   assert.equal(pluginManifest.version, packageVersion);
   assert.deepEqual(pluginConfig.mcpServers.rlhf.args, ['-y', 'mcp-memory-gateway@latest', 'serve']);
+  assert.equal(pluginManifest.homepage, 'https://rlhf-feedback-loop-production.up.railway.app');
+  assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
 });
 
 test('claude plugin metadata stays aligned with the released package and install story', () => {
@@ -200,4 +206,20 @@ test('codex config.toml uses either npx or node command', () => {
   if (usesNode) {
     assert.match(content, /"serve"/, 'node command should include serve');
   }
+});
+
+test('codex app plugin surface is present and aligned to ThumbGate metadata', () => {
+  const pluginManifest = JSON.parse(fs.readFileSync(path.join(root, 'plugins/codex-profile/.codex-plugin/plugin.json'), 'utf-8'));
+  const pluginConfig = JSON.parse(fs.readFileSync(path.join(root, 'plugins/codex-profile/.mcp.json'), 'utf-8'));
+  const marketplace = JSON.parse(fs.readFileSync(path.join(root, '.agents/plugins/marketplace.json'), 'utf-8'));
+  const pluginEntry = marketplace.plugins.find((plugin) => plugin.name === pluginManifest.name);
+
+  assert.equal(pluginManifest.version, packageVersion);
+  assert.equal(pluginManifest.homepage, 'https://rlhf-feedback-loop-production.up.railway.app');
+  assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
+  assert.equal(pluginManifest.interface.displayName, 'ThumbGate for Codex');
+  assert.equal(pluginManifest.mcpServers, './.mcp.json');
+  assert.ok(pluginEntry, 'codex plugin marketplace entry should exist');
+  assert.equal(pluginEntry.source.path, './plugins/codex-profile');
+  assert.deepEqual(pluginConfig.mcpServers.rlhf.args, ['-y', `mcp-memory-gateway@${packageVersion}`, 'serve']);
 });

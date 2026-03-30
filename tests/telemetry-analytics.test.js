@@ -92,12 +92,14 @@ test('sanitizeTelemetryPayload preserves SEO content classification fields', () 
 });
 
 test('inferTrafficChannel prefers explicit source and deterministic referrer heuristics', () => {
+  assert.equal(inferTrafficChannel({ source: 'producthunt' }, null), 'producthunt');
   assert.equal(inferTrafficChannel({ source: 'reddit' }, null), 'reddit');
   assert.equal(inferTrafficChannel({ source: 'ai_search' }, null), 'ai_search');
   assert.equal(inferTrafficChannel({ source: 'organic_search' }, null), 'organic_search');
   assert.equal(inferTrafficChannel({ source: 'website' }, null), 'direct');
   assert.equal(inferTrafficChannel({ utmMedium: 'organic' }, 'docs.example.com'), 'organic_search');
   assert.equal(inferTrafficChannel({}, 'perplexity.ai'), 'ai_search');
+  assert.equal(inferTrafficChannel({}, 'www.producthunt.com'), 'producthunt');
   assert.equal(inferTrafficChannel({}, 'www.reddit.com'), 'reddit');
   assert.equal(inferTrafficChannel({}, 'www.google.com'), 'organic_search');
   assert.equal(inferTrafficChannel({}, null), 'direct');
@@ -389,6 +391,41 @@ test('getTelemetryAnalytics summarizes reddit community and offer performance', 
   assert.equal(analytics.visitors.topOfferCode.key, 'REDDIT-EARLY');
   assert.equal(analytics.ctas.byCommunity.ClaudeCode, 1);
   assert.equal(analytics.ctas.byOfferCode['REDDIT-EARLY'], 1);
+});
+
+test('getTelemetryAnalytics breaks out product hunt as its own buyer channel', () => {
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'landing_page_view',
+    clientType: 'web',
+    acquisitionId: 'acq_ph_1',
+    visitorId: 'visitor_ph_1',
+    sessionId: 'session_ph_1',
+    source: 'producthunt',
+    utmSource: 'producthunt',
+    utmMedium: 'listing',
+    utmCampaign: 'thumbgate_launch',
+    page: '/',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_bootstrap',
+    clientType: 'web',
+    acquisitionId: 'acq_ph_1',
+    visitorId: 'visitor_ph_1',
+    sessionId: 'session_ph_1',
+    source: 'producthunt',
+    utmSource: 'producthunt',
+    utmMedium: 'listing',
+    utmCampaign: 'thumbgate_launch',
+    ctaId: 'pricing_pro',
+    planId: 'pro',
+    page: '/checkout/pro',
+  });
+
+  const analytics = getTelemetryAnalytics(tmpDir);
+  assert.equal(analytics.visitors.byTrafficChannel.producthunt, 1);
+  assert.equal(analytics.visitors.topTrafficChannel.key, 'producthunt');
+  assert.equal(analytics.ctas.byTrafficChannel.producthunt, 1);
+  assert.equal(analytics.ctas.checkoutStartsByTrafficChannel.producthunt, 1);
 });
 
 test('getTelemetryAnalytics applies daily windows and summarizes checkout success telemetry', () => {

@@ -53,3 +53,16 @@ test('sync-version covers the pro package manifest', () => {
     'pro/package.json should be a sync target'
   );
 });
+
+test('sync-version covers codex plugin manifests', () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const result = syncVersion({ checkOnly: true });
+  assert.ok(
+    result.targets.includes('plugins/codex-profile/.codex-plugin/plugin.json'),
+    'plugins/codex-profile/.codex-plugin/plugin.json should be a sync target'
+  );
+  assert.ok(
+    result.targets.includes('plugins/codex-profile/.mcp.json'),
+    'plugins/codex-profile/.mcp.json should be a sync target'
+  );
+});

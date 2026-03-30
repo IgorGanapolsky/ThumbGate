@@ -2,6 +2,8 @@
 
 const https = require('https');
 const { PRODUCTHUNT_URL } = require('./distribution-surfaces');
+const { getFeedbackPaths } = require('./feedback-loop');
+const { getTelemetryAnalytics } = require('./telemetry-analytics');
 
 const NPM_PACKAGE = 'mcp-memory-gateway';
 const GITHUB_REPO = 'IgorGanapolsky/ThumbGate';
@@ -46,20 +48,37 @@ async function fetchNpmVersions() {
   return httpsGet(`https://registry.npmjs.org/${NPM_PACKAGE}`);
 }
 
+function loadTelemetrySnapshot() {
+  const { FEEDBACK_DIR } = getFeedbackPaths();
+  return getTelemetryAnalytics(FEEDBACK_DIR);
+}
+
+function getCounterValue(counter = {}, key) {
+  return Number(counter && counter[key]) || 0;
+}
+
+function resolveProductHuntCount(primaryCounter = {}, secondaryCounter = {}) {
+  const primary = getCounterValue(primaryCounter, 'producthunt');
+  if (primary > 0) return primary;
+  return getCounterValue(secondaryCounter, 'producthunt');
+}
+
 async function collectAnalytics(fetchers = {}) {
   const fetchMonthly = fetchers.fetchNpmMonthly || fetchNpmMonthly;
   const fetchWeekly = fetchers.fetchNpmWeekly || fetchNpmWeekly;
   const fetchRepo = fetchers.fetchGitHub || fetchGitHub;
   const fetchVersions = fetchers.fetchNpmVersions || fetchNpmVersions;
+  const fetchTelemetry = fetchers.fetchTelemetry || loadTelemetrySnapshot;
 
-  const [monthly, weekly, github, npmMeta] = await Promise.all([
+  const [monthly, weekly, github, npmMeta, telemetry] = await Promise.all([
     fetchMonthly(),
     fetchWeekly(),
     fetchRepo(),
     fetchVersions().catch(() => null),
+    Promise.resolve().then(() => fetchTelemetry()).catch(() => null),
   ]);
 
-  return { monthly, weekly, github, npmMeta };
+  return { monthly, weekly, github, npmMeta, telemetry };
 }
 
 /**
@@ -118,7 +137,7 @@ function estimateOrganicDownloads(dailyDownloads, publishDates) {
   };
 }
 
-function formatReport(monthly, weekly, github, npmMeta) {
+function formatReport(monthly, weekly, github, npmMeta, telemetry = null) {
   const weeklyDownloads = weekly.downloads || 0;
   const allDays = monthly.downloads || [];
   const monthlyDownloads = allDays.reduce((sum, d) => sum + d.downloads, 0);
@@ -136,6 +155,17 @@ function formatReport(monthly, weekly, github, npmMeta) {
   }
 
   const organic = estimateOrganicDownloads(allDays, publishDates);
+  const productHuntVisitors = telemetry
+    ? resolveProductHuntCount(telemetry.visitors.byTrafficChannel, telemetry.visitors.bySource)
+    : 0;
+  const productHuntCtas = telemetry
+    ? resolveProductHuntCount(telemetry.ctas.byTrafficChannel, telemetry.ctas.bySource)
+    : 0;
+  const productHuntCheckouts = telemetry
+    ? resolveProductHuntCount(telemetry.ctas.checkoutStartsByTrafficChannel, telemetry.ctas.checkoutStartsBySource)
+    : 0;
+  const telemetryWindow = telemetry && telemetry.window ? telemetry.window : 'all';
+  const telemetryLastSeen = telemetry && telemetry.latestSeenAt ? telemetry.latestSeenAt : 'none';
 
   const lines = [
     '',
@@ -167,6 +197,12 @@ function formatReport(monthly, weekly, github, npmMeta) {
     '',
     '🚀 ProductHunt',
     `   Listing:    ${PRODUCTHUNT_URL}`,
+    `   Tracked:    utm_source=producthunt → traffic_channel=producthunt`,
+    `   Visitors:   ${productHuntVisitors}`,
+    `   CTA clicks: ${productHuntCtas}`,
+    `   Checkouts:  ${productHuntCheckouts}`,
+    `   Window:     ${telemetryWindow}`,
+    `   Last seen:  ${telemetryLastSeen}`,
     '',
     '🔗 UTM links for sharing (tracks referral source in Plausible)',
     `   Twitter:     ${LANDING_PAGE}?utm_source=twitter&utm_medium=social&utm_campaign=launch`,
@@ -191,8 +227,8 @@ async function run(options = {}) {
   const exit = options.exit || process.exit;
 
   try {
-    const { monthly, weekly, github, npmMeta } = await collectAnalytics(options.fetchers);
-    log(formatReport(monthly, weekly, github, npmMeta));
+    const { monthly, weekly, github, npmMeta, telemetry } = await collectAnalytics(options.fetchers);
+    log(formatReport(monthly, weekly, github, npmMeta, telemetry));
   } catch (err) {
     error('Analytics fetch failed:', err.message);
     exit(1);

@@ -6,8 +6,8 @@
   "author": {
     "name": "Igor Ganapolsky"
   },
-  "homepage": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
-  "repository": "https://github.com/IgorGanapolsky/mcp-memory-gateway",
+  "homepage": "https://rlhf-feedback-loop-production.up.railway.app",
+  "repository": "https://github.com/IgorGanapolsky/ThumbGate",
   "license": "MIT",
   "keywords": [
     "cursor",

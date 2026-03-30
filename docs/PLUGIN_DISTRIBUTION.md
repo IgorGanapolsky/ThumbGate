@@ -54,7 +54,10 @@ npm run build:claude-mcpb
 
 ## Codex (MCP)
 
-- Merge section from `adapters/codex/config.toml`
+- Manual profile: `adapters/codex/config.toml`
+- Repo-local Codex plugin manifest: `plugins/codex-profile/.codex-plugin/plugin.json`
+- Repo-local Codex MCP config: `plugins/codex-profile/.mcp.json`
+- Repo-local Codex marketplace: `.agents/plugins/marketplace.json`
 - Transport: local stdio MCP server launched via `npx -y mcp-memory-gateway@0.8.4 serve`
 
 ## Cursor Plugins

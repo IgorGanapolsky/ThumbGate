@@ -1,0 +1,42 @@
+{
+  "name": "codex-profile",
+  "version": "0.8.4",
+  "description": "ThumbGate for Codex: a repo-local Codex app plugin that adds pre-action gates, thumbs-up/down feedback capture, and MCP-backed reliability memory.",
+  "author": {
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "homepage": "https://rlhf-feedback-loop-production.up.railway.app",
+  "repository": "https://github.com/IgorGanapolsky/ThumbGate",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "codex-plugin",
+    "thumbgate",
+    "pre-action-gates",
+    "feedback",
+    "mcp",
+    "agent-reliability"
+  ],
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "ThumbGate for Codex",
+    "shortDescription": "Codex app plugin for thumbs-up/down reliability gates.",
+    "longDescription": "Adds ThumbGate's pre-action gates, feedback capture, and MCP reliability memory to Codex workflows without another orchestration layer.",
+    "developerName": "Igor Ganapolsky",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://rlhf-feedback-loop-production.up.railway.app",
+    "privacyPolicyURL": "https://rlhf-feedback-loop-production.up.railway.app/privacy",
+    "termsOfServiceURL": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/LICENSE",
+    "defaultPrompt": [
+      "Load ThumbGate before a risky Codex task.",
+      "Capture a thumbs down with context after a mistake.",
+      "Check prevention gates before a deploy or publish."
+    ],
+    "brandColor": "#0ea5e9"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "thumbgate-plugin-catalog",
+  "interface": {
+    "displayName": "ThumbGate Plugin Catalog"
+  },
+  "plugins": [
+    {
+      "name": "codex-profile",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-profile"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

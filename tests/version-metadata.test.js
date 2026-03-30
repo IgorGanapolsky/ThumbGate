@@ -36,6 +36,7 @@ test('package version matches MCP manifests', () => {
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
   const cursorMarketplace = readJson('.cursor-plugin/marketplace.json');
   const cursorPlugin = readJson('plugins/cursor-marketplace/.cursor-plugin/plugin.json');
+  const codexPlugin = readJson('plugins/codex-profile/.codex-plugin/plugin.json');
 
   assert.equal(proPackage.version, packageJson.version);
   assert.equal(serverManifest.version, packageJson.version);
@@ -43,6 +44,7 @@ test('package version matches MCP manifests', () => {
   assert.equal(claudeMarketplace.version, packageJson.version);
   assert.equal(cursorMarketplace.metadata.version, packageJson.version);
   assert.equal(cursorPlugin.version, packageJson.version);
+  assert.equal(codexPlugin.version, packageJson.version);
 });
 
 test('public docs render the current package version', () => {
@@ -106,6 +108,8 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   const claudePlugin = readJson('.claude-plugin/plugin.json');
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
   const claudeReadme = readText('.claude-plugin/README.md');
+  const cursorPlugin = readJson('plugins/cursor-marketplace/.cursor-plugin/plugin.json');
+  const codexPlugin = readJson('plugins/codex-profile/.codex-plugin/plugin.json');
   const publicLanding = readText('public/index.html');
   const serverSource = readText('src/api/server.js');
   const twitterThread = readText('docs/marketing/twitter-thread.md');
@@ -133,6 +137,10 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.equal(claudePlugin.homepage, CANONICAL_APP_ORIGIN);
   assert.equal(claudePlugin.repository, CURRENT_REPOSITORY_URL);
   assert.equal(claudeMarketplace.plugins[0].metadata.homepage, CANONICAL_APP_ORIGIN);
+  assert.equal(cursorPlugin.homepage, CANONICAL_APP_ORIGIN);
+  assert.equal(cursorPlugin.repository, CURRENT_REPOSITORY_URL);
+  assert.equal(codexPlugin.homepage, CANONICAL_APP_ORIGIN);
+  assert.equal(codexPlugin.repository, CURRENT_REPOSITORY_URL);
   assert.doesNotMatch(claudeReadme, /github\.com\/IgorGanapolsky\/mcp-memory-gateway/);
 
   assert.match(twitterThread, /Hosted demo: rlhf-feedback-loop-production\.up\.railway\.app/);

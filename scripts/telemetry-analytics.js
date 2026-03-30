@@ -92,11 +92,13 @@ function inferTrafficChannel(raw = {}, referrerHost = null) {
   const seoSurface = normalizeHostToken(raw.seoSurface || raw.searchSurface || raw.surface);
   const host = normalizeHostToken(referrerHost);
 
+  if (source === 'producthunt') return 'producthunt';
   if (source === 'reddit') return 'reddit';
   if (source === 'ai_search' || seoSurface === 'ai_search') return 'ai_search';
   if (source === 'organic_search' || seoSurface === 'organic_search') return 'organic_search';
   if (source === 'direct') return 'direct';
   if (source === 'website' && !host) return 'direct';
+  if (medium === 'listing' && source === 'producthunt') return 'producthunt';
   if (medium === 'organic') return 'organic_search';
 
   const aiHosts = [
@@ -108,6 +110,14 @@ function inferTrafficChannel(raw = {}, referrerHost = null) {
   ];
   if (host && aiHosts.some((candidate) => host === candidate || host.endsWith(`.${candidate}`))) {
     return 'ai_search';
+  }
+
+  const productHuntHosts = [
+    'producthunt.com',
+    'www.producthunt.com',
+  ];
+  if (host && productHuntHosts.some((candidate) => host === candidate || host.endsWith(`.${candidate}`))) {
+    return 'producthunt';
   }
 
   const redditHosts = [

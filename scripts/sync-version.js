@@ -36,11 +36,21 @@ function replaceInFile(relPath, search, replace) {
   return true;
 }
 
+function syncJsonField(target, field, expectedValue, drifted, checkOnly) {
+  if (field !== 'version' && field !== 'homepage' && field !== 'repository') return false;
+  if (target[field] === expectedValue) return false;
+  drifted.push({ file: target.__file, field, current: target[field] });
+  if (!checkOnly) target[field] = expectedValue;
+  return true;
+}
+
 function syncVersion(opts) {
   const options = opts || {};
   const checkOnly = options.check || false;
   const pkg = readJson('package.json');
   const version = pkg.version;
+  const homepageUrl = pkg.homepage;
+  const repositoryUrl = pkg.repository && pkg.repository.url ? String(pkg.repository.url).replace(/\.git$/, '') : '';
 
   const targets = [];
   const drifted = [];
@@ -105,12 +115,15 @@ function syncVersion(opts) {
   const claudePluginPath = '.claude-plugin/plugin.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, claudePluginPath))) {
     const claudePlugin = readJson(claudePluginPath);
-    if (claudePlugin.version !== version) {
-      drifted.push({ file: claudePluginPath, field: 'version', current: claudePlugin.version });
-      if (!checkOnly) {
-        claudePlugin.version = version;
-        writeJson(claudePluginPath, claudePlugin);
-      }
+    claudePlugin.__file = claudePluginPath;
+    const changed = [
+      syncJsonField(claudePlugin, 'version', version, drifted, checkOnly),
+      syncJsonField(claudePlugin, 'homepage', homepageUrl, drifted, checkOnly),
+      syncJsonField(claudePlugin, 'repository', repositoryUrl, drifted, checkOnly),
+    ].some(Boolean);
+    delete claudePlugin.__file;
+    if (!checkOnly && changed) {
+      writeJson(claudePluginPath, claudePlugin);
     }
     targets.push(claudePluginPath);
   }
@@ -119,12 +132,27 @@ function syncVersion(opts) {
   const claudeMarketplacePath = '.claude-plugin/marketplace.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, claudeMarketplacePath))) {
     const claudeMarketplace = readJson(claudeMarketplacePath);
+    let changed = false;
     if (claudeMarketplace.version !== version) {
       drifted.push({ file: claudeMarketplacePath, field: 'version', current: claudeMarketplace.version });
       if (!checkOnly) {
         claudeMarketplace.version = version;
-        writeJson(claudeMarketplacePath, claudeMarketplace);
+        changed = true;
       }
+    } 
+    const currentHomepage = claudeMarketplace.plugins && claudeMarketplace.plugins[0] && claudeMarketplace.plugins[0].metadata
+      ? claudeMarketplace.plugins[0].metadata.homepage
+      : undefined;
+    if (currentHomepage !== homepageUrl) {
+      drifted.push({ file: claudeMarketplacePath, field: 'plugins[0].metadata.homepage', current: currentHomepage });
+      if (!checkOnly && claudeMarketplace.plugins && claudeMarketplace.plugins[0]) {
+        claudeMarketplace.plugins[0].metadata = claudeMarketplace.plugins[0].metadata || {};
+        claudeMarketplace.plugins[0].metadata.homepage = homepageUrl;
+        changed = true;
+      }
+    }
+    if (!checkOnly && changed) {
+      writeJson(claudeMarketplacePath, claudeMarketplace);
     }
     targets.push(claudeMarketplacePath);
   }
@@ -149,17 +177,53 @@ function syncVersion(opts) {
   const cursorPluginManifestPath = 'plugins/cursor-marketplace/.cursor-plugin/plugin.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, cursorPluginManifestPath))) {
     const cursorPlugin = readJson(cursorPluginManifestPath);
-    if (cursorPlugin.version !== version) {
-      drifted.push({ file: cursorPluginManifestPath, field: 'version', current: cursorPlugin.version });
-      if (!checkOnly) {
-        cursorPlugin.version = version;
-        writeJson(cursorPluginManifestPath, cursorPlugin);
-      }
+    cursorPlugin.__file = cursorPluginManifestPath;
+    const changed = [
+      syncJsonField(cursorPlugin, 'version', version, drifted, checkOnly),
+      syncJsonField(cursorPlugin, 'homepage', homepageUrl, drifted, checkOnly),
+      syncJsonField(cursorPlugin, 'repository', repositoryUrl, drifted, checkOnly),
+    ].some(Boolean);
+    delete cursorPlugin.__file;
+    if (!checkOnly && changed) {
+      writeJson(cursorPluginManifestPath, cursorPlugin);
     }
     targets.push(cursorPluginManifestPath);
   }
 
-  // 8. plugin Cursor MCP config
+  // 8. Codex plugin manifest + MCP config
+  const codexPluginManifestPath = 'plugins/codex-profile/.codex-plugin/plugin.json';
+  if (fs.existsSync(path.join(PROJECT_ROOT, codexPluginManifestPath))) {
+    const codexPlugin = readJson(codexPluginManifestPath);
+    codexPlugin.__file = codexPluginManifestPath;
+    const changed = [
+      syncJsonField(codexPlugin, 'version', version, drifted, checkOnly),
+      syncJsonField(codexPlugin, 'homepage', homepageUrl, drifted, checkOnly),
+      syncJsonField(codexPlugin, 'repository', repositoryUrl, drifted, checkOnly),
+    ].some(Boolean);
+    delete codexPlugin.__file;
+    if (!checkOnly && changed) {
+      writeJson(codexPluginManifestPath, codexPlugin);
+    }
+    targets.push(codexPluginManifestPath);
+  }
+
+  const codexPluginConfigPath = 'plugins/codex-profile/.mcp.json';
+  if (fs.existsSync(path.join(PROJECT_ROOT, codexPluginConfigPath))) {
+    const codexPluginConfig = readJson(codexPluginConfigPath);
+    const server = codexPluginConfig.mcpServers && codexPluginConfig.mcpServers.rlhf;
+    const expectedArgs = ['-y', `mcp-memory-gateway@${version}`, 'serve'];
+    const currentArgs = server && Array.isArray(server.args) ? server.args : [];
+    if (server && server.command === 'npx' && JSON.stringify(currentArgs) !== JSON.stringify(expectedArgs)) {
+      drifted.push({ file: codexPluginConfigPath, field: 'mcpServers.rlhf.args', current: JSON.stringify(currentArgs) });
+      if (!checkOnly) {
+        server.args = expectedArgs.slice();
+        writeJson(codexPluginConfigPath, codexPluginConfig);
+      }
+    }
+    targets.push(codexPluginConfigPath);
+  }
+
+  // 9. plugin Cursor MCP config
   const cursorPluginConfigPath = 'plugins/cursor-marketplace/mcp.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, cursorPluginConfigPath))) {
     const cursorPluginConfig = readJson(cursorPluginConfigPath);
@@ -176,7 +240,7 @@ function syncVersion(opts) {
     targets.push(cursorPluginConfigPath);
   }
 
-  // 9. docs/install files that pin the npm package version
+  // 10. docs/install files that pin the npm package version
   const pinnedPackageTargets = [
     'adapters/claude/.mcp.json',
     'docs/PLUGIN_DISTRIBUTION.md',
@@ -185,6 +249,7 @@ function syncVersion(opts) {
     'docs/guides/opencode-integration.md',
     'docs/mcp-hub-submission.md',
     'docs/VERIFICATION_EVIDENCE.md',
+    'plugins/codex-profile/README.md',
     'plugins/codex-profile/INSTALL.md',
     'plugins/opencode-profile/INSTALL.md',
   ];
@@ -204,7 +269,7 @@ function syncVersion(opts) {
     targets.push(relPath);
   }
 
-  // 10. docs/landing-page.html — hero badge + JSON snippet
+  // 11. docs/landing-page.html — hero badge + JSON snippet
   const landingPath = 'docs/landing-page.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, landingPath))) {
     const landingContent = fs.readFileSync(path.join(PROJECT_ROOT, landingPath), 'utf-8');
@@ -227,7 +292,7 @@ function syncVersion(opts) {
     targets.push(landingPath);
   }
 
-  // 11. docs/mcp-hub-submission.md
+  // 12. docs/mcp-hub-submission.md
   const mcpSubmPath = 'docs/mcp-hub-submission.md';
   if (fs.existsSync(path.join(PROJECT_ROOT, mcpSubmPath))) {
     const mcpContent = fs.readFileSync(path.join(PROJECT_ROOT, mcpSubmPath), 'utf-8');
@@ -241,7 +306,7 @@ function syncVersion(opts) {
     targets.push(mcpSubmPath);
   }
 
-  // 12. public/index.html — static landing proof pill + footer version
+  // 13. public/index.html — static landing proof pill + footer version
   const publicIndexPath = 'public/index.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, publicIndexPath))) {
     const publicContent = fs.readFileSync(path.join(PROJECT_ROOT, publicIndexPath), 'utf-8');
@@ -271,7 +336,7 @@ function syncVersion(opts) {
     targets.push(publicIndexPath);
   }
 
-  // 13. adapters/mcp/server-stdio.js — MCP server metadata
+  // 14. adapters/mcp/server-stdio.js — MCP server metadata
   const serverStdioPath = 'adapters/mcp/server-stdio.js';
   const serverStdioFile = path.join(PROJECT_ROOT, serverStdioPath);
   if (fs.existsSync(serverStdioFile)) {
@@ -289,7 +354,7 @@ function syncVersion(opts) {
     targets.push(serverStdioPath);
   }
 
-  // 14. mcpize.yaml
+  // 15. mcpize.yaml
   const mcpizePath = 'mcpize.yaml';
   const mcpizeFile = path.join(PROJECT_ROOT, mcpizePath);
   if (fs.existsSync(mcpizeFile)) {
@@ -305,7 +370,7 @@ function syncVersion(opts) {
     targets.push(mcpizePath);
   }
 
-  // 15. pro/package.json
+  // 16. pro/package.json
   const proPackagePath = 'pro/package.json';
   const proPackageFile = path.join(PROJECT_ROOT, proPackagePath);
   if (fs.existsSync(proPackageFile)) {
