@@ -9,6 +9,7 @@ const path = require('node:path');
 
 const {
   buildVerifyPlan,
+  materializeProofArtifacts,
   recordVerifyWorkflowRun,
   runPlan,
 } = require('../scripts/verify-run');
@@ -114,10 +115,82 @@ test('recordVerifyWorkflowRun skips quick mode', () => {
   fs.rmSync(feedbackDir, { recursive: true, force: true });
 });
 
+test('materializeProofArtifacts copies temp proof reports into repo-local proof paths', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'verify-run-proof-root-'));
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'verify-run-proof-cwd-'));
+  const fixtures = [
+    ['proof-adapters/report.json', '{"compatibility":true}\n'],
+    ['proof-adapters/report.md', '# compatibility\n'],
+    ['proof-automation/report.json', '{"automation":true}\n'],
+    ['proof-automation/report.md', '# automation\n'],
+    ['proof-runtime/runtime-report.json', '{"runtime":true}\n'],
+    ['proof-runtime/runtime-report.md', '# runtime\n'],
+    ['proof-adapters/seo-gsd-report.json', '{"seo":true}\n'],
+    ['proof-adapters/seo-gsd-report.md', '# seo\n'],
+    ['proof-adapters/tessl-report.json', '{"tessl":true}\n'],
+    ['proof-adapters/tessl-report.md', '# tessl\n'],
+    ['proof-adapters/xmemory-report.json', '{"xmemory":true}\n'],
+    ['proof-adapters/xmemory-report.md', '# xmemory\n'],
+  ];
+
+  for (const [relativePath, content] of fixtures) {
+    const fullPath = path.join(tempRoot, relativePath);
+    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+    fs.writeFileSync(fullPath, content);
+  }
+
+  const copied = materializeProofArtifacts(tempRoot, cwd);
+
+  assert.ok(copied.includes(path.join(cwd, 'proof', 'runtime-report.json')));
+  assert.equal(
+    fs.readFileSync(path.join(cwd, 'proof', 'runtime-report.json'), 'utf8'),
+    '{"runtime":true}\n',
+  );
+  assert.equal(
+    fs.readFileSync(path.join(cwd, 'proof', 'compatibility', 'report.json'), 'utf8'),
+    '{"compatibility":true}\n',
+  );
+  assert.equal(
+    fs.readFileSync(path.join(cwd, 'proof', 'automation', 'report.json'), 'utf8'),
+    '{"automation":true}\n',
+  );
+  assert.equal(
+    fs.readFileSync(path.join(cwd, 'proof', 'seo-gsd-report.json'), 'utf8'),
+    '{"seo":true}\n',
+  );
+  assert.equal(
+    fs.readFileSync(path.join(cwd, 'proof', 'tessl-report.json'), 'utf8'),
+    '{"tessl":true}\n',
+  );
+  assert.equal(
+    fs.readFileSync(path.join(cwd, 'proof', 'xmemory-report.json'), 'utf8'),
+    '{"xmemory":true}\n',
+  );
+
+  fs.rmSync(tempRoot, { recursive: true, force: true });
+  fs.rmSync(cwd, { recursive: true, force: true });
+});
+
 test('runVerify injects proof directories and records full verification', () => {
   const calls = [];
   const stubWorkflowRun = { workflowId: 'repo_self_dogfood_full_verify', status: 'passed' };
-  const tempRoot = path.join(os.tmpdir(), 'verify-run-stubbed');
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'verify-run-stubbed-'));
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'verify-run-cwd-'));
+  const proofFixtures = [
+    ['proof-adapters/report.json', '{"compatibility":true}\n'],
+    ['proof-automation/report.json', '{"automation":true}\n'],
+    ['proof-runtime/runtime-report.json', '{"runtime":true}\n'],
+    ['proof-runtime/runtime-report.md', '# runtime\n'],
+    ['proof-adapters/seo-gsd-report.json', '{"seo":true}\n'],
+    ['proof-adapters/tessl-report.json', '{"tessl":true}\n'],
+    ['proof-adapters/xmemory-report.json', '{"xmemory":true}\n'],
+  ];
+  for (const [relativePath, content] of proofFixtures) {
+    const fullPath = path.join(tempRoot, relativePath);
+    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+    fs.writeFileSync(fullPath, content);
+  }
+
   const { verifyRun, restore } = loadVerifyRunWithStubs({
     spawnSyncImpl(command, args, options) {
       calls.push({ command, args, options });
@@ -133,7 +206,7 @@ test('runVerify injects proof directories and records full verification', () => 
   });
 
   try {
-    const result = verifyRun.runVerify('full', { BASE_ENV: '1' }, '/tmp/verify-run-cwd');
+    const result = verifyRun.runVerify('full', { BASE_ENV: '1' }, cwd);
     const commandCalls = calls.filter((call) => call.command);
     const appendCall = calls.find((call) => call.entry);
 
@@ -141,7 +214,7 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.equal(result.tempRoot, tempRoot);
     assert.deepEqual(result.workflowRun, stubWorkflowRun);
     assert.equal(commandCalls.length, 9);
-    assert.equal(commandCalls[0].options.cwd, '/tmp/verify-run-cwd');
+    assert.equal(commandCalls[0].options.cwd, cwd);
     assert.equal(commandCalls[0].options.env.BASE_ENV, '1');
     assert.equal(commandCalls[0].options.env.RLHF_PROOF_DIR, path.join(tempRoot, 'proof-adapters'));
     assert.equal(commandCalls[0].options.env.RLHF_AUTOMATION_PROOF_DIR, path.join(tempRoot, 'proof-automation'));
@@ -151,7 +224,13 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'seo-gsd-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'tessl-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'xmemory-report.json'))));
+    assert.equal(
+      fs.readFileSync(path.join(cwd, 'proof', 'runtime-report.json'), 'utf8'),
+      '{"runtime":true}\n',
+    );
   } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+    fs.rmSync(cwd, { recursive: true, force: true });
     restore();
   }
 });
