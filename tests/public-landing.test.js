@@ -77,7 +77,7 @@ test('public landing page includes Plausible analytics and search engine proof b
   assert.match(landingPage, /\/js\/analytics\.js/);
   assert.match(landingPage, /npm downloads/i);
   assert.match(landingPage, /tests passing/i);
-  assert.match(landingPage, new RegExp(PRODUCTHUNT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.ok(landingPage.includes(PRODUCTHUNT_URL));
   assert.match(landingPage, /MIT licensed/i);
 });
 

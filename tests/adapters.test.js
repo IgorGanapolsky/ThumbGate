@@ -174,7 +174,7 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.match(readme, /claude mcp add rlhf -- npx -y mcp-memory-gateway serve/i);
   assert.match(readme, /build:claude-mcpb/i);
   assert.match(readme, new RegExp(getClaudePluginLatestDownloadUrl(root).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(readme, new RegExp(PRODUCTHUNT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.ok(readme.includes(PRODUCTHUNT_URL));
   assert.doesNotMatch(readme, /github\.com\/IgorGanapolsky\/mcp-memory-gateway/);
 });
 

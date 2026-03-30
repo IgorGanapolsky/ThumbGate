@@ -78,7 +78,7 @@ test('public docs render the current package version', () => {
   assert.match(claudeDesktopPacket, new RegExp(getClaudePluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(claudeDesktopPacket, /Tool safety annotations/i);
   assert.match(claudeDesktopPacket, /Do not claim directory approval/i);
-  assert.match(productHuntKit, new RegExp(PRODUCTHUNT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.ok(productHuntKit.includes(PRODUCTHUNT_URL));
   assert.match(productHuntKit, /Claude plugin bundle/i);
   assert.doesNotMatch(landingPage, /billingIncrement/);
   assert.doesNotMatch(landingPage, /P1M/);
@@ -120,7 +120,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
   assert.match(publicLanding, /Human-in-the-loop enforcement/i);
-  assert.match(publicLanding, new RegExp(PRODUCTHUNT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.ok(publicLanding.includes(PRODUCTHUNT_URL));
   assert.doesNotMatch(publicLanding, /billingDuration/);
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);

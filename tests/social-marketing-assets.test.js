@@ -53,7 +53,7 @@ test('cursor plugin launch kit leads with repeated-mistake prevention and proof'
 test('product hunt launch kit links the live listing and the Claude plugin bundle', () => {
   const productHuntKit = read('docs/marketing/product-hunt-launch.md');
 
-  assert.match(productHuntKit, new RegExp(PRODUCTHUNT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.ok(productHuntKit.includes(PRODUCTHUNT_URL));
   assert.match(productHuntKit, /thumbs[\s-]?up|👍/i);
   assert.match(productHuntKit, /thumbs[\s-]?down|👎/i);
   assert.match(productHuntKit, new RegExp(getClaudePluginLatestDownloadUrl(repoRoot).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
