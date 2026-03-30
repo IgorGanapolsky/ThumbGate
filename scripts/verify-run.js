@@ -27,6 +27,7 @@ function buildVerifyPlan(mode = 'quick') {
       { command: npmCommand(), args: ['run', 'prove:adapters'] },
       { command: npmCommand(), args: ['run', 'prove:automation'] },
       { command: npmCommand(), args: ['run', 'prove:seo-gsd'] },
+      { command: npmCommand(), args: ['run', 'prove:xmemory'] },
       { command: npmCommand(), args: ['run', 'self-heal:check'] },
     ];
   }
@@ -69,6 +70,7 @@ function recordVerifyWorkflowRun(mode = 'quick', cwd = process.cwd(), feedbackDi
       path.join(cwd, 'proof', 'compatibility', 'report.json'),
       path.join(cwd, 'proof', 'automation', 'report.json'),
       path.join(cwd, 'proof', 'seo-gsd-report.json'),
+      path.join(cwd, 'proof', 'xmemory-report.json'),
     ],
     metadata: {
       suite: 'repo_verify_full',
