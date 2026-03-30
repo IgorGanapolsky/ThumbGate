@@ -129,3 +129,28 @@ npx mcp-memory-gateway init — auto-detects your agent.
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 Product Hunt: [link]
 ```
+
+## UTM-Tracked Links for Distribution
+
+> **Note:** Use these links in all social posts and the PH listing to track referral sources in Plausible. View analytics at: https://plausible.io/rlhf-feedback-loop-production.up.railway.app
+
+### ProductHunt → Landing Page
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch
+
+### ProductHunt → GitHub
+https://github.com/IgorGanapolsky/ThumbGate?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch
+
+### Reddit → Landing Page
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=post&utm_campaign=thumbgate-launch
+
+### Twitter/X → Landing Page
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=twitter&utm_medium=post&utm_campaign=thumbgate-launch
+
+### LinkedIn → Landing Page
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=linkedin&utm_medium=post&utm_campaign=thumbgate-launch
+
+### npm README → Landing Page
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=npm&utm_medium=readme&utm_campaign=thumbgate-launch
+
+### Direct / Newsletter
+https://rlhf-feedback-loop-production.up.railway.app/?utm_source=email&utm_medium=newsletter&utm_campaign=thumbgate-launch
