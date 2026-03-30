@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  buildAgenticDataPipelineSchedule,
   buildManagedScheduleCommand,
   escapePlistString,
   generatePlist,
@@ -54,4 +55,20 @@ test('buildManagedScheduleCommand runs the async job runner against a job file w
   assert.match(command, /gtm-followup\.json/);
   assert.match(command, /"autoResume":true/);
   assert.match(command, /process\.exit\(1\)/);
+});
+
+test('buildAgenticDataPipelineSchedule emits a managed job file contract for automated materialization', () => {
+  const schedule = buildAgenticDataPipelineSchedule({
+    id: 'nightly-data-pipeline',
+    feedbackDir: '/tmp/thumbgate-feedback',
+    outDir: '/tmp/thumbgate-pipeline',
+    window: '30d',
+    recordWorkflowRun: false,
+  });
+
+  assert.match(schedule.jobFile, /nightly-data-pipeline\.job\.json$/);
+  assert.equal(schedule.jobSpec.id, 'nightly-data-pipeline');
+  assert.equal(schedule.jobSpec.stages[0].name, 'materialize_pipeline');
+  assert.match(schedule.jobSpec.stages[0].command, /agentic-data-pipeline\.js/);
+  assert.match(schedule.command, /async-job-runner\.js/);
 });

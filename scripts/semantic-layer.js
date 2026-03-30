@@ -5,9 +5,7 @@
  * The Foundation of Enterprise AI for mcp-memory-gateway.
  * Centralizes business logic, metrics, and entity definitions.
  */
-const { getBillingSummary } = require('./billing');
-const { getTelemetryAnalytics } = require('./telemetry-analytics');
-const { resolveAnalyticsWindow } = require('./analytics-window');
+const { materializeAgenticDataPipeline } = require('./agentic-data-pipeline');
 
 /**
  * Canonical Schema for Business Entities and Metrics.
@@ -28,6 +26,10 @@ const SemanticSchema = {
       description: 'The journey from anonymous visitor to paid customer.',
       stages: ['visitor', 'checkout_start', 'acquisition', 'paid'],
     },
+    DataPipeline: {
+      description: 'The staged analytics pipeline that materializes raw, staging, semantic, and lineage artifacts.',
+      stages: ['raw', 'staging', 'semantic', 'lineage'],
+    },
   },
   metrics: {
     ConversionRate: {
@@ -41,46 +43,28 @@ const SemanticSchema = {
     ActiveProUsers: {
       description: 'Count of unique customers with at least one active Pro API key.',
     },
+    AttributionCoverageRate: {
+      description: 'The share of tracked web page views carrying attribution metadata.',
+      unit: 'ratio',
+    },
+    UnreconciledPaidEvents: {
+      description: 'Count of paid events still waiting for billing reconciliation.',
+      unit: 'count',
+    },
+    PipelineWarnings: {
+      description: 'Warning count emitted by the staged analytics reconciliation checks.',
+      unit: 'count',
+    },
   },
 };
 
 async function getBusinessMetrics(options = {}) {
-  const window = resolveAnalyticsWindow(options);
-  const billing = getBillingSummary(window);
-  const { getFeedbackPaths } = require('./feedback-loop');
-  const feedbackDir = options.feedbackDir || getFeedbackPaths().FEEDBACK_DIR;
-  const telemetry = getTelemetryAnalytics(feedbackDir, window);
-
-  const uniqueVisitors = telemetry.visitors.uniqueVisitors || 0;
-  const paidCustomers = billing.revenue.paidCustomers || 0;
-  const bookedRevenueCents = billing.revenue.bookedRevenueCents || 0;
-
-  return {
-    generatedAt: new Date().toISOString(),
-    window: billing.window,
-    metrics: {
-      uniqueVisitors,
-      checkoutStarts: telemetry.ctas.checkoutStarts || 0,
-      acquisitionLeads: billing.signups.uniqueLeads || 0,
-      paidCustomers,
-      bookedRevenueCents,
-      bookedRevenueFormatted: `$${(bookedRevenueCents / 100).toFixed(2)}`,
-      conversionRate: safeRate(paidCustomers, uniqueVisitors),
-      leadToPaidRate: safeRate(paidCustomers, billing.signups.uniqueLeads || 0),
-      activeProKeys: billing.keys.active || 0,
-      totalUsage: billing.keys.totalUsage || 0,
-    },
-    attribution: billing.attribution,
-    status: {
-      isPostFirstDollar: paidCustomers > 0 || bookedRevenueCents > 0,
-      hasActivePipeline: (telemetry.ctas.checkoutStarts || 0) > 0 || billing.signups.uniqueLeads > 0,
-    }
-  };
-}
-
-function safeRate(num, den) {
-  if (!den) return 0;
-  return Number((num / den).toFixed(4));
+  const snapshot = await materializeAgenticDataPipeline({
+    ...options,
+    write: false,
+    recordWorkflowRun: false,
+  });
+  return snapshot.semantic;
 }
 
 function describeSemanticSchema() {

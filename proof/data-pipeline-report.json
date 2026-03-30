@@ -1,0 +1,32 @@
+{
+  "phase": "15-agentic-data-pipeline",
+  "generatedAt": "2026-03-30T20:56:45.017Z",
+  "passed": 6,
+  "failed": 0,
+  "requirements": {
+    "DATA-PIPE-01": {
+      "desc": "materializeAgenticDataPipeline builds raw, staging, semantic, and lineage layers from billing and telemetry inputs",
+      "status": "passed"
+    },
+    "DATA-PIPE-02": {
+      "desc": "pipeline reruns are idempotent and downgrade to noop when source hashes do not change",
+      "status": "passed"
+    },
+    "DATA-PIPE-03": {
+      "desc": "reconciliation flags unreconciled paid events and telemetry coverage drift as warnings",
+      "status": "passed"
+    },
+    "DATA-PIPE-04": {
+      "desc": "schedule manager emits a managed async-job spec for automated pipeline materialization",
+      "status": "passed"
+    },
+    "DATA-PIPE-05": {
+      "desc": "semantic-layer consumes the staged pipeline and surfaces pipeline quality metrics",
+      "status": "passed"
+    },
+    "DATA-PIPE-06": {
+      "desc": "verify-run full includes the data-pipeline proof lane and artifact",
+      "status": "passed"
+    }
+  }
+}

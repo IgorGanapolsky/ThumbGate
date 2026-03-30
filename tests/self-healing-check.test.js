@@ -19,10 +19,12 @@ test('DEFAULT_CHECKS delegates verification through npm test', () => {
 test('DEFAULT_CHECKS isolates proof artifacts for prove checks', () => {
   const proveAdapters = DEFAULT_CHECKS.find((check) => check.name === 'prove_adapters');
   const proveAutomation = DEFAULT_CHECKS.find((check) => check.name === 'prove_automation');
+  const proveDataPipeline = DEFAULT_CHECKS.find((check) => check.name === 'prove_data_pipeline');
   const proveTessl = DEFAULT_CHECKS.find((check) => check.name === 'prove_tessl');
 
   assert.equal(proveAdapters.useTempProofDir, true);
   assert.equal(proveAutomation.useTempProofDir, true);
+  assert.equal(proveDataPipeline.useTempProofDir, true);
   assert.equal(proveTessl.useTempProofDir, true);
 });
 
