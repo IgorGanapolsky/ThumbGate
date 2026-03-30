@@ -26,7 +26,7 @@ Keep these terms in the body, tags, or follow-up copy:
 
 - Name: `ThumbGate`
 - Description: `👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.`
-- Repository URL: `https://github.com/IgorGanapolsky/mcp-memory-gateway`
+- Repository URL: `https://github.com/IgorGanapolsky/ThumbGate`
 - Homepage: `https://rlhf-feedback-loop-production.up.railway.app`
 
 ## Surface notes
@@ -47,7 +47,7 @@ We shipped ThumbGate to give Cursor agents:
 The point is not more orchestration.
 The point is fewer repeated mistakes.
 
-Proof: https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md
+Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 ```
 
 ## LinkedIn Post
@@ -66,7 +66,7 @@ ThumbGate is our fix for that:
 The positioning is simple: stop repeated mistakes before they become team-wide habits.
 
 Proof:
-https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md
+https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 ```
 
 ## Proof links

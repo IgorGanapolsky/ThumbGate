@@ -7,7 +7,7 @@ const {
   DEFAULT_PUBLIC_APP_ORIGIN,
 } = require('./hosted-config');
 
-const DEFAULT_REPO = 'IgorGanapolsky/mcp-memory-gateway';
+const DEFAULT_REPO = 'IgorGanapolsky/ThumbGate';
 const DEFAULT_RAILWAY_SERVICE = 'rlhf-feedback-loop';
 const HOSTED_WINDOWS = ['today', '30d', 'lifetime'];
 const RUNTIME_KEYS = [

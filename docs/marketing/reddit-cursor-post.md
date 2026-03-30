@@ -30,7 +30,7 @@ Curious how others are handling cross-session reliability. Are `.cursorrules` an
 
 **Comment (post immediately after, only if the post stays up):**
 
-For those asking how the 👍/👎 system works — I built it as an open-source MCP server. Repo is here: https://github.com/IgorGanapolsky/mcp-memory-gateway
+For those asking how the 👍/👎 system works — I built it as an open-source MCP server. Repo is here: https://github.com/IgorGanapolsky/ThumbGate
 
 👍 reinforces good behavior. 👎 auto-generates a prevention rule that blocks the action before it executes. MIT licensed, fully local. Happy to answer questions.
 

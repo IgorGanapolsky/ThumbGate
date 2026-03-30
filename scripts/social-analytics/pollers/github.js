@@ -9,13 +9,13 @@
  *
  * Required env vars:
  *   GITHUB_TOKEN  — personal access token with repo scope (required)
- *   GITHUB_REPO   — owner/repo slug (default: IgorGanapolsky/mcp-memory-gateway)
+ *   GITHUB_REPO   — owner/repo slug (default: IgorGanapolsky/ThumbGate)
  */
 
 const path = require('path');
 
 const GITHUB_API_BASE = 'https://api.github.com';
-const DEFAULT_REPO = 'IgorGanapolsky/mcp-memory-gateway';
+const DEFAULT_REPO = 'IgorGanapolsky/ThumbGate';
 
 /**
  * Build standard GitHub API request headers.

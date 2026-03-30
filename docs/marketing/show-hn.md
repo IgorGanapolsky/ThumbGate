@@ -13,7 +13,7 @@ ThumbGate is an MCP server that gives AI agents a persistent feedback memory. Du
 
 The self-hosted version is free. Install in 30 seconds: npx mcp-memory-gateway serve. It works with Claude Code, Codex CLI, Gemini CLI, Amp, and Cursor. All data stays local. The public self-serve commercial offer today is Pro at $49 one-time via https://rlhf-feedback-loop-production.up.railway.app/checkout/pro. Hosted rollout help is pilot/by-request at https://rlhf-feedback-loop-production.up.railway.app
 
-GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
+GitHub: https://github.com/IgorGanapolsky/ThumbGate
 npm: https://www.npmjs.com/package/mcp-memory-gateway
 Live hosted: https://rlhf-feedback-loop-production.up.railway.app
 
@@ -24,4 +24,4 @@ Happy to answer questions on the protocol, the DPO export format, or how the pre
 **Direct submit URL:**
 https://news.ycombinator.com/submit
 (Title: Show HN: ThumbGate – Persistent memory for AI coding agents)
-(URL: https://github.com/IgorGanapolsky/mcp-memory-gateway)
+(URL: https://github.com/IgorGanapolsky/ThumbGate)

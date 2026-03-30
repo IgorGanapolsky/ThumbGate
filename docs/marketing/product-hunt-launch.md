@@ -1,13 +1,15 @@
-# Product Hunt Launch Assets — ThumbGate v0.8.4
+# Product Hunt Listing Kit — ThumbGate v0.8.4
+
+Status: live listing at https://www.producthunt.com/products/mcp-memory-gateway
 
 ## Name
 ThumbGate (mcp-memory-gateway)
 
 ## Tagline (60 chars max)
-Thumbs down a mistake. Your AI agent never repeats it.
+👍 reinforce wins. 👎 block repeated mistakes.
 
 ## Description (260 chars max)
-The safety net for AI coding agents. Give a thumbs-down → ThumbGate auto-generates a prevention rule → pre-action gates physically block the agent before it repeats the mistake. Works with Claude Code, Cursor, Codex, Gemini, Amp, and any MCP agent.
+ThumbGate turns thumbs-up/down feedback into enforcement for AI coding agents. 👍 reinforces what worked. 👎 auto-promotes failures into prevention rules and pre-action gates that block repeat mistakes across Claude, Cursor, Codex, Gemini, Amp, and MCP agents.
 
 ## Topics
 Developer Tools, Artificial Intelligence, Open Source
@@ -20,6 +22,9 @@ Free + Open Source (Pro Pack $49 one-time for teams)
 - **GitHub:** https://github.com/IgorGanapolsky/ThumbGate
 - **npm:** https://www.npmjs.com/package/mcp-memory-gateway
 - **Live Dashboard:** https://rlhf-feedback-loop-production.up.railway.app/dashboard
+- **Product Hunt:** https://www.producthunt.com/products/mcp-memory-gateway
+- **Claude plugin bundle:** https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb
+- **Claude plugin guide:** https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md
 
 ## First Comment (Maker's Comment)
 
@@ -31,6 +36,8 @@ Every AI coding agent has the same problem: **you correct a mistake, and next se
 1️⃣ Agent force-pushes to main. You give it a 👎.
 2️⃣ ThumbGate auto-generates a prevention rule from your feedback.
 3️⃣ A PreToolUse gate physically blocks `git push --force` before it executes. Forever.
+
+**The other half matters too:** 👍 feedback reinforces what worked, so your safe patterns, approved flows, and useful commands become easier to repeat.
 
 **No swarm. No planner. No orchestrator.** Just one sharp agent that can't repeat known mistakes.
 
@@ -47,6 +54,10 @@ Every AI coding agent has the same problem: **you correct a mistake, and next se
 npx mcp-memory-gateway init
 ```
 Auto-detects your agent (Claude Code, Cursor, Codex, Gemini, Amp, OpenCode) and wires everything up.
+
+**Claude Desktop install path:**
+- Direct bundle: https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb
+- Guide: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md
 
 **What makes ThumbGate different from memory tools like Mem0 or .cursorrules:**
 Most memory tools help agents *remember*. ThumbGate also *enforces*. A gate doesn't ask the agent to cooperate — it blocks the action before execution.
@@ -96,7 +107,7 @@ Works with Claude Code, Cursor, Codex, Gemini, Amp.
 
 npx mcp-memory-gateway init
 
-Live on Product Hunt → [link]
+Live on Product Hunt → https://www.producthunt.com/products/mcp-memory-gateway
 ```
 
 ### LinkedIn
@@ -111,7 +122,7 @@ Give your AI coding agent a thumbs-down → it auto-generates a prevention rule 
 
 Free and open source: npx mcp-memory-gateway init
 
-We just updated our Product Hunt listing → [link]
+We just updated our Product Hunt listing → https://www.producthunt.com/products/mcp-memory-gateway
 ```
 
 ### Reddit (r/ClaudeAI, r/cursor, r/MachineLearning)
@@ -127,7 +138,8 @@ How it works: 👎 → prevention rule → gate blocks the action before executi
 npx mcp-memory-gateway init — auto-detects your agent.
 
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
-Product Hunt: [link]
+Product Hunt: https://www.producthunt.com/products/mcp-memory-gateway
+Claude plugin: https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb
 ```
 
 ## UTM-Tracked Links for Distribution
@@ -139,6 +151,9 @@ https://rlhf-feedback-loop-production.up.railway.app/?utm_source=producthunt&utm
 
 ### ProductHunt → GitHub
 https://github.com/IgorGanapolsky/ThumbGate?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch
+
+### ProductHunt → Claude Plugin Guide
+https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch
 
 ### Reddit → Landing Page
 https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=post&utm_campaign=thumbgate-launch

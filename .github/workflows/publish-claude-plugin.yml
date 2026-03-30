@@ -1,0 +1,75 @@
+name: Publish Claude Plugin
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.claude-plugin/**'
+      - 'docs/CLAUDE_DESKTOP_EXTENSION.md'
+      - 'docs/marketing/product-hunt-launch.md'
+      - 'public/index.html'
+      - 'scripts/build-claude-mcpb.js'
+      - 'scripts/distribution-surfaces.js'
+      - '.github/workflows/publish-claude-plugin.yml'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - run: node scripts/sync-version.js --check
+
+      - run: npm run build:claude-mcpb
+
+      - name: Resolve Claude plugin asset names
+        id: assets
+        run: |
+          echo "version=$(node -p 'require(\"./package.json\").version')" >> "$GITHUB_OUTPUT"
+          echo "versioned_asset=$(node -e 'const { getClaudePluginVersionedAssetName } = require(\"./scripts/distribution-surfaces\"); process.stdout.write(getClaudePluginVersionedAssetName())')" >> "$GITHUB_OUTPUT"
+          echo "latest_asset=$(node -e 'const { CLAUDE_PLUGIN_LATEST_ASSET_NAME } = require(\"./scripts/distribution-surfaces\"); process.stdout.write(CLAUDE_PLUGIN_LATEST_ASSET_NAME)')" >> "$GITHUB_OUTPUT"
+
+      - name: Create stable latest asset alias
+        run: |
+          cp ".artifacts/claude-desktop/${{ steps.assets.outputs.versioned_asset }}" \
+            ".artifacts/claude-desktop/${{ steps.assets.outputs.latest_asset }}"
+
+      - name: Upload Claude plugin artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: claude-plugin-mcpb
+          path: |
+            .artifacts/claude-desktop/${{ steps.assets.outputs.versioned_asset }}
+            .artifacts/claude-desktop/${{ steps.assets.outputs.latest_asset }}
+
+      - name: Ensure GitHub Release exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.assets.outputs.version }}
+        run: |
+          if ! gh release view "v${VERSION}" >/dev/null 2>&1; then
+            gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
+          fi
+
+      - name: Upload Claude plugin assets to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.assets.outputs.version }}
+        run: |
+          gh release upload "v${VERSION}" \
+            ".artifacts/claude-desktop/${{ steps.assets.outputs.versioned_asset }}" \
+            ".artifacts/claude-desktop/${{ steps.assets.outputs.latest_asset }}" \
+            --clobber

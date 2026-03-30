@@ -2,6 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const {
+  PRODUCTHUNT_URL,
+  getClaudePluginLatestDownloadUrl,
+} = require('../scripts/distribution-surfaces');
 
 const root = path.join(__dirname, '..');
 const packageVersion = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8')).version;
@@ -160,12 +164,18 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.ok(pluginManifest.keywords.includes('pre-action-gates'));
   assert.ok(pluginManifest.keywords.includes('ai-agent-safety'));
   assert.ok(marketplaceEntry.metadata.keywords.includes('pre-action-gates'));
+  assert.equal(pluginManifest.homepage, 'https://rlhf-feedback-loop-production.up.railway.app');
+  assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
+  assert.equal(marketplaceEntry.metadata.homepage, 'https://rlhf-feedback-loop-production.up.railway.app');
   assert.match(readme, /Privacy Policy/i);
   assert.match(readme, /Data Collection/i);
   assert.match(readme, /Support/i);
   assert.match(readme, /Examples/i);
   assert.match(readme, /claude mcp add rlhf -- npx -y mcp-memory-gateway serve/i);
   assert.match(readme, /build:claude-mcpb/i);
+  assert.match(readme, new RegExp(getClaudePluginLatestDownloadUrl(root).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.ok(readme.includes(PRODUCTHUNT_URL));
+  assert.doesNotMatch(readme, /github\.com\/IgorGanapolsky\/mcp-memory-gateway/);
 });
 
 test('claude .mcp.json rlhf command is either npx or node', () => {

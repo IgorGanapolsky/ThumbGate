@@ -7,6 +7,10 @@ const {
   GA_MEASUREMENT_ID_PATTERN,
   resolveHostedBillingConfig,
 } = require('../scripts/hosted-config');
+const {
+  PRODUCTHUNT_URL,
+  getClaudePluginLatestDownloadUrl,
+} = require('../scripts/distribution-surfaces');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const CANONICAL_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
@@ -47,6 +51,7 @@ test('public docs render the current package version', () => {
   const mcpSubmission = readText('docs/mcp-hub-submission.md');
   const claudePluginReadme = readText('.claude-plugin/README.md');
   const claudeDesktopPacket = readText('docs/CLAUDE_DESKTOP_EXTENSION.md');
+  const productHuntKit = readText('docs/marketing/product-hunt-launch.md');
 
   assert.match(landingPage, /ThumbGate/);
   assert.match(landingPage, /AI agent reliability/i);
@@ -65,12 +70,16 @@ test('public docs render the current package version', () => {
   assert.match(claudePluginReadme, /Support/i);
   assert.match(claudePluginReadme, /claude mcp add rlhf -- npx -y mcp-memory-gateway serve/i);
   assert.match(claudePluginReadme, /npm run build:claude-mcpb/i);
+  assert.match(claudePluginReadme, new RegExp(getClaudePluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(claudeDesktopPacket, /Anthropic Local MCP Server Submission Guide/i);
   assert.match(claudeDesktopPacket, /Build the MCPB/i);
   assert.match(claudeDesktopPacket, /privacy_policies/i);
   assert.match(claudeDesktopPacket, /npm run build:claude-mcpb/i);
+  assert.match(claudeDesktopPacket, new RegExp(getClaudePluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(claudeDesktopPacket, /Tool safety annotations/i);
   assert.match(claudeDesktopPacket, /Do not claim directory approval/i);
+  assert.ok(productHuntKit.includes(PRODUCTHUNT_URL));
+  assert.match(productHuntKit, /Claude plugin bundle/i);
   assert.doesNotMatch(landingPage, /billingIncrement/);
   assert.doesNotMatch(landingPage, /P1M/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
@@ -94,6 +103,9 @@ test('landing page keeps GTM and schema assets wired', () => {
 test('hosted origin and repository metadata stay canonical across live-facing artifacts', () => {
   const packageJson = readJson('package.json');
   const serverManifest = readJson('server.json');
+  const claudePlugin = readJson('.claude-plugin/plugin.json');
+  const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
+  const claudeReadme = readText('.claude-plugin/README.md');
   const publicLanding = readText('public/index.html');
   const serverSource = readText('src/api/server.js');
   const twitterThread = readText('docs/marketing/twitter-thread.md');
@@ -108,6 +120,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
   assert.match(publicLanding, /Human-in-the-loop enforcement/i);
+  assert.ok(publicLanding.includes(PRODUCTHUNT_URL));
   assert.doesNotMatch(publicLanding, /billingDuration/);
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
@@ -117,6 +130,10 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(serverSource, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
   assert.doesNotMatch(serverSource, /github\.com\/IgorGanapolsky\/mcp-memory-gateway/);
   assert.doesNotMatch(serverSource, /github\.com\/IgorGanapolsky\/rlhf-feedback-loop/);
+  assert.equal(claudePlugin.homepage, CANONICAL_APP_ORIGIN);
+  assert.equal(claudePlugin.repository, CURRENT_REPOSITORY_URL);
+  assert.equal(claudeMarketplace.plugins[0].metadata.homepage, CANONICAL_APP_ORIGIN);
+  assert.doesNotMatch(claudeReadme, /github\.com\/IgorGanapolsky\/mcp-memory-gateway/);
 
   assert.match(twitterThread, /Hosted demo: rlhf-feedback-loop-production\.up\.railway\.app/);
   assert.match(twitterThread, /engineering validation, not customer proof/i);

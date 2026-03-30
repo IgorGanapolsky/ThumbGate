@@ -1,7 +1,7 @@
 # Claude Desktop Extension Plan
 
 Status: current  
-Updated: March 18, 2026
+Updated: March 30, 2026
 
 This document turns the existing Claude-specific bundle metadata into a concrete promotion and submission packet for Claude Desktop.
 
@@ -27,6 +27,7 @@ For this repo, that means:
 - Anthropic Building Desktop Extensions with MCPB: https://support.claude.com/en/articles/12922929-building-desktop-extensions-with-mcpb
 - Anthropic Software Directory Terms: https://support.claude.com/en/articles/13145338-anthropic-software-directory-terms
 - Anthropic Software Directory Policy: https://support.claude.com/en/articles/13145358-anthropic-software-directory-policy
+- Anthropic Cowork plugin customization tutorial: https://claude.com/resources/tutorials/how-to-customize-plugins-in-cowork
 - MCPB manifest specification: https://github.com/modelcontextprotocol/mcpb/blob/main/MANIFEST.md
 
 ## Repo assets already in place
@@ -128,8 +129,17 @@ That command:
 - stages a clean Claude Desktop bundle in `.artifacts/claude-desktop/bundle`
 - installs production dependencies only
 - writes a generated `manifest.json` with tool inventory and privacy policy URLs
-- packs `mcp-memory-gateway-<version>.mcpb`
+- packs `thumbgate-claude-desktop-v<version>.mcpb`
 - validates the artifact with `mcpb info`
+
+## Public install path
+
+The repo now publishes a user-consumable Claude Desktop bundle on GitHub Releases:
+
+- Latest direct download: https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb
+- Release notes: https://github.com/IgorGanapolsky/ThumbGate/releases
+
+This is the clean public install lane for buyers who do not want to build the bundle locally.
 
 ## Promotion lanes
 
@@ -138,6 +148,7 @@ That command:
 Call out the Claude Desktop extension path as:
 
 - install locally today
+- download the packaged `.mcpb` from GitHub Releases
 - review proof and privacy before rollout
 - treat directory inclusion as discoverability, not traction proof
 
@@ -169,7 +180,8 @@ Keep the generated MCPB manifest aligned with:
 1. Re-run the standard verification suite.
 2. Keep Claude plugin metadata version-aligned with `package.json`.
 3. Run `npm run build:claude-mcpb`.
-4. Confirm privacy, support, and proof links resolve.
-5. Inspect the resulting `.mcpb` with `mcpb info`.
-6. Submit through Anthropic's official directory process.
-7. Do not market the directory listing until approval is real.
+4. Confirm the GitHub Release asset exists at `releases/latest/download/thumbgate-claude-desktop.mcpb`.
+5. Confirm privacy, support, and proof links resolve.
+6. Inspect the resulting `.mcpb` with `mcpb info`.
+7. Submit through Anthropic's official directory process.
+8. Do not market the directory listing until approval is real.

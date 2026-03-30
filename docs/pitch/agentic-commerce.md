@@ -112,5 +112,5 @@ Export preference pairs for fine-tuning commerce-specific agent models. This is 
 ---
 
 Contact: Igor Ganapolsky, CEO
-GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
+GitHub: https://github.com/IgorGanapolsky/ThumbGate
 npm: https://www.npmjs.com/package/mcp-memory-gateway

@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { PRODUCTHUNT_URL } = require('../scripts/distribution-surfaces');
 
 const landingPagePath = path.join(__dirname, '..', 'public', 'index.html');
 
@@ -76,6 +77,7 @@ test('public landing page includes Plausible analytics and search engine proof b
   assert.match(landingPage, /\/js\/analytics\.js/);
   assert.match(landingPage, /npm downloads/i);
   assert.match(landingPage, /tests passing/i);
+  assert.ok(landingPage.includes(PRODUCTHUNT_URL));
   assert.match(landingPage, /MIT licensed/i);
 });
 
@@ -142,10 +144,12 @@ test('public landing page includes compatibility section for AI agent surfaces',
 
   assert.match(landingPage, /id="compatibility"/);
   assert.match(landingPage, /AI CLIs/i);
+  assert.match(landingPage, /Claude Desktop plugin/i);
   assert.match(landingPage, /Editor workflows/i);
   assert.match(landingPage, /Install in 30 seconds/i);
   assert.match(landingPage, /compatibility-grid/);
   assert.match(landingPage, /View setup guide/);
+  assert.match(landingPage, /Get the Claude plugin/);
   assert.match(landingPage, /Browse plugins/);
   assert.match(landingPage, /View on npm/);
 });

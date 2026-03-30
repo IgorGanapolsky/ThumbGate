@@ -2,6 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const {
+  PRODUCTHUNT_URL,
+  getClaudePluginLatestDownloadUrl,
+} = require('../scripts/distribution-surfaces');
 
 const repoRoot = path.resolve(__dirname, '..');
 
@@ -44,6 +48,16 @@ test('cursor plugin launch kit leads with repeated-mistake prevention and proof'
   assert.match(cursorLaunch, /Cursor Directory/i);
   assert.match(cursorLaunch, /Cursor Marketplace/i);
   assert.match(socialKit, /\[cursor-plugin-launch\.md\]/);
+});
+
+test('product hunt launch kit links the live listing and the Claude plugin bundle', () => {
+  const productHuntKit = read('docs/marketing/product-hunt-launch.md');
+
+  assert.ok(productHuntKit.includes(PRODUCTHUNT_URL));
+  assert.match(productHuntKit, /thumbs[\s-]?up|👍/i);
+  assert.match(productHuntKit, /thumbs[\s-]?down|👎/i);
+  assert.match(productHuntKit, new RegExp(getClaudePluginLatestDownloadUrl(repoRoot).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(productHuntKit, /Claude plugin guide/i);
 });
 
 test('private local SVG assets exist for LinkedIn carousel and X card', () => {

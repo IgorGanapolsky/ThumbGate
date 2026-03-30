@@ -41,6 +41,8 @@ This avoids platform-specific rewrite cost and keeps the product under a `$10/mo
 - Claude Desktop bundle icon: `.claude-plugin/bundle/icon.png`
 - Internal submission packet: `docs/CLAUDE_DESKTOP_EXTENSION.md`
 - Bundle build command: `npm run build:claude-mcpb`
+- Release workflow: `.github/workflows/publish-claude-plugin.yml`
+- Latest direct download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
 - Local install path: `claude mcp add rlhf -- npx -y mcp-memory-gateway@0.8.4 serve`
 - Promotion rule: treat directory inclusion as a discoverability lane, not customer proof
 

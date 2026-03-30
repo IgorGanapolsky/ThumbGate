@@ -149,7 +149,7 @@ fi
 echo ""
 echo "[ GitHub Repository URL ]"
 
-EXPECTED_REPO="https://github.com/IgorGanapolsky/mcp-memory-gateway"
+EXPECTED_REPO="https://github.com/IgorGanapolsky/ThumbGate"
 if grep -q "$EXPECTED_REPO" "$SETUP_DOC"; then
   check "OBSIDIAN_SETUP.md contains correct GitHub URL" "pass"
 else

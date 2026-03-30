@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="${1:-IgorGanapolsky/mcp-memory-gateway}"
+REPO="${1:-IgorGanapolsky/ThumbGate}"
 
 # Runtime + deploy secrets used by hosted billing and CI.
 SECRET_KEYS=(
