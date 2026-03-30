@@ -38,9 +38,14 @@ jobs:
       - name: Resolve Claude plugin asset names
         id: assets
         run: |
-          echo "version=$(node -p 'require(\"./package.json\").version')" >> "$GITHUB_OUTPUT"
-          echo "versioned_asset=$(node -e 'const { getClaudePluginVersionedAssetName } = require(\"./scripts/distribution-surfaces\"); process.stdout.write(getClaudePluginVersionedAssetName())')" >> "$GITHUB_OUTPUT"
-          echo "latest_asset=$(node -e 'const { CLAUDE_PLUGIN_LATEST_ASSET_NAME } = require(\"./scripts/distribution-surfaces\"); process.stdout.write(CLAUDE_PLUGIN_LATEST_ASSET_NAME)')" >> "$GITHUB_OUTPUT"
+          version=$(node -p "require('./package.json').version")
+          versioned_asset=$(node -e "const { getClaudePluginVersionedAssetName } = require('./scripts/distribution-surfaces'); process.stdout.write(getClaudePluginVersionedAssetName())")
+          latest_asset=$(node -e "const { CLAUDE_PLUGIN_LATEST_ASSET_NAME } = require('./scripts/distribution-surfaces'); process.stdout.write(CLAUDE_PLUGIN_LATEST_ASSET_NAME)")
+          {
+            echo "version=$version"
+            echo "versioned_asset=$versioned_asset"
+            echo "latest_asset=$latest_asset"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create stable latest asset alias
         run: |
