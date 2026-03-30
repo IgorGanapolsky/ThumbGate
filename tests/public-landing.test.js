@@ -205,14 +205,34 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /depth: mark \+ '%'/);
 });
 
-test('public landing page internally links to high-intent comparison and guide pages', () => {
+test('public landing page internally links to comparison and guide pages without internal jargon', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /id="compare-guides"/);
-  assert.match(landingPage, /High-intent comparison and guide pages/i);
+  assert.match(landingPage, /How ThumbGate compares/i);
   assert.match(landingPage, /href="\/compare\/speclock"/);
   assert.match(landingPage, /href="\/compare\/mem0"/);
   assert.match(landingPage, /href="\/guides\/pre-action-gates"/);
   assert.match(landingPage, /href="\/guides\/claude-code-feedback"/);
-  assert.match(landingPage, /GSD Pages/);
+  // No internal marketing jargon visible to customers
+  assert.doesNotMatch(landingPage, /GSD Pages/);
+  assert.doesNotMatch(landingPage, /Bottom of funnel/i);
+  assert.doesNotMatch(landingPage, /Category creation/i);
+  assert.doesNotMatch(landingPage, /convert.*search.*demand/i);
+});
+
+test('public landing page FAQ defaults first item open for credibility', () => {
+  const landingPage = readLandingPage();
+
+  // "Is this real RLHF?" should be open by default to address the #1 credibility question
+  assert.match(landingPage, /class="faq-item open"/);
+});
+
+test('public landing page hero is evergreen without version numbers', () => {
+  const landingPage = readLandingPage();
+
+  // Hero paragraph should not contain version-specific changelog items
+  const heroMatch = landingPage.match(/<section class="hero">[\s\S]*?<\/section>/);
+  assert.ok(heroMatch, 'Hero section must exist');
+  assert.doesNotMatch(heroMatch[0], /New in v\d/i);
 });

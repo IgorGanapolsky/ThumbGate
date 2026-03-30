@@ -318,11 +318,11 @@ __GA_BOOTSTRAP__
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
       <a href="#compatibility">Compatibility</a>
-      <a href="#compare-guides">Guides</a>
+      <a href="#compare-guides">Comparisons</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
-      <a href="/guide">Guide</a>
+      <a href="/guide">Setup Guide</a>
       <a href="/dashboard">Dashboard Demo</a>
       <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" class="nav-cta">Get Pro — $49</a>
     </div>
@@ -340,7 +340,7 @@ __GA_BOOTSTRAP__
       <div class="signal-pill signal-up">👍 reinforces what worked across sessions</div>
     </div>
     <p class="hero-persona">For power users of Claude Code, Cursor, Codex, Gemini, Amp, and any MCP agent who are tired of fixing the same mistakes every session.</p>
-    <p>ThumbGate turns thumbs-up/down feedback into hard gates that block bad actions before they execute. Think of it as an immune system for your AI agent — it learns from your corrections and enforces them automatically. The safety net for vibe coding works across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent. <strong>New in v0.8.4:</strong> SQLite+FTS5 lesson DB, corrective-action inference, and Thompson Sampling.</p>
+    <p>ThumbGate turns thumbs-up/down feedback into hard gates that block bad actions before they execute. Think of it as an immune system for your AI agent — it learns from your corrections and enforces them automatically. The safety net for vibe coding works across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx mcp-memory-gateway init</span>
@@ -391,31 +391,31 @@ __GA_BOOTSTRAP__
 
 <section class="seo-pages" id="compare-guides">
   <div class="container">
-    <div class="section-label">GSD Pages</div>
-    <h2 class="section-title">High-intent comparison and guide pages built to convert search demand</h2>
+    <div class="section-label">Learn More</div>
+    <h2 class="section-title">How ThumbGate compares and when to use it</h2>
     <div class="seo-grid">
       <a class="seo-card" href="/compare/speclock">
-        <div class="seo-kicker">Comparison · Bottom of funnel</div>
+        <div class="seo-kicker">Comparison</div>
         <h3>ThumbGate vs SpecLock</h3>
-        <p>Show why thumbs-up/down feedback and pre-action gates solve repeated mistakes faster than a manual spec-authoring loop.</p>
+        <p>Why thumbs-up/down feedback and pre-action gates solve repeated mistakes faster than a manual spec-authoring loop.</p>
         <div class="card-arrow">Read the comparison →</div>
       </a>
       <a class="seo-card" href="/compare/mem0">
-        <div class="seo-kicker">Comparison · Memory vs enforcement</div>
+        <div class="seo-kicker">Comparison</div>
         <h3>ThumbGate vs Mem0</h3>
-        <p>Make the enforcement distinction obvious for buyers who start with memory tooling and later realize retrieval alone is not enough.</p>
+        <p>Mem0 remembers context. ThumbGate enforces behavior. Why retrieval alone is not enough when your agent keeps repeating the same mistakes.</p>
         <div class="card-arrow">See the enforcement angle →</div>
       </a>
       <a class="seo-card" href="/guides/pre-action-gates">
-        <div class="seo-kicker">Guide · Category creation</div>
+        <div class="seo-kicker">Guide</div>
         <h3>What Are Pre-Action Gates?</h3>
-        <p>Explain the core category in plain language and connect thumbs up, thumbs down, runtime enforcement, and proof-backed reliability.</p>
+        <p>The core concept explained in plain language: how thumbs up, thumbs down, and runtime enforcement work together to prevent repeated failures.</p>
         <div class="card-arrow">Read the guide →</div>
       </a>
       <a class="seo-card" href="/guides/claude-code-feedback">
-        <div class="seo-kicker">Integration · Claude Code</div>
+        <div class="seo-kicker">Integration</div>
         <h3>Claude Code Feedback Memory That Enforces</h3>
-        <p>Convert Claude Code searchers by showing why structured feedback memory matters more when it also becomes a live gate.</p>
+        <p>Why structured feedback memory matters more when it becomes a live gate that blocks your agent from repeating mistakes.</p>
         <div class="card-arrow">Read the integration guide →</div>
       </a>
     </div>
@@ -436,7 +436,7 @@ __GA_BOOTSTRAP__
       <div class="step">
         <div class="step-num">2</div>
         <h3>Rules</h3>
-        <p>Repeated failures auto-promote into prevention rules. Thompson Sampling adapts which rules fire.</p>
+        <p>Repeated failures auto-promote into prevention rules. Thompson Sampling adapts which rules fire — high-risk patterns get stricter enforcement while low-risk ones stay relaxed.</p>
       </div>
       <div class="step">
         <div class="step-num">3</div>
@@ -517,7 +517,7 @@ __GA_BOOTSTRAP__
     <div class="section-label">FAQ</div>
     <h2 class="section-title">Common questions</h2>
     <div class="faq-list">
-      <div class="faq-item">
+      <div class="faq-item open">
         <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Is this real RLHF?</div>
         <div class="faq-a">Honest answer: no. This is context engineering plus enforcement, not RLHF weight training. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions. Your model's weights are never changed. What actually works: recall injects past context, search_lessons exposes corrective actions, and pre-action gates block known-bad tool calls. What does not work: thumbs up/down changing model weights, or agents self-correcting without context injection.</div>
       </div>
@@ -562,7 +562,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.npmjs.com/package/mcp-memory-gateway" target="_blank" rel="noopener">npm</a>
       <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer">Created with Perplexity Computer</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License</span>
+    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v0.8.4</span>
   </div>
 </footer>
 
