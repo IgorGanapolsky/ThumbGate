@@ -109,6 +109,23 @@ function generatePlist(schedule) {
 </plist>`;
 }
 
+function buildManagedScheduleCommand(params = {}) {
+  if (!params.jobFile) {
+    throw new Error('buildManagedScheduleCommand requires jobFile');
+  }
+
+  const runnerPath = path.join(__dirname, 'async-job-runner.js');
+  const jobFile = path.resolve(params.jobFile);
+  const autoResume = params.autoResume !== false;
+
+  return [
+    `const runner = require(${JSON.stringify(runnerPath)});`,
+    `const result = runner.runJobFromFile(${JSON.stringify(jobFile)}, ${JSON.stringify({ autoResume })});`,
+    'process.stdout.write(JSON.stringify(result, null, 2) + "\\n");',
+    'if (["failed", "cancelled"].includes(result.status)) process.exit(1);',
+  ].join(' ');
+}
+
 function createSchedule(params) {
   ensureDir();
 
@@ -118,13 +135,25 @@ function createSchedule(params) {
     return { success: false, error: `Cannot parse schedule: "${params.schedule}". Use formats like "daily 9:00", "weekly monday 8:30", "hourly"` };
   }
 
+  const jobFile = params.jobFile ? path.resolve(params.jobFile) : null;
+  const command = params.command || (jobFile ? buildManagedScheduleCommand({
+    jobFile,
+    autoResume: params.autoResume !== false,
+  }) : null);
+
+  if (!command) {
+    return { success: false, error: 'Schedule requires command or jobFile' };
+  }
+
   const schedule = {
     id,
     name: params.name || id,
     description: params.description || '',
     schedule: params.schedule,
-    command: params.command,
-    workingDirectory: params.workingDirectory || process.cwd(),
+    command,
+    jobFile,
+    resumePolicy: jobFile ? (params.autoResume !== false ? 'auto_resume' : 'fresh_only') : null,
+    workingDirectory: params.workingDirectory || (jobFile ? path.dirname(jobFile) : process.cwd()),
     calendarInterval,
     createdAt: new Date().toISOString(),
   };
@@ -190,4 +219,5 @@ module.exports = {
   escapePlistString,
   generatePlist,
   parseCronSpec,
+  buildManagedScheduleCommand,
 };
