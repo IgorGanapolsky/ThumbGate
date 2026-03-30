@@ -434,6 +434,7 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('prove'), 'Help should mention prove');
     assert.ok(result.stdout.includes('doctor'), 'Help should mention doctor');
     assert.ok(result.stdout.includes('dispatch'), 'Help should mention dispatch');
+    assert.ok(result.stdout.includes('analytics'), 'Help should mention analytics');
   });
 
   test('pro command prints truthful commercial offer info', () => {

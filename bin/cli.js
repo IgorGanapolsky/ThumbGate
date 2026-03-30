@@ -1100,6 +1100,7 @@ function help() {
   console.log('  pulse                   Show real-time GTM velocity and Mission Control summary');
   console.log('  dispatch                Dispatch-safe brief — metrics, gates, and read-only prompt templates');
   console.log('  gate-stats              Show gate statistics — active gates, blocks, warns, time saved');
+  console.log('  analytics               Unified ThumbGate analytics snapshot (npm, GitHub, landing page)');
   console.log('  start-api             Start the Memory Gateway HTTPS API server');
   console.log('  help                  Show this help message');
   console.log('');
@@ -1241,6 +1242,11 @@ switch (COMMAND) {
   case 'dashboard':
     dashboard();
     break;
+  case 'analytics': {
+    const { run: runAnalytics } = require(path.join(PKG_ROOT, 'scripts', 'analytics-report'));
+    runAnalytics();
+    break;
+  }
   case 'start-api':
     startApi();
     break;
