@@ -13,6 +13,15 @@ function ensureDir() {
   if (!fs.existsSync(SCHEDULES_DIR)) fs.mkdirSync(SCHEDULES_DIR, { recursive: true });
 }
 
+function escapePlistString(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /**
  * Parse a simple cron-like spec into LaunchAgent calendar intervals
  * Supports: "daily 9:00", "weekly monday 8:30", "hourly", "every 6h"
@@ -54,7 +63,7 @@ function parseCronSpec(spec) {
 }
 
 function generatePlist(schedule) {
-  const label = `${PLIST_PREFIX}.${schedule.id}`;
+  const label = escapePlistString(`${PLIST_PREFIX}.${schedule.id}`);
   const interval = schedule.calendarInterval;
 
   let intervalXml = '<dict>\n';
@@ -63,7 +72,11 @@ function generatePlist(schedule) {
   }
   intervalXml += '    </dict>';
 
-  const logDir = path.join(os.homedir(), '.rlhf', 'logs');
+  const logDir = escapePlistString(path.join(os.homedir(), '.rlhf', 'logs'));
+  const workingDirectory = escapePlistString(schedule.workingDirectory || os.homedir());
+  const command = escapePlistString(schedule.command);
+  const homeDir = escapePlistString(os.homedir());
+  const escapedScheduleId = escapePlistString(schedule.id);
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -75,22 +88,22 @@ function generatePlist(schedule) {
     <array>
         <string>${process.execPath}</string>
         <string>-e</string>
-        <string>${schedule.command.replace(/"/g, '\\"')}</string>
+        <string>${command}</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>${schedule.workingDirectory || os.homedir()}</string>
+    <string>${workingDirectory}</string>
     <key>StartCalendarInterval</key>
     ${intervalXml}
     <key>StandardOutPath</key>
-    <string>${logDir}/schedule-${schedule.id}.log</string>
+    <string>${logDir}/schedule-${escapedScheduleId}.log</string>
     <key>StandardErrorPath</key>
-    <string>${logDir}/schedule-${schedule.id}-error.log</string>
+    <string>${logDir}/schedule-${escapedScheduleId}-error.log</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
         <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
         <key>HOME</key>
-        <string>${os.homedir()}</string>
+        <string>${homeDir}</string>
     </dict>
 </dict>
 </plist>`;
@@ -170,4 +183,11 @@ function deleteSchedule(id) {
   return { success: true, message: `Schedule "${id}" deleted` };
 }
 
-module.exports = { createSchedule, listSchedules, deleteSchedule, parseCronSpec };
+module.exports = {
+  createSchedule,
+  listSchedules,
+  deleteSchedule,
+  escapePlistString,
+  generatePlist,
+  parseCronSpec,
+};
