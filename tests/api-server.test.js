@@ -110,7 +110,7 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /FAQPage/);
   assert.match(body, /SoftwareApplication/);
   assert.match(body, /\$49/);
-  assert.match(body, /plausible\.io\/js\/pa-/);
+  assert.match(body, /plausible\.io\/js\/script\.js/);
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
   assert.match(body, /google-site-verification" content="test-verification-token"/);
   assert.match(body, /gtag\('config', 'G-TEST1234', \{ send_page_view: false \}\)/);
