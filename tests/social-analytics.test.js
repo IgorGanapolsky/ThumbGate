@@ -206,13 +206,14 @@ describe('social-analytics store', () => {
 
     const db = initDb(':memory:');
 
+    const today = new Date().toISOString().slice(0, 10);
     upsertMetric(db, {
       platform: 'instagram',
       content_type: 'carousel',
       post_id: 'test_post_1',
       post_url: 'https://instagram.com/p/test',
-      published_at: '2026-03-21T10:00:00Z',
-      metric_date: '2026-03-21',
+      published_at: `${today}T10:00:00Z`,
+      metric_date: today,
       impressions: 100,
       reach: 50,
       likes: 10,
@@ -233,7 +234,7 @@ describe('social-analytics store', () => {
     upsertFollowerSnapshot(db, {
       platform: 'instagram',
       follower_count: 150,
-      snapshot_date: '2026-03-21',
+      snapshot_date: today,
     });
 
     const history = getFollowerHistory(db, { platform: 'instagram', days: 7 });
