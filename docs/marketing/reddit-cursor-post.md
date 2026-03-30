@@ -14,11 +14,15 @@
 
 I keep running into the same thing: I correct Cursor mid-session — "don't force-push," "always run tests before committing," "use the existing helper, don't write a new one" — and it listens. That session is great.
 
-Next session? It's like the conversation never happened. Same force-push. Same skipped tests. Same duplicate helper function. I've tried beefing up my `.cursorrules` and adding more context to system prompts, but it only partially helps. The rules file captures general patterns, but the agent doesn't learn from specific mistakes it made in *my* project.
+Next session? Groundhog Day. Same force-push. Same skipped tests. Same duplicate helper.
 
-What actually changed things for me was hooking into the agent's tool execution layer — intercepting commands like `git push` or `rm -rf` *before* they run and checking them against a list of validated failure patterns. Not a memory file the agent reads. A physical gate that blocks the action. The gate list grows from structured feedback (not just thumbs up/down, but "what went wrong" and "what to change"), and rules that fire too often or too rarely get reweighted automatically.
+What finally worked for me was dead simple: **thumbs down the mistake.** Not just a mental note — an actual structured signal: what went wrong, what to change. The system turns that 👎 into a prevention rule, and the agent is physically blocked from repeating it next time.
 
-It's made a real difference — the agent literally can't repeat a known mistake once a rule exists for it.
+👍 works too — it reinforces the behavior you want to keep. Over time, the good patterns strengthen and the bad ones literally can't execute.
+
+No prompt engineering. No manually updating `.cursorrules` every session. You just react with 👍 or 👎 as you work, and the enforcement builds itself from your feedback.
+
+The agent literally can't repeat a known mistake once a rule exists for it.
 
 Curious how others are handling cross-session reliability. Are `.cursorrules` and manual prompting enough for your workflow, or have you found something that sticks better?
 
@@ -26,8 +30,8 @@ Curious how others are handling cross-session reliability. Are `.cursorrules` an
 
 **Comment (post immediately after, only if the post stays up):**
 
-For those asking how the gate system works — I built it as an open-source Cursor plugin. Repo is here: https://github.com/IgorGanapolsky/mcp-memory-gateway
+For those asking how the 👍/👎 system works — I built it as an open-source MCP server. Repo is here: https://github.com/IgorGanapolsky/mcp-memory-gateway
 
-It includes pre-action hooks, feedback capture with schema validation, and Thompson Sampling for adaptive rule enforcement. MIT licensed, fully local (no cloud, no telemetry). Happy to explain any of the internals.
+👍 reinforces good behavior. 👎 auto-generates a prevention rule that blocks the action before it executes. MIT licensed, fully local. Happy to answer questions.
 
 Disclosure: I built this.

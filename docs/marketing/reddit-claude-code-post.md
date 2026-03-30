@@ -14,16 +14,18 @@
 
 I've been using Claude Code full-time for about 6 months. The in-session experience is great — you correct it, it adjusts, the rest of the session is smooth.
 
-But next session? Complete amnesia. Same force-push to main. Same skipped tests. Same "let me rewrite that helper function that already exists." CLAUDE.md helps for general patterns, but it doesn't prevent the agent from ignoring specific lessons it should have learned.
+But next session? Complete amnesia. Same force-push to main. Same skipped tests. Same "let me rewrite that helper function that already exists."
 
 I tried a few things that didn't stick:
 - Longer CLAUDE.md with explicit "never do X" lists — works sometimes, gets ignored when context is tight
-- Saving chat history and re-injecting it — too noisy, the agent can't parse what matters
+- Saving chat history and re-injecting it — too noisy, agent can't parse what matters
 - Manual pre-commit hooks — catches some things but can't cover agent-specific patterns
 
-What actually worked was shifting from "tell the agent what not to do" to "physically prevent the agent from doing it." Instead of a memory the agent reads, I set up hooks at the tool-call layer that intercept commands before they execute and check them against validated failure patterns. The agent literally can't force-push if there's a rule against it — it's not a suggestion, it's a gate.
+What actually worked was embarrassingly simple: **give it a 👎 when it screws up.** Not just a vague signal — structured: what went wrong, what to change. That thumbs-down becomes a prevention rule. The rule becomes a gate that fires *before* the tool call executes. The agent physically can't force-push if a 👎 rule exists for it.
 
-The rules come from structured feedback — not just "that was wrong" but "what went wrong + what to change." When the same pattern shows up repeatedly, it auto-promotes into an active gate.
+👍 works the other way — reinforces behavior you want to keep. Over time, the 👍/👎 signals build an immune system. Good patterns strengthen. Bad patterns are blocked at execution.
+
+No prompt engineering. No manually updating CLAUDE.md. You just react as you work and the enforcement builds itself.
 
 Has this been a pain point for others? How are you handling cross-session reliability — just CLAUDE.md, or have you found something more persistent?
 
@@ -31,8 +33,8 @@ Has this been a pain point for others? How are you handling cross-session reliab
 
 **Comment (post if someone asks for the tool):**
 
-For those asking — I open-sourced the gate system I described: https://github.com/IgorGanapolsky/mcp-memory-gateway
+For those asking — I open-sourced the 👍/👎 system: https://github.com/IgorGanapolsky/mcp-memory-gateway
 
-It's an MCP server that captures feedback, auto-promotes repeated failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Cursor, Codex, Gemini CLI, and Amp. MIT licensed, fully local.
+👍 reinforces good behavior. 👎 auto-generates a prevention rule that blocks the action. Works with Claude Code, Cursor, Codex, Gemini, Amp. MIT licensed, fully local, completely free.
 
 Disclosure: I built this.

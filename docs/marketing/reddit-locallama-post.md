@@ -2,37 +2,32 @@
 
 **Subreddit:** r/LocalLLaMA
 **Account:** u/eazyigz123
-**Post type:** Technical discussion — algorithm tradeoffs, no product links in body
+**Post type:** Technical discussion — accessible framing, no product links in body
 
 ---
 
-**Title:** Using Thompson Sampling for adaptive pre-action gates in AI agent workflows — worth it or overkill?
+**Title:** Has anyone built a feedback loop where thumbs-down actually blocks the agent from repeating a mistake?
 
 ---
 
 **Body:**
 
-Working on a reliability layer for AI coding agents and ran into an interesting algorithmic tradeoff I wanted to get opinions on.
+I've been running local models for coding tasks and hit a pattern I think most people here have seen: you correct the agent, it adjusts, and next session it does the exact same thing again. System prompts help, but the agent can read a rule and still ignore it.
 
-**The problem:** You have a set of prevention rules that gate agent actions — things like "don't force-push to main" or "don't delete files matching *.env." Each rule fires before a tool call executes and can block it. The challenge is that static rules degrade over time: some fire too aggressively (false positives cause alert fatigue, the user starts ignoring gates), and some fire too rarely to justify the overhead of checking them.
+I tried a different approach: **give the agent a thumbs down 👎 when it screws up.** Not just a signal — a structured capture: what went wrong, what should change. That thumbs-down gets promoted into a prevention rule. The rule becomes a gate. The gate fires *before* the agent's tool call executes and blocks it. The agent physically cannot repeat the mistake.
 
-**What I tried:** Thompson Sampling, where each rule maintains a Beta(alpha, beta) distribution over its block/pass history. When the agent requests a tool call, the gate engine samples from each relevant rule's distribution and decides whether to enforce it. Rules with high uncertainty (new rules, or rules that haven't been tested much) get sampled more aggressively — essentially maximum exploration. Rules that have a strong track record of correct blocks settle into reliable enforcement. Rules that consistently fire on legitimate actions decay naturally.
+👍 works the other way — it reinforces good behavior. Over time you get an adaptive system where patterns the agent should follow get stronger, and patterns it should avoid are blocked at the execution layer.
 
-**The tradeoff I'm stuck on:** Cold start. A brand new rule has Beta(1,1) — uniform prior — which means it gets maximum exploration weight. In practice, this means new rules fire very aggressively in their first ~20 evaluations, which feels punitive to the user. You just created a rule and suddenly it's blocking everything.
+The interesting technical bit: the rules use Thompson Sampling (Beta distributions) to adapt. New rules start with high uncertainty and explore aggressively. Rules with a track record of correct blocks settle into stable enforcement. Rules that fire on legitimate actions decay. It's basically a bandit over your feedback history.
 
-I tried a few mitigations:
-- Warm start with Beta(2,5) — biased toward passing, so new rules are lenient by default and tighten only after confirmed blocks
-- Decay factor on alpha — old successes count less, so rules that haven't triggered recently lose confidence
-- Separate exploration budget — only N rules per session can be in "exploration mode"
+The cold-start question is the tricky part — a brand new rule has Beta(1,1) and fires very aggressively in its first ~20 evaluations. Warm-starting with Beta(2,5) helps but means genuinely dangerous rules (like blocking `rm -rf`) don't activate fast enough.
 
-Each has its own failure mode. The warm start means genuinely dangerous rules (like the rm -rf gate) don't activate fast enough. The decay factor causes oscillation in stable rules. The exploration budget creates priority conflicts.
-
-Has anyone used Thompson Sampling or other bandit approaches (UCB1, EXP3, contextual bandits) for rule selection or policy enforcement in agentic systems? Curious if there's a cleaner solution to the cold-start problem that I'm missing.
+Has anyone used bandit approaches (UCB1, EXP3, contextual bandits) for rule enforcement in agentic systems? Curious if there's a cleaner cold-start solution.
 
 ---
 
 **Comment (post if someone asks to see the implementation):**
 
-Implementation is here if you want to look at the gate engine code: https://github.com/IgorGanapolsky/mcp-memory-gateway — the Thompson Sampling logic is in the pre-action gate evaluator. MIT licensed.
+Implementation is here: https://github.com/IgorGanapolsky/mcp-memory-gateway — the 👍/👎 feedback pipeline, Thompson Sampling, and gate engine are all in there. MIT licensed.
 
 Disclosure: I built this.
