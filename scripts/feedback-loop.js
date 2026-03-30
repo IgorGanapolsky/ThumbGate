@@ -1009,6 +1009,16 @@ function captureFeedback(params) {
 }
 
 function analyzeFeedback(logPath) {
+  // Fast path: use SQLite if available (prevents 300s JSONL scan timeout)
+  const db = getLessonDB();
+  if (db) {
+    try {
+      const { getStatsFromDB } = require('./lesson-db');
+      const sqliteStats = getStatsFromDB(db);
+      if (sqliteStats.total > 0) return sqliteStats;
+    } catch { /* fall through to JSONL scan */ }
+  }
+
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
   const entries = readJSONL(logPath || FEEDBACK_LOG_PATH);
   const diagnosticLogPath = path.join(path.dirname(logPath || FEEDBACK_LOG_PATH), 'diagnostic-log.jsonl');

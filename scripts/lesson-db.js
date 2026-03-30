@@ -87,7 +87,77 @@ function initDB(dbPath) {
     END;
   `);
 
+  // Session search table — stores session notes for cross-session recall
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      project TEXT,
+      branch TEXT,
+      summary TEXT,
+      content TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE VIRTUAL TABLE IF NOT EXISTS sessions_fts USING fts5(
+      summary, content,
+      content=sessions,
+      content_rowid=rowid
+    );
+
+    CREATE TRIGGER IF NOT EXISTS sessions_ai AFTER INSERT ON sessions BEGIN
+      INSERT INTO sessions_fts(rowid, summary, content)
+      VALUES (new.rowid, new.summary, new.content);
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS sessions_ad AFTER DELETE ON sessions BEGIN
+      INSERT INTO sessions_fts(sessions_fts, rowid, summary, content)
+      VALUES ('delete', old.rowid, old.summary, old.content);
+    END;
+  `);
+
   return db;
+}
+
+/**
+ * Upsert a session note into SQLite for cross-session search.
+ */
+function upsertSession(db, session) {
+  db.prepare(`
+    INSERT OR REPLACE INTO sessions (id, project, branch, summary, content, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(
+    session.id,
+    session.project || null,
+    session.branch || null,
+    session.summary || null,
+    session.content || '',
+    session.created_at || new Date().toISOString(),
+  );
+  return session.id;
+}
+
+/**
+ * Full-text search across past sessions using FTS5.
+ */
+function searchSessions(db, query, limit = 10) {
+  if (!query || !query.trim()) {
+    return db.prepare('SELECT * FROM sessions ORDER BY created_at DESC LIMIT ?').all(limit);
+  }
+  const ftsQuery = sanitizeFtsQuery(query);
+  try {
+    return db.prepare(`
+      SELECT s.*, rank
+      FROM sessions_fts fts
+      JOIN sessions s ON s.rowid = fts.rowid
+      WHERE sessions_fts MATCH ?
+      ORDER BY rank
+      LIMIT ?
+    `).all(ftsQuery, limit);
+  } catch {
+    return db.prepare(
+      'SELECT * FROM sessions WHERE content LIKE ? OR summary LIKE ? ORDER BY created_at DESC LIMIT ?',
+    ).all(`%${query}%`, `%${query}%`, limit);
+  }
 }
 
 /**
@@ -391,6 +461,32 @@ function getStats(db) {
 }
 
 /**
+ * Fast stats computation from SQLite — replaces slow JSONL scan.
+ * Used by feedback_stats MCP tool to prevent 300s timeouts.
+ */
+function getStatsFromDB(db) {
+  const total = db.prepare('SELECT COUNT(*) as count FROM lessons').get().count;
+  const positive = db.prepare("SELECT COUNT(*) as count FROM lessons WHERE signal = 'positive'").get().count;
+  const negative = db.prepare("SELECT COUNT(*) as count FROM lessons WHERE signal = 'negative'").get().count;
+  const byDomain = db.prepare('SELECT domain, COUNT(*) as count FROM lessons GROUP BY domain ORDER BY count DESC').all();
+  const byImportance = db.prepare('SELECT importance, COUNT(*) as count FROM lessons GROUP BY importance ORDER BY count DESC').all();
+  const recentLessons = db.prepare('SELECT id, signal, context, domain, timestamp FROM lessons ORDER BY timestamp DESC LIMIT 10').all();
+  const sessionCount = db.prepare('SELECT COUNT(*) as count FROM sessions').get().count;
+
+  return {
+    source: 'sqlite',
+    total,
+    positive,
+    negative,
+    positiveRate: total > 0 ? Math.round((positive / total) * 100) : 0,
+    byDomain,
+    byImportance,
+    recentLessons,
+    sessionCount,
+  };
+}
+
+/**
  * Backfill SQLite from existing JSONL files.
  * Reads feedback-log.jsonl and memory-log.jsonl, upserts all records.
  */
@@ -503,11 +599,14 @@ function readJsonlSafe(filePath) {
 module.exports = {
   initDB,
   upsertLesson,
+  upsertSession,
+  searchSessions,
   findDuplicate,
   compactLessons,
   searchLessons,
   inferCorrectiveActions,
   getStats,
+  getStatsFromDB,
   backfillFromJsonl,
   DEFAULT_DB_PATH,
 };

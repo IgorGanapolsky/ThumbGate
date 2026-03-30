@@ -1115,6 +1115,13 @@ function help() {
   proNudge();
 }
 
+if (COMMAND === 'daemon' || COMMAND === 'serve-daemon') {
+  const subCmd = process.argv[3] || 'status';
+  const { manageDaemon } = require(path.join(PKG_ROOT, 'scripts', 'daemon-manager'));
+  manageDaemon(subCmd);
+  process.exit(0);
+}
+
 switch (COMMAND) {
   case 'init':
     init();
