@@ -29,11 +29,34 @@ const {
 
 // Lesson DB — SQLite+FTS5 backing store (dual-write alongside JSONL)
 let _lessonDB = null;
+let _lessonDBPath = null;
+
+function resolveLessonDbPath() {
+  if (process.env.LESSON_DB_PATH) return process.env.LESSON_DB_PATH;
+  if (process.env.RLHF_FEEDBACK_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+    return path.join(getFeedbackPaths().FEEDBACK_DIR, 'lessons.sqlite');
+  }
+  return null;
+}
+
 function getLessonDB() {
-  if (_lessonDB) return _lessonDB;
+  const desiredPath = resolveLessonDbPath();
+  if (_lessonDB && _lessonDBPath === desiredPath) return _lessonDB;
+
+  if (_lessonDB && _lessonDBPath !== desiredPath) {
+    try {
+      _lessonDB.close();
+    } catch {
+      // Non-critical; reopen on the new path below.
+    }
+    _lessonDB = null;
+    _lessonDBPath = null;
+  }
+
   try {
     const { initDB } = require('./lesson-db');
-    _lessonDB = initDB();
+    _lessonDB = desiredPath ? initDB(desiredPath) : initDB();
+    _lessonDBPath = desiredPath;
     return _lessonDB;
   } catch (_err) {
     return null; // SQLite unavailable — degrade gracefully
@@ -158,6 +181,58 @@ function ensureDir(dirPath) {
 function appendJSONL(filePath, record) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
+}
+
+function normalizeAnalysisShape(analysis = {}) {
+  const total = Number.isFinite(analysis.total) ? analysis.total : 0;
+  const totalPositive = Number.isFinite(analysis.totalPositive)
+    ? analysis.totalPositive
+    : Number.isFinite(analysis.positive) ? analysis.positive : 0;
+  const totalNegative = Number.isFinite(analysis.totalNegative)
+    ? analysis.totalNegative
+    : Number.isFinite(analysis.negative) ? analysis.negative : Math.max(0, total - totalPositive);
+  const approvalRate = Number.isFinite(analysis.approvalRate)
+    ? analysis.approvalRate
+    : Number.isFinite(analysis.positiveRate)
+      ? Number((analysis.positiveRate / 100).toFixed(3))
+      : total > 0 ? Number((totalPositive / total).toFixed(3)) : 0;
+  const recentRate = Number.isFinite(analysis.recentRate) ? analysis.recentRate : approvalRate;
+
+  return {
+    total,
+    totalPositive,
+    totalNegative,
+    approvalRate,
+    recentRate,
+    windows: analysis.windows || {
+      '7d': { total: 0, positive: 0, rate: 0 },
+      '30d': { total: 0, positive: 0, rate: 0 },
+      lifetime: { total, positive: totalPositive, rate: approvalRate },
+    },
+    trend: analysis.trend || 'stable',
+    skills: analysis.skills || {},
+    tags: analysis.tags || {},
+    rubric: {
+      samples: 0,
+      blockedPromotions: 0,
+      failingCriteria: {},
+      ...(analysis.rubric || {}),
+    },
+    diagnostics: analysis.diagnostics || {
+      totalDiagnosed: 0,
+      categories: [],
+      criticalFailureSteps: [],
+      repeatedViolations: [],
+    },
+    delegation: analysis.delegation || null,
+    boostedRisk: analysis.boostedRisk || null,
+    recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
+    source: analysis.source,
+    byDomain: Array.isArray(analysis.byDomain) ? analysis.byDomain : [],
+    byImportance: Array.isArray(analysis.byImportance) ? analysis.byImportance : [],
+    recentLessons: Array.isArray(analysis.recentLessons) ? analysis.recentLessons : [],
+    sessionCount: Number.isFinite(analysis.sessionCount) ? analysis.sessionCount : 0,
+  };
 }
 
 /**
@@ -1009,21 +1084,26 @@ function captureFeedback(params) {
 }
 
 function analyzeFeedback(logPath) {
-  // Fast path: use SQLite if available (prevents 300s JSONL scan timeout)
-  const db = getLessonDB();
-  if (db) {
+  const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
+  const resolvedLogPath = logPath || FEEDBACK_LOG_PATH;
+  const feedbackDir = path.dirname(resolvedLogPath);
+  const paths = buildPathsFromDir(feedbackDir);
+  const shouldUseSQLite = !logPath || path.resolve(resolvedLogPath) === path.resolve(FEEDBACK_LOG_PATH);
+  const entries = readJSONL(resolvedLogPath);
+  const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');
+  const diagnosticEntries = readDiagnosticEntries(diagnosticLogPath);
+
+  // Prefer the JSONL mirror for full analytics fidelity. Fall back to SQLite only
+  // when the mirror is unavailable so dashboards and proof paths keep their full shape.
+  const db = shouldUseSQLite ? getLessonDB() : null;
+  if (db && entries.length === 0) {
     try {
       const { getStatsFromDB } = require('./lesson-db');
       const sqliteStats = getStatsFromDB(db);
-      if (sqliteStats.total > 0) return sqliteStats;
+      if (sqliteStats.total > 0) return normalizeAnalysisShape(sqliteStats);
     } catch { /* fall through to JSONL scan */ }
   }
 
-  const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
-  const entries = readJSONL(logPath || FEEDBACK_LOG_PATH);
-  const diagnosticLogPath = path.join(path.dirname(logPath || FEEDBACK_LOG_PATH), 'diagnostic-log.jsonl');
-  const diagnosticEntries = readDiagnosticEntries(diagnosticLogPath);
-  const paths = getFeedbackPaths();
   const skills = {};
   const tags = {};
   const rubricCriteria = {};
@@ -1163,7 +1243,7 @@ function analyzeFeedback(logPath) {
     recommendations.push(`DIAGNOSE '${bucket.key}' failures (${bucket.count})`);
   });
 
-  return {
+  return normalizeAnalysisShape({
     total,
     totalPositive,
     totalNegative,
@@ -1182,7 +1262,7 @@ function analyzeFeedback(logPath) {
     delegation,
     boostedRisk,
     recommendations,
-  };
+  });
 }
 
 function buildPreventionRules(minOccurrences = 2, options = {}) {

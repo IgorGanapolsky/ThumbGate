@@ -5,6 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   getPrStatus,
+  isOpenPr,
   loadManagedPrs,
   managePrs,
   resolveBlockers,
@@ -149,6 +150,45 @@ test('PR Manager - loadManagedPrs falls back to open PR list when branch has no 
   ]);
 
   assert.deepEqual(loadManagedPrs('', runner), [mockPr]);
+});
+
+test('PR Manager - isOpenPr returns false for merged PR state', () => {
+  assert.equal(isOpenPr({ state: 'MERGED' }), false);
+  assert.equal(isOpenPr({ state: 'OPEN' }), true);
+});
+
+test('PR Manager - loadManagedPrs falls back to open PR list when current branch PR is already merged', () => {
+  const openPr = {
+    number: 398,
+    state: 'OPEN',
+    title: 'Repo open PR',
+    mergeable: 'MERGEABLE',
+    mergeStateStatus: 'CLEAN',
+    isDraft: false,
+    statusCheckRollup: []
+  };
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        number: 401,
+        state: 'MERGED',
+        title: 'Merged current-branch PR',
+        mergeable: 'UNKNOWN',
+        mergeStateStatus: 'UNKNOWN',
+        isDraft: false,
+        statusCheckRollup: []
+      }),
+      stderr: ''
+    },
+    {
+      status: 0,
+      stdout: JSON.stringify([openPr]),
+      stderr: ''
+    }
+  ]);
+
+  assert.deepEqual(loadManagedPrs('', runner), [openPr]);
 });
 
 test('PR Manager - managePrs returns noop when there are no open PRs', async () => {

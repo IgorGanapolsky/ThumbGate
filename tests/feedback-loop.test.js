@@ -34,6 +34,12 @@ function appendJSONL(filePath, record) {
   fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
 }
 
+function loadFreshFeedbackLoop() {
+  delete require.cache[require.resolve('../scripts/feedback-loop')];
+  delete require.cache[require.resolve('../scripts/lesson-db')];
+  return require('../scripts/feedback-loop');
+}
+
 // -- inferDomain --
 
 test('inferDomain: tags=["testing"] returns "testing"', () => {
@@ -389,6 +395,90 @@ test('analyzeFeedback: includes boosted risk summary after sequence training row
 
   const summary = feedbackSummary();
   assert.ok(summary.includes('Boosted risk'), `expected boosted risk line in summary, got: ${summary}`);
+});
+
+test('analyzeFeedback: SQLite fast path stays scoped to the active feedback dir and preserves the full shape', (t) => {
+  const tmpDir = makeTmpDir();
+  const prevFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+  const prevLessonDbPath = process.env.LESSON_DB_PATH;
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  delete process.env.LESSON_DB_PATH;
+
+  t.after(() => {
+    if (prevFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
+    else process.env.RLHF_FEEDBACK_DIR = prevFeedbackDir;
+    if (prevLessonDbPath === undefined) delete process.env.LESSON_DB_PATH;
+    else process.env.LESSON_DB_PATH = prevLessonDbPath;
+    delete require.cache[require.resolve('../scripts/feedback-loop')];
+    delete require.cache[require.resolve('../scripts/lesson-db')];
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const freshLoop = loadFreshFeedbackLoop();
+  freshLoop.captureFeedback({
+    signal: 'up',
+    context: 'ran full verification with logs',
+    whatWorked: 'evidence attached',
+    tags: ['testing', 'verification'],
+  });
+  freshLoop.captureFeedback({
+    signal: 'down',
+    context: 'skipped tests and shipped a regression',
+    whatWentWrong: 'verification skipped',
+    whatToChange: 'always run tests first',
+    tags: ['testing', 'verification'],
+  });
+
+  const analysis = freshLoop.analyzeFeedback();
+  assert.equal(analysis.total, 2);
+  assert.equal(analysis.totalPositive, 1);
+  assert.equal(analysis.totalNegative, 1);
+  assert.equal(typeof analysis.approvalRate, 'number');
+  assert.ok(Array.isArray(analysis.recommendations));
+  assert.equal(typeof analysis.rubric.blockedPromotions, 'number');
+  assert.ok(fs.existsSync(path.join(tmpDir, 'lessons.sqlite')), 'expected scoped SQLite lesson DB in feedback dir');
+
+  const summary = freshLoop.feedbackSummary();
+  assert.match(summary, /Overall approval:\s+50%/);
+});
+
+test('analyzeFeedback: explicit logPath bypasses unrelated SQLite state', (t) => {
+  const feedbackDir = makeTmpDir();
+  const isolatedDir = makeTmpDir();
+  const isolatedLogPath = path.join(isolatedDir, 'feedback-log.jsonl');
+  const prevFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+  const prevLessonDbPath = process.env.LESSON_DB_PATH;
+  process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+  delete process.env.LESSON_DB_PATH;
+
+  t.after(() => {
+    if (prevFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
+    else process.env.RLHF_FEEDBACK_DIR = prevFeedbackDir;
+    if (prevLessonDbPath === undefined) delete process.env.LESSON_DB_PATH;
+    else process.env.LESSON_DB_PATH = prevLessonDbPath;
+    delete require.cache[require.resolve('../scripts/feedback-loop')];
+    delete require.cache[require.resolve('../scripts/lesson-db')];
+    try { fs.rmSync(feedbackDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+    try { fs.rmSync(isolatedDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const freshLoop = loadFreshFeedbackLoop();
+  freshLoop.captureFeedback({
+    signal: 'up',
+    context: 'writes a single SQLite-backed record',
+    whatWorked: 'local DB scoped correctly',
+    tags: ['testing'],
+  });
+
+  appendJSONL(isolatedLogPath, { signal: 'positive', tags: ['api'] });
+  appendJSONL(isolatedLogPath, { signal: 'negative', tags: ['api'] });
+  appendJSONL(isolatedLogPath, { signal: 'positive', tags: ['api'] });
+
+  const analysis = freshLoop.analyzeFeedback(isolatedLogPath);
+  assert.equal(analysis.total, 3);
+  assert.equal(analysis.totalPositive, 2);
+  assert.equal(analysis.totalNegative, 1);
+  assert.equal(analysis.tags.api.total, 3);
 });
 
 test('analyzeFeedback and prevention rules include persisted diagnostic records outside feedback capture', (t) => {

@@ -28,8 +28,6 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 
 # Configuration
-# rlhf path: scripts/train_from_feedback.py → scripts/ → rlhf/
-SCRIPT_DIR = Path(__file__).parent
 PROJECT_ROOT = Path(__file__).parent.parent
 FEEDBACK_LOG = PROJECT_ROOT / ".claude" / "memory" / "feedback" / "feedback-log.jsonl"
 MODEL_FILE = PROJECT_ROOT / ".claude" / "memory" / "feedback" / "feedback_model.json"
@@ -108,14 +106,14 @@ def load_config(config_path: Optional[str]) -> Dict:
     return DEFAULT_CATEGORIES
 
 
-def load_model() -> Dict:
+def load_model(categories: Optional[Dict[str, Any]] = None) -> Dict:
     """Load existing model or create with uniform priors."""
     if MODEL_FILE.exists():
         try:
             return json.loads(MODEL_FILE.read_text())
         except json.JSONDecodeError:
             pass
-    return create_initial_model(DEFAULT_CATEGORIES)
+    return create_initial_model(categories or DEFAULT_CATEGORIES)
 
 
 def create_initial_model(categories: Dict) -> Dict:
@@ -262,9 +260,9 @@ def train_incremental(categories: Dict) -> Dict:
     """Incremental update: process only the latest entry."""
     entries = load_feedback_entries()
     if not entries:
-        return load_model()
+        return load_model(categories)
 
-    model = load_model()
+    model = load_model(categories)
 
     # Ensure all categories exist
     for cat_name in categories:
@@ -292,7 +290,7 @@ def train_incremental(categories: Dict) -> Dict:
     return model
 
 
-def compute_reliability(model: Dict) -> List[Tuple[str, float, float, float, int]]:
+def compute_reliability(model: Dict) -> List[Tuple[str, float, float, float, int, float]]:
     """Compute reliability (posterior mean) for each category."""
     results = []
     for cat_name, params in model.get("categories", {}).items():
@@ -614,9 +612,9 @@ def train_dpo(categories: Dict) -> Dict:
     pairs = build_preference_pairs(categories)
     if not pairs:
         print("No preference pairs found. Need both positive and negative feedback per category.")
-        return load_model()
+        return load_model(categories)
 
-    model = load_model()
+    model = load_model(categories)
 
     dpo_adjustments = {}
 
@@ -836,7 +834,7 @@ def main():
             print(f"Incremental update complete. Total entries: {model['total_entries']}")
 
     elif args.reliability:
-        model = load_model()
+        model = load_model(categories)
         if args.json:
             results = compute_reliability(model)
             output = {
@@ -852,7 +850,7 @@ def main():
             print_reliability_table(model)
 
     elif args.sample:
-        model = load_model()
+        model = load_model(categories)
         if args.json:
             samples = sample_posteriors(model)
             print(json.dumps(samples, indent=2))
@@ -860,7 +858,7 @@ def main():
             print_samples(model)
 
     elif args.snapshot:
-        model = load_model()
+        model = load_model(categories)
         snapshot_file = save_snapshot(model)
         if args.json:
             print(json.dumps({"snapshot": str(snapshot_file)}))

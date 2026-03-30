@@ -28,9 +28,9 @@ const DEFAULT_TIMEOUT_MS = 120_000;
 /**
  * Returns the public URL for a locally staged image file.
  *
- * NOTE: This is a placeholder. Wire in the Cloudflare R2 SDK (or AWS S3 SDK)
- * to actually upload `localPath` to the bucket and return the resulting URL.
- * For now we assume the file has already been staged at the public base URL.
+ * NOTE: This helper currently assumes the file has already been staged at the
+ * public base URL. If we later enable direct uploads here, use the Cloudflare
+ * R2 or AWS S3 SDK and return the resulting hosted URL.
  *
  * @param {string} localPath - Absolute or relative path to the image file.
  * @returns {string} Publicly accessible HTTPS URL.
@@ -40,8 +40,6 @@ function uploadImageToR2(localPath) {
   if (!r2Base) throw new Error('R2_PUBLIC_URL is not set');
 
   const filename = path.basename(localPath);
-  // TODO: Replace with actual R2/S3 upload using the AWS SDK v3 or
-  //       @cloudflare/workers-types + fetch upload. Return the resulting URL.
   return `${r2Base}/${filename}`;
 }
 

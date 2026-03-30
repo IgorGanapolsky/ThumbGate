@@ -7,7 +7,7 @@ PROD_URL    = https://rlhf-feedback-loop-production.up.railway.app
 REPO        = IgorGanapolsky/ThumbGate
 NPM_PKG     = mcp-memory-gateway
 NPM_PRO_PKG = mcp-memory-gateway-pro
-VERSION     = 0.8.3  (source of truth: package.json → scripts/sync-version.js propagates)
+VERSION     = package.json  (source of truth: scripts/sync-version.js propagates release surfaces)
 DEPLOY      = Railway auto-deploys from main via Docker (2-5 min rebuild)
 ```
 
@@ -28,6 +28,7 @@ Stack: Node.js >=18.18.0, SQLite+FTS5 lesson DB, Thompson Sampling, LanceDB vect
 | Pattern | Why |
 |---------|-----|
 | `.claude/worktrees/*` | Ephemeral agent workspaces |
+| `.claude/memory/*.sqlite*` | Local lesson DB runtime artifacts |
 | `.rlhf/*` | Runtime artifacts |
 | `.claude/memory/feedback/lancedb/*` | Generated vector store |
 | `.env`, `*.pem`, `*.key` | Secrets |
@@ -41,7 +42,8 @@ Stack: Node.js >=18.18.0, SQLite+FTS5 lesson DB, Thompson Sampling, LanceDB vect
 sleep 180
 
 # Step 2: Verify the health endpoint returns the new version
-curl -s https://rlhf-feedback-loop-production.up.railway.app/health | grep '"version":"0.8.3"'
+EXPECTED_VERSION="$(node -p "require('./package.json').version")"
+curl -s https://rlhf-feedback-loop-production.up.railway.app/health | grep "\"version\":\"${EXPECTED_VERSION}\""
 
 # Step 3: Verify the dashboard loads
 curl -s https://rlhf-feedback-loop-production.up.railway.app/dashboard | grep 'ThumbGate Dashboard'
