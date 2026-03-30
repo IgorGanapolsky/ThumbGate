@@ -8,20 +8,20 @@
 
 **Body:**
 
-I built an MCP server that prevents AI coding agents from repeating known mistakes. It's called ThumbGate.
+I built ThumbGate — an MCP server where 👎 thumbs down blocks the agent from repeating a mistake, and 👍 thumbs up reinforces the good stuff.
 
-The problem: AI agents lose memory between sessions. You tell Claude "don't push without checking PR threads" on Monday, and by Wednesday it's doing it again. Multiply that by every mistake across every project.
+The problem: AI agents lose memory between sessions. You tell Claude "don't push without checking PR threads" on Monday, and by Wednesday it's doing it again.
 
-What this does, concretely:
+How it works:
 
-1. You capture explicit up/down feedback with structured context (vague thumbs-down is rejected)
-2. Repeated failures (3+ occurrences) auto-promote into prevention rules
-3. PreToolUse hooks physically block the agent before it executes a known-bad action
-4. At session start, relevant past context is injected so the agent has project history it would otherwise lose
+1. Something goes wrong → you give a 👎 with what happened and what should change
+2. The thumbs-down becomes a prevention rule
+3. The rule becomes a gate that fires *before* the agent's tool call executes
+4. The agent physically cannot repeat the mistake
 
-This is NOT another context/memory store like Mem0 or Zep. Those systems store and retrieve context. This system enforces behavior change — it has pre-action gates that block tool calls before they happen. The agent literally cannot push to main without checking review threads if that rule exists. That's the difference between "remember this" and "prevent this."
+👍 works the opposite way — reinforces behavior you want the agent to keep doing.
 
-Honest disclaimer in the README: this is context injection, not actual RLHF. LLM weights don't change. What happens is feedback gets validated, promoted to searchable memory, and recalled at session start. The pre-action gates are the real value — they turn past mistakes into physical blocks.
+This is NOT another memory store like Mem0 or Zep. Those remember context. This enforces behavior — the agent literally cannot push to main without checking review threads if a 👎 rule exists for it. That's the difference between "remember this" and "prevent this."
 
 Works with Claude Code, Codex, Gemini, Amp, Cursor, OpenCode.
 
@@ -47,25 +47,21 @@ Happy to answer questions about the gate engine or how prevention rules are gene
 
 ## 2. Reddit r/ClaudeAI Post
 
-**Title:** I built an MCP server that gives Claude Code persistent memory and prevents it from repeating mistakes
+**Title:** I gave Claude Code a 👎 button. Now it can't repeat the same mistake twice.
 
 **Body:**
 
-If you use Claude Code daily, you've hit this: Claude makes the same mistake across sessions. It pushes without checking PR threads. It skips tests. It force-pushes when it shouldn't. You correct it, it apologizes, and next session it does it again.
+If you use Claude Code daily, you've hit this: Claude makes the same mistake across sessions. Force-pushes. Skips tests. You correct it, it apologizes, next session it does it again.
 
-The root cause is simple — Claude has no memory between sessions. Every conversation starts from zero.
+I built ThumbGate to fix this. The UX is simple:
 
-I built ThumbGate to fix this. Here's how it works:
+👎 **Thumbs down** when Claude screws up — capture what went wrong and what should change. That thumbs-down becomes a prevention rule. The rule becomes a gate. The gate fires *before* Claude's tool call executes. The agent physically cannot repeat it.
 
-**Capture:** When Claude does something wrong, you capture structured feedback (not just "bad" — it requires what went wrong and what to change). When it does something right, you capture that too.
+👍 **Thumbs up** when Claude does something right — reinforces the behavior so it sticks.
 
-**Promote:** When the same failure shows up 3+ times, it automatically becomes a prevention rule.
+Over time, your 👍/👎 signals build an immune system. Good patterns get stronger. Bad patterns are blocked at execution.
 
-**Gate:** Prevention rules become PreToolUse hooks. Before Claude executes a tool call, the gate engine checks if it matches a known failure pattern. If it does, the call is blocked with an explanation of why and what to do instead.
-
-**Recall:** At session start, relevant context from past sessions is injected so Claude knows what happened before.
-
-The key difference from other memory tools: this doesn't just store context for retrieval. It physically blocks known-bad actions before they execute. Claude cannot skip the step it keeps forgetting because the gate won't let it.
+The key difference from memory tools like Mem0: this doesn't just store context for retrieval. It physically blocks known-bad actions. Claude cannot skip the step it keeps forgetting because the gate won't let it.
 
 Install in one command:
 
@@ -89,19 +85,19 @@ GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
 
 ## 3. Reddit r/vibecoding Post
 
-**Title:** I tracked my AI agent's mistakes for 3 months — it repeated the same 10 failures 84% of the time
+**Title:** I gave my AI agent a 👎 button — repeated mistakes dropped to near-zero
 
 **Body:**
 
-I've been using Claude Code as my primary coding agent for months. After yet another session where it pushed to main without checking PR review threads (for the fifth time), I started logging every failure with structured context.
+I've been using Claude Code as my primary coding agent for months. After yet another session where it pushed to main without checking PR threads (for the fifth time), I started thinking about what would actually fix this.
 
-After 3 months of data, the pattern was obvious: the same small set of mistakes accounted for the vast majority of failures. Skip tests, forget to check threads, force-push, ignore linting, commit secrets — the same stuff, over and over.
+The answer was embarrassingly simple: a thumbs-down button.
 
-The problem isn't that AI agents are bad at coding. It's that they have zero memory between sessions. Every session starts clean. There's no mechanism to say "you've done this wrong before, don't do it again."
+Not a mental note. Not a prompt update. An actual 👎 that captures what went wrong and turns it into a rule that blocks the agent from doing it again. Physically blocks — the agent's tool call gets intercepted before execution. It can't repeat the mistake even if it wants to.
 
-So I built one. ThumbGate captures explicit feedback, and when the same failure appears 3+ times, it auto-generates a prevention rule. That rule becomes a pre-action gate — a hook that fires before the agent executes a tool call. If the call matches a known failure pattern, it's blocked.
+👍 works the other way — reinforces the behavior you like. Over time, your 👍/👎 signals build an immune system. Good patterns strengthen. Bad patterns are blocked.
 
-The result: after deploying gates on my top 10 failure patterns, those specific mistakes dropped to near-zero. The agent still finds new ways to mess up (it's creative like that), but it stopped repeating the known ones.
+After setting up gates on my top 10 failure patterns, those specific mistakes dropped to near-zero. The agent still finds new ways to mess up (it's creative like that), but it can't repeat the known ones.
 
 It works with any MCP-compatible agent. One command to set up:
 
@@ -118,32 +114,38 @@ GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
 ## 4. X/Twitter Thread
 
 **Tweet 1:**
-AI coding agents have a dirty secret: they repeat the same mistakes every single session.
+What if your AI coding agent had a 👎 button that actually worked?
 
-No memory. No learning. You correct them, they apologize, and do it again tomorrow.
+Not "noted." Not "I'll try to remember."
 
-I built something that fixes this. Thread:
+👎 = the agent physically cannot repeat that mistake. Ever.
+
+Thread:
 
 **Tweet 2:**
-ThumbGate captures structured feedback when your agent fails.
+How it works:
 
-Not vague "thumbs down" — it requires: what went wrong, what context, what to change.
+👎 Thumbs down → captures what went wrong → becomes a prevention rule → rule fires before the tool call executes → blocked.
 
-When the same failure appears 3+ times, it auto-promotes into a prevention rule.
+👍 Thumbs up → reinforces what worked → pattern gets stronger.
+
+Your feedback builds an immune system for your agent.
 
 **Tweet 3:**
-Prevention rules become pre-action gates.
+Example: my agent kept force-pushing to main.
 
-Before your agent executes a tool call, the gate engine checks if it matches a known failure pattern.
+I gave it a 👎 once. That thumbs-down became a gate.
 
-If it does: blocked. With an explanation. Before the damage happens.
-
-This is not "remember context." This is "physically prevent the mistake."
+Now it literally cannot run `git push --force` — the gate blocks it before execution. Not a suggestion. A physical block.
 
 **Tweet 4:**
-Example: my agent kept pushing to main without checking PR review threads.
+The difference from memory tools:
 
-After 3 captured failures, a gate was auto-generated. Now the agent literally cannot run `git push` without running `gh pr view` first. The gate blocks it.
+Mem0/Zep: "Here's context about past mistakes" (agent can still ignore it)
+
+ThumbGate: "You cannot execute this action" (gate fires before the tool call)
+
+Memory is advisory. 👎 is enforcement.
 
 **Tweet 5:**
 Works with Claude Code, Codex, Gemini, Amp, Cursor.
@@ -153,25 +155,24 @@ One command:
 npx mcp-memory-gateway init
 ```
 
-MIT licensed. Fully open source.
+Fully free and unlimited. MIT licensed.
 
 **Tweet 6:**
-Optional: $49 one-time Mistake-Free Starter Pack (500 credits) for teams that want hosted memory sync and analytics.
+Pro ($49 one-time) adds a searchable dashboard to query, edit, and delete your 👍/👎 entries.
 
-But the gate engine, prevention rules, and local memory all work for free.
+But captures, recalls, gates, and blocking all work for free. No limits.
 
 GitHub: github.com/IgorGanapolsky/mcp-memory-gateway
-Landing: rlhf-feedback-loop-production.up.railway.app
 
-#MCP #AIcoding
+#MCP #AIcoding #vibecoding
 
 ---
 
 ## 5. Product Hunt
 
-**Tagline:** Pre-action gates that stop AI agents repeating mistakes
+**Tagline:** 👎 Thumbs down a mistake. It never happens again.
 
-**Description:** MCP server that captures structured feedback from AI coding agents, auto-promotes repeated failures into prevention rules, and enforces them via pre-action gates. Your agent physically cannot repeat a known mistake. Works with Claude Code, Codex, Gemini, Amp, Cursor. Open source, one command install.
+**Description:** Give your AI coding agent a 👎 when it screws up. ThumbGate turns that thumbs-down into a prevention rule that physically blocks the agent from repeating the mistake. 👍 Thumbs up reinforces what works. Over time, your feedback builds an immune system — good patterns stick, bad patterns are blocked at execution. Works with Claude Code, Codex, Gemini, Amp, Cursor. Free and unlimited. One command install.
 
 ---
 
