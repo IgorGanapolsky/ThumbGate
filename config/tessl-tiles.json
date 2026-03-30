@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "defaultWorkspace": "thumbgate",
+  "proofLinks": {
+    "verificationEvidence": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+    "compatibilityReport": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/compatibility/report.json",
+    "automationReport": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+  },
+  "tiles": [
+    {
+      "id": "agent-memory",
+      "tileName": "agent-memory",
+      "summary": "Persistent agent memory with pre-action gates that stop repeated mistakes before execution.",
+      "private": false,
+      "sourceSkills": [
+        "agent-memory"
+      ]
+    },
+    {
+      "id": "rlhf-feedback",
+      "tileName": "rlhf-feedback",
+      "summary": "Thumbs up and thumbs down capture that turns agent feedback into structured memories and prevention rules.",
+      "private": false,
+      "sourceSkills": [
+        "rlhf-feedback"
+      ]
+    }
+  ]
+}
