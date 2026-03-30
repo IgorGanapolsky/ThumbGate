@@ -9,7 +9,7 @@
 'use strict';
 
 const { spawnSync } = require('child_process');
-const PR_FIELDS = 'number,mergeable,mergeStateStatus,statusCheckRollup,reviewDecision,isDraft,title';
+const PR_FIELDS = 'number,state,mergeable,mergeStateStatus,statusCheckRollup,reviewDecision,isDraft,title';
 const SUCCESSFUL_CHECK_CONCLUSIONS = new Set(['SUCCESS', 'SKIPPED', 'NEUTRAL']);
 const FAILING_CHECK_CONCLUSIONS = new Set([
   'ACTION_REQUIRED',
@@ -64,13 +64,17 @@ function listOpenPrs(runner = runGh) {
   return JSON.parse(result.stdout || '[]');
 }
 
+function isOpenPr(pr) {
+  return Boolean(pr) && String(pr.state || 'OPEN').toUpperCase() === 'OPEN';
+}
+
 function loadManagedPrs(prNumber = '', runner = runGh) {
   if (prNumber) {
     return [getPrStatus(prNumber, runner)];
   }
 
   const currentBranchPr = getPrStatus('', runner);
-  if (currentBranchPr) {
+  if (isOpenPr(currentBranchPr)) {
     return [currentBranchPr];
   }
 
@@ -224,6 +228,7 @@ if (require.main === module) {
 module.exports = {
   getPrStatus,
   listOpenPrs,
+  isOpenPr,
   loadManagedPrs,
   resolveBlockers,
   performMerge,

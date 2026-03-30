@@ -258,3 +258,21 @@ test('GitHub Actions workflows never use bare npm ci for onnxruntime installs', 
   const gtmWorkflow = fs.readFileSync(path.join(workflowsDir, 'gtm-autonomous-loop.yml'), 'utf8');
   assert.match(gtmWorkflow, /npm ci --onnxruntime-node-install-cuda=skip/);
 });
+
+test('.env.example documents the active operator and analytics variables without stale one-time Stripe or xAI keys', () => {
+  const envExample = fs.readFileSync(path.join(PROJECT_ROOT, '.env.example'), 'utf8');
+
+  assert.match(envExample, /^# GH_PAT=/m);
+  assert.match(envExample, /^# PLAUSIBLE_API_KEY=/m);
+  assert.match(envExample, /^# PLAUSIBLE_SITE_ID=/m);
+  assert.match(envExample, /^# TESSL_WORKSPACE=/m);
+  assert.doesNotMatch(envExample, /^# STRIPE_ONE_TIME_PRICE_ID=/m);
+  assert.doesNotMatch(envExample, /^# XAI_API_KEY=/m);
+});
+
+test('.gitignore keeps local SQLite sidecars out of git status and removes stale aider exceptions', () => {
+  const gitignore = fs.readFileSync(path.join(PROJECT_ROOT, '.gitignore'), 'utf8');
+
+  assert.match(gitignore, /^\.claude\/memory\/\*\.sqlite\*$/m);
+  assert.doesNotMatch(gitignore, /^!\.env\.aider\.example$/m);
+});

@@ -2,11 +2,11 @@ node_modules/
 .env*
 !.env.example
 !.env.paperbanana.example
-!.env.aider.example
 .DS_Store
 .claude/settings.local.json
 .claude/debug/
 .claude/worktrees/
+.claude/memory/*.sqlite*
 .claude/memory/feedback/*.json
 .claude/memory/feedback/*.jsonl
 .claude/memory/feedback/*.md

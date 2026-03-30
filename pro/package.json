@@ -1,6 +1,6 @@
 {
   "name": "mcp-memory-gateway-pro",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "description": "ThumbGate Pro — hosted dashboard, auto-gate promotion, unlimited gates. Extends mcp-memory-gateway.",
   "bin": {
     "mcp-memory-gateway-pro": "bin/cli.js"

@@ -26,12 +26,14 @@ test('pricing matches 2026 standard', () => {
 
 test('package version matches MCP manifests', () => {
   const packageJson = readJson('package.json');
+  const proPackage = readJson('pro/package.json');
   const serverManifest = readJson('server.json');
   const claudePlugin = readJson('.claude-plugin/plugin.json');
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
   const cursorMarketplace = readJson('.cursor-plugin/marketplace.json');
   const cursorPlugin = readJson('plugins/cursor-marketplace/.cursor-plugin/plugin.json');
 
+  assert.equal(proPackage.version, packageJson.version);
   assert.equal(serverManifest.version, packageJson.version);
   assert.equal(claudePlugin.version, packageJson.version);
   assert.equal(claudeMarketplace.version, packageJson.version);

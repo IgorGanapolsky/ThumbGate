@@ -56,7 +56,7 @@ function buildSocialLinks(baseUrl, campaign) {
 
 /**
  * Placeholder for dub.co link shortening.
- * Returns the original long URL as-is until the dub.co API is wired up.
+ * Returns the original long URL as-is until a shortening provider is enabled.
  *
  * To activate: set DUB_API_KEY in the environment and call
  * POST https://api.dub.co/links with { url: longUrl, domain: 'dub.sh' }.
@@ -65,8 +65,8 @@ function buildSocialLinks(baseUrl, campaign) {
  * @returns {Promise<string>} The longUrl unchanged (no-op placeholder).
  */
 async function shortenWithDub(longUrl) {
-  // TODO: wire up dub.co API when needed.
-  // Example: POST https://api.dub.co/links with Bearer DUB_API_KEY and { url: longUrl }
+  // Deliberate no-op until a shortening provider is enabled for this pipeline.
+  // Example future implementation: POST https://api.dub.co/links with Bearer DUB_API_KEY.
   return longUrl;
 }
 

@@ -153,8 +153,8 @@ function createSchedule(params) {
     return { success: true, schedule, plistPath, message: `Schedule "${id}" created and loaded` };
   }
 
-  // Linux: use user crontab
-  return { success: true, schedule, message: `Schedule "${id}" saved (crontab integration TBD on Linux)` };
+  // Linux keeps the schedule metadata so operators can install it via user crontab tooling.
+  return { success: true, schedule, message: `Schedule "${id}" saved for Linux crontab installation` };
 }
 
 function listSchedules() {
