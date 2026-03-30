@@ -23,7 +23,7 @@ test('parseGhVariableList reads gh variable output', () => {
 
 test('parseHtmlSignals detects telemetry and tracking hooks', () => {
   const signals = parseHtmlSignals(`
-    <script async src="https://plausible.io/js/pa-9R1o7nQGyxVASU7_IvZK9.js"></script>
+    <script defer data-domain="rlhf-feedback-loop-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-TEST1234"></script>
     <script>window.gtag('event', 'checkout_start');</script>
     <script>fetch('/v1/telemetry/ping', { method: 'POST' });</script>
