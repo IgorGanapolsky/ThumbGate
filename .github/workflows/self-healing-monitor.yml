@@ -32,7 +32,7 @@ jobs:
           cache: 'npm'
 
       - name: Install deps
-        run: npm ci
+        run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Run health checks
         run: node scripts/self-healing-check.js --json --no-fail > health_report.json
@@ -145,7 +145,7 @@ jobs:
           cache: 'npm'
 
       - name: Install deps
-        run: npm ci
+        run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Run self-heal
         run: node scripts/self-heal.js --reason=scheduled-health-check > self_heal_report.json || true

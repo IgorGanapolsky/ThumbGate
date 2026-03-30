@@ -25,7 +25,7 @@ jobs:
           node-version: 20
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --onnxruntime-node-install-cuda=skip
       - name: Poll all platforms
         run: node scripts/social-analytics/poll-all.js
         env:
@@ -72,7 +72,7 @@ jobs:
           node-version: 20
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --onnxruntime-node-install-cuda=skip
       - name: Generate weekly digest
         run: node scripts/social-analytics/run-digest.js --days=7
         env:

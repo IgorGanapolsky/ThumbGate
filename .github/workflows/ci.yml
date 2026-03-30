@@ -39,7 +39,7 @@ jobs:
             workers/package-lock.json
 
       - name: Install deps
-        run: npm ci
+        run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Check version sync
         run: node scripts/sync-version.js --check
