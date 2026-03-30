@@ -222,6 +222,14 @@ test('CI workflow runs Tessl proof and uploads Tessl evidence artifacts', () => 
   assert.match(workflow, /proof\/tessl-report\.md/);
 });
 
+test('CI workflow runs runtime proof and uploads runtime evidence artifacts', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+
+  assert.match(workflow, /npm run prove:runtime/);
+  assert.match(workflow, /proof\/runtime-report\.json/);
+  assert.match(workflow, /proof\/runtime-report\.md/);
+});
+
 test('Publish Tessl workflow verifies exports and only publishes when a Tessl token exists', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'publish-tessl.yml'), 'utf8');
 

@@ -54,7 +54,8 @@ test('buildVerifyPlan returns quick and full plans without removed legacy verifi
   assert.equal(Array.isArray(quick), true);
   assert.equal(Array.isArray(full), true);
   assert.ok(quick.length >= 2);
-  assert.ok(full.length >= 8);
+  assert.ok(full.length >= 9);
+  assert.ok(full.some((step) => step.args && step.args.includes('prove:runtime')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:xmemory')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:tessl')));
 
@@ -95,6 +96,7 @@ test('recordVerifyWorkflowRun persists a proof-backed workflow run for full veri
   assert.equal(entry.runtime, 'node');
   assert.equal(entries.length, 1);
   assert.equal(entries[0].reviewedBy, 'automation');
+  assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'runtime-report.json'))));
 
   fs.rmSync(feedbackDir, { recursive: true, force: true });
   fs.rmSync(cwd, { recursive: true, force: true });
@@ -138,12 +140,14 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.equal(result.mode, 'full');
     assert.equal(result.tempRoot, tempRoot);
     assert.deepEqual(result.workflowRun, stubWorkflowRun);
-    assert.equal(commandCalls.length, 8);
+    assert.equal(commandCalls.length, 9);
     assert.equal(commandCalls[0].options.cwd, '/tmp/verify-run-cwd');
     assert.equal(commandCalls[0].options.env.BASE_ENV, '1');
     assert.equal(commandCalls[0].options.env.RLHF_PROOF_DIR, path.join(tempRoot, 'proof-adapters'));
     assert.equal(commandCalls[0].options.env.RLHF_AUTOMATION_PROOF_DIR, path.join(tempRoot, 'proof-automation'));
+    assert.equal(commandCalls[0].options.env.RLHF_RUNTIME_PROOF_DIR, path.join(tempRoot, 'proof-runtime'));
     assert.equal(appendCall.entry.source, 'verify:full');
+    assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'runtime-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'seo-gsd-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'tessl-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'xmemory-report.json'))));

@@ -56,6 +56,9 @@ jobs:
       - name: Run automation proof
         run: npm run prove:automation
 
+      - name: Run runtime proof
+        run: npm run prove:runtime
+
       - name: Run workflow contract proof
         run: npm run prove:workflow-contract
 
@@ -87,6 +90,8 @@ jobs:
             proof/compatibility/report.md
             proof/automation/report.json
             proof/automation/report.md
+            proof/runtime-report.json
+            proof/runtime-report.md
             proof/workflow-contract/report.json
             proof/workflow-contract/report.md
             proof/autoresearch-report.json

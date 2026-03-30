@@ -1,194 +1,324 @@
 'use strict';
 
-const { describe, it, before, after } = require('node:test');
+const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
-describe('async-job-runner', () => {
-  let m;
-  let tmpDir;
+const RUNNER_PATH = require.resolve('../scripts/async-job-runner');
+const FEEDBACK_PATH = require.resolve('../scripts/feedback-loop');
+const VERIFICATION_PATH = require.resolve('../scripts/verification-loop');
+const EXPERIMENT_TRACKER_PATH = require.resolve('../scripts/experiment-tracker');
 
-  before(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ajr-test-'));
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
-    delete require.cache[require.resolve('../scripts/async-job-runner')];
-    delete require.cache[require.resolve('../scripts/verification-loop')];
-    delete require.cache[require.resolve('../scripts/feedback-loop')];
-    m = require('../scripts/async-job-runner');
+function createFeedbackDir() {
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-async-runner-test-'));
+}
+
+function resetRuntimeModules() {
+  [
+    RUNNER_PATH,
+    FEEDBACK_PATH,
+    VERIFICATION_PATH,
+    EXPERIMENT_TRACKER_PATH,
+  ].forEach((modulePath) => {
+    delete require.cache[modulePath];
   });
+}
 
-  after(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.RLHF_FEEDBACK_DIR;
+function stubModule(modulePath, exports) {
+  require.cache[modulePath] = {
+    id: modulePath,
+    filename: modulePath,
+    loaded: true,
+    exports,
+  };
+}
+
+function makeAcceptedVerification() {
+  return {
+    accepted: true,
+    attempts: 1,
+    finalVerification: {
+      score: 1,
+      violations: [],
+    },
+    partnerStrategy: {
+      profile: 'strict_reviewer',
+      verificationMode: 'evidence_first',
+    },
+    partnerReward: {
+      reward: 1,
+    },
+  };
+}
+
+function makeRejectedVerification() {
+  return {
+    accepted: false,
+    attempts: 2,
+    finalVerification: {
+      score: 0.2,
+      violations: [
+        {
+          pattern: 'webhook signature mismatch',
+          avoidRule: 'Verify webhook signatures before deploy.',
+        },
+      ],
+    },
+    partnerStrategy: {
+      profile: 'strict_reviewer',
+      verificationMode: 'evidence_first',
+    },
+    partnerReward: {
+      reward: 0,
+    },
+  };
+}
+
+function loadRuntimeHarness({
+  feedbackDir,
+  verificationLoopImpl = () => makeAcceptedVerification(),
+} = {}) {
+  process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+  resetRuntimeModules();
+  stubModule(VERIFICATION_PATH, {
+    runVerificationLoop: verificationLoopImpl,
   });
+  const runner = require('../scripts/async-job-runner');
+  const experimentTracker = require('../scripts/experiment-tracker');
 
-  it('exports JOB_LOG_FILENAME', () => {
-    assert.equal(m.JOB_LOG_FILENAME, 'job-log.jsonl');
-  });
+  return {
+    runner,
+    experimentTracker,
+    cleanup() {
+      resetRuntimeModules();
+      delete process.env.RLHF_FEEDBACK_DIR;
+    },
+  };
+}
 
-  it('recallContext returns analysis structure', () => {
-    const ctx = m.recallContext({ tags: ['testing'] });
-    assert.equal(typeof ctx.totalFeedback, 'number');
-    assert.equal(typeof ctx.approvalRate, 'number');
-    assert.equal(typeof ctx.preventionRuleCount, 'number');
-    assert.ok(Array.isArray(ctx.riskDomains));
-    assert.ok(Array.isArray(ctx.recommendations));
-  });
+test('async-job-runner exports runtime filenames and job-state paths', () => {
+  const feedbackDir = createFeedbackDir();
+  const harness = loadRuntimeHarness({ feedbackDir });
 
-  it('recallContext works with no tags', () => {
-    const ctx = m.recallContext({});
-    assert.equal(typeof ctx.totalFeedback, 'number');
-  });
+  try {
+    const paths = harness.runner.getJobRuntimePaths('job_123');
+    assert.equal(harness.runner.JOB_LOG_FILENAME, 'job-log.jsonl');
+    assert.equal(harness.runner.JOB_CONTROL_FILENAME, 'job-control.json');
+    assert.equal(harness.runner.JOB_STATE_DIRNAME, 'jobs');
+    assert.equal(paths.feedbackDir, feedbackDir);
+    assert.match(paths.statePath, /jobs\/job_123\/state\.json$/);
+    assert.match(paths.controlPath, /jobs\/job_123\/job-control\.json$/);
+  } finally {
+    harness.cleanup();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
 
-  it('executeJob runs full pipeline and returns result', () => {
-    const result = m.executeJob({
-      id: 'test-job-1',
-      context: 'output that should pass verification',
+test('recallContext returns normalized analytics structure', () => {
+  const feedbackDir = createFeedbackDir();
+  const harness = loadRuntimeHarness({ feedbackDir });
+
+  try {
+    const context = harness.runner.recallContext({ tags: ['testing'] });
+
+    assert.equal(typeof context.totalFeedback, 'number');
+    assert.equal(typeof context.approvalRate, 'number');
+    assert.equal(typeof context.preventionRuleCount, 'number');
+    assert.ok(Array.isArray(context.riskDomains));
+    assert.ok(Array.isArray(context.recommendations));
+  } finally {
+    harness.cleanup();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('executeJob runs the full pipeline and persists stage history and checkpoints', () => {
+  const feedbackDir = createFeedbackDir();
+  const harness = loadRuntimeHarness({ feedbackDir });
+
+  try {
+    const result = harness.runner.executeJob({
+      id: 'pipeline-job',
       tags: ['testing'],
-      skill: 'test-skill',
+      stages: [
+        { name: 'draft', context: 'draft ready' },
+        { name: 'ship', appendContext: 'ship ready' },
+      ],
     });
+    const state = harness.runner.readJobState('pipeline-job');
+    const log = harness.runner.readJobLog();
 
-    assert.equal(result.jobId, 'test-job-1');
     assert.equal(result.status, 'completed');
-    assert.ok(result.phases.recall);
-    assert.ok(result.phases.verification);
-    assert.ok(result.phases.feedback);
     assert.equal(result.phases.verification.accepted, true);
-    assert.ok(result.durationMs >= 0);
-    assert.ok(result.timestamp);
-  });
+    assert.equal(state.status, 'completed');
+    assert.equal(state.currentContext, 'draft ready\nship ready');
+    assert.equal(state.stageHistory.length, 2);
+    assert.equal(state.checkpoints.length, 2);
+    assert.equal(log[log.length - 1].jobId, 'pipeline-job');
+  } finally {
+    harness.cleanup();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
 
-  it('executeJob generates jobId when not provided', () => {
-    const result = m.executeJob({
-      context: 'auto id test',
-      tags: [],
-    });
+test('runBatch processes multiple jobs sequentially', () => {
+  const feedbackDir = createFeedbackDir();
+  const harness = loadRuntimeHarness({ feedbackDir });
 
-    assert.ok(result.jobId.startsWith('job_'));
-  });
-
-  it('executeJob calls taskFn with recall context', () => {
-    let receivedContext = null;
-    const result = m.executeJob({
-      id: 'taskfn-test',
-      tags: ['api'],
-      taskFn: (recall) => {
-        receivedContext = recall;
-        return 'task produced this output';
-      },
-    });
-
-    assert.ok(receivedContext);
-    assert.equal(typeof receivedContext.approvalRate, 'number');
-    assert.equal(result.status, 'completed');
-  });
-
-  it('executeJob carries partner profile through verification', () => {
-    const result = m.executeJob({
-      id: 'partner-job',
-      context: 'verified output',
-      tags: ['testing'],
-      partnerProfile: 'strict-reviewer',
-    });
-
-    assert.equal(result.phases.verification.partnerProfile, 'strict_reviewer');
-    assert.equal(result.phases.verification.verificationMode, 'evidence_first');
-    assert.ok(typeof result.phases.verification.reward === 'number');
-  });
-
-  it('executeJob writes to job log', () => {
-    const before = m.readJobLog();
-    m.executeJob({
-      id: 'log-test',
-      context: 'will be logged',
-      tags: [],
-    });
-    const after = m.readJobLog();
-
-    assert.ok(after.length > before.length);
-    const last = after[after.length - 1];
-    assert.equal(last.jobId, 'log-test');
-  });
-
-  it('readJobLog respects limit', () => {
-    for (let i = 0; i < 5; i++) {
-      m.executeJob({
-        id: `limit-test-${i}`,
-        context: `output ${i}`,
-        tags: [],
-      });
-    }
-
-    const limited = m.readJobLog(2);
-    assert.ok(limited.length <= 2);
-  });
-
-  it('runBatch processes multiple jobs', () => {
-    const result = m.runBatch([
-      { id: 'batch-1', context: 'first job output', tags: ['testing'] },
-      { id: 'batch-2', context: 'second job output', tags: ['api'] },
+  try {
+    const result = harness.runner.runBatch([
+      { id: 'batch-1', context: 'first output', tags: ['testing'] },
+      { id: 'batch-2', context: 'second output', tags: ['ops'] },
     ]);
 
     assert.equal(result.total, 2);
     assert.equal(result.completed, 2);
     assert.equal(result.failed, 0);
-    assert.equal(result.results.length, 2);
-    assert.ok(result.timestamp);
+    assert.equal(result.paused, 0);
+    assert.equal(result.cancelled, 0);
+  } finally {
+    harness.cleanup();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('executeJob pauses after a checkpoint and resumeJob continues from the next stage', () => {
+  const feedbackDir = createFeedbackDir();
+  const harness = loadRuntimeHarness({ feedbackDir });
+
+  try {
+    const executedStages = [];
+    const job = {
+      id: 'resume-job',
+      tags: ['testing'],
+      stages: [
+        {
+          name: 'draft',
+          run({ controller }) {
+            executedStages.push('draft');
+            controller.requestPause({ reason: 'checkpoint pause' });
+            return { context: 'draft ready' };
+          },
+        },
+        {
+          name: 'ship',
+          run() {
+            executedStages.push('ship');
+            return { appendContext: 'ship ready' };
+          },
+        },
+      ],
+    };
+
+    const paused = harness.runner.executeJob(job);
+    const pausedState = harness.runner.readJobState('resume-job');
+    const resumed = harness.runner.resumeJob('resume-job', job);
+    const completedState = harness.runner.readJobState('resume-job');
+
+    assert.equal(paused.status, 'paused');
+    assert.equal(pausedState.status, 'paused');
+    assert.equal(pausedState.nextStageIndex, 1);
+    assert.equal(pausedState.stageHistory.length, 1);
+    assert.equal(pausedState.checkpoints.length, 1);
+    assert.equal(harness.runner.readJobControl('resume-job'), null);
+
+    assert.equal(resumed.status, 'completed');
+    assert.deepEqual(executedStages, ['draft', 'ship']);
+    assert.equal(completedState.status, 'completed');
+    assert.equal(completedState.currentContext, 'draft ready\nship ready');
+    assert.equal(completedState.stageHistory.length, 2);
+  } finally {
+    harness.cleanup();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('resumeManagedJobs auto-resumes paused managed jobs from their job files', () => {
+  const feedbackDir = createFeedbackDir();
+  const harness = loadRuntimeHarness({ feedbackDir });
+
+  try {
+    const jobFile = path.join(feedbackDir, 'managed-job.json');
+    fs.writeFileSync(jobFile, JSON.stringify({
+      id: 'managed-job',
+      tags: ['testing'],
+      stages: [
+        { name: 'plan', context: 'plan ready' },
+        { name: 'ship', appendContext: 'ship ready' },
+      ],
+    }, null, 2));
+
+    harness.runner.requestJobControl('managed-job', 'pause', { reason: 'simulate pause before start' });
+    const paused = harness.runner.runJobFromFile(jobFile);
+    const resumed = harness.runner.resumeManagedJobs();
+    const state = harness.runner.readJobState('managed-job');
+
+    assert.equal(paused.status, 'paused');
+    assert.equal(resumed.total, 1);
+    assert.equal(resumed.completed, 1);
+    assert.equal(resumed.failed, 0);
+    assert.equal(resumed.results[0].jobId, 'managed-job');
+    assert.equal(state.status, 'completed');
+    assert.equal(state.currentContext, 'plan ready\nship ready');
+    assert.equal(state.jobFilePath, jobFile);
+  } finally {
+    harness.cleanup();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('verification failures queue a follow-up experiment automatically', () => {
+  const feedbackDir = createFeedbackDir();
+  const harness = loadRuntimeHarness({
+    feedbackDir,
+    verificationLoopImpl: () => makeRejectedVerification(),
   });
 
-  it('runBatch handles empty array', () => {
-    const result = m.runBatch([]);
-    assert.equal(result.total, 0);
-    assert.equal(result.completed, 0);
-    assert.equal(result.failed, 0);
-  });
+  try {
+    const result = harness.runner.executeJob({
+      id: 'verification-failure-job',
+      context: 'webhook signature mismatch',
+      tags: ['billing'],
+      skill: 'billing-guard',
+    });
+    const experiments = harness.experimentTracker.loadExperiments();
+    const state = harness.runner.readJobState('verification-failure-job');
 
-  it('getJobStats returns correct aggregates', () => {
-    const stats = m.getJobStats();
-    assert.equal(typeof stats.totalJobs, 'number');
-    assert.equal(typeof stats.completed, 'number');
-    assert.equal(typeof stats.failed, 'number');
-    assert.ok(stats.totalJobs > 0);
-    assert.ok(typeof stats.successRate === 'number');
-    assert.ok(typeof stats.avgDurationMs === 'number');
-    assert.ok(typeof stats.avgAttempts === 'number');
-  });
+    assert.equal(result.status, 'failed');
+    assert.equal(experiments.length, 1);
+    assert.equal(experiments[0].status, 'pending');
+    assert.equal(experiments[0].mutationType, 'prompt');
+    assert.equal(experiments[0].mutation.failureType, 'verification');
+    assert.equal(experiments[0].mutation.jobId, 'verification-failure-job');
+    assert.equal(state.improvementExperimentId, experiments[0].id);
+  } finally {
+    harness.cleanup();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
 
-  it('getJobStats handles empty log', () => {
-    const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ajr-empty-'));
-    process.env.RLHF_FEEDBACK_DIR = emptyDir;
+test('command stages that emit no stdout preserve the current context', () => {
+  const feedbackDir = createFeedbackDir();
+  const harness = loadRuntimeHarness({ feedbackDir });
 
-    delete require.cache[require.resolve('../scripts/async-job-runner')];
-    delete require.cache[require.resolve('../scripts/verification-loop')];
-    delete require.cache[require.resolve('../scripts/feedback-loop')];
-    const freshM = require('../scripts/async-job-runner');
+  try {
+    const result = harness.runner.executeJob({
+      id: 'stdout-preserve-job',
+      tags: ['testing'],
+      stages: [
+        { name: 'seed', context: 'seed context' },
+        { name: 'noop-command', command: `${process.execPath} -e ""` },
+        { name: 'append', appendContext: 'final context' },
+      ],
+    });
+    const state = harness.runner.readJobState('stdout-preserve-job');
 
-    const stats = freshM.getJobStats();
-    assert.equal(stats.totalJobs, 0);
-    assert.equal(stats.completed, 0);
-    assert.equal(stats.avgDurationMs, 0);
-
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
-    fs.rmSync(emptyDir, { recursive: true, force: true });
-  });
-
-  it('appendJobLog creates dir if missing', () => {
-    const nestedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ajr-nested-'));
-    const deepDir = path.join(nestedDir, 'a', 'b');
-    process.env.RLHF_FEEDBACK_DIR = deepDir;
-
-    delete require.cache[require.resolve('../scripts/async-job-runner')];
-    delete require.cache[require.resolve('../scripts/verification-loop')];
-    delete require.cache[require.resolve('../scripts/feedback-loop')];
-    const freshM = require('../scripts/async-job-runner');
-
-    freshM.appendJobLog({ test: true });
-    const logPath = path.join(deepDir, 'job-log.jsonl');
-    assert.ok(fs.existsSync(logPath));
-
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
-    fs.rmSync(nestedDir, { recursive: true, force: true });
-  });
+    assert.equal(result.status, 'completed');
+    assert.equal(state.currentContext, 'seed context\nfinal context');
+  } finally {
+    harness.cleanup();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
 });

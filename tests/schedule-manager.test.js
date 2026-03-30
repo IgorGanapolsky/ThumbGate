@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  buildManagedScheduleCommand,
   escapePlistString,
   generatePlist,
   parseCronSpec,
@@ -40,4 +41,17 @@ test('parseCronSpec parses supported schedule formats', () => {
   assert.deepEqual(parseCronSpec('weekly monday 8:15'), { Weekday: 1, Hour: 8, Minute: 15 });
   assert.deepEqual(parseCronSpec('hourly'), { Minute: 0 });
   assert.equal(parseCronSpec('nonsense'), null);
+});
+
+test('buildManagedScheduleCommand runs the async job runner against a job file with auto-resume enabled', () => {
+  const command = buildManagedScheduleCommand({
+    jobFile: '/tmp/thumbgate/jobs/gtm-followup.json',
+    autoResume: true,
+  });
+
+  assert.match(command, /async-job-runner\.js/);
+  assert.match(command, /runJobFromFile/);
+  assert.match(command, /gtm-followup\.json/);
+  assert.match(command, /"autoResume":true/);
+  assert.match(command, /process\.exit\(1\)/);
 });

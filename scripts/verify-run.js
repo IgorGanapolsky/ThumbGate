@@ -26,6 +26,7 @@ function buildVerifyPlan(mode = 'quick') {
       { command: npmCommand(), args: ['run', 'test:coverage'] },
       { command: npmCommand(), args: ['run', 'prove:adapters'] },
       { command: npmCommand(), args: ['run', 'prove:automation'] },
+      { command: npmCommand(), args: ['run', 'prove:runtime'] },
       { command: npmCommand(), args: ['run', 'prove:seo-gsd'] },
       { command: npmCommand(), args: ['run', 'prove:tessl'] },
       { command: npmCommand(), args: ['run', 'prove:xmemory'] },
@@ -70,6 +71,7 @@ function recordVerifyWorkflowRun(mode = 'quick', cwd = process.cwd(), feedbackDi
       path.join(cwd, 'docs', 'VERIFICATION_EVIDENCE.md'),
       path.join(cwd, 'proof', 'compatibility', 'report.json'),
       path.join(cwd, 'proof', 'automation', 'report.json'),
+      path.join(cwd, 'proof', 'runtime-report.json'),
       path.join(cwd, 'proof', 'seo-gsd-report.json'),
       path.join(cwd, 'proof', 'tessl-report.json'),
       path.join(cwd, 'proof', 'xmemory-report.json'),
@@ -86,6 +88,7 @@ function runVerify(mode = 'quick', baseEnv = process.env, cwd = process.cwd()) {
     ...baseEnv,
     RLHF_PROOF_DIR: path.join(tempRoot, 'proof-adapters'),
     RLHF_AUTOMATION_PROOF_DIR: path.join(tempRoot, 'proof-automation'),
+    RLHF_RUNTIME_PROOF_DIR: path.join(tempRoot, 'proof-runtime'),
   };
 
   runPlan(buildVerifyPlan(mode), env, cwd);
