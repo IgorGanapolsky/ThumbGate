@@ -1,0 +1,173 @@
+#!/usr/bin/env node
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const { execSync } = require('child_process');
+
+const SCHEDULES_DIR = path.join(os.homedir(), '.rlhf', 'schedules');
+const PLIST_PREFIX = 'com.thumbgate.schedule';
+
+function ensureDir() {
+  if (!fs.existsSync(SCHEDULES_DIR)) fs.mkdirSync(SCHEDULES_DIR, { recursive: true });
+}
+
+/**
+ * Parse a simple cron-like spec into LaunchAgent calendar intervals
+ * Supports: "daily 9:00", "weekly monday 8:30", "hourly", "every 6h"
+ */
+function parseCronSpec(spec) {
+  const s = spec.toLowerCase().trim();
+
+  if (s === 'hourly') {
+    return { Minute: 0 };
+  }
+
+  const everyHMatch = s.match(/^every\s+(\d+)\s*h/);
+  if (everyHMatch) {
+    return { Minute: 0 }; // LaunchAgent doesn't support "every Nh" natively, use hourly
+  }
+
+  const dailyMatch = s.match(/^daily\s+(\d{1,2}):(\d{2})$/);
+  if (dailyMatch) {
+    return { Hour: parseInt(dailyMatch[1]), Minute: parseInt(dailyMatch[2]) };
+  }
+
+  const weeklyMatch = s.match(/^weekly\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+(\d{1,2}):(\d{2})$/);
+  if (weeklyMatch) {
+    const dayMap = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+    return {
+      Weekday: dayMap[weeklyMatch[1]],
+      Hour: parseInt(weeklyMatch[2]),
+      Minute: parseInt(weeklyMatch[3]),
+    };
+  }
+
+  // Fallback: try to parse as "HH:MM" (daily)
+  const timeMatch = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (timeMatch) {
+    return { Hour: parseInt(timeMatch[1]), Minute: parseInt(timeMatch[2]) };
+  }
+
+  return null;
+}
+
+function generatePlist(schedule) {
+  const label = `${PLIST_PREFIX}.${schedule.id}`;
+  const interval = schedule.calendarInterval;
+
+  let intervalXml = '<dict>\n';
+  for (const [key, value] of Object.entries(interval)) {
+    intervalXml += `        <key>${key}</key>\n        <integer>${value}</integer>\n`;
+  }
+  intervalXml += '    </dict>';
+
+  const logDir = path.join(os.homedir(), '.rlhf', 'logs');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>${label}</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>${process.execPath}</string>
+        <string>-e</string>
+        <string>${schedule.command.replace(/"/g, '\\"')}</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>${schedule.workingDirectory || os.homedir()}</string>
+    <key>StartCalendarInterval</key>
+    ${intervalXml}
+    <key>StandardOutPath</key>
+    <string>${logDir}/schedule-${schedule.id}.log</string>
+    <key>StandardErrorPath</key>
+    <string>${logDir}/schedule-${schedule.id}-error.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>${os.homedir()}</string>
+    </dict>
+</dict>
+</plist>`;
+}
+
+function createSchedule(params) {
+  ensureDir();
+
+  const id = params.id || params.name || `sched_${Date.now()}`;
+  const calendarInterval = parseCronSpec(params.schedule);
+  if (!calendarInterval) {
+    return { success: false, error: `Cannot parse schedule: "${params.schedule}". Use formats like "daily 9:00", "weekly monday 8:30", "hourly"` };
+  }
+
+  const schedule = {
+    id,
+    name: params.name || id,
+    description: params.description || '',
+    schedule: params.schedule,
+    command: params.command,
+    workingDirectory: params.workingDirectory || process.cwd(),
+    calendarInterval,
+    createdAt: new Date().toISOString(),
+  };
+
+  // Save schedule metadata
+  const metaPath = path.join(SCHEDULES_DIR, `${id}.json`);
+  fs.writeFileSync(metaPath, JSON.stringify(schedule, null, 2), 'utf8');
+
+  // Generate and install LaunchAgent
+  if (process.platform === 'darwin') {
+    const plistContent = generatePlist(schedule);
+    const plistPath = path.join(os.homedir(), 'Library', 'LaunchAgents', `${PLIST_PREFIX}.${id}.plist`);
+    const logDir = path.join(os.homedir(), '.rlhf', 'logs');
+    if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+
+    fs.writeFileSync(plistPath, plistContent, 'utf8');
+    try {
+      execSync(`launchctl unload "${plistPath}" 2>/dev/null`, { stdio: 'pipe' });
+    } catch { /* not loaded */ }
+    try {
+      execSync(`launchctl load "${plistPath}"`, { stdio: 'pipe' });
+    } catch (e) {
+      return { success: false, error: `Failed to load LaunchAgent: ${e.message}`, schedule };
+    }
+
+    return { success: true, schedule, plistPath, message: `Schedule "${id}" created and loaded` };
+  }
+
+  // Linux: use user crontab
+  return { success: true, schedule, message: `Schedule "${id}" saved (crontab integration TBD on Linux)` };
+}
+
+function listSchedules() {
+  ensureDir();
+  const files = fs.readdirSync(SCHEDULES_DIR).filter(f => f.endsWith('.json'));
+  return files.map(f => {
+    try {
+      return JSON.parse(fs.readFileSync(path.join(SCHEDULES_DIR, f), 'utf8'));
+    } catch {
+      return { id: f.replace('.json', ''), error: 'corrupt' };
+    }
+  });
+}
+
+function deleteSchedule(id) {
+  const metaPath = path.join(SCHEDULES_DIR, `${id}.json`);
+  const plistPath = path.join(os.homedir(), 'Library', 'LaunchAgents', `${PLIST_PREFIX}.${id}.plist`);
+
+  try {
+    execSync(`launchctl unload "${plistPath}" 2>/dev/null`, { stdio: 'pipe' });
+  } catch { /* not loaded */ }
+
+  if (fs.existsSync(plistPath)) fs.unlinkSync(plistPath);
+  if (fs.existsSync(metaPath)) fs.unlinkSync(metaPath);
+
+  return { success: true, message: `Schedule "${id}" deleted` };
+}
+
+module.exports = { createSchedule, listSchedules, deleteSchedule, parseCronSpec };

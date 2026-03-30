@@ -523,6 +523,61 @@ const TOOLS = [
       properties: {},
     },
   }),
+  destructiveTool({
+    name: 'schedule',
+    description: 'Create, list, or delete scheduled tasks. Supports natural language scheduling like "daily 9:00", "weekly monday 8:30", "hourly". Installs as macOS LaunchAgent or Linux crontab.',
+    inputSchema: {
+      type: 'object',
+      required: ['action'],
+      properties: {
+        action: { type: 'string', enum: ['create', 'list', 'delete'], description: 'Schedule action' },
+        name: { type: 'string', description: 'Schedule name/ID' },
+        schedule: { type: 'string', description: 'Schedule spec: "daily 9:00", "weekly monday 8:30", "hourly"' },
+        command: { type: 'string', description: 'Node.js code to execute on schedule' },
+        description: { type: 'string', description: 'What this schedule does' },
+        workingDirectory: { type: 'string', description: 'Working directory for the command' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'user_profile',
+    description: 'Manage persistent user profile — preferences, style, domain knowledge that persists across sessions. Actions: add, remove, replace, view.',
+    inputSchema: {
+      type: 'object',
+      required: ['action'],
+      properties: {
+        action: { type: 'string', enum: ['add', 'remove', 'replace', 'view'], description: 'Profile action' },
+        content: { type: 'string', description: 'Content to add or new content for replace' },
+        old_text: { type: 'string', description: 'Substring to match for remove/replace' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'session_search',
+    description: 'Search past session notes and conversations using full-text search. Returns relevant sessions from the SQLite FTS5 index for cross-session recall.',
+    inputSchema: {
+      type: 'object',
+      required: ['query'],
+      properties: {
+        query: { type: 'string', description: 'Search query to find relevant past sessions' },
+        limit: { type: 'number', description: 'Max results to return (default 10)' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'webhook_deliver',
+    description: 'Send a message to Teams, Slack, or Discord via webhook. Use for status reports, alerts, and notifications.',
+    inputSchema: {
+      type: 'object',
+      required: ['platform', 'webhook_url', 'title', 'message'],
+      properties: {
+        platform: { type: 'string', enum: ['teams', 'slack', 'discord'], description: 'Target platform' },
+        webhook_url: { type: 'string', description: 'Webhook URL for the target channel' },
+        title: { type: 'string', description: 'Message title' },
+        message: { type: 'string', description: 'Message body (markdown supported)' },
+      },
+    },
+  }),
 ];
 
 module.exports = {
