@@ -49,7 +49,7 @@ jobs:
           cache: 'npm'
 
       - name: Install deps
-        run: npm ci
+        run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Budget guard
         id: budget

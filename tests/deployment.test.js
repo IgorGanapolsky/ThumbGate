@@ -213,3 +213,21 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /steps\.plan\.outputs\.skip_publish == 'true'/);
   assert.match(workflow, /steps\.plan\.outputs\.publish_npm == 'true'/);
 });
+
+test('GitHub Actions workflows never use bare npm ci for onnxruntime installs', () => {
+  const workflowsDir = path.join(PROJECT_ROOT, '.github', 'workflows');
+  const workflowFiles = fs.readdirSync(workflowsDir).filter((name) => name.endsWith('.yml'));
+
+  for (const workflowFile of workflowFiles) {
+    const workflow = fs.readFileSync(path.join(workflowsDir, workflowFile), 'utf8');
+
+    assert.doesNotMatch(
+      workflow,
+      /^\s*run:\s*npm ci\s*$/m,
+      `${workflowFile} should not use bare npm ci`
+    );
+  }
+
+  const gtmWorkflow = fs.readFileSync(path.join(workflowsDir, 'gtm-autonomous-loop.yml'), 'utf8');
+  assert.match(gtmWorkflow, /npm ci --onnxruntime-node-install-cuda=skip/);
+});
