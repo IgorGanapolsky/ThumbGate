@@ -46,6 +46,22 @@ async function fetchNpmVersions() {
   return httpsGet(`https://registry.npmjs.org/${NPM_PACKAGE}`);
 }
 
+async function collectAnalytics(fetchers = {}) {
+  const fetchMonthly = fetchers.fetchNpmMonthly || fetchNpmMonthly;
+  const fetchWeekly = fetchers.fetchNpmWeekly || fetchNpmWeekly;
+  const fetchRepo = fetchers.fetchGitHub || fetchGitHub;
+  const fetchVersions = fetchers.fetchNpmVersions || fetchNpmVersions;
+
+  const [monthly, weekly, github, npmMeta] = await Promise.all([
+    fetchMonthly(),
+    fetchWeekly(),
+    fetchRepo(),
+    fetchVersions().catch(() => null),
+  ]);
+
+  return { monthly, weekly, github, npmMeta };
+}
+
 /**
  * Estimate organic downloads by filtering out publish-day inflation.
  * npm registry mirrors, bot crawlers (socket.dev, snyk, bundlephobia),
@@ -169,22 +185,30 @@ function formatReport(monthly, weekly, github, npmMeta) {
   return lines.join('\n');
 }
 
-async function run() {
+async function run(options = {}) {
+  const log = options.log || console.log;
+  const error = options.error || console.error;
+  const exit = options.exit || process.exit;
+
   try {
-    const [monthly, weekly, github, npmMeta] = await Promise.all([
-      fetchNpmMonthly(),
-      fetchNpmWeekly(),
-      fetchGitHub(),
-      fetchNpmVersions().catch(() => null),
-    ]);
-    console.log(formatReport(monthly, weekly, github, npmMeta));
+    const { monthly, weekly, github, npmMeta } = await collectAnalytics(options.fetchers);
+    log(formatReport(monthly, weekly, github, npmMeta));
   } catch (err) {
-    console.error('Analytics fetch failed:', err.message);
-    process.exit(1);
+    error('Analytics fetch failed:', err.message);
+    exit(1);
   }
 }
 
-module.exports = { run, formatReport, fetchNpmMonthly, fetchNpmWeekly, fetchGitHub, estimateOrganicDownloads };
+module.exports = {
+  run,
+  collectAnalytics,
+  formatReport,
+  fetchNpmMonthly,
+  fetchNpmWeekly,
+  fetchGitHub,
+  fetchNpmVersions,
+  estimateOrganicDownloads,
+};
 
 if (require.main === module) {
   run();
