@@ -12,8 +12,11 @@ const {
   createInitialModel,
   updateModel,
   getReliability,
+  isCalibrated,
+  getCalibration,
   samplePosteriors,
   DECAY_FLOOR,
+  MIN_SAMPLES_THRESHOLD,
   DEFAULT_CATEGORIES,
 } = require('../scripts/thompson-sampling');
 
@@ -175,5 +178,113 @@ describe('loadModel', () => {
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('MIN_SAMPLES_THRESHOLD', () => {
+  it('is a positive integer', () => {
+    assert.ok(Number.isInteger(MIN_SAMPLES_THRESHOLD));
+    assert.ok(MIN_SAMPLES_THRESHOLD > 0);
+  });
+});
+
+describe('isCalibrated', () => {
+  it('returns false for fresh model (0 samples)', () => {
+    const model = createInitialModel();
+    assert.strictEqual(isCalibrated(model, 'testing'), false);
+  });
+
+  it('returns false below threshold', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    for (let i = 0; i < MIN_SAMPLES_THRESHOLD - 1; i++) {
+      updateModel(model, { signal: 'positive', timestamp: ts, categories: ['testing'] });
+    }
+    assert.strictEqual(isCalibrated(model, 'testing'), false);
+  });
+
+  it('returns true at threshold', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    for (let i = 0; i < MIN_SAMPLES_THRESHOLD; i++) {
+      updateModel(model, { signal: 'positive', timestamp: ts, categories: ['testing'] });
+    }
+    assert.strictEqual(isCalibrated(model, 'testing'), true);
+  });
+
+  it('returns false for nonexistent category', () => {
+    const model = createInitialModel();
+    assert.strictEqual(isCalibrated(model, 'nonexistent_xyz'), false);
+  });
+});
+
+describe('getCalibration', () => {
+  it('reports none confidence for fresh model', () => {
+    const model = createInitialModel();
+    const cal = getCalibration(model);
+    assert.ok(cal.testing);
+    assert.strictEqual(cal.testing.confidence, 'none');
+    assert.strictEqual(cal.testing.calibrated, false);
+    assert.strictEqual(cal.testing.samples, 0);
+    assert.strictEqual(cal.testing.reliability, 0.5);
+  });
+
+  it('reports low confidence below threshold', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    updateModel(model, { signal: 'positive', timestamp: ts, categories: ['testing'] });
+    updateModel(model, { signal: 'negative', timestamp: ts, categories: ['testing'] });
+    const cal = getCalibration(model);
+    assert.strictEqual(cal.testing.confidence, 'low');
+    assert.strictEqual(cal.testing.calibrated, false);
+    assert.strictEqual(cal.testing.samples, 2);
+  });
+
+  it('reports medium confidence at threshold', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    for (let i = 0; i < MIN_SAMPLES_THRESHOLD; i++) {
+      updateModel(model, { signal: 'positive', timestamp: ts, categories: ['git'] });
+    }
+    const cal = getCalibration(model);
+    assert.strictEqual(cal.git.confidence, 'medium');
+    assert.strictEqual(cal.git.calibrated, true);
+    assert.ok(cal.git.reliability > 0.5, 'reliability should be above prior with positive signals');
+  });
+
+  it('reports high confidence at 20+ samples', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    for (let i = 0; i < 20; i++) {
+      updateModel(model, { signal: 'positive', timestamp: ts, categories: ['security'] });
+    }
+    const cal = getCalibration(model);
+    assert.strictEqual(cal.security.confidence, 'high');
+    assert.strictEqual(cal.security.calibrated, true);
+  });
+
+  it('covers all categories in the model', () => {
+    const model = createInitialModel();
+    const cal = getCalibration(model);
+    for (const cat of DEFAULT_CATEGORIES) {
+      assert.ok(cal[cat], `calibration should include ${cat}`);
+      assert.ok(['none', 'low', 'medium', 'high'].includes(cal[cat].confidence));
+    }
+  });
+
+  it('reliability reflects actual signal ratio when calibrated', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    // 8 positive, 2 negative = ~80% reliability (with priors: (1+8)/(2+10) ≈ 0.75)
+    for (let i = 0; i < 8; i++) {
+      updateModel(model, { signal: 'positive', timestamp: ts, categories: ['code_edit'] });
+    }
+    for (let i = 0; i < 2; i++) {
+      updateModel(model, { signal: 'negative', timestamp: ts, categories: ['code_edit'] });
+    }
+    const cal = getCalibration(model);
+    assert.ok(cal.code_edit.calibrated, 'should be calibrated at 10 samples');
+    assert.ok(cal.code_edit.reliability > 0.7, `reliability should be > 0.7, got ${cal.code_edit.reliability}`);
+    assert.ok(cal.code_edit.reliability < 0.85, `reliability should be < 0.85, got ${cal.code_edit.reliability}`);
   });
 });
