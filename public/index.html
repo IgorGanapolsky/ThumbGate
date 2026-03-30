@@ -331,12 +331,12 @@ __GA_BOOTSTRAP__
 <!-- HERO -->
 <section class="hero">
   <div class="container">
-    <div class="hero-thumbs">👎</div>
+    <div class="hero-thumbs">👍👎</div>
     <div class="hero-badge">● Human-in-the-Loop Enforcement for AI Agents</div>
-    <h1>Thumbs down a mistake.<br>It never happens again.</h1>
+    <h1>Thumbs up what works. Thumbs down what breaks.<br>Your agent never repeats the mistake.</h1>
     <div class="hero-signals">
-      <div class="signal-pill signal-down">👎 blocks the mistake from repeating</div>
-      <div class="signal-pill signal-up">👍 reinforces what worked</div>
+      <div class="signal-pill signal-up">👍 reinforces good behavior across sessions</div>
+      <div class="signal-pill signal-down">👎 blocks the mistake from ever repeating</div>
     </div>
     <p>ThumbGate turns thumbs-up/down feedback into pre-action gates for AI coding agents. The safety net for vibe coding works across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent. <strong>New in v0.8.4:</strong> SQLite+FTS5 lesson DB, corrective-action inference, and Thompson Sampling.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
@@ -571,7 +571,55 @@ function copyInstall(el) {
     hint.classList.add('copied');
     setTimeout(function() { hint.textContent = 'click to copy'; hint.classList.remove('copied'); }, 2000);
   });
+  if (typeof plausible === 'function') plausible('install_copy');
 }
+
+/* ── Plausible custom event tracking ── */
+(function() {
+  function trackClick(selector, eventName, props) {
+    document.querySelectorAll(selector).forEach(function(el) {
+      el.addEventListener('click', function() {
+        if (typeof plausible === 'function') plausible(eventName, { props: props || {} });
+      });
+    });
+  }
+
+  /* CTA clicks */
+  trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 49 });
+  trackClick('.btn-free', 'install_click', { tier: 'free' });
+  trackClick('.nav-cta', 'checkout_start', { tier: 'pro', source: 'nav' });
+
+  /* FAQ accordion opens */
+  document.querySelectorAll('.faq-q').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var question = this.textContent.trim().substring(0, 60);
+      if (typeof plausible === 'function') plausible('faq_open', { props: { question: question } });
+    });
+  });
+
+  /* Scroll depth (25%, 50%, 75%, 100%) */
+  var scrollMarks = { 25: false, 50: false, 75: false, 100: false };
+  window.addEventListener('scroll', function() {
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    if (docHeight <= 0) return;
+    var pct = Math.round((window.scrollY / docHeight) * 100);
+    [25, 50, 75, 100].forEach(function(mark) {
+      if (pct >= mark && !scrollMarks[mark]) {
+        scrollMarks[mark] = true;
+        if (typeof plausible === 'function') plausible('scroll_depth', { props: { depth: mark + '%' } });
+      }
+    });
+  });
+
+  /* Proof bar link clicks */
+  trackClick('.proof-bar a', 'proof_bar_click');
+
+  /* Compatibility card clicks */
+  trackClick('.compat-card', 'compat_click');
+
+  /* SEO/comparison page clicks */
+  trackClick('.seo-card', 'seo_page_click');
+})();
 </script>
 </body>
 </html>

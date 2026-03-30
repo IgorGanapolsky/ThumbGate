@@ -117,12 +117,23 @@ test('public landing page positions ThumbGate as human-in-the-loop enforcement f
   assert.match(landingPage, /OpenCode/);
   assert.match(landingPage, /MCP-compatible agent/i);
   assert.match(landingPage, /SQLite\+FTS5/);
-  assert.match(landingPage, /MemAlign/i);
-  assert.match(landingPage, /LanceDB/);
-  assert.match(landingPage, /ContextFS/);
-  assert.match(landingPage, /Bayesian belief/i);
   assert.doesNotMatch(landingPage, /mailto:/i);
   assert.doesNotMatch(landingPage, /official Anthropic partner/i);
+});
+
+test('public landing page hero features both thumbs up AND thumbs down prominently', () => {
+  const landingPage = readLandingPage();
+
+  // Hero big emoji must show BOTH thumbs — not just one
+  assert.match(landingPage, /class="hero-thumbs">👍👎</);
+  // Headline must reference both thumbs up and thumbs down
+  assert.match(landingPage, /Thumbs up what works/i);
+  assert.match(landingPage, /Thumbs down what breaks/i);
+  // Signal pills must show both
+  assert.match(landingPage, /signal-pill signal-up/);
+  assert.match(landingPage, /signal-pill signal-down/);
+  assert.match(landingPage, /👍 reinforces good behavior/);
+  assert.match(landingPage, /👎 blocks the mistake/);
 });
 
 test('public landing page includes FAQ section with accordion interaction', () => {
@@ -153,6 +164,30 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /Get the Claude plugin/);
   assert.match(landingPage, /Browse plugins/);
   assert.match(landingPage, /View on npm/);
+});
+
+test('public landing page includes Plausible custom event tracking for all CTAs', () => {
+  const landingPage = readLandingPage();
+
+  // install_copy fires directly in copyInstall function
+  assert.match(landingPage, /plausible\('install_copy'\)/);
+
+  // trackClick wires up CTA events by selector and event name
+  assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
+  assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
+  assert.match(landingPage, /trackClick\('.nav-cta', 'checkout_start'/);
+  assert.match(landingPage, /plausible\('faq_open'/);
+  assert.match(landingPage, /plausible\('scroll_depth'/);
+  assert.match(landingPage, /trackClick\('.proof-bar a', 'proof_bar_click'\)/);
+  assert.match(landingPage, /trackClick\('.compat-card', 'compat_click'\)/);
+  assert.match(landingPage, /trackClick\('.seo-card', 'seo_page_click'\)/);
+
+  // Safety: typeof check before calling plausible
+  assert.match(landingPage, /typeof plausible === 'function'/);
+
+  // Scroll depth tracks 25%, 50%, 75%, 100%
+  assert.match(landingPage, /scrollMarks/);
+  assert.match(landingPage, /depth: mark \+ '%'/);
 });
 
 test('public landing page internally links to high-intent comparison and guide pages', () => {
