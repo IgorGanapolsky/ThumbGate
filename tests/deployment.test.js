@@ -248,6 +248,10 @@ test('Publish Claude Plugin workflow builds the MCPB and uploads stable release 
   assert.match(workflow, /npm ci --onnxruntime-node-install-cuda=skip/);
   assert.match(workflow, /npm run build:claude-mcpb/);
   assert.match(workflow, /scripts\/distribution-surfaces/);
+  assert.match(workflow, /version=\$\(node -p "require\('\.\/package\.json'\)\.version"\)/);
+  assert.match(workflow, /versioned_asset=\$\(node -e "const \{ getClaudePluginVersionedAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getClaudePluginVersionedAssetName\(\)\)"\)/);
+  assert.match(workflow, /latest_asset=\$\(node -e "const \{ CLAUDE_PLUGIN_LATEST_ASSET_NAME \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(CLAUDE_PLUGIN_LATEST_ASSET_NAME\)"\)/);
+  assert.doesNotMatch(workflow, /require\\+"/);
   assert.match(workflow, /claude-plugin-mcpb/);
   assert.match(workflow, /gh release create/);
   assert.match(workflow, /gh release upload/);
