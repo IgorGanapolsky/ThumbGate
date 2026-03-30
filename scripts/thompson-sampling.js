@@ -36,6 +36,14 @@ const HALF_LIFE_DAYS = 7.0;
 const DECAY_FLOOR = 0.01;
 
 /**
+ * Minimum number of real samples before a category's posterior mean is trusted
+ * over the uniform prior. Below this threshold, getCalibration() marks the
+ * category as "uncalibrated" — callers should treat reliability estimates as
+ * speculative and fall back to rule-based decisions.
+ */
+const MIN_SAMPLES_THRESHOLD = 5;
+
+/**
  * Default category taxonomy — mirrors Subway's 8-keyword categories plus
  * 'uncategorized' as the catch-all. Used when initializing a new model.
  */
@@ -222,6 +230,55 @@ function getReliability(model) {
 }
 
 // ---------------------------------------------------------------------------
+// Calibration
+// ---------------------------------------------------------------------------
+
+/**
+ * Check whether a single category has enough samples to be trusted.
+ *
+ * @param {Object} model - Model object containing categories
+ * @param {string} category - Category name to check
+ * @returns {boolean} true if samples >= MIN_SAMPLES_THRESHOLD
+ */
+function isCalibrated(model, category) {
+  const cat = model.categories && model.categories[category];
+  if (!cat) return false;
+  return cat.samples >= MIN_SAMPLES_THRESHOLD;
+}
+
+/**
+ * Return per-category calibration report: reliability, sample count,
+ * calibrated flag, and a confidence tier (high / medium / low / none).
+ *
+ * Confidence tiers:
+ *   none   — 0 samples (pure prior)
+ *   low    — 1–4 samples (speculative)
+ *   medium — 5–19 samples (usable)
+ *   high   — 20+ samples (trustworthy)
+ *
+ * @param {Object} model - Model object containing categories
+ * @returns {Object} Map of category → { reliability, samples, calibrated, confidence }
+ */
+function getCalibration(model) {
+  const results = {};
+  for (const [cat, params] of Object.entries(model.categories || {})) {
+    const total = params.alpha + params.beta;
+    const reliability = total > 0 ? params.alpha / total : 0.5;
+    const samples = params.samples || 0;
+    const calibrated = samples >= MIN_SAMPLES_THRESHOLD;
+
+    let confidence;
+    if (samples === 0) confidence = 'none';
+    else if (samples < MIN_SAMPLES_THRESHOLD) confidence = 'low';
+    else if (samples < 20) confidence = 'medium';
+    else confidence = 'high';
+
+    results[cat] = { reliability, samples, calibrated, confidence };
+  }
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Posterior Sampling
 // ---------------------------------------------------------------------------
 
@@ -331,8 +388,11 @@ module.exports = {
   createInitialModel,
   updateModel,
   getReliability,
+  isCalibrated,
+  getCalibration,
   samplePosteriors,
   HALF_LIFE_DAYS,
   DECAY_FLOOR,
+  MIN_SAMPLES_THRESHOLD,
   DEFAULT_CATEGORIES,
 };

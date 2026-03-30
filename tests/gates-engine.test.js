@@ -12,6 +12,7 @@ const {
   loadGatesConfig,
   matchesGate,
   evaluateGates,
+  buildReasoning,
   formatOutput,
   run,
   satisfyCondition,
@@ -441,4 +442,111 @@ test('satisfyGate creates state entry', () => {
 test('satisfyGate throws without gate ID', () => {
   const { satisfyGate } = require('../scripts/gate-satisfy');
   assert.throws(() => satisfyGate(), /gate ID is required/);
+});
+
+// ---------------------------------------------------------------------------
+// Reasoning chain (explainability)
+// ---------------------------------------------------------------------------
+
+test('buildReasoning returns array with pattern match step', () => {
+  const gate = { id: 'test-gate', pattern: 'git\\s+push', action: 'block', severity: 'critical', layer: 'Execution' };
+  const reasoning = buildReasoning(gate, 'Bash', { command: 'git push origin main' });
+  assert.ok(Array.isArray(reasoning), 'reasoning should be an array');
+  assert.ok(reasoning.length >= 2, `expected >= 2 steps, got ${reasoning.length}`);
+  assert.ok(reasoning[0].includes('git push origin main'), 'first step should show matched text');
+  assert.ok(reasoning[1].includes('test-gate'), 'second step should identify the gate');
+});
+
+test('buildReasoning identifies manual policy rules', () => {
+  const gate = { id: 'force-push', pattern: 'git\\s+push', action: 'block', severity: 'critical' };
+  const reasoning = buildReasoning(gate, 'Bash', { command: 'git push --force' });
+  assert.ok(reasoning.some((s) => s.includes('Manual policy rule')), 'should identify as manual rule');
+});
+
+test('buildReasoning identifies auto-promoted gates', () => {
+  const gate = { id: 'auto-test', pattern: 'test', action: 'warn', severity: 'medium', promotedAt: '2026-03-30T00:00:00Z', occurrences: 4 };
+  const reasoning = buildReasoning(gate, 'Bash', { command: 'test cmd' });
+  assert.ok(reasoning.some((s) => s.includes('Auto-promoted')), 'should identify as auto-promoted');
+  assert.ok(reasoning.some((s) => s.includes('4 failures')), 'should include occurrence count');
+});
+
+test('buildReasoning includes unless bypass hint', () => {
+  const gate = { id: 'push-gate', pattern: 'push', action: 'block', severity: 'critical', unless: 'pr_threads_checked' };
+  const reasoning = buildReasoning(gate, 'Bash', { command: 'git push' });
+  assert.ok(reasoning.some((s) => s.includes('satisfy_gate("pr_threads_checked")')), 'should hint at bypass');
+});
+
+test('buildReasoning includes historical fire count', () => {
+  cleanupStateFiles();
+  recordStat('hist-gate', 'block');
+  recordStat('hist-gate', 'block');
+  recordStat('hist-gate', 'warn');
+  const gate = { id: 'hist-gate', pattern: 'test', action: 'block', severity: 'critical' };
+  const reasoning = buildReasoning(gate, 'Bash', { command: 'test' });
+  assert.ok(reasoning.some((s) => s.includes('blocked 2×')), 'should show block count');
+  assert.ok(reasoning.some((s) => s.includes('warned 1×')), 'should show warn count');
+  cleanupStateFiles();
+});
+
+test('buildReasoning truncates long input text', () => {
+  const gate = { id: 'long-gate', pattern: '.', action: 'block', severity: 'critical' };
+  const longCmd = 'x'.repeat(200);
+  const reasoning = buildReasoning(gate, 'Bash', { command: longCmd });
+  assert.ok(reasoning[0].includes('…'), 'should truncate with ellipsis');
+  assert.ok(reasoning[0].length < 200, 'first step should be shorter than input');
+});
+
+test('evaluateGates includes reasoning array in deny result', () => {
+  cleanupStateFiles();
+  const result = evaluateGates('Bash', { command: 'git push origin feature/x' });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.ok(Array.isArray(result.reasoning), 'result should have reasoning array');
+  assert.ok(result.reasoning.length >= 2, 'reasoning should have multiple steps');
+  cleanupStateFiles();
+});
+
+test('evaluateGates includes reasoning array in warn result', () => {
+  cleanupStateFiles();
+  const result = evaluateGates('Edit', { file_path: '/project/.env' });
+  assert.ok(result);
+  assert.equal(result.decision, 'warn');
+  assert.ok(Array.isArray(result.reasoning), 'warn result should have reasoning array');
+  cleanupStateFiles();
+});
+
+test('formatOutput includes reasoning in deny reason text', () => {
+  const output = JSON.parse(formatOutput({
+    decision: 'deny',
+    gate: 'test-gate',
+    message: 'Blocked for testing',
+    severity: 'critical',
+    reasoning: ['Pattern matched', 'Manual rule'],
+  }));
+  assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('Reasoning:'));
+  assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('Pattern matched'));
+  assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('Manual rule'));
+});
+
+test('formatOutput includes reasoning in warn context text', () => {
+  const output = JSON.parse(formatOutput({
+    decision: 'warn',
+    gate: 'test-gate',
+    message: 'Warning for testing',
+    severity: 'medium',
+    reasoning: ['Step 1', 'Step 2'],
+  }));
+  assert.ok(output.hookSpecificOutput.additionalContext.includes('Reasoning:'));
+  assert.ok(output.hookSpecificOutput.additionalContext.includes('Step 1'));
+});
+
+test('formatOutput omits reasoning section when reasoning is empty', () => {
+  const output = JSON.parse(formatOutput({
+    decision: 'deny',
+    gate: 'test-gate',
+    message: 'No reasoning',
+    severity: 'critical',
+    reasoning: [],
+  }));
+  assert.ok(!output.hookSpecificOutput.permissionDecisionReason.includes('Reasoning:'));
 });

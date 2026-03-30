@@ -172,6 +172,65 @@ function recordStat(gateId, action) {
 }
 
 // ---------------------------------------------------------------------------
+// Reasoning chain builder
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a human-readable reasoning chain explaining WHY a gate decision was made.
+ * Returns an array of evidence steps — each a short sentence a developer can scan.
+ *
+ * @param {Object} gate - The matched gate definition
+ * @param {string} toolName - The tool that was evaluated
+ * @param {Object} toolInput - The tool input that was evaluated
+ * @param {Object} [extras] - Optional extra context (metrics, constraints)
+ * @returns {string[]} Array of reasoning steps
+ */
+function buildReasoning(gate, toolName, toolInput, extras = {}) {
+  const steps = [];
+  const text = toolInput.command || toolInput.file_path || toolInput.path || '';
+
+  // 1. What matched
+  steps.push(`Pattern /${gate.pattern}/ matched "${text.length > 80 ? text.slice(0, 80) + '…' : text}"`);
+
+  // 2. Gate identity
+  steps.push(`Gate ${gate.id} [${gate.action}] — layer: ${gate.layer || 'Execution'}, severity: ${gate.severity || 'medium'}`);
+
+  // 3. Source (manual vs auto-promoted)
+  if (gate.promotedAt || gate.source === 'auto-promote' || gate.source === 'force-promote') {
+    const occText = gate.occurrences ? ` after ${gate.occurrences} failures` : '';
+    steps.push(`Auto-promoted from feedback${occText} (${gate.promotedAt || 'unknown date'})`);
+  } else {
+    steps.push('Manual policy rule (default.json)');
+  }
+
+  // 4. Constraint context
+  if (gate.when && gate.when.constraints) {
+    const keys = Object.entries(gate.when.constraints).map(([k, v]) => `${k}=${v}`).join(', ');
+    steps.push(`Active because constraint ${keys} is set`);
+  }
+
+  // 5. Unless condition status
+  if (gate.unless) {
+    steps.push(`Bypassable via satisfy_gate("${gate.unless}") — not currently satisfied`);
+  }
+
+  // 6. Metric condition
+  if (extras.metricFailed) {
+    const m = gate.metrics;
+    steps.push(`Business metric "${m.name}" outside bounds [${m.min ?? '-∞'}, ${m.max ?? '∞'}]`);
+  }
+
+  // 7. Historical fire count
+  const stats = loadStats();
+  const gateStats = stats.byGate && stats.byGate[gate.id];
+  if (gateStats) {
+    steps.push(`History: blocked ${gateStats.blocked || 0}×, warned ${gateStats.warned || 0}×`);
+  }
+
+  return steps;
+}
+
+// ---------------------------------------------------------------------------
 // Matching engine
 // ---------------------------------------------------------------------------
 
@@ -242,12 +301,12 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     }
 
     // Metric-aware gates: check business metrics from Semantic Layer
+    let metricFailed = false;
     if (gate.metrics) {
       const metricsPassed = await checkMetricCondition(gate.metrics);
       if (!metricsPassed) {
-        // If metrics don't pass, the gate matches and we take the action (block/warn)
+        metricFailed = true;
       } else {
-        // If metrics pass, the gate doesn't apply
         continue;
       }
     }
@@ -257,10 +316,11 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
       continue;
     }
 
+    const reasoning = buildReasoning(gate, toolName, toolInput, { metricFailed });
+
     if (gate.action === 'block') {
       recordStat(gate.id, 'block');
-      const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity };
-      // Audit trail: record + auto-feed into RLHF pipeline
+      const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
@@ -268,7 +328,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 
     if (gate.action === 'warn') {
       recordStat(gate.id, 'warn');
-      const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity };
+      const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
@@ -304,9 +364,11 @@ function evaluateGates(toolName, toolInput, configPath) {
       continue;
     }
 
+    const reasoning = buildReasoning(gate, toolName, toolInput);
+
     if (gate.action === 'block') {
       recordStat(gate.id, 'block');
-      const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity };
+      const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
@@ -314,7 +376,7 @@ function evaluateGates(toolName, toolInput, configPath) {
 
     if (gate.action === 'warn') {
       recordStat(gate.id, 'warn');
-      const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity };
+      const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
@@ -439,11 +501,15 @@ function formatOutput(result) {
     return JSON.stringify({});
   }
 
+  const reasoningSuffix = Array.isArray(result.reasoning) && result.reasoning.length
+    ? '\n  Reasoning:\n  • ' + result.reasoning.join('\n  • ')
+    : '';
+
   if (result.decision === 'deny') {
     return JSON.stringify({
       hookSpecificOutput: {
         permissionDecision: 'deny',
-        permissionDecisionReason: `[GATE:${result.gate}] ${result.message}`,
+        permissionDecisionReason: `[GATE:${result.gate}] ${result.message}${reasoningSuffix}`,
       },
     });
   }
@@ -451,7 +517,7 @@ function formatOutput(result) {
   if (result.decision === 'warn') {
     return JSON.stringify({
       hookSpecificOutput: {
-        additionalContext: `[GATE:${result.gate}] WARNING: ${result.message}`,
+        additionalContext: `[GATE:${result.gate}] WARNING: ${result.message}${reasoningSuffix}`,
       },
     });
   }
@@ -501,6 +567,7 @@ module.exports = {
   recordStat,
   evaluateSecretGuard,
   buildSecretGuardResult,
+  buildReasoning,
   matchesGate,
   evaluateGates,
   evaluateGatesAsync,
