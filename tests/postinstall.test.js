@@ -8,18 +8,16 @@ const path = require('path');
 const POSTINSTALL = path.join(__dirname, '..', 'bin', 'postinstall.js');
 
 describe('postinstall banner', () => {
-  it('prints banner with checkout URL to stderr', () => {
-    const result = execSync(`node ${POSTINSTALL}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+  it('prints banner with checkout URL to stderr (stdout empty)', () => {
+    // Unset CI vars so banner actually prints
+    const result = execSync(`CI= CONTINUOUS_INTEGRATION= GITHUB_ACTIONS= node ${POSTINSTALL}`, { encoding: 'utf8', shell: true });
     // stdout should be empty (no MCP contamination)
     assert.equal(result, '', 'stdout should be empty');
   });
 
   it('includes checkout URL in stderr output', () => {
-    try {
-      execSync(`node ${POSTINSTALL} 2>&1`, { encoding: 'utf8' });
-    } catch (_) { /* ignore */ }
-    // Run again capturing stderr
-    const stderr = execSync(`node ${POSTINSTALL} 2>&1 1>/dev/null`, { encoding: 'utf8', shell: true });
+    // Unset CI so the banner actually prints (GitHub Actions sets CI=true)
+    const stderr = execSync(`CI= CONTINUOUS_INTEGRATION= GITHUB_ACTIONS= node ${POSTINSTALL} 2>&1 1>/dev/null`, { encoding: 'utf8', shell: true });
     assert.ok(stderr.includes('checkout/pro'), 'should include checkout URL');
     assert.ok(stderr.includes('ThumbGate'), 'should mention ThumbGate');
     assert.ok(stderr.includes('npx mcp-memory-gateway'), 'should include quick start');
