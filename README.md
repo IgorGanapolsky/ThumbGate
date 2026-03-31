@@ -15,7 +15,7 @@
 
 The safety net for vibe coding. Give your AI agent a thumbs-down and it auto-generates a prevention rule. Give a thumbs-up and it reinforces good behavior. Pre-action gates physically block the agent before it repeats a known mistake — a reliability layer for one sharp agent, without another planner or swarm.
 
-> **Honest disclaimer: this is not RLHF weight training.** ThumbGate is context engineering plus enforcement. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions before they execute.
+> **Honest disclaimer:** ThumbGate is context-engineered behavioral steering — it injects feedback into context to condition the model's behavior. It does not update model weights. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions before they execute.
 
 Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
 
@@ -31,7 +31,7 @@ Most memory tools only help an agent remember. ThumbGate also enforces.
 
 - `recall` injects the right context at session start.
 - `search_lessons` shows promoted lessons plus the corrective action, lifecycle state, linked rules, linked gates, and the next harness fix the system should make.
-- `search_rlhf` searches raw RLHF state across feedback logs, ContextFS memory, and prevention rules.
+- `search_rlhf` searches feedback state across feedback logs, ContextFS memory, and prevention rules (context engineering, not weight training).
 - Pre-action gates physically block tool calls that match known failure patterns.
 - Session handoff and primer keep continuity across sessions without adding an extra orchestrator.
 
@@ -123,7 +123,7 @@ Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
 | `capture_feedback` | Accept up/down signal + context, validate, promote to memory |
 | `recall` | Recall relevant past failures and rules for the current task |
 | `search_lessons` | Search promoted lessons with corrective action, lifecycle state, rules, gates |
-| `search_rlhf` | Search raw RLHF state across feedback logs, ContextFS, and rules |
+| `search_rlhf` | Search feedback state across feedback logs, ContextFS, and rules (context engineering, not weight training) |
 | `prevention_rules` | Generate prevention rules from repeated mistakes |
 | `enforcement_matrix` | Inspect promotion rate, active gates, and rejection ledger |
 | `feedback_stats` | Approval rate and failure-domain summary |
@@ -135,7 +135,7 @@ Lean install for recall + gates + lesson search only:
 RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y mcp-memory-gateway serve
 ```
 
-Free and self-hosted users can invoke `search_lessons` directly through MCP to inspect corrective action per lesson. For broader retrieval across feedback logs, ContextFS memory, and prevention rules, use `search_rlhf` through MCP or the authenticated `GET /v1/search` API.
+Free and self-hosted users can invoke `search_lessons` directly through MCP to inspect corrective action per lesson. For broader retrieval across feedback logs, ContextFS memory, and prevention rules, use `search_rlhf` (searches feedback state, not model weights) through MCP or the authenticated `GET /v1/search` API.
 
 ### Dispatch profile
 

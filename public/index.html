@@ -80,10 +80,10 @@ __GA_BOOTSTRAP__
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "Is ThumbGate real RLHF?",
+      "name": "How is ThumbGate different from RLHF?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. ThumbGate is context engineering plus enforcement, not RLHF weight training. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions. Your model's weights are never changed."
+        "text": "RLHF updates model weights. ThumbGate doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. The gate blocks are hard enforcement, not soft suggestions."
       }
     },
     {
@@ -519,8 +519,8 @@ __GA_BOOTSTRAP__
     <h2 class="section-title">Common questions</h2>
     <div class="faq-list">
       <div class="faq-item open">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Is this real RLHF?</div>
-        <div class="faq-a">Honest answer: no. This is context engineering plus enforcement, not RLHF weight training. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions. Your model's weights are never changed. What actually works: recall injects past context, search_lessons exposes corrective actions, and pre-action gates block known-bad tool calls. What does not work: thumbs up/down changing model weights, or agents self-correcting without context injection.</div>
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">How is ThumbGate different from RLHF?</div>
+        <div class="faq-a">RLHF updates model weights. ThumbGate doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. The gate blocks are hard enforcement, not soft suggestions.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What's the tech stack?</div>

@@ -1,6 +1,6 @@
 # ThumbGate — Pro Configuration Pack
 
-Production-ready RLHF configurations for AI agent teams.
+Production-ready ThumbGate configurations for AI agent teams.
 
 ## What's Included
 

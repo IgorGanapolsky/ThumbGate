@@ -545,7 +545,7 @@ function capture() {
   if (result.accepted) {
     const ev = result.feedbackEvent;
     const mem = result.memoryRecord;
-    console.log(`\nRLHF Feedback Captured [${normalized.toUpperCase()}]`);
+    console.log(`\nFeedback Captured [${normalized.toUpperCase()}]`);
     console.log('─'.repeat(50));
     console.log(`  Feedback ID : ${ev.id}`);
     console.log(`  Signal      : ${ev.signal} (${ev.actionType})`);
@@ -553,7 +553,7 @@ function capture() {
     console.log(`  Storage     : JSONL log + LanceDB vector index\n`);
     proNudge();
   } else {
-    console.log(`\nRLHF Feedback Recorded [${normalized.toUpperCase()}] — not promoted`);
+    console.log(`\nFeedback Recorded [${normalized.toUpperCase()}] — not promoted`);
     console.log('─'.repeat(50));
     console.log(`  Reason      : ${result.reason}\n`);
     process.exit(2);
@@ -565,7 +565,7 @@ function stats() {
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const data = analyzeFeedback();
   
-  console.log('\n📊 RLHF Performance Metrics');
+  console.log('\n📊 ThumbGate Performance Metrics');
   console.log('─'.repeat(50));
   console.log(`  Total Signals   : ${data.total}`);
   console.log(`  Approval Rate   : ${Math.round(data.approvalRate * 100)}%`);
@@ -903,7 +903,7 @@ function exportDatabricks() {
     const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
     process.stderr.write(
       `\n  🔒 Databricks Export requires Pro ($49 one-time).\n` +
-      `     Export RLHF logs + proof artifacts for analytics.\n` +
+      `     Export feedback logs + proof artifacts for analytics.\n` +
       `     Upgrade: ${STRIPE_URL}\n\n`
     );
     process.exit(1);
@@ -1148,7 +1148,7 @@ function help() {
   console.log('    --agent=NAME        Wire PreToolUse hooks for agent (claude-code|codex|gemini)');
   console.log('    --wire-hooks        Wire hooks only (auto-detect agent, skip scaffolding)');
   console.log('    --dry-run           Preview hook changes without writing');
-  console.log('  install-mcp           Install RLHF MCP server into Claude Code settings (--project for local)');
+  console.log('  install-mcp           Install ThumbGate MCP server into Claude Code settings (--project for local)');
   console.log('  serve                 Start MCP server (stdio) — for claude/codex/gemini mcp add');
   console.log('  capture [flags]       Capture feedback (--feedback=up|down --context="..." --tags="...")');
   console.log('  stats                 Show feedback analytics + Revenue-at-Risk');
@@ -1162,8 +1162,8 @@ function help() {
   console.log('  doctor                Audit runtime isolation, bootstrap context, and permission tier');
   console.log('  dispatch              Print a Dispatch-safe remote ops brief for phone-driven review sessions');
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
-  console.log('  export-databricks     Export RLHF logs + proof artifacts as a Databricks-ready analytics bundle');
-  console.log('  obsidian-export       Export all RLHF data as interlinked Obsidian markdown notes');
+  console.log('  export-databricks     Export feedback logs + proof artifacts as a Databricks-ready analytics bundle');
+  console.log('  obsidian-export       Export all feedback data as interlinked Obsidian markdown notes');
   console.log('    --vault-path=PATH   Obsidian vault path (or set RLHF_OBSIDIAN_VAULT_PATH)');
   console.log('    --output-dir=DIR    Output subdirectory (default: AI-Memories/rlhf)');
   console.log('  rules                 Generate prevention rules from repeated failures');
@@ -1175,7 +1175,7 @@ function help() {
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
   console.log('  watch [flags]           Watch .rlhf/ for external signals and ingest through pipeline (--once, --source=X)');
   console.log('  status                  Show feedback tracking dashboard — approval trend + failure domains');
-  console.log('  dashboard               Full RLHF dashboard — approval rate, gate stats, prevention impact');
+  console.log('  dashboard               Full ThumbGate dashboard — approval rate, gate stats, prevention impact');
   console.log('  funnel                  Show marketing & revenue conversion funnel analytics');
   console.log('  pulse                   Show real-time GTM velocity and Mission Control summary');
   console.log('  dispatch                Dispatch-safe brief — metrics, gates, and read-only prompt templates');
