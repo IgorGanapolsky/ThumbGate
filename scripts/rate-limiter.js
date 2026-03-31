@@ -7,8 +7,10 @@ const path = require('path');
 const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.rlhf', 'usage-limits.json');
 
 const FREE_TIER_LIMITS = {
-  // Free tier is fully unlimited — captures, recalls, gates all work without limits.
-  // Pro adds the searchable dashboard (query, edit, delete entries) + DPO export + API key.
+  capture_feedback: { daily: 5, label: 'feedback captures' },
+  search_lessons: { daily: 10, label: 'lesson searches' },
+  export_dpo: { daily: 0, label: 'DPO exports (Pro only)' },
+  export_databricks: { daily: 0, label: 'Databricks exports (Pro only)' },
 };
 
 const FREE_TIER_MAX_GATES = Infinity;
@@ -52,8 +54,10 @@ function todayKey() {
 function checkLimit(action, authContext) {
   if (isProTier(authContext)) return { allowed: true };
 
-  const limit = FREE_TIER_LIMITS[action];
-  if (limit == null) return { allowed: true }; // no limit for this action
+  const limitEntry = FREE_TIER_LIMITS[action];
+  if (limitEntry == null) return { allowed: true }; // no limit for this action
+
+  const dailyLimit = typeof limitEntry === 'object' ? limitEntry.daily : limitEntry;
 
   const usage = loadUsage();
   const today = todayKey();
@@ -67,7 +71,7 @@ function checkLimit(action, authContext) {
   usage.counts = usage.counts || {};
   const current = usage.counts[action] || 0;
 
-  if (current >= limit) {
+  if (current >= dailyLimit) {
     return { allowed: false, message: UPGRADE_MESSAGE };
   }
 
@@ -84,14 +88,15 @@ function checkLimit(action, authContext) {
 function getUsage(action, authContext) {
   if (isProTier(authContext)) return { count: 0, limit: Infinity, remaining: Infinity };
 
-  const limit = FREE_TIER_LIMITS[action] || Infinity;
+  const limitEntry = FREE_TIER_LIMITS[action];
+  const dailyLimit = limitEntry == null ? Infinity : (typeof limitEntry === 'object' ? limitEntry.daily : limitEntry);
   const usage = loadUsage();
   const today = todayKey();
 
-  if (usage.date !== today) return { count: 0, limit, remaining: limit };
+  if (usage.date !== today) return { count: 0, limit: dailyLimit, remaining: dailyLimit };
 
   const count = (usage.counts || {})[action] || 0;
-  return { count, limit, remaining: Math.max(0, limit - count) };
+  return { count, limit: dailyLimit, remaining: Math.max(0, dailyLimit - count) };
 }
 
 module.exports = {
