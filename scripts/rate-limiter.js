@@ -9,11 +9,13 @@ const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.rlhf', 'usage-limits.
 const FREE_TIER_LIMITS = {
   capture_feedback: { daily: 5, label: 'feedback captures' },
   search_lessons: { daily: 10, label: 'lesson searches' },
+  search_rlhf: { daily: 20, label: 'RLHF searches' },
+  commerce_recall: { daily: 10, label: 'commerce recalls' },
   export_dpo: { daily: 0, label: 'DPO exports (Pro only)' },
   export_databricks: { daily: 0, label: 'Databricks exports (Pro only)' },
 };
 
-const FREE_TIER_MAX_GATES = Infinity;
+const FREE_TIER_MAX_GATES = 10;
 
 const UPGRADE_MESSAGE = 'Upgrade to Pro ($49 one-time) for searchable dashboard, DPO export, and API key: https://rlhf-feedback-loop-production.up.railway.app';
 

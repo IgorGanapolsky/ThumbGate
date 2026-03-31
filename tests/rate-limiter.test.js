@@ -71,16 +71,32 @@ describe('rate-limiter', () => {
     }
   });
 
-  it('FREE_TIER_MAX_GATES is Infinity', () => {
-    assert.equal(rateLimiter.FREE_TIER_MAX_GATES, Infinity);
+  it('FREE_TIER_MAX_GATES is a finite number', () => {
+    assert.ok(Number.isFinite(rateLimiter.FREE_TIER_MAX_GATES));
+    assert.ok(rateLimiter.FREE_TIER_MAX_GATES > 0);
   });
 
-  it('FREE_TIER_LIMITS has real limits for gated actions', () => {
+  it('FREE_TIER_LIMITS has limits for all gated actions', () => {
     const keys = Object.keys(rateLimiter.FREE_TIER_LIMITS);
     assert.ok(keys.includes('capture_feedback'), 'should limit capture_feedback');
     assert.ok(keys.includes('export_dpo'), 'should limit export_dpo');
     assert.ok(keys.includes('export_databricks'), 'should limit export_databricks');
+    assert.ok(keys.includes('search_rlhf'), 'should limit search_rlhf');
+    assert.ok(keys.includes('commerce_recall'), 'should limit commerce_recall');
     assert.equal(rateLimiter.FREE_TIER_LIMITS.export_dpo.daily, 0, 'DPO export should be Pro-only');
+  });
+
+  it('export_dpo is blocked immediately on free tier (Pro-only)', () => {
+    const blocked = rateLimiter.checkLimit('export_dpo');
+    assert.equal(blocked.allowed, false, 'should be blocked (daily=0)');
+    assert.ok(blocked.message.includes('Upgrade'), 'blocked message should mention upgrade');
+  });
+
+  it('pro tier bypasses export_dpo limit', () => {
+    process.env.RLHF_PRO_MODE = '1';
+    for (let i = 0; i < 5; i++) {
+      assert.equal(rateLimiter.checkLimit('export_dpo').allowed, true);
+    }
   });
 
   it('UPGRADE_MESSAGE references dashboard', () => {

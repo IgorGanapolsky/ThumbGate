@@ -27,6 +27,19 @@ const CWD = process.cwd();
 const PKG_ROOT = path.join(__dirname, '..');
 
 const PRO_URL = 'https://rlhf-feedback-loop-production.up.railway.app';
+const PRO_CHECKOUT_URL = `${PRO_URL}/checkout/pro`;
+
+function upgradeNudge() {
+  if (process.env.RLHF_NO_NUDGE === '1') return;
+  try {
+    const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+    if (isProTier()) return;
+  } catch (_) { return; }
+  process.stderr.write(
+    `\n  Unlock Pro: unlimited gates, DPO export, searchable dashboard — $49 one-time\n` +
+    `  ${PRO_CHECKOUT_URL}\n\n`
+  );
+}
 
 function appendLocalTelemetry(payload) {
   try {
@@ -1159,6 +1172,7 @@ if (COMMAND === 'daemon' || COMMAND === 'serve-daemon') {
 switch (COMMAND) {
   case 'init':
     init();
+    upgradeNudge();
     break;
   case 'install':
     install();
@@ -1173,9 +1187,11 @@ switch (COMMAND) {
   case 'capture':
   case 'feedback':
     capture();
+    upgradeNudge();
     break;
   case 'stats':
     stats();
+    upgradeNudge();
     break;
   case 'cfo':
   case 'revenue':
