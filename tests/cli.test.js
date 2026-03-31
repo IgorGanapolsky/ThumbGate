@@ -356,6 +356,60 @@ function runCliCommand(args, options = {}) {
   });
 }
 
+function waitForCliOutput(args, pattern, options = {}) {
+  const child = spawn(process.execPath, [CLI, ...args], {
+    cwd: options.cwd,
+    env: options.env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  let stdout = '';
+  let stderr = '';
+  let settled = false;
+  const matcher = pattern instanceof RegExp ? pattern : new RegExp(String(pattern));
+
+  return new Promise((resolve, reject) => {
+    const done = (err, value) => {
+      if (settled) return;
+      settled = true;
+      try {
+        child.kill('SIGKILL');
+      } catch (_) {
+        // no-op
+      }
+      if (err) reject(err);
+      else resolve(value);
+    };
+
+    const timer = setTimeout(() => {
+      done(new Error(`CLI output timed out: ${args.join(' ')}\nstdout=${stdout}\nstderr=${stderr}`));
+    }, options.timeoutMs ?? 15000);
+
+    child.stdout.on('data', (chunk) => {
+      stdout += String(chunk || '');
+      if (matcher.test(stdout)) {
+        clearTimeout(timer);
+        done(null, { stdout, stderr });
+      }
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderr += String(chunk || '');
+    });
+
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      done(err);
+    });
+
+    child.on('exit', (code, signal) => {
+      if (settled) return;
+      clearTimeout(timer);
+      done(new Error(`CLI exited early (code=${code}, signal=${signal})\nstdout=${stdout}\nstderr=${stderr}`));
+    });
+  });
+}
+
 describe('bin/cli.js', () => {
   let tmpDir;
   let defaultLedgerPath;
@@ -437,13 +491,65 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('analytics'), 'Help should mention analytics');
   });
 
-  test('pro command prints truthful commercial offer info', () => {
+  test('pro command prints truthful local-first Pro offer info when unlicensed', () => {
     const result = spawnSync(process.execPath, [CLI, 'pro'], { encoding: 'utf8' });
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
     assert.match(result.stdout, /Pro \(\$49 one-time\)/);
-    assert.match(result.stdout, /pilot\/by-request/);
+    assert.match(result.stdout, /personal local dashboard/i);
+    assert.match(result.stdout, /Launch dashboard\s*:\s*npx mcp-memory-gateway pro/);
+    assert.match(result.stdout, /Activate \+ run\s*:\s*npx mcp-memory-gateway pro --activate --key=YOUR_KEY/);
     assert.match(result.stdout, /COMMERCIAL_TRUTH\.md/);
     assert.doesNotMatch(result.stdout, /\$10\/mo|38 spots remaining|first 50 users|Founding Member/i);
+  });
+
+  test('pro command launches local dashboard when a license is already saved', async () => {
+    const homeDir = makeTmpDir();
+    const licenseDir = path.join(homeDir, '.thumbgate');
+    fs.mkdirSync(licenseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(licenseDir, 'license.json'),
+      JSON.stringify({ key: 'tg_local_dashboard_launch' }, null, 2)
+    );
+
+    const result = await waitForCliOutput(['pro'], /ThumbGate Pro dashboard: http:\/\/localhost:\d+\/dashboard/, {
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        USERPROFILE: homeDir,
+        RLHF_NO_NUDGE: '1',
+        RLHF_API_KEY: '',
+        RLHF_PRO_MODE: '',
+        PORT: '0',
+      },
+    });
+
+    assert.match(result.stdout, /ThumbGate Pro dashboard: http:\/\/localhost:\d+\/dashboard/);
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  test('pro --info prints local-first offer info even when a license is already saved', () => {
+    const homeDir = makeTmpDir();
+    const licenseDir = path.join(homeDir, '.thumbgate');
+    fs.mkdirSync(licenseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(licenseDir, 'license.json'),
+      JSON.stringify({ key: 'tg_info_only' }, null, 2)
+    );
+
+    const result = spawnSync(process.execPath, [CLI, 'pro', '--info'], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        USERPROFILE: homeDir,
+        RLHF_NO_NUDGE: '1',
+      },
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /ThumbGate Pro — Local Dashboard/);
+    assert.doesNotMatch(result.stdout, /ThumbGate Pro dashboard: http:\/\/localhost:/);
+    fs.rmSync(homeDir, { recursive: true, force: true });
   });
 
   test('lessons command prints linked corrective actions', () => {
@@ -525,6 +631,7 @@ describe('bin/cli.js', () => {
     assert.strictEqual(result.status, 0);
     assert.ok(result.stdout.includes('railway.app'), 'Pro command should include hosted URL');
     assert.ok(result.stdout.includes('$49 one-time'), 'Pro command should include current price');
+    assert.ok(result.stdout.includes('Legacy launcher'), 'Pro command should still mention legacy launcher path');
   });
 
   test('RLHF_NO_TELEMETRY=1 prevents telemetry ping on init', () => {

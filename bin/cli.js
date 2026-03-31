@@ -646,13 +646,49 @@ function northStar() {
 
 function pro() {
   const args = parseArgs(process.argv.slice(3));
+  const {
+    resolveProKey,
+    saveLicense,
+    startLocalProDashboard,
+  } = require(path.join(PKG_ROOT, 'scripts', 'pro-local-dashboard'));
+
+  function printProInfo() {
+    const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
+    const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
+    console.log('\nThumbGate Pro — Local Dashboard');
+    console.log('─'.repeat(50));
+    console.log('Self-serve offer today: Pro ($49 one-time).');
+    console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
+    console.log('\nWhat is available:');
+    console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
+    console.log('  - Optional hosted API key: shared lesson DB for teams and multi-agent workflows');
+    console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
+    console.log('\nLinks:');
+    console.log(`  Buy Pro         : ${hostedUrl}`);
+    console.log(`  Commercial truth: ${truthUrl}\n`);
+    console.log('  Launch dashboard: npx mcp-memory-gateway pro');
+    console.log('  Activate + run  : npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
+    console.log('  Install configs : npx mcp-memory-gateway pro --upgrade');
+    console.log('  Legacy launcher : npx mcp-memory-gateway-pro\n');
+  }
+
+  function launchDashboard(key, eventType) {
+    return startLocalProDashboard({ key })
+      .then(({ url }) => {
+        console.log(`\n👍👎 ThumbGate Pro dashboard: ${url}\n`);
+        appendLocalTelemetry({
+          eventType,
+          version: pkgVersion(),
+          timestamp: new Date().toISOString(),
+        });
+      })
+      .catch((err) => {
+        console.error(err && err.message ? err.message : err);
+        process.exit(1);
+      });
+  }
 
   if (args.activate) {
-    const os = require('os');
-    const licensePath = path.join(os.homedir(), '.thumbgate', 'license.json');
-    const licenseDir = path.dirname(licensePath);
-    if (!fs.existsSync(licenseDir)) fs.mkdirSync(licenseDir, { recursive: true });
-
     const key = args.key || process.argv.slice(3).find((a) => !a.startsWith('--'));
     if (!key) {
       console.error('❌ License key required. Usage: npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
@@ -672,14 +708,11 @@ function pro() {
       version: pkgVersion(),
     };
 
-    fs.writeFileSync(licensePath, JSON.stringify(license, null, 2));
+    const licensePath = saveLicense(license.key, { version: license.version });
     console.log('\n✅ Pro license activated!');
     console.log(`   Key saved to: ${licensePath}`);
-    console.log('   Pro features are now unlocked.\n');
-    console.log('   Run: npx mcp-memory-gateway pro --upgrade  to install Pro config files\n');
-
-    appendLocalTelemetry({ eventType: 'pro_activate', version: pkgVersion(), timestamp: new Date().toISOString() });
-    return;
+    console.log('   Launching your personal local dashboard...\n');
+    return launchDashboard(license.key, 'pro_activate');
   }
 
   if (args.upgrade) {
@@ -708,22 +741,17 @@ function pro() {
     return;
   }
 
-  const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
-  const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
-  console.log('\nThumbGate — Commercial Truth');
-  console.log('─'.repeat(50));
-  console.log('Self-serve offer today: Pro ($49 one-time).');
-  console.log('Hosted Context Gateway access is pilot/by-request.');
-  console.log('\nWhat is available:');
-  console.log('  - Pro: hosted dashboard, auto-gate promotion, unlimited custom gates, multi-repo sync');
-  console.log('  - Hosted demo: public product surface and onboarding shell');
-  console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
-  console.log('\nLinks:');
-  console.log(`  Pro             : ${hostedUrl}`);
-  console.log(`  Commercial truth: ${truthUrl}\n`);
-  console.log('  Dashboard       : npx mcp-memory-gateway-pro');
-  console.log('  Activate license: npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
-  console.log('  Install configs : npx mcp-memory-gateway pro --upgrade\n');
+  if (args.info) {
+    printProInfo();
+    return;
+  }
+
+  const resolvedKey = resolveProKey();
+  if (resolvedKey && resolvedKey.key) {
+    return launchDashboard(resolvedKey.key, 'pro_dashboard_launch');
+  }
+
+  printProInfo();
 }
 
 function summary() {

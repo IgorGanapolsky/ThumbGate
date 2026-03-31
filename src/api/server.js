@@ -666,6 +666,19 @@ function getPublicOrigin(req) {
   return `${proto}://${host}`;
 }
 
+function isLoopbackHost(hostValue) {
+  const rawHost = String(hostValue || '').split(',')[0].trim();
+  if (!rawHost) {
+    return false;
+  }
+
+  const hostWithoutPort = rawHost.startsWith('[')
+    ? rawHost.slice(1).split(']')[0]
+    : rawHost.split(':')[0];
+  const normalized = hostWithoutPort.toLowerCase();
+  return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1';
+}
+
 function wantsJson(req, parsed) {
   if (parsed.searchParams.get('format') === 'json') {
     return true;
@@ -726,6 +739,21 @@ function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
     '__AUTOMATION_REPORT_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json',
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
+  });
+}
+
+function loadDashboardPageHtml(req, expectedApiKey) {
+  const template = fs.readFileSync(DASHBOARD_PAGE_PATH, 'utf-8');
+  const forwardedHost = req.headers['x-forwarded-host'];
+  const hostHeader = Array.isArray(forwardedHost)
+    ? forwardedHost[0]
+    : forwardedHost || req.headers.host || '';
+  const localProBootstrap = process.env.RLHF_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
+  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : '').replace(/</g, '\\u003c');
+
+  return fillTemplate(template, {
+    '__DASHBOARD_BOOTSTRAP_KEY__': serializedBootstrapKey,
+    '__DASHBOARD_BOOTSTRAP_ENABLED__': localProBootstrap ? 'true' : 'false',
   });
 }
 
@@ -951,9 +979,9 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 </head>
 <body>
   <main>
-    <span class="eyebrow">Context Gateway</span>
-    <h1>Your hosted API key is ready.</h1>
-    <p class="lead">This page verifies your Stripe session, provisions the key if needed, and gives you a copy-paste onboarding snippet for the hosted API.</p>
+    <span class="eyebrow">ThumbGate Pro</span>
+    <h1>Your local Pro dashboard is ready.</h1>
+    <p class="lead">This page verifies your Stripe session, provisions the key if needed, and gives you the exact command to save your license and launch your personal local dashboard.</p>
 
     <div class="card">
       <div class="status" id="status">Verifying payment and provisioning your key...</div>
@@ -962,10 +990,10 @@ function renderCheckoutSuccessPage(runtimeConfig) {
     </div>
 
     <div class="card">
-      <h2>Activate Pro locally</h2>
-      <p>Run this command to save your license key and unlock Pro features:</p>
+      <h2>Launch your personal dashboard</h2>
+      <p>Run this command once to save your license key and open ThumbGate locally on <code>localhost</code>:</p>
       <pre id="activate-block">Waiting for provisioning...</pre>
-      <p class="muted">Your key is saved to <code>~/.thumbgate/license.json</code> and persists across sessions.</p>
+      <p class="muted">Your key is saved to <code>~/.thumbgate/license.json</code>. After that, rerun <code>npx mcp-memory-gateway pro</code> any time to reopen your dashboard.</p>
     </div>
 
     <div class="card">
@@ -1105,11 +1133,11 @@ function renderCheckoutSuccessPage(runtimeConfig) {
         }
 
         sendTelemetryOnce('checkout_paid_confirmed');
-        statusEl.textContent = 'Context Gateway activated.';
+        statusEl.textContent = 'ThumbGate Pro activated.';
         const resolvedTraceId = body.traceId || traceId || '';
         summaryEl.textContent = resolvedTraceId
-          ? 'Your API key is ready. Copy the snippets below into your workflow project. Trace: ' + resolvedTraceId + '.'
-          : 'Your API key is ready. Copy the snippets below into your workflow project.';
+          ? 'Your Pro key is ready. Save it once, launch your local dashboard, and keep the optional hosted snippet for team workflows. Trace: ' + resolvedTraceId + '.'
+          : 'Your Pro key is ready. Save it once, launch your local dashboard, and keep the optional hosted snippet for team workflows.';
         keyBlock.textContent = body.apiKey || 'Provisioned, but no key was returned.';
         activateBlock.textContent = body.apiKey
           ? 'npx mcp-memory-gateway pro --activate --key=' + body.apiKey
@@ -1703,11 +1731,8 @@ function createApiServer() {
     }
 
     if (isGetLikeRequest && pathname === '/dashboard') {
-      // Always serve the dashboard HTML — it has its own auth flow
-      // and a "Try Demo" button with sample data for non-Pro visitors.
-      // The API endpoints behind the dashboard still require auth.
       try {
-        const html = fs.readFileSync(DASHBOARD_PAGE_PATH, 'utf-8');
+        const html = loadDashboardPageHtml(req, expectedApiKey);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
         sendJson(res, 404, { error: 'Dashboard page not found' });

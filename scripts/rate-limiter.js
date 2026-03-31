@@ -8,7 +8,7 @@ const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.rlhf', 'usage-limits.
 
 const FREE_TIER_LIMITS = {
   // Free tier is fully unlimited — captures, recalls, gates all work without limits.
-  // Pro adds the searchable dashboard (query, edit, delete entries) + DPO export + API key.
+  // Pro adds the personal local dashboard, DPO export, and optional hosted API key.
 };
 
 const FREE_TIER_MAX_GATES = Infinity;

@@ -228,7 +228,7 @@ For autonomous agent runs against this or any repo using this workflow:
 
 ## Pro Pack
 
-**[$49 one-time](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro)** — searchable dashboard (query, edit, delete entries), DPO export, API key, priority support.
+**[$49 one-time](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro)** — personal local dashboard, DPO export, optional hosted API key for teams, priority support.
 
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md)
 - [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)

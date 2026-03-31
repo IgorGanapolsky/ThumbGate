@@ -129,12 +129,12 @@
   <div class="container">
     <div style="margin-bottom:10px;">
       <span style="font-size:14px;font-weight:600;">Connect your API key</span>
-      <span style="font-size:13px;color:var(--text-muted);margin-left:8px;">Your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">RLHF_API_KEY</code> from your environment. After buying Pro, you receive this key via email. For local testing, set <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">RLHF_API_KEY</code> in your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">.env</code> file.</span>
+      <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Pro auto-connects locally when you launch with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx mcp-memory-gateway pro</code>. Otherwise paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">RLHF_API_KEY</code> manually.</span>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
       <input type="password" class="auth-input" id="apiKey" placeholder="Paste your RLHF_API_KEY here..." />
       <button class="btn" id="connectBtn" onclick="connect()">Connect</button>
-       <button class="btn-outline" onclick="loadDemo()">Try Demo</button>
+       <button class="btn-outline" id="demoBtn" onclick="loadDemo()">Try Demo</button>
        <span class="auth-status" id="authStatus"></span>
     </div>
   </div>
@@ -214,33 +214,54 @@ let API_KEY = '';
 let currentSource = 'all';
 let isDemo = false;
 let demoData = [];
+const BOOTSTRAP_API_KEY = __DASHBOARD_BOOTSTRAP_KEY__;
+const LOCAL_PRO_BOOTSTRAP = __DASHBOARD_BOOTSTRAP_ENABLED__;
 
 function getHeaders() {
   return { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
 }
 
-async function connect() {
-  API_KEY = document.getElementById('apiKey').value.trim();
+function hasBootstrapKey() {
+  return LOCAL_PRO_BOOTSTRAP && Boolean(BOOTSTRAP_API_KEY);
+}
+
+async function connect(options) {
+  var opts = options || {};
+  var input = document.getElementById('apiKey');
+  API_KEY = String(opts.key || input.value || '').trim();
   if (!API_KEY) return;
   const status = document.getElementById('authStatus');
   const btn = document.getElementById('connectBtn');
   btn.disabled = true;
   status.className = 'auth-status';
-  status.textContent = 'Connecting...';
+  status.textContent = opts.localPro ? 'Connecting local dashboard...' : 'Connecting...';
   try {
     const res = await fetch('/v1/feedback/stats', { headers: getHeaders() });
     if (!res.ok) throw new Error('Invalid API key');
     const data = await res.json();
     status.className = 'auth-status ok';
-    status.textContent = '✓ Connected';
+    status.textContent = opts.localPro ? '✓ Local Pro dashboard connected' : '✓ Connected';
     document.getElementById('dashboardContent').style.display = 'block';
+    if (opts.localPro) {
+      input.value = 'local-license';
+      input.disabled = true;
+      input.placeholder = 'Local Pro auto-connected';
+      btn.disabled = true;
+      document.getElementById('demoBtn').style.display = 'none';
+      document.getElementById('authHelp').textContent = 'Local Pro is active on this machine. Your personal dashboard is using the saved license key automatically.';
+    }
     renderStats(data);
-    loadGates();
+    await loadGates();
   } catch (e) {
     status.className = 'auth-status err';
     status.textContent = '✗ ' + e.message;
+    if (opts.localPro) {
+      document.getElementById('authHelp').textContent = 'Local Pro bootstrap failed. Paste your RLHF_API_KEY manually or retry the local launcher.';
+    }
   }
-  btn.disabled = false;
+  if (!opts.localPro) {
+    btn.disabled = false;
+  }
 }
 
 function renderStats(data) {
@@ -413,9 +434,15 @@ function loadDemo() {
 }
 
 // Auto-load demo on first visit so visitors see the product immediately
-if (!window.location.search.includes('noauto')) {
-  window.addEventListener('DOMContentLoaded', function() { loadDemo(); });
-}
+window.addEventListener('DOMContentLoaded', function() {
+  if (hasBootstrapKey()) {
+    connect({ key: BOOTSTRAP_API_KEY, localPro: true });
+    return;
+  }
+  if (!window.location.search.includes('noauto')) {
+    loadDemo();
+  }
+});
 
 async function exportDpo() {
   const status = document.getElementById('exportStatus');
