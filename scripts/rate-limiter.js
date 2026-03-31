@@ -17,7 +17,7 @@ const FREE_TIER_LIMITS = {
 
 const FREE_TIER_MAX_GATES = 10;
 
-const UPGRADE_MESSAGE = 'Upgrade to Pro ($49 one-time) for searchable dashboard, DPO export, and API key: https://rlhf-feedback-loop-production.up.railway.app';
+const UPGRADE_MESSAGE = 'Upgrade to Pro ($49 one-time) for a personal local dashboard, DPO export, and optional hosted API key: https://rlhf-feedback-loop-production.up.railway.app';
 
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;

@@ -80,8 +80,8 @@ It's a personal knowledge loop, not a SaaS product pretending to be one.
 # 3. Create AI-Memories/rlhf/ in your vault and symlink memory files
 ```
 
-Open source, MIT licensed. Core is free. There's a $49 one-time Pro tier for hosted dashboard
-and multi-repo sync, but the memory system works fully offline.
+Open source, MIT licensed. Core is free. There's a $49 one-time Pro tier for a personal local
+dashboard and optional hosted sync for teams, but the memory system works fully offline.
 
 GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
 
