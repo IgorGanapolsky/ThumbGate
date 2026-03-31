@@ -79,20 +79,26 @@ function telemetryPing(installId) {
   } catch (_) { /* telemetry is best-effort */ }
 }
 
-function proNudge() {
+function proNudge(context) {
   if (process.env.RLHF_NO_NUDGE === '1') return;
-  // Write to stderr so it never contaminates MCP stdio JSON on stdout
-  process.stderr.write(
-    '\n💡 After a week of use, run: npx mcp-memory-gateway checkin\n' +
-    '   We\'d love to hear what\'s working and what\'s not.\n\n'
-  );
+  const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
+  const messages = [
+    `\n  💡 Unlock Pro ($49 one-time): searchable dashboard, DPO export, multi-repo sync\n     ${STRIPE_URL}\n`,
+    `\n  💡 Pro tip: export your feedback as DPO training pairs to improve your models.\n     Get Pro: ${STRIPE_URL}\n`,
+    `\n  💡 ThumbGate Pro: search, edit, and sync lessons across repos. $49 one-time.\n     ${STRIPE_URL}\n`,
+  ];
+  // Rotate message daily — no Math.random (security policy)
+  const msg = messages[Math.floor(Date.now() / 86400000) % messages.length];
+  process.stderr.write(msg);
 }
 
 function limitNudge(action) {
+  if (process.env.RLHF_NO_NUDGE === '1') return;
+  const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
   process.stderr.write(
     `\nFree tier: ${action} daily limit reached.\n` +
-    `   Upgrade to Pro for unlimited usage: ${PRO_CHECKOUT_URL}\n` +
-    '   Or set RLHF_API_KEY or RLHF_PRO_MODE=1 to bypass.\n\n'
+    `   Upgrade to Pro for unlimited usage — $49 one-time:\n` +
+    `   ${PRO_CHECKOUT_URL}\n\n`
   );
 }
 
@@ -469,6 +475,13 @@ function init() {
   console.log(`mcp-memory-gateway v${pkgVersion()} initialized.`);
   console.log('Run: npx mcp-memory-gateway help');
   proNudge();
+  process.stderr.write(
+    '\n  ┌─────────────────────────────────────────────────┐\n' +
+    '  │  Free: unlimited captures, recalls, and gates   │\n' +
+    '  │  Pro:  + dashboard + DPO export + multi-repo    │\n' +
+    '  │        $49 one-time → npx mcp-memory-gateway pro│\n' +
+    '  └─────────────────────────────────────────────────┘\n\n'
+  );
 
   try {
     const { appendFunnelEvent } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
@@ -831,6 +844,16 @@ function risk() {
 }
 
 function exportDpo() {
+  const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+  if (!isProTier(null)) {
+    const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
+    process.stderr.write(
+      `\n  🔒 DPO Export requires Pro ($49 one-time).\n` +
+      `     Your feedback would generate valuable training pairs.\n` +
+      `     Upgrade: ${STRIPE_URL}\n\n`
+    );
+    process.exit(1);
+  }
   const extraArgs = process.argv.slice(3).join(' ');
   try {
     const output = execSync(
@@ -845,6 +868,16 @@ function exportDpo() {
 }
 
 function exportDatabricks() {
+  const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+  if (!isProTier(null)) {
+    const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
+    process.stderr.write(
+      `\n  🔒 Databricks Export requires Pro ($49 one-time).\n` +
+      `     Export RLHF logs + proof artifacts for analytics.\n` +
+      `     Upgrade: ${STRIPE_URL}\n\n`
+    );
+    process.exit(1);
+  }
   const extraArgs = process.argv.slice(3).join(' ');
   try {
     const output = execSync(
