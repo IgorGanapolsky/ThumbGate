@@ -7,6 +7,8 @@ function requirePro(featureName) {
   if (isProLicensed()) return true;
   const descriptions = {
     'dpo-export': 'Export feedback as DPO training pairs for model fine-tuning',
+    'dpo-synthesis': 'Generate synthetic DPO pairs from existing feedback patterns',
+    'multi-hop-recall': 'Multi-hop recall — chain related lessons for deeper context',
     'databricks-export': 'Export to Databricks ML pipeline format',
     'dashboard-search': 'Search, filter, and edit lessons across all repos',
     'multi-repo-sync': 'Sync prevention rules across multiple repositories',

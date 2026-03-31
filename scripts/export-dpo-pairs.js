@@ -332,6 +332,7 @@ module.exports = {
   extractDomainKeys,
   domainOverlap,
   inferPrompt,
+  buildRubricDelta,
   findDistractors,
   buildDpoPairs,
   toJSONL,
