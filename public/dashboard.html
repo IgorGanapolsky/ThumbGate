@@ -72,7 +72,7 @@
   .result-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
   .result-context { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
   .result-tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-  .tag { font-size: 11px; background: var(--cyan-dim); color: var(--cyan); padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: background 0.15s, transform 0.1s; }
+  .tag { font-size: 11px; background: var(--cyan-dim); color: var(--cyan); padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: background 0.15s, transform 0.1s; border: none; font-family: inherit; }
   .tag:hover { background: rgba(34,211,238,0.25); transform: translateY(-1px); }
   mark { background: rgba(34,211,238,0.25); color: var(--cyan); border-radius: 2px; padding: 0 2px; }
 
@@ -289,7 +289,7 @@ async function search() {
       return (r.title + ' ' + r.context + ' ' + (r.tags || []).join(' ')).toLowerCase().indexOf(q) !== -1;
     });
     if (!results.length) {
-      container.innerHTML = '<div class="empty">No demo results for "' + escHtml(query) + '". Try: git, test, deploy, secrets, database</div>';
+      setMessageState(container, 'empty', 'No demo results for "' + query + '". Try: git, test, deploy, secrets, database');
       return;
     }
     container.innerHTML = results.map(renderResult).join('');
@@ -311,7 +311,7 @@ async function search() {
     }
     container.innerHTML = results.map(renderResult).join('');
   } catch (e) {
-    container.innerHTML = '<div class="empty">' + e.message + '</div>';
+    setMessageState(container, 'empty', e && e.message ? e.message : 'Search failed');
   }
 }
 
@@ -332,12 +332,22 @@ function renderResult(r) {
     '</div>' +
     (title ? '<div class="result-title">' + highlightText(title) + '</div>' : '') +
     (context && context !== title ? '<div class="result-context">' + highlightText(context.slice(0, 300)) + '</div>' : '') +
-    (tags.length ? '<div class="result-tags">' + tags.map(function(t) { return '<span class="tag" onclick="searchByTag(\'' + escHtml(t).replace(/'/g, "\\'") + '\')" title="Search for ' + escHtml(t) + '">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+    (tags.length ? '<div class="result-tags">' + tags.map(function(t) {
+      return '<button type="button" class="tag" data-tag="' + encodeURIComponent(String(t)) + '" title="' + escAttr('Search for ' + t) + '">' + escHtml(t) + '</button>';
+    }).join('') + '</div>' : '') +
   '</div>';
 }
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function escAttr(s) {
+  return escHtml(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function setMessageState(container, className, message) {
+  container.innerHTML = '<div class="' + className + '">' + escHtml(message) + '</div>';
 }
 
 var currentHighlightTerms = [];
@@ -386,7 +396,7 @@ function selectCard(el, action) {
       var items = data.results || [];
       container.innerHTML = items.length ? items.map(renderResult).join('') : '<div class="empty">No ' + (action === 'all' ? '' : action + ' ') + 'feedback found</div>';
     })
-    .catch(function(e) { container.innerHTML = '<div class="empty">Error: ' + e.message + '</div>'; });
+    .catch(function(e) { setMessageState(container, 'empty', 'Error: ' + (e && e.message ? e.message : 'Unable to load feedback')); });
 }
 
 function setSource(el, source) {
@@ -421,9 +431,15 @@ async function loadGates() {
         '<span class="gate-action ' + action + '">' + action.toUpperCase() + '</span></div>';
     }).join('');
   } catch (e) {
-    document.getElementById('gatesList').innerHTML = '<div class="empty">' + e.message + '</div>';
+    setMessageState(document.getElementById('gatesList'), 'empty', e && e.message ? e.message : 'Failed to load gates');
   }
 }
+
+document.addEventListener('click', function(event) {
+  var tagButton = event.target.closest('.tag[data-tag]');
+  if (!tagButton) return;
+  searchByTag(decodeURIComponent(tagButton.dataset.tag || ''));
+});
 
 function loadDemo() {
   document.querySelector('.auth-bar').style.display = 'none';
