@@ -36,6 +36,7 @@ test('package version matches MCP manifests', () => {
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
   const cursorMarketplace = readJson('.cursor-plugin/marketplace.json');
   const cursorPlugin = readJson('plugins/cursor-marketplace/.cursor-plugin/plugin.json');
+  const claudeCodexBridge = readJson('plugins/claude-codex-bridge/.claude-plugin/plugin.json');
   const codexPlugin = readJson('plugins/codex-profile/.codex-plugin/plugin.json');
 
   assert.equal(proPackage.version, packageJson.version);
@@ -44,6 +45,7 @@ test('package version matches MCP manifests', () => {
   assert.equal(claudeMarketplace.version, packageJson.version);
   assert.equal(cursorMarketplace.metadata.version, packageJson.version);
   assert.equal(cursorPlugin.version, packageJson.version);
+  assert.equal(claudeCodexBridge.version, packageJson.version);
   assert.equal(codexPlugin.version, packageJson.version);
 });
 
@@ -52,6 +54,8 @@ test('public docs render the current package version', () => {
   const landingPage = readText('docs/landing-page.html');
   const mcpSubmission = readText('docs/mcp-hub-submission.md');
   const claudePluginReadme = readText('.claude-plugin/README.md');
+  const claudeCodexBridgeReadme = readText('plugins/claude-codex-bridge/README.md');
+  const claudeCodexBridgeInstall = readText('plugins/claude-codex-bridge/INSTALL.md');
   const claudeDesktopPacket = readText('docs/CLAUDE_DESKTOP_EXTENSION.md');
   const productHuntKit = readText('docs/marketing/product-hunt-launch.md');
 
@@ -73,6 +77,10 @@ test('public docs render the current package version', () => {
   assert.match(claudePluginReadme, /claude mcp add rlhf -- npx -y mcp-memory-gateway serve/i);
   assert.match(claudePluginReadme, /npm run build:claude-mcpb/i);
   assert.match(claudePluginReadme, new RegExp(getClaudePluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(claudeCodexBridgeReadme, /claude --plugin-dir/i);
+  assert.match(claudeCodexBridgeReadme, /claude plugin validate/i);
+  assert.match(claudeCodexBridgeInstall, /\/codex-bridge:review/);
+  assert.match(claudeCodexBridgeInstall, /\/codex-bridge:adversarial-review/);
   assert.match(claudeDesktopPacket, /Anthropic Local MCP Server Submission Guide/i);
   assert.match(claudeDesktopPacket, /Build the MCPB/i);
   assert.match(claudeDesktopPacket, /privacy_policies/i);
@@ -109,6 +117,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
   const claudeReadme = readText('.claude-plugin/README.md');
   const cursorPlugin = readJson('plugins/cursor-marketplace/.cursor-plugin/plugin.json');
+  const claudeCodexBridge = readJson('plugins/claude-codex-bridge/.claude-plugin/plugin.json');
   const codexPlugin = readJson('plugins/codex-profile/.codex-plugin/plugin.json');
   const publicLanding = readText('public/index.html');
   const serverSource = readText('src/api/server.js');
@@ -139,6 +148,8 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.equal(claudeMarketplace.plugins[0].metadata.homepage, CANONICAL_APP_ORIGIN);
   assert.equal(cursorPlugin.homepage, CANONICAL_APP_ORIGIN);
   assert.equal(cursorPlugin.repository, CURRENT_REPOSITORY_URL);
+  assert.equal(claudeCodexBridge.homepage, CANONICAL_APP_ORIGIN);
+  assert.equal(claudeCodexBridge.repository, CURRENT_REPOSITORY_URL);
   assert.equal(codexPlugin.homepage, CANONICAL_APP_ORIGIN);
   assert.equal(codexPlugin.repository, CURRENT_REPOSITORY_URL);
   assert.doesNotMatch(claudeReadme, /github\.com\/IgorGanapolsky\/mcp-memory-gateway/);
