@@ -68,6 +68,25 @@ npx mcp-memory-gateway lessons
 npx mcp-memory-gateway dashboard
 ```
 
+### Free vs Pro
+
+| Feature | Free | Pro ($49 one-time) |
+|---------|------|--------------------|
+| Feedback capture | 5/day | Unlimited |
+| Lesson recall | 10/day | Unlimited |
+| Prevention rules | Yes | Yes |
+| PreToolUse gates | Yes | Yes |
+| Thompson Sampling | Basic | Advanced (custom priors) |
+| DPO training export | No | Yes |
+| Databricks export | No | Yes |
+| Searchable dashboard | No | Yes |
+| Multi-repo rule sync | No | Yes |
+| Custom gate creation | 3 max | Unlimited |
+| Rule analytics | No | Yes |
+| Priority support | No | Yes |
+
+**[Get Pro -- $49](https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05)** -- One-time purchase, lifetime updates.
+
 ## How It Works
 
 ```

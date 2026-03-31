@@ -12,10 +12,13 @@ describe('rate-limiter', () => {
   beforeEach(() => {
     savedEnv.RLHF_API_KEY = process.env.RLHF_API_KEY;
     savedEnv.RLHF_PRO_MODE = process.env.RLHF_PRO_MODE;
+    savedEnv.THUMBGATE_PRO_KEY = process.env.THUMBGATE_PRO_KEY;
     delete process.env.RLHF_API_KEY;
     delete process.env.RLHF_PRO_MODE;
+    delete process.env.THUMBGATE_PRO_KEY;
 
     delete require.cache[require.resolve('../scripts/rate-limiter')];
+    delete require.cache[require.resolve('../scripts/license')];
     rateLimiter = require('../scripts/rate-limiter');
     rateLimiter.USAGE_FILE = TEMP_USAGE_FILE;
 
@@ -27,6 +30,8 @@ describe('rate-limiter', () => {
     else delete process.env.RLHF_API_KEY;
     if (savedEnv.RLHF_PRO_MODE !== undefined) process.env.RLHF_PRO_MODE = savedEnv.RLHF_PRO_MODE;
     else delete process.env.RLHF_PRO_MODE;
+    if (savedEnv.THUMBGATE_PRO_KEY !== undefined) process.env.THUMBGATE_PRO_KEY = savedEnv.THUMBGATE_PRO_KEY;
+    else delete process.env.THUMBGATE_PRO_KEY;
     if (fs.existsSync(TEMP_USAGE_FILE)) fs.unlinkSync(TEMP_USAGE_FILE);
   });
 
@@ -46,8 +51,8 @@ describe('rate-limiter', () => {
     }
   });
 
-  it('RLHF_API_KEY marks pro tier', () => {
-    process.env.RLHF_API_KEY = 'test-key-123';
+  it('RLHF_API_KEY with tg_pro_ prefix marks pro tier', () => {
+    process.env.RLHF_API_KEY = 'tg_pro_test123456789abcdef';
     assert.equal(rateLimiter.isProTier(), true);
     for (let i = 0; i < 10; i++) {
       const result = rateLimiter.checkLimit('capture_feedback');
@@ -55,12 +60,12 @@ describe('rate-limiter', () => {
     }
   });
 
-  it('RLHF_PRO_MODE=1 marks pro tier', () => {
-    process.env.RLHF_PRO_MODE = '1';
+  it('THUMBGATE_PRO_KEY marks pro tier', () => {
+    process.env.THUMBGATE_PRO_KEY = 'tg_pro_test123456789abcdef';
     assert.equal(rateLimiter.isProTier(), true);
     for (let i = 0; i < 10; i++) {
       const result = rateLimiter.checkLimit('capture_feedback');
-      assert.equal(result.allowed, true, `call ${i + 1} should be allowed with PRO_MODE`);
+      assert.equal(result.allowed, true, `call ${i + 1} should be allowed with PRO_KEY`);
     }
   });
 
