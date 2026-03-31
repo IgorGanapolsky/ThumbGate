@@ -30,11 +30,13 @@ describe('rate-limiter', () => {
     if (fs.existsSync(TEMP_USAGE_FILE)) fs.unlinkSync(TEMP_USAGE_FILE);
   });
 
-  it('allows unlimited capture_feedback calls on free tier', () => {
-    for (let i = 0; i < 20; i++) {
+  it('enforces capture_feedback daily limit on free tier', () => {
+    for (let i = 0; i < 5; i++) {
       const result = rateLimiter.checkLimit('capture_feedback');
       assert.equal(result.allowed, true, `call ${i + 1} should be allowed`);
     }
+    const blocked = rateLimiter.checkLimit('capture_feedback');
+    assert.equal(blocked.allowed, false, 'call 6 should be blocked');
   });
 
   it('allows unlimited recall calls on free tier', () => {
@@ -73,8 +75,12 @@ describe('rate-limiter', () => {
     assert.equal(rateLimiter.FREE_TIER_MAX_GATES, Infinity);
   });
 
-  it('FREE_TIER_LIMITS is empty (no limits)', () => {
-    assert.deepEqual(Object.keys(rateLimiter.FREE_TIER_LIMITS), []);
+  it('FREE_TIER_LIMITS has real limits for gated actions', () => {
+    const keys = Object.keys(rateLimiter.FREE_TIER_LIMITS);
+    assert.ok(keys.includes('capture_feedback'), 'should limit capture_feedback');
+    assert.ok(keys.includes('export_dpo'), 'should limit export_dpo');
+    assert.ok(keys.includes('export_databricks'), 'should limit export_databricks');
+    assert.equal(rateLimiter.FREE_TIER_LIMITS.export_dpo.daily, 0, 'DPO export should be Pro-only');
   });
 
   it('UPGRADE_MESSAGE references dashboard', () => {

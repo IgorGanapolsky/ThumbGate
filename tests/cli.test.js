@@ -502,22 +502,22 @@ describe('bin/cli.js', () => {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
-  test('help command shows checkin nudge on stderr', () => {
+  test('help command shows Pro nudge on stderr', () => {
     const result = spawnSync(process.execPath, [CLI, 'help'], {
       encoding: 'utf8',
       env: { ...process.env, RLHF_NO_NUDGE: undefined },
     });
     assert.strictEqual(result.status, 0);
-    assert.ok(result.stderr.includes('checkin'), 'Nudge should appear on stderr');
+    assert.ok(result.stderr.includes('Pro'), 'Pro nudge should appear on stderr');
   });
 
-  test('RLHF_NO_NUDGE=1 suppresses checkin nudge', () => {
+  test('RLHF_NO_NUDGE=1 suppresses Pro nudge', () => {
     const result = spawnSync(process.execPath, [CLI, 'help'], {
       encoding: 'utf8',
       env: { ...process.env, RLHF_NO_NUDGE: '1' },
     });
     assert.strictEqual(result.status, 0);
-    assert.ok(!result.stderr.includes('checkin'), 'Nudge should be suppressed when RLHF_NO_NUDGE=1');
+    assert.ok(!result.stderr.includes('Pro'), 'Pro nudge should be suppressed when RLHF_NO_NUDGE=1');
   });
 
   test('pro command includes hosted link', () => {
