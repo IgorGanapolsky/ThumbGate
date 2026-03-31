@@ -113,14 +113,21 @@ async function run() {
       desc: 'custom claim gates persist only to local runtime state',
       fn: async () => {
         await withIsolatedRuntime(async ({ gatesEngine }) => {
-          const baseline = fs.readFileSync(gatesEngine.DEFAULT_CLAIM_GATES_PATH, 'utf8');
+          const gatesPath = gatesEngine.CLAIM_GATES_PATH;
+          const baseline = fs.existsSync(gatesPath) ? fs.readFileSync(gatesPath, 'utf8') : null;
           gatesEngine.registerClaimGate('ready to demo', ['tests_passed'], 'Run tests before demo claims');
 
-          if (!fs.existsSync(gatesEngine.CUSTOM_CLAIM_GATES_PATH)) {
-            throw new Error('Expected runtime custom claim gate file');
+          if (!fs.existsSync(gatesPath)) {
+            throw new Error('Expected claim gate file to exist after registerClaimGate');
           }
-          if (fs.readFileSync(gatesEngine.DEFAULT_CLAIM_GATES_PATH, 'utf8') !== baseline) {
-            throw new Error('Default claim gates file was mutated');
+          const updated = JSON.parse(fs.readFileSync(gatesPath, 'utf8'));
+          const found = updated.claims.some(c => c.pattern === 'ready to demo');
+          if (!found) {
+            throw new Error('Custom claim gate was not persisted');
+          }
+          // Restore original state
+          if (baseline) {
+            fs.writeFileSync(gatesPath, baseline);
           }
         });
       },

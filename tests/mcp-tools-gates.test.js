@@ -10,7 +10,7 @@ process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
 const { handleRequest, TOOLS } = require('../adapters/mcp/server-stdio');
 const {
   SESSION_ACTIONS_PATH,
-  CUSTOM_CLAIM_GATES_PATH,
+  CLAIM_GATES_PATH,
 } = require('../scripts/gates-engine');
 
 function readIfExists(filePath) {
@@ -20,7 +20,7 @@ function readIfExists(filePath) {
 function backupRuntimeState() {
   return {
     sessionActions: readIfExists(SESSION_ACTIONS_PATH),
-    customClaimGates: readIfExists(CUSTOM_CLAIM_GATES_PATH),
+    customClaimGates: readIfExists(CLAIM_GATES_PATH),
   };
 }
 
@@ -35,7 +35,7 @@ function restoreRuntimeState(backups) {
   };
 
   restoreOne(SESSION_ACTIONS_PATH, backups.sessionActions);
-  restoreOne(CUSTOM_CLAIM_GATES_PATH, backups.customClaimGates);
+  restoreOne(CLAIM_GATES_PATH, backups.customClaimGates);
 }
 
 test.after(() => {
@@ -137,7 +137,7 @@ test('track_action records evidence for verify_claim over MCP', async () => {
 test('register_claim_gate stores runtime-local custom rules over MCP', async () => {
   const backups = backupRuntimeState();
   try {
-    fs.rmSync(CUSTOM_CLAIM_GATES_PATH, { force: true });
+    fs.rmSync(CLAIM_GATES_PATH, { force: true });
     const result = await handleRequest({
       jsonrpc: '2.0',
       id: 108,
@@ -154,7 +154,7 @@ test('register_claim_gate stores runtime-local custom rules over MCP', async () 
 
     const payload = JSON.parse(result.content[0].text);
     assert.equal(payload.pattern, 'ready to demo');
-    assert.equal(fs.existsSync(CUSTOM_CLAIM_GATES_PATH), true);
+    assert.equal(fs.existsSync(CLAIM_GATES_PATH), true);
   } finally {
     restoreRuntimeState(backups);
   }
