@@ -259,12 +259,12 @@ test('CodeQL workflow supports merge queue and cancels stale non-main runs', () 
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
 });
 
-test('Claude Code Review workflow cancels stale review runs for the same PR or issue thread', () => {
+test('Claude Code Review workflow only cancels manual issue-comment review reruns', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'claude-code-review.yml'), 'utf8');
 
   assert.match(workflow, /concurrency:/);
-  assert.match(workflow, /group:\s*claude-code-review-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.event\.issue\.number \|\| github\.ref\s*\}\}/);
-  assert.match(workflow, /cancel-in-progress:\s*true/);
+  assert.match(workflow, /group:\s*claude-code-review-\$\{\{\s*github\.event_name\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.event\.issue\.number \|\| github\.ref\s*\}\}/);
+  assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.event_name == 'issue_comment'\s*\}\}/);
 });
 
 test('Deploy to Railway workflow serializes main deploys and cancels superseded runs', () => {
