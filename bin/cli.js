@@ -27,6 +27,23 @@ const CWD = process.cwd();
 const PKG_ROOT = path.join(__dirname, '..');
 
 const PRO_URL = 'https://rlhf-feedback-loop-production.up.railway.app';
+const PRO_CHECKOUT_URL = `${PRO_URL}/checkout/pro`;
+
+/**
+ * Show a one-line Pro nudge after CLI commands on free tier.
+ * Writes to stderr, skipped if Pro or RLHF_NO_NUDGE=1.
+ */
+function upgradeNudge() {
+  if (process.env.RLHF_NO_NUDGE === '1') return;
+  try {
+    const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+    if (isProTier()) return;
+  } catch (_) { return; }
+  process.stderr.write(
+    `\n  Unlock Pro: unlimited gates, DPO export, searchable dashboard — $49 one-time\n` +
+    `  ${PRO_CHECKOUT_URL}\n\n`
+  );
+}
 
 function appendLocalTelemetry(payload) {
   try {
@@ -73,8 +90,8 @@ function proNudge() {
 
 function limitNudge(action) {
   process.stderr.write(
-    `\nFree tier: ${action} daily limit reached (5/day).\n` +
-    `   Upgrade to Pro for unlimited usage: ${PRO_URL}\n` +
+    `\nFree tier: ${action} daily limit reached.\n` +
+    `   Upgrade to Pro for unlimited usage: ${PRO_CHECKOUT_URL}\n` +
     '   Or set RLHF_API_KEY or RLHF_PRO_MODE=1 to bypass.\n\n'
   );
 }
@@ -1126,6 +1143,7 @@ if (COMMAND === 'daemon' || COMMAND === 'serve-daemon') {
 switch (COMMAND) {
   case 'init':
     init();
+    upgradeNudge();
     break;
   case 'install':
     install();
@@ -1140,9 +1158,11 @@ switch (COMMAND) {
   case 'capture':
   case 'feedback':
     capture();
+    upgradeNudge();
     break;
   case 'stats':
     stats();
+    upgradeNudge();
     break;
   case 'cfo':
   case 'revenue':

@@ -66,8 +66,27 @@ const {
 const {
   searchRlhf,
 } = require('../../scripts/rlhf-search');
-const { checkLimit } = require('../../scripts/rate-limiter');
+const { checkLimit, UPGRADE_MESSAGE } = require('../../scripts/rate-limiter');
 const { TOOLS } = require('../../scripts/tool-registry');
+
+const PRO_CHECKOUT_URL = 'https://rlhf-feedback-loop-production.up.railway.app/checkout/pro';
+
+/**
+ * Check rate limit for an action. If blocked, throw a descriptive error
+ * that includes the upgrade URL so the user knows how to unlock it.
+ */
+function enforceLimit(action) {
+  const limit = checkLimit(action);
+  if (!limit.allowed) {
+    const err = new Error(
+      `Free tier daily limit reached for "${action}". ${UPGRADE_MESSAGE}\n` +
+      `Upgrade now: ${PRO_CHECKOUT_URL}`
+    );
+    err.errorCategory = 'rate_limit';
+    err.isRetryable = false;
+    throw err;
+  }
+}
 const { bootstrapInternalAgent } = require('../../scripts/internal-agent-bootstrap');
 
 const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.8.4' };
@@ -344,6 +363,7 @@ async function callToolInner(name, args) {
         tags: Array.isArray(args.tags) ? args.tags : [],
       }));
     case 'search_rlhf':
+      enforceLimit('search_rlhf');
       return toTextResult(searchRlhf({
         query: args.query,
         limit: args.limit,
@@ -408,8 +428,10 @@ async function callToolInner(name, args) {
       return toTextResult(writePreventionRules(outputPath, Number(args.minOccurrences || 2)));
     }
     case 'export_dpo_pairs':
+      enforceLimit('export_dpo');
       return buildExportDpoResponse(args);
     case 'export_databricks_bundle': {
+      enforceLimit('export_databricks');
       const outputPath = args.outputPath ? resolveSafePath(args.outputPath) : undefined;
       return toTextResult(exportDatabricksBundle(undefined, outputPath));
     }
@@ -446,6 +468,7 @@ async function callToolInner(name, args) {
     case 'dashboard':
       return toTextResult(generateDashboard(getFeedbackPaths().FEEDBACK_DIR));
     case 'commerce_recall':
+      enforceLimit('commerce_recall');
       return buildCommerceRecallResponse(args);
     case 'get_business_metrics': {
       const { getBusinessMetrics } = require('../../scripts/semantic-layer');

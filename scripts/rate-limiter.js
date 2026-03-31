@@ -7,11 +7,15 @@ const path = require('path');
 const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.rlhf', 'usage-limits.json');
 
 const FREE_TIER_LIMITS = {
-  // Free tier is fully unlimited — captures, recalls, gates all work without limits.
-  // Pro adds the searchable dashboard (query, edit, delete entries) + DPO export + API key.
+  // Core actions are unlimited — captures, basic recalls, gates all work forever.
+  // These limits only gate power features to surface the Pro upgrade path.
+  export_dpo: 3,          // DPO export: 3/day free, unlimited Pro
+  export_databricks: 3,   // Databricks export: 3/day free, unlimited Pro
+  search_rlhf: 20,        // RLHF search: 20/day free, unlimited Pro
+  commerce_recall: 10,    // Commerce recall: 10/day free, unlimited Pro
 };
 
-const FREE_TIER_MAX_GATES = Infinity;
+const FREE_TIER_MAX_GATES = 10;
 
 const UPGRADE_MESSAGE = 'Upgrade to Pro ($49 one-time) for searchable dashboard, DPO export, and API key: https://rlhf-feedback-loop-production.up.railway.app';
 

@@ -69,15 +69,39 @@ describe('rate-limiter', () => {
     }
   });
 
-  it('FREE_TIER_MAX_GATES is Infinity', () => {
-    assert.equal(rateLimiter.FREE_TIER_MAX_GATES, Infinity);
+  it('FREE_TIER_MAX_GATES is a finite number', () => {
+    assert.ok(Number.isFinite(rateLimiter.FREE_TIER_MAX_GATES));
+    assert.ok(rateLimiter.FREE_TIER_MAX_GATES > 0);
   });
 
-  it('FREE_TIER_LIMITS is empty (no limits)', () => {
-    assert.deepEqual(Object.keys(rateLimiter.FREE_TIER_LIMITS), []);
+  it('FREE_TIER_LIMITS has power-feature limits', () => {
+    assert.ok(Object.keys(rateLimiter.FREE_TIER_LIMITS).length > 0, 'should have some limits');
+    assert.ok(rateLimiter.FREE_TIER_LIMITS.export_dpo > 0, 'export_dpo should have a limit');
+    assert.ok(rateLimiter.FREE_TIER_LIMITS.search_rlhf > 0, 'search_rlhf should have a limit');
+  });
+
+  it('export_dpo is blocked after limit', () => {
+    const limit = rateLimiter.FREE_TIER_LIMITS.export_dpo;
+    for (let i = 0; i < limit; i++) {
+      assert.equal(rateLimiter.checkLimit('export_dpo').allowed, true, `call ${i + 1} should be allowed`);
+    }
+    const blocked = rateLimiter.checkLimit('export_dpo');
+    assert.equal(blocked.allowed, false, 'should be blocked after limit');
+    assert.ok(blocked.message.includes('Upgrade'), 'blocked message should mention upgrade');
+  });
+
+  it('pro tier bypasses export_dpo limit', () => {
+    process.env.RLHF_PRO_MODE = '1';
+    for (let i = 0; i < 50; i++) {
+      assert.equal(rateLimiter.checkLimit('export_dpo').allowed, true);
+    }
   });
 
   it('UPGRADE_MESSAGE references dashboard', () => {
     assert.ok(rateLimiter.UPGRADE_MESSAGE.includes('dashboard'));
+  });
+
+  it('UPGRADE_MESSAGE includes checkout URL', () => {
+    assert.ok(rateLimiter.UPGRADE_MESSAGE.includes('railway'));
   });
 });
