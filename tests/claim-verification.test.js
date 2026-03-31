@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
+const fs = require('fs');
+const path = require('path');
 
 const {
   trackAction,
@@ -12,153 +12,256 @@ const {
   registerClaimGate,
   verifyClaimEvidence,
   SESSION_ACTIONS_PATH,
-  CUSTOM_CLAIM_GATES_PATH,
-  DEFAULT_CLAIM_GATES_PATH,
-  SESSION_ACTION_TTL_MS,
+  CLAIM_GATES_PATH,
 } = require('../scripts/gates-engine');
 
-function readIfExists(filePath) {
-  return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : null;
-}
-
-function backupRuntimeState() {
-  return {
-    sessionActions: readIfExists(SESSION_ACTIONS_PATH),
-    customClaimGates: readIfExists(CUSTOM_CLAIM_GATES_PATH),
-  };
-}
-
-function restoreRuntimeState(backups) {
-  const restoreOne = (filePath, content) => {
-    if (content === null) {
-      fs.rmSync(filePath, { force: true });
-      return;
+// ---------------------------------------------------------------------------
+// Helpers — save and restore state between tests
+// ---------------------------------------------------------------------------
+function backupAndClear() {
+  const backups = {};
+  for (const p of [SESSION_ACTIONS_PATH, CLAIM_GATES_PATH]) {
+    if (fs.existsSync(p)) {
+      backups[p] = fs.readFileSync(p, 'utf8');
     }
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, content);
-  };
-
-  restoreOne(SESSION_ACTIONS_PATH, backups.sessionActions);
-  restoreOne(CUSTOM_CLAIM_GATES_PATH, backups.customClaimGates);
-}
-
-function resetRuntimeState() {
+  }
   clearSessionActions();
-  fs.rmSync(CUSTOM_CLAIM_GATES_PATH, { force: true });
+  // Write empty claim gates so tests start clean
+  fs.mkdirSync(path.dirname(CLAIM_GATES_PATH), { recursive: true });
+  fs.writeFileSync(CLAIM_GATES_PATH, JSON.stringify({ claims: [] }));
+  return backups;
 }
 
-test('trackAction records metadata for the current session', () => {
-  const backups = backupRuntimeState();
+function restore(backups) {
+  clearSessionActions();
+  for (const [p, content] of Object.entries(backups)) {
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, content);
+  }
+  // Clean up test files that didn't exist before
+  for (const p of [SESSION_ACTIONS_PATH, CLAIM_GATES_PATH]) {
+    if (!backups[p] && fs.existsSync(p)) {
+      fs.unlinkSync(p);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Session Action Tracking
+// ---------------------------------------------------------------------------
+
+test('trackAction stores an action with timestamp', () => {
+  const backups = backupAndClear();
   try {
-    resetRuntimeState();
-    const entry = trackAction('figma_verified', { nodeId: '1585:106967' });
-    assert.ok(entry.timestamp);
-    assert.deepStrictEqual(entry.metadata, { nodeId: '1585:106967' });
-    assert.equal(hasAction('figma_verified'), true);
+    const result = trackAction('figma_verified', { nodeId: '1585:106967' });
+    assert.ok(result.timestamp, 'action must have a timestamp');
+    assert.deepStrictEqual(result.metadata, { nodeId: '1585:106967' });
   } finally {
-    restoreRuntimeState(backups);
+    restore(backups);
   }
 });
 
-test('loadSessionActions prunes expired actions from runtime state', () => {
-  const backups = backupRuntimeState();
+test('hasAction returns true for tracked actions, false for missing', () => {
+  const backups = backupAndClear();
   try {
-    resetRuntimeState();
+    trackAction('tests_passed');
+    assert.ok(hasAction('tests_passed'), 'should find tracked action');
+    assert.ok(!hasAction('nonexistent'), 'should not find untracked action');
+  } finally {
+    restore(backups);
+  }
+});
+
+test('listSessionActions returns all tracked actions', () => {
+  const backups = backupAndClear();
+  try {
+    trackAction('figma_verified');
+    trackAction('tests_passed');
+    const actions = listSessionActions();
+    assert.ok(actions.figma_verified, 'should contain figma_verified');
+    assert.ok(actions.tests_passed, 'should contain tests_passed');
+  } finally {
+    restore(backups);
+  }
+});
+
+test('clearSessionActions removes all actions', () => {
+  const backups = backupAndClear();
+  try {
+    trackAction('figma_verified');
+    clearSessionActions();
+    assert.ok(!hasAction('figma_verified'), 'should be cleared');
+    const actions = listSessionActions();
+    assert.equal(Object.keys(actions).length, 0, 'should be empty');
+  } finally {
+    restore(backups);
+  }
+});
+
+test('expired actions are pruned on load (1 hour TTL)', () => {
+  const backups = backupAndClear();
+  try {
+    // Write an action with an old timestamp directly
+    const actions = {
+      old_action: { timestamp: Date.now() - (2 * 60 * 60 * 1000), metadata: {} },
+      fresh_action: { timestamp: Date.now(), metadata: {} },
+    };
     fs.mkdirSync(path.dirname(SESSION_ACTIONS_PATH), { recursive: true });
-    fs.writeFileSync(SESSION_ACTIONS_PATH, JSON.stringify({
-      old_action: { timestamp: Date.now() - SESSION_ACTION_TTL_MS - 1000, metadata: {} },
-      fresh_action: { timestamp: Date.now(), metadata: { source: 'test' } },
-    }));
+    fs.writeFileSync(SESSION_ACTIONS_PATH, JSON.stringify(actions));
 
-    assert.equal(hasAction('old_action'), false);
-    assert.equal(hasAction('fresh_action'), true);
-
-    const persisted = JSON.parse(fs.readFileSync(SESSION_ACTIONS_PATH, 'utf8'));
-    assert.deepStrictEqual(Object.keys(persisted), ['fresh_action']);
+    assert.ok(!hasAction('old_action'), 'expired action should be pruned');
+    assert.ok(hasAction('fresh_action'), 'fresh action should remain');
   } finally {
-    restoreRuntimeState(backups);
+    restore(backups);
   }
 });
 
-test('registerClaimGate writes custom gates to runtime state instead of tracked config', () => {
-  const backups = backupRuntimeState();
+// ---------------------------------------------------------------------------
+// Claim Verification
+// ---------------------------------------------------------------------------
+
+test('verifyClaimEvidence returns verified:true when all evidence present', () => {
+  const backups = backupAndClear();
   try {
-    resetRuntimeState();
-    const beforeDefault = fs.readFileSync(DEFAULT_CLAIM_GATES_PATH, 'utf8');
-    const entry = registerClaimGate('ready to demo', ['tests_passed'], 'Run tests before demo claims');
-
-    assert.equal(entry.pattern, 'ready to demo');
-    assert.equal(fs.existsSync(CUSTOM_CLAIM_GATES_PATH), true);
-    assert.equal(fs.readFileSync(DEFAULT_CLAIM_GATES_PATH, 'utf8'), beforeDefault);
-
-    const runtimeConfig = JSON.parse(fs.readFileSync(CUSTOM_CLAIM_GATES_PATH, 'utf8'));
-    assert.equal(runtimeConfig.claims.length, 1);
-    assert.equal(runtimeConfig.claims[0].pattern, 'ready to demo');
-  } finally {
-    restoreRuntimeState(backups);
-  }
-});
-
-test('loadClaimGates merges shipped defaults with custom runtime gates', () => {
-  const backups = backupRuntimeState();
-  try {
-    resetRuntimeState();
-    registerClaimGate('ready to demo', ['tests_passed'], 'Run tests before demo claims');
-    const config = loadClaimGates();
-    const patterns = config.claims.map((claim) => claim.pattern);
-
-    assert.ok(patterns.some((pattern) => pattern.includes('figma')));
-    assert.ok(patterns.includes('ready to demo'));
-  } finally {
-    restoreRuntimeState(backups);
-  }
-});
-
-test('verifyClaimEvidence passes when default evidence has been tracked', () => {
-  const backups = backupRuntimeState();
-  try {
-    resetRuntimeState();
-    trackAction('figma_verified', { tool: 'mcp__figma__get_design_context' });
+    // Register a claim gate
+    registerClaimGate('match.*figma', ['figma_verified'], 'Must verify Figma first');
+    // Track the required action
+    trackAction('figma_verified', { nodeId: '1585:106967' });
+    // Verify the claim
     const result = verifyClaimEvidence('colors match Figma design');
-    assert.equal(result.verified, true);
+    assert.ok(result.verified, 'should be verified when evidence present');
     assert.equal(result.checks.length, 1);
-    assert.equal(result.checks[0].passed, true);
+    assert.ok(result.checks[0].passed);
+    assert.equal(result.checks[0].missing.length, 0);
   } finally {
-    restoreRuntimeState(backups);
+    restore(backups);
   }
 });
 
-test('verifyClaimEvidence reports missing actions for matching claims', () => {
-  const backups = backupRuntimeState();
+test('verifyClaimEvidence returns verified:false with missing actions', () => {
+  const backups = backupAndClear();
   try {
-    resetRuntimeState();
-    registerClaimGate('ready to demo', ['tests_passed', 'pr_threads_checked'], 'Not ready to demo');
-    const result = verifyClaimEvidence('ready to demo');
-    assert.equal(result.verified, false);
-    assert.deepStrictEqual(result.checks[0].missing, ['tests_passed', 'pr_threads_checked']);
-    assert.equal(result.checks[0].message, 'Not ready to demo');
+    registerClaimGate('match.*figma', ['figma_verified'], 'Must verify Figma first');
+    // Do NOT track figma_verified
+    const result = verifyClaimEvidence('This matches the Figma design');
+    assert.ok(!result.verified, 'should fail without evidence');
+    assert.equal(result.checks.length, 1);
+    assert.ok(!result.checks[0].passed);
+    assert.deepStrictEqual(result.checks[0].missing, ['figma_verified']);
+    assert.equal(result.checks[0].message, 'Must verify Figma first');
   } finally {
-    restoreRuntimeState(backups);
+    restore(backups);
   }
 });
 
-test('verifyClaimEvidence ignores non-matching claims', () => {
-  const backups = backupRuntimeState();
+test('verifyClaimEvidence handles multiple required actions', () => {
+  const backups = backupAndClear();
   try {
-    resetRuntimeState();
+    registerClaimGate('ready to merge', ['tests_passed', 'pr_threads_checked'], 'PR not ready');
+    trackAction('tests_passed');
+    // Missing pr_threads_checked
+    const result = verifyClaimEvidence('This PR is ready to merge');
+    assert.ok(!result.verified);
+    assert.deepStrictEqual(result.checks[0].missing, ['pr_threads_checked']);
+  } finally {
+    restore(backups);
+  }
+});
+
+test('verifyClaimEvidence passes when no claim gates match', () => {
+  const backups = backupAndClear();
+  try {
+    registerClaimGate('match.*figma', ['figma_verified'], 'Must verify Figma');
+    // Claim that doesn't match any gate pattern
     const result = verifyClaimEvidence('refactored the helper function');
-    assert.equal(result.verified, true);
-    assert.deepStrictEqual(result.checks, []);
+    assert.ok(result.verified, 'should pass when no gates match');
+    assert.equal(result.checks.length, 0);
   } finally {
-    restoreRuntimeState(backups);
+    restore(backups);
   }
 });
 
-test('default claim verification config ships expected gates', () => {
-  const config = JSON.parse(fs.readFileSync(DEFAULT_CLAIM_GATES_PATH, 'utf8'));
-  const patterns = config.claims.map((claim) => claim.pattern);
-  assert.ok(patterns.some((pattern) => pattern.includes('figma')));
-  assert.ok(patterns.some((pattern) => pattern.includes('tests? pass')));
-  assert.ok(patterns.some((pattern) => pattern.includes('ready to merge')));
-  assert.ok(patterns.some((pattern) => pattern.includes('verified on device')));
+test('verifyClaimEvidence is case-insensitive', () => {
+  const backups = backupAndClear();
+  try {
+    registerClaimGate('match.*figma', ['figma_verified'], 'Must verify Figma');
+    const result = verifyClaimEvidence('Colors MATCH the FIGMA design');
+    assert.ok(!result.verified, 'should match case-insensitively');
+  } finally {
+    restore(backups);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Claim Gate Registration
+// ---------------------------------------------------------------------------
+
+test('registerClaimGate creates new entry', () => {
+  const backups = backupAndClear();
+  try {
+    registerClaimGate('tests? pass', ['tests_passed'], 'Run tests first');
+    const config = loadClaimGates();
+    assert.ok(config.claims.length >= 1);
+    const gate = config.claims.find(c => c.pattern === 'tests? pass');
+    assert.ok(gate, 'should find registered gate');
+    assert.deepStrictEqual(gate.requiredActions, ['tests_passed']);
+  } finally {
+    restore(backups);
+  }
+});
+
+test('registerClaimGate updates existing entry with same pattern', () => {
+  const backups = backupAndClear();
+  try {
+    registerClaimGate('tests? pass', ['tests_passed'], 'v1');
+    registerClaimGate('tests? pass', ['tests_passed', 'lint_passed'], 'v2');
+    const config = loadClaimGates();
+    const gates = config.claims.filter(c => c.pattern === 'tests? pass');
+    assert.equal(gates.length, 1, 'should not duplicate');
+    assert.deepStrictEqual(gates[0].requiredActions, ['tests_passed', 'lint_passed']);
+    assert.equal(gates[0].message, 'v2');
+  } finally {
+    restore(backups);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Tool Registry Validation
+// ---------------------------------------------------------------------------
+
+test('new tools are registered in tool-registry', () => {
+  const { TOOLS } = require('../scripts/tool-registry');
+  const toolNames = TOOLS.map(t => t.name);
+  assert.ok(toolNames.includes('track_action'), 'track_action must be registered');
+  assert.ok(toolNames.includes('verify_claim'), 'verify_claim must be registered');
+  assert.ok(toolNames.includes('register_claim_gate'), 'register_claim_gate must be registered');
+});
+
+test('new tools have valid inputSchema', () => {
+  const { TOOLS } = require('../scripts/tool-registry');
+  for (const name of ['track_action', 'verify_claim', 'register_claim_gate']) {
+    const tool = TOOLS.find(t => t.name === name);
+    assert.ok(tool, `${name} must exist`);
+    assert.equal(tool.inputSchema.type, 'object', `${name} schema type must be object`);
+    assert.ok(tool.inputSchema.required, `${name} must have required fields`);
+    assert.ok(tool.inputSchema.required.length > 0, `${name} must require at least one field`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Default claim-verification.json config
+// ---------------------------------------------------------------------------
+
+test('default claim-verification.json loads with expected gates', () => {
+  const configPath = path.join(__dirname, '..', 'config', 'gates', 'claim-verification.json');
+  assert.ok(fs.existsSync(configPath), 'claim-verification.json must exist');
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  assert.ok(Array.isArray(config.claims), 'must have claims array');
+  assert.ok(config.claims.length >= 4, 'must have at least 4 default claim gates');
+
+  const patterns = config.claims.map(c => c.pattern);
+  assert.ok(patterns.some(p => p.includes('figma')), 'must have Figma verification gate');
+  assert.ok(patterns.some(p => p.includes('test')), 'must have test verification gate');
+  assert.ok(patterns.some(p => p.includes('merge')), 'must have merge readiness gate');
+  assert.ok(patterns.some(p => p.includes('device')), 'must have device verification gate');
 });

@@ -16,13 +16,13 @@
     {
       "pattern": "ready to merge|pr.*ready|mark.*ready",
       "requiredActions": ["tests_passed", "pr_threads_checked"],
-      "message": "You claimed PR readiness without verifying tests pass and review threads are resolved.",
+      "message": "You claimed PR is ready without verifying tests pass and review threads are resolved.",
       "createdAt": 1774972800000
     },
     {
       "pattern": "verified on device|works on device|device.*verified|on.device.*correct",
       "requiredActions": ["on_device_verified"],
-      "message": "You claimed on-device verification without evidence. Capture the proof first, then call track_action('on_device_verified').",
+      "message": "You claimed on-device verification without evidence. Take a screenshot or run Maestro tests first.",
       "createdAt": 1774972800000
     }
   ]

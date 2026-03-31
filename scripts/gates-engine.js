@@ -44,14 +44,12 @@ const { getAutoGatesPath } = require('./auto-promote-gates');
 const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'default.json');
-const DEFAULT_CLAIM_GATES_PATH = path.join(__dirname, '..', 'config', 'gates', 'claim-verification.json');
+const CLAIM_GATES_PATH = path.join(__dirname, '..', 'config', 'gates', 'claim-verification.json');
 const STATE_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'gate-state.json');
 const CONSTRAINTS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'session-constraints.json');
 const STATS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'gate-stats.json');
 const SESSION_ACTIONS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'session-actions.json');
-const CUSTOM_CLAIM_GATES_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'claim-verification.json');
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
-const SESSION_ACTION_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // ---------------------------------------------------------------------------
 // Config loading
@@ -554,54 +552,38 @@ function run(input) {
 }
 
 // ---------------------------------------------------------------------------
-// Session action tracking and claim verification
+// Session Action Tracking & Claim Verification
 // ---------------------------------------------------------------------------
 
 function loadSessionActions() {
-  const actions = loadJSON(module.exports.SESSION_ACTIONS_PATH);
+  const actions = loadJSON(SESSION_ACTIONS_PATH);
+  // Expire actions older than 1 hour (session boundary)
+  const SESSION_TTL_MS = 60 * 60 * 1000;
   const now = Date.now();
   const valid = {};
-
   for (const [key, entry] of Object.entries(actions)) {
-    if (!entry || typeof entry !== 'object') continue;
-    if (!entry.timestamp || (now - entry.timestamp) >= SESSION_ACTION_TTL_MS) continue;
-    valid[key] = entry;
+    if (entry.timestamp && (now - entry.timestamp) < SESSION_TTL_MS) {
+      valid[key] = entry;
+    }
   }
-
-  if (Object.keys(valid).length !== Object.keys(actions).length) {
-    saveSessionActions(valid);
-  }
-
   return valid;
 }
 
-function saveSessionActions(actions) {
-  saveJSON(module.exports.SESSION_ACTIONS_PATH, actions);
-}
+function saveSessionActions(actions) { saveJSON(SESSION_ACTIONS_PATH, actions); }
 
-function trackAction(actionId, metadata = {}) {
-  const normalizedActionId = String(actionId || '').trim();
-  if (!normalizedActionId) {
-    throw new Error('actionId is required');
-  }
-  if (metadata !== null && typeof metadata !== 'object') {
-    throw new Error('metadata must be an object when provided');
-  }
-
+function trackAction(actionId, metadata) {
   const actions = loadSessionActions();
-  actions[normalizedActionId] = {
+  actions[actionId] = {
     timestamp: Date.now(),
     metadata: metadata || {},
   };
   saveSessionActions(actions);
-  return actions[normalizedActionId];
+  return actions[actionId];
 }
 
 function hasAction(actionId) {
-  const normalizedActionId = String(actionId || '').trim();
-  if (!normalizedActionId) return false;
   const actions = loadSessionActions();
-  return Boolean(actions[normalizedActionId]);
+  return !!actions[actionId];
 }
 
 function listSessionActions() {
@@ -612,86 +594,38 @@ function clearSessionActions() {
   saveSessionActions({});
 }
 
-function loadClaimGateFile(filePath, { allowMissing = true } = {}) {
-  if (!fs.existsSync(filePath)) {
-    if (allowMissing) return { claims: [] };
-    throw new Error(`Claim gates config not found: ${filePath}`);
-  }
-
-  const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  if (!parsed || !Array.isArray(parsed.claims)) {
-    throw new Error(`Invalid claim gates config: ${filePath}`);
-  }
-  return parsed;
-}
-
-function saveCustomClaimGates(config) {
-  fs.mkdirSync(path.dirname(module.exports.CUSTOM_CLAIM_GATES_PATH), { recursive: true });
-  fs.writeFileSync(module.exports.CUSTOM_CLAIM_GATES_PATH, JSON.stringify(config, null, 2) + '\n');
-}
-
 function loadClaimGates() {
-  const defaults = loadClaimGateFile(module.exports.DEFAULT_CLAIM_GATES_PATH, { allowMissing: false });
-  const custom = loadClaimGateFile(module.exports.CUSTOM_CLAIM_GATES_PATH);
-  const mergedByPattern = new Map();
-
-  for (const claim of defaults.claims) {
-    mergedByPattern.set(claim.pattern, claim);
+  if (!fs.existsSync(CLAIM_GATES_PATH)) return { claims: [] };
+  try {
+    return JSON.parse(fs.readFileSync(CLAIM_GATES_PATH, 'utf8'));
+  } catch {
+    return { claims: [] };
   }
-  for (const claim of custom.claims) {
-    mergedByPattern.set(claim.pattern, claim);
-  }
-
-  return {
-    version: Math.max(defaults.version || 1, custom.version || 1),
-    claims: Array.from(mergedByPattern.values()),
-  };
 }
 
 function registerClaimGate(claimPattern, requiredActions, blockMessage) {
-  const normalizedPattern = String(claimPattern || '').trim();
-  if (!normalizedPattern) {
-    throw new Error('claimPattern is required');
-  }
-  if (!Array.isArray(requiredActions) || requiredActions.length === 0) {
-    throw new Error('requiredActions must be a non-empty array');
-  }
-
-  const normalizedActions = requiredActions
-    .map((actionId) => String(actionId || '').trim())
-    .filter(Boolean);
-  if (normalizedActions.length === 0) {
-    throw new Error('requiredActions must contain at least one non-empty action id');
-  }
-
-  const custom = loadClaimGateFile(module.exports.CUSTOM_CLAIM_GATES_PATH);
-  const existingIndex = custom.claims.findIndex((claim) => claim.pattern === normalizedPattern);
+  const config = loadClaimGates();
+  const existing = config.claims.findIndex(c => c.pattern === claimPattern);
   const entry = {
-    pattern: normalizedPattern,
-    requiredActions: normalizedActions,
-    message: blockMessage || `Claim "${normalizedPattern}" requires evidence: ${normalizedActions.join(', ')}`,
+    pattern: claimPattern,
+    requiredActions: requiredActions,
+    message: blockMessage || `Claim "${claimPattern}" requires evidence: ${requiredActions.join(', ')}`,
     createdAt: Date.now(),
   };
-
-  if (existingIndex >= 0) {
-    custom.claims[existingIndex] = entry;
+  if (existing >= 0) {
+    config.claims[existing] = entry;
   } else {
-    custom.claims.push(entry);
+    config.claims.push(entry);
   }
-
-  saveCustomClaimGates(custom);
+  fs.mkdirSync(path.dirname(CLAIM_GATES_PATH), { recursive: true });
+  fs.writeFileSync(CLAIM_GATES_PATH, JSON.stringify(config, null, 2) + '\n');
   return entry;
 }
 
 function verifyClaimEvidence(claimText) {
-  const normalizedClaimText = String(claimText || '').trim();
-  if (!normalizedClaimText) {
-    throw new Error('claimText is required');
-  }
-
   const config = loadClaimGates();
   const actions = loadSessionActions();
-  const checks = [];
+  const results = [];
 
   for (const claim of config.claims) {
     let regex;
@@ -700,10 +634,10 @@ function verifyClaimEvidence(claimText) {
     } catch {
       continue;
     }
-    if (!regex.test(normalizedClaimText)) continue;
+    if (!regex.test(claimText)) continue;
 
-    const missing = (claim.requiredActions || []).filter((actionId) => !actions[actionId]);
-    checks.push({
+    const missing = claim.requiredActions.filter(a => !actions[a]);
+    results.push({
       claim: claim.pattern,
       passed: missing.length === 0,
       missing,
@@ -712,8 +646,8 @@ function verifyClaimEvidence(claimText) {
   }
 
   return {
-    verified: checks.every((check) => check.passed),
-    checks,
+    verified: results.every(r => r.passed),
+    checks: results,
   };
 }
 
@@ -751,14 +685,12 @@ module.exports = {
   registerClaimGate,
   verifyClaimEvidence,
   DEFAULT_CONFIG_PATH,
-  DEFAULT_CLAIM_GATES_PATH,
+  CLAIM_GATES_PATH,
   STATE_PATH,
   CONSTRAINTS_PATH,
   STATS_PATH,
   SESSION_ACTIONS_PATH,
-  CUSTOM_CLAIM_GATES_PATH,
   TTL_MS,
-  SESSION_ACTION_TTL_MS,
 };
 
 // ---------------------------------------------------------------------------

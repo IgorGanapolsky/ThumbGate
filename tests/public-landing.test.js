@@ -147,11 +147,12 @@ test('public landing page Pro tier uses outcome-framed bullets that justify upgr
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /personal local dashboard/i);
-  assert.match(landingPage, /launch your own browser view on localhost/i);
-  assert.match(landingPage, /auto-connect on your machine/i);
+  assert.match(landingPage, /search.*filter.*explore.*feedback/i);
+  assert.match(landingPage, /npx mcp-memory-gateway pro/i);
+  assert.match(landingPage, /localhost:9876\/dashboard/i);
   assert.match(landingPage, /optional hosted API key/i);
   assert.match(landingPage, /teams and multiple agents can share one central lesson DB/i);
-  assert.match(landingPage, /turn real failures into model-improving datasets/i);
+  assert.match(landingPage, /turn real failures into model-improving preference pairs/i);
   assert.match(landingPage, /help wiring gates into your most critical agents/i);
   assert.match(landingPage, /Upgrade when your experiment becomes a team workflow/i);
 });
