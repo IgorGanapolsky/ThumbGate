@@ -52,6 +52,18 @@ Build the `.mcpb` for Claude Desktop review or direct installation with:
 npm run build:claude-mcpb
 ```
 
+## Claude Code repo-local plugin
+
+- Repo-local Claude Code plugin root: `plugins/claude-codex-bridge/`
+- Claude Code plugin manifest: `plugins/claude-codex-bridge/.claude-plugin/plugin.json`
+- Claude Code MCP wiring: `plugins/claude-codex-bridge/.mcp.json`
+- Bridge skills: `plugins/claude-codex-bridge/skills/`
+- Bridge script: `plugins/claude-codex-bridge/scripts/codex-bridge.js`
+- Local session install: `claude --plugin-dir "$(pwd)/plugins/claude-codex-bridge"`
+- Validation command: `claude plugin validate plugins/claude-codex-bridge`
+
+This lane is for Claude Code users who want Codex review, adversarial review, and second-pass handoff inside the same local workflow without giving up ThumbGate's reliability memory.
+
 ## Codex (MCP)
 
 - Manual profile: `adapters/codex/config.toml`

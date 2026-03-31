@@ -65,4 +65,12 @@ test('sync-version covers codex plugin manifests', () => {
     result.targets.includes('plugins/codex-profile/.mcp.json'),
     'plugins/codex-profile/.mcp.json should be a sync target'
   );
+  assert.ok(
+    result.targets.includes('plugins/claude-codex-bridge/.claude-plugin/plugin.json'),
+    'plugins/claude-codex-bridge/.claude-plugin/plugin.json should be a sync target'
+  );
+  assert.ok(
+    result.targets.includes('plugins/claude-codex-bridge/.mcp.json'),
+    'plugins/claude-codex-bridge/.mcp.json should be a sync target'
+  );
 });

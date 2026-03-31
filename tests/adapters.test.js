@@ -28,6 +28,10 @@ test('adapter files exist', () => {
     '.claude-plugin/README.md',
     '.claude-plugin/bundle/server/index.js',
     '.claude-plugin/bundle/icon.png',
+    'plugins/claude-codex-bridge/.claude-plugin/plugin.json',
+    'plugins/claude-codex-bridge/.mcp.json',
+    'plugins/claude-codex-bridge/README.md',
+    'plugins/claude-codex-bridge/INSTALL.md',
     'plugins/opencode-profile/INSTALL.md',
     'plugins/codex-profile/.codex-plugin/plugin.json',
     'plugins/codex-profile/.mcp.json',
@@ -222,4 +226,19 @@ test('codex app plugin surface is present and aligned to ThumbGate metadata', ()
   assert.ok(pluginEntry, 'codex plugin marketplace entry should exist');
   assert.equal(pluginEntry.source.path, './plugins/codex-profile');
   assert.deepEqual(pluginConfig.mcpServers.rlhf.args, ['-y', `mcp-memory-gateway@${packageVersion}`, 'serve']);
+});
+
+test('Claude Codex bridge plugin surface is present and aligned to ThumbGate metadata', () => {
+  const pluginManifest = JSON.parse(fs.readFileSync(path.join(root, 'plugins/claude-codex-bridge/.claude-plugin/plugin.json'), 'utf-8'));
+  const pluginConfig = JSON.parse(fs.readFileSync(path.join(root, 'plugins/claude-codex-bridge/.mcp.json'), 'utf-8'));
+  const readme = fs.readFileSync(path.join(root, 'plugins/claude-codex-bridge/README.md'), 'utf-8');
+
+  assert.equal(pluginManifest.version, packageVersion);
+  assert.equal(pluginManifest.homepage, 'https://rlhf-feedback-loop-production.up.railway.app');
+  assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
+  assert.equal(pluginManifest.name, 'codex-bridge');
+  assert.deepEqual(pluginConfig.mcpServers.rlhf.args, ['-y', `mcp-memory-gateway@${packageVersion}`, 'serve']);
+  assert.match(readme, /Claude Code plugin/i);
+  assert.match(readme, /adversarial review/i);
+  assert.match(readme, /second-pass handoff/i);
 });

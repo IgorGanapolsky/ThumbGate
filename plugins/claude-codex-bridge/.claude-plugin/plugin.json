@@ -1,0 +1,22 @@
+{
+  "name": "codex-bridge",
+  "version": "0.8.5",
+  "description": "Run Codex review, adversarial review, and second-pass handoffs from Claude Code while keeping ThumbGate reliability memory in the loop.",
+  "author": {
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "homepage": "https://rlhf-feedback-loop-production.up.railway.app",
+  "repository": "https://github.com/IgorGanapolsky/ThumbGate",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "codex",
+    "codex-review",
+    "adversarial-review",
+    "thumbgate",
+    "pre-action-gates",
+    "agent-reliability"
+  ],
+  "mcpServers": "./.mcp.json"
+}

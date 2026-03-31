@@ -223,6 +223,38 @@ function syncVersion(opts) {
     targets.push(codexPluginConfigPath);
   }
 
+  const claudeCodexBridgeManifestPath = 'plugins/claude-codex-bridge/.claude-plugin/plugin.json';
+  if (fs.existsSync(path.join(PROJECT_ROOT, claudeCodexBridgeManifestPath))) {
+    const bridgePlugin = readJson(claudeCodexBridgeManifestPath);
+    bridgePlugin.__file = claudeCodexBridgeManifestPath;
+    const changed = [
+      syncJsonField(bridgePlugin, 'version', version, drifted, checkOnly),
+      syncJsonField(bridgePlugin, 'homepage', homepageUrl, drifted, checkOnly),
+      syncJsonField(bridgePlugin, 'repository', repositoryUrl, drifted, checkOnly),
+    ].some(Boolean);
+    delete bridgePlugin.__file;
+    if (!checkOnly && changed) {
+      writeJson(claudeCodexBridgeManifestPath, bridgePlugin);
+    }
+    targets.push(claudeCodexBridgeManifestPath);
+  }
+
+  const claudeCodexBridgeConfigPath = 'plugins/claude-codex-bridge/.mcp.json';
+  if (fs.existsSync(path.join(PROJECT_ROOT, claudeCodexBridgeConfigPath))) {
+    const bridgeConfig = readJson(claudeCodexBridgeConfigPath);
+    const server = bridgeConfig.mcpServers && bridgeConfig.mcpServers.rlhf;
+    const expectedArgs = ['-y', `mcp-memory-gateway@${version}`, 'serve'];
+    const currentArgs = server && Array.isArray(server.args) ? server.args : [];
+    if (server && server.command === 'npx' && JSON.stringify(currentArgs) !== JSON.stringify(expectedArgs)) {
+      drifted.push({ file: claudeCodexBridgeConfigPath, field: 'mcpServers.rlhf.args', current: JSON.stringify(currentArgs) });
+      if (!checkOnly) {
+        server.args = expectedArgs.slice();
+        writeJson(claudeCodexBridgeConfigPath, bridgeConfig);
+      }
+    }
+    targets.push(claudeCodexBridgeConfigPath);
+  }
+
   // 9. plugin Cursor MCP config
   const cursorPluginConfigPath = 'plugins/cursor-marketplace/mcp.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, cursorPluginConfigPath))) {
@@ -249,6 +281,8 @@ function syncVersion(opts) {
     'docs/guides/opencode-integration.md',
     'docs/mcp-hub-submission.md',
     'docs/VERIFICATION_EVIDENCE.md',
+    'plugins/claude-codex-bridge/README.md',
+    'plugins/claude-codex-bridge/INSTALL.md',
     'plugins/codex-profile/README.md',
     'plugins/codex-profile/INSTALL.md',
     'plugins/opencode-profile/INSTALL.md',
