@@ -24,10 +24,15 @@ test('profile allowlists differentiate permissions', () => {
   assert.ok(defaultTools.length > dispatchTools.length);
   assert.ok(isToolAllowed('feedback_summary', 'locked'));
   assert.equal(isToolAllowed('capture_feedback', 'locked'), false);
+  assert.ok(isToolAllowed('verify_claim', 'locked'));
   assert.ok(isToolAllowed('plan_intent', 'locked'));
   assert.ok(isToolAllowed('dashboard', 'dispatch'));
+  assert.ok(isToolAllowed('verify_claim', 'dispatch'));
   assert.equal(isToolAllowed('capture_feedback', 'dispatch'), false);
   assert.equal(isToolAllowed('start_handoff', 'dispatch'), false);
+  assert.ok(isToolAllowed('track_action', 'default'));
+  assert.equal(isToolAllowed('track_action', 'readonly'), false);
+  assert.ok(isToolAllowed('register_claim_gate', 'default'));
 });
 
 test('assertToolAllowed throws for denied tools', () => {

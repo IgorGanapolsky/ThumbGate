@@ -8,6 +8,35 @@ const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-gates-tes
 process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
 
 const { handleRequest, TOOLS } = require('../adapters/mcp/server-stdio');
+const {
+  SESSION_ACTIONS_PATH,
+  CUSTOM_CLAIM_GATES_PATH,
+} = require('../scripts/gates-engine');
+
+function readIfExists(filePath) {
+  return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : null;
+}
+
+function backupRuntimeState() {
+  return {
+    sessionActions: readIfExists(SESSION_ACTIONS_PATH),
+    customClaimGates: readIfExists(CUSTOM_CLAIM_GATES_PATH),
+  };
+}
+
+function restoreRuntimeState(backups) {
+  const restoreOne = (filePath, content) => {
+    if (content === null) {
+      fs.rmSync(filePath, { force: true });
+      return;
+    }
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, content);
+  };
+
+  restoreOne(SESSION_ACTIONS_PATH, backups.sessionActions);
+  restoreOne(CUSTOM_CLAIM_GATES_PATH, backups.customClaimGates);
+}
 
 test.after(() => {
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
@@ -58,6 +87,77 @@ test('satisfy_gate requires gate param', async () => {
     }),
     { message: /gate/i },
   );
+});
+
+test('track_action, verify_claim, and register_claim_gate are registered', () => {
+  const names = TOOLS.map((tool) => tool.name);
+  assert.ok(names.includes('track_action'));
+  assert.ok(names.includes('verify_claim'));
+  assert.ok(names.includes('register_claim_gate'));
+});
+
+test('track_action records evidence for verify_claim over MCP', async () => {
+  const backups = backupRuntimeState();
+  try {
+    fs.rmSync(SESSION_ACTIONS_PATH, { force: true });
+    const tracked = await handleRequest({
+      jsonrpc: '2.0',
+      id: 106,
+      method: 'tools/call',
+      params: {
+        name: 'track_action',
+        arguments: {
+          actionId: 'tests_passed',
+          metadata: { source: 'npm test' },
+        },
+      },
+    });
+    const trackedPayload = JSON.parse(tracked.content[0].text);
+    assert.equal(trackedPayload.tracked, true);
+    assert.equal(trackedPayload.actionId, 'tests_passed');
+
+    const verified = await handleRequest({
+      jsonrpc: '2.0',
+      id: 107,
+      method: 'tools/call',
+      params: {
+        name: 'verify_claim',
+        arguments: {
+          claim: 'tests pass',
+        },
+      },
+    });
+    const verifiedPayload = JSON.parse(verified.content[0].text);
+    assert.equal(verifiedPayload.verified, true);
+  } finally {
+    restoreRuntimeState(backups);
+  }
+});
+
+test('register_claim_gate stores runtime-local custom rules over MCP', async () => {
+  const backups = backupRuntimeState();
+  try {
+    fs.rmSync(CUSTOM_CLAIM_GATES_PATH, { force: true });
+    const result = await handleRequest({
+      jsonrpc: '2.0',
+      id: 108,
+      method: 'tools/call',
+      params: {
+        name: 'register_claim_gate',
+        arguments: {
+          claimPattern: 'ready to demo',
+          requiredActions: ['tests_passed'],
+          message: 'Run tests before demo claims',
+        },
+      },
+    });
+
+    const payload = JSON.parse(result.content[0].text);
+    assert.equal(payload.pattern, 'ready to demo');
+    assert.equal(fs.existsSync(CUSTOM_CLAIM_GATES_PATH), true);
+  } finally {
+    restoreRuntimeState(backups);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -176,6 +276,9 @@ test('tools/list includes gate_stats, dashboard, and diagnose_failure', async ()
   const result = await handleRequest({ jsonrpc: '2.0', id: 105, method: 'tools/list' });
   const names = result.tools.map((t) => t.name);
   assert.ok(names.includes('satisfy_gate'), 'satisfy_gate in tools/list');
+  assert.ok(names.includes('track_action'), 'track_action in tools/list');
+  assert.ok(names.includes('verify_claim'), 'verify_claim in tools/list');
+  assert.ok(names.includes('register_claim_gate'), 'register_claim_gate in tools/list');
   assert.ok(names.includes('gate_stats'), 'gate_stats in tools/list');
   assert.ok(names.includes('dashboard'), 'dashboard in tools/list');
   assert.ok(names.includes('diagnose_failure'), 'diagnose_failure in tools/list');

@@ -441,6 +441,46 @@ const TOOLS = [
       },
     },
   }),
+  destructiveTool({
+    name: 'track_action',
+    description: 'Record a verification action in the current session (for example figma_verified or tests_passed). Session actions expire after one hour.',
+    inputSchema: {
+      type: 'object',
+      required: ['actionId'],
+      properties: {
+        actionId: { type: 'string', description: 'Verification action ID to record' },
+        metadata: { type: 'object', description: 'Optional structured metadata describing the evidence source' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'verify_claim',
+    description: 'Check whether a claim has enough tracked evidence before the agent asserts it.',
+    inputSchema: {
+      type: 'object',
+      required: ['claim'],
+      properties: {
+        claim: { type: 'string', description: 'The claim text to verify' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'register_claim_gate',
+    description: 'Register a custom claim verification rule in local runtime state without editing tracked repo config.',
+    inputSchema: {
+      type: 'object',
+      required: ['claimPattern', 'requiredActions'],
+      properties: {
+        claimPattern: { type: 'string', description: 'Regex pattern that should trigger claim verification' },
+        requiredActions: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Tracked actions that must be present before the claim is verified',
+        },
+        message: { type: 'string', description: 'Custom message returned when evidence is missing' },
+      },
+    },
+  }),
   readOnlyTool({
     name: 'gate_stats',
     description: 'Get gate enforcement statistics -- blocked count, warned count, top gates',
