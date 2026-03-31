@@ -73,6 +73,7 @@
   .result-context { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
   .result-tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
   .tag { font-size: 11px; background: var(--cyan-dim); color: var(--cyan); padding: 2px 8px; border-radius: 4px; }
+  mark { background: rgba(34,211,238,0.25); color: var(--cyan); border-radius: 2px; padding: 0 2px; }
 
   /* GATES */
   .gates-section { margin-bottom: 32px; }
@@ -266,8 +267,8 @@ async function connect(options) {
 
 function renderStats(data) {
   const total = (data.totalFeedback || data.total || 0);
-  const pos = (data.positive || data.thumbsUp || 0);
-  const neg = (data.negative || data.thumbsDown || 0);
+  const pos = (data.totalPositive || data.positive || data.thumbsUp || 0);
+  const neg = (data.totalNegative || data.negative || data.thumbsDown || 0);
   document.getElementById('statTotal').textContent = total;
   document.getElementById('statPositive').textContent = pos;
   document.getElementById('statNegative').textContent = neg;
@@ -276,6 +277,7 @@ function renderStats(data) {
 async function search() {
   const query = document.getElementById('searchQuery').value.trim();
   if (!query) return;
+  currentHighlightTerms = query.split(/\s+/).filter(function(t) { return t.length > 1; });
   const container = document.getElementById('searchResults');
   container.innerHTML = '<div class="loading">Searching...</div>';
 
@@ -327,8 +329,8 @@ function renderResult(r) {
       (signalLabel ? '<span class="result-signal ' + signalClass + '">' + signalLabel + '</span>' : '<span></span>') +
       '<span class="result-date">' + date + '</span>' +
     '</div>' +
-    (title ? '<div class="result-title">' + escHtml(title) + '</div>' : '') +
-    (context && context !== title ? '<div class="result-context">' + escHtml(context.slice(0, 300)) + '</div>' : '') +
+    (title ? '<div class="result-title">' + highlightText(title) + '</div>' : '') +
+    (context && context !== title ? '<div class="result-context">' + highlightText(context.slice(0, 300)) + '</div>' : '') +
     (tags.length ? '<div class="result-tags">' + tags.map(function(t) { return '<span class="tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
   '</div>';
 }
@@ -337,7 +339,21 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+var currentHighlightTerms = [];
+
+function highlightText(text) {
+  if (!currentHighlightTerms.length) return escHtml(text);
+  var escaped = escHtml(text);
+  currentHighlightTerms.forEach(function(term) {
+    if (!term) return;
+    var re = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    escaped = escaped.replace(re, '<mark>$1</mark>');
+  });
+  return escaped;
+}
+
 function selectCard(el, action) {
+  currentHighlightTerms = [];
   // Highlight clicked card, clear all others
   document.querySelectorAll('.stat-card').forEach(function(c) { c.style.borderColor = ''; });
   el.style.borderColor = 'var(--cyan)';
@@ -350,9 +366,21 @@ function selectCard(el, action) {
   // Filter memories by signal
   switchTab('search');
   var container = document.getElementById('searchResults');
-  if (!isDemo || !demoData.length) return;
-  var results = action === 'all' ? demoData : demoData.filter(function(r) { return r.signal === action; });
-  container.innerHTML = results.length ? results.map(renderResult).join('') : '<div class="empty">No ' + action + ' feedback in demo</div>';
+  if (isDemo && demoData.length) {
+    var results = action === 'all' ? demoData : demoData.filter(function(r) { return r.signal === action; });
+    container.innerHTML = results.length ? results.map(renderResult).join('') : '<div class="empty">No ' + action + ' feedback in demo</div>';
+    return;
+  }
+  // Live mode: search by signal filter
+  var signalParam = action === 'all' ? '' : '&signal=' + action;
+  container.innerHTML = '<div class="loading">Loading...</div>';
+  fetch('/v1/search?q=*&limit=50' + signalParam, { method: 'GET', headers: getHeaders() })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      var items = data.results || [];
+      container.innerHTML = items.length ? items.map(renderResult).join('') : '<div class="empty">No ' + (action === 'all' ? '' : action + ' ') + 'feedback found</div>';
+    })
+    .catch(function(e) { container.innerHTML = '<div class="empty">Error: ' + e.message + '</div>'; });
 }
 
 function setSource(el, source) {
