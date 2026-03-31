@@ -242,6 +242,14 @@ test('CI workflow supports merge queue and cancels stale non-main runs', () => {
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
 });
 
+test('CI workflow gives the full suite enough runtime budget', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+  const timeoutMatch = workflow.match(/timeout-minutes:\s*(\d+)/);
+
+  assert.ok(timeoutMatch, 'CI workflow must declare a timeout budget');
+  assert.ok(Number(timeoutMatch[1]) >= 45, 'CI timeout must leave enough room for the full suite');
+});
+
 test('CodeQL workflow supports merge queue and cancels stale non-main runs', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'codeql.yml'), 'utf8');
 
