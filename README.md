@@ -230,6 +230,24 @@ For autonomous agent runs against this or any repo using this workflow:
 
 **[$49 one-time](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro)** — searchable dashboard (query, edit, delete entries), DPO export, API key, priority support.
 
+### Free vs Pro
+
+| Feature | Free | Pro ($49) |
+|---------|------|-----------|
+| Feedback capture (thumbs up/down) | 5/day | Unlimited |
+| Lesson recall | 10/day | Unlimited |
+| Prevention rules | Yes | Yes |
+| PreToolUse gates | Yes | Yes |
+| Thompson Sampling | Basic | Advanced |
+| DPO training export | No | Yes |
+| Databricks export | No | Yes |
+| Searchable dashboard | No | Yes |
+| Multi-repo rule sync | No | Yes |
+| Rule analytics | No | Yes |
+| Priority support | No | Yes |
+
+**[Get Pro — $49](https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05)** — One-time purchase, lifetime updates.
+
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md)
 - [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
 - [Pitch](docs/PITCH.md)

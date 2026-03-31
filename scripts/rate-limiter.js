@@ -19,7 +19,13 @@ const UPGRADE_MESSAGE = 'Upgrade to Pro ($49 one-time) for searchable dashboard,
 
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;
-  return !!(process.env.RLHF_API_KEY || process.env.RLHF_PRO_MODE === '1' || process.env.RLHF_NO_RATE_LIMIT === '1');
+  if (process.env.RLHF_API_KEY || process.env.RLHF_PRO_MODE === '1' || process.env.RLHF_NO_RATE_LIMIT === '1') return true;
+  // Also check license file for real customer Pro verification
+  try {
+    const { isProLicensed } = require('./license');
+    if (isProLicensed()) return true;
+  } catch (_) {}
+  return false;
 }
 
 function getUsageFile() {

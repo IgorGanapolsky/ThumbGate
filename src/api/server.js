@@ -1658,6 +1658,13 @@ function createApiServer() {
     }
 
     if (req.method === 'POST' && pathname === '/api/event') {
+      // Filter bots from analytics to keep Plausible data clean
+      let _botDetector;
+      try { _botDetector = require('../../scripts/bot-detector'); } catch (_e) { _botDetector = null; }
+      if (_botDetector && _botDetector.shouldExcludeFromAnalytics(req)) {
+        sendJson(res, 202, { status: 'filtered', reason: 'bot' });
+        return;
+      }
       const chunks = [];
       req.on('data', (chunk) => chunks.push(chunk));
       req.on('end', () => {
@@ -2051,6 +2058,32 @@ function createApiServer() {
         'Access-Control-Allow-Headers': 'Content-Type',
       });
       res.end();
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/v1/metrics/real') {
+      const bd = require('../../scripts/bot-detector');
+      const { FEEDBACK_DIR: metricsDir } = getFeedbackPaths();
+      const telemetryPath = path.join(metricsDir, 'telemetry-pings.jsonl');
+      let entries = [];
+      try {
+        if (fs.existsSync(telemetryPath)) {
+          entries = fs.readFileSync(telemetryPath, 'utf8')
+            .split('\n').filter(Boolean)
+            .map(l => { try { return JSON.parse(l); } catch(_e) { return null; } })
+            .filter(Boolean);
+        }
+      } catch (_) {}
+      const classified = entries.map(e => {
+        const cls = bd.classifyVisitor({ headers: { 'user-agent': e.userAgent || '' }, email: e.email || '' });
+        return { ...e, visitorType: cls.type };
+      });
+      sendJson(res, 200, {
+        total: classified.length,
+        real_users: classified.filter(e => e.visitorType === 'real_user').length,
+        bots: classified.filter(e => e.visitorType === 'bot').length,
+        owner: classified.filter(e => e.visitorType === 'owner').length,
+      });
       return;
     }
 
