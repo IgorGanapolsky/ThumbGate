@@ -234,6 +234,27 @@ function parseMcpMessage(buffer) {
   return line;
 }
 
+function runCliSync(args, options = {}) {
+  return spawnSync(process.execPath, [CLI, ...args], {
+    encoding: 'utf8',
+    timeout: options.timeoutMs ?? 20000,
+    killSignal: 'SIGKILL',
+    maxBuffer: options.maxBuffer ?? 10 * 1024 * 1024,
+    ...options,
+  });
+}
+
+function unlicensedProEnv(homeDir, overrides = {}) {
+  return {
+    ...process.env,
+    HOME: homeDir,
+    USERPROFILE: homeDir,
+    RLHF_API_KEY: '',
+    RLHF_PRO_MODE: '',
+    ...overrides,
+  };
+}
+
 function runServeHandshake(sendRequest, options = {}) {
   const child = spawn(process.execPath, [CLI, 'serve'], {
     cwd: options.cwd,
@@ -469,7 +490,7 @@ describe('bin/cli.js', () => {
   });
 
   test('help command exits 0 and lists subcommands', () => {
-    const result = spawnSync(process.execPath, [CLI, 'help'], { encoding: 'utf8' });
+    const result = runCliSync(['help']);
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
     assert.ok(result.stdout.includes('mcp-memory-gateway'), 'Help should include CLI name');
     assert.ok(result.stdout.includes('init'), 'Help should mention init');
@@ -492,7 +513,9 @@ describe('bin/cli.js', () => {
   });
 
   test('pro command prints truthful local-first Pro offer info when unlicensed', () => {
-    const result = spawnSync(process.execPath, [CLI, 'pro'], { encoding: 'utf8' });
+    const result = runCliSync(['pro'], {
+      env: unlicensedProEnv(testHomeDir),
+    });
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
     assert.match(result.stdout, /Pro \(\$49 one-time\)/);
     assert.match(result.stdout, /personal local dashboard/i);
@@ -536,8 +559,7 @@ describe('bin/cli.js', () => {
       JSON.stringify({ key: 'tg_info_only' }, null, 2)
     );
 
-    const result = spawnSync(process.execPath, [CLI, 'pro', '--info'], {
-      encoding: 'utf8',
+    const result = runCliSync(['pro', '--info'], {
       env: {
         ...process.env,
         HOME: homeDir,
@@ -591,8 +613,7 @@ describe('bin/cli.js', () => {
       promotionLog: [],
     }, null, 2));
 
-    const result = spawnSync(process.execPath, [CLI, 'lessons', '--query=shipping'], {
-      encoding: 'utf8',
+    const result = runCliSync(['lessons', '--query=shipping'], {
       env: {
         ...process.env,
         RLHF_FEEDBACK_DIR: feedbackDir,
@@ -609,8 +630,7 @@ describe('bin/cli.js', () => {
   });
 
   test('help command shows Pro nudge on stderr', () => {
-    const result = spawnSync(process.execPath, [CLI, 'help'], {
-      encoding: 'utf8',
+    const result = runCliSync(['help'], {
       env: { ...process.env, RLHF_NO_NUDGE: undefined },
     });
     assert.strictEqual(result.status, 0);
@@ -618,8 +638,7 @@ describe('bin/cli.js', () => {
   });
 
   test('RLHF_NO_NUDGE=1 suppresses Pro nudge', () => {
-    const result = spawnSync(process.execPath, [CLI, 'help'], {
-      encoding: 'utf8',
+    const result = runCliSync(['help'], {
       env: { ...process.env, RLHF_NO_NUDGE: '1' },
     });
     assert.strictEqual(result.status, 0);
@@ -627,7 +646,9 @@ describe('bin/cli.js', () => {
   });
 
   test('pro command includes hosted link', () => {
-    const result = spawnSync(process.execPath, [CLI, 'pro'], { encoding: 'utf8' });
+    const result = runCliSync(['pro'], {
+      env: unlicensedProEnv(testHomeDir),
+    });
     assert.strictEqual(result.status, 0);
     assert.ok(result.stdout.includes('railway.app'), 'Pro command should include hosted URL');
     assert.ok(result.stdout.includes('$49 one-time'), 'Pro command should include current price');
@@ -636,8 +657,7 @@ describe('bin/cli.js', () => {
 
   test('RLHF_NO_TELEMETRY=1 prevents telemetry ping on init', () => {
     const initDir = makeTmpDir();
-    const result = spawnSync(process.execPath, [CLI, 'init'], {
-      encoding: 'utf8',
+    const result = runCliSync(['init'], {
       cwd: initDir,
       env: {
         ...process.env,
@@ -656,8 +676,7 @@ describe('bin/cli.js', () => {
     const initDir = makeTmpDir();
     const feedbackDir = path.join(initDir, '.rlhf');
     const telemetryPath = path.join(feedbackDir, 'telemetry-pings.jsonl');
-    const result = spawnSync(process.execPath, [CLI, 'init'], {
-      encoding: 'utf8',
+    const result = runCliSync(['init'], {
       cwd: initDir,
       env: {
         ...process.env,
@@ -682,18 +701,18 @@ describe('bin/cli.js', () => {
   });
 
   test('--help flag exits 0', () => {
-    const result = spawnSync(process.execPath, [CLI, '--help'], { encoding: 'utf8' });
+    const result = runCliSync(['--help']);
     assert.strictEqual(result.status, 0);
   });
 
   test('no-arg invocation exits 0 with help', () => {
-    const result = spawnSync(process.execPath, [CLI], { encoding: 'utf8' });
+    const result = runCliSync([]);
     assert.strictEqual(result.status, 0);
     assert.ok(result.stdout.includes('init'), 'No-arg output should mention init');
   });
 
   test('unknown command exits 1', () => {
-    const result = spawnSync(process.execPath, [CLI, 'unknown-xyz'], { encoding: 'utf8' });
+    const result = runCliSync(['unknown-xyz']);
     assert.strictEqual(result.status, 1, `Expected exit 1, got ${result.status}`);
   });
 
@@ -709,8 +728,7 @@ describe('bin/cli.js', () => {
       JSON.stringify({ version: 1 }, null, 2)
     );
 
-    const result = spawnSync(process.execPath, [CLI, 'doctor', '--json'], {
-      encoding: 'utf8',
+    const result = runCliSync(['doctor', '--json'], {
       cwd: doctorDir,
       env: {
         ...process.env,
@@ -763,8 +781,7 @@ describe('bin/cli.js', () => {
       metadata: {},
     })}\n`);
 
-    const result = spawnSync(process.execPath, [CLI, 'dispatch', '--json'], {
-      encoding: 'utf8',
+    const result = runCliSync(['dispatch', '--json'], {
       cwd: isolatedDir,
       env: {
         ...process.env,
@@ -889,8 +906,7 @@ describe('bin/cli.js', () => {
       '',
     ].join('\n'));
 
-    const result = spawnSync(process.execPath, [CLI, 'cfo'], {
-      encoding: 'utf8',
+    const result = runCliSync(['cfo'], {
       cwd: isolatedDir,
       env: {
         ...process.env,
@@ -1023,14 +1039,12 @@ describe('bin/cli.js', () => {
       '',
     ].join('\n'));
 
-    const result = spawnSync(process.execPath, [
-      CLI,
+    const result = runCliSync([
       'cfo',
       '--window=today',
       '--timezone=UTC',
       '--now=2026-03-19T18:00:00.000Z',
     ], {
-      encoding: 'utf8',
       cwd: isolatedDir,
       env: {
         ...process.env,
@@ -1056,8 +1070,7 @@ describe('bin/cli.js', () => {
     const isolatedDir = makeTmpDir();
     const feedbackDir = path.join(isolatedDir, 'feedback');
 
-    const result = spawnSync(process.execPath, [CLI, 'cfo'], {
-      encoding: 'utf8',
+    const result = runCliSync(['cfo'], {
       cwd: isolatedDir,
       env: {
         ...process.env,
@@ -1129,8 +1142,7 @@ describe('bin/cli.js', () => {
       }),
     };
 
-    const preview = spawnSync(process.execPath, [CLI, 'repair-github-marketplace'], {
-      encoding: 'utf8',
+    const preview = runCliSync(['repair-github-marketplace'], {
       cwd: isolatedDir,
       env,
     });
@@ -1144,8 +1156,7 @@ describe('bin/cli.js', () => {
     const beforeWrite = JSON.parse(fs.readFileSync(revenuePath, 'utf8').trim());
     assert.equal(beforeWrite.amountKnown, false);
 
-    const write = spawnSync(process.execPath, [CLI, 'repair-github-marketplace', '--write'], {
-      encoding: 'utf8',
+    const write = runCliSync(['repair-github-marketplace', '--write'], {
       cwd: isolatedDir,
       env,
     });
@@ -1245,8 +1256,7 @@ describe('bin/cli.js', () => {
   test('model-fit writes a machine-readable report using hardware overrides', () => {
     const isolatedDir = makeTmpDir();
     const feedbackDir = path.join(isolatedDir, 'feedback');
-    const result = spawnSync(process.execPath, [CLI, 'model-fit'], {
-      encoding: 'utf8',
+    const result = runCliSync(['model-fit'], {
       cwd: isolatedDir,
       env: {
         ...process.env,
@@ -1268,8 +1278,7 @@ describe('bin/cli.js', () => {
     const feedbackDir = path.join(isolatedDir, 'feedback');
     writeSequenceLog(feedbackDir, buildSequenceRows());
 
-    const result = spawnSync(process.execPath, [CLI, 'risk'], {
-      encoding: 'utf8',
+    const result = runCliSync(['risk'], {
       cwd: isolatedDir,
       env: {
         ...process.env,
@@ -1290,15 +1299,13 @@ describe('bin/cli.js', () => {
     const feedbackDir = path.join(isolatedDir, 'feedback');
     writeSequenceLog(feedbackDir, buildSequenceRows());
 
-    const result = spawnSync(process.execPath, [
-      CLI,
+    const result = runCliSync([
       'risk',
       '--context=verify the fix and add evidence',
       '--tags=testing,verification',
       '--skill=tdd',
       '--file-count=2',
     ], {
-      encoding: 'utf8',
       cwd: isolatedDir,
       env: {
         ...process.env,
@@ -1315,10 +1322,7 @@ describe('bin/cli.js', () => {
   });
 
   test('init creates .rlhf/ directory', () => {
-    const result = spawnSync(process.execPath, [CLI, 'init'], {
-      encoding: 'utf8',
-      cwd: tmpDir,
-    });
+    const result = runCliSync(['init'], { cwd: tmpDir });
     assert.strictEqual(result.status, 0, `init failed:\n${result.stderr}`);
     const rlhfDir = path.join(tmpDir, '.rlhf');
     assert.ok(fs.existsSync(rlhfDir), '.rlhf/ directory should be created');
@@ -1340,8 +1344,7 @@ describe('bin/cli.js', () => {
     const isolatedDir = makeTmpDir();
     const ledgerPath = path.join(isolatedDir, 'funnel-events.jsonl');
 
-    const result = spawnSync(process.execPath, [CLI, 'init'], {
-      encoding: 'utf8',
+    const result = runCliSync(['init'], {
       cwd: isolatedDir,
       env: {
         ...process.env,
@@ -1384,8 +1387,7 @@ describe('bin/cli.js', () => {
       })}\n`
     );
 
-    const result = spawnSync(process.execPath, [CLI, 'north-star'], {
-      encoding: 'utf8',
+    const result = runCliSync(['north-star'], {
       cwd: isolatedDir,
       env: {
         ...process.env,
@@ -1502,8 +1504,7 @@ describe('bin/cli.js', () => {
 
   test('init keeps a local source launcher for unpublished external installs', () => {
     const isolatedDir = makeTmpDir();
-    const result = spawnSync(process.execPath, [CLI, 'init'], {
-      encoding: 'utf8',
+    const result = runCliSync(['init'], {
       cwd: isolatedDir,
       env: {
         ...process.env,
@@ -1535,8 +1536,7 @@ describe('bin/cli.js', () => {
     const codexHome = path.join(isolatedHome, '.codex');
     fs.mkdirSync(codexHome, { recursive: true });
 
-    const result = spawnSync(process.execPath, [CLI, 'init'], {
-      encoding: 'utf8',
+    const result = runCliSync(['init'], {
       cwd: isolatedDir,
       env: {
         ...process.env,
@@ -1570,8 +1570,7 @@ describe('bin/cli.js', () => {
       '[mcp_servers.rlhf]\ncommand = "node"\nargs = ["/tmp/disposable-worktree/adapters/mcp/server-stdio.js"]\n'
     );
 
-    const result = spawnSync(process.execPath, [CLI, 'init'], {
-      encoding: 'utf8',
+    const result = runCliSync(['init'], {
       cwd: isolatedDir,
       env: {
         ...process.env,
@@ -1593,10 +1592,7 @@ describe('bin/cli.js', () => {
   });
 
   test('init output includes initialized message and platform detection', () => {
-    const result = spawnSync(process.execPath, [CLI, 'init'], {
-      encoding: 'utf8',
-      cwd: tmpDir,
-    });
+    const result = runCliSync(['init'], { cwd: tmpDir });
     assert.ok(
       result.stdout.includes('initialized'),
       `Expected "initialized" in output:\n${result.stdout}`
@@ -1609,11 +1605,9 @@ describe('bin/cli.js', () => {
 
   test('capture --feedback=up routes to full engine', () => {
     const isolatedDir = makeTmpDir();
-    const result = spawnSync(
-      process.execPath,
-      [CLI, 'capture', '--feedback=up', '--context=cli test verification'],
-      { encoding: 'utf8', cwd: isolatedDir }
-    );
+    const result = runCliSync(['capture', '--feedback=up', '--context=cli test verification'], {
+      cwd: isolatedDir,
+    });
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     // Exit 0 (promoted) or 2 (signal logged only) are both valid
     assert.notEqual(result.status, 1, `capture should not exit 1:\n${result.stderr}`);
@@ -1621,10 +1615,9 @@ describe('bin/cli.js', () => {
 
   test('capture --feedback=down routes to full engine', () => {
     const isolatedDir = makeTmpDir();
-    const result = spawnSync(
-      process.execPath,
-      [CLI, 'capture', '--feedback=down', '--context=test failure', '--what-went-wrong=broke it'],
-      { encoding: 'utf8', cwd: isolatedDir }
+    const result = runCliSync(
+      ['capture', '--feedback=down', '--context=test failure', '--what-went-wrong=broke it'],
+      { cwd: isolatedDir }
     );
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     assert.notEqual(result.status, 1, `capture should not exit 1:\n${result.stderr}`);
@@ -1678,19 +1671,13 @@ describe('bin/cli.js', () => {
   });
 
   test('init is idempotent — running twice exits 0', () => {
-    const result = spawnSync(process.execPath, [CLI, 'init'], {
-      encoding: 'utf8',
-      cwd: tmpDir,
-    });
+    const result = runCliSync(['init'], { cwd: tmpDir });
     assert.strictEqual(result.status, 0, `Second init failed:\n${result.stderr}`);
     assert.ok(result.stdout.includes('initialized') || result.stdout.includes('already exists'));
   });
 
   test('unknown proof target lists local-intelligence in available targets', () => {
-    const result = spawnSync(process.execPath, [CLI, 'prove', '--target=unknown-proof'], {
-      encoding: 'utf8',
-      cwd: tmpDir,
-    });
+    const result = runCliSync(['prove', '--target=unknown-proof'], { cwd: tmpDir });
     assert.equal(result.status, 1);
     assert.ok(result.stderr.includes('local-intelligence'));
   });
