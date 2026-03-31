@@ -23,6 +23,7 @@ function setupTempStore() {
   revenueLedgerPath = path.join(tmpDir, 'revenue-events.jsonl');
   process.env._TEST_API_KEYS_PATH = keyStorePath;
   process.env._TEST_REVENUE_LEDGER_PATH = revenueLedgerPath;
+  process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpDir, 'funnel-events.jsonl');
   fs.writeFileSync(keyStorePath, JSON.stringify({ keys: {} }), 'utf-8');
 }
 
@@ -32,6 +33,7 @@ function cleanupTempStore() {
   }
   delete process.env._TEST_API_KEYS_PATH;
   delete process.env._TEST_REVENUE_LEDGER_PATH;
+  delete process.env._TEST_FUNNEL_LEDGER_PATH;
   delete process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
 }
 

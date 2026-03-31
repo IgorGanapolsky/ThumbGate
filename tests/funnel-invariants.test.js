@@ -106,3 +106,34 @@ describe('funnel invariant: CLI surfaces upgrade path', () => {
     assert.ok(src.includes('PRO_CHECKOUT_URL'), 'upgradeNudge must reference PRO_CHECKOUT_URL');
   });
 });
+
+// Snapshot ledger at module load time — before other test suites can contaminate it
+const _ledgerPath = path.join(PKG_ROOT, '.rlhf', 'funnel-events.jsonl');
+const _ledgerSnapshot = fs.existsSync(_ledgerPath) ? fs.readFileSync(_ledgerPath, 'utf8').trim() : '';
+
+describe('funnel invariant: ledger data integrity', () => {
+  it('funnel ledger has no test-data paid events (snapshot at load time)', () => {
+    if (!_ledgerSnapshot) return; // no ledger = no contamination
+    const events = _ledgerSnapshot.split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    const fakePaid = events.filter((e) =>
+      e.stage === 'paid' && (
+        !e.customerId ||
+        e.customerId === 'None' ||
+        /^github_user_\d+$/.test(e.customerId) ||
+        /^test_/.test(e.customerId) ||
+        /^mock_/.test(e.customerId)
+      )
+    );
+    assert.equal(fakePaid.length, 0,
+      `Funnel ledger contains ${fakePaid.length} fake paid events at startup. ` +
+      'Test runs must use _TEST_FUNNEL_LEDGER_PATH to isolate test data. ' +
+      `Fake IDs: ${fakePaid.map((e) => e.customerId || e.evidence).join(', ')}`
+    );
+  });
+
+  it('billing.js uses _TEST_ env vars for ledger isolation', () => {
+    const src = fs.readFileSync(path.join(PKG_ROOT, 'scripts', 'billing.js'), 'utf8');
+    assert.ok(src.includes('_TEST_FUNNEL_LEDGER_PATH'), 'billing.js must check _TEST_FUNNEL_LEDGER_PATH for test isolation');
+    assert.ok(src.includes('_TEST_REVENUE_LEDGER_PATH'), 'billing.js must check _TEST_REVENUE_LEDGER_PATH for test isolation');
+  });
+});
