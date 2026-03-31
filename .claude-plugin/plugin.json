@@ -1,7 +1,7 @@
 {
   "name": "mcp-memory-gateway",
   "description": "Pre-action gates that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "author": {
     "name": "Igor Ganapolsky"
   },
