@@ -1,0 +1,37 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude-review:
+    name: Claude Code Review
+    if: |
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Claude Code Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-sonnet-4-20250514
+          trigger_phrase: "@claude"
+          direct_prompt: |
+            Review this PR for:
+            1. Security vulnerabilities
+            2. Test coverage gaps
+            3. Performance issues
+            4. Code quality and maintainability
+            Be concise. Flag only real issues.
+        continue-on-error: true
