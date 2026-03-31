@@ -1011,6 +1011,222 @@ function readSessionHandoff() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Multi-Hop Agentic Retrieval (Context-1 inspired)
+// ---------------------------------------------------------------------------
+
+/** Default max retrieval hops before stopping. */
+const MAX_HOPS = 3;
+/** Minimum coverage score (0–1) to stop early. */
+const COVERAGE_THRESHOLD = 0.6;
+/** Minimum relevance score for an item to survive pruning. */
+const PRUNE_SCORE_FLOOR = 2;
+
+/**
+ * Compute query coverage: what fraction of query tokens appear in the
+ * assembled context items. Returns 0–1.
+ */
+function computeCoverage(queryTokens, items) {
+  if (queryTokens.length === 0) return 1;
+  const contextText = items.map((i) =>
+    `${i.title || ''} ${i.structuredContext ? i.structuredContext.rawContent || '' : ''} ${(i.tags || []).join(' ')}`
+  ).join(' ').toLowerCase();
+  const contextTokens = new Set(contextText.split(/[^a-z0-9]+/).filter(Boolean));
+  let covered = 0;
+  for (const token of queryTokens) {
+    if (token.length > 2 && contextTokens.has(token)) covered++;
+  }
+  return covered / queryTokens.length;
+}
+
+/**
+ * Prune weak chunks: re-score all items against query and drop any below
+ * PRUNE_SCORE_FLOOR. Returns the survivors sorted by score descending.
+ */
+function pruneWeakChunks(items, queryTokens) {
+  return items
+    .map((item) => {
+      const haystack = `${item.title || ''} ${item.structuredContext ? item.structuredContext.rawContent || '' : ''} ${(item.tags || []).join(' ')}`.toLowerCase();
+      let score = 0;
+      for (const token of queryTokens) {
+        if (token.length > 2 && haystack.includes(token)) score += 3;
+      }
+      if (item.namespace && item.namespace.includes('memory/')) score += 1;
+      return { item, score };
+    })
+    .filter((x) => x.score >= PRUNE_SCORE_FLOOR)
+    .sort((a, b) => b.score - a.score)
+    .map((x) => ({ ...x.item, score: x.score }));
+}
+
+/**
+ * Refine a query based on what's already been retrieved — extract tokens
+ * from retrieved items that weren't in the original query (expansion),
+ * then combine with original tokens for the next hop.
+ */
+function refineQuery(originalTokens, items) {
+  const original = new Set(originalTokens);
+  const expansion = new Set();
+  for (const item of items) {
+    const itemTokens = tokenizeQuery(
+      `${item.title || ''} ${(item.tags || []).join(' ')}`
+    );
+    for (const t of itemTokens) {
+      if (t.length > 3 && !original.has(t)) expansion.add(t);
+    }
+  }
+  // Take top 3 expansion terms (by length, as a proxy for specificity)
+  const sorted = [...expansion].sort((a, b) => b.length - a.length).slice(0, 3);
+  return [...originalTokens, ...sorted];
+}
+
+/**
+ * Multi-hop context pack construction. Iteratively retrieves, prunes weak
+ * chunks, checks coverage, and refines the query until coverage is
+ * sufficient or max hops are reached.
+ *
+ * @param {Object} opts
+ * @param {string} opts.query - Search query
+ * @param {number} [opts.maxItems=8] - Max items in final pack
+ * @param {number} [opts.maxChars=6000] - Max chars budget
+ * @param {string[]} [opts.namespaces=[]] - Namespaces to search
+ * @param {number} [opts.maxHops=MAX_HOPS] - Max retrieval iterations
+ * @returns {Object} Context pack with hop metadata
+ */
+function constructMultiHopPack({ query = '', maxItems = 8, maxChars = 6000, namespaces = [], maxHops = MAX_HOPS } = {}) {
+  const normalizedNamespaces = normalizeNamespaces(namespaces);
+  const originalTokens = tokenizeQuery(query);
+  const sourceHash = getSourceHash(normalizedNamespaces);
+
+  // Check cache first (same as single-hop)
+  const cacheHit = findSemanticCacheHit({ query, namespaces: normalizedNamespaces, maxItems, maxChars });
+  if (cacheHit) {
+    const packId = `mhop_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    return { ...cacheHit.entry.pack, packId, query, createdAt: nowIso(), cache: { hit: true, similarity: Number(cacheHit.score.toFixed(4)), sourcePackId: cacheHit.entry.pack.packId } };
+  }
+
+  const allCandidates = loadCandidates(normalizedNamespaces);
+  let currentTokens = [...originalTokens];
+  let accumulatedItems = [];
+  let usedChars = 0;
+  const hopLog = [];
+  const seenIds = new Set();
+
+  for (let hop = 0; hop < maxHops; hop++) {
+    // Score candidates with current (possibly refined) query
+    const scored = allCandidates
+      .filter((doc) => !seenIds.has(doc.id))
+      .map((doc) => ({ doc, score: scoreDocument(doc, currentTokens) }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    // Take top candidates that fit within budget
+    const hopItems = [];
+    for (const { doc, score } of scored) {
+      if (accumulatedItems.length + hopItems.length >= maxItems) break;
+      const snippetLen = measureDocumentChars(doc);
+      if (usedChars + snippetLen > maxChars) continue;
+
+      const item = {
+        id: doc.id,
+        namespace: doc.namespace,
+        title: doc.title,
+        structuredContext: buildStructuredContext(doc),
+        tags: doc.tags || [],
+        score,
+      };
+      hopItems.push(item);
+      usedChars += snippetLen;
+      seenIds.add(doc.id);
+    }
+
+    accumulatedItems.push(...hopItems);
+
+    // Prune weak chunks from the accumulated set
+    const beforePrune = accumulatedItems.length;
+    accumulatedItems = pruneWeakChunks(accumulatedItems, originalTokens);
+    const pruned = beforePrune - accumulatedItems.length;
+
+    // Recalculate usedChars after pruning
+    usedChars = accumulatedItems.reduce((sum, item) => {
+      const content = item.structuredContext ? item.structuredContext.rawContent || '' : '';
+      return sum + `${item.title || ''}\n${content}`.length;
+    }, 0);
+
+    // Check coverage
+    const coverage = computeCoverage(originalTokens, accumulatedItems);
+
+    hopLog.push({
+      hop: hop + 1,
+      newItems: hopItems.length,
+      prunedItems: pruned,
+      totalItems: accumulatedItems.length,
+      coverage: Number(coverage.toFixed(3)),
+      queryTokenCount: currentTokens.length,
+    });
+
+    // Stop if coverage is good or we have enough items
+    if (coverage >= COVERAGE_THRESHOLD || accumulatedItems.length >= maxItems) break;
+
+    // Refine query for next hop
+    currentTokens = refineQuery(originalTokens, accumulatedItems);
+  }
+
+  const visibility = {
+    itemCount: accumulatedItems.length,
+    sourceCandidateCount: allCandidates.length,
+    hiddenCount: Math.max(allCandidates.length - accumulatedItems.length, 0),
+    maxItemsHit: accumulatedItems.length >= maxItems,
+    maxCharsHit: usedChars >= maxChars,
+    remainingCharBudget: Math.max(maxChars - usedChars, 0),
+    visibleTitles: accumulatedItems.slice(0, 5).map((i) => i.title),
+  };
+
+  const packId = `mhop_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const pack = {
+    packId,
+    query,
+    maxItems,
+    maxChars,
+    usedChars,
+    namespaces: normalizedNamespaces,
+    createdAt: nowIso(),
+    items: accumulatedItems,
+    visibility,
+    cache: { hit: false },
+    sourceHash,
+    retrieval: {
+      strategy: 'multi-hop',
+      hops: hopLog,
+      totalHops: hopLog.length,
+      finalCoverage: hopLog.length > 0 ? hopLog[hopLog.length - 1].coverage : 0,
+    },
+  };
+
+  appendJsonl(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'packs.jsonl'), pack);
+  appendSemanticCacheEntry({
+    id: `cache_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    timestamp: nowIso(),
+    key: buildSemanticCacheKey({ namespaces: normalizedNamespaces, maxItems, maxChars }),
+    query,
+    tokens: originalTokens,
+    sourceHash,
+    pack,
+  });
+  recordProvenance({
+    type: 'multi_hop_pack_constructed',
+    packId,
+    query,
+    itemCount: accumulatedItems.length,
+    hops: hopLog.length,
+    finalCoverage: pack.retrieval.finalCoverage,
+    usedChars,
+    sourceHash,
+  });
+
+  return pack;
+}
+
 function constructTemplatedPack({ template, query } = {}) {
   const config = PACK_TEMPLATES[template];
   if (!config) {
@@ -1067,6 +1283,13 @@ module.exports = {
   PACK_TEMPLATES,
   constructTemplatedPack,
   listPackTemplates,
+  constructMultiHopPack,
+  computeCoverage,
+  pruneWeakChunks,
+  refineQuery,
+  MAX_HOPS,
+  COVERAGE_THRESHOLD,
+  PRUNE_SCORE_FLOOR,
 };
 
 if (require.main === module) {
