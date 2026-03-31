@@ -94,7 +94,31 @@ function buildRubricDelta(error, learning) {
   };
 }
 
-function buildDpoPairs(errors, learnings) {
+/**
+ * Find distractor errors for a learning: same-domain errors that are NOT
+ * the best match but look similar (high overlap, low rubric delta).
+ * These are harder negatives that train retrieval precision.
+ */
+function findDistractors(learning, errorKeys, usedErrorId, maxDistractors) {
+  const learningKeys = extractDomainKeys(learning);
+  return errorKeys
+    .filter((err) => err.memory.id !== usedErrorId)
+    .map((err) => {
+      const overlap = domainOverlap(err.keys, learningKeys);
+      return { memory: err.memory, overlap };
+    })
+    .filter((d) => d.overlap > 0)
+    .sort((a, b) => b.overlap - a.overlap)
+    .slice(0, maxDistractors)
+    .map((d) => ({
+      id: d.memory.id,
+      title: d.memory.title,
+      content: d.memory.content,
+      overlap: d.overlap,
+    }));
+}
+
+function buildDpoPairs(errors, learnings, { maxDistractors = 2 } = {}) {
   const pairs = [];
   const usedErrors = new Set();
   const usedLearnings = new Set();
@@ -121,10 +145,12 @@ function buildDpoPairs(errors, learnings) {
     }
 
     if (best && bestScore > 0 && bestOverlap > 0) {
+      const distractors = findDistractors(best.memory, errorKeys, err.memory.id, maxDistractors);
       pairs.push({
         prompt: inferPrompt(err.memory, best.memory),
         chosen: best.memory.content,
         rejected: err.memory.content,
+        distractors: distractors.length > 0 ? distractors : undefined,
         metadata: {
           errorId: err.memory.id,
           learningId: best.memory.id,
@@ -134,6 +160,7 @@ function buildDpoPairs(errors, learnings) {
           errorTitle: err.memory.title,
           learningTitle: best.memory.title,
           rubric: buildRubricDelta(err.memory, best.memory),
+          distractorCount: distractors.length,
         },
       });
       usedErrors.add(err.memory.id);
@@ -305,6 +332,7 @@ module.exports = {
   extractDomainKeys,
   domainOverlap,
   inferPrompt,
+  findDistractors,
   buildDpoPairs,
   toJSONL,
   exportDpoFromMemories,

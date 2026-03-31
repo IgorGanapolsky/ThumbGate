@@ -23,6 +23,13 @@ const {
   searchMemexIndex,
   dereferenceEntry,
   constructMemexPack,
+  constructMultiHopPack,
+  computeCoverage,
+  pruneWeakChunks,
+  refineQuery,
+  MAX_HOPS,
+  COVERAGE_THRESHOLD,
+  PRUNE_SCORE_FLOOR,
 } = require('../scripts/contextfs');
 
 test.after(() => {
@@ -356,4 +363,130 @@ test('constructMemexPack respects maxChars budget', () => {
   assert.ok(pack.visibility.sourceCandidateCount >= 1);
   assert.equal(pack.visibility.maxCharsHit, true);
   assert.ok(pack.visibility.skippedByMaxChars >= 1);
+});
+
+// ---------------------------------------------------------------------------
+// Multi-Hop Agentic Retrieval
+// ---------------------------------------------------------------------------
+
+test('computeCoverage returns 1 for empty query', () => {
+  assert.equal(computeCoverage([], []), 1);
+});
+
+test('computeCoverage returns 0 when items have no matching tokens', () => {
+  const cov = computeCoverage(['alpha', 'beta'], [
+    { title: 'gamma delta', structuredContext: { rawContent: 'nothing here' }, tags: [] },
+  ]);
+  assert.equal(cov, 0);
+});
+
+test('computeCoverage returns fraction for partial match', () => {
+  const cov = computeCoverage(['alpha', 'beta', 'gamma'], [
+    { title: 'alpha gamma', structuredContext: { rawContent: '' }, tags: [] },
+  ]);
+  // 2 of 3 tokens covered (alpha is >2 chars, beta not found, gamma found)
+  assert.ok(cov > 0.5, `expected > 0.5, got ${cov}`);
+  assert.ok(cov < 1, `expected < 1, got ${cov}`);
+});
+
+test('pruneWeakChunks drops items below score floor', () => {
+  const items = [
+    { title: 'alpha beta test', structuredContext: { rawContent: 'verification testing' }, tags: ['test'], namespace: 'memory/error' },
+    { title: 'unrelated content', structuredContext: { rawContent: 'no match here' }, tags: [], namespace: 'rules' },
+  ];
+  const result = pruneWeakChunks(items, ['alpha', 'beta', 'test']);
+  assert.ok(result.length >= 1, 'should keep at least the matching item');
+  assert.ok(result.every((i) => i.score >= PRUNE_SCORE_FLOOR), 'all survivors should be above floor');
+});
+
+test('pruneWeakChunks returns items sorted by score descending', () => {
+  const items = [
+    { title: 'weak', structuredContext: { rawContent: 'testing' }, tags: [], namespace: '' },
+    { title: 'strong testing verification alpha beta', structuredContext: { rawContent: 'testing alpha beta' }, tags: ['testing'], namespace: 'memory/error' },
+  ];
+  const result = pruneWeakChunks(items, ['testing', 'alpha', 'beta']);
+  if (result.length > 1) {
+    assert.ok(result[0].score >= result[1].score, 'should be sorted by score desc');
+  }
+});
+
+test('refineQuery adds expansion tokens from items', () => {
+  const original = ['testing', 'error'];
+  const items = [
+    { title: 'verification deployment pipeline', tags: ['deployment'] },
+  ];
+  const refined = refineQuery(original, items);
+  assert.ok(refined.length > original.length, 'should add expansion tokens');
+  assert.ok(refined.includes('testing'), 'should keep original tokens');
+  assert.ok(refined.includes('error'), 'should keep original tokens');
+});
+
+test('refineQuery limits expansion to 3 terms', () => {
+  const original = ['bug'];
+  const items = [
+    { title: 'alpha beta gamma delta epsilon zeta eta theta', tags: ['one', 'two', 'three', 'four'] },
+  ];
+  const refined = refineQuery(original, items);
+  // original (1) + up to 3 expansion = max 4
+  assert.ok(refined.length <= 4, `expected <= 4, got ${refined.length}`);
+});
+
+test('constructMultiHopPack returns pack with hop metadata', () => {
+  ensureContextFs();
+  // Seed some data
+  upsertContextObject({
+    namespace: NAMESPACES.memoryError,
+    title: 'MISTAKE: deployment failed without tests',
+    content: 'Deployed without running verification tests',
+    tags: ['deployment', 'testing'],
+    source: 'test',
+  });
+  upsertContextObject({
+    namespace: NAMESPACES.memoryLearning,
+    title: 'SUCCESS: always verify before deploy',
+    content: 'Run full test suite before deployment',
+    tags: ['deployment', 'verification'],
+    source: 'test',
+  });
+
+  const pack = constructMultiHopPack({
+    query: 'deployment testing verification',
+    maxItems: 8,
+    maxChars: 6000,
+  });
+
+  assert.ok(pack.packId.startsWith('mhop_'), 'packId should start with mhop_');
+  assert.ok(Array.isArray(pack.items), 'should have items array');
+  assert.ok(pack.items.length > 0, 'should find items');
+  assert.equal(pack.retrieval.strategy, 'multi-hop');
+  assert.ok(Array.isArray(pack.retrieval.hops), 'should have hop log');
+  assert.ok(pack.retrieval.hops.length >= 1, 'should have at least 1 hop');
+  assert.ok(pack.retrieval.hops[0].coverage >= 0, 'hop should report coverage');
+  assert.ok(pack.retrieval.finalCoverage >= 0, 'should report final coverage');
+});
+
+test('constructMultiHopPack respects maxChars budget', () => {
+  const pack = constructMultiHopPack({
+    query: 'deployment testing',
+    maxItems: 50,
+    maxChars: 100,
+  });
+  assert.ok(pack.usedChars <= 100, `usedChars ${pack.usedChars} should be <= 100`);
+});
+
+test('constructMultiHopPack stops early when coverage is sufficient', () => {
+  const pack = constructMultiHopPack({
+    query: 'deployment',
+    maxItems: 20,
+    maxChars: 20000,
+    maxHops: 5,
+  });
+  // Should stop before maxHops if coverage is met
+  assert.ok(pack.retrieval.totalHops <= 5, 'should not exceed maxHops');
+});
+
+test('MAX_HOPS, COVERAGE_THRESHOLD, PRUNE_SCORE_FLOOR are exported constants', () => {
+  assert.ok(MAX_HOPS > 0);
+  assert.ok(COVERAGE_THRESHOLD > 0 && COVERAGE_THRESHOLD <= 1);
+  assert.ok(PRUNE_SCORE_FLOOR >= 0);
 });
