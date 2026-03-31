@@ -519,27 +519,27 @@ __GA_BOOTSTRAP__
     <h2 class="section-title">Common questions</h2>
     <div class="faq-list">
       <div class="faq-item open">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">How is ThumbGate different from RLHF?</div>
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="true" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from RLHF?</div>
         <div class="faq-a">RLHF updates model weights. ThumbGate doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. The gate blocks are hard enforcement, not soft suggestions.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What's the tech stack?</div>
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What's the tech stack?</div>
         <div class="faq-a">SQLite+FTS5 lesson DB for fast full-text search. MemAlign-inspired dual recall (principle-based rules + episodic context). Thompson Sampling for adaptive gate sensitivity per failure domain. LanceDB + Apache Arrow for local vector search with Hugging Face embeddings. ContextFS for context assembly. Bayesian belief updates on each memory. PreToolUse hook enforcement blocks known-bad actions before execution. All local-first — no cloud required.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What AI agents and editors does this work with?</div>
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What AI agents and editors does this work with?</div>
         <div class="faq-a">ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any other MCP-compatible agent. Cursor ships with a plugin bundle in this repo. Codex ships with a repo-local app plugin profile. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Do I need a cloud account?</div>
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
         <div class="faq-a">No. Free is fully featured — unlimited captures, recalls, gates, and hook blocking. No cloud, no account, no signup. Pro adds a personal local dashboard on your machine, DPO export, and an optional hosted API key if your team wants a shared lesson database.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">How are gates different from prompt rules?</div>
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are gates different from prompt rules?</div>
         <div class="faq-a">Prompt rules are suggestions that agents can ignore. Pre-Action Gates are enforcement — they block the action before execution. Gates are auto-generated from your feedback and use Thompson Sampling to adapt over time.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Is the $49 a subscription?</div>
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Is the $49 a subscription?</div>
         <div class="faq-a">No. It's a one-time payment for lifetime Pro access. No recurring charges, no hidden fees.</div>
       </div>
     </div>
@@ -586,6 +586,18 @@ function copyInstall(el) {
         if (typeof plausible === 'function') plausible(eventName, { props: props || {} });
       });
     });
+  }
+
+  function toggleFaq(el) {
+    var item = el.parentElement;
+    var open = item.classList.toggle('open');
+    el.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function handleFaqKeydown(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    toggleFaq(event.currentTarget);
   }
 
   /* CTA clicks */

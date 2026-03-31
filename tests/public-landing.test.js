@@ -167,7 +167,14 @@ test('public landing page includes FAQ section with accordion interaction', () =
   assert.match(landingPage, /Do I need a cloud account\?/);
   assert.match(landingPage, /How are gates different from prompt rules\?/);
   assert.match(landingPage, /Is the \$49 a subscription\?/);
-  assert.match(landingPage, /classList\.toggle\('open'\)/);
+  assert.match(landingPage, /role="button"/);
+  assert.match(landingPage, /tabindex="0"/);
+  assert.match(landingPage, /aria-expanded="true"/);
+  assert.match(landingPage, /aria-expanded="false"/);
+  assert.match(landingPage, /onclick="toggleFaq\(this\)"/);
+  assert.match(landingPage, /onkeydown="handleFaqKeydown\(event\)"/);
+  assert.match(landingPage, /function toggleFaq\(el\)/);
+  assert.match(landingPage, /function handleFaqKeydown\(event\)/);
   assert.match(landingPage, /personal local dashboard on your machine/i);
   assert.match(landingPage, /optional hosted API key/i);
 });
