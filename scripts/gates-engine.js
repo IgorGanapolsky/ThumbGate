@@ -44,9 +44,11 @@ const { getAutoGatesPath } = require('./auto-promote-gates');
 const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'default.json');
+const CLAIM_GATES_PATH = path.join(__dirname, '..', 'config', 'gates', 'claim-verification.json');
 const STATE_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'gate-state.json');
 const CONSTRAINTS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'session-constraints.json');
 const STATS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'gate-stats.json');
+const SESSION_ACTIONS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'session-actions.json');
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 // ---------------------------------------------------------------------------
@@ -550,6 +552,106 @@ function run(input) {
 }
 
 // ---------------------------------------------------------------------------
+// Session Action Tracking & Claim Verification
+// ---------------------------------------------------------------------------
+
+function loadSessionActions() {
+  const actions = loadJSON(SESSION_ACTIONS_PATH);
+  // Expire actions older than 1 hour (session boundary)
+  const SESSION_TTL_MS = 60 * 60 * 1000;
+  const now = Date.now();
+  const valid = {};
+  for (const [key, entry] of Object.entries(actions)) {
+    if (entry.timestamp && (now - entry.timestamp) < SESSION_TTL_MS) {
+      valid[key] = entry;
+    }
+  }
+  return valid;
+}
+
+function saveSessionActions(actions) { saveJSON(SESSION_ACTIONS_PATH, actions); }
+
+function trackAction(actionId, metadata) {
+  const actions = loadSessionActions();
+  actions[actionId] = {
+    timestamp: Date.now(),
+    metadata: metadata || {},
+  };
+  saveSessionActions(actions);
+  return actions[actionId];
+}
+
+function hasAction(actionId) {
+  const actions = loadSessionActions();
+  return !!actions[actionId];
+}
+
+function listSessionActions() {
+  return loadSessionActions();
+}
+
+function clearSessionActions() {
+  saveSessionActions({});
+}
+
+function loadClaimGates() {
+  if (!fs.existsSync(CLAIM_GATES_PATH)) return { claims: [] };
+  try {
+    return JSON.parse(fs.readFileSync(CLAIM_GATES_PATH, 'utf8'));
+  } catch {
+    return { claims: [] };
+  }
+}
+
+function registerClaimGate(claimPattern, requiredActions, blockMessage) {
+  const config = loadClaimGates();
+  const existing = config.claims.findIndex(c => c.pattern === claimPattern);
+  const entry = {
+    pattern: claimPattern,
+    requiredActions: requiredActions,
+    message: blockMessage || `Claim "${claimPattern}" requires evidence: ${requiredActions.join(', ')}`,
+    createdAt: Date.now(),
+  };
+  if (existing >= 0) {
+    config.claims[existing] = entry;
+  } else {
+    config.claims.push(entry);
+  }
+  fs.mkdirSync(path.dirname(CLAIM_GATES_PATH), { recursive: true });
+  fs.writeFileSync(CLAIM_GATES_PATH, JSON.stringify(config, null, 2) + '\n');
+  return entry;
+}
+
+function verifyClaimEvidence(claimText) {
+  const config = loadClaimGates();
+  const actions = loadSessionActions();
+  const results = [];
+
+  for (const claim of config.claims) {
+    let regex;
+    try {
+      regex = new RegExp(claim.pattern, 'i');
+    } catch {
+      continue;
+    }
+    if (!regex.test(claimText)) continue;
+
+    const missing = claim.requiredActions.filter(a => !actions[a]);
+    results.push({
+      claim: claim.pattern,
+      passed: missing.length === 0,
+      missing,
+      message: missing.length > 0 ? claim.message : 'All evidence present',
+    });
+  }
+
+  return {
+    verified: results.every(r => r.passed),
+    checks: results,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -575,10 +677,19 @@ module.exports = {
   formatOutput,
   run,
   runAsync,
+  trackAction,
+  hasAction,
+  listSessionActions,
+  clearSessionActions,
+  loadClaimGates,
+  registerClaimGate,
+  verifyClaimEvidence,
   DEFAULT_CONFIG_PATH,
+  CLAIM_GATES_PATH,
   STATE_PATH,
   CONSTRAINTS_PATH,
   STATS_PATH,
+  SESSION_ACTIONS_PATH,
   TTL_MS,
 };
 
