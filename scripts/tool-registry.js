@@ -441,6 +441,46 @@ const TOOLS = [
       },
     },
   }),
+  destructiveTool({
+    name: 'track_action',
+    description: 'Record a verification action in the current session (for example figma_verified or tests_passed). Session actions expire after one hour.',
+    inputSchema: {
+      type: 'object',
+      required: ['actionId'],
+      properties: {
+        actionId: { type: 'string', description: 'Verification action ID to record' },
+        metadata: { type: 'object', description: 'Optional structured metadata describing the evidence source' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'verify_claim',
+    description: 'Check whether a claim has enough tracked evidence before the agent asserts it.',
+    inputSchema: {
+      type: 'object',
+      required: ['claim'],
+      properties: {
+        claim: { type: 'string', description: 'The claim text to verify' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'register_claim_gate',
+    description: 'Register a custom claim verification rule in local runtime state without editing tracked repo config.',
+    inputSchema: {
+      type: 'object',
+      required: ['claimPattern', 'requiredActions'],
+      properties: {
+        claimPattern: { type: 'string', description: 'Regex pattern that should trigger claim verification' },
+        requiredActions: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Tracked actions that must be present before the claim is verified',
+        },
+        message: { type: 'string', description: 'Custom message returned when evidence is missing' },
+      },
+    },
+  }),
   readOnlyTool({
     name: 'gate_stats',
     description: 'Get gate enforcement statistics -- blocked count, warned count, top gates',
@@ -575,42 +615,6 @@ const TOOLS = [
         webhook_url: { type: 'string', description: 'Webhook URL for the target channel' },
         title: { type: 'string', description: 'Message title' },
         message: { type: 'string', description: 'Message body (markdown supported)' },
-      },
-    },
-  }),
-  destructiveTool({
-    name: 'track_action',
-    description: 'Record a verification action in the current session (e.g., "figma_verified", "tests_passed"). Used by claim verification gates to enforce evidence-based claims. Actions expire after 1 hour.',
-    inputSchema: {
-      type: 'object',
-      required: ['actionId'],
-      properties: {
-        actionId: { type: 'string', description: 'Unique action identifier (e.g., "figma_verified", "on_device_verified", "tests_passed")' },
-        metadata: { type: 'object', description: 'Optional metadata (e.g., { nodeId: "1585:106967", tool: "mcp__figma__get_design_context" })' },
-      },
-    },
-  }),
-  readOnlyTool({
-    name: 'verify_claim',
-    description: 'Check whether a claim (e.g., "colors match Figma design") has sufficient evidence from tracked session actions. Returns which required actions are missing. Call this before making assertions about UI correctness, test results, or deployment readiness.',
-    inputSchema: {
-      type: 'object',
-      required: ['claim'],
-      properties: {
-        claim: { type: 'string', description: 'The claim text to verify (e.g., "matches Figma design", "tests pass", "ready to merge")' },
-      },
-    },
-  }),
-  destructiveTool({
-    name: 'register_claim_gate',
-    description: 'Register a new claim verification rule. Maps a claim pattern (regex) to required session actions that must be tracked before the claim can pass verification.',
-    inputSchema: {
-      type: 'object',
-      required: ['claimPattern', 'requiredActions'],
-      properties: {
-        claimPattern: { type: 'string', description: 'Regex pattern to match against claim text (e.g., "match.*figma|design.*correct")' },
-        requiredActions: { type: 'array', items: { type: 'string' }, description: 'Action IDs that must be tracked before this claim passes (e.g., ["figma_verified"])' },
-        message: { type: 'string', description: 'Custom block message when evidence is missing' },
       },
     },
   }),

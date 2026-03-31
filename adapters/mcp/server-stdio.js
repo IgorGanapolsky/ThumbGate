@@ -43,6 +43,9 @@ const {
   evaluateSecretGuard,
   satisfyCondition,
   loadStats: loadGateStats,
+  trackAction,
+  verifyClaimEvidence,
+  registerClaimGate,
 } = require('../../scripts/gates-engine');
 const { diagnoseFailure } = require('../../scripts/failure-diagnostics');
 const {
@@ -458,6 +461,18 @@ async function callToolInner(name, args) {
         ...entry,
       });
     }
+    case 'track_action': {
+      const entry = trackAction(args.actionId, args.metadata || {});
+      return toTextResult({
+        tracked: true,
+        actionId: args.actionId,
+        ...entry,
+      });
+    }
+    case 'verify_claim':
+      return toTextResult(verifyClaimEvidence(args.claim));
+    case 'register_claim_gate':
+      return toTextResult(registerClaimGate(args.claimPattern, args.requiredActions, args.message));
     case 'gate_stats':
       return toTextResult(loadGateStats());
     case 'dashboard':

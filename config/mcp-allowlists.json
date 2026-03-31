@@ -23,6 +23,9 @@
       "commerce_recall",
       "generate_skill",
       "satisfy_gate",
+      "track_action",
+      "verify_claim",
+      "register_claim_gate",
       "gate_stats",
       "dashboard",
       "estimate_uncertainty",
@@ -38,6 +41,8 @@
       "search_lessons",
       "search_rlhf",
       "prevention_rules",
+      "track_action",
+      "verify_claim",
       "feedback_stats",
       "feedback_summary",
       "estimate_uncertainty"
@@ -47,6 +52,8 @@
       "recall",
       "search_rlhf",
       "commerce_recall",
+      "track_action",
+      "verify_claim",
       "prevention_rules",
       "feedback_stats",
       "feedback_summary"
@@ -63,6 +70,7 @@
       "start_handoff",
       "complete_handoff",
       "context_provenance",
+      "verify_claim",
       "gate_stats",
       "dashboard",
       "get_business_metrics",
@@ -80,6 +88,7 @@
       "list_intents",
       "plan_intent",
       "context_provenance",
+      "verify_claim",
       "gate_stats",
       "dashboard",
       "get_business_metrics",
@@ -93,7 +102,8 @@
       "search_rlhf",
       "diagnose_failure",
       "list_intents",
-      "plan_intent"
+      "plan_intent",
+      "verify_claim"
     ]
   }
 }

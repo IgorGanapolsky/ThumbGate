@@ -166,7 +166,14 @@ function routePrivacy(params = {}) {
   }
 
   // Sensitive tools that should always route locally
-  const localOnlyTools = ['capture_feedback', 'export_dpo_pairs', 'export_databricks_bundle'];
+  const localOnlyTools = [
+    'capture_feedback',
+    'export_dpo_pairs',
+    'export_databricks_bundle',
+    'track_action',
+    'verify_claim',
+    'register_claim_gate',
+  ];
   if (localOnlyTools.includes(toolName)) {
     return {
       route: 'local',

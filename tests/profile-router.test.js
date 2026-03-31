@@ -138,6 +138,14 @@ test('routePrivacy routes locally for DPO export tool', () => {
   assert.equal(result.route, 'local');
 });
 
+test('routePrivacy routes locally for claim verification tools', () => {
+  const result = routePrivacy({
+    toolName: 'verify_claim',
+    toolInput: { claim: 'tests pass' },
+  });
+  assert.equal(result.route, 'local');
+});
+
 test('routePrivacy routes to frontier for normal operations', () => {
   const result = routePrivacy({
     toolName: 'recall',
