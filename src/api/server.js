@@ -29,6 +29,10 @@ const {
   getProvenance,
 } = require('../../scripts/contextfs');
 const {
+  shouldExcludeFromAnalytics,
+  classifyVisitor,
+} = require('../../scripts/bot-detector');
+const {
   buildRubricEvaluation,
 } = require('../../scripts/rubric-engine');
 const {
@@ -1658,6 +1662,10 @@ function createApiServer() {
     }
 
     if (req.method === 'POST' && pathname === '/api/event') {
+      if (shouldExcludeFromAnalytics(req)) {
+        sendJson(res, 202, { status: 'filtered', reason: 'bot' });
+        return;
+      }
       const chunks = [];
       req.on('data', (chunk) => chunks.push(chunk));
       req.on('end', () => {
@@ -2458,6 +2466,43 @@ function createApiServer() {
     try {
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
         sendJson(res, 200, analyzeFeedback());
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/metrics/real') {
+        const { FEEDBACK_DIR } = getFeedbackPaths();
+        const telemetryPath = path.join(FEEDBACK_DIR, 'telemetry-pings.jsonl');
+
+        let entries = [];
+        try {
+          if (fs.existsSync(telemetryPath)) {
+            entries = fs.readFileSync(telemetryPath, 'utf8')
+              .split('\n')
+              .filter(Boolean)
+              .map(line => { try { return JSON.parse(line); } catch (_) { return null; } })
+              .filter(Boolean);
+          }
+        } catch (_) { /* no telemetry data yet */ }
+
+        const classified = entries.map(entry => {
+          const mockReq = { headers: { 'user-agent': entry.userAgent || '' }, email: entry.email || '' };
+          const cls = classifyVisitor(mockReq);
+          return { ...entry, visitorType: cls.type, visitorReason: cls.reason };
+        });
+
+        const stats = {
+          total: classified.length,
+          real_users: classified.filter(e => e.visitorType === 'real_user').length,
+          bots: classified.filter(e => e.visitorType === 'bot').length,
+          owner: classified.filter(e => e.visitorType === 'owner').length,
+          byType: {},
+        };
+
+        classified.forEach(e => {
+          stats.byType[e.visitorType] = (stats.byType[e.visitorType] || 0) + 1;
+        });
+
+        sendJson(res, 200, stats);
         return;
       }
 
