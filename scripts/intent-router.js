@@ -26,7 +26,12 @@ function getBundlePath(bundleId = getDefaultBundleId()) {
   if (process.env.RLHF_POLICY_BUNDLE_PATH) {
     return process.env.RLHF_POLICY_BUNDLE_PATH;
   }
-  return path.join(DEFAULT_BUNDLE_DIR, `${bundleId}.json`);
+  // Prevent path traversal: resolve and verify result stays within bundle dir (CodeQL S2083)
+  const candidate = path.resolve(DEFAULT_BUNDLE_DIR, `${bundleId}.json`);
+  if (!candidate.startsWith(path.resolve(DEFAULT_BUNDLE_DIR))) {
+    throw new Error(`Invalid bundle ID: path traversal detected in "${bundleId}"`);
+  }
+  return candidate;
 }
 
 function validateBundle(bundle) {

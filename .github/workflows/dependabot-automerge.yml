@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   auto-merge:
-    if: ${{ github.actor == 'dependabot[bot]' && github.event.pull_request.draft == false }}
+    if: github.actor == 'dependabot[bot]' && !github.event.pull_request.draft
     runs-on: ubuntu-latest
 
     steps:

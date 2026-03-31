@@ -132,9 +132,13 @@ def create_initial_model(categories: Dict) -> Dict:
 
 def save_model(model: Dict):
     """Save model to disk."""
-    MODEL_FILE.parent.mkdir(parents=True, exist_ok=True)
+    # Resolve and verify path stays within project root (CodeQL S2083)
+    resolved = MODEL_FILE.resolve()
+    if not str(resolved).startswith(str(PROJECT_ROOT.resolve())):
+        raise ValueError(f"Model path escapes project root: {resolved}")
+    resolved.parent.mkdir(parents=True, exist_ok=True)
     model["updated"] = datetime.now().isoformat()
-    MODEL_FILE.write_text(json.dumps(model, indent=2))
+    resolved.write_text(json.dumps(model, indent=2))
 
 
 def time_decay_weight(timestamp_str: str) -> float:
