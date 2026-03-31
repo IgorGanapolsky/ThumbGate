@@ -1685,6 +1685,31 @@ function createApiServer() {
       return;
     }
 
+    if (req.method === 'POST' && pathname === '/api/newsletter') {
+      const chunks = [];
+      req.on('data', (chunk) => chunks.push(chunk));
+      req.on('end', () => {
+        try {
+          const body = Buffer.concat(chunks).toString();
+          const params = new URLSearchParams(body);
+          const email = (params.get('email') || '').trim().toLowerCase();
+          if (!email || !email.includes('@')) {
+            sendJson(res, 400, { error: 'valid email required' });
+            return;
+          }
+          const newsletterPath = path.join(getFeedbackPaths().FEEDBACK_DIR, 'newsletter-subscribers.jsonl');
+          const dir = path.dirname(newsletterPath);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          fs.appendFileSync(newsletterPath, JSON.stringify({ email, subscribedAt: new Date().toISOString(), source: 'landing-page' }) + '\n');
+          res.writeHead(302, { Location: '/?subscribed=1' });
+          res.end();
+        } catch {
+          sendJson(res, 500, { error: 'subscription failed' });
+        }
+      });
+      return;
+    }
+
     if (req.method === 'POST' && pathname === '/api/event') {
       // Filter bots from analytics to keep Plausible data clean
       let _botDetector;
