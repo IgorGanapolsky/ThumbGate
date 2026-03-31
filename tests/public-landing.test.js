@@ -67,6 +67,9 @@ test('public landing page includes pricing section with Free and Pro tiers', () 
   assert.match(landingPage, /\$49/);
   assert.match(landingPage, /One-time payment/);
   assert.match(landingPage, /Forever free/);
+  assert.match(landingPage, /Local-only, single dev/);
+  assert.match(landingPage, /Founder license/);
+  assert.match(landingPage, /Founder pricing/);
   assert.match(landingPage, /Install Free/);
   assert.match(landingPage, /Get Pro/);
 });
@@ -146,14 +149,23 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /personal local dashboard/i);
-  assert.match(landingPage, /launch your own browser view on localhost/i);
-  assert.match(landingPage, /auto-connect on your machine/i);
-  assert.match(landingPage, /optional hosted API key/i);
-  assert.match(landingPage, /teams and multiple agents can share one central lesson DB/i);
-  assert.match(landingPage, /turn real failures into model-improving datasets/i);
-  assert.match(landingPage, /help wiring gates into your most critical agents/i);
-  assert.match(landingPage, /Upgrade when your experiment becomes a team workflow/i);
+  // Pro bullets frame outcomes, not features
+  assert.match(landingPage, /Visual gate debugger/i);
+  assert.match(landingPage, /every blocked action and the gate that fired/i);
+  assert.match(landingPage, /Auto-connect/i);
+  assert.match(landingPage, /agents appear automatically/i);
+  assert.match(landingPage, /DPO training data export/i);
+  assert.match(landingPage, /ready-to-use preference pairs for fine-tuning/i);
+  assert.match(landingPage, /Shared team lesson DB/i);
+  assert.match(landingPage, /one dev's 👎 on a bad migration instantly protects every agent/i);
+  assert.match(landingPage, /Gate wiring support/i);
+  assert.match(landingPage, /riskiest flows/i);
+  // Persona targeting for Pro
+  assert.match(landingPage, /power users and teams/i);
+  assert.match(landingPage, /shared, inspectable enforcement/i);
+  // Upgrade triggers
+  assert.match(landingPage, /Go Pro when:/i);
+  assert.match(landingPage, /blocked 20\+ actions/i);
 });
 
 test('public landing page includes FAQ section with accordion interaction', () => {
