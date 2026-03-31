@@ -207,7 +207,17 @@ test('commerce MCP profile has the right tools', () => {
   const allowlists = JSON.parse(fs.readFileSync(
     path.join(__dirname, '..', 'config', 'mcp-allowlists.json'), 'utf8'
   ));
-  const expected = ['capture_feedback', 'recall', 'search_rlhf', 'commerce_recall', 'prevention_rules', 'feedback_stats', 'feedback_summary'];
+  const expected = [
+    'capture_feedback',
+    'recall',
+    'search_rlhf',
+    'commerce_recall',
+    'track_action',
+    'verify_claim',
+    'prevention_rules',
+    'feedback_stats',
+    'feedback_summary',
+  ];
   assert.deepEqual(allowlists.profiles.commerce.sort(), expected.sort());
 });
 
