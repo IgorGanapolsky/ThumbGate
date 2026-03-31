@@ -244,6 +244,17 @@ function runCliSync(args, options = {}) {
   });
 }
 
+function unlicensedProEnv(homeDir, overrides = {}) {
+  return {
+    ...process.env,
+    HOME: homeDir,
+    USERPROFILE: homeDir,
+    RLHF_API_KEY: '',
+    RLHF_PRO_MODE: '',
+    ...overrides,
+  };
+}
+
 function runServeHandshake(sendRequest, options = {}) {
   const child = spawn(process.execPath, [CLI, 'serve'], {
     cwd: options.cwd,
@@ -502,7 +513,9 @@ describe('bin/cli.js', () => {
   });
 
   test('pro command prints truthful local-first Pro offer info when unlicensed', () => {
-    const result = runCliSync(['pro']);
+    const result = runCliSync(['pro'], {
+      env: unlicensedProEnv(testHomeDir),
+    });
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
     assert.match(result.stdout, /Pro \(\$49 one-time\)/);
     assert.match(result.stdout, /personal local dashboard/i);
@@ -633,7 +646,9 @@ describe('bin/cli.js', () => {
   });
 
   test('pro command includes hosted link', () => {
-    const result = runCliSync(['pro']);
+    const result = runCliSync(['pro'], {
+      env: unlicensedProEnv(testHomeDir),
+    });
     assert.strictEqual(result.status, 0);
     assert.ok(result.stdout.includes('railway.app'), 'Pro command should include hosted URL');
     assert.ok(result.stdout.includes('$49 one-time'), 'Pro command should include current price');
