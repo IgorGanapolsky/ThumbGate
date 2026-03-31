@@ -447,7 +447,9 @@ test('success page serves hosted onboarding shell and records first-party teleme
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
   const body = await res.text();
-  assert.match(body, /Your hosted API key is ready\./);
+  assert.match(body, /Your local Pro dashboard is ready\./);
+  assert.match(body, /Launch your personal dashboard/);
+  assert.match(body, /npx mcp-memory-gateway pro --activate --key=/);
   assert.match(body, /const sessionEndpoint = "https:\/\/billing\.example\.com\/v1\/billing\/session";/);
   assert.match(body, /\+ '\?sessionId=' \+ encodeURIComponent\(sessionId\)/);
   assert.match(body, /sendTelemetryOnce\('checkout_session_lookup_started'/);
@@ -466,6 +468,38 @@ test('success page serves hosted onboarding shell and records first-party teleme
   assert.equal(successPageView.sessionId, 'session_success_page');
   assert.equal(successPageView.ctaId, 'pricing_pro');
   assert.equal(successPageView.landingPath, '/pricing');
+});
+
+test('dashboard auto-bootstraps local Pro auth only for localhost requests', async () => {
+  const previousProMode = process.env.RLHF_PRO_MODE;
+  process.env.RLHF_PRO_MODE = '1';
+
+  try {
+    const localRes = await fetch(apiUrl('/dashboard'));
+    assert.equal(localRes.status, 200);
+    const localBody = await localRes.text();
+    assert.match(localBody, /const BOOTSTRAP_API_KEY = "test-api-key";/);
+    assert.match(localBody, /const LOCAL_PRO_BOOTSTRAP = true;/);
+    assert.match(localBody, /Local Pro is active on this machine/);
+
+    const forwardedRes = await fetch(apiUrl('/dashboard'), {
+      headers: {
+        'x-forwarded-host': 'thumbgate.example.com',
+        'x-forwarded-proto': 'https',
+      },
+    });
+    assert.equal(forwardedRes.status, 200);
+    const forwardedBody = await forwardedRes.text();
+    assert.match(forwardedBody, /const BOOTSTRAP_API_KEY = "";/);
+    assert.match(forwardedBody, /const LOCAL_PRO_BOOTSTRAP = false;/);
+    assert.doesNotMatch(forwardedBody, /const BOOTSTRAP_API_KEY = "test-api-key";/);
+  } finally {
+    if (previousProMode === undefined) {
+      delete process.env.RLHF_PRO_MODE;
+    } else {
+      process.env.RLHF_PRO_MODE = previousProMode;
+    }
+  }
 });
 
 test('cancel page serves retry message and records first-party telemetry', async () => {

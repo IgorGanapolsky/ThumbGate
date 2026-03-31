@@ -146,8 +146,11 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /audit and refine rules across repos/i);
-  assert.match(landingPage, /teams and multiple agents share one central lesson DB/i);
+  assert.match(landingPage, /personal local dashboard/i);
+  assert.match(landingPage, /launch your own browser view on localhost/i);
+  assert.match(landingPage, /auto-connect on your machine/i);
+  assert.match(landingPage, /optional hosted API key/i);
+  assert.match(landingPage, /teams and multiple agents can share one central lesson DB/i);
   assert.match(landingPage, /turn real failures into model-improving datasets/i);
   assert.match(landingPage, /help wiring gates into your most critical agents/i);
   assert.match(landingPage, /Upgrade when your experiment becomes a team workflow/i);
@@ -165,6 +168,8 @@ test('public landing page includes FAQ section with accordion interaction', () =
   assert.match(landingPage, /How are gates different from prompt rules\?/);
   assert.match(landingPage, /Is the \$49 a subscription\?/);
   assert.match(landingPage, /classList\.toggle\('open'\)/);
+  assert.match(landingPage, /personal local dashboard on your machine/i);
+  assert.match(landingPage, /optional hosted API key/i);
 });
 
 test('public landing page includes compatibility section for AI agent surfaces', () => {
