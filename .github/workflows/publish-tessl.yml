@@ -16,15 +16,14 @@ on:
       - 'proof/**'
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 concurrency:
   group: publish-tessl-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   export:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -76,6 +75,8 @@ jobs:
   publish:
     needs: [export, plan_publish]
     if: ${{ needs.plan_publish.outputs.should_publish == 'true' }}
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     env:
       TESSL_API_TOKEN: ${{ secrets.TESSL_API_TOKEN }}
