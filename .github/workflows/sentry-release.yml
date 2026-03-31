@@ -1,0 +1,25 @@
+name: Sentry Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sentry:
+    name: Create Sentry Release
+    runs-on: ubuntu-latest
+    if: github.repository == 'IgorGanapolsky/ThumbGate'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create Sentry Release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: thumbgate
+          SENTRY_PROJECT: thumbgate
+        with:
+          environment: production
+          version: ${{ github.sha }}
+        continue-on-error: true

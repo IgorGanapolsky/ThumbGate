@@ -27,41 +27,22 @@ _No strong behavioral patterns identified yet._
 
 ## Live Git Context
 
-### Branch: main
+### Branch: feat/github-bot-integrations
 
 ### Last 5 Commits:
 ```
-a80988a test: improve branch coverage for 10 lowest-coverage files (#360)
-49bf01a test: add tests for 15 previously untested scripts (#358)
-53fe964 feat: prep Cursor marketplace submission (#357)
-4825407 fix: fill audit gaps — CHANGELOG, LAUNCH.md, 5 new test files, 23 new assertions (#356)
-bb14078 chore: remove dead code — 3 orphan files + stale landing page (#355)
+9f907a2 fix: eliminate CodeQL shell injection alerts in postinstall tests (#428)
+7df5b4a feat: add funnel invariant CI tests to prevent checkout blindspot regression (#427)
+ccf139e feat: close npm-to-checkout funnel with 4 upgrade touchpoints (#426)
+9cda875 feat: add Pro license verification, bot detection, and filtered metrics (#424)
+fc864c2 fix: rewire CLI conversion funnel — Pro CTA, feature gating, remove free bypass (#419)
 ```
 
 ### Modified Files:
 ```
- M .claude-plugin/marketplace.json
- M .claude-plugin/plugin.json
- M .cursor-plugin/marketplace.json
- M .well-known/mcp/server-card.json
- M LAUNCH.md
- M adapters/README.md
- M adapters/claude/.mcp.json
- M adapters/mcp/server-stdio.js
- M adapters/opencode/opencode.json
- M docs/PLUGIN_DISTRIBUTION.md
- M docs/VERIFICATION_EVIDENCE.md
- M docs/guides/opencode-integration.md
- M docs/mcp-hub-submission.md
- M mcpize.yaml
- M package-lock.json
- M package.json
- M plugins/codex-profile/INSTALL.md
- M plugins/cursor-marketplace/.cursor-plugin/plugin.json
- M plugins/opencode-profile/INSTALL.md
  M primer.md
- M public/index.html
- M server.json
-?? .claude/memory/lessons.sqlite-shm
-?? .claude/memory/lessons.sqlite-wal
+?? .github/workflows/claude-code-review.yml
+?? .github/workflows/sentry-release.yml
+?? .github/workflows/sonarcloud.yml
+?? sonar-project.properties
 ```
