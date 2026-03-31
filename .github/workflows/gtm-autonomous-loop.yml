@@ -2,7 +2,7 @@ name: Always-On GTM Acquisition Loop
 
 on:
   schedule:
-    - cron: '0 * * * *' # Every hour
+    - cron: '0 9 * * *' # Daily at 9am UTC (was hourly — saves ~23 runs/day)
   workflow_dispatch:
 
 permissions:
