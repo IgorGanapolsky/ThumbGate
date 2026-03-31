@@ -282,6 +282,10 @@ test('Publish Tessl workflow verifies exports and only publishes when a Tessl to
   assert.match(workflow, /concurrency:/);
   assert.match(workflow, /group:\s*publish-tessl-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*true/);
+  assert.doesNotMatch(workflow, /^permissions:\n\s+contents:\s+read/m);
+  assert.match(workflow, /jobs:\s+export:\s+permissions:\s+contents:\s+read/s);
+  assert.match(workflow, /jobs:\s+export:.*?plan_publish:\s+needs:\s+export\s+runs-on:/s);
+  assert.match(workflow, /publish:\s+needs:\s+\[export, plan_publish\]\s+if:\s+\$\{\{\s*needs\.plan_publish\.outputs\.should_publish == 'true'\s*\}\}\s+permissions:\s+contents:\s+read/s);
   assert.match(workflow, /npm run tessl:verify/);
   assert.match(workflow, /npm run prove:tessl/);
   assert.match(workflow, /npm run tessl:export -- --out-dir=.artifacts\/tessl/);
@@ -295,6 +299,14 @@ test('Publish Tessl workflow verifies exports and only publishes when a Tessl to
   assert.match(workflow, /matrix:\s+tile:/s);
   assert.match(workflow, /agent-memory/);
   assert.match(workflow, /rlhf-feedback/);
+});
+
+test('Dependabot auto-merge trusts the pull request author instead of the triggering actor', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'dependabot-automerge.yml'), 'utf8');
+
+  assert.match(workflow, /pull_request_target:/);
+  assert.match(workflow, /github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'/);
+  assert.doesNotMatch(workflow, /if:\s*github\.actor == 'dependabot\[bot\]'/);
 });
 
 test('Publish Claude Plugin workflow builds the MCPB and uploads stable release assets', () => {
