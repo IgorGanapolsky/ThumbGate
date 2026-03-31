@@ -1779,6 +1779,17 @@ function createApiServer() {
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/blog') {
+      try {
+        const blogPath = path.join(PUBLIC_DIR, 'blog.html');
+        const html = fs.readFileSync(blogPath, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'Blog page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/') {
       if (wantsJson(req, parsed)) {
         sendJson(res, 200, {
