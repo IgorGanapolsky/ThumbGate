@@ -116,11 +116,11 @@ async function main() {
 
   // --- Honest disclaimer must be on both surfaces ---
   check(
-    readmeMd.includes('not RLHF weight training'),
-    'README.md missing honest disclaimer ("not RLHF weight training")'
+    readmeMd.includes('does not update model weights'),
+    'README.md missing honest disclaimer ("does not update model weights")'
   );
   check(
-    landingHtml.includes('not RLHF') || landingHtml.includes('Is this real RLHF'),
+    landingHtml.includes('doesn\'t touch the model') || landingHtml.includes('different from RLHF'),
     'public/index.html missing honest disclaimer (FAQ or inline)'
   );
 

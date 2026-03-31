@@ -15,11 +15,11 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
 
   assert.match(landingPage, /"@type": "SoftwareApplication"/);
   assert.match(landingPage, /"@type": "FAQPage"/);
-  assert.match(landingPage, /Is ThumbGate real RLHF\?/);
+  assert.match(landingPage, /How is ThumbGate different from RLHF\?/);
   assert.match(landingPage, /What is the ThumbGate tech stack\?/);
   assert.match(landingPage, /What AI agents does ThumbGate work with\?/);
   assert.match(landingPage, /How are pre-action gates different from prompt rules\?/);
-  assert.match(landingPage, /context engineering plus enforcement/i);
+  assert.match(landingPage, /behavioral immune system/i);
   assert.match(landingPage, /PreToolUse hook enforcement/i);
   assert.match(landingPage, /Thompson Sampling/i);
 });
@@ -161,13 +161,20 @@ test('public landing page includes FAQ section with accordion interaction', () =
 
   assert.match(landingPage, /id="faq"/);
   assert.match(landingPage, /Common questions/);
-  assert.match(landingPage, /Is this real RLHF\?/);
+  assert.match(landingPage, /How is ThumbGate different from RLHF\?/);
   assert.match(landingPage, /What's the tech stack\?/);
   assert.match(landingPage, /What AI agents and editors does this work with\?/);
   assert.match(landingPage, /Do I need a cloud account\?/);
   assert.match(landingPage, /How are gates different from prompt rules\?/);
   assert.match(landingPage, /Is the \$49 a subscription\?/);
-  assert.match(landingPage, /classList\.toggle\('open'\)/);
+  assert.match(landingPage, /role="button"/);
+  assert.match(landingPage, /tabindex="0"/);
+  assert.match(landingPage, /aria-expanded="true"/);
+  assert.match(landingPage, /aria-expanded="false"/);
+  assert.match(landingPage, /onclick="toggleFaq\(this\)"/);
+  assert.match(landingPage, /onkeydown="handleFaqKeydown\(event\)"/);
+  assert.match(landingPage, /function toggleFaq\(el\)/);
+  assert.match(landingPage, /function handleFaqKeydown\(event\)/);
   assert.match(landingPage, /personal local dashboard on your machine/i);
   assert.match(landingPage, /optional hosted API key/i);
 });
@@ -231,7 +238,7 @@ test('public landing page internally links to comparison and guide pages without
 test('public landing page FAQ defaults first item open for credibility', () => {
   const landingPage = readLandingPage();
 
-  // "Is this real RLHF?" should be open by default to address the #1 credibility question
+  // "How is ThumbGate different from RLHF?" should be open by default to address the #1 credibility question
   assert.match(landingPage, /class="faq-item open"/);
 });
 

@@ -132,7 +132,7 @@
       <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Pro auto-connects locally when you launch with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx mcp-memory-gateway pro</code>. Otherwise paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">RLHF_API_KEY</code> manually.</span>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
-      <input type="password" class="auth-input" id="apiKey" placeholder="Paste your RLHF_API_KEY here..." />
+      <input type="password" class="auth-input" id="apiKey" placeholder="Paste your API key here (RLHF_API_KEY or THUMBGATE_PRO_KEY)..." />
       <button class="btn" id="connectBtn" onclick="connect()">Connect</button>
        <button class="btn-outline" id="demoBtn" onclick="loadDemo()">Try Demo</button>
        <span class="auth-status" id="authStatus"></span>
