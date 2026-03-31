@@ -9,7 +9,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro) — Free is fully featured (unlimited captures, recalls, gates, blocking). Pro adds a searchable dashboard to query, edit, and delete entries + DPO export. $49 one-time.
+[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free is fully featured (unlimited captures, recalls, gates, blocking). Pro adds a searchable dashboard to query, edit, and delete entries + DPO export. $49 one-time.
 
 **Thumbs down a mistake. It never happens again.**
 
@@ -19,7 +19,7 @@ The safety net for vibe coding. Give your AI agent a thumbs-down and it auto-gen
 
 Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
 
-**[Live Demo Dashboard](https://rlhf-feedback-loop-production.up.railway.app/dashboard)** | **[Setup Guide](https://rlhf-feedback-loop-production.up.railway.app/guide)** | **[Landing Page](https://rlhf-feedback-loop-production.up.railway.app/)** | **[Verification Evidence](docs/VERIFICATION_EVIDENCE.md)**
+**[Live Demo Dashboard](https://rlhf-feedback-loop-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Setup Guide](https://rlhf-feedback-loop-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Landing Page](https://rlhf-feedback-loop-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Verification Evidence](docs/VERIFICATION_EVIDENCE.md)**
 
 Most memory tools only help an agent remember. ThumbGate also enforces.
 
@@ -228,7 +228,7 @@ For autonomous agent runs against this or any repo using this workflow:
 
 ## Pro Pack
 
-**[$49 one-time](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro)** — searchable dashboard (query, edit, delete entries), DPO export, API key, priority support.
+**[$49 one-time](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — searchable dashboard (query, edit, delete entries), DPO export, API key, priority support.
 
 ### Free vs Pro
 

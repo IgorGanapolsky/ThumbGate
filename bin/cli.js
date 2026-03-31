@@ -21,6 +21,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
 const { resolveMcpEntry } = require(path.join(__dirname, '..', 'scripts', 'mcp-config'));
+const { trackEvent } = require(path.join(__dirname, '..', 'scripts', 'cli-telemetry'));
 
 const COMMAND = process.argv[2];
 const CWD = process.cwd();
@@ -470,6 +471,7 @@ function init() {
   console.log('');
   console.log(`mcp-memory-gateway v${pkgVersion()} initialized.`);
   console.log('Run: npx mcp-memory-gateway help');
+  trackEvent('cli_init', { command: 'init' });
   proNudge();
   process.stderr.write(
     '\n  ┌─────────────────────────────────────────────────┐\n' +
@@ -509,6 +511,7 @@ function capture() {
     limitNudge('capture_feedback');
     process.exit(1);
   }
+  trackEvent('cli_capture', { command: 'capture' });
 
   if (args.stats) {
     stats();
@@ -558,6 +561,7 @@ function capture() {
 }
 
 function stats() {
+  trackEvent('cli_stats', { command: 'stats' });
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const data = analyzeFeedback();
   
@@ -671,6 +675,7 @@ function northStar() {
 }
 
 function pro() {
+  trackEvent('cli_pro_view', { command: 'pro' });
   const args = parseArgs(process.argv.slice(3));
 
   if (args.activate) {
@@ -759,6 +764,7 @@ function summary() {
 }
 
 function lessons() {
+  trackEvent('cli_recall', { command: 'lessons' });
   const args = parseArgs(process.argv.slice(3));
   const { searchLessons, formatLessonSearchResults } = require(path.join(PKG_ROOT, 'scripts', 'lesson-search'));
   const tags = String(args.tags || '')

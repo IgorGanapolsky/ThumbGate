@@ -2074,15 +2074,53 @@ function createApiServer() {
             .filter(Boolean);
         }
       } catch (_) {}
+
+      const now = Date.now();
+      const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+
       const classified = entries.map(e => {
         const cls = bd.classifyVisitor({ headers: { 'user-agent': e.userAgent || '' }, email: e.email || '' });
-        return { ...e, visitorType: cls.type };
+        return { ...e, visitorType: e.visitorType || cls.type };
       });
+
+      const recent = classified.filter(e => {
+        const ts = e.timestamp || e.receivedAt;
+        return ts && new Date(ts).getTime() > sevenDaysAgo;
+      });
+
+      const uniqueInstallIds = new Set(classified.filter(e => e.installId).map(e => e.installId));
+      const recentInstallIds = new Set(recent.filter(e => e.installId).map(e => e.installId));
+
+      const byEventType = {};
+      classified.forEach(e => {
+        const et = e.eventType || 'unknown';
+        byEventType[et] = (byEventType[et] || 0) + 1;
+      });
+
+      const byVisitorType = {};
+      classified.forEach(e => {
+        byVisitorType[e.visitorType] = (byVisitorType[e.visitorType] || 0) + 1;
+      });
+
       sendJson(res, 200, {
-        total: classified.length,
-        real_users: classified.filter(e => e.visitorType === 'real_user').length,
-        bots: classified.filter(e => e.visitorType === 'bot').length,
-        owner: classified.filter(e => e.visitorType === 'owner').length,
+        allTime: {
+          total: classified.length,
+          real_users: classified.filter(e => e.visitorType === 'real_user').length,
+          bots: classified.filter(e => e.visitorType === 'bot').length,
+          owner: classified.filter(e => e.visitorType === 'owner').length,
+          ci: classified.filter(e => e.visitorType === 'ci').length,
+          uniqueInstalls: uniqueInstallIds.size,
+        },
+        last7Days: {
+          total: recent.length,
+          real_users: recent.filter(e => e.visitorType === 'real_user').length,
+          bots: recent.filter(e => e.visitorType === 'bot').length,
+          owner: recent.filter(e => e.visitorType === 'owner').length,
+          ci: recent.filter(e => e.visitorType === 'ci').length,
+          uniqueInstalls: recentInstallIds.size,
+        },
+        byEventType,
+        byVisitorType,
       });
       return;
     }
