@@ -208,6 +208,9 @@ test('Deploy to Railway workflow waits long enough to verify the promoted build 
 test('Publish to NPM workflow uses the tested publish-decision guardrail', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'publish-npm.yml'), 'utf8');
 
+  assert.match(workflow, /concurrency:/);
+  assert.match(workflow, /group:\s*publish-npm-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
+  assert.match(workflow, /cancel-in-progress:\s*true/);
   assert.match(workflow, /name: Plan publish action/);
   assert.match(workflow, /run: node scripts\/publish-decision\.js/);
   assert.match(workflow, /steps\.plan\.outputs\.skip_publish == 'true'/);
@@ -230,10 +233,47 @@ test('CI workflow runs runtime proof and uploads runtime evidence artifacts', ()
   assert.match(workflow, /proof\/runtime-report\.md/);
 });
 
+test('CI workflow supports merge queue and cancels stale non-main runs', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+
+  assert.match(workflow, /merge_group:/);
+  assert.match(workflow, /types:\s*\[checks_requested\]/);
+  assert.match(workflow, /group:\s*ci-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
+  assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
+});
+
+test('CodeQL workflow supports merge queue and cancels stale non-main runs', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'codeql.yml'), 'utf8');
+
+  assert.match(workflow, /merge_group:/);
+  assert.match(workflow, /types:\s*\[checks_requested\]/);
+  assert.match(workflow, /group:\s*codeql-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
+  assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
+});
+
+test('Claude Code Review workflow cancels stale review runs for the same PR or issue thread', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'claude-code-review.yml'), 'utf8');
+
+  assert.match(workflow, /concurrency:/);
+  assert.match(workflow, /group:\s*claude-code-review-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.event\.issue\.number \|\| github\.ref\s*\}\}/);
+  assert.match(workflow, /cancel-in-progress:\s*true/);
+});
+
+test('Deploy to Railway workflow serializes main deploys and cancels superseded runs', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+
+  assert.match(workflow, /concurrency:/);
+  assert.match(workflow, /group:\s*deploy-railway-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
+  assert.match(workflow, /cancel-in-progress:\s*true/);
+});
+
 test('Publish Tessl workflow verifies exports and only publishes when a Tessl token exists', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'publish-tessl.yml'), 'utf8');
 
   assert.match(workflow, /name: Publish Tessl Tiles/);
+  assert.match(workflow, /concurrency:/);
+  assert.match(workflow, /group:\s*publish-tessl-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
+  assert.match(workflow, /cancel-in-progress:\s*true/);
   assert.match(workflow, /npm run tessl:verify/);
   assert.match(workflow, /npm run prove:tessl/);
   assert.match(workflow, /npm run tessl:export -- --out-dir=.artifacts\/tessl/);
@@ -253,6 +293,9 @@ test('Publish Claude Plugin workflow builds the MCPB and uploads stable release 
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'publish-claude-plugin.yml'), 'utf8');
 
   assert.match(workflow, /name: Publish Claude Plugin/);
+  assert.match(workflow, /concurrency:/);
+  assert.match(workflow, /group:\s*publish-claude-plugin-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
+  assert.match(workflow, /cancel-in-progress:\s*true/);
   assert.match(workflow, /npm ci --onnxruntime-node-install-cuda=skip/);
   assert.match(workflow, /npm run build:claude-mcpb/);
   assert.match(workflow, /scripts\/distribution-surfaces/);
@@ -266,6 +309,15 @@ test('Publish Claude Plugin workflow builds the MCPB and uploads stable release 
   assert.match(workflow, /--clobber/);
   assert.match(workflow, /CLAUDE_PLUGIN_LATEST_ASSET_NAME/);
   assert.match(workflow, /steps\.assets\.outputs\.latest_asset/);
+});
+
+test('Sentry release workflow serializes main release stamping', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'sentry-release.yml'), 'utf8');
+
+  assert.match(workflow, /concurrency:/);
+  assert.match(workflow, /group:\s*sentry-release-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
+  assert.match(workflow, /cancel-in-progress:\s*true/);
+  assert.match(workflow, /uses: getsentry\/action-release@v1/);
 });
 
 test('GitHub Actions workflows never use bare npm ci for onnxruntime installs', () => {
