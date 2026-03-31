@@ -498,6 +498,16 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'org_dashboard',
+    description: 'Org-wide multi-agent dashboard — shows all active agents, gate decisions, adherence rates, risk agents, and top blocked gates across the organization. Pro: full visibility. Free: limited to 3 agents.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        windowHours: { type: 'number', description: 'Lookback window in hours (default 24)' },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'commerce_recall',
     description: 'Recall past feedback filtered by commerce categories (product_recommendation, brand_compliance, sizing, pricing, regulatory). Returns quality scores alongside memories for agentic commerce agents.',
     inputSchema: {

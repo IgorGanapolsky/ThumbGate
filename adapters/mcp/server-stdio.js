@@ -70,6 +70,7 @@ const {
   searchRlhf,
 } = require('../../scripts/rlhf-search');
 const { checkLimit, UPGRADE_MESSAGE } = require('../../scripts/rate-limiter');
+const { generateOrgDashboard } = require('../../scripts/org-dashboard');
 const { TOOLS } = require('../../scripts/tool-registry');
 
 const PRO_CHECKOUT_URL = 'https://rlhf-feedback-loop-production.up.railway.app/checkout/pro';
@@ -477,6 +478,8 @@ async function callToolInner(name, args) {
       return toTextResult(loadGateStats());
     case 'dashboard':
       return toTextResult(generateDashboard(getFeedbackPaths().FEEDBACK_DIR));
+    case 'org_dashboard':
+      return toTextResult(generateOrgDashboard({ windowHours: Number(args.windowHours || 24) }));
     case 'commerce_recall':
       enforceLimit('commerce_recall');
       return buildCommerceRecallResponse(args);
