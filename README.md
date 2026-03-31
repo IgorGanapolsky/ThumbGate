@@ -80,6 +80,16 @@ npx mcp-memory-gateway dashboard
 
 Pipeline: **Capture → Validate → Remember → Distill → Prevent → Gate → Export**
 
+## What's New in v0.8.5
+
+- **Gate reasoning chains** — every block/warn explains WHY: pattern match, gate identity, source, bypass hints, historical fire count
+- **Multi-hop retrieval** — iterative retrieve → prune → refine loop for complex queries, inspired by Context-1 agentic retrieval
+- **Active context pruning** — re-scores accumulated items after each retrieval hop, drops weak chunks to keep context quality high
+- **Thompson Sampling calibration** — minimum sample threshold (5) prevents low-sample overconfidence; confidence tiers (none/low/medium/high)
+- **Org dashboard** — `org_dashboard` MCP tool aggregates gate decisions across all agent sessions (Pro: full visibility, Free: 3 agents)
+- **Distractor-aware DPO** — training data export includes near-miss same-domain distractors for harder negatives
+- **Funnel invariant CI** — 13 tests prevent checkout path regression; Pro parity enforced across free/Pro npm packages
+
 ![Context Engineering Architecture](https://raw.githubusercontent.com/IgorGanapolsky/ThumbGate/main/docs/diagrams/rlhf-architecture-pb.png)
 
 ## Pre-Action Gates
@@ -128,6 +138,7 @@ Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
 | `enforcement_matrix` | Inspect promotion rate, active gates, and rejection ledger |
 | `feedback_stats` | Approval rate and failure-domain summary |
 | `estimate_uncertainty` | Bayesian uncertainty estimate for risky tags |
+| `org_dashboard` | **Pro** — Org-wide multi-agent visibility: all agents, adherence rates, risk alerts |
 
 Lean install for recall + gates + lesson search only:
 
