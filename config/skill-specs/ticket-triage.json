@@ -1,0 +1,9 @@
+{
+  "name": "ticket-triage",
+  "description": "Triages Linear/GitHub issues with learned priority patterns",
+  "tools": ["recall", "search_lessons", "estimate_uncertainty"],
+  "policyBundle": "constrained-v1",
+  "memoryScope": ["triage", "priority"],
+  "defaultModelClass": "nano",
+  "escalationRules": ["escalate-on-high-severity"]
+}

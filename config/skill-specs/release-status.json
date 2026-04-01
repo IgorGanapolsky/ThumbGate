@@ -1,0 +1,9 @@
+{
+  "name": "release-status",
+  "description": "Posts release status digests with deployment memory",
+  "tools": ["recall", "feedback_summary", "dashboard"],
+  "policyBundle": "default-v1",
+  "memoryScope": ["release", "deployment"],
+  "defaultModelClass": "nano",
+  "escalationRules": []
+}
