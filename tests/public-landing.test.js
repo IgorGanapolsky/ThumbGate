@@ -65,11 +65,12 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /class="price-card pro"/);
   assert.match(landingPage, /class="price-card team"/);
   assert.match(landingPage, /\$0/);
-  assert.match(landingPage, /\$49/);
-  assert.match(landingPage, /One-time payment/);
+  assert.match(landingPage, /\$19/);
+  assert.match(landingPage, /\/mo/);
+  assert.match(landingPage, /\$12/);
+  assert.match(landingPage, /\/seat\/mo/);
   assert.match(landingPage, /Forever free/);
   assert.match(landingPage, /Local-only, single dev/);
-  assert.match(landingPage, /Founder license/);
   assert.match(landingPage, /Founder pricing/);
   assert.match(landingPage, /Hosted rollout/i);
   assert.match(landingPage, /Pilot/);
@@ -193,7 +194,7 @@ test('public landing page includes FAQ section with accordion interaction', () =
   assert.match(landingPage, /What AI agents and editors does this work with\?/);
   assert.match(landingPage, /Do I need a cloud account\?/);
   assert.match(landingPage, /How are gates different from prompt rules\?/);
-  assert.match(landingPage, /Is the \$49 a subscription\?/);
+  assert.match(landingPage, /What does Pro cost\?/);
   assert.match(landingPage, /role="button"/);
   assert.match(landingPage, /tabindex="0"/);
   assert.match(landingPage, /aria-expanded="true"/);
