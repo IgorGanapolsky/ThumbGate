@@ -166,6 +166,41 @@ describe('billing.js — funnel ledger', () => {
       },
     });
     assert.equal(withEmail.customer_email, 'buyer@example.com');
+    assert.equal(withoutEmail.mode, 'subscription');
+    assert.equal(withoutEmail.line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
+    assert.equal(withoutEmail.line_items[0].quantity, 1);
+  });
+
+  test('checkout session payload selects annual Pro and Team pricing explicitly', () => {
+    const billing = require('../scripts/billing');
+
+    const annual = billing._buildCheckoutSessionPayload({
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+      checkoutMetadata: {
+        traceId: 'trace_checkout_payload_annual',
+        planId: 'pro',
+        billingCycle: 'annual',
+      },
+    });
+    assert.equal(annual.line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_PRO_ANNUAL);
+    assert.equal(annual.line_items[0].quantity, 1);
+    assert.equal(annual.metadata.billingCycle, 'annual');
+
+    const team = billing._buildCheckoutSessionPayload({
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+      checkoutMetadata: {
+        traceId: 'trace_checkout_payload_team',
+        planId: 'team',
+        billingCycle: 'monthly',
+        seatCount: 2,
+      },
+    });
+    assert.equal(team.line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_TEAM_MONTHLY);
+    assert.equal(team.line_items[0].quantity, 3);
+    assert.equal(team.metadata.planId, 'team');
+    assert.equal(team.metadata.seatCount, '3');
   });
 
   test('checkout session status preserves trace id for cross-service lookup', async () => {

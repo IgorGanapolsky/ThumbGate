@@ -15,7 +15,7 @@ ThumbGate turns thumbs-up/down feedback into enforcement for AI coding agents. �
 Developer Tools, Artificial Intelligence, Open Source
 
 ## Pricing
-Free + Open Source (Pro Pack $49 one-time for teams)
+Free + Open Source (Pro $19/mo or $149/yr for individual operators; Team rollout intake-first)
 
 ## Links
 - **Website:** https://rlhf-feedback-loop-production.up.railway.app
@@ -64,7 +64,7 @@ Most memory tools help agents *remember*. ThumbGate also *enforces*. A gate does
 
 **Honest disclaimer:** This is not RLHF weight training. It's context engineering + enforcement. Feedback → searchable memory → prevention rules → gates that block known-bad actions.
 
-Free and open source. Pro Pack ($49 one-time) adds synced rules across machines for teams.
+Free and open source. Pro adds a personal local dashboard and exports for individual operators. Team rollout stays intake-first for shared lessons and org visibility.
 
 I'll be here all day — ask me anything about pre-action gates, the MCP protocol, or why "prevention > cure" for AI agents. 🚀
 

@@ -14,6 +14,18 @@ const { getFeedbackPaths } = require('./feedback-loop');
 const { getTelemetryAnalytics } = require('./telemetry-analytics');
 const { loadWorkflowSprintLeads } = require('./workflow-sprint-intake');
 const {
+  PRO_MONTHLY_PRICE_ID,
+  PRO_ANNUAL_PRICE_ID,
+  TEAM_MONTHLY_PRICE_ID,
+  PRO_MONTHLY_PRICE_DOLLARS,
+  PRO_ANNUAL_PRICE_DOLLARS,
+  TEAM_MONTHLY_PRICE_DOLLARS,
+  TEAM_MIN_SEATS,
+  normalizePlanId,
+  normalizeBillingCycle,
+  normalizeSeatCount,
+} = require('./commercial-offer');
+const {
   eventOccursInWindow,
   filterEntriesForWindow,
   resolveAnalyticsWindow,
@@ -29,10 +41,10 @@ const CONFIG = {
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   GITHUB_MARKETPLACE_WEBHOOK_SECRET: process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '',
   GITHUB_MARKETPLACE_PLAN_PRICES_JSON: process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON || '',
-  STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || 'price_1THQY7GGBpd520QYHoS7RG0J',
-  STRIPE_PRICE_ID_PRO_MONTHLY: process.env.STRIPE_PRICE_ID_PRO_MONTHLY || 'price_1THQY7GGBpd520QYHoS7RG0J',
-  STRIPE_PRICE_ID_PRO_ANNUAL: process.env.STRIPE_PRICE_ID_PRO_ANNUAL || 'price_1THQZ7GGBpd520QYxzDRnxhB',
-  STRIPE_PRICE_ID_TEAM_MONTHLY: process.env.STRIPE_PRICE_ID_TEAM_MONTHLY || 'price_1THQa5GGBpd520QYoqdq1R1S',
+  STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || PRO_MONTHLY_PRICE_ID,
+  STRIPE_PRICE_ID_PRO_MONTHLY: process.env.STRIPE_PRICE_ID_PRO_MONTHLY || PRO_MONTHLY_PRICE_ID,
+  STRIPE_PRICE_ID_PRO_ANNUAL: process.env.STRIPE_PRICE_ID_PRO_ANNUAL || PRO_ANNUAL_PRICE_ID,
+  STRIPE_PRICE_ID_TEAM_MONTHLY: process.env.STRIPE_PRICE_ID_TEAM_MONTHLY || TEAM_MONTHLY_PRICE_ID,
   STRIPE_PRODUCT_ID: process.env.STRIPE_PRODUCT_ID || '',
   get API_KEYS_PATH() {
     return process.env._TEST_API_KEYS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'api-keys.json');
@@ -647,6 +659,46 @@ function serializeStripeMetadata(metadata) {
     serialized[key] = String(value);
   }
   return serialized;
+}
+
+function resolveSubscriptionCheckoutSelection(checkoutMetadata = {}) {
+  const planId = normalizePlanId(checkoutMetadata.planId);
+  const billingCycle = normalizeBillingCycle(checkoutMetadata.billingCycle);
+
+  if (planId === 'team') {
+    const seatCount = normalizeSeatCount(checkoutMetadata.seatCount, TEAM_MIN_SEATS);
+    return {
+      planId: 'team',
+      billingCycle: 'monthly',
+      seatCount,
+      quantity: seatCount,
+      priceId: CONFIG.STRIPE_PRICE_ID_TEAM_MONTHLY,
+      unitPriceDollars: TEAM_MONTHLY_PRICE_DOLLARS,
+      totalPriceDollars: TEAM_MONTHLY_PRICE_DOLLARS * seatCount,
+    };
+  }
+
+  if (billingCycle === 'annual') {
+    return {
+      planId: 'pro',
+      billingCycle: 'annual',
+      seatCount: 1,
+      quantity: 1,
+      priceId: CONFIG.STRIPE_PRICE_ID_PRO_ANNUAL,
+      unitPriceDollars: PRO_ANNUAL_PRICE_DOLLARS,
+      totalPriceDollars: PRO_ANNUAL_PRICE_DOLLARS,
+    };
+  }
+
+  return {
+    planId: 'pro',
+    billingCycle: 'monthly',
+    seatCount: 1,
+    quantity: 1,
+    priceId: CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY || CONFIG.STRIPE_PRICE_ID,
+    unitPriceDollars: PRO_MONTHLY_PRICE_DOLLARS,
+    totalPriceDollars: PRO_MONTHLY_PRICE_DOLLARS,
+  };
 }
 
 function parseGithubPlanPricing() {
@@ -1640,7 +1692,22 @@ function saveKeyStore(store) {
 
 async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, packId = null, metadata = {} } = {}) {
   const resolvedTraceId = traceId || metadata.traceId || createTraceId('checkout');
-  const checkoutMetadata = sanitizeMetadata({ ...metadata, installId: installId || 'unknown', traceId: resolvedTraceId });
+  const baseCheckoutMetadata = sanitizeMetadata({
+    ...metadata,
+    installId: installId || metadata.installId || 'unknown',
+    traceId: resolvedTraceId,
+  });
+  const checkoutSelection = packId ? null : resolveSubscriptionCheckoutSelection(baseCheckoutMetadata);
+  const checkoutMetadata = packId
+    ? baseCheckoutMetadata
+    : sanitizeMetadata({
+        ...baseCheckoutMetadata,
+        planId: checkoutSelection.planId,
+        billingCycle: checkoutSelection.billingCycle,
+        seatCount: checkoutSelection.seatCount,
+        priceId: checkoutSelection.priceId,
+      });
+  const resolvedInstallId = installId || checkoutMetadata.installId || 'unknown';
 
   if (LOCAL_MODE()) {
     const localSessionId = `test_session_${crypto.randomBytes(8).toString('hex')}`;
@@ -1658,7 +1725,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     appendFunnelEvent({
       stage: 'acquisition',
       event: 'checkout_session_created',
-      installId,
+      installId: resolvedInstallId,
       traceId: resolvedTraceId,
       evidence: 'local_mode_manual',
       metadata: { ...checkoutMetadata, packId: pack ? pack.id : null },
@@ -1679,7 +1746,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
   appendFunnelEvent({
     stage: 'acquisition',
     event: 'checkout_session_created',
-    installId,
+    installId: resolvedInstallId,
     traceId: resolvedTraceId,
     evidence: session.id,
     metadata: { ...checkoutMetadata, packId },
@@ -1689,6 +1756,10 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
 
 function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null } = {}) {
   const pack = packId ? CONFIG.CREDIT_PACKS[packId] : null;
+  const checkoutSelection = pack ? null : resolveSubscriptionCheckoutSelection(checkoutMetadata);
+  if (!pack && !checkoutSelection.priceId) {
+    throw new Error(`Stripe price ID is missing for ${checkoutSelection.planId} ${checkoutSelection.billingCycle} checkout.`);
+  }
   const lineItems = pack
     ? [{
         price_data: {
@@ -1698,7 +1769,7 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
         },
         quantity: 1,
       }]
-    : [{ price: CONFIG.STRIPE_PRICE_ID, quantity: 1 }];
+    : [{ price: checkoutSelection.priceId, quantity: checkoutSelection.quantity }];
 
   const sessionPayload = {
     success_url: successUrl,
@@ -1708,6 +1779,10 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
     line_items: lineItems,
     metadata: serializeStripeMetadata({
       ...checkoutMetadata,
+      planId: pack ? checkoutMetadata.planId : checkoutSelection.planId,
+      billingCycle: pack ? checkoutMetadata.billingCycle : checkoutSelection.billingCycle,
+      seatCount: pack ? checkoutMetadata.seatCount : checkoutSelection.seatCount,
+      priceId: pack ? checkoutMetadata.priceId : checkoutSelection.priceId,
       packId: pack ? pack.id : null,
       credits: pack ? pack.credits : null,
     }),
@@ -2144,6 +2219,7 @@ function handleGithubWebhook(event) {
 module.exports = {
   CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
+  _resolveSubscriptionCheckoutSelection: resolveSubscriptionCheckoutSelection,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,
   _REVENUE_LEDGER_PATH: () => CONFIG.REVENUE_LEDGER_PATH,

@@ -40,7 +40,7 @@ Pricing note:
 
 Current note:
 
-- The public self-serve commercial offer is Pro at `$49 one-time` per `docs/COMMERCIAL_TRUTH.md`.
+- The public self-serve commercial offer is Pro at `$19/mo or $149/yr` per `docs/COMMERCIAL_TRUTH.md`.
 - Hosted Context Gateway access is pilot/by-request, not a public recurring subscription.
 
 ### Tier 3: Enterprise (Pricing: custom quote)

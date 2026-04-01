@@ -8,11 +8,11 @@ In March 2026, developers are moving away from subscriptions and toward **Outcom
 ### 1. High-ROI Product: "Mistake-Free" Credits
 We sell a "Mistake-Free Starter Pack" for **$49.00**.
 *   **What they get:** 500 "Verified Consolidations" (ADK dreams) and 5 "Critical Prevention Rules" authored by our reasoning engine.
-*   **Why it sells today:** It's a one-time, low-friction purchase that solves a massive pain point: agents breaking in production.
+*   **Why it sells today:** It's a low-friction self-serve purchase that solves a massive pain point: agents breaking in production.
 
 ### 2. The Implementation: "Pay-per-Consolidation"
 I can autonomously refactor our `/v1/billing/checkout` route to support this "Wallet" model. 
-*   Instead of a subscription, the checkout creates a one-time payment.
+*   The current checkout supports recurring Pro subscriptions while keeping the founder one-time link preserved separately.
 *   The `api-keys.json` store will now track a `remainingCredits` balance.
 *   When `remainingCredits == 0`, the "Always-On" consolidator pauses until a top-up occurs.
 

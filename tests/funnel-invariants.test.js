@@ -31,9 +31,12 @@ describe('funnel invariant: postinstall banner exists', () => {
     assert.ok(pkg.scripts.postinstall.includes('postinstall'), 'postinstall script must reference the postinstall file');
   });
 
-  it('postinstall contains checkout URL', () => {
+  it('postinstall contains a live upgrade URL', () => {
     const src = fs.readFileSync(path.join(PKG_ROOT, 'bin', 'postinstall.js'), 'utf8');
-    assert.ok(src.includes('checkout'), 'postinstall must contain a checkout URL');
+    assert.ok(
+      src.includes('PRO_MONTHLY_PAYMENT_LINK') || /https?:\/\//.test(src),
+      'postinstall must contain a live upgrade URL'
+    );
   });
 });
 

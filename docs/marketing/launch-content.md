@@ -37,7 +37,7 @@ Or wire it to a specific agent:
 npx mcp-memory-gateway init --agent claude-code
 ```
 
-MIT licensed. $49 one-time Mistake-Free Starter Pack (500 credits) available for teams that want hosted analytics, but the core is fully open source.
+MIT licensed. Pro is $19/mo or $149/yr for individual operators, while Team rollout stays intake-first for buyers who want hosted analytics and shared lessons.
 
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
@@ -77,7 +77,7 @@ claude mcp add rlhf -- npx -y mcp-memory-gateway serve
 
 Works with Claude Code, Codex, Gemini, Amp, and Cursor. MIT licensed, fully open source.
 
-There's an optional Pro tier ($49 one-time, 500 credits) for hosted memory sync and usage analytics, but everything described above works locally for free.
+There's an optional Pro tier ($19/mo or $149/yr) for the personal local dashboard, exports, and advanced gate workflows, but everything described above works locally for free.
 
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
@@ -105,7 +105,7 @@ It works with any MCP-compatible agent. One command to set up:
 npx mcp-memory-gateway init
 ```
 
-The core is open source and MIT licensed. There's a $49 one-time Starter Pack if you want hosted analytics.
+The core is open source and MIT licensed. There's a Pro tier at $19/mo or $149/yr if you want the personal local dashboard and exports.
 
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
@@ -158,7 +158,7 @@ npx mcp-memory-gateway init
 Fully free and unlimited. MIT licensed.
 
 **Tweet 6:**
-Pro ($49 one-time) adds a searchable dashboard to query, edit, and delete your 👍/👎 entries.
+Pro ($19/mo or $149/yr) adds a searchable dashboard to query and export your 👍/👎 entries.
 
 But captures, recalls, gates, and blocking all work for free. No limits.
 

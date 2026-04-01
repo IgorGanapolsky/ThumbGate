@@ -74,12 +74,12 @@ function buildRevenueLinks(config = resolveHostedBillingConfig({
   const appOrigin = config.appOrigin;
   return {
     appOrigin,
-    proCheckoutLink: `${appOrigin}/checkout/pro?packId=mistake-free-starter`,
+    proCheckoutLink: `${appOrigin}/checkout/pro`,
     sprintLink: `${appOrigin}/#workflow-sprint-intake`,
     commercialTruthLink: COMMERCIAL_TRUTH_LINK,
     verificationEvidenceLink: VERIFICATION_EVIDENCE_LINK,
-    proPriceLabel: '$49 one-time',
-    proOfferLabel: `Pro at $49 one-time`,
+    proPriceLabel: '$19/mo or $149/yr',
+    proOfferLabel: 'Pro at $19/mo or $149/yr',
   };
 }
 
@@ -149,7 +149,7 @@ function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog
       objective: 'Convert existing interest into the first paid orders without inventing traction.',
       primaryMotion: motionCatalog.pro.key,
       secondaryMotion: motionCatalog.sprint.key,
-      headline: 'Interest exists but paid conversion is still zero. Push the $49 Pro CTA to builders and reserve sprint outreach for team workflows.',
+      headline: 'Interest exists but paid conversion is still zero. Push the Pro monthly/annual CTA to builders and reserve sprint outreach for team workflows.',
       actions: [
         'Follow up on every checkout start or lead within one business day.',
         'Use the Pro self-serve path as the default CTA unless the target clearly has team-level rollout pain.',
@@ -165,7 +165,7 @@ function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog
     secondaryMotion: motionCatalog.sprint.key,
     headline: 'No verified revenue and no active pipeline. Run dual motion: Pro for individual builders, sprint for teams with one workflow problem.',
     actions: [
-      'Lead builder outreach with Pro at $49 one-time and the direct checkout link.',
+      'Lead builder outreach with Pro at $19/mo or $149/yr and the direct checkout link.',
       'Route platform or ops teams to the Workflow Hardening Sprint intake only when they fit the qualification bar.',
       'Treat stars, traffic, and model praise as noise until they become paid orders or named pilot agreements.',
     ],

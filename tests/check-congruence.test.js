@@ -23,6 +23,7 @@ test('check-congruence verifies version, brand, tech terms, and disclaimer', () 
   const output = execSync('node scripts/check-congruence.js', { cwd: ROOT, encoding: 'utf-8' });
   assert.match(output, /v\d+\.\d+\.\d+/);
   assert.match(output, /brand "ThumbGate"/);
+  assert.match(output, /GitHub About source-of-truth verified/);
 });
 
 test('GitHub About source-of-truth matches local public surfaces', () => {

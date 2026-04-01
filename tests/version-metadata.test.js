@@ -25,7 +25,7 @@ function readText(relativePath) {
 }
 
 test('pricing matches 2026 standard', () => {
-  assert.match('$49 one-time', /\$49 one-time/);
+  assert.match('$19/mo or $149/yr', /\$19\/mo or \$149\/yr/);
 });
 
 test('package version matches MCP manifests', () => {
@@ -62,7 +62,8 @@ test('public docs render the current package version', () => {
   assert.match(landingPage, /ThumbGate/);
   assert.match(landingPage, /AI agent reliability/i);
   assert.match(landingPage, /Claude Desktop extension/i);
-  assert.match(landingPage, /\$49 one-time/);
+  assert.match(landingPage, /\$19\/mo/);
+  assert.match(landingPage, /\$149\/yr/);
   assert.match(landingPage, /Reliability Studio/i);
   assert.match(landingPage, /Compare and Deploy/i);
   assert.match(landingPage, /No model fine-tuning required/i);
@@ -128,7 +129,8 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
 
   assert.match(publicLanding, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
   assert.match(publicLanding, /mcp-memory-gateway/i);
-  assert.match(publicLanding, /\$49/);
+  assert.match(publicLanding, /\$19/);
+  assert.match(publicLanding, /\$149/);
   assert.match(publicLanding, /__PRO_PRICE_DOLLARS__/);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
@@ -209,13 +211,13 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
 
 test('runtime hosted billing config preserves absolute fallback checkout urls', () => {
   const previousFallback = process.env.RLHF_CHECKOUT_FALLBACK_URL;
-  process.env.RLHF_CHECKOUT_FALLBACK_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05?utm_source=website&utm_medium=cta_button';
+  process.env.RLHF_CHECKOUT_FALLBACK_URL = 'https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06?utm_source=website&utm_medium=cta_button';
 
   try {
     const runtimeConfig = resolveHostedBillingConfig();
     assert.equal(
       runtimeConfig.checkoutFallbackUrl,
-      'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05?utm_source=website&utm_medium=cta_button'
+      'https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06?utm_source=website&utm_medium=cta_button'
     );
   } finally {
     if (previousFallback === undefined) {
@@ -280,7 +282,8 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const xStrategy = readText('docs/X_AUTOMATION_STRATEGY.md');
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
-  assert.match(commercialTruth, /Pro at \$49 one-time/);
+  assert.match(commercialTruth, /Pro at \$19\/mo or \$149\/yr/);
+  assert.match(commercialTruth, /Team pricing anchor is \*\*\$12\/seat\/mo/i);
   assert.match(commercialTruth, /auto-gate promotion/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 

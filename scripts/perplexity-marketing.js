@@ -35,7 +35,7 @@ const PRODUCT = {
   coffee: 'https://buymeacoffee.com/igorganapolsky',
   tagline: 'Local-first memory and feedback pipeline for AI agents. Captures thumbs-up/down signals, promotes reusable memories, generates prevention rules from repeated failures, and exports KTO/DPO pairs for fine-tuning.',
   keywords: ['MCP', 'RLHF', 'DPO', 'KTO', 'Thompson Sampling', 'AI agent memory', 'Claude Code', 'Amp', 'Gemini CLI', 'context engineering', 'prevention rules', 'Pre-Action Gates'],
-  proPrice: '$49 one-time',
+  proPrice: '$19/mo or $149/yr',
 };
 
 async function sonarRequest(model, messages, options = {}) {
@@ -97,11 +97,11 @@ I built "${PRODUCT.name}" — ${PRODUCT.tagline}
 
 Research and provide:
 1. **Competitor Analysis**: What similar tools exist? (LangSmith, Weights & Biases, custom RLHF pipelines, etc.) What do they charge? What gaps does my tool fill?
-2. **Target Buyer Personas**: Who would pay $49 one-time for a Pro plan with curated RLHF configs? (AI engineers, dev tool builders, agent framework users)
+2. **Target Buyer Personas**: Who would pay $19/mo or $149/yr for a Pro plan with curated RLHF configs? (AI engineers, dev tool builders, agent framework users)
 3. **Distribution Channels**: Specific subreddits, Discord servers, Slack communities, newsletters, and forums where MCP/RLHF tool buyers hang out. Include URLs.
 4. **SEO/GEO Keywords**: High-intent search terms people use when looking for this type of tool
 5. **Launch Strategy**: Specific steps to get first 10 paying customers this week
-6. **Pricing Validation**: Is $49 one-time right for a Pro plan? What would similar tools charge?
+6. **Pricing Validation**: Is $19/mo or $149/yr right for a Pro plan? What would similar tools charge?
 
 Be specific with URLs, community names, and actionable steps.`,
     },
@@ -295,7 +295,7 @@ Requirements:
 - 5 key features as bullet points
 - "First comment" from the maker (personal story, why you built it)
 - Suggested categories: Developer Tools, AI, Productivity
-- Pricing: Free (open source) + Pro ($49 one-time)`,
+- Pricing: Free (open source) + Pro ($19/mo or $149/yr)`,
     },
   ];
 

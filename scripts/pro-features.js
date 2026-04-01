@@ -1,7 +1,11 @@
 'use strict';
 const { isProLicensed } = require('./license');
+const {
+  PRO_MONTHLY_PAYMENT_LINK,
+  PRO_PRICE_LABEL,
+} = require('./commercial-offer');
 
-const PRO_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
+const PRO_URL = PRO_MONTHLY_PAYMENT_LINK;
 
 function requirePro(featureName) {
   if (isProLicensed()) return true;
@@ -20,7 +24,7 @@ function requirePro(featureName) {
   const desc = descriptions[featureName] || featureName;
   process.stderr.write(
     `\n  🔒 Pro Feature Required: ${desc}\n` +
-    `     Upgrade to ThumbGate Pro — $49 one-time:\n` +
+    `     Upgrade to ThumbGate Pro — ${PRO_PRICE_LABEL}:\n` +
     `     ${PRO_URL}\n` +
     `     Or run: npx mcp-memory-gateway pro\n\n`
   );

@@ -43,7 +43,9 @@ async function main() {
   const version = pkg.version;
 
   const landingHtml = read('public/index.html') || '';
+  const guideHtml = read('public/guide.html') || '';
   const readmeMd = read('README.md') || '';
+  const commercialTruth = read('docs/COMMERCIAL_TRUTH.md') || '';
   const agentsMd = read('AGENTS.md') || '';
   const claudeMd = read('CLAUDE.md') || '';
   const geminiMd = read('GEMINI.md') || '';
@@ -120,8 +122,24 @@ async function main() {
     'README.md missing honest disclaimer ("does not update model weights")'
   );
   check(
+    !/<<<<<<<|=======|>>>>>>>/.test(readmeMd),
+    'README.md contains unresolved merge conflict markers'
+  );
+  check(
     landingHtml.includes('doesn\'t touch the model') || landingHtml.includes('different from RLHF'),
     'public/index.html missing honest disclaimer (FAQ or inline)'
+  );
+  check(
+    /\$19\/mo/i.test(landingHtml) && /\$149\/yr/i.test(landingHtml),
+    'public/index.html must advertise the current Pro monthly and annual pricing'
+  );
+  check(
+    /\$19\/mo/i.test(guideHtml) && /\$149\/yr/i.test(guideHtml),
+    'public/guide.html must advertise the current Pro monthly and annual pricing'
+  );
+  check(
+    /Pro at \$19\/mo or \$149\/yr/i.test(commercialTruth),
+    'docs/COMMERCIAL_TRUTH.md must record the current Pro offer'
   );
 
   check(

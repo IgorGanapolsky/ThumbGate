@@ -1,11 +1,16 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const {
+  PRO_MONTHLY_PAYMENT_LINK,
+  PRO_MONTHLY_PRICE_DOLLARS,
+  PRO_PRICE_LABEL,
+} = require('./commercial-offer');
 
 const DEFAULT_PUBLIC_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
-const DEFAULT_CHECKOUT_FALLBACK_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
-const DEFAULT_PRO_PRICE_DOLLARS = 19;
-const DEFAULT_PRO_PRICE_LABEL = '$19/mo or $149/yr';
+const DEFAULT_CHECKOUT_FALLBACK_URL = PRO_MONTHLY_PAYMENT_LINK;
+const DEFAULT_PRO_PRICE_DOLLARS = PRO_MONTHLY_PRICE_DOLLARS;
+const DEFAULT_PRO_PRICE_LABEL = PRO_PRICE_LABEL;
 const GA_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/i;
 
 function normalizeOrigin(value) {
