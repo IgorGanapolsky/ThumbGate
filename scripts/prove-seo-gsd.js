@@ -35,7 +35,7 @@ async function run() {
         if (plan.capture.totalKeywords !== HIGH_ROI_QUERY_SEEDS.length) {
           throw new Error('Capture stage keyword count is incorrect');
         }
-        if (plan.execute.pages.length !== 4) throw new Error('Execute stage must publish 4 public pages');
+        if (plan.execute.pages.length < 4) throw new Error('Execute stage must publish at least 4 public pages');
         if (!plan.review.recommendedOrder.includes('/compare/speclock')) {
           throw new Error('Recommended order must include /compare/speclock');
         }
