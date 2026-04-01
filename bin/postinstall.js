@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-'use strict';
+"use strict";
 
 /**
  * Post-install banner — the ONE place every npm user sees ThumbGate.
@@ -7,12 +7,18 @@
  * Respects RLHF_NO_NUDGE=1 and CI environments.
  */
 
-const isCI = !!(process.env.CI || process.env.CONTINUOUS_INTEGRATION || process.env.GITHUB_ACTIONS);
-const isQuiet = process.env.RLHF_NO_NUDGE === '1' || process.env.npm_config_loglevel === 'silent';
+const isCI = !!(
+  process.env.CI ||
+  process.env.CONTINUOUS_INTEGRATION ||
+  process.env.GITHUB_ACTIONS
+);
+const isQuiet =
+  process.env.RLHF_NO_NUDGE === "1" ||
+  process.env.npm_config_loglevel === "silent";
 
 if (isCI || isQuiet) process.exit(0);
 
-const PRO_URL = 'https://rlhf-feedback-loop-production.up.railway.app';
+const PRO_URL = "https://rlhf-feedback-loop-production.up.railway.app";
 const CHECKOUT_URL = `${PRO_URL}/checkout/pro`;
 
 process.stderr.write(`
@@ -25,7 +31,7 @@ process.stderr.write(`
   │     npx mcp-memory-gateway stats                    │
   │                                                     │
   │   Unlock Pro (personal local dashboard, DPO export, │
-  │   optional hosted API key) — $49 one-time:          │
+  │   optional hosted API key) — $19/mo or $149/yr:          │
   │     ${CHECKOUT_URL}       │
   │                                                     │
   │   Or run: npx mcp-memory-gateway pro                │

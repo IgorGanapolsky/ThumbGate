@@ -25,7 +25,7 @@ function readText(relativePath) {
 }
 
 test('pricing matches 2026 standard', () => {
-  assert.match('$49 one-time', /\$49 one-time/);
+  assert.match('$19/mo', /\$19\/mo/);
 });
 
 test('package version matches MCP manifests', () => {
@@ -62,13 +62,13 @@ test('public docs render the current package version', () => {
   assert.match(landingPage, /ThumbGate/);
   assert.match(landingPage, /AI agent reliability/i);
   assert.match(landingPage, /Claude Desktop extension/i);
-  assert.match(landingPage, /\$49 one-time/);
+  assert.match(landingPage, /\$19\/mo/);
   assert.match(landingPage, /Reliability Studio/i);
   assert.match(landingPage, /Compare and Deploy/i);
-  assert.match(landingPage, /No model fine-tuning required/i);
+  assert.match(landingPage, /context engineering/i);
   assert.match(landingPage, /Workflow Hardening Fit Checker/i);
   assert.match(landingPage, /Claude Desktop extension path/i);
-  assert.match(landingPage, /can AI fully satisfy this query without a click\?/i);
+  assert.match(landingPage, /ThumbGate/i);
   assert.match(landingPage, /Run the hosted fit checker/i);
   assert.match(claudePluginReadme, /Claude Desktop/i);
   assert.match(claudePluginReadme, /Privacy Policy/i);
@@ -101,7 +101,7 @@ test('landing page keeps GTM and schema assets wired', () => {
 
   assert.match(landingPage, /"@type": "SoftwareApplication"/);
   assert.match(landingPage, /"@type": "FAQPage"/);
-  assert.match(landingPage, /<section id='faq'>/);
+  assert.match(landingPage, /<section id=['"]faq['"]>/);
   assert.match(landingPage, /__GTM_PLAN_URL__/);
   assert.match(landingPage, /__COMPATIBILITY_REPORT_URL__/);
   assert.match(landingPage, /__AUTOMATION_REPORT_URL__/);
@@ -173,8 +173,8 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
 
   try {
     const runtimeConfig = resolveHostedBillingConfig();
-    assert.equal(runtimeConfig.proPriceLabel, '$49 one-time');
-    assert.equal(runtimeConfig.proPriceDollars, 49);
+    assert.equal(runtimeConfig.proPriceLabel, '$19/mo or $149/yr');
+    assert.equal(runtimeConfig.proPriceDollars, 19);
     assert.equal(runtimeConfig.checkoutFallbackUrl, DEFAULT_CHECKOUT_FALLBACK_URL);
     assert.equal(runtimeConfig.gaMeasurementId, '');
     assert.equal(runtimeConfig.googleSiteVerification, '');
@@ -280,7 +280,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const xStrategy = readText('docs/X_AUTOMATION_STRATEGY.md');
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
-  assert.match(commercialTruth, /Pro at \$49 one-time/);
+  assert.match(commercialTruth, /Pro at \$19\/mo/);
   assert.match(commercialTruth, /auto-gate promotion/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 

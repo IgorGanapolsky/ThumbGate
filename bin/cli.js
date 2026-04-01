@@ -14,75 +14,106 @@
  *   npx mcp-memory-gateway pro           # upgrade to Context Gateway
  */
 
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const { execSync } = require('child_process');
-const { resolveMcpEntry } = require(path.join(__dirname, '..', 'scripts', 'mcp-config'));
-const { trackEvent } = require(path.join(__dirname, '..', 'scripts', 'cli-telemetry'));
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+const { execSync } = require("child_process");
+const { resolveMcpEntry } = require(
+  path.join(__dirname, "..", "scripts", "mcp-config"),
+);
+const { trackEvent } = require(
+  path.join(__dirname, "..", "scripts", "cli-telemetry"),
+);
 
 const COMMAND = process.argv[2];
 const CWD = process.cwd();
-const PKG_ROOT = path.join(__dirname, '..');
+const PKG_ROOT = path.join(__dirname, "..");
 
-const PRO_URL = 'https://rlhf-feedback-loop-production.up.railway.app';
+const PRO_URL = "https://rlhf-feedback-loop-production.up.railway.app";
 const PRO_CHECKOUT_URL = `${PRO_URL}/checkout/pro`;
 
 function upgradeNudge() {
-  if (process.env.RLHF_NO_NUDGE === '1') return;
+  if (process.env.RLHF_NO_NUDGE === "1") return;
   try {
-    const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+    const { isProTier } = require(
+      path.join(PKG_ROOT, "scripts", "rate-limiter"),
+    );
     if (isProTier()) return;
-  } catch (_) { return; }
+  } catch (_) {
+    return;
+  }
   process.stderr.write(
-    `\n  Unlock Pro: unlimited gates, DPO export, searchable dashboard — $49 one-time\n` +
-    `  ${PRO_CHECKOUT_URL}\n\n`
+    `\n  Unlock Pro: unlimited gates, DPO export, searchable dashboard — $19/mo\n` +
+      `  ${PRO_CHECKOUT_URL}\n\n`,
   );
 }
 
 function appendLocalTelemetry(payload) {
   try {
-    const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
-    const { appendTelemetryPing } = require(path.join(PKG_ROOT, 'scripts', 'telemetry-analytics'));
+    const { getFeedbackPaths } = require(
+      path.join(PKG_ROOT, "scripts", "feedback-loop"),
+    );
+    const { appendTelemetryPing } = require(
+      path.join(PKG_ROOT, "scripts", "telemetry-analytics"),
+    );
     const { FEEDBACK_DIR } = getFeedbackPaths();
     appendTelemetryPing(FEEDBACK_DIR, payload);
-  } catch (_) { /* telemetry is best-effort */ }
+  } catch (_) {
+    /* telemetry is best-effort */
+  }
 }
 
 function telemetryPing(installId) {
-  if (process.env.RLHF_NO_TELEMETRY === '1') return;
+  if (process.env.RLHF_NO_TELEMETRY === "1") return;
   const payloadObject = {
     installId,
-    eventType: 'cli_init',
-    clientType: 'cli',
-    source: 'cli',
+    eventType: "cli_init",
+    clientType: "cli",
+    source: "cli",
     version: pkgVersion(),
     platform: process.platform,
     nodeVersion: process.version,
     timestamp: new Date().toISOString(),
   };
   appendLocalTelemetry(payloadObject);
-  const apiUrl = process.env.RLHF_API_URL || 'https://rlhf-feedback-loop-production.up.railway.app';
+  const apiUrl =
+    process.env.RLHF_API_URL ||
+    "https://rlhf-feedback-loop-production.up.railway.app";
   const payload = JSON.stringify(payloadObject);
   try {
-    const url = new URL('/v1/telemetry/ping', apiUrl);
-    const mod = url.protocol === 'https:' ? require('https') : require('http');
-    const req = mod.request(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }, timeout: 3000 }, () => {});
-    req.on('error', () => {});
-    req.on('timeout', () => { req.destroy(); });
+    const url = new URL("/v1/telemetry/ping", apiUrl);
+    const mod = url.protocol === "https:" ? require("https") : require("http");
+    const req = mod.request(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(payload),
+        },
+        timeout: 3000,
+      },
+      () => {},
+    );
+    req.on("error", () => {});
+    req.on("timeout", () => {
+      req.destroy();
+    });
     req.end(payload);
-  } catch (_) { /* telemetry is best-effort */ }
+  } catch (_) {
+    /* telemetry is best-effort */
+  }
 }
 
 function proNudge(context) {
-  if (process.env.RLHF_NO_NUDGE === '1') return;
-  const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
+  if (process.env.RLHF_NO_NUDGE === "1") return;
+  const STRIPE_URL = "https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05";
   const messages = [
-    `\n  💡 Unlock Pro ($49 one-time): searchable dashboard, DPO export, multi-repo sync\n     ${STRIPE_URL}\n`,
+    `\n  💡 Unlock Pro ($19/mo): searchable dashboard, DPO export, multi-repo sync\n     ${STRIPE_URL}\n`,
     `\n  💡 Pro tip: export your feedback as DPO training pairs to improve your models.\n     Get Pro: ${STRIPE_URL}\n`,
-    `\n  💡 ThumbGate Pro: search, edit, and sync lessons across repos. $49 one-time.\n     ${STRIPE_URL}\n`,
+    `\n  💡 ThumbGate Pro: search, edit, and sync lessons across repos. $19/mo.\n     ${STRIPE_URL}\n`,
   ];
   // Rotate message daily — no Math.random (security policy)
   const msg = messages[Math.floor(Date.now() / 86400000) % messages.length];
@@ -90,35 +121,41 @@ function proNudge(context) {
 }
 
 function limitNudge(action) {
-  if (process.env.RLHF_NO_NUDGE === '1') return;
-  const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
+  if (process.env.RLHF_NO_NUDGE === "1") return;
+  const STRIPE_URL = "https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05";
   process.stderr.write(
     `\n  ⚠️  Free tier: ${action} daily limit reached (5/day).\n` +
-    `     Upgrade to Pro for unlimited usage — $49 one-time:\n` +
-    `     ${STRIPE_URL}\n\n`
+      `     Upgrade to Pro for unlimited usage — $19/mo:\n` +
+      `     ${STRIPE_URL}\n\n`,
   );
 }
 
 function parseArgs(argv) {
   const args = {};
   argv.forEach((arg) => {
-    if (!arg.startsWith('--')) return;
-    const [key, ...rest] = arg.slice(2).split('=');
-    args[key] = rest.length ? rest.join('=') : true;
+    if (!arg.startsWith("--")) return;
+    const [key, ...rest] = arg.slice(2).split("=");
+    args[key] = rest.length ? rest.join("=") : true;
   });
   return args;
 }
 
 function pkgVersion() {
-  const pkg = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8'));
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(PKG_ROOT, "package.json"), "utf8"),
+  );
   return pkg.version;
 }
 
 // --- Platform auto-detection helpers ---
 
-const HOME = process.env.HOME || process.env.USERPROFILE || '';
-const MCP_SERVER_NAME = 'rlhf';
-const LEGACY_MCP_SERVER_NAMES = ['rlhf', 'rlhf-feedback-loop', 'rlhf_feedback_loop'];
+const HOME = process.env.HOME || process.env.USERPROFILE || "";
+const MCP_SERVER_NAME = "rlhf";
+const LEGACY_MCP_SERVER_NAMES = [
+  "rlhf",
+  "rlhf-feedback-loop",
+  "rlhf_feedback_loop",
+];
 
 function mcpEntriesMatch(entry, expectedEntry) {
   return Boolean(
@@ -128,19 +165,19 @@ function mcpEntriesMatch(entry, expectedEntry) {
     Array.isArray(entry.args) &&
     Array.isArray(expectedEntry.args) &&
     entry.args.length === expectedEntry.args.length &&
-    entry.args.every((arg, index) => arg === expectedEntry.args[index])
+    entry.args.every((arg, index) => arg === expectedEntry.args[index]),
   );
 }
 
 function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function formatTomlStringArray(values) {
-  return `[${values.map((value) => JSON.stringify(value)).join(', ')}]`;
+  return `[${values.map((value) => JSON.stringify(value)).join(", ")}]`;
 }
 
-function canonicalMcpEntry(scope = 'project') {
+function canonicalMcpEntry(scope = "project") {
   return resolveMcpEntry({
     pkgRoot: PKG_ROOT,
     pkgVersion: pkgVersion(),
@@ -149,7 +186,7 @@ function canonicalMcpEntry(scope = 'project') {
   });
 }
 
-function mcpSectionBlock(name = MCP_SERVER_NAME, scope = 'project') {
+function mcpSectionBlock(name = MCP_SERVER_NAME, scope = "project") {
   const entry = canonicalMcpEntry(scope);
   return `[mcp_servers.${name}]\ncommand = "${entry.command}"\nargs = ${formatTomlStringArray(entry.args)}\n`;
 }
@@ -157,12 +194,12 @@ function mcpSectionBlock(name = MCP_SERVER_NAME, scope = 'project') {
 function mcpSectionRegex(name) {
   return new RegExp(
     `^\\[mcp_servers\\.${escapeRegExp(name)}\\]\\n(?:^(?!\\[).*(?:\\n|$))*`,
-    'm'
+    "m",
   );
 }
 
 function upsertCodexServerConfig(content) {
-  const canonicalBlock = mcpSectionBlock(MCP_SERVER_NAME, 'home');
+  const canonicalBlock = mcpSectionBlock(MCP_SERVER_NAME, "home");
   const sections = LEGACY_MCP_SERVER_NAMES.map((name) => ({
     name,
     regex: mcpSectionRegex(name),
@@ -175,7 +212,7 @@ function upsertCodexServerConfig(content) {
     const prefix = content.trimEnd();
     return {
       changed: true,
-      content: `${prefix}${prefix ? '\n\n' : ''}${canonicalBlock}`,
+      content: `${prefix}${prefix ? "\n\n" : ""}${canonicalBlock}`,
     };
   }
 
@@ -196,32 +233,39 @@ function upsertCodexServerConfig(content) {
       continue;
     }
 
-    nextContent = nextContent.replace(section.regex, '');
+    nextContent = nextContent.replace(section.regex, "");
     changed = true;
   }
 
   if (!canonicalPresent) {
     const prefix = nextContent.trimEnd();
-    nextContent = `${prefix}${prefix ? '\n\n' : ''}${canonicalBlock}`;
+    nextContent = `${prefix}${prefix ? "\n\n" : ""}${canonicalBlock}`;
     changed = true;
   }
 
   return {
     changed,
-    content: nextContent.endsWith('\n') ? nextContent : `${nextContent}\n`,
+    content: nextContent.endsWith("\n") ? nextContent : `${nextContent}\n`,
   };
 }
 
-function mergeMcpJson(filePath, label, scope = 'project') {
+function mergeMcpJson(filePath, label, scope = "project") {
   const canonicalEntry = canonicalMcpEntry(scope);
   if (!fs.existsSync(filePath)) {
     const dir = path.dirname(filePath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify({ mcpServers: { [MCP_SERVER_NAME]: canonicalEntry } }, null, 2) + '\n');
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify(
+        { mcpServers: { [MCP_SERVER_NAME]: canonicalEntry } },
+        null,
+        2,
+      ) + "\n",
+    );
     console.log(`  ${label}: wrote ${path.relative(CWD, filePath)}`);
     return true;
   }
-  const existing = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  const existing = JSON.parse(fs.readFileSync(filePath, "utf8"));
   existing.mcpServers = existing.mcpServers || {};
 
   let changed = false;
@@ -241,45 +285,63 @@ function mergeMcpJson(filePath, label, scope = 'project') {
 
   if (!changed) return false;
 
-  fs.writeFileSync(filePath, JSON.stringify(existing, null, 2) + '\n');
+  fs.writeFileSync(filePath, JSON.stringify(existing, null, 2) + "\n");
   console.log(`  ${label}: updated ${path.relative(CWD, filePath)}`);
   return true;
 }
 
 function detectPlatform(name, checks) {
   for (const check of checks) {
-    try { if (check()) return true; } catch (_) {}
+    try {
+      if (check()) return true;
+    } catch (_) {}
   }
   return false;
 }
 
 function whichExists(cmd) {
-  try { execSync(`which ${cmd}`, { stdio: 'pipe' }); return true; } catch (_) { return false; }
+  try {
+    execSync(`which ${cmd}`, { stdio: "pipe" });
+    return true;
+  } catch (_) {
+    return false;
+  }
 }
 
 function setupClaude() {
-  const mcpChanged = mergeMcpJson(path.join(CWD, '.mcp.json'), 'Claude Code', 'project');
+  const mcpChanged = mergeMcpJson(
+    path.join(CWD, ".mcp.json"),
+    "Claude Code",
+    "project",
+  );
 
   // Upsert Stop hook into .claude/settings.json for autonomous self-scoring
-  const settingsPath = path.join(CWD, '.claude', 'settings.json');
-  const stopHookCommand = 'bash scripts/hook-stop-self-score.sh';
+  const settingsPath = path.join(CWD, ".claude", "settings.json");
+  const stopHookCommand = "bash scripts/hook-stop-self-score.sh";
 
   let settings = { hooks: {} };
   if (fs.existsSync(settingsPath)) {
-    try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch (_) { /* fresh */ }
+    try {
+      settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    } catch (_) {
+      /* fresh */
+    }
   }
   settings.hooks = settings.hooks || {};
 
-  const stopAlreadyPresent = (settings.hooks.Stop || [])
-    .some(entry => (entry.hooks || []).some(h => h.command === stopHookCommand));
+  const stopAlreadyPresent = (settings.hooks.Stop || []).some((entry) =>
+    (entry.hooks || []).some((h) => h.command === stopHookCommand),
+  );
 
   let hooksChanged = false;
   if (!stopAlreadyPresent) {
     settings.hooks.Stop = settings.hooks.Stop || [];
-    settings.hooks.Stop.push({ hooks: [{ type: 'command', command: stopHookCommand }] });
+    settings.hooks.Stop.push({
+      hooks: [{ type: "command", command: stopHookCommand }],
+    });
     fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
-    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
-    console.log('  Claude Code: installed Stop hook in .claude/settings.json');
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
+    console.log("  Claude Code: installed Stop hook in .claude/settings.json");
     hooksChanged = true;
   }
 
@@ -287,83 +349,102 @@ function setupClaude() {
 }
 
 function setupCodex() {
-  const configPath = path.join(HOME, '.codex', 'config.toml');
-  const block = mcpSectionBlock(MCP_SERVER_NAME, 'home');
+  const configPath = path.join(HOME, ".codex", "config.toml");
+  const block = mcpSectionBlock(MCP_SERVER_NAME, "home");
   if (!fs.existsSync(configPath)) {
     fs.mkdirSync(path.dirname(configPath), { recursive: true });
     fs.writeFileSync(configPath, block);
-    console.log('  Codex: created ~/.codex/config.toml');
+    console.log("  Codex: created ~/.codex/config.toml");
     return true;
   }
-  const content = fs.readFileSync(configPath, 'utf8');
+  const content = fs.readFileSync(configPath, "utf8");
   const updated = upsertCodexServerConfig(content);
   if (!updated.changed) return false;
   fs.writeFileSync(configPath, updated.content);
-  console.log('  Codex: appended MCP server to ~/.codex/config.toml');
+  console.log("  Codex: appended MCP server to ~/.codex/config.toml");
   return true;
 }
 
 function setupGemini() {
-  const settingsPath = path.join(HOME, '.gemini', 'settings.json');
+  const settingsPath = path.join(HOME, ".gemini", "settings.json");
   if (fs.existsSync(settingsPath)) {
-    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
     settings.mcpServers = settings.mcpServers || {};
     let changed = false;
-    const canonicalEntry = canonicalMcpEntry('home');
+    const canonicalEntry = canonicalMcpEntry("home");
 
-    if (!mcpEntriesMatch(settings.mcpServers[MCP_SERVER_NAME], canonicalEntry)) {
+    if (
+      !mcpEntriesMatch(settings.mcpServers[MCP_SERVER_NAME], canonicalEntry)
+    ) {
       settings.mcpServers[MCP_SERVER_NAME] = canonicalEntry;
       changed = true;
     }
 
     for (const legacyName of LEGACY_MCP_SERVER_NAMES) {
       if (legacyName === MCP_SERVER_NAME) continue;
-      if (Object.prototype.hasOwnProperty.call(settings.mcpServers, legacyName)) {
+      if (
+        Object.prototype.hasOwnProperty.call(settings.mcpServers, legacyName)
+      ) {
         delete settings.mcpServers[legacyName];
         changed = true;
       }
     }
 
     if (!changed) return false;
-    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
-    console.log('  Gemini: updated ~/.gemini/settings.json');
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
+    console.log("  Gemini: updated ~/.gemini/settings.json");
     return true;
   }
   // Fallback: project-level .gemini/settings.json
-  return mergeMcpJson(path.join(CWD, '.gemini', 'settings.json'), 'Gemini', 'project');
+  return mergeMcpJson(
+    path.join(CWD, ".gemini", "settings.json"),
+    "Gemini",
+    "project",
+  );
 }
 
 function setupAmp() {
-  const skillDir = path.join(CWD, '.amp', 'skills', 'rlhf-feedback');
-  const destPath = path.join(skillDir, 'SKILL.md');
+  const skillDir = path.join(CWD, ".amp", "skills", "rlhf-feedback");
+  const destPath = path.join(skillDir, "SKILL.md");
   if (fs.existsSync(destPath)) return false;
-  const srcPath = path.join(PKG_ROOT, 'plugins', 'amp-skill', 'SKILL.md');
+  const srcPath = path.join(PKG_ROOT, "plugins", "amp-skill", "SKILL.md");
   if (!fs.existsSync(srcPath)) return false;
   fs.mkdirSync(skillDir, { recursive: true });
   fs.copyFileSync(srcPath, destPath);
-  console.log('  Amp: installed .amp/skills/rlhf-feedback/SKILL.md');
+  console.log("  Amp: installed .amp/skills/rlhf-feedback/SKILL.md");
   return true;
 }
 
 function setupCursor() {
-  return mergeMcpJson(path.join(CWD, '.cursor', 'mcp.json'), 'Cursor', 'project');
+  return mergeMcpJson(
+    path.join(CWD, ".cursor", "mcp.json"),
+    "Cursor",
+    "project",
+  );
 }
 
 function init() {
   const args = parseArgs(process.argv.slice(3));
 
   // --wire-hooks only mode: skip scaffolding, just wire hooks
-  if (args['wire-hooks']) {
-    const { wireHooks, parseFlags: parseHookFlags } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
-    const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'] });
+  if (args["wire-hooks"]) {
+    const { wireHooks, parseFlags: parseHookFlags } = require(
+      path.join(PKG_ROOT, "scripts", "auto-wire-hooks"),
+    );
+    const hookResult = wireHooks({
+      agent: args.agent,
+      dryRun: args["dry-run"],
+    });
     if (hookResult.error) {
       console.error(hookResult.error);
       process.exit(1);
     }
     if (!hookResult.changed) {
-      console.log(`Hooks already wired for ${hookResult.agent} at ${hookResult.settingsPath}`);
+      console.log(
+        `Hooks already wired for ${hookResult.agent} at ${hookResult.settingsPath}`,
+      );
     } else {
-      const prefix = args['dry-run'] ? '[DRY RUN] Would add' : 'Added';
+      const prefix = args["dry-run"] ? "[DRY RUN] Would add" : "Added";
       console.log(`${prefix} hooks for ${hookResult.agent}:`);
       for (const h of hookResult.added) {
         console.log(`  ${h.lifecycle}: ${h.command}`);
@@ -373,21 +454,25 @@ function init() {
     return;
   }
 
-  const rlhfDir = path.join(CWD, '.rlhf');
-  const configPath = path.join(rlhfDir, 'config.json');
+  const rlhfDir = path.join(CWD, ".rlhf");
+  const configPath = path.join(rlhfDir, "config.json");
 
   if (!fs.existsSync(rlhfDir)) {
     fs.mkdirSync(rlhfDir, { recursive: true });
-    console.log('Created .rlhf/');
+    console.log("Created .rlhf/");
   } else {
-    console.log('.rlhf/ already exists — updating config');
+    console.log(".rlhf/ already exists — updating config");
   }
 
   let existingInstallId = null;
   if (fs.existsSync(configPath)) {
     try {
-      const existingConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      if (existingConfig && typeof existingConfig.installId === 'string' && existingConfig.installId.trim()) {
+      const existingConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      if (
+        existingConfig &&
+        typeof existingConfig.installId === "string" &&
+        existingConfig.installId.trim()
+      ) {
         existingInstallId = existingConfig.installId.trim();
       }
     } catch (_) {
@@ -397,29 +482,57 @@ function init() {
 
   const config = {
     version: pkgVersion(),
-    apiUrl: process.env.RLHF_API_URL || 'http://localhost:3000',
-    logPath: '.rlhf/feedback-log.jsonl',
-    memoryPath: '.rlhf/memory-log.jsonl',
+    apiUrl: process.env.RLHF_API_URL || "http://localhost:3000",
+    logPath: ".rlhf/feedback-log.jsonl",
+    memoryPath: ".rlhf/memory-log.jsonl",
     installId: existingInstallId || crypto.randomUUID(),
     createdAt: new Date().toISOString(),
   };
 
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
-  console.log('Wrote .rlhf/config.json');
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+  console.log("Wrote .rlhf/config.json");
 
   // Always create .mcp.json (project-level MCP config used by Claude, Codex, Cursor)
-  mergeMcpJson(path.join(CWD, '.mcp.json'), 'MCP');
+  mergeMcpJson(path.join(CWD, ".mcp.json"), "MCP");
 
   // Auto-detect and configure platform-specific locations
-  console.log('');
-  console.log('Detecting platforms...');
+  console.log("");
+  console.log("Detecting platforms...");
   let configured = 0;
 
   const platforms = [
-    { name: 'Codex', detect: [() => whichExists('codex'), () => fs.existsSync(path.join(HOME, '.codex'))], setup: setupCodex },
-    { name: 'Gemini', detect: [() => whichExists('gemini'), () => fs.existsSync(path.join(HOME, '.gemini'))], setup: setupGemini },
-    { name: 'Amp', detect: [() => whichExists('amp'), () => fs.existsSync(path.join(HOME, '.amp'))], setup: setupAmp },
-    { name: 'Cursor', detect: [() => fs.existsSync(path.join(HOME, '.cursor', 'mcp.json')), () => fs.existsSync(path.join(CWD, '.cursor'))], setup: setupCursor },
+    {
+      name: "Codex",
+      detect: [
+        () => whichExists("codex"),
+        () => fs.existsSync(path.join(HOME, ".codex")),
+      ],
+      setup: setupCodex,
+    },
+    {
+      name: "Gemini",
+      detect: [
+        () => whichExists("gemini"),
+        () => fs.existsSync(path.join(HOME, ".gemini")),
+      ],
+      setup: setupGemini,
+    },
+    {
+      name: "Amp",
+      detect: [
+        () => whichExists("amp"),
+        () => fs.existsSync(path.join(HOME, ".amp")),
+      ],
+      setup: setupAmp,
+    },
+    {
+      name: "Cursor",
+      detect: [
+        () => fs.existsSync(path.join(HOME, ".cursor", "mcp.json")),
+        () => fs.existsSync(path.join(CWD, ".cursor")),
+      ],
+      setup: setupCursor,
+    },
   ];
 
   for (const p of platforms) {
@@ -431,25 +544,38 @@ function init() {
   }
 
   // ChatGPT — cannot be automated
-  const chatgptSpec = path.join(PKG_ROOT, 'adapters', 'chatgpt', 'openapi.yaml');
+  const chatgptSpec = path.join(
+    PKG_ROOT,
+    "adapters",
+    "chatgpt",
+    "openapi.yaml",
+  );
   if (fs.existsSync(chatgptSpec)) {
-    const projectChatgptSpec = path.join(rlhfDir, 'chatgpt-openapi.yaml');
+    const projectChatgptSpec = path.join(rlhfDir, "chatgpt-openapi.yaml");
     fs.copyFileSync(chatgptSpec, projectChatgptSpec);
-    console.log(`  ChatGPT: import ${path.relative(CWD, projectChatgptSpec)} in GPT Builder > Actions`);
+    console.log(
+      `  ChatGPT: import ${path.relative(CWD, projectChatgptSpec)} in GPT Builder > Actions`,
+    );
   }
 
-  if (configured === 0) console.log('  All detected platforms already configured.');
+  if (configured === 0)
+    console.log("  All detected platforms already configured.");
 
   // Auto-wire hooks if --agent flag is provided (or auto-detect)
-  if (args.agent || args['wire-hooks']) {
-    const { wireHooks } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
-    const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'] });
+  if (args.agent || args["wire-hooks"]) {
+    const { wireHooks } = require(
+      path.join(PKG_ROOT, "scripts", "auto-wire-hooks"),
+    );
+    const hookResult = wireHooks({
+      agent: args.agent,
+      dryRun: args["dry-run"],
+    });
     if (hookResult.error) {
       console.log(`  Hook wiring: ${hookResult.error}`);
     } else if (!hookResult.changed) {
       console.log(`  Hooks: already wired for ${hookResult.agent}`);
     } else {
-      const prefix = args['dry-run'] ? '[DRY RUN] Would add' : 'Wired';
+      const prefix = args["dry-run"] ? "[DRY RUN] Would add" : "Wired";
       for (const h of hookResult.added) {
         console.log(`  ${prefix} ${h.lifecycle} hook: ${h.command}`);
       }
@@ -457,36 +583,41 @@ function init() {
   }
 
   // .gitignore
-  const gitignorePath = path.join(CWD, '.gitignore');
+  const gitignorePath = path.join(CWD, ".gitignore");
   if (fs.existsSync(gitignorePath)) {
-    const gitignore = fs.readFileSync(gitignorePath, 'utf8');
-    const entries = ['.rlhf/feedback-log.jsonl', '.rlhf/memory-log.jsonl'];
+    const gitignore = fs.readFileSync(gitignorePath, "utf8");
+    const entries = [".rlhf/feedback-log.jsonl", ".rlhf/memory-log.jsonl"];
     const missing = entries.filter((e) => !gitignore.includes(e));
     if (missing.length > 0) {
-      fs.appendFileSync(gitignorePath, '\n# RLHF local feedback data\n' + missing.join('\n') + '\n');
-      console.log('Updated .gitignore');
+      fs.appendFileSync(
+        gitignorePath,
+        "\n# RLHF local feedback data\n" + missing.join("\n") + "\n",
+      );
+      console.log("Updated .gitignore");
     }
   }
 
-  console.log('');
+  console.log("");
   console.log(`mcp-memory-gateway v${pkgVersion()} initialized.`);
-  console.log('Run: npx mcp-memory-gateway help');
-  trackEvent('cli_init', { command: 'init' });
+  console.log("Run: npx mcp-memory-gateway help");
+  trackEvent("cli_init", { command: "init" });
   proNudge();
   process.stderr.write(
-    '\n  ┌─────────────────────────────────────────────────┐\n' +
-    '  │  Free: unlimited captures, recalls, and gates   │\n' +
-    '  │  Pro:  + dashboard + DPO export + multi-repo    │\n' +
-    '  │        $49 one-time → npx mcp-memory-gateway pro│\n' +
-    '  └─────────────────────────────────────────────────┘\n\n'
+    "\n  ┌─────────────────────────────────────────────────┐\n" +
+      "  │  Free: unlimited captures, recalls, and gates   │\n" +
+      "  │  Pro:  + dashboard + DPO export + multi-repo    │\n" +
+      "  │        $19/mo → npx mcp-memory-gateway pro│\n" +
+      "  └─────────────────────────────────────────────────┘\n\n",
   );
 
   try {
-    const { appendFunnelEvent } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
+    const { appendFunnelEvent } = require(
+      path.join(PKG_ROOT, "scripts", "billing"),
+    );
     appendFunnelEvent({
-      stage: 'acquisition',
-      event: 'cli_init_completed',
-      evidence: 'cli_init_completed',
+      stage: "acquisition",
+      event: "cli_init_completed",
+      evidence: "cli_init_completed",
       installId: config.installId,
       metadata: {
         cwd: CWD,
@@ -503,15 +634,22 @@ function capture() {
   const args = parseArgs(process.argv.slice(3));
 
   // Delegate to the full engine
-  const { captureFeedback, analyzeFeedback, feedbackSummary, writePreventionRules } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
-  const { checkLimit } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+  const {
+    captureFeedback,
+    analyzeFeedback,
+    feedbackSummary,
+    writePreventionRules,
+  } = require(path.join(PKG_ROOT, "scripts", "feedback-loop"));
+  const { checkLimit } = require(
+    path.join(PKG_ROOT, "scripts", "rate-limiter"),
+  );
 
-  const capLimit = checkLimit('capture_feedback');
+  const capLimit = checkLimit("capture_feedback");
   if (!capLimit.allowed) {
-    limitNudge('capture_feedback');
+    limitNudge("capture_feedback");
     process.exit(1);
   }
-  trackEvent('cli_capture', { command: 'capture' });
+  trackEvent("cli_capture", { command: "capture" });
 
   if (args.stats) {
     stats();
@@ -523,22 +661,28 @@ function capture() {
     return;
   }
 
-  const signal = (args.feedback || '').toLowerCase();
-  const normalized = ['up', 'thumbsup', 'thumbs_up', 'positive'].some(v => signal.includes(v)) ? 'up'
-    : ['down', 'thumbsdown', 'thumbs_down', 'negative'].some(v => signal.includes(v)) ? 'down'
-    : signal;
+  const signal = (args.feedback || "").toLowerCase();
+  const normalized = ["up", "thumbsup", "thumbs_up", "positive"].some((v) =>
+    signal.includes(v),
+  )
+    ? "up"
+    : ["down", "thumbsdown", "thumbs_down", "negative"].some((v) =>
+          signal.includes(v),
+        )
+      ? "down"
+      : signal;
 
-  if (normalized !== 'up' && normalized !== 'down') {
-    console.error('Missing or unrecognized --feedback=up|down');
+  if (normalized !== "up" && normalized !== "down") {
+    console.error("Missing or unrecognized --feedback=up|down");
     process.exit(1);
   }
 
   const result = captureFeedback({
     signal: normalized,
-    context: args.context || '',
-    whatWentWrong: args['what-went-wrong'],
-    whatToChange: args['what-to-change'],
-    whatWorked: args['what-worked'],
+    context: args.context || "",
+    whatWentWrong: args["what-went-wrong"],
+    whatToChange: args["what-to-change"],
+    whatWorked: args["what-worked"],
     tags: args.tags,
   });
 
@@ -546,79 +690,101 @@ function capture() {
     const ev = result.feedbackEvent;
     const mem = result.memoryRecord;
     console.log(`\nFeedback Captured [${normalized.toUpperCase()}]`);
-    console.log('─'.repeat(50));
+    console.log("─".repeat(50));
     console.log(`  Feedback ID : ${ev.id}`);
     console.log(`  Signal      : ${ev.signal} (${ev.actionType})`);
     console.log(`  Memory ID   : ${mem.id}`);
     console.log(`  Storage     : JSONL log + LanceDB vector index\n`);
     proNudge();
   } else {
-    console.log(`\nFeedback Recorded [${normalized.toUpperCase()}] — not promoted`);
-    console.log('─'.repeat(50));
+    console.log(
+      `\nFeedback Recorded [${normalized.toUpperCase()}] — not promoted`,
+    );
+    console.log("─".repeat(50));
     console.log(`  Reason      : ${result.reason}\n`);
     process.exit(2);
   }
 }
 
 function stats() {
-  trackEvent('cli_stats', { command: 'stats' });
-  const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  trackEvent("cli_stats", { command: "stats" });
+  const { analyzeFeedback } = require(
+    path.join(PKG_ROOT, "scripts", "feedback-loop"),
+  );
   const data = analyzeFeedback();
-  
-  console.log('\n📊 ThumbGate Performance Metrics');
-  console.log('─'.repeat(50));
+
+  console.log("\n📊 ThumbGate Performance Metrics");
+  console.log("─".repeat(50));
   console.log(`  Total Signals   : ${data.total}`);
   console.log(`  Approval Rate   : ${Math.round(data.approvalRate * 100)}%`);
   console.log(`  Recent Trend    : ${Math.round(data.recentRate * 100)}%`);
-  
+
   // The Pitch: Revenue-at-Risk
-  const avgCostOfMistake = 2.50; // $2.50 per agent turn/fix
+  const avgCostOfMistake = 2.5; // $2.50 per agent turn/fix
   const revenueAtRisk = (data.totalNegative * avgCostOfMistake).toFixed(2);
-  
+
   if (data.totalNegative > 0) {
-    console.log('\n⚠️  REVENUE-AT-RISK ANALYSIS');
+    console.log("\n⚠️  REVENUE-AT-RISK ANALYSIS");
     console.log(`  Repeated Failures detected: ${data.totalNegative}`);
     console.log(`  Estimated Operational Loss: $${revenueAtRisk}`);
-    console.log('  Action Required: Run "npx mcp-memory-gateway rules" to generate guardrails.');
-    console.log('  Strategic Recommendation: Upgrade to Context Gateway to sync these rules across your team.');
-    console.log('  Run: npx mcp-memory-gateway pro');
+    console.log(
+      '  Action Required: Run "npx mcp-memory-gateway rules" to generate guardrails.',
+    );
+    console.log(
+      "  Strategic Recommendation: Upgrade to Context Gateway to sync these rules across your team.",
+    );
+    console.log("  Run: npx mcp-memory-gateway pro");
   } else {
-    console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');
+    console.log(
+      "\n✅ System is currently high-reliability. No immediate revenue loss detected.",
+    );
   }
   proNudge();
 }
 
 function compact() {
-  const { compactMemories } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  const { compactMemories } = require(
+    path.join(PKG_ROOT, "scripts", "feedback-loop"),
+  );
   const result = compactMemories();
 
-  console.log('\n🧹 Memory Compaction Complete');
-  console.log('─'.repeat(50));
+  console.log("\n🧹 Memory Compaction Complete");
+  console.log("─".repeat(50));
   console.log(`  Before : ${result.before} memories`);
   console.log(`  After  : ${result.after} memories`);
   console.log(`  Removed: ${result.removed} duplicates`);
 
   if (result.removed > 0) {
-    console.log(`\n✅ Eliminated ${Math.round((result.removed / result.before) * 100)}% noise.`);
+    console.log(
+      `\n✅ Eliminated ${Math.round((result.removed / result.before) * 100)}% noise.`,
+    );
   } else {
-    console.log('\n✅ No duplicates found — memory log is clean.');
+    console.log("\n✅ No duplicates found — memory log is clean.");
   }
 }
 
 function cfo() {
   const args = parseArgs(process.argv.slice(3));
-  const { getOperationalBillingSummary } = require(path.join(PKG_ROOT, 'scripts', 'operational-summary'));
+  const { getOperationalBillingSummary } = require(
+    path.join(PKG_ROOT, "scripts", "operational-summary"),
+  );
   getOperationalBillingSummary({
     window: args.window,
     timeZone: args.timezone,
     now: args.now,
   })
     .then(({ source, summary, fallbackReason }) => {
-      console.log(JSON.stringify({
-        source,
-        fallbackReason,
-        summary,
-      }, null, 2));
+      console.log(
+        JSON.stringify(
+          {
+            source,
+            fallbackReason,
+            summary,
+          },
+          null,
+          2,
+        ),
+      );
       process.exit(0);
     })
     .catch((err) => {
@@ -629,7 +795,9 @@ function cfo() {
 
 function repairGithubMarketplace() {
   const args = parseArgs(process.argv.slice(3));
-  const { repairGithubMarketplaceRevenueLedger } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
+  const { repairGithubMarketplaceRevenueLedger } = require(
+    path.join(PKG_ROOT, "scripts", "billing"),
+  );
   const result = repairGithubMarketplaceRevenueLedger({
     write: Boolean(args.write),
   });
@@ -639,7 +807,9 @@ function repairGithubMarketplace() {
 
 function northStar() {
   const args = parseArgs(process.argv.slice(3));
-  const { getOperationalDashboard } = require(path.join(PKG_ROOT, 'scripts', 'operational-dashboard'));
+  const { getOperationalDashboard } = require(
+    path.join(PKG_ROOT, "scripts", "operational-dashboard"),
+  );
 
   getOperationalDashboard({
     window: args.window,
@@ -650,22 +820,44 @@ function northStar() {
       const summary = data.analytics.northStar || {};
       const revenue = data.analytics.revenue || {};
 
-      console.log('\nNorth Star');
-      console.log('─'.repeat(40));
-      console.log(`Metrics source                    : ${source}${fallbackReason ? ` (${fallbackReason})` : ''}`);
-      console.log(`Weekly proof-backed workflow runs : ${summary.weeklyActiveProofBackedWorkflowRuns || 0}`);
-      console.log(`Weekly teams on proof-backed runs : ${summary.weeklyTeamsRunningProofBackedWorkflows || 0}`);
-      console.log(`Reviewed workflow runs            : ${summary.reviewedRuns || 0}`);
-      console.log(`Named pilot agreements            : ${summary.namedPilotAgreements || 0}`);
-      console.log(`Paid team runs                    : ${summary.paidTeamRuns || 0}`);
-      console.log(`Paid orders                       : ${revenue.paidOrders || 0}`);
-      console.log(`Booked revenue                    : $${(Number(revenue.bookedRevenueCents || 0) / 100).toFixed(2)}`);
-      console.log(`Customer proof                    : ${summary.customerProofReached ? 'present' : 'missing'}`);
-      console.log(`North Star status                 : ${summary.northStarReached ? 'tracking' : 'not_started'}`);
+      console.log("\nNorth Star");
+      console.log("─".repeat(40));
+      console.log(
+        `Metrics source                    : ${source}${fallbackReason ? ` (${fallbackReason})` : ""}`,
+      );
+      console.log(
+        `Weekly proof-backed workflow runs : ${summary.weeklyActiveProofBackedWorkflowRuns || 0}`,
+      );
+      console.log(
+        `Weekly teams on proof-backed runs : ${summary.weeklyTeamsRunningProofBackedWorkflows || 0}`,
+      );
+      console.log(
+        `Reviewed workflow runs            : ${summary.reviewedRuns || 0}`,
+      );
+      console.log(
+        `Named pilot agreements            : ${summary.namedPilotAgreements || 0}`,
+      );
+      console.log(
+        `Paid team runs                    : ${summary.paidTeamRuns || 0}`,
+      );
+      console.log(
+        `Paid orders                       : ${revenue.paidOrders || 0}`,
+      );
+      console.log(
+        `Booked revenue                    : $${(Number(revenue.bookedRevenueCents || 0) / 100).toFixed(2)}`,
+      );
+      console.log(
+        `Customer proof                    : ${summary.customerProofReached ? "present" : "missing"}`,
+      );
+      console.log(
+        `North Star status                 : ${summary.northStarReached ? "tracking" : "not_started"}`,
+      );
       if (summary.latestRun) {
-        console.log(`Latest proof-backed run           : ${summary.latestRun.workflowId} @ ${summary.latestRun.timestamp}`);
+        console.log(
+          `Latest proof-backed run           : ${summary.latestRun.workflowId} @ ${summary.latestRun.timestamp}`,
+        );
       }
-      console.log('');
+      console.log("");
       process.exit(0);
     })
     .catch((err) => {
@@ -675,32 +867,41 @@ function northStar() {
 }
 
 function pro() {
-  trackEvent('cli_pro_view', { command: 'pro' });
+  trackEvent("cli_pro_view", { command: "pro" });
   const args = parseArgs(process.argv.slice(3));
-  const {
-    resolveProKey,
-    saveLicense,
-    startLocalProDashboard,
-  } = require(path.join(PKG_ROOT, 'scripts', 'pro-local-dashboard'));
+  const { resolveProKey, saveLicense, startLocalProDashboard } = require(
+    path.join(PKG_ROOT, "scripts", "pro-local-dashboard"),
+  );
 
   function printProInfo() {
-    const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
-    const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
-    console.log('\nThumbGate Pro — Local Dashboard');
-    console.log('─'.repeat(50));
-    console.log('Self-serve offer today: Pro ($49 one-time).');
-    console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
-    console.log('\nWhat is available:');
-    console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
-    console.log('  - Optional hosted API key: shared lesson DB for teams and multi-agent workflows');
-    console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
-    console.log('\nLinks:');
+    const hostedUrl = "https://rlhf-feedback-loop-production.up.railway.app";
+    const truthUrl =
+      "https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md";
+    console.log("\nThumbGate Pro — Local Dashboard");
+    console.log("─".repeat(50));
+    console.log("Self-serve offer today: Pro ($19/mo).");
+    console.log(
+      "Every licensed Pro user gets a personal local dashboard on localhost.",
+    );
+    console.log("\nWhat is available:");
+    console.log(
+      "  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export",
+    );
+    console.log(
+      "  - Optional hosted API key: shared lesson DB for teams and multi-agent workflows",
+    );
+    console.log(
+      "  - Commercial truth doc: source of truth for traction, pricing, and proof claims",
+    );
+    console.log("\nLinks:");
     console.log(`  Buy Pro         : ${hostedUrl}`);
     console.log(`  Commercial truth: ${truthUrl}\n`);
-    console.log('  Launch dashboard: npx mcp-memory-gateway pro');
-    console.log('  Activate + run  : npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
-    console.log('  Install configs : npx mcp-memory-gateway pro --upgrade');
-    console.log('  Legacy launcher : npx mcp-memory-gateway-pro\n');
+    console.log("  Launch dashboard: npx mcp-memory-gateway pro");
+    console.log(
+      "  Activate + run  : npx mcp-memory-gateway pro --activate --key=YOUR_KEY",
+    );
+    console.log("  Install configs : npx mcp-memory-gateway pro --upgrade");
+    console.log("  Legacy launcher : npx mcp-memory-gateway-pro\n");
   }
 
   function launchDashboard(key, eventType) {
@@ -720,16 +921,21 @@ function pro() {
   }
 
   if (args.activate) {
-    const key = args.key || process.argv.slice(3).find((a) => !a.startsWith('--'));
+    const key =
+      args.key || process.argv.slice(3).find((a) => !a.startsWith("--"));
     if (!key) {
-      console.error('❌ License key required. Usage: npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
-      console.error('   You received your key by email after purchasing Pro.');
+      console.error(
+        "❌ License key required. Usage: npx mcp-memory-gateway pro --activate --key=YOUR_KEY",
+      );
+      console.error("   You received your key by email after purchasing Pro.");
       process.exit(1);
     }
 
     // Validate key format (RLHF_API_KEY prefix)
-    if (!key.startsWith('rlhf_') && !key.startsWith('tg_')) {
-      console.error('❌ Invalid license key format. Keys start with "rlhf_" or "tg_".');
+    if (!key.startsWith("rlhf_") && !key.startsWith("tg_")) {
+      console.error(
+        '❌ Invalid license key format. Keys start with "rlhf_" or "tg_".',
+      );
       process.exit(1);
     }
 
@@ -740,35 +946,39 @@ function pro() {
     };
 
     const licensePath = saveLicense(license.key, { version: license.version });
-    console.log('\n✅ Pro license activated!');
+    console.log("\n✅ Pro license activated!");
     console.log(`   Key saved to: ${licensePath}`);
-    console.log('   Launching your personal local dashboard...\n');
-    return launchDashboard(license.key, 'pro_activate');
+    console.log("   Launching your personal local dashboard...\n");
+    return launchDashboard(license.key, "pro_activate");
   }
 
   if (args.upgrade) {
-    const proDir = path.join(PKG_ROOT, 'pro');
-    const rlhfDir = path.join(CWD, '.rlhf');
+    const proDir = path.join(PKG_ROOT, "pro");
+    const rlhfDir = path.join(CWD, ".rlhf");
     if (!fs.existsSync(rlhfDir)) fs.mkdirSync(rlhfDir, { recursive: true });
 
     const files = [
-      ['constraints-pro.json', '10 RLAIF constraints'],
-      ['prevention-rules-pro.md', 'curated production rules'],
-      ['thompson-presets.json', '4 sampling presets'],
-      ['reminders-pro.json', '8 reminder templates'],
+      ["constraints-pro.json", "10 RLAIF constraints"],
+      ["prevention-rules-pro.md", "curated production rules"],
+      ["thompson-presets.json", "4 sampling presets"],
+      ["reminders-pro.json", "8 reminder templates"],
     ];
 
     for (const [file] of files) {
       fs.copyFileSync(path.join(proDir, file), path.join(rlhfDir, file));
     }
 
-    console.log('\n✅ Pro configs installed to .rlhf/');
+    console.log("\n✅ Pro configs installed to .rlhf/");
     for (const [file, desc] of files) {
       console.log(`  - ${file} (${desc})`);
     }
-    console.log('');
+    console.log("");
 
-    appendLocalTelemetry({ eventType: 'pro_upgrade', version: pkgVersion(), timestamp: new Date().toISOString() });
+    appendLocalTelemetry({
+      eventType: "pro_upgrade",
+      version: pkgVersion(),
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
 
@@ -779,7 +989,7 @@ function pro() {
 
   const resolvedKey = resolveProKey();
   if (resolvedKey && resolvedKey.key) {
-    return launchDashboard(resolvedKey.key, 'pro_dashboard_launch');
+    return launchDashboard(resolvedKey.key, "pro_dashboard_launch");
   }
 
   printProInfo();
@@ -787,19 +997,26 @@ function pro() {
 
 function summary() {
   const args = parseArgs(process.argv.slice(3));
-  const { feedbackSummary } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  const { feedbackSummary } = require(
+    path.join(PKG_ROOT, "scripts", "feedback-loop"),
+  );
   console.log(feedbackSummary(Number(args.recent || 20)));
 }
 
 function lessons() {
-  trackEvent('cli_recall', { command: 'lessons' });
+  trackEvent("cli_recall", { command: "lessons" });
   const args = parseArgs(process.argv.slice(3));
-  const { searchLessons, formatLessonSearchResults } = require(path.join(PKG_ROOT, 'scripts', 'lesson-search'));
-  const tags = String(args.tags || '')
-    .split(',')
+  const { searchLessons, formatLessonSearchResults } = require(
+    path.join(PKG_ROOT, "scripts", "lesson-search"),
+  );
+  const tags = String(args.tags || "")
+    .split(",")
     .map((tag) => tag.trim())
     .filter(Boolean);
-  const query = args.query || process.argv.slice(3).find((arg) => !arg.startsWith('--')) || '';
+  const query =
+    args.query ||
+    process.argv.slice(3).find((arg) => !arg.startsWith("--")) ||
+    "";
   const result = searchLessons(query, {
     limit: Number(args.limit || 10),
     category: args.category,
@@ -815,28 +1032,41 @@ function lessons() {
 }
 
 function modelFit() {
-  const { writeModelFitReport } = require(path.join(PKG_ROOT, 'scripts', 'local-model-profile'));
+  const { writeModelFitReport } = require(
+    path.join(PKG_ROOT, "scripts", "local-model-profile"),
+  );
   const { reportPath, report } = writeModelFitReport();
   console.log(JSON.stringify({ reportPath, report }, null, 2));
 }
 
 function risk() {
   const args = parseArgs(process.argv.slice(3));
-  const riskScorer = require(path.join(PKG_ROOT, 'scripts', 'risk-scorer'));
+  const riskScorer = require(path.join(PKG_ROOT, "scripts", "risk-scorer"));
 
-  if (args.context || args.tags || args.skill || args.domain || args['rubric-scores'] || args.guardrails) {
-    const { inferDomain } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
-    const { buildRubricEvaluation } = require(path.join(PKG_ROOT, 'scripts', 'rubric-engine'));
+  if (
+    args.context ||
+    args.tags ||
+    args.skill ||
+    args.domain ||
+    args["rubric-scores"] ||
+    args.guardrails
+  ) {
+    const { inferDomain } = require(
+      path.join(PKG_ROOT, "scripts", "feedback-loop"),
+    );
+    const { buildRubricEvaluation } = require(
+      path.join(PKG_ROOT, "scripts", "rubric-engine"),
+    );
     const historyRows = riskScorer.readJSONL(riskScorer.sequencePathFor());
-    const tags = String(args.tags || '')
-      .split(',')
+    const tags = String(args.tags || "")
+      .split(",")
       .map((tag) => tag.trim())
       .filter(Boolean);
 
     let rubric = null;
-    if (args['rubric-scores'] || args.guardrails) {
+    if (args["rubric-scores"] || args.guardrails) {
       const evaluation = buildRubricEvaluation({
-        rubricScores: args['rubric-scores'],
+        rubricScores: args["rubric-scores"],
         guardrails: args.guardrails,
       });
       rubric = {
@@ -848,47 +1078,63 @@ function risk() {
       };
     }
 
-    const candidate = riskScorer.buildRiskCandidate({
-      context: args.context || '',
-      tags,
-      skill: args.skill || null,
-      domain: args.domain || inferDomain(tags, args.context || ''),
-      rubric,
-      filePathCount: Number(args['file-count'] || 0),
-      errorType: args['error-type'] || null,
-    }, historyRows);
-    const model = riskScorer.loadRiskModel() || riskScorer.trainAndPersistRiskModel().model;
-    console.log(JSON.stringify({
-      prediction: riskScorer.predictRisk(model, candidate),
-      candidate,
-    }, null, 2));
+    const candidate = riskScorer.buildRiskCandidate(
+      {
+        context: args.context || "",
+        tags,
+        skill: args.skill || null,
+        domain: args.domain || inferDomain(tags, args.context || ""),
+        rubric,
+        filePathCount: Number(args["file-count"] || 0),
+        errorType: args["error-type"] || null,
+      },
+      historyRows,
+    );
+    const model =
+      riskScorer.loadRiskModel() || riskScorer.trainAndPersistRiskModel().model;
+    console.log(
+      JSON.stringify(
+        {
+          prediction: riskScorer.predictRisk(model, candidate),
+          candidate,
+        },
+        null,
+        2,
+      ),
+    );
     return;
   }
 
   const { model, modelPath } = riskScorer.trainAndPersistRiskModel();
-  console.log(JSON.stringify({
-    modelPath,
-    metrics: model.metrics,
-    summary: riskScorer.getRiskSummary(),
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        modelPath,
+        metrics: model.metrics,
+        summary: riskScorer.getRiskSummary(),
+      },
+      null,
+      2,
+    ),
+  );
 }
 
 function exportDpo() {
-  const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+  const { isProTier } = require(path.join(PKG_ROOT, "scripts", "rate-limiter"));
   if (!isProTier(null)) {
-    const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
+    const STRIPE_URL = "https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05";
     process.stderr.write(
-      `\n  🔒 DPO Export requires Pro ($49 one-time).\n` +
-      `     Your feedback would generate valuable training pairs.\n` +
-      `     Upgrade: ${STRIPE_URL}\n\n`
+      `\n  🔒 DPO Export requires Pro ($19/mo).\n` +
+        `     Your feedback would generate valuable training pairs.\n` +
+        `     Upgrade: ${STRIPE_URL}\n\n`,
     );
     process.exit(1);
   }
-  const extraArgs = process.argv.slice(3).join(' ');
+  const extraArgs = process.argv.slice(3).join(" ");
   try {
     const output = execSync(
-      `node "${path.join(PKG_ROOT, 'scripts', 'export-dpo-pairs.js')}" --from-local ${extraArgs}`,
-      { encoding: 'utf8', stdio: 'pipe', cwd: CWD }
+      `node "${path.join(PKG_ROOT, "scripts", "export-dpo-pairs.js")}" --from-local ${extraArgs}`,
+      { encoding: "utf8", stdio: "pipe", cwd: CWD },
     );
     process.stdout.write(output);
   } catch (err) {
@@ -898,21 +1144,21 @@ function exportDpo() {
 }
 
 function exportDatabricks() {
-  const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+  const { isProTier } = require(path.join(PKG_ROOT, "scripts", "rate-limiter"));
   if (!isProTier(null)) {
-    const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
+    const STRIPE_URL = "https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05";
     process.stderr.write(
-      `\n  🔒 Databricks Export requires Pro ($49 one-time).\n` +
-      `     Export feedback logs + proof artifacts for analytics.\n` +
-      `     Upgrade: ${STRIPE_URL}\n\n`
+      `\n  🔒 Databricks Export requires Pro ($19/mo).\n` +
+        `     Export feedback logs + proof artifacts for analytics.\n` +
+        `     Upgrade: ${STRIPE_URL}\n\n`,
     );
     process.exit(1);
   }
-  const extraArgs = process.argv.slice(3).join(' ');
+  const extraArgs = process.argv.slice(3).join(" ");
   try {
     const output = execSync(
-      `node "${path.join(PKG_ROOT, 'scripts', 'export-databricks-bundle.js')}" ${extraArgs}`,
-      { encoding: 'utf8', stdio: 'pipe', cwd: CWD }
+      `node "${path.join(PKG_ROOT, "scripts", "export-databricks-bundle.js")}" ${extraArgs}`,
+      { encoding: "utf8", stdio: "pipe", cwd: CWD },
     );
     process.stdout.write(output);
   } catch (err) {
@@ -923,20 +1169,30 @@ function exportDatabricks() {
 
 function obsidianExport() {
   const args = parseArgs(process.argv.slice(3));
-  const { exportAll } = require(path.join(PKG_ROOT, 'scripts', 'obsidian-export'));
-  const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  const { exportAll } = require(
+    path.join(PKG_ROOT, "scripts", "obsidian-export"),
+  );
+  const { getFeedbackPaths } = require(
+    path.join(PKG_ROOT, "scripts", "feedback-loop"),
+  );
 
-  const vaultPath = args['vault-path'] || process.env.RLHF_OBSIDIAN_VAULT_PATH || '';
-  const outputSubdir = args['output-dir'] || 'AI-Memories/rlhf';
+  const vaultPath =
+    args["vault-path"] || process.env.RLHF_OBSIDIAN_VAULT_PATH || "";
+  const outputSubdir = args["output-dir"] || "AI-Memories/rlhf";
   let outputDir;
   if (vaultPath) {
     outputDir = path.join(vaultPath, outputSubdir);
   } else {
-    outputDir = path.join(CWD, 'obsidian-export');
+    outputDir = path.join(CWD, "obsidian-export");
   }
 
   const { FEEDBACK_DIR } = getFeedbackPaths();
-  const gatesConfigPath = path.join(PKG_ROOT, 'config', 'gates', 'default.json');
+  const gatesConfigPath = path.join(
+    PKG_ROOT,
+    "config",
+    "gates",
+    "default.json",
+  );
 
   const stats = exportAll({
     feedbackDir: FEEDBACK_DIR,
@@ -947,7 +1203,7 @@ function obsidianExport() {
 
   console.log(
     `Exported ${stats.feedback} feedback, ${stats.memories} memories, ` +
-    `${stats.rules} rules, ${stats.gates} gates, ${stats.lessons} lessons`
+      `${stats.rules} rules, ${stats.gates} gates, ${stats.lessons} lessons`,
   );
   if (stats.packs > 0) console.log(`  + ${stats.packs} context packs`);
   if (stats.errors.length > 0) {
@@ -959,8 +1215,10 @@ function obsidianExport() {
 
 function rules() {
   const args = parseArgs(process.argv.slice(3));
-  const { writePreventionRules } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
-  const outPath = args.output || path.join(CWD, '.rlhf', 'prevention-rules.md');
+  const { writePreventionRules } = require(
+    path.join(PKG_ROOT, "scripts", "feedback-loop"),
+  );
+  const outPath = args.output || path.join(CWD, ".rlhf", "prevention-rules.md");
   const result = writePreventionRules(outPath, Number(args.min || 2));
   console.log(`Wrote prevention rules to ${result.path}`);
 }
@@ -968,8 +1226,8 @@ function rules() {
 function selfHeal() {
   try {
     const output = execSync(
-      `node "${path.join(PKG_ROOT, 'scripts', 'self-healing-check.js')}" && node "${path.join(PKG_ROOT, 'scripts', 'self-heal.js')}"`,
-      { encoding: 'utf8', stdio: 'inherit', cwd: CWD }
+      `node "${path.join(PKG_ROOT, "scripts", "self-healing-check.js")}" && node "${path.join(PKG_ROOT, "scripts", "self-heal.js")}"`,
+      { encoding: "utf8", stdio: "inherit", cwd: CWD },
     );
   } catch (err) {
     process.exit(err.status || 1);
@@ -978,15 +1236,21 @@ function selfHeal() {
 
 function prove() {
   const args = parseArgs(process.argv.slice(3));
-  const target = args.target || 'adapters';
-  const script = path.join(PKG_ROOT, 'scripts', `prove-${target}.js`);
+  const target = args.target || "adapters";
+  const script = path.join(PKG_ROOT, "scripts", `prove-${target}.js`);
   if (!fs.existsSync(script)) {
     console.error(`Unknown proof target: ${target}`);
-    console.error('Available: adapters, automation, attribution, lancedb, data-quality, intelligence, local-intelligence, loop-closure, training-export');
+    console.error(
+      "Available: adapters, automation, attribution, lancedb, data-quality, intelligence, local-intelligence, loop-closure, training-export",
+    );
     process.exit(1);
   }
   try {
-    execSync(`node "${script}"`, { encoding: 'utf8', stdio: 'inherit', cwd: CWD });
+    execSync(`node "${script}"`, {
+      encoding: "utf8",
+      stdio: "inherit",
+      cwd: CWD,
+    });
   } catch (err) {
     process.exit(err.status || 1);
   }
@@ -994,7 +1258,9 @@ function prove() {
 
 function watchCmd() {
   const args = parseArgs(process.argv.slice(3));
-  const { watch, once } = require(path.join(PKG_ROOT, 'scripts', 'jsonl-watcher'));
+  const { watch, once } = require(
+    path.join(PKG_ROOT, "scripts", "jsonl-watcher"),
+  );
   const sourceFilter = args.source || undefined;
   if (args.once) {
     once(sourceFilter);
@@ -1004,8 +1270,12 @@ function watchCmd() {
 }
 
 function status() {
-  const statusDashboard = require(path.join(PKG_ROOT, 'scripts', 'status-dashboard'));
-  const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  const statusDashboard = require(
+    path.join(PKG_ROOT, "scripts", "status-dashboard"),
+  );
+  const { getFeedbackPaths } = require(
+    path.join(PKG_ROOT, "scripts", "feedback-loop"),
+  );
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const data = statusDashboard.generateStatus(FEEDBACK_DIR);
   // printDashboard writes directly to stdout when run as main;
@@ -1016,32 +1286,35 @@ function status() {
 }
 
 function funnel() {
-  const { generateFunnelReport } = require(path.join(PKG_ROOT, 'scripts', 'funnel-analytics'));
+  const { generateFunnelReport } = require(
+    path.join(PKG_ROOT, "scripts", "funnel-analytics"),
+  );
   generateFunnelReport();
 }
 
 function pulse() {
-  const { showPulse } = require(path.join(PKG_ROOT, 'scripts', 'pulse'));
-  showPulse().catch((err) => {
-    console.error(err && err.message ? err.message : err);
-    process.exit(1);
-  }).then(() => {
-    process.exit(0);
-  });
+  const { showPulse } = require(path.join(PKG_ROOT, "scripts", "pulse"));
+  showPulse()
+    .catch((err) => {
+      console.error(err && err.message ? err.message : err);
+      process.exit(1);
+    })
+    .then(() => {
+      process.exit(0);
+    });
 }
 
 function dispatchBrief() {
   const args = parseArgs(process.argv.slice(3));
-  const {
-    getDispatchBrief,
-    formatDispatchBrief,
-  } = require(path.join(PKG_ROOT, 'scripts', 'dispatch-brief'));
+  const { getDispatchBrief, formatDispatchBrief } = require(
+    path.join(PKG_ROOT, "scripts", "dispatch-brief"),
+  );
 
   getDispatchBrief({
     window: args.window,
     timeZone: args.timezone,
     now: args.now,
-    profile: args.profile || 'dispatch',
+    profile: args.profile || "dispatch",
   })
     .then((brief) => {
       if (args.json) {
@@ -1058,56 +1331,70 @@ function dispatchBrief() {
 }
 
 function gateStats() {
-  const { calculateStats, formatStats } = require(path.join(PKG_ROOT, 'scripts', 'gate-stats'));
+  const { calculateStats, formatStats } = require(
+    path.join(PKG_ROOT, "scripts", "gate-stats"),
+  );
   const stats = calculateStats();
-  console.log('\n' + formatStats(stats) + '\n');
+  console.log("\n" + formatStats(stats) + "\n");
 }
 
 function optimize() {
-  const { optimize: doOptimize } = require(path.join(PKG_ROOT, 'scripts', 'optimize-context'));
+  const { optimize: doOptimize } = require(
+    path.join(PKG_ROOT, "scripts", "optimize-context"),
+  );
   doOptimize();
 }
 
 function serve() {
   // Start MCP server over stdio
-  const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
+  const mcpServer = path.join(PKG_ROOT, "adapters", "mcp", "server-stdio.js");
   const { startStdioServer } = require(mcpServer);
   startStdioServer();
   // Start watcher as a background daemon alongside MCP server
   try {
-    const { watch } = require(path.join(PKG_ROOT, 'scripts', 'jsonl-watcher'));
+    const { watch } = require(path.join(PKG_ROOT, "scripts", "jsonl-watcher"));
     watch();
-  } catch (_) { /* watcher is non-critical */ }
+  } catch (_) {
+    /* watcher is non-critical */
+  }
 }
 
 function install() {
-  console.log('Installing ThumbGate as a global MCP skill...');
+  console.log("Installing ThumbGate as a global MCP skill...");
   const results = [
     setupClaude(),
     setupCodex(),
     setupGemini(),
     setupCursor(),
-    setupAmp()
+    setupAmp(),
   ];
-  const success = results.some(r => r === true);
+  const success = results.some((r) => r === true);
   if (success) {
-    console.log('\nSuccess! ThumbGate is now available to your agents.');
-    console.log('Try asking your agent: "Capture positive feedback for this task"');
+    console.log("\nSuccess! ThumbGate is now available to your agents.");
+    console.log(
+      'Try asking your agent: "Capture positive feedback for this task"',
+    );
   } else {
-    console.log('\nThumbGate is already configured.');
+    console.log("\nThumbGate is already configured.");
   }
 }
 
 function installMcp() {
-  const { installMcp: doInstall, parseFlags } = require(path.join(PKG_ROOT, 'scripts', 'install-mcp'));
+  const { installMcp: doInstall, parseFlags } = require(
+    path.join(PKG_ROOT, "scripts", "install-mcp"),
+  );
   const flags = parseFlags(process.argv.slice(3));
   doInstall(flags);
 }
 
 function dashboard() {
   const args = parseArgs(process.argv.slice(3));
-  const { printDashboard } = require(path.join(PKG_ROOT, 'scripts', 'dashboard'));
-  const { getOperationalDashboard } = require(path.join(PKG_ROOT, 'scripts', 'operational-dashboard'));
+  const { printDashboard } = require(
+    path.join(PKG_ROOT, "scripts", "dashboard"),
+  );
+  const { getOperationalDashboard } = require(
+    path.join(PKG_ROOT, "scripts", "operational-dashboard"),
+  );
 
   getOperationalDashboard({
     window: args.window,
@@ -1125,15 +1412,17 @@ function dashboard() {
 }
 
 function gateStats() {
-  const { calculateStats, formatStats } = require(path.join(PKG_ROOT, 'scripts', 'gate-stats'));
+  const { calculateStats, formatStats } = require(
+    path.join(PKG_ROOT, "scripts", "gate-stats"),
+  );
   const stats = calculateStats();
-  console.log('\n' + formatStats(stats) + '\n');
+  console.log("\n" + formatStats(stats) + "\n");
 }
 
 function startApi() {
-  const serverPath = path.join(PKG_ROOT, 'src', 'api', 'server.js');
+  const serverPath = path.join(PKG_ROOT, "src", "api", "server.js");
   try {
-    execSync(`node "${serverPath}"`, { stdio: 'inherit', cwd: CWD });
+    execSync(`node "${serverPath}"`, { stdio: "inherit", cwd: CWD });
   } catch (err) {
     process.exit(err.status || 1);
   }
@@ -1142,119 +1431,190 @@ function startApi() {
 function help() {
   const v = pkgVersion();
   console.log(`mcp-memory-gateway v${v}`);
-  console.log('');
-  console.log('Commands:');
-  console.log('  init                  Scaffold .rlhf/ config + MCP server in current project');
-  console.log('    --agent=NAME        Wire PreToolUse hooks for agent (claude-code|codex|gemini)');
-  console.log('    --wire-hooks        Wire hooks only (auto-detect agent, skip scaffolding)');
-  console.log('    --dry-run           Preview hook changes without writing');
-  console.log('  install-mcp           Install ThumbGate MCP server into Claude Code settings (--project for local)');
-  console.log('  serve                 Start MCP server (stdio) — for claude/codex/gemini mcp add');
-  console.log('  capture [flags]       Capture feedback (--feedback=up|down --context="..." --tags="...")');
-  console.log('  stats                 Show feedback analytics + Revenue-at-Risk');
-  console.log('  cfo                   Show hosted billing summary when configured, else local fallback JSON');
-  console.log('  repair-github-marketplace  Dry-run or apply legacy GitHub Marketplace amount repairs (--write)');
-  console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
-  console.log('  summary               Human-readable feedback summary');
-  console.log('  lessons [flags]       Search promoted lessons and show linked corrective actions');
-  console.log('  model-fit             Detect the current local embedding profile and write evidence report');
-  console.log('  risk [flags]          Train or query the boosted local risk scorer');
-  console.log('  doctor                Audit runtime isolation, bootstrap context, and permission tier');
-  console.log('  dispatch              Print a Dispatch-safe remote ops brief for phone-driven review sessions');
-  console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
-  console.log('  export-databricks     Export feedback logs + proof artifacts as a Databricks-ready analytics bundle');
-  console.log('  obsidian-export       Export all feedback data as interlinked Obsidian markdown notes');
-  console.log('    --vault-path=PATH   Obsidian vault path (or set RLHF_OBSIDIAN_VAULT_PATH)');
-  console.log('    --output-dir=DIR    Output subdirectory (default: AI-Memories/rlhf)');
-  console.log('  rules                 Generate prevention rules from repeated failures');
-  console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Pre-Action Gates');
-  console.log('  force-gate <PATTERN>  Immediately create a blocking gate from a pattern');
-  console.log('  self-heal             Run self-healing check and auto-fix');
-  console.log('  pro                   Show Pro plan ($49 one-time) + hosted pilot info');
-  console.log('    --upgrade           Install Pro configs into .rlhf/');
-  console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
-  console.log('  watch [flags]           Watch .rlhf/ for external signals and ingest through pipeline (--once, --source=X)');
-  console.log('  status                  Show feedback tracking dashboard — approval trend + failure domains');
-  console.log('  dashboard               Full ThumbGate dashboard — approval rate, gate stats, prevention impact');
-  console.log('  funnel                  Show marketing & revenue conversion funnel analytics');
-  console.log('  pulse                   Show real-time GTM velocity and Mission Control summary');
-  console.log('  dispatch                Dispatch-safe brief — metrics, gates, and read-only prompt templates');
-  console.log('  gate-stats              Show gate statistics — active gates, blocks, warns, time saved');
-  console.log('  analytics               Unified ThumbGate analytics snapshot (npm, GitHub, landing page)');
-  console.log('  start-api             Start the Memory Gateway HTTPS API server');
-  console.log('  help                  Show this help message');
-  console.log('');
-  console.log('Examples:');
-  console.log('  npx mcp-memory-gateway init');
-  console.log('  npx mcp-memory-gateway stats');
-  console.log('  npx mcp-memory-gateway cfo');
-  console.log('  npx mcp-memory-gateway repair-github-marketplace --write');
-  console.log('  npx mcp-memory-gateway lessons --query="verification" --limit=5');
-  console.log('  npx mcp-memory-gateway model-fit');
-  console.log('  npx mcp-memory-gateway risk');
-  console.log('  npx mcp-memory-gateway pro');
+  console.log("");
+  console.log("Commands:");
+  console.log(
+    "  init                  Scaffold .rlhf/ config + MCP server in current project",
+  );
+  console.log(
+    "    --agent=NAME        Wire PreToolUse hooks for agent (claude-code|codex|gemini)",
+  );
+  console.log(
+    "    --wire-hooks        Wire hooks only (auto-detect agent, skip scaffolding)",
+  );
+  console.log("    --dry-run           Preview hook changes without writing");
+  console.log(
+    "  install-mcp           Install ThumbGate MCP server into Claude Code settings (--project for local)",
+  );
+  console.log(
+    "  serve                 Start MCP server (stdio) — for claude/codex/gemini mcp add",
+  );
+  console.log(
+    '  capture [flags]       Capture feedback (--feedback=up|down --context="..." --tags="...")',
+  );
+  console.log(
+    "  stats                 Show feedback analytics + Revenue-at-Risk",
+  );
+  console.log(
+    "  cfo                   Show hosted billing summary when configured, else local fallback JSON",
+  );
+  console.log(
+    "  repair-github-marketplace  Dry-run or apply legacy GitHub Marketplace amount repairs (--write)",
+  );
+  console.log(
+    "  north-star            Show proof-backed workflow-run progress toward the North Star",
+  );
+  console.log("  summary               Human-readable feedback summary");
+  console.log(
+    "  lessons [flags]       Search promoted lessons and show linked corrective actions",
+  );
+  console.log(
+    "  model-fit             Detect the current local embedding profile and write evidence report",
+  );
+  console.log(
+    "  risk [flags]          Train or query the boosted local risk scorer",
+  );
+  console.log(
+    "  doctor                Audit runtime isolation, bootstrap context, and permission tier",
+  );
+  console.log(
+    "  dispatch              Print a Dispatch-safe remote ops brief for phone-driven review sessions",
+  );
+  console.log(
+    "  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)",
+  );
+  console.log(
+    "  export-databricks     Export feedback logs + proof artifacts as a Databricks-ready analytics bundle",
+  );
+  console.log(
+    "  obsidian-export       Export all feedback data as interlinked Obsidian markdown notes",
+  );
+  console.log(
+    "    --vault-path=PATH   Obsidian vault path (or set RLHF_OBSIDIAN_VAULT_PATH)",
+  );
+  console.log(
+    "    --output-dir=DIR    Output subdirectory (default: AI-Memories/rlhf)",
+  );
+  console.log(
+    "  rules                 Generate prevention rules from repeated failures",
+  );
+  console.log(
+    "  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Pre-Action Gates",
+  );
+  console.log(
+    "  force-gate <PATTERN>  Immediately create a blocking gate from a pattern",
+  );
+  console.log("  self-heal             Run self-healing check and auto-fix");
+  console.log(
+    "  pro                   Show Pro plan ($19/mo) + hosted pilot info",
+  );
+  console.log("    --upgrade           Install Pro configs into .rlhf/");
+  console.log(
+    "  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)",
+  );
+  console.log(
+    "  watch [flags]           Watch .rlhf/ for external signals and ingest through pipeline (--once, --source=X)",
+  );
+  console.log(
+    "  status                  Show feedback tracking dashboard — approval trend + failure domains",
+  );
+  console.log(
+    "  dashboard               Full ThumbGate dashboard — approval rate, gate stats, prevention impact",
+  );
+  console.log(
+    "  funnel                  Show marketing & revenue conversion funnel analytics",
+  );
+  console.log(
+    "  pulse                   Show real-time GTM velocity and Mission Control summary",
+  );
+  console.log(
+    "  dispatch                Dispatch-safe brief — metrics, gates, and read-only prompt templates",
+  );
+  console.log(
+    "  gate-stats              Show gate statistics — active gates, blocks, warns, time saved",
+  );
+  console.log(
+    "  analytics               Unified ThumbGate analytics snapshot (npm, GitHub, landing page)",
+  );
+  console.log(
+    "  start-api             Start the Memory Gateway HTTPS API server",
+  );
+  console.log("  help                  Show this help message");
+  console.log("");
+  console.log("Examples:");
+  console.log("  npx mcp-memory-gateway init");
+  console.log("  npx mcp-memory-gateway stats");
+  console.log("  npx mcp-memory-gateway cfo");
+  console.log("  npx mcp-memory-gateway repair-github-marketplace --write");
+  console.log(
+    '  npx mcp-memory-gateway lessons --query="verification" --limit=5',
+  );
+  console.log("  npx mcp-memory-gateway model-fit");
+  console.log("  npx mcp-memory-gateway risk");
+  console.log("  npx mcp-memory-gateway pro");
   proNudge();
 }
 
-if (COMMAND === 'daemon' || COMMAND === 'serve-daemon') {
-  const subCmd = process.argv[3] || 'status';
-  const { manageDaemon } = require(path.join(PKG_ROOT, 'scripts', 'daemon-manager'));
+if (COMMAND === "daemon" || COMMAND === "serve-daemon") {
+  const subCmd = process.argv[3] || "status";
+  const { manageDaemon } = require(
+    path.join(PKG_ROOT, "scripts", "daemon-manager"),
+  );
   manageDaemon(subCmd);
   process.exit(0);
 }
 
 switch (COMMAND) {
-  case 'init':
+  case "init":
     init();
     upgradeNudge();
     break;
-  case 'install':
+  case "install":
     install();
     break;
-  case 'install-mcp':
+  case "install-mcp":
     installMcp();
     break;
-  case 'serve':
-  case 'mcp':
+  case "serve":
+  case "mcp":
     serve();
     break;
-  case 'capture':
-  case 'feedback':
+  case "capture":
+  case "feedback":
     capture();
     upgradeNudge();
     break;
-  case 'stats':
+  case "stats":
     stats();
     upgradeNudge();
     break;
-  case 'cfo':
-  case 'revenue':
+  case "cfo":
+  case "revenue":
     cfo();
     break;
-  case 'repair-github-marketplace':
+  case "repair-github-marketplace":
     repairGithubMarketplace();
     break;
-  case 'north-star':
+  case "north-star":
     northStar();
     break;
-  case 'summary':
+  case "summary":
     summary();
     break;
-  case 'lessons':
-  case 'search-lessons':
+  case "lessons":
+  case "search-lessons":
     lessons();
     break;
-  case 'model-fit':
+  case "model-fit":
     modelFit();
     break;
-  case 'risk':
+  case "risk":
     risk();
     break;
-  case 'doctor': {
-    const {
-      generateAgentReadinessReport,
-      reportToText,
-    } = require(path.join(PKG_ROOT, 'scripts', 'agent-readiness'));
+  case "doctor": {
+    const { generateAgentReadinessReport, reportToText } = require(
+      path.join(PKG_ROOT, "scripts", "agent-readiness"),
+    );
     const args = parseArgs(process.argv.slice(3));
     const report = generateAgentReadinessReport({ projectRoot: CWD });
     if (args.json) {
@@ -1262,119 +1622,135 @@ switch (COMMAND) {
     } else {
       process.stdout.write(reportToText(report));
     }
-    process.exit(report.overallStatus === 'ready' ? 0 : 1);
+    process.exit(report.overallStatus === "ready" ? 0 : 1);
     break;
   }
-  case 'export-dpo':
-  case 'dpo':
+  case "export-dpo":
+  case "dpo":
     exportDpo();
     break;
-  case 'export-databricks':
-  case 'databricks':
+  case "export-databricks":
+  case "databricks":
     exportDatabricks();
     break;
-  case 'obsidian-export':
+  case "obsidian-export":
     obsidianExport();
     break;
-  case 'rules':
+  case "rules":
     rules();
     break;
-  case 'optimize':
+  case "optimize":
     optimize();
     break;
-  case 'force-gate': {
-    const context = process.argv.slice(3).find(a => !a.startsWith('--'));
+  case "force-gate": {
+    const context = process.argv.slice(3).find((a) => !a.startsWith("--"));
     if (!context) {
-      console.error('Error: context string is required for force-gate');
+      console.error("Error: context string is required for force-gate");
       process.exit(1);
     }
-    const { forcePromote } = require('../scripts/auto-promote-gates');
-    const result = forcePromote(context, 'block');
+    const { forcePromote } = require("../scripts/auto-promote-gates");
+    const result = forcePromote(context, "block");
     console.log(`✅ Forced block gate created: ${result.gateId}`);
     console.log(`Total auto-promoted gates: ${result.totalGates}`);
     break;
   }
-  case 'self-heal':
+  case "self-heal":
     selfHeal();
     break;
-  case 'pro':
+  case "pro":
     pro();
     break;
-  case 'prove':
+  case "prove":
     prove();
     break;
-  case 'watch':
+  case "watch":
     watchCmd();
     break;
-  case 'status':
+  case "status":
     status();
     break;
-  case 'funnel':
+  case "funnel":
     funnel();
     break;
-  case 'pulse':
+  case "pulse":
     pulse();
     break;
-  case 'dispatch':
-  case 'dispatch-brief':
+  case "dispatch":
+  case "dispatch-brief":
     dispatchBrief();
     break;
-  case 'gate-stats':
+  case "gate-stats":
     gateStats();
     break;
-  case 'dashboard':
+  case "dashboard":
     dashboard();
     break;
-  case 'analytics': {
-    const { run: runAnalytics } = require(path.join(PKG_ROOT, 'scripts', 'analytics-report'));
+  case "analytics": {
+    const { run: runAnalytics } = require(
+      path.join(PKG_ROOT, "scripts", "analytics-report"),
+    );
     runAnalytics();
     break;
   }
-  case 'start-api':
+  case "start-api":
     startApi();
     break;
-  case 'help':
-  case '--help':
-  case '-h':
+  case "help":
+  case "--help":
+  case "-h":
     help();
     break;
-  case 'compact':
+  case "compact":
     compact();
     break;
-  case 'checkin': {
+  case "checkin": {
     // User check-in command — asks how it's going after install
-    const rlhfDir = path.join(CWD, '.rlhf');
-    const configPath = path.join(rlhfDir, 'config.json');
-    let installAge = 'unknown';
+    const rlhfDir = path.join(CWD, ".rlhf");
+    const configPath = path.join(rlhfDir, "config.json");
+    let installAge = "unknown";
     if (fs.existsSync(configPath)) {
       try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
         if (config.installedAt) {
-          const days = Math.floor((Date.now() - new Date(config.installedAt).getTime()) / 86400000);
-          installAge = `${days} day${days !== 1 ? 's' : ''}`;
+          const days = Math.floor(
+            (Date.now() - new Date(config.installedAt).getTime()) / 86400000,
+          );
+          installAge = `${days} day${days !== 1 ? "s" : ""}`;
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
-    console.log(`\n🔔 mcp-memory-gateway check-in (installed ${installAge} ago)\n`);
-    console.log('Quick questions to help improve this tool:\n');
-    console.log('1. Is the gate engine catching real mistakes for you? (y/n/haven\'t tried)');
-    console.log('2. What failure pattern do you wish it caught but doesn\'t?');
-    console.log('3. Anything confusing or broken?\n');
-    console.log('Reply to any of these at: https://github.com/IgorGanapolsky/mcp-memory-gateway/discussions');
-    console.log('Or email: iganapolsky@gmail.com\n');
+    console.log(
+      `\n🔔 mcp-memory-gateway check-in (installed ${installAge} ago)\n`,
+    );
+    console.log("Quick questions to help improve this tool:\n");
+    console.log(
+      "1. Is the gate engine catching real mistakes for you? (y/n/haven't tried)",
+    );
+    console.log("2. What failure pattern do you wish it caught but doesn't?");
+    console.log("3. Anything confusing or broken?\n");
+    console.log(
+      "Reply to any of these at: https://github.com/IgorGanapolsky/mcp-memory-gateway/discussions",
+    );
+    console.log("Or email: iganapolsky@gmail.com\n");
 
     // Log the check-in event
-    const checkinLog = path.join(rlhfDir, 'checkin-log.jsonl');
+    const checkinLog = path.join(rlhfDir, "checkin-log.jsonl");
     if (fs.existsSync(rlhfDir)) {
-      const event = { event: 'checkin_shown', at: new Date().toISOString(), installAge };
-      fs.appendFileSync(checkinLog, JSON.stringify(event) + '\n');
+      const event = {
+        event: "checkin_shown",
+        at: new Date().toISOString(),
+        installAge,
+      };
+      fs.appendFileSync(checkinLog, JSON.stringify(event) + "\n");
     }
     break;
   }
   default:
     if (COMMAND) {
       console.error(`Unknown command: ${COMMAND}`);
-      console.error('Run: npx mcp-memory-gateway help');
+      console.error("Run: npx mcp-memory-gateway help");
       process.exit(1);
     } else {
       help();

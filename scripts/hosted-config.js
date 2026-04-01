@@ -1,71 +1,73 @@
-'use strict';
+"use strict";
 
-const crypto = require('node:crypto');
+const crypto = require("node:crypto");
 
-const DEFAULT_PUBLIC_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
-const DEFAULT_CHECKOUT_FALLBACK_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
-const DEFAULT_PRO_PRICE_DOLLARS = 49;
-const DEFAULT_PRO_PRICE_LABEL = '$49 one-time';
+const DEFAULT_PUBLIC_APP_ORIGIN =
+  "https://rlhf-feedback-loop-production.up.railway.app";
+const DEFAULT_CHECKOUT_FALLBACK_URL =
+  "https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05";
+const DEFAULT_PRO_PRICE_DOLLARS = 19;
+const DEFAULT_PRO_PRICE_LABEL = "$19/mo or $149/yr";
 const GA_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/i;
 
 function normalizeOrigin(value) {
-  if (!value || typeof value !== 'string') {
-    return '';
+  if (!value || typeof value !== "string") {
+    return "";
   }
 
   const trimmed = value.trim();
   if (!trimmed) {
-    return '';
+    return "";
   }
 
   try {
     const parsed = new URL(trimmed);
     if (!/^https?:$/.test(parsed.protocol)) {
-      return '';
+      return "";
     }
-    parsed.pathname = parsed.pathname.replace(/\/+$/, '') || '/';
-    parsed.search = '';
-    parsed.hash = '';
+    parsed.pathname = parsed.pathname.replace(/\/+$/, "") || "/";
+    parsed.search = "";
+    parsed.hash = "";
     const serialized = parsed.toString();
-    return serialized.endsWith('/') ? serialized.slice(0, -1) : serialized;
+    return serialized.endsWith("/") ? serialized.slice(0, -1) : serialized;
   } catch {
-    return '';
+    return "";
   }
 }
 
 function normalizeAbsoluteUrl(value) {
-  if (!value || typeof value !== 'string') {
-    return '';
+  if (!value || typeof value !== "string") {
+    return "";
   }
 
   const trimmed = value.trim();
   if (!trimmed) {
-    return '';
+    return "";
   }
 
   try {
     const parsed = new URL(trimmed);
     if (!/^https?:$/.test(parsed.protocol)) {
-      return '';
+      return "";
     }
     return parsed.toString();
   } catch {
-    return '';
+    return "";
   }
 }
 
 function normalizeTrackingId(value, pattern) {
-  if (!value || typeof value !== 'string') {
-    return '';
+  if (!value || typeof value !== "string") {
+    return "";
   }
 
   const trimmed = value.trim();
   if (!trimmed) {
-    return '';
+    return "";
   }
 
   if (pattern && !pattern.test(trimmed)) {
-    return '';
+    return "";
   }
 
   return trimmed;
@@ -74,18 +76,18 @@ function normalizeTrackingId(value, pattern) {
 function joinPublicUrl(baseOrigin, pathname) {
   const normalized = normalizeOrigin(baseOrigin);
   if (!normalized) {
-    throw new Error(`Invalid public origin: ${String(baseOrigin || '')}`);
+    throw new Error(`Invalid public origin: ${String(baseOrigin || "")}`);
   }
-  const cleanPath = pathname.startsWith('/') ? pathname : `/${pathname}`;
+  const cleanPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
   return `${normalized}${cleanPath}`;
 }
 
-function createTraceId(prefix = 'trace') {
-  return `${prefix}_${Date.now().toString(36)}_${crypto.randomBytes(6).toString('hex')}`;
+function createTraceId(prefix = "trace") {
+  return `${prefix}_${Date.now().toString(36)}_${crypto.randomBytes(6).toString("hex")}`;
 }
 
 function normalizePriceDollars(value) {
-  if (value === undefined || value === null || value === '') {
+  if (value === undefined || value === null || value === "") {
     return null;
   }
   const parsed = Number(value);
@@ -96,36 +98,50 @@ function normalizePriceDollars(value) {
 }
 
 function buildHostedSuccessUrl(appOrigin, traceId) {
-  const encodedTraceId = encodeURIComponent(String(traceId || ''));
-  const traceQuery = traceId ? `&trace_id=${encodedTraceId}` : '';
-  return `${joinPublicUrl(appOrigin, '/success')}?session_id={CHECKOUT_SESSION_ID}${traceQuery}`;
+  const encodedTraceId = encodeURIComponent(String(traceId || ""));
+  const traceQuery = traceId ? `&trace_id=${encodedTraceId}` : "";
+  return `${joinPublicUrl(appOrigin, "/success")}?session_id={CHECKOUT_SESSION_ID}${traceQuery}`;
 }
 
 function buildHostedCancelUrl(appOrigin, traceId) {
-  const encodedTraceId = encodeURIComponent(String(traceId || ''));
-  const traceQuery = traceId ? `?trace_id=${encodedTraceId}` : '';
-  return `${joinPublicUrl(appOrigin, '/cancel')}${traceQuery}`;
+  const encodedTraceId = encodeURIComponent(String(traceId || ""));
+  const traceQuery = traceId ? `?trace_id=${encodedTraceId}` : "";
+  return `${joinPublicUrl(appOrigin, "/cancel")}${traceQuery}`;
 }
 
 function resolveHostedBillingConfig({ requestOrigin } = {}) {
-  const inferredOrigin = normalizeOrigin(requestOrigin) || DEFAULT_PUBLIC_APP_ORIGIN;
-  const appOrigin = normalizeOrigin(process.env.RLHF_PUBLIC_APP_ORIGIN) || inferredOrigin;
-  const billingApiBaseUrl = normalizeOrigin(
-    process.env.RLHF_BILLING_API_BASE_URL || process.env.RLHF_CANONICAL_API_BASE_URL || appOrigin
-  ) || appOrigin;
-  const proPriceDollars = normalizePriceDollars(process.env.RLHF_PRO_PRICE_DOLLARS) || DEFAULT_PRO_PRICE_DOLLARS;
-  const proPriceLabel = process.env.RLHF_PRO_PRICE_LABEL || DEFAULT_PRO_PRICE_LABEL;
-  const gaMeasurementId = normalizeTrackingId(process.env.RLHF_GA_MEASUREMENT_ID, GA_MEASUREMENT_ID_PATTERN);
-  const googleSiteVerification = normalizeTrackingId(process.env.RLHF_GOOGLE_SITE_VERIFICATION);
+  const inferredOrigin =
+    normalizeOrigin(requestOrigin) || DEFAULT_PUBLIC_APP_ORIGIN;
+  const appOrigin =
+    normalizeOrigin(process.env.RLHF_PUBLIC_APP_ORIGIN) || inferredOrigin;
+  const billingApiBaseUrl =
+    normalizeOrigin(
+      process.env.RLHF_BILLING_API_BASE_URL ||
+        process.env.RLHF_CANONICAL_API_BASE_URL ||
+        appOrigin,
+    ) || appOrigin;
+  const proPriceDollars =
+    normalizePriceDollars(process.env.RLHF_PRO_PRICE_DOLLARS) ||
+    DEFAULT_PRO_PRICE_DOLLARS;
+  const proPriceLabel =
+    process.env.RLHF_PRO_PRICE_LABEL || DEFAULT_PRO_PRICE_LABEL;
+  const gaMeasurementId = normalizeTrackingId(
+    process.env.RLHF_GA_MEASUREMENT_ID,
+    GA_MEASUREMENT_ID_PATTERN,
+  );
+  const googleSiteVerification = normalizeTrackingId(
+    process.env.RLHF_GOOGLE_SITE_VERIFICATION,
+  );
 
   return {
     appOrigin,
     billingApiBaseUrl,
-    checkoutEndpoint: joinPublicUrl(billingApiBaseUrl, '/v1/billing/checkout'),
-    sessionEndpoint: joinPublicUrl(billingApiBaseUrl, '/v1/billing/session'),
-    checkoutFallbackUrl: normalizeAbsoluteUrl(
-      process.env.RLHF_CHECKOUT_FALLBACK_URL || DEFAULT_CHECKOUT_FALLBACK_URL
-    ) || DEFAULT_CHECKOUT_FALLBACK_URL,
+    checkoutEndpoint: joinPublicUrl(billingApiBaseUrl, "/v1/billing/checkout"),
+    sessionEndpoint: joinPublicUrl(billingApiBaseUrl, "/v1/billing/session"),
+    checkoutFallbackUrl:
+      normalizeAbsoluteUrl(
+        process.env.RLHF_CHECKOUT_FALLBACK_URL || DEFAULT_CHECKOUT_FALLBACK_URL,
+      ) || DEFAULT_CHECKOUT_FALLBACK_URL,
     proPriceDollars,
     proPriceLabel,
     gaMeasurementId,

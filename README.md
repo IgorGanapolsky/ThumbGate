@@ -25,9 +25,11 @@ Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-co
 Most memory tools only help an agent remember. ThumbGate also enforces.
 
 **The problem without it:**
+
 > BEFORE: Agent force-pushes to main. You correct it. Next session, it force-pushes again.
 
 **With ThumbGate (`mcp-memory-gateway`):**
+
 > AFTER: Gate blocks the force-push before it executes. Agent can't repeat the mistake.
 
 - `recall` injects the right context at session start.
@@ -132,30 +134,30 @@ Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
 
 ## What Actually Works
 
-| Actually works | Does not work |
-|---|---|
-| `recall` injects past context into the next session | Thumbs up/down changing model weights |
-| `session_handoff` and `session_primer` preserve continuity | Agents magically remembering what happened last session |
+| Actually works                                                                                                   | Does not work                                                 |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `recall` injects past context into the next session                                                              | Thumbs up/down changing model weights                         |
+| `session_handoff` and `session_primer` preserve continuity                                                       | Agents magically remembering what happened last session       |
 | `search_lessons` exposes corrective actions, lifecycle state, linked rules, linked gates, and next harness fixes | Feedback stats automatically improving behavior by themselves |
-| Pre-action gates block known-bad tool calls before execution | Agents self-correcting without context injection or gates |
-| Auto-promotion turns repeated failures into warn/block rules | Calling this "RLHF" in the strict training sense |
-| Rejection ledger shows why vague feedback was rejected | Vague signals silently helping the system |
+| Pre-action gates block known-bad tool calls before execution                                                     | Agents self-correcting without context injection or gates     |
+| Auto-promotion turns repeated failures into warn/block rules                                                     | Calling this "RLHF" in the strict training sense              |
+| Rejection ledger shows why vague feedback was rejected                                                           | Vague signals silently helping the system                     |
 
 ## Core MCP Tools
 
 ### Essential profile
 
-| Tool | Purpose |
-|---|---|
-| `capture_feedback` | Accept up/down signal + context, validate, promote to memory |
-| `recall` | Recall relevant past failures and rules for the current task |
-| `search_lessons` | Search promoted lessons with corrective action, lifecycle state, rules, gates |
-| `search_rlhf` | Search feedback state across feedback logs, ContextFS, and rules (context engineering, not weight training) |
-| `prevention_rules` | Generate prevention rules from repeated mistakes |
-| `enforcement_matrix` | Inspect promotion rate, active gates, and rejection ledger |
-| `feedback_stats` | Approval rate and failure-domain summary |
-| `estimate_uncertainty` | Bayesian uncertainty estimate for risky tags |
-| `org_dashboard` | **Pro** — Org-wide multi-agent visibility: all agents, adherence rates, risk alerts |
+| Tool                   | Purpose                                                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `capture_feedback`     | Accept up/down signal + context, validate, promote to memory                                                |
+| `recall`               | Recall relevant past failures and rules for the current task                                                |
+| `search_lessons`       | Search promoted lessons with corrective action, lifecycle state, rules, gates                               |
+| `search_rlhf`          | Search feedback state across feedback logs, ContextFS, and rules (context engineering, not weight training) |
+| `prevention_rules`     | Generate prevention rules from repeated mistakes                                                            |
+| `enforcement_matrix`   | Inspect promotion rate, active gates, and rejection ledger                                                  |
+| `feedback_stats`       | Approval rate and failure-domain summary                                                                    |
+| `estimate_uncertainty` | Bayesian uncertainty estimate for risky tags                                                                |
+| `org_dashboard`        | **Pro** — Org-wide multi-agent visibility: all agents, adherence rates, risk alerts                         |
 
 Lean install for recall + gates + lesson search only:
 
@@ -178,16 +180,16 @@ Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
 
 ## ThumbGate vs Alternatives
 
-| Feature | ThumbGate | SpecLock | Mem0 | .cursorrules |
-|---------|-----------|----------|------|-------------|
-| Blocks mistakes before execution | **Yes** — PreToolUse gates | Yes — Patch Firewall | No | No |
-| Learns from your feedback | **Yes** — thumbs up/down | No — manual spec writing | Yes — auto-capture | No |
-| Works across sessions | **Yes** — SQLite + JSONL | Yes — encrypted store | Yes — cloud | No — per-project |
-| Auto-generates rules | **Yes** — from repeated failures | No — manual or Gemini compile | No | No |
-| Agent support | Claude Code, Codex, Gemini, Amp, Cursor, OpenCode | Claude Code, Cursor, Windsurf, Cline, Bolt.new | Claude, Cursor | Cursor only |
-| Install | `npx mcp-memory-gateway init` | `npx speclock setup` | Cloud signup | Edit file |
-| Cost | **Free** (Pro $99 for teams) | Free | Free tier + paid | Free |
-| npm weekly downloads | **724** | 98 | N/A | N/A |
+| Feature                          | ThumbGate                                         | SpecLock                                       | Mem0               | .cursorrules     |
+| -------------------------------- | ------------------------------------------------- | ---------------------------------------------- | ------------------ | ---------------- |
+| Blocks mistakes before execution | **Yes** — PreToolUse gates                        | Yes — Patch Firewall                           | No                 | No               |
+| Learns from your feedback        | **Yes** — thumbs up/down                          | No — manual spec writing                       | Yes — auto-capture | No               |
+| Works across sessions            | **Yes** — SQLite + JSONL                          | Yes — encrypted store                          | Yes — cloud        | No — per-project |
+| Auto-generates rules             | **Yes** — from repeated failures                  | No — manual or Gemini compile                  | No                 | No               |
+| Agent support                    | Claude Code, Codex, Gemini, Amp, Cursor, OpenCode | Claude Code, Cursor, Windsurf, Cline, Bolt.new | Claude, Cursor     | Cursor only      |
+| Install                          | `npx mcp-memory-gateway init`                     | `npx speclock setup`                           | Cloud signup       | Edit file        |
+| Cost                             | **Free** (Pro $19/mo for teams)                   | Free                                           | Free tier + paid   | Free             |
+| npm weekly downloads             | **724**                                           | 98                                             | N/A                | N/A              |
 
 **When to use ThumbGate:** You want your agent to learn from mistakes automatically and enforce what it learned. One thumbs-down creates a gate.
 
@@ -256,26 +258,26 @@ For autonomous agent runs against this or any repo using this workflow:
 
 ## Pro Pack
 
-**[$49 one-time](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — personal local dashboard, DPO export, and founder-license support for individual operators.
+**[$19/mo or $149/yr](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — personal local dashboard, DPO export, and founder-license support for individual operators.
 
 **[Start Team Rollout](https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake?utm_source=github&utm_medium=readme&utm_campaign=team_rollout)** — shared hosted lesson DB, org dashboard, curated gate templates, and workflow-hardening rollout support for teams.
 
 ### Free vs Pro
 
-| Feature | Free | Pro ($49) | Team rollout |
-|---------|------|-----------|--------------|
-| Feedback capture (thumbs up/down) | 5/day | Unlimited | Shared across team workflow |
-| Lesson recall | 10/day | Unlimited | Shared hosted lesson DB |
-| Prevention rules | Yes | Yes | Team-wide rollout |
-| PreToolUse gates | Yes | Yes | Team-wide rollout |
-| Thompson Sampling | Basic | Advanced | Advanced |
-| DPO training export | No | Yes | Yes |
-| Databricks export | No | Yes | Yes |
-| Personal local dashboard | No | Yes | Yes |
-| Org dashboard + active agents | No | No | Yes |
-| Gate template library | No | No | Yes |
-| Workflow hardening sprint | No | No | Yes |
-| Priority support | No | Yes | Yes |
+| Feature                           | Free   | Pro ($49) | Team rollout                |
+| --------------------------------- | ------ | --------- | --------------------------- |
+| Feedback capture (thumbs up/down) | 5/day  | Unlimited | Shared across team workflow |
+| Lesson recall                     | 10/day | Unlimited | Shared hosted lesson DB     |
+| Prevention rules                  | Yes    | Yes       | Team-wide rollout           |
+| PreToolUse gates                  | Yes    | Yes       | Team-wide rollout           |
+| Thompson Sampling                 | Basic  | Advanced  | Advanced                    |
+| DPO training export               | No     | Yes       | Yes                         |
+| Databricks export                 | No     | Yes       | Yes                         |
+| Personal local dashboard          | No     | Yes       | Yes                         |
+| Org dashboard + active agents     | No     | No        | Yes                         |
+| Gate template library             | No     | No        | Yes                         |
+| Workflow hardening sprint         | No     | No        | Yes                         |
+| Priority support                  | No     | Yes       | Yes                         |
 
 **[Get Pro — $49](https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05)** — One-time purchase, lifetime updates.
 
