@@ -1762,6 +1762,24 @@ function createApiServer() {
       return;
     }
 
+    // Quick feedback capture via GET — for statusline clickable links
+    if (isGetLikeRequest && pathname === '/feedback/quick') {
+      const signal = parsed.searchParams.get('signal');
+      if (signal === 'up' || signal === 'down') {
+        const result = captureFeedback({
+          signal,
+          context: 'Quick capture from Claude Code statusline',
+          tags: ['statusline', 'quick-capture'],
+        });
+        const emoji = signal === 'up' ? '👍' : '👎';
+        const color = signal === 'up' ? '#22c55e' : '#ef4444';
+        sendHtml(res, 200, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>ThumbGate</title><style>body{background:#0a0a0a;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}div{text-align:center}.emoji{font-size:96px;margin-bottom:16px}.msg{font-size:20px;color:${color};font-weight:600}.sub{font-size:14px;color:#888;margin-top:8px}</style></head><body><div><div class="emoji">${emoji}</div><div class="msg">Feedback captured: ${signal}</div><div class="sub">${result.accepted ? 'Promoted to memory' : 'Stored'} · ${result.feedbackEvent?.id || 'saved'}</div><div class="sub" style="margin-top:24px"><a href="/dashboard" style="color:#22d3ee;text-decoration:none">Open Dashboard →</a></div></div></body></html>`);
+      } else {
+        sendHtml(res, 400, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>ThumbGate</title></head><body style="background:#0a0a0a;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh"><div style="text-align:center"><div style="font-size:48px">⚠️</div><div style="font-size:18px;margin-top:12px">Missing ?signal=up or ?signal=down</div></div></body></html>`);
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/dashboard') {
       try {
         const html = loadDashboardPageHtml(req, expectedApiKey);

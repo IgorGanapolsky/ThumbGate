@@ -703,6 +703,30 @@ test('feedback capture returns clarification_required for vague positive signal'
   assert.match(body.prompt, /What specifically worked that should be repeated/);
 });
 
+test('quick feedback capture via GET /feedback/quick?signal=up returns HTML confirmation', async () => {
+  const res = await fetch(apiUrl('/feedback/quick?signal=up'), { headers: authHeader });
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.ok(html.includes('👍'), 'should show thumbs up emoji');
+  assert.ok(html.includes('Feedback captured'), 'should confirm capture');
+  assert.ok(html.includes('up'), 'should show signal direction');
+});
+
+test('quick feedback capture via GET /feedback/quick?signal=down returns HTML confirmation', async () => {
+  const res = await fetch(apiUrl('/feedback/quick?signal=down'), { headers: authHeader });
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.ok(html.includes('👎'), 'should show thumbs down emoji');
+  assert.ok(html.includes('Feedback captured'), 'should confirm capture');
+});
+
+test('quick feedback capture without signal returns 400', async () => {
+  const res = await fetch(apiUrl('/feedback/quick'), { headers: authHeader });
+  assert.equal(res.status, 400);
+  const html = await res.text();
+  assert.ok(html.includes('signal=up'), 'should hint at correct usage');
+});
+
 test('intent catalog endpoint returns configured intents', async () => {
   const res = await fetch(apiUrl('/v1/intents/catalog?mcpProfile=locked'), { headers: authHeader });
   assert.equal(res.status, 200);
