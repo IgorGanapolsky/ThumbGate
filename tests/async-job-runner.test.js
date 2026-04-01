@@ -324,3 +324,26 @@ test('command stages that emit no stdout preserve the current context', () => {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
 });
+
+test('runHarness compiles and executes a natural-language harness through async-job-runner', () => {
+  const feedbackDir = createFeedbackDir();
+  const harness = loadRuntimeHarness({ feedbackDir });
+
+  try {
+    const result = harness.runner.runHarness('repo-full-verification', {
+      verificationCommand: 'node -e "process.stdout.write(\'verify ok\')"',
+    }, {
+      jobId: 'async-runner-harness-job',
+    });
+    const state = harness.runner.readJobState('async-runner-harness-job');
+
+    assert.equal(result.status, 'completed');
+    assert.ok(state);
+    assert.match(state.currentContext, /verify ok/);
+    assert.match(state.currentContext, /Success evidence required:/);
+    assert.ok(state.stageHistory.length >= 3);
+  } finally {
+    harness.cleanup();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});

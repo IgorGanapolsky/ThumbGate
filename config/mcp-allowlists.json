@@ -28,6 +28,8 @@
       "register_claim_gate",
       "gate_stats",
       "dashboard",
+      "list_harnesses",
+      "run_harness",
       "estimate_uncertainty",
       "get_business_metrics",
       "describe_semantic_entity",
@@ -65,6 +67,7 @@
       "search_rlhf",
       "feedback_stats",
       "diagnose_failure",
+      "list_harnesses",
       "list_intents",
       "plan_intent",
       "start_handoff",
@@ -85,8 +88,10 @@
       "search_rlhf",
       "feedback_stats",
       "diagnose_failure",
+      "list_harnesses",
       "list_intents",
       "plan_intent",
+      "run_harness",
       "context_provenance",
       "verify_claim",
       "gate_stats",
@@ -103,6 +108,7 @@
       "diagnose_failure",
       "list_intents",
       "plan_intent",
+      "list_harnesses",
       "verify_claim"
     ]
   }

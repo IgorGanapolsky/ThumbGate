@@ -584,6 +584,29 @@ const TOOLS = [
       properties: {},
     },
   }),
+  readOnlyTool({
+    name: 'list_harnesses',
+    description: 'List natural-language harness specs for portable workflow control, proof-backed verification, and GTM execution.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tag: { type: 'string', description: 'Optional tag filter such as verification, acquisition, or workflow.' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'run_harness',
+    description: 'Execute a natural-language harness through the async job runner with checkpoints, verification, and proof-backed outcomes.',
+    inputSchema: {
+      type: 'object',
+      required: ['harness'],
+      properties: {
+        harness: { type: 'string', description: 'Harness id or file basename to execute.' },
+        inputs: { type: 'object', description: 'Optional input overrides for template variables.' },
+        jobId: { type: 'string', description: 'Optional stable job id for the resulting runtime.' },
+      },
+    },
+  }),
   destructiveTool({
     name: 'schedule',
     description: 'Create, list, or delete scheduled tasks. Supports natural language scheduling like "daily 9:00", "weekly monday 8:30", "hourly". Installs as macOS LaunchAgent or Linux crontab.',
