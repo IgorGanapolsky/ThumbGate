@@ -5,6 +5,7 @@ const readline = require('readline');
 const {
   DEFAULT_PRO_API,
   getLicensePath,
+  isCreatorDev,
   resolveProKey,
   saveLicense,
   startLocalProDashboard,
@@ -24,7 +25,9 @@ function prompt(question) {
 async function main() {
   let license = resolveProKey();
 
-  if (!license || !license.key) {
+  if (license && license.source === 'creator-dev') {
+    console.error('👍👎 ThumbGate Pro — Creator dev mode (enterprise)\n');
+  } else if (!license || !license.key) {
     console.log('\n👍👎 ThumbGate Pro — License Activation');
     console.log('─'.repeat(45));
     console.log('Enter the license key from your purchase email.');
