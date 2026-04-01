@@ -833,6 +833,7 @@ function captureFeedback(params) {
     id: `fb_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     signal,
     context: params.context || '',
+    relatedFeedbackId: params.relatedFeedbackId || null,
     lastAction,
     whatWentWrong: params.whatWentWrong || null,
     whatToChange: params.whatToChange || null,
