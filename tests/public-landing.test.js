@@ -305,3 +305,12 @@ test('landing page has social links in footer', () => {
   assert.match(html, /href="https:\/\/www\.linkedin\.com\/[^"]+"/, 'footer must link to LinkedIn');
   assert.ok(html.includes('/blog'), 'footer must link to blog');
 });
+
+test('blog page has JSON-LD, canonical, and OG tags for Google indexing', () => {
+  const blogPath = path.join(__dirname, '..', 'public', 'blog.html');
+  const blog = fs.readFileSync(blogPath, 'utf8');
+  assert.match(blog, /application\/ld\+json/, 'blog must have JSON-LD structured data');
+  assert.match(blog, /rel="canonical"/, 'blog must have canonical URL');
+  assert.match(blog, /og:title/, 'blog must have OG title');
+  assert.match(blog, /og:description/, 'blog must have OG description');
+});
