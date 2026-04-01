@@ -11,7 +11,7 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://rlhf-feedback-loop-production.up.railway.app/blog">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Blog","name":"ThumbGate Blog","url":"https://rlhf-feedback-loop-production.up.railway.app/blog","publisher":{"@type":"Organization","name":"Max Smith KDP LLC"},"blogPost":[{"@type":"BlogPosting","headline":"v0.8.5: Gate Reasoning Chains, Org Dashboard, and the Checkout Funnel That Didn't Exist","datePublished":"2026-03-31"}]}
+{"@context":"https://schema.org","@type":"Blog","name":"ThumbGate Blog","url":"https://rlhf-feedback-loop-production.up.railway.app/blog","publisher":{"@type":"Organization","name":"Max Smith KDP LLC"},"blogPost":[{"@type":"BlogPosting","headline":"The Claude Code Leak Proves Why Pre-Action Gates Matter","datePublished":"2026-04-01","keywords":"Claude Code security, Claude Code guardrails, AI agent safety, pre-action gates"},{"@type":"BlogPosting","headline":"v0.8.5: Gate Reasoning Chains, Org Dashboard, and the Checkout Funnel That Didn't Exist","datePublished":"2026-03-31"}]}
 </script>
 <style>
   :root { --bg: #0a0a0a; --surface: #141414; --border: #2a2a2a; --text: #e0e0e0; --text-dim: #888; --cyan: #00d4aa; }
@@ -45,6 +45,34 @@
 </header>
 
 <div class="container">
+
+<article class="post">
+  <div class="post-date">April 1, 2026</div>
+  <h2>The Claude Code Leak Proves Why Pre-Action Gates Matter</h2>
+
+  <p>Anthropic accidentally shipped 512,000 lines of Claude Code source inside an npm package. A missing <code>.npmignore</code> exposed the full agent architecture: tool-call loops, permission models, retry logic, 44 unreleased feature flags.</p>
+
+  <p>Within 24 hours, a clean rewrite called Claw-code hit 100K GitHub stars — the fastest-growing repo in GitHub history.</p>
+
+  <h3>What the leak revealed about agent security</h3>
+  <p>Claude Code has a sophisticated permission model and tool-calling pipeline. What it does <strong>not</strong> have is feedback-driven enforcement — the ability to learn from past mistakes and physically block the agent from repeating them.</p>
+
+  <p>That's exactly what ThumbGate does. Every Claude Code user — and every Claw-code user — can add pre-action gates today:</p>
+
+  <ul>
+    <li><strong>Thumbs-down a mistake</strong> — it auto-generates a prevention rule</li>
+    <li><strong>Gates enforce</strong> — PreToolUse hooks block the action before execution</li>
+    <li><strong>Reasoning chains explain</strong> — every block tells you WHY</li>
+    <li><strong>Thompson Sampling adapts</strong> — confidence tiers prevent false blocks</li>
+  </ul>
+
+  <h3>Install in 30 seconds</h3>
+  <p><code>npx mcp-memory-gateway init</code> works with Claude Code, Claw-code, Cursor, Codex, Gemini, Amp, and any MCP-compatible agent.</p>
+
+  <p>The leak proves agents are powerful but fallible software. Memory without enforcement is a suggestion. <strong>ThumbGate is a guarantee.</strong></p>
+
+  <a class="cta" href="https://www.npmjs.com/package/mcp-memory-gateway">Install ThumbGate</a>
+</article>
 
 <article class="post">
   <div class="post-date">March 31, 2026</div>

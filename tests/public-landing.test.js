@@ -213,9 +213,9 @@ test('public landing page includes compatibility section for AI agent surfaces',
 
   assert.match(landingPage, /id="compatibility"/);
   assert.match(landingPage, /AI CLIs/i);
-  assert.match(landingPage, /repo-local Codex bridge/i);
-  assert.match(landingPage, /review, adversarial review, and second-pass handoff/i);
-  assert.match(landingPage, /Codex keeps its repo-local app plugin profile/i);
+  assert.match(landingPage, /MCP-compatible agent/i);
+  assert.match(landingPage, /pre-action gates/i);
+  assert.match(landingPage, /enforcement out of the box/i);
   assert.match(landingPage, /Claude Desktop plugin/i);
   assert.match(landingPage, /Editor workflows/i);
   assert.match(landingPage, /Claude Code Skill/i);
