@@ -28,6 +28,7 @@ const TOOLS = [
       required: ['signal'],
       properties: {
         signal: { type: 'string', enum: ['up', 'down'] },
+        failureType: { type: 'string', enum: ['decision', 'execution'], description: 'Dual-signal: "decision" = wrong tool/action chosen, "execution" = right tool but bad parameters/output. Improves Thompson Sampling precision.' },
         context: { type: 'string', description: 'One-sentence reason describing what worked or failed' },
         whatWentWrong: { type: 'string' },
         whatToChange: { type: 'string' },

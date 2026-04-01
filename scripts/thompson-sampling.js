@@ -179,7 +179,7 @@ function saveModel(model, modelPath) {
  * @param {number} [params.weightMultiplier] - Optional multiplier for stronger/slower updates
  * @returns {Object} The mutated model
  */
-function updateModel(model, { signal, timestamp, categories, weightMultiplier }) {
+function updateModel(model, { signal, timestamp, categories, weightMultiplier, failureType }) {
   const multiplier = Number.isFinite(weightMultiplier) && weightMultiplier > 0 ? weightMultiplier : 1;
   const weight = timeDecayWeight(timestamp) * multiplier;
   const isPositive = signal === 'positive';
@@ -196,6 +196,22 @@ function updateModel(model, { signal, timestamp, categories, weightMultiplier })
     }
     model.categories[cat].samples += 1;
     model.categories[cat].last_updated = timestamp;
+
+    // Dual-signal: update decision/execution sub-arms when failureType is provided
+    // Inspired by Gen-Searcher's dual reward (text + image) for more precise learning
+    if (failureType === 'decision' || failureType === 'execution') {
+      const subCat = `${cat}:${failureType}`;
+      if (!model.categories[subCat]) {
+        model.categories[subCat] = { alpha: 1.0, beta: 1.0, samples: 0, last_updated: null };
+      }
+      if (isPositive) {
+        model.categories[subCat].alpha += weight;
+      } else {
+        model.categories[subCat].beta += weight;
+      }
+      model.categories[subCat].samples += 1;
+      model.categories[subCat].last_updated = timestamp;
+    }
   });
 
   model.total_entries = (model.total_entries || 0) + 1;
