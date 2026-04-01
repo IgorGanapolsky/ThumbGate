@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 const STATUSLINE_PATH = path.join(__dirname, '..', 'scripts', 'statusline.sh');
 const CACHE_UPDATER_PATH = path.join(__dirname, '..', 'scripts', 'hook-rlhf-cache-updater.js');
@@ -27,8 +27,9 @@ test('statusline script reads jq input and outputs RLHF line', () => {
 
   try {
     const sessionJson = JSON.stringify({ context_window: { used_percentage: 25 } });
-    const out = execSync(`echo '${sessionJson}' | bash ${STATUSLINE_PATH}`, {
+    const out = execFileSync('bash', [STATUSLINE_PATH], {
       encoding: 'utf8',
+      input: sessionJson,
       env: { ...process.env, RLHF_FEEDBACK_DIR: path.join(__dirname, '..') },
       timeout: 5000
     });
@@ -55,8 +56,9 @@ test('statusline shows "no feedback yet" when cache has zeros', () => {
 
   try {
     const sessionJson = JSON.stringify({ context_window: { used_percentage: 10 } });
-    const out = execSync(`echo '${sessionJson}' | bash ${STATUSLINE_PATH}`, {
+    const out = execFileSync('bash', [STATUSLINE_PATH], {
       encoding: 'utf8',
+      input: sessionJson,
       env: { ...process.env, RLHF_FEEDBACK_DIR: path.join(__dirname, '..') },
       timeout: 5000
     });
@@ -84,8 +86,9 @@ test('cache updater writes cache from feedback_stats input', () => {
     })
   };
 
-  execSync(`echo '${JSON.stringify(event)}' | node ${CACHE_UPDATER_PATH}`, {
+  execFileSync(process.execPath, [CACHE_UPDATER_PATH], {
     encoding: 'utf8',
+    input: JSON.stringify(event),
     env: { ...process.env, RLHF_FEEDBACK_DIR: tmpDir },
     timeout: 5000
   });
