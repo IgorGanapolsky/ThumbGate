@@ -121,6 +121,7 @@ const {
 
 const LANDING_PAGE_PATH = path.resolve(__dirname, '../../public/index.html');
 const DASHBOARD_PAGE_PATH = path.resolve(__dirname, '../../public/dashboard.html');
+const LESSONS_PAGE_PATH = path.resolve(__dirname, '../../public/lessons.html');
 const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
 const VISITOR_COOKIE_NAME = 'rlhf_visitor_id';
 const SESSION_COOKIE_NAME = 'rlhf_session_id';
@@ -1933,6 +1934,16 @@ async function addContext(){
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
         sendJson(res, 404, { error: 'Dashboard page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/lessons') {
+      try {
+        const html = fs.readFileSync(LESSONS_PAGE_PATH, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'Lessons page not found' });
       }
       return;
     }

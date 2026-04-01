@@ -314,3 +314,47 @@ test('blog page has JSON-LD, canonical, and OG tags for Google indexing', () => 
   assert.match(blog, /og:title/, 'blog must have OG title');
   assert.match(blog, /og:description/, 'blog must have OG description');
 });
+
+// ── Lessons page tests ──────────────────────────────────────────
+
+const lessonsPagePath = path.join(__dirname, '..', 'public', 'lessons.html');
+
+function readLessonsPage() {
+  return fs.readFileSync(lessonsPagePath, 'utf8');
+}
+
+test('lessons page exists and has three tabs', () => {
+  const html = readLessonsPage();
+  assert.match(html, /Active Rules/i);
+  assert.match(html, /Feedback Timeline/i);
+  assert.match(html, /Insights/i);
+});
+
+test('lessons page has rule cards with effectiveness metric', () => {
+  const html = readLessonsPage();
+  assert.match(html, /Prevented/i);
+  assert.match(html, /Mistakes Prevented/i);
+  assert.match(html, /rule-effectiveness/);
+  assert.match(html, /rule-severity/);
+});
+
+test('lessons page has feedback timeline with up/down signals', () => {
+  const html = readLessonsPage();
+  assert.match(html, /timeline-dot/);
+  assert.match(html, /timeline-signal/);
+  assert.match(html, /Positive/);
+  assert.match(html, /Negative/);
+});
+
+test('lessons page has Pro upgrade badge in insights tab', () => {
+  const html = readLessonsPage();
+  assert.match(html, /Unlock Full Insights/i);
+  assert.match(html, /Get Pro/i);
+  assert.match(html, /\$19\/mo/);
+});
+
+test('lessons page links to dashboard in nav', () => {
+  const html = readLessonsPage();
+  assert.match(html, /href="\/dashboard"/);
+  assert.match(html, /href="\/lessons"/);
+});
