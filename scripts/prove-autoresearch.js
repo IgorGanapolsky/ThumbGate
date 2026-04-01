@@ -133,19 +133,16 @@ async function run() {
     },
     {
       id: 'AUTORESEARCH-05',
-      desc: 'MUTATION_TARGETS all resolve to existing files with matching patterns',
+      desc: 'MUTATION_TARGETS resolve to evolution-state settings with valid ranges',
       fn: () => {
         delete require.cache[require.resolve('./autoresearch-runner')];
+        delete require.cache[require.resolve('./evolution-state')];
         const m = require('./autoresearch-runner');
+        const { DEFAULT_SETTINGS } = require('./evolution-state');
 
         for (const target of m.MUTATION_TARGETS) {
-          const filePath = path.join(ROOT, target.file);
-          if (!fs.existsSync(filePath)) throw new Error(`File not found: ${target.file}`);
-          const content = fs.readFileSync(filePath, 'utf-8');
-          const match = content.match(target.pattern);
-          if (!match) throw new Error(`Pattern not found in ${target.file} for target ${target.name}`);
-          const value = parseFloat(match[1]);
-          if (isNaN(value)) throw new Error(`Matched value for ${target.name} is NaN`);
+          const value = DEFAULT_SETTINGS[target.settingKey];
+          if (!Number.isFinite(value)) throw new Error(`Default setting missing for ${target.settingKey}`);
           if (value < target.range[0] || value > target.range[1]) {
             throw new Error(`Current value ${value} for ${target.name} outside range [${target.range}]`);
           }
@@ -168,7 +165,23 @@ async function run() {
 
         const result = await runner.runIteration({
           targetName: 'half_life_days',
-          testCommand: 'node -e "console.log(\'ℹ tests 1\\nℹ pass 1\\nℹ fail 0\')"',
+          nextValue: 8,
+          testCommand: `${JSON.stringify(process.execPath)} -e ${JSON.stringify([
+            'const { readEvolutionState } = require("./scripts/evolution-state");',
+            'const passed = readEvolutionState().settings.half_life_days === 8;',
+            'console.log("ℹ tests 1");',
+            'console.log("ℹ pass " + (passed ? 1 : 0));',
+            'console.log("ℹ fail " + (passed ? 0 : 1));',
+            'if (!passed) process.exit(1);',
+          ].join(' '))}`,
+          holdoutCommands: [`${JSON.stringify(process.execPath)} -e ${JSON.stringify([
+            'const { readEvolutionState } = require("./scripts/evolution-state");',
+            'const passed = readEvolutionState().settings.half_life_days === 8;',
+            'console.log("ℹ tests 1");',
+            'console.log("ℹ pass " + (passed ? 1 : 0));',
+            'console.log("ℹ fail " + (passed ? 0 : 1));',
+            'if (!passed) process.exit(1);',
+          ].join(' '))}`],
           timeoutMs: 5000,
           researchQuery: 'rank fusion',
           searchPapersImpl: async () => [{
@@ -191,7 +204,10 @@ async function run() {
         if (!result.metrics.researchPaperIds.includes('2603.01896')) {
           throw new Error('Research paper id missing from autoresearch result');
         }
-        if (result.metrics.baselineDetails.pass !== 1 || result.metrics.mutantDetails.pass !== 1) {
+        if (result.metrics.baselineEvaluation.primary.results[0].details.pass !== 0) {
+          throw new Error('Expected baseline to fail before the candidate mutation');
+        }
+        if (result.metrics.candidateEvaluation.primary.results[0].details.pass !== 1) {
           throw new Error('Research context changed score execution flow');
         }
 

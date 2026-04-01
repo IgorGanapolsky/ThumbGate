@@ -14,6 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { getEffectiveSetting } = require('./evolution-state');
 
 const DPO_BETA = 0.1;
 
@@ -30,7 +31,7 @@ const DPO_BETA = 0.1;
  * @returns {number} Adjustment in [-1, +1]
  */
 function dpoLogRatio(chosenWeight, rejectedWeight, beta) {
-  const b = (beta !== undefined && beta !== null) ? beta : DPO_BETA;
+  const b = (beta !== undefined && beta !== null) ? beta : getEffectiveSetting('dpo_beta', DPO_BETA);
   const cw = Math.max(chosenWeight, 0.01);
   const rw = Math.max(rejectedWeight, 0.01);
   const logRatio = Math.log(cw) - Math.log(rw);

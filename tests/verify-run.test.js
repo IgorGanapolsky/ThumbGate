@@ -55,9 +55,10 @@ test('buildVerifyPlan returns quick and full plans without removed legacy verifi
   assert.equal(Array.isArray(quick), true);
   assert.equal(Array.isArray(full), true);
   assert.ok(quick.length >= 2);
-  assert.ok(full.length >= 11);
+  assert.ok(full.length >= 12);
   assert.ok(full.some((step) => step.args && step.args.includes('prove:claim-verification')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:data-pipeline')));
+  assert.ok(full.some((step) => step.args && step.args.includes('prove:evolution')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:runtime')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:xmemory')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:tessl')));
@@ -101,6 +102,7 @@ test('recordVerifyWorkflowRun persists a proof-backed workflow run for full veri
   assert.equal(entries[0].reviewedBy, 'automation');
   assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'claim-verification-report.json'))));
   assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'data-pipeline-report.json'))));
+  assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'evolution-report.json'))));
   assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'runtime-report.json'))));
 
   fs.rmSync(feedbackDir, { recursive: true, force: true });
@@ -131,6 +133,8 @@ test('materializeProofArtifacts copies temp proof reports into repo-local proof 
     ['proof-adapters/claim-verification-report.md', '# claims\n'],
     ['proof-adapters/data-pipeline-report.json', '{"pipeline":true}\n'],
     ['proof-adapters/data-pipeline-report.md', '# pipeline\n'],
+    ['proof-adapters/evolution-report.json', '{"evolution":true}\n'],
+    ['proof-adapters/evolution-report.md', '# evolution\n'],
     ['proof-runtime/runtime-report.json', '{"runtime":true}\n'],
     ['proof-runtime/runtime-report.md', '# runtime\n'],
     ['proof-adapters/seo-gsd-report.json', '{"seo":true}\n'],
@@ -157,6 +161,10 @@ test('materializeProofArtifacts copies temp proof reports into repo-local proof 
   assert.equal(
     fs.readFileSync(path.join(cwd, 'proof', 'data-pipeline-report.json'), 'utf8'),
     '{"pipeline":true}\n',
+  );
+  assert.equal(
+    fs.readFileSync(path.join(cwd, 'proof', 'evolution-report.json'), 'utf8'),
+    '{"evolution":true}\n',
   );
   assert.equal(
     fs.readFileSync(path.join(cwd, 'proof', 'runtime-report.json'), 'utf8'),
@@ -197,6 +205,7 @@ test('runVerify injects proof directories and records full verification', () => 
     ['proof-automation/report.json', '{"automation":true}\n'],
     ['proof-adapters/claim-verification-report.json', '{"claims":true}\n'],
     ['proof-adapters/data-pipeline-report.json', '{"pipeline":true}\n'],
+    ['proof-adapters/evolution-report.json', '{"evolution":true}\n'],
     ['proof-runtime/runtime-report.json', '{"runtime":true}\n'],
     ['proof-runtime/runtime-report.md', '# runtime\n'],
     ['proof-adapters/seo-gsd-report.json', '{"seo":true}\n'],
@@ -231,7 +240,7 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.equal(result.mode, 'full');
     assert.equal(result.tempRoot, tempRoot);
     assert.deepEqual(result.workflowRun, stubWorkflowRun);
-    assert.equal(commandCalls.length, 11);
+    assert.equal(commandCalls.length, 12);
     assert.equal(commandCalls[0].options.cwd, cwd);
     assert.equal(commandCalls[0].options.env.BASE_ENV, '1');
     assert.equal(commandCalls[0].options.env.RLHF_PROOF_DIR, path.join(tempRoot, 'proof-adapters'));
@@ -239,8 +248,10 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.equal(commandCalls[0].options.env.RLHF_RUNTIME_PROOF_DIR, path.join(tempRoot, 'proof-runtime'));
     assert.equal(appendCall.entry.source, 'verify:full');
     assert.ok(commandCalls.some((call) => call.args.includes('prove:claim-verification')));
+    assert.ok(commandCalls.some((call) => call.args.includes('prove:evolution')));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'claim-verification-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'data-pipeline-report.json'))));
+    assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'evolution-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'runtime-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'seo-gsd-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'tessl-report.json'))));
@@ -252,6 +263,10 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.equal(
       fs.readFileSync(path.join(cwd, 'proof', 'data-pipeline-report.json'), 'utf8'),
       '{"pipeline":true}\n',
+    );
+    assert.equal(
+      fs.readFileSync(path.join(cwd, 'proof', 'evolution-report.json'), 'utf8'),
+      '{"evolution":true}\n',
     );
     assert.equal(
       fs.readFileSync(path.join(cwd, 'proof', 'runtime-report.json'), 'utf8'),

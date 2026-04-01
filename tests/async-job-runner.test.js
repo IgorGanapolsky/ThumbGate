@@ -292,6 +292,8 @@ test('verification failures queue a follow-up experiment automatically', () => {
     assert.equal(experiments[0].mutationType, 'prompt');
     assert.equal(experiments[0].mutation.failureType, 'verification');
     assert.equal(experiments[0].mutation.jobId, 'verification-failure-job');
+    assert.equal(typeof experiments[0].mutation.recommendedTarget, 'string');
+    assert.match(experiments[0].mutation.evolutionCommand, /workspace-evolver\.js/);
     assert.equal(state.improvementExperimentId, experiments[0].id);
   } finally {
     harness.cleanup();

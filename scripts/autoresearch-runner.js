@@ -4,10 +4,12 @@
  * Autoresearch Runner (AUTORESEARCH-02)
  *
  * Karpathy-inspired self-optimizing loop for the RLHF feedback studio.
- * Each iteration: mutate config → run test suite → measure score → keep/discard.
+ * Each iteration: mutate local evolution state → run primary + holdout checks
+ * → measure score → keep/discard with rollback snapshots.
  *
- * The runner never touches production files. It works in an isolated tmp
- * environment and only records results via the experiment tracker.
+ * The runner never rewrites tracked source files. It mutates the local
+ * evolution-state overlay, evaluates in place, and only persists accepted
+ * settings plus rollback snapshots.
  *
  * Mutation targets (in priority order):
  *   1. Thompson Sampling priors (HALF_LIFE_DAYS, DECAY_FLOOR)
@@ -15,64 +17,28 @@
  *   3. Verification loop retries (MAX_RETRIES)
  *   4. DPO temperature (DPO_BETA)
  *
- * Score function: test pass rate × (1 + approval rate delta)
+ * Score function: command pass rate × approval weighting, with holdout gating.
  *
  * Zero external dependencies.
  *
  * Exports: runIteration, runLoop, scoreSuite, MUTATION_TARGETS
  */
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
 const {
-  createExperiment,
-  recordResult,
   getProgress,
 } = require('./experiment-tracker');
-const { analyzeFeedback } = require('./feedback-loop');
 const { buildResearchBrief } = require('./hf-papers');
-
-const ROOT = path.join(__dirname, '..');
+const {
+  EVOLUTION_TARGETS,
+  parseCommandScore,
+  runWorkspaceEvolution,
+} = require('./workspace-evolver');
 
 // ---------------------------------------------------------------------------
 // Mutation Targets
 // ---------------------------------------------------------------------------
 
-const MUTATION_TARGETS = [
-  {
-    name: 'half_life_days',
-    file: 'scripts/thompson-sampling.js',
-    pattern: /const HALF_LIFE_DAYS = ([\d.]+);/,
-    range: [3, 14],
-    step: 1,
-    type: 'threshold',
-  },
-  {
-    name: 'decay_floor',
-    file: 'scripts/thompson-sampling.js',
-    pattern: /const DECAY_FLOOR = ([\d.]+);/,
-    range: [0.001, 0.1],
-    step: 0.01,
-    type: 'threshold',
-  },
-  {
-    name: 'prevention_min_occurrences',
-    file: 'scripts/feedback-loop.js',
-    pattern: /function writePreventionRules\(filePath, minOccurrences = (\d+)\)/,
-    range: [1, 5],
-    step: 1,
-    type: 'config',
-  },
-  {
-    name: 'dpo_beta',
-    file: 'scripts/dpo-optimizer.js',
-    pattern: /const DPO_BETA = ([\d.]+);/,
-    range: [0.01, 0.5],
-    step: 0.05,
-    type: 'threshold',
-  },
-];
+const MUTATION_TARGETS = EVOLUTION_TARGETS;
 
 // ---------------------------------------------------------------------------
 // Score Function
@@ -87,29 +53,7 @@ const MUTATION_TARGETS = [
  * @returns {{ score: number, testPassRate: number, details: object }}
  */
 function scoreSuite(params) {
-  const output = params.testOutput || '';
-
-  // Parse node:test output: "ℹ tests N" and "ℹ pass N" and "ℹ fail N"
-  const totalMatch = output.match(/ℹ tests (\d+)/);
-  const passMatch = output.match(/ℹ pass (\d+)/);
-  const failMatch = output.match(/ℹ fail (\d+)/);
-
-  const total = totalMatch ? parseInt(totalMatch[1], 10) : 0;
-  const pass = passMatch ? parseInt(passMatch[1], 10) : 0;
-  const fail = failMatch ? parseInt(failMatch[1], 10) : 0;
-
-  // Fallback: if node:test format not found, try generic pass/fail counts
-  const testPassRate = total > 0 ? pass / total : (fail === 0 && output.length > 0 ? 1.0 : 0);
-  const approvalRate = typeof params.approvalRate === 'number' ? params.approvalRate : 0.5;
-
-  // Score: test reliability weighted by approval signal
-  const score = testPassRate * (0.8 + 0.2 * approvalRate);
-
-  return {
-    score: Math.round(score * 10000) / 10000,
-    testPassRate,
-    details: { total, pass, fail, approvalRate },
-  };
+  return parseCommandScore(params.testOutput || '', 0, typeof params.approvalRate === 'number' ? params.approvalRate : 0.5);
 }
 
 // ---------------------------------------------------------------------------
@@ -126,7 +70,9 @@ function scoreSuite(params) {
  *
  * @param {object} [opts]
  * @param {string} [opts.targetName] - Force a specific mutation target
+ * @param {number} [opts.nextValue] - Force the candidate value instead of a random neighbor
  * @param {string} [opts.testCommand] - Override test command (default: npm test)
+ * @param {string[]} [opts.holdoutCommands] - Optional holdout commands required for acceptance
  * @param {number} [opts.timeoutMs] - Test timeout in ms (default: 120000)
  * @param {string} [opts.researchQuery] - Optional external research query
  * @param {number} [opts.paperLimit] - Max papers to ingest for research context
@@ -148,110 +94,14 @@ async function runIteration(opts = {}) {
     })
     : null;
 
-  // Pick mutation target
-  const target = options.targetName
-    ? MUTATION_TARGETS.find(t => t.name === options.targetName)
-    : MUTATION_TARGETS[Math.floor(Math.random() * MUTATION_TARGETS.length)];
-
-  if (!target) {
-    throw new Error(`Unknown mutation target: ${options.targetName}`);
-  }
-
-  // Read current value
-  const filePath = path.join(ROOT, target.file);
-  const originalContent = fs.readFileSync(filePath, 'utf-8');
-  const match = originalContent.match(target.pattern);
-  if (!match) {
-    throw new Error(`Pattern not found in ${target.file}: ${target.pattern}`);
-  }
-  const currentValue = parseFloat(match[1]);
-
-  // Compute mutation: random step in range
-  const direction = Math.random() > 0.5 ? 1 : -1;
-  const newValue = Math.min(
-    target.range[1],
-    Math.max(target.range[0], currentValue + direction * target.step)
-  );
-
-  // Skip no-op mutations
-  if (newValue === currentValue) {
-    return {
-      skipped: true,
-      reason: `Mutation would be no-op for ${target.name} (value=${currentValue})`,
-    };
-  }
-
-  // Create experiment record
-  const experiment = createExperiment({
-    name: `${target.name}: ${currentValue} → ${newValue}`,
-    hypothesis: [
-      `Changing ${target.name} from ${currentValue} to ${newValue} improves test+approval score.`,
-      research ? `Research query: ${research.query}` : null,
-    ].filter(Boolean).join(' '),
-    mutationType: target.type,
-    mutation: {
-      target: target.name,
-      file: target.file,
-      from: currentValue,
-      to: newValue,
-    },
-  });
-
-  // Run baseline score
-  let baselineScore;
-  try {
-    const baselineOutput = execSync(testCommand, {
-      cwd: ROOT,
-      encoding: 'utf8',
-      stdio: 'pipe',
-      timeout: timeoutMs,
-    });
-    const approvalRate = getApprovalRate();
-    baselineScore = scoreSuite({ testOutput: baselineOutput, approvalRate });
-  } catch (err) {
-    // Tests failed at baseline — record it but use 0 score
-    baselineScore = scoreSuite({ testOutput: err.stdout || '', approvalRate: getApprovalRate() });
-  }
-
-  // Apply mutation temporarily
-  const mutatedContent = originalContent.replace(
-    match[0],
-    match[0].replace(match[1], String(newValue))
-  );
-  fs.writeFileSync(filePath, mutatedContent);
-
-  let mutantScore;
-  let testsPassed = false;
-  try {
-    const mutantOutput = execSync(testCommand, {
-      cwd: ROOT,
-      encoding: 'utf8',
-      stdio: 'pipe',
-      timeout: timeoutMs,
-    });
-    const approvalRate = getApprovalRate();
-    mutantScore = scoreSuite({ testOutput: mutantOutput, approvalRate });
-    testsPassed = true;
-  } catch (err) {
-    mutantScore = scoreSuite({ testOutput: err.stdout || '', approvalRate: getApprovalRate() });
-    testsPassed = false;
-  } finally {
-    // ALWAYS restore original file
-    fs.writeFileSync(filePath, originalContent);
-  }
-
-  // Record result
-  const result = recordResult({
-    experimentId: experiment.id,
-    score: mutantScore.score,
-    baseline: baselineScore.score,
-    testsPassed,
-    metrics: {
-      baselineDetails: baselineScore.details,
-      mutantDetails: mutantScore.details,
-      target: target.name,
-      from: currentValue,
-      to: newValue,
+  const result = runWorkspaceEvolution({
+    targetName: options.targetName,
+    nextValue: options.nextValue,
+    primaryCommands: [testCommand],
+    holdoutCommands: options.holdoutCommands || [],
+    timeoutMs,
+    hypothesisSuffix: research ? `Research query: ${research.query}` : null,
+    additionalMetrics: {
       researchQuery: research ? research.query : null,
       researchPackId: research ? research.packId : null,
       researchPaperIds: research ? research.citations.map((citation) => citation.paperId).filter(Boolean) : [],
@@ -259,19 +109,6 @@ async function runIteration(opts = {}) {
   });
 
   return result;
-}
-
-/**
- * Get current approval rate from feedback analytics.
- * @returns {number} approval rate in [0, 1]
- */
-function getApprovalRate() {
-  try {
-    const stats = analyzeFeedback();
-    return typeof stats.approvalRate === 'number' ? stats.approvalRate : 0.5;
-  } catch {
-    return 0.5;
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -300,6 +137,7 @@ async function runLoop(params) {
     try {
       const result = await runIteration({
         testCommand: params.testCommand,
+        holdoutCommands: params.holdoutCommands,
         timeoutMs: params.timeoutMs,
         researchQuery: params.researchQuery,
         paperLimit: params.paperLimit,
@@ -342,9 +180,11 @@ if (require.main === module) {
     const testCommand = args['test-command'] || 'npm test';
     const timeoutMs = Number(args.timeout || 120000);
     const paperLimit = Number(args['paper-limit'] || 5);
+    const holdoutCommands = args.holdout ? [args.holdout] : [];
     runLoop({
       iterations,
       testCommand,
+      holdoutCommands,
       timeoutMs,
       researchQuery: args['research-query'] || null,
       paperLimit,
@@ -359,7 +199,7 @@ if (require.main === module) {
     });
   } else {
     console.log(`Usage:
-  node scripts/autoresearch-runner.js --run [--iterations=5] [--test-command="npm test"] [--timeout=120000] [--research-query="rank fusion"] [--paper-limit=5]
+  node scripts/autoresearch-runner.js --run [--iterations=5] [--test-command="npm test"] [--holdout="npm run self-heal:check"] [--timeout=120000] [--research-query="rank fusion"] [--paper-limit=5]
   node scripts/autoresearch-runner.js --targets`);
   }
 }

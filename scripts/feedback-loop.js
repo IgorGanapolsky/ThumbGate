@@ -26,6 +26,7 @@ const {
   diagnoseFailure,
   aggregateFailureDiagnostics,
 } = require('./failure-diagnostics');
+const { getEffectiveSetting } = require('./evolution-state');
 
 // Lesson DB — SQLite+FTS5 backing store (dual-write alongside JSONL)
 let _lessonDB = null;
@@ -1266,6 +1267,9 @@ function analyzeFeedback(logPath) {
 }
 
 function buildPreventionRules(minOccurrences = 2, options = {}) {
+  const resolvedMinOccurrences = Number.isFinite(minOccurrences)
+    ? minOccurrences
+    : getEffectiveSetting('prevention_min_occurrences', 2);
   const { MEMORY_LOG_PATH, DIAGNOSTIC_LOG_PATH } = getFeedbackPaths();
   const memories = readJSONL(MEMORY_LOG_PATH).filter((m) => m.category === 'error');
   const diagnosticEntries = readDiagnosticEntries(DIAGNOSTIC_LOG_PATH);
@@ -1338,7 +1342,7 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
     .sort((a, b) => b[1].weightedCount - a[1].weightedCount)
     .forEach(([domain, { items, weightedCount }]) => {
       const effectiveOccurrences = Math.round(weightedCount);
-      if (effectiveOccurrences < minOccurrences) return;
+      if (effectiveOccurrences < resolvedMinOccurrences) return;
       const latest = items[items.length - 1];
       const avoid = (latest.content || '').split('\n').find((l) => l.toLowerCase().startsWith('how to avoid:')) || 'How to avoid: Investigate and prevent recurrence';
       lines.push('');
@@ -1350,7 +1354,7 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
 
   const rubricEntries = Object.entries(rubricBuckets)
     .sort((a, b) => b[1].length - a[1].length)
-    .filter(([, items]) => items.length >= minOccurrences);
+    .filter(([, items]) => items.length >= resolvedMinOccurrences);
   if (rubricEntries.length > 0) {
     lines.push('');
     lines.push('## Rubric Failure Dimensions');
@@ -1361,7 +1365,7 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
 
   const diagnosisEntries = Object.entries(diagnosisBuckets)
     .sort((a, b) => b[1].length - a[1].length)
-    .filter(([, items]) => items.length >= minOccurrences);
+    .filter(([, items]) => items.length >= resolvedMinOccurrences);
   if (diagnosisEntries.length > 0) {
     lines.push('');
     lines.push('## Root Cause Categories');
@@ -1372,7 +1376,7 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
 
   const repeatedViolationEntries = Object.entries(repeatedViolationBuckets)
     .sort((a, b) => b[1].length - a[1].length)
-    .filter(([, items]) => items.length >= minOccurrences);
+    .filter(([, items]) => items.length >= resolvedMinOccurrences);
   if (repeatedViolationEntries.length > 0) {
     lines.push('');
     lines.push('## Repeated Failure Constraints');
@@ -1383,7 +1387,7 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
 
   if (lines.length === 3) {
     lines.push('');
-    lines.push(`No domain has reached the threshold (${minOccurrences}) yet.`);
+    lines.push(`No domain has reached the threshold (${resolvedMinOccurrences}) yet.`);
   }
 
   return lines.join('\n');
@@ -1392,14 +1396,17 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
 function writePreventionRules(filePath, minOccurrences = 2) {
   const { PREVENTION_RULES_PATH } = getFeedbackPaths();
   const outPath = filePath || PREVENTION_RULES_PATH;
-  const markdown = buildPreventionRules(minOccurrences);
+  const resolvedMinOccurrences = Number.isFinite(minOccurrences)
+    ? minOccurrences
+    : getEffectiveSetting('prevention_min_occurrences', 2);
+  const markdown = buildPreventionRules(resolvedMinOccurrences);
   ensureDir(path.dirname(outPath));
   fs.writeFileSync(outPath, `${markdown}\n`);
 
   const contextFs = getContextFsModule();
   if (contextFs && typeof contextFs.registerPreventionRules === 'function') {
     try {
-      contextFs.registerPreventionRules(markdown, { minOccurrences, outputPath: outPath });
+      contextFs.registerPreventionRules(markdown, { minOccurrences: resolvedMinOccurrences, outputPath: outPath });
     } catch {
       // Non-critical
     }

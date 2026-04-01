@@ -6,6 +6,20 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+function buildStateCommand(settingKey, expectedValue) {
+  const script = [
+    'const { readEvolutionState } = require("./scripts/evolution-state");',
+    `const expected = ${JSON.stringify(expectedValue)};`,
+    `const value = readEvolutionState().settings[${JSON.stringify(settingKey)}];`,
+    'const passed = value === expected;',
+    'console.log("ℹ tests 1");',
+    'console.log("ℹ pass " + (passed ? 1 : 0));',
+    'console.log("ℹ fail " + (passed ? 0 : 1));',
+    'if (!passed) process.exit(1);',
+  ].join(' ');
+  return `${JSON.stringify(process.execPath)} -e ${JSON.stringify(script)}`;
+}
+
 // ===================================================================
 // Experiment Tracker Tests (AUTORESEARCH-01)
 // ===================================================================
@@ -240,26 +254,21 @@ describe('autoresearch-runner', () => {
   it('each MUTATION_TARGET has required fields', () => {
     for (const target of runner.MUTATION_TARGETS) {
       assert.ok(target.name, `target missing name`);
-      assert.ok(target.file, `${target.name} missing file`);
-      assert.ok(target.pattern instanceof RegExp, `${target.name} missing pattern`);
+      assert.ok(target.settingKey, `${target.name} missing settingKey`);
       assert.ok(Array.isArray(target.range), `${target.name} missing range`);
       assert.equal(target.range.length, 2, `${target.name} range must have 2 elements`);
       assert.ok(target.range[0] < target.range[1], `${target.name} range[0] must be < range[1]`);
       assert.equal(typeof target.step, 'number', `${target.name} missing step`);
-      assert.ok(['config', 'prompt', 'code', 'threshold'].includes(target.type), `${target.name} invalid type`);
+      assert.ok(['config', 'threshold'].includes(target.type), `${target.name} invalid type`);
     }
   });
 
-  it('each MUTATION_TARGET pattern matches its source file', () => {
-    const ROOT = path.join(__dirname, '..');
+  it('each MUTATION_TARGET resolves to a default evolution-state setting', () => {
+    const { DEFAULT_SETTINGS } = require('../scripts/evolution-state');
     for (const target of runner.MUTATION_TARGETS) {
-      const filePath = path.join(ROOT, target.file);
-      assert.ok(fs.existsSync(filePath), `${target.file} does not exist`);
-      const content = fs.readFileSync(filePath, 'utf-8');
-      const match = content.match(target.pattern);
-      assert.ok(match, `Pattern for ${target.name} does not match ${target.file}`);
-      const value = parseFloat(match[1]);
-      assert.ok(!isNaN(value), `${target.name} matched value is not a number: ${match[1]}`);
+      const value = DEFAULT_SETTINGS[target.settingKey];
+      assert.ok(Number.isFinite(value), `${target.settingKey} missing from DEFAULT_SETTINGS`);
+      assert.ok(value >= target.range[0] && value <= target.range[1], `${target.name} default is outside range`);
     }
   });
 
@@ -398,7 +407,9 @@ describe('autoresearch integration', () => {
   it('runIteration records optional research metadata without changing scoring flow', async () => {
     const result = await runner.runIteration({
       targetName: 'half_life_days',
-      testCommand: 'node -e "console.log(\'ℹ tests 1\\nℹ pass 1\\nℹ fail 0\')"',
+      nextValue: 8,
+      testCommand: buildStateCommand('half_life_days', 8),
+      holdoutCommands: [buildStateCommand('half_life_days', 8)],
       timeoutMs: 5000,
       researchQuery: 'rank fusion',
       searchPapersImpl: async () => [{
@@ -415,7 +426,8 @@ describe('autoresearch integration', () => {
     assert.equal(result.metrics.researchQuery, 'rank fusion');
     assert.equal(result.metrics.researchPaperIds[0], '2603.01896');
     assert.ok(result.metrics.researchPackId);
-    assert.equal(result.metrics.baselineDetails.pass, 1);
-    assert.equal(result.metrics.mutantDetails.pass, 1);
+    assert.ok(result.metrics.rollbackSnapshotId);
+    assert.equal(result.metrics.baselineEvaluation.primary.results[0].details.pass, 0);
+    assert.equal(result.metrics.candidateEvaluation.primary.results[0].details.pass, 1);
   });
 });

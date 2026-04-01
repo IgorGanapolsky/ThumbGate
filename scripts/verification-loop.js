@@ -14,6 +14,7 @@ const {
 const {
   diagnoseFailure,
 } = require('./failure-diagnostics');
+const { getEffectiveSetting } = require('./evolution-state');
 
 const MAX_RETRIES = 3;
 const DEFAULT_MODEL_PATH = path.join(__dirname, '..', '.rlhf', 'verification-model.json');
@@ -89,7 +90,8 @@ function extractKeywords(text) {
  * @returns {object} { accepted, attempts, finalVerification, history, thompsonUpdate }
  */
 function runVerificationLoop(params) {
-  const requestedMaxRetries = Number.isFinite(params.maxRetries) ? params.maxRetries : MAX_RETRIES;
+  const effectiveDefaultRetries = getEffectiveSetting('verification_max_retries', MAX_RETRIES);
+  const requestedMaxRetries = Number.isFinite(params.maxRetries) ? params.maxRetries : effectiveDefaultRetries;
   const partnerStrategy = buildPartnerStrategy({
     partnerProfile: params.partnerProfile,
   });

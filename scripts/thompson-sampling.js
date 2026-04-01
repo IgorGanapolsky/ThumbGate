@@ -21,6 +21,7 @@
 
 const fs = require('fs');
 const { parseTimestamp } = require('./feedback-schema');
+const { getEffectiveSetting } = require('./evolution-state');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -84,9 +85,11 @@ const DEFAULT_CATEGORIES = [
  */
 function timeDecayWeight(timestamp) {
   const d = parseTimestamp(timestamp);
-  if (!d) return DECAY_FLOOR;
+  const decayFloor = getEffectiveSetting('decay_floor', DECAY_FLOOR);
+  const halfLifeDays = getEffectiveSetting('half_life_days', HALF_LIFE_DAYS);
+  if (!d) return decayFloor;
   const ageDays = (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24);
-  return Math.max(Math.pow(2, -ageDays / HALF_LIFE_DAYS), DECAY_FLOOR);
+  return Math.max(Math.pow(2, -ageDays / halfLifeDays), decayFloor);
 }
 
 // ---------------------------------------------------------------------------
