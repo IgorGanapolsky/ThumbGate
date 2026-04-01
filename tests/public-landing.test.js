@@ -201,12 +201,13 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /Codex keeps its repo-local app plugin profile/i);
   assert.match(landingPage, /Claude Desktop plugin/i);
   assert.match(landingPage, /Editor workflows/i);
-  assert.match(landingPage, /Install in 30 seconds/i);
+  assert.match(landingPage, /Claude Code Skill/i);
+  assert.match(landingPage, /\/thumbgate/);
   assert.match(landingPage, /compatibility-grid/);
   assert.match(landingPage, /View setup guide/);
   assert.match(landingPage, /Get the Claude plugin/);
   assert.match(landingPage, /Browse plugins/);
-  assert.match(landingPage, /View on npm/);
+  assert.match(landingPage, /View skill on GitHub/);
 });
 
 test('public landing page includes Plausible custom event tracking for all CTAs', () => {
