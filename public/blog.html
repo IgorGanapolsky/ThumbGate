@@ -1,130 +1,400 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ThumbGate Blog — Agent Governance Engineering</title>
-<meta name="description" content="Technical breakdowns, release notes, and agent governance insights from the ThumbGate team.">
-<link rel="canonical" href="https://rlhf-feedback-loop-production.up.railway.app/blog">
-<meta property="og:title" content="ThumbGate Blog — Agent Governance Engineering">
-<meta property="og:description" content="Technical breakdowns, release notes, and agent governance insights from the ThumbGate team.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://rlhf-feedback-loop-production.up.railway.app/blog">
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Blog","name":"ThumbGate Blog","url":"https://rlhf-feedback-loop-production.up.railway.app/blog","publisher":{"@type":"Organization","name":"Max Smith KDP LLC"},"blogPost":[{"@type":"BlogPosting","headline":"The Claude Code Leak Proves Why Pre-Action Gates Matter","datePublished":"2026-04-01","keywords":"Claude Code security, Claude Code guardrails, AI agent safety, pre-action gates"},{"@type":"BlogPosting","headline":"v0.8.5: Gate Reasoning Chains, Org Dashboard, and the Checkout Funnel That Didn't Exist","datePublished":"2026-03-31"}]}
-</script>
-<style>
-  :root { --bg: #0a0a0a; --surface: #141414; --border: #2a2a2a; --text: #e0e0e0; --text-dim: #888; --cyan: #00d4aa; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
-  .container { max-width: 720px; margin: 0 auto; padding: 0 24px; }
-  header { padding: 24px 0; border-bottom: 1px solid var(--border); }
-  header a { color: var(--cyan); text-decoration: none; font-weight: 600; }
-  h1 { font-size: 18px; font-weight: 700; }
-  .post { padding: 48px 0; border-bottom: 1px solid var(--border); }
-  .post-date { font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
-  .post h2 { font-size: 24px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.02em; }
-  .post h3 { font-size: 18px; font-weight: 600; margin: 24px 0 8px; }
-  .post p { margin-bottom: 16px; color: var(--text-dim); }
-  .post ul { margin: 0 0 16px 24px; color: var(--text-dim); }
-  .post li { margin-bottom: 6px; }
-  .post code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-size: 14px; }
-  .post strong { color: var(--text); }
-  .cta { display: inline-block; margin-top: 16px; padding: 10px 20px; background: var(--cyan); color: #000; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; }
-  footer { padding: 48px 0 24px; text-align: center; color: var(--text-dim); font-size: 13px; }
-  footer a { color: var(--cyan); text-decoration: none; }
-</style>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ThumbGate Blog — Agent Governance Engineering</title>
+    <meta
+      name="description"
+      content="Technical breakdowns, release notes, and agent governance insights from the ThumbGate team."
+    />
+    <link
+      rel="canonical"
+      href="https://rlhf-feedback-loop-production.up.railway.app/blog"
+    />
+    <meta
+      property="og:title"
+      content="ThumbGate Blog — Agent Governance Engineering"
+    />
+    <meta
+      property="og:description"
+      content="Technical breakdowns, release notes, and agent governance insights from the ThumbGate team."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://rlhf-feedback-loop-production.up.railway.app/blog"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Blog",
+        "name": "ThumbGate Blog",
+        "url": "https://rlhf-feedback-loop-production.up.railway.app/blog",
+        "publisher": { "@type": "Organization", "name": "Max Smith KDP LLC" },
+        "blogPost": [
+          {
+            "@type": "BlogPosting",
+            "headline": "The Claude Code Leak Proves Why Pre-Action Gates Matter",
+            "datePublished": "2026-04-01",
+            "keywords": "Claude Code security, Claude Code guardrails, AI agent safety, pre-action gates"
+          },
+          {
+            "@type": "BlogPosting",
+            "headline": "v0.8.5: Gate Reasoning Chains, Org Dashboard, and the Checkout Funnel That Didn't Exist",
+            "datePublished": "2026-03-31"
+          }
+        ]
+      }
+    </script>
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --surface: #141414;
+        --border: #2a2a2a;
+        --text: #e0e0e0;
+        --text-dim: #888;
+        --cyan: #00d4aa;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.7;
+      }
+      .container {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      header {
+        padding: 24px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      header a {
+        color: var(--cyan);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      h1 {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .post {
+        padding: 48px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .post-date {
+        font-size: 13px;
+        color: var(--text-dim);
+        margin-bottom: 8px;
+      }
+      .post h2 {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+      }
+      .post h3 {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 24px 0 8px;
+      }
+      .post p {
+        margin-bottom: 16px;
+        color: var(--text-dim);
+      }
+      .post ul {
+        margin: 0 0 16px 24px;
+        color: var(--text-dim);
+      }
+      .post li {
+        margin-bottom: 6px;
+      }
+      .post code {
+        background: var(--surface);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      .post strong {
+        color: var(--text);
+      }
+      .cta {
+        display: inline-block;
+        margin-top: 16px;
+        padding: 10px 20px;
+        background: var(--cyan);
+        color: #000;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      footer {
+        padding: 48px 0 24px;
+        text-align: center;
+        color: var(--text-dim);
+        font-size: 13px;
+      }
+      footer a {
+        color: var(--cyan);
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div
+        class="container"
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        "
+      >
+        <h1><a href="/">ThumbGate</a> / Blog</h1>
+        <a href="/">Back to home</a>
+      </div>
+    </header>
 
-<header>
-  <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
-    <h1><a href="/">ThumbGate</a> / Blog</h1>
-    <a href="/">Back to home</a>
-  </div>
-</header>
+    <div class="container">
+      <article class="post">
+        <div class="post-date">April 1, 2026</div>
+        <h2>Dual-Signal Feedback: Why "What Failed" Isn't Enough</h2>
 
-<div class="container">
+        <p>
+          Standard thumbs-down tells you <em>something</em> went wrong. But was
+          it a bad decision (wrong tool) or bad execution (right tool, wrong
+          parameters)?
+        </p>
 
-<article class="post">
-  <div class="post-date">April 1, 2026</div>
-  <h2>The Claude Code Leak Proves Why Pre-Action Gates Matter</h2>
+        <p>
+          Inspired by
+          <a
+            href="https://huggingface.co/papers/2603.28767"
+            style="color: var(--cyan)"
+            >Gen-Searcher's dual reward system</a
+          >, ThumbGate now supports an optional <code>failureType</code> field
+          on <code>capture_feedback</code>:
+        </p>
 
-  <p>Anthropic accidentally shipped 512,000 lines of Claude Code source inside an npm package. A missing <code>.npmignore</code> exposed the full agent architecture: tool-call loops, permission models, retry logic, 44 unreleased feature flags.</p>
+        <ul>
+          <li>
+            <strong><code>"decision"</code></strong> — the agent chose the wrong
+            action entirely
+          </li>
+          <li>
+            <strong><code>"execution"</code></strong> — right action, bad
+            parameters or output
+          </li>
+        </ul>
 
-  <p>Within 24 hours, a clean rewrite called Claw-code hit 100K GitHub stars — the fastest-growing repo in GitHub history.</p>
+        <p>
+          Thompson Sampling creates separate sub-arms (e.g.,
+          <code>git:decision</code> and <code>git:execution</code>) so
+          reliability scores diverge per dimension. An agent might be great at
+          choosing git commands but bad at parameterizing them — now you can see
+          that distinction.
+        </p>
 
-  <h3>What the leak revealed about agent security</h3>
-  <p>Claude Code has a sophisticated permission model and tool-calling pipeline. What it does <strong>not</strong> have is feedback-driven enforcement — the ability to learn from past mistakes and physically block the agent from repeating them.</p>
+        <p>
+          Backward compatible. Existing feedback without
+          <code>failureType</code> works unchanged.
+        </p>
 
-  <p>That's exactly what ThumbGate does. Every Claude Code user — and every Claw-code user — can add pre-action gates today:</p>
+        <a class="cta" href="https://www.npmjs.com/package/mcp-memory-gateway"
+          >Try it now</a
+        >
+      </article>
 
-  <ul>
-    <li><strong>Thumbs-down a mistake</strong> — it auto-generates a prevention rule</li>
-    <li><strong>Gates enforce</strong> — PreToolUse hooks block the action before execution</li>
-    <li><strong>Reasoning chains explain</strong> — every block tells you WHY</li>
-    <li><strong>Thompson Sampling adapts</strong> — confidence tiers prevent false blocks</li>
-  </ul>
+      <article class="post">
+        <div class="post-date">April 1, 2026</div>
+        <h2>The Claude Code Leak Proves Why Pre-Action Gates Matter</h2>
 
-  <h3>Install in 30 seconds</h3>
-  <p><code>npx mcp-memory-gateway init</code> works with Claude Code, Claw-code, Cursor, Codex, Gemini, Amp, and any MCP-compatible agent.</p>
+        <p>
+          Anthropic accidentally shipped 512,000 lines of Claude Code source
+          inside an npm package. A missing <code>.npmignore</code> exposed the
+          full agent architecture: tool-call loops, permission models, retry
+          logic, 44 unreleased feature flags.
+        </p>
 
-  <p>The leak proves agents are powerful but fallible software. Memory without enforcement is a suggestion. <strong>ThumbGate is a guarantee.</strong></p>
+        <p>
+          Within 24 hours, a clean rewrite called Claw-code hit 100K GitHub
+          stars — the fastest-growing repo in GitHub history.
+        </p>
 
-  <a class="cta" href="https://www.npmjs.com/package/mcp-memory-gateway">Install ThumbGate</a>
-</article>
+        <h3>What the leak revealed about agent security</h3>
+        <p>
+          Claude Code has a sophisticated permission model and tool-calling
+          pipeline. What it does <strong>not</strong> have is feedback-driven
+          enforcement — the ability to learn from past mistakes and physically
+          block the agent from repeating them.
+        </p>
 
-<article class="post">
-  <div class="post-date">March 31, 2026</div>
-  <h2>v0.8.5: Gate Reasoning Chains, Org Dashboard, and the Checkout Funnel That Didn't Exist</h2>
+        <p>
+          That's exactly what ThumbGate does. Every Claude Code user — and every
+          Claw-code user — can add pre-action gates today:
+        </p>
 
-  <p>ThumbGate v0.8.5 is our biggest release yet. Here's what shipped and why.</p>
+        <ul>
+          <li>
+            <strong>Thumbs-down a mistake</strong> — it auto-generates a
+            prevention rule
+          </li>
+          <li>
+            <strong>Gates enforce</strong> — PreToolUse hooks block the action
+            before execution
+          </li>
+          <li>
+            <strong>Reasoning chains explain</strong> — every block tells you
+            WHY
+          </li>
+          <li>
+            <strong>Thompson Sampling adapts</strong> — confidence tiers prevent
+            false blocks
+          </li>
+        </ul>
 
-  <h3>The problem we didn't see</h3>
-  <p>~1,700 developers install ThumbGate via npm every month. <strong>Zero of them ever saw a checkout button.</strong> They find the GitHub README, run <code>npx mcp-memory-gateway init</code>, use it for free, and never visit the landing page. The checkout flow nobody reaches is irrelevant. We were optimizing a storefront in a building with no door.</p>
+        <h3>Install in 30 seconds</h3>
+        <p>
+          <code>npx mcp-memory-gateway init</code> works with Claude Code,
+          Claw-code, Cursor, Codex, Gemini, Amp, and any MCP-compatible agent.
+        </p>
 
-  <h3>Gate reasoning chains</h3>
-  <p>Every gate block and warning now explains <strong>WHY</strong> it fired. When ThumbGate blocks a <code>git push --force</code>, the response includes:</p>
-  <ul>
-    <li>Which pattern matched and what it matched against</li>
-    <li>Gate identity: ID, action, layer, severity</li>
-    <li>Source: manual policy rule vs auto-promoted from feedback</li>
-    <li>How to bypass: <code>satisfy_gate("pr_threads_checked")</code></li>
-    <li>Historical fire count: "blocked 23x, warned 15x"</li>
-  </ul>
-  <p>This was inspired by the neuro-symbolic explainability trend in production AI systems. Gates are the symbolic rules; Thompson Sampling provides the statistical confidence. The reasoning chain bridges both.</p>
+        <p>
+          The leak proves agents are powerful but fallible software. Memory
+          without enforcement is a suggestion.
+          <strong>ThumbGate is a guarantee.</strong>
+        </p>
 
-  <h3>Multi-agent org dashboard</h3>
-  <p>"I'm not going to have 10,000 agents running in the environment that I don't know what they're doing." — CIO.com, March 2026</p>
-  <p>The new <code>org_dashboard</code> MCP tool aggregates gate decisions across all registered agent sessions. CIOs and team leads see: total active agents, org-wide adherence rate, top blocked gates, and risk agents (those with the lowest adherence). Free tier shows 3 agents; Pro shows the full org.</p>
+        <a class="cta" href="https://www.npmjs.com/package/mcp-memory-gateway"
+          >Install ThumbGate</a
+        >
+      </article>
 
-  <h3>Multi-hop agentic retrieval</h3>
-  <p>Inspired by Chroma's Context-1, <code>constructMultiHopPack</code> iteratively retrieves context, prunes weak chunks, refines the query with expansion terms, and checks coverage — stopping when the coverage threshold (60%) is met or max hops are reached. Each hop is logged.</p>
+      <article class="post">
+        <div class="post-date">March 31, 2026</div>
+        <h2>
+          v0.8.5: Gate Reasoning Chains, Org Dashboard, and the Checkout Funnel
+          That Didn't Exist
+        </h2>
 
-  <h3>Thompson Sampling calibration</h3>
-  <p><code>MIN_SAMPLES_THRESHOLD</code> (5) prevents low-sample overconfidence. <code>getCalibration()</code> reports per-category confidence tiers: none (0 samples), low (1-4), medium (5-19), high (20+). Callers know when to trust the statistical arm vs fall back to rules.</p>
+        <p>
+          ThumbGate v0.8.5 is our biggest release yet. Here's what shipped and
+          why.
+        </p>
 
-  <h3>The funnel fix</h3>
-  <p>Four touchpoints now put the checkout URL where 100% of npm users actually are:</p>
-  <ul>
-    <li><strong>Post-install banner</strong> — prints after <code>npm install</code> (stderr, CI-safe)</li>
-    <li><strong>Free-tier rate limits</strong> — power features capped, upgrade URL in error</li>
-    <li><strong>MCP enforceLimit</strong> — agents surface the checkout URL when limits hit</li>
-    <li><strong>CLI upgrade nudge</strong> — after <code>init</code>, <code>capture</code>, <code>stats</code></li>
-  </ul>
-  <p>13 funnel invariant CI tests prevent this blindspot from ever regressing.</p>
+        <h3>The problem we didn't see</h3>
+        <p>
+          ~1,700 developers install ThumbGate via npm every month.
+          <strong>Zero of them ever saw a checkout button.</strong> They find
+          the GitHub README, run <code>npx mcp-memory-gateway init</code>, use
+          it for free, and never visit the landing page. The checkout flow
+          nobody reaches is irrelevant. We were optimizing a storefront in a
+          building with no door.
+        </p>
 
-  <a class="cta" href="https://www.npmjs.com/package/mcp-memory-gateway">Install v0.8.5 on npm</a>
-</article>
+        <h3>Gate reasoning chains</h3>
+        <p>
+          Every gate block and warning now explains <strong>WHY</strong> it
+          fired. When ThumbGate blocks a <code>git push --force</code>, the
+          response includes:
+        </p>
+        <ul>
+          <li>Which pattern matched and what it matched against</li>
+          <li>Gate identity: ID, action, layer, severity</li>
+          <li>Source: manual policy rule vs auto-promoted from feedback</li>
+          <li>
+            How to bypass: <code>satisfy_gate("pr_threads_checked")</code>
+          </li>
+          <li>Historical fire count: "blocked 23x, warned 15x"</li>
+        </ul>
+        <p>
+          This was inspired by the neuro-symbolic explainability trend in
+          production AI systems. Gates are the symbolic rules; Thompson Sampling
+          provides the statistical confidence. The reasoning chain bridges both.
+        </p>
 
-</div>
+        <h3>Multi-agent org dashboard</h3>
+        <p>
+          "I'm not going to have 10,000 agents running in the environment that I
+          don't know what they're doing." — CIO.com, March 2026
+        </p>
+        <p>
+          The new <code>org_dashboard</code> MCP tool aggregates gate decisions
+          across all registered agent sessions. CIOs and team leads see: total
+          active agents, org-wide adherence rate, top blocked gates, and risk
+          agents (those with the lowest adherence). Free tier shows 3 agents;
+          Pro shows the full org.
+        </p>
 
-<footer>
-  <div class="container">
-    <a href="/">Home</a> · <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="https://x.com/IgorGanapolsky">X</a> · <a href="https://www.linkedin.com/in/igorganapolsky">LinkedIn</a>
-    <br><br>© 2026 Max Smith KDP LLC · MIT License
-  </div>
-</footer>
+        <h3>Multi-hop agentic retrieval</h3>
+        <p>
+          Inspired by Chroma's Context-1,
+          <code>constructMultiHopPack</code> iteratively retrieves context,
+          prunes weak chunks, refines the query with expansion terms, and checks
+          coverage — stopping when the coverage threshold (60%) is met or max
+          hops are reached. Each hop is logged.
+        </p>
 
-</body>
+        <h3>Thompson Sampling calibration</h3>
+        <p>
+          <code>MIN_SAMPLES_THRESHOLD</code> (5) prevents low-sample
+          overconfidence. <code>getCalibration()</code> reports per-category
+          confidence tiers: none (0 samples), low (1-4), medium (5-19), high
+          (20+). Callers know when to trust the statistical arm vs fall back to
+          rules.
+        </p>
+
+        <h3>The funnel fix</h3>
+        <p>
+          Four touchpoints now put the checkout URL where 100% of npm users
+          actually are:
+        </p>
+        <ul>
+          <li>
+            <strong>Post-install banner</strong> — prints after
+            <code>npm install</code> (stderr, CI-safe)
+          </li>
+          <li>
+            <strong>Free-tier rate limits</strong> — power features capped,
+            upgrade URL in error
+          </li>
+          <li>
+            <strong>MCP enforceLimit</strong> — agents surface the checkout URL
+            when limits hit
+          </li>
+          <li>
+            <strong>CLI upgrade nudge</strong> — after <code>init</code>,
+            <code>capture</code>, <code>stats</code>
+          </li>
+        </ul>
+        <p>
+          13 funnel invariant CI tests prevent this blindspot from ever
+          regressing.
+        </p>
+
+        <a class="cta" href="https://www.npmjs.com/package/mcp-memory-gateway"
+          >Install v0.8.5 on npm</a
+        >
+      </article>
+    </div>
+
+    <footer>
+      <div class="container">
+        <a href="/">Home</a> ·
+        <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> ·
+        <a href="https://x.com/IgorGanapolsky">X</a> ·
+        <a href="https://www.linkedin.com/in/igorganapolsky">LinkedIn</a>
+        <br /><br />© 2026 Max Smith KDP LLC · MIT License
+      </div>
+    </footer>
+  </body>
 </html>
