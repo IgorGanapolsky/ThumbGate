@@ -28,6 +28,14 @@ test('recall tool exists', () => {
   assert.ok(recallTool, 'recall tool must exist');
 });
 
+test('org_dashboard tool stays aligned with Team rollout packaging', () => {
+  const orgDashboardTool = TOOLS.find(t => t.name === 'org_dashboard');
+  assert.ok(orgDashboardTool, 'org_dashboard tool must exist');
+  assert.match(orgDashboardTool.description, /Team rollout: full visibility/i);
+  assert.match(orgDashboardTool.description, /Free preview: limited to 3 agents/i);
+  assert.doesNotMatch(orgDashboardTool.description, /Pro: full visibility/i);
+});
+
 test('tool names are unique', () => {
   const names = TOOLS.map(t => t.name);
   const unique = new Set(names);

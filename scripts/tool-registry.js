@@ -500,7 +500,7 @@ const TOOLS = [
   }),
   readOnlyTool({
     name: 'org_dashboard',
-    description: 'Org-wide multi-agent dashboard — shows all active agents, gate decisions, adherence rates, risk agents, and top blocked gates across the organization. Pro: full visibility. Free: limited to 3 agents.',
+    description: 'Org-wide multi-agent dashboard — shows all active agents, gate decisions, adherence rates, risk agents, and top blocked gates across the organization. Team rollout: full visibility. Free preview: limited to 3 agents.',
     inputSchema: {
       type: 'object',
       properties: {

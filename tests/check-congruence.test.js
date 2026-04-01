@@ -36,6 +36,17 @@ test('GitHub About description highlights both thumbs-up and thumbs-down feedbac
   assert.match(about.description, /👎/u);
   assert.match(about.description, /thumbs up/i);
   assert.match(about.description, /thumbs down/i);
+  assert.match(about.description, /shared lessons and org visibility/i);
+});
+
+test('README commercial copy stays aligned with current Pro and Team packaging', () => {
+  const readme = execSync('sed -n \'1,320p\' README.md', { cwd: ROOT, encoding: 'utf-8' });
+  assert.match(readme, /\$19\/mo or \$149\/yr/);
+  assert.match(readme, /\$12\/seat\/mo/);
+  assert.match(readme, /shared hosted lesson DB/i);
+  assert.match(readme, /org dashboard/i);
+  assert.doesNotMatch(readme, /shared team DB/i);
+  assert.doesNotMatch(readme, /\/mo\$19/i);
 });
 
 test('GitHub About comparison normalizes topic order and flags real drift', () => {
