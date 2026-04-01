@@ -4,6 +4,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('child_process');
 const path = require('path');
+const { PRO_MONTHLY_PAYMENT_LINK } = require('../scripts/commercial-offer');
 
 const POSTINSTALL = path.join(__dirname, '..', 'bin', 'postinstall.js');
 
@@ -26,6 +27,10 @@ function runPostinstall(envOverrides = {}) {
   };
 }
 
+function extractHttpUrls(text) {
+  return Array.from(String(text || '').matchAll(/https:\/\/[^\s)]+/g), (match) => match[0]);
+}
+
 describe('postinstall banner', () => {
   it('stdout is empty (no MCP contamination)', () => {
     const { stdout } = runPostinstall();
@@ -35,11 +40,13 @@ describe('postinstall banner', () => {
   it('includes checkout URL in stderr output', () => {
     const { stderr, exitCode } = runPostinstall();
     assert.equal(exitCode, 0);
-    assert.ok(stderr.includes('checkout/pro'), 'should include checkout URL');
+    const checkoutUrl = extractHttpUrls(stderr).find((candidate) => new URL(candidate).host === 'buy.stripe.com');
+    assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'should include checkout URL');
     assert.ok(stderr.includes('ThumbGate'), 'should mention ThumbGate');
     assert.ok(stderr.includes('npx mcp-memory-gateway'), 'should include quick start');
     assert.match(stderr, /personal local dashboard/i);
     assert.match(stderr, /optional hosted API key/i);
+    assert.match(stderr, /\$19\/mo or \$149\/yr/i);
   });
 
   it('exits silently in CI', () => {

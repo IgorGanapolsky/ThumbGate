@@ -36,7 +36,7 @@ let apiOrigin = '';
 const authHeader = { authorization: 'Bearer test-api-key' };
 
 test('api servers 2026 pricing', () => {
-  assert.match('$49 one-time', /\$49 one-time/);
+  assert.match('$19/mo or $149/yr', /\$19\/mo or \$149\/yr/);
 });
 
 function apiUrl(pathname = '/') {
@@ -109,7 +109,8 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Thompson Sampling/i);
   assert.match(body, /FAQPage/);
   assert.match(body, /SoftwareApplication/);
-  assert.match(body, /\$49/);
+  assert.match(body, /\$19/);
+  assert.match(body, /\$149/);
   assert.match(body, /\/js\/analytics\.js/);
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
   assert.match(body, /google-site-verification" content="test-verification-token"/);
@@ -1075,8 +1076,10 @@ test('billing checkout endpoint is public', async () => {
   assert.ok(typeof body.sessionId === 'string');
   assert.equal(body.localMode, true);
   assert.match(body.traceId, /^checkout_/);
+  assert.equal(body.planId, 'pro');
+  assert.equal(body.billingCycle, 'monthly');
   assert.equal(body.price, 19);
-  assert.equal(body.type, 'payment');
+  assert.equal(body.type, 'subscription');
   assert.equal(res.headers.get('x-rlhf-trace-id'), body.traceId);
 });
 
@@ -1390,6 +1393,10 @@ test('billing session endpoint returns provisioned local checkout details', asyn
   assert.equal(checkoutRes.status, 200);
   const checkoutBody = await checkoutRes.json();
   assert.ok(typeof checkoutBody.sessionId === 'string');
+  assert.equal(checkoutBody.planId, 'pro');
+  assert.equal(checkoutBody.billingCycle, 'monthly');
+  assert.equal(checkoutBody.price, 19);
+  assert.equal(checkoutBody.type, 'subscription');
 
   const sessionRes = await fetch(
     `${apiUrl('/v1/billing/session')}?sessionId=${encodeURIComponent(checkoutBody.sessionId)}`
@@ -1405,6 +1412,39 @@ test('billing session endpoint returns provisioned local checkout details', asyn
   assert.match(sessionBody.nextSteps.env, /RLHF_API_KEY=/);
   assert.match(sessionBody.nextSteps.env, /RLHF_API_BASE_URL=https:\/\/billing\.example\.com/);
   assert.match(sessionBody.nextSteps.curl, /https:\/\/billing\.example\.com\/v1\/feedback\/capture/);
+});
+
+test('billing checkout supports annual Pro and Team seat selection', async () => {
+  const annualRes = await fetch(apiUrl('/v1/billing/checkout'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      planId: 'pro',
+      billingCycle: 'annual',
+    }),
+  });
+  assert.equal(annualRes.status, 200);
+  const annualBody = await annualRes.json();
+  assert.equal(annualBody.planId, 'pro');
+  assert.equal(annualBody.billingCycle, 'annual');
+  assert.equal(annualBody.price, 149);
+  assert.equal(annualBody.type, 'subscription');
+
+  const teamRes = await fetch(apiUrl('/v1/billing/checkout'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      planId: 'team',
+      seatCount: 2,
+    }),
+  });
+  assert.equal(teamRes.status, 200);
+  const teamBody = await teamRes.json();
+  assert.equal(teamBody.planId, 'team');
+  assert.equal(teamBody.billingCycle, 'monthly');
+  assert.equal(teamBody.seatCount, 3);
+  assert.equal(teamBody.price, 36);
+  assert.equal(teamBody.type, 'subscription');
 });
 
 test('billing checkout supports CORS preflight', async () => {

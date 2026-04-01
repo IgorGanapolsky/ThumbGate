@@ -19,6 +19,7 @@ const os = require('os');
 const path = require('path');
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const { PRO_MONTHLY_PAYMENT_LINK } = require('../scripts/commercial-offer');
 const { resolveMcpEntry } = require('../scripts/mcp-config');
 
 const CLI = path.resolve(__dirname, '../bin/cli.js');
@@ -207,6 +208,10 @@ function buildSequenceRows() {
       },
     },
   ];
+}
+
+function extractHttpUrls(text) {
+  return Array.from(String(text || '').matchAll(/https:\/\/[^\s)]+/g), (match) => match[0]);
 }
 
 function frameMcpMessage(payload) {
@@ -517,7 +522,7 @@ describe('bin/cli.js', () => {
       env: unlicensedProEnv(testHomeDir),
     });
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
-    assert.match(result.stdout, /Pro \(\$19\/mo\)/);
+    assert.match(result.stdout, /Pro \(\$19\/mo or \$149\/yr\)/);
     assert.match(result.stdout, /personal local dashboard/i);
     assert.match(result.stdout, /Launch dashboard\s*:\s*npx mcp-memory-gateway pro/);
     assert.match(result.stdout, /Activate \+ run\s*:\s*npx mcp-memory-gateway pro --activate --key=YOUR_KEY/);
@@ -650,8 +655,9 @@ describe('bin/cli.js', () => {
       env: unlicensedProEnv(testHomeDir),
     });
     assert.strictEqual(result.status, 0);
-    assert.ok(result.stdout.includes('railway.app'), 'Pro command should include hosted URL');
-    assert.ok(result.stdout.includes('$19/mo'), 'Pro command should include current price');
+    const checkoutUrl = extractHttpUrls(result.stdout).find((candidate) => new URL(candidate).host === 'buy.stripe.com');
+    assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'Pro command should include the live Stripe checkout URL');
+    assert.ok(result.stdout.includes('$19/mo or $149/yr'), 'Pro command should include current pricing');
     assert.ok(result.stdout.includes('Legacy launcher'), 'Pro command should still mention legacy launcher path');
   });
 

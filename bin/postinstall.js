@@ -12,8 +12,10 @@ const isQuiet = process.env.RLHF_NO_NUDGE === '1' || process.env.npm_config_logl
 
 if (isCI || isQuiet) process.exit(0);
 
-const PRO_URL = 'https://rlhf-feedback-loop-production.up.railway.app';
-const CHECKOUT_URL = `${PRO_URL}/checkout/pro`;
+const {
+  PRO_MONTHLY_PAYMENT_LINK,
+  PRO_PRICE_LABEL,
+} = require('../scripts/commercial-offer');
 
 process.stderr.write(`
   ┌─────────────────────────────────────────────────────┐
@@ -25,8 +27,8 @@ process.stderr.write(`
   │     npx mcp-memory-gateway stats                    │
   │                                                     │
   │   Unlock Pro (personal local dashboard, DPO export, │
-  │   optional hosted API key) — $19/mo:          │
-  │     ${CHECKOUT_URL}       │
+  │   optional hosted API key) — ${PRO_PRICE_LABEL}:      │
+  │     ${PRO_MONTHLY_PAYMENT_LINK}       │
   │                                                     │
   │   Or run: npx mcp-memory-gateway pro                │
   │                                                     │

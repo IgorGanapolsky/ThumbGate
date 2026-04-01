@@ -1,15 +1,16 @@
 # Commercial Truth
 
 Status: current
-Updated: March 24, 2026
+Updated: April 1, 2026
 
 This document is the source of truth for product, pricing, traction, and proof claims in this repository.
 
 ## What is true today
 
 - The open-source `mcp-memory-gateway` package is free and MIT licensed.
-- The current public self-serve commercial offer is **Pro at $49 one-time** via Stripe checkout link.
-- The current hosted team path is **Workflow Hardening Sprint intake** on the landing page, which starts the shared lesson DB and org-dashboard rollout lane for teams.
+- The current public self-serve commercial offer is **Pro at $19/mo or $149/yr** via Stripe checkout.
+- The preserved founder one-time Stripe link still exists for legacy founder buyers, but it is not the default commercial offer.
+- The current Team pricing anchor is **$12/seat/mo with a 3-seat minimum**, and the public Team path remains **Workflow Hardening Sprint intake** until hosted rollout scope is qualified.
 - Verified booked revenue as of March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product.
 - Verified booked revenue for March 19, 2026 is **$0.00**; there is no evidence of a new paid charge today.
 - Engineering verification is strong and should be cited through `docs/VERIFICATION_EVIDENCE.md` and machine-readable proof reports.
@@ -24,14 +25,14 @@ This document is the source of truth for product, pricing, traction, and proof c
 - DPO/KTO export for fine-tuning
 - CLI dashboard
 
-### Pro ($49 one-time, hosted checkout on Railway)
+### Pro ($19/mo or $149/yr, hosted checkout on Railway)
 
 - Personal local dashboard
 - DPO export and advanced data exports
 - Founder-license support
 - Unlimited custom gates with auto-gate promotion
 
-### Team (hosted rollout, intake-first)
+### Team ($12/seat/mo, min 3, hosted rollout intake-first)
 
 - Shared hosted lesson database
 - Org dashboard with active agents, gate hit rates, and risk agents

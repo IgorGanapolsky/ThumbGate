@@ -88,7 +88,7 @@ Works with Claude Code, Cursor, Codex, Gemini CLI, and any MCP client.
 - 466 tests, 90%+ coverage
 - 18 MCP tools in the default profile
 - MIT licensed, free OSS core
-- $49 one-time Pro tier for dashboard and analytics
+- $19/mo or $149/yr Pro tier for dashboard and analytics
 
 ## What I'd love feedback on
 
