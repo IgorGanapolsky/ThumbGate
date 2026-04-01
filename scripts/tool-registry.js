@@ -432,13 +432,23 @@ const TOOLS = [
   }),
   destructiveTool({
     name: 'satisfy_gate',
-    description: 'Satisfy a gate condition (e.g., after checking PR threads). Evidence is stored with a 5-minute TTL.',
+    description: 'Satisfy a gate condition with optional structured reasoning. Evidence is stored with a 5-minute TTL. When structuredReasoning is provided, the premise/evidence/conclusion chain is stored in the audit trail.',
     inputSchema: {
       type: 'object',
       required: ['gate'],
       properties: {
         gate: { type: 'string', description: 'Gate condition ID to satisfy (e.g., pr_threads_checked)' },
         evidence: { type: 'string', description: 'Evidence text (e.g., \"0 unresolved threads\")' },
+        structuredReasoning: {
+          type: 'object',
+          description: 'Structured pre-gate reasoning: state premises, trace evidence, assess risk, derive conclusion before unlocking.',
+          properties: {
+            premise: { type: 'string', description: 'What am I trying to do and why?' },
+            evidence: { type: 'string', description: 'What specific, verifiable evidence supports this action?' },
+            risk: { type: 'string', description: 'What could go wrong if this action proceeds?' },
+            conclusion: { type: 'string', description: 'Based on evidence, should I proceed? Yes/No with justification.' },
+          },
+        },
       },
     },
   }),

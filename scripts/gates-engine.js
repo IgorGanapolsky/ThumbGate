@@ -141,14 +141,23 @@ function isConditionSatisfied(conditionId) {
   return age < TTL_MS;
 }
 
-function satisfyCondition(conditionId, evidence) {
+function satisfyCondition(conditionId, evidence, structuredReasoning) {
   const state = loadState();
-  state[conditionId] = {
+  const entry = {
     timestamp: Date.now(),
     evidence: evidence || '',
   };
+  if (structuredReasoning && typeof structuredReasoning === 'object') {
+    entry.structuredReasoning = {
+      premise: structuredReasoning.premise || null,
+      evidence: structuredReasoning.evidence || null,
+      risk: structuredReasoning.risk || null,
+      conclusion: structuredReasoning.conclusion || null,
+    };
+  }
+  state[conditionId] = entry;
   saveState(state);
-  return state[conditionId];
+  return entry;
 }
 
 // ---------------------------------------------------------------------------
