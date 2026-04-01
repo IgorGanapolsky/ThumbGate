@@ -264,3 +264,25 @@ test('public landing page hero is evergreen without version numbers', () => {
   assert.ok(heroMatch, 'Hero section must exist');
   assert.doesNotMatch(heroMatch[0], /New in v\d/i);
 });
+
+test('landing page has guardrail positioning section', () => {
+  const html = readLandingPage();
+  assert.ok(html.includes('id="guardrails"'), 'guardrails section must exist');
+  assert.ok(html.includes('Don\'t trust'), 'must include "Don\'t trust — verify" card');
+  assert.ok(html.includes('Real tools'), 'must include "Real tools" card');
+  assert.ok(html.includes('show work'), 'must include "show work" card');
+  assert.ok(html.includes('Log everything'), 'must include "Log everything" card');
+});
+
+test('landing page has newsletter signup', () => {
+  const html = readLandingPage();
+  assert.ok(html.includes('newsletter'), 'must include newsletter section');
+  assert.ok(html.includes('type="email"'), 'must include email input');
+});
+
+test('landing page has social links in footer', () => {
+  const html = readLandingPage();
+  assert.ok(html.includes('x.com'), 'footer must link to X/Twitter');
+  assert.ok(html.includes('linkedin.com'), 'footer must link to LinkedIn');
+  assert.ok(html.includes('/blog'), 'footer must link to blog');
+});
