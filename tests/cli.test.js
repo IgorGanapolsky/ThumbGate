@@ -19,6 +19,7 @@ const os = require('os');
 const path = require('path');
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const { PRO_MONTHLY_PAYMENT_LINK } = require('../scripts/commercial-offer');
 const { resolveMcpEntry } = require('../scripts/mcp-config');
 
 const CLI = path.resolve(__dirname, '../bin/cli.js');
@@ -207,6 +208,10 @@ function buildSequenceRows() {
       },
     },
   ];
+}
+
+function extractHttpUrls(text) {
+  return Array.from(String(text || '').matchAll(/https:\/\/[^\s)]+/g), (match) => match[0]);
 }
 
 function frameMcpMessage(payload) {
@@ -650,10 +655,8 @@ describe('bin/cli.js', () => {
       env: unlicensedProEnv(testHomeDir),
     });
     assert.strictEqual(result.status, 0);
-    assert.ok(
-      result.stdout.includes('https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06'),
-      'Pro command should include the live Stripe checkout URL'
-    );
+    const checkoutUrl = extractHttpUrls(result.stdout).find((candidate) => new URL(candidate).host === 'buy.stripe.com');
+    assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'Pro command should include the live Stripe checkout URL');
     assert.ok(result.stdout.includes('$19/mo or $149/yr'), 'Pro command should include current pricing');
     assert.ok(result.stdout.includes('Legacy launcher'), 'Pro command should still mention legacy launcher path');
   });
