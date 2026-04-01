@@ -954,6 +954,7 @@ function captureFeedback(params) {
   const memoryRecord = {
     id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     ...prepared.memory,
+    richContext: feedbackEvent.richContext || null,
     diagnosis: storedDiagnosis,
     sourceFeedbackId: feedbackEvent.id,
     timestamp: now,
@@ -1295,7 +1296,9 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
   const diagnosisBuckets = {};
   const repeatedViolationBuckets = {};
   for (const m of memories) {
-    const key = (m.tags || []).find((t) => !['feedback', 'negative', 'positive'].includes(t)) || 'general';
+    const key = (m.richContext && m.richContext.domain && m.richContext.domain !== 'unknown')
+      ? m.richContext.domain
+      : (m.tags || []).find((t) => !['feedback', 'negative', 'positive'].includes(t)) || 'general';
     if (!buckets[key]) buckets[key] = { items: [], weightedCount: 0 };
     const w = decayWeight(m);
     buckets[key].items.push(m);
