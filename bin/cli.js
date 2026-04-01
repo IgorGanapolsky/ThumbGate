@@ -37,7 +37,7 @@ function upgradeNudge() {
     if (isProTier()) return;
   } catch (_) { return; }
   process.stderr.write(
-    `\n  Unlock Pro: unlimited gates, DPO export, searchable dashboard — $49 one-time\n` +
+    `\n  Unlock Pro: unlimited gates, DPO export, searchable dashboard — $19/mo\n` +
     `  ${PRO_CHECKOUT_URL}\n\n`
   );
 }
@@ -80,9 +80,9 @@ function proNudge(context) {
   if (process.env.RLHF_NO_NUDGE === '1') return;
   const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
   const messages = [
-    `\n  💡 Unlock Pro ($49 one-time): searchable dashboard, DPO export, multi-repo sync\n     ${STRIPE_URL}\n`,
+    `\n  💡 Unlock Pro ($19/mo): searchable dashboard, DPO export, multi-repo sync\n     ${STRIPE_URL}\n`,
     `\n  💡 Pro tip: export your feedback as DPO training pairs to improve your models.\n     Get Pro: ${STRIPE_URL}\n`,
-    `\n  💡 ThumbGate Pro: search, edit, and sync lessons across repos. $49 one-time.\n     ${STRIPE_URL}\n`,
+    `\n  💡 ThumbGate Pro: search, edit, and sync lessons across repos. $19/mo.\n     ${STRIPE_URL}\n`,
   ];
   // Rotate message daily — no Math.random (security policy)
   const msg = messages[Math.floor(Date.now() / 86400000) % messages.length];
@@ -94,7 +94,7 @@ function limitNudge(action) {
   const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
   process.stderr.write(
     `\n  ⚠️  Free tier: ${action} daily limit reached (5/day).\n` +
-    `     Upgrade to Pro for unlimited usage — $49 one-time:\n` +
+    `     Upgrade to Pro for unlimited usage — $19/mo:\n` +
     `     ${STRIPE_URL}\n\n`
   );
 }
@@ -503,7 +503,7 @@ function init() {
     '\n  ┌─────────────────────────────────────────────────┐\n' +
     '  │  Free: unlimited captures, recalls, and gates   │\n' +
     '  │  Pro:  + dashboard + DPO export + multi-repo    │\n' +
-    '  │        $49 one-time → npx mcp-memory-gateway pro│\n' +
+    '  │        $19/mo → npx mcp-memory-gateway pro│\n' +
     '  └─────────────────────────────────────────────────┘\n\n'
   );
 
@@ -714,7 +714,7 @@ function pro() {
     const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
     console.log('\nThumbGate Pro — Local Dashboard');
     console.log('─'.repeat(50));
-    console.log('Self-serve offer today: Pro ($49 one-time).');
+    console.log('Self-serve offer today: Pro ($19/mo).');
     console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
     console.log('\nWhat is available:');
     console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
@@ -904,7 +904,7 @@ function exportDpo() {
   if (!isProTier(null)) {
     const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
     process.stderr.write(
-      `\n  🔒 DPO Export requires Pro ($49 one-time).\n` +
+      `\n  🔒 DPO Export requires Pro ($19/mo).\n` +
       `     Your feedback would generate valuable training pairs.\n` +
       `     Upgrade: ${STRIPE_URL}\n\n`
     );
@@ -928,7 +928,7 @@ function exportDatabricks() {
   if (!isProTier(null)) {
     const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
     process.stderr.write(
-      `\n  🔒 Databricks Export requires Pro ($49 one-time).\n` +
+      `\n  🔒 Databricks Export requires Pro ($19/mo).\n` +
       `     Export feedback logs + proof artifacts for analytics.\n` +
       `     Upgrade: ${STRIPE_URL}\n\n`
     );
@@ -1196,7 +1196,7 @@ function help() {
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Pre-Action Gates');
   console.log('  force-gate <PATTERN>  Immediately create a blocking gate from a pattern');
   console.log('  self-heal             Run self-healing check and auto-fix');
-  console.log('  pro                   Show Pro plan ($49 one-time) + hosted pilot info');
+  console.log('  pro                   Show Pro plan ($19/mo) + hosted pilot info');
   console.log('    --upgrade           Install Pro configs into .rlhf/');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
   console.log('  watch [flags]           Watch .rlhf/ for external signals and ingest through pipeline (--once, --source=X)');

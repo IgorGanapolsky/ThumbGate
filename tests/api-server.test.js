@@ -1051,7 +1051,7 @@ test('billing checkout endpoint is public', async () => {
   assert.ok(typeof body.sessionId === 'string');
   assert.equal(body.localMode, true);
   assert.match(body.traceId, /^checkout_/);
-  assert.equal(body.price, 49);
+  assert.equal(body.price, 19);
   assert.equal(body.type, 'payment');
   assert.equal(res.headers.get('x-rlhf-trace-id'), body.traceId);
 });

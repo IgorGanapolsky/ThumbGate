@@ -72,8 +72,8 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /Forever free/);
   assert.match(landingPage, /Local-only, single dev/);
   assert.match(landingPage, /Founder pricing/);
-  assert.match(landingPage, /Hosted rollout/i);
-  assert.match(landingPage, /Pilot/);
+  assert.match(landingPage, /Shared lessons/i);
+  assert.match(landingPage, /\$12/);
   assert.match(landingPage, /Install Free/);
   assert.match(landingPage, /Get Pro/);
   assert.match(landingPage, /Start Team Rollout/);

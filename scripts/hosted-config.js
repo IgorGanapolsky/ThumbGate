@@ -4,8 +4,8 @@ const crypto = require('node:crypto');
 
 const DEFAULT_PUBLIC_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
 const DEFAULT_CHECKOUT_FALLBACK_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
-const DEFAULT_PRO_PRICE_DOLLARS = 49;
-const DEFAULT_PRO_PRICE_LABEL = '$49 one-time';
+const DEFAULT_PRO_PRICE_DOLLARS = 19;
+const DEFAULT_PRO_PRICE_LABEL = '$19/mo or $149/yr';
 const GA_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/i;
 
 function normalizeOrigin(value) {

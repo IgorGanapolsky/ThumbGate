@@ -25,7 +25,7 @@ process.stderr.write(`
   │     npx mcp-memory-gateway stats                    │
   │                                                     │
   │   Unlock Pro (personal local dashboard, DPO export, │
-  │   optional hosted API key) — $49 one-time:          │
+  │   optional hosted API key) — $19/mo:          │
   │     ${CHECKOUT_URL}       │
   │                                                     │
   │   Or run: npx mcp-memory-gateway pro                │
