@@ -1,24 +1,33 @@
 version: 0.1
 cli:
   version: 1.25.0
+plugins:
+  sources:
+    - id: trunk
+      ref: v1.7.6
+      uri: https://github.com/trunk-io/plugins
 lint:
   enabled:
-    - actionlint
-    - bandit
-    - checkov
+    - actionlint@1.7.12
+    - bandit@1.9.4
+    - checkov@3.2.513
     - git-diff-check
-    - hadolint
-    - isort
-    - markdownlint
-    - osv-scanner
-    - prettier
-    - ruff
-    - shellcheck
-    - shfmt
-    - trufflehog
-    - yamllint
-tests:
-  flaky_test_management:
+    - hadolint@2.14.0
+    - isort@8.0.1
+    - markdownlint@0.48.0
+    - osv-scanner@2.3.5
+    - prettier@3.8.1
+    - ruff@0.15.8
+    - shellcheck@0.11.0
+    - shfmt@3.6.0
+    - trufflehog@3.94.2
+    - yamllint@1.38.0
+flaky:
+  quarantine: true
+  monitors:
     enabled:
       - python-pytest
-    quarantine: true
+  detection:
+    threshold: 3
+    window: 10
+

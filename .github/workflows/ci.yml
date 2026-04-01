@@ -1,13 +1,19 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
 jobs:
   trunk-check:
     name: Trunk Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Trunk Check
         uses: trunk-io/trunk-action@v1
         with:
-          trunk_token: ${{ secrets.TRUNK_API_TOKEN }}
+          trunk-token: ${{ secrets.TRUNK_API_TOKEN }}
+
