@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "description": "Computer-use action gates for OpenAI Responses API environment",
+  "presets": {
+    "safe-readonly": {
+      "description": "Read-only browsing and file access. No writes, no shell, no uploads.",
+      "allowedActions": ["browser.open", "browser.click", "file.read", "clipboard.read"],
+      "deniedActions": ["shell.exec", "file.write", "file.delete", "upload", "message.send"],
+      "approvalRequired": ["browser.type", "download", "clipboard.write"]
+    },
+    "dev-sandbox": {
+      "description": "Development sandbox. Code editing allowed, no external communication.",
+      "allowedActions": ["browser.open", "browser.click", "browser.type", "file.read", "file.write", "clipboard.read", "clipboard.write", "download"],
+      "deniedActions": ["upload", "message.send"],
+      "approvalRequired": ["shell.exec", "file.delete"]
+    },
+    "human-approval-for-write": {
+      "description": "All write actions require human approval.",
+      "allowedActions": ["browser.open", "browser.click", "file.read", "clipboard.read"],
+      "deniedActions": [],
+      "approvalRequired": ["browser.type", "shell.exec", "file.write", "file.delete", "clipboard.write", "download", "upload", "message.send"]
+    }
+  },
+  "secretPatterns": [
+    "(?i)(api[_-]?key|secret|token|password|credential|auth)\\s*[:=]",
+    "(?i)bearer\\s+[a-zA-Z0-9._-]+",
+    "ghp_[a-zA-Z0-9]{36}",
+    "sk-[a-zA-Z0-9]{48}"
+  ],
+  "dangerousShellPatterns": [
+    "rm\\s+-rf\\s+/",
+    "rm\\s+-rf\\s+~",
+    ":(){ :|:& };:",
+    "dd\\s+if=/dev/zero",
+    "mkfs\\.",
+    "curl.*\\|.*sh",
+    "wget.*\\|.*bash"
+  ]
+}

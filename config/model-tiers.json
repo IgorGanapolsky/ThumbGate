@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "tiers": {
+    "nano": {
+      "label": "GPT-5.4 nano",
+      "taskTypes": ["classification", "extraction", "ranking", "labeling", "summarization"],
+      "maxContextTokens": 32000,
+      "costMultiplier": 0.1
+    },
+    "mini": {
+      "label": "GPT-5.4 mini",
+      "taskTypes": ["code-edit", "test-generation", "review", "tool-use", "debugging"],
+      "maxContextTokens": 200000,
+      "costMultiplier": 0.4
+    },
+    "frontier": {
+      "label": "GPT-5.4",
+      "taskTypes": ["architecture", "cross-file", "complex-debugging", "large-context"],
+      "maxContextTokens": 1000000,
+      "costMultiplier": 1.0,
+      "budgetDefaults": {
+        "tokenCap": 500000,
+        "requireReason": true
+      }
+    }
+  },
+  "escalationRules": {
+    "contextThreshold": 200000,
+    "failureRetryThreshold": 2,
+    "highRiskEscalation": true,
+    "architectureTags": ["architecture", "cross-file", "multi-module", "system-design"]
+  }
+}

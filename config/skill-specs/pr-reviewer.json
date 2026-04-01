@@ -1,0 +1,9 @@
+{
+  "name": "pr-reviewer",
+  "description": "Reviews pull requests with ThumbGate memory and gates",
+  "tools": ["recall", "capture_feedback", "search_lessons", "enforcement_matrix"],
+  "policyBundle": "default-v1",
+  "memoryScope": ["pr-review", "code-quality"],
+  "defaultModelClass": "mini",
+  "escalationRules": ["escalate-on-security-finding", "escalate-on-breaking-change"]
+}
