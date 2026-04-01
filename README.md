@@ -140,6 +140,7 @@ Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
 | `recall` injects past context into the next session                                                              | Thumbs up/down changing model weights                         |
 | `session_handoff` and `session_primer` preserve continuity                                                       | Agents magically remembering what happened last session       |
 | `search_lessons` exposes corrective actions, lifecycle state, linked rules, linked gates, and next harness fixes | Feedback stats automatically improving behavior by themselves |
+| Natural-language harness specs keep workflow control legible and portable across runtimes                        | Re-implementing the same agent-control logic in every adapter |
 | Pre-action gates block known-bad tool calls before execution                                                     | Agents self-correcting without context injection or gates     |
 | Auto-promotion turns repeated failures into warn/block rules                                                     | Calling this "RLHF" in the strict training sense              |
 | Rejection ledger shows why vague feedback was rejected                                                           | Vague signals silently helping the system                     |
@@ -158,7 +159,14 @@ Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
 | `enforcement_matrix`   | Inspect promotion rate, active gates, and rejection ledger                                                  |
 | `feedback_stats`       | Approval rate and failure-domain summary                                                                    |
 | `estimate_uncertainty` | Bayesian uncertainty estimate for risky tags                                                                |
-| `org_dashboard`        | **Pro** — Org-wide multi-agent visibility: all agents, adherence rates, risk alerts                         |
+| `org_dashboard`        | **Team** — Shared lessons plus org-wide multi-agent visibility, adherence rates, and risk alerts           |
+
+Natural-language harnesses now live in [`harnesses/`](harnesses) and can be executed through the async runtime:
+
+```bash
+node scripts/async-job-runner.js --list-harnesses
+node scripts/async-job-runner.js --run-harness=repo-full-verification --harness-inputs='{"verificationCommand":"npm run verify:full"}'
+```
 
 Lean install for recall + gates + lesson search only:
 

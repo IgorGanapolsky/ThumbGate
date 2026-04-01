@@ -29,6 +29,7 @@ function buildVerifyPlan(mode = 'quick') {
       { command: npmCommand(), args: ['run', 'prove:claim-verification'] },
       { command: npmCommand(), args: ['run', 'prove:data-pipeline'] },
       { command: npmCommand(), args: ['run', 'prove:evolution'] },
+      { command: npmCommand(), args: ['run', 'prove:harnesses'] },
       { command: npmCommand(), args: ['run', 'prove:runtime'] },
       { command: npmCommand(), args: ['run', 'prove:seo-gsd'] },
       { command: npmCommand(), args: ['run', 'prove:tessl'] },
@@ -109,6 +110,14 @@ function materializeProofArtifacts(tempRoot, cwd = process.cwd()) {
       target: path.join(cwd, 'proof', 'evolution-report.md'),
     },
     {
+      source: path.join(tempRoot, 'proof-harnesses', 'harnesses-report.json'),
+      target: path.join(cwd, 'proof', 'harnesses-report.json'),
+    },
+    {
+      source: path.join(tempRoot, 'proof-harnesses', 'harnesses-report.md'),
+      target: path.join(cwd, 'proof', 'harnesses-report.md'),
+    },
+    {
       source: path.join(tempRoot, 'proof-runtime', 'runtime-report.json'),
       target: path.join(cwd, 'proof', 'runtime-report.json'),
     },
@@ -168,6 +177,7 @@ function recordVerifyWorkflowRun(mode = 'quick', cwd = process.cwd(), feedbackDi
       path.join(cwd, 'proof', 'claim-verification-report.json'),
       path.join(cwd, 'proof', 'data-pipeline-report.json'),
       path.join(cwd, 'proof', 'evolution-report.json'),
+      path.join(cwd, 'proof', 'harnesses-report.json'),
       path.join(cwd, 'proof', 'runtime-report.json'),
       path.join(cwd, 'proof', 'seo-gsd-report.json'),
       path.join(cwd, 'proof', 'tessl-report.json'),
@@ -185,6 +195,7 @@ function runVerify(mode = 'quick', baseEnv = process.env, cwd = process.cwd()) {
     ...baseEnv,
     RLHF_PROOF_DIR: path.join(tempRoot, 'proof-adapters'),
     RLHF_AUTOMATION_PROOF_DIR: path.join(tempRoot, 'proof-automation'),
+    RLHF_HARNESSES_PROOF_DIR: path.join(tempRoot, 'proof-harnesses'),
     RLHF_RUNTIME_PROOF_DIR: path.join(tempRoot, 'proof-runtime'),
   };
 

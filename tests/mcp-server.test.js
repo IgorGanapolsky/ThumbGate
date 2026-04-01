@@ -11,6 +11,10 @@ process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.RLHF_PROOF_DIR = tmpProofDir;
 process.env.RLHF_NO_RATE_LIMIT = '1'; // bypass free-tier rate limits during tests
 
+const RUNNER_PATH = require.resolve('../scripts/async-job-runner');
+const HARNESS_PATH = require.resolve('../scripts/natural-language-harness');
+const VERIFICATION_PATH = require.resolve('../scripts/verification-loop');
+
 const { handleRequest, TOOLS, SAFE_DATA_DIR } = require('../adapters/mcp/server-stdio');
 
 function initGitRepo() {
@@ -31,6 +35,33 @@ function removeWorktree(repoPath, worktreePath) {
   });
 }
 
+function stubModule(modulePath, exports) {
+  require.cache[modulePath] = {
+    id: modulePath,
+    filename: modulePath,
+    loaded: true,
+    exports,
+  };
+}
+
+function makeAcceptedVerification() {
+  return {
+    accepted: true,
+    attempts: 1,
+    finalVerification: {
+      score: 1,
+      violations: [],
+    },
+    partnerStrategy: {
+      profile: 'strict_reviewer',
+      verificationMode: 'evidence_first',
+    },
+    partnerReward: {
+      reward: 1,
+    },
+  };
+}
+
 test.after(() => {
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
   fs.rmSync(tmpProofDir, { recursive: true, force: true });
@@ -46,6 +77,60 @@ test('tools/list returns all configured tools', async () => {
     const hasDestructiveHint = annotations.destructiveHint === true;
     assert.equal(hasReadOnlyHint || hasDestructiveHint, true, `${tool.name} must declare a safety annotation`);
     assert.equal(hasReadOnlyHint && hasDestructiveHint, false, `${tool.name} must not claim both readOnlyHint and destructiveHint`);
+  }
+});
+
+test('list_harnesses tool returns the natural-language harness catalog', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 29,
+    method: 'tools/call',
+    params: {
+      name: 'list_harnesses',
+      arguments: {
+        tag: 'verification',
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.harnesses.length, 1);
+  assert.equal(payload.harnesses[0].id, 'repo-full-verification');
+});
+
+test('run_harness tool executes a natural-language harness over MCP', async () => {
+  delete require.cache[RUNNER_PATH];
+  delete require.cache[HARNESS_PATH];
+  delete require.cache[VERIFICATION_PATH];
+  stubModule(VERIFICATION_PATH, {
+    runVerificationLoop: () => makeAcceptedVerification(),
+  });
+
+  try {
+    const result = await handleRequest({
+      jsonrpc: '2.0',
+      id: 30,
+      method: 'tools/call',
+      params: {
+        name: 'run_harness',
+        arguments: {
+          harness: 'repo-full-verification',
+          jobId: 'mcp-run-harness-job',
+          inputs: {
+            verificationCommand: 'node -e "process.stdout.write(\'verify ok\')"',
+          },
+        },
+      },
+    });
+
+    const payload = JSON.parse(result.content[0].text);
+    assert.equal(payload.status, 'completed');
+    assert.equal(payload.jobId, 'mcp-run-harness-job');
+    assert.equal(payload.phases.verification.accepted, true);
+  } finally {
+    delete require.cache[RUNNER_PATH];
+    delete require.cache[HARNESS_PATH];
+    delete require.cache[VERIFICATION_PATH];
   }
 });
 

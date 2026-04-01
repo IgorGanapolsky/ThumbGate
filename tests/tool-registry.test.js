@@ -28,6 +28,16 @@ test('recall tool exists', () => {
   assert.ok(recallTool, 'recall tool must exist');
 });
 
+test('natural-language harness tools exist with the expected safety hints', () => {
+  const listTool = TOOLS.find((tool) => tool.name === 'list_harnesses');
+  const runTool = TOOLS.find((tool) => tool.name === 'run_harness');
+
+  assert.ok(listTool, 'list_harnesses tool must exist');
+  assert.ok(runTool, 'run_harness tool must exist');
+  assert.equal(listTool.annotations.readOnlyHint, true);
+  assert.equal(runTool.annotations.destructiveHint, true);
+});
+
 test('org_dashboard tool stays aligned with Team rollout packaging', () => {
   const orgDashboardTool = TOOLS.find(t => t.name === 'org_dashboard');
   assert.ok(orgDashboardTool, 'org_dashboard tool must exist');

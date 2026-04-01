@@ -828,6 +828,11 @@ function runJobFromFile(jobFilePath, options = {}) {
   }, options);
 }
 
+function runHarness(harnessId, inputs = {}, options = {}) {
+  const { runHarness: executeHarness } = require('./natural-language-harness');
+  return executeHarness(harnessId, inputs, options);
+}
+
 function resumeManagedJobs(options = {}) {
   const states = listJobStates({
     statuses: ['paused', 'running', 'resume_requested'],
@@ -885,6 +890,7 @@ module.exports = {
   requestJobControl,
   clearJobControl,
   runJobFromFile,
+  runHarness,
   resumeJob,
   resumeManagedJobs,
   getJobRuntimePaths,
@@ -923,6 +929,30 @@ if (require.main === module) {
     process.exit(result.failed > 0 || result.cancelled > 0 ? 1 : 0);
   }
 
+  if (args['list-harnesses']) {
+    const { listHarnesses } = require('./natural-language-harness');
+    console.log(JSON.stringify({ harnesses: listHarnesses({ tag: args.tag }) }, null, 2));
+    process.exit(0);
+  }
+
+  if (args['run-harness']) {
+    let inputs = {};
+    if (args['harness-inputs']) {
+      try {
+        inputs = JSON.parse(args['harness-inputs']);
+      } catch (error) {
+        console.error(`Invalid --harness-inputs JSON: ${error.message}`);
+        process.exit(1);
+      }
+    }
+
+    const result = runHarness(args['run-harness'], inputs, {
+      jobId: args['job-id'],
+    });
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(['failed', 'cancelled'].includes(result.status) ? 1 : 0);
+  }
+
   if (args['run-file']) {
     const result = runJobFromFile(args['run-file']);
     console.log(JSON.stringify(result, null, 2));
@@ -959,6 +989,8 @@ if (require.main === module) {
   console.log(`Usage:
   node scripts/async-job-runner.js --run --context="..." --tags=testing --skill=executor
   node scripts/async-job-runner.js --run-file=./job.json
+  node scripts/async-job-runner.js --list-harnesses [--tag=verification]
+  node scripts/async-job-runner.js --run-harness=repo-full-verification --harness-inputs='{"verificationCommand":"npm run verify:full"}' [--job-id=verify-job]
   node scripts/async-job-runner.js --resume=<jobId>
   node scripts/async-job-runner.js --resume-managed [--limit=5]
   node scripts/async-job-runner.js --pause=<jobId>

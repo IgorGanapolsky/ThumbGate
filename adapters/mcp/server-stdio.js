@@ -71,6 +71,10 @@ const {
 } = require('../../scripts/rlhf-search');
 const { checkLimit, UPGRADE_MESSAGE } = require('../../scripts/rate-limiter');
 const { generateOrgDashboard } = require('../../scripts/org-dashboard');
+const {
+  listHarnesses,
+  runHarness,
+} = require('../../scripts/natural-language-harness');
 const { TOOLS } = require('../../scripts/tool-registry');
 
 const PRO_CHECKOUT_URL = 'https://rlhf-feedback-loop-production.up.railway.app/checkout/pro';
@@ -529,6 +533,10 @@ async function callToolInner(name, args) {
       if (!primer) return toTextResult({ message: 'No session primer found. This is the first session.' });
       return toTextResult(primer);
     }
+    case 'list_harnesses':
+      return toTextResult({ harnesses: listHarnesses({ tag: args.tag }) });
+    case 'run_harness':
+      return toTextResult(runHarness(args.harness, args.inputs || {}, { jobId: args.jobId }));
     default:
       throw new Error(`Unsupported tool: ${name}`);
   }
