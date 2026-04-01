@@ -38,6 +38,7 @@ function createStubTelemetry() {
       visitorIdCoverageRate: 1,
       sessionIdCoverageRate: 1,
       acquisitionIdCoverageRate: 1,
+      byCreator: { reach_vb: 1 },
       bySource: { producthunt: 1 },
       byCampaign: { ph_launch: 1 },
       byTrafficChannel: { producthunt: 1 },
@@ -54,6 +55,7 @@ function createStubTelemetry() {
       checkoutCancelled: 0,
       checkoutAbandoned: 0,
       paidConfirmations: 1,
+      byCreator: { reach_vb: 1 },
       bySource: { producthunt: 1 },
       byCampaign: { ph_launch: 1 },
       byTrafficChannel: { producthunt: 1 },
@@ -63,6 +65,7 @@ function createStubTelemetry() {
       checkoutStartsBySource: { producthunt: 1 },
       checkoutStartsByCampaign: { ph_launch: 1 },
       checkoutStartsByTrafficChannel: { producthunt: 1 },
+      checkoutStartsByCreator: { reach_vb: 1 },
       checkoutStartsByCommunity: { ProductHunt: 1 },
       checkoutStartsByOfferCode: { PH_EARLY: 1 },
       checkoutStartsByCampaignVariant: { launch_comment: 1 },
@@ -104,18 +107,25 @@ function createStubBilling(overrides = {}) {
       bookedRevenueCents: 4900,
     },
     attribution: {
+      acquisitionByCreator: { reach_vb: 1 },
       acquisitionBySource: { producthunt: 1 },
       acquisitionByCampaign: { ph_launch: 1 },
       acquisitionByCommunity: { ProductHunt: 1 },
       acquisitionByOfferCode: { PH_EARLY: 1 },
+      paidByCreator: { reach_vb: 1 },
       paidBySource: { producthunt: 1 },
       paidByCampaign: { ph_launch: 1 },
       paidByCommunity: { ProductHunt: 1 },
       paidByOfferCode: { PH_EARLY: 1 },
+      bookedRevenueByCreatorCents: { reach_vb: 4900 },
       bookedRevenueBySourceCents: { producthunt: 4900 },
       bookedRevenueByCampaignCents: { ph_launch: 4900 },
       bookedRevenueByCommunityCents: { ProductHunt: 4900 },
       bookedRevenueByOfferCodeCents: { PH_EARLY: 4900 },
+    },
+    pipeline: {
+      workflowSprintLeads: { byCreator: { reach_vb: 1 } },
+      qualifiedWorkflowSprintLeads: { byCreator: { reach_vb: 1 } },
     },
     dataQuality: {
       unreconciledPaidEvents: 0,
@@ -155,6 +165,7 @@ test('materializeAgenticDataPipeline builds staged snapshots and writes artifact
 
     assert.equal(snapshot.semantic.metrics.bookedRevenueCents, 4900);
     assert.equal(snapshot.semantic.metrics.pipelineWarnings, 0);
+    assert.equal(snapshot.staging.dims.creators[0].key, 'reach_vb');
     assert.equal(snapshot.staging.dims.sources[0].key, 'producthunt');
     assert.equal(snapshot.lineage.incremental.mode, 'refresh');
     assert.equal(fs.existsSync(snapshot.paths.telemetryRawPath), true);

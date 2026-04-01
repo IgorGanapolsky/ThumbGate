@@ -246,6 +246,7 @@ describe('billing.js — funnel ledger', () => {
         utmSource: 'reddit',
         utmMedium: 'organic_social',
         utmCampaign: 'reddit_launch',
+        creator: 'reach_vb',
         community: 'ClaudeCode',
         postId: '1rsudq0',
         commentId: 'oa9mqjf',
@@ -265,6 +266,7 @@ describe('billing.js — funnel ledger', () => {
         utmSource: 'reddit',
         utmMedium: 'organic_social',
         utmCampaign: 'reddit_launch',
+        creator: 'reach_vb',
         community: 'ClaudeCode',
         postId: '1rsudq0',
         commentId: 'oa9mqjf',
@@ -289,6 +291,7 @@ describe('billing.js — funnel ledger', () => {
         utmSource: 'reddit',
         utmMedium: 'organic_social',
         utmCampaign: 'reddit_launch',
+        creator: 'reach_vb',
         community: 'ClaudeCode',
         postId: '1rsudq0',
         commentId: 'oa9mqjf',
@@ -307,6 +310,7 @@ describe('billing.js — funnel ledger', () => {
       source: 'linkedin',
       utmSource: 'linkedin',
       utmCampaign: 'workflow_hardening',
+      creator: 'reach_vb',
       community: 'platform',
     });
 
@@ -328,29 +332,35 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.pipeline.workflowSprintLeads.byStatus.new, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.bySource.linkedin, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.byCampaign.workflow_hardening, 1);
+    assert.equal(summary.pipeline.workflowSprintLeads.byCreator.reach_vb, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.byCommunity.platform, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.byRuntime['Claude Code + MCP'], 1);
     assert.equal(summary.pipeline.workflowSprintLeads.latestLead.email, 'ops@example.com');
     assert.equal(summary.pipeline.qualifiedWorkflowSprintLeads.total, 1);
     assert.equal(summary.pipeline.qualifiedWorkflowSprintLeads.bySource.linkedin, 1);
+    assert.equal(summary.pipeline.qualifiedWorkflowSprintLeads.byCreator.reach_vb, 1);
     assert.equal(summary.attribution.acquisitionBySource.reddit, 1);
+    assert.equal(summary.attribution.acquisitionByCreator.reach_vb, 1);
     assert.equal(summary.attribution.acquisitionByCommunity.ClaudeCode, 1);
     assert.equal(summary.attribution.acquisitionByPostId['1rsudq0'], 1);
     assert.equal(summary.attribution.acquisitionByCommentId.oa9mqjf, 1);
     assert.equal(summary.attribution.acquisitionByCampaignVariant.comment_problem_solution, 1);
     assert.equal(summary.attribution.acquisitionByOfferCode['REDDIT-EARLY'], 1);
     assert.equal(summary.attribution.paidByCampaign.reddit_launch, 1);
+    assert.equal(summary.attribution.paidByCreator.reach_vb, 1);
     assert.equal(summary.attribution.paidByCommunity.ClaudeCode, 1);
     assert.equal(summary.attribution.paidByPostId['1rsudq0'], 1);
     assert.equal(summary.attribution.paidByCommentId.oa9mqjf, 1);
     assert.equal(summary.attribution.paidByCampaignVariant.comment_problem_solution, 1);
     assert.equal(summary.attribution.paidByOfferCode['REDDIT-EARLY'], 1);
     assert.equal(summary.attribution.bookedRevenueBySourceCents.reddit, 4900);
+    assert.equal(summary.attribution.bookedRevenueByCreatorCents.reach_vb, 4900);
     assert.equal(summary.attribution.bookedRevenueByCommunityCents.ClaudeCode, 4900);
     assert.equal(summary.attribution.bookedRevenueByPostIdCents['1rsudq0'], 4900);
     assert.equal(summary.attribution.bookedRevenueByCommentIdCents.oa9mqjf, 4900);
     assert.equal(summary.attribution.bookedRevenueByCampaignVariantCents.comment_problem_solution, 4900);
     assert.equal(summary.attribution.bookedRevenueByOfferCodeCents['REDDIT-EARLY'], 4900);
+    assert.equal(summary.attribution.conversionByCreator.reach_vb, 1);
     assert.equal(summary.attribution.conversionByCommunity.ClaudeCode, 1);
     assert.equal(summary.attribution.conversionByPostId['1rsudq0'], 1);
     assert.equal(summary.attribution.conversionByCommentId.oa9mqjf, 1);

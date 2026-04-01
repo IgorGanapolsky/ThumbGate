@@ -359,6 +359,15 @@ function buildStagingModel({
       pageViews: telemetryAnalytics.visitors?.byTrafficChannel,
       checkoutStarts: telemetryAnalytics.ctas?.checkoutStartsByTrafficChannel,
     }),
+    creators: mergeDimensionCounters({
+      pageViews: telemetryAnalytics.visitors?.byCreator,
+      checkoutStarts: telemetryAnalytics.ctas?.checkoutStartsByCreator,
+      acquisitionLeads: billingSummary.attribution?.acquisitionByCreator,
+      paidCustomers: billingSummary.attribution?.paidByCreator,
+      bookedRevenueCents: billingSummary.attribution?.bookedRevenueByCreatorCents,
+      workflowSprintLeads: billingSummary.pipeline?.workflowSprintLeads?.byCreator,
+      qualifiedWorkflowSprintLeads: billingSummary.pipeline?.qualifiedWorkflowSprintLeads?.byCreator,
+    }),
     communities: mergeDimensionCounters({
       pageViews: telemetryAnalytics.visitors?.byCommunity,
       acquisitionLeads: billingSummary.attribution?.acquisitionByCommunity,

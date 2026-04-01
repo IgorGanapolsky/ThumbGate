@@ -94,6 +94,7 @@ function inferTrafficChannel(raw = {}, referrerHost = null) {
 
   if (source === 'producthunt') return 'producthunt';
   if (source === 'reddit') return 'reddit';
+  if (medium === 'creator_partnership') return 'creator';
   if (source === 'ai_search' || seoSurface === 'ai_search') return 'ai_search';
   if (source === 'organic_search' || seoSurface === 'organic_search') return 'organic_search';
   if (source === 'direct') return 'direct';
@@ -192,6 +193,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     utmCampaign,
     utmContent: pickFirstText(raw.utmContent),
     utmTerm: pickFirstText(raw.utmTerm),
+    creator: pickFirstText(raw.creator, raw.creatorHandle, raw.creator_handle),
     campaignVariant: pickFirstText(raw.campaignVariant, raw.variant),
     offerCode: pickFirstText(raw.offerCode, raw.offer, raw.coupon),
     community: pickFirstText(raw.community, raw.subreddit),
@@ -261,6 +263,7 @@ function summarizeRecentEvents(events) {
       ctaId: entry.ctaId || null,
       page: entry.page || null,
       reasonCode: entry.reasonCode || null,
+      creator: entry.creator || null,
       community: entry.community || null,
       offerCode: entry.offerCode || null,
       campaignVariant: entry.campaignVariant || null,
@@ -284,18 +287,21 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   const pageViewsByCampaign = {};
   const pageViewsByPath = {};
   const pageViewsByTrafficChannel = {};
+  const pageViewsByCreator = {};
   const pageViewsByCommunity = {};
   const pageViewsByOfferCode = {};
   const pageViewsByCampaignVariant = {};
   const ctaClicksBySource = {};
   const ctaClicksByCampaign = {};
   const ctaClicksByTrafficChannel = {};
+  const ctaClicksByCreator = {};
   const ctaClicksByCommunity = {};
   const ctaClicksByOfferCode = {};
   const ctaClicksByCampaignVariant = {};
   const checkoutStartsBySource = {};
   const checkoutStartsByCampaign = {};
   const checkoutStartsByTrafficChannel = {};
+  const checkoutStartsByCreator = {};
   const checkoutStartsByCommunity = {};
   const checkoutStartsByOfferCode = {};
   const checkoutStartsByCampaignVariant = {};
@@ -358,6 +364,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         incrementCounter(pageViewsByCampaign, entry.utmCampaign);
         incrementCounter(pageViewsByPath, entry.page);
         incrementCounter(pageViewsByTrafficChannel, entry.trafficChannel);
+        incrementCounter(pageViewsByCreator, entry.creator);
         incrementCounter(pageViewsByCommunity, entry.community);
         incrementCounter(pageViewsByOfferCode, entry.offerCode);
         incrementCounter(pageViewsByCampaignVariant, entry.campaignVariant);
@@ -369,6 +376,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         incrementCounter(ctaClicksBySource, entry.source);
         incrementCounter(ctaClicksByCampaign, entry.utmCampaign);
         incrementCounter(ctaClicksByTrafficChannel, entry.trafficChannel);
+        incrementCounter(ctaClicksByCreator, entry.creator);
         incrementCounter(ctaClicksByCommunity, entry.community);
         incrementCounter(ctaClicksByOfferCode, entry.offerCode);
         incrementCounter(ctaClicksByCampaignVariant, entry.campaignVariant);
@@ -380,6 +388,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         incrementCounter(checkoutStartsBySource, entry.source);
         incrementCounter(checkoutStartsByCampaign, entry.utmCampaign);
         incrementCounter(checkoutStartsByTrafficChannel, entry.trafficChannel);
+        incrementCounter(checkoutStartsByCreator, entry.creator);
         incrementCounter(checkoutStartsByCommunity, entry.community);
         incrementCounter(checkoutStartsByOfferCode, entry.offerCode);
         incrementCounter(checkoutStartsByCampaignVariant, entry.campaignVariant);
@@ -535,18 +544,21 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       pageViewsByCampaign,
       pageViewsByPath,
       pageViewsByTrafficChannel,
+      pageViewsByCreator,
       pageViewsByCommunity,
       pageViewsByOfferCode,
       pageViewsByCampaignVariant,
       ctaClicksBySource,
       ctaClicksByCampaign,
       ctaClicksByTrafficChannel,
+      ctaClicksByCreator,
       ctaClicksByCommunity,
       ctaClicksByOfferCode,
       ctaClicksByCampaignVariant,
       checkoutStartsBySource,
       checkoutStartsByCampaign,
       checkoutStartsByTrafficChannel,
+      checkoutStartsByCreator,
       checkoutStartsByCommunity,
       checkoutStartsByOfferCode,
       checkoutStartsByCampaignVariant,
@@ -583,6 +595,7 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
   const topReferrerHost = getTopCounterEntry(summary.marketing.byReferrerHost);
   const topPath = getTopCounterEntry(summary.marketing.pageViewsByPath);
   const topTrafficChannel = getTopCounterEntry(summary.marketing.pageViewsByTrafficChannel);
+  const topCreator = getTopCounterEntry(summary.marketing.pageViewsByCreator);
   const topCommunity = getTopCounterEntry(summary.marketing.pageViewsByCommunity);
   const topOfferCode = getTopCounterEntry(summary.marketing.pageViewsByOfferCode);
   const topCampaignVariant = getTopCounterEntry(summary.marketing.pageViewsByCampaignVariant);
@@ -610,6 +623,7 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
       byCampaign: summary.marketing.pageViewsByCampaign,
       byPath: summary.marketing.pageViewsByPath,
       byTrafficChannel: summary.marketing.pageViewsByTrafficChannel,
+      byCreator: summary.marketing.pageViewsByCreator,
       byCommunity: summary.marketing.pageViewsByCommunity,
       byOfferCode: summary.marketing.pageViewsByOfferCode,
       byCampaignVariant: summary.marketing.pageViewsByCampaignVariant,
@@ -618,6 +632,7 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
       topCampaign: topCampaign ? { key: topCampaign[0], count: topCampaign[1] } : null,
       topPath: topPath ? { key: topPath[0], count: topPath[1] } : null,
       topTrafficChannel: topTrafficChannel ? { key: topTrafficChannel[0], count: topTrafficChannel[1] } : null,
+      topCreator: topCreator ? { key: topCreator[0], count: topCreator[1] } : null,
       topCommunity: topCommunity ? { key: topCommunity[0], count: topCommunity[1] } : null,
       topOfferCode: topOfferCode ? { key: topOfferCode[0], count: topOfferCode[1] } : null,
       topCampaignVariant: topCampaignVariant ? { key: topCampaignVariant[0], count: topCampaignVariant[1] } : null,
@@ -644,12 +659,14 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
       bySource: summary.marketing.ctaClicksBySource,
       byCampaign: summary.marketing.ctaClicksByCampaign,
       byTrafficChannel: summary.marketing.ctaClicksByTrafficChannel,
+      byCreator: summary.marketing.ctaClicksByCreator,
       byCommunity: summary.marketing.ctaClicksByCommunity,
       byOfferCode: summary.marketing.ctaClicksByOfferCode,
       byCampaignVariant: summary.marketing.ctaClicksByCampaignVariant,
       checkoutStartsBySource: summary.marketing.checkoutStartsBySource,
       checkoutStartsByCampaign: summary.marketing.checkoutStartsByCampaign,
       checkoutStartsByTrafficChannel: summary.marketing.checkoutStartsByTrafficChannel,
+      checkoutStartsByCreator: summary.marketing.checkoutStartsByCreator,
       checkoutStartsByCommunity: summary.marketing.checkoutStartsByCommunity,
       checkoutStartsByOfferCode: summary.marketing.checkoutStartsByOfferCode,
       checkoutStartsByCampaignVariant: summary.marketing.checkoutStartsByCampaignVariant,

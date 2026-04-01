@@ -2,6 +2,8 @@
 
 const https = require('https');
 const { PRODUCTHUNT_URL } = require('./distribution-surfaces');
+const { getOperationalBillingSummary } = require('./operational-summary');
+const { summarizeCreatorPerformance } = require('./creator-campaigns');
 const { getFeedbackPaths } = require('./feedback-loop');
 const { getTelemetryAnalytics } = require('./telemetry-analytics');
 
@@ -69,16 +71,21 @@ async function collectAnalytics(fetchers = {}) {
   const fetchRepo = fetchers.fetchGitHub || fetchGitHub;
   const fetchVersions = fetchers.fetchNpmVersions || fetchNpmVersions;
   const fetchTelemetry = fetchers.fetchTelemetry || loadTelemetrySnapshot;
+  const fetchBillingSummary = fetchers.fetchBillingSummary || (async () => {
+    const result = await getOperationalBillingSummary();
+    return result.summary;
+  });
 
-  const [monthly, weekly, github, npmMeta, telemetry] = await Promise.all([
+  const [monthly, weekly, github, npmMeta, telemetry, billingSummary] = await Promise.all([
     fetchMonthly(),
     fetchWeekly(),
     fetchRepo(),
     fetchVersions().catch(() => null),
     Promise.resolve().then(() => fetchTelemetry()).catch(() => null),
+    Promise.resolve().then(() => fetchBillingSummary()).catch(() => null),
   ]);
 
-  return { monthly, weekly, github, npmMeta, telemetry };
+  return { monthly, weekly, github, npmMeta, telemetry, billingSummary };
 }
 
 /**
@@ -137,7 +144,14 @@ function estimateOrganicDownloads(dailyDownloads, publishDates) {
   };
 }
 
-function formatReport(monthly, weekly, github, npmMeta, telemetry = null) {
+function formatCreatorRows(telemetry = null, billingSummary = null) {
+  return summarizeCreatorPerformance(telemetry, billingSummary).map((entry, index) => {
+    const revenueDollars = (entry.bookedRevenueCents / 100).toFixed(2);
+    return `   ${index + 1}. ${entry.creator} — rev $${revenueDollars}, paid ${entry.paidOrders}, sprint ${entry.qualifiedSprintLeads}/${entry.sprintLeads}, checkouts ${entry.checkoutStarts}, visitors ${entry.visitors}`;
+  });
+}
+
+function formatReport(monthly, weekly, github, npmMeta, telemetry = null, billingSummary = null) {
   const weeklyDownloads = weekly.downloads || 0;
   const allDays = monthly.downloads || [];
   const monthlyDownloads = allDays.reduce((sum, d) => sum + d.downloads, 0);
@@ -166,6 +180,7 @@ function formatReport(monthly, weekly, github, npmMeta, telemetry = null) {
     : 0;
   const telemetryWindow = telemetry && telemetry.window ? telemetry.window : 'all';
   const telemetryLastSeen = telemetry && telemetry.latestSeenAt ? telemetry.latestSeenAt : 'none';
+  const creatorRows = formatCreatorRows(telemetry, billingSummary);
 
   const lines = [
     '',
@@ -204,6 +219,10 @@ function formatReport(monthly, weekly, github, npmMeta, telemetry = null) {
     `   Window:     ${telemetryWindow}`,
     `   Last seen:  ${telemetryLastSeen}`,
     '',
+    '🎥 Creator Partnerships',
+    '   Ranked: booked revenue → paid orders → qualified sprint leads → checkouts',
+    ...(creatorRows.length > 0 ? creatorRows : ['   No attributed creator campaigns yet.']),
+    '',
     '🔗 UTM links for sharing (tracks referral source in Plausible)',
     `   Twitter:     ${LANDING_PAGE}?utm_source=twitter&utm_medium=social&utm_campaign=launch`,
     `   LinkedIn:    ${LANDING_PAGE}?utm_source=linkedin&utm_medium=social&utm_campaign=launch`,
@@ -227,8 +246,8 @@ async function run(options = {}) {
   const exit = options.exit || process.exit;
 
   try {
-    const { monthly, weekly, github, npmMeta, telemetry } = await collectAnalytics(options.fetchers);
-    log(formatReport(monthly, weekly, github, npmMeta, telemetry));
+    const { monthly, weekly, github, npmMeta, telemetry, billingSummary } = await collectAnalytics(options.fetchers);
+    log(formatReport(monthly, weekly, github, npmMeta, telemetry, billingSummary));
   } catch (err) {
     error('Analytics fetch failed:', err.message);
     exit(1);
