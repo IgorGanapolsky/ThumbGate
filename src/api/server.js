@@ -1875,22 +1875,22 @@ body{background:#0a0a0a;color:#fff;font-family:system-ui,-apple-system,sans-seri
   <div class="msg">${label} feedback recorded</div>
   <div class="sub">${promoted} · <span class="badge">${feedbackId}</span></div>
   <div class="context-form" id="contextForm">
-    <label>Add context <span style="color:#555">(optional)</span></label>
+    <label>Add follow-up context <span style="color:#555">(optional)</span></label>
     <textarea id="contextInput" placeholder="What worked or went wrong?"></textarea>
-    <button onclick="addContext()">Save context</button>
+    <button onclick="addContext()">Save follow-up note</button>
   </div>
   <div class="actions">
     <a href="/feedback/quick?signal=${opposite}" title="Meant to click ${oppEmoji}?">Undo → send ${oppEmoji} instead</a>
     <a href="/dashboard">Dashboard →</a>
   </div>
 </div>
-<div class="toast" id="toast">✓ Context saved</div>
+<div class="toast" id="toast">✓ Follow-up note saved</div>
 <script>
 async function addContext(){
   const ctx=document.getElementById('contextInput').value.trim();
   if(!ctx)return;
   try{
-    await fetch('/api/capture_feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({signal:'${signal}',context:ctx,tags:['statusline','quick-capture','with-context']})});
+    await fetch('/feedback/quick/context',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({signal:'${signal}',context:ctx,relatedFeedbackId:'${feedbackId}'})});
     document.getElementById('toast').style.display='block';
     document.getElementById('contextForm').style.display='none';
     setTimeout(()=>document.getElementById('toast').style.display='none',3000);
@@ -1900,6 +1900,30 @@ async function addContext(){
       } else {
         sendHtml(res, 400, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>ThumbGate</title></head><body style="background:#0a0a0a;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh"><div style="text-align:center"><div style="font-size:48px">⚠️</div><div style="font-size:18px;margin-top:12px">Missing ?signal=up or ?signal=down</div></div></body></html>`);
       }
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/feedback/quick/context') {
+      const body = await parseJsonBody(req);
+      const signal = body.signal;
+      const context = typeof body.context === 'string' ? body.context.trim() : '';
+      const relatedFeedbackId = typeof body.relatedFeedbackId === 'string' ? body.relatedFeedbackId.trim() : '';
+      if (signal !== 'up' && signal !== 'down') {
+        sendJson(res, 400, { error: 'signal must be up or down' });
+        return;
+      }
+      if (!context) {
+        sendJson(res, 400, { error: 'context is required' });
+        return;
+      }
+      const result = captureFeedback({
+        signal,
+        context,
+        relatedFeedbackId,
+        tags: ['statusline', 'quick-capture', 'follow-up-context'],
+      });
+      const code = result.accepted ? 200 : 422;
+      sendJson(res, code, result);
       return;
     }
 
@@ -2945,6 +2969,7 @@ async function addContext(){
         const result = captureFeedback({
           signal: body.signal,
           context: body.context || '',
+          relatedFeedbackId: body.relatedFeedbackId,
           whatWentWrong: body.whatWentWrong,
           whatToChange: body.whatToChange,
           whatWorked: body.whatWorked,

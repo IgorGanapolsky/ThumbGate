@@ -660,6 +660,24 @@ test('feedback capture accepts valid payload', async () => {
   assert.ok(body.memoryRecord);
 });
 
+test('feedback capture preserves related feedback linkage when provided', async () => {
+  const res = await fetch(apiUrl('/v1/feedback/capture'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      signal: 'down',
+      context: 'Follow-up note about the earlier mistake',
+      relatedFeedbackId: 'fb_parent_123',
+      tags: ['verification'],
+    }),
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.accepted, true);
+  assert.equal(body.feedbackEvent.relatedFeedbackId, 'fb_parent_123');
+});
+
 test('feedback capture blocks positive memory promotion when rubric guardrail fails', async () => {
   const res = await fetch(apiUrl('/v1/feedback/capture'), {
     method: 'POST',
@@ -712,7 +730,8 @@ test('quick feedback capture via GET /feedback/quick?signal=up returns HTML conf
   assert.ok(html.includes('Positive feedback recorded'), 'should confirm capture with friendly label');
   assert.ok(html.includes('Undo'), 'should offer undo action');
   assert.ok(html.includes('signal=down'), 'undo link should point to opposite signal');
-  assert.ok(html.includes('Add context'), 'should offer context input');
+  assert.ok(html.includes('Add follow-up context'), 'should offer follow-up context input');
+  assert.ok(html.includes('/feedback/quick/context'), 'should post follow-up notes to the public quick-feedback endpoint');
 });
 
 test('quick feedback capture via GET /feedback/quick?signal=down returns HTML confirmation', async () => {
@@ -730,6 +749,23 @@ test('quick feedback capture without signal returns 400', async () => {
   assert.equal(res.status, 400);
   const html = await res.text();
   assert.ok(html.includes('signal=up'), 'should hint at correct usage');
+});
+
+test('quick feedback follow-up context endpoint stores a linked follow-up note without auth', async () => {
+  const res = await fetch(apiUrl('/feedback/quick/context'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      signal: 'down',
+      context: 'This broke after the deploy window closed',
+      relatedFeedbackId: 'fb_origin_456',
+    }),
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.accepted, true);
+  assert.equal(body.feedbackEvent.relatedFeedbackId, 'fb_origin_456');
+  assert.match(body.feedbackEvent.tags.join(','), /follow-up-context/);
 });
 
 test('intent catalog endpoint returns configured intents', async () => {
