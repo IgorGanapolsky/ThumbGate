@@ -36,7 +36,7 @@ test('buildThumbGateSeoPlan returns GSD stages and prioritizes comparison pages 
   assert.equal(plan.framework, 'GSD');
   assert.equal(plan.capture.totalKeywords, HIGH_ROI_QUERY_SEEDS.length);
   assert.ok(plan.capture.keywordRows.every((row) => typeof row.opportunityScore === 'number'));
-  assert.equal(plan.execute.pages.length, 4);
+  assert.equal(plan.execute.pages.length, 5);
   assert.equal(plan.execute.briefs[0].path, '/compare/speclock');
   assert.equal(plan.execute.briefs[1].path, '/compare/mem0');
   assert.equal(plan.review.recommendedOrder[0], '/compare/speclock');
@@ -98,7 +98,7 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     const execute = fs.readFileSync(files.execute, 'utf8');
 
     assert.equal(capture.totalKeywords, HIGH_ROI_QUERY_SEEDS.length);
-    assert.equal(pages.length, 4);
+    assert.equal(pages.length, 5);
     assert.match(execute, /# ThumbGate SEO\/GEO GSD Plan/);
     assert.match(execute, /Recommended publish order/);
   } finally {
