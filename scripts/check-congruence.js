@@ -133,6 +133,22 @@ async function main() {
     'public/index.html must visibly include the thumbs-down icon'
   );
   check(
+    /workflow-sprint-intake/.test(landingHtml),
+    'public/index.html must expose the team workflow intake path'
+  );
+  check(
+    /shared lesson db|shared lesson database/i.test(landingHtml),
+    'public/index.html must describe the shared Team lesson database'
+  );
+  check(
+    /org dashboard/i.test(landingHtml),
+    'public/index.html must describe the Team org dashboard'
+  );
+  check(
+    /personal local dashboard/i.test(landingHtml),
+    'public/index.html must keep the personal Pro dashboard message'
+  );
+  check(
     landingHtml.includes(PRODUCTHUNT_URL),
     'public/index.html must link to the live Product Hunt listing'
   );

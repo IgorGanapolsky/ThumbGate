@@ -58,11 +58,12 @@ test('public landing page keeps optional GA4 and Search Console hooks available 
   assert.match(landingPage, /const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';/);
 });
 
-test('public landing page includes pricing section with Free and Pro tiers', () => {
+test('public landing page includes pricing section with Free, Pro, and Team tiers', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /class="price-card"/);
   assert.match(landingPage, /class="price-card pro"/);
+  assert.match(landingPage, /class="price-card team"/);
   assert.match(landingPage, /\$0/);
   assert.match(landingPage, /\$49/);
   assert.match(landingPage, /One-time payment/);
@@ -70,8 +71,11 @@ test('public landing page includes pricing section with Free and Pro tiers', () 
   assert.match(landingPage, /Local-only, single dev/);
   assert.match(landingPage, /Founder license/);
   assert.match(landingPage, /Founder pricing/);
+  assert.match(landingPage, /Hosted rollout/i);
+  assert.match(landingPage, /Pilot/);
   assert.match(landingPage, /Install Free/);
   assert.match(landingPage, /Get Pro/);
+  assert.match(landingPage, /Start Team Rollout/);
 });
 
 test('public landing page includes Plausible analytics and search engine proof bar', () => {
@@ -156,16 +160,27 @@ test('public landing page Pro tier uses outcome-framed bullets that justify upgr
   assert.match(landingPage, /agents appear automatically/i);
   assert.match(landingPage, /DPO training data export/i);
   assert.match(landingPage, /ready-to-use preference pairs for fine-tuning/i);
-  assert.match(landingPage, /Shared team lesson DB/i);
-  assert.match(landingPage, /one dev's 👎 on a bad migration instantly protects every agent/i);
-  assert.match(landingPage, /Gate wiring support/i);
-  assert.match(landingPage, /riskiest flows/i);
+  assert.match(landingPage, /Personal local dashboard/i);
+  assert.match(landingPage, /Founder-license support/i);
   // Persona targeting for Pro
-  assert.match(landingPage, /power users and teams/i);
-  assert.match(landingPage, /shared, inspectable enforcement/i);
+  assert.match(landingPage, /individual operators/i);
+  assert.match(landingPage, /personal local dashboard/i);
   // Upgrade triggers
   assert.match(landingPage, /Go Pro when:/i);
   assert.match(landingPage, /blocked 20\+ actions/i);
+});
+
+test('public landing page includes an explicit Team rollout lane with shared workflow intake', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /<div class="tier">Team<\/div>/);
+  assert.match(landingPage, /Hosted shared lesson DB/i);
+  assert.match(landingPage, /Org dashboard/i);
+  assert.match(landingPage, /Gate template library/i);
+  assert.match(landingPage, /workflow-sprint-intake/);
+  assert.match(landingPage, /Submit Team Workflow Intake/i);
+  assert.match(landingPage, /name="planId" value="team"/);
+  assert.match(landingPage, /name="ctaId" value="workflow_sprint_intake"/);
 });
 
 test('public landing page includes FAQ section with accordion interaction', () => {
@@ -188,7 +203,8 @@ test('public landing page includes FAQ section with accordion interaction', () =
   assert.match(landingPage, /function toggleFaq\(el\)/);
   assert.match(landingPage, /function handleFaqKeydown\(event\)/);
   assert.match(landingPage, /personal local dashboard on your machine/i);
-  assert.match(landingPage, /optional hosted API key/i);
+  assert.match(landingPage, /shared lesson database/i);
+  assert.match(landingPage, /org dashboard/i);
 });
 
 test('public landing page includes compatibility section for AI agent surfaces', () => {
@@ -218,6 +234,7 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
 
   // trackClick wires up CTA events by selector and event name
   assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
+  assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
   assert.match(landingPage, /trackClick\('.nav-cta', 'checkout_start'/);
   assert.match(landingPage, /plausible\('faq_open'/);

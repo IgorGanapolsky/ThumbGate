@@ -9,7 +9,8 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free is fully featured (unlimited captures, recalls, gates, blocking). Pro adds a searchable dashboard to query, edit, and delete entries + DPO export. $99 one-time.
+<<<<<<< HEAD
+[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free is fully featured (unlimited captures, recalls, gates, blocking). Pro adds a personal local dashboard + DPO export. Team rollout starts at the shared hosted lesson DB and org dashboard.
 
 **Thumbs down a mistake. It never happens again.**
 
@@ -255,23 +256,26 @@ For autonomous agent runs against this or any repo using this workflow:
 
 ## Pro Pack
 
-**[$99 one-time](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — personal local dashboard, DPO export, optional hosted API key for teams, priority support.
+**[$49 one-time](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — personal local dashboard, DPO export, and founder-license support for individual operators.
+
+**[Start Team Rollout](https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake?utm_source=github&utm_medium=readme&utm_campaign=team_rollout)** — shared hosted lesson DB, org dashboard, curated gate templates, and workflow-hardening rollout support for teams.
 
 ### Free vs Pro
 
-| Feature | Free | Pro ($49) |
-|---------|------|-----------|
-| Feedback capture (thumbs up/down) | 5/day | Unlimited |
-| Lesson recall | 10/day | Unlimited |
-| Prevention rules | Yes | Yes |
-| PreToolUse gates | Yes | Yes |
-| Thompson Sampling | Basic | Advanced |
-| DPO training export | No | Yes |
-| Databricks export | No | Yes |
-| Searchable dashboard | No | Yes |
-| Multi-repo rule sync | No | Yes |
-| Rule analytics | No | Yes |
-| Priority support | No | Yes |
+| Feature | Free | Pro ($49) | Team rollout |
+|---------|------|-----------|--------------|
+| Feedback capture (thumbs up/down) | 5/day | Unlimited | Shared across team workflow |
+| Lesson recall | 10/day | Unlimited | Shared hosted lesson DB |
+| Prevention rules | Yes | Yes | Team-wide rollout |
+| PreToolUse gates | Yes | Yes | Team-wide rollout |
+| Thompson Sampling | Basic | Advanced | Advanced |
+| DPO training export | No | Yes | Yes |
+| Databricks export | No | Yes | Yes |
+| Personal local dashboard | No | Yes | Yes |
+| Org dashboard + active agents | No | No | Yes |
+| Gate template library | No | No | Yes |
+| Workflow hardening sprint | No | No | Yes |
+| Priority support | No | Yes | Yes |
 
 **[Get Pro — $49](https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05)** — One-time purchase, lifetime updates.
 

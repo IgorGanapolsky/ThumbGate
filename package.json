@@ -121,7 +121,7 @@
     "test:evolution": "node --test tests/workspace-evolver.test.js",
     "test:ops": "node --test tests/adk-consolidator.test.js tests/anthropic-partner-strategy.test.js tests/auto-promote-gates.test.js tests/auto-wire-hooks.test.js tests/claude-skill.test.js tests/codegraph-context.test.js tests/commercial-signals.test.js tests/delegation-runtime.test.js tests/disagreement-mining.test.js tests/failure-diagnostics.test.js tests/gate-stats.test.js tests/github-billing.test.js tests/markdown-escape.test.js tests/mcp-tools-gates.test.js tests/project-bayes-e2e.test.js tests/project-bayes.test.js tests/rate-limiter.test.js tests/schedule-manager.test.js tests/session-handoff.test.js tests/skill-generator.test.js tests/smart-learning.test.js tests/spike-and-sink.test.js tests/stripe-webhook-route.test.js tests/train-from-feedback.test.js tests/workflow-hardening-sprint.test.js tests/test-suite-parity.test.js",
     "test:tessl": "node --test tests/tessl-export.test.js",
-    "test:gates": "node --test tests/gates-engine.test.js tests/claim-verification.test.js tests/secret-scanner.test.js tests/prompt-guard.test.js tests/audit-trail.test.js tests/profile-router.test.js",
+    "test:gates": "node --test tests/gate-templates.test.js tests/gates-engine.test.js tests/claim-verification.test.js tests/secret-scanner.test.js tests/prompt-guard.test.js tests/audit-trail.test.js tests/profile-router.test.js",
     "test:workers": "npm --prefix workers ci && npm --prefix workers test",
     "test:evoskill": "node --test tests/evoskill.test.js",
     "test:gates-hardening": "node --test tests/gates-hardening.test.js",

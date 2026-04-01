@@ -125,7 +125,9 @@ function loadAgentRegistry() {
 function generateOrgDashboard(opts = {}) {
   const windowHours = opts.windowHours || 24;
   const cutoff = Date.now() - windowHours * 60 * 60 * 1000;
-  const pro = isProTier();
+  const pro = typeof opts.proOverride === 'boolean'
+    ? opts.proOverride
+    : isProTier(opts.authContext);
 
   // Load all agents
   const allAgents = loadAgentRegistry();

@@ -66,8 +66,14 @@ __GA_BOOTSTRAP__
       "name": "Pro",
       "price": "49",
       "priceCurrency": "USD",
-      "description": "Visual gate debugger, DPO training data export, shared team lesson DB, gate wiring support — founder license",
+      "description": "Personal local dashboard, DPO training data export, and founder-license support for individual operators",
       "url": "https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05"
+    },
+    {
+      "@type": "Offer",
+      "name": "Team",
+      "description": "Hosted shared lesson database, org dashboard, multi-agent visibility, and workflow hardening rollout support for teams",
+      "url": "https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake"
     }
   ]
 }
@@ -256,11 +262,13 @@ __GA_BOOTSTRAP__
 
   /* PRICING */
   .pricing { padding: 80px 0; }
-  .pricing-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 720px; margin: 0 auto; }
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1080px; margin: 0 auto; }
   .price-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px 28px; }
   .price-card.pro { border-color: var(--cyan); box-shadow: 0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15); }
+  .price-card.team { border-color: rgba(74,222,128,0.45); box-shadow: inset 0 1px 0 rgba(74,222,128,0.16); }
   .price-card .tier { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
   .price-card.pro .tier { color: var(--cyan); }
+  .price-card.team .tier { color: var(--green); }
   .price-card .price { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 4px; }
   .price-card .price-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
   .price-card ul { list-style: none; margin-bottom: 28px; }
@@ -271,6 +279,13 @@ __GA_BOOTSTRAP__
   .btn-free:hover { border-color: var(--text-muted); }
   .btn-pro { display: block; text-align: center; padding: 10px; background: var(--cyan); color: var(--bg); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: opacity 0.15s; }
   .btn-pro:hover { opacity: 0.85; }
+  .btn-team { display: block; text-align: center; padding: 10px; background: rgba(74,222,128,0.14); color: var(--green); border: 1px solid rgba(74,222,128,0.4); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: border-color 0.15s, transform 0.15s; }
+  .btn-team:hover { border-color: var(--green); transform: translateY(-1px); }
+  .team-form { max-width: 860px; margin: 24px auto 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .team-form .full { grid-column: 1 / -1; }
+  .team-form input, .team-form textarea { width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px; font-family: inherit; }
+  .team-form textarea { min-height: 120px; resize: vertical; }
+  .team-form button { width: 100%; }
 
   /* FAQ */
   .faq { padding: 80px 0; }
@@ -286,7 +301,7 @@ __GA_BOOTSTRAP__
   .final-cta { padding: 80px 0; text-align: center; }
   .final-cta h2 { font-size: clamp(24px, 3vw, 32px); font-weight: 700; letter-spacing: -0.025em; margin-bottom: 12px; }
   .final-cta p { font-size: 15px; color: var(--text-muted); margin-bottom: 28px; }
-  .final-cta .btn-pro { display: inline-block; padding: 12px 32px; font-size: 15px; border-radius: 8px; }
+  .final-cta .btn-pro, .final-cta .btn-team { display: inline-block; padding: 12px 32px; font-size: 15px; border-radius: 8px; margin: 0 6px; }
 
   /* FOOTER */
   footer { border-top: 1px solid var(--border); padding: 32px 0; }
@@ -302,6 +317,7 @@ __GA_BOOTSTRAP__
     .compatibility-grid { grid-template-columns: 1fr; }
     .seo-grid { grid-template-columns: 1fr; }
     .pricing-grid { grid-template-columns: 1fr; }
+    .team-form { grid-template-columns: 1fr; }
     .hero { padding: 72px 0 56px; }
     .nav-links a:not(.nav-cta) { display: none; }
     .proof-bar { gap: 16px; }
@@ -528,7 +544,7 @@ __GA_BOOTSTRAP__
 <section class="pricing" id="pricing">
   <div class="container">
     <div class="section-label">Pricing</div>
-    <h2 class="section-title">Start free. Go Pro when the stakes go up.</h2>
+    <h2 class="section-title">Start free. Upgrade to personal Pro or a shared Team rollout.</h2>
     <div class="pricing-grid">
       <div class="price-card">
         <div class="tier">Free</div>
@@ -548,22 +564,63 @@ __GA_BOOTSTRAP__
         <div class="tier">Pro</div>
         <div class="price">$49</div>
         <div class="price-sub">One-time payment · Founder license</div>
-        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">For power users and teams who need shared, inspectable enforcement.</p>
+        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">For individual operators who want a personal local dashboard with proof-ready exports.</p>
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">Go Pro when:</strong> you've blocked 20+ actions, you run multiple agents, or your team shares repos.
+          <strong style="color:#fff;">Go Pro when:</strong> you've blocked 20+ actions, want your own dashboard, or need DPO exports without extra setup.
         </div>
         <ul>
           <li>Everything in Free, plus:</li>
           <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">Visual gate debugger →</a> see every blocked action and the gate that fired so you can trust the system in minutes</li>
           <li>Auto-connect — your running agents appear automatically, no keys to copy, debug live behavior while you code</li>
           <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">DPO training data export →</a> turn real thumbs-downs into ready-to-use preference pairs for fine-tuning</li>
-          <li>Shared team lesson DB — one dev's 👎 on a bad migration instantly protects every agent on the team</li>
-          <li>Gate wiring support — we help you enforce your riskiest flows (migrations, force-pushes, CI) in the first week</li>
+          <li>Personal local dashboard — every Pro user gets their own localhost dashboard without extra cloud setup</li>
+          <li>Founder-license support — we help you wire your riskiest flows (migrations, force-pushes, CI) in the first week</li>
         </ul>
         <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" class="btn-pro">Get Pro — $49</a>
         <p style="font-size:11px;color:#666;margin-top:8px;">Founder pricing — locks in $49 for life. Price increases after v1.0.</p>
       </div>
+      <div class="price-card team">
+        <div class="tier">Team</div>
+        <div class="price">Pilot</div>
+        <div class="price-sub">Hosted rollout · shared lessons and org visibility</div>
+        <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">For teams running multiple agents across shared repos who need one lesson to protect everyone.</p>
+        <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
+          <strong style="color:#fff;">Start Team when:</strong> you need a shared lesson DB, org-wide metrics, or workflow hardening that survives handoffs.
+        </div>
+        <ul>
+          <li>Hosted shared lesson DB — one dev's 👎 on a bad migration protects every agent on the team</li>
+          <li>Org dashboard — active agents, gate hit rates, risk agents, and proof-backed team metrics in one place</li>
+          <li>Gate template library — pre-built guardrails for force-pushes, skipped tests, destructive SQL, and evidence-before-done</li>
+          <li>Workflow hardening sprint — intake, rollout plan, and evidence pack for the first shared workflow</li>
+          <li>Product Hunt and campaign attribution stay tied to the team funnel instead of generic referral traffic</li>
+        </ul>
+        <a href="#workflow-sprint-intake" class="btn-team">Start Team Rollout</a>
+        <p style="font-size:11px;color:#666;margin-top:8px;">Hosted team rollout starts with the workflow sprint intake so we scope the shared workflow honestly.</p>
+      </div>
     </div>
+  </div>
+</section>
+
+<section class="compatibility" id="workflow-sprint-intake">
+  <div class="container">
+    <div class="section-label">Team Rollout</div>
+    <h2 class="section-title">Start the Team lane with one workflow that matters</h2>
+    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">The recurring value is shared enforcement. Start with one workflow, one owner, and one blocker. The hosted intake gives us a proof-backed path into the shared lesson DB, org dashboard, and team-wide gate rollout.</p>
+    <form class="team-form" action="/v1/intake/workflow-sprint" method="POST">
+      <input type="hidden" name="ctaId" value="workflow_sprint_intake">
+      <input type="hidden" name="ctaPlacement" value="team_pricing">
+      <input type="hidden" name="planId" value="team">
+      <input type="email" name="email" placeholder="you@company.com" required>
+      <input type="text" name="company" placeholder="Company">
+      <input type="text" name="workflow" placeholder="Workflow to harden (e.g. deploy approvals, migrations, PR review)" required>
+      <input type="text" name="owner" placeholder="Workflow owner" required>
+      <input type="text" name="runtime" placeholder="Current agent/runtime (Claude Code, Codex, Cursor, Gemini...)" required>
+      <textarea class="full" name="blocker" placeholder="What repeat mistake, rollout blocker, or team handoff failure keeps happening?" required></textarea>
+      <textarea class="full" name="note" placeholder="Optional context: team size, repos involved, target rollout date, or what you need to prove internally."></textarea>
+      <div class="full">
+        <button type="submit" class="btn-team">Submit Team Workflow Intake</button>
+      </div>
+    </form>
   </div>
 </section>
 
@@ -587,7 +644,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
-        <div class="faq-a">No. Free gives you full local enforcement — captures, recalls, gates, and hook blocking on your machine. No cloud, no account, no signup. Pro adds a personal local dashboard on your machine, DPO export, and an optional hosted API key if your team wants a shared lesson database.</div>
+        <div class="faq-a">No. Free gives you full local enforcement — captures, recalls, gates, and hook blocking on your machine. No cloud, no account, no signup. Pro adds a personal local dashboard on your machine plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, org dashboard, and team-wide gate visibility.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are gates different from prompt rules?</div>
@@ -618,8 +675,9 @@ __GA_BOOTSTRAP__
 <section class="final-cta">
   <div class="container">
     <h2>Ready to stop fixing the same AI mistakes?</h2>
-    <p>Install in 30 seconds. Free tier included. No account required.</p>
+    <p>Install in 30 seconds for yourself, then move the shared workflow into Team when multiple agents and repos need the same protection.</p>
     <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" class="btn-pro">Get Pro — $49</a>
+    <a href="#workflow-sprint-intake" class="btn-team">Start Team Rollout</a>
   </div>
 </section>
 
@@ -672,6 +730,7 @@ function copyInstall(el) {
 
   /* CTA clicks */
   trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 49 });
+  trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
   trackClick('.btn-free', 'install_click', { tier: 'free' });
   trackClick('.nav-cta', 'checkout_start', { tier: 'pro', source: 'nav' });
 

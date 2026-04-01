@@ -9,6 +9,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 - The open-source `mcp-memory-gateway` package is free and MIT licensed.
 - The current public self-serve commercial offer is **Pro at $49 one-time** via Stripe checkout link.
+- The current hosted team path is **Workflow Hardening Sprint intake** on the landing page, which starts the shared lesson DB and org-dashboard rollout lane for teams.
 - Verified booked revenue as of March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product.
 - Verified booked revenue for March 19, 2026 is **$0.00**; there is no evidence of a new paid charge today.
 - Engineering verification is strong and should be cited through `docs/VERIFICATION_EVIDENCE.md` and machine-readable proof reports.
@@ -25,12 +26,18 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ### Pro ($49 one-time, hosted checkout on Railway)
 
-- Cloud-synced memories accessible from any machine
-- Unlimited memories and retrievals
-- Team sharing of prevention rules
-- Usage dashboard (memories, retrievals, semantic cache hit rate, reused context tokens)
+- Personal local dashboard
+- DPO export and advanced data exports
+- Founder-license support
 - Unlimited custom gates with auto-gate promotion
-- Priority support
+
+### Team (hosted rollout, intake-first)
+
+- Shared hosted lesson database
+- Org dashboard with active agents, gate hit rates, and risk agents
+- Curated gate template library
+- Workflow hardening sprint intake and rollout support
+- Team-wide sharing of prevention rules and proof artifacts
 
 ## What we must not claim
 
