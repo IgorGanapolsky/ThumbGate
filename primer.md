@@ -27,22 +27,34 @@ _No strong behavioral patterns identified yet._
 
 ## Live Git Context
 
-### Branch: feat/github-bot-integrations
+### Branch: fix/dashboard-ux-and-ci
 
 ### Last 5 Commits:
 ```
-9f907a2 fix: eliminate CodeQL shell injection alerts in postinstall tests (#428)
-7df5b4a feat: add funnel invariant CI tests to prevent checkout blindspot regression (#427)
-ccf139e feat: close npm-to-checkout funnel with 4 upgrade touchpoints (#426)
-9cda875 feat: add Pro license verification, bot detection, and filtered metrics (#424)
-fc864c2 fix: rewire CLI conversion funnel — Pro CTA, feature gating, remove free bypass (#419)
+9186147 feat: add latencyMs tracking to audit trail for every tool call
+ea48bf8 feat: dashboard UX fixes + realistic demo data
+8535d37 fix: sharpen pricing section to convert free users to Pro (#443)
+63f947a fix: reduce scheduled workflow frequency to prevent CI runner exhaustion (#441)
+18ebc07 feat: enforce free/pro npm publish parity with CI workflow + tests (#440)
 ```
 
 ### Modified Files:
 ```
+ M package.json
  M primer.md
-?? .github/workflows/claude-code-review.yml
-?? .github/workflows/sentry-release.yml
-?? .github/workflows/sonarcloud.yml
-?? sonar-project.properties
+?? config/gates/computer-use.json
+?? config/model-tiers.json
+?? config/skill-specs/
+?? docs/marketing/gallery/
+?? proof/claim-verification-report.json
+?? proof/claim-verification-report.md
+?? proof/computer-use-firewall-report.md
+?? proof/model-tier-router-report.md
+?? proof/skill-exporter-report.md
+?? scripts/computer-use-firewall.js
+?? scripts/model-tier-router.js
+?? scripts/skill-exporter.js
+?? tests/computer-use-firewall.test.js
+?? tests/model-tier-router.test.js
+?? tests/skill-exporter.test.js
 ```
