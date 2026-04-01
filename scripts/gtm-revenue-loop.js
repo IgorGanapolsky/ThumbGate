@@ -134,7 +134,7 @@ function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog
       objective: 'Scale the first-10-customers loop with proof-backed self-serve follow-up.',
       primaryMotion: motionCatalog.pro.key,
       secondaryMotion: motionCatalog.sprint.key,
-      headline: 'Revenue is proven. Double down on the self-serve Pro CTA and use the sprint motion for expansion deals.',
+      headline: 'Revenue is proven. Double down on the self-serve/mo Pro CTA and use the sprint motion for expansion deals.',
       actions: [
         'Reply to every qualified builder lead with the Pro checkout path and the proof pack.',
         'Use the Workflow Hardening Sprint only when a team already has one workflow owner and a rollout blocker.',
@@ -252,7 +252,7 @@ function selectOutreachMotion(target, motionCatalog = buildMotionCatalog()) {
   return {
     key: motionCatalog.pro.key,
     label: motionCatalog.pro.label,
-    reason: 'Target looks builder-led, so the self-serve Pro CTA is the lowest-friction path.',
+    reason: 'Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.',
   };
 }
 

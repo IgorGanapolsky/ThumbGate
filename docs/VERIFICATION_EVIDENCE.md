@@ -884,7 +884,7 @@ Requirements verified:
 
 - The public sprint offer now has a direct hosted intake path for qualified workflow demand instead of forcing an email handoff.
 - Sprint-intake leads are captured as structured local runtime records and exposed in the admin billing/CFO summary without being misrepresented as revenue.
-- Public positioning, outreach assets, billing truth surfaces, and operator scripts now agree on the same commercial story: Workflow Hardening Sprint for pipeline, Pro for self-serve $49 one-time access.
+- Public positioning, outreach assets, billing truth surfaces, and operator scripts now agree on the same commercial story: Workflow Hardening Sprint for pipeline, Pro for self-serve $19/mo access.
 - Clean-worktree verification is stable again after hardening the delegation test teardown.
 
 ## March 16, 2026: Databricks post-merge safety follow-up
@@ -1212,7 +1212,7 @@ Requirements verified:
 
 Scope:
 
-- Replaced stale `$5/mo` and `$10/mo` self-serve subscription language on live-facing surfaces with the actual public offer: Pro (`$49 one-time`).
+- Replaced stale `$5/mo` and `$10/mo` self-serve subscription language on live-facing surfaces with the actual public offer: Pro (`$19/mo`).
 - Removed unsupported scarcity and adoption framing from CLI and landing-page copy.
 - Added `docs/COMMERCIAL_TRUTH.md` as the source of truth for pricing, traction, and proof claims.
 

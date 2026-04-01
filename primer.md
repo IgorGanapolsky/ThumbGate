@@ -2,7 +2,7 @@
 
 ## Active Mission
 - **North Star:** Earn **$100/day after-tax profit**.
-- **Current Wedge:** $49 "Mistake-Free" Starter Pack (500 credits).
+- **Current Wedge:** $19/mo "Mistake-Free" Starter Pack (500 credits).
 - **Target Audience:** Developers hitting "Claude amnesia" and context compaction.
 
 ## Current State (2026-03-21)
@@ -27,34 +27,28 @@ _No strong behavioral patterns identified yet._
 
 ## Live Git Context
 
-### Branch: fix/dashboard-ux-and-ci
+### Branch: fix/pricing-19mo-final
 
 ### Last 5 Commits:
 ```
-9186147 feat: add latencyMs tracking to audit trail for every tool call
-ea48bf8 feat: dashboard UX fixes + realistic demo data
-8535d37 fix: sharpen pricing section to convert free users to Pro (#443)
-63f947a fix: reduce scheduled workflow frequency to prevent CI runner exhaustion (#441)
-18ebc07 feat: enforce free/pro npm publish parity with CI workflow + tests (#440)
+172ede5 fix: rate-limiter test isolates Pro license file to prevent false passes (#483)
+d528b67 feat: add /lessons page with Active Rules, Timeline, and Insights tabs (#482)
+bb0abcb feat: /lessons page with Active Rules, Timeline, and Insights tabs
+96cc625 feat: rich quick-feedback confirmation page with context input, undo, and animations (#476)
+eddf7de chore: bump to 0.8.6
 ```
 
 ### Modified Files:
 ```
- M package.json
+ M .claude/skills/thumbgate/SKILL.md
+ M LAUNCH.md
+ M README.md
+ M docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md
+ M docs/VERIFICATION_EVIDENCE.md
+ M package-lock.json
  M primer.md
-?? config/gates/computer-use.json
-?? config/model-tiers.json
-?? config/skill-specs/
-?? docs/marketing/gallery/
-?? proof/claim-verification-report.json
-?? proof/claim-verification-report.md
-?? proof/computer-use-firewall-report.md
-?? proof/model-tier-router-report.md
-?? proof/skill-exporter-report.md
-?? scripts/computer-use-firewall.js
-?? scripts/model-tier-router.js
-?? scripts/skill-exporter.js
-?? tests/computer-use-firewall.test.js
-?? tests/model-tier-router.test.js
-?? tests/skill-exporter.test.js
+ M public/guide.html
+ M scripts/gtm-revenue-loop.js
+ M workers/README.md
+ M workers/package.json
 ```
