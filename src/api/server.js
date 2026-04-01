@@ -3219,6 +3219,7 @@ function createApiServer() {
           analyticsWindow: summaryOptions,
           billingSummary,
           billingSource: 'live',
+          authContext: { tier: 'pro' },
         });
         sendJson(res, 200, data);
         return;

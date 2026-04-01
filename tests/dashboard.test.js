@@ -114,6 +114,9 @@ test('generateDashboard handles empty state (no files)', () => {
   assert.equal(data.analytics.funnel.visitors, 0);
   assert.equal(data.analytics.northStar.weeklyActiveProofBackedWorkflowRuns, 0);
   assert.equal(data.observability.diagnosticEvents, 0);
+  assert.equal(typeof data.team.activeAgents, 'number');
+  assert.equal(data.templateLibrary.total, 6);
+  assert.equal(data.templateLibrary.categories['Git Safety'], 1);
 });
 
 test('generateDashboard surfaces tracking readiness and instrumentation truth', () => {
@@ -298,6 +301,8 @@ test('generateDashboard returns complete structure with data', () => {
   assert.ok(data.diagnostics);
   assert.ok(data.delegation);
   assert.ok(data.secretGuard);
+  assert.ok(data.team);
+  assert.ok(data.templateLibrary);
 
   // Values
   assert.equal(data.approval.total, 30);
@@ -312,6 +317,7 @@ test('generateDashboard returns complete structure with data', () => {
   assert.equal(data.diagnostics.categories[0].key, 'tool_output_misread');
   assert.equal(data.secretGuard.blocked, 0);
   assert.equal(data.analytics.funnel.visitors, 0);
+  assert.equal(data.templateLibrary.total, 6);
 });
 
 test('generateDashboard aggregates persisted diagnostics beyond feedback capture', () => {

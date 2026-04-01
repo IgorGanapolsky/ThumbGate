@@ -120,4 +120,19 @@ describe('org dashboard', () => {
       assert.ok(agent.adherenceRate < 70, `expected < 70%, got ${agent.adherenceRate}`);
     }
   });
+
+  it('accepts authContext and proOverride for hosted Team surfaces', () => {
+    registerAgent({ agentId: 'team-agent', source: 'cli', project: 'team-project' });
+    recordAgentActivity('team-agent', 'allow');
+    recordAgentActivity('team-agent', 'deny');
+    recordAgentActivity('team-agent', 'allow');
+
+    const byAuthContext = generateOrgDashboard({ windowHours: 1, authContext: { tier: 'pro' } });
+    const byOverride = generateOrgDashboard({ windowHours: 1, proOverride: true });
+
+    assert.equal(byAuthContext.proRequired, false);
+    assert.equal(byOverride.proRequired, false);
+    assert.ok(byAuthContext.agents.some((agent) => agent.id === 'team-agent'));
+    assert.ok(byOverride.agents.some((agent) => agent.id === 'team-agent'));
+  });
 });
