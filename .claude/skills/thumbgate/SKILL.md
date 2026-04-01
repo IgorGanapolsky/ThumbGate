@@ -108,7 +108,7 @@ When the MCP server is running, these tools are available to your agent:
 
 ## Pro Features
 
-Pro users ($49 one-time, founder license) unlock:
+Pro users ($19/mo, founder license) unlock:
 
 - **Visual gate debugger** — see every blocked action and the gate that fired
 - **Multi-hop recall** — chain related lessons across hops for deeper context

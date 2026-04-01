@@ -276,7 +276,7 @@ For autonomous agent runs against this or any repo using this workflow:
 | Workflow hardening sprint | No | No | Yes |
 | Priority support | No | Yes | Yes |
 
-**[Get Pro — $19/mo or $149/yr](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate_cta)** — recurring self-serve for individual operators.
+**[Get Pro — /mo$19/mo or $149/yr](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate_cta)** — recurring self-serve for individual operators.
 
 **[Founder one-time offer — $49](https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05)** — preserved legacy founder checkout path.
 
