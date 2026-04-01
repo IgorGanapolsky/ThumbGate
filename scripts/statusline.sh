@@ -47,8 +47,8 @@ if [ "$UP" = "0" ] && [ "$DOWN" = "0" ]; then
   echo -e "${D}${LABEL}${RST}"
 else
   TG_LINK=$(osc_link "${DASH}/dashboard" "ThumbGate")
-  UP_LINK=$(osc_link "${DASH}/dashboard?filter=positive" "${G}${BD}${UP}${RST}👍")
-  DOWN_LINK=$(osc_link "${DASH}/dashboard?filter=negative" "${R}${BD}${DOWN}${RST}👎")
+  UP_LINK=$(osc_link "${DASH}/feedback/quick?signal=up" "${G}${BD}${UP}${RST}👍")
+  DOWN_LINK=$(osc_link "${DASH}/feedback/quick?signal=down" "${R}${BD}${DOWN}${RST}👎")
   LESSONS_LINK=$(osc_link "${DASH}/dashboard?tab=lessons" "${M}${BD}${LESSONS}${RST} lessons")
   echo -e "${TG_LINK}: ${UP_LINK} ${DOWN_LINK} · ${LESSONS_LINK} ${ARROW}"
 fi

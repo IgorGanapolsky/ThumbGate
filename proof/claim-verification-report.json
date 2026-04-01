@@ -1,0 +1,33 @@
+{
+  "phase": "13-claim-verification",
+  "generatedAt": "2026-03-31T20:42:20.821Z",
+  "passed": 6,
+  "failed": 0,
+  "total": 6,
+  "requirements": {
+    "CLAIM-01": {
+      "status": "pass",
+      "desc": "default claim gates ship with the expected evidence-backed assertions"
+    },
+    "CLAIM-02": {
+      "status": "pass",
+      "desc": "tracked evidence verifies shipped default claims"
+    },
+    "CLAIM-03": {
+      "status": "pass",
+      "desc": "missing evidence blocks claims with actionable missing actions"
+    },
+    "CLAIM-04": {
+      "status": "pass",
+      "desc": "custom claim gates persist only to local runtime state"
+    },
+    "CLAIM-05": {
+      "status": "pass",
+      "desc": "MCP tools expose track_action, verify_claim, and register_claim_gate end to end"
+    },
+    "CLAIM-06": {
+      "status": "pass",
+      "desc": "verify:full includes the claim-verification proof lane and artifact"
+    }
+  }
+}
