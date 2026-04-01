@@ -468,12 +468,20 @@ async function callToolInner(name, args) {
       if (!args.gate) {
         throw new Error('gate is required');
       }
-      const entry = satisfyCondition(args.gate, args.evidence || '');
-      return toTextResult({
-        satisfied: true,
-        gate: args.gate,
-        ...entry,
-      });
+      const entry = satisfyCondition(args.gate, args.evidence || '', args.structuredReasoning || null);
+      const result = { satisfied: true, gate: args.gate, ...entry };
+      // Log structured reasoning to audit trail for learning
+      if (args.structuredReasoning) {
+        recordAuditEvent({
+          toolName: 'satisfy_gate',
+          toolInput: { gate: args.gate },
+          decision: 'allow',
+          gateId: args.gate,
+          message: `Gate satisfied with structured reasoning: ${args.structuredReasoning.conclusion || 'no conclusion'}`,
+          source: 'structured-reasoning',
+        });
+      }
+      return toTextResult(result);
     }
     case 'track_action': {
       const entry = trackAction(args.actionId, args.metadata || {});
