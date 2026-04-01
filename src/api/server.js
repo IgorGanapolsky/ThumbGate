@@ -123,6 +123,8 @@ const LANDING_PAGE_PATH = path.resolve(__dirname, '../../public/index.html');
 const DASHBOARD_PAGE_PATH = path.resolve(__dirname, '../../public/dashboard.html');
 const LESSONS_PAGE_PATH = path.resolve(__dirname, '../../public/lessons.html');
 const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
+const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
+const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const VISITOR_COOKIE_NAME = 'rlhf_visitor_id';
 const SESSION_COOKIE_NAME = 'rlhf_session_id';
 const ACQUISITION_COOKIE_NAME = 'rlhf_acquisition_id';
@@ -2016,6 +2018,45 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/learn') {
+      try {
+        const html = fs.readFileSync(LEARN_PAGE_PATH, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'Learn page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/learn/learn.css') {
+      try {
+        const cssPath = path.join(LEARN_DIR, 'learn.css');
+        const css = fs.readFileSync(cssPath, 'utf-8');
+        res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=86400' });
+        if (!isHeadRequest) res.end(css);
+        else res.end();
+      } catch {
+        sendJson(res, 404, { error: 'Stylesheet not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname.startsWith('/learn/')) {
+      try {
+        const slug = pathname.replace('/learn/', '').replace(/[^a-z0-9-]/g, '');
+        const articlePath = path.join(LEARN_DIR, `${slug}.html`);
+        if (!articlePath.startsWith(LEARN_DIR)) {
+          sendJson(res, 403, { error: 'Forbidden' });
+          return;
+        }
+        const html = fs.readFileSync(articlePath, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'Article not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/') {
       if (wantsJson(req, parsed)) {
         sendJson(res, 200, {
@@ -2023,7 +2064,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dpo/export', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/learn', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dpo/export', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });

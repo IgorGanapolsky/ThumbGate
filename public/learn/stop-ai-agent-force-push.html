@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Stop AI Agents From Force-Pushing to Main — ThumbGate</title>
+<script defer data-domain="rlhf-feedback-loop-production.up.railway.app" data-api="/api/event" src="/js/analytics.js"></script>
+<meta name="description" content="Your AI coding agent just force-pushed to main. Again. Here is how to make that physically impossible with a pre-action gate in two minutes.">
+<meta name="keywords" content="AI agent force push, Claude Code force push prevention, git push force main, AI coding agent git safety, pre-action gates, ThumbGate">
+<meta property="og:title" content="How to Stop AI Agents From Force-Pushing to Main">
+<meta property="og:description" content="Make force-push to main physically impossible for your AI coding agent with a pre-action gate.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://rlhf-feedback-loop-production.up.railway.app/learn/stop-ai-agent-force-push">
+<link rel="canonical" href="https://rlhf-feedback-loop-production.up.railway.app/learn/stop-ai-agent-force-push">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How to Stop AI Agents From Force-Pushing to Main",
+  "description": "Make force-push to main physically impossible for your AI coding agent with a pre-action gate.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://rlhf-feedback-loop-production.up.railway.app"
+  },
+  "datePublished": "2026-04-01",
+  "dateModified": "2026-04-01",
+  "mainEntityOfPage": "https://rlhf-feedback-loop-production.up.railway.app/learn/stop-ai-agent-force-push",
+  "about": [
+    {"@type": "Thing", "name": "git force push prevention"},
+    {"@type": "Thing", "name": "AI coding agent safety"},
+    {"@type": "Thing", "name": "pre-action gates"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">👍👎 ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Stop AI Agent Force-Push</div>
+  <h1>How to Stop AI Agents From Force-Pushing to Main</h1>
+  <p style="color:var(--muted);">2 min read &middot; Works with Claude Code, Cursor, Codex, and any MCP agent</p>
+
+  <h2>The problem</h2>
+  <p>You write <code>never force-push to main</code> in your CLAUDE.md. Your agent reads it. Then it force-pushes to main anyway. Prompt rules are suggestions. Agents can and do ignore them when the context window fills up or when a chain of reasoning overrides the instruction.</p>
+
+  <div class="callout callout-red">
+    <strong>Real example:</strong> A developer lost 14 commits when their Claude Code agent ran <code>git push --force origin main</code> during a rebase. The CLAUDE.md said "never force-push." The agent did it anyway.
+  </div>
+
+  <h2>Why prompt rules fail</h2>
+  <ul>
+    <li><strong>Context overflow</strong> &mdash; as the conversation grows, early instructions get compressed or dropped</li>
+    <li><strong>Reasoning override</strong> &mdash; the agent decides force-push is the "correct" solution to a merge conflict</li>
+    <li><strong>No enforcement layer</strong> &mdash; nothing physically stops the tool call from executing</li>
+  </ul>
+
+  <h2>The fix: a pre-action gate</h2>
+  <p>A pre-action gate intercepts the tool call <em>before</em> it executes. It pattern-matches the command against known-bad actions and blocks them. The agent cannot bypass it because the gate runs outside the agent's control, at the MCP hook layer.</p>
+
+  <h3>Step 1: Install ThumbGate</h3>
+  <pre><code>npx mcp-memory-gateway init</code></pre>
+  <p>This auto-detects your agent (Claude Code, Cursor, etc.) and configures the PreToolUse hook.</p>
+
+  <h3>Step 2: Give feedback</h3>
+  <p>The next time your agent tries a force-push (or anything dangerous), give it a thumbs-down with context:</p>
+  <pre><code>👎 "Never force-push to main. This destroyed 14 commits last time."</code></pre>
+
+  <h3>Step 3: Gate auto-generates</h3>
+  <p>ThumbGate captures the feedback, matches it against the tool call pattern, and auto-generates a prevention rule. After repeated failures (configurable), it promotes to a hard gate:</p>
+  <pre><code># Auto-generated prevention rule
+pattern: "git push --force"
+target_branch: "main"
+action: BLOCK
+reason: "Force-push to main blocked — destroyed 14 commits (2026-03-15)"</code></pre>
+
+  <h3>Step 4: Gate fires on every future attempt</h3>
+  <p>The PreToolUse hook checks every <code>Bash</code> tool call. If it matches <code>git push --force</code> targeting <code>main</code>, the action is blocked before execution. The agent receives a rejection with the reason and adapts.</p>
+
+  <div class="callout">
+    <strong>Key difference:</strong> Prompt rules ask nicely. Pre-action gates physically block. The gate runs at the hook layer, outside the agent's reasoning chain, so it cannot be overridden by context or chain-of-thought.
+  </div>
+
+  <h2>What about other dangerous actions?</h2>
+  <p>The same pattern works for any tool call you want to prevent:</p>
+  <ul>
+    <li><code>DROP TABLE</code> on production databases</li>
+    <li><code>rm -rf</code> on project directories</li>
+    <li>Committing <code>.env</code> files with secrets</li>
+    <li>Running untested migrations on prod</li>
+    <li>Skipping test suites before deploy</li>
+  </ul>
+  <p>Every thumbs-down teaches the system. Thompson Sampling adapts gate sensitivity: high-risk patterns get strict enforcement, low-risk ones stay relaxed.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Try it now</h2>
+    <p>One command. Your agent stops repeating mistakes today.</p>
+    <div class="cta-install">$ npx mcp-memory-gateway init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related guides</h3>
+    <a href="/learn/vibe-coding-safety-net">The Vibe Coding Safety Net You Are Missing &rarr;</a>
+    <a href="/learn/mcp-pre-action-gates-explained">MCP Pre-Action Gates Explained &rarr;</a>
+    <a href="/guide">Full Setup Guide &rarr;</a>
+  </div>
+</div>
+
+</body>
+</html>

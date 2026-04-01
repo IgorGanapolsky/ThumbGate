@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Vibe Coding Safety Net You Are Missing — ThumbGate</title>
+<script defer data-domain="rlhf-feedback-loop-production.up.railway.app" data-api="/api/event" src="/js/analytics.js"></script>
+<meta name="description" content="Vibe coding is fast until your AI agent deletes a production table or rewrites a file you did not ask it to touch. Add guardrails without slowing down.">
+<meta name="keywords" content="vibe coding safety, vibe coding guardrails, AI coding mistakes, Claude Code safety net, Cursor agent guardrails, AI agent enforcement, ThumbGate">
+<meta property="og:title" content="The Vibe Coding Safety Net You Are Missing">
+<meta property="og:description" content="Vibe coding is fast until your AI agent breaks something. Add guardrails without slowing down.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://rlhf-feedback-loop-production.up.railway.app/learn/vibe-coding-safety-net">
+<link rel="canonical" href="https://rlhf-feedback-loop-production.up.railway.app/learn/vibe-coding-safety-net">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "The Vibe Coding Safety Net You Are Missing",
+  "description": "Vibe coding is fast until your AI agent breaks something. Here is how to add guardrails that learn from your corrections.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://rlhf-feedback-loop-production.up.railway.app"
+  },
+  "datePublished": "2026-04-01",
+  "dateModified": "2026-04-01",
+  "mainEntityOfPage": "https://rlhf-feedback-loop-production.up.railway.app/learn/vibe-coding-safety-net"
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 1.5rem 0; }
+  .comparison > div { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  .comparison h4 { font-size: 0.95rem; margin-bottom: 0.5rem; }
+  .comparison .bad h4 { color: var(--red); }
+  .comparison .good h4 { color: var(--green); }
+  @media (max-width: 700px) { .comparison { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">👍👎 ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Vibe Coding Safety Net</div>
+  <h1>The Vibe Coding Safety Net You Are Missing</h1>
+  <p style="color:var(--muted);">3 min read &middot; For developers who vibe-code with Claude Code, Cursor, Codex, or Gemini</p>
+
+  <h2>Vibe coding is a superpower with a blindspot</h2>
+  <p>You describe what you want. The agent builds it. You ship in hours what used to take days. But every vibe-coder has hit this wall: the agent does something catastrophically wrong, and you realize there was nothing stopping it.</p>
+
+  <div class="comparison">
+    <div class="bad">
+      <h4>Without guardrails</h4>
+      <ul>
+        <li>Agent rewrites a file you did not mention</li>
+        <li>Agent runs <code>DROP TABLE</code> in prod</li>
+        <li>Agent force-pushes over teammate's commits</li>
+        <li>Agent installs a dependency you rejected yesterday</li>
+        <li>Same mistake repeats every session</li>
+      </ul>
+    </div>
+    <div class="good">
+      <h4>With ThumbGate</h4>
+      <ul>
+        <li>Gate blocks file writes outside scope</li>
+        <li>Gate blocks destructive SQL before execution</li>
+        <li>Gate blocks force-push to protected branches</li>
+        <li>Gate remembers your rejection across sessions</li>
+        <li>Mistakes are blocked permanently after feedback</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Why CLAUDE.md and .cursorrules are not enough</h2>
+  <p>Prompt rules live inside the agent's context. They compete with your conversation, the codebase, and the agent's own reasoning. When the context window fills up, prompt rules are the first thing to get compressed or ignored.</p>
+  <p>Pre-action gates live <em>outside</em> the agent. They intercept tool calls at the hook layer (PreToolUse in MCP) before execution. The agent cannot override them because the gate runs in a separate process.</p>
+
+  <div class="callout callout-green">
+    <strong>Mental model:</strong> Prompt rules are speed limit signs. Pre-action gates are physical barriers. Signs can be ignored. Barriers cannot.
+  </div>
+
+  <h2>How to add guardrails in two minutes</h2>
+  <ol>
+    <li><strong>Install:</strong> <code>npx mcp-memory-gateway init</code> — auto-detects your agent and configures hooks</li>
+    <li><strong>Code normally:</strong> vibe-code as you always do, no workflow changes</li>
+    <li><strong>Correct when needed:</strong> when the agent does something wrong, give it a thumbs-down with context</li>
+    <li><strong>Gates build themselves:</strong> repeated failures auto-promote into prevention rules that block the action next time</li>
+  </ol>
+
+  <h2>It gets smarter over time</h2>
+  <p>ThumbGate uses Thompson Sampling to adapt enforcement. Patterns that cause real damage get strict gates. Low-risk patterns stay relaxed. The system tunes itself based on your feedback — no manual rule-writing required.</p>
+  <p>Every correction you make improves the model. Every thumbs-up reinforces good behavior. Over weeks, your agent develops an immune system tailored to your codebase and workflow.</p>
+
+  <h2>What vibe-coders actually gate</h2>
+  <p>Based on real usage patterns from ThumbGate users:</p>
+  <ul>
+    <li><strong>Git operations:</strong> force-push, branch deletion, rebase on shared branches</li>
+    <li><strong>File mutations:</strong> writes to config files, package.json changes, lock file modifications</li>
+    <li><strong>Database operations:</strong> destructive SQL, schema migrations without backup</li>
+    <li><strong>Dependency management:</strong> installing packages the developer already rejected</li>
+    <li><strong>Deployment:</strong> pushing to production without test suite passing</li>
+  </ul>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Start with one gate</h2>
+    <p>Install, vibe-code, and give your first thumbs-down. The safety net builds itself.</p>
+    <div class="cta-install">$ npx mcp-memory-gateway init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related guides</h3>
+    <a href="/learn/stop-ai-agent-force-push">How to Stop AI Agents From Force-Pushing to Main &rarr;</a>
+    <a href="/learn/mcp-pre-action-gates-explained">MCP Pre-Action Gates Explained &rarr;</a>
+    <a href="/guide">Full Setup Guide &rarr;</a>
+  </div>
+</div>
+
+</body>
+</html>
