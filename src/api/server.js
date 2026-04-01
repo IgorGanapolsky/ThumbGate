@@ -69,6 +69,14 @@ const {
   buildHostedCancelUrl,
 } = require('../../scripts/hosted-config');
 const {
+  PRO_MONTHLY_PRICE_DOLLARS,
+  PRO_ANNUAL_PRICE_DOLLARS,
+  TEAM_MONTHLY_PRICE_DOLLARS,
+  normalizePlanId,
+  normalizeBillingCycle,
+  normalizeSeatCount,
+} = require('../../scripts/commercial-offer');
+const {
   generateSkills,
 } = require('../../scripts/skill-generator');
 const {
@@ -414,6 +422,13 @@ function buildCheckoutAttributionMetadata(body, req, traceId) {
   const utmSource = pickFirstText(rawMetadata.utmSource, body.utmSource, rawMetadata.source, body.source);
   const utmMedium = pickFirstText(rawMetadata.utmMedium, body.utmMedium, 'checkout_api');
   const referrer = pickFirstText(rawMetadata.referrer, body.referrer, req.headers.referer, req.headers.referrer);
+  const planId = normalizePlanId(pickFirstText(rawMetadata.planId, body.planId, 'pro'));
+  const billingCycle = normalizeBillingCycle(
+    pickFirstText(rawMetadata.billingCycle, rawMetadata.billing_cycle, body.billingCycle, body.billing_cycle, 'monthly')
+  );
+  const seatCount = planId === 'team'
+    ? normalizeSeatCount(pickFirstText(rawMetadata.seatCount, rawMetadata.seat_count, body.seatCount, body.seat_count))
+    : 1;
 
   return {
     ...rawMetadata,
@@ -437,7 +452,9 @@ function buildCheckoutAttributionMetadata(body, req, traceId) {
     landingPath: pickFirstText(rawMetadata.landingPath, body.landingPath, body.page),
     ctaId: pickFirstText(rawMetadata.ctaId, body.ctaId),
     ctaPlacement: pickFirstText(rawMetadata.ctaPlacement, body.ctaPlacement),
-    planId: pickFirstText(rawMetadata.planId, body.planId, 'pro'),
+    planId,
+    billingCycle,
+    seatCount,
   };
 }
 
@@ -450,6 +467,11 @@ function buildCheckoutPageTelemetryMetadata(parsed, req, journeyState, page) {
   );
   const referrerHost = pickFirstText(params.get('referrer_host'), parseReferrerHost(referrer));
   const source = pickFirstText(params.get('source'), params.get('utm_source'), inferSource(referrerHost));
+  const planId = normalizePlanId(pickFirstText(params.get('plan_id'), 'pro'));
+  const billingCycle = normalizeBillingCycle(pickFirstText(params.get('billing_cycle'), 'monthly'));
+  const seatCount = planId === 'team'
+    ? normalizeSeatCount(pickFirstText(params.get('seat_count')))
+    : 1;
 
   return {
     clientType: 'web',
@@ -471,7 +493,9 @@ function buildCheckoutPageTelemetryMetadata(parsed, req, journeyState, page) {
     offerCode: pickFirstText(params.get('offer_code')),
     ctaId: pickFirstText(params.get('cta_id')),
     ctaPlacement: pickFirstText(params.get('cta_placement')),
-    planId: pickFirstText(params.get('plan_id'), 'pro'),
+    planId,
+    billingCycle,
+    seatCount,
     landingPath: pickFirstText(params.get('landing_path'), '/'),
     page,
     referrer,
@@ -535,6 +559,8 @@ function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
   appendQueryParam(url, 'cta_id', metadata.ctaId);
   appendQueryParam(url, 'cta_placement', metadata.ctaPlacement);
   appendQueryParam(url, 'plan_id', metadata.planId);
+  appendQueryParam(url, 'billing_cycle', metadata.billingCycle);
+  appendQueryParam(url, 'seat_count', metadata.seatCount);
   appendQueryParam(url, 'landing_path', metadata.landingPath);
   appendQueryParam(url, 'referrer_host', metadata.referrerHost);
   return restoreStripeCheckoutPlaceholder(url.toString());
@@ -543,6 +569,11 @@ function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
   const params = parsed.searchParams;
   const traceId = pickFirstText(params.get('trace_id')) || createJourneyId('checkout');
+  const planId = normalizePlanId(pickFirstText(params.get('plan_id'), 'pro'));
+  const billingCycle = normalizeBillingCycle(pickFirstText(params.get('billing_cycle'), 'monthly'));
+  const seatCount = planId === 'team'
+    ? normalizeSeatCount(pickFirstText(params.get('seat_count')))
+    : 1;
   return {
     traceId,
     installId: pickFirstText(params.get('install_id')),
@@ -565,12 +596,51 @@ function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneySt
     referrerHost: pickFirstText(params.get('referrer_host')),
     ctaId: pickFirstText(params.get('cta_id'), 'pricing_pro'),
     ctaPlacement: pickFirstText(params.get('cta_placement'), 'pricing'),
-    planId: pickFirstText(params.get('plan_id'), 'pro'),
+    planId,
+    billingCycle,
+    seatCount,
     metadata: {
       referrer: pickFirstText(params.get('referrer'), req.headers.referer, req.headers.referrer),
       landingPath: pickFirstText(params.get('landing_path'), '/'),
       referrerHost: pickFirstText(params.get('referrer_host')),
     },
+  };
+}
+
+function resolveCheckoutOfferSummary(metadata = {}) {
+  const planId = normalizePlanId(metadata.planId);
+  const billingCycle = normalizeBillingCycle(metadata.billingCycle);
+
+  if (planId === 'team') {
+    const seatCount = normalizeSeatCount(metadata.seatCount);
+    return {
+      planId: 'team',
+      billingCycle: 'monthly',
+      seatCount,
+      type: 'subscription',
+      price: TEAM_MONTHLY_PRICE_DOLLARS * seatCount,
+      priceLabel: `$${TEAM_MONTHLY_PRICE_DOLLARS}/seat/mo`,
+    };
+  }
+
+  if (billingCycle === 'annual') {
+    return {
+      planId: 'pro',
+      billingCycle: 'annual',
+      seatCount: 1,
+      type: 'subscription',
+      price: PRO_ANNUAL_PRICE_DOLLARS,
+      priceLabel: '$149/yr',
+    };
+  }
+
+  return {
+    planId: 'pro',
+    billingCycle: 'monthly',
+    seatCount: 1,
+    type: 'subscription',
+    price: PRO_MONTHLY_PRICE_DOLLARS,
+    priceLabel: '$19/mo',
   };
 }
 
@@ -1331,7 +1401,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         }
 
         const retryUrl = new URL(retryLink.href, window.location.origin);
-        ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'visitor_session_id', 'install_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'community', 'post_id', 'comment_id', 'campaign_variant', 'offer_code', 'cta_id', 'cta_placement', 'plan_id', 'landing_path', 'referrer_host'].forEach(function (key) {
+        ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'visitor_session_id', 'install_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'community', 'post_id', 'comment_id', 'campaign_variant', 'offer_code', 'cta_id', 'cta_placement', 'plan_id', 'billing_cycle', 'seat_count', 'landing_path', 'referrer_host'].forEach(function (key) {
           const value = params.get(key);
           if (value) retryUrl.searchParams.set(key, value);
         });
@@ -1906,6 +1976,8 @@ function createApiServer() {
         ctaId: analyticsMetadata.ctaId,
         ctaPlacement: analyticsMetadata.ctaPlacement,
         planId: analyticsMetadata.planId,
+        billingCycle: analyticsMetadata.billingCycle,
+        seatCount: analyticsMetadata.seatCount,
         referrer: analyticsMetadata.referrer,
         referrerHost: analyticsMetadata.referrerHost,
       }, req.headers, 'checkout_bootstrap');
@@ -1955,6 +2027,8 @@ function createApiServer() {
         appendQueryParam(successUrl, 'cta_id', analyticsMetadata.ctaId);
         appendQueryParam(successUrl, 'cta_placement', analyticsMetadata.ctaPlacement);
         appendQueryParam(successUrl, 'plan_id', analyticsMetadata.planId);
+        appendQueryParam(successUrl, 'billing_cycle', analyticsMetadata.billingCycle);
+        appendQueryParam(successUrl, 'seat_count', analyticsMetadata.seatCount);
         appendQueryParam(successUrl, 'landing_path', analyticsMetadata.landingPath);
         appendQueryParam(successUrl, 'referrer_host', analyticsMetadata.referrerHost);
         res.writeHead(302, {
@@ -1982,6 +2056,8 @@ function createApiServer() {
           ctaId: analyticsMetadata.ctaId,
           ctaPlacement: analyticsMetadata.ctaPlacement,
           planId: analyticsMetadata.planId,
+          billingCycle: analyticsMetadata.billingCycle,
+          seatCount: analyticsMetadata.seatCount,
           referrer: analyticsMetadata.referrer,
           referrerHost: analyticsMetadata.referrerHost,
           failureCode: err && err.message ? err.message : 'checkout_bootstrap_failed',
@@ -2519,6 +2595,7 @@ function createApiServer() {
         const traceId = body.traceId || createTraceId('checkout');
         const responseHeaders = getPublicBillingHeaders(traceId);
         const analyticsMetadata = buildCheckoutAttributionMetadata(body, req, traceId);
+        const offerSummary = resolveCheckoutOfferSummary(analyticsMetadata);
         
         const result = await createCheckoutSession({
           successUrl: body.successUrl || buildCheckoutFallbackUrl(
@@ -2537,8 +2614,12 @@ function createApiServer() {
         sendJson(res, 200, {
           ...result,
           traceId: result.traceId || traceId,
-          price: hostedConfig.proPriceDollars,
-          type: 'payment',
+          planId: offerSummary.planId,
+          billingCycle: offerSummary.billingCycle,
+          seatCount: offerSummary.seatCount,
+          price: offerSummary.price,
+          priceLabel: offerSummary.priceLabel,
+          type: offerSummary.type,
         }, responseHeaders);
       } catch (err) {
         const fallbackTraceId = createTraceId('checkout_error');

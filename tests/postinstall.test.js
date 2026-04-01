@@ -35,11 +35,12 @@ describe('postinstall banner', () => {
   it('includes checkout URL in stderr output', () => {
     const { stderr, exitCode } = runPostinstall();
     assert.equal(exitCode, 0);
-    assert.ok(stderr.includes('checkout/pro'), 'should include checkout URL');
+    assert.ok(stderr.includes('https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06'), 'should include checkout URL');
     assert.ok(stderr.includes('ThumbGate'), 'should mention ThumbGate');
     assert.ok(stderr.includes('npx mcp-memory-gateway'), 'should include quick start');
     assert.match(stderr, /personal local dashboard/i);
     assert.match(stderr, /optional hosted API key/i);
+    assert.match(stderr, /\$19\/mo or \$149\/yr/i);
   });
 
   it('exits silently in CI', () => {

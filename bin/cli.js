@@ -22,13 +22,17 @@ const crypto = require('crypto');
 const { execSync } = require('child_process');
 const { resolveMcpEntry } = require(path.join(__dirname, '..', 'scripts', 'mcp-config'));
 const { trackEvent } = require(path.join(__dirname, '..', 'scripts', 'cli-telemetry'));
+const {
+  PRO_MONTHLY_PAYMENT_LINK,
+  PRO_PRICE_LABEL,
+} = require(path.join(__dirname, '..', 'scripts', 'commercial-offer'));
 
 const COMMAND = process.argv[2];
 const CWD = process.cwd();
 const PKG_ROOT = path.join(__dirname, '..');
 
 const PRO_URL = 'https://rlhf-feedback-loop-production.up.railway.app';
-const PRO_CHECKOUT_URL = `${PRO_URL}/checkout/pro`;
+const PRO_CHECKOUT_URL = PRO_MONTHLY_PAYMENT_LINK;
 
 function upgradeNudge() {
   if (process.env.RLHF_NO_NUDGE === '1') return;
@@ -37,7 +41,7 @@ function upgradeNudge() {
     if (isProTier()) return;
   } catch (_) { return; }
   process.stderr.write(
-    `\n  Unlock Pro: unlimited gates, DPO export, searchable dashboard — $19/mo\n` +
+    `\n  Unlock Pro: unlimited gates, DPO export, searchable dashboard — ${PRO_PRICE_LABEL}\n` +
     `  ${PRO_CHECKOUT_URL}\n\n`
   );
 }
@@ -78,11 +82,10 @@ function telemetryPing(installId) {
 
 function proNudge(context) {
   if (process.env.RLHF_NO_NUDGE === '1') return;
-  const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
   const messages = [
-    `\n  💡 Unlock Pro ($19/mo): searchable dashboard, DPO export, multi-repo sync\n     ${STRIPE_URL}\n`,
-    `\n  💡 Pro tip: export your feedback as DPO training pairs to improve your models.\n     Get Pro: ${STRIPE_URL}\n`,
-    `\n  💡 ThumbGate Pro: search, edit, and sync lessons across repos. $19/mo.\n     ${STRIPE_URL}\n`,
+    `\n  💡 Unlock Pro (${PRO_PRICE_LABEL}): searchable dashboard, DPO export, multi-repo sync\n     ${PRO_CHECKOUT_URL}\n`,
+    `\n  💡 Pro tip: export your feedback as DPO training pairs to improve your models.\n     Get Pro: ${PRO_CHECKOUT_URL}\n`,
+    `\n  💡 ThumbGate Pro: search, edit, and sync lessons across repos. ${PRO_PRICE_LABEL}.\n     ${PRO_CHECKOUT_URL}\n`,
   ];
   // Rotate message daily — no Math.random (security policy)
   const msg = messages[Math.floor(Date.now() / 86400000) % messages.length];
@@ -91,11 +94,10 @@ function proNudge(context) {
 
 function limitNudge(action) {
   if (process.env.RLHF_NO_NUDGE === '1') return;
-  const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
   process.stderr.write(
     `\n  ⚠️  Free tier: ${action} daily limit reached (5/day).\n` +
-    `     Upgrade to Pro for unlimited usage — $19/mo:\n` +
-    `     ${STRIPE_URL}\n\n`
+    `     Upgrade to Pro for unlimited usage — ${PRO_PRICE_LABEL}:\n` +
+    `     ${PRO_CHECKOUT_URL}\n\n`
   );
 }
 
@@ -711,17 +713,17 @@ function pro() {
 
   function printProInfo() {
     const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
-    const truthUrl = 'https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/COMMERCIAL_TRUTH.md';
+    const truthUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
     console.log('\nThumbGate Pro — Local Dashboard');
     console.log('─'.repeat(50));
-    console.log('Self-serve offer today: Pro ($19/mo).');
+    console.log('Self-serve offer today: Pro ($19/mo or $149/yr).');
     console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
     console.log('\nWhat is available:');
     console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
     console.log('  - Optional hosted API key: shared lesson DB for teams and multi-agent workflows');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');
-    console.log(`  Buy Pro         : ${hostedUrl}`);
+    console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
     console.log(`  Commercial truth: ${truthUrl}\n`);
     console.log('  Launch dashboard: npx mcp-memory-gateway pro');
     console.log('  Activate + run  : npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
@@ -902,11 +904,10 @@ function risk() {
 function exportDpo() {
   const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
   if (!isProTier(null)) {
-    const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
     process.stderr.write(
-      `\n  🔒 DPO Export requires Pro ($19/mo).\n` +
+      `\n  🔒 DPO Export requires Pro (${PRO_PRICE_LABEL}).\n` +
       `     Your feedback would generate valuable training pairs.\n` +
-      `     Upgrade: ${STRIPE_URL}\n\n`
+      `     Upgrade: ${PRO_CHECKOUT_URL}\n\n`
     );
     process.exit(1);
   }
@@ -926,11 +927,10 @@ function exportDpo() {
 function exportDatabricks() {
   const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
   if (!isProTier(null)) {
-    const STRIPE_URL = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
     process.stderr.write(
-      `\n  🔒 Databricks Export requires Pro ($19/mo).\n` +
+      `\n  🔒 Databricks Export requires Pro (${PRO_PRICE_LABEL}).\n` +
       `     Export feedback logs + proof artifacts for analytics.\n` +
-      `     Upgrade: ${STRIPE_URL}\n\n`
+      `     Upgrade: ${PRO_CHECKOUT_URL}\n\n`
     );
     process.exit(1);
   }
@@ -1386,7 +1386,7 @@ switch (COMMAND) {
     console.log('1. Is the gate engine catching real mistakes for you? (y/n/haven\'t tried)');
     console.log('2. What failure pattern do you wish it caught but doesn\'t?');
     console.log('3. Anything confusing or broken?\n');
-    console.log('Reply to any of these at: https://github.com/IgorGanapolsky/mcp-memory-gateway/discussions');
+    console.log('Reply to any of these at: https://github.com/IgorGanapolsky/ThumbGate/discussions');
     console.log('Or email: iganapolsky@gmail.com\n');
 
     // Log the check-in event
