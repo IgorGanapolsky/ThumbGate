@@ -189,7 +189,12 @@
     "thompson-sampling",
     "memalign",
     "dual-memory",
-    "feedback-to-enforcement-pipeline"
+    "feedback-to-enforcement-pipeline",
+    "claude-code",
+    "claude-skill",
+    "claude-plugin",
+    "cursor",
+    "codex"
   ],
   "author": "Igor Ganapolsky",
   "license": "MIT",

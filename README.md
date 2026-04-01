@@ -9,7 +9,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free is fully featured (unlimited captures, recalls, gates, blocking). Pro adds a searchable dashboard to query, edit, and delete entries + DPO export. $49 one-time.
+[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free is fully featured (unlimited captures, recalls, gates, blocking). Pro adds a searchable dashboard to query, edit, and delete entries + DPO export. $99 one-time.
 
 **Thumbs down a mistake. It never happens again.**
 
@@ -67,6 +67,22 @@ npx mcp-memory-gateway doctor
 npx mcp-memory-gateway lessons
 npx mcp-memory-gateway dashboard
 ```
+
+## Claude Code Skill
+
+If you use Claude Code, ThumbGate is available as a built-in skill:
+
+```bash
+# Type in any Claude Code session:
+/thumbgate
+```
+
+The skill auto-triggers on keywords like "gate", "feedback", "block mistake", "prevention rule", and "thumbs down". It provides inline access to all ThumbGate commands — capture feedback, view gates, search lessons, and check system health.
+
+**Free skill** includes: install, capture feedback, view active gates, search lessons, health checks.
+**Pro skill** adds: multi-hop recall, DPO export, gate debugger, shared team DB, gate wiring support.
+
+Source: [`.claude/skills/thumbgate/SKILL.md`](.claude/skills/thumbgate/SKILL.md)
 
 ## How It Works
 
@@ -169,7 +185,7 @@ Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
 | Auto-generates rules | **Yes** — from repeated failures | No — manual or Gemini compile | No | No |
 | Agent support | Claude Code, Codex, Gemini, Amp, Cursor, OpenCode | Claude Code, Cursor, Windsurf, Cline, Bolt.new | Claude, Cursor | Cursor only |
 | Install | `npx mcp-memory-gateway init` | `npx speclock setup` | Cloud signup | Edit file |
-| Cost | **Free** (Pro $49 for teams) | Free | Free tier + paid | Free |
+| Cost | **Free** (Pro $99 for teams) | Free | Free tier + paid | Free |
 | npm weekly downloads | **724** | 98 | N/A | N/A |
 
 **When to use ThumbGate:** You want your agent to learn from mistakes automatically and enforce what it learned. One thumbs-down creates a gate.
@@ -239,7 +255,7 @@ For autonomous agent runs against this or any repo using this workflow:
 
 ## Pro Pack
 
-**[$49 one-time](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — personal local dashboard, DPO export, optional hosted API key for teams, priority support.
+**[$99 one-time](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — personal local dashboard, DPO export, optional hosted API key for teams, priority support.
 
 ### Free vs Pro
 
