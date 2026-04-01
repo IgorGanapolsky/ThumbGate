@@ -828,6 +828,21 @@ function loadDashboardPageHtml(req, expectedApiKey) {
   });
 }
 
+function loadLessonsPageHtml(req, expectedApiKey) {
+  const template = fs.readFileSync(LESSONS_PAGE_PATH, 'utf-8');
+  const forwardedHost = req.headers['x-forwarded-host'];
+  const hostHeader = Array.isArray(forwardedHost)
+    ? forwardedHost[0]
+    : forwardedHost || req.headers.host || '';
+  const localProBootstrap = process.env.RLHF_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
+  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : '').replace(/</g, '\\u003c');
+
+  return fillTemplate(template, {
+    '__LESSONS_BOOTSTRAP_KEY__': serializedBootstrapKey,
+    '__LESSONS_BOOTSTRAP_ENABLED__': localProBootstrap ? 'true' : 'false',
+  });
+}
+
 function renderRobotsTxt(runtimeConfig) {
   return [
     'User-agent: *',
@@ -1940,7 +1955,7 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname === '/lessons') {
       try {
-        const html = fs.readFileSync(LESSONS_PAGE_PATH, 'utf-8');
+        const html = loadLessonsPageHtml(req, expectedApiKey);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
         sendJson(res, 404, { error: 'Lessons page not found' });

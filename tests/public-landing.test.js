@@ -315,7 +315,7 @@ test('blog page has JSON-LD, canonical, and OG tags for Google indexing', () => 
   assert.match(blog, /og:description/, 'blog must have OG description');
 });
 
-// ── Lessons page tests ──────────────────────────────────────────
+// Lessons page tests
 
 const lessonsPagePath = path.join(__dirname, '..', 'public', 'lessons.html');
 
@@ -357,4 +357,8 @@ test('lessons page links to dashboard in nav', () => {
   const html = readLessonsPage();
   assert.match(html, /href="\/dashboard"/);
   assert.match(html, /href="\/lessons"/);
+  assert.match(html, /Local Pro connected/i);
+  assert.match(html, /__LESSONS_BOOTSTRAP_KEY__/);
+  assert.match(html, /\/v1\/lessons\/search/);
+  assert.match(html, /Demo preview/i);
 });

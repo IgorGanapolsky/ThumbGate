@@ -155,6 +155,10 @@
     </div>
   </div>
 
+  <div id="lessonsMode" style="margin:-8px 0 20px;padding:12px 16px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);font-size:13px;color:var(--text-muted);">
+    Loading lessons view...
+  </div>
+
   <div class="tabs">
     <div class="tab active" onclick="switchTab('rules')">📋 Active Rules</div>
     <div class="tab" onclick="switchTab('timeline')">📊 Feedback Timeline</div>
@@ -222,8 +226,36 @@
 var allRules = [];
 var allTimeline = [];
 var isDemo = true;
+var API_KEY = '';
+var dashboardSnapshot = null;
+const BOOTSTRAP_API_KEY = __LESSONS_BOOTSTRAP_KEY__;
+const LOCAL_PRO_BOOTSTRAP = __LESSONS_BOOTSTRAP_ENABLED__;
 
 function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function getHeaders() {
+  return { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
+}
+
+function hasBootstrapKey() {
+  return LOCAL_PRO_BOOTSTRAP && Boolean(BOOTSTRAP_API_KEY);
+}
+
+function setMode(message, demoMode) {
+  isDemo = demoMode;
+  var el = document.getElementById('lessonsMode');
+  if (!el) return;
+  el.textContent = message;
+  el.style.borderColor = demoMode ? 'var(--border)' : 'rgba(74,222,128,0.25)';
+  el.style.color = demoMode ? 'var(--text-muted)' : 'var(--green)';
+}
+
+function formatDate(value) {
+  if (!value) return '';
+  var ts = new Date(value);
+  if (Number.isNaN(ts.getTime())) return String(value);
+  return ts.toLocaleString();
+}
 
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
@@ -332,6 +364,43 @@ function renderInsights(data) {
   }).join('') : '<li><span style="color:var(--green)">All rules are active</span></li>';
 }
 
+function deriveSeverity(lesson) {
+  var severity = String(lesson.importance || '').toLowerCase();
+  if (severity === 'critical' || severity === 'high') return 'critical';
+  if (severity === 'medium') return 'warning';
+  return 'info';
+}
+
+function mapLiveRules(payload) {
+  return (payload.results || []).map(function(result) {
+    var linkedGate = (((result.systemResponse || {}).linkedAutoGates) || [])[0] || null;
+    var sourceFeedback = ((result.systemResponse || {}).sourceFeedback) || null;
+    return {
+      id: result.id,
+      title: result.title || ((result.lesson || {}).summary) || 'Lesson',
+      context: ((result.lesson || {}).howToAvoid) || ((result.lesson || {}).summary) || (sourceFeedback && sourceFeedback.context) || '',
+      occurrences: linkedGate && linkedGate.occurrences ? linkedGate.occurrences : 1,
+      prevented: linkedGate && linkedGate.occurrences ? linkedGate.occurrences : 0,
+      severity: deriveSeverity(result),
+      tags: Array.isArray(result.tags) ? result.tags : [],
+      lastTriggered: sourceFeedback && sourceFeedback.timestamp ? formatDate(sourceFeedback.timestamp) : formatDate(result.timestamp),
+      sourceFeedbackId: sourceFeedback && sourceFeedback.id ? sourceFeedback.id : result.sourceFeedbackId
+    };
+  });
+}
+
+function mapTimelineItems(payload, lessonMap) {
+  return (payload.results || []).map(function(entry) {
+    var linkedLesson = lessonMap.get(entry.id) || null;
+    return {
+      signal: entry.signal || 'down',
+      context: entry.context || entry.title || '',
+      date: formatDate(entry.timestamp),
+      learned: linkedLesson ? linkedLesson.title : ''
+    };
+  });
+}
+
 // Demo data
 var demoRules = [
   { id: 'execution-gap', title: 'Push before claiming done', context: 'After tests pass, immediately git add + commit + push. Never announce completion without pushing.', occurrences: 36, prevented: 22, severity: 'critical', tags: ['execution-gap', 'git-workflow'], lastTriggered: '2 hours ago' },
@@ -358,6 +427,7 @@ var demoTimeline = [
 function loadDemo() {
   allRules = demoRules;
   allTimeline = demoTimeline;
+  dashboardSnapshot = null;
 
   document.getElementById('statRules').textContent = allRules.length;
   document.getElementById('statCritical').textContent = allRules.filter(function(r) { return r.severity === 'critical'; }).length;
@@ -368,15 +438,55 @@ function loadDemo() {
   renderRules(allRules);
   renderTimeline(allTimeline);
   renderInsights();
+  setMode('Demo preview — local Pro auto-connect unlocks your live lessons, timeline, and insights on localhost.', true);
+  document.getElementById('proBadge').style.display = 'block';
 }
 
-function loadLive() {
-  // TODO: Wire to /v1/lessons/search and /v1/feedback/stats APIs
-  // For now, fall through to demo
-  loadDemo();
+async function loadLive() {
+  if (!hasBootstrapKey()) {
+    loadDemo();
+    return;
+  }
+  API_KEY = String(BOOTSTRAP_API_KEY || '').trim();
+  try {
+    const responses = await Promise.all([
+      fetch('/v1/feedback/stats', { headers: getHeaders() }),
+      fetch('/v1/lessons/search?limit=50', { headers: getHeaders() }),
+      fetch('/v1/search?limit=40&source=feedback', { headers: getHeaders() }),
+      fetch('/v1/dashboard', { headers: getHeaders() })
+    ]);
+    if (responses.some(function(res) { return !res.ok; })) {
+      throw new Error('Local Pro bootstrap unavailable');
+    }
+
+    const stats = await responses[0].json();
+    const lessonsPayload = await responses[1].json();
+    const feedbackPayload = await responses[2].json();
+    dashboardSnapshot = await responses[3].json();
+
+    allRules = mapLiveRules(lessonsPayload);
+    var lessonMap = new Map(allRules
+      .filter(function(rule) { return rule.sourceFeedbackId; })
+      .map(function(rule) { return [rule.sourceFeedbackId, rule]; }));
+    allTimeline = mapTimelineItems(feedbackPayload, lessonMap);
+
+    document.getElementById('statRules').textContent = allRules.length;
+    document.getElementById('statCritical').textContent = allRules.filter(function(r) { return r.severity === 'critical'; }).length;
+    document.getElementById('statPrevented').textContent = allRules.reduce(function(sum, r) { return sum + (r.prevented || 0); }, 0);
+    document.getElementById('statTrend').textContent = ((stats.recentRate || stats.approvalRate || 0) * 100).toFixed(1) + '%';
+    document.getElementById('statTrendSub').textContent = 'Live approval rate';
+
+    renderRules(allRules);
+    renderTimeline(allTimeline);
+    renderInsights(dashboardSnapshot);
+    document.getElementById('proBadge').style.display = 'none';
+    setMode('Local Pro connected — this lessons view is reading your live rules, feedback timeline, and insights.', false);
+  } catch (_err) {
+    loadDemo();
+  }
 }
 
-loadDemo();
+loadLive();
 </script>
 </body>
 </html>
