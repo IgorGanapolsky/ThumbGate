@@ -35,6 +35,7 @@ test('collectAnalytics tolerates npm version metadata failures', async () => {
     fetchNpmWeekly: async () => ({ downloads: 42 }),
     fetchGitHub: async () => ({ stargazers_count: 5, forks_count: 2, open_issues_count: 1, subscribers_count: 3 }),
     fetchNpmVersions: async () => { throw new Error('rate-limited'); },
+    fetchBillingSummary: async () => null,
   });
 
   assert.equal(data.weekly.downloads, 42);
@@ -67,14 +68,28 @@ test('formatReport includes honest metrics and share links', () => {
       latestSeenAt: '2026-03-30T19:40:00.000Z',
       window: 'all',
       visitors: {
+        byCreator: { reach_vb: 3 },
         bySource: { producthunt: 3 },
         byTrafficChannel: { producthunt: 3 },
       },
       ctas: {
+        byCreator: { reach_vb: 2 },
         bySource: { producthunt: 2 },
         byTrafficChannel: { producthunt: 2 },
+        checkoutStartsByCreator: { reach_vb: 1 },
         checkoutStartsBySource: { producthunt: 1 },
         checkoutStartsByTrafficChannel: { producthunt: 1 },
+      },
+    },
+    {
+      attribution: {
+        acquisitionByCreator: { reach_vb: 1 },
+        paidByCreator: { reach_vb: 1 },
+        bookedRevenueByCreatorCents: { reach_vb: 1900 },
+      },
+      pipeline: {
+        workflowSprintLeads: { byCreator: { reach_vb: 1 } },
+        qualifiedWorkflowSprintLeads: { byCreator: { reach_vb: 0 } },
       },
     }
   );
@@ -89,6 +104,8 @@ test('formatReport includes honest metrics and share links', () => {
   assert.match(report, /Visitors:\s+3/);
   assert.match(report, /CTA clicks:\s+2/);
   assert.match(report, /Checkouts:\s+1/);
+  assert.match(report, /Creator Partnerships/);
+  assert.match(report, /reach_vb — rev \$19\.00, paid 1/);
 });
 
 test('run emits formatted analytics snapshot from injected fetchers without network access', async () => {
@@ -113,12 +130,25 @@ test('run emits formatted analytics snapshot from injected fetchers without netw
       fetchTelemetry: async () => ({
         latestSeenAt: '2026-03-30T19:40:00.000Z',
         window: 'all',
-        visitors: { bySource: {}, byTrafficChannel: {} },
+        visitors: { byCreator: {}, bySource: {}, byTrafficChannel: {} },
         ctas: {
+          byCreator: {},
           bySource: {},
           byTrafficChannel: {},
+          checkoutStartsByCreator: {},
           checkoutStartsBySource: {},
           checkoutStartsByTrafficChannel: {},
+        },
+      }),
+      fetchBillingSummary: async () => ({
+        attribution: {
+          acquisitionByCreator: {},
+          paidByCreator: {},
+          bookedRevenueByCreatorCents: {},
+        },
+        pipeline: {
+          workflowSprintLeads: { byCreator: {} },
+          qualifiedWorkflowSprintLeads: { byCreator: {} },
         },
       }),
     },
@@ -147,6 +177,7 @@ test('run reports fetch failures and exits 1', async () => {
       fetchGitHub: async () => ({ stargazers_count: 0, forks_count: 0, open_issues_count: 0, subscribers_count: 0 }),
       fetchNpmVersions: async () => ({ time: {} }),
       fetchTelemetry: async () => null,
+      fetchBillingSummary: async () => null,
     },
   });
 

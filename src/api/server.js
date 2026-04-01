@@ -353,6 +353,7 @@ function buildLandingAttribution(parsed, req) {
     ),
     utmContent: getAttributionValue(params, 'utm_content', null),
     utmTerm: getAttributionValue(params, 'utm_term', null),
+    creator: getAttributionValue(params, 'creator', getAttributionValue(params, 'creator_handle', null)),
     community,
     postId: getAttributionValue(params, 'post_id', null),
     commentId: getAttributionValue(params, 'comment_id', null),
@@ -392,6 +393,7 @@ function buildReferrerAttribution(req) {
     ),
     utmContent: getAttributionValue(params, 'utm_content', null),
     utmTerm: getAttributionValue(params, 'utm_term', null),
+    creator: getAttributionValue(params, 'creator', getAttributionValue(params, 'creator_handle', null)),
     community,
     postId: getAttributionValue(params, 'post_id', null),
     commentId: getAttributionValue(params, 'comment_id', null),
@@ -443,6 +445,7 @@ function buildCheckoutAttributionMetadata(body, req, traceId) {
     utmCampaign: pickFirstText(rawMetadata.utmCampaign, body.utmCampaign),
     utmContent: pickFirstText(rawMetadata.utmContent, body.utmContent),
     utmTerm: pickFirstText(rawMetadata.utmTerm, body.utmTerm),
+    creator: pickFirstText(rawMetadata.creator, rawMetadata.creatorHandle, rawMetadata.creator_handle, body.creator, body.creatorHandle, body.creator_handle),
     community: pickFirstText(rawMetadata.community, rawMetadata.subreddit, body.community, body.subreddit),
     postId: pickFirstText(rawMetadata.postId, rawMetadata.post_id, body.postId, body.post_id),
     commentId: pickFirstText(rawMetadata.commentId, rawMetadata.comment_id, body.commentId, body.comment_id),
@@ -487,6 +490,7 @@ function buildCheckoutPageTelemetryMetadata(parsed, req, journeyState, page) {
     utmCampaign: pickFirstText(params.get('utm_campaign')),
     utmContent: pickFirstText(params.get('utm_content')),
     utmTerm: pickFirstText(params.get('utm_term')),
+    creator: pickFirstText(params.get('creator'), params.get('creator_handle')),
     community: pickFirstText(params.get('community'), params.get('subreddit')),
     postId: pickFirstText(params.get('post_id')),
     commentId: pickFirstText(params.get('comment_id')),
@@ -548,6 +552,7 @@ function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
   appendQueryParam(url, 'utm_campaign', metadata.utmCampaign);
   appendQueryParam(url, 'utm_content', metadata.utmContent);
   appendQueryParam(url, 'utm_term', metadata.utmTerm);
+  appendQueryParam(url, 'creator', metadata.creator);
   appendQueryParam(url, 'community', metadata.community);
   appendQueryParam(url, 'post_id', metadata.postId);
   appendQueryParam(url, 'comment_id', metadata.commentId);
@@ -588,6 +593,7 @@ function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneySt
     utmCampaign: pickFirstText(params.get('utm_campaign'), 'pro_pack'),
     utmContent: pickFirstText(params.get('utm_content')),
     utmTerm: pickFirstText(params.get('utm_term')),
+    creator: pickFirstText(params.get('creator'), params.get('creator_handle')),
     community: pickFirstText(params.get('community'), params.get('subreddit')),
     postId: pickFirstText(params.get('post_id')),
     commentId: pickFirstText(params.get('comment_id')),
@@ -927,6 +933,7 @@ function servePublicMarketingPage({
       utmCampaign: landingAttribution.utmCampaign,
       utmContent: landingAttribution.utmContent,
       utmTerm: landingAttribution.utmTerm,
+      creator: landingAttribution.creator,
       community: landingAttribution.community,
       postId: landingAttribution.postId,
       commentId: landingAttribution.commentId,
@@ -1119,6 +1126,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
     const utmCampaign = params.get('utm_campaign');
     const utmContent = params.get('utm_content');
     const utmTerm = params.get('utm_term');
+    const creator = params.get('creator') || params.get('creator_handle');
     const community = params.get('community');
     const postId = params.get('post_id');
     const commentId = params.get('comment_id');
@@ -1146,6 +1154,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
         utmCampaign,
         utmContent,
         utmTerm,
+        creator,
         community,
         postId,
         commentId,
@@ -1389,6 +1398,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
             utmCampaign: params.get('utm_campaign') || 'pro_pack',
             utmContent: params.get('utm_content'),
             utmTerm: params.get('utm_term'),
+            creator: params.get('creator') || params.get('creator_handle'),
             community: params.get('community') || params.get('subreddit'),
             postId: params.get('post_id'),
             commentId: params.get('comment_id'),
@@ -1417,7 +1427,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         }
 
         const retryUrl = new URL(retryLink.href, window.location.origin);
-        ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'visitor_session_id', 'install_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'community', 'post_id', 'comment_id', 'campaign_variant', 'offer_code', 'cta_id', 'cta_placement', 'plan_id', 'billing_cycle', 'seat_count', 'landing_path', 'referrer_host'].forEach(function (key) {
+        ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'visitor_session_id', 'install_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'creator', 'community', 'post_id', 'comment_id', 'campaign_variant', 'offer_code', 'cta_id', 'cta_placement', 'plan_id', 'billing_cycle', 'seat_count', 'landing_path', 'referrer_host'].forEach(function (key) {
           const value = params.get(key);
           if (value) retryUrl.searchParams.set(key, value);
         });
@@ -2069,6 +2079,7 @@ async function addContext(){
         utmCampaign: analyticsMetadata.utmCampaign,
         utmContent: analyticsMetadata.utmContent,
         utmTerm: analyticsMetadata.utmTerm,
+        creator: analyticsMetadata.creator,
         community: analyticsMetadata.community,
         postId: analyticsMetadata.postId,
         commentId: analyticsMetadata.commentId,
@@ -2122,6 +2133,7 @@ async function addContext(){
         appendQueryParam(successUrl, 'utm_campaign', analyticsMetadata.utmCampaign);
         appendQueryParam(successUrl, 'utm_content', analyticsMetadata.utmContent);
         appendQueryParam(successUrl, 'utm_term', analyticsMetadata.utmTerm);
+        appendQueryParam(successUrl, 'creator', analyticsMetadata.creator);
         appendQueryParam(successUrl, 'community', analyticsMetadata.community);
         appendQueryParam(successUrl, 'post_id', analyticsMetadata.postId);
         appendQueryParam(successUrl, 'comment_id', analyticsMetadata.commentId);
@@ -2154,6 +2166,7 @@ async function addContext(){
           utmCampaign: analyticsMetadata.utmCampaign,
           utmContent: analyticsMetadata.utmContent,
           utmTerm: analyticsMetadata.utmTerm,
+          creator: analyticsMetadata.creator,
           landingPath: analyticsMetadata.landingPath,
           page: '/checkout/pro',
           ctaId: analyticsMetadata.ctaId,
@@ -2417,6 +2430,7 @@ async function addContext(){
           utmCampaign: body.utmCampaign || referrerAttribution.utmCampaign || 'workflow_hardening_sprint',
           utmContent: body.utmContent || referrerAttribution.utmContent || null,
           utmTerm: body.utmTerm || referrerAttribution.utmTerm || null,
+          creator: body.creator || referrerAttribution.creator || null,
           community: body.community || referrerAttribution.community || null,
           postId: body.postId || referrerAttribution.postId || null,
           commentId: body.commentId || referrerAttribution.commentId || null,
@@ -2440,6 +2454,7 @@ async function addContext(){
           utmCampaign: lead.attribution.utmCampaign,
           utmContent: lead.attribution.utmContent,
           utmTerm: lead.attribution.utmTerm,
+          creator: lead.attribution.creator,
           community: lead.attribution.community,
           postId: lead.attribution.postId,
           commentId: lead.attribution.commentId,
@@ -2492,6 +2507,7 @@ async function addContext(){
           utmSource: referrerAttribution.utmSource || 'website',
           utmMedium: referrerAttribution.utmMedium || 'workflow_sprint_intake',
           utmCampaign: referrerAttribution.utmCampaign || 'workflow_hardening_sprint',
+          creator: referrerAttribution.creator,
           community: referrerAttribution.community,
           postId: referrerAttribution.postId,
           commentId: referrerAttribution.commentId,
@@ -3319,6 +3335,7 @@ async function addContext(){
             utmSource: result.lead.attribution.utmSource,
             utmMedium: result.lead.attribution.utmMedium,
             utmCampaign: result.lead.attribution.utmCampaign,
+            creator: result.lead.attribution.creator,
             community: result.lead.attribution.community,
             ctaId: result.lead.attribution.ctaId,
             ctaPlacement: result.lead.attribution.ctaPlacement,

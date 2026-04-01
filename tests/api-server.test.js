@@ -549,7 +549,7 @@ test('checkout fallback URLs preserve Stripe session placeholders while carrying
 
 test('checkout bootstrap route preserves attribution and records first-party telemetry in local mode', async () => {
   const res = await fetch(
-    apiUrl('/checkout/pro?acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_term=agentic+feedback&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
+    apiUrl('/checkout/pro?acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_term=agentic+feedback&creator=reach_vb&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
     {
       redirect: 'manual',
       headers: {
@@ -583,6 +583,7 @@ test('checkout bootstrap route preserves attribution and records first-party tel
   assert.equal(checkoutCreated.planId, 'pro');
   assert.equal(checkoutCreated.landingPath, '/pricing');
   assert.equal(checkoutCreated.referrerHost, 'www.reddit.com');
+  assert.equal(checkoutCreated.creator, 'reach_vb');
   assert.equal(checkoutCreated.community, 'ClaudeCode');
   assert.equal(checkoutCreated.postId, '1rsudq0');
   assert.equal(checkoutCreated.commentId, 'oa9mqjf');
@@ -604,6 +605,7 @@ test('checkout bootstrap route preserves attribution and records first-party tel
   assert.equal(bootstrapEvent.planId, 'pro');
   assert.equal(bootstrapEvent.landingPath, '/pricing');
   assert.equal(bootstrapEvent.referrerHost, 'www.reddit.com');
+  assert.equal(bootstrapEvent.creator, 'reach_vb');
   assert.equal(bootstrapEvent.community, 'ClaudeCode');
   assert.equal(bootstrapEvent.offerCode, 'REDDIT-EARLY');
 });
@@ -1138,6 +1140,7 @@ test('workflow sprint intake endpoint captures a contactable lead', async () => 
       utmSource: 'linkedin',
       utmMedium: 'organic_social',
       utmCampaign: 'claude_workflow_hardening_march_2026',
+      creator: 'reach_vb',
       ctaId: 'workflow_sprint_intake',
       ctaPlacement: 'workflow_sprint',
       planId: 'sprint',
@@ -1159,6 +1162,7 @@ test('workflow sprint intake endpoint captures a contactable lead', async () => 
   assert.equal(leads[0].attribution.planId, 'sprint');
   assert.equal(leads[0].attribution.source, 'linkedin');
   assert.equal(leads[0].attribution.utmMedium, 'organic_social');
+  assert.equal(leads[0].attribution.creator, 'reach_vb');
 
   const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
   assert.ok(telemetry.some((entry) => entry.eventType === 'workflow_sprint_lead_submitted'));
@@ -1220,7 +1224,7 @@ test('workflow sprint intake accepts form posts, seeds journey cookies, and retu
     method: 'POST',
     headers: {
       'content-type': 'application/x-www-form-urlencoded',
-      referer: 'https://app.example.com/?utm_source=reddit&utm_medium=organic_social&utm_campaign=workflow_hardening_launch&community=ClaudeCode&post_id=1rsudq0&offer_code=EARLY',
+      referer: 'https://app.example.com/?utm_source=reddit&utm_medium=organic_social&utm_campaign=workflow_hardening_launch&creator=reach_vb&community=ClaudeCode&post_id=1rsudq0&offer_code=EARLY',
     },
     body,
   });
@@ -1247,6 +1251,7 @@ test('workflow sprint intake accepts form posts, seeds journey cookies, and retu
   assert.ok(lead);
   assert.equal(lead.attribution.source, 'reddit');
   assert.equal(lead.attribution.utmCampaign, 'workflow_hardening_launch');
+  assert.equal(lead.attribution.creator, 'reach_vb');
   assert.equal(lead.attribution.community, 'ClaudeCode');
   assert.equal(lead.attribution.postId, '1rsudq0');
   assert.equal(lead.attribution.offerCode, 'EARLY');

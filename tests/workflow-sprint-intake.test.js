@@ -46,6 +46,7 @@ function buildLeadPayload() {
     runtime: 'Claude Code',
     note: 'Need proof before team rollout.',
     utmSource: 'linkedin',
+    creator: 'reach_vb',
     ctaId: 'workflow_sprint_intake',
   };
 }
@@ -98,6 +99,7 @@ test('advanceWorkflowSprintLead appends snapshots and workflow runs for the proo
   assert.equal(leads.length, 1);
   assert.equal(leads[0].status, 'paid_team');
   assert.equal(leads[0].statusHistory.length, 5);
+  assert.equal(leads[0].attribution.creator, 'reach_vb');
   assert.ok(leads[0].workflowProgress.qualifiedAt);
   assert.ok(leads[0].workflowProgress.namedPilotAt);
   assert.ok(leads[0].workflowProgress.proofBackedRunAt);

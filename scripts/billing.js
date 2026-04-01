@@ -252,6 +252,7 @@ function extractAttribution(metadata = {}) {
     campaign: normalizeText(safe.utmCampaign || safe.campaign),
     content: normalizeText(safe.utmContent || safe.content),
     term: normalizeText(safe.utmTerm || safe.term),
+    creator: normalizeText(safe.creator || safe.creatorHandle || safe.creator_handle),
     community: normalizeText(safe.community || safe.subreddit),
     postId: normalizeText(safe.postId || safe.post_id),
     commentId: normalizeText(safe.commentId || safe.comment_id),
@@ -273,6 +274,7 @@ function extractJourneyFields(metadata = {}) {
     ctaId: attribution.ctaId,
     ctaPlacement: normalizeText(safe.ctaPlacement),
     planId: normalizeText(safe.planId),
+    creator: attribution.creator,
     community: attribution.community,
     postId: attribution.postId,
     commentId: attribution.commentId,
@@ -1183,6 +1185,7 @@ function getBusinessAnalytics(options = {}) {
 
   const signupsBySource = {};
   const signupsByCampaign = {};
+  const signupsByCreator = {};
   const signupsByCommunity = {};
   const signupsByPostId = {};
   const signupsByCommentId = {};
@@ -1200,6 +1203,7 @@ function getBusinessAnalytics(options = {}) {
     const campaignKey = resolveAttributionCampaign(attribution);
     incrementCounter(signupsBySource, sourceKey);
     incrementCounter(signupsByCampaign, campaignKey);
+    incrementCounter(signupsByCreator, attribution.creator);
     incrementCounter(signupsByCommunity, attribution.community);
     incrementCounter(signupsByPostId, attribution.postId);
     incrementCounter(signupsByCommentId, attribution.commentId);
@@ -1214,6 +1218,7 @@ function getBusinessAnalytics(options = {}) {
 
   const paidBySource = {};
   const paidByCampaign = {};
+  const paidByCreator = {};
   const paidByCommunity = {};
   const paidByPostId = {};
   const paidByCommentId = {};
@@ -1221,6 +1226,7 @@ function getBusinessAnalytics(options = {}) {
   const paidByOfferCode = {};
   const bookedRevenueBySourceCents = {};
   const bookedRevenueByCampaignCents = {};
+  const bookedRevenueByCreatorCents = {};
   const bookedRevenueByCommunityCents = {};
   const bookedRevenueByPostIdCents = {};
   const bookedRevenueByCommentIdCents = {};
@@ -1253,6 +1259,7 @@ function getBusinessAnalytics(options = {}) {
     const campaignKey = resolveAttributionCampaign(attribution);
     incrementCounter(paidBySource, sourceKey);
     incrementCounter(paidByCampaign, campaignKey);
+    incrementCounter(paidByCreator, attribution.creator);
     incrementCounter(paidByCommunity, attribution.community);
     incrementCounter(paidByPostId, attribution.postId);
     incrementCounter(paidByCommentId, attribution.commentId);
@@ -1287,6 +1294,7 @@ function getBusinessAnalytics(options = {}) {
       }
       incrementCounter(bookedRevenueBySourceCents, sourceKey, entry.amountCents);
       incrementCounter(bookedRevenueByCampaignCents, campaignKey, entry.amountCents);
+      incrementCounter(bookedRevenueByCreatorCents, attribution.creator, entry.amountCents);
       incrementCounter(bookedRevenueByCommunityCents, attribution.community, entry.amountCents);
       incrementCounter(bookedRevenueByPostIdCents, attribution.postId, entry.amountCents);
       incrementCounter(bookedRevenueByCommentIdCents, attribution.commentId, entry.amountCents);
@@ -1339,6 +1347,11 @@ function getBusinessAnalytics(options = {}) {
     conversionByCampaign[campaignKey] = safeRate(paidByCampaign[campaignKey] || 0, signupsByCampaign[campaignKey] || 0);
   }
 
+  const conversionByCreator = {};
+  for (const creatorKey of new Set([...Object.keys(signupsByCreator), ...Object.keys(paidByCreator)])) {
+    conversionByCreator[creatorKey] = safeRate(paidByCreator[creatorKey] || 0, signupsByCreator[creatorKey] || 0);
+  }
+
   const conversionByCommunity = {};
   for (const communityKey of new Set([...Object.keys(signupsByCommunity), ...Object.keys(paidByCommunity)])) {
     conversionByCommunity[communityKey] = safeRate(paidByCommunity[communityKey] || 0, signupsByCommunity[communityKey] || 0);
@@ -1367,9 +1380,11 @@ function getBusinessAnalytics(options = {}) {
   const workflowSprintLeadStatus = {};
   const workflowSprintLeadBySource = {};
   const workflowSprintLeadByCampaign = {};
+  const workflowSprintLeadByCreator = {};
   const workflowSprintLeadByCommunity = {};
   const workflowSprintLeadByRuntime = {};
   const qualifiedWorkflowSprintLeadBySource = {};
+  const qualifiedWorkflowSprintLeadByCreator = {};
   let workflowSprintLeadLatest = null;
   let workflowSprintLeadLatestAt = null;
   let workflowSprintLeadContactable = 0;
@@ -1381,6 +1396,7 @@ function getBusinessAnalytics(options = {}) {
     const attribution = extractAttribution(entry.attribution || {});
     incrementCounter(workflowSprintLeadBySource, resolveAttributionSource(attribution, 'workflow_sprint_intake'));
     incrementCounter(workflowSprintLeadByCampaign, resolveAttributionCampaign(attribution));
+    incrementCounter(workflowSprintLeadByCreator, attribution.creator);
     incrementCounter(workflowSprintLeadByCommunity, attribution.community);
     incrementCounter(workflowSprintLeadByRuntime, entry.qualification?.runtime);
 
@@ -1393,6 +1409,7 @@ function getBusinessAnalytics(options = {}) {
         qualifiedWorkflowSprintLeadBySource,
         resolveAttributionSource(attribution, 'workflow_sprint_intake')
       );
+      incrementCounter(qualifiedWorkflowSprintLeadByCreator, attribution.creator);
     }
 
     if (!workflowSprintLeadLatestAt || String(entry.submittedAt || '') > workflowSprintLeadLatestAt) {
@@ -1484,6 +1501,7 @@ function getBusinessAnalytics(options = {}) {
       uniqueLeads: acquisitionLeadKeys.size,
       bySource: signupsBySource,
       byCampaign: signupsByCampaign,
+      byCreator: signupsByCreator,
       byCommunity: signupsByCommunity,
       byPostId: signupsByPostId,
       byCommentId: signupsByCommentId,
@@ -1516,6 +1534,7 @@ function getBusinessAnalytics(options = {}) {
         byStatus: workflowSprintLeadStatus,
         bySource: workflowSprintLeadBySource,
         byCampaign: workflowSprintLeadByCampaign,
+        byCreator: workflowSprintLeadByCreator,
         byCommunity: workflowSprintLeadByCommunity,
         byRuntime: workflowSprintLeadByRuntime,
         latestLeadAt: workflowSprintLeadLatestAt,
@@ -1524,11 +1543,13 @@ function getBusinessAnalytics(options = {}) {
       qualifiedWorkflowSprintLeads: {
         total: qualifiedWorkflowSprintLeadCount,
         bySource: qualifiedWorkflowSprintLeadBySource,
+        byCreator: qualifiedWorkflowSprintLeadByCreator,
       },
     },
     attribution: {
       acquisitionBySource: signupsBySource,
       acquisitionByCampaign: signupsByCampaign,
+      acquisitionByCreator: signupsByCreator,
       acquisitionByCommunity: signupsByCommunity,
       acquisitionByPostId: signupsByPostId,
       acquisitionByCommentId: signupsByCommentId,
@@ -1536,6 +1557,7 @@ function getBusinessAnalytics(options = {}) {
       acquisitionByOfferCode: signupsByOfferCode,
       paidBySource,
       paidByCampaign,
+      paidByCreator,
       paidByCommunity,
       paidByPostId,
       paidByCommentId,
@@ -1543,6 +1565,7 @@ function getBusinessAnalytics(options = {}) {
       paidByOfferCode,
       bookedRevenueBySourceCents,
       bookedRevenueByCampaignCents,
+      bookedRevenueByCreatorCents,
       bookedRevenueByCommunityCents,
       bookedRevenueByPostIdCents,
       bookedRevenueByCommentIdCents,
@@ -1553,6 +1576,7 @@ function getBusinessAnalytics(options = {}) {
       bookedRevenueByReferrerHost,
       conversionBySource,
       conversionByCampaign,
+      conversionByCreator,
       conversionByCommunity,
       conversionByPostId,
       conversionByCommentId,

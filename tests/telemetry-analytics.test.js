@@ -94,6 +94,7 @@ test('sanitizeTelemetryPayload preserves SEO content classification fields', () 
 test('inferTrafficChannel prefers explicit source and deterministic referrer heuristics', () => {
   assert.equal(inferTrafficChannel({ source: 'producthunt' }, null), 'producthunt');
   assert.equal(inferTrafficChannel({ source: 'reddit' }, null), 'reddit');
+  assert.equal(inferTrafficChannel({ utmMedium: 'creator_partnership' }, null), 'creator');
   assert.equal(inferTrafficChannel({ source: 'ai_search' }, null), 'ai_search');
   assert.equal(inferTrafficChannel({ source: 'organic_search' }, null), 'organic_search');
   assert.equal(inferTrafficChannel({ source: 'website' }, null), 'direct');
@@ -111,6 +112,7 @@ test('sanitizeTelemetryPayload preserves reddit campaign metadata', () => {
     eventType: 'landing_page_view',
     clientType: 'web',
     source: 'reddit',
+    creator: 'reach_vb',
     utmCampaign: 'reddit_launch',
     community: 'ClaudeCode',
     offerCode: 'REDDIT-EARLY',
@@ -120,6 +122,7 @@ test('sanitizeTelemetryPayload preserves reddit campaign metadata', () => {
   });
 
   assert.equal(entry.trafficChannel, 'reddit');
+  assert.equal(entry.creator, 'reach_vb');
   assert.equal(entry.community, 'ClaudeCode');
   assert.equal(entry.offerCode, 'REDDIT-EARLY');
   assert.equal(entry.campaignVariant, 'comment_problem_solution');
@@ -152,6 +155,7 @@ test('getTelemetryAnalytics summarizes visitors, CTAs, and CLI installs', () => 
     acquisitionId: 'acq_1',
     visitorId: 'visitor_1',
     sessionId: 'session_1',
+    creator: 'reach_vb',
     source: 'website',
     utmSource: 'website',
     utmCampaign: 'launch',
@@ -164,6 +168,7 @@ test('getTelemetryAnalytics summarizes visitors, CTAs, and CLI installs', () => 
     visitorId: 'visitor_1',
     sessionId: 'session_1',
     installId: 'inst_1',
+    creator: 'reach_vb',
     source: 'website',
     utmSource: 'website',
     utmCampaign: 'launch',
@@ -195,8 +200,11 @@ test('getTelemetryAnalytics summarizes visitors, CTAs, and CLI installs', () => 
   assert.equal(analytics.visitors.uniqueVisitors, 1);
   assert.equal(analytics.visitors.totalEvents, 3);
   assert.equal(analytics.visitors.pageViews, 1);
+  assert.equal(analytics.visitors.byCreator.reach_vb, 1);
   assert.equal(analytics.ctas.totalClicks, 1);
   assert.equal(analytics.ctas.checkoutStarts, 1);
+  assert.equal(analytics.ctas.byCreator.reach_vb, 1);
+  assert.equal(analytics.ctas.checkoutStartsByCreator.reach_vb, 1);
   assert.equal(analytics.ctas.uniqueCheckoutStarters, 1);
   assert.equal(analytics.ctas.checkoutFailures, 1);
   assert.equal(analytics.ctas.failuresByCode.checkout_request_failed, 1);

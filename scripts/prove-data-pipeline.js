@@ -45,6 +45,7 @@ function buildStubTelemetry() {
       visitorIdCoverageRate: 1,
       sessionIdCoverageRate: 1,
       acquisitionIdCoverageRate: 1,
+      byCreator: { reach_vb: 1 },
       bySource: { producthunt: 1 },
       byCampaign: { ph_launch: 1 },
       byTrafficChannel: { producthunt: 1 },
@@ -61,6 +62,7 @@ function buildStubTelemetry() {
       checkoutCancelled: 0,
       checkoutAbandoned: 0,
       paidConfirmations: 1,
+      byCreator: { reach_vb: 1 },
       bySource: { producthunt: 1 },
       byCampaign: { ph_launch: 1 },
       byTrafficChannel: { producthunt: 1 },
@@ -70,6 +72,7 @@ function buildStubTelemetry() {
       checkoutStartsBySource: { producthunt: 1 },
       checkoutStartsByCampaign: { ph_launch: 1 },
       checkoutStartsByTrafficChannel: { producthunt: 1 },
+      checkoutStartsByCreator: { reach_vb: 1 },
       checkoutStartsByCommunity: { ProductHunt: 1 },
       checkoutStartsByOfferCode: { PH_EARLY: 1 },
       checkoutStartsByCampaignVariant: { launch_comment: 1 },
@@ -113,16 +116,22 @@ function buildStubBilling(overrides = {}) {
       paidCustomers: 1,
       bookedRevenueCents: 4900,
     },
-    pipeline: {},
+    pipeline: {
+      workflowSprintLeads: { byCreator: { reach_vb: 1 } },
+      qualifiedWorkflowSprintLeads: { byCreator: { reach_vb: 1 } },
+    },
     attribution: {
+      acquisitionByCreator: { reach_vb: 1 },
       acquisitionBySource: { producthunt: 1 },
       acquisitionByCampaign: { ph_launch: 1 },
       acquisitionByCommunity: { ProductHunt: 1 },
       acquisitionByOfferCode: { PH_EARLY: 1 },
+      paidByCreator: { reach_vb: 1 },
       paidBySource: { producthunt: 1 },
       paidByCampaign: { ph_launch: 1 },
       paidByCommunity: { ProductHunt: 1 },
       paidByOfferCode: { PH_EARLY: 1 },
+      bookedRevenueByCreatorCents: { reach_vb: 4900 },
       bookedRevenueBySourceCents: { producthunt: 4900 },
       bookedRevenueByCampaignCents: { ph_launch: 4900 },
       bookedRevenueByCommunityCents: { ProductHunt: 4900 },
@@ -173,6 +182,9 @@ async function run() {
 
           if (snapshot.semantic.metrics.bookedRevenueCents !== 4900) {
             throw new Error('Expected booked revenue semantic metric');
+          }
+          if (!snapshot.staging.dims.creators.some((entry) => entry.key === 'reach_vb')) {
+            throw new Error('Expected one staged creator row');
           }
           if (snapshot.staging.dims.sources.length !== 1) {
             throw new Error('Expected one staged source row');
