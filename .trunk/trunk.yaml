@@ -1,0 +1,24 @@
+version: 0.1
+cli:
+  version: 1.25.0
+lint:
+  enabled:
+    - actionlint
+    - bandit
+    - checkov
+    - git-diff-check
+    - hadolint
+    - isort
+    - markdownlint
+    - osv-scanner
+    - prettier
+    - ruff
+    - shellcheck
+    - shfmt
+    - trufflehog
+    - yamllint
+tests:
+  flaky_test_management:
+    enabled:
+      - python-pytest
+    quarantine: true
