@@ -42,3 +42,10 @@ test('dashboard includes team metrics and gate-template tabs powered by dashboar
   assert.match(dashboard, /function renderTemplates\(templateLibrary\)/);
   assert.match(dashboard, /highest-ROI guardrails/i);
 });
+
+test('dashboard has noindex and meta description for SEO safety', () => {
+  const dashboard = readDashboard();
+  assert.match(dashboard, /noindex/, 'dashboard must have noindex to prevent Google indexing a Pro-only page');
+  assert.match(dashboard, /<meta name="description"/, 'dashboard must have meta description');
+  assert.match(dashboard, /rel="canonical"/, 'dashboard must have canonical URL');
+});
