@@ -43,7 +43,8 @@ function ensureDir(dirPath) {
  * @param {string} [params.gateId]   — which gate matched (null for allow)
  * @param {string} [params.message]  — gate message
  * @param {string} [params.severity] — gate severity
- * @param {string} [params.source]   — 'gates-engine' | 'secret-guard' | 'mcp-policy' | 'profile-router'
+ * @param {number} [params.latencyMs] — tool execution time in milliseconds
+ * @param {string} [params.source]   — 'gates-engine' | 'secret-guard' | 'mcp-policy' | 'profile-router' | 'tool-latency'
  * @returns {object} the stored audit record
  */
 function recordAuditEvent(params = {}) {
@@ -59,6 +60,7 @@ function recordAuditEvent(params = {}) {
     gateId: params.gateId || null,
     message: params.message || null,
     severity: params.severity || null,
+    latencyMs: typeof params.latencyMs === 'number' ? params.latencyMs : null,
     source: params.source || 'gates-engine',
   };
 
@@ -306,6 +308,7 @@ module.exports = {
   auditToFeedback,
   readAuditLog,
   auditStats,
+  latencyStats,
   skillAdherence,
   evaluateSelfHealTrigger,
   tuneCacheThreshold,
@@ -319,6 +322,56 @@ module.exports = {
 // CLI
 // ---------------------------------------------------------------------------
 
+/**
+ * Compute latency statistics from audit trail entries that have latencyMs.
+ * @param {string} [logPath]
+ * @returns {{ count: number, avgMs: number, p50Ms: number, p95Ms: number, p99Ms: number, maxMs: number, slowest: Array }}
+ */
+function latencyStats(logPath) {
+  const entries = readAuditLog(logPath);
+  const withLatency = entries.filter(e => typeof e.latencyMs === 'number');
+  if (withLatency.length === 0) return { count: 0, avgMs: 0, p50Ms: 0, p95Ms: 0, p99Ms: 0, maxMs: 0, slowest: [] };
+
+  const sorted = withLatency.map(e => e.latencyMs).sort((a, b) => a - b);
+  const sum = sorted.reduce((a, b) => a + b, 0);
+  const percentile = (arr, p) => arr[Math.min(Math.ceil(arr.length * p) - 1, arr.length - 1)];
+
+  // Per-tool breakdown
+  const byTool = {};
+  for (const e of withLatency) {
+    const tool = e.toolName || 'unknown';
+    if (!byTool[tool]) byTool[tool] = [];
+    byTool[tool].push(e.latencyMs);
+  }
+  const toolStats = {};
+  for (const [tool, latencies] of Object.entries(byTool)) {
+    const s = latencies.sort((a, b) => a - b);
+    toolStats[tool] = {
+      count: s.length,
+      avgMs: Math.round(s.reduce((a, b) => a + b, 0) / s.length),
+      p95Ms: percentile(s, 0.95),
+      maxMs: s[s.length - 1],
+    };
+  }
+
+  // Top 5 slowest calls
+  const slowest = withLatency
+    .sort((a, b) => b.latencyMs - a.latencyMs)
+    .slice(0, 5)
+    .map(e => ({ tool: e.toolName, latencyMs: e.latencyMs, timestamp: e.timestamp }));
+
+  return {
+    count: sorted.length,
+    avgMs: Math.round(sum / sorted.length),
+    p50Ms: percentile(sorted, 0.50),
+    p95Ms: percentile(sorted, 0.95),
+    p99Ms: percentile(sorted, 0.99),
+    maxMs: sorted[sorted.length - 1],
+    byTool: toolStats,
+    slowest,
+  };
+}
+
 if (require.main === module) {
   const args = process.argv.slice(2);
   if (args.includes('--stats')) {
@@ -329,6 +382,8 @@ if (require.main === module) {
     console.log(JSON.stringify(evaluateSelfHealTrigger(), null, 2));
   } else if (args.includes('--tune-cache')) {
     console.log(JSON.stringify(tuneCacheThreshold(), null, 2));
+  } else if (args.includes('--latency')) {
+    console.log(JSON.stringify(latencyStats(), null, 2));
   } else {
     const entries = readAuditLog();
     const adherence = skillAdherence();
@@ -336,5 +391,9 @@ if (require.main === module) {
     const stats = auditStats();
     console.log(`  allow: ${stats.allow}  warn: ${stats.warn}  deny: ${stats.deny}`);
     console.log(`  skill adherence: ${adherence.overall}% across ${adherence.totalTools} tools`);
+    const lat = latencyStats();
+    if (lat.count > 0) {
+      console.log(`  latency: avg=${lat.avgMs}ms  p95=${lat.p95Ms}ms  max=${lat.maxMs}ms  (${lat.count} samples)`);
+    }
   }
 }

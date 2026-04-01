@@ -340,7 +340,20 @@ async function callTool(name, args = {}) {
     err.isRetryable = false;
     throw err;
   }
-  return callToolInner(name, args);
+  const startMs = Date.now();
+  const result = await callToolInner(name, args);
+  const latencyMs = Date.now() - startMs;
+  try {
+    const { recordAuditEvent } = require('../../scripts/audit-trail');
+    recordAuditEvent({
+      toolName: name,
+      toolInput: args,
+      decision: 'allow',
+      latencyMs,
+      source: 'tool-latency',
+    });
+  } catch { /* audit write failure must never break tool response */ }
+  return result;
 }
 
 async function callToolInner(name, args) {
