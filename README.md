@@ -82,7 +82,8 @@ If you use Claude Code, ThumbGate is available as a built-in skill:
 The skill auto-triggers on keywords like "gate", "feedback", "block mistake", "prevention rule", and "thumbs down". It provides inline access to all ThumbGate commands — capture feedback, view gates, search lessons, and check system health.
 
 **Free skill** includes: install, capture feedback, view active gates, search lessons, health checks.
-**Pro skill** adds: multi-hop recall, DPO export, gate debugger, shared team DB, gate wiring support.
+**Pro skill** adds: multi-hop recall, DPO export, gate debugger, and gate wiring support.
+**Team rollout** adds: shared hosted lesson DB and org dashboard visibility for multi-agent workflows.
 
 Source: [`.claude/skills/thumbgate/SKILL.md`](.claude/skills/thumbgate/SKILL.md)
 
@@ -104,7 +105,7 @@ Pipeline: **Capture → Validate → Remember → Distill → Prevent → Gate �
 - **Multi-hop retrieval** — iterative retrieve → prune → refine loop for complex queries, inspired by Context-1 agentic retrieval
 - **Active context pruning** — re-scores accumulated items after each retrieval hop, drops weak chunks to keep context quality high
 - **Thompson Sampling calibration** — minimum sample threshold (5) prevents low-sample overconfidence; confidence tiers (none/low/medium/high)
-- **Org dashboard** — `org_dashboard` MCP tool aggregates gate decisions across all agent sessions (Pro: full visibility, Free: 3 agents)
+- **Org dashboard** — `org_dashboard` MCP tool aggregates gate decisions across all agent sessions (Team rollout: full visibility, Free preview: 3 agents)
 - **Distractor-aware DPO** — training data export includes near-miss same-domain distractors for harder negatives
 - **Funnel invariant CI** — 13 tests prevent checkout path regression; Pro parity enforced across free/Pro npm packages
 - **Dual-signal feedback** — optional `failureType` ("decision" vs "execution") on `capture_feedback` creates separate Thompson Sampling sub-arms per failure dimension, inspired by Gen-Searcher's dual reward system
@@ -279,7 +280,7 @@ For autonomous agent runs against this or any repo using this workflow:
 | Workflow hardening sprint         | No     | No                      | Yes                               |
 | Priority support                  | No     | Yes                     | Yes                               |
 
-**[Get Pro — /mo$19/mo or $149/yr](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate_cta)** — recurring self-serve for individual operators.
+**[Get Pro — $19/mo or $149/yr](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate_cta)** — recurring self-serve for individual operators.
 
 **[Founder one-time offer — $49](https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05)** — preserved legacy founder checkout path.
 

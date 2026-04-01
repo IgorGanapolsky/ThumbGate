@@ -10,20 +10,20 @@
 > Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
 ### Public Landing Page (rlhf-feedback-loop-production.up.railway.app)
-> 👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. Pro adds a personal local dashboard. Team adds shared lessons.
+> 👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. Pro adds a personal local dashboard. Team adds shared lessons and org visibility.
 
 ### NPM package.json
 > Pre-action gates that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
 
 ### GitHub Repo About
 **Canonical source:** `config/github-about.json`
-> 👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. Pro adds a personal local dashboard. Team adds shared lessons.
+> 👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. Pro adds a personal local dashboard. Team adds shared lessons and org visibility.
 
 **Canonical topics:** `thumbgate`, `pre-action-gates`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`
 
 ### Stripe Pro Offer
 **Title:** ThumbGate Pro — Personal Local Dashboard + DPO Export
-**Description:** ThumbGate Pro gives individual operators a personal local dashboard, DPO export, advanced data exports, and founder-license support. Team rollout remains intake-first for shared lessons and org visibility.
+**Description:** ThumbGate Pro gives individual operators a personal local dashboard, DPO export, advanced data exports, and founder-license support. Team rollout remains intake-first for shared hosted lessons and org visibility.
 
 ### DEV.TO Blog Post
 **Title:** I built pre-action gates that physically block Claude Code from repeating mistakes

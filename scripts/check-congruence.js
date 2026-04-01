@@ -138,8 +138,44 @@ async function main() {
     'public/guide.html must advertise the current Pro monthly and annual pricing'
   );
   check(
+    /\$12\/seat\/mo/i.test(guideHtml),
+    'public/guide.html must advertise the current Team pricing anchor'
+  );
+  check(
     /Pro at \$19\/mo or \$149\/yr/i.test(commercialTruth),
     'docs/COMMERCIAL_TRUTH.md must record the current Pro offer'
+  );
+  check(
+    /shared lessons and org visibility/i.test(githubAbout.description),
+    'config/github-about.json description must mention shared lessons and org visibility'
+  );
+  check(
+    /\$19\/mo or \$149\/yr/i.test(readmeMd),
+    'README.md must advertise the current Pro monthly and annual pricing'
+  );
+  check(
+    /\$12\/seat\/mo/i.test(readmeMd),
+    'README.md must advertise the current Team pricing anchor'
+  );
+  check(
+    /shared hosted lesson db/i.test(readmeMd),
+    'README.md must describe the shared hosted Team lesson database'
+  );
+  check(
+    /org dashboard/i.test(readmeMd),
+    'README.md must describe the Team org dashboard'
+  );
+  check(
+    !/shared team db/i.test(readmeMd),
+    'README.md must not claim Pro includes a shared team DB'
+  );
+  check(
+    !/\/mo\$19/i.test(readmeMd),
+    'README.md must not contain malformed duplicated Pro pricing'
+  );
+  check(
+    !/\/mo\$19/i.test(guideHtml),
+    'public/guide.html must not contain malformed duplicated Pro pricing'
   );
 
   check(
