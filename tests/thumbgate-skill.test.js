@@ -55,7 +55,7 @@ describe('thumbgate-skill', () => {
     assert.ok(content.includes('Pro Features'), 'has Pro section');
     assert.ok(content.includes('Multi-hop recall'), 'mentions multi-hop recall');
     assert.ok(content.includes('Synthetic DPO'), 'mentions synthetic DPO');
-    assert.ok(content.includes('buy.stripe.com'), 'has Stripe checkout link');
+    assert.match(content, /https:\/\/buy\.stripe\.com\/[^\s)]+/, 'has Stripe checkout link');
     assert.ok(content.includes('founder license'), 'mentions founder license');
   });
 
@@ -67,7 +67,7 @@ describe('thumbgate-skill', () => {
     assert.ok(refLinks.length >= 2, `has ${refLinks.length} reference links (need 2+)`);
 
     for (const link of refLinks) {
-      const refPath = link.replace('<', '').replace('>', '');
+      const refPath = link.slice(1, -1);
       const fullPath = path.join(SKILL_DIR, refPath);
       assert.ok(fs.existsSync(fullPath), `reference file exists: ${refPath}`);
     }

@@ -282,7 +282,7 @@ test('landing page has newsletter signup', () => {
 
 test('landing page has social links in footer', () => {
   const html = readLandingPage();
-  assert.ok(html.includes('x.com'), 'footer must link to X/Twitter');
-  assert.ok(html.includes('linkedin.com'), 'footer must link to LinkedIn');
+  assert.match(html, /href="https:\/\/x\.com\/[^"]+"/, 'footer must link to X/Twitter');
+  assert.match(html, /href="https:\/\/www\.linkedin\.com\/[^"]+"/, 'footer must link to LinkedIn');
   assert.ok(html.includes('/blog'), 'footer must link to blog');
 });
