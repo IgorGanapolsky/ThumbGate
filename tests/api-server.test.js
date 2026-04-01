@@ -709,8 +709,10 @@ test('quick feedback capture via GET /feedback/quick?signal=up returns HTML conf
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.ok(html.includes('👍'), 'should show thumbs up emoji');
-  assert.ok(html.includes('Feedback captured'), 'should confirm capture');
-  assert.ok(html.includes('up'), 'should show signal direction');
+  assert.ok(html.includes('Positive feedback recorded'), 'should confirm capture with friendly label');
+  assert.ok(html.includes('Undo'), 'should offer undo action');
+  assert.ok(html.includes('signal=down'), 'undo link should point to opposite signal');
+  assert.ok(html.includes('Add context'), 'should offer context input');
 });
 
 test('quick feedback capture via GET /feedback/quick?signal=down returns HTML confirmation', async () => {
@@ -718,7 +720,9 @@ test('quick feedback capture via GET /feedback/quick?signal=down returns HTML co
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.ok(html.includes('👎'), 'should show thumbs down emoji');
-  assert.ok(html.includes('Feedback captured'), 'should confirm capture');
+  assert.ok(html.includes('Negative feedback recorded'), 'should confirm capture with friendly label');
+  assert.ok(html.includes('Undo'), 'should offer undo action');
+  assert.ok(html.includes('signal=up'), 'undo link should point to opposite signal');
 });
 
 test('quick feedback capture without signal returns 400', async () => {

@@ -1843,7 +1843,60 @@ function createApiServer() {
         });
         const emoji = signal === 'up' ? '👍' : '👎';
         const color = signal === 'up' ? '#22c55e' : '#ef4444';
-        sendHtml(res, 200, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>ThumbGate</title><style>body{background:#0a0a0a;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}div{text-align:center}.emoji{font-size:96px;margin-bottom:16px}.msg{font-size:20px;color:${color};font-weight:600}.sub{font-size:14px;color:#888;margin-top:8px}</style></head><body><div><div class="emoji">${emoji}</div><div class="msg">Feedback captured: ${signal}</div><div class="sub">${result.accepted ? 'Promoted to memory' : 'Stored'} · ${result.feedbackEvent?.id || 'saved'}</div><div class="sub" style="margin-top:24px"><a href="/dashboard" style="color:#22d3ee;text-decoration:none">Open Dashboard →</a></div></div></body></html>`);
+        const label = signal === 'up' ? 'Positive' : 'Negative';
+        const opposite = signal === 'up' ? 'down' : 'up';
+        const oppEmoji = signal === 'up' ? '👎' : '👍';
+        const feedbackId = result.feedbackEvent?.id || 'saved';
+        const promoted = result.accepted ? 'Promoted to memory' : 'Stored';
+        sendHtml(res, 200, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>ThumbGate — ${label} feedback</title>
+<style>
+*{box-sizing:border-box}
+body{background:#0a0a0a;color:#fff;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.card{text-align:center;background:#141414;border:1px solid #222;border-radius:16px;padding:48px 40px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.emoji{font-size:80px;margin-bottom:12px;animation:pop .4s ease-out}
+@keyframes pop{0%{transform:scale(0)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+.msg{font-size:22px;color:${color};font-weight:700;margin-bottom:4px}
+.sub{font-size:13px;color:#666;margin-top:6px;font-family:ui-monospace,monospace}
+.context-form{margin-top:20px;text-align:left}
+.context-form label{font-size:12px;color:#888;display:block;margin-bottom:6px}
+.context-form textarea{width:100%;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#ccc;padding:10px;font-size:13px;resize:vertical;min-height:60px;font-family:system-ui}
+.context-form textarea:focus{outline:none;border-color:${color}}
+.context-form button{margin-top:8px;background:${color};color:#000;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer}
+.context-form button:hover{opacity:.85}
+.actions{margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.actions a{color:#22d3ee;text-decoration:none;font-size:13px;padding:8px 16px;border:1px solid #333;border-radius:8px;transition:all .15s}
+.actions a:hover{background:#1a2a2e;border-color:#22d3ee}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#22c55e;color:#000;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;display:none;animation:slideUp .3s ease-out}
+@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;background:#1a1a1a;border:1px solid #333;color:#888;margin-top:8px}
+</style></head><body>
+<div class="card">
+  <div class="emoji">${emoji}</div>
+  <div class="msg">${label} feedback recorded</div>
+  <div class="sub">${promoted} · <span class="badge">${feedbackId}</span></div>
+  <div class="context-form" id="contextForm">
+    <label>Add context <span style="color:#555">(optional)</span></label>
+    <textarea id="contextInput" placeholder="What worked or went wrong?"></textarea>
+    <button onclick="addContext()">Save context</button>
+  </div>
+  <div class="actions">
+    <a href="/feedback/quick?signal=${opposite}" title="Meant to click ${oppEmoji}?">Undo → send ${oppEmoji} instead</a>
+    <a href="/dashboard">Dashboard →</a>
+  </div>
+</div>
+<div class="toast" id="toast">✓ Context saved</div>
+<script>
+async function addContext(){
+  const ctx=document.getElementById('contextInput').value.trim();
+  if(!ctx)return;
+  try{
+    await fetch('/api/capture_feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({signal:'${signal}',context:ctx,tags:['statusline','quick-capture','with-context']})});
+    document.getElementById('toast').style.display='block';
+    document.getElementById('contextForm').style.display='none';
+    setTimeout(()=>document.getElementById('toast').style.display='none',3000);
+  }catch(e){alert('Failed: '+e.message)}
+}
+</script></body></html>`);
       } else {
         sendHtml(res, 400, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>ThumbGate</title></head><body style="background:#0a0a0a;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh"><div style="text-align:center"><div style="font-size:48px">⚠️</div><div style="font-size:18px;margin-top:12px">Missing ?signal=up or ?signal=down</div></div></body></html>`);
       }
