@@ -2028,6 +2028,19 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/learn/learn.css') {
+      try {
+        const cssPath = path.join(LEARN_DIR, 'learn.css');
+        const css = fs.readFileSync(cssPath, 'utf-8');
+        res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=86400' });
+        if (!isHeadRequest) res.end(css);
+        else res.end();
+      } catch {
+        sendJson(res, 404, { error: 'Stylesheet not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname.startsWith('/learn/')) {
       try {
         const slug = pathname.replace('/learn/', '').replace(/[^a-z0-9-]/g, '');

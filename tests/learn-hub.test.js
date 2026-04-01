@@ -247,6 +247,34 @@ test('server.js API discovery includes /learn endpoint', () => {
   assert.ok(src.includes("'/learn'"), '/learn missing from API endpoint discovery');
 });
 
+test('server.js serves /learn/learn.css with correct content-type', () => {
+  const src = readFile(serverPath);
+  assert.ok(src.includes("pathname === '/learn/learn.css'"), '/learn/learn.css route missing');
+  assert.ok(src.includes("text/css"), 'CSS content-type missing');
+});
+
+// ============================================================
+// Shared stylesheet (zero duplication)
+// ============================================================
+
+test('shared learn.css exists with design tokens', () => {
+  const css = readFile(path.join(learnDir, 'learn.css'));
+  assert.match(css, /--bg:/);
+  assert.match(css, /--cyan:/);
+  assert.match(css, /--text:/);
+  assert.match(css, /\.container/);
+  assert.match(css, /\.breadcrumb/);
+  assert.match(css, /\.cta-box/);
+});
+
+test('all learn articles link to shared stylesheet instead of inline CSS', () => {
+  const articles = fs.readdirSync(learnDir).filter(f => f.endsWith('.html'));
+  for (const file of articles) {
+    const html = readFile(path.join(learnDir, file));
+    assert.match(html, /href="\/learn\/learn\.css"/, `${file} missing shared stylesheet link`);
+  }
+});
+
 // ============================================================
 // Cross-cutting: No stale content or tech debt
 // ============================================================
@@ -280,7 +308,7 @@ test('no learn page references version numbers (evergreen content)', () => {
 
 test('no learn page has broken internal links', () => {
   const allFiles = [learnHubPath, ...fs.readdirSync(learnDir).filter(f => f.endsWith('.html')).map(f => path.join(learnDir, f))];
-  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-gates-explained'];
+  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-gates-explained', '/learn/learn.css'];
   for (const file of allFiles) {
     const html = readFile(file);
     const links = html.match(/href="(\/[^"#]*?)"/g) || [];
