@@ -59,15 +59,29 @@ __GA_BOOTSTRAP__
       "name": "Free",
       "price": "0",
       "priceCurrency": "USD",
-      "description": "Local enforcement — captures, recalls, gates, and PreToolUse hook blocking for solo devs"
+      "description": "Unlimited captures, recalls, up to 50 gates, all MCP integrations, PreToolUse blocking, CLI dashboard"
     },
     {
       "@type": "Offer",
       "name": "Pro",
-      "price": "49",
+      "price": "19",
       "priceCurrency": "USD",
-      "description": "Visual gate debugger, DPO training data export, shared team lesson DB, gate wiring support — founder license",
+      "priceSpecification": { "@type": "UnitPriceSpecification", "billingDuration": "P1M" },
+      "description": "Unlimited gates, visual gate debugger, DPO export, analytics, webhooks, gate templates, email support",
       "url": "https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05"
+    },
+    {
+      "@type": "Offer",
+      "name": "Team",
+      "price": "12",
+      "priceCurrency": "USD",
+      "priceSpecification": { "@type": "UnitPriceSpecification", "billingDuration": "P1M", "referenceQuantity": { "@type": "QuantitativeValue", "unitText": "seat" } },
+      "description": "Shared team lesson DB, cross-repo patterns, org dashboard, CI/CD integration, RBAC, priority support"
+    },
+    {
+      "@type": "Offer",
+      "name": "Enterprise",
+      "description": "SSO/SAML, SOC2 compliance, self-hosted, industry gate templates, dedicated onboarding, SLA"
     }
   ]
 }
@@ -256,21 +270,27 @@ __GA_BOOTSTRAP__
 
   /* PRICING */
   .pricing { padding: 80px 0; }
-  .pricing-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 720px; margin: 0 auto; }
-  .price-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px 28px; }
-  .price-card.pro { border-color: var(--cyan); box-shadow: 0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15); }
+  .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; max-width: 1080px; margin: 0 auto; }
+  .price-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 28px 22px; position: relative; }
+  .price-card.popular { border-color: var(--cyan); box-shadow: 0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15); }
+  .price-card .popular-badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--cyan); color: var(--bg); font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
   .price-card .tier { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
-  .price-card.pro .tier { color: var(--cyan); }
-  .price-card .price { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 4px; }
-  .price-card .price-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
-  .price-card ul { list-style: none; margin-bottom: 28px; }
-  .price-card li { font-size: 14px; color: var(--text-muted); padding: 6px 0; display: flex; align-items: flex-start; gap: 8px; }
+  .price-card.popular .tier { color: var(--cyan); }
+  .price-card .price { font-size: 36px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 4px; }
+  .price-card .price-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+  .price-card ul { list-style: none; margin-bottom: 24px; }
+  .price-card li { font-size: 13px; color: var(--text-muted); padding: 5px 0; display: flex; align-items: flex-start; gap: 8px; }
   .price-card li::before { content: "✓"; color: var(--cyan); font-weight: 700; flex-shrink: 0; }
-  .price-card.pro li::before { color: var(--cyan); }
   .btn-free { display: block; text-align: center; padding: 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; transition: border-color 0.15s; }
   .btn-free:hover { border-color: var(--text-muted); }
   .btn-pro { display: block; text-align: center; padding: 10px; background: var(--cyan); color: var(--bg); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: opacity 0.15s; }
   .btn-pro:hover { opacity: 0.85; }
+  .btn-team { display: block; text-align: center; padding: 10px; border: 2px solid var(--cyan); border-radius: 8px; color: var(--cyan); text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.15s; }
+  .btn-team:hover { background: var(--cyan); color: var(--bg); }
+  .btn-enterprise { display: block; text-align: center; padding: 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; transition: border-color 0.15s; }
+  .btn-enterprise:hover { border-color: var(--text-muted); }
+  .founder-banner { max-width: 1080px; margin: 24px auto 0; background: linear-gradient(135deg, rgba(34,211,238,0.08), rgba(34,211,238,0.02)); border: 1px solid rgba(34,211,238,0.2); border-radius: 10px; padding: 16px 24px; text-align: center; font-size: 13px; color: var(--text-muted); }
+  .founder-banner strong { color: var(--cyan); }
 
   /* FAQ */
   .faq { padding: 80px 0; }
@@ -301,7 +321,8 @@ __GA_BOOTSTRAP__
     .steps { grid-template-columns: 1fr; }
     .compatibility-grid { grid-template-columns: 1fr; }
     .seo-grid { grid-template-columns: 1fr; }
-    .pricing-grid { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 480px) { .pricing-grid { grid-template-columns: 1fr; } }
     .hero { padding: 72px 0 56px; }
     .nav-links a:not(.nav-cta) { display: none; }
     .proof-bar { gap: 16px; }
@@ -324,7 +345,7 @@ __GA_BOOTSTRAP__
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
       <a href="/guide">Setup Guide</a>
       <a href="/dashboard">Dashboard Demo</a>
-      <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" class="nav-cta">Get Pro — $49</a>
+      <a href="#pricing" class="nav-cta">View Plans</a>
     </div>
   </div>
 </nav>
@@ -528,41 +549,85 @@ __GA_BOOTSTRAP__
 <section class="pricing" id="pricing">
   <div class="container">
     <div class="section-label">Pricing</div>
-    <h2 class="section-title">Start free. Go Pro when the stakes go up.</h2>
+    <h2 class="section-title">Start free. Scale when the stakes go up.</h2>
     <div class="pricing-grid">
+
+      <!-- FREE -->
       <div class="price-card">
         <div class="tier">Free</div>
         <div class="price">$0</div>
-        <div class="price-sub">Forever free · Local-only, single dev</div>
-        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo devs experimenting with gates on one machine.</p>
+        <div class="price-sub">Forever free · Single dev</div>
         <ul>
-          <li>Feedback captures, memory recalls, and gates</li>
+          <li>Unlimited feedback captures &amp; recalls</li>
+          <li>Local SQLite lesson DB</li>
+          <li>Up to 50 active gates</li>
           <li>All MCP integrations</li>
           <li>PreToolUse hook blocking</li>
-          <li>Local SQLite lesson DB</li>
-          <li><a href="/guide" style="color:var(--cyan);text-decoration:underline;">Setup guide for all agents →</a></li>
+          <li>CLI dashboard</li>
         </ul>
         <a href="https://www.npmjs.com/package/mcp-memory-gateway" target="_blank" rel="noopener" class="btn-free">Install Free</a>
       </div>
-      <div class="price-card pro" data-price-dollars="__PRO_PRICE_DOLLARS__">
+
+      <!-- PRO -->
+      <div class="price-card popular" data-price-dollars="19">
+        <div class="popular-badge">Most Popular</div>
         <div class="tier">Pro</div>
-        <div class="price">$49</div>
-        <div class="price-sub">One-time payment · Founder license</div>
-        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">For power users and teams who need shared, inspectable enforcement.</p>
-        <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">Go Pro when:</strong> you've blocked 20+ actions, you run multiple agents, or your team shares repos.
-        </div>
+        <div class="price">$19<span style="font-size:16px;font-weight:400;color:var(--text-muted)">/mo</span></div>
+        <div class="price-sub">or $149/year (save 35%)</div>
         <ul>
-          <li>Everything in Free, plus:</li>
-          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">Visual gate debugger →</a> see every blocked action and the gate that fired so you can trust the system in minutes</li>
-          <li>Auto-connect — your running agents appear automatically, no keys to copy, debug live behavior while you code</li>
-          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">DPO training data export →</a> turn real thumbs-downs into ready-to-use preference pairs for fine-tuning</li>
-          <li>Shared team lesson DB — one dev's 👎 on a bad migration instantly protects every agent on the team</li>
-          <li>Gate wiring support — we help you enforce your riskiest flows (migrations, force-pushes, CI) in the first week</li>
+          <li>Everything in Free</li>
+          <li>Unlimited gates</li>
+          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">Visual gate debugger →</a></li>
+          <li>DPO training data export</li>
+          <li>Historical analytics &amp; trends</li>
+          <li>Webhook/Slack notifications</li>
+          <li>Gate template library</li>
+          <li>Email support</li>
         </ul>
-        <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" class="btn-pro">Get Pro — $49</a>
-        <p style="font-size:11px;color:#666;margin-top:8px;">Founder pricing — locks in $49 for life. Price increases after v1.0.</p>
+        <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" class="btn-pro">Get Pro — $19/mo</a>
       </div>
+
+      <!-- TEAM -->
+      <div class="price-card">
+        <div class="tier">Team</div>
+        <div class="price">$12<span style="font-size:16px;font-weight:400;color:var(--text-muted)">/seat/mo</span></div>
+        <div class="price-sub">min 3 seats · or $99/seat/year</div>
+        <ul>
+          <li>Everything in Pro</li>
+          <li>Shared team lesson DB</li>
+          <li>Cross-repo pattern sharing</li>
+          <li>Org dashboard &amp; agent governance</li>
+          <li>CI/CD integration (GitHub Actions)</li>
+          <li>Role-based access control</li>
+          <li>Priority support (48hr SLA)</li>
+        </ul>
+        <a href="mailto:igor@thumbgate.dev?subject=ThumbGate%20Team%20Plan" class="btn-team">Start Team Trial</a>
+      </div>
+
+      <!-- ENTERPRISE -->
+      <div class="price-card">
+        <div class="tier">Enterprise</div>
+        <div class="price">Custom</div>
+        <div class="price-sub">Volume pricing for orgs</div>
+        <ul>
+          <li>Everything in Team</li>
+          <li>SSO / SAML authentication</li>
+          <li>SOC2 compliance artifacts</li>
+          <li>Self-hosted / air-gapped deploy</li>
+          <li>Industry gate templates (HIPAA, SOX)</li>
+          <li>Dedicated onboarding &amp; gate wiring</li>
+          <li>SLA with 4hr response time</li>
+          <li>Audit logs with retention policies</li>
+        </ul>
+        <a href="mailto:igor@thumbgate.dev?subject=ThumbGate%20Enterprise" class="btn-enterprise">Contact Sales</a>
+      </div>
+
+    </div>
+
+    <!-- Founder deal banner -->
+    <div class="founder-banner">
+      <strong>Founder Deal:</strong> Get Pro for life at <strong>$49 one-time</strong> (limited to first 500 buyers).
+      <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" style="color:var(--cyan);text-decoration:underline;margin-left:8px;">Lock in founder price →</a>
     </div>
   </div>
 </section>
@@ -619,7 +684,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <h2>Ready to stop fixing the same AI mistakes?</h2>
     <p>Install in 30 seconds. Free tier included. No account required.</p>
-    <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" class="btn-pro">Get Pro — $49</a>
+    <a href="#pricing" class="btn-pro" style="display:inline-block;padding:12px 32px;">View Plans</a>
   </div>
 </section>
 
@@ -671,7 +736,9 @@ function copyInstall(el) {
   }
 
   /* CTA clicks */
-  trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 49 });
+  trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 19 });
+  trackClick('.btn-team', 'checkout_start', { tier: 'team', price: 12 });
+  trackClick('.btn-enterprise', 'contact_sales', { tier: 'enterprise' });
   trackClick('.btn-free', 'install_click', { tier: 'free' });
   trackClick('.nav-cta', 'checkout_start', { tier: 'pro', source: 'nav' });
 

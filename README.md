@@ -9,7 +9,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2449%20one--time-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free is fully featured (unlimited captures, recalls, gates, blocking). Pro adds a searchable dashboard to query, edit, and delete entries + DPO export. $49 one-time.
+[![Pro](https://img.shields.io/badge/Pro-%2419%2Fmo-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/#pricing?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) [![Team](https://img.shields.io/badge/Team-%2412%2Fseat%2Fmo-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/#pricing?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free: unlimited captures, recalls, 50 gates. Pro: unlimited gates, visual debugger, DPO export, analytics. Team: shared lessons, org dashboard, CI/CD. [Founder deal: $49 one-time for Pro-for-life](https://rlhf-feedback-loop-production.up.railway.app/#pricing).
 
 **Thumbs down a mistake. It never happens again.**
 

@@ -62,16 +62,18 @@ test('public landing page includes pricing section with Free and Pro tiers', () 
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /class="price-card"/);
-  assert.match(landingPage, /class="price-card pro"/);
+  assert.match(landingPage, /class="price-card popular"/);
   assert.match(landingPage, /\$0/);
-  assert.match(landingPage, /\$49/);
-  assert.match(landingPage, /One-time payment/);
+  assert.match(landingPage, /\$19/);
+  assert.match(landingPage, /\$12/);
   assert.match(landingPage, /Forever free/);
-  assert.match(landingPage, /Local-only, single dev/);
-  assert.match(landingPage, /Founder license/);
-  assert.match(landingPage, /Founder pricing/);
+  assert.match(landingPage, /Single dev/);
+  assert.match(landingPage, /Most Popular/);
+  assert.match(landingPage, /Founder Deal/);
   assert.match(landingPage, /Install Free/);
   assert.match(landingPage, /Get Pro/);
+  assert.match(landingPage, /Start Team Trial/);
+  assert.match(landingPage, /Contact Sales/);
 });
 
 test('public landing page includes Plausible analytics and search engine proof bar', () => {
@@ -120,7 +122,7 @@ test('public landing page positions ThumbGate as human-in-the-loop enforcement f
   assert.match(landingPage, /OpenCode/);
   assert.match(landingPage, /MCP-compatible agent/i);
   assert.match(landingPage, /SQLite\+FTS5/);
-  assert.doesNotMatch(landingPage, /mailto:/i);
+  assert.match(landingPage, /mailto:igor@thumbgate\.dev/i);
   assert.doesNotMatch(landingPage, /official Anthropic partner/i);
 });
 
@@ -149,23 +151,24 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
   const landingPage = readLandingPage();
 
-  // Pro bullets frame outcomes, not features
+  // Pro tier features
   assert.match(landingPage, /Visual gate debugger/i);
-  assert.match(landingPage, /every blocked action and the gate that fired/i);
-  assert.match(landingPage, /Auto-connect/i);
-  assert.match(landingPage, /agents appear automatically/i);
   assert.match(landingPage, /DPO training data export/i);
-  assert.match(landingPage, /ready-to-use preference pairs for fine-tuning/i);
+  assert.match(landingPage, /Historical analytics/i);
+  assert.match(landingPage, /Webhook\/Slack notifications/i);
+  assert.match(landingPage, /Gate template library/i);
+  // Team tier features
   assert.match(landingPage, /Shared team lesson DB/i);
-  assert.match(landingPage, /one dev's 👎 on a bad migration instantly protects every agent/i);
-  assert.match(landingPage, /Gate wiring support/i);
-  assert.match(landingPage, /riskiest flows/i);
-  // Persona targeting for Pro
-  assert.match(landingPage, /power users and teams/i);
-  assert.match(landingPage, /shared, inspectable enforcement/i);
-  // Upgrade triggers
-  assert.match(landingPage, /Go Pro when:/i);
-  assert.match(landingPage, /blocked 20\+ actions/i);
+  assert.match(landingPage, /Cross-repo pattern sharing/i);
+  assert.match(landingPage, /Org dashboard/i);
+  assert.match(landingPage, /CI\/CD integration/i);
+  // Enterprise tier features
+  assert.match(landingPage, /SSO.*SAML/i);
+  assert.match(landingPage, /SOC2/i);
+  assert.match(landingPage, /Self-hosted/i);
+  // Founder deal banner
+  assert.match(landingPage, /Founder Deal/i);
+  assert.match(landingPage, /\$49 one-time/i);
 });
 
 test('public landing page includes FAQ section with accordion interaction', () => {
