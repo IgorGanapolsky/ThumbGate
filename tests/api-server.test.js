@@ -1842,6 +1842,10 @@ test('dashboard applies analytics window query params with live billing truth', 
     assert.equal(body.analytics.efficiency.contextPackRequests, 2);
     assert.equal(body.analytics.efficiency.semanticCacheHits, 1);
     assert.equal(body.analytics.efficiency.estimatedContextTokensReused, 300);
+    assert.equal(typeof body.team.activeAgents, 'number');
+    assert.equal(body.team.proRequired, false);
+    assert.equal(body.templateLibrary.total, 6);
+    assert.equal(body.templateLibrary.categories['Git Safety'], 1);
   } finally {
     process.env.RLHF_FEEDBACK_DIR = savedEnv.feedbackDir;
     process.env._TEST_API_KEYS_PATH = savedEnv.apiKeysPath;

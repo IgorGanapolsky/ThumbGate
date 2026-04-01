@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "templates": [
+    {
+      "id": "never-force-push-main",
+      "name": "Never force-push to main",
+      "category": "Git Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "git\\s+push\\s+(--force|-f)",
+      "problem": "Stops destructive history rewrites on protected branches before they land.",
+      "roi": "Protects every shared repo from the fastest irreversible mistake.",
+      "rollout": "Enable on every team repo on day one."
+    },
+    {
+      "id": "never-skip-tests-before-commit",
+      "name": "Never skip tests before commit",
+      "category": "Verification",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "git\\s+commit",
+      "problem": "Requires proof before code leaves the laptop, reducing broken commits and noisy CI.",
+      "roi": "Cuts review churn and CI rollback time across the team.",
+      "rollout": "Pair with repository-specific test commands."
+    },
+    {
+      "id": "evidence-before-done",
+      "name": "Require evidence before saying done",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "completion_claim_without_verification",
+      "problem": "Prevents agents from claiming success without test, deploy, or runtime evidence.",
+      "roi": "Raises trust in autonomous runs and reduces manual re-checking.",
+      "rollout": "Use for every workflow where proof matters more than speed."
+    },
+    {
+      "id": "protect-production-sql",
+      "name": "Protect production SQL",
+      "category": "Database Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(drop|truncate|delete)\\s+.*production",
+      "problem": "Blocks destructive SQL operations against production-like targets.",
+      "roi": "One saved incident pays for the whole rollout.",
+      "rollout": "Turn on for any team touching live data."
+    },
+    {
+      "id": "back-up-env-before-edit",
+      "name": "Back up .env before editing",
+      "category": "Secrets Hygiene",
+      "signal": "👎",
+      "defaultAction": "warn",
+      "severity": "medium",
+      "pattern": "\\.env",
+      "problem": "Flags risky config edits before tokens or local credentials are lost.",
+      "roi": "Reduces secret churn and local breakage during setup work.",
+      "rollout": "Good default for every machine and shared repo."
+    },
+    {
+      "id": "promote-known-good-workflows",
+      "name": "Promote known-good workflows",
+      "category": "Positive Reinforcement",
+      "signal": "👍",
+      "defaultAction": "allow",
+      "severity": "medium",
+      "pattern": "verified_workflow_pattern",
+      "problem": "Turns repeated thumbs-up patterns into recommended workflow defaults and starter rules.",
+      "roi": "Helps new agents and new teammates start from what already works.",
+      "rollout": "Use with shared lessons to accelerate onboarding."
+    }
+  ]
+}

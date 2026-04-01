@@ -28,3 +28,17 @@ test('dashboard routes exception text through escaped message rendering', () => 
   assert.match(dashboard, /setMessageState\(document\.getElementById\('gatesList'\), 'empty', e && e\.message \? e\.message : 'Failed to load gates'\)/);
   assert.doesNotMatch(dashboard, /<div class="empty">' \+ e\.message \+ '<\/div>'/);
 });
+
+test('dashboard includes team metrics and gate-template tabs powered by dashboard API data', () => {
+  const dashboard = readDashboard();
+
+  assert.match(dashboard, /switchTab\('team'\)/);
+  assert.match(dashboard, /switchTab\('templates'\)/);
+  assert.match(dashboard, /id="teamSummaryCards"/);
+  assert.match(dashboard, /id="teamRiskAgents"/);
+  assert.match(dashboard, /id="teamBlockedGates"/);
+  assert.match(dashboard, /id="templateLibrary"/);
+  assert.match(dashboard, /function renderTeam\(team, analytics\)/);
+  assert.match(dashboard, /function renderTemplates\(templateLibrary\)/);
+  assert.match(dashboard, /highest-ROI guardrails/i);
+});

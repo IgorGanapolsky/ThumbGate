@@ -273,6 +273,73 @@ const PAGE_BLUEPRINTS = [
     ],
     relatedPaths: ['/guides/pre-action-gates', '/compare/mem0'],
   },
+  {
+    query: 'claude desktop extension plugin thumbgate',
+    path: '/guides/claude-desktop',
+    pageType: 'integration',
+    pillar: 'agent-workflows',
+    title: 'ThumbGate for Claude Desktop | Install the Plugin in 60 Seconds',
+    heroTitle: 'ThumbGate for Claude Desktop',
+    heroSummary: 'Install ThumbGate as a Claude Desktop plugin and get pre-action gates running in under a minute. No build step, no cloud account, no config files.',
+    takeaways: [
+      'One command installs ThumbGate into Claude Desktop with zero config.',
+      'The packaged .mcpb bundle is available on GitHub Releases for drag-and-drop install.',
+      'All feedback, rules, and gates stay local on your machine.',
+    ],
+    sections: [
+      {
+        heading: 'Install with one command',
+        paragraphs: [
+          'Run this in your terminal and Claude Desktop picks up ThumbGate automatically:',
+          'npx mcp-memory-gateway init --claude-desktop',
+          'Or add the MCP server directly:',
+          'claude mcp add rlhf -- npx -y mcp-memory-gateway serve',
+        ],
+      },
+      {
+        heading: 'Or download the packaged bundle',
+        paragraphs: [
+          'Grab the .mcpb bundle from GitHub Releases — no build step required. Drop it into Claude Desktop and you are running.',
+        ],
+        bullets: [
+          'Download from: github.com/IgorGanapolsky/ThumbGate/releases',
+          'Works with Claude Desktop on macOS, Windows, and Linux.',
+          'All data stays local. No cloud account needed.',
+        ],
+      },
+      {
+        heading: 'What you get',
+        bullets: [
+          'Thumbs-up/down feedback capture inside Claude Desktop.',
+          'Prevention rules auto-generated from repeated failures.',
+          'Pre-action gates that block known-bad patterns before execution.',
+          'Full-text search across your lesson history.',
+          'Health checks and system diagnostics.',
+        ],
+      },
+      {
+        heading: 'Verify it works',
+        paragraphs: [
+          'After install, run npx mcp-memory-gateway doctor to confirm all subsystems are healthy. You should see 4/4 HEALTHY.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Do I need a cloud account?',
+        answer: 'No. ThumbGate runs entirely locally. Your feedback, rules, and gates never leave your machine.',
+      },
+      {
+        question: 'What is the .mcpb bundle?',
+        answer: 'It is a packaged Claude Desktop extension that includes the ThumbGate MCP server, tool definitions, and manifest — ready to install without building from source.',
+      },
+      {
+        question: 'Does this work with Claude Code too?',
+        answer: 'Yes. The same npx mcp-memory-gateway init command works for both Claude Desktop and Claude Code. Use --claude-desktop for the Desktop-specific setup.',
+      },
+    ],
+    relatedPaths: ['/guides/claude-code-feedback', '/guides/pre-action-gates'],
+  },
 ];
 
 function normalizeText(value) {

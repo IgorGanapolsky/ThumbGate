@@ -85,6 +85,26 @@
   .gate-action.block { background: rgba(248,113,113,0.12); color: var(--red); }
   .gate-action.warn { background: rgba(251,191,36,0.12); color: #fbbf24; }
 
+  /* TEAM */
+  .team-section, .templates-section { margin-bottom: 40px; }
+  .team-grid, .template-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .team-card, .template-card, .panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .panel h3, .template-card h3 { font-size: 15px; margin-bottom: 10px; }
+  .team-kicker { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .team-value { font-size: 28px; font-weight: 700; color: var(--cyan); letter-spacing: -0.03em; }
+  .team-note { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+  .team-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .risk-row, .blocked-row, .template-meta { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+  .risk-row, .blocked-row { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .risk-row:last-child, .blocked-row:last-child { border-bottom: none; }
+  .risk-name, .blocked-name { font-size: 14px; font-weight: 600; }
+  .risk-meta, .blocked-meta, .template-copy { font-size: 12px; color: var(--text-muted); }
+  .template-copy { margin: 8px 0 12px; line-height: 1.6; }
+  .template-meta { margin-bottom: 8px; }
+  .template-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; border-radius: 999px; padding: 4px 10px; background: var(--bg-raised); color: var(--text-muted); border: 1px solid var(--border); margin-right: 8px; margin-bottom: 8px; }
+  .template-pattern { font-family: var(--mono); font-size: 12px; color: var(--text-muted); background: var(--bg-raised); padding: 10px 12px; border-radius: 8px; overflow-x: auto; }
+  .template-summary { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+
   /* EXPORT */
   .export-section { margin-bottom: 48px; }
   .export-btn { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; color: var(--text); font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: border-color 0.15s; }
@@ -112,6 +132,7 @@
   @media (max-width: 700px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .search-filters { flex-wrap: wrap; }
+    .team-grid, .template-grid, .team-columns { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -145,7 +166,7 @@
 <div class="container" id="dashboardContent" style="display:none;">
 
   <div class="demo-banner" id="demoBanner" style="display:none;">
-    <span>📊 <strong>Demo Mode</strong> — sample data. Buy Pro ($49) for your own dashboard.</span>
+    <span>📊 <strong>Demo Mode</strong> — sample data. Pro unlocks your personal dashboard; Team rollout adds shared lessons and org visibility.</span>
     <a href="https://rlhf-feedback-loop-production.up.railway.app" target="_blank" rel="noopener">Get Pro →</a>
   </div>
 
@@ -161,6 +182,8 @@
   <div class="tabs">
     <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
     <div class="tab" onclick="switchTab('gates')">🛡️ Active Gates</div>
+    <div class="tab" onclick="switchTab('team')">👥 Team</div>
+    <div class="tab" onclick="switchTab('templates')">🧱 Gate Templates</div>
     <div class="tab" onclick="switchTab('export')">📦 Export</div>
   </div>
 
@@ -191,6 +214,34 @@
     </div>
   </div>
 
+  <!-- TEAM TAB -->
+  <div class="tab-content" id="tab-team">
+    <div class="team-section">
+      <h2>Shared Team Reliability</h2>
+      <p class="template-summary">See which agents drift, which gates save the team the most time, and whether the shared workflow is getting safer.</p>
+      <div class="team-grid" id="teamSummaryCards"><div class="loading">Loading team metrics...</div></div>
+      <div class="team-columns">
+        <div class="panel">
+          <h3>Highest-Risk Agents</h3>
+          <div id="teamRiskAgents"><div class="loading">Loading agent risk...</div></div>
+        </div>
+        <div class="panel">
+          <h3>Top Blocked Gates</h3>
+          <div id="teamBlockedGates"><div class="loading">Loading blocked gates...</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEMPLATES TAB -->
+  <div class="tab-content" id="tab-templates">
+    <div class="templates-section">
+      <h2>Curated Gate Templates</h2>
+      <div class="template-summary" id="templateSummary">Loading template library...</div>
+      <div class="template-grid" id="templateLibrary"><div class="loading">Loading templates...</div></div>
+    </div>
+  </div>
+
   <!-- EXPORT TAB -->
   <div class="tab-content" id="tab-export">
     <div class="export-section">
@@ -216,6 +267,7 @@ let API_KEY = '';
 let currentSource = 'all';
 let isDemo = false;
 let demoData = [];
+let dashboardSnapshot = null;
 const BOOTSTRAP_API_KEY = __DASHBOARD_BOOTSTRAP_KEY__;
 const LOCAL_PRO_BOOTSTRAP = __DASHBOARD_BOOTSTRAP_ENABLED__;
 
@@ -253,7 +305,7 @@ async function connect(options) {
       document.getElementById('authHelp').textContent = 'Local Pro is active on this machine. Your personal dashboard is using the saved license key automatically.';
     }
     renderStats(data);
-    await loadGates();
+    await loadDashboardData();
   } catch (e) {
     status.className = 'auth-status err';
     status.textContent = '✗ ' + e.message;
@@ -417,22 +469,94 @@ async function loadGates() {
     const res = await fetch('/v1/dashboard', { headers: getHeaders() });
     if (!res.ok) throw new Error('Failed to load dashboard');
     const data = await res.json();
-    const gates = data.gates || data.activeGates || [];
-    const gateStats = data.gateStats || {};
-    document.getElementById('statGates').textContent = gates.length || gateStats.totalGates || 0;
-    if (!gates.length) {
-      document.getElementById('gatesList').innerHTML = '<div class="empty">No active gates</div>';
-      return;
-    }
+    renderDashboardData(data);
+  } catch (e) {
+    setMessageState(document.getElementById('gatesList'), 'empty', e && e.message ? e.message : 'Failed to load gates');
+    setMessageState(document.getElementById('teamSummaryCards'), 'empty', e && e.message ? e.message : 'Failed to load team metrics');
+    setMessageState(document.getElementById('templateLibrary'), 'empty', e && e.message ? e.message : 'Failed to load template library');
+  }
+}
+
+async function loadDashboardData() {
+  return loadGates();
+}
+
+function renderDashboardData(data) {
+  dashboardSnapshot = data;
+  const gates = data.gates || data.activeGates || [];
+  const gateStats = data.gateStats || {};
+  document.getElementById('statGates').textContent = gates.length || gateStats.totalGates || 0;
+  if (!gates.length) {
+    document.getElementById('gatesList').innerHTML = '<div class="empty">No active gates</div>';
+  } else {
     document.getElementById('gatesList').innerHTML = gates.map(function(g) {
       const action = g.action || 'block';
       return '<div class="gate-card"><div><div class="gate-name">' + escHtml(g.name || g.id || 'Gate') + '</div>' +
         '<div class="gate-pattern">' + escHtml(g.pattern || g.match || '') + '</div></div>' +
         '<span class="gate-action ' + action + '">' + action.toUpperCase() + '</span></div>';
     }).join('');
-  } catch (e) {
-    setMessageState(document.getElementById('gatesList'), 'empty', e && e.message ? e.message : 'Failed to load gates');
   }
+
+  renderTeam(data.team || {}, data.analytics || {});
+  renderTemplates(data.templateLibrary || {});
+}
+
+function renderTeam(team, analytics) {
+  const northStar = analytics && analytics.northStar ? analytics.northStar : {};
+  const summaryCards = [
+    { label: 'Active agents', value: team.activeAgents || 0, note: 'of ' + (team.totalAgents || 0) + ' registered' },
+    { label: 'Org adherence', value: String(team.orgAdherenceRate || 0) + '%', note: 'last ' + (team.windowHours || 24) + ' hours' },
+    { label: 'Weekly teams', value: northStar.weeklyTeamsRunningProofBackedWorkflows || 0, note: 'proof-backed workflows' },
+    { label: 'Paid team runs', value: northStar.paidTeamRuns || 0, note: 'north-star proof' }
+  ];
+
+  document.getElementById('teamSummaryCards').innerHTML = summaryCards.map(function(card) {
+    return '<div class="team-card">' +
+      '<div class="team-kicker">' + escHtml(card.label) + '</div>' +
+      '<div class="team-value">' + escHtml(card.value) + '</div>' +
+      '<div class="team-note">' + escHtml(card.note) + '</div>' +
+    '</div>';
+  }).join('');
+
+  const riskAgents = Array.isArray(team.riskAgents) ? team.riskAgents : [];
+  document.getElementById('teamRiskAgents').innerHTML = riskAgents.length
+    ? riskAgents.map(function(agent) {
+      return '<div class="risk-row"><div>' +
+        '<div class="risk-name">' + escHtml(agent.id || 'agent') + '</div>' +
+        '<div class="risk-meta">' + escHtml((agent.project || 'unknown project') + (agent.branch ? ' · ' + agent.branch : '')) + '</div>' +
+      '</div><div class="risk-meta">' + escHtml(String(agent.adherenceRate || 0) + '% adherence') + '</div></div>';
+    }).join('')
+    : '<div class="empty" style="padding:20px 0;">No risky agents detected in this window.</div>';
+
+  const blocked = Array.isArray(team.topBlockedGates) ? team.topBlockedGates : [];
+  document.getElementById('teamBlockedGates').innerHTML = blocked.length
+    ? blocked.map(function(gate) {
+      return '<div class="blocked-row"><div>' +
+        '<div class="blocked-name">' + escHtml(gate.gateId || 'gate') + '</div>' +
+        '<div class="blocked-meta">' + escHtml(String(gate.warned || 0) + ' warns') + '</div>' +
+      '</div><div class="blocked-meta">' + escHtml(String(gate.blocked || 0) + ' blocks') + '</div></div>';
+    }).join('')
+    : '<div class="empty" style="padding:20px 0;">No blocked gates recorded yet.</div>';
+}
+
+function renderTemplates(templateLibrary) {
+  const templates = Array.isArray(templateLibrary.templates) ? templateLibrary.templates : [];
+  const categories = templateLibrary.categories || {};
+  document.getElementById('templateSummary').textContent =
+    (templateLibrary.total || 0) + ' curated templates across ' + Object.keys(categories).length + ' categories. Start with the highest-ROI guardrails, then tune for your repos.';
+
+  document.getElementById('templateLibrary').innerHTML = templates.length
+    ? templates.map(function(template) {
+      return '<div class="template-card">' +
+        '<div class="template-meta"><div><h3>' + escHtml(template.name || 'Template') + '</h3></div><div class="blocked-meta">' + escHtml(template.category || 'Other') + '</div></div>' +
+        '<div><span class="template-pill">' + escHtml(template.signal || '•') + '</span><span class="template-pill">' + escHtml((template.defaultAction || 'unknown').toUpperCase()) + '</span><span class="template-pill">' + escHtml(template.severity || 'medium') + '</span></div>' +
+        '<div class="template-copy">' + escHtml(template.problem || '') + '</div>' +
+        '<div class="template-copy"><strong>ROI:</strong> ' + escHtml(template.roi || '') + '</div>' +
+        '<div class="template-copy"><strong>Rollout:</strong> ' + escHtml(template.rollout || '') + '</div>' +
+        '<div class="template-pattern">' + escHtml(template.pattern || '') + '</div>' +
+      '</div>';
+    }).join('')
+    : '<div class="empty">No gate templates available</div>';
 }
 
 document.addEventListener('click', function(event) {
@@ -492,6 +616,42 @@ function loadDemo() {
       '<div class="gate-pattern">' + escHtml(g.pattern) + '</div></div>' +
       '<span class="gate-action ' + g.action + '">' + g.action.toUpperCase() + '</span></div>';
   }).join('');
+  renderTeam({
+    totalAgents: 8,
+    activeAgents: 5,
+    windowHours: 24,
+    orgAdherenceRate: 92.4,
+    riskAgents: [
+      { id: 'claude-reviewer', project: 'checkout-flow', branch: 'fix/stripe-timeout', adherenceRate: 67.5 },
+      { id: 'codex-second-pass', project: 'dashboard', branch: 'feat/team-rollout', adherenceRate: 74.2 }
+    ],
+    topBlockedGates: [
+      { gateId: 'evidence-before-done', blocked: 12, warned: 1 },
+      { gateId: 'never-force-push-main', blocked: 7, warned: 0 }
+    ]
+  }, {
+    northStar: {
+      weeklyTeamsRunningProofBackedWorkflows: 3,
+      paidTeamRuns: 1
+    }
+  });
+  renderTemplates({
+    total: 6,
+    categories: {
+      'Git Safety': 1,
+      'Verification': 1,
+      'Agent Honesty': 1,
+      'Database Safety': 1,
+      'Secrets Hygiene': 1,
+      'Positive Reinforcement': 1
+    },
+    templates: [
+      { name: 'Never force-push to main', category: 'Git Safety', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Stops destructive history rewrites on protected branches before they land.', roi: 'Protects every shared repo from the fastest irreversible mistake.', rollout: 'Enable on every team repo on day one.', pattern: 'git\\s+push\\s+(--force|-f)' },
+      { name: 'Never skip tests before commit', category: 'Verification', signal: '👎', defaultAction: 'block', severity: 'high', problem: 'Requires proof before code leaves the laptop.', roi: 'Cuts review churn and CI rollback time across the team.', rollout: 'Pair with repository-specific test commands.', pattern: 'git\\s+commit' },
+      { name: 'Require evidence before saying done', category: 'Agent Honesty', signal: '👎', defaultAction: 'block', severity: 'high', problem: 'Prevents unsupported completion claims.', roi: 'Raises trust in autonomous runs.', rollout: 'Use anywhere proof matters more than speed.', pattern: 'completion_claim_without_verification' },
+      { name: 'Protect production SQL', category: 'Database Safety', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Blocks destructive SQL operations on production-like targets.', roi: 'One saved incident pays for the rollout.', rollout: 'Turn on for any team touching live data.', pattern: '(drop|truncate|delete)\\s+.*production' }
+    ]
+  });
 }
 
 // Auto-load demo on first visit so visitors see the product immediately

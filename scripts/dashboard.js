@@ -8,9 +8,12 @@ const { getBillingSummary, loadFunnelLedger, loadResolvedRevenueEvents } = requi
 const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-analytics');
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { summarizeDelegation } = require('./delegation-runtime');
+const { loadGatesConfig } = require('./gates-engine');
 const { filterEntriesForWindow, resolveAnalyticsWindow } = require('./analytics-window');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { generateAgentReadinessReport } = require('./agent-readiness');
+const { summarizeGateTemplates } = require('./gate-templates');
+const { generateOrgDashboard } = require('./org-dashboard');
 const { summarizeWorkflowRuns } = require('./workflow-runs');
 const { searchLessons } = require('./lesson-search');
 
@@ -135,6 +138,22 @@ function computeGateStats() {
     topBlockedCount,
     byGate: stats.byGate || {},
   };
+}
+
+function listActiveGates() {
+  try {
+    const config = loadGatesConfig();
+    return (config.gates || []).map((gate) => ({
+      id: gate.id || null,
+      name: gate.id || gate.pattern || 'gate',
+      pattern: gate.pattern || '',
+      action: gate.action || 'warn',
+      severity: gate.severity || 'medium',
+      layer: gate.layer || null,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -663,6 +682,14 @@ function computeHarnessOverview(feedbackDir, entries) {
   };
 }
 
+function resolveTeamWindowHours(analyticsWindow) {
+  const window = analyticsWindow && analyticsWindow.window;
+  if (window === 'today') return 24;
+  if (window === '7d') return 24 * 7;
+  if (window === '30d') return 24 * 30;
+  return 24;
+}
+
 // ---------------------------------------------------------------------------
 // Full dashboard data
 // ---------------------------------------------------------------------------
@@ -682,6 +709,7 @@ function generateDashboard(feedbackDir, options = {}) {
   const health = computeSystemHealth(feedbackDir, gateStats);
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
   const secretGuard = computeSecretGuardStats(diagnosticEntries);
+  const gates = listActiveGates();
   const analytics = computeAnalyticsSummary(feedbackDir, {
     analyticsWindow,
     billingSummary,
@@ -691,6 +719,12 @@ function generateDashboard(feedbackDir, options = {}) {
   const delegation = summarizeDelegation(feedbackDir);
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
   const harness = computeHarnessOverview(feedbackDir, entries);
+  const team = generateOrgDashboard({
+    windowHours: resolveTeamWindowHours(analyticsWindow),
+    authContext: options.authContext,
+    proOverride: options.teamProOverride,
+  });
+  const templateLibrary = summarizeGateTemplates();
 
   return {
     operational: {
@@ -700,6 +734,7 @@ function generateDashboard(feedbackDir, options = {}) {
     },
     approval,
     gateStats,
+    gates,
     prevention,
     trend,
     health,
@@ -711,6 +746,8 @@ function generateDashboard(feedbackDir, options = {}) {
     observability,
     instrumentation,
     readiness,
+    team,
+    templateLibrary,
   };
 }
 
@@ -733,6 +770,8 @@ function printDashboard(data) {
     observability,
     instrumentation,
     readiness,
+    team,
+    templateLibrary,
   } = data;
 
   const trendArrow = approval.trendDirection === 'improving' ? '\u2191'
@@ -842,6 +881,27 @@ function printDashboard(data) {
   console.log(`  Revenue Tracking : ${instrumentation.bookedRevenueTrackingEnabled ? 'booked revenue enabled' : 'disabled'}`);
   console.log(`  Amount Coverage  : ${Math.round((analytics.dataQuality.amountKnownCoverage || 0) * 100)}%`);
   console.log(`  Unreconciled Paid: ${analytics.dataQuality.unreconciledPaidEvents}`);
+
+  console.log('');
+  console.log('👥 Team');
+  console.log(`  Active Agents    : ${team.activeAgents}/${team.totalAgents}`);
+  console.log(`  Org Adherence    : ${team.orgAdherenceRate}%`);
+  console.log(`  Top Blocked Gates: ${team.topBlockedGates.length}`);
+  console.log(`  Risk Agents      : ${team.riskAgents.length}`);
+  console.log(`  Proof-Backed Teams: ${analytics.northStar.weeklyTeamsRunningProofBackedWorkflows}`);
+  if (team.upgradeMessage) {
+    console.log(`  Upgrade Path     : ${team.upgradeMessage}`);
+  }
+
+  console.log('');
+  console.log('🧱 Gate Templates');
+  console.log(`  Total Templates  : ${templateLibrary.total}`);
+  console.log(`  Categories       : ${Object.keys(templateLibrary.categories || {}).length}`);
+  const topTemplateCategory = Object.entries(templateLibrary.categories || {})
+    .sort((a, b) => b[1] - a[1])[0];
+  if (topTemplateCategory) {
+    console.log(`  Top Category     : ${topTemplateCategory[0]} (${topTemplateCategory[1]} templates)`);
+  }
 
   console.log('');
   console.log('🧭 Agent Readiness');
