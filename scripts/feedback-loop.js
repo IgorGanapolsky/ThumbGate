@@ -842,6 +842,7 @@ function captureFeedback(params) {
     visualEvidence: params.visualEvidence || null,
     tags,
     skill: params.skill || null,
+    failureType: params.failureType || null,
     rubric: rubricEvaluation
       ? {
         rubricId: rubricEvaluation.rubricId,

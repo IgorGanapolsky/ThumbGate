@@ -288,3 +288,62 @@ describe('getCalibration', () => {
     assert.ok(cal.code_edit.reliability < 0.85, `reliability should be < 0.85, got ${cal.code_edit.reliability}`);
   });
 });
+
+describe('dual-signal failureType', () => {
+  it('creates decision sub-category when failureType=decision', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    updateModel(model, { signal: 'negative', timestamp: ts, categories: ['testing'], failureType: 'decision' });
+    assert.ok(model.categories['testing:decision'], 'should create testing:decision sub-category');
+    assert.ok(model.categories['testing:decision'].beta > 1.0, 'decision beta should be incremented');
+    assert.equal(model.categories['testing:decision'].samples, 1);
+  });
+
+  it('creates execution sub-category when failureType=execution', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    updateModel(model, { signal: 'negative', timestamp: ts, categories: ['git'], failureType: 'execution' });
+    assert.ok(model.categories['git:execution'], 'should create git:execution sub-category');
+    assert.ok(model.categories['git:execution'].beta > 1.0, 'execution beta should be incremented');
+  });
+
+  it('updates both parent and sub-category', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    updateModel(model, { signal: 'negative', timestamp: ts, categories: ['testing'], failureType: 'decision' });
+    assert.ok(model.categories.testing.beta > 1.0, 'parent beta should be incremented');
+    assert.ok(model.categories['testing:decision'].beta > 1.0, 'sub-category beta should be incremented');
+    assert.equal(model.categories.testing.samples, 1);
+    assert.equal(model.categories['testing:decision'].samples, 1);
+  });
+
+  it('does not create sub-category when failureType is null', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    updateModel(model, { signal: 'negative', timestamp: ts, categories: ['testing'] });
+    assert.ok(!model.categories['testing:decision'], 'should not create sub-category without failureType');
+    assert.ok(!model.categories['testing:execution'], 'should not create sub-category without failureType');
+  });
+
+  it('positive signal with failureType updates sub-category alpha', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    updateModel(model, { signal: 'positive', timestamp: ts, categories: ['testing'], failureType: 'execution' });
+    assert.ok(model.categories['testing:execution'].alpha > 1.0, 'sub-category alpha should be incremented on positive');
+  });
+
+  it('reliability diverges between decision and execution sub-arms', () => {
+    const model = createInitialModel();
+    const ts = new Date().toISOString();
+    // 5 decision failures, 0 execution failures
+    for (let i = 0; i < 5; i++) {
+      updateModel(model, { signal: 'negative', timestamp: ts, categories: ['git'], failureType: 'decision' });
+    }
+    for (let i = 0; i < 5; i++) {
+      updateModel(model, { signal: 'positive', timestamp: ts, categories: ['git'], failureType: 'execution' });
+    }
+    const rel = getReliability(model);
+    assert.ok(rel['git:decision'].reliability < 0.3, `decision reliability should be low, got ${rel['git:decision'].reliability}`);
+    assert.ok(rel['git:execution'].reliability > 0.7, `execution reliability should be high, got ${rel['git:execution'].reliability}`);
+  });
+});
