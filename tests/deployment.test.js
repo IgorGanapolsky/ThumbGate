@@ -233,6 +233,14 @@ test('CI workflow runs runtime proof and uploads runtime evidence artifacts', ()
   assert.match(workflow, /proof\/runtime-report\.md/);
 });
 
+test('CI workflow runs evolution proof and uploads evolution evidence artifacts', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+
+  assert.match(workflow, /npm run prove:evolution/);
+  assert.match(workflow, /proof\/evolution-report\.json/);
+  assert.match(workflow, /proof\/evolution-report\.md/);
+});
+
 test('CI workflow supports merge queue and cancels stale non-main runs', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 

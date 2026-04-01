@@ -28,6 +28,7 @@ function buildVerifyPlan(mode = 'quick') {
       { command: npmCommand(), args: ['run', 'prove:automation'] },
       { command: npmCommand(), args: ['run', 'prove:claim-verification'] },
       { command: npmCommand(), args: ['run', 'prove:data-pipeline'] },
+      { command: npmCommand(), args: ['run', 'prove:evolution'] },
       { command: npmCommand(), args: ['run', 'prove:runtime'] },
       { command: npmCommand(), args: ['run', 'prove:seo-gsd'] },
       { command: npmCommand(), args: ['run', 'prove:tessl'] },
@@ -100,6 +101,14 @@ function materializeProofArtifacts(tempRoot, cwd = process.cwd()) {
       target: path.join(cwd, 'proof', 'data-pipeline-report.md'),
     },
     {
+      source: path.join(tempRoot, 'proof-adapters', 'evolution-report.json'),
+      target: path.join(cwd, 'proof', 'evolution-report.json'),
+    },
+    {
+      source: path.join(tempRoot, 'proof-adapters', 'evolution-report.md'),
+      target: path.join(cwd, 'proof', 'evolution-report.md'),
+    },
+    {
       source: path.join(tempRoot, 'proof-runtime', 'runtime-report.json'),
       target: path.join(cwd, 'proof', 'runtime-report.json'),
     },
@@ -158,6 +167,7 @@ function recordVerifyWorkflowRun(mode = 'quick', cwd = process.cwd(), feedbackDi
       path.join(cwd, 'proof', 'automation', 'report.json'),
       path.join(cwd, 'proof', 'claim-verification-report.json'),
       path.join(cwd, 'proof', 'data-pipeline-report.json'),
+      path.join(cwd, 'proof', 'evolution-report.json'),
       path.join(cwd, 'proof', 'runtime-report.json'),
       path.join(cwd, 'proof', 'seo-gsd-report.json'),
       path.join(cwd, 'proof', 'tessl-report.json'),

@@ -7,6 +7,7 @@ const { spawnSync } = require('child_process');
 const { captureFeedback, analyzeFeedback, getFeedbackPaths, readJSONL } = require('./feedback-loop');
 const { runVerificationLoop } = require('./verification-loop');
 const { createExperiment } = require('./experiment-tracker');
+const { recommendEvolutionTarget } = require('./workspace-evolver');
 
 const JOB_LOG_FILENAME = 'job-log.jsonl';
 const JOB_CONTROL_FILENAME = 'job-control.json';
@@ -493,6 +494,10 @@ function maybeQueueImprovementExperiment(job, state, recall, failure) {
   if (job.autoImprove === false) return null;
 
   const recommendations = Array.isArray(recall.recommendations) ? recall.recommendations.slice(0, 2) : [];
+  const recommendedTarget = recommendEvolutionTarget({
+    failureType: failure ? failure.type : null,
+    tags: Array.isArray(job.tags) ? job.tags : [],
+  });
   let summary = 'Improve the job prompt or stage plan to reduce runtime failures.';
   let mutation = {
     source: 'async-job-runner',
@@ -500,6 +505,8 @@ function maybeQueueImprovementExperiment(job, state, recall, failure) {
     jobFilePath: state.jobFilePath || null,
     stage: state.currentStage || null,
     recommendations,
+    recommendedTarget,
+    evolutionCommand: `node scripts/workspace-evolver.js --run --target=${recommendedTarget} --primary="npm test" --holdout="npm run self-heal:check"`,
   };
 
   if (failure && failure.type === 'verification') {
