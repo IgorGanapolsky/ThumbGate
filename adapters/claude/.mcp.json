@@ -2,13 +2,13 @@
   "mcpServers": {
     "rlhf": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.8.5", "serve"]
+      "args": ["-y", "mcp-memory-gateway@0.8.6", "serve"]
     }
   },
   "hooks": {
     "preToolUse": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.8.5", "gate"]
+      "args": ["-y", "mcp-memory-gateway@0.8.6", "gate"]
     }
   }
 }
