@@ -277,10 +277,36 @@ function setupClaude() {
   if (!stopAlreadyPresent) {
     settings.hooks.Stop = settings.hooks.Stop || [];
     settings.hooks.Stop.push({ hooks: [{ type: 'command', command: stopHookCommand }] });
+    hooksChanged = true;
+    console.log('  Claude Code: installed Stop hook');
+  }
+
+  // Upsert PostToolUse hook for RLHF statusline cache updates
+  const cacheHookCommand = 'node node_modules/mcp-memory-gateway/scripts/hook-rlhf-cache-updater.js';
+  const cacheAlreadyPresent = (settings.hooks.PostToolUse || [])
+    .some(entry => (entry.hooks || []).some(h => h.command && h.command.includes('hook-rlhf-cache-updater')));
+
+  if (!cacheAlreadyPresent) {
+    settings.hooks.PostToolUse = settings.hooks.PostToolUse || [];
+    settings.hooks.PostToolUse.push({
+      matcher: 'mcp__rlhf__feedback_stats|mcp__rlhf__dashboard',
+      hooks: [{ type: 'command', command: cacheHookCommand }]
+    });
+    hooksChanged = true;
+    console.log('  Claude Code: installed RLHF cache updater hook');
+  }
+
+  // Upsert statusLine for ThumbGate feedback display
+  const statuslineScript = path.join('node_modules', 'mcp-memory-gateway', 'scripts', 'statusline.sh');
+  if (!settings.statusLine) {
+    settings.statusLine = { type: 'command', command: statuslineScript };
+    hooksChanged = true;
+    console.log('  Claude Code: installed ThumbGate status line');
+  }
+
+  if (hooksChanged) {
     fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
-    console.log('  Claude Code: installed Stop hook in .claude/settings.json');
-    hooksChanged = true;
   }
 
   return mcpChanged || hooksChanged;
