@@ -67,7 +67,7 @@ __GA_BOOTSTRAP__
       "price": "49",
       "priceCurrency": "USD",
       "description": "Personal local dashboard, DPO training data export, and founder-license support for individual operators",
-      "url": "https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05"
+      "url": "https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06"
     },
     {
       "@type": "Offer",
@@ -405,26 +405,27 @@ __GA_BOOTSTRAP__
   </div>
 </section>
 
-<section class="compatibility" id="whats-new">
+<section class="compatibility" id="social-proof">
   <div class="container">
-    <div class="section-label">New in v0.8.5</div>
-    <h2 class="section-title">Enterprise-grade agent governance, shipped today</h2>
+    <div class="section-label">See It In Action</div>
+    <h2 class="section-title">Try the dashboard before you buy anything</h2>
     <div class="agent-grid">
       <div class="agent-card">
-        <h3>Org Dashboard</h3>
-        <p>See what ALL your agents are doing. Adherence rates, risk alerts, top blocked gates — across every session in your org. Pro feature.</p>
+        <h3>🔍 Live Dashboard Demo</h3>
+        <p>Search lessons, inspect gates, see blocked actions — all with real sample data. No signup, no install required.</p>
+        <a href="/dashboard" style="display:inline-block;margin-top:12px;color:var(--cyan);font-weight:600;text-decoration:underline;">Open Dashboard Demo →</a>
       </div>
       <div class="agent-card">
-        <h3>Gate Reasoning Chains</h3>
-        <p>Every block and warning now explains WHY: which pattern matched, what layer, whether manual or auto-promoted, and how to bypass.</p>
+        <h3>⛔ Gate Reasoning Chains</h3>
+        <p>Every block explains WHY: which pattern matched, what evidence triggered it, whether it was auto-promoted from your feedback or manually set.</p>
       </div>
       <div class="agent-card">
-        <h3>Multi-Hop Retrieval</h3>
-        <p>Context-1 inspired agentic retrieval: iterative retrieve, prune weak chunks, refine query, repeat until coverage threshold met.</p>
+        <h3>📊 Org Dashboard (Pro)</h3>
+        <p>See what ALL your agents are doing. Adherence rates, risk alerts, top blocked gates — across every session in your org.</p>
       </div>
       <div class="agent-card">
-        <h3>Thompson Sampling Calibration</h3>
-        <p>Confidence tiers (none/low/medium/high) tell you when to trust the statistical model vs fall back to rules. No more low-sample overconfidence.</p>
+        <h3>🧪 Thompson Sampling</h3>
+        <p>Confidence tiers (none/low/medium/high) tell you when to trust the model vs fall back to rules. No guessing.</p>
       </div>
     </div>
   </div>
@@ -552,8 +553,8 @@ __GA_BOOTSTRAP__
         <div class="price-sub">Forever free · Local-only, single dev</div>
         <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo devs experimenting with gates on one machine.</p>
         <ul>
-          <li>Feedback captures, memory recalls, and gates</li>
-          <li>All MCP integrations</li>
+          <li>50 lessons · 10 recalls/day · 3 built-in gates</li>
+          <li>All MCP integrations (Claude Code, Cursor, Codex, etc.)</li>
           <li>PreToolUse hook blocking</li>
           <li>Local SQLite lesson DB</li>
           <li><a href="/guide" style="color:var(--cyan);text-decoration:underline;">Setup guide for all agents →</a></li>
@@ -576,8 +577,9 @@ __GA_BOOTSTRAP__
           <li>Personal local dashboard — every Pro user gets their own localhost dashboard without extra cloud setup</li>
           <li>Founder-license support — we help you wire your riskiest flows (migrations, force-pushes, CI) in the first week</li>
         </ul>
-        <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" class="btn-pro">Get Pro — $49</a>
+        <a href="https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06" class="btn-pro">Get Pro — $19/mo</a>
         <p style="font-size:11px;color:#666;margin-top:8px;">Founder pricing — locks in $49 for life. Price increases after v1.0.</p>
+        <p style="font-size:12px;color:var(--cyan);margin-top:6px;">Mem0 Pro: $249/mo. ThumbGate Pro: $19/mo.</p>
       </div>
       <div class="price-card team">
         <div class="tier">Team</div>
@@ -675,9 +677,11 @@ __GA_BOOTSTRAP__
 <section class="final-cta">
   <div class="container">
     <h2>Ready to stop fixing the same AI mistakes?</h2>
-    <p>Install in 30 seconds for yourself, then move the shared workflow into Team when multiple agents and repos need the same protection.</p>
-    <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" class="btn-pro">Get Pro — $49</a>
-    <a href="#workflow-sprint-intake" class="btn-team">Start Team Rollout</a>
+    <p>Try the dashboard demo first. Install in 30 seconds. No account required.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="/dashboard" class="btn-free" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);">Try Dashboard Demo</a>
+      <a href="https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06" class="btn-pro">Get Pro — $19/mo</a>
+    </div>
   </div>
 </section>
 
@@ -729,7 +733,7 @@ function copyInstall(el) {
   }
 
   /* CTA clicks */
-  trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 49 });
+  trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 19, billing: 'monthly' });
   trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
   trackClick('.btn-free', 'install_click', { tier: 'free' });
   trackClick('.nav-cta', 'checkout_start', { tier: 'pro', source: 'nav' });
