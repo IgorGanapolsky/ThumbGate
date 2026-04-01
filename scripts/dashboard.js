@@ -719,6 +719,27 @@ function generateDashboard(feedbackDir, options = {}) {
   const delegation = summarizeDelegation(feedbackDir);
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
   const harness = computeHarnessOverview(feedbackDir, entries);
+
+  // Live metrics — gate hit rate, lesson effectiveness, error trend
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  const weekAgo = now - 7 * day;
+  const recentEntries = entries.filter((e) => e.timestamp && new Date(e.timestamp).getTime() > weekAgo);
+  const negRecent = recentEntries.filter((e) => ['down', 'negative', 'thumbs_down'].includes(String(e.signal || e.feedback || '').toLowerCase()));
+  const posRecent = recentEntries.filter((e) => ['up', 'positive', 'thumbs_up'].includes(String(e.signal || e.feedback || '').toLowerCase()));
+  const timestamps = entries.filter((e) => e.timestamp).map((e) => new Date(e.timestamp).getTime());
+  const daysActive = timestamps.length > 0 ? Math.max(1, Math.ceil((now - Math.min(...timestamps)) / day)) : 1;
+  const totalNeg = entries.filter((e) => ['down', 'negative', 'thumbs_down'].includes(String(e.signal || e.feedback || '').toLowerCase())).length;
+  const autoGates = gateStats.autoCount || 0;
+  const twoWeeksAgo = now - 14 * day;
+  const lastWeekNeg = entries.filter((e) => e.timestamp && new Date(e.timestamp).getTime() > twoWeeksAgo && new Date(e.timestamp).getTime() <= weekAgo && ['down', 'negative', 'thumbs_down'].includes(String(e.signal || e.feedback || '').toLowerCase())).length;
+  const liveMetrics = {
+    gateHitRate: { blockedPerDay: Math.round(((gateStats.blocked || 0) / daysActive) * 100) / 100, warnedPerDay: Math.round(((gateStats.warned || 0) / daysActive) * 100) / 100, daysActive },
+    lessonEffectiveness: { rate: totalNeg > 0 ? Math.round((autoGates / totalNeg) * 10000) / 100 : 0, totalNegative: totalNeg, autoGatesCreated: autoGates },
+    errorTrend: { direction: lastWeekNeg > 0 ? (negRecent.length < lastWeekNeg ? 'improving' : negRecent.length > lastWeekNeg ? 'worsening' : 'stable') : (negRecent.length > 0 ? 'new-errors' : 'clean'), thisWeek: negRecent.length, lastWeek: lastWeekNeg },
+    weeklyActivity: { positive: posRecent.length, negative: negRecent.length, total: recentEntries.length },
+  };
+
   const team = generateOrgDashboard({
     windowHours: resolveTeamWindowHours(analyticsWindow),
     authContext: options.authContext,
@@ -748,6 +769,7 @@ function generateDashboard(feedbackDir, options = {}) {
     readiness,
     team,
     templateLibrary,
+    liveMetrics,
   };
 }
 
