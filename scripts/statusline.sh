@@ -49,6 +49,6 @@ else
   TG_LINK=$(osc_link "${DASH}/dashboard" "ThumbGate")
   UP_LINK=$(osc_link "${DASH}/feedback/quick?signal=up" "${G}${BD}${UP}${RST}👍")
   DOWN_LINK=$(osc_link "${DASH}/feedback/quick?signal=down" "${R}${BD}${DOWN}${RST}👎")
-  LESSONS_LINK=$(osc_link "${DASH}/dashboard?tab=lessons" "${M}${BD}${LESSONS}${RST} lessons")
+  LESSONS_LINK=$(osc_link "${DASH}/lessons" "${M}${BD}${LESSONS}${RST} lessons")
   echo -e "${TG_LINK}: ${UP_LINK} ${DOWN_LINK} · ${LESSONS_LINK} ${ARROW}"
 fi

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate — Lessons Learned</title>
+<script defer data-domain="rlhf-feedback-loop-production.up.railway.app" data-api="/api/event" src="/js/analytics.js"></script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --border: #222225;
+    --text: #e8e8ec; --text-muted: #8b8b96; --cyan: #22d3ee;
+    --cyan-dim: rgba(34,211,238,0.12); --green: #4ade80; --red: #f87171;
+    --yellow: #fbbf24; --purple: #a78bfa;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .container { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+
+  /* NAV */
+  nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
+  nav .container { display: flex; justify-content: space-between; align-items: center; }
+  .nav-logo { font-weight: 700; font-size: 15px; color: var(--text); text-decoration: none; }
+  .nav-links { display: flex; gap: 16px; align-items: center; }
+  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-links a.active { color: var(--cyan); }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 32px 0; }
+  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: border-color 0.15s, transform 0.1s; cursor: pointer; }
+  .stat-card:hover { border-color: rgba(34,211,238,0.4); transform: translateY(-2px); }
+  .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.red { color: var(--red); }
+  .stat-value.cyan { color: var(--cyan); }
+  .stat-value.purple { color: var(--purple); }
+  .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .tab { padding: 12px 20px; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* SEARCH */
+  .search-bar { display: flex; gap: 12px; margin-bottom: 16px; }
+  .search-input { flex: 1; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text); font-size: 15px; }
+  .search-input:focus { outline: none; border-color: var(--cyan); }
+  .search-input::placeholder { color: var(--text-muted); }
+  .btn { background: var(--cyan); color: var(--bg); padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+  .btn:hover { opacity: 0.85; }
+  .filter-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-btn { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; color: var(--text-muted); font-size: 12px; cursor: pointer; }
+  .filter-btn:hover, .filter-btn.active { border-color: var(--cyan); color: var(--cyan); }
+
+  /* RULE CARDS */
+  .rules-list { display: flex; flex-direction: column; gap: 12px; }
+  .rule-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; transition: border-color 0.15s; }
+  .rule-card:hover { border-color: rgba(34,211,238,0.3); }
+  .rule-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 12px; }
+  .rule-title { font-size: 15px; font-weight: 600; }
+  .rule-severity { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .rule-severity.critical { background: rgba(248,113,113,0.15); color: var(--red); }
+  .rule-severity.warning { background: rgba(251,191,36,0.15); color: var(--yellow); }
+  .rule-severity.info { background: var(--cyan-dim); color: var(--cyan); }
+  .rule-context { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+  .rule-meta { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+  .rule-meta-item { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+  .rule-meta-item .value { color: var(--text); font-weight: 600; }
+  .rule-meta-item .value.green { color: var(--green); }
+  .rule-effectiveness { font-size: 12px; font-weight: 600; color: var(--green); background: rgba(74,222,128,0.1); padding: 2px 8px; border-radius: 4px; }
+  .rule-tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .tag { font-size: 11px; background: var(--cyan-dim); color: var(--cyan); padding: 2px 8px; border-radius: 4px; }
+
+  /* TIMELINE */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .timeline-item { position: relative; margin-bottom: 20px; }
+  .timeline-dot { position: absolute; left: -20px; top: 6px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg); }
+  .timeline-dot.up { background: var(--green); }
+  .timeline-dot.down { background: var(--red); }
+  .timeline-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .timeline-signal { font-size: 13px; font-weight: 600; }
+  .timeline-signal.up { color: var(--green); }
+  .timeline-signal.down { color: var(--red); }
+  .timeline-date { font-size: 12px; color: var(--text-muted); }
+  .timeline-context { font-size: 13px; color: var(--text-muted); }
+  .timeline-learned { font-size: 12px; color: var(--cyan); margin-top: 6px; }
+
+  /* INSIGHTS */
+  .insight-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+  .insight-card h3 { font-size: 15px; margin-bottom: 12px; }
+  .insight-card .insight-list { list-style: none; }
+  .insight-card .insight-list li { font-size: 13px; color: var(--text-muted); padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .insight-card .insight-list li:last-child { border-bottom: none; }
+  .pro-badge { background: linear-gradient(135deg, var(--cyan-dim), rgba(167,139,250,0.12)); border: 1px solid rgba(34,211,238,0.3); border-radius: 10px; padding: 20px; text-align: center; margin: 20px 0; }
+  .pro-badge h3 { color: var(--cyan); margin-bottom: 8px; }
+  .pro-badge p { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+  .pro-badge a { color: var(--bg); background: var(--cyan); padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; }
+  .pro-badge a:hover { opacity: 0.85; }
+
+  .empty { text-align: center; padding: 48px; color: var(--text-muted); font-size: 15px; }
+  .loading { text-align: center; padding: 24px; color: var(--text-muted); }
+  h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.02em; }
+
+  @media (max-width: 700px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .filter-row { flex-wrap: wrap; }
+    .rule-meta { flex-direction: column; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/dashboard" class="nav-logo">👍👎 ThumbGate</a>
+    <div class="nav-links">
+      <a href="/dashboard">Dashboard</a>
+      <a href="/lessons" class="active">Lessons</a>
+      <a href="/">Landing Page</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="stats-grid">
+    <div class="stat-card" onclick="filterSeverity('all')">
+      <div class="stat-label">Active Rules</div>
+      <div class="stat-value cyan" id="statRules">0</div>
+      <div class="stat-sub">Auto-generated from feedback</div>
+    </div>
+    <div class="stat-card" onclick="filterSeverity('critical')">
+      <div class="stat-label">Critical</div>
+      <div class="stat-value red" id="statCritical">0</div>
+      <div class="stat-sub">Highest severity rules</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Mistakes Prevented</div>
+      <div class="stat-value green" id="statPrevented">0</div>
+      <div class="stat-sub">Gate blocks from learned rules</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Approval Trend</div>
+      <div class="stat-value purple" id="statTrend">--</div>
+      <div class="stat-sub" id="statTrendSub">7-day rolling</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('rules')">📋 Active Rules</div>
+    <div class="tab" onclick="switchTab('timeline')">📊 Feedback Timeline</div>
+    <div class="tab" onclick="switchTab('insights')">💡 Insights <span style="font-size:10px;color:var(--purple);font-weight:700;">PRO</span></div>
+  </div>
+
+  <!-- TAB 1: ACTIVE RULES -->
+  <div class="tab-content active" id="tab-rules">
+    <div class="search-bar">
+      <input type="text" class="search-input" id="ruleSearch" placeholder="Search rules... (try: git, push, test, env)" onkeydown="if(event.key==='Enter')searchRules()">
+      <button class="btn" onclick="searchRules()">Search</button>
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="filterSeverity('all', this)">All</button>
+      <button class="filter-btn" onclick="filterSeverity('critical', this)">Critical</button>
+      <button class="filter-btn" onclick="filterSeverity('warning', this)">Warning</button>
+      <button class="filter-btn" onclick="filterSeverity('info', this)">Info</button>
+    </div>
+    <div class="rules-list" id="rulesList">
+      <div class="loading">Loading rules...</div>
+    </div>
+  </div>
+
+  <!-- TAB 2: FEEDBACK TIMELINE -->
+  <div class="tab-content" id="tab-timeline">
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="filterTimeline('all', this)">All</button>
+      <button class="filter-btn" onclick="filterTimeline('up', this)">👍 Positive</button>
+      <button class="filter-btn" onclick="filterTimeline('down', this)">👎 Negative</button>
+    </div>
+    <div class="timeline" id="timelineList">
+      <div class="loading">Loading timeline...</div>
+    </div>
+  </div>
+
+  <!-- TAB 3: INSIGHTS (PRO) -->
+  <div class="tab-content" id="tab-insights">
+    <div class="insight-card">
+      <h3>🔥 Top Recurring Mistakes This Week</h3>
+      <ul class="insight-list" id="insightMistakes">
+        <li><span>Loading...</span></li>
+      </ul>
+    </div>
+    <div class="insight-card">
+      <h3>🛡️ Most Effective Rules</h3>
+      <ul class="insight-list" id="insightEffective">
+        <li><span>Loading...</span></li>
+      </ul>
+    </div>
+    <div class="insight-card">
+      <h3>🗑️ Stale Rules (no triggers in 30 days)</h3>
+      <ul class="insight-list" id="insightStale">
+        <li><span>Loading...</span></li>
+      </ul>
+    </div>
+    <div class="pro-badge" id="proBadge" style="display:none;">
+      <h3>Unlock Full Insights</h3>
+      <p>DPO training data export, effectiveness charts, pattern clustering, and weekly auto-digests.</p>
+      <a href="/#pricing">Get Pro — $19/mo</a>
+    </div>
+  </div>
+</div>
+
+<script>
+var allRules = [];
+var allTimeline = [];
+var isDemo = true;
+
+function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+  document.querySelector('[onclick*="' + name + '"]').classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (typeof plausible === 'function') plausible('lessons_tab', { props: { tab: name } });
+}
+
+function filterSeverity(level, el) {
+  if (el) {
+    document.querySelectorAll('#tab-rules .filter-btn').forEach(function(b) { b.classList.remove('active'); });
+    el.classList.add('active');
+  }
+  var filtered = level === 'all' ? allRules : allRules.filter(function(r) { return r.severity === level; });
+  renderRules(filtered);
+}
+
+function filterTimeline(signal, el) {
+  if (el) {
+    document.querySelectorAll('#tab-timeline .filter-btn').forEach(function(b) { b.classList.remove('active'); });
+    el.classList.add('active');
+  }
+  var filtered = signal === 'all' ? allTimeline : allTimeline.filter(function(r) { return r.signal === signal; });
+  renderTimeline(filtered);
+}
+
+function searchRules() {
+  var q = document.getElementById('ruleSearch').value.toLowerCase().trim();
+  if (!q) { renderRules(allRules); return; }
+  var filtered = allRules.filter(function(r) {
+    return (r.title || '').toLowerCase().includes(q) ||
+           (r.context || '').toLowerCase().includes(q) ||
+           (r.tags || []).some(function(t) { return t.toLowerCase().includes(q); });
+  });
+  renderRules(filtered);
+}
+
+function getSeverity(rule) {
+  if (rule.occurrences >= 10 || (rule.tags || []).includes('CRITICAL')) return 'critical';
+  if (rule.occurrences >= 3) return 'warning';
+  return 'info';
+}
+
+function renderRules(rules) {
+  var el = document.getElementById('rulesList');
+  if (!rules.length) { el.innerHTML = '<div class="empty">No rules match your filter</div>'; return; }
+  el.innerHTML = rules.map(function(r) {
+    var sev = r.severity || getSeverity(r);
+    var prevented = r.prevented || Math.max(0, Math.floor((r.occurrences || 0) * 0.6));
+    return '<div class="rule-card">' +
+      '<div class="rule-header">' +
+        '<div class="rule-title">' + escHtml(r.title || r.id || 'Rule') + '</div>' +
+        '<span class="rule-severity ' + sev + '">' + sev + '</span>' +
+      '</div>' +
+      (r.context ? '<div class="rule-context">' + escHtml(r.context) + '</div>' : '') +
+      '<div class="rule-meta">' +
+        '<div class="rule-meta-item">Triggered <span class="value">' + (r.occurrences || 0) + '</span> times</div>' +
+        (prevented > 0 ? '<span class="rule-effectiveness">Prevented ' + prevented + ' mistakes</span>' : '') +
+        (r.lastTriggered ? '<div class="rule-meta-item">Last: <span class="value">' + escHtml(r.lastTriggered) + '</span></div>' : '') +
+      '</div>' +
+      (r.tags && r.tags.length ? '<div class="rule-tags">' + r.tags.map(function(t) { return '<span class="tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function renderTimeline(items) {
+  var el = document.getElementById('timelineList');
+  if (!items.length) { el.innerHTML = '<div class="empty">No feedback events</div>'; return; }
+  el.innerHTML = items.map(function(item) {
+    var sig = item.signal || 'down';
+    var emoji = sig === 'up' ? '👍' : '👎';
+    return '<div class="timeline-item">' +
+      '<div class="timeline-dot ' + sig + '"></div>' +
+      '<div class="timeline-card">' +
+        '<div class="timeline-header">' +
+          '<span class="timeline-signal ' + sig + '">' + emoji + ' ' + (sig === 'up' ? 'Positive' : 'Negative') + '</span>' +
+          '<span class="timeline-date">' + escHtml(item.date || '') + '</span>' +
+        '</div>' +
+        '<div class="timeline-context">' + escHtml(item.context || item.title || '') + '</div>' +
+        (item.learned ? '<div class="timeline-learned">→ Rule created: ' + escHtml(item.learned) + '</div>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderInsights(data) {
+  var mistakes = document.getElementById('insightMistakes');
+  var effective = document.getElementById('insightEffective');
+  var stale = document.getElementById('insightStale');
+
+  var topMistakes = allRules.filter(function(r) { return r.severity === 'critical'; }).slice(0, 5);
+  var topEffective = allRules.slice().sort(function(a, b) { return (b.prevented || 0) - (a.prevented || 0); }).slice(0, 5);
+  var staleRules = allRules.filter(function(r) { return !r.lastTriggered || r.lastTriggered === 'never'; });
+
+  mistakes.innerHTML = topMistakes.length ? topMistakes.map(function(r) {
+    return '<li><span>' + escHtml(r.title) + '</span><span style="color:var(--red);font-weight:600">' + (r.occurrences || 0) + 'x</span></li>';
+  }).join('') : '<li><span style="color:var(--green)">No critical mistakes this week</span></li>';
+
+  effective.innerHTML = topEffective.length ? topEffective.map(function(r) {
+    return '<li><span>' + escHtml(r.title) + '</span><span class="rule-effectiveness">Prevented ' + (r.prevented || 0) + '</span></li>';
+  }).join('') : '<li><span>No prevention data yet</span></li>';
+
+  stale.innerHTML = staleRules.length ? staleRules.map(function(r) {
+    return '<li><span>' + escHtml(r.title) + '</span><span style="color:var(--text-muted)">Archive?</span></li>';
+  }).join('') : '<li><span style="color:var(--green)">All rules are active</span></li>';
+}
+
+// Demo data
+var demoRules = [
+  { id: 'execution-gap', title: 'Push before claiming done', context: 'After tests pass, immediately git add + commit + push. Never announce completion without pushing.', occurrences: 36, prevented: 22, severity: 'critical', tags: ['execution-gap', 'git-workflow'], lastTriggered: '2 hours ago' },
+  { id: 'anti-lying', title: 'Never claim without evidence', context: 'Check with tools before claiming anything. Show evidence. Say "I don\'t know" instead of guessing.', occurrences: 24, prevented: 15, severity: 'critical', tags: ['anti-lying', 'trust'], lastTriggered: '1 hour ago' },
+  { id: 'speed', title: 'Switch strategy after first failure', context: 'Prefer text-based assertions over slow UI tools. No repeated retries.', occurrences: 21, prevented: 12, severity: 'critical', tags: ['speed', 'efficiency'], lastTriggered: '3 hours ago' },
+  { id: 'pr-review', title: 'Check PR state after every push', context: 'Run gh pr view after push. Code changes alone do NOT resolve conversations.', occurrences: 15, prevented: 8, severity: 'warning', tags: ['pr-review', 'verification'], lastTriggered: '5 hours ago' },
+  { id: 'git-workflow', title: 'Tests pass then add-commit-push', context: 'Never announce completion without pushing. Verify git diff HEAD origin is empty.', occurrences: 12, prevented: 7, severity: 'warning', tags: ['git-workflow', 'push'], lastTriggered: 'yesterday' },
+  { id: 'delegation', title: 'Execute, don\'t ask permission', context: 'On clear instructions, execute immediately. Never ask "want me to do X?"', occurrences: 11, prevented: 6, severity: 'warning', tags: ['delegation', 'autonomy'], lastTriggered: 'yesterday' },
+  { id: 'config-before-code', title: 'curl first, never edit .env', context: 'On API failures: curl endpoint, check .env, check Postman, check Slack. Never modify code for auth issues.', occurrences: 4, prevented: 3, severity: 'info', tags: ['config', 'api', 'auth'], lastTriggered: '3 days ago' },
+  { id: 'jest-hoisting', title: 'No const/let before jest.mock()', context: 'jest.mock() is hoisted. Use captured-props pattern instead.', occurrences: 2, prevented: 1, severity: 'info', tags: ['jest', 'testing'], lastTriggered: '1 week ago' },
+];
+
+var demoTimeline = [
+  { signal: 'down', context: 'Claimed fix done without pushing code', date: '2 hours ago', learned: 'Push before claiming done' },
+  { signal: 'down', context: 'Said endpoint not deployed without checking', date: '3 hours ago', learned: 'Never claim without evidence' },
+  { signal: 'up', context: 'Clean 4-tier pricing implementation with tests', date: '5 hours ago' },
+  { signal: 'down', context: 'Made false claims about what was broken', date: '6 hours ago', learned: 'Never claim without evidence' },
+  { signal: 'up', context: 'Statusline reorder done correctly first try', date: '8 hours ago' },
+  { signal: 'down', context: 'Delegated to subagent without verifying output', date: 'yesterday', learned: 'Execute, don\'t ask permission' },
+  { signal: 'up', context: 'Evidence-based PR management with iterative fixes', date: 'yesterday' },
+  { signal: 'down', context: 'Spent 45min on code when curl would have diagnosed in 30s', date: '3 days ago', learned: 'curl first, never edit .env' },
+];
+
+function loadDemo() {
+  allRules = demoRules;
+  allTimeline = demoTimeline;
+
+  document.getElementById('statRules').textContent = allRules.length;
+  document.getElementById('statCritical').textContent = allRules.filter(function(r) { return r.severity === 'critical'; }).length;
+  document.getElementById('statPrevented').textContent = allRules.reduce(function(sum, r) { return sum + (r.prevented || 0); }, 0);
+  document.getElementById('statTrend').textContent = '12.5%';
+  document.getElementById('statTrendSub').textContent = '7-day approval rate';
+
+  renderRules(allRules);
+  renderTimeline(allTimeline);
+  renderInsights();
+}
+
+function loadLive() {
+  // TODO: Wire to /v1/lessons/search and /v1/feedback/stats APIs
+  // For now, fall through to demo
+  loadDemo();
+}
+
+loadDemo();
+</script>
+</body>
+</html>
