@@ -20,7 +20,7 @@ function requirePro(featureName) {
   const desc = descriptions[featureName] || featureName;
   process.stderr.write(
     `\n  🔒 Pro Feature Required: ${desc}\n` +
-    `     Upgrade to ThumbGate Pro — $49 one-time:\n` +
+    `     Upgrade to ThumbGate Pro — $19/mo:\n` +
     `     ${PRO_URL}\n` +
     `     Or run: npx mcp-memory-gateway pro\n\n`
   );

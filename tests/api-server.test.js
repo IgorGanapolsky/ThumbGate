@@ -36,7 +36,7 @@ let apiOrigin = '';
 const authHeader = { authorization: 'Bearer test-api-key' };
 
 test('api servers 2026 pricing', () => {
-  assert.match('$49 one-time', /\$49 one-time/);
+  assert.match('$19/mo', /\$19\/mo/);
 });
 
 function apiUrl(pathname = '/') {
@@ -109,7 +109,7 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Thompson Sampling/i);
   assert.match(body, /FAQPage/);
   assert.match(body, /SoftwareApplication/);
-  assert.match(body, /\$49/);
+  assert.match(body, /\$19/);
   assert.match(body, /\/js\/analytics\.js/);
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
   assert.match(body, /google-site-verification" content="test-verification-token"/);

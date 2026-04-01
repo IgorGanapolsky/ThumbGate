@@ -3,7 +3,7 @@
 Status: current  
 Updated: March 18, 2026
 
-This document turns the current AI-search playbook into a repeatable demand engine for `mcp-memory-gateway`, the `Workflow Hardening Sprint`, and Pro at `$49 one-time`.
+This document turns the current AI-search playbook into a repeatable demand engine for `mcp-memory-gateway`, the `Workflow Hardening Sprint`, and Pro at `$19/mo`.
 
 Commercial guardrails:
 
@@ -17,7 +17,7 @@ Primary brands and offers:
 
 - `mcp-memory-gateway`
 - `Workflow Hardening Sprint`
-- `Pro at $49 one-time`
+- `Pro at $19/mo`
 - `Reliability Studio`
 - `Workflow Hardening Fit Checker`
 - `Claude Desktop extension`

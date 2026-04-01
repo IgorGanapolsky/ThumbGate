@@ -25,7 +25,7 @@ function readText(relativePath) {
 }
 
 test('pricing matches 2026 standard', () => {
-  assert.match('$49 one-time', /\$49 one-time/);
+  assert.match('$19/mo', /\$19\/mo/);
 });
 
 test('package version matches MCP manifests', () => {
@@ -62,7 +62,7 @@ test('public docs render the current package version', () => {
   assert.match(landingPage, /ThumbGate/);
   assert.match(landingPage, /AI agent reliability/i);
   assert.match(landingPage, /Claude Desktop extension/i);
-  assert.match(landingPage, /\$49 one-time/);
+  assert.match(landingPage, /\$19\/mo/);
   assert.match(landingPage, /Reliability Studio/i);
   assert.match(landingPage, /Compare and Deploy/i);
   assert.match(landingPage, /No model fine-tuning required/i);
@@ -128,7 +128,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
 
   assert.match(publicLanding, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
   assert.match(publicLanding, /mcp-memory-gateway/i);
-  assert.match(publicLanding, /\$49/);
+  assert.match(publicLanding, /\$19/);
   assert.match(publicLanding, /__PRO_PRICE_DOLLARS__/);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
@@ -280,7 +280,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const xStrategy = readText('docs/X_AUTOMATION_STRATEGY.md');
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
-  assert.match(commercialTruth, /Pro at \$49 one-time/);
+  assert.match(commercialTruth, /Pro at \$19\/mo/);
   assert.match(commercialTruth, /auto-gate promotion/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 

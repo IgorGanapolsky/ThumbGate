@@ -92,7 +92,7 @@ test('GEO demand engine prioritizes action queries and proof-backed fan-out surf
   assert.match(geoDemandEngine, /Workflow Hardening Fit Checker/i);
   assert.match(geoDemandEngine, /Can AI fully satisfy this query without a click\?/i);
   assert.match(geoDemandEngine, /Workflow Hardening Sprint/i);
-  assert.match(geoDemandEngine, /Pro at \$49 one-time/i);
+  assert.match(geoDemandEngine, /Pro at \$19\/mo/i);
   assert.match(geoDemandEngine, /VERIFICATION_EVIDENCE\.md/);
   assert.match(geoDemandEngine, /COMMERCIAL_TRUTH\.md/);
   assert.match(geoDemandEngine, /bannerbear\.com/i);

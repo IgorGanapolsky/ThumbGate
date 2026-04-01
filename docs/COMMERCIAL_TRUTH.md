@@ -8,7 +8,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 ## What is true today
 
 - The open-source `mcp-memory-gateway` package is free and MIT licensed.
-- The current public self-serve commercial offer is **Pro at $49 one-time** via Stripe checkout link.
+- The current public self-serve commercial offer is **Pro at $19/mo** via Stripe checkout link.
 - The current hosted team path is **Workflow Hardening Sprint intake** on the landing page, which starts the shared lesson DB and org-dashboard rollout lane for teams.
 - Verified booked revenue as of March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product.
 - Verified booked revenue for March 19, 2026 is **$0.00**; there is no evidence of a new paid charge today.
@@ -24,7 +24,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - DPO/KTO export for fine-tuning
 - CLI dashboard
 
-### Pro ($49 one-time, hosted checkout on Railway)
+### Pro ($19/mo, hosted checkout on Railway)
 
 - Personal local dashboard
 - DPO export and advanced data exports

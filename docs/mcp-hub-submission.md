@@ -88,7 +88,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 ```
 
 Hosted API access is currently pilot/by-request rather than a public self-serve monthly subscription.
-Current self-serve commercial offer: Pro ($49 one-time): https://rlhf-feedback-loop-production.up.railway.app/checkout/pro
+Current self-serve commercial offer: Pro ($19/mo): https://rlhf-feedback-loop-production.up.railway.app/checkout/pro
 Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ---

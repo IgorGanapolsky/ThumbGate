@@ -2,7 +2,7 @@
 
 ## Active Mission
 - **North Star:** Earn **$100/day after-tax profit**.
-- **Current Wedge:** $49 "Mistake-Free" Starter Pack (500 credits).
+- **Current Wedge:** $19/mo "Mistake-Free" Starter Pack (500 credits).
 - **Target Audience:** Developers hitting "Claude amnesia" and context compaction.
 
 ## Current State (2026-03-21)
@@ -23,38 +23,94 @@
 
 ## Behavioral Traits
 
-_No strong behavioral patterns identified yet._
+- User prefers surgical edits over full file rewrites.
 
 ## Live Git Context
 
-### Branch: fix/dashboard-ux-and-ci
+### Branch: fix/pricing-19mo-v2
 
 ### Last 5 Commits:
 ```
-9186147 feat: add latencyMs tracking to audit trail for every tool call
-ea48bf8 feat: dashboard UX fixes + realistic demo data
-8535d37 fix: sharpen pricing section to convert free users to Pro (#443)
-63f947a fix: reduce scheduled workflow frequency to prevent CI runner exhaustion (#441)
-18ebc07 feat: enforce free/pro npm publish parity with CI workflow + tests (#440)
+bf9edc9 fix: restore blog JSON-LD, canonical, OG tags (lost in merge conflict) (#470)
+839b5d5 fix: prevention rules not generating — richContext not propagated to memories (#469)
+dda2f0b fix: prevention rules not generating — richContext not propagated to memories (#468)
+4639660 feat: click-to-capture feedback from Claude Code statusline
+e76a898 fix: add annual Stripe link + restore founder $49 link on landing page (#467)
 ```
 
 ### Modified Files:
 ```
- M package.json
+ M .claude/skills/thumbgate/SKILL.md
+ M LAUNCH.md
+ M README.md
+ M docs/AUTONOMOUS_GITOPS.md
+ M docs/COMMERCIAL_TRUTH.md
+ M docs/GEO_DEMAND_ENGINE_MAR2026.md
+ M docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md
+ M docs/VERIFICATION_EVIDENCE.md
+ M docs/WORKFLOW_HARDENING_SPRINT.md
+ M docs/landing-page.html
+ M docs/marketing/devto-article.md
+ M docs/marketing/devto-reliability-post.md
+ M docs/marketing/launch-content.md
+ M docs/marketing/pricing-comparison.md
+ M docs/marketing/product-hunt-launch.md
+ M docs/marketing/reddit-obsidian-post.md
+ M docs/marketing/show-hn.md
+ M docs/marketing/twitter-launch-thread.md
+ M docs/marketing/twitter-thread-formatted.md
+ M docs/marketing/twitter-thread.md
+ M docs/mcp-hub-submission.md
  M primer.md
-?? config/gates/computer-use.json
-?? config/model-tiers.json
-?? config/skill-specs/
-?? docs/marketing/gallery/
-?? proof/claim-verification-report.json
-?? proof/claim-verification-report.md
-?? proof/computer-use-firewall-report.md
-?? proof/model-tier-router-report.md
-?? proof/skill-exporter-report.md
-?? scripts/computer-use-firewall.js
-?? scripts/model-tier-router.js
-?? scripts/skill-exporter.js
-?? tests/computer-use-firewall.test.js
-?? tests/model-tier-router.test.js
-?? tests/skill-exporter.test.js
+ M public/guide.html
+ M scripts/gtm-revenue-loop.js
+ M scripts/perplexity-marketing.js
+ M scripts/post-to-x.js
+ M scripts/pro-features.js
+ M tests/api-server.test.js
+ M tests/gtm-revenue-loop.test.js
+ M tests/positioning-contract.test.js
+ M tests/version-metadata.test.js
+ M workers/README.md
+ M workers/package.json
+?? .adal/
+?? .agents/skills/
+?? .augment/
+?? .claude/context-engine/quality-log.jsonl
+?? .claude/launch.json
+?? .claude/skills/stripe-best-practices
+?? .claude/skills/stripe-projects
+?? .claude/skills/upgrade-stripe
+?? .codebuddy/
+?? .commandcode/
+?? .continue/
+?? .cortex/
+?? .crush/
+?? .factory/
+?? .github/workflows/trunk-check.yml
+?? .goose/
+?? .iflow/
+?? .junie/
+?? .kilocode/
+?? .kiro/
+?? .kode/
+?? .mcp.json
+?? .mcpjam/
+?? .mux/
+?? .neovate/
+?? .openhands/
+?? .pi/
+?? .pochi/
+?? .qoder/
+?? .qwen/
+?? .roo/
+?? .trae/
+?? .trunk/
+?? .vibe/
+?? .windsurf/
+?? .zencoder/
+?? skills-lock.json
+?? skills/stripe-best-practices
+?? skills/stripe-projects
+?? skills/upgrade-stripe
 ```

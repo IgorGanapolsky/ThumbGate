@@ -46,7 +46,7 @@ Only move forward when the buyer has:
 ## Commercial Motion
 
 - This is a pilot-by-request service offer, not a new public self-serve subscription tier.
-- The public self-serve offer remains Pro at `$49 one-time` per [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
+- The public self-serve offer remains Pro at `$19/mo` per [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
 - Use booked pilots, paid orders, or named pilot agreements as commercial proof.
 
 ## Contact

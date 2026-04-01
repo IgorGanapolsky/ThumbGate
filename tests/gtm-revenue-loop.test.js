@@ -14,7 +14,7 @@ test('motion catalog stays aligned with current commercial truth and proof links
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
 
-  assert.match(catalog.pro.label, /Pro at \$49 one-time/);
+  assert.match(catalog.pro.label, /Pro at \$19\/mo/);
   assert.match(catalog.pro.cta, /\/checkout\/pro(\?packId=.+)?$/);
   assert.match(catalog.sprint.cta, /#workflow-sprint-intake$/);
   assert.match(catalog.pro.truth, /COMMERCIAL_TRUTH\.md/);
@@ -121,6 +121,6 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
 
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
-  assert.match(markdown, /Pro at \$49 one-time/);
+  assert.match(markdown, /Pro at \$19\/mo/);
   assert.doesNotMatch(markdown, /founding users today/i);
 });

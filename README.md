@@ -256,13 +256,13 @@ For autonomous agent runs against this or any repo using this workflow:
 
 ## Pro Pack
 
-**[$49 one-time](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — personal local dashboard, DPO export, and founder-license support for individual operators.
+**[$19/mo](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — personal local dashboard, DPO export, and founder-license support for individual operators.
 
 **[Start Team Rollout](https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake?utm_source=github&utm_medium=readme&utm_campaign=team_rollout)** — shared hosted lesson DB, org dashboard, curated gate templates, and workflow-hardening rollout support for teams.
 
 ### Free vs Pro
 
-| Feature | Free | Pro ($49) | Team rollout |
+| Feature | Free | Pro ($19/mo) | Team rollout |
 |---------|------|-----------|--------------|
 | Feedback capture (thumbs up/down) | 5/day | Unlimited | Shared across team workflow |
 | Lesson recall | 10/day | Unlimited | Shared hosted lesson DB |
@@ -277,7 +277,7 @@ For autonomous agent runs against this or any repo using this workflow:
 | Workflow hardening sprint | No | No | Yes |
 | Priority support | No | Yes | Yes |
 
-**[Get Pro — $49](https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05)** — One-time purchase, lifetime updates.
+**[Get Pro — $19/mo](https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05)** — Monthly subscription, cancel anytime.
 
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md)
 - [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
