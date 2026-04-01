@@ -1806,7 +1806,7 @@ function createApiServer() {
 
     if (isGetLikeRequest && pathname === '/blog') {
       try {
-        const blogPath = path.join(PUBLIC_DIR, 'blog.html');
+        const blogPath = path.resolve(__dirname, '../../public/blog.html');
         const html = fs.readFileSync(blogPath, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
