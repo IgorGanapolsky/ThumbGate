@@ -915,6 +915,21 @@ function captureFeedback(params) {
     } catch (_err) { /* non-critical */ }
   }
 
+  // Reflector agent: auto-propose rules on negative feedback
+  let reflection = null;
+  if (signal === 'negative' && Array.isArray(params.conversationWindow) && params.conversationWindow.length >= 2) {
+    try {
+      const { reflect } = require('./reflector-agent');
+      reflection = reflect({
+        conversationWindow: params.conversationWindow,
+        context: inferredContext,
+        whatWentWrong: params.whatWentWrong,
+        structuredRule,
+        feedbackEvent: null, // not yet constructed
+      });
+    } catch (_err) { /* non-critical */ }
+  }
+
   let rubricEvaluation = null;
   try {
     if (params.rubricScores != null || params.guardrails != null) {
@@ -997,6 +1012,7 @@ function captureFeedback(params) {
       }))
       : null,
     structuredRule: structuredRule || null,
+    ...(reflection && { reflection }),
     timestamp: now,
   };
 
@@ -1170,6 +1186,13 @@ function captureFeedback(params) {
 
   const _captureMs = Date.now() - _captureStart;
 
+  // Auto-open feedback session for follow-up capture
+  let feedbackSession = null;
+  try {
+    const { openSession } = require('./feedback-session');
+    feedbackSession = openSession(feedbackEvent.id, signal, inferredContext);
+  } catch (_err) { /* non-critical */ }
+
   // Build result immediately — all remaining side-effects are deferred
   const result = {
     accepted: true,
@@ -1179,15 +1202,19 @@ function captureFeedback(params) {
     memoryRecord,
     _captureMs,
     ...(correctiveActions.length > 0 && { correctiveActions }),
+    ...(reflection && { reflection }),
+    ...(feedbackSession && { feedbackSession }),
   };
 
-  // Update statusline with lesson info
+  // Update statusline with lesson info (include proposed rule if reflection available)
   updateStatuslineWithLesson({
     accepted: true,
     signal,
     memoryId: memoryRecord.id,
     feedbackId: feedbackEvent.id,
-    lesson: inferredContext || context,
+    lesson: reflection?.proposedRule?.rule
+      ? `${inferredContext || context} | Rule: ${reflection.proposedRule.rule}`
+      : (inferredContext || context),
     turnCount: Array.isArray(params.conversationWindow) ? params.conversationWindow.length : 0,
   });
 
