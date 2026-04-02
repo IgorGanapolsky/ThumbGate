@@ -14,6 +14,7 @@ const { resolveHostedBillingConfig } = require('./hosted-config');
 const { generateAgentReadinessReport } = require('./agent-readiness');
 const { summarizeGateTemplates } = require('./gate-templates');
 const { generateOrgDashboard } = require('./org-dashboard');
+const { buildPredictiveInsights } = require('./predictive-insights');
 const { routeProfile } = require('./profile-router');
 const { getSettingsStatus } = require('./settings-hierarchy');
 const { summarizeWorkflowRuns } = require('./workflow-runs');
@@ -762,6 +763,12 @@ function generateDashboard(feedbackDir, options = {}) {
     proOverride: options.teamProOverride,
   });
   const templateLibrary = summarizeGateTemplates();
+  const predictive = buildPredictiveInsights({
+    telemetryAnalytics: analytics.telemetry,
+    billingSummary,
+    gateStats,
+    team,
+  });
 
   return {
     operational: {
@@ -787,6 +794,7 @@ function generateDashboard(feedbackDir, options = {}) {
     team,
     templateLibrary,
     liveMetrics,
+    predictive,
   };
 }
 
@@ -812,6 +820,7 @@ function printDashboard(data) {
     settingsStatus,
     team,
     templateLibrary,
+    predictive,
   } = data;
 
   const trendArrow = approval.trendDirection === 'improving' ? '\u2191'
@@ -951,6 +960,20 @@ function printDashboard(data) {
     .sort((a, b) => b[1] - a[1])[0];
   if (topTemplateCategory) {
     console.log(`  Top Category     : ${topTemplateCategory[0]} (${topTemplateCategory[1]} templates)`);
+  }
+
+  console.log('');
+  console.log('🔮 Predictive Insights');
+  console.log(`  Pro Propensity   : ${predictive.upgradePropensity.pro.band} (${predictive.upgradePropensity.pro.score})`);
+  console.log(`  Team Propensity  : ${predictive.upgradePropensity.team.band} (${predictive.upgradePropensity.team.score})`);
+  console.log(`  Revenue Forecast : $${(predictive.revenueForecast.predictedBookedRevenueCents / 100).toFixed(2)}`);
+  console.log(`  Opportunity Gap  : $${(predictive.revenueForecast.incrementalOpportunityCents / 100).toFixed(2)}`);
+  console.log(`  Predictive Alerts: ${predictive.anomalySummary.count} (${predictive.anomalySummary.severity})`);
+  if (predictive.topCreators[0]) {
+    console.log(`  Top Creator      : ${predictive.topCreators[0].key} (+$${(predictive.topCreators[0].opportunityRevenueCents / 100).toFixed(2)})`);
+  }
+  if (predictive.topSources[0]) {
+    console.log(`  Top Channel      : ${predictive.topSources[0].key} (+$${(predictive.topSources[0].opportunityRevenueCents / 100).toFixed(2)})`);
   }
 
   console.log('');

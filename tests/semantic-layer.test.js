@@ -105,6 +105,9 @@ describe('semantic-layer', () => {
     assert.equal(metrics.metrics.bookedRevenueCents, 4900);
     assert.equal(metrics.metrics.attributionCoverageRate, 1);
     assert.equal(metrics.metrics.unreconciledPaidEvents, 0);
+    assert.equal(metrics.metrics.predictedBookedRevenueCents, 4900);
+    assert.equal(metrics.metrics.incrementalRevenueOpportunityCents, 0);
+    assert.equal(metrics.metrics.predictiveAnomalyCount, 0);
     assert.equal(metrics.pipeline.reconciliationStatus, 'healthy');
   });
 });

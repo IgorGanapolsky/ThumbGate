@@ -41,9 +41,13 @@ test('dashboard includes team metrics and gate-template tabs powered by dashboar
   assert.match(dashboard, /id="settingsSummaryCards"/);
   assert.match(dashboard, /id="settingsOrigins"/);
   assert.match(dashboard, /id="templateLibrary"/);
+  assert.match(dashboard, /id="predictiveSummaryCards"/);
+  assert.match(dashboard, /id="predictiveAnomalies"/);
   assert.match(dashboard, /function renderTeam\(team, analytics\)/);
+  assert.match(dashboard, /function renderPredictive\(predictive\)/);
   assert.match(dashboard, /function renderSettingsStatus\(settingsStatus\)/);
   assert.match(dashboard, /function renderTemplates\(templateLibrary\)/);
+  assert.match(dashboard, /Forecast revenue/);
   assert.match(dashboard, /highest-ROI guardrails/i);
 });
 

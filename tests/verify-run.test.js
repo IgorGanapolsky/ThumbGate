@@ -61,6 +61,7 @@ test('buildVerifyPlan returns quick and full plans without removed legacy verifi
   assert.ok(full.some((step) => step.args && step.args.includes('prove:evolution')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:harnesses')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:local-intelligence')));
+  assert.ok(full.some((step) => step.args && step.args.includes('prove:predictive-insights')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:runtime')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:settings')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:xmemory')));
@@ -108,6 +109,7 @@ test('recordVerifyWorkflowRun persists a proof-backed workflow run for full veri
   assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'evolution-report.json'))));
   assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'harnesses-report.json'))));
   assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'local-intelligence-report.json'))));
+  assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'predictive-insights-report.json'))));
   assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'runtime-report.json'))));
   assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'settings-report.json'))));
 
@@ -145,6 +147,8 @@ test('materializeProofArtifacts copies temp proof reports into repo-local proof 
     ['proof-harnesses/harnesses-report.md', '# harnesses\n'],
     ['proof-adapters/local-intelligence-report.json', '{"localIntelligence":true}\n'],
     ['proof-adapters/local-intelligence-report.md', '# local intelligence\n'],
+    ['proof-adapters/predictive-insights-report.json', '{"predictiveInsights":true}\n'],
+    ['proof-adapters/predictive-insights-report.md', '# predictive insights\n'],
     ['proof-runtime/runtime-report.json', '{"runtime":true}\n'],
     ['proof-runtime/runtime-report.md', '# runtime\n'],
     ['proof-settings/settings-report.json', '{"settings":true}\n'],
@@ -185,6 +189,10 @@ test('materializeProofArtifacts copies temp proof reports into repo-local proof 
   assert.equal(
     fs.readFileSync(path.join(cwd, 'proof', 'local-intelligence-report.json'), 'utf8'),
     '{"localIntelligence":true}\n',
+  );
+  assert.equal(
+    fs.readFileSync(path.join(cwd, 'proof', 'predictive-insights-report.json'), 'utf8'),
+    '{"predictiveInsights":true}\n',
   );
   assert.equal(
     fs.readFileSync(path.join(cwd, 'proof', 'runtime-report.json'), 'utf8'),
@@ -232,6 +240,7 @@ test('runVerify injects proof directories and records full verification', () => 
     ['proof-adapters/evolution-report.json', '{"evolution":true}\n'],
     ['proof-harnesses/harnesses-report.json', '{"harnesses":true}\n'],
     ['proof-adapters/local-intelligence-report.json', '{"localIntelligence":true}\n'],
+    ['proof-adapters/predictive-insights-report.json', '{"predictiveInsights":true}\n'],
     ['proof-runtime/runtime-report.json', '{"runtime":true}\n'],
     ['proof-runtime/runtime-report.md', '# runtime\n'],
     ['proof-settings/settings-report.json', '{"settings":true}\n'],
@@ -267,7 +276,7 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.equal(result.mode, 'full');
     assert.equal(result.tempRoot, tempRoot);
     assert.deepEqual(result.workflowRun, stubWorkflowRun);
-    assert.equal(commandCalls.length, 15);
+    assert.equal(commandCalls.length, 16);
     assert.equal(commandCalls[0].options.cwd, cwd);
     assert.equal(commandCalls[0].options.env.BASE_ENV, '1');
     assert.equal(commandCalls[0].options.env.RLHF_PROOF_DIR, path.join(tempRoot, 'proof-adapters'));
@@ -280,12 +289,14 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.ok(commandCalls.some((call) => call.args.includes('prove:evolution')));
     assert.ok(commandCalls.some((call) => call.args.includes('prove:harnesses')));
     assert.ok(commandCalls.some((call) => call.args.includes('prove:local-intelligence')));
+    assert.ok(commandCalls.some((call) => call.args.includes('prove:predictive-insights')));
     assert.ok(commandCalls.some((call) => call.args.includes('prove:settings')));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'claim-verification-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'data-pipeline-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'evolution-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'harnesses-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'local-intelligence-report.json'))));
+    assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'predictive-insights-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'runtime-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'settings-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'seo-gsd-report.json'))));
@@ -306,6 +317,10 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.equal(
       fs.readFileSync(path.join(cwd, 'proof', 'runtime-report.json'), 'utf8'),
       '{"runtime":true}\n',
+    );
+    assert.equal(
+      fs.readFileSync(path.join(cwd, 'proof', 'predictive-insights-report.json'), 'utf8'),
+      '{"predictiveInsights":true}\n',
     );
     assert.equal(
       fs.readFileSync(path.join(cwd, 'proof', 'settings-report.json'), 'utf8'),

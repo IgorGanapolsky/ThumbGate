@@ -245,6 +245,7 @@
       <h2>Shared Team Reliability</h2>
       <p class="template-summary">See which agents drift, which gates save the team the most time, and whether the shared workflow is getting safer.</p>
       <div class="team-grid" id="teamSummaryCards"><div class="loading">Loading team metrics...</div></div>
+      <div class="team-grid" id="predictiveSummaryCards"><div class="loading">Loading predictive insights...</div></div>
       <div class="team-columns">
         <div class="panel">
           <h3>Highest-Risk Agents</h3>
@@ -254,6 +255,10 @@
           <h3>Top Blocked Gates</h3>
           <div id="teamBlockedGates"><div class="loading">Loading blocked gates...</div></div>
         </div>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <h3>Predictive Watchlist</h3>
+        <div id="predictiveAnomalies"><div class="loading">Loading predictive watchlist...</div></div>
       </div>
     </div>
   </div>
@@ -521,6 +526,8 @@ async function loadGates() {
   } catch (e) {
     setMessageState(document.getElementById('gatesList'), 'empty', e && e.message ? e.message : 'Failed to load gates');
     setMessageState(document.getElementById('teamSummaryCards'), 'empty', e && e.message ? e.message : 'Failed to load team metrics');
+    setMessageState(document.getElementById('predictiveSummaryCards'), 'empty', e && e.message ? e.message : 'Failed to load predictive insights');
+    setMessageState(document.getElementById('predictiveAnomalies'), 'empty', e && e.message ? e.message : 'Failed to load predictive watchlist');
     setMessageState(document.getElementById('settingsSummaryCards'), 'empty', e && e.message ? e.message : 'Failed to load policy origins');
     setMessageState(document.getElementById('templateLibrary'), 'empty', e && e.message ? e.message : 'Failed to load template library');
   }
@@ -547,6 +554,7 @@ function renderDashboardData(data) {
   }
 
   renderTeam(data.team || {}, data.analytics || {});
+  renderPredictive(data.predictive || {});
   renderSettingsStatus(data.settingsStatus || {});
   renderTemplates(data.templateLibrary || {});
 }
@@ -657,6 +665,46 @@ function renderTeam(team, analytics) {
     : '<div class="empty" style="padding:20px 0;">No blocked gates recorded yet.</div>';
 }
 
+function renderPredictive(predictive) {
+  const pro = predictive && predictive.upgradePropensity ? predictive.upgradePropensity.pro || {} : {};
+  const team = predictive && predictive.upgradePropensity ? predictive.upgradePropensity.team || {} : {};
+  const forecast = predictive && predictive.revenueForecast ? predictive.revenueForecast : {};
+  const anomalySummary = predictive && predictive.anomalySummary ? predictive.anomalySummary : {};
+  const topCreator = predictive && Array.isArray(predictive.topCreators) ? predictive.topCreators[0] : null;
+  const topSource = predictive && Array.isArray(predictive.topSources) ? predictive.topSources[0] : null;
+  const anomalies = predictive && Array.isArray(predictive.anomalies) ? predictive.anomalies : [];
+
+  const cards = [
+    { label: 'Pro propensity', value: pro.band || 'none', note: 'score ' + escHtml(String(pro.score || 0)) },
+    { label: 'Team propensity', value: team.band || 'none', note: 'score ' + escHtml(String(team.score || 0)) },
+    { label: 'Forecast revenue', value: '$' + (((forecast.predictedBookedRevenueCents || 0) / 100).toFixed(2)), note: 'opportunity +' + '$' + (((forecast.incrementalOpportunityCents || 0) / 100).toFixed(2)) },
+    { label: 'Predictive alerts', value: String(anomalySummary.count || 0), note: (anomalySummary.severity || 'healthy') + ' watchlist' }
+  ];
+
+  document.getElementById('predictiveSummaryCards').innerHTML = cards.map(function(card) {
+    return '<div class="team-card">' +
+      '<div class="team-kicker">' + escHtml(card.label) + '</div>' +
+      '<div class="team-value">' + escHtml(card.value) + '</div>' +
+      '<div class="team-note">' + escHtml(card.note) + '</div>' +
+    '</div>';
+  }).join('');
+
+  const lines = [];
+  if (topCreator) {
+    lines.push('<div class="blocked-row"><div><div class="blocked-name">Top creator opportunity</div><div class="blocked-meta">' + escHtml(topCreator.key || 'unknown') + '</div></div><div class="blocked-meta">+$' + escHtml(((topCreator.opportunityRevenueCents || 0) / 100).toFixed(2)) + '</div></div>');
+  }
+  if (topSource) {
+    lines.push('<div class="blocked-row"><div><div class="blocked-name">Top channel opportunity</div><div class="blocked-meta">' + escHtml(topSource.key || 'unknown') + '</div></div><div class="blocked-meta">+$' + escHtml(((topSource.opportunityRevenueCents || 0) / 100).toFixed(2)) + '</div></div>');
+  }
+  anomalies.slice(0, 5).forEach(function(anomaly) {
+    lines.push('<div class="blocked-row"><div><div class="blocked-name">' + escHtml(anomaly.type || 'anomaly') + '</div><div class="blocked-meta">' + escHtml(anomaly.message || '') + '</div></div><div class="blocked-meta">' + escHtml(anomaly.severity || 'warning') + '</div></div>');
+  });
+
+  document.getElementById('predictiveAnomalies').innerHTML = lines.length
+    ? lines.join('')
+    : '<div class="empty" style="padding:20px 0;">No predictive anomalies right now.</div>';
+}
+
 function renderTemplates(templateLibrary) {
   const templates = Array.isArray(templateLibrary.templates) ? templateLibrary.templates : [];
   const categories = templateLibrary.categories || {};
@@ -752,6 +800,30 @@ function loadDemo() {
       weeklyTeamsRunningProofBackedWorkflows: 3,
       paidTeamRuns: 1
     }
+  });
+  renderPredictive({
+    upgradePropensity: {
+      pro: { band: 'high', score: 0.71 },
+      team: { band: 'medium', score: 0.54 }
+    },
+    revenueForecast: {
+      predictedBookedRevenueCents: 12800,
+      incrementalOpportunityCents: 4900
+    },
+    anomalySummary: {
+      count: 2,
+      severity: 'warning'
+    },
+    topCreators: [
+      { key: 'reach_vb', opportunityRevenueCents: 3100 }
+    ],
+    topSources: [
+      { key: 'producthunt', opportunityRevenueCents: 1800 }
+    ],
+    anomalies: [
+      { type: 'pricing_resistance', message: 'Price sensitivity dominates current loss reasons.', severity: 'warning' },
+      { type: 'creator_underperformance', message: 'Creator reach_vb is generating intent without revenue conversion.', severity: 'warning' }
+    ]
   });
   renderSettingsStatus({
     activeLayers: [

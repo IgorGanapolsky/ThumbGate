@@ -1955,6 +1955,10 @@ test('dashboard applies analytics window query params with live billing truth', 
     assert.equal(body.team.proRequired, false);
     assert.equal(body.templateLibrary.total, 6);
     assert.equal(body.templateLibrary.categories['Git Safety'], 1);
+    assert.ok(body.predictive);
+    assert.equal(typeof body.predictive.upgradePropensity.pro.score, 'number');
+    assert.equal(body.predictive.revenueForecast.predictedBookedRevenueCents, 4900);
+    assert.equal(body.predictive.anomalySummary.count, 0);
   } finally {
     process.env.RLHF_FEEDBACK_DIR = savedEnv.feedbackDir;
     process.env._TEST_API_KEYS_PATH = savedEnv.apiKeysPath;
