@@ -39,19 +39,10 @@ jobs:
         run: |
           BEFORE_SHA='${{ github.event.before }}'
           CHANGED_FILES=''
-          SHOULD_DEPLOY=false
+          SHOULD_DEPLOY=true
 
-          if [ "$GITHUB_EVENT_NAME" != "push" ] || [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            SHOULD_DEPLOY=true
-          else
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
             CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | sed '/^$/d')"
-
-            if [ -z "$CHANGED_FILES" ]; then
-              echo "No changed files detected in push range $BEFORE_SHA..$GITHUB_SHA; defaulting to deploy."
-              SHOULD_DEPLOY=true
-            elif printf '%s\n' "$CHANGED_FILES" | grep -Eqv '^(\.github/|tests/)'; then
-              SHOULD_DEPLOY=true
-            fi
           fi
 
           echo "before_sha=${BEFORE_SHA:-<none>}"
@@ -71,7 +62,7 @@ jobs:
         run: |
           if [ "${{ steps.deploy-scope.outputs.should_deploy }}" != "true" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Railway deploy skipped: only workflow/test files changed on this commit."
+            echo "Railway deploy skipped: deploy-scope disabled this run."
             exit 0
           fi
 
