@@ -1,0 +1,12 @@
+{
+  "dashboard": {
+    "showPolicyOrigins": true,
+    "showSettingsStatus": true
+  },
+  "policies": {
+    "surfaceOriginsInStatus": true
+  },
+  "team": {
+    "orgVisibilityMode": "team_rollout"
+  }
+}

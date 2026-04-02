@@ -31,6 +31,7 @@ function buildVerifyPlan(mode = 'quick') {
       { command: npmCommand(), args: ['run', 'prove:evolution'] },
       { command: npmCommand(), args: ['run', 'prove:harnesses'] },
       { command: npmCommand(), args: ['run', 'prove:runtime'] },
+      { command: npmCommand(), args: ['run', 'prove:settings'] },
       { command: npmCommand(), args: ['run', 'prove:seo-gsd'] },
       { command: npmCommand(), args: ['run', 'prove:tessl'] },
       { command: npmCommand(), args: ['run', 'prove:xmemory'] },
@@ -126,6 +127,14 @@ function materializeProofArtifacts(tempRoot, cwd = process.cwd()) {
       target: path.join(cwd, 'proof', 'runtime-report.md'),
     },
     {
+      source: path.join(tempRoot, 'proof-settings', 'settings-report.json'),
+      target: path.join(cwd, 'proof', 'settings-report.json'),
+    },
+    {
+      source: path.join(tempRoot, 'proof-settings', 'settings-report.md'),
+      target: path.join(cwd, 'proof', 'settings-report.md'),
+    },
+    {
       source: path.join(tempRoot, 'proof-adapters', 'seo-gsd-report.json'),
       target: path.join(cwd, 'proof', 'seo-gsd-report.json'),
     },
@@ -179,6 +188,7 @@ function recordVerifyWorkflowRun(mode = 'quick', cwd = process.cwd(), feedbackDi
       path.join(cwd, 'proof', 'evolution-report.json'),
       path.join(cwd, 'proof', 'harnesses-report.json'),
       path.join(cwd, 'proof', 'runtime-report.json'),
+      path.join(cwd, 'proof', 'settings-report.json'),
       path.join(cwd, 'proof', 'seo-gsd-report.json'),
       path.join(cwd, 'proof', 'tessl-report.json'),
       path.join(cwd, 'proof', 'xmemory-report.json'),
@@ -197,6 +207,7 @@ function runVerify(mode = 'quick', baseEnv = process.env, cwd = process.cwd()) {
     RLHF_AUTOMATION_PROOF_DIR: path.join(tempRoot, 'proof-automation'),
     RLHF_HARNESSES_PROOF_DIR: path.join(tempRoot, 'proof-harnesses'),
     RLHF_RUNTIME_PROOF_DIR: path.join(tempRoot, 'proof-runtime'),
+    RLHF_SETTINGS_PROOF_DIR: path.join(tempRoot, 'proof-settings'),
   };
 
   runPlan(buildVerifyPlan(mode), env, cwd);

@@ -12,6 +12,10 @@
  */
 
 const path = require('path');
+const {
+  getSetting,
+  getSettingOrigin,
+} = require('./settings-hierarchy');
 
 // ---------------------------------------------------------------------------
 // Context classifiers
@@ -30,8 +34,12 @@ const path = require('path');
  * @returns {{ profile: string, reason: string }}
  */
 function routeProfile(params = {}) {
-  const { toolName, sessionType, hasWriteIntent } = params;
+  const { toolName, sessionType, hasWriteIntent, settingsOptions } = params;
   const explicitProfile = process.env.RLHF_MCP_PROFILE;
+  const defaultProfile = getSetting('mcp.defaultProfile', settingsOptions) || 'essential';
+  const readonlyProfile = getSetting('mcp.readonlySessionProfile', settingsOptions) || 'readonly';
+  const defaultOrigin = getSettingOrigin('mcp.defaultProfile', settingsOptions);
+  const readonlyOrigin = getSettingOrigin('mcp.readonlySessionProfile', settingsOptions);
 
   // Explicit override always wins — but we still audit the decision
   if (explicitProfile) {
@@ -39,15 +47,17 @@ function routeProfile(params = {}) {
       profile: explicitProfile,
       reason: `explicit override via RLHF_MCP_PROFILE=${explicitProfile}`,
       wasAutoRouted: false,
+      settingsOrigin: null,
     };
   }
 
   // Session-type routing
   if (sessionType === 'review' || isReadOnlySession()) {
     return {
-      profile: 'readonly',
-      reason: 'read-only session detected — routing to readonly profile',
+      profile: readonlyProfile,
+      reason: `read-only session detected — routing to ${readonlyProfile} profile`,
       wasAutoRouted: true,
+      settingsOrigin: readonlyOrigin,
     };
   }
 
@@ -67,17 +77,19 @@ function routeProfile(params = {}) {
   // Write-intent routing
   if (hasWriteIntent === false) {
     return {
-      profile: 'readonly',
-      reason: 'no write intent — routing to readonly profile',
+      profile: readonlyProfile,
+      reason: `no write intent — routing to ${readonlyProfile} profile`,
       wasAutoRouted: true,
+      settingsOrigin: readonlyOrigin,
     };
   }
 
   // Default: use 'essential' instead of 'default' for least-privilege
   return {
-    profile: 'essential',
-    reason: 'default auto-routing — essential profile (least privilege)',
+    profile: defaultProfile,
+    reason: `default auto-routing — ${defaultProfile} profile from settings hierarchy`,
     wasAutoRouted: true,
+    settingsOrigin: defaultOrigin,
   };
 }
 

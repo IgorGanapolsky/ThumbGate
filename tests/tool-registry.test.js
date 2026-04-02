@@ -46,6 +46,13 @@ test('org_dashboard tool stays aligned with Team rollout packaging', () => {
   assert.doesNotMatch(orgDashboardTool.description, /Pro: full visibility/i);
 });
 
+test('settings_status tool exists as a read-only visibility surface', () => {
+  const settingsTool = TOOLS.find((tool) => tool.name === 'settings_status');
+  assert.ok(settingsTool, 'settings_status tool must exist');
+  assert.equal(settingsTool.annotations.readOnlyHint, true);
+  assert.match(settingsTool.description, /per-field origin metadata/i);
+});
+
 test('tool names are unique', () => {
   const names = TOOLS.map(t => t.name);
   const unique = new Set(names);

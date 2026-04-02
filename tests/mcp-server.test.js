@@ -98,6 +98,23 @@ test('list_harnesses tool returns the natural-language harness catalog', async (
   assert.equal(payload.harnesses[0].id, 'repo-full-verification');
 });
 
+test('settings_status tool returns resolved settings with origin metadata', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 28,
+    method: 'tools/call',
+    params: {
+      name: 'settings_status',
+      arguments: {},
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.ok(payload.resolvedSettings);
+  assert.ok(Array.isArray(payload.origins));
+  assert.ok(payload.origins.some((entry) => entry.path === 'mcp.defaultProfile'));
+});
+
 test('run_harness tool executes a natural-language harness over MCP', async () => {
   delete require.cache[RUNNER_PATH];
   delete require.cache[HARNESS_PATH];

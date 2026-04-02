@@ -1965,6 +1965,18 @@ test('dashboard applies analytics window query params with live billing truth', 
   }
 });
 
+test('settings status endpoint returns resolved settings and origin metadata', async () => {
+  const res = await fetch(apiUrl('/v1/settings/status'), {
+    headers: authHeader,
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(typeof body.resolvedSettings.mcp.defaultProfile, 'string');
+  assert.ok(Array.isArray(body.origins));
+  assert.ok(body.origins.some((entry) => entry.path === 'mcp.defaultProfile'));
+});
+
 test('billing summary includes Stripe-reconciled revenue when live processor events are available', async () => {
   process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = JSON.stringify([
     {

@@ -14,6 +14,8 @@ const { resolveHostedBillingConfig } = require('./hosted-config');
 const { generateAgentReadinessReport } = require('./agent-readiness');
 const { summarizeGateTemplates } = require('./gate-templates');
 const { generateOrgDashboard } = require('./org-dashboard');
+const { routeProfile } = require('./profile-router');
+const { getSettingsStatus } = require('./settings-hierarchy');
 const { summarizeWorkflowRuns } = require('./workflow-runs');
 const { searchLessons } = require('./lesson-search');
 
@@ -719,6 +721,20 @@ function generateDashboard(feedbackDir, options = {}) {
   const delegation = summarizeDelegation(feedbackDir);
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
   const harness = computeHarnessOverview(feedbackDir, entries);
+  const settingsStatus = getSettingsStatus({ projectRoot: PROJECT_ROOT });
+  settingsStatus.routingPreview = {
+    dashboardTool: routeProfile({
+      toolName: 'dashboard',
+      settingsOptions: { projectRoot: PROJECT_ROOT },
+    }),
+    defaultSession: routeProfile({
+      settingsOptions: { projectRoot: PROJECT_ROOT },
+    }),
+    reviewSession: routeProfile({
+      sessionType: 'review',
+      settingsOptions: { projectRoot: PROJECT_ROOT },
+    }),
+  };
 
   // Live metrics — gate hit rate, lesson effectiveness, error trend
   const now = Date.now();
@@ -767,6 +783,7 @@ function generateDashboard(feedbackDir, options = {}) {
     observability,
     instrumentation,
     readiness,
+    settingsStatus,
     team,
     templateLibrary,
     liveMetrics,
@@ -792,6 +809,7 @@ function printDashboard(data) {
     observability,
     instrumentation,
     readiness,
+    settingsStatus,
     team,
     templateLibrary,
   } = data;
@@ -903,6 +921,16 @@ function printDashboard(data) {
   console.log(`  Revenue Tracking : ${instrumentation.bookedRevenueTrackingEnabled ? 'booked revenue enabled' : 'disabled'}`);
   console.log(`  Amount Coverage  : ${Math.round((analytics.dataQuality.amountKnownCoverage || 0) * 100)}%`);
   console.log(`  Unreconciled Paid: ${analytics.dataQuality.unreconciledPaidEvents}`);
+
+  console.log('');
+  console.log('⚙️ Policy Origins');
+  console.log(`  Active Layers    : ${settingsStatus.activeLayers.filter((layer) => layer.exists).map((layer) => layer.scope).join(' -> ')}`);
+  console.log(`  Default Profile  : ${settingsStatus.resolvedSettings.mcp.defaultProfile}`);
+  console.log(`  Review Profile   : ${settingsStatus.resolvedSettings.mcp.readonlySessionProfile}`);
+  console.log(`  Harness Runtime  : ${settingsStatus.resolvedSettings.harnesses.allowRuntimeExecution ? 'enabled' : 'disabled'}`);
+  if (settingsStatus.routingPreview && settingsStatus.routingPreview.dashboardTool) {
+    console.log(`  Dashboard Route  : ${settingsStatus.routingPreview.dashboardTool.profile} (${settingsStatus.routingPreview.dashboardTool.reason})`);
+  }
 
   console.log('');
   console.log('👥 Team');

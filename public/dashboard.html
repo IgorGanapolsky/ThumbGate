@@ -131,11 +131,19 @@
   .empty { text-align: center; padding: 48px; color: var(--text-muted); font-size: 15px; }
   .loading { text-align: center; padding: 24px; color: var(--text-muted); }
   h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.02em; }
+  .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .settings-card, .origin-row, .layer-row, .routing-row { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .layer-row, .routing-row, .origin-row { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 12px; }
+  .scope-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; background: var(--cyan-dim); color: var(--cyan); }
+  .settings-card .team-kicker, .origin-path, .routing-name, .layer-name { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+  .settings-card .team-value, .origin-value { font-size: 18px; font-weight: 700; color: var(--text); margin-top: 8px; word-break: break-word; }
+  .origin-list, .layer-list, .routing-list { display: flex; flex-direction: column; gap: 12px; }
+  .origin-note, .layer-note, .routing-note { font-size: 13px; color: var(--text-muted); line-height: 1.55; }
 
   @media (max-width: 700px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .search-filters { flex-wrap: wrap; }
-    .team-grid, .template-grid, .team-columns { grid-template-columns: 1fr; }
+    .team-grid, .template-grid, .team-columns, .settings-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -199,6 +207,7 @@
     <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
     <div class="tab" onclick="switchTab('gates')">🛡️ Active Gates</div>
     <div class="tab" onclick="switchTab('team')">👥 Team</div>
+    <div class="tab" onclick="switchTab('settings')">⚙️ Policy Origins</div>
     <div class="tab" onclick="switchTab('templates')">🧱 Gate Templates</div>
     <div class="tab" onclick="switchTab('export')">📦 Export</div>
   </div>
@@ -245,6 +254,29 @@
           <h3>Top Blocked Gates</h3>
           <div id="teamBlockedGates"><div class="loading">Loading blocked gates...</div></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div class="tab-content" id="tab-settings">
+    <div class="templates-section">
+      <h2>Policy Origins</h2>
+      <div class="template-summary" id="settingsSummary">Loading settings hierarchy...</div>
+      <div class="settings-grid" id="settingsSummaryCards"><div class="loading">Loading settings summary...</div></div>
+      <div class="team-columns">
+        <div class="panel">
+          <h3>Layer Precedence</h3>
+          <div class="layer-list" id="settingsLayers"><div class="loading">Loading layers...</div></div>
+        </div>
+        <div class="panel">
+          <h3>Routing Preview</h3>
+          <div class="routing-list" id="settingsRouting"><div class="loading">Loading routing...</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Resolved Setting Origins</h3>
+        <div class="origin-list" id="settingsOrigins"><div class="loading">Loading settings origins...</div></div>
       </div>
     </div>
   </div>
@@ -489,6 +521,7 @@ async function loadGates() {
   } catch (e) {
     setMessageState(document.getElementById('gatesList'), 'empty', e && e.message ? e.message : 'Failed to load gates');
     setMessageState(document.getElementById('teamSummaryCards'), 'empty', e && e.message ? e.message : 'Failed to load team metrics');
+    setMessageState(document.getElementById('settingsSummaryCards'), 'empty', e && e.message ? e.message : 'Failed to load policy origins');
     setMessageState(document.getElementById('templateLibrary'), 'empty', e && e.message ? e.message : 'Failed to load template library');
   }
 }
@@ -514,7 +547,76 @@ function renderDashboardData(data) {
   }
 
   renderTeam(data.team || {}, data.analytics || {});
+  renderSettingsStatus(data.settingsStatus || {});
   renderTemplates(data.templateLibrary || {});
+}
+
+function formatScope(scope) {
+  return escHtml(String(scope || 'unknown').replace(/_/g, ' '));
+}
+
+function formatSettingValue(value) {
+  if (value === undefined) return 'undefined';
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
+}
+
+function renderSettingsStatus(settingsStatus) {
+  const resolvedSettings = settingsStatus.resolvedSettings || {};
+  const origins = Array.isArray(settingsStatus.origins) ? settingsStatus.origins : [];
+  const activeLayers = Array.isArray(settingsStatus.activeLayers) ? settingsStatus.activeLayers : [];
+  const routingPreview = settingsStatus.routingPreview || {};
+  const activeLayerNames = activeLayers.filter(function(layer) { return layer.exists; }).map(function(layer) { return layer.scope; });
+
+  document.getElementById('settingsSummary').textContent =
+    'Managed > local > project > user > defaults. Active layers: ' + (activeLayerNames.length ? activeLayerNames.join(' → ') : 'defaults only') + '.';
+
+  const summaryCards = [
+    { label: 'Default MCP profile', value: resolvedSettings.mcp && resolvedSettings.mcp.defaultProfile ? resolvedSettings.mcp.defaultProfile : 'essential', note: 'baseline execution profile' },
+    { label: 'Read-only profile', value: resolvedSettings.mcp && resolvedSettings.mcp.readonlySessionProfile ? resolvedSettings.mcp.readonlySessionProfile : 'readonly', note: 'review sessions and no-write intent' },
+    { label: 'Harness runtime', value: resolvedSettings.harnesses && resolvedSettings.harnesses.allowRuntimeExecution ? 'enabled' : 'disabled', note: 'natural-language harness execution' },
+    { label: 'Policy origins', value: String(origins.length), note: 'resolved leaf settings with source metadata' }
+  ];
+
+  document.getElementById('settingsSummaryCards').innerHTML = summaryCards.map(function(card) {
+    return '<div class="settings-card">' +
+      '<div class="team-kicker">' + escHtml(card.label) + '</div>' +
+      '<div class="team-value">' + escHtml(card.value) + '</div>' +
+      '<div class="team-note">' + escHtml(card.note) + '</div>' +
+    '</div>';
+  }).join('');
+
+  document.getElementById('settingsLayers').innerHTML = activeLayers.length
+    ? activeLayers.map(function(layer) {
+      const source = layer.sourcePath ? layer.sourcePath : 'built-in defaults';
+      const state = layer.exists ? String(layer.leafCount || 0) + ' overrides' : 'not present';
+      return '<div class="layer-row"><div>' +
+        '<div class="layer-name">' + escHtml(source) + '</div>' +
+        '<div class="layer-note">' + escHtml(state) + '</div>' +
+      '</div><span class="scope-pill">' + formatScope(layer.scope) + '</span></div>';
+    }).join('')
+    : '<div class="empty" style="padding:20px 0;">No settings layers resolved.</div>';
+
+  const routingEntries = Object.keys(routingPreview);
+  document.getElementById('settingsRouting').innerHTML = routingEntries.length
+    ? routingEntries.map(function(key) {
+      const route = routingPreview[key] || {};
+      return '<div class="routing-row"><div>' +
+        '<div class="routing-name">' + escHtml(key) + '</div>' +
+        '<div class="routing-note">' + escHtml(route.reason || 'No routing reason available') + '</div>' +
+      '</div><span class="scope-pill">' + escHtml(route.profile || 'unknown') + '</span></div>';
+    }).join('')
+    : '<div class="empty" style="padding:20px 0;">No routing preview available.</div>';
+
+  document.getElementById('settingsOrigins').innerHTML = origins.length
+    ? origins.map(function(origin) {
+      return '<div class="origin-row"><div>' +
+        '<div class="origin-path">' + escHtml(origin.path || '') + '</div>' +
+        '<div class="origin-value">' + escHtml(formatSettingValue(origin.value)) + '</div>' +
+        '<div class="origin-note">' + escHtml(origin.sourcePath || 'built-in defaults') + '</div>' +
+      '</div><span class="scope-pill">' + formatScope(origin.scope) + '</span></div>';
+    }).join('')
+    : '<div class="empty" style="padding:20px 0;">No resolved setting origins.</div>';
 }
 
 function renderTeam(team, analytics) {
@@ -650,6 +752,30 @@ function loadDemo() {
       weeklyTeamsRunningProofBackedWorkflows: 3,
       paidTeamRuns: 1
     }
+  });
+  renderSettingsStatus({
+    activeLayers: [
+      { scope: 'defaults', exists: true, leafCount: 7, sourcePath: null },
+      { scope: 'user', exists: true, leafCount: 2, sourcePath: '~/.thumbgate/settings.json' },
+      { scope: 'project', exists: true, leafCount: 2, sourcePath: '.thumbgate/settings.json' },
+      { scope: 'local', exists: false, leafCount: 0, sourcePath: '.thumbgate/settings.local.json' },
+      { scope: 'managed', exists: true, leafCount: 3, sourcePath: 'config/thumbgate-settings.managed.json' }
+    ],
+    resolvedSettings: {
+      mcp: { defaultProfile: 'essential', readonlySessionProfile: 'readonly' },
+      harnesses: { enabled: true, allowRuntimeExecution: true }
+    },
+    routingPreview: {
+      dashboardTool: { profile: 'readonly', reason: 'dashboard is available in the most restrictive profile that contains it' },
+      defaultSession: { profile: 'essential', reason: 'default auto-routing — essential profile from settings hierarchy' },
+      reviewSession: { profile: 'readonly', reason: 'read-only session detected — routing to readonly profile' }
+    },
+    origins: [
+      { path: 'mcp.defaultProfile', value: 'essential', scope: 'project', sourcePath: '.thumbgate/settings.json' },
+      { path: 'mcp.readonlySessionProfile', value: 'readonly', scope: 'project', sourcePath: '.thumbgate/settings.json' },
+      { path: 'harnesses.allowRuntimeExecution', value: true, scope: 'project', sourcePath: '.thumbgate/settings.json' },
+      { path: 'dashboard.showPolicyOrigins', value: true, scope: 'managed', sourcePath: 'config/thumbgate-settings.managed.json' }
+    ]
   });
   renderTemplates({
     total: 6,

@@ -24,6 +24,7 @@ node_modules/
 .rlhf/
 .artifacts/
 .npmrc
+.thumbgate/settings.local.json
 .mcpregistry_github_token
 .mcpregistry_registry_token
 .omx/
