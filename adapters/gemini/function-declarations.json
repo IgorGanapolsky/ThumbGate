@@ -195,6 +195,30 @@
         "method": "POST",
         "path": "/v1/gates/constraint"
       }
+    },
+    {
+      "name": "list_skill_packs",
+      "description": "List all available domain-specific skill packs with best-practice prevention rules.",
+      "parameters": { "type": "object", "properties": {} },
+      "http": { "method": "GET", "path": "/v1/skill-packs" }
+    },
+    {
+      "name": "match_skill_packs",
+      "description": "Find skill packs whose triggers match a query.",
+      "parameters": { "type": "object", "properties": { "query": { "type": "string" } }, "required": ["query"] },
+      "http": { "method": "GET", "path": "/v1/skill-packs/match" }
+    },
+    {
+      "name": "install_skill_pack",
+      "description": "Install a skill pack's prevention rules into the active rule set.",
+      "parameters": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] },
+      "http": { "method": "POST", "path": "/v1/skill-packs/install" }
+    },
+    {
+      "name": "run_eval",
+      "description": "Run the ThumbGate eval harness to measure before/after impact.",
+      "parameters": { "type": "object", "properties": { "domain": { "type": "string" } } },
+      "http": { "method": "POST", "path": "/v1/eval/run" }
     }
   ]
 }
