@@ -145,6 +145,8 @@
   <div class="container">
     <a href="/" class="nav-logo">👍👎 ThumbGate Dashboard</a>
     <div class="nav-links">
+      <a href="/dashboard" class="active" style="color:var(--cyan);">Dashboard</a>
+      <a href="/lessons">Lessons</a>
       <a href="/">Landing Page</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -167,6 +169,17 @@
 </div>
 
 <div class="container" id="dashboardContent" style="display:none;">
+
+  <div style="margin:0 0 24px;padding:24px;background:linear-gradient(135deg,rgba(34,211,238,0.08),rgba(74,222,128,0.05));border:1px solid rgba(34,211,238,0.2);border-radius:12px;">
+    <h1 style="font-size:22px;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;">🔍 Operations Dashboard</h1>
+    <p style="font-size:14px;color:var(--text-muted);line-height:1.6;max-width:700px;">What's happening right now? Search memories, inspect active gates, manage your team, and export training data. <span style="color:var(--cyan);font-weight:600;">This is your control plane for AI agent behavior.</span></p>
+    <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted);">
+      <span>🔍 <strong style="color:var(--text);">Search</strong> — find any memory</span>
+      <span>🛡️ <strong style="color:var(--text);">Gates</strong> — what's blocking</span>
+      <span>👥 <strong style="color:var(--text);">Team</strong> — org metrics</span>
+      <span>📤 <strong style="color:var(--text);">Export</strong> — DPO training data</span>
+    </div>
+  </div>
 
   <div class="demo-banner" id="demoBanner" style="display:none;">
     <span>📊 <strong>Demo Mode</strong> — sample data. Pro unlocks your personal dashboard; Team rollout adds shared lessons and org visibility.</span>
