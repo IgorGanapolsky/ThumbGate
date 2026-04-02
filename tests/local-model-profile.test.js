@@ -8,6 +8,8 @@ const path = require('node:path');
 
 const {
   detectHardware,
+  detectInferenceBackend,
+  recommendInferenceBackend,
   resolveEmbeddingProfile,
   writeModelFitReport,
   resolveModelRole,
@@ -102,4 +104,43 @@ test('resolveModelRole respects env override', () => {
 
 test('resolveModelRole throws on unknown role', () => {
   assert.throws(() => resolveModelRole('nonexistent', {}), /Unknown model role/);
+});
+
+test('detectInferenceBackend defaults to managed API and is not IndexCache-eligible', () => {
+  const backend = detectInferenceBackend({});
+  assert.equal(backend.providerMode, 'managed');
+  assert.equal(backend.id, 'managed-api');
+  assert.equal(backend.indexCacheEligible, false);
+  assert.equal(backend.indexCacheEnabled, false);
+});
+
+test('detectInferenceBackend recognizes local sparse-attention backend with IndexCache readiness', () => {
+  const backend = detectInferenceBackend({
+    RLHF_PROVIDER_MODE: 'local',
+    RLHF_LOCAL_MODEL_FAMILY: 'deepseek-r1',
+    RLHF_LOCAL_MODEL_SERVER: 'sglang',
+    RLHF_INDEXCACHE_ENABLED: 'true',
+  });
+
+  assert.equal(backend.providerMode, 'local');
+  assert.equal(backend.id, 'local-deepseek-r1-sparse');
+  assert.equal(backend.indexCacheEligible, true);
+  assert.equal(backend.indexCacheEnabled, true);
+  assert.equal(backend.longContextOptimized, true);
+});
+
+test('recommendInferenceBackend highlights IndexCache eligibility for long-context local sparse workloads', () => {
+  const recommendation = recommendInferenceBackend({
+    type: 'large-context',
+    contextTokens: 180000,
+    tags: ['xmemory'],
+  }, {
+    RLHF_PROVIDER_MODE: 'local',
+    RLHF_LOCAL_MODEL_FAMILY: 'glm-4.5',
+    RLHF_LOCAL_MODEL_SERVER: 'vllm',
+  });
+
+  assert.equal(recommendation.workloadClass, 'long_context');
+  assert.equal(recommendation.recommendationClass, 'indexcache_eligible');
+  assert.equal(recommendation.backend.indexCacheEligible, true);
 });

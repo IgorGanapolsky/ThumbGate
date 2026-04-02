@@ -168,6 +168,18 @@ node scripts/async-job-runner.js --list-harnesses
 node scripts/async-job-runner.js --run-harness=repo-full-verification --harness-inputs='{"verificationCommand":"npm run verify:full"}'
 ```
 
+Long-context local backends can now expose sparse-attention routing hints through the profile router:
+
+```bash
+RLHF_PROVIDER_MODE=local \
+RLHF_LOCAL_MODEL_FAMILY=deepseek-r1 \
+RLHF_LOCAL_MODEL_SERVER=sglang \
+RLHF_INDEXCACHE_ENABLED=true \
+npm run profile:route
+```
+
+ThumbGate treats IndexCache-style acceleration as a backend capability, not a blanket claim. Long-context retrieval-heavy workloads will recommend sparse-attention local backends when they are actually available.
+
 Lean install for recall + gates + lesson search only:
 
 ```bash
@@ -197,7 +209,7 @@ Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
 | Auto-generates rules             | **Yes** — from repeated failures                  | No — manual or Gemini compile                  | No                 | No               |
 | Agent support                    | Claude Code, Codex, Gemini, Amp, Cursor, OpenCode | Claude Code, Cursor, Windsurf, Cline, Bolt.new | Claude, Cursor     | Cursor only      |
 | Install                          | `npx mcp-memory-gateway init`                     | `npx speclock setup`                           | Cloud signup       | Edit file        |
-| Cost                             | **Free** (Pro $99 for teams)                      | Free                                           | Free tier + paid   | Free             |
+| Cost                             | **Free** ($19/mo or $149/yr Pro; Team rollout starts at $12/seat/mo) | Free                                           | Free tier + paid   | Free             |
 | npm weekly downloads             | **724**                                           | 98                                             | N/A                | N/A              |
 
 **When to use ThumbGate:** You want your agent to learn from mistakes automatically and enforce what it learned. One thumbs-down creates a gate.
