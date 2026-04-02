@@ -108,6 +108,19 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'retrieve_lessons',
+    description: 'Retrieve the most relevant lessons for a given tool/action context. Use in PreToolUse hooks for per-action guidance.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        toolName: { type: 'string', description: 'The tool being called (e.g., Bash, Edit, Read)' },
+        actionContext: { type: 'string', description: 'Description of what the tool call is doing' },
+        maxResults: { type: 'number', description: 'Max lessons to return (default 5)' },
+      },
+      required: ['toolName'],
+    },
+  }),
+  readOnlyTool({
     name: 'search_rlhf',
     description: 'Search raw RLHF state across feedback logs, ContextFS memory, and prevention rules.',
     inputSchema: {

@@ -68,6 +68,9 @@ const {
   searchLessons,
 } = require('../../scripts/lesson-search');
 const {
+  retrieveRelevantLessons,
+} = require('../../scripts/lesson-retrieval');
+const {
   searchRlhf,
 } = require('../../scripts/rlhf-search');
 const { checkLimit, UPGRADE_MESSAGE } = require('../../scripts/rate-limiter');
@@ -379,6 +382,12 @@ async function callToolInner(name, args) {
         category: args.category,
         tags: Array.isArray(args.tags) ? args.tags : [],
       }));
+    case 'retrieve_lessons':
+      return toTextResult(retrieveRelevantLessons(
+        args.toolName,
+        args.actionContext || '',
+        { maxResults: Number(args.maxResults || 5) },
+      ));
     case 'search_rlhf':
       enforceLimit('search_rlhf');
       return toTextResult(searchRlhf({
