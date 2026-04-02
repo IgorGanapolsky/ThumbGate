@@ -24,6 +24,7 @@ function initDb(dbPath = DEFAULT_DB_PATH) {
   }
 
   const db = new Database(resolvedPath);
+  db.pragma('busy_timeout = 3000');
 
   // Enable WAL mode for better concurrent read performance.
   if (!isInMemoryDatabase) {
