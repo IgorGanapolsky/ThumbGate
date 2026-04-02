@@ -51,7 +51,7 @@ Works in local mode (zero config, no API key) or connected to the Context Gatewa
 ### Option A: Local mode (OSS, no API key needed)
 
 ```bash
-claude mcp add rlhf -- npx -y mcp-memory-gateway@0.8.7 serve
+claude mcp add rlhf -- npx -y mcp-memory-gateway@0.8.8 serve
 ```
 
 Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/settings.json`):
@@ -61,7 +61,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
   "mcpServers": {
     "rlhf": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.8.7", "serve"],
+      "args": ["-y", "mcp-memory-gateway@0.8.8", "serve"],
       "env": {
         "RLHF_BASE_URL": "http://localhost:8787"
       }
@@ -77,7 +77,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
   "mcpServers": {
     "rlhf": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.8.7", "serve"],
+      "args": ["-y", "mcp-memory-gateway@0.8.8", "serve"],
       "env": {
         "RLHF_BASE_URL": "https://rlhf-feedback-loop-production.up.railway.app",
         "RLHF_API_KEY": "rlhf_YOUR_KEY_HERE"
@@ -125,7 +125,7 @@ Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/doc
 
 ## Transport
 
-- **stdio** (primary): `npx -y mcp-memory-gateway@0.8.7 serve` — version-pinned portable MCP launcher for Claude Code desktop and CLI
+- **stdio** (primary): `npx -y mcp-memory-gateway@0.8.8 serve` — version-pinned portable MCP launcher for Claude Code desktop and CLI
 - **HTTP** (secondary): `src/api/server.js` — REST API (`POST /v1/feedback/capture`, `GET /v1/feedback/summary`, `POST /v1/dpo/export`)
 
 ---
@@ -172,7 +172,7 @@ MIT
 
 ## Version
 
-0.8.7
+0.8.8
 
 ---
 

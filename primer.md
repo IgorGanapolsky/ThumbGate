@@ -35,7 +35,7 @@ _No strong behavioral patterns identified yet._
 d528b67 feat: add /lessons page with Active Rules, Timeline, and Insights tabs (#482)
 bb0abcb feat: /lessons page with Active Rules, Timeline, and Insights tabs
 96cc625 feat: rich quick-feedback confirmation page with context input, undo, and animations (#476)
-eddf7de chore: bump to 0.8.7
+eddf7de chore: bump to 0.8.8
 ```
 
 ### Modified Files:
