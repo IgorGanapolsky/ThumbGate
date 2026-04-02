@@ -93,7 +93,7 @@ function enforceLimit(action) {
 }
 const { bootstrapInternalAgent } = require('../../scripts/internal-agent-bootstrap');
 
-const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.9.2' };
+const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.9.3' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -631,8 +631,12 @@ function writeNdjsonResponse(id, payload, error = null) {
   process.stdout.write(`${body}\n`);
 }
 
-function startStdioServer() {
-  // Process dedup: prevent multiple instances serving the same feedback dir (causes SQLite contention)
+/**
+ * Acquire a file-system lock to prevent duplicate MCP server instances.
+ * Returns { lockFile, cleanupLock } on success, or calls process.exit(1)
+ * if another live server holds the lock.
+ */
+function acquireLock() {
   const feedbackDir = getFeedbackPaths().FEEDBACK_DIR;
   const lockFile = path.join(feedbackDir, '.mcp-server.lock');
   try {
@@ -654,7 +658,13 @@ function startStdioServer() {
     process.on('exit', cleanupLock);
     process.on('SIGTERM', () => { cleanupLock(); process.exit(0); });
     process.on('SIGINT', () => { cleanupLock(); process.exit(0); });
+    return { lockFile, cleanupLock };
   } catch { /* best-effort lock */ }
+  return { lockFile, cleanupLock: () => {} };
+}
+
+function startStdioServer() {
+  acquireLock();
 
   process.stdin.resume();
   let buffer = Buffer.alloc(0);
@@ -717,4 +727,5 @@ module.exports = {
   handleRequest,
   callTool,
   startStdioServer,
+  acquireLock,
 };

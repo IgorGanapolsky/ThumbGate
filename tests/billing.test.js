@@ -860,3 +860,121 @@ describe('API server — /v1/billing/* routes', () => {
     assert.equal(res.headers.get('x-rlhf-trace-id'), body.traceId);
   });
 });
+
+describe('billing.js — withTimeout helper', () => {
+  test('resolves when promise settles before timeout', async () => {
+    const billing = requireFreshBilling('');
+    const result = await billing._withTimeout(Promise.resolve('ok'), 1000);
+    assert.equal(result, 'ok');
+  });
+
+  test('rejects with timeout error when promise exceeds timeout', async () => {
+    const billing = requireFreshBilling('');
+    const slow = new Promise((resolve) => setTimeout(() => resolve('late'), 5000));
+    await assert.rejects(
+      () => billing._withTimeout(slow, 50),
+      (err) => {
+        assert.ok(err.message.includes('Stripe API timeout after 50ms'));
+        return true;
+      }
+    );
+  });
+
+  test('rejects with original error when promise rejects before timeout', async () => {
+    const billing = requireFreshBilling('');
+    await assert.rejects(
+      () => billing._withTimeout(Promise.reject(new Error('stripe_err')), 5000),
+      (err) => {
+        assert.equal(err.message, 'stripe_err');
+        return true;
+      }
+    );
+  });
+});
+
+describe('billing.js — getBillingSummaryLive fallback paths', () => {
+  beforeEach(() => {
+    clearBillingArtifacts();
+  });
+
+  test('returns default object with stripe_timeout error when options getter throws timeout', async () => {
+    const billing = requireFreshBilling('');
+    const trap = Object.create(null, {
+      poisoned: {
+        get() { throw new Error('Stripe API timeout after 5000ms'); },
+        enumerable: true,
+      },
+    });
+
+    const summary = await billing.getBillingSummaryLive(trap);
+
+    assert.equal(summary.error, 'stripe_timeout');
+    assert.ok(summary.message.includes('Stripe API timeout'));
+    assert.equal(summary.revenue.total, 0);
+    assert.equal(summary.revenue.mrr, 0);
+    assert.deepEqual(summary.revenue.events, []);
+    assert.deepEqual(summary.customers, []);
+  });
+
+  test('returns default object with billing_summary_error on non-timeout errors', async () => {
+    const billing = requireFreshBilling('');
+    const trap = Object.create(null, {
+      poisoned: {
+        get() { throw new Error('unexpected failure'); },
+        enumerable: true,
+      },
+    });
+
+    const summary = await billing.getBillingSummaryLive(trap);
+
+    assert.equal(summary.error, 'billing_summary_error');
+    assert.equal(summary.message, 'unexpected failure');
+    assert.equal(summary.revenue.total, 0);
+    assert.equal(summary.usage.totalUsage, 0);
+  });
+
+  test('returns default object when error has no message property', async () => {
+    const billing = requireFreshBilling('');
+    const trap = Object.create(null, {
+      poisoned: {
+        get() { throw null; },
+        enumerable: true,
+      },
+    });
+
+    const summary = await billing.getBillingSummaryLive(trap);
+
+    assert.equal(summary.error, 'billing_summary_error');
+    assert.equal(summary.message, 'Unknown error');
+  });
+});
+
+describe('billing.js — listStripeReconciledRevenueEvents edge cases', () => {
+  beforeEach(() => {
+    clearBillingArtifacts();
+  });
+
+  test('returns empty array when STRIPE_SECRET_KEY is missing', async () => {
+    delete process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
+    const billing = requireFreshBilling('');
+    const events = await billing.listStripeReconciledRevenueEvents();
+    assert.deepEqual(events, []);
+  });
+
+  test('returns test events from env var when set', async () => {
+    process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = JSON.stringify([
+      { provider: 'stripe', event: 'stripe_charge_reconciled', orderId: 'ch_test_1' },
+    ]);
+    const billing = requireFreshBilling('');
+    const events = await billing.listStripeReconciledRevenueEvents();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].orderId, 'ch_test_1');
+  });
+
+  test('returns empty array when env var has invalid JSON', async () => {
+    process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = 'not-json{{{';
+    const billing = requireFreshBilling('');
+    const events = await billing.listStripeReconciledRevenueEvents();
+    assert.deepEqual(events, []);
+  });
+});
