@@ -32,12 +32,43 @@ jobs:
       STRIPE_WEBHOOK_SECRET_ROTATED_AT: ${{ vars.STRIPE_WEBHOOK_SECRET_ROTATED_AT }}
     steps:
       - uses: actions/checkout@v6
+      - name: Detect deployable changes
+        id: deploy-scope
+        run: |
+          CHANGED_FILES="$(git show --name-only --format='' "$GITHUB_SHA" | sed '/^$/d')"
+          SHOULD_DEPLOY=false
+
+          if [ -z "$CHANGED_FILES" ]; then
+            SHOULD_DEPLOY=true
+          else
+            while IFS= read -r file; do
+              case "$file" in
+                .github/*|tests/*)
+                  ;;
+                *)
+                  SHOULD_DEPLOY=true
+                  break
+                  ;;
+              esac
+            done <<< "$CHANGED_FILES"
+          fi
+
+          echo "changed_files<<EOF" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$CHANGED_FILES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "should_deploy=$SHOULD_DEPLOY" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v6
         with:
           node-version: 20
       - name: Check Railway deployment configuration
         id: railway-config
         run: |
+          if [ "${{ steps.deploy-scope.outputs.should_deploy }}" != "true" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Railway deploy skipped: only workflow/test files changed on this commit."
+            exit 0
+          fi
+
           if [ -z "$RAILWAY_TOKEN" ] || [ -z "$RAILWAY_PROJECT_ID" ] || [ -z "$RAILWAY_ENVIRONMENT_ID" ] || [ -z "$RAILWAY_HEALTHCHECK_URL" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "Railway deploy skipped: missing RAILWAY_TOKEN, RAILWAY_PROJECT_ID, RAILWAY_ENVIRONMENT_ID, or RAILWAY_HEALTHCHECK_URL."
