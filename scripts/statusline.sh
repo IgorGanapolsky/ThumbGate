@@ -19,14 +19,33 @@ if [ ! -f "$RLHF_CACHE" ]; then
   done
 fi
 
-UP="0"; DOWN="0"; LESSONS="0"; TREND="?"
+UP="0"; DOWN="0"; LESSONS="0"; TREND="?"; CACHE_TS="0"
 if [ -f "$RLHF_CACHE" ]; then
   eval "$(jq -r '
     @sh "UP=\(.thumbs_up // "0")",
     @sh "DOWN=\(.thumbs_down // "0")",
     @sh "LESSONS=\(.lessons // "0")",
-    @sh "TREND=\(.trend // "?")"
+    @sh "TREND=\(.trend // "?")",
+    @sh "CACHE_TS=\(.updated_at // "0")"
   ' "$RLHF_CACHE" 2>/dev/null)"
+fi
+# Background refresh from REST API when cache is stale (>120s)
+_NOW=$(date +%s)
+if [ $(( _NOW - ${CACHE_TS:-0} )) -gt 120 ]; then
+  (
+    _R=$(curl -s --max-time 3 "http://localhost:9876/v1/feedback/stats" -H "Authorization: Bearer tg_creator_dev_enterprise" 2>/dev/null)
+    [ -z "$_R" ] && exit 0
+    echo "$_R" | python3 -c "
+import json,sys,time,os
+try:
+  d=json.load(sys.stdin)
+  c={'thumbs_up':str(d.get('totalPositive',0)),'thumbs_down':str(d.get('totalNegative',0)),'lessons':str(d.get('rubric',{}).get('samples',0)),'approval_rate':str(round(d.get('approvalRate',0)*100,1)),'trend':d.get('trend','?'),'total_feedback':str(d.get('total',0)),'updated_at':str(int(time.time()))}
+  os.makedirs(os.path.dirname('$RLHF_CACHE'),exist_ok=True)
+  json.dump(c,open('$RLHF_CACHE','w'))
+except:pass
+" 2>/dev/null
+  ) &>/dev/null &
+  disown 2>/dev/null
 fi
 
 # ── Colors ────────────────────────────────────────────────────────
