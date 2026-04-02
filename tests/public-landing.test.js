@@ -160,6 +160,7 @@ test('public landing page Pro tier uses outcome-framed bullets that justify upgr
   assert.match(landingPage, /Auto-connect/i);
   assert.match(landingPage, /agents appear automatically/i);
   assert.match(landingPage, /DPO training data export/i);
+  assert.match(landingPage, /Model Hardening Advisor/i);
   assert.match(landingPage, /ready-to-use preference pairs for fine-tuning/i);
   assert.match(landingPage, /Personal local dashboard/i);
   assert.match(landingPage, /Founder-license support/i);
@@ -189,12 +190,13 @@ test('public landing page includes FAQ section with accordion interaction', () =
 
   assert.match(landingPage, /id="faq"/);
   assert.match(landingPage, /Common questions/);
-  assert.match(landingPage, /How is ThumbGate different from RLHF\?/);
-  assert.match(landingPage, /What's the tech stack\?/);
-  assert.match(landingPage, /What AI agents and editors does this work with\?/);
-  assert.match(landingPage, /Do I need a cloud account\?/);
-  assert.match(landingPage, /How are gates different from prompt rules\?/);
-  assert.match(landingPage, /What does Pro cost\?/);
+  assert.match(landingPage, /How are (pre-action )?gates different from prompt rules\?/i);
+  assert.match(landingPage, /How is ThumbGate different from RLHF\?/i);
+  assert.match(landingPage, /What's the tech stack\?/i);
+  assert.match(landingPage, /What AI agents and editors does this work with\?/i);
+  assert.match(landingPage, /Do I need a cloud account\?/i);
+  assert.match(landingPage, /What does Pro cost\?/i);
+  assert.match(landingPage, /Does ThumbGate support model fine-tuning\?/i);
   assert.match(landingPage, /role="button"/);
   assert.match(landingPage, /tabindex="0"/);
   assert.match(landingPage, /aria-expanded="true"/);
@@ -245,7 +247,7 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /trackClick\('.seo-card', 'seo_page_click'\)/);
 
   // Safety: typeof check before calling plausible
-  assert.match(landingPage, /typeof plausible === 'function'/);
+  assert.match(landingPage, /typeof plausible === ['"]function['"]/);
 
   // Scroll depth tracks 25%, 50%, 75%, 100%
   assert.match(landingPage, /scrollMarks/);
