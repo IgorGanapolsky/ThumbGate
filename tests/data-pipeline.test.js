@@ -165,8 +165,14 @@ test('materializeAgenticDataPipeline builds staged snapshots and writes artifact
 
     assert.equal(snapshot.semantic.metrics.bookedRevenueCents, 4900);
     assert.equal(snapshot.semantic.metrics.pipelineWarnings, 0);
+    assert.equal(snapshot.semantic.metrics.predictedBookedRevenueCents, 4900);
+    assert.equal(snapshot.semantic.metrics.incrementalRevenueOpportunityCents, 0);
+    assert.equal(snapshot.semantic.metrics.predictiveAnomalyCount, 0);
     assert.equal(snapshot.staging.dims.creators[0].key, 'reach_vb');
     assert.equal(snapshot.staging.dims.sources[0].key, 'producthunt');
+    assert.ok(snapshot.semantic.predictive);
+    assert.ok(snapshot.semantic.predictive.upgradePropensity.pro.score >= 0);
+    assert.equal(snapshot.semantic.predictive.topCreators[0].key, 'reach_vb');
     assert.equal(snapshot.lineage.incremental.mode, 'refresh');
     assert.equal(fs.existsSync(snapshot.paths.telemetryRawPath), true);
     assert.equal(fs.existsSync(snapshot.paths.catalogPath), true);

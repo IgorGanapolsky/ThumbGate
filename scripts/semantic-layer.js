@@ -55,6 +55,26 @@ const SemanticSchema = {
       description: 'Warning count emitted by the staged analytics reconciliation checks.',
       unit: 'count',
     },
+    PredictedBookedRevenue: {
+      description: 'Model-assisted projection of likely booked revenue from current funnel and attribution signals.',
+      unit: 'cents',
+    },
+    IncrementalRevenueOpportunity: {
+      description: 'Forecasted revenue left on the table relative to currently booked revenue.',
+      unit: 'cents',
+    },
+    ProUpgradeScore: {
+      description: '0-1 propensity score that free/local activity is ripe for Pro conversion.',
+      unit: 'ratio',
+    },
+    TeamUpgradeScore: {
+      description: '0-1 propensity score that current activity is ripe for Team rollout and expansion.',
+      unit: 'ratio',
+    },
+    PredictiveAnomalyCount: {
+      description: 'Count of predictive analytics anomalies requiring operator attention.',
+      unit: 'count',
+    },
   },
 };
 

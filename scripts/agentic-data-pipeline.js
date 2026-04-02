@@ -17,6 +17,7 @@ const {
   serializeAnalyticsWindow,
 } = require('./analytics-window');
 const { appendWorkflowRun } = require('./workflow-runs');
+const { buildPredictiveInsights } = require('./predictive-insights');
 
 const PIPELINE_DIRNAME = 'agentic-data-pipeline';
 const DEFAULT_JOB_ID = 'agentic-data-pipeline';
@@ -412,6 +413,8 @@ function buildSemanticSnapshot({
   telemetryAnalytics,
   billingSummary,
   stagingModel,
+  gateStats = {},
+  team = {},
 }) {
   const uniqueVisitors = Number(telemetryAnalytics.visitors?.uniqueVisitors || 0);
   const checkoutStarts = Number(telemetryAnalytics.ctas?.checkoutStarts || 0);
@@ -420,6 +423,13 @@ function buildSemanticSnapshot({
   const bookedRevenueCents = Number(billingSummary.revenue?.bookedRevenueCents || 0);
   const attributionCoverageRate = Number(telemetryAnalytics.visitors?.attributionCoverageRate || 0);
   const unreconciledPaidEvents = Number(billingSummary.dataQuality?.unreconciledPaidEvents || 0);
+  const predictive = buildPredictiveInsights({
+    telemetryAnalytics,
+    billingSummary,
+    stagingModel,
+    gateStats,
+    team,
+  });
 
   return {
     generatedAt: new Date().toISOString(),
@@ -439,18 +449,25 @@ function buildSemanticSnapshot({
       attributionCoverageRate,
       unreconciledPaidEvents,
       pipelineWarnings: stagingModel.reconciliation.warningCount,
+      predictedBookedRevenueCents: predictive.revenueForecast.predictedBookedRevenueCents,
+      incrementalRevenueOpportunityCents: predictive.revenueForecast.incrementalOpportunityCents,
+      proUpgradeScore: predictive.upgradePropensity.pro.score,
+      teamUpgradeScore: predictive.upgradePropensity.team.score,
+      predictiveAnomalyCount: predictive.anomalySummary.count,
     },
     attribution: billingSummary.attribution || {},
     status: {
       isPostFirstDollar: paidCustomers > 0 || bookedRevenueCents > 0,
       hasActivePipeline: checkoutStarts > 0 || acquisitionLeads > 0,
       reconciliationStatus: stagingModel.reconciliation.status,
+      predictiveStatus: predictive.anomalySummary.severity,
     },
     dataQuality: {
       attributionCoverageRate,
       unreconciledPaidEvents,
       reconciliation: stagingModel.reconciliation,
     },
+    predictive,
     pipeline: {
       snapshotId,
       sourceHashes: stagingModel.sourceHashes,
@@ -668,6 +685,8 @@ async function materializeAgenticDataPipeline(options = {}) {
     telemetryAnalytics,
     billingSummary,
     stagingModel,
+    gateStats: options.gateStats || {},
+    team: options.team || {},
   });
   const lineageReport = buildLineageReport({
     window,

@@ -31,6 +31,7 @@ function buildVerifyPlan(mode = 'quick') {
       { command: npmCommand(), args: ['run', 'prove:evolution'] },
       { command: npmCommand(), args: ['run', 'prove:harnesses'] },
       { command: npmCommand(), args: ['run', 'prove:local-intelligence'] },
+      { command: npmCommand(), args: ['run', 'prove:predictive-insights'] },
       { command: npmCommand(), args: ['run', 'prove:runtime'] },
       { command: npmCommand(), args: ['run', 'prove:settings'] },
       { command: npmCommand(), args: ['run', 'prove:seo-gsd'] },
@@ -128,6 +129,14 @@ function materializeProofArtifacts(tempRoot, cwd = process.cwd()) {
       target: path.join(cwd, 'proof', 'local-intelligence-report.md'),
     },
     {
+      source: path.join(tempRoot, 'proof-adapters', 'predictive-insights-report.json'),
+      target: path.join(cwd, 'proof', 'predictive-insights-report.json'),
+    },
+    {
+      source: path.join(tempRoot, 'proof-adapters', 'predictive-insights-report.md'),
+      target: path.join(cwd, 'proof', 'predictive-insights-report.md'),
+    },
+    {
       source: path.join(tempRoot, 'proof-runtime', 'runtime-report.json'),
       target: path.join(cwd, 'proof', 'runtime-report.json'),
     },
@@ -197,6 +206,7 @@ function recordVerifyWorkflowRun(mode = 'quick', cwd = process.cwd(), feedbackDi
       path.join(cwd, 'proof', 'evolution-report.json'),
       path.join(cwd, 'proof', 'harnesses-report.json'),
       path.join(cwd, 'proof', 'local-intelligence-report.json'),
+      path.join(cwd, 'proof', 'predictive-insights-report.json'),
       path.join(cwd, 'proof', 'runtime-report.json'),
       path.join(cwd, 'proof', 'settings-report.json'),
       path.join(cwd, 'proof', 'seo-gsd-report.json'),

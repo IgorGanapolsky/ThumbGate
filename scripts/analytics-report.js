@@ -5,6 +5,7 @@ const { PRODUCTHUNT_URL } = require('./distribution-surfaces');
 const { getOperationalBillingSummary } = require('./operational-summary');
 const { summarizeCreatorPerformance } = require('./creator-campaigns');
 const { getFeedbackPaths } = require('./feedback-loop');
+const { buildPredictiveInsights } = require('./predictive-insights');
 const { getTelemetryAnalytics } = require('./telemetry-analytics');
 
 const NPM_PACKAGE = 'mcp-memory-gateway';
@@ -57,6 +58,46 @@ function loadTelemetrySnapshot() {
 
 function getCounterValue(counter = {}, key) {
   return Number(counter && counter[key]) || 0;
+}
+
+function mergeDimensionCounters(metricCounters = {}) {
+  const metrics = Object.keys(metricCounters);
+  const rows = new Map();
+
+  for (const metric of metrics) {
+    const counter = metricCounters[metric] || {};
+    for (const [rawKey, rawValue] of Object.entries(counter)) {
+      const key = String(rawKey || '').trim() || 'unknown';
+      const row = rows.get(key) || { key };
+      row[metric] = Number(rawValue || 0);
+      rows.set(key, row);
+    }
+  }
+
+  return Array.from(rows.values());
+}
+
+function buildPredictiveStagingModel(telemetry = {}, billingSummary = {}) {
+  return {
+    dims: {
+      sources: mergeDimensionCounters({
+        pageViews: telemetry.visitors && telemetry.visitors.bySource,
+        checkoutStarts: telemetry.ctas && telemetry.ctas.checkoutStartsBySource,
+        acquisitionLeads: billingSummary.attribution && billingSummary.attribution.acquisitionBySource,
+        paidCustomers: billingSummary.attribution && billingSummary.attribution.paidBySource,
+        bookedRevenueCents: billingSummary.attribution && billingSummary.attribution.bookedRevenueBySourceCents,
+      }),
+      creators: mergeDimensionCounters({
+        pageViews: telemetry.visitors && telemetry.visitors.byCreator,
+        checkoutStarts: telemetry.ctas && telemetry.ctas.checkoutStartsByCreator,
+        acquisitionLeads: billingSummary.attribution && billingSummary.attribution.acquisitionByCreator,
+        paidCustomers: billingSummary.attribution && billingSummary.attribution.paidByCreator,
+        bookedRevenueCents: billingSummary.attribution && billingSummary.attribution.bookedRevenueByCreatorCents,
+        workflowSprintLeads: billingSummary.pipeline && billingSummary.pipeline.workflowSprintLeads && billingSummary.pipeline.workflowSprintLeads.byCreator,
+        qualifiedWorkflowSprintLeads: billingSummary.pipeline && billingSummary.pipeline.qualifiedWorkflowSprintLeads && billingSummary.pipeline.qualifiedWorkflowSprintLeads.byCreator,
+      }),
+    },
+  };
 }
 
 function resolveProductHuntCount(primaryCounter = {}, secondaryCounter = {}) {
@@ -181,6 +222,11 @@ function formatReport(monthly, weekly, github, npmMeta, telemetry = null, billin
   const telemetryWindow = telemetry && telemetry.window ? telemetry.window : 'all';
   const telemetryLastSeen = telemetry && telemetry.latestSeenAt ? telemetry.latestSeenAt : 'none';
   const creatorRows = formatCreatorRows(telemetry, billingSummary);
+  const predictive = buildPredictiveInsights({
+    telemetryAnalytics: telemetry || {},
+    billingSummary: billingSummary || {},
+    stagingModel: buildPredictiveStagingModel(telemetry || {}, billingSummary || {}),
+  });
 
   const lines = [
     '',
@@ -222,6 +268,18 @@ function formatReport(monthly, weekly, github, npmMeta, telemetry = null, billin
     '🎥 Creator Partnerships',
     '   Ranked: booked revenue → paid orders → qualified sprint leads → checkouts',
     ...(creatorRows.length > 0 ? creatorRows : ['   No attributed creator campaigns yet.']),
+    '',
+    '🔮 Predictive Insights',
+    `   Pro propensity:   ${predictive.upgradePropensity.pro.band} (${predictive.upgradePropensity.pro.score})`,
+    `   Team propensity:  ${predictive.upgradePropensity.team.band} (${predictive.upgradePropensity.team.score})`,
+    `   Revenue forecast: $${(predictive.revenueForecast.predictedBookedRevenueCents / 100).toFixed(2)} (+$${(predictive.revenueForecast.incrementalOpportunityCents / 100).toFixed(2)} opportunity)`,
+    `   Predictive alerts:${predictive.anomalySummary.count} (${predictive.anomalySummary.severity})`,
+    ...(predictive.topCreators[0]
+      ? [`   Top creator opp: ${predictive.topCreators[0].key} → +$${(predictive.topCreators[0].opportunityRevenueCents / 100).toFixed(2)}`]
+      : ['   Top creator opp: none yet']),
+    ...(predictive.topSources[0]
+      ? [`   Top channel opp: ${predictive.topSources[0].key} → +$${(predictive.topSources[0].opportunityRevenueCents / 100).toFixed(2)}`]
+      : ['   Top channel opp: none yet']),
     '',
     '🔗 UTM links for sharing (tracks referral source in Plausible)',
     `   Twitter:     ${LANDING_PAGE}?utm_source=twitter&utm_medium=social&utm_campaign=launch`,

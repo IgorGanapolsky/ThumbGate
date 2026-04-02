@@ -106,6 +106,12 @@ test('formatReport includes honest metrics and share links', () => {
   assert.match(report, /Checkouts:\s+1/);
   assert.match(report, /Creator Partnerships/);
   assert.match(report, /reach_vb — rev \$19\.00, paid 1/);
+  assert.match(report, /Predictive Insights/);
+  assert.match(report, /Pro propensity:\s+\w+/);
+  assert.match(report, /Team propensity:\s+\w+/);
+  assert.match(report, /Revenue forecast:\s+\$0\.00 \(\+\$0\.00 opportunity\)/);
+  assert.match(report, /Top creator opp: reach_vb → \+\$0\.00/);
+  assert.match(report, /Top channel opp: producthunt → \+\$0\.00/);
 });
 
 test('run emits formatted analytics snapshot from injected fetchers without network access', async () => {
@@ -160,6 +166,7 @@ test('run emits formatted analytics snapshot from injected fetchers without netw
   assert.match(logs[0], /Weekly downloads:\s+42/);
   assert.match(logs[0], /ThumbGate — Unified Analytics Snapshot/);
   assert.match(logs[0], /ProductHunt/);
+  assert.match(logs[0], /Predictive Insights/);
 });
 
 test('run reports fetch failures and exits 1', async () => {
