@@ -29,7 +29,7 @@ That profile launches:
 ```toml
 [mcp_servers.rlhf]
 command = "npx"
-args = ["-y", "mcp-memory-gateway@0.8.8", "serve"]
+args = ["-y", "mcp-memory-gateway@0.8.9", "serve"]
 ```
 
 ## Why this exists

@@ -93,7 +93,7 @@ function enforceLimit(action) {
 }
 const { bootstrapInternalAgent } = require('../../scripts/internal-agent-bootstrap');
 
-const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.8.8' };
+const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.8.9' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
