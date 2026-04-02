@@ -1113,6 +1113,18 @@ function captureFeedback(params) {
       const sam = getSelfAuditModule();
       if (sam) sam.selfAuditAndLog(feedbackEvent, mlPaths);
     } catch { /* non-critical */ }
+
+    // Auto-create lesson for statusbar display
+    try {
+      const { createLesson } = require('./lesson-inference');
+      createLesson({
+        feedbackId: feedbackEvent.id,
+        signal: feedbackEvent.signal,
+        inferredLesson: memoryRecord ? memoryRecord.title : (feedbackEvent.context || '').slice(0, 200),
+        confidence: memoryRecord ? 70 : 40,
+        tags: feedbackEvent.tags || [],
+      });
+    } catch { /* non-critical — lesson creation should never block feedback */ }
   });
 
   return result;

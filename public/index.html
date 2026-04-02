@@ -94,6 +94,14 @@ __GA_BOOTSTRAP__
   "mainEntity": [
     {
       "@type": "Question",
+      "name": "Does ThumbGate support model fine-tuning?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. ThumbGate Pro includes a Model Hardening Advisor and LoRA JSONL export. Pro users can export their episodic memory as DPO (Direct Preference Optimization) pairs to fine-tune local models (like Llama 3 or Mistral) so they natively avoid repeating known mistakes."
+      }
+    },
+    {
+      "@type": "Question",
       "name": "How is ThumbGate different from RLHF?",
       "acceptedAnswer": {
         "@type": "Answer",
@@ -616,7 +624,8 @@ __GA_BOOTSTRAP__
           <li>Everything in Free, plus:</li>
           <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">Visual gate debugger →</a> see every blocked action and the gate that fired so you can trust the system in minutes</li>
           <li>Auto-connect — your running agents appear automatically, no keys to copy, debug live behavior while you code</li>
-          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">DPO training data export →</a> turn real thumbs-downs into ready-to-use preference pairs for fine-tuning</li>
+          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">DPO training data export →</a> turn real thumbs-downs into ready-to-use preference pairs for fine-tuning (LoRA / JSONL)</li>
+          <li><strong>Model Hardening Advisor</strong> — get recommendations on when and how to fine-tune your model to natively avoid recurring failures</li>
           <li>Personal local dashboard — every Pro user gets their own localhost dashboard without extra cloud setup</li>
           <li>Founder-license support — we help you wire your riskiest flows (migrations, force-pushes, CI) in the first week</li>
         </ul>
@@ -676,7 +685,11 @@ __GA_BOOTSTRAP__
     <h2 class="section-title">Common questions</h2>
     <div class="faq-list">
       <div class="faq-item open">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="true" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from RLHF?</div>
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="true" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support model fine-tuning?</div>
+        <div class="faq-a">Yes. ThumbGate Pro includes a Model Hardening Advisor and LoRA JSONL export. Pro users can export their episodic memory as DPO (Direct Preference Optimization) pairs to fine-tune local models (like Llama 3 or Mistral) so they natively avoid repeating known mistakes.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from RLHF?</div>
         <div class="faq-a">RLHF updates model weights. ThumbGate doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. The gate blocks are hard enforcement, not soft suggestions.</div>
       </div>
       <div class="faq-item">
@@ -692,7 +705,11 @@ __GA_BOOTSTRAP__
         <div class="faq-a">No. Free gives you full local enforcement — captures, recalls, gates, and hook blocking on your machine. No cloud, no account, no signup. Pro adds a personal local dashboard on your machine plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, org dashboard, and team-wide gate visibility.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are gates different from prompt rules?</div>
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support model fine-tuning?</div>
+        <div class="faq-a">Yes. ThumbGate Pro includes a Model Hardening Advisor and LoRA JSONL export. Pro users can export their episodic memory as DPO (Direct Preference Optimization) pairs to fine-tune local models (like Llama 3 or Mistral) so they natively avoid repeating known mistakes.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from RLHF?</div>
         <div class="faq-a">Prompt rules are suggestions that agents can ignore. Pre-Action Gates are enforcement — they block the action before execution. Gates are auto-generated from your feedback and use Thompson Sampling to adapt over time.</div>
       </div>
       <div class="faq-item">

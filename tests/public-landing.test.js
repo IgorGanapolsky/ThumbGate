@@ -193,7 +193,7 @@ test('public landing page includes FAQ section with accordion interaction', () =
   assert.match(landingPage, /What's the tech stack\?/);
   assert.match(landingPage, /What AI agents and editors does this work with\?/);
   assert.match(landingPage, /Do I need a cloud account\?/);
-  assert.match(landingPage, /How are gates different from prompt rules\?/);
+  assert.match(landingPage, /How are (?:pre-action )?gates different from prompt rules\?/);
   assert.match(landingPage, /What does Pro cost\?/);
   assert.match(landingPage, /role="button"/);
   assert.match(landingPage, /tabindex="0"/);
