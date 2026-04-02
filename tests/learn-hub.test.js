@@ -47,11 +47,12 @@ test('learn hub has Plausible analytics', () => {
   assert.match(html, /src="\/js\/analytics\.js"/);
 });
 
-test('learn hub links to all three articles', () => {
+test('learn hub links to all four articles', () => {
   const html = readFile(learnHubPath);
   assert.match(html, /\/learn\/stop-ai-agent-force-push/);
   assert.match(html, /\/learn\/vibe-coding-safety-net/);
   assert.match(html, /\/learn\/mcp-pre-action-gates-explained/);
+  assert.match(html, /\/learn\/agent-harness-pattern/);
 });
 
 test('learn hub has article cards with titles, descriptions, and tags', () => {
@@ -61,6 +62,7 @@ test('learn hub has article cards with titles, descriptions, and tags', () => {
   assert.match(html, /How to Stop AI Agents From Force-Pushing/);
   assert.match(html, /Vibe Coding Safety Net/);
   assert.match(html, /MCP Pre-Action Gates Explained/);
+  assert.match(html, /Agent Harness Pattern/);
 });
 
 test('learn hub has CTA with npx install command', () => {
@@ -209,6 +211,68 @@ test('mcp-gates article lists supported agents', () => {
 });
 
 // ============================================================
+// Article 4: Agent Harness Pattern (NLAH)
+// ============================================================
+
+test('agent-harness article exists with correct structure', () => {
+  const html = readFile(path.join(learnDir, 'agent-harness-pattern.html'));
+  assert.match(html, /<!DOCTYPE html>/i);
+  assert.match(html, /<title>The Agent Harness Pattern/);
+});
+
+test('agent-harness article has TechArticle JSON-LD', () => {
+  const html = readFile(path.join(learnDir, 'agent-harness-pattern.html'));
+  assert.match(html, /"@type":\s*"TechArticle"/);
+  assert.match(html, /datePublished/);
+});
+
+test('agent-harness article has NLAH-to-ThumbGate mapping table', () => {
+  const html = readFile(path.join(learnDir, 'agent-harness-pattern.html'));
+  assert.match(html, /<table>/);
+  assert.match(html, /NLAH Component/);
+  assert.match(html, /Contracts/);
+  assert.match(html, /Verification Gates/);
+  assert.match(html, /Durable State/);
+  assert.match(html, /Adapters/);
+});
+
+test('agent-harness article has canonical and OG tags', () => {
+  const html = readFile(path.join(learnDir, 'agent-harness-pattern.html'));
+  assert.match(html, /rel="canonical"/);
+  assert.match(html, /\/learn\/agent-harness-pattern/);
+  assert.match(html, /og:title/);
+});
+
+test('agent-harness article has install CTA', () => {
+  const html = readFile(path.join(learnDir, 'agent-harness-pattern.html'));
+  assert.match(html, /npx mcp-memory-gateway init/);
+});
+
+test('agent-harness article has breadcrumb back to learn hub', () => {
+  const html = readFile(path.join(learnDir, 'agent-harness-pattern.html'));
+  assert.match(html, /class="breadcrumb"/);
+  assert.match(html, /href="\/learn"/);
+});
+
+test('agent-harness article has related links to other articles', () => {
+  const html = readFile(path.join(learnDir, 'agent-harness-pattern.html'));
+  assert.match(html, /\/learn\/mcp-pre-action-gates-explained/);
+  assert.match(html, /\/learn\/stop-ai-agent-force-push/);
+  assert.match(html, /\/learn\/vibe-coding-safety-net/);
+});
+
+test('agent-harness article mentions Thompson Sampling', () => {
+  const html = readFile(path.join(learnDir, 'agent-harness-pattern.html'));
+  assert.match(html, /Thompson Sampling/);
+});
+
+test('agent-harness article mentions SQLite and FTS5', () => {
+  const html = readFile(path.join(learnDir, 'agent-harness-pattern.html'));
+  assert.match(html, /SQLite/);
+  assert.match(html, /FTS5/);
+});
+
+// ============================================================
 // Integration: Landing page nav includes Learn link
 // ============================================================
 
@@ -281,7 +345,7 @@ test('all learn articles link to shared stylesheet instead of inline CSS', () =>
 
 test('all learn articles use consistent nav structure', () => {
   const articles = fs.readdirSync(learnDir).filter(f => f.endsWith('.html'));
-  assert.ok(articles.length >= 3, `Expected >= 3 articles, got ${articles.length}`);
+  assert.ok(articles.length >= 4, `Expected >= 4 articles, got ${articles.length}`);
   for (const file of articles) {
     const html = readFile(path.join(learnDir, file));
     assert.match(html, /class="brand"/, `${file} missing nav brand`);
@@ -308,7 +372,7 @@ test('no learn page references version numbers (evergreen content)', () => {
 
 test('no learn page has broken internal links', () => {
   const allFiles = [learnHubPath, ...fs.readdirSync(learnDir).filter(f => f.endsWith('.html')).map(f => path.join(learnDir, f))];
-  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-gates-explained', '/learn/learn.css'];
+  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-gates-explained', '/learn/agent-harness-pattern', '/learn/learn.css'];
   for (const file of allFiles) {
     const html = readFile(file);
     const links = html.match(/href="(\/[^"#]*?)"/g) || [];
