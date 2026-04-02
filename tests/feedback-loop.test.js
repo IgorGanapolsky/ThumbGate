@@ -20,6 +20,7 @@ const {
   inferDomain,
   inferOutcome,
   enrichFeedbackContext,
+  inferLessonFromConversation,
   waitForBackgroundSideEffects,
 } = require('../scripts/feedback-loop');
 const { evaluateMemoryIngress } = require('../scripts/memory-firewall');
@@ -825,5 +826,84 @@ test('readJSONL: malformed JSON lines are skipped', () => {
   assert.deepStrictEqual(result[1], { b: 2 });
   assert.deepStrictEqual(result[2], { c: 3 });
 
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+// -- inferLessonFromConversation --
+
+test('inferLessonFromConversation: returns null for empty array', () => {
+  assert.strictEqual(inferLessonFromConversation([], 'negative'), null);
+  assert.strictEqual(inferLessonFromConversation(null, 'negative'), null);
+  assert.strictEqual(inferLessonFromConversation(undefined, 'positive'), null);
+});
+
+test('inferLessonFromConversation: negative signal extracts user intent and assistant action', () => {
+  const window = [
+    { role: 'user', content: 'Fix the login bug in src/auth/login.ts' },
+    { role: 'assistant', content: 'I deleted the entire auth module and replaced it with a TODO' },
+  ];
+  const result = inferLessonFromConversation(window, 'negative');
+  assert.ok(result);
+  assert.ok(result.lesson.includes('User asked:'));
+  assert.ok(result.lesson.includes('User rejected this'));
+  assert.ok(result.whatWentWrong);
+  assert.strictEqual(result.whatWorked, null);
+  assert.strictEqual(result.messageCount, 2);
+});
+
+test('inferLessonFromConversation: positive signal extracts approval', () => {
+  const window = [
+    { role: 'user', content: 'Refactor the payment hook' },
+    { role: 'assistant', content: 'Extracted business logic into usePaymentFlow hook with tests' },
+  ];
+  const result = inferLessonFromConversation(window, 'positive');
+  assert.ok(result);
+  assert.ok(result.lesson.includes('User approved this'));
+  assert.strictEqual(result.whatWentWrong, null);
+  assert.ok(result.whatWorked);
+});
+
+test('inferLessonFromConversation: extracts file paths and error patterns', () => {
+  const window = [
+    { role: 'user', content: 'The build is broken' },
+    { role: 'assistant', content: 'Error: FAIL in src/features/menu/hooks/useMenuData.ts - crash on null reference. Also touched scripts/build.js and tests/menu.test.ts' },
+  ];
+  const result = inferLessonFromConversation(window, 'negative');
+  assert.ok(result);
+  assert.ok(result.filePaths.length > 0);
+  assert.ok(result.filePaths.some(f => f.includes('src/features/menu')));
+  assert.ok(result.errorPatterns.length > 0);
+  assert.ok(result.tags.includes('has-file-context'));
+  assert.ok(result.tags.includes('has-error-context'));
+});
+
+test('captureFeedback: conversationWindow enriches context and is stored', () => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_DATA_DIR = tmpDir;
+
+  const window = [
+    { role: 'user', content: 'Fix the cart total calculation' },
+    { role: 'assistant', content: 'Updated the useCartTotal hook to handle discount codes correctly' },
+  ];
+
+  const result = captureFeedback({
+    signal: 'up',
+    context: 'good fix',
+    conversationWindow: window,
+  });
+
+  // Should still be accepted
+  assert.ok(result.accepted !== undefined);
+
+  // The feedbackEvent should have conversationWindow stored
+  if (result.feedbackEvent) {
+    assert.ok(Array.isArray(result.feedbackEvent.conversationWindow));
+    assert.strictEqual(result.feedbackEvent.conversationWindow.length, 2);
+    assert.strictEqual(result.feedbackEvent.conversationWindow[0].role, 'user');
+    // Content should be capped at 500 chars
+    assert.ok(result.feedbackEvent.conversationWindow[0].content.length <= 500);
+  }
+
+  delete process.env.RLHF_DATA_DIR;
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });

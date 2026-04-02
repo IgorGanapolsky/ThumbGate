@@ -49,6 +49,18 @@ const TOOLS = [
         },
         tags: { type: 'array', items: { type: 'string' } },
         skill: { type: 'string' },
+        conversationWindow: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              role: { type: 'string', enum: ['user', 'assistant'] },
+              content: { type: 'string' },
+              timestamp: { type: 'string' },
+            },
+          },
+          description: 'Last 5-10 conversation turns before the feedback signal. Raw messages, not summaries.',
+        },
         rubricScores: {
           type: 'array',
           items: {

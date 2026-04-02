@@ -767,6 +767,41 @@ function inferSemanticTags(context = '') {
   return Array.from(tags);
 }
 
+function inferLessonFromConversation(conversationWindow, signal) {
+  if (!Array.isArray(conversationWindow) || conversationWindow.length === 0) return null;
+
+  const userMessages = conversationWindow.filter(m => m.role === 'user');
+  const assistantMessages = conversationWindow.filter(m => m.role === 'assistant');
+
+  const lastUserMsg = userMessages[userMessages.length - 1]?.content || '';
+  const lastAssistantMsg = assistantMessages[assistantMessages.length - 1]?.content || '';
+
+  const userIntent = lastUserMsg.slice(0, 200);
+  const assistantAction = lastAssistantMsg.slice(0, 200);
+
+  const lesson = signal === 'negative'
+    ? `User asked: "${userIntent}" → Assistant did: "${assistantAction}" → User rejected this`
+    : `User asked: "${userIntent}" → Assistant did: "${assistantAction}" → User approved this`;
+
+  const allText = conversationWindow.map(m => m.content || '').join('\n');
+  const filePaths = [...new Set((allText.match(/(?:src\/|scripts\/|tests\/)[^\s,)'"]+/g) || []))];
+  const errorPatterns = [...new Set((allText.match(/(?:Error|FAIL|error|failed|crash|bug|broken)[:\s][^\n]{0,80}/gi) || []))];
+
+  const tags = [];
+  if (filePaths.length > 0) tags.push('has-file-context');
+  if (errorPatterns.length > 0) tags.push('has-error-context');
+
+  return {
+    lesson,
+    whatWentWrong: signal === 'negative' ? `Assistant response to "${userIntent.slice(0, 60)}..." was rejected` : null,
+    whatWorked: signal === 'positive' ? `Assistant response to "${userIntent.slice(0, 60)}..." was approved` : null,
+    tags,
+    filePaths,
+    errorPatterns,
+    messageCount: conversationWindow.length,
+  };
+}
+
 function captureFeedback(params) {
   const _captureStart = Date.now();
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
@@ -810,6 +845,24 @@ function captureFeedback(params) {
 
   const semanticTags = inferSemanticTags(context);
   const tags = Array.from(new Set([...providedTags, ...semanticTags]));
+
+  // Infer lesson from conversation window if provided
+  let inferredContext = context;
+  if (Array.isArray(params.conversationWindow) && params.conversationWindow.length > 0) {
+    const windowSummary = inferLessonFromConversation(params.conversationWindow, signal);
+    if (windowSummary) {
+      inferredContext = windowSummary.lesson;
+      if (windowSummary.tags) {
+        tags.push(...windowSummary.tags.filter(t => !tags.includes(t)));
+      }
+      if (!params.whatWentWrong && windowSummary.whatWentWrong) {
+        params.whatWentWrong = windowSummary.whatWentWrong;
+      }
+      if (!params.whatWorked && windowSummary.whatWorked) {
+        params.whatWorked = windowSummary.whatWorked;
+      }
+    }
+  }
 
   let rubricEvaluation = null;
   try {
@@ -885,6 +938,13 @@ function captureFeedback(params) {
       : null,
     actionType: action.type,
     actionReason: action.reason || null,
+    conversationWindow: Array.isArray(params.conversationWindow)
+      ? params.conversationWindow.slice(-10).map(m => ({
+        role: m.role,
+        content: (m.content || '').slice(0, 500),
+        timestamp: m.timestamp || null,
+      }))
+      : null,
     timestamp: now,
   };
 
@@ -1687,6 +1747,7 @@ module.exports = {
   inferDomain,
   inferOutcome,
   enrichFeedbackContext,
+  inferLessonFromConversation,
   waitForBackgroundSideEffects,
   getPendingBackgroundSideEffectCount,
   getFeedbackPaths,
