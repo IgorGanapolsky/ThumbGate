@@ -99,7 +99,18 @@ Source: [`.claude/skills/thumbgate/SKILL.md`](.claude/skills/thumbgate/SKILL.md)
 
 Pipeline: **Capture → Validate → Remember → Distill → Prevent → Gate → Export**
 
-## What's New in v0.8.5
+## What's New in v0.9.0
+
+- **Domain skill packs** — installable best-practice rule sets for Stripe, Railway, database migrations. Auto-match by task context.
+- **Before/after eval harness** — 6 built-in eval cases, 100% pass rate with ThumbGate vs 0% without.
+- **MetaClaw slow loop** — idle-time DPO export scheduler via LaunchAgent cron.
+- **Metered outcome billing** — $0.10/blocked action (Pro), $0.08/seat (Team), floor pricing.
+- **AI Control Tower** — per-tool KPIs (P50/P90/P95 latency, success rate), SLO threshold alerts, access anomaly detection.
+- **Daily digest + weekly stats** — ambient Slack/Teams/Discord push. Social-ready weekly stats for build-in-public.
+- **Statusline upgrade** — Claude Code statusbar shows SLO violations, at-risk tools, anomalies inline.
+- **Gemini MCP adapter** — 14 tool declarations for native Gemini agent interop.
+
+### Previous (v0.8.5)
 
 - **Gate reasoning chains** — every block/warn explains WHY: pattern match, gate identity, source, bypass hints, historical fire count
 - **Multi-hop retrieval** — iterative retrieve → prune → refine loop for complex queries, inspired by Context-1 agentic retrieval

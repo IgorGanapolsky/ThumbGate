@@ -47,12 +47,13 @@ test('learn hub has Plausible analytics', () => {
   assert.match(html, /src="\/js\/analytics\.js"/);
 });
 
-test('learn hub links to all four articles', () => {
+test('learn hub links to all five articles', () => {
   const html = readFile(learnHubPath);
   assert.match(html, /\/learn\/stop-ai-agent-force-push/);
   assert.match(html, /\/learn\/vibe-coding-safety-net/);
   assert.match(html, /\/learn\/mcp-pre-action-gates-explained/);
   assert.match(html, /\/learn\/agent-harness-pattern/);
+  assert.match(html, /\/learn\/ai-agent-persistent-memory/);
 });
 
 test('learn hub has article cards with titles, descriptions, and tags', () => {
@@ -63,6 +64,7 @@ test('learn hub has article cards with titles, descriptions, and tags', () => {
   assert.match(html, /Vibe Coding Safety Net/);
   assert.match(html, /MCP Pre-Action Gates Explained/);
   assert.match(html, /Agent Harness Pattern/);
+  assert.match(html, /Persistent Memory Across Sessions/);
 });
 
 test('learn hub has CTA with npx install command', () => {
@@ -273,6 +275,67 @@ test('agent-harness article mentions SQLite and FTS5', () => {
 });
 
 // ============================================================
+// Article 5: AI Agent Persistent Memory
+// ============================================================
+
+test('persistent-memory article exists with correct structure', () => {
+  const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
+  assert.match(html, /<!DOCTYPE html>/i);
+  assert.match(html, /<title>How to Give Your AI Coding Agent Persistent Memory/);
+});
+
+test('persistent-memory article has TechArticle JSON-LD', () => {
+  const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
+  assert.match(html, /"@type":\s*"TechArticle"/);
+  assert.match(html, /datePublished/);
+});
+
+test('persistent-memory article has canonical and OG tags', () => {
+  const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
+  assert.match(html, /rel="canonical"/);
+  assert.match(html, /\/learn\/ai-agent-persistent-memory/);
+  assert.match(html, /og:title/);
+});
+
+test('persistent-memory article has three memory types table', () => {
+  const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
+  assert.match(html, /<table>/);
+  assert.match(html, /Episodic/);
+  assert.match(html, /Semantic/);
+  assert.match(html, /Procedural/);
+});
+
+test('persistent-memory article covers Thompson Sampling', () => {
+  const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
+  assert.match(html, /Thompson Sampling/);
+});
+
+test('persistent-memory article mentions SQLite and FTS5', () => {
+  const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
+  assert.match(html, /SQLite/);
+  assert.match(html, /FTS5/);
+});
+
+test('persistent-memory article has install CTA', () => {
+  const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
+  assert.match(html, /npx mcp-memory-gateway init/);
+});
+
+test('persistent-memory article has breadcrumb back to learn hub', () => {
+  const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
+  assert.match(html, /class="breadcrumb"/);
+  assert.match(html, /href="\/learn"/);
+});
+
+test('persistent-memory article has related links to other articles', () => {
+  const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
+  assert.match(html, /\/learn\/agent-harness-pattern/);
+  assert.match(html, /\/learn\/mcp-pre-action-gates-explained/);
+  assert.match(html, /\/learn\/stop-ai-agent-force-push/);
+  assert.match(html, /\/learn\/vibe-coding-safety-net/);
+});
+
+// ============================================================
 // Integration: Landing page nav includes Learn link
 // ============================================================
 
@@ -345,7 +408,7 @@ test('all learn articles link to shared stylesheet instead of inline CSS', () =>
 
 test('all learn articles use consistent nav structure', () => {
   const articles = fs.readdirSync(learnDir).filter(f => f.endsWith('.html'));
-  assert.ok(articles.length >= 4, `Expected >= 4 articles, got ${articles.length}`);
+  assert.ok(articles.length >= 5, `Expected >= 5 articles, got ${articles.length}`);
   for (const file of articles) {
     const html = readFile(path.join(learnDir, file));
     assert.match(html, /class="brand"/, `${file} missing nav brand`);
@@ -372,7 +435,7 @@ test('no learn page references version numbers (evergreen content)', () => {
 
 test('no learn page has broken internal links', () => {
   const allFiles = [learnHubPath, ...fs.readdirSync(learnDir).filter(f => f.endsWith('.html')).map(f => path.join(learnDir, f))];
-  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-gates-explained', '/learn/agent-harness-pattern', '/learn/learn.css'];
+  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-gates-explained', '/learn/agent-harness-pattern', '/learn/ai-agent-persistent-memory', '/learn/learn.css'];
   for (const file of allFiles) {
     const html = readFile(file);
     const links = html.match(/href="(\/[^"#]*?)"/g) || [];
