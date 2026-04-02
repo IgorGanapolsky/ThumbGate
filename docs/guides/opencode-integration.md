@@ -26,7 +26,7 @@ That gives OpenCode a repo-native permission surface instead of bolting on a sec
 
 If you want the same MCP server in a different OpenCode project, copy `adapters/opencode/opencode.json` into your OpenCode config and merge the `mcp.rlhf` block.
 
-The portable profile stays version-pinned to `mcp-memory-gateway@0.8.9`, and `scripts/sync-version.js` now checks it for drift.
+The portable profile stays version-pinned to `mcp-memory-gateway@0.9.0`, and `scripts/sync-version.js` now checks it for drift.
 
 ## Why This Is High ROI
 

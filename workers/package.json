@@ -1,6 +1,6 @@
 {
   "name": "mcp-memory-gateway-worker",
-  "version": "0.8.9",
+  "version": "0.9.0",
   "description": "Cloudflare Workers MCP server for mcp-memory-gateway Pro tier ($19/mo)",
   "private": true,
   "scripts": {
