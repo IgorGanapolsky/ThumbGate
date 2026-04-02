@@ -90,8 +90,11 @@ test('formatCliOutput handles no distill result', () => {
 // === statusline-lesson.js ===
 test('statusline-lesson.js outputs valid JSON', () => {
   createLesson({ signal: 'positive', inferredLesson: 'Deploy health check works' });
-  const { execSync } = require('child_process');
-  const result = execSync(`node ${path.join(__dirname, '..', 'scripts', 'statusline-lesson.js')}`, { encoding: 'utf-8', env: { ...process.env, RLHF_FEEDBACK_DIR: tmpDir } });
+  const { execFileSync } = require('child_process');
+  const result = execFileSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'statusline-lesson.js')], {
+    encoding: 'utf-8',
+    env: { ...process.env, RLHF_FEEDBACK_DIR: tmpDir },
+  });
   const parsed = JSON.parse(result);
   assert.equal(parsed.hasLesson, true);
   assert.ok(parsed.text.includes('Deploy health check'));
