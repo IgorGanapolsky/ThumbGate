@@ -16,6 +16,7 @@ const {
   getSetting,
   getSettingOrigin,
 } = require('./settings-hierarchy');
+const { recommendInferenceBackend } = require('./local-model-profile');
 
 // ---------------------------------------------------------------------------
 // Context classifiers
@@ -199,6 +200,25 @@ function routePrivacy(params = {}) {
   };
 }
 
+function routeInference(params = {}) {
+  const privacy = routePrivacy(params);
+  const inference = recommendInferenceBackend({
+    type: params.taskType,
+    contextTokens: params.contextTokens,
+    tags: params.tags,
+    privacyRoute: privacy.route,
+  }, params.env || process.env);
+
+  return {
+    route: privacy.route === 'local' ? 'local' : inference.route,
+    reason: inference.reason,
+    workloadClass: inference.workloadClass,
+    recommendationClass: inference.recommendationClass,
+    privacy,
+    backend: inference.backend,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
@@ -206,6 +226,7 @@ function routePrivacy(params = {}) {
 module.exports = {
   routeProfile,
   routePrivacy,
+  routeInference,
   findMostRestrictiveProfile,
   isReadOnlySession,
 };
@@ -218,6 +239,7 @@ if (require.main === module) {
   const toolName = process.argv[2] || null;
   const result = routeProfile({ toolName });
   const privacy = toolName ? routePrivacy({ toolName, toolInput: {} }) : null;
+  const inference = routeInference({ toolName, toolInput: {}, taskType: 'large-context', contextTokens: 200000, tags: ['xmemory'] });
 
-  console.log(JSON.stringify({ routing: result, privacy }, null, 2));
+  console.log(JSON.stringify({ routing: result, privacy, inference }, null, 2));
 }

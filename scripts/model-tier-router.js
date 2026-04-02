@@ -8,6 +8,7 @@
  */
 
 const path = require('path');
+const { recommendInferenceBackend } = require('./local-model-profile');
 
 const CONFIG_PATH = path.join(__dirname, '..', 'config', 'model-tiers.json');
 
@@ -263,11 +264,29 @@ class FrontierBudget {
   }
 }
 
+function recommendExecutionPlan(task = {}, env = process.env) {
+  const classification = classifyTask(task);
+  const inference = recommendInferenceBackend(task, env);
+
+  return {
+    tier: classification.tier,
+    escalated: classification.escalated,
+    tierReason: classification.reason,
+    backendId: inference.backend.id,
+    providerMode: inference.backend.providerMode,
+    workloadClass: inference.workloadClass,
+    recommendationClass: inference.recommendationClass,
+    indexCacheEligible: inference.backend.indexCacheEligible,
+    indexCacheEnabled: inference.backend.indexCacheEnabled,
+    reason: `${classification.reason}; ${inference.reason}`,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
-module.exports = { TIERS, classifyTask, shouldEscalate, FrontierBudget };
+module.exports = { TIERS, classifyTask, shouldEscalate, FrontierBudget, recommendExecutionPlan };
 
 // ---------------------------------------------------------------------------
 // CLI
@@ -276,6 +295,7 @@ module.exports = { TIERS, classifyTask, shouldEscalate, FrontierBudget };
 if (require.main === module) {
   const taskType = process.argv[2] || 'code-edit';
   const result = classifyTask({ type: taskType });
+  const execution = recommendExecutionPlan({ type: taskType });
   const budget = new FrontierBudget();
-  console.log(JSON.stringify({ classification: result, budget: budget.status() }, null, 2));
+  console.log(JSON.stringify({ classification: result, execution, budget: budget.status() }, null, 2));
 }

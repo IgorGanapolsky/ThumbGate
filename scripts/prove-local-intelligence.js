@@ -16,7 +16,7 @@ function ensureDir(dirPath) {
 function runTests() {
   try {
     return execSync(
-      'node --test tests/local-model-profile.test.js tests/risk-scorer.test.js tests/vector-store.test.js tests/feedback-sequences.test.js tests/feedback-loop.test.js',
+      'node --test tests/local-model-profile.test.js tests/model-tier-router.test.js tests/profile-router.test.js tests/risk-scorer.test.js tests/vector-store.test.js tests/feedback-sequences.test.js tests/feedback-loop.test.js',
       { cwd: ROOT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
     );
   } catch (err) {
@@ -54,7 +54,13 @@ async function main() {
   }
 
   try {
-    const { writeModelFitReport } = require('./local-model-profile');
+    const {
+      writeModelFitReport,
+      detectInferenceBackend,
+      recommendInferenceBackend,
+    } = require('./local-model-profile');
+    const { recommendExecutionPlan } = require('./model-tier-router');
+    const { routeInference } = require('./profile-router');
     const { reportPath, report: modelFitReport } = writeModelFitReport(tmpFeedbackDir, {
       resolved: require('./local-model-profile').resolveEmbeddingProfile({
         RLHF_RAM_BYTES_OVERRIDE: String(4 * 1024 ** 3),
@@ -122,6 +128,65 @@ async function main() {
       'FIT-02',
       Boolean(fallbackProfile && fallbackProfile.fallbackUsed),
       `vector-store active profile=${fallbackProfile && fallbackProfile.activeProfile ? fallbackProfile.activeProfile.id : 'none'}; fallbackUsed=${fallbackProfile ? fallbackProfile.fallbackUsed : false}; reason=${fallbackProfile ? fallbackProfile.fallbackReason : 'n/a'}`
+    );
+
+    const sparseBackend = detectInferenceBackend({
+      RLHF_PROVIDER_MODE: 'local',
+      RLHF_LOCAL_MODEL_FAMILY: 'deepseek-r1',
+      RLHF_LOCAL_MODEL_SERVER: 'sglang',
+      RLHF_INDEXCACHE_ENABLED: 'true',
+    });
+    addResult(
+      'IDX-01',
+      sparseBackend.indexCacheEligible && sparseBackend.indexCacheEnabled,
+      `backend=${sparseBackend.id}; server=${sparseBackend.serverEngine}; eligible=${sparseBackend.indexCacheEligible}; enabled=${sparseBackend.indexCacheEnabled}`
+    );
+
+    const recommendation = recommendInferenceBackend({
+      type: 'large-context',
+      contextTokens: 240000,
+      tags: ['xmemory'],
+    }, {
+      RLHF_PROVIDER_MODE: 'local',
+      RLHF_LOCAL_MODEL_FAMILY: 'glm-4.5',
+      RLHF_LOCAL_MODEL_SERVER: 'vllm',
+    });
+    addResult(
+      'IDX-02',
+      recommendation.recommendationClass === 'indexcache_eligible',
+      `class=${recommendation.recommendationClass}; backend=${recommendation.backend.id}; reason=${recommendation.reason}`
+    );
+
+    const executionPlan = recommendExecutionPlan({
+      type: 'code-edit',
+      contextTokens: 260000,
+      tags: ['retrieval-heavy'],
+    }, {
+      RLHF_PROVIDER_MODE: 'local',
+      RLHF_LOCAL_MODEL_FAMILY: 'deepseek-v3',
+      RLHF_LOCAL_MODEL_SERVER: 'sglang',
+      RLHF_INDEXCACHE_ENABLED: 'true',
+    });
+    addResult(
+      'IDX-03',
+      executionPlan.tier === 'frontier' && executionPlan.recommendationClass === 'indexcache_active',
+      `tier=${executionPlan.tier}; backend=${executionPlan.backendId}; class=${executionPlan.recommendationClass}`
+    );
+
+    const routed = routeInference({
+      toolName: 'verify_claim',
+      toolInput: { claim: 'long-context repo audit' },
+      taskType: 'large-context',
+      contextTokens: 220000,
+      tags: ['xmemory'],
+      env: {
+        RLHF_PROVIDER_MODE: 'managed',
+      },
+    });
+    addResult(
+      'IDX-04',
+      routed.route === 'local' && routed.privacy.route === 'local',
+      `route=${routed.route}; privacy=${routed.privacy.route}; class=${routed.recommendationClass}`
     );
 
     delete require.cache[require.resolve('./feedback-loop')];

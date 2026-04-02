@@ -47,6 +47,28 @@ const EMBEDDING_PROFILES = {
   },
 };
 
+const INDEXCACHE_SERVER_ENGINES = new Set([
+  'sglang',
+  'vllm',
+  'trtllm',
+  'tensorrt-llm',
+]);
+
+const LONG_CONTEXT_TASK_TYPES = new Set([
+  'architecture',
+  'cross-file',
+  'large-context',
+]);
+
+const LONG_CONTEXT_TAGS = new Set([
+  'codegraph',
+  'contextfs',
+  'long-context',
+  'multi-hop',
+  'retrieval-heavy',
+  'xmemory',
+]);
+
 function parseNumber(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -59,6 +81,154 @@ function parseBoolean(value, fallback) {
   if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
   if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
   return fallback;
+}
+
+function normalizeSlug(value, fallback = '') {
+  if (value === undefined || value === null || value === '') return fallback;
+  const normalized = String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return normalized || fallback;
+}
+
+function isSparseAttentionFamily(modelFamily) {
+  return modelFamily.startsWith('deepseek') || modelFamily.startsWith('glm');
+}
+
+function resolveProviderMode(env = process.env) {
+  const explicit = normalizeSlug(env.RLHF_PROVIDER_MODE || env.RLHF_MODEL_PROVIDER_MODE);
+  if (explicit === 'local' || explicit === 'managed') return explicit;
+  if (env.RLHF_LOCAL_MODEL_FAMILY || env.RLHF_LOCAL_MODEL_SERVER) return 'local';
+  return 'managed';
+}
+
+function resolveServerEngine(env = process.env, providerMode = resolveProviderMode(env)) {
+  const explicit = normalizeSlug(env.RLHF_LOCAL_MODEL_SERVER || env.RLHF_MODEL_SERVER);
+  if (explicit) return explicit;
+  return providerMode === 'local' ? 'generic' : 'api';
+}
+
+function resolveModelFamily(env = process.env) {
+  return normalizeSlug(
+    env.RLHF_LOCAL_MODEL_FAMILY
+      || env.RLHF_MODEL_FAMILY
+      || env.RLHF_LOCAL_MODEL
+      || env.RLHF_MODEL_ID,
+    'unknown',
+  );
+}
+
+function buildBackendLabel(providerMode, modelFamily) {
+  if (providerMode === 'managed') return 'Managed API backend';
+  if (modelFamily.startsWith('deepseek')) return 'Local DeepSeek sparse backend';
+  if (modelFamily.startsWith('glm')) return 'Local GLM sparse backend';
+  return 'Local dense backend';
+}
+
+function detectInferenceBackend(env = process.env) {
+  const providerMode = resolveProviderMode(env);
+  const modelFamily = resolveModelFamily(env);
+  const serverEngine = resolveServerEngine(env, providerMode);
+  const supportsSparseAttention = isSparseAttentionFamily(modelFamily);
+  const indexCacheEligible = providerMode === 'local'
+    && supportsSparseAttention
+    && INDEXCACHE_SERVER_ENGINES.has(serverEngine);
+  const indexCacheEnabled = indexCacheEligible && parseBoolean(env.RLHF_INDEXCACHE_ENABLED, false);
+  const id = providerMode === 'managed'
+    ? 'managed-api'
+    : supportsSparseAttention
+      ? `local-${modelFamily}-sparse`
+      : 'local-dense';
+
+  let rationale = 'Baseline backend with no sparse-attention acceleration.';
+  if (providerMode === 'managed') {
+    rationale = 'Managed API path does not expose sparse-attention kernel controls like IndexCache.';
+  } else if (indexCacheEnabled) {
+    rationale = `Local ${modelFamily} backend is sparse-attention capable and IndexCache-ready on ${serverEngine}.`;
+  } else if (indexCacheEligible) {
+    rationale = `Local ${modelFamily} backend is sparse-attention capable and can use IndexCache on ${serverEngine}.`;
+  } else if (supportsSparseAttention) {
+    rationale = `Local ${modelFamily} backend is sparse-attention capable, but current server engine "${serverEngine}" is not marked IndexCache-ready.`;
+  }
+
+  return {
+    id,
+    label: buildBackendLabel(providerMode, modelFamily),
+    providerMode,
+    modelFamily,
+    serverEngine,
+    supportsSparseAttention,
+    indexCacheEligible,
+    indexCacheEnabled,
+    longContextOptimized: indexCacheEnabled,
+    rationale,
+  };
+}
+
+function isLongContextTask(task = {}) {
+  const contextTokens = Number(task.contextTokens || 0);
+  const tags = Array.isArray(task.tags) ? task.tags.map((tag) => normalizeSlug(tag)) : [];
+  return contextTokens >= 120000
+    || LONG_CONTEXT_TASK_TYPES.has(normalizeSlug(task.type))
+    || tags.some((tag) => LONG_CONTEXT_TAGS.has(tag));
+}
+
+function recommendInferenceBackend(task = {}, env = process.env) {
+  const backend = detectInferenceBackend(env);
+  const privacyRoute = task.privacyRoute || 'frontier';
+  const workloadClass = isLongContextTask(task) ? 'long_context' : 'baseline';
+
+  if (privacyRoute === 'local' && backend.providerMode !== 'local') {
+    return {
+      backend,
+      workloadClass,
+      recommendationClass: 'privacy_local_required',
+      route: 'local',
+      reason: 'privacy-sensitive workload should stay on a local backend before any long-context optimization.',
+    };
+  }
+
+  if (workloadClass === 'long_context' && backend.indexCacheEnabled) {
+    return {
+      backend,
+      workloadClass,
+      recommendationClass: 'indexcache_active',
+      route: backend.providerMode,
+      reason: `current backend ${backend.id} is IndexCache-ready for long-context sparse-attention workloads.`,
+    };
+  }
+
+  if (workloadClass === 'long_context' && backend.indexCacheEligible) {
+    return {
+      backend,
+      workloadClass,
+      recommendationClass: 'indexcache_eligible',
+      route: backend.providerMode,
+      reason: `current backend ${backend.id} is sparse-attention capable; enabling IndexCache is the highest-ROI latency/cost improvement.`,
+    };
+  }
+
+  if (workloadClass === 'long_context') {
+    return {
+      backend,
+      workloadClass,
+      recommendationClass: 'baseline_long_context',
+      route: backend.providerMode,
+      reason: backend.providerMode === 'managed'
+        ? 'managed API path hides sparse-attention kernel controls, so IndexCache-style gains are unavailable here.'
+        : `current local backend ${backend.id} is not yet IndexCache-eligible.`,
+    };
+  }
+
+  return {
+    backend,
+    workloadClass,
+    recommendationClass: 'baseline',
+    route: privacyRoute === 'local' ? 'local' : backend.providerMode,
+    reason: 'baseline workload does not need sparse-attention optimization.',
+  };
 }
 
 function resolveFeedbackDir(explicitDir) {
@@ -190,14 +360,20 @@ module.exports = {
   DEFAULT_EMBED_MODEL,
   DEFAULT_FEEDBACK_DIR,
   EMBEDDING_PROFILES,
+  INDEXCACHE_SERVER_ENGINES,
+  LONG_CONTEXT_TAGS,
+  LONG_CONTEXT_TASK_TYPES,
   MODEL_ROLES,
   VALID_MODEL_ROLES,
   detectHardware,
+  detectInferenceBackend,
   resolveEmbeddingProfile,
   resolveModelRole,
   buildModelFitReport,
   writeModelFitReport,
   getModelFitReportPath,
+  isLongContextTask,
+  recommendInferenceBackend,
   resolveFeedbackDir,
 };
 

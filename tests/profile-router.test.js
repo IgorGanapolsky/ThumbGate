@@ -9,6 +9,7 @@ const path = require('node:path');
 const {
   routeProfile,
   routePrivacy,
+  routeInference,
   findMostRestrictiveProfile,
   isReadOnlySession,
 } = require('../scripts/profile-router');
@@ -215,6 +216,43 @@ test('routePrivacy detects api_key in input', () => {
     toolInput: { command: 'export API_KEY=sk-abc123' },
   });
   assert.equal(result.route, 'local');
+});
+
+test('routeInference keeps sensitive long-context workloads local even if current backend is managed', () => {
+  const result = routeInference({
+    toolName: 'verify_claim',
+    toolInput: { claim: 'audit repo safety' },
+    taskType: 'large-context',
+    contextTokens: 220000,
+    tags: ['xmemory'],
+    env: {
+      RLHF_PROVIDER_MODE: 'managed',
+    },
+  });
+
+  assert.equal(result.route, 'local');
+  assert.equal(result.privacy.route, 'local');
+  assert.equal(result.recommendationClass, 'privacy_local_required');
+});
+
+test('routeInference surfaces IndexCache-ready sparse local backend recommendations', () => {
+  const result = routeInference({
+    toolName: 'recall',
+    toolInput: { query: 'multi-hop recall' },
+    taskType: 'large-context',
+    contextTokens: 180000,
+    tags: ['retrieval-heavy'],
+    env: {
+      RLHF_PROVIDER_MODE: 'local',
+      RLHF_LOCAL_MODEL_FAMILY: 'glm-4.5',
+      RLHF_LOCAL_MODEL_SERVER: 'vllm',
+      RLHF_INDEXCACHE_ENABLED: 'true',
+    },
+  });
+
+  assert.equal(result.route, 'local');
+  assert.equal(result.recommendationClass, 'indexcache_active');
+  assert.equal(result.backend.indexCacheEnabled, true);
 });
 
 // ---------------------------------------------------------------------------

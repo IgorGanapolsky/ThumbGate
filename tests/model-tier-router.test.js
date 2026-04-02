@@ -8,6 +8,7 @@ const {
   classifyTask,
   shouldEscalate,
   FrontierBudget,
+  recommendExecutionPlan,
 } = require('../scripts/model-tier-router');
 
 const config = require('../config/model-tiers.json');
@@ -261,4 +262,23 @@ test('config version is 1', () => {
 
 test('config escalation threshold matches TIERS.mini.maxContext', () => {
   assert.equal(config.escalationRules.contextThreshold, TIERS.mini.maxContext);
+});
+
+test('recommendExecutionPlan combines tier escalation with IndexCache-aware backend recommendation', () => {
+  const plan = recommendExecutionPlan({
+    type: 'code-edit',
+    contextTokens: 260000,
+    tags: ['retrieval-heavy'],
+  }, {
+    RLHF_PROVIDER_MODE: 'local',
+    RLHF_LOCAL_MODEL_FAMILY: 'deepseek-v3',
+    RLHF_LOCAL_MODEL_SERVER: 'sglang',
+    RLHF_INDEXCACHE_ENABLED: 'true',
+  });
+
+  assert.equal(plan.tier, 'frontier');
+  assert.equal(plan.indexCacheEligible, true);
+  assert.equal(plan.indexCacheEnabled, true);
+  assert.equal(plan.recommendationClass, 'indexcache_active');
+  assert.ok(plan.reason.includes('IndexCache-ready'));
 });
