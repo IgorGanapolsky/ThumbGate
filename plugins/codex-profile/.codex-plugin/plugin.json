@@ -1,6 +1,6 @@
 {
   "name": "codex-profile",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "description": "ThumbGate for Codex: a repo-local Codex app plugin that adds pre-action gates, thumbs-up/down feedback capture, and MCP-backed reliability memory.",
   "author": {
     "name": "Igor Ganapolsky",

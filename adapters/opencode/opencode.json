@@ -6,7 +6,7 @@
       "command": [
         "npx",
         "-y",
-        "mcp-memory-gateway@0.8.8",
+        "mcp-memory-gateway@0.8.9",
         "serve"
       ],
       "enabled": true
