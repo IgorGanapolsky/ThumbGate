@@ -37,3 +37,6 @@ test-vault-*/
 # RLHF local feedback data
 .rlhf/feedback-log.jsonl
 .rlhf/memory-log.jsonl
+
+coverage/
+undefined/
