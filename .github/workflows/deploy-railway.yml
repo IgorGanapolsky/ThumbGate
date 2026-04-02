@@ -59,31 +59,71 @@ jobs:
       - name: Set Railway environment variables
         if: steps.railway-config.outputs.enabled == 'true'
         run: |
+          retry_railway() {
+            local description="$1"
+            shift
+            local attempt=1
+            local max_attempts=4
+            local sleep_seconds=10
+
+            until "$@"; do
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                echo "Railway command failed after $attempt attempts: $description"
+                return 1
+              fi
+
+              echo "Railway command failed (attempt $attempt/$max_attempts): $description"
+              echo "Retrying in ${sleep_seconds}s..."
+              sleep "$sleep_seconds"
+              attempt=$((attempt + 1))
+            done
+          }
+
           SERVICE_ARGS=()
           if [ -n "$RAILWAY_SERVICE" ]; then
             SERVICE_ARGS+=(--service "$RAILWAY_SERVICE")
           fi
-          railway variables set STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" "${SERVICE_ARGS[@]}"
-          railway variables set STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" "${SERVICE_ARGS[@]}"
+          retry_railway "set STRIPE_SECRET_KEY" railway variables set STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" "${SERVICE_ARGS[@]}"
+          retry_railway "set STRIPE_WEBHOOK_SECRET" railway variables set STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" "${SERVICE_ARGS[@]}"
           if [ -n "$RLHF_FEEDBACK_DIR" ]; then
-            railway variables set RLHF_FEEDBACK_DIR="$RLHF_FEEDBACK_DIR" "${SERVICE_ARGS[@]}"
+            retry_railway "set RLHF_FEEDBACK_DIR" railway variables set RLHF_FEEDBACK_DIR="$RLHF_FEEDBACK_DIR" "${SERVICE_ARGS[@]}"
           fi
           if [ -n "$RLHF_GA_MEASUREMENT_ID" ]; then
-            railway variables set RLHF_GA_MEASUREMENT_ID="$RLHF_GA_MEASUREMENT_ID" "${SERVICE_ARGS[@]}"
+            retry_railway "set RLHF_GA_MEASUREMENT_ID" railway variables set RLHF_GA_MEASUREMENT_ID="$RLHF_GA_MEASUREMENT_ID" "${SERVICE_ARGS[@]}"
           fi
           if [ -n "$RLHF_GOOGLE_SITE_VERIFICATION" ]; then
-            railway variables set RLHF_GOOGLE_SITE_VERIFICATION="$RLHF_GOOGLE_SITE_VERIFICATION" "${SERVICE_ARGS[@]}"
+            retry_railway "set RLHF_GOOGLE_SITE_VERIFICATION" railway variables set RLHF_GOOGLE_SITE_VERIFICATION="$RLHF_GOOGLE_SITE_VERIFICATION" "${SERVICE_ARGS[@]}"
           fi
       - name: Deploy to Railway
         if: steps.railway-config.outputs.enabled == 'true'
         run: |
+          retry_railway() {
+            local description="$1"
+            shift
+            local attempt=1
+            local max_attempts=4
+            local sleep_seconds=15
+
+            until "$@"; do
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                echo "Railway command failed after $attempt attempts: $description"
+                return 1
+              fi
+
+              echo "Railway command failed (attempt $attempt/$max_attempts): $description"
+              echo "Retrying in ${sleep_seconds}s..."
+              sleep "$sleep_seconds"
+              attempt=$((attempt + 1))
+            done
+          }
+
           SERVICE_ARGS=()
           if [ -n "$RAILWAY_SERVICE" ]; then
             SERVICE_ARGS+=(--service "$RAILWAY_SERVICE")
           fi
           # Use --detach to avoid "Failed to retrieve build log" streaming errors
           # (known Railway CLI issue). Health check step below verifies deployment.
-          railway up --ci --detach --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT_ID" "${SERVICE_ARGS[@]}"
+          retry_railway "deploy with railway up" railway up --ci --detach --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT_ID" "${SERVICE_ARGS[@]}"
       - name: Verify deployment health
         if: steps.railway-config.outputs.enabled == 'true'
         run: |
