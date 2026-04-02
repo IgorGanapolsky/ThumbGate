@@ -1,6 +1,6 @@
 {
   "name": "mcp-memory-gateway-pro",
-  "version": "0.9.2",
+  "version": "0.9.0",
   "description": "ThumbGate Pro — personal local dashboard, DPO export, optional hosted API key for teams. Extends mcp-memory-gateway.",
   "bin": {
     "mcp-memory-gateway-pro": "bin/cli.js"
