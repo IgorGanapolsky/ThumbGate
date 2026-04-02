@@ -692,3 +692,83 @@ test('enrichFeedbackContext: null errorType', () => {
   const enriched = enrichFeedbackContext(event, { context: 'error' });
   assert.strictEqual(enriched.richContext.errorType, null);
 });
+
+// -- readJSONL tail-read --
+
+test('readJSONL: non-existent file returns empty array', () => {
+  const result = readJSONL('/tmp/does-not-exist-' + Date.now() + '.jsonl');
+  assert.deepStrictEqual(result, []);
+});
+
+test('readJSONL: default maxLines (500) truncates a file with more than 500 lines', () => {
+  const tmpDir = makeTmpDir();
+  const filePath = path.join(tmpDir, 'large.jsonl');
+  const lines = [];
+  for (let i = 0; i < 600; i++) {
+    lines.push(JSON.stringify({ idx: i }));
+  }
+  fs.writeFileSync(filePath, lines.join('\n') + '\n');
+
+  const result = readJSONL(filePath);
+  assert.strictEqual(result.length, 500);
+  // Should return the LAST 500 lines (indices 100-599)
+  assert.strictEqual(result[0].idx, 100);
+  assert.strictEqual(result[499].idx, 599);
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('readJSONL: maxLines 0 returns all lines', () => {
+  const tmpDir = makeTmpDir();
+  const filePath = path.join(tmpDir, 'all.jsonl');
+  const lines = [];
+  for (let i = 0; i < 600; i++) {
+    lines.push(JSON.stringify({ idx: i }));
+  }
+  fs.writeFileSync(filePath, lines.join('\n') + '\n');
+
+  const result = readJSONL(filePath, { maxLines: 0 });
+  assert.strictEqual(result.length, 600);
+  assert.strictEqual(result[0].idx, 0);
+  assert.strictEqual(result[599].idx, 599);
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('readJSONL: maxLines 10 returns only last 10 lines', () => {
+  const tmpDir = makeTmpDir();
+  const filePath = path.join(tmpDir, 'small.jsonl');
+  const lines = [];
+  for (let i = 0; i < 50; i++) {
+    lines.push(JSON.stringify({ idx: i }));
+  }
+  fs.writeFileSync(filePath, lines.join('\n') + '\n');
+
+  const result = readJSONL(filePath, { maxLines: 10 });
+  assert.strictEqual(result.length, 10);
+  assert.strictEqual(result[0].idx, 40);
+  assert.strictEqual(result[9].idx, 49);
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('readJSONL: malformed JSON lines are skipped', () => {
+  const tmpDir = makeTmpDir();
+  const filePath = path.join(tmpDir, 'malformed.jsonl');
+  const content = [
+    JSON.stringify({ a: 1 }),
+    'not valid json{{{',
+    JSON.stringify({ b: 2 }),
+    '}{bad',
+    JSON.stringify({ c: 3 }),
+  ].join('\n') + '\n';
+  fs.writeFileSync(filePath, content);
+
+  const result = readJSONL(filePath);
+  assert.strictEqual(result.length, 3);
+  assert.deepStrictEqual(result[0], { a: 1 });
+  assert.deepStrictEqual(result[1], { b: 2 });
+  assert.deepStrictEqual(result[2], { c: 3 });
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
