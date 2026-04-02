@@ -1,12 +1,7 @@
 #!/bin/bash
 # ThumbGate Status Line for Claude Code
-# Shows RLHF feedback stats + most recent lesson at a glance.
-# Thumbs icons trigger CLI feedback capture inline (no browser).
+# Shows RLHF feedback stats at a glance with clickable links.
 # Installed by: npx mcp-memory-gateway init --agent claude-code
-
-# Resolve script directory safely (CodeQL: no uncontrolled paths)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-case "$SCRIPT_DIR" in *[!a-zA-Z0-9/_.-]*) echo "ThumbGate: invalid script path"; exit 1;; esac
 
 # ── Parse Claude Code session JSON from stdin ─────────────────────
 eval "$(cat | jq -r '
@@ -17,6 +12,7 @@ CTX_PCT="${CTX_PCT:-0}"
 
 # ── RLHF stats from cache ────────────────────────────────────────
 RLHF_CACHE="${RLHF_FEEDBACK_DIR:-.}/.rlhf/statusline_cache.json"
+# Fallback: check common locations
 if [ ! -f "$RLHF_CACHE" ]; then
   for dir in "." "${HOME}"; do
     [ -f "${dir}/.rlhf/statusline_cache.json" ] && RLHF_CACHE="${dir}/.rlhf/statusline_cache.json" && break
@@ -24,16 +20,20 @@ if [ ! -f "$RLHF_CACHE" ]; then
 fi
 
 UP="0"; DOWN="0"; LESSONS="0"; TREND="?"; CACHE_TS="0"
+LESSON_ICON=""; LESSON_MEMID=""; LESSON_SUMMARY=""; LESSON_TURNS="0"
 if [ -f "$RLHF_CACHE" ]; then
   eval "$(jq -r '
     @sh "UP=\(.thumbs_up // "0")",
     @sh "DOWN=\(.thumbs_down // "0")",
     @sh "LESSONS=\(.lessons // "0")",
     @sh "TREND=\(.trend // "?")",
-    @sh "CACHE_TS=\(.updated_at // "0")"
+    @sh "CACHE_TS=\(.updated_at // "0")",
+    @sh "LESSON_ICON=\(.last_lesson.icon // "")",
+    @sh "LESSON_MEMID=\(.last_lesson.memoryId // "")",
+    @sh "LESSON_SUMMARY=\(.last_lesson.summary // "")",
+    @sh "LESSON_TURNS=\(.last_lesson.turnCount // "0")"
   ' "$RLHF_CACHE" 2>/dev/null)"
 fi
-
 # Background refresh from REST API when cache is stale (>120s)
 _NOW=$(date +%s)
 if [ $(( _NOW - ${CACHE_TS:-0} )) -gt 120 ]; then
@@ -53,29 +53,8 @@ except:pass
   disown 2>/dev/null
 fi
 
-# ── Most recent lesson from lesson-inference ──────────────────────
-LESSON_TEXT=""; LESSON_ID=""
-_LESSON_JSON=$(node "${SCRIPT_DIR}/statusline-lesson.js" 2>/dev/null)
-if [ -n "$_LESSON_JSON" ]; then
-  eval "$(echo "$_LESSON_JSON" | jq -r '
-    @sh "LESSON_TEXT=\(.text // "")",
-    @sh "LESSON_ID=\(.lessonId // "")"
-  ' 2>/dev/null)"
-fi
-
-# ── Control Tower stats ──────────────────────────────────────────
-SLO_V="0"; AT_RISK="0"; ANOMALIES="0"
-_TOWER_JSON=$(node "${SCRIPT_DIR}/statusline-tower.js" 2>/dev/null)
-if [ -n "$_TOWER_JSON" ]; then
-  eval "$(echo "$_TOWER_JSON" | jq -r '
-    @sh "SLO_V=\(.sloViolations // 0)",
-    @sh "AT_RISK=\(.atRiskToolCount // 0)",
-    @sh "ANOMALIES=\(.anomalyCount // 0)"
-  ' 2>/dev/null)"
-fi
-
 # ── Colors ────────────────────────────────────────────────────────
-G='\033[32m'; R='\033[31m'; M='\033[35m'; C='\033[36m'; D='\033[90m'; BD='\033[1m'; RST='\033[0m'
+G='\033[32m'; R='\033[31m'; M='\033[35m'; D='\033[90m'; BD='\033[1m'; RST='\033[0m'
 
 # Trend arrow
 case "${TREND}" in
@@ -83,28 +62,28 @@ case "${TREND}" in
 esac
 
 # ── OSC 8 clickable links ────────────────────────────────────────
-# Links use CLI commands instead of browser URLs.
-# Clicking 👍 runs: node bin/cli.js feedback --signal=up
-# Clicking 👎 runs: node bin/cli.js feedback --signal=down
 osc_link() { printf '\033]8;;%s\a%s\033]8;;\a' "$1" "$2"; }
-CLI="node ${SCRIPT_DIR}/../bin/cli.js"
+DASH="http://localhost:9876"
+
+# ── Lesson detail (if available) ─────────────────────────────────
+LESSON_PART=""
+if [ -n "$LESSON_ICON" ] && [ -n "$LESSON_SUMMARY" ]; then
+  if [ -n "$LESSON_MEMID" ] && [ "$LESSON_MEMID" != "null" ]; then
+    LESSON_LINK=$(osc_link "${DASH}/lessons/${LESSON_MEMID}" "${LESSON_ICON} Lesson: ${LESSON_MEMID}")
+    LESSON_PART=" | ${LESSON_LINK} — \"${LESSON_SUMMARY}\" | ${LESSON_TURNS} turns captured"
+  else
+    LESSON_PART=" | ${LESSON_ICON} ${LESSON_SUMMARY}"
+  fi
+fi
 
 # ── Output (single line) ─────────────────────────────────────────
 if [ "$UP" = "0" ] && [ "$DOWN" = "0" ]; then
-  echo -e "${D}ThumbGate: no feedback yet — type 'thumbs up' or 'thumbs down'${RST}"
+  LABEL=$(osc_link "${DASH}/dashboard" "ThumbGate: no feedback yet")
+  echo -e "${D}${LABEL}${RST}${LESSON_PART}"
 else
-  # Feedback counts
-  LINE="ThumbGate: ${G}${BD}${UP}${RST}👍 ${R}${BD}${DOWN}${RST}👎 · ${M}${BD}${LESSONS}${RST} lessons ${ARROW}"
-
-  # Control Tower alerts (if any)
-  [ "${SLO_V:-0}" -gt 0 ] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"
-  [ "${AT_RISK:-0}" -gt 0 ] && LINE="${LINE} ${R}${AT_RISK}⚠${RST}"
-  [ "${ANOMALIES:-0}" -gt 0 ] && LINE="${LINE} ${R}${ANOMALIES}☠${RST}"
-
-  # Most recent lesson
-  if [ -n "$LESSON_TEXT" ]; then
-    LINE="${LINE} · ${C}${LESSON_TEXT}${RST}"
-  fi
-
-  echo -e "$LINE"
+  TG_LINK=$(osc_link "${DASH}/dashboard" "ThumbGate")
+  UP_LINK=$(osc_link "${DASH}/feedback/quick?signal=up" "${G}${BD}${UP}${RST}👍")
+  DOWN_LINK=$(osc_link "${DASH}/feedback/quick?signal=down" "${R}${BD}${DOWN}${RST}👎")
+  LESSONS_LINK=$(osc_link "${DASH}/lessons" "${M}${BD}${LESSONS}${RST} lessons")
+  echo -e "${TG_LINK}: ${UP_LINK} ${DOWN_LINK} · ${LESSONS_LINK} ${ARROW}${LESSON_PART}"
 fi

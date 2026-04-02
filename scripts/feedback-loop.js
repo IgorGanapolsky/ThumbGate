@@ -82,6 +82,48 @@ const DOMAIN_CATEGORIES = [
 const HOME = process.env.HOME || process.env.USERPROFILE || '';
 const pendingBackgroundSideEffects = new Set();
 
+/**
+ * Update the statusline cache with latest lesson info after feedback capture.
+ * The statusline.sh script reads this cache to display lesson context in Claude Code's status bar.
+ */
+function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, lesson, turnCount }) {
+  try {
+    const cacheDir = process.env.RLHF_FEEDBACK_DIR || HOME || '.';
+    const cachePath = path.join(cacheDir, '.rlhf', 'statusline_cache.json');
+    let cache = {};
+    try {
+      cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    } catch { /* cache may not exist yet */ }
+
+    if (accepted) {
+      const icon = signal === 'positive' ? '\u2705' : '\u274C';
+      const summary = (lesson || '').slice(0, 80).replace(/\n/g, ' ');
+      cache.last_lesson = {
+        icon,
+        memoryId: memoryId || null,
+        feedbackId: feedbackId || null,
+        signal: signal || null,
+        summary,
+        turnCount: turnCount || 0,
+        timestamp: Math.floor(Date.now() / 1000),
+      };
+    } else {
+      cache.last_lesson = {
+        icon: '\u26A0\uFE0F',
+        memoryId: null,
+        feedbackId: feedbackId || null,
+        signal: signal || null,
+        summary: 'Feedback needs detail \u2014 describe what worked/failed',
+        turnCount: 0,
+        timestamp: Math.floor(Date.now() / 1000),
+      };
+    }
+    cache.updated_at = String(Math.floor(Date.now() / 1000));
+    fs.mkdirSync(path.dirname(cachePath), { recursive: true });
+    fs.writeFileSync(cachePath, JSON.stringify(cache));
+  } catch { /* statusline update is best-effort */ }
+}
+
 function buildPathsFromDir(d) {
   return {
     FEEDBACK_DIR: d,
@@ -864,6 +906,15 @@ function captureFeedback(params) {
     }
   }
 
+  // Infer structured IF/THEN rule from conversation
+  let structuredRule = null;
+  if (Array.isArray(params.conversationWindow) && params.conversationWindow.length >= 2) {
+    try {
+      const { inferStructuredLesson } = require('./lesson-inference');
+      structuredRule = inferStructuredLesson(params.conversationWindow, signal, inferredContext);
+    } catch (_err) { /* non-critical */ }
+  }
+
   let rubricEvaluation = null;
   try {
     if (params.rubricScores != null || params.guardrails != null) {
@@ -945,6 +996,7 @@ function captureFeedback(params) {
         timestamp: m.timestamp || null,
       }))
       : null,
+    structuredRule: structuredRule || null,
     timestamp: now,
   };
 
@@ -1002,6 +1054,11 @@ function captureFeedback(params) {
       const riskScorer = getRiskScorerModule();
       if (riskScorer) riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
     } catch { /* non-critical */ }
+    updateStatuslineWithLesson({
+      accepted: false,
+      signal,
+      feedbackId: feedbackEvent.id,
+    });
     return {
       accepted: false,
       status: clarification ? 'clarification_required' : 'rejected',
@@ -1049,6 +1106,7 @@ function captureFeedback(params) {
     richContext: feedbackEvent.richContext || null,
     distillation: feedbackEvent.distillation || null,
     diagnosis: storedDiagnosis,
+    structuredRule: structuredRule || null,
     sourceFeedbackId: feedbackEvent.id,
     timestamp: now,
   };
@@ -1122,6 +1180,16 @@ function captureFeedback(params) {
     _captureMs,
     ...(correctiveActions.length > 0 && { correctiveActions }),
   };
+
+  // Update statusline with lesson info
+  updateStatuslineWithLesson({
+    accepted: true,
+    signal,
+    memoryId: memoryRecord.id,
+    feedbackId: feedbackEvent.id,
+    lesson: inferredContext || context,
+    turnCount: Array.isArray(params.conversationWindow) ? params.conversationWindow.length : 0,
+  });
 
   // --- Synchronous side-effects (fast, needed by analyzeFeedback) ---
   const mlPaths = getFeedbackPaths();
@@ -1748,6 +1816,7 @@ module.exports = {
   inferOutcome,
   enrichFeedbackContext,
   inferLessonFromConversation,
+  updateStatuslineWithLesson,
   waitForBackgroundSideEffects,
   getPendingBackgroundSideEffectCount,
   getFeedbackPaths,
