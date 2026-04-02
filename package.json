@@ -1,6 +1,6 @@
 {
   "name": "mcp-memory-gateway",
-  "version": "0.8.7",
+  "version": "0.8.8",
   "description": "ThumbGate — Pre-action gates that block AI coding agents from repeating known mistakes. SQLite+FTS5 lesson DB with corrective-action inference. MemAlign-inspired dual recall (principles + episodic context). Thompson Sampling for adaptive gate sensitivity. LanceDB vector search. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.",
   "homepage": "https://rlhf-feedback-loop-production.up.railway.app",
   "repository": {
