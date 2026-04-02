@@ -21,6 +21,8 @@ test('capture_feedback tool exists with required signal param', () => {
   const captureTool = TOOLS.find(t => t.name === 'capture_feedback');
   assert.ok(captureTool, 'capture_feedback tool must exist');
   assert.ok(captureTool.inputSchema.properties.signal, 'capture_feedback must have signal property');
+  assert.ok(captureTool.inputSchema.properties.chatHistory, 'capture_feedback must expose chatHistory for history-aware distillation');
+  assert.ok(captureTool.inputSchema.properties.relatedFeedbackId, 'capture_feedback must expose relatedFeedbackId');
 });
 
 test('recall tool exists', () => {

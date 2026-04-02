@@ -2,12 +2,13 @@
 
 `mcp-memory-gateway` gives Claude Desktop a local-first **Reliability Gateway** and **Pre-Action Gates** for workflow hardening.
 
-The extension path is useful when a team wants Claude Desktop to keep one workflow sharper over time without adding another orchestration layer. The MCP server captures explicit feedback, recalls past failures, promotes reusable prevention rules, and produces proof-backed rollout artifacts.
+The extension path is useful when a team wants Claude Desktop to keep one workflow sharper over time without adding another orchestration layer. The MCP server captures explicit feedback, recalls past failures, distills lessons from the recent conversation window when a thumbs signal is vague, promotes reusable prevention rules, and produces proof-backed rollout artifacts.
 
 ## Features
 
 - Workflow hardening for Claude-first engineering and ops workflows
 - Pre-Action Gates that block repeated mistakes before tool use
+- History-aware lesson distillation from the last ~10 messages and failed tool calls
 - Reliability memory and recall across long sessions
 - Bounded context packs, provenance, and diagnostics
 - DPO export and analytics bundle generation after runtime reliability lands
@@ -99,6 +100,14 @@ Optional hosted path:
 - Claude Desktop records explicit operator feedback and proof artifacts
 - The extension keeps the workflow history local-first and searchable
 - Repeated release failures can be turned into prevention rules before the next run
+
+### Example 4: Bare thumbs-down with automatic lesson proposal
+
+**User prompt:** "👎 That was wrong."
+**Expected behavior:**
+- Claude Desktop can pass the last ~10 messages and the failed tool call into `capture_feedback`
+- ThumbGate distills a proposed `whatWentWrong` and `whatToChange` from recent history
+- A linked follow-up note can refine the same feedback record with `relatedFeedbackId`
 
 ## Privacy Policy
 

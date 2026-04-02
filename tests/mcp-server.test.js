@@ -219,6 +219,31 @@ test('capture_feedback returns clarification_required for vague positive feedbac
   assert.match(text, /What specifically worked that should be repeated/);
 });
 
+test('capture_feedback can promote a vague negative signal from chatHistory over MCP', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 31,
+    method: 'tools/call',
+    params: {
+      name: 'capture_feedback',
+      arguments: {
+        signal: 'down',
+        context: 'thumbs down',
+        chatHistory: [
+          { author: 'user', text: 'Do not use Tailwind in this repo.' },
+          { author: 'assistant', text: 'I used Tailwind classes in the hero rewrite.' },
+        ],
+        tags: ['ui'],
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.accepted, true);
+  assert.match(payload.feedbackEvent.whatWentWrong, /ignored a prior instruction/i);
+  assert.equal(payload.feedbackEvent.conversationWindow.length, 2);
+});
+
 test('intent tools list and plan enforce checkpoint flow', async () => {
   const listResult = await handleRequest({
     jsonrpc: '2.0',

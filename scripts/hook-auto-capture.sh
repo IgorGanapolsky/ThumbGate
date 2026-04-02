@@ -10,6 +10,17 @@ PROMPT_GUARD="$SCRIPT_DIR/prompt-guard.js"
 FEEDBACK_LOG="$SCRIPT_DIR/../.claude/memory/feedback/feedback-log.jsonl"
 MEMORY_LOG="$SCRIPT_DIR/../.claude/memory/feedback/memory-log.jsonl"
 
+# Record the latest user prompt so statusline thumbs can distill lessons
+# from recent conversation even when the click itself has no body payload.
+THUMBGATE_CONVERSATION_TEXT="$PROMPT" node -e "
+  const { recordConversationEntry } = require(process.argv[1]);
+  recordConversationEntry({
+    author: 'user',
+    text: process.env.THUMBGATE_CONVERSATION_TEXT || '',
+    source: 'claude_user_prompt',
+  });
+" "$SCRIPT_DIR/feedback-history-distiller.js" 2>/dev/null || true
+
 # Normalize to lowercase for matching
 LOWER=$(echo "$PROMPT" | tr '[:upper:]' '[:lower:]')
 

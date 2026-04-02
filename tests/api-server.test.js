@@ -30,6 +30,10 @@ fs.writeFileSync(
 const { startServer, __test__ } = require('../src/api/server');
 const billing = require('../scripts/billing');
 const { buildHostedSuccessUrl } = require('../scripts/hosted-config');
+const {
+  recordConversationEntry,
+  getConversationPaths,
+} = require('../scripts/feedback-history-distiller');
 
 let handle;
 let apiOrigin = '';
@@ -706,6 +710,28 @@ test('feedback capture blocks positive memory promotion when rubric guardrail fa
   assert.match(body.reason, /Rubric gate prevented promotion/);
 });
 
+test('feedback capture can distill a lesson from chatHistory when the submitted signal is vague', async () => {
+  const res = await fetch(apiUrl('/v1/feedback/capture'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      signal: 'down',
+      context: 'thumbs down',
+      chatHistory: [
+        { author: 'user', text: 'Do not use Tailwind in this repo.' },
+        { author: 'assistant', text: 'I used Tailwind classes in the hero rewrite.' },
+      ],
+      tags: ['ui'],
+    }),
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.accepted, true);
+  assert.match(body.feedbackEvent.whatWentWrong, /ignored a prior instruction/i);
+  assert.equal(body.feedbackEvent.conversationWindow.length, 2);
+});
+
 test('feedback capture returns clarification_required for vague positive signal', async () => {
   const res = await fetch(apiUrl('/v1/feedback/capture'), {
     method: 'POST',
@@ -737,6 +763,17 @@ test('quick feedback capture via GET /feedback/quick?signal=up returns HTML conf
 });
 
 test('quick feedback capture via GET /feedback/quick?signal=down returns HTML confirmation', async () => {
+  recordConversationEntry({
+    author: 'user',
+    text: 'Never skip tests before claiming done.',
+    source: 'statusline-test',
+  }, { feedbackDir: tmpFeedbackDir });
+  recordConversationEntry({
+    author: 'assistant',
+    text: 'I claimed done without running npm test.',
+    source: 'statusline-test',
+  }, { feedbackDir: tmpFeedbackDir });
+
   const res = await fetch(apiUrl('/feedback/quick?signal=down'), { headers: authHeader });
   assert.equal(res.status, 200);
   const html = await res.text();
@@ -744,6 +781,11 @@ test('quick feedback capture via GET /feedback/quick?signal=down returns HTML co
   assert.ok(html.includes('Negative feedback recorded'), 'should confirm capture with friendly label');
   assert.ok(html.includes('Undo'), 'should offer undo action');
   assert.ok(html.includes('signal=up'), 'undo link should point to opposite signal');
+
+  const { feedbackLogPath } = getConversationPaths(tmpFeedbackDir);
+  const logEntries = readJsonl(feedbackLogPath);
+  const latest = logEntries[logEntries.length - 1];
+  assert.match(latest.whatWentWrong, /ignored a prior instruction/i);
 });
 
 test('quick feedback capture without signal returns 400', async () => {
