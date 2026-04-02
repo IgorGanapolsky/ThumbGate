@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Give Your AI Coding Agent Persistent Memory Across Sessions — ThumbGate</title>
+<script defer data-domain="rlhf-feedback-loop-production.up.railway.app" data-api="/api/event" src="/js/analytics.js"></script>
+<meta name="description" content="AI coding agents forget everything when a session ends. Learn how to give Claude Code, Cursor, Codex, and Gemini persistent memory using an MCP memory server that survives restarts.">
+<meta name="keywords" content="ai agent memory, persistent memory, claude code memory, cursor agent memory, MCP memory server, session persistence, agent context, episodic memory, semantic memory">
+<meta property="og:title" content="How to Give Your AI Coding Agent Persistent Memory Across Sessions">
+<meta property="og:description" content="Context windows are ephemeral. Real memory persists. Here is how to build durable memory for any MCP-compatible AI coding agent.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://rlhf-feedback-loop-production.up.railway.app/learn/ai-agent-persistent-memory">
+<link rel="canonical" href="https://rlhf-feedback-loop-production.up.railway.app/learn/ai-agent-persistent-memory">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How to Give Your AI Coding Agent Persistent Memory Across Sessions",
+  "description": "AI coding agents forget everything when a session ends. Learn how to give Claude Code, Cursor, Codex, and Gemini persistent memory using an MCP memory server that survives restarts.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://rlhf-feedback-loop-production.up.railway.app"
+  },
+  "datePublished": "2026-04-02",
+  "dateModified": "2026-04-02",
+  "mainEntityOfPage": "https://rlhf-feedback-loop-production.up.railway.app/learn/ai-agent-persistent-memory",
+  "about": [
+    {"@type": "Thing", "name": "ai agent memory"},
+    {"@type": "Thing", "name": "persistent memory"},
+    {"@type": "Thing", "name": "MCP memory server"},
+    {"@type": "Thing", "name": "session persistence"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  th { color: var(--cyan); font-weight: 600; }
+  .memory-row td:first-child { color: var(--green); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">👍👎 ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / AI Agent Persistent Memory</div>
+  <h1>How to Give Your AI Coding Agent Persistent Memory Across Sessions</h1>
+  <p style="color:var(--muted);">6 min read &middot; For developers using Claude Code, Cursor, Codex, or Gemini who are tired of re-explaining context every session</p>
+
+  <h2>The problem: agents forget everything when you close the tab</h2>
+  <p>You spend twenty minutes explaining your codebase to your AI coding agent. You tell it about the monorepo structure, the deployment conventions, the one branch it must never force-push to. The session ends. You come back tomorrow and it has no memory of any of it.</p>
+  <p>You are not doing anything wrong. This is how context windows work. Every session starts with a blank slate. The agent has no continuity of experience — no record of past mistakes, no accumulated knowledge of your project, no recollection of the rules you established last week.</p>
+  <p>The frustration is real and widespread. Developers using Claude Code, Cursor, Codex, and Gemini all hit the same wall. The agents are capable — they just cannot remember.</p>
+
+  <div class="callout">
+    <strong>The distinction that matters:</strong> A context window holds information for one session. Memory holds information across sessions. Most agents have the former. Almost none have the latter by default.
+  </div>
+
+  <h2>Why context windows are not memory</h2>
+  <p>Context windows are large and getting larger. That solves a different problem. A big context window means the agent can reason over more information at once within a single session. It does not mean that information survives when the session ends.</p>
+  <p>Think of the difference this way: a context window is RAM — fast, capacious, gone when the power cuts. Memory is disk — slower to query, but persistent. You need both. Right now, AI coding agents only ship with RAM.</p>
+  <p>The consequences compound over time. An agent with no persistent memory will:</p>
+  <ul>
+    <li>Repeat mistakes it made last week because it has no record of them</li>
+    <li>Re-ask you for project conventions it has already learned once</li>
+    <li>Ignore prevention rules you painstakingly wrote into a prompt — because that prompt is gone</li>
+    <li>Treat every session as if it is the first day on the job</li>
+  </ul>
+  <p>Stuffing facts into a <code>CLAUDE.md</code> file helps, but it is a manual workaround. You are the memory. You remember what to put in the file. You update it when things change. That is not a solution — it is delegation of a machine problem back to a human.</p>
+
+  <div class="callout callout-red">
+    <strong>The hidden cost:</strong> Re-explaining context is not just annoying. Every token you spend re-establishing what the agent already knew is a token not spent on the actual task. And re-explained rules are still just prompt rules — the agent can reason around them.
+  </div>
+
+  <h2>Three types of agent memory</h2>
+  <p>Cognitive science distinguishes several memory types. The same taxonomy maps cleanly onto what AI coding agents need. Here is how each type works and what it looks like in practice:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Memory Type</th>
+        <th>What It Stores</th>
+        <th>Concrete Example</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="memory-row">
+        <td>Episodic</td>
+        <td>Records of specific past events — what happened, when, and what the outcome was</td>
+        <td>The agent tried to force-push to main. You gave thumbs-down. That event is stored with context, timestamp, and failure description.</td>
+      </tr>
+      <tr class="memory-row">
+        <td>Semantic</td>
+        <td>Generalised knowledge extracted from episodes — rules, patterns, facts about the world</td>
+        <td>From multiple thumbs-down events, the system derives: "force-pushing to main causes broken deploys in this repo." That becomes a prevention rule.</td>
+      </tr>
+      <tr class="memory-row">
+        <td>Procedural</td>
+        <td>Encoded behaviours — gates that fire before actions without requiring the agent to reason about them</td>
+        <td>A PreToolUse hook that checks every <code>git push</code> command against the prevention rule and blocks the dangerous pattern automatically.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Most "persistent memory" proposals for AI agents stop at episodic: they store a log of past conversations. That is useful, but insufficient. The signal gets diluted in a sea of raw events. What agents need is the full pipeline: episodes promote to semantic rules, semantic rules compile into procedural gates.</p>
+
+  <h2>How ThumbGate implements persistent memory</h2>
+  <p>ThumbGate is built around this three-tier memory architecture. Here is each layer in concrete terms.</p>
+
+  <h3>Episodic layer: the feedback log</h3>
+  <p>Every thumbs-up or thumbs-down you give an agent action is written to a structured feedback log. Each entry captures the tool call that was made, the context at the time, what worked or went wrong, and any tags you add. The log is append-only and survives across sessions.</p>
+
+  <pre><code># Thumbs-down: record a specific failure
+node .claude/scripts/feedback/capture-feedback.js \
+  --feedback=down \
+  --context="deploying to production" \
+  --what-went-wrong="agent ran db migration without backup" \
+  --what-to-change="always checkpoint before schema changes" \
+  --tags="database,migrations,safety"</code></pre>
+
+  <p>You do not need to write this manually for every interaction. The MCP server captures tool calls automatically. Manual feedback is for adding nuance that the agent could not observe on its own.</p>
+
+  <h3>Semantic layer: the lesson database</h3>
+  <p>Raw feedback events are processed into a SQLite database with full-text search (FTS5). This is not a flat file — it is a queryable knowledge store. When a new session starts, the system retrieves lessons relevant to the current task by similarity, not by recency.</p>
+  <p>The FTS5 index means retrieval is fast even as the database grows. You are not loading the entire history into context. You are loading the lessons most likely to matter right now. That is the difference between a knowledge base and a memory dump.</p>
+
+  <h3>Procedural layer: prevention rules and gates</h3>
+  <p>Promoted lessons generate prevention rules in <code>prevention-rules.md</code>. Rules are not prompt instructions — they are checked by a PreToolUse hook that fires before every tool call. The agent cannot reason around a gate. The gate runs outside the agent's context.</p>
+
+  <div class="callout callout-green">
+    <strong>The promotion pipeline:</strong> Thumbs-down event &rarr; feedback log entry &rarr; lesson promoted to SQLite &rarr; prevention rule generated &rarr; PreToolUse gate active for every future session, with no additional setup.
+  </div>
+
+  <h2>Thompson Sampling for memory-informed decisions</h2>
+  <p>Not every prevention rule has the same confidence level. A rule derived from one thumbs-down event is weaker than a rule reinforced by a dozen. ThumbGate uses Thompson Sampling — a multi-armed bandit algorithm — to handle this uncertainty.</p>
+  <p>For each gate, the system maintains a Beta distribution over outcomes. As thumbs-up and thumbs-down feedback accumulates, the distribution tightens. A gate with high confidence becomes a hard block. A gate still gathering signal issues a warning and lets the agent reconsider.</p>
+  <p>This matters for memory because it means the system learns your preferences rather than requiring you to manually tune thresholds. You give feedback. The gate calibrates. The agent adapts.</p>
+  <p>Thompson Sampling also prevents over-blocking. If a pattern that was once dangerous stops being a problem — because the codebase changed, or you updated your workflow — thumbs-up feedback on future calls will widen the distribution back toward allowing. Memory is not one-way.</p>
+
+  <h2>Setup: persistent memory in two minutes</h2>
+  <p>ThumbGate ships as an MCP server. Any agent that speaks MCP — Claude Code, Cursor, Codex, Gemini, Amp, OpenCode — can connect to it. You initialize once and the memory layer is active for every subsequent session.</p>
+
+  <pre><code>npx mcp-memory-gateway init</code></pre>
+
+  <p>That command sets up:</p>
+  <ul>
+    <li>The SQLite+FTS5 lesson database in <code>.claude/memory/</code></li>
+    <li>The feedback log at <code>.claude/memory/feedback/feedback-log.jsonl</code></li>
+    <li>Prevention rules at <code>.claude/memory/feedback/prevention-rules.md</code></li>
+    <li>A PreToolUse hook that reads gates on every tool call</li>
+    <li>The MCP server adapter for your agent runtime</li>
+  </ul>
+
+  <p>After init, your agent starts each session with context assembled from relevant past lessons. It does not start blank. It starts informed.</p>
+
+  <h3>What memory looks like on day one vs. day thirty</h3>
+  <p>On day one, the database is empty. The agent behaves the same as it always has. You give feedback on its actions.</p>
+  <p>By day thirty, the database has accumulated dozens of lessons. The agent's context at session start includes the most relevant ones. Prevention rules have tightened around patterns that caused problems. Patterns that worked have been reinforced. The agent makes fewer mistakes — not because it was retrained, but because the gates learned from your feedback.</p>
+  <p>That is persistent memory in practice: not a bigger context window, not a longer system prompt, but a feedback loop that accumulates signal and converts it into durable enforcement.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Give your agent memory that survives restarts</h2>
+    <p>One command. Works with Claude Code, Cursor, Codex, Gemini, Amp, and any MCP-compatible agent.</p>
+    <div class="cta-install">$ npx mcp-memory-gateway init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related articles</h3>
+    <a href="/learn/agent-harness-pattern">The Agent Harness Pattern: Why Your AI Needs a Seatbelt &rarr;</a>
+    <a href="/learn/mcp-pre-action-gates-explained">MCP Pre-Action Gates Explained &rarr;</a>
+    <a href="/learn/stop-ai-agent-force-push">How to Stop AI Agents From Force-Pushing to Main &rarr;</a>
+    <a href="/learn/vibe-coding-safety-net">The Vibe Coding Safety Net You Are Missing &rarr;</a>
+  </div>
+</div>
+
+</body>
+</html>
