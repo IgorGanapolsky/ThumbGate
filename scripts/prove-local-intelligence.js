@@ -16,7 +16,7 @@ function ensureDir(dirPath) {
 function runTests() {
   try {
     return execSync(
-      'node --test tests/local-model-profile.test.js tests/model-tier-router.test.js tests/profile-router.test.js tests/risk-scorer.test.js tests/vector-store.test.js tests/feedback-sequences.test.js tests/feedback-loop.test.js',
+      'node --test tests/local-model-profile.test.js tests/model-tier-router.test.js tests/profile-router.test.js tests/risk-scorer.test.js tests/vector-store.test.js tests/feedback-sequences.test.js tests/feedback-history-distiller.test.js tests/feedback-loop.test.js',
       { cwd: ROOT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
     );
   } catch (err) {
@@ -191,6 +191,7 @@ async function main() {
 
     delete require.cache[require.resolve('./feedback-loop')];
     const { captureFeedback, analyzeFeedback } = require('./feedback-loop');
+    const { recordConversationEntry } = require('./feedback-history-distiller');
     captureFeedback({
       signal: 'up',
       context: 'ran tests and included logs',
@@ -261,6 +262,38 @@ async function main() {
       'RISK-02',
       Boolean(analysis.boostedRisk && analysis.boostedRisk.exampleCount >= 6),
       `boostedRisk exampleCount=${analysis.boostedRisk ? analysis.boostedRisk.exampleCount : 0}; mode=${analysis.boostedRisk ? analysis.boostedRisk.mode : 'none'}; topDomain=${analysis.boostedRisk && analysis.boostedRisk.highRiskDomains[0] ? analysis.boostedRisk.highRiskDomains[0].key : 'none'}`
+    );
+
+    const distilled = captureFeedback({
+      signal: 'down',
+      context: 'thumbs down',
+      chatHistory: [
+        { author: 'user', text: 'Do not use Tailwind in this repo.' },
+        { author: 'assistant', text: 'I used Tailwind classes in the hero rewrite.' },
+      ],
+      tags: ['ui'],
+    });
+    addResult(
+      'DISTILL-01',
+      distilled.accepted === true && /ignored a prior instruction/i.test(distilled.feedbackEvent.whatWentWrong || ''),
+      `accepted=${distilled.accepted}; whatWentWrong=${distilled.feedbackEvent.whatWentWrong || 'n/a'}`
+    );
+
+    recordConversationEntry({
+      author: 'assistant',
+      text: 'Ran npm test and attached the output before closing the task.',
+      source: 'proof',
+    }, { feedbackDir: tmpFeedbackDir });
+    const fallback = captureFeedback({
+      signal: 'up',
+      context: 'thumbs up',
+      allowLocalConversationFallback: true,
+      tags: ['verification'],
+    });
+    addResult(
+      'DISTILL-02',
+      fallback.accepted === true && /successful pattern/i.test(fallback.feedbackEvent.whatWorked || ''),
+      `accepted=${fallback.accepted}; whatWorked=${fallback.feedbackEvent.whatWorked || 'n/a'}`
     );
   } finally {
     delete process.env.RLHF_FEEDBACK_DIR;

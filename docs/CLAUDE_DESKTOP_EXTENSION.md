@@ -64,6 +64,7 @@ Use:
 
 - Claude Desktop extension
 - Claude workflow hardening
+- history-aware lesson distillation
 - Pre-Action Gates
 - Reliability Gateway
 - proof-backed reliability
@@ -105,6 +106,7 @@ The Claude extension README includes three examples:
 - PR review hardening
 - code modernization workflow
 - internal ops or release workflow
+- bare thumbs-down with automatic lesson proposal from recent conversation history
 
 ### 5. Proof and trust layer
 
@@ -113,6 +115,23 @@ Every buyer-facing or directory-facing claim should point back to:
 - [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md)
 - [../proof/compatibility/report.json](../proof/compatibility/report.json)
 - [../proof/automation/report.json](../proof/automation/report.json)
+
+## History-aware feedback distillation
+
+For Claude Desktop, the highest-ROI feedback improvement is allowing a user to give a vague `👍` or `👎` and still produce a useful lesson.
+
+Current shipped behavior:
+
+- `capture_feedback` accepts optional `chatHistory` and `relatedFeedbackId`
+- negative signals can distill `whatWentWrong` and `whatToChange` from the last ~10 messages plus the failed tool call
+- positive signals can distill `whatWorked` from the recent conversation window
+- linked follow-up notes can refine an earlier feedback record instead of creating isolated duplicates
+
+Do not market this as generic black-box summarization. Market it as:
+
+- local-first history-aware lesson distillation
+- recent-message inference for vague thumbs feedback
+- reusable corrective rules grounded in the actual workflow transcript
 
 ## Build the MCPB
 

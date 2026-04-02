@@ -23,6 +23,7 @@ const {
   waitForBackgroundSideEffects,
 } = require('../scripts/feedback-loop');
 const { evaluateMemoryIngress } = require('../scripts/memory-firewall');
+const { recordConversationEntry } = require('../scripts/feedback-history-distiller');
 
 function makeTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-loop-test-'));
@@ -201,6 +202,60 @@ test('captureFeedback: rejects generic positive context and requests clarificati
   assert.strictEqual(result.needsClarification, true);
   assert.match(result.reason, /too vague/i);
   assert.match(result.prompt, /What specifically worked that should be repeated/i);
+});
+
+test('captureFeedback: promotes vague negative feedback when chatHistory supplies a concrete failure', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const result = captureFeedback({
+    signal: 'down',
+    context: 'thumbs down',
+    chatHistory: [
+      { author: 'user', text: 'Do not use Tailwind in this repo.' },
+      { author: 'assistant', text: 'I used Tailwind classes in the hero rewrite.' },
+    ],
+    tags: ['ui'],
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.feedbackEvent.submittedContext, 'thumbs down');
+  assert.match(result.feedbackEvent.context, /History-aware distillation/i);
+  assert.match(result.feedbackEvent.whatWentWrong, /ignored a prior instruction/i);
+  assert.ok(Array.isArray(result.feedbackEvent.conversationWindow));
+  assert.equal(result.feedbackEvent.conversationWindow.length, 2);
+  assert.ok(result.feedbackEvent.distillation);
+  assert.match(result.memoryRecord.content, /How to avoid/);
+});
+
+test('captureFeedback: can distill a statusline follow-up from local conversation history', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  recordConversationEntry({
+    author: 'assistant',
+    text: 'Ran npm test and attached the output before closing the task.',
+    source: 'statusline-test',
+  }, { feedbackDir: tmpDir });
+
+  const result = captureFeedback({
+    signal: 'up',
+    context: 'thumbs up',
+    allowLocalConversationFallback: true,
+    tags: ['verification'],
+  });
+
+  assert.equal(result.accepted, true);
+  assert.match(result.feedbackEvent.whatWorked, /successful pattern/i);
+  assert.equal(result.feedbackEvent.distillation.source, 'local_conversation_window');
 });
 
 // -- analyzeFeedback --

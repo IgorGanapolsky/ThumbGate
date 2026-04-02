@@ -80,9 +80,23 @@ function main() {
     process.exit(1);
   }
 
+  let chatHistory = undefined;
+  try {
+    if (args['chat-history-json']) {
+      chatHistory = JSON.parse(args['chat-history-json']);
+    } else if (args['chat-history-file']) {
+      chatHistory = JSON.parse(require('fs').readFileSync(args['chat-history-file'], 'utf8'));
+    }
+  } catch (error) {
+    console.error(`Invalid chat history payload: ${error.message}`);
+    process.exit(1);
+  }
+
   const result = captureFeedback({
     signal: feedback,
     context: args.context || '',
+    relatedFeedbackId: args['related-feedback-id'],
+    chatHistory,
     whatWentWrong: args['what-went-wrong'],
     whatToChange: args['what-to-change'],
     whatWorked: args['what-worked'],

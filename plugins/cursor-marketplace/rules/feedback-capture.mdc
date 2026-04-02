@@ -1,5 +1,5 @@
 ---
-description: After any mistake or unexpected behavior, prompt to capture structured feedback with context and tags.
+description: After any mistake or unexpected behavior, prompt to capture structured feedback with context, history-aware lesson distillation, and tags.
 alwaysApply: false
 ---
 
@@ -18,13 +18,17 @@ After any mistake, unexpected behavior, or completed task, prompt to capture str
 
 1. Call the `capture_feedback` MCP tool with:
    - `signal`: "thumbs_up" or "thumbs_down"
-   - `context`: Brief description of what happened
+   - `context`: Brief description of what happened when the explanation is already explicit
    - `tags`: Relevant tags (e.g., "test-failure", "wrong-approach", "deployment-error")
+   - `chatHistory`: the last ~10 messages plus the failed tool call when the signal is vague and the lesson should be inferred from recent conversation
+   - `relatedFeedbackId`: use for a later clarification that should refine an existing feedback event
    - `rubric_scores`: Optional structured scores if a rubric applies
 
 2. Include enough context so the feedback is useful for future prevention rule generation.
+3. If the user only gives a bare thumbs signal or short correction, still capture it and let ThumbGate propose `whatWentWrong` / `whatToChange` from recent history.
 
 ## Examples
 
 - Test failure after refactor: signal=thumbs_down, tags=["test-failure", "refactor"], context="Tests broke after extracting helper function — missed internal dependency"
 - Successful deployment: signal=thumbs_up, tags=["deployment", "success"], context="Clean deploy after running gate checks"
+- Vague correction after failed tool use: signal=thumbs_down, chatHistory=[last 10 messages + failed tool call], tags=["wrong-approach", "tool-failure"]

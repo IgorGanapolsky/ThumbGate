@@ -14,6 +14,9 @@ const {
   appendDiagnosticRecord,
 } = require('../../scripts/feedback-loop');
 const {
+  readRecentConversationWindow,
+} = require('../../scripts/feedback-history-distiller');
+const {
   readJSONL,
   exportDpoFromMemories,
   DEFAULT_LOCAL_MEMORY_LOG,
@@ -1867,9 +1870,14 @@ function createApiServer() {
     if (isGetLikeRequest && pathname === '/feedback/quick') {
       const signal = parsed.searchParams.get('signal');
       if (signal === 'up' || signal === 'down') {
+        const chatHistory = readRecentConversationWindow({
+          feedbackDir: getSafeDataDir(),
+          limit: 10,
+        });
         const result = captureFeedback({
           signal,
           context: 'Quick capture from Claude Code statusline',
+          chatHistory,
           tags: ['statusline', 'quick-capture'],
         });
         const emoji = signal === 'up' ? '👍' : '👎';
@@ -1951,6 +1959,10 @@ async function addContext(){
         signal,
         context,
         relatedFeedbackId,
+        chatHistory: readRecentConversationWindow({
+          feedbackDir: getSafeDataDir(),
+          limit: 10,
+        }),
         tags: ['statusline', 'quick-capture', 'follow-up-context'],
       });
       const code = result.accepted ? 200 : 422;
@@ -3056,6 +3068,7 @@ async function addContext(){
           signal: body.signal,
           context: body.context || '',
           relatedFeedbackId: body.relatedFeedbackId,
+          chatHistory: Array.isArray(body.chatHistory) ? body.chatHistory : body.messages,
           whatWentWrong: body.whatWentWrong,
           whatToChange: body.whatToChange,
           whatWorked: body.whatWorked,

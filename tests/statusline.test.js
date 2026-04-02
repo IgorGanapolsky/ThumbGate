@@ -3,10 +3,12 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execFileSync } = require('child_process');
 
 const STATUSLINE_PATH = path.join(__dirname, '..', 'scripts', 'statusline.sh');
 const CACHE_UPDATER_PATH = path.join(__dirname, '..', 'scripts', 'hook-rlhf-cache-updater.js');
+const AUTO_CAPTURE_HOOK_PATH = path.join(__dirname, '..', 'scripts', 'hook-auto-capture.sh');
 
 test('statusline script exists and is executable', () => {
   assert.ok(fs.existsSync(STATUSLINE_PATH), 'scripts/statusline.sh must exist');
@@ -71,6 +73,29 @@ test('statusline shows "no feedback yet" when cache has zeros', () => {
 
 test('cache updater hook script exists', () => {
   assert.ok(fs.existsSync(CACHE_UPDATER_PATH), 'scripts/hook-rlhf-cache-updater.js must exist');
+});
+
+test('user prompt hook records recent conversation history for statusline distillation', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-statusline-hook-'));
+  const conversationPath = path.join(tmpDir, 'conversation-window.jsonl');
+
+  execFileSync('bash', [AUTO_CAPTURE_HOOK_PATH], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      RLHF_FEEDBACK_DIR: tmpDir,
+      CLAUDE_USER_PROMPT: 'Need proof before saying deployed',
+    },
+    timeout: 5000,
+  });
+
+  assert.ok(fs.existsSync(conversationPath), 'conversation-window.jsonl should be created');
+  const entries = fs.readFileSync(conversationPath, 'utf8').trim().split('\n').map(JSON.parse);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].text, 'Need proof before saying deployed');
+  assert.equal(entries[0].source, 'claude_user_prompt');
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
 test('cache updater writes cache from feedback_stats input', () => {

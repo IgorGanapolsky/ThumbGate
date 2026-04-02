@@ -30,9 +30,23 @@ const TOOLS = [
         signal: { type: 'string', enum: ['up', 'down'] },
         failureType: { type: 'string', enum: ['decision', 'execution'], description: 'Dual-signal: "decision" = wrong tool/action chosen, "execution" = right tool but bad parameters/output. Improves Thompson Sampling precision.' },
         context: { type: 'string', description: 'One-sentence reason describing what worked or failed' },
+        relatedFeedbackId: { type: 'string', description: 'Optional prior feedback event to merge with later follow-up context.' },
         whatWentWrong: { type: 'string' },
         whatToChange: { type: 'string' },
         whatWorked: { type: 'string' },
+        chatHistory: {
+          type: 'array',
+          description: 'Optional recent conversation window used for history-aware lesson distillation.',
+          items: {
+            type: 'object',
+            properties: {
+              author: { type: 'string' },
+              text: { type: 'string' },
+              timestamp: { type: 'string' },
+              source: { type: 'string' },
+            },
+          },
+        },
         tags: { type: 'array', items: { type: 'string' } },
         skill: { type: 'string' },
         rubricScores: {

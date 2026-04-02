@@ -29,6 +29,7 @@ test('claude mcpb manifest stays aligned with the package metadata and tool regi
   assert.equal(manifest.server.entry_point, 'server/index.js');
   assert.deepEqual(manifest.server.mcp_config.args, ['${__dirname}/server/index.js']);
   assert.equal(manifest.tools_generated, true);
+  assert.match(manifest.long_description, /recent conversation window/i);
   assert.deepEqual(
     manifest.tools.map((tool) => tool.name),
     TOOLS.map((tool) => tool.name)
@@ -58,6 +59,9 @@ test('claude mcpb staging writes a submission-ready bundle directory', () => {
 
     assert.equal(manifest.version, packageJson.version);
     assert.equal(manifest.icon, 'icon.png');
+    assert.match(readme, /History-aware lesson distillation/i);
+    assert.match(readme, /last ~10 messages/i);
+    assert.match(readme, /relatedFeedbackId/);
     assert.match(readme, /Privacy Policy/i);
     assert.match(readme, /Data Collection/i);
     assert.match(readme, /build:claude-mcpb/i);
@@ -66,4 +70,13 @@ test('claude mcpb staging writes a submission-ready bundle directory', () => {
   } finally {
     fs.rmSync(outputDir, { recursive: true, force: true });
   }
+});
+
+test('claude desktop submission doc covers history-aware lesson distillation', () => {
+  const extensionDoc = fs.readFileSync(path.join(__dirname, '..', 'docs', 'CLAUDE_DESKTOP_EXTENSION.md'), 'utf8');
+
+  assert.match(extensionDoc, /history-aware lesson distillation/i);
+  assert.match(extensionDoc, /chatHistory/);
+  assert.match(extensionDoc, /relatedFeedbackId/);
+  assert.match(extensionDoc, /last ~10 messages/i);
 });

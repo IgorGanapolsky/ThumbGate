@@ -17,11 +17,15 @@ const {
 } = require('./feedback-schema');
 const {
   buildClarificationMessage,
+  isGenericFeedbackText,
 } = require('./feedback-quality');
 const {
   buildRubricEvaluation,
 } = require('./rubric-engine');
 const { recordAction, attributeFeedback } = require('./feedback-attribution');
+const {
+  distillFeedbackHistory,
+} = require('./feedback-history-distiller');
 const {
   diagnoseFailure,
   aggregateFailureDiagnostics,
@@ -774,7 +778,27 @@ function captureFeedback(params) {
     };
   }
 
-  const context = params.context || '';
+  const submittedContext = params.context || '';
+  const distillation = distillFeedbackHistory({
+    signal,
+    context: submittedContext,
+    whatWentWrong: params.whatWentWrong,
+    whatToChange: params.whatToChange,
+    whatWorked: params.whatWorked,
+    relatedFeedbackId: params.relatedFeedbackId,
+    chatHistory: params.chatHistory || params.messages,
+    allowLocalConversationFallback: params.allowLocalConversationFallback === true,
+    lastAction: params.lastAction,
+    feedbackDir: FEEDBACK_DIR,
+  });
+
+  const shouldUseDistilledContext = !submittedContext || isGenericFeedbackText(submittedContext, signal);
+  const context = shouldUseDistilledContext && distillation.inferredFields.context
+    ? distillation.inferredFields.context
+    : submittedContext;
+  const whatWentWrong = params.whatWentWrong || distillation.inferredFields.whatWentWrong || null;
+  const whatToChange = params.whatToChange || distillation.inferredFields.whatToChange || null;
+  const whatWorked = params.whatWorked || distillation.inferredFields.whatWorked || null;
   extractAndSetConstraints(context);
 
   const providedTags = Array.isArray(params.tags)
@@ -804,10 +828,10 @@ function captureFeedback(params) {
 
   const action = resolveFeedbackAction({
     signal,
-    context: params.context || '',
-    whatWentWrong: params.whatWentWrong,
-    whatToChange: params.whatToChange,
-    whatWorked: params.whatWorked,
+    context,
+    whatWentWrong,
+    whatToChange,
+    whatWorked,
     reasoning: params.reasoning,
     visualEvidence: params.visualEvidence,
     tags,
@@ -828,14 +852,24 @@ function captureFeedback(params) {
   const rawFeedbackEvent = {
     id: `fb_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     signal,
-    context: params.context || '',
+    context,
+    submittedContext,
     relatedFeedbackId: params.relatedFeedbackId || null,
     lastAction,
-    whatWentWrong: params.whatWentWrong || null,
-    whatToChange: params.whatToChange || null,
-    whatWorked: params.whatWorked || null,
+    whatWentWrong,
+    whatToChange,
+    whatWorked,
     reasoning: params.reasoning || null,
     visualEvidence: params.visualEvidence || null,
+    conversationWindow: distillation.conversationWindow.length > 0 ? distillation.conversationWindow : null,
+    distillation: distillation.usedHistory
+      ? {
+        source: distillation.source,
+        relatedFeedbackId: distillation.relatedFeedbackId,
+        evidence: distillation.evidence,
+        lessonProposal: distillation.lessonProposal,
+      }
+      : null,
     tags,
     skill: params.skill || null,
     failureType: params.failureType || null,
@@ -891,10 +925,10 @@ function captureFeedback(params) {
     }
     const clarification = buildClarificationMessage({
       signal,
-      context: params.context || '',
-      whatWentWrong: params.whatWentWrong,
-      whatToChange: params.whatToChange,
-      whatWorked: params.whatWorked,
+      context,
+      whatWentWrong,
+      whatToChange,
+      whatWorked,
     });
     summary.rejected += 1;
     summary.lastUpdated = now;
@@ -953,6 +987,7 @@ function captureFeedback(params) {
     id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     ...prepared.memory,
     richContext: feedbackEvent.richContext || null,
+    distillation: feedbackEvent.distillation || null,
     diagnosis: storedDiagnosis,
     sourceFeedbackId: feedbackEvent.id,
     timestamp: now,

@@ -32,6 +32,7 @@
 
 - Lead with the user problem: known mistakes repeating in agent workflows.
 - Lead with outcome before architecture: Pre-Action Gates, prevention rules, proof.
+- Mention history-aware lesson distillation when the surface allows a vague thumbs signal to become a concrete lesson.
 - Keep `DPO` and `Thompson Sampling` in the body or tags, not the first sentence.
 - Keep proof near the pitch by linking [VERIFICATION_EVIDENCE.md](./VERIFICATION_EVIDENCE.md).
 - In manual forms, use the display name for `Name` and keep the slug for package/config paths only.
@@ -43,6 +44,8 @@
 ## Suggested long description
 
 👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.
+
+When the feedback is vague, ThumbGate can distill the lesson from the last ~10 messages and failed tool call, then propose a corrective rule automatically.
 
 ## Suggested manual submission fields
 

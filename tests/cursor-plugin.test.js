@@ -93,6 +93,10 @@ test('cursor plugin docs explain runtime updates versus listing updates', () => 
   assert.match(readme, /mcp-memory-gateway/);
   assert.match(readme, new RegExp(canonicalDescription.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(readme, /mcp-memory-gateway@latest/);
+  assert.match(readme, /History-aware lesson distillation/i);
+  assert.match(readme, /last ~10 messages/i);
+  assert.match(readme, /failed tool call/i);
+  assert.match(readme, /relatedFeedbackId/);
   assert.equal(fs.existsSync(opsDocPath), true, 'Cursor plugin operations doc should exist');
   assert.match(opsDoc, /Cursor Marketplace/i);
   assert.match(opsDoc, /Cursor Directory/i);
@@ -100,7 +104,34 @@ test('cursor plugin docs explain runtime updates versus listing updates', () => 
   assert.match(opsDoc, /Plugin slug: `mcp-memory-gateway`/);
   assert.match(opsDoc, /npm publish/i);
   assert.match(opsDoc, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(opsDoc, /history-aware lesson distillation/i);
+  assert.match(opsDoc, /last ~10 messages/i);
   assert.match(opsDoc, new RegExp(canonicalDescription.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+});
+
+test('cursor feedback command, skill, and rule encode history-aware distillation inputs', () => {
+  const command = fs.readFileSync(path.join(root, 'plugins/cursor-marketplace/commands/capture-feedback.md'), 'utf-8');
+  const skill = fs.readFileSync(path.join(root, 'plugins/cursor-marketplace/skills/capture-feedback/SKILL.md'), 'utf-8');
+  const rule = fs.readFileSync(path.join(root, 'plugins/cursor-marketplace/rules/feedback-capture.mdc'), 'utf-8');
+
+  assert.match(command, /chatHistory/);
+  assert.match(command, /relatedFeedbackId/);
+  assert.match(command, /last ~10 messages/i);
+  assert.match(command, /failed tool call/i);
+  assert.match(command, /history-aware distillation/i);
+
+  assert.match(skill, /history-aware lesson distillation/i);
+  assert.match(skill, /chatHistory/);
+  assert.match(skill, /relatedFeedbackId/);
+  assert.match(skill, /last ~10 messages/i);
+  assert.match(skill, /whatWentWrong/);
+  assert.match(skill, /whatToChange/);
+
+  assert.match(rule, /history-aware lesson distillation/i);
+  assert.match(rule, /chatHistory/);
+  assert.match(rule, /relatedFeedbackId/);
+  assert.match(rule, /last ~10 messages/i);
+  assert.match(rule, /bare thumbs signal/i);
 });
 
 test('all skills have valid YAML frontmatter with name and description', () => {
