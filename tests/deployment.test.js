@@ -205,6 +205,18 @@ test('Deploy to Railway workflow waits long enough to verify the promoted build 
   assert.match(workflow, /Expected build SHA/);
 });
 
+test('Deploy to Railway workflow retries transient Railway CLI failures before failing the lane', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+
+  assert.match(workflow, /retry_railway\(\) \{/);
+  assert.match(workflow, /max_attempts=4/);
+  assert.match(workflow, /set STRIPE_SECRET_KEY/);
+  assert.match(workflow, /set STRIPE_WEBHOOK_SECRET/);
+  assert.match(workflow, /deploy with railway up/);
+  assert.match(workflow, /Railway command failed \(attempt \$attempt\/\$max_attempts\)/);
+  assert.match(workflow, /Retrying in \$\{sleep_seconds\}s/);
+});
+
 test('Publish to NPM workflow uses the tested publish-decision guardrail', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'publish-npm.yml'), 'utf8');
 
