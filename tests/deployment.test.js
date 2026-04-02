@@ -217,16 +217,17 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
   assert.match(workflow, /Retrying in \$\{sleep_seconds\}s/);
 });
 
-test('Deploy to Railway workflow skips Railway promotion when only workflow and test files changed', () => {
+test('Deploy to Railway workflow always promotes the latest main commit, even for workflow-only or test-only pushes', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
   assert.match(workflow, /fetch-depth:\s*2/);
   assert.match(workflow, /name: Detect deployable changes/);
   assert.match(workflow, /BEFORE_SHA='\$\{\{\s*github\.event\.before\s*\}\}'/);
   assert.match(workflow, /git diff --name-only "\$BEFORE_SHA" "\$GITHUB_SHA"/);
-  assert.match(workflow, /grep -Eqv '\^\(\\\.github\/\|tests\/\)'/);
   assert.match(workflow, /should_deploy=\$SHOULD_DEPLOY/);
-  assert.match(workflow, /Railway deploy skipped: only workflow\/test files changed on this commit\./);
+  assert.match(workflow, /SHOULD_DEPLOY=true/);
+  assert.doesNotMatch(workflow, /grep -Eqv '\^\(\\\.github\/\|tests\/\)'/);
+  assert.doesNotMatch(workflow, /Railway deploy skipped: only workflow\/test files changed on this commit\./);
 });
 
 test('Publish to NPM workflow uses the tested publish-decision guardrail', () => {
