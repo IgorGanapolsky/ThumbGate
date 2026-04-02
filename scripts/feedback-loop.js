@@ -980,7 +980,7 @@ function captureFeedback(params) {
     whatWorked,
     reasoning: params.reasoning || null,
     visualEvidence: params.visualEvidence || null,
-    conversationWindow: distillation.conversationWindow.length > 0 ? distillation.conversationWindow : null,
+    conversationWindow: Array.isArray(distillation.conversationWindow) && distillation.conversationWindow.length > 0 ? distillation.conversationWindow : null,
     distillation: distillation.usedHistory
       ? {
         source: distillation.source,
