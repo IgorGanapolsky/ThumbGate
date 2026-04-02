@@ -5,6 +5,14 @@
 
 'use strict';
 
+const STRIPE_TIMEOUT_MS = 5000;
+function withTimeout(promise, ms = STRIPE_TIMEOUT_MS) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`Stripe API timeout after ${ms}ms`)), ms)),
+  ]);
+}
+
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -1063,11 +1071,11 @@ async function listStripeReconciledRevenueEvents() {
     return [];
   }
 
-  const currentPrice = await stripe.prices.retrieve(CONFIG.STRIPE_PRICE_ID);
-  const relatedPrices = await stripe.prices.list({
+  const currentPrice = await withTimeout(stripe.prices.retrieve(CONFIG.STRIPE_PRICE_ID));
+  const relatedPrices = await withTimeout(stripe.prices.list({
     product: CONFIG.STRIPE_PRODUCT_ID || currentPrice.product,
     limit: 100,
-  });
+  }));
   const priceCatalog = buildStripePriceCatalog(
     currentPrice,
     relatedPrices && Array.isArray(relatedPrices.data) ? relatedPrices.data : []
@@ -1076,7 +1084,7 @@ async function listStripeReconciledRevenueEvents() {
     return [];
   }
 
-  const charges = await stripe.charges.list({ limit: 100 });
+  const charges = await withTimeout(stripe.charges.list({ limit: 100 }));
   const reconciled = [];
   const invoiceCache = new Map();
   const subscriptionCache = new Map();
@@ -1093,7 +1101,7 @@ async function listStripeReconciledRevenueEvents() {
       if (invoiceId) {
         let invoice = invoiceCache.get(invoiceId);
         if (!invoice) {
-          invoice = await stripe.invoices.retrieve(invoiceId, { expand: ['lines.data.price'] });
+          invoice = await withTimeout(stripe.invoices.retrieve(invoiceId, { expand: ['lines.data.price'] }));
           invoiceCache.set(invoiceId, invoice);
         }
         const lines = invoice && invoice.lines && Array.isArray(invoice.lines.data) ? invoice.lines.data : [];
@@ -1106,11 +1114,11 @@ async function listStripeReconciledRevenueEvents() {
       if (customerId) {
         let subscriptions = subscriptionCache.get(customerId);
         if (!subscriptions) {
-          const listed = await stripe.subscriptions.list({
+          const listed = await withTimeout(stripe.subscriptions.list({
             customer: customerId,
             status: 'all',
             limit: 100,
-          });
+          }));
           subscriptions = listed && Array.isArray(listed.data) ? listed.data : [];
           subscriptionCache.set(customerId, subscriptions);
         }
@@ -1686,11 +1694,22 @@ function getBillingSummary(options = {}) {
 }
 
 async function getBillingSummaryLive(options = {}) {
-  const extraRevenueEvents = await listStripeReconciledRevenueEvents().catch(() => []);
-  return getBillingSummary({
-    ...options,
-    extraRevenueEvents,
-  });
+  try {
+    const extraRevenueEvents = await listStripeReconciledRevenueEvents().catch(() => []);
+    return getBillingSummary({
+      ...options,
+      extraRevenueEvents,
+    });
+  } catch (err) {
+    const isTimeout = err && err.message && err.message.includes('Stripe API timeout');
+    return {
+      error: isTimeout ? 'stripe_timeout' : 'billing_summary_error',
+      message: err && err.message ? err.message : 'Unknown error',
+      revenue: { total: 0, mrr: 0, events: [] },
+      usage: { totalUsage: 0, bySource: {}, activeBySource: {} },
+      customers: [],
+    };
+  }
 }
 
 function loadKeyStore() {
