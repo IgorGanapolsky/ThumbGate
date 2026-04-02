@@ -1004,13 +1004,15 @@ function captureFeedback(params) {
       : null,
     actionType: action.type,
     actionReason: action.reason || null,
-    conversationWindow: Array.isArray(params.conversationWindow)
+    conversationWindow: Array.isArray(params.conversationWindow) && params.conversationWindow.length > 0
       ? params.conversationWindow.slice(-10).map(m => ({
         role: m.role,
         content: (m.content || '').slice(0, 500),
         timestamp: m.timestamp || null,
       }))
-      : null,
+      : (Array.isArray(distillation.conversationWindow) && distillation.conversationWindow.length > 0
+        ? distillation.conversationWindow
+        : null),
     structuredRule: structuredRule || null,
     ...(reflection && { reflection }),
     timestamp: now,
