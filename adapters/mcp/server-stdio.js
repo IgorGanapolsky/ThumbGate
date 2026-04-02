@@ -58,6 +58,7 @@ const {
 } = require('../../scripts/export-dpo-pairs');
 const { exportDatabricksBundle } = require('../../scripts/export-databricks-bundle');
 const { generateDashboard } = require('../../scripts/dashboard');
+const { getSettingsStatus } = require('../../scripts/settings-hierarchy');
 const { generateSkills } = require('../../scripts/skill-generator');
 const {
   loadModel,
@@ -505,6 +506,8 @@ async function callToolInner(name, args) {
       return toTextResult(generateDashboard(getFeedbackPaths().FEEDBACK_DIR));
     case 'org_dashboard':
       return toTextResult(generateOrgDashboard({ windowHours: Number(args.windowHours || 24) }));
+    case 'settings_status':
+      return toTextResult(getSettingsStatus());
     case 'commerce_recall':
       enforceLimit('commerce_recall');
       return buildCommerceRecallResponse(args);

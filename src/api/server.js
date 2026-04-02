@@ -89,6 +89,9 @@ const {
   generateDashboard,
 } = require('../../scripts/dashboard');
 const {
+  getSettingsStatus,
+} = require('../../scripts/settings-hierarchy');
+const {
   searchLessons,
 } = require('../../scripts/lesson-search');
 const {
@@ -2064,7 +2067,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/learn', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dpo/export', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/learn', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/settings/status', '/v1/dpo/export', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -3483,6 +3486,12 @@ async function addContext(){
           authContext: { tier: 'pro' },
         });
         sendJson(res, 200, data);
+        return;
+      }
+
+      // GET /v1/settings/status -- Resolved settings hierarchy with origin metadata
+      if (req.method === 'GET' && pathname === '/v1/settings/status') {
+        sendJson(res, 200, getSettingsStatus());
         return;
       }
 

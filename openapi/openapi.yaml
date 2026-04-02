@@ -762,6 +762,19 @@ paths:
                 additionalProperties: true
         '401':
           description: Unauthorized
+  /v1/settings/status:
+    get:
+      operationId: getSettingsStatus
+      responses:
+        '200':
+          description: Resolved settings hierarchy with per-field origin metadata for managed, user, project, and local scopes
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          description: Unauthorized
   /v1/billing/summary:
     get:
       operationId: getBillingSummary

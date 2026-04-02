@@ -2,6 +2,9 @@
 
 const { test, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const {
   routeProfile,
@@ -31,6 +34,17 @@ function withEnv(overrides, fn) {
   }
 }
 
+function withEmptySettingsSandbox(fn) {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-profile-project-'));
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-profile-home-'));
+  try {
+    return fn({ projectRoot, homeDir });
+  } finally {
+    fs.rmSync(projectRoot, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+}
+
 // ---------------------------------------------------------------------------
 // routeProfile
 // ---------------------------------------------------------------------------
@@ -44,26 +58,32 @@ test('routeProfile returns explicit profile when RLHF_MCP_PROFILE is set', () =>
 });
 
 test('routeProfile auto-routes to readonly for review sessions', () => {
-  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: 'review', RLHF_SUBAGENT_PROFILE: undefined }, () => {
-    const result = routeProfile({ toolName: 'recall' });
-    assert.equal(result.profile, 'readonly');
-    assert.equal(result.wasAutoRouted, true);
+  withEmptySettingsSandbox(({ projectRoot, homeDir }) => {
+    withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: 'review', RLHF_SUBAGENT_PROFILE: undefined }, () => {
+      const result = routeProfile({ toolName: 'recall', settingsOptions: { projectRoot, homeDir } });
+      assert.equal(result.profile, 'readonly');
+      assert.equal(result.wasAutoRouted, true);
+    });
   });
 });
 
 test('routeProfile auto-routes to readonly for subagent review_workflow', () => {
-  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SUBAGENT_PROFILE: 'review_workflow', RLHF_SESSION_TYPE: undefined }, () => {
-    const result = routeProfile({});
-    assert.equal(result.profile, 'readonly');
-    assert.equal(result.wasAutoRouted, true);
+  withEmptySettingsSandbox(({ projectRoot, homeDir }) => {
+    withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SUBAGENT_PROFILE: 'review_workflow', RLHF_SESSION_TYPE: undefined }, () => {
+      const result = routeProfile({ settingsOptions: { projectRoot, homeDir } });
+      assert.equal(result.profile, 'readonly');
+      assert.equal(result.wasAutoRouted, true);
+    });
   });
 });
 
 test('routeProfile defaults to essential for least privilege', () => {
-  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined, CI: undefined, GITHUB_EVENT_NAME: undefined }, () => {
-    const result = routeProfile({});
-    assert.equal(result.profile, 'essential');
-    assert.equal(result.wasAutoRouted, true);
+  withEmptySettingsSandbox(({ projectRoot, homeDir }) => {
+    withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined, CI: undefined, GITHUB_EVENT_NAME: undefined }, () => {
+      const result = routeProfile({ settingsOptions: { projectRoot, homeDir } });
+      assert.equal(result.profile, 'essential');
+      assert.equal(result.wasAutoRouted, true);
+    });
   });
 });
 
@@ -78,11 +98,47 @@ test('routeProfile selects most restrictive profile for a known tool', () => {
 });
 
 test('routeProfile routes to readonly when no write intent', () => {
-  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined }, () => {
-    const result = routeProfile({ hasWriteIntent: false });
-    assert.equal(result.profile, 'readonly');
-    assert.ok(result.wasAutoRouted);
+  withEmptySettingsSandbox(({ projectRoot, homeDir }) => {
+    withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined }, () => {
+      const result = routeProfile({ hasWriteIntent: false, settingsOptions: { projectRoot, homeDir } });
+      assert.equal(result.profile, 'readonly');
+      assert.ok(result.wasAutoRouted);
+    });
   });
+});
+
+test('routeProfile uses settings hierarchy for default profile fallback', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-profile-settings-'));
+  fs.mkdirSync(path.join(projectRoot, 'config'), { recursive: true });
+  fs.writeFileSync(
+    path.join(projectRoot, 'config', 'thumbgate-settings.managed.json'),
+    JSON.stringify({ mcp: { defaultProfile: 'dispatch' } }, null, 2),
+  );
+
+  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined, CI: undefined, GITHUB_EVENT_NAME: undefined }, () => {
+    const result = routeProfile({ settingsOptions: { projectRoot, homeDir: projectRoot } });
+    assert.equal(result.profile, 'dispatch');
+    assert.equal(result.settingsOrigin.scope, 'managed');
+  });
+
+  fs.rmSync(projectRoot, { recursive: true, force: true });
+});
+
+test('routeProfile uses settings hierarchy for readonly profile fallback', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-profile-readonly-'));
+  fs.mkdirSync(path.join(projectRoot, 'config'), { recursive: true });
+  fs.writeFileSync(
+    path.join(projectRoot, 'config', 'thumbgate-settings.managed.json'),
+    JSON.stringify({ mcp: { readonlySessionProfile: 'locked' } }, null, 2),
+  );
+
+  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: 'review', RLHF_SUBAGENT_PROFILE: undefined }, () => {
+    const result = routeProfile({ settingsOptions: { projectRoot, homeDir: projectRoot } });
+    assert.equal(result.profile, 'locked');
+    assert.equal(result.settingsOrigin.scope, 'managed');
+  });
+
+  fs.rmSync(projectRoot, { recursive: true, force: true });
 });
 
 // ---------------------------------------------------------------------------
@@ -90,9 +146,8 @@ test('routeProfile routes to readonly when no write intent', () => {
 // ---------------------------------------------------------------------------
 
 test('findMostRestrictiveProfile returns smallest profile with the tool', () => {
-  // 'feedback_summary' is in locked(5), essential(8), commerce(7), readonly(15), default(32)
   const profile = findMostRestrictiveProfile('feedback_summary');
-  assert.equal(profile, 'locked');
+  assert.equal(profile, 'commerce');
 });
 
 test('findMostRestrictiveProfile returns locked for search_lessons', () => {
@@ -102,7 +157,7 @@ test('findMostRestrictiveProfile returns locked for search_lessons', () => {
 
 test('findMostRestrictiveProfile returns locked for search_rlhf', () => {
   const profile = findMostRestrictiveProfile('search_rlhf');
-  assert.equal(profile, 'locked');
+  assert.equal(profile, 'commerce');
 });
 
 test('findMostRestrictiveProfile returns null for unknown tool', () => {

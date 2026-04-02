@@ -519,6 +519,14 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'settings_status',
+    description: 'Resolve managed, user, project, and local ThumbGate settings with per-field origin metadata for policy visibility.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  }),
+  readOnlyTool({
     name: 'commerce_recall',
     description: 'Recall past feedback filtered by commerce categories (product_recommendation, brand_compliance, sizing, pricing, regulatory). Returns quality scores alongside memories for agentic commerce agents.',
     inputSchema: {

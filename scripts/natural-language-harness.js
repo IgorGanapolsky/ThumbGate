@@ -3,6 +3,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const {
+  getSetting,
+  getSettingOrigin,
+} = require('./settings-hierarchy');
 
 const HARNESS_DIR = path.join(__dirname, '..', 'harnesses');
 const REQUIRED_SECTIONS = ['Purpose', 'Steps', 'Success Evidence'];
@@ -214,6 +218,15 @@ function extractCommand(step) {
 
 function buildHarnessJob(identifier, inputOverrides = {}, options = {}) {
   const plan = renderHarnessPlan(identifier, inputOverrides);
+  const settingsOptions = options.settingsOptions || {};
+  const runtimePolicy = {
+    enabled: Boolean(getSetting('harnesses.enabled', settingsOptions)),
+    allowRuntimeExecution: Boolean(getSetting('harnesses.allowRuntimeExecution', settingsOptions)),
+    origins: {
+      enabled: getSettingOrigin('harnesses.enabled', settingsOptions),
+      allowRuntimeExecution: getSettingOrigin('harnesses.allowRuntimeExecution', settingsOptions),
+    },
+  };
   const summary = [
     `Harness: ${plan.title}`,
     `Harness ID: ${plan.id}`,
@@ -258,10 +271,18 @@ function buildHarnessJob(identifier, inputOverrides = {}, options = {}) {
     stages,
     harnessId: plan.id,
     harnessSourcePath: plan.sourcePath,
+    runtimePolicy,
   };
 }
 
 function runHarness(identifier, inputOverrides = {}, options = {}) {
+  const settingsOptions = options.settingsOptions || {};
+  if (!getSetting('harnesses.enabled', settingsOptions)) {
+    throw new Error('Natural-language harnesses are disabled by the settings hierarchy');
+  }
+  if (!getSetting('harnesses.allowRuntimeExecution', settingsOptions)) {
+    throw new Error('Natural-language harness runtime execution is disabled by the settings hierarchy');
+  }
   const { executeJob } = require('./async-job-runner');
   return executeJob(buildHarnessJob(identifier, inputOverrides, options), options);
 }

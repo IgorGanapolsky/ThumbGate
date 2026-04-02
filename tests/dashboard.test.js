@@ -117,6 +117,8 @@ test('generateDashboard handles empty state (no files)', () => {
   assert.equal(typeof data.team.activeAgents, 'number');
   assert.equal(data.templateLibrary.total, 6);
   assert.equal(data.templateLibrary.categories['Git Safety'], 1);
+  assert.equal(typeof data.settingsStatus.resolvedSettings.mcp.defaultProfile, 'string');
+  assert.ok(Array.isArray(data.settingsStatus.origins));
 });
 
 test('generateDashboard surfaces tracking readiness and instrumentation truth', () => {

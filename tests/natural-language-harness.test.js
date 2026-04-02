@@ -16,6 +16,7 @@ const {
   buildHarnessJob,
   listHarnesses,
   renderHarnessPlan,
+  runHarness,
 } = require('../scripts/natural-language-harness');
 
 function resetRuntimeModules() {
@@ -122,4 +123,21 @@ test('runHarness executes a natural-language harness through the async runtime',
     delete process.env.RLHF_FEEDBACK_DIR;
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
+});
+
+test('runHarness blocks execution when settings disable runtime execution', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-harness-settings-'));
+  fs.mkdirSync(path.join(projectRoot, '.thumbgate'), { recursive: true });
+  fs.writeFileSync(
+    path.join(projectRoot, '.thumbgate', 'settings.json'),
+    JSON.stringify({ harnesses: { allowRuntimeExecution: false } }, null, 2),
+  );
+
+  assert.throws(() => {
+    runHarness('repo-full-verification', {}, {
+      settingsOptions: { projectRoot, homeDir: projectRoot },
+    });
+  }, /disabled by the settings hierarchy/i);
+
+  fs.rmSync(projectRoot, { recursive: true, force: true });
 });

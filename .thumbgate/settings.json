@@ -1,0 +1,10 @@
+{
+  "harnesses": {
+    "allowRuntimeExecution": true,
+    "enabled": true
+  },
+  "mcp": {
+    "defaultProfile": "essential",
+    "readonlySessionProfile": "readonly"
+  }
+}

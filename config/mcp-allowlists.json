@@ -28,6 +28,7 @@
       "register_claim_gate",
       "gate_stats",
       "dashboard",
+      "settings_status",
       "list_harnesses",
       "run_harness",
       "estimate_uncertainty",
@@ -76,6 +77,7 @@
       "verify_claim",
       "gate_stats",
       "dashboard",
+      "settings_status",
       "get_business_metrics",
       "describe_semantic_entity",
       "get_reliability_rules",
@@ -96,6 +98,7 @@
       "verify_claim",
       "gate_stats",
       "dashboard",
+      "settings_status",
       "get_business_metrics",
       "describe_semantic_entity",
       "get_reliability_rules",
@@ -109,7 +112,8 @@
       "list_intents",
       "plan_intent",
       "list_harnesses",
-      "verify_claim"
+      "verify_claim",
+      "settings_status"
     ]
   }
 }
