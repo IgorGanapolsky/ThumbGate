@@ -32,17 +32,32 @@ jobs:
       STRIPE_WEBHOOK_SECRET_ROTATED_AT: ${{ vars.STRIPE_WEBHOOK_SECRET_ROTATED_AT }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
       - name: Detect deployable changes
         id: deploy-scope
         run: |
-          CHANGED_FILES="$(git show --name-only --format='' "$GITHUB_SHA" | sed '/^$/d')"
+          BEFORE_SHA='${{ github.event.before }}'
+          CHANGED_FILES=''
           SHOULD_DEPLOY=false
 
-          if [ -z "$CHANGED_FILES" ]; then
+          if [ "$GITHUB_EVENT_NAME" != "push" ] || [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
             SHOULD_DEPLOY=true
-          elif printf '%s\n' "$CHANGED_FILES" | grep -Eqv '^(\.github/|tests/)'; then
-            SHOULD_DEPLOY=true
+          else
+            CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | sed '/^$/d')"
+
+            if [ -z "$CHANGED_FILES" ]; then
+              echo "No changed files detected in push range $BEFORE_SHA..$GITHUB_SHA; defaulting to deploy."
+              SHOULD_DEPLOY=true
+            elif printf '%s\n' "$CHANGED_FILES" | grep -Eqv '^(\.github/|tests/)'; then
+              SHOULD_DEPLOY=true
+            fi
           fi
+
+          echo "before_sha=${BEFORE_SHA:-<none>}"
+          echo 'changed_files:'
+          printf '%s\n' "${CHANGED_FILES:-<none>}"
+          echo "should_deploy=$SHOULD_DEPLOY"
 
           echo "changed_files<<EOF" >> "$GITHUB_OUTPUT"
           printf '%s\n' "$CHANGED_FILES" >> "$GITHUB_OUTPUT"
