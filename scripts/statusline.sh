@@ -4,7 +4,9 @@
 # Thumbs icons trigger CLI feedback capture inline (no browser).
 # Installed by: npx mcp-memory-gateway init --agent claude-code
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve script directory safely (CodeQL: no uncontrolled paths)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+case "$SCRIPT_DIR" in *[!a-zA-Z0-9/_.-]*) echo "ThumbGate: invalid script path"; exit 1;; esac
 
 # ── Parse Claude Code session JSON from stdin ─────────────────────
 eval "$(cat | jq -r '
