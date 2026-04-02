@@ -176,6 +176,7 @@ if (require.main === module) {
   const fs = require('fs');
 
   const db = new Database(dbPath);
+  db.pragma('busy_timeout = 3000');
   db.pragma('journal_mode = WAL');
 
   const schema = fs.readFileSync(schemaPath, 'utf8');

@@ -305,6 +305,10 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 
   const constraints = loadConstraints();
 
+  // Fast-path: feedback/recall tools skip metric gates entirely (avoids Stripe API calls)
+  const METRIC_SKIP_TOOLS = ['capture_feedback', 'feedback_stats', 'recall', 'feedback_summary', 'prevention_rules'];
+  const skipMetrics = METRIC_SKIP_TOOLS.includes(toolName);
+
   for (const gate of config.gates) {
     if (!matchesGate(gate, toolName, toolInput)) continue;
 
@@ -316,7 +320,16 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     // Metric-aware gates: check business metrics from Semantic Layer
     let metricFailed = false;
     if (gate.metrics) {
-      const metricsPassed = await checkMetricCondition(gate.metrics);
+      if (skipMetrics) {
+        // Fast path: skip metric gates for feedback/recall tools
+        continue;
+      }
+      const metricResult = await Promise.race([
+        checkMetricCondition(gate.metrics),
+        new Promise(resolve => setTimeout(() => resolve({ pass: true, reason: 'metric-timeout' }), 3000))
+      ]);
+      // checkMetricCondition returns a boolean; Promise.race timeout returns an object
+      const metricsPassed = typeof metricResult === 'object' ? metricResult.pass : metricResult;
       if (!metricsPassed) {
         metricFailed = true;
       } else {

@@ -245,7 +245,7 @@ function findDuplicateMemory(memoryLogPath, newRecord) {
   const feedbackId = newRecord.sourceFeedbackId;
   if (!feedbackId) return null;
 
-  const existing = readJSONL(memoryLogPath);
+  const existing = readJSONL(memoryLogPath, { maxLines: 0 });
   for (let i = existing.length - 1; i >= 0; i--) {
     if (existing[i].sourceFeedbackId === feedbackId) return existing[i];
   }
@@ -468,20 +468,16 @@ function getPendingBackgroundSideEffectCount() {
   return pendingBackgroundSideEffects.size;
 }
 
-function readJSONL(filePath) {
+function readJSONL(filePath, { maxLines = 500 } = {}) {
   if (!fs.existsSync(filePath)) return [];
-  const raw = fs.readFileSync(filePath, 'utf-8').trim();
-  if (!raw) return [];
-  return raw
-    .split('\n')
-    .map((line) => {
-      try {
-        return JSON.parse(line);
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean);
+  const content = fs.readFileSync(filePath, 'utf8');
+  const lines = content.split('\n').filter(Boolean);
+  const tail = maxLines > 0 ? lines.slice(-maxLines) : lines;
+  const results = [];
+  for (const line of tail) {
+    try { results.push(JSON.parse(line)); } catch { /* skip malformed */ }
+  }
+  return results;
 }
 
 function normalizeSignal(signal) {
@@ -1093,7 +1089,7 @@ function analyzeFeedback(logPath) {
   const feedbackDir = path.dirname(resolvedLogPath);
   const paths = buildPathsFromDir(feedbackDir);
   const shouldUseSQLite = !logPath || path.resolve(resolvedLogPath) === path.resolve(FEEDBACK_LOG_PATH);
-  const entries = readJSONL(resolvedLogPath);
+  const entries = readJSONL(resolvedLogPath, { maxLines: 0 });
   const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');
   const diagnosticEntries = readDiagnosticEntries(diagnosticLogPath);
 
@@ -1601,7 +1597,7 @@ function runTests() {
  */
 function compactMemories() {
   const { MEMORY_LOG_PATH } = getFeedbackPaths();
-  const all = readJSONL(MEMORY_LOG_PATH);
+  const all = readJSONL(MEMORY_LOG_PATH, { maxLines: 0 });
   const seen = new Map();
 
   // Walk newest-first so we keep the latest version of each memory
