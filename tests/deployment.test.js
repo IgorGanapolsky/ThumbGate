@@ -222,7 +222,7 @@ test('Deploy to Railway workflow skips Railway promotion when only workflow and 
 
   assert.match(workflow, /name: Detect deployable changes/);
   assert.match(workflow, /git show --name-only --format='' "\$GITHUB_SHA"/);
-  assert.match(workflow, /\.github\/\*\|tests\/\*/);
+  assert.match(workflow, /grep -Eqv '\^\(\\\.github\/\|tests\/\)'/);
   assert.match(workflow, /should_deploy=\$SHOULD_DEPLOY/);
   assert.match(workflow, /Railway deploy skipped: only workflow\/test files changed on this commit\./);
 });

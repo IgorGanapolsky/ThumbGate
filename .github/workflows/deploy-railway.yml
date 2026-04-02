@@ -40,17 +40,8 @@ jobs:
 
           if [ -z "$CHANGED_FILES" ]; then
             SHOULD_DEPLOY=true
-          else
-            while IFS= read -r file; do
-              case "$file" in
-                .github/*|tests/*)
-                  ;;
-                *)
-                  SHOULD_DEPLOY=true
-                  break
-                  ;;
-              esac
-            done <<< "$CHANGED_FILES"
+          elif printf '%s\n' "$CHANGED_FILES" | grep -Eqv '^(\.github/|tests/)'; then
+            SHOULD_DEPLOY=true
           fi
 
           echo "changed_files<<EOF" >> "$GITHUB_OUTPUT"
