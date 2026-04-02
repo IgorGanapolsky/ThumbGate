@@ -461,7 +461,7 @@ async function loadLive() {
     const responses = await Promise.all([
       fetch('/v1/feedback/stats', { headers: getHeaders() }),
       fetch('/v1/lessons/search?limit=50', { headers: getHeaders() }),
-      fetch('/v1/search?limit=40&source=feedback', { headers: getHeaders() }),
+      fetch('/v1/search?q=*&limit=40&source=feedback', { headers: getHeaders() }),
       fetch('/v1/dashboard', { headers: getHeaders() })
     ]);
     if (responses.some(function(res) { return !res.ok; })) {

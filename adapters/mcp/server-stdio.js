@@ -629,6 +629,21 @@ function writeNdjsonResponse(id, payload, error = null) {
 }
 
 function startStdioServer() {
+  // Process dedup: warn if another instance is already serving this feedback dir
+  const feedbackDir = getFeedbackPaths().FEEDBACK_DIR;
+  const lockFile = path.join(feedbackDir, '.mcp-server.lock');
+  try {
+    fs.mkdirSync(feedbackDir, { recursive: true });
+    if (fs.existsSync(lockFile)) {
+      const lockData = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+      try { process.kill(lockData.pid, 0); /* check if alive */
+        process.stderr.write(`[thumbgate] Warning: another MCP server (PID ${lockData.pid}) is already serving ${feedbackDir}. Multiple instances may cause SQLite lock contention.\n`);
+      } catch { /* stale lock — process is dead */ }
+    }
+    fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
+    process.on('exit', () => { try { fs.unlinkSync(lockFile); } catch {} });
+  } catch { /* best-effort lock */ }
+
   process.stdin.resume();
   let buffer = Buffer.alloc(0);
   // Auto-detect transport from first request and lock it for the session.
