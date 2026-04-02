@@ -632,19 +632,28 @@ function writeNdjsonResponse(id, payload, error = null) {
 }
 
 function startStdioServer() {
-  // Process dedup: warn if another instance is already serving this feedback dir
+  // Process dedup: prevent multiple instances serving the same feedback dir (causes SQLite contention)
   const feedbackDir = getFeedbackPaths().FEEDBACK_DIR;
   const lockFile = path.join(feedbackDir, '.mcp-server.lock');
   try {
     fs.mkdirSync(feedbackDir, { recursive: true });
     if (fs.existsSync(lockFile)) {
       const lockData = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
-      try { process.kill(lockData.pid, 0); /* check if alive */
-        process.stderr.write(`[thumbgate] Warning: another MCP server (PID ${lockData.pid}) is already serving ${feedbackDir}. Multiple instances may cause SQLite lock contention.\n`);
-      } catch { /* stale lock — process is dead */ }
+      let isRunning = false;
+      try { process.kill(lockData.pid, 0); isRunning = true; } catch { /* process is dead */ }
+      if (isRunning) {
+        process.stderr.write(`[thumbgate] FATAL: another MCP server (PID ${lockData.pid}) is already serving ${feedbackDir}. Refusing to start — would cause SQLite lock contention.\n`);
+        process.exit(1);
+      }
+      // Stale lock from a dead process — remove it
+      try { fs.unlinkSync(lockFile); } catch { /* already gone */ }
+      process.stderr.write(`[thumbgate] Removed stale lock (PID ${lockData.pid} is no longer running).\n`);
     }
     fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
-    process.on('exit', () => { try { fs.unlinkSync(lockFile); } catch {} });
+    const cleanupLock = () => { try { fs.unlinkSync(lockFile); } catch { /* already removed */ } };
+    process.on('exit', cleanupLock);
+    process.on('SIGTERM', () => { cleanupLock(); process.exit(0); });
+    process.on('SIGINT', () => { cleanupLock(); process.exit(0); });
   } catch { /* best-effort lock */ }
 
   process.stdin.resume();
