@@ -8,13 +8,13 @@
     "source": "github",
     "url": "https://github.com/IgorGanapolsky/ThumbGate"
   },
-  "version": "0.9.0",
+  "version": "0.9.3",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "mcp-memory-gateway",
-      "version": "0.9.0",
+      "version": "0.9.3",
       "transport": {
         "type": "stdio"
       }
