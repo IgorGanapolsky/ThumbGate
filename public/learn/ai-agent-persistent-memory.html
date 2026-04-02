@@ -64,6 +64,8 @@
   <h1>How to Give Your AI Coding Agent Persistent Memory Across Sessions</h1>
   <p style="color:var(--muted);">6 min read &middot; For developers using Claude Code, Cursor, Codex, or Gemini who are tired of re-explaining context every session</p>
 
+  <div class="tldr"><strong>TL;DR:</strong> Your AI agent forgets everything between sessions. Give it a SQLite+FTS5 memory that stores lessons, retrieves relevant context, and blocks known-bad actions automatically.</div>
+
   <h2>The problem: agents forget everything when you close the tab</h2>
   <p>You spend twenty minutes explaining your codebase to your AI coding agent. You tell it about the monorepo structure, the deployment conventions, the one branch it must never force-push to. The session ends. You come back tomorrow and it has no memory of any of it.</p>
   <p>You are not doing anything wrong. This is how context windows work. Every session starts with a blank slate. The agent has no continuity of experience — no record of past mistakes, no accumulated knowledge of your project, no recollection of the rules you established last week.</p>
@@ -190,5 +192,11 @@ node .claude/scripts/feedback/capture-feedback.js \
   </div>
 </div>
 
+
+  <div class="sticky-cta">
+    <span style="color:var(--muted)">Try it now:</span>
+    <code>npx mcp-memory-gateway init</code>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
 </body>
 </html>

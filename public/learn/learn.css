@@ -32,3 +32,14 @@ pre code { background: none; padding: 0; color: var(--text); }
 .related a { color: var(--cyan); text-decoration: none; display: block; margin-bottom: 0.5rem; }
 .related a:hover { text-decoration: underline; }
 @media (max-width: 700px) { h1 { font-size: 1.5rem; } .container { padding: 1.5rem 1rem 3rem; } }
+
+/* TL;DR box — appears right after h1 to hook skimmers */
+.tldr { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0 2rem; font-size: 0.95rem; }
+.tldr strong { color: var(--cyan); }
+/* Sticky bottom CTA bar */
+.sticky-cta { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-raised); border-top: 1px solid var(--border); padding: 10px 0; text-align: center; z-index: 100; display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 0.9rem; }
+.sticky-cta code { background: var(--bg-card); padding: 4px 12px; border-radius: 6px; color: var(--cyan); font-family: 'SF Mono', Consolas, monospace; font-size: 0.85rem; border: 1px solid var(--border); }
+.sticky-cta a { color: var(--cyan); text-decoration: none; font-weight: 600; }
+.sticky-cta a:hover { text-decoration: underline; }
+/* Add padding-bottom to body so sticky bar doesn't cover content */
+body { padding-bottom: 52px; }
