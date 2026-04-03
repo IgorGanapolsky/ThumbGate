@@ -46,8 +46,14 @@ async function postThumbGateToInstagram() {
       },
     ];
 
+    const args = process.argv.slice(2);
+    const imagePathArg = args.find(a => a.startsWith('--image-path='));
+    const imageUrl = imagePathArg ? imagePathArg.split('=')[1] : 'https://rlhf-feedback-loop-production.up.railway.app/logo-400x400.png';
+
     console.log('[instagram] Publishing ThumbGate caption to Instagram...');
-    const result = await publishPost(THUMBGATE_CAPTION, platforms);
+    const result = await publishPost(THUMBGATE_CAPTION, platforms, {
+      media: [{ type: 'image', url: imageUrl }]
+    });
 
     console.log('✅ Post published successfully!');
     console.log(`Post ID: ${result.id || result.data?.id || 'unknown'}`);

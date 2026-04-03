@@ -311,14 +311,21 @@ function getCalibration(model) {
  * Used for Thompson Sampling action selection (explore via uncertainty).
  *
  * @param {Object} model - Model object containing categories
+ * @param {number} [affectiveMultiplier=1.0] - Optional multiplier based on emotional state (Frustration/Urgency)
  * @returns {Object} Map of category → float sample in [0, 1]
  */
-function samplePosteriors(model) {
+function samplePosteriors(model, affectiveMultiplier = 1.0) {
   const samples = {};
+  const multiplier = Number.isFinite(affectiveMultiplier) && affectiveMultiplier > 0 ? affectiveMultiplier : 1.0;
+
   for (const [cat, params] of Object.entries(model.categories || {})) {
+    // When affectiveMultiplier > 1.0 (e.g. Frustration), we scale the effective beta.
+    // This shifts the distribution toward 0 (lower reliability), making gates more likely to block.
+    const effectiveBeta = params.beta * multiplier;
+
     samples[cat] = betaSample(
       Math.max(params.alpha, 0.01),
-      Math.max(params.beta, 0.01),
+      Math.max(effectiveBeta, 0.01),
     );
   }
   return samples;

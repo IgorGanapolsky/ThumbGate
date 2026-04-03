@@ -15,6 +15,7 @@
  */
 
 const { createLesson, inferFromSurroundingMessages } = require('./lesson-inference');
+const { analyzeAffectiveState } = require('./affective-distiller');
 const contextfs = require('./contextfs');
 
 // ---------------------------------------------------------------------------
@@ -135,14 +136,17 @@ function distillFromHistory({ chatHistory = [], failedToolCall = null, feedbackC
   // Step 1: Analyze chat history for corrections and anti-patterns
   const analysis = analyzeChatHistory(chatHistory, failedToolCall);
 
-  // Step 2: Infer from surrounding messages (leverage existing module)
+  // Step 2: Detect Affective State (Emotional Gravity)
+  const affective = analyzeAffectiveState(chatHistory);
+
+  // Step 3: Infer from surrounding messages (leverage existing module)
   const inference = inferFromSurroundingMessages({
     priorMessages: chatHistory.slice(-10),
     signal,
     feedbackContext,
   });
 
-  // Step 3: Build the auto-proposed lesson
+  // Step 4: Build the auto-proposed lesson
   let proposedWhatWentWrong;
   let proposedRule = analysis.proposedRule;
 
@@ -158,27 +162,36 @@ function distillFromHistory({ chatHistory = [], failedToolCall = null, feedbackC
     proposedWhatWentWrong = feedbackContext || 'The agent action did not meet expectations.';
   }
 
-  // Step 4: Build confirmation message
+  // Step 5: Build confirmation message
   const confirmation = proposedRule
     ? `I've recorded a rule: "${proposedRule}". Correct?`
     : `Lesson captured: "${proposedWhatWentWrong.slice(0, 100)}". Any corrections?`;
 
-  // Step 5: Auto-create the lesson
+  // Step 6: Auto-create the lesson (with affective weighting)
+  const baseConfidence = analysis.confidence || inference.confidence;
+  const weightedConfidence = Math.min(100, Math.round(baseConfidence * affective.lessonWeight));
+
   const lesson = createLesson({
     signal,
     inferredLesson: proposedWhatWentWrong,
     triggerMessage: inference.triggerMessage,
     priorSummary: inference.priorSummary,
-    confidence: analysis.confidence || inference.confidence,
+    confidence: weightedConfidence,
     tags: analysis.antiPattern ? [analysis.antiPattern] : [],
-    metadata: { distilled: true, hasCorrection: !!analysis.correction, hasAntiPattern: !!analysis.antiPattern },
+    metadata: {
+      distilled: true,
+      hasCorrection: !!analysis.correction,
+      hasAntiPattern: !!analysis.antiPattern,
+      affectiveStates: affective.states,
+      affectiveWeight: affective.lessonWeight
+    },
   });
 
-  // Step 6: If high confidence + anti-pattern, auto-install prevention rule
+  // Step 7: If high confidence + anti-pattern, auto-install prevention rule
   let ruleInstalled = false;
-  if (proposedRule && analysis.confidence >= 60) {
+  if (proposedRule && weightedConfidence >= 60) {
     try {
-      contextfs.registerPreventionRules(`# Auto-Distilled Rule\n\n- ${proposedRule}\n\nSource: history-distiller (confidence: ${analysis.confidence}%)`, { source: 'history-distiller', lessonId: lesson.id });
+      contextfs.registerPreventionRules(`# Auto-Distilled Rule (Affective Priority: ${affective.states.join(', ') || 'Normal'})\n\n- ${proposedRule}\n\nSource: history-distiller (confidence: ${weightedConfidence}%)`, { source: 'history-distiller', lessonId: lesson.id });
       ruleInstalled = true;
     } catch { /* non-critical */ }
   }
@@ -191,6 +204,7 @@ function distillFromHistory({ chatHistory = [], failedToolCall = null, feedbackC
     ruleInstalled,
     analysis,
     inference: { action: inference.inferredAction, confidence: inference.confidence },
+    affective,
     autoCreated: true,
   };
 }

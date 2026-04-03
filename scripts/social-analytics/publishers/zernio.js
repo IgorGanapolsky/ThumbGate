@@ -48,9 +48,10 @@ async function zernioFetch(method, endpoint, body = null) {
  * Publishes a post immediately to one or more platforms.
  * @param {string} content
  * @param {Array<{platform: string, accountId: string}>} platforms
+ * @param {object} [options={}]
  * @returns {Promise<object>}
  */
-async function publishPost(content, platforms) {
+async function publishPost(content, platforms, options = {}) {
   if (!content) throw new Error('publishPost: content is required');
   if (!Array.isArray(platforms) || platforms.length === 0) {
     throw new Error('publishPost: platforms must be a non-empty array');
@@ -58,11 +59,17 @@ async function publishPost(content, platforms) {
 
   console.log(`[zernio:publisher] Publishing to ${platforms.length} platform(s): ${platforms.map((p) => p.platform).join(', ')}`);
 
-  const json = await zernioFetch('POST', '/posts', {
+  const body = {
     content,
     publishNow: true,
     platforms,
-  });
+  };
+
+  if (options.media) {
+    body.media = options.media;
+  }
+
+  const json = await zernioFetch('POST', '/posts', body);
 
   const data = json.data ?? json;
   console.log(`[zernio:publisher] Post published. id=${data.id ?? 'unknown'}`);

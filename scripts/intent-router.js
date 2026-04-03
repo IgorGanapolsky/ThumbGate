@@ -4,6 +4,7 @@ const path = require('path');
 const { getActiveMcpProfile, getAllowedTools } = require('./mcp-policy');
 const { loadGatesConfig } = require('./gates-engine');
 const { loadModel, samplePosteriors } = require('./thompson-sampling');
+const { analyzeAffectiveState } = require('./affective-distiller');
 const { analyzeCodeGraphImpact } = require('./codegraph-context');
 const {
   buildPartnerStrategy,
@@ -157,6 +158,7 @@ function planIntent(options = {}) {
   const profile = assertKnownMcpProfile(options.mcpProfile || getActiveMcpProfile());
   const intentId = String(options.intentId || '').trim();
   const context = String(options.context || '').trim();
+  const chatHistory = Array.isArray(options.chatHistory) ? options.chatHistory : [];
   const approved = options.approved === true;
   const tokenBudget = resolveTokenBudget(options.tokenBudget);
   const delegationMode = normalizeDelegationMode(options.delegationMode);
@@ -170,6 +172,8 @@ function planIntent(options = {}) {
     throw new Error(`Unknown intent: ${intentId}`);
   }
 
+  const affectiveState = analyzeAffectiveState(chatHistory);
+
   const requiredRisks = getRequiredApprovalRisks(bundle, profile);
   const requiresApproval = requiredRisks.includes(intent.risk);
   const checkpointRequired = requiresApproval && !approved;
@@ -180,6 +184,7 @@ function planIntent(options = {}) {
   const rankedActions = rankActions(intent.actions, {
     modelPath: options.modelPath,
     partnerStrategy,
+    affectiveMultiplier: affectiveState.gateMultiplier,
   });
   const plannedActions = partnerStrategy.profile === 'balanced'
     ? intent.actions
@@ -210,6 +215,8 @@ function planIntent(options = {}) {
       risk: intent.risk,
     },
     context,
+    chatHistory: chatHistory.length > 0 ? true : false,
+    affectiveState: affectiveState.states.length > 0 ? affectiveState : null,
     requiresApproval,
     approved,
     checkpoint: checkpointRequired
@@ -227,8 +234,12 @@ function planIntent(options = {}) {
     codegraphImpact,
     killSwitches: loadGatesConfig().gates
       .filter((g) => {
+        // If frustrated or urgent, include even 'medium' severity gates as killswitches
+        const isFrustrated = affectiveState.states.includes('FRUSTRATION') || affectiveState.states.includes('DESPERATION');
+        const killswitchSeverities = isFrustrated ? ['medium', 'high', 'critical'] : ['high', 'critical'];
+        
         const isHighRisk = ['high', 'critical'].includes(intent.risk);
-        if (isHighRisk && (g.severity === 'high' || g.severity === 'critical')) return true;
+        if (isHighRisk && killswitchSeverities.includes(g.severity)) return true;
 
         const actionNames = plannedActions.map((a) => a.name);
         return g.trigger && actionNames.some((name) => g.trigger.toLowerCase().includes(name.toLowerCase()));
@@ -296,7 +307,7 @@ function scoreActions(actions, modelPath, options = {}) {
     partnerProfile: options.partnerProfile,
   });
   const model = loadModel(modelPath || getDefaultModelPath());
-  const posteriors = samplePosteriors(model);
+  const posteriors = samplePosteriors(model, options.affectiveMultiplier || 1.0);
   const partnerScore = posteriors[partnerStrategy.partnerCategory] !== undefined
     ? posteriors[partnerStrategy.partnerCategory]
     : 0.5;
@@ -331,7 +342,10 @@ function rankActions(actions, options = {}) {
   const partnerStrategy = options.partnerStrategy || buildPartnerStrategy({
     partnerProfile: options.partnerProfile,
   });
-  const scored = scoreActions(actions, modelPath, { partnerStrategy });
+  const scored = scoreActions(actions, modelPath, { 
+    partnerStrategy,
+    affectiveMultiplier: options.affectiveMultiplier 
+  });
   return {
     ranked: scored.map((s) => s.action),
     scores: scored.map((s) => ({

@@ -230,6 +230,17 @@ const TOOLS = [
         delegationMode: { type: 'string', enum: ['off', 'auto', 'sequential'] },
         approved: { type: 'boolean' },
         repoPath: { type: 'string' },
+        chatHistory: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              role: { type: 'string' },
+              content: { type: 'string' },
+            },
+          },
+          description: 'Optional recent chat history to perform automated affective state analysis.',
+        },
       },
     },
   }),

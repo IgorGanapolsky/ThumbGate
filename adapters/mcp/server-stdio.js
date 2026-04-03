@@ -424,6 +424,7 @@ async function callToolInner(name, args) {
       return toTextResult(planIntent({
         intentId: args.intentId,
         context: args.context || '',
+        chatHistory: args.chatHistory || [],
         mcpProfile: args.mcpProfile,
         bundleId: args.bundleId,
         partnerProfile: args.partnerProfile,
