@@ -109,7 +109,15 @@ Feedback session flow:
 👎 Thumbs down → Session opens → User types follow-up context → Session finalizes → Lesson inferred from full conversation
 ```
 
-## What's New in v0.9.5
+## What's New in v0.9.6
+
+- **Background Agent Governance** — run tracking, pre-run governance gates, CI auto-feedback capture. Blocks agents with >50% failure rate. Warns on protected branches and large blast radius. Auto-captures CI pass/fail as structured feedback — no human in the loop. Governance report shows per-agent pass rates and gate blocks.
+- **Hallucination Detector** — decomposes agent claims ("deployed", "tests pass", "PR merged") into verifiable sub-claims, checks each against evidence. Confidence-weighted gates: low confidence blocks, medium warns, high allows. Retrieval-grounded verification flags contradictions with prevention rules.
+- **PII Scanner + Data Governance** — detects emails, phone numbers, SSNs, credit cards in feedback content. DPO export gate blocks pairs containing PII. User-controlled preferences for what data can be exported, shared, or retained. Compliance-ready audit summary.
+- **CLI Inline Feedback** — `node scripts/cli-feedback.js down "broke tests"` captures feedback and echoes lesson + stats to terminal. No browser needed.
+- **Statusline Lessons** — Claude Code statusbar shows most recent lesson with clickable dashboard/lessons links. Auto-created on every feedback capture.
+
+### Previous (v0.9.5)
 
 - **Conversation Context Capture** — Captures the last 5-10 conversation turns alongside every thumbs up/down, so lessons include the full story, not just a one-liner summary.
 - **History-aware lesson distillation** — Vague thumbs feedback can reuse the recent conversation window plus the failed tool call to propose `whatWentWrong`, `whatToChange`, and a concrete lesson instead of discarding the signal.
