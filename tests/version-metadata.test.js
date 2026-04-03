@@ -30,7 +30,6 @@ test('pricing matches 2026 standard', () => {
 
 test('package version matches MCP manifests', () => {
   const packageJson = readJson('package.json');
-  const proPackage = readJson('pro/package.json');
   const serverManifest = readJson('server.json');
   const claudePlugin = readJson('.claude-plugin/plugin.json');
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
@@ -39,7 +38,6 @@ test('package version matches MCP manifests', () => {
   const claudeCodexBridge = readJson('plugins/claude-codex-bridge/.claude-plugin/plugin.json');
   const codexPlugin = readJson('plugins/codex-profile/.codex-plugin/plugin.json');
 
-  assert.equal(proPackage.version, packageJson.version);
   assert.equal(serverManifest.version, packageJson.version);
   assert.equal(claudePlugin.version, packageJson.version);
   assert.equal(claudeMarketplace.version, packageJson.version);
@@ -289,6 +287,8 @@ test('commercial truth sources stay aligned across public and historical docs', 
 
   assert.match(readme, /Commercial Truth/);
   assert.match(proReadme, /Commercial Truth/);
+  assert.match(proReadme, /private repository/i);
+  assert.match(proReadme, /@igorganapolsky\/mcp-memory-gateway-pro/);
   assert.doesNotMatch(readme, /500\+ agentic sessions|battle-tested/i);
   assert.doesNotMatch(proReadme, /500\+ agentic sessions|battle-tested/i);
 

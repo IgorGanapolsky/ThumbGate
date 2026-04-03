@@ -523,36 +523,12 @@ describe('bin/cli.js', () => {
     });
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
     assert.match(result.stdout, /Pro \(\$19\/mo or \$149\/yr\)/);
-    assert.match(result.stdout, /personal local dashboard/i);
-    assert.match(result.stdout, /Launch dashboard\s*:\s*npx mcp-memory-gateway pro/);
-    assert.match(result.stdout, /Activate \+ run\s*:\s*npx mcp-memory-gateway pro --activate --key=YOUR_KEY/);
+    assert.match(result.stdout, /private distribution/i);
+    assert.match(result.stdout, /@igorganapolsky:registry https:\/\/npm\.pkg\.github\.com/i);
+    assert.match(result.stdout, /Launch dashboard\s*:\s*npx @igorganapolsky\/mcp-memory-gateway-pro/);
+    assert.match(result.stdout, /Activate \+ run\s*:\s*npx @igorganapolsky\/mcp-memory-gateway-pro --activate --key=YOUR_KEY/);
     assert.match(result.stdout, /COMMERCIAL_TRUTH\.md/);
     assert.doesNotMatch(result.stdout, /\$10\/mo|38 spots remaining|first 50 users|Founding Member/i);
-  });
-
-  test('pro command launches local dashboard when a license is already saved', async () => {
-    const homeDir = makeTmpDir();
-    const licenseDir = path.join(homeDir, '.thumbgate');
-    fs.mkdirSync(licenseDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(licenseDir, 'license.json'),
-      JSON.stringify({ key: 'tg_local_dashboard_launch' }, null, 2)
-    );
-
-    const result = await waitForCliOutput(['pro'], /ThumbGate Pro dashboard: http:\/\/localhost:\d+\/dashboard/, {
-      env: {
-        ...process.env,
-        HOME: homeDir,
-        USERPROFILE: homeDir,
-        RLHF_NO_NUDGE: '1',
-        RLHF_API_KEY: '',
-        RLHF_PRO_MODE: '',
-        PORT: '0',
-      },
-    });
-
-    assert.match(result.stdout, /ThumbGate Pro dashboard: http:\/\/localhost:\d+\/dashboard/);
-    fs.rmSync(homeDir, { recursive: true, force: true });
   });
 
   test('pro --info prints local-first offer info even when a license is already saved', () => {
@@ -574,8 +550,8 @@ describe('bin/cli.js', () => {
     });
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /ThumbGate Pro — Local Dashboard/);
-    assert.doesNotMatch(result.stdout, /ThumbGate Pro dashboard: http:\/\/localhost:/);
+    assert.match(result.stdout, /ThumbGate Pro — Private Distribution/);
+    assert.match(result.stdout, /@igorganapolsky\/mcp-memory-gateway-pro/);
     fs.rmSync(homeDir, { recursive: true, force: true });
   });
 
@@ -658,7 +634,7 @@ describe('bin/cli.js', () => {
     const checkoutUrl = extractHttpUrls(result.stdout).find((candidate) => new URL(candidate).host === 'buy.stripe.com');
     assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'Pro command should include the live Stripe checkout URL');
     assert.ok(result.stdout.includes('$19/mo or $149/yr'), 'Pro command should include current pricing');
-    assert.ok(result.stdout.includes('Legacy launcher'), 'Pro command should still mention legacy launcher path');
+    assert.ok(result.stdout.includes('@igorganapolsky/mcp-memory-gateway-pro'), 'Pro command should point to the private package');
   });
 
   test('RLHF_NO_TELEMETRY=1 prevents telemetry ping on init', () => {

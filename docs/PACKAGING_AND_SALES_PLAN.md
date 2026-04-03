@@ -2,6 +2,12 @@
 
 > Historical research note: this file contains packaging hypotheses and outdated pricing experiments. Use `docs/COMMERCIAL_TRUTH.md` for current pricing and traction claims.
 
+Current packaging note:
+
+- The public repository ships only the open-source core on public npm.
+- The Pro runtime and premium configuration assets ship from the private scoped package `@igorganapolsky/mcp-memory-gateway-pro`.
+- The public repository must not publish a Pro package from `pro/` or embed private distribution assets as a public npm artifact.
+
 ## North Star
 
 Weekly active proof-backed workflow runs.

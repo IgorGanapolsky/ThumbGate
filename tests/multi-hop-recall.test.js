@@ -3,6 +3,9 @@
 
 const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 const {
   multiHopRecall,
@@ -228,14 +231,40 @@ describe('multi-hop-recall', () => {
   });
 
   test('multi-hop recall returns proRequired when not licensed', () => {
-    // Don't skip Pro check — should fail gracefully
-    const result = multiHopRecall(mockSearch, 'test', {
+    const origKey = process.env.RLHF_API_KEY;
+    const origPro = process.env.THUMBGATE_PRO_KEY;
+    const origHome = process.env.HOME;
+    const origUserProfile = process.env.USERPROFILE;
+    const tempHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-multi-hop-test-'));
+
+    delete process.env.RLHF_API_KEY;
+    delete process.env.THUMBGATE_PRO_KEY;
+    process.env.HOME = tempHomeDir;
+    process.env.USERPROFILE = tempHomeDir;
+
+    delete require.cache[require.resolve('../scripts/license')];
+    delete require.cache[require.resolve('../scripts/pro-features')];
+    delete require.cache[require.resolve('../scripts/multi-hop-recall')];
+
+    const { multiHopRecall: unlicensedMultiHopRecall } = require('../scripts/multi-hop-recall');
+    const result = unlicensedMultiHopRecall(mockSearch, 'test', {
       maxHops: 2,
       skipProCheck: false,
     });
 
     assert.equal(result.proRequired, true, 'proRequired flag set');
     assert.equal(result.results.length, 0, 'no results without Pro');
+
+    if (origKey) process.env.RLHF_API_KEY = origKey;
+    else delete process.env.RLHF_API_KEY;
+    if (origPro) process.env.THUMBGATE_PRO_KEY = origPro;
+    else delete process.env.THUMBGATE_PRO_KEY;
+    if (origHome) process.env.HOME = origHome;
+    else delete process.env.HOME;
+    if (origUserProfile) process.env.USERPROFILE = origUserProfile;
+    else delete process.env.USERPROFILE;
+
+    fs.rmSync(tempHomeDir, { recursive: true, force: true });
   });
 
   test('multi-hop recall clamps hops to [1, 3]', () => {

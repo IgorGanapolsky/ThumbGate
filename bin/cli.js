@@ -704,113 +704,23 @@ function northStar() {
 
 function pro() {
   trackEvent('cli_pro_view', { command: 'pro' });
-  const args = parseArgs(process.argv.slice(3));
-  const {
-    resolveProKey,
-    saveLicense,
-    startLocalProDashboard,
-  } = require(path.join(PKG_ROOT, 'scripts', 'pro-local-dashboard'));
-
-  function printProInfo() {
-    const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
-    const truthUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
-    console.log('\nThumbGate Pro — Local Dashboard');
-    console.log('─'.repeat(50));
-    console.log('Self-serve offer today: Pro ($19/mo or $149/yr).');
-    console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
-    console.log('\nWhat is available:');
-    console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
-    console.log('  - Optional hosted API key: shared lesson DB for teams and multi-agent workflows');
-    console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
-    console.log('\nLinks:');
-    console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
-    console.log(`  Commercial truth: ${truthUrl}\n`);
-    console.log('  Launch dashboard: npx mcp-memory-gateway pro');
-    console.log('  Activate + run  : npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
-    console.log('  Install configs : npx mcp-memory-gateway pro --upgrade');
-    console.log('  Legacy launcher : npx mcp-memory-gateway-pro\n');
-  }
-
-  function launchDashboard(key, eventType) {
-    return startLocalProDashboard({ key })
-      .then(({ url }) => {
-        console.log(`\n👍👎 ThumbGate Pro dashboard: ${url}\n`);
-        appendLocalTelemetry({
-          eventType,
-          version: pkgVersion(),
-          timestamp: new Date().toISOString(),
-        });
-      })
-      .catch((err) => {
-        console.error(err && err.message ? err.message : err);
-        process.exit(1);
-      });
-  }
-
-  if (args.activate) {
-    const key = args.key || process.argv.slice(3).find((a) => !a.startsWith('--'));
-    if (!key) {
-      console.error('❌ License key required. Usage: npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
-      console.error('   You received your key by email after purchasing Pro.');
-      process.exit(1);
-    }
-
-    // Validate key format (RLHF_API_KEY prefix)
-    if (!key.startsWith('rlhf_') && !key.startsWith('tg_')) {
-      console.error('❌ Invalid license key format. Keys start with "rlhf_" or "tg_".');
-      process.exit(1);
-    }
-
-    const license = {
-      key,
-      activatedAt: new Date().toISOString(),
-      version: pkgVersion(),
-    };
-
-    const licensePath = saveLicense(license.key, { version: license.version });
-    console.log('\n✅ Pro license activated!');
-    console.log(`   Key saved to: ${licensePath}`);
-    console.log('   Launching your personal local dashboard...\n');
-    return launchDashboard(license.key, 'pro_activate');
-  }
-
-  if (args.upgrade) {
-    const proDir = path.join(PKG_ROOT, 'pro');
-    const rlhfDir = path.join(CWD, '.rlhf');
-    if (!fs.existsSync(rlhfDir)) fs.mkdirSync(rlhfDir, { recursive: true });
-
-    const files = [
-      ['constraints-pro.json', '10 RLAIF constraints'],
-      ['prevention-rules-pro.md', 'curated production rules'],
-      ['thompson-presets.json', '4 sampling presets'],
-      ['reminders-pro.json', '8 reminder templates'],
-    ];
-
-    for (const [file] of files) {
-      fs.copyFileSync(path.join(proDir, file), path.join(rlhfDir, file));
-    }
-
-    console.log('\n✅ Pro configs installed to .rlhf/');
-    for (const [file, desc] of files) {
-      console.log(`  - ${file} (${desc})`);
-    }
-    console.log('');
-
-    appendLocalTelemetry({ eventType: 'pro_upgrade', version: pkgVersion(), timestamp: new Date().toISOString() });
-    return;
-  }
-
-  if (args.info) {
-    printProInfo();
-    return;
-  }
-
-  const resolvedKey = resolveProKey();
-  if (resolvedKey && resolvedKey.key) {
-    return launchDashboard(resolvedKey.key, 'pro_dashboard_launch');
-  }
-
-  printProInfo();
+  const privateProPackage = '@igorganapolsky/mcp-memory-gateway-pro';
+  const truthUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
+  console.log('\nThumbGate Pro — Private Distribution');
+  console.log('─'.repeat(50));
+  console.log('Self-serve offer today: Pro ($19/mo or $149/yr).');
+  console.log('OSS core stays in the public mcp-memory-gateway package.');
+  console.log('The Pro runtime and premium configuration packs ship only from the private package.');
+  console.log('\nLinks:');
+  console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
+  console.log(`  Commercial truth: ${truthUrl}\n`);
+  console.log('GitHub Packages setup:');
+  console.log('  npm config set @igorganapolsky:registry https://npm.pkg.github.com');
+  console.log(`  npm install -g ${privateProPackage}`);
+  console.log('\nRun Pro:');
+  console.log(`  Launch dashboard: npx ${privateProPackage}`);
+  console.log(`  Activate + run  : npx ${privateProPackage} --activate --key=YOUR_KEY`);
+  console.log('\nNote: the public OSS package no longer embeds the Pro runtime or publish path.\n');
 }
 
 function summary() {

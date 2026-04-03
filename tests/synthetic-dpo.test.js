@@ -3,6 +3,9 @@
 
 const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 const {
   augmentDpoExport,
@@ -176,11 +179,38 @@ describe('synthetic-dpo', () => {
   });
 
   test('augmentDpoExport returns proRequired when not licensed', () => {
-    const result = augmentDpoExport(MOCK_DPO_EXPORT, { skipProCheck: false });
+    const origKey = process.env.RLHF_API_KEY;
+    const origPro = process.env.THUMBGATE_PRO_KEY;
+    const origHome = process.env.HOME;
+    const origUserProfile = process.env.USERPROFILE;
+    const tempHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-synth-dpo-test-'));
+
+    delete process.env.RLHF_API_KEY;
+    delete process.env.THUMBGATE_PRO_KEY;
+    process.env.HOME = tempHomeDir;
+    process.env.USERPROFILE = tempHomeDir;
+
+    delete require.cache[require.resolve('../scripts/license')];
+    delete require.cache[require.resolve('../scripts/pro-features')];
+    delete require.cache[require.resolve('../scripts/synthetic-dpo')];
+
+    const { augmentDpoExport: unlicensedAugmentDpoExport } = require('../scripts/synthetic-dpo');
+    const result = unlicensedAugmentDpoExport(MOCK_DPO_EXPORT, { skipProCheck: false });
 
     assert.equal(result.proRequired, true, 'proRequired flag set');
     assert.equal(result.syntheticPairs, 0, 'no synthetic pairs without Pro');
     assert.equal(result.totalPairs, 1, 'only original pairs returned');
+
+    if (origKey) process.env.RLHF_API_KEY = origKey;
+    else delete process.env.RLHF_API_KEY;
+    if (origPro) process.env.THUMBGATE_PRO_KEY = origPro;
+    else delete process.env.THUMBGATE_PRO_KEY;
+    if (origHome) process.env.HOME = origHome;
+    else delete process.env.HOME;
+    if (origUserProfile) process.env.USERPROFILE = origUserProfile;
+    else delete process.env.USERPROFILE;
+
+    fs.rmSync(tempHomeDir, { recursive: true, force: true });
   });
 
   test('augmentDpoExport handles empty DPO export', () => {
