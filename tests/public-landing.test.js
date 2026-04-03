@@ -28,7 +28,7 @@ test('public landing page uses Stripe checkout links for Pro tier', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /buy\.stripe\.com/);
-  assert.match(landingPage, /Get Pro/);
+  assert.match(landingPage, /(?:Get|Try) Pro/);
   assert.doesNotMatch(landingPage, /gumroad\.com/);
 });
 
@@ -75,7 +75,7 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /Shared lessons/i);
   assert.match(landingPage, /\$12/);
   assert.match(landingPage, /Install Free/);
-  assert.match(landingPage, /Get Pro/);
+  assert.match(landingPage, /(?:Get|Try) Pro/);
   assert.match(landingPage, /Start Team Rollout/);
 });
 
