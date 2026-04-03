@@ -107,6 +107,21 @@
   .template-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; border-radius: 999px; padding: 4px 10px; background: var(--bg-raised); color: var(--text-muted); border: 1px solid var(--border); margin-right: 8px; margin-bottom: 8px; }
   .template-pattern { font-family: var(--mono); font-size: 12px; color: var(--text-muted); background: var(--bg-raised); padding: 10px 12px; border-radius: 8px; overflow-x: auto; }
   .template-summary { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+  .generated-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .generated-view-btn { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px; color: var(--text-muted); font-size: 12px; font-weight: 600; cursor: pointer; }
+  .generated-view-btn:hover, .generated-view-btn.active { border-color: var(--cyan); color: var(--cyan); }
+  .generated-canvas { display: flex; flex-direction: column; gap: 16px; }
+  .generated-section-title { font-size: 15px; margin-bottom: 12px; }
+  .generated-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .generated-list { display: flex; flex-direction: column; gap: 10px; }
+  .generated-list-row { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .generated-list-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .generated-list-title { font-size: 14px; font-weight: 600; }
+  .generated-list-subtitle { font-size: 12px; color: var(--text-muted); line-height: 1.55; margin-top: 4px; }
+  .generated-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 700; background: var(--bg-raised); color: var(--text-muted); border: 1px solid var(--border); white-space: nowrap; }
+  .generated-callout.warning { border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.06); }
+  .generated-callout.danger { border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.06); }
+  .generated-callout.success { border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.06); }
 
   /* EXPORT */
   .export-section { margin-bottom: 48px; }
@@ -143,7 +158,7 @@
   @media (max-width: 700px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .search-filters { flex-wrap: wrap; }
-    .team-grid, .template-grid, .team-columns, .settings-grid { grid-template-columns: 1fr; }
+    .team-grid, .template-grid, .team-columns, .settings-grid, .generated-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -207,6 +222,7 @@
     <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
     <div class="tab" onclick="switchTab('gates')">🛡️ Active Gates</div>
     <div class="tab" onclick="switchTab('team')">👥 Team</div>
+    <div class="tab" onclick="switchTab('generated')">🧩 Generated Views</div>
     <div class="tab" onclick="switchTab('settings')">⚙️ Policy Origins</div>
     <div class="tab" onclick="switchTab('templates')">🧱 Gate Templates</div>
     <div class="tab" onclick="switchTab('export')">📦 Export</div>
@@ -260,6 +276,16 @@
         <h3>Predictive Watchlist</h3>
         <div id="predictiveAnomalies"><div class="loading">Loading predictive watchlist...</div></div>
       </div>
+    </div>
+  </div>
+
+  <!-- GENERATED TAB -->
+  <div class="tab-content" id="tab-generated">
+    <div class="templates-section">
+      <h2>Generated Hosted Views</h2>
+      <p class="template-summary" id="generatedViewSummary">A constrained JSON spec builds opinionated review dashboards from approved cards, lists, and callouts.</p>
+      <div class="generated-toolbar" id="generatedViewToolbar"><div class="loading">Loading generated views...</div></div>
+      <div class="generated-canvas" id="generatedViewCanvas"><div class="loading">Loading generated view...</div></div>
     </div>
   </div>
 
@@ -321,6 +347,7 @@ let currentSource = 'all';
 let isDemo = false;
 let demoData = [];
 let dashboardSnapshot = null;
+let currentGeneratedView = 'team-review';
 const BOOTSTRAP_API_KEY = __DASHBOARD_BOOTSTRAP_KEY__;
 const LOCAL_PRO_BOOTSTRAP = __DASHBOARD_BOOTSTRAP_ENABLED__;
 
@@ -451,6 +478,10 @@ function escAttr(s) {
   return escHtml(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+function escJs(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
+}
+
 function setMessageState(container, className, message) {
   container.innerHTML = '<div class="' + className + '">' + escHtml(message) + '</div>';
 }
@@ -528,13 +559,15 @@ async function loadGates() {
     setMessageState(document.getElementById('teamSummaryCards'), 'empty', e && e.message ? e.message : 'Failed to load team metrics');
     setMessageState(document.getElementById('predictiveSummaryCards'), 'empty', e && e.message ? e.message : 'Failed to load predictive insights');
     setMessageState(document.getElementById('predictiveAnomalies'), 'empty', e && e.message ? e.message : 'Failed to load predictive watchlist');
+    setMessageState(document.getElementById('generatedViewCanvas'), 'empty', e && e.message ? e.message : 'Failed to load generated view');
     setMessageState(document.getElementById('settingsSummaryCards'), 'empty', e && e.message ? e.message : 'Failed to load policy origins');
     setMessageState(document.getElementById('templateLibrary'), 'empty', e && e.message ? e.message : 'Failed to load template library');
   }
 }
 
 async function loadDashboardData() {
-  return loadGates();
+  await loadGates();
+  await loadGeneratedView(currentGeneratedView);
 }
 
 function renderDashboardData(data) {
@@ -557,6 +590,148 @@ function renderDashboardData(data) {
   renderPredictive(data.predictive || {});
   renderSettingsStatus(data.settingsStatus || {});
   renderTemplates(data.templateLibrary || {});
+}
+
+function renderGeneratedViewToolbar(spec) {
+  var views = Array.isArray(spec.availableViews) ? spec.availableViews : [];
+  document.getElementById('generatedViewToolbar').innerHTML = views.map(function(view) {
+    var activeClass = view.id === spec.view ? ' active' : '';
+    return '<button class="generated-view-btn' + activeClass + '" data-generated-view="' + escAttr(view.id) + '" onclick="loadGeneratedView(\'' + escJs(view.id) + '\')">' + escHtml(view.label || view.id) + '</button>';
+  }).join('');
+}
+
+function renderGeneratedStatGrid(component) {
+  var items = Array.isArray(component.items) ? component.items : [];
+  return '<div class="panel"><h3 class="generated-section-title">' + escHtml(component.title || 'Snapshot') + '</h3><div class="generated-grid">' + items.map(function(item) {
+    return '<div class="team-card"><div class="team-kicker">' + escHtml(item.label || 'Metric') + '</div><div class="team-value">' + escHtml(item.value || '0') + '</div><div class="team-note">' + escHtml(item.note || '') + '</div></div>';
+  }).join('') + '</div></div>';
+}
+
+function renderGeneratedList(component) {
+  var items = Array.isArray(component.items) ? component.items : [];
+  if (!items.length) {
+    return '<div class="panel"><h3 class="generated-section-title">' + escHtml(component.title || 'List') + '</h3><div class="empty" style="padding:20px 0;">' + escHtml(component.emptyMessage || 'No items.') + '</div></div>';
+  }
+  return '<div class="panel"><h3 class="generated-section-title">' + escHtml(component.title || 'List') + '</h3><div class="generated-list">' + items.map(function(item) {
+    return '<div class="generated-list-row"><div><div class="generated-list-title">' + escHtml(item.title || 'Item') + '</div><div class="generated-list-subtitle">' + escHtml(item.subtitle || '') + '</div></div><span class="generated-badge">' + escHtml(item.badge || '') + '</span></div>';
+  }).join('') + '</div></div>';
+}
+
+function renderGeneratedComponent(component) {
+  if (!component || !component.type) return '';
+  if (component.type === 'hero') {
+    return '<div class="panel"><h3 class="generated-section-title">' + escHtml(component.title || 'Generated view') + '</h3><p class="template-summary" style="margin-bottom:0;">' + escHtml(component.description || '') + '</p></div>';
+  }
+  if (component.type === 'stat_grid') {
+    return renderGeneratedStatGrid(component);
+  }
+  if (component.type === 'list') {
+    return renderGeneratedList(component);
+  }
+  if (component.type === 'callout') {
+    var tone = escAttr(component.tone || 'success');
+    return '<div class="panel generated-callout ' + tone + '"><h3 class="generated-section-title">' + escHtml(component.title || 'Callout') + '</h3><p class="template-summary" style="margin-bottom:0;">' + escHtml(component.body || '') + '</p></div>';
+  }
+  return '';
+}
+
+function renderGeneratedView(spec) {
+  currentGeneratedView = spec && spec.view ? spec.view : currentGeneratedView;
+  renderGeneratedViewToolbar(spec || {});
+  document.getElementById('generatedViewSummary').textContent = 'Approved component catalog: ' + ((spec && spec.allowedComponentTypes) ? spec.allowedComponentTypes.join(', ') : 'none');
+  var components = spec && Array.isArray(spec.components) ? spec.components : [];
+  document.getElementById('generatedViewCanvas').innerHTML = components.length
+    ? components.map(renderGeneratedComponent).join('')
+    : '<div class="empty">No generated view available.</div>';
+}
+
+function buildDemoGeneratedViewSpec(viewName) {
+  var base = {
+    version: '1.0.0',
+    catalog: 'thumbgate-dashboard-render-spec',
+    view: viewName,
+    availableViews: [
+      { id: 'team-review', label: 'Team review' },
+      { id: 'incident-review', label: 'Incident review' },
+      { id: 'workflow-rollout', label: 'Workflow rollout' }
+    ],
+    allowedComponentTypes: ['hero', 'stat_grid', 'list', 'callout']
+  };
+  if (viewName === 'incident-review') {
+    base.components = [
+      { type: 'hero', title: 'Generated Incident Review', description: 'Review blocked gates, root causes, and the next safest actions without hand-building a post-mortem page.' },
+      { type: 'stat_grid', title: 'Incident snapshot', items: [
+        { label: 'Active gates', value: '6', note: '4 manual / 2 auto-promoted' },
+        { label: 'Blocks per day', value: '1.7', note: 'warns/day 0.4' },
+        { label: 'Predictive alerts', value: '2', note: 'warning' },
+        { label: 'Buyer loss signals', value: '3', note: 'telemetry-backed' }
+      ] },
+      { type: 'list', title: 'Root cause clusters', emptyMessage: 'No root causes.', items: [
+        { title: 'verification_gap', subtitle: 'Claimed a change was complete before a proof run.', badge: '6 cases' },
+        { title: 'pricing_resistance', subtitle: 'Buyers showed intent but stopped at pricing.', badge: '2 cases' }
+      ] },
+      { type: 'list', title: 'Recommended next actions', emptyMessage: 'No actions.', items: [
+        { title: 'Audit evidence-before-done', subtitle: 'Top blocked gate is doing useful work and should stay explicit.', badge: '12 blocks' },
+        { title: 'Revisit team offer copy', subtitle: 'Predictive watchlist shows conversion drag despite traffic.', badge: 'warning' }
+      ] }
+    ];
+    return base;
+  }
+  if (viewName === 'workflow-rollout') {
+    base.components = [
+      { type: 'hero', title: 'Generated Workflow Rollout View', description: 'Turn funnel, attribution, and predictive data into a constrained operator dashboard for team rollout.' },
+      { type: 'stat_grid', title: 'Rollout pipeline', items: [
+        { label: 'Workflow sprint leads', value: '4', note: 'intake-first hosted funnel' },
+        { label: 'Qualified leads', value: '2', note: 'ready for proof-backed rollout' },
+        { label: 'Booked revenue', value: '$128.00', note: '1 paid order' },
+        { label: 'Team propensity', value: 'medium', note: 'score 0.54' }
+      ] },
+      { type: 'list', title: 'Top acquisition sources', emptyMessage: 'No sources.', items: [
+        { title: 'producthunt', subtitle: 'captured acquisition source', badge: '3 leads' },
+        { title: 'website', subtitle: 'captured acquisition source', badge: '1 lead' }
+      ] },
+      { type: 'list', title: 'Next rollout moves', emptyMessage: 'No rollout moves.', items: [
+        { title: 'Double down on reach_vb', subtitle: 'Best creator opportunity from predictive revenue scoring.', badge: '+$31.00' },
+        { title: 'Qualify pending sprint leads', subtitle: 'More leads than qualified workflows today.', badge: '4 total' }
+      ] }
+    ];
+    return base;
+  }
+  base.components = [
+    { type: 'hero', title: 'Generated Team Reliability Review', description: 'A constrained hosted view assembled from approved dashboard components.' },
+    { type: 'stat_grid', title: 'Team snapshot', items: [
+      { label: 'Active agents', value: '5', note: 'of 8 registered agents' },
+      { label: 'Org adherence', value: '92.4%', note: 'rolling 24h view' },
+      { label: 'Team propensity', value: 'medium', note: 'score 0.54' },
+      { label: 'Forecast revenue', value: '$128.00', note: 'opportunity $49.00' }
+    ] },
+    { type: 'list', title: 'Highest-risk agents', emptyMessage: 'No risky agents.', items: [
+      { title: 'claude-reviewer', subtitle: 'checkout-flow · fix/stripe-timeout', badge: '67.5% adherence' },
+      { title: 'codex-second-pass', subtitle: 'dashboard · feat/team-rollout', badge: '74.2% adherence' }
+    ] },
+    { type: 'list', title: 'Predictive watchlist', emptyMessage: 'No anomalies.', items: [
+      { title: 'pricing_resistance', subtitle: 'Price sensitivity dominates current loss reasons.', badge: 'warning' },
+      { title: 'creator_underperformance', subtitle: 'Creator reach_vb is generating intent without revenue conversion.', badge: 'warning' }
+    ] },
+    { type: 'callout', title: 'Commercial signal', body: 'Pro propensity is high and Team propensity is medium. Workflow sprint leads currently total 4.', tone: 'warning' }
+  ];
+  return base;
+}
+
+async function loadGeneratedView(viewName) {
+  currentGeneratedView = viewName || currentGeneratedView;
+  if (isDemo) {
+    renderGeneratedView(buildDemoGeneratedViewSpec(currentGeneratedView));
+    return;
+  }
+  try {
+    const res = await fetch('/v1/dashboard/render-spec?view=' + encodeURIComponent(currentGeneratedView), { headers: getHeaders() });
+    if (!res.ok) throw new Error('Failed to load generated view');
+    const spec = await res.json();
+    renderGeneratedView(spec);
+  } catch (e) {
+    setMessageState(document.getElementById('generatedViewCanvas'), 'empty', e && e.message ? e.message : 'Failed to load generated view');
+  }
 }
 
 function formatScope(scope) {
@@ -877,6 +1052,7 @@ function loadDemo() {
       { name: 'Protect production SQL', category: 'Database Safety', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Blocks destructive SQL operations on production-like targets.', roi: 'One saved incident pays for the rollout.', rollout: 'Turn on for any team touching live data.', pattern: '(drop|truncate|delete)\\s+.*production' }
     ]
   });
+  renderGeneratedView(buildDemoGeneratedViewSpec(currentGeneratedView));
 }
 
 // Auto-load demo on first visit so visitors see the product immediately

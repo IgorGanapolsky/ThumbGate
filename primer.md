@@ -23,28 +23,28 @@
 
 ## Behavioral Traits
 
-- User prefers surgical edits over full file rewrites.
+_No strong behavioral patterns identified yet._
 
 ## Live Git Context
 
-### Branch: feat/statusbar-lessons-final
+### Branch: fix/conversion-gaps
 
 ### Last 5 Commits:
 ```
-75da5ca fix: statusline shows branded ThumbGate line with clickable links + fix CLI signal routing
-8ca118e fix(test): fix landing page FAQ tests + wire lesson auto-creation into feedback
-3d0d1a0 feat: wire lesson auto-creation into feedback pipeline + statusbar display
-619baba docs: update landing page and README with Model Hardening and LoRA features
-a2387f2 fix(test): avoid shell-based statusline invocation (#521)
+3f7d9f4 feat: lesson rotation — staleness scoring, auto-archive, Pro review
+de3e597 fix: keep feedback captures unlimited for free users
+2e220a6 feat: hard-gate dashboard and lessons behind Pro upgrade wall
+ba08ea2 feat: tighten free-to-Pro funnel — lower limits, add usage counter
+7d4c124 fix: license key prefix mismatch + conversion gaps (#563)
 ```
 
 ### Modified Files:
 ```
- M adapters/chatgpt/openapi.yaml
- M openapi/openapi.yaml
+ M config/skill-packs/react-testing.json
  M primer.md
- M scripts/history-distiller.js
- M scripts/social-reply-monitor.js
- M scripts/tool-registry.js
- M tests/history-distiller.test.js
+ M public/index.html
+ M scripts/billing.js
+ M tests/public-landing.test.js
+?? scripts/_apply-checkout-fixes.js
+?? scripts/_fix-test-assertions.js
 ```

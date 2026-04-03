@@ -176,6 +176,7 @@ test('public landing page includes an explicit Team rollout lane with shared wor
 
   assert.match(landingPage, /<div class="tier">Team<\/div>/);
   assert.match(landingPage, /Hosted shared lesson DB/i);
+  assert.match(landingPage, /Generated hosted review views/i);
   assert.match(landingPage, /Org dashboard/i);
   assert.match(landingPage, /Gate template library/i);
   assert.match(landingPage, /workflow-sprint-intake/);
@@ -205,6 +206,7 @@ test('public landing page includes FAQ section with accordion interaction', () =
   assert.match(landingPage, /function handleFaqKeydown\(event\)/);
   assert.match(landingPage, /personal local dashboard on your machine/i);
   assert.match(landingPage, /shared lesson database/i);
+  assert.match(landingPage, /generated hosted review views/i);
   assert.match(landingPage, /org dashboard/i);
 });
 
