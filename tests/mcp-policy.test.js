@@ -31,6 +31,8 @@ test('profile allowlists differentiate permissions', () => {
   assert.equal(isToolAllowed('capture_feedback', 'dispatch'), false);
   assert.equal(isToolAllowed('start_handoff', 'dispatch'), false);
   assert.ok(isToolAllowed('track_action', 'default'));
+  assert.ok(isToolAllowed('report_product_issue', 'default'));
+  assert.ok(isToolAllowed('report_product_issue', 'essential'));
   assert.equal(isToolAllowed('track_action', 'readonly'), false);
   assert.ok(isToolAllowed('register_claim_gate', 'default'));
 });

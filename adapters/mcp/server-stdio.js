@@ -81,6 +81,7 @@ const {
 } = require('../../scripts/natural-language-harness');
 const { TOOLS } = require('../../scripts/tool-registry');
 const { reflect: reflectOnFeedback } = require('../../scripts/reflector-agent');
+const { submitProductIssue } = require('../../scripts/product-feedback');
 
 const PRO_CHECKOUT_URL = 'https://rlhf-feedback-loop-production.up.railway.app/checkout/pro';
 
@@ -413,6 +414,13 @@ async function callToolInner(name, args) {
         whatWentWrong: args.whatWentWrong || '',
         structuredRule: null,
         feedbackEvent: args.feedbackEventId ? { id: args.feedbackEventId } : null,
+      }));
+    case 'report_product_issue':
+      return toTextResult(await submitProductIssue({
+        title: args.title,
+        body: args.body,
+        category: args.category || 'bug',
+        source: 'mcp tool',
       }));
     case 'list_intents':
       return toTextResult(listIntents({
