@@ -84,12 +84,32 @@ function main() {
     unit.ok ? 'cloudflare sandbox planner + API tests passed' : unit.output.trim(),
   );
 
-  const worker = runCommand(npmCommand(), ['--prefix', 'workers', 'test']);
+  const workerTypecheck = runCommand(npmCommand(), [
+    'exec',
+    '--yes',
+    '--package=typescript',
+    '--',
+    'tsc',
+    '-p',
+    'workers/tsconfig.json',
+    '--noEmit',
+  ]);
+  const worker = workerTypecheck.ok
+    ? runCommand(npmCommand(), [
+      'exec',
+      '--yes',
+      '--package=tsx',
+      '--',
+      'tsx',
+      '--test',
+      'workers/src/sandbox.test.ts',
+    ])
+    : workerTypecheck;
   addCheck(
     report,
     'CFW-02',
     worker.ok,
-    worker.ok ? 'workers sandbox route tests passed' : worker.output.trim(),
+    worker.ok ? 'worker typecheck + sandbox route tests passed' : worker.output.trim(),
   );
 
   const plan = buildCloudflareSandboxPlan({
