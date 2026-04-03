@@ -1953,13 +1953,14 @@ body{background:#0a0a0a;color:#fff;font-family:system-ui,-apple-system,sans-seri
 <div class="card">
   <div class="emoji">${emoji}</div>
   <div class="msg">${label} feedback recorded</div>
-  <div class="sub">${promoted} · <span class="badge">${feedbackId}</span></div>
+  <div class="sub">${promoted} · <a href="/lessons#${feedbackId}" class="badge" style="color:#22d3ee;text-decoration:none;cursor:pointer" title="View full lesson">${feedbackId}</a></div>
   <div class="context-form" id="contextForm">
-    <label>Add follow-up context <span style="color:#555">(optional)</span></label>
-    <textarea id="contextInput" placeholder="What worked or went wrong?"></textarea>
+    <label>Add follow-up context <span style="color:#555">(what worked or went wrong?)</span></label>
+    <textarea id="contextInput" placeholder="e.g. you forgot to check the API schema first..."></textarea>
     <button onclick="addContext()">Save follow-up note</button>
   </div>
   <div class="actions">
+    <a href="/lessons#${feedbackId}" title="View the full lesson and edit it">📋 View Lesson</a>
     <a href="/feedback/quick?signal=${opposite}" title="Meant to click ${oppEmoji}?">Undo → send ${oppEmoji} instead</a>
     <a href="/dashboard">Dashboard →</a>
   </div>
