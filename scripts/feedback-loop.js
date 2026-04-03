@@ -1541,27 +1541,28 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
       : (m.tags || []).find((t) => !['feedback', 'negative', 'positive'].includes(t)) || 'general';
     if (!buckets[key]) buckets[key] = { items: [], weightedCount: 0 };
     const w = decayWeight(m);
+    const occ = m.occurrences || 1;
     buckets[key].items.push(m);
-    buckets[key].weightedCount += w;
+    buckets[key].weightedCount += w * occ;
 
     const failed = m.rubricSummary && Array.isArray(m.rubricSummary.failingCriteria)
       ? m.rubricSummary.failingCriteria
       : [];
     failed.forEach((criterion) => {
       if (!rubricBuckets[criterion]) rubricBuckets[criterion] = [];
-      rubricBuckets[criterion].push(m);
+      for (let i = 0; i < occ; i++) rubricBuckets[criterion].push(m);
     });
 
     if (m.diagnosis && m.diagnosis.rootCauseCategory) {
       if (!diagnosisBuckets[m.diagnosis.rootCauseCategory]) diagnosisBuckets[m.diagnosis.rootCauseCategory] = [];
-      diagnosisBuckets[m.diagnosis.rootCauseCategory].push(m);
+      for (let i = 0; i < occ; i++) diagnosisBuckets[m.diagnosis.rootCauseCategory].push(m);
     }
 
     (m.diagnosis && Array.isArray(m.diagnosis.violations) ? m.diagnosis.violations : []).forEach((violation) => {
-      const key = violation.constraintId || violation.message;
-      if (!key) return;
-      if (!repeatedViolationBuckets[key]) repeatedViolationBuckets[key] = [];
-      repeatedViolationBuckets[key].push(m);
+      const vKey = violation.constraintId || violation.message;
+      if (!vKey) return;
+      if (!repeatedViolationBuckets[vKey]) repeatedViolationBuckets[vKey] = [];
+      for (let i = 0; i < occ; i++) repeatedViolationBuckets[vKey].push(m);
     });
   }
 
