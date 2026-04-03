@@ -261,6 +261,15 @@ async function submitComment(token, userAgent, { parentId, text }) {
  * @returns {Promise<object>} Reddit API response data for the submitted post
  */
 async function publishToReddit({ subreddit, title, text, url, token }) {
+  // Quality gate — block bot slop before it reaches Reddit
+  const qualityGate = require('../../social-quality-gate');
+  const gateResult = qualityGate.gatePost([title, text].filter(Boolean).join('\n'));
+  if (!gateResult.allowed) {
+    const reasons = gateResult.findings.map(f => f.reason).join(', ');
+    console.error(`[reddit:publisher] BLOCKED by quality gate: ${reasons}`);
+    return { blocked: true, reasons: gateResult.findings };
+  }
+
   const clientId = process.env.REDDIT_CLIENT_ID;
   const clientSecret = process.env.REDDIT_CLIENT_SECRET;
   const username = process.env.REDDIT_USERNAME;
