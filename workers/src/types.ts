@@ -7,6 +7,7 @@ export interface Env {
   STRIPE_WEBHOOK_SECRET: string;
   STRIPE_PRICE_ID: string;
   FREE_DAILY_LIMIT: string;
+  SANDBOX_SHARED_SECRET: string;
 }
 
 /** Subscription tier */
@@ -107,4 +108,50 @@ export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
   resetAt: string;
+}
+
+export interface SandboxNetworkPolicy {
+  mode: 'deny_all' | 'egress_enabled' | 'allow_list';
+  allowedHosts: string[];
+}
+
+export interface SandboxDispatchEnvelope {
+  executionId: string;
+  provider: 'cloudflare_dynamic_worker';
+  workloadType: string;
+  tier: 'free' | 'pro' | 'team' | 'enterprise';
+  tenantId: string | null;
+  traceId: string;
+  requestedAt: string;
+  networkPolicy: SandboxNetworkPolicy;
+  bindings: string[];
+  limits: {
+    maxRuntimeMs: number;
+    maxContextTokens: number | null;
+  };
+  bootstrap: {
+    invocation: {
+      threadId: string;
+      intentId: string;
+    };
+    reviewerLane: {
+      enabled: boolean;
+    };
+  } | null;
+}
+
+export interface SandboxQueueRecord {
+  executionId: string;
+  tenantId: string | null;
+  workloadType: string;
+  provider: 'cloudflare_dynamic_worker';
+  queuedAt: string;
+  traceId: string;
+  bindings: string[];
+  networkPolicy: SandboxNetworkPolicy;
+  bootstrapSummary: {
+    threadId: string;
+    intentId: string;
+    reviewerLaneEnabled: boolean;
+  } | null;
 }

@@ -1,6 +1,7 @@
 import type { Env, JsonRpcRequest, JsonRpcResponse, ToolResult } from './types';
 import { validateAuth } from './auth';
 import { handleCheckout, handleWebhook } from './billing';
+import { handleSandboxExecute } from './sandbox';
 import { FREE_TOOLS, isFreeTool, executeFree } from './tools/free';
 import { PAID_TOOLS, isPaidTool, executePaid } from './tools/paid';
 import { problemResponse, PROBLEM_TYPES } from './problem-detail';
@@ -14,6 +15,7 @@ const ALL_TOOLS = [...FREE_TOOLS, ...PAID_TOOLS];
  *   POST /mcp          — MCP JSON-RPC (tools/list, tools/call)
  *   POST /billing/checkout  — Stripe checkout session
  *   POST /billing/webhook   — Stripe webhook handler
+ *   POST /sandbox/execute   — Signed dynamic-worker sandbox dispatch
  *   GET  /health            — Health check
  */
 export default {
@@ -51,6 +53,10 @@ export default {
           response = await handleWebhook(request, env);
           break;
 
+        case url.pathname === '/sandbox/execute' && request.method === 'POST':
+          response = await handleSandboxExecute(request, env);
+          break;
+
         case url.pathname === '/billing/success':
           response = new Response(
             '<html><body><h1>Subscription active!</h1><p>Your API key has been provisioned. Check your email or retrieve it via the API.</p></body></html>',
@@ -71,7 +77,7 @@ export default {
             title: 'Not Found',
             status: 404,
             detail: `No handler for ${request.method} ${url.pathname}`,
-            endpoints: ['/mcp', '/billing/checkout', '/billing/webhook', '/health'],
+            endpoints: ['/mcp', '/billing/checkout', '/billing/webhook', '/sandbox/execute', '/health'],
           });
       }
 
