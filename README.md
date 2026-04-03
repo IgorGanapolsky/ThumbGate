@@ -99,7 +99,21 @@ Source: [`.claude/skills/thumbgate/SKILL.md`](.claude/skills/thumbgate/SKILL.md)
 
 Pipeline: **Capture → Validate → Remember → Distill → Prevent → Gate → Export**
 
-## What's New in v0.9.0
+Feedback session flow:
+
+```
+👎 Thumbs down → Session opens → User types follow-up context → Session finalizes → Lesson inferred from full conversation
+```
+
+## What's New in v0.9.5
+
+- **Conversation Context Capture** — Captures the last 5-10 conversation turns alongside every thumbs up/down, so lessons include the full story, not just a one-liner summary.
+- **Feedback Sessions** — Follow-up messages after thumbs up/down ("you lied about X", "you forgot Y") are captured for 60 seconds and folded into the lesson.
+- **Self-Healing Reflector** — On negative feedback, automatically runs a post-mortem: analyzes what went wrong, checks for recurrence, and proposes a specific rule back to the user.
+- **Structured IF/THEN Rules** — Every lesson is extracted as a structured rule with trigger, action, confidence, and scope — not flat text.
+- **Per-Action Lesson Retrieval** — `retrieve_lessons` MCP tool returns top-K relevant lessons for each tool call using keyword matching, file path overlap, and recency decay.
+
+### Previous (v0.9.0)
 
 - **Domain skill packs** — installable best-practice rule sets for Stripe, Railway, database migrations. Auto-match by task context.
 - **Before/after eval harness** — 6 built-in eval cases, 100% pass rate with ThumbGate vs 0% without.
@@ -171,6 +185,11 @@ Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
 | `feedback_stats`       | Approval rate and failure-domain summary                                                                    |
 | `estimate_uncertainty` | Bayesian uncertainty estimate for risky tags                                                                |
 | `org_dashboard`        | **Team** — Shared lessons plus org-wide multi-agent visibility, adherence rates, and risk alerts           |
+| `open_feedback_session` | Start a feedback session after thumbs up/down to capture follow-up context                               |
+| `append_feedback_context` | Add follow-up messages to an open feedback session within the 60-second window                          |
+| `finalize_feedback_session` | Close the session and fold all follow-up context into the lesson                                      |
+| `retrieve_lessons`     | Return top-K relevant lessons for a tool call using keyword matching, file path overlap, and recency decay |
+| `reflect_on_feedback`  | Run a self-healing post-mortem on negative feedback — analyzes what went wrong and proposes a rule         |
 
 Natural-language harnesses now live in [`harnesses/`](harnesses) and can be executed through the async runtime:
 
