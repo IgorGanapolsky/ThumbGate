@@ -65,6 +65,22 @@ test('fetchLicenseEntitlement resolves the hosted runtime unlock shape', async (
   assert.equal(entitlement.planId, 'pro');
 });
 
+test('fetchLicenseEntitlement returns free tier when billing URL is invalid', async () => {
+  const license = require('../scripts/license');
+  let fetchCalled = false;
+  const entitlement = await license.fetchLicenseEntitlement('rlhf_valid_key', {
+    apiBaseUrl: 'not-a-valid-url',
+    fetchImpl: async () => {
+      fetchCalled = true;
+      throw new Error('fetch should not run for invalid billing URLs');
+    },
+  });
+
+  assert.equal(fetchCalled, false);
+  assert.equal(entitlement.valid, false);
+  assert.equal(entitlement.tier, 'free');
+});
+
 test('Pro feature gate blocks without license', () => {
   const origKey = process.env.RLHF_API_KEY;
   const origPro = process.env.THUMBGATE_PRO_KEY;

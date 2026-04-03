@@ -194,8 +194,9 @@ async function runProof(options = {}) {
   const previousApiKey = process.env.RLHF_API_KEY;
   const previousMcpProfile = process.env.RLHF_MCP_PROFILE;
   const previousCodegraphStub = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
+  const proofApiKey = 'rlhf_proof_key';
   process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
-  process.env.RLHF_API_KEY = 'proof-key';
+  process.env.RLHF_API_KEY = proofApiKey;
   process.env.RLHF_MCP_PROFILE = 'default';
   process.env.RLHF_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
     source: 'stub',
@@ -226,7 +227,7 @@ async function runProof(options = {}) {
     {
       currentCheck = 'api.healthz';
       const res = await fetchWithRetry(`${baseUrl}/healthz`, {
-        headers: { Authorization: 'Bearer proof-key' },
+        headers: { Authorization: `Bearer ${proofApiKey}` },
       });
       check(res.status === 200, `health expected 200, got ${res.status}`);
       addResult('api.healthz', true, { status: res.status });
@@ -242,7 +243,7 @@ async function runProof(options = {}) {
     {
       currentCheck = 'api.intents.catalog';
       const res = await fetchWithRetry(`${baseUrl}/v1/intents/catalog?mcpProfile=locked`, {
-        headers: { Authorization: 'Bearer proof-key' },
+        headers: { Authorization: `Bearer ${proofApiKey}` },
       });
       check(res.status === 200, `intents catalog expected 200, got ${res.status}`);
       const body = await res.json();
@@ -255,7 +256,7 @@ async function runProof(options = {}) {
       const res = await fetchWithRetry(`${baseUrl}/v1/intents/plan`, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer proof-key',
+          Authorization: `Bearer ${proofApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -275,7 +276,7 @@ async function runProof(options = {}) {
       const res = await fetchWithRetry(`${baseUrl}/v1/intents/plan`, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer proof-key',
+          Authorization: `Bearer ${proofApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -305,7 +306,7 @@ async function runProof(options = {}) {
         const res = await fetchWithRetry(`${baseUrl}/v1/internal-agent/bootstrap`, {
           method: 'POST',
           headers: {
-            Authorization: 'Bearer proof-key',
+            Authorization: `Bearer ${proofApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -341,7 +342,7 @@ async function runProof(options = {}) {
       const res = await fetchWithRetry(`${baseUrl}/v1/feedback/capture`, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer proof-key',
+          Authorization: `Bearer ${proofApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -362,7 +363,7 @@ async function runProof(options = {}) {
       const res = await fetchWithRetry(`${baseUrl}/v1/feedback/capture`, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer proof-key',
+          Authorization: `Bearer ${proofApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -383,7 +384,7 @@ async function runProof(options = {}) {
       const res = await fetchWithRetry(`${baseUrl}/v1/feedback/capture`, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer proof-key',
+          Authorization: `Bearer ${proofApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -409,7 +410,7 @@ async function runProof(options = {}) {
       const construct = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer proof-key',
+          Authorization: `Bearer ${proofApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ query: 'verification', maxItems: 5, maxChars: 5000 }),
@@ -423,7 +424,7 @@ async function runProof(options = {}) {
       const evaluate = await fetchWithRetry(`${baseUrl}/v1/context/evaluate`, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer proof-key',
+          Authorization: `Bearer ${proofApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

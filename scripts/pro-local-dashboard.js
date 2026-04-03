@@ -8,6 +8,7 @@ const {
   fetchLicenseEntitlement,
   getLicenseDir,
   getLicensePath,
+  isSupportedLicenseKey,
   readLicense,
 } = require('./license');
 
@@ -58,7 +59,7 @@ function resolveProKey({ env = process.env, homeDir } = {}) {
   }
 
   const envKey = String(env.RLHF_API_KEY || '').trim();
-  if (envKey) {
+  if (isSupportedLicenseKey(envKey)) {
     return {
       key: envKey,
       source: 'env',
@@ -67,7 +68,7 @@ function resolveProKey({ env = process.env, homeDir } = {}) {
 
   const license = readLicense({ homeDir });
   const licenseKey = String(license && license.key ? license.key : '').trim();
-  if (licenseKey) {
+  if (isSupportedLicenseKey(licenseKey)) {
     return {
       key: licenseKey,
       source: 'license',

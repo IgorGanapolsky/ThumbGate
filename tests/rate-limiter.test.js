@@ -65,12 +65,17 @@ describe('rate-limiter', () => {
   });
 
   it('RLHF_API_KEY marks pro tier', () => {
-    process.env.RLHF_API_KEY = 'test-key-123';
+    process.env.RLHF_API_KEY = 'rlhf_test_key_123';
     assert.equal(rateLimiter.isProTier(), true);
     for (let i = 0; i < 10; i++) {
       const result = rateLimiter.checkLimit('capture_feedback');
       assert.equal(result.allowed, true, `call ${i + 1} should be allowed with API key`);
     }
+  });
+
+  it('unsupported RLHF_API_KEY values do not bypass free-tier limits', () => {
+    process.env.RLHF_API_KEY = 'remote-admin-key';
+    assert.equal(rateLimiter.isProTier(), false);
   });
 
   it('RLHF_PRO_MODE=1 marks pro tier', () => {
@@ -115,6 +120,10 @@ describe('rate-limiter', () => {
     for (let i = 0; i < 5; i++) {
       assert.equal(rateLimiter.checkLimit('export_dpo').allowed, true);
     }
+  });
+
+  it('team auth context bypasses free-tier limits', () => {
+    assert.equal(rateLimiter.isProTier({ tier: 'team' }), true);
   });
 
   it('UPGRADE_MESSAGE references dashboard', () => {

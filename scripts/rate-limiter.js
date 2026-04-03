@@ -23,13 +23,14 @@ const FREE_TIER_MAX_GATES = 10;
 const UPGRADE_MESSAGE = `Upgrade to Pro ($19/mo) for a personal local dashboard, DPO export, and optional hosted API key: ${PRO_MONTHLY_PAYMENT_LINK}`;
 
 function isProTier(authContext) {
-  if (authContext && authContext.tier === 'pro') return true;
-  if (process.env.RLHF_API_KEY || process.env.RLHF_PRO_MODE === '1' || process.env.RLHF_NO_RATE_LIMIT === '1') return true;
-  // Also check license file for real customer Pro verification
+  if (authContext && ['pro', 'team', 'enterprise'].includes(authContext.tier)) return true;
+  if (process.env.RLHF_PRO_MODE === '1' || process.env.RLHF_NO_RATE_LIMIT === '1') return true;
+
   try {
     const { isProLicensed } = require('./license');
     if (isProLicensed()) return true;
   } catch (_) {}
+
   return false;
 }
 

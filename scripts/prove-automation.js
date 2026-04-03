@@ -61,8 +61,9 @@ async function runAutomationProof(options = {}) {
 
   const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-automation-proof-'));
   const previousCodegraphStub = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
+  const automationProofApiKey = 'rlhf_automation_proof_key';
   process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
-  process.env.RLHF_API_KEY = 'automation-proof-key';
+  process.env.RLHF_API_KEY = automationProofApiKey;
   process.env.RLHF_MCP_PROFILE = 'default';
   process.env.RLHF_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
     source: 'stub',
@@ -223,7 +224,7 @@ async function runAutomationProof(options = {}) {
       const res = await fetchWithRetry(`${baseUrl}/v1/feedback/capture`, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer automation-proof-key',
+          Authorization: `Bearer ${automationProofApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -478,7 +479,7 @@ async function runAutomationProof(options = {}) {
       const construct = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer automation-proof-key',
+          Authorization: `Bearer ${automationProofApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ query: 'verification automation', maxItems: 5, maxChars: 5000 }),
@@ -490,7 +491,7 @@ async function runAutomationProof(options = {}) {
       const evaluate = await fetchWithRetry(`${baseUrl}/v1/context/evaluate`, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer automation-proof-key',
+          Authorization: `Bearer ${automationProofApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -517,7 +518,7 @@ async function runAutomationProof(options = {}) {
       const first = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer automation-proof-key',
+          Authorization: `Bearer ${automationProofApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ query: 'verification testing evidence', maxItems: 5, maxChars: 5000 }),
@@ -529,7 +530,7 @@ async function runAutomationProof(options = {}) {
       const second = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer automation-proof-key',
+          Authorization: `Bearer ${automationProofApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ query: 'testing verification evidence', maxItems: 5, maxChars: 5000 }),

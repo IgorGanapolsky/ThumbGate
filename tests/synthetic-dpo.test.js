@@ -3,9 +3,6 @@
 
 const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
 
 const {
   augmentDpoExport,
@@ -14,6 +11,7 @@ const {
   buildContrastivePairs,
   truncate,
 } = require('../scripts/synthetic-dpo');
+const { withUnlicensedEnvironment } = require('./helpers/unlicensed-environment');
 
 // ── Test fixtures ──────────────────────────────────────────────────
 
@@ -64,35 +62,6 @@ const MOCK_DPO_EXPORT = {
   errors: [],
   learnings: [],
 };
-
-function withUnlicensedEnvironment(run) {
-  const savedEnv = {
-    RLHF_API_KEY: process.env.RLHF_API_KEY,
-    THUMBGATE_PRO_KEY: process.env.THUMBGATE_PRO_KEY,
-    HOME: process.env.HOME,
-    USERPROFILE: process.env.USERPROFILE,
-  };
-  const tempHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-synthetic-dpo-test-'));
-
-  delete process.env.RLHF_API_KEY;
-  delete process.env.THUMBGATE_PRO_KEY;
-  process.env.HOME = tempHomeDir;
-  process.env.USERPROFILE = tempHomeDir;
-
-  try {
-    return run();
-  } finally {
-    if (savedEnv.RLHF_API_KEY !== undefined) process.env.RLHF_API_KEY = savedEnv.RLHF_API_KEY;
-    else delete process.env.RLHF_API_KEY;
-    if (savedEnv.THUMBGATE_PRO_KEY !== undefined) process.env.THUMBGATE_PRO_KEY = savedEnv.THUMBGATE_PRO_KEY;
-    else delete process.env.THUMBGATE_PRO_KEY;
-    if (savedEnv.HOME !== undefined) process.env.HOME = savedEnv.HOME;
-    else delete process.env.HOME;
-    if (savedEnv.USERPROFILE !== undefined) process.env.USERPROFILE = savedEnv.USERPROFILE;
-    else delete process.env.USERPROFILE;
-    fs.rmSync(tempHomeDir, { recursive: true, force: true });
-  }
-}
 
 // ── Unit tests ─────────────────────────────────────────────────────
 
@@ -210,7 +179,7 @@ describe('synthetic-dpo', () => {
   test('augmentDpoExport returns proRequired when not licensed', () => {
     const result = withUnlicensedEnvironment(() => augmentDpoExport(MOCK_DPO_EXPORT, {
       skipProCheck: false,
-    }));
+    }), { prefix: 'thumbgate-synthetic-dpo-test-' });
 
     assert.equal(result.proRequired, true, 'proRequired flag set');
     assert.equal(result.syntheticPairs, 0, 'no synthetic pairs without Pro');

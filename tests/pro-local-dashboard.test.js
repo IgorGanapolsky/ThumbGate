@@ -55,6 +55,26 @@ test('pro local dashboard helper prefers RLHF_API_KEY over saved license', () =>
   fs.rmSync(homeDir, { recursive: true, force: true });
 });
 
+test('pro local dashboard helper ignores unsupported RLHF_API_KEY values', () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-pro-invalid-env-'));
+  saveLicense('rlhf_saved_license', { homeDir });
+
+  const resolved = resolveProKey({
+    homeDir,
+    env: {
+      RLHF_API_KEY: 'remote-admin-key',
+    },
+  });
+
+  assert.deepEqual(resolved, {
+    key: 'rlhf_saved_license',
+    source: 'license',
+    licensePath: getLicensePath(homeDir),
+  });
+
+  fs.rmSync(homeDir, { recursive: true, force: true });
+});
+
 test('pro local dashboard helper validates keys against billing usage endpoint', async () => {
   const valid = await validateProKey('rlhf_valid_key', {
     fetchImpl: async (url, options) => {

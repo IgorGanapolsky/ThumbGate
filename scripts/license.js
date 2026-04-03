@@ -103,9 +103,16 @@ async function fetchLicenseEntitlement(key, {
 
   const hostedConfig = resolveHostedBillingConfig();
   const baseUrl = apiBaseUrl || process.env.RLHF_BILLING_API_BASE_URL || hostedConfig.billingApiBaseUrl;
+  let entitlementUrl;
 
   try {
-    const res = await fetchImpl(`${baseUrl}/v1/billing/entitlement`, {
+    entitlementUrl = new URL('/v1/billing/entitlement', `${String(baseUrl || '').replace(/\/+$/, '')}/`).toString();
+  } catch {
+    return { ...DEFAULT_ENTITLEMENT };
+  }
+
+  try {
+    const res = await fetchImpl(entitlementUrl, {
       headers: {
         Authorization: `Bearer ${normalizedKey}`,
         ...extraHeaders,
