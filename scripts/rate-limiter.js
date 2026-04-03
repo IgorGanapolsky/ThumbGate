@@ -10,15 +10,15 @@ const {
 const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.rlhf', 'usage-limits.json');
 
 const FREE_TIER_LIMITS = {
-  capture_feedback: { daily: 5, label: 'feedback captures' },
-  search_lessons: { daily: 10, label: 'lesson searches' },
-  search_rlhf: { daily: 20, label: 'RLHF searches' },
-  commerce_recall: { daily: 10, label: 'commerce recalls' },
+  capture_feedback: { daily: 3, label: 'feedback captures' },
+  search_lessons: { daily: 5, label: 'lesson searches' },
+  search_rlhf: { daily: 10, label: 'RLHF searches' },
+  commerce_recall: { daily: 5, label: 'commerce recalls' },
   export_dpo: { daily: 0, label: 'DPO exports (Pro only)' },
   export_databricks: { daily: 0, label: 'Databricks exports (Pro only)' },
 };
 
-const FREE_TIER_MAX_GATES = 10;
+const FREE_TIER_MAX_GATES = 5;
 
 const UPGRADE_MESSAGE = `Upgrade to Pro ($19/mo) for a personal local dashboard, DPO export, and optional hosted API key: ${PRO_MONTHLY_PAYMENT_LINK}`;
 
@@ -83,14 +83,15 @@ function checkLimit(action, authContext) {
   const current = usage.counts[action] || 0;
 
   if (current >= dailyLimit) {
-    return { allowed: false, message: UPGRADE_MESSAGE };
+    return { allowed: false, message: UPGRADE_MESSAGE, used: current, limit: dailyLimit };
   }
 
   // Increment
   usage.counts[action] = current + 1;
   saveUsage(usage);
 
-  return { allowed: true };
+  const used = current + 1;
+  return { allowed: true, used, limit: dailyLimit, remaining: dailyLimit - used };
 }
 
 /**

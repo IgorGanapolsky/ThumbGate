@@ -95,7 +95,7 @@ function proNudge(context) {
 function limitNudge(action) {
   if (process.env.RLHF_NO_NUDGE === '1') return;
   process.stderr.write(
-    `\n  ⚠️  Free tier: ${action} daily limit reached (5/day).\n` +
+    `\n  ⚠️  Free tier: ${action} daily limit reached.\n` +
     `     Upgrade to Pro for unlimited usage — ${PRO_PRICE_LABEL}:\n` +
     `     ${PRO_CHECKOUT_URL}\n\n`
   );
@@ -503,9 +503,9 @@ function init() {
   proNudge();
   process.stderr.write(
     '\n  ┌─────────────────────────────────────────────────┐\n' +
-    '  │  Free: unlimited captures, recalls, and gates   │\n' +
-    '  │  Pro:  + dashboard + DPO export + multi-repo    │\n' +
-    '  │        $19/mo → npx mcp-memory-gateway pro│\n' +
+    '  │  Free: 3 captures/day · 5 searches · 5 gates  │\n' +
+    '  │  Pro:  unlimited + dashboard + DPO export      │\n' +
+    '  │        $19/mo → npx mcp-memory-gateway pro     │\n' +
     '  └─────────────────────────────────────────────────┘\n\n'
   );
 
@@ -534,6 +534,7 @@ function capture() {
   const { captureFeedback, analyzeFeedback, feedbackSummary, writePreventionRules } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { checkLimit } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
 
+  const { getUsage } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
   const capLimit = checkLimit('capture_feedback');
   if (!capLimit.allowed) {
     limitNudge('capture_feedback');
@@ -578,7 +579,15 @@ function capture() {
     console.log(`  Feedback ID : ${ev.id}`);
     console.log(`  Signal      : ${ev.signal} (${ev.actionType})`);
     console.log(`  Memory ID   : ${mem.id}`);
-    console.log(`  Storage     : JSONL log + LanceDB vector index\n`);
+    console.log(`  Storage     : JSONL log + LanceDB vector index`);
+    if (capLimit.used != null && capLimit.limit != null && capLimit.limit !== Infinity) {
+      const pct = Math.round((capLimit.used / capLimit.limit) * 100);
+      console.log(`  Usage       : ${capLimit.used}/${capLimit.limit} captures today (${pct}%)`);
+      if (capLimit.remaining <= 1) {
+        console.log(`  ⚠️  Last capture for today. Upgrade to Pro for unlimited.`);
+      }
+    }
+    console.log('');
     proNudge();
   } else {
     console.log(`\nFeedback Recorded [${normalized.toUpperCase()}] — not promoted`);

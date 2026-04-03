@@ -223,11 +223,11 @@ async function main() {
     'public/index.html must mention the linked feedback session flow'
   );
   check(
-    /5 feedback captures\/day/i.test(landingHtml) && /10 lesson searches\/day/i.test(landingHtml),
+    /3 feedback captures\/day/i.test(landingHtml) && /5 lesson searches\/day/i.test(landingHtml),
     'public/index.html must advertise the truthful free-tier capture and lesson-search limits'
   );
   check(
-    /10 auto-promoted gates/i.test(landingHtml),
+    /5 auto-promoted gates/i.test(landingHtml),
     'public/index.html must advertise the truthful free-tier auto-promoted gate limit'
   );
   check(
