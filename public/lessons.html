@@ -544,6 +544,9 @@ async function loadLive() {
 }
 
 loadLive().then(function() {
+  // Default: highlight Active Rules card on page load
+  highlightCard(0);
+
   // Handle #feedbackId hash — scroll to and highlight the matching item
   var hash = window.location.hash.replace('#', '');
   if (!hash) return;
