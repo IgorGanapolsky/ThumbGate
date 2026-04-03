@@ -20,9 +20,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
 <title>ThumbGate — Stop AI Coding Agents From Repeating Mistakes</title>
-<meta name="description" content="👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. Pro adds a personal local dashboard. Team adds shared lessons and org visibility.">
+<meta name="description" content="👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility.">
 <meta property="og:title" content="ThumbGate — Human-in-the-Loop Enforcement for AI Agents">
-<meta property="og:description" content="👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. Pro adds a personal local dashboard. Team adds shared lessons and org visibility.">
+<meta property="og:description" content="👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility.">
 <meta property="og:type" content="website">
 <meta name="keywords" content="ThumbGate, mcp-memory-gateway, AI agent guardrails, pre-action gates, MCP server, Claude Code, Claude Code security, Claude Code guardrails, Claw-code, Cursor, Codex, Gemini, Amp, OpenCode, vibe coding safety, SpecLock alternative, Mem0 alternative, AI coding agent memory, PreToolUse hooks, prevention rules, feedback enforcement">
 
@@ -43,7 +43,7 @@ __GA_BOOTSTRAP__
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
-  "description": "👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. Pro adds a personal local dashboard. Team adds shared lessons and org visibility.",
+  "description": "👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform",
   "license": "https://opensource.org/licenses/MIT",
@@ -373,7 +373,7 @@ __GA_BOOTSTRAP__
       <div class="signal-pill signal-up">👍 reinforces what worked across sessions</div>
     </div>
     <p class="hero-persona">For power users of Claude Code, Cursor, Codex, Gemini, Amp, and any MCP agent who are tired of fixing the same mistakes every session.</p>
-    <p>ThumbGate turns thumbs-up/down feedback into hard gates that block bad actions before they execute. Think of it as an immune system for your AI agent — it learns from your corrections and enforces them automatically. The safety net for vibe coding works across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.</p>
+    <p>ThumbGate turns thumbs-up/down feedback into hard gates that block bad actions before they execute. Think of it as an immune system for your AI agent — it learns from your corrections, can distill a vague thumbs signal from the recent conversation window, and enforces the resulting lesson automatically. The safety net for vibe coding works across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx mcp-memory-gateway init</span>
@@ -444,6 +444,10 @@ __GA_BOOTSTRAP__
         <h3>🧪 Thompson Sampling</h3>
         <p>Confidence tiers (none/low/medium/high) tell you when to trust the model vs fall back to rules. No guessing.</p>
       </div>
+      <div class="agent-card">
+        <h3>🪞 History-Aware Lessons</h3>
+        <p>When a thumbs signal is vague, ThumbGate can reuse the last ~10 messages plus the failed tool call, propose what went wrong, and turn that into one linked lesson instead of a dead-end note.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -490,12 +494,12 @@ __GA_BOOTSTRAP__
       <div class="step">
         <div class="step-num">1</div>
         <h3>Feedback</h3>
-        <p>Give <code>👍</code> or <code>👎</code> on your AI agent's actions. Feedback is stored in a SQLite+FTS5 lesson DB. On <code>👎</code>, get corrective actions from similar past failures. Example: you 👎 a risky migration → it auto-promotes to a "never run DROP on prod" gate.</p>
+        <p>Give <code>👍</code> or <code>👎</code> on your AI agent's actions. Feedback is stored in a SQLite+FTS5 lesson DB. If the signal is vague, ThumbGate can distill it from the recent conversation window and failed tool call before promotion. Example: you 👎 a risky migration → it auto-promotes to a "never run DROP on prod" gate.</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
-        <h3>Rules</h3>
-        <p>Repeated failures auto-promote into prevention rules. Thompson Sampling adapts which rules fire — high-risk patterns get stricter enforcement while low-risk ones stay relaxed.</p>
+        <h3>Distill + Rules</h3>
+        <p>Repeated failures auto-promote into prevention rules. Thompson Sampling adapts which rules fire, and the reflector lane can propose a reusable rule from the same transcript so high-risk patterns get stricter enforcement while low-risk ones stay relaxed.</p>
       </div>
       <div class="step">
         <div class="step-num">3</div>
@@ -527,6 +531,10 @@ __GA_BOOTSTRAP__
       <div class="agent-card">
         <h3>Log everything, learn automatically</h3>
         <p>Audit trail records every allow/deny/warn. Repeated failures auto-promote to gates. Org dashboard shows all agents across your team.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Keep one correction thread</h3>
+        <p>Feedback sessions let you open, append, and finalize one linked correction instead of spraying follow-up notes across separate records. Better lessons, less operator friction.</p>
       </div>
     </div>
   </div>
@@ -604,7 +612,8 @@ __GA_BOOTSTRAP__
         <div class="price-sub">Forever free · Local-only, single dev</div>
         <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo devs experimenting with gates on one machine.</p>
         <ul>
-          <li>50 lessons · 10 recalls/day · 3 built-in gates</li>
+          <li>5 feedback captures/day · 10 lesson searches/day · unlimited recall</li>
+          <li>10 auto-promoted gates plus the core safety policy</li>
           <li>All MCP integrations (Claude Code, Cursor, Codex, etc.)</li>
           <li>PreToolUse hook blocking</li>
           <li>Local SQLite lesson DB</li>
@@ -702,7 +711,11 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
-        <div class="faq-a">No. Free gives you full local enforcement — captures, recalls, gates, and hook blocking on your machine. No cloud, no account, no signup. Pro adds a personal local dashboard on your machine plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, org dashboard, and team-wide gate visibility.</div>
+        <div class="faq-a">No. Free keeps local enforcement on your machine with 5 daily feedback captures, 10 lesson searches, unlimited recall, gates, and hook blocking. No cloud account is required. Pro adds a personal local dashboard on your machine plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, org dashboard, and team-wide gate visibility.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What if my thumbs-down is vague?</div>
+        <div class="faq-a">ThumbGate can reuse the last ~10 messages, the failed tool call, and later follow-up notes to propose <code>whatWentWrong</code>, <code>whatToChange</code>, and a reusable lesson. The feedback session stays linked instead of creating duplicate records.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are pre-action gates different from prompt rules?</div>

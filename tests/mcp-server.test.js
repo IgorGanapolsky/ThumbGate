@@ -244,6 +244,123 @@ test('capture_feedback can promote a vague negative signal from chatHistory over
   assert.equal(payload.feedbackEvent.conversationWindow.length, 2);
 });
 
+test('retrieve_lessons returns relevant lessons for the current tool context', async () => {
+  await handleRequest({
+    jsonrpc: '2.0',
+    id: 32,
+    method: 'tools/call',
+    params: {
+      name: 'capture_feedback',
+      arguments: {
+        signal: 'down',
+        context: 'Bash pushed directly to main without verification',
+        whatWentWrong: 'Pushed to main before running tests',
+        whatToChange: 'Run tests before any push to main',
+        tags: ['git-workflow', 'verification'],
+      },
+    },
+  });
+
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 33,
+    method: 'tools/call',
+    params: {
+      name: 'retrieve_lessons',
+      arguments: {
+        toolName: 'Bash',
+        actionContext: 'git push origin main after editing src/api/server.js',
+        maxResults: 1,
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(Array.isArray(payload), true);
+  assert.equal(payload.length, 1);
+  assert.equal(payload[0].signal, 'negative');
+  assert.ok(payload[0].relevanceScore > 0);
+});
+
+test('reflect_on_feedback returns a proposed rule from the conversation window', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 34,
+    method: 'tools/call',
+    params: {
+      name: 'reflect_on_feedback',
+      arguments: {
+        context: 'editing auth files',
+        whatWentWrong: 'Edited .env directly',
+        conversationWindow: [
+          { role: 'user', content: 'Do not edit the .env file directly.' },
+          { role: 'assistant', content: 'Edit(.env) removed the token.' },
+          { role: 'user', content: 'Wrong, never do that here.' },
+        ],
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.status, 'reflection_complete');
+  assert.equal(payload.proposedRule.source, 'user-correction');
+  assert.match(payload.message, /Correct\?/);
+});
+
+test('feedback session tools support follow-up capture and finalization over MCP', async () => {
+  const opened = await handleRequest({
+    jsonrpc: '2.0',
+    id: 35,
+    method: 'tools/call',
+    params: {
+      name: 'open_feedback_session',
+      arguments: {
+        feedbackEventId: 'fb_session_test',
+        signal: 'down',
+        initialContext: 'thumbs down',
+      },
+    },
+  });
+
+  const openedPayload = JSON.parse(opened.content[0].text);
+  assert.equal(openedPayload.status, 'open');
+  assert.ok(openedPayload.sessionId);
+
+  const appended = await handleRequest({
+    jsonrpc: '2.0',
+    id: 36,
+    method: 'tools/call',
+    params: {
+      name: 'append_feedback_context',
+      arguments: {
+        sessionId: openedPayload.sessionId,
+        message: 'you lied about the tests passing',
+      },
+    },
+  });
+
+  const appendedPayload = JSON.parse(appended.content[0].text);
+  assert.equal(appendedPayload.status, 'appended');
+  assert.equal(appendedPayload.messageCount, 1);
+
+  const finalized = await handleRequest({
+    jsonrpc: '2.0',
+    id: 37,
+    method: 'tools/call',
+    params: {
+      name: 'finalize_feedback_session',
+      arguments: {
+        sessionId: openedPayload.sessionId,
+      },
+    },
+  });
+
+  const finalizedPayload = JSON.parse(finalized.content[0].text);
+  assert.equal(finalizedPayload.status, 'finalized');
+  assert.equal(finalizedPayload.followUpCount, 1);
+  assert.equal(finalizedPayload.complaints[0].type, 'dishonesty');
+});
+
 test('intent tools list and plan enforce checkpoint flow', async () => {
   const listResult = await handleRequest({
     jsonrpc: '2.0',

@@ -716,7 +716,7 @@ const TOOLS = [
       },
     },
   }),
-  readOnlyTool({
+  destructiveTool({
     name: 'open_feedback_session',
     description: 'Open a feedback session after thumbs up/down. Follow-up messages will be captured for 60s.',
     inputSchema: {

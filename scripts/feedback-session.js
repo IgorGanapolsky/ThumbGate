@@ -18,6 +18,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { buildStableId } = require('./conversation-context');
 
 const SESSION_TIMEOUT_MS = 60000; // 60 seconds
 const MAX_FOLLOWUP_MESSAGES = 20;
@@ -25,12 +26,31 @@ const MAX_FOLLOWUP_MESSAGES = 20;
 // In-memory store for active sessions (keyed by sessionId)
 const activeSessions = new Map();
 
+function scheduleTimer(callback, timeoutMs) {
+  const handle = setTimeout(callback, timeoutMs);
+  if (typeof handle.unref === 'function') {
+    handle.unref();
+  }
+  return handle;
+}
+
+function resetSessionTimer(sessionId, session) {
+  if (session.timeoutHandle) {
+    clearTimeout(session.timeoutHandle);
+  }
+  session.timeoutHandle = scheduleTimer(() => {
+    if (session.status === 'open') {
+      finalizeSession(sessionId);
+    }
+  }, SESSION_TIMEOUT_MS);
+}
+
 /**
  * Open a new feedback session after a thumbs up/down signal.
  * The session stays open for follow-up messages.
  */
 function openSession(feedbackEventId, signal, initialContext) {
-  const sessionId = `fbs_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const sessionId = buildStableId('fbs');
 
   const session = {
     sessionId,
@@ -44,13 +64,7 @@ function openSession(feedbackEventId, signal, initialContext) {
     finalizedAt: null,
   };
 
-  // Auto-finalize after timeout
-  session.timeoutHandle = setTimeout(() => {
-    if (session.status === 'open') {
-      finalizeSession(sessionId);
-    }
-  }, SESSION_TIMEOUT_MS);
-  if (session.timeoutHandle.unref) session.timeoutHandle.unref();
+  resetSessionTimer(sessionId, session);
 
   activeSessions.set(sessionId, session);
 
@@ -84,16 +98,7 @@ function appendToSession(sessionId, message, role = 'user') {
     timestamp: new Date().toISOString(),
   });
 
-  // Reset timeout — user is still typing
-  if (session.timeoutHandle) {
-    clearTimeout(session.timeoutHandle);
-  }
-  session.timeoutHandle = setTimeout(() => {
-    if (session.status === 'open') {
-      finalizeSession(sessionId);
-    }
-  }, SESSION_TIMEOUT_MS);
-  if (session.timeoutHandle.unref) session.timeoutHandle.unref();
+  resetSessionTimer(sessionId, session);
 
   return {
     status: 'appended',
@@ -157,8 +162,7 @@ function finalizeSession(sessionId) {
   } catch (_err) { /* non-critical */ }
 
   // Clean up from active sessions after a delay (allow reads)
-  const cleanupTimer = setTimeout(() => activeSessions.delete(sessionId), 5000);
-  if (cleanupTimer.unref) cleanupTimer.unref();
+  scheduleTimer(() => activeSessions.delete(sessionId), 5000);
 
   return result;
 }
@@ -174,30 +178,15 @@ function extractComplaints(messages) {
     if (msg.role !== 'user') continue;
     const content = msg.content || '';
 
-    const patterns = [
-      { regex: /you (?:lied|lying) (?:about|to me about)\s+(.{5,200})/gi, type: 'dishonesty' },
-      { regex: /you (?:didn't|did not|forgot to|failed to|never)\s+(.{5,200})/gi, type: 'omission' },
-      { regex: /you (?:broke|ruined|messed up|screwed up)\s+(.{5,200})/gi, type: 'damage' },
-      { regex: /(?:wrong|incorrect|bad|terrible|stupid)\s+(.{5,200})/gi, type: 'quality' },
-      { regex: /(?:I said|I told you|I asked you to)\s+(.{5,200})/gi, type: 'ignored-instruction' },
-      { regex: /(?:don't|do not|never|stop)\s+(.{5,200})/gi, type: 'constraint' },
-      { regex: /(?:should have|should've|why didn't you)\s+(.{5,200})/gi, type: 'missed-expectation' },
-      { regex: /(?:too slow|took too long|waste of time|5 minutes)\s*(.{0,200})/gi, type: 'performance' },
-    ];
+    const matches = extractComplaintMatches(content);
+    complaints.push(...matches.map((match) => ({
+      type: match.type,
+      detail: match.detail,
+      source: content.slice(0, 100),
+      timestamp: msg.timestamp,
+    })));
 
-    for (const p of patterns) {
-      for (const match of content.matchAll(p.regex)) {
-        complaints.push({
-          type: p.type,
-          detail: match[1].trim().slice(0, 200),
-          source: content.slice(0, 100),
-          timestamp: msg.timestamp,
-        });
-      }
-    }
-
-    // If no pattern matched but message is clearly a complaint, capture it raw
-    if (complaints.length === 0 && /[!?]{2,}|fuck|shit|stupid|terrible|wrong|bad|lied/.test(content)) {
+    if (matches.length === 0 && isGeneralFrustration(content)) {
       complaints.push({
         type: 'general-frustration',
         detail: content.slice(0, 200),
@@ -208,6 +197,51 @@ function extractComplaints(messages) {
   }
 
   return complaints;
+}
+
+function extractComplaintMatches(content) {
+  const normalized = String(content || '').trim();
+  const lower = normalized.toLowerCase();
+  if (!lower) return [];
+
+  const phraseSets = [
+    { type: 'dishonesty', phrases: ['you lied about ', 'you lying about ', 'you lied to me about '] },
+    { type: 'omission', phrases: ['you didn\'t ', 'you did not ', 'you forgot to ', 'you failed to ', 'you never '] },
+    { type: 'damage', phrases: ['you broke ', 'you ruined ', 'you messed up ', 'you screwed up '] },
+    { type: 'quality', phrases: ['wrong ', 'incorrect ', 'bad ', 'terrible ', 'stupid '] },
+    { type: 'ignored-instruction', phrases: ['i said ', 'i told you ', 'i asked you to '] },
+    { type: 'constraint', phrases: ['don\'t ', 'do not ', 'never ', 'stop '] },
+    { type: 'missed-expectation', phrases: ['should have ', 'should\'ve ', 'why didn\'t you '] },
+    { type: 'performance', phrases: ['too slow', 'took too long', 'waste of time', '5 minutes'] },
+  ];
+
+  const matches = [];
+  for (const entry of phraseSets) {
+    for (const phrase of entry.phrases) {
+      const index = lower.indexOf(phrase);
+      if (index === -1) continue;
+      const start = index + phrase.length;
+      const detail = normalized.slice(start).trim().slice(0, 200);
+      matches.push({
+        type: entry.type,
+        detail: detail || phrase.trim(),
+      });
+      break;
+    }
+  }
+  return matches;
+}
+
+function isGeneralFrustration(content) {
+  const lower = String(content || '').toLowerCase();
+  return lower.includes('!!')
+    || lower.includes('fuck')
+    || lower.includes('shit')
+    || lower.includes('stupid')
+    || lower.includes('terrible')
+    || lower.includes('wrong')
+    || lower.includes('bad')
+    || lower.includes('lied');
 }
 
 /**
@@ -246,6 +280,7 @@ module.exports = {
   extractComplaints,
   SESSION_TIMEOUT_MS,
   MAX_FOLLOWUP_MESSAGES,
+  scheduleTimer,
   // For testing
   _activeSessions: activeSessions,
 };

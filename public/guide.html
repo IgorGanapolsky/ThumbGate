@@ -6,7 +6,7 @@
 <title>How to Stop AI Coding Agents From Repeating Mistakes — ThumbGate Guide</title>
 <!-- Privacy-friendly analytics by Plausible -->
 <script defer data-domain="rlhf-feedback-loop-production.up.railway.app" data-api="/api/event" src="/js/analytics.js"></script>
-<meta name="description" content="The complete guide to preventing AI coding agent mistakes with pre-action gates. Learn how ThumbGate captures feedback, generates prevention rules, and blocks known-bad actions before they execute.">
+<meta name="description" content="The complete guide to preventing AI coding agent mistakes with pre-action gates, history-aware lesson distillation, and automatic prevention rules.">
 <meta name="keywords" content="AI agent mistakes, Claude Code force push, AI coding agent memory, MCP server guardrails, pre-action gates, vibe coding safety, PreToolUse hooks, ThumbGate, SpecLock alternative, Mem0 alternative">
 <meta property="og:title" content="How to Stop AI Coding Agents From Repeating Mistakes">
 <meta property="og:description" content="Pre-action gates that physically block AI agents from repeating known mistakes. The complete guide.">
@@ -19,7 +19,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "How to Stop AI Coding Agents From Repeating Mistakes",
-  "description": "Complete guide to preventing AI agent mistakes with pre-action gates, feedback capture, and automatic prevention rule generation.",
+  "description": "Complete guide to preventing AI agent mistakes with pre-action gates, feedback capture, history-aware lesson distillation, and automatic prevention rule generation.",
   "author": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -201,7 +201,7 @@
 <p class="breadcrumb"><a href="/">Home</a> / Guide</p>
 
 <h1>How to Stop AI Coding Agents From Repeating Mistakes</h1>
-<p style="color:var(--muted);">The complete guide to pre-action gates, feedback capture, and automatic prevention rules.</p>
+<p style="color:var(--muted);">The complete guide to pre-action gates, feedback capture, history-aware lesson distillation, and automatic prevention rules.</p>
 
 <h2>The Problem</h2>
 <p>Your AI coding agent force-pushes to main. You correct it. Next session, it force-pushes again. You add a rule to CLAUDE.md. It ignores it. You lose an afternoon reverting.</p>
@@ -234,7 +234,7 @@ npx mcp-memory-gateway init --agent gemini</code></pre>
 <h2>How It Works</h2>
 
 <h3>1. You give feedback</h3>
-<p>When your agent makes a mistake, tell it. ThumbGate captures the feedback as structured data with context, tags, and domain.</p>
+<p>When your agent makes a mistake, tell it. ThumbGate captures the feedback as structured data with context, tags, and domain. If the signal is vague, it can reuse the recent conversation window and failed tool call to propose a better lesson instead of discarding the feedback.</p>
 <pre><code># Your agent force-pushed. You say:
 "thumbs down — force-pushed to main, lost commits"
 
@@ -260,7 +260,17 @@ npx mcp-memory-gateway init --agent gemini</code></pre>
 <ul>
   <li><code>recall</code> — injects relevant context at session start</li>
   <li><code>search_lessons</code> — finds promoted lessons with corrective actions</li>
+  <li><code>retrieve_lessons</code> — surfaces lessons for the tool or action you are about to run</li>
   <li><code>session_handoff</code> — preserves continuity across sessions</li>
+</ul>
+
+<h2>History-Aware Feedback Sessions</h2>
+<p>ThumbGate supports linked feedback sessions for the messy reality of AI debugging. You can start one correction thread, append more context, and finalize it once the lesson is clear.</p>
+<ul>
+  <li><code>open_feedback_session</code> starts a linked correction thread.</li>
+  <li><code>append_feedback_context</code> adds later notes, failed tool output, or user corrections to the same thread.</li>
+  <li><code>finalize_feedback_session</code> promotes the combined evidence into one reusable lesson.</li>
+  <li><code>reflect_on_feedback</code> proposes a reusable rule from the same transcript when the failure pattern is obvious.</li>
 </ul>
 
 <h2>Pre-Action Gates vs Prompt Rules</h2>
@@ -300,7 +310,7 @@ npx mcp-memory-gateway init --agent gemini</code></pre>
 <pre><code>npx mcp-memory-gateway init</code></pre>
 <p>One command. Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode. Claude Code can also call Codex for review, adversarial review, and second-pass handoffs through the repo-local bridge plugin.</p>
 <a href="https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=guide&utm_medium=cta_button&utm_campaign=pro_pack" class="cta">Get Pro — $19/mo or $149/yr</a>
-<p style="color:var(--muted); font-size:0.85rem;">Free is fully featured — unlimited captures, recalls, gates, and blocking. Pro adds a personal local dashboard and DPO export. Team rollout adds the hosted shared lesson DB and org dashboard. <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" style="color:inherit;text-decoration:underline;">Founder $49 one-time link</a> stays preserved.</p>
+<p style="color:var(--muted); font-size:0.85rem;">Free keeps local enforcement with 5 daily feedback captures, 10 lesson searches, unlimited recall, blocking, and history-aware lesson distillation. Pro adds a personal local dashboard and DPO export. Team rollout adds the hosted shared lesson DB and org dashboard. <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" style="color:inherit;text-decoration:underline;">Founder $49 one-time link</a> stays preserved.</p>
 
 </div>
 </body>

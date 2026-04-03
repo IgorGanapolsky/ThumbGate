@@ -36,6 +36,7 @@ test('GitHub About description highlights both thumbs-up and thumbs-down feedbac
   assert.match(about.description, /👎/u);
   assert.match(about.description, /thumbs up/i);
   assert.match(about.description, /thumbs down/i);
+  assert.match(about.description, /history-aware lessons/i);
   assert.match(about.description, /shared lessons and org visibility/i);
 });
 
@@ -45,6 +46,11 @@ test('README commercial copy stays aligned with current Pro and Team packaging',
   assert.match(readme, /\$12\/seat\/mo/);
   assert.match(readme, /shared hosted lesson DB/i);
   assert.match(readme, /org dashboard/i);
+  assert.match(readme, /history-aware/i);
+  assert.match(readme, /feedback session|open_feedback_session|append_feedback_context|finalize_feedback_session/i);
+  assert.match(readme, /5 daily feedback captures/i);
+  assert.match(readme, /10 daily lesson searches/i);
+  assert.doesNotMatch(readme, /unlimited captures/i);
   assert.doesNotMatch(readme, /shared team DB/i);
   assert.doesNotMatch(readme, /\/mo\$19/i);
 });
