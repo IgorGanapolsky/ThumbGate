@@ -40,6 +40,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 ### Team ($12/seat/mo, min 3, hosted rollout intake-first)
 
 - Shared hosted lesson database
+- Generated hosted review views for team, incident, and rollout operations
 - Org dashboard with active agents, gate hit rates, and risk agents
 - Curated gate template library
 - Workflow hardening sprint intake and rollout support

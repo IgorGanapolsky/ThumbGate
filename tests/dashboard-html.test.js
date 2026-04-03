@@ -2,11 +2,19 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const dashboardPath = path.join(__dirname, '..', 'public', 'dashboard.html');
 
 function readDashboard() {
   return fs.readFileSync(dashboardPath, 'utf8');
+}
+
+function readDashboardScript() {
+  const dashboard = readDashboard();
+  const match = dashboard.match(/<script>([\s\S]*)<\/script>/);
+  assert.ok(match, 'dashboard must contain an inline script');
+  return match[1];
 }
 
 test('dashboard escapes tag attributes and uses data-tag buttons instead of inline handlers', () => {
@@ -33,11 +41,14 @@ test('dashboard includes team metrics and gate-template tabs powered by dashboar
   const dashboard = readDashboard();
 
   assert.match(dashboard, /switchTab\('team'\)/);
+  assert.match(dashboard, /switchTab\('generated'\)/);
   assert.match(dashboard, /switchTab\('settings'\)/);
   assert.match(dashboard, /switchTab\('templates'\)/);
   assert.match(dashboard, /id="teamSummaryCards"/);
   assert.match(dashboard, /id="teamRiskAgents"/);
   assert.match(dashboard, /id="teamBlockedGates"/);
+  assert.match(dashboard, /id="generatedViewToolbar"/);
+  assert.match(dashboard, /id="generatedViewCanvas"/);
   assert.match(dashboard, /id="settingsSummaryCards"/);
   assert.match(dashboard, /id="settingsOrigins"/);
   assert.match(dashboard, /id="templateLibrary"/);
@@ -45,8 +56,12 @@ test('dashboard includes team metrics and gate-template tabs powered by dashboar
   assert.match(dashboard, /id="predictiveAnomalies"/);
   assert.match(dashboard, /function renderTeam\(team, analytics\)/);
   assert.match(dashboard, /function renderPredictive\(predictive\)/);
+  assert.match(dashboard, /function renderGeneratedView\(spec\)/);
+  assert.match(dashboard, /function loadGeneratedView\(viewName\)/);
   assert.match(dashboard, /function renderSettingsStatus\(settingsStatus\)/);
   assert.match(dashboard, /function renderTemplates\(templateLibrary\)/);
+  assert.match(dashboard, /\/v1\/dashboard\/render-spec\?view=/);
+  assert.match(dashboard, /Approved component catalog:/);
   assert.match(dashboard, /Forecast revenue/);
   assert.match(dashboard, /highest-ROI guardrails/i);
 });
@@ -56,4 +71,8 @@ test('dashboard has noindex and meta description for SEO safety', () => {
   assert.match(dashboard, /noindex/, 'dashboard must have noindex to prevent Google indexing a Pro-only page');
   assert.match(dashboard, /<meta name="description"/, 'dashboard must have meta description');
   assert.match(dashboard, /rel="canonical"/, 'dashboard must have canonical URL');
+});
+
+test('dashboard inline script parses after generated-view additions', () => {
+  assert.doesNotThrow(() => new vm.Script(readDashboardScript()));
 });
