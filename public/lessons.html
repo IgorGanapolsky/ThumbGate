@@ -341,7 +341,7 @@ function renderRules(rules) {
     var sev = r.severity || getSeverity(r);
     return '<div class="rule-card" data-rule-id="' + escHtml(r.id || '') + '">' +
       '<div class="rule-header">' +
-        '<div class="rule-title">' + escHtml(r.title || r.id || 'Rule') + '</div>' +
+        '<div class="rule-title"><a href="/lessons/' + encodeURIComponent(r.id || '') + '" style="color:inherit;text-decoration:none" onmouseover="this.style.color=\'var(--cyan)\'" onmouseout="this.style.color=\'inherit\'">' + escHtml(r.title || r.id || 'Rule') + '</a></div>' +
         '<span class="rule-severity ' + sev + '">' + sev + '</span>' +
       '</div>' +
       (r.context ? '<div class="rule-context">' + escHtml(r.context) + '</div>' : '') +
@@ -368,7 +368,7 @@ function renderTimeline(items) {
           '<span class="timeline-signal ' + sig + '">' + emoji + ' ' + (sig === 'up' ? 'Positive' : 'Negative') + '</span>' +
           '<span class="timeline-date">' + escHtml(item.date || '') + '</span>' +
         '</div>' +
-        '<div class="timeline-context">' + escHtml(item.context || item.title || '') + '</div>' +
+        '<div class="timeline-context"><a href="/lessons/' + encodeURIComponent(item.feedbackId || '') + '" style="color:inherit;text-decoration:none" onmouseover="this.style.color=\'var(--cyan)\'" onmouseout="this.style.color=\'inherit\'">' + escHtml(item.context || item.title || '') + '</a></div>' +
         (item.learned ? '<div class="timeline-learned">→ Rule created: ' + escHtml(item.learned) + '</div>' : '') +
       '</div>' +
     '</div>';
