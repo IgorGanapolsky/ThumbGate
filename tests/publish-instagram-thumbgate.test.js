@@ -29,10 +29,11 @@ describe('Publish Instagram ThumbGate', { skip: !sharpAvailable ? 'sharp not ins
     });
   });
 
-  it('should generate image when called with default options', async function() {
+  it('should generate image when called with default options', async (t) => {
     // Skip if Zernio not configured
     if (!process.env.ZERNIO_API_KEY) {
-      this.skip();
+      t.skip('ZERNIO_API_KEY not set');
+      return;
     }
 
     const result = await publishInstagramThumbGate({
@@ -48,10 +49,11 @@ describe('Publish Instagram ThumbGate', { skip: !sharpAvailable ? 'sharp not ins
     console.log(`✅ Image generated: ${stats.size} bytes`);
   });
 
-  it('should post to Instagram when fully configured', async function() {
+  it('should post to Instagram when fully configured', async (t) => {
     // Skip if Zernio not configured
     if (!process.env.ZERNIO_API_KEY) {
-      this.skip();
+      t.skip('ZERNIO_API_KEY not set');
+      return;
     }
 
     const result = await publishInstagramThumbGate({
@@ -67,10 +69,11 @@ describe('Publish Instagram ThumbGate', { skip: !sharpAvailable ? 'sharp not ins
     console.log(`   Post ID: ${result.postId}`);
   });
 
-  it('should support post-only mode', async function() {
+  it('should support post-only mode', async (t) => {
     // Skip if Zernio not configured
     if (!process.env.ZERNIO_API_KEY) {
-      this.skip();
+      t.skip('ZERNIO_API_KEY not set');
+      return;
     }
 
     const result = await publishInstagramThumbGate({

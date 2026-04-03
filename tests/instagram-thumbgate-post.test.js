@@ -19,10 +19,11 @@ describe('Instagram ThumbGate Post', () => {
     assert.match(THUMBGATE_CAPTION, /npx mcp-memory-gateway init/);
   });
 
-  it('should post to Instagram when ZERNIO_API_KEY is set', async function() {
+  it('should post to Instagram when ZERNIO_API_KEY is set', async (t) => {
     // Skip if no API key configured
     if (!process.env.ZERNIO_API_KEY) {
-      this.skip();
+      t.skip('ZERNIO_API_KEY not set');
+      return;
     }
 
     const result = await postThumbGateToInstagram();
