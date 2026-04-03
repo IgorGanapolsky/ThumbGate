@@ -1166,10 +1166,42 @@ function captureFeedback(params) {
 
   appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
 
-  // Dedup: skip memory write if an identical memory already exists
-  const duplicateMemory = findDuplicateMemory(MEMORY_LOG_PATH, memoryRecord);
-  if (!duplicateMemory) {
-    appendJSONL(MEMORY_LOG_PATH, memoryRecord);
+  // Synthesis: merge similar lessons instead of creating duplicates
+  let synthesisResult = null;
+  try {
+    const { findSimilarLesson, mergeIntoExisting, shouldAutoPromote, synthesizePreventionRule, appendJSONLLocal } = require('./lesson-synthesis');
+    const similar = findSimilarLesson(MEMORY_LOG_PATH, memoryRecord);
+
+    if (similar) {
+      // Merge into existing lesson
+      const merged = mergeIntoExisting(MEMORY_LOG_PATH, similar.match, memoryRecord, feedbackEvent);
+      synthesisResult = { action: 'merged', existingId: similar.match.id, similarity: similar.similarity, occurrences: merged.occurrences };
+
+      // Auto-promote if threshold reached
+      if (shouldAutoPromote(merged)) {
+        const rule = synthesizePreventionRule(merged);
+        synthesisResult.autoPromoted = true;
+        synthesisResult.preventionRule = rule;
+        // Store the synthesized rule
+        const rulesPath = path.join(path.dirname(MEMORY_LOG_PATH), 'synthesized-rules.jsonl');
+        appendJSONLLocal(rulesPath, rule);
+      }
+    } else {
+      // No similar lesson — check exact duplicate, then store
+      const duplicateMemory = findDuplicateMemory(MEMORY_LOG_PATH, memoryRecord);
+      if (!duplicateMemory) {
+        memoryRecord.occurrences = 1;
+        appendJSONL(MEMORY_LOG_PATH, memoryRecord);
+      }
+      synthesisResult = { action: duplicateMemory ? 'exact-duplicate-skipped' : 'new-lesson' };
+    }
+  } catch (_synthErr) {
+    // Fallback to original behavior
+    const duplicateMemory = findDuplicateMemory(MEMORY_LOG_PATH, memoryRecord);
+    if (!duplicateMemory) {
+      appendJSONL(MEMORY_LOG_PATH, memoryRecord);
+    }
+    synthesisResult = { action: 'fallback', error: _synthErr.message };
   }
 
   // Dual-write to SQLite lesson DB — deferred to avoid blocking response
@@ -1211,6 +1243,7 @@ function captureFeedback(params) {
     ...(correctiveActions.length > 0 && { correctiveActions }),
     ...(reflection && { reflection }),
     ...(feedbackSession && { feedbackSession }),
+    ...(synthesisResult && { synthesis: synthesisResult }),
   };
 
   // Update statusline with lesson info (include proposed rule if reflection available)
