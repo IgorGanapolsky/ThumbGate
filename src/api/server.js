@@ -2137,6 +2137,81 @@ function createApiServer() {
       return;
     }
 
+
+    // User feedback → GitHub Issues
+    if (req.method === 'POST' && pathname === '/api/feedback/submit') {
+      const chunks = [];
+      req.on('data', (chunk) => chunks.push(chunk));
+      req.on('end', async () => {
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString());
+          const { category, message } = body;
+          if (!message || message.length < 5) {
+            sendJson(res, 400, { error: 'message too short' });
+            return;
+          }
+          // File as GitHub issue via API
+          const labels = ['user-feedback', category || 'bug'].filter(Boolean);
+          const title = (category === 'feature' ? '[Feature] ' : category === 'question' ? '[Question] ' : '[Bug] ') +
+            message.slice(0, 80) + (message.length > 80 ? '...' : '');
+          const issueBody = '## User Feedback\n\n' + message +
+            '\n\n---\n*Submitted via dashboard feedback widget*\n' +
+            '*Category: ' + (category || 'bug') + '*';
+
+          // Log locally first (always works, even without GitHub token)
+          const feedbackLogPath = path.join(getFeedbackPaths().FEEDBACK_DIR, 'user-feedback.jsonl');
+          const feedbackDir = path.dirname(feedbackLogPath);
+          if (!fs.existsSync(feedbackDir)) fs.mkdirSync(feedbackDir, { recursive: true });
+          fs.appendFileSync(feedbackLogPath, JSON.stringify({
+            category, message, timestamp: new Date().toISOString()
+          }) + '\n');
+
+          // Try GitHub Issues API if token available
+          const ghToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+          if (ghToken) {
+            const https = require('https');
+            const ghBody = JSON.stringify({ title, body: issueBody, labels });
+            const ghReq = https.request({
+              hostname: 'api.github.com',
+              path: '/repos/IgorGanapolsky/ThumbGate/issues',
+              method: 'POST',
+              headers: {
+                'Authorization': 'token ' + ghToken,
+                'Content-Type': 'application/json',
+                'User-Agent': 'ThumbGate-Feedback',
+                'Content-Length': Buffer.byteLength(ghBody)
+              }
+            }, (ghRes) => {
+              let d = '';
+              ghRes.on('data', c => d += c);
+              ghRes.on('end', () => {
+                try {
+                  const issue = JSON.parse(d);
+                  sendJson(res, 200, {
+                    success: true,
+                    issueNumber: issue.number,
+                    issueUrl: issue.html_url
+                  });
+                } catch {
+                  sendJson(res, 200, { success: true, issueNumber: null, issueUrl: null, note: 'logged locally' });
+                }
+              });
+            });
+            ghReq.on('error', () => {
+              sendJson(res, 200, { success: true, issueNumber: null, issueUrl: null, note: 'logged locally' });
+            });
+            ghReq.write(ghBody);
+            ghReq.end();
+          } else {
+            sendJson(res, 200, { success: true, issueNumber: null, issueUrl: null, note: 'logged locally (no GitHub token)' });
+          }
+        } catch (e) {
+          sendJson(res, 500, { error: 'feedback submission failed' });
+        }
+      });
+      return;
+    }
+
     if (req.method === 'POST' && pathname === '/api/newsletter') {
       const chunks = [];
       req.on('data', (chunk) => chunks.push(chunk));

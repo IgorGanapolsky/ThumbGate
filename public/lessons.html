@@ -117,6 +117,22 @@
     .filter-row { flex-wrap: wrap; }
     .rule-meta { flex-direction: column; gap: 8px; }
   }
+
+  /* Feedback widget */
+  .feedback-widget { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+  .feedback-toggle { background: var(--cyan); color: var(--bg); border: none; border-radius: 50px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(34,211,238,0.3); transition: transform 0.15s; }
+  .feedback-toggle:hover { transform: scale(1.05); }
+  .feedback-panel { display: none; position: absolute; bottom: 56px; right: 0; width: 340px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+  .feedback-panel.open { display: block; }
+  .feedback-panel h3 { font-size: 15px; margin-bottom: 12px; }
+  .feedback-panel textarea { width: 100%; min-height: 80px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px; font-size: 13px; font-family: inherit; resize: vertical; }
+  .feedback-panel textarea:focus { outline: none; border-color: var(--cyan); }
+  .feedback-panel select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 8px 10px; font-size: 13px; margin: 8px 0; }
+  .feedback-submit { background: var(--cyan); color: var(--bg); border: none; border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 8px; }
+  .feedback-submit:hover { opacity: 0.85; }
+  .feedback-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .feedback-success { color: var(--green); font-size: 13px; text-align: center; padding: 12px 0; }
+
 </style>
 </head>
 <body>
@@ -566,5 +582,51 @@ loadLive().then(function() {
   }
 });
 </script>
+
+<div class="feedback-widget">
+  <div class="feedback-panel" id="feedbackPanel">
+    <h3>Share feedback with ThumbGate team</h3>
+    <select id="feedbackCategory">
+      <option value="bug">Bug report</option>
+      <option value="feature">Feature request</option>
+      <option value="question">Question</option>
+    </select>
+    <textarea id="feedbackText" placeholder="What's on your mind? Be honest — we read every one."></textarea>
+    <button class="feedback-submit" id="feedbackSubmit" onclick="submitFeedback()">Submit</button>
+    <div id="feedbackResult"></div>
+  </div>
+  <button class="feedback-toggle" onclick="toggleFeedback()">💬 Feedback</button>
+</div>
+<script>
+function toggleFeedback() {
+  document.getElementById('feedbackPanel').classList.toggle('open');
+  document.getElementById('feedbackResult').innerHTML = '';
+}
+async function submitFeedback() {
+  var btn = document.getElementById('feedbackSubmit');
+  var text = document.getElementById('feedbackText').value.trim();
+  var category = document.getElementById('feedbackCategory').value;
+  if (!text) return;
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  try {
+    var res = await fetch('/api/feedback/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: category, message: text })
+    });
+    var data = await res.json();
+    if (data.success) {
+      document.getElementById('feedbackResult').innerHTML = '<div class="feedback-success">Thanks! Filed as <a href="' + data.issueUrl + '" target="_blank" style="color:var(--cyan)">#' + data.issueNumber + '</a></div>';
+      document.getElementById('feedbackText').value = '';
+    } else {
+      document.getElementById('feedbackResult').innerHTML = '<div style="color:var(--red);font-size:13px">Failed: ' + (data.error || 'unknown') + '</div>';
+    }
+  } catch (e) {
+    document.getElementById('feedbackResult').innerHTML = '<div style="color:var(--red);font-size:13px">Network error. Try again.</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Submit';
+}
+</script>
+
 </body>
 </html>
