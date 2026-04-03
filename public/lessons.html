@@ -339,8 +339,7 @@ function renderRules(rules) {
   if (!rules.length) { el.innerHTML = '<div class="empty">No rules match your filter</div>'; return; }
   el.innerHTML = rules.map(function(r) {
     var sev = r.severity || getSeverity(r);
-    var prevented = r.prevented || Math.max(0, Math.floor((r.occurrences || 0) * 0.6));
-    return '<div class="rule-card">' +
+    return '<div class="rule-card" data-rule-id="' + escHtml(r.id || '') + '">' +
       '<div class="rule-header">' +
         '<div class="rule-title">' + escHtml(r.title || r.id || 'Rule') + '</div>' +
         '<span class="rule-severity ' + sev + '">' + sev + '</span>' +
@@ -348,7 +347,6 @@ function renderRules(rules) {
       (r.context ? '<div class="rule-context">' + escHtml(r.context) + '</div>' : '') +
       '<div class="rule-meta">' +
         '<div class="rule-meta-item">Triggered <span class="value">' + (r.occurrences || 0) + '</span> times</div>' +
-        (prevented > 0 ? '<span class="rule-effectiveness">Prevented ' + prevented + ' mistakes</span>' : '') +
         (r.lastTriggered ? '<div class="rule-meta-item">Last: <span class="value">' + escHtml(r.lastTriggered) + '</span></div>' : '') +
       '</div>' +
       (r.tags && r.tags.length ? '<div class="rule-tags">' + r.tags.map(function(t) { return '<span class="tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
@@ -381,21 +379,44 @@ function renderInsights(data) {
   var effective = document.getElementById('insightEffective');
   var stale = document.getElementById('insightStale');
 
-  var topMistakes = allRules.filter(function(r) { return r.severity === 'critical'; }).slice(0, 5);
-  var topEffective = allRules.slice().sort(function(a, b) { return (b.prevented || 0) - (a.prevented || 0); }).slice(0, 5);
-  var staleRules = allRules.filter(function(r) { return !r.lastTriggered || r.lastTriggered === 'never'; });
+  // Dedup by title — keep the one with highest occurrences
+  var seen = {};
+  var dedupedRules = allRules.filter(function(r) {
+    var key = (r.title || '').trim().toLowerCase();
+    if (!key) return false;
+    if (seen[key] && seen[key].occurrences >= (r.occurrences || 0)) return false;
+    seen[key] = r;
+    return true;
+  });
+
+  var topMistakes = dedupedRules.filter(function(r) { return r.severity === 'critical'; })
+    .sort(function(a, b) { return (b.occurrences || 0) - (a.occurrences || 0); }).slice(0, 5);
+  var topEffective = dedupedRules.slice().sort(function(a, b) { return (b.occurrences || 0) - (a.occurrences || 0); })
+    .filter(function(r) { return (r.occurrences || 0) > 1; }).slice(0, 5);
+  var staleRules = dedupedRules.filter(function(r) { return !r.lastTriggered || r.lastTriggered === 'never'; });
+
+  function insightRow(r, badge) {
+    var title = r.title.length > 80 ? r.title.slice(0, 77) + '...' : r.title;
+    return '<li style="cursor:pointer" onclick="switchTab(\'rules\'); searchAndHighlight(\'' + escHtml(r.id) + '\')">'
+      + '<span title="' + escHtml(r.title) + '">' + escHtml(title) + '</span>' + badge + '</li>';
+  }
 
   mistakes.innerHTML = topMistakes.length ? topMistakes.map(function(r) {
-    return '<li><span>' + escHtml(r.title) + '</span><span style="color:var(--red);font-weight:600">' + (r.occurrences || 0) + 'x</span></li>';
+    return insightRow(r, '<span style="color:var(--red);font-weight:600">' + (r.occurrences || 0) + 'x</span>');
   }).join('') : '<li><span style="color:var(--green)">No critical mistakes this week</span></li>';
 
   effective.innerHTML = topEffective.length ? topEffective.map(function(r) {
-    return '<li><span>' + escHtml(r.title) + '</span><span class="rule-effectiveness">Prevented ' + (r.prevented || 0) + '</span></li>';
-  }).join('') : '<li><span>No prevention data yet</span></li>';
+    return insightRow(r, '<span class="rule-effectiveness">Triggered ' + (r.occurrences || 0) + 'x</span>');
+  }).join('') : '<li><span>No high-frequency rules yet</span></li>';
 
   stale.innerHTML = staleRules.length ? staleRules.map(function(r) {
-    return '<li><span>' + escHtml(r.title) + '</span><span style="color:var(--text-muted)">Archive?</span></li>';
+    return insightRow(r, '<span style="color:var(--text-muted)">Archive?</span>');
   }).join('') : '<li><span style="color:var(--green)">All rules are active</span></li>';
+}
+
+function searchAndHighlight(ruleId) {
+  var el = document.querySelector('[data-rule-id="' + ruleId + '"]');
+  if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.style.borderColor = 'var(--cyan)'; setTimeout(function() { el.style.borderColor = ''; }, 2000); }
 }
 
 function deriveSeverity(lesson) {
