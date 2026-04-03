@@ -217,11 +217,16 @@
   "keywords": [
     "rlhf",
     "mcp",
+    "mcp-server",
     "ai-agents",
+    "agent-skills",
+    "skill",
     "context-engineering",
     "pre-action-gates",
     "ai-agent-safety",
     "guardrails",
+    "feedback-memory",
+    "thumbgate",
     "llmops",
     "dpo",
     "agentic-commerce",
@@ -236,7 +241,9 @@
     "claude-skill",
     "claude-plugin",
     "cursor",
-    "codex"
+    "codex",
+    "safety",
+    "enforcement"
   ],
   "author": "Igor Ganapolsky",
   "license": "MIT",
