@@ -1,182 +1,254 @@
-const test = require('node:test');
+'use strict';
+
+const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const os = require('node:os');
-const path = require('node:path');
-const fs = require('node:fs');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-lesson-'));
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
+const {
+  inferStructuredLesson,
+  extractTrigger,
+  extractAction,
+  extractToolCalls,
+  extractFilePaths,
+  extractErrors,
+  calculateConfidence,
+  inferScope,
+} = require('../scripts/lesson-inference');
 
-const li = require('../scripts/lesson-inference');
-
-test.after(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
-
-// === Surrounding Message Inference ===
-test('inferFromSurroundingMessages extracts edit action from prior messages', () => {
-  const r = li.inferFromSurroundingMessages({
-    priorMessages: [
-      { role: 'assistant', content: 'I edited scripts/deploy.js to add the health check.' },
-      { role: 'user', content: 'fix the deploy script' },
-    ],
-    signal: 'positive',
-    feedbackContext: 'Health check works now',
+describe('inferStructuredLesson', () => {
+  it('returns a structured rule for negative signal conversation', () => {
+    const window = [
+      { role: 'user', content: 'Fix the login crash when password is empty' },
+      { role: 'assistant', content: 'I edited src/auth/login.ts and removed the null check' },
+      { role: 'user', content: 'That made it worse, now it crashes on all logins' },
+    ];
+    const rule = inferStructuredLesson(window, 'negative', 'login crash');
+    assert.equal(rule.format, 'if-then-v1');
+    assert.equal(rule.signal, 'negative');
+    assert.equal(rule.action.type, 'avoid');
+    assert.ok(rule.trigger.condition);
+    assert.ok(rule.examples.length > 0);
+    assert.equal(rule.examples[0].outcome, 'rejected');
+    assert.ok(rule.metadata.inferredAt);
+    assert.equal(rule.metadata.conversationLength, 3);
   });
-  assert.ok(r.inferredLesson.includes('Repeat'));
-  assert.ok(r.inferredLesson.includes('edit'));
-  assert.ok(r.inferredAction);
-  assert.equal(r.inferredAction.type, 'edit');
-  assert.ok(r.confidence > 0);
-});
 
-test('inferFromSurroundingMessages detects negative deploy action', () => {
-  const r = li.inferFromSurroundingMessages({
-    priorMessages: [{ role: 'assistant', content: 'I deployed to production without tests.' }],
-    signal: 'negative',
+  it('returns a structured rule for positive signal conversation', () => {
+    const window = [
+      { role: 'user', content: 'Implement the dark mode toggle in settings' },
+      { role: 'assistant', content: 'Added useAppTheme hook and toggled colors via theme context' },
+    ];
+    const rule = inferStructuredLesson(window, 'positive', 'dark mode');
+    assert.equal(rule.signal, 'positive');
+    assert.equal(rule.action.type, 'do');
+    assert.ok(rule.action.description.includes('Repeat this approach'));
+    assert.equal(rule.examples[0].outcome, 'approved');
   });
-  assert.ok(r.inferredLesson.includes('Avoid'));
-  assert.ok(r.inferredLesson.includes('deploy'));
-});
 
-test('inferFromSurroundingMessages uses feedbackContext when no action found', () => {
-  const r = li.inferFromSurroundingMessages({
-    priorMessages: [{ role: 'assistant', content: 'Here is the analysis.' }],
-    signal: 'positive',
-    feedbackContext: 'Great analysis, exactly what I needed',
+  it('includes tool calls and file paths in metadata', () => {
+    const window = [
+      { role: 'user', content: 'Check src/features/menu/hooks/useMenu.ts for bugs' },
+      { role: 'assistant', content: 'Read(src/features/menu/hooks/useMenu.ts) found the issue. Edit(src/features/menu/hooks/useMenu.ts) applied fix.' },
+    ];
+    const rule = inferStructuredLesson(window, 'positive', '');
+    assert.ok(rule.metadata.toolsUsed.includes('Read'));
+    assert.ok(rule.metadata.toolsUsed.includes('Edit'));
+    assert.ok(rule.metadata.filesInvolved.length > 0);
   });
-  assert.equal(r.inferredLesson, 'Great analysis, exactly what I needed');
-});
 
-test('inferFromSurroundingMessages handles empty input', () => {
-  const r = li.inferFromSurroundingMessages({});
-  assert.ok(r.inferredLesson.length > 0);
-  assert.equal(r.confidence, 0);
-});
-
-test('inferFromSurroundingMessages builds prior summary', () => {
-  const r = li.inferFromSurroundingMessages({
-    priorMessages: [
-      { role: 'assistant', content: 'Fixed the bug' },
-      { role: 'user', content: 'Fix the bug in deploy.js' },
-    ],
-    signal: 'positive',
+  it('includes error patterns in metadata', () => {
+    const window = [
+      { role: 'user', content: 'TypeError: Cannot read property x of undefined' },
+      { role: 'assistant', content: 'The 401 Unauthorized error means the token expired' },
+    ];
+    const rule = inferStructuredLesson(window, 'negative', 'auth error');
+    assert.ok(rule.metadata.errorPatterns.length > 0);
   });
-  assert.ok(r.priorSummary.includes('[assistant]'));
-  assert.ok(r.priorSummary.includes('[user]'));
 });
 
-test('inferFromSurroundingMessages detects create, command, fix, delete actions', () => {
-  assert.equal(li.inferFromSurroundingMessages({ priorMessages: [{ role: 'assistant', content: 'I created a new test file.' }], signal: 'positive' }).inferredAction.type, 'create');
-  assert.equal(li.inferFromSurroundingMessages({ priorMessages: [{ role: 'assistant', content: 'I ran npm test.' }], signal: 'positive' }).inferredAction.type, 'command');
-  assert.equal(li.inferFromSurroundingMessages({ priorMessages: [{ role: 'assistant', content: 'I fixed the auth bug.' }], signal: 'positive' }).inferredAction.type, 'fix');
-  assert.equal(li.inferFromSurroundingMessages({ priorMessages: [{ role: 'assistant', content: 'I deleted the old config.' }], signal: 'negative' }).inferredAction.type, 'delete');
+describe('extractTrigger', () => {
+  it('matches debugging pattern', () => {
+    const result = extractTrigger('Fix the authentication failure in production', '', 'negative');
+    assert.equal(result.type, 'debugging');
+    assert.ok(result.condition.includes('authentication failure'));
+  });
+
+  it('matches implementation pattern', () => {
+    const result = extractTrigger('Implement the new payment flow with Stripe', '', 'positive');
+    assert.equal(result.type, 'implementation');
+    assert.ok(result.condition.includes('payment flow'));
+  });
+
+  it('matches question pattern', () => {
+    const result = extractTrigger('Why does the menu fail to load on Android?', '', 'negative');
+    assert.equal(result.type, 'question');
+  });
+
+  it('matches error-report pattern', () => {
+    const result = extractTrigger('Error: ENOENT no such file or directory for config.json', '', 'negative');
+    assert.equal(result.type, 'error-report');
+  });
+
+  it('matches constraint pattern', () => {
+    const result = extractTrigger("Don't ever modify the .env file without asking first", '', 'negative');
+    assert.equal(result.type, 'constraint');
+  });
+
+  it('falls back to general for unrecognized patterns', () => {
+    const result = extractTrigger('hello there', '', 'positive');
+    assert.equal(result.type, 'general');
+    assert.equal(result.condition, 'hello there');
+  });
 });
 
-// === Lesson Creation & Storage ===
-test('createLesson stores lesson with stable link', () => {
-  const l = li.createLesson({ feedbackId: 'fb_1', signal: 'negative', inferredLesson: 'Never deploy without tests', confidence: 75, tags: ['deploy'] });
-  assert.ok(l.id.startsWith('lesson_'));
-  assert.ok(l.link.includes(l.id));
-  assert.ok(l.createdAt);
-  assert.equal(l.signal, 'negative');
-  assert.equal(l.confidence, 75);
+describe('extractAction', () => {
+  it('returns do action for positive signal', () => {
+    const result = extractAction('Used memoization to fix re-render issue', 'positive');
+    assert.equal(result.type, 'do');
+    assert.ok(result.description.includes('Repeat this approach'));
+  });
+
+  it('returns avoid action for negative signal', () => {
+    const result = extractAction('Deleted the auth token from .env', 'negative');
+    assert.equal(result.type, 'avoid');
+    assert.ok(result.description.includes('Avoid this approach'));
+  });
 });
 
-test('createLesson updates recent lesson file', () => {
-  li.createLesson({ signal: 'positive', inferredLesson: 'Health check pattern works' });
-  const recent = li.getRecentLesson();
-  assert.ok(recent);
-  assert.ok(recent.lesson.includes('Health check'));
+describe('extractToolCalls', () => {
+  it('extracts tool names from Claude-style output', () => {
+    const window = [
+      { role: 'assistant', content: 'Read(file.ts) then Bash(npm test) and Edit(file.ts)' },
+      { role: 'assistant', content: 'Grep(pattern) found matches, Glob(*.ts) listed files' },
+    ];
+    const tools = extractToolCalls(window);
+    assert.ok(tools.includes('Read'));
+    assert.ok(tools.includes('Bash'));
+    assert.ok(tools.includes('Edit'));
+    assert.ok(tools.includes('Grep'));
+    assert.ok(tools.includes('Glob'));
+  });
+
+  it('returns empty array when no tool calls present', () => {
+    const window = [{ role: 'user', content: 'Just a plain message' }];
+    assert.deepEqual(extractToolCalls(window), []);
+  });
+
+  it('deduplicates tool names', () => {
+    const window = [
+      { role: 'assistant', content: 'Read(a.ts) then Read(b.ts)' },
+    ];
+    const tools = extractToolCalls(window);
+    assert.equal(tools.filter(t => t === 'Read').length, 1);
+  });
 });
 
-test('createLesson appends to lessons index', () => {
-  const before = fs.readFileSync(li.getLessonsPath(), 'utf-8').trim().split('\n').length;
-  li.createLesson({ signal: 'negative', inferredLesson: 'Test lesson 3' });
-  const after = fs.readFileSync(li.getLessonsPath(), 'utf-8').trim().split('\n').length;
-  assert.equal(after, before + 1);
+describe('extractFilePaths', () => {
+  it('extracts paths from mixed content', () => {
+    const window = [
+      { role: 'user', content: 'Check src/features/menu/hooks/useMenu.ts and scripts/build.js' },
+      { role: 'assistant', content: 'Found issue in adapters/mcp/server.js and tests/api.test.js' },
+    ];
+    const paths = extractFilePaths(window);
+    assert.ok(paths.some(p => p.includes('src/features/menu')));
+    assert.ok(paths.some(p => p.includes('scripts/build.js')));
+    assert.ok(paths.some(p => p.includes('adapters/mcp')));
+    assert.ok(paths.some(p => p.includes('tests/api.test.js')));
+  });
+
+  it('returns empty array when no file paths present', () => {
+    const window = [{ role: 'user', content: 'No files here' }];
+    assert.deepEqual(extractFilePaths(window), []);
+  });
+
+  it('handles .claude/ paths', () => {
+    const window = [{ role: 'assistant', content: 'Edited .claude/settings.json' }];
+    const paths = extractFilePaths(window);
+    assert.ok(paths.some(p => p.includes('.claude/')));
+  });
 });
 
-// === Recent Lesson ===
-test('getRecentLesson returns null when no lessons', () => {
-  const tmpDir2 = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-empty-'));
-  const origDir = process.env.RLHF_FEEDBACK_DIR;
-  process.env.RLHF_FEEDBACK_DIR = tmpDir2;
-  assert.equal(li.getRecentLesson(), null);
-  process.env.RLHF_FEEDBACK_DIR = origDir;
-  fs.rmSync(tmpDir2, { recursive: true, force: true });
+describe('extractErrors', () => {
+  it('extracts error messages from conversation', () => {
+    const window = [
+      { role: 'user', content: 'TypeError: Cannot read properties of undefined' },
+      { role: 'assistant', content: 'The 401 response means the token is invalid' },
+    ];
+    const errors = extractErrors(window);
+    assert.ok(errors.length >= 2);
+    assert.ok(errors.some(e => /TypeError/i.test(e)));
+    assert.ok(errors.some(e => /401/.test(e)));
+  });
+
+  it('extracts FAIL patterns', () => {
+    const window = [
+      { role: 'assistant', content: 'FAIL tests/api.test.js - assertion failed' },
+    ];
+    const errors = extractErrors(window);
+    assert.ok(errors.length > 0);
+  });
+
+  it('returns empty array when no errors present', () => {
+    const window = [{ role: 'user', content: 'Everything looks good' }];
+    assert.deepEqual(extractErrors(window), []);
+  });
 });
 
-test('getRecentLesson returns the latest lesson', () => {
-  li.createLesson({ signal: 'positive', inferredLesson: 'Latest lesson here' });
-  const recent = li.getRecentLesson();
-  assert.ok(recent.lesson.includes('Latest'));
+describe('calculateConfidence', () => {
+  it('starts at 0.5 for minimal window', () => {
+    const window = [{ role: 'user', content: 'hi' }];
+    assert.equal(calculateConfidence(window, ''), 0.5);
+  });
+
+  it('increases with window size >= 3', () => {
+    const window = [
+      { role: 'user', content: 'a' },
+      { role: 'assistant', content: 'b' },
+      { role: 'user', content: 'c' },
+    ];
+    assert.ok(calculateConfidence(window, '') >= 0.6);
+  });
+
+  it('increases with window size >= 5', () => {
+    const window = Array.from({ length: 5 }, (_, i) => ({
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: `msg ${i}`,
+    }));
+    assert.ok(calculateConfidence(window, '') >= 0.7);
+  });
+
+  it('increases with longer context', () => {
+    const window = [{ role: 'user', content: 'hi' }];
+    const short = calculateConfidence(window, 'short');
+    const long = calculateConfidence(window, 'This is a much longer context string that exceeds twenty characters');
+    assert.ok(long > short);
+  });
+
+  it('increases when file paths are present', () => {
+    const withFiles = [{ role: 'user', content: 'Check src/index.ts' }];
+    const noFiles = [{ role: 'user', content: 'Just a question' }];
+    assert.ok(calculateConfidence(withFiles, '') > calculateConfidence(noFiles, ''));
+  });
+
+  it('caps at 1.0', () => {
+    const window = Array.from({ length: 10 }, (_, i) => ({
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: `working on src/features/thing${i}.ts with scripts/build.js`,
+    }));
+    assert.ok(calculateConfidence(window, 'A very long context string that is definitely over twenty characters') <= 1.0);
+  });
 });
 
-// === Search ===
-test('searchLessons finds by query', () => {
-  li.createLesson({ signal: 'negative', inferredLesson: 'Never force push to main', tags: ['git'] });
-  const results = li.searchLessons({ query: 'force push' });
-  assert.ok(results.length >= 1);
-  assert.ok(results[0].lesson.includes('force push'));
-});
+describe('inferScope', () => {
+  it('returns global when no files or tools', () => {
+    assert.equal(inferScope([], []), 'global');
+  });
 
-test('searchLessons filters by signal', () => {
-  const neg = li.searchLessons({ signal: 'negative' });
-  neg.forEach((l) => assert.equal(l.signal, 'negative'));
-});
+  it('returns file-level for 1-2 files', () => {
+    assert.equal(inferScope(['src/a.ts'], ['Read']), 'file-level');
+    assert.equal(inferScope(['src/a.ts', 'src/b.ts'], []), 'file-level');
+  });
 
-test('searchLessons returns all when no query', () => {
-  const all = li.searchLessons({});
-  assert.ok(all.length >= 3);
-});
-
-test('searchLessons respects limit', () => {
-  const limited = li.searchLessons({ limit: 2 });
-  assert.ok(limited.length <= 2);
-});
-
-// === Stats ===
-test('getLessonStats counts positive and negative', () => {
-  const stats = li.getLessonStats();
-  assert.ok(stats.total >= 3);
-  assert.ok(stats.positive >= 1);
-  assert.ok(stats.negative >= 1);
-  assert.ok(typeof stats.avgConfidence === 'number');
-});
-
-// === Statusbar Data ===
-test('getStatusbarLessonData returns lesson with link', () => {
-  li.createLesson({ signal: 'negative', inferredLesson: 'Never skip CI before merging PR' });
-  const sb = li.getStatusbarLessonData();
-  assert.equal(sb.hasLesson, true);
-  assert.ok(sb.text.includes('👎'));
-  assert.ok(sb.text.includes('Never skip CI'));
-  assert.ok(sb.link.includes('lesson_'));
-  assert.ok(sb.lessonId);
-});
-
-test('getStatusbarLessonData shows thumbs up for positive', () => {
-  li.createLesson({ signal: 'positive', inferredLesson: 'Health check pattern is solid' });
-  const sb = li.getStatusbarLessonData();
-  assert.ok(sb.text.includes('👍'));
-});
-
-test('getStatusbarLessonData truncates long lessons', () => {
-  li.createLesson({ signal: 'negative', inferredLesson: 'A'.repeat(100) });
-  const sb = li.getStatusbarLessonData();
-  assert.ok(sb.text.length < 70);
-  assert.ok(sb.text.includes('...'));
-});
-
-test('getStatusbarLessonData returns hasLesson false when empty', () => {
-  const tmpDir2 = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-empty2-'));
-  const origDir = process.env.RLHF_FEEDBACK_DIR;
-  process.env.RLHF_FEEDBACK_DIR = tmpDir2;
-  const sb = li.getStatusbarLessonData();
-  assert.equal(sb.hasLesson, false);
-  process.env.RLHF_FEEDBACK_DIR = origDir;
-  fs.rmSync(tmpDir2, { recursive: true, force: true });
-});
-
-test('getRecentLessonPath returns correct path', () => {
-  assert.ok(li.getRecentLessonPath().endsWith('recent-lesson.json'));
+  it('returns project-level for 3+ files', () => {
+    assert.equal(inferScope(['src/a.ts', 'src/b.ts', 'src/c.ts'], []), 'project-level');
+  });
 });

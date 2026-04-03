@@ -209,8 +209,83 @@ function getStatusbarLessonData() {
   };
 }
 
+// ---------------------------------------------------------------------------
+// 4. Structured IF/THEN Lesson Extraction (v0.9.4)
+// ---------------------------------------------------------------------------
+
+function inferStructuredLesson(conversationWindow, signal, context) {
+  const userMessages = conversationWindow.filter(m => m.role === 'user');
+  const assistantMessages = conversationWindow.filter(m => m.role === 'assistant');
+  const lastUser = userMessages[userMessages.length - 1]?.content || '';
+  const lastAssistant = assistantMessages[assistantMessages.length - 1]?.content || '';
+
+  return {
+    format: 'if-then-v1',
+    trigger: extractTrigger(lastUser),
+    action: extractAction(lastAssistant, signal),
+    signal,
+    confidence: calculateConfidence(conversationWindow, context),
+    scope: inferScope(extractFilePaths(conversationWindow), extractToolCalls(conversationWindow)),
+    examples: [{ userIntent: lastUser.slice(0, 300), assistantAction: lastAssistant.slice(0, 300), outcome: signal === 'positive' ? 'approved' : 'rejected' }],
+    metadata: { toolsUsed: extractToolCalls(conversationWindow), filesInvolved: extractFilePaths(conversationWindow).slice(0, 10), errorPatterns: extractErrors(conversationWindow).slice(0, 5), conversationLength: conversationWindow.length, inferredAt: new Date().toISOString() },
+  };
+}
+
+function extractTrigger(userMsg) {
+  const patterns = [
+    { regex: /(?:fix|debug|solve|investigate)\s+(.{10,80})/i, type: 'debugging' },
+    { regex: /(?:implement|add|create|build)\s+(.{10,80})/i, type: 'implementation' },
+    { regex: /(?:why|how|what|where)\s+(.{10,80})/i, type: 'question' },
+    { regex: /(?:error|fail|crash|broken|wrong)\s*[:\-]?\s*(.{10,80})/i, type: 'error-report' },
+    { regex: /(?:don't|never|stop|avoid)\s+(.{10,80})/i, type: 'constraint' },
+  ];
+  for (const p of patterns) { const m = userMsg.match(p.regex); if (m) return { condition: m[1].trim(), type: p.type }; }
+  return { condition: userMsg.slice(0, 120).trim(), type: 'general' };
+}
+
+function extractAction(assistantMsg, signal) {
+  return signal === 'positive'
+    ? { type: 'do', description: `Repeat this approach: ${assistantMsg.slice(0, 200).trim()}` }
+    : { type: 'avoid', description: `Avoid this approach: ${assistantMsg.slice(0, 200).trim()}` };
+}
+
+function extractToolCalls(window) {
+  const tools = new Set();
+  for (const msg of window) { const m = (msg.content || '').match(/(?:Read|Edit|Write|Bash|Grep|Glob|Agent|WebFetch)\s*\(/g); if (m) m.forEach(t => tools.add(t.replace(/\s*\($/, ''))); }
+  return [...tools];
+}
+
+function extractFilePaths(window) {
+  const paths = new Set();
+  for (const msg of window) { const m = (msg.content || '').match(/(?:src\/|scripts\/|tests\/|\.claude\/|adapters\/)[^\s,)'"<>]+/g); if (m) m.forEach(p => paths.add(p)); }
+  return [...paths];
+}
+
+function extractErrors(window) {
+  const errors = new Set();
+  for (const msg of window) { const m = (msg.content || '').match(/(?:Error|FAIL|error|TypeError|ReferenceError|401|403|404|500)[:\s][^\n]{0,100}/gi); if (m) m.forEach(e => errors.add(e.trim())); }
+  return [...errors];
+}
+
+function calculateConfidence(window, context) {
+  let s = 0.5;
+  if (window.length >= 3) s += 0.1;
+  if (window.length >= 5) s += 0.1;
+  if (context && context.length > 20) s += 0.1;
+  if (window.some(m => /(?:src\/|scripts\/)/.test(m.content || ''))) s += 0.1;
+  return Math.min(s, 1.0);
+}
+
+function inferScope(filePaths, toolCalls) {
+  if (filePaths.length === 0 && toolCalls.length === 0) return 'global';
+  if (filePaths.length <= 2) return 'file-level';
+  return 'project-level';
+}
+
 module.exports = {
   inferFromSurroundingMessages, createLesson, getRecentLesson,
   searchLessons, getLessonStats, getStatusbarLessonData,
   getLessonsPath, getRecentLessonPath,
+  inferStructuredLesson, extractTrigger, extractAction, extractToolCalls,
+  extractFilePaths, extractErrors, calculateConfidence, inferScope,
 };

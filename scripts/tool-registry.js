@@ -49,6 +49,18 @@ const TOOLS = [
         },
         tags: { type: 'array', items: { type: 'string' } },
         skill: { type: 'string' },
+        conversationWindow: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              role: { type: 'string', enum: ['user', 'assistant'] },
+              content: { type: 'string' },
+              timestamp: { type: 'string' },
+            },
+          },
+          description: 'Last 5-10 conversation turns before the feedback signal. Raw messages, not summaries.',
+        },
         rubricScores: {
           type: 'array',
           items: {
@@ -93,6 +105,19 @@ const TOOLS = [
         category: { type: 'string', enum: ['error', 'learning', 'preference'] },
         tags: { type: 'array', items: { type: 'string' }, description: 'Require all tags to be present on a lesson' },
       },
+    },
+  }),
+  readOnlyTool({
+    name: 'retrieve_lessons',
+    description: 'Retrieve the most relevant lessons for a given tool/action context. Use in PreToolUse hooks for per-action guidance.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        toolName: { type: 'string', description: 'The tool being called (e.g., Bash, Edit, Read)' },
+        actionContext: { type: 'string', description: 'Description of what the tool call is doing' },
+        maxResults: { type: 'number', description: 'Max lessons to return (default 5)' },
+      },
+      required: ['toolName'],
     },
   }),
   readOnlyTool({
@@ -670,6 +695,43 @@ const TOOLS = [
       },
     },
   }),
+  readOnlyTool({
+    name: 'open_feedback_session',
+    description: 'Open a feedback session after thumbs up/down. Follow-up messages will be captured for 60s.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        feedbackEventId: { type: 'string', description: 'The feedback event ID from capture_feedback' },
+        signal: { type: 'string', enum: ['up', 'down'] },
+        initialContext: { type: 'string' },
+      },
+      required: ['feedbackEventId', 'signal'],
+    },
+  }),
+  destructiveTool({
+    name: 'append_feedback_context',
+    description: 'Append a follow-up message to an open feedback session. Call this when the user types additional context after giving thumbs up/down.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sessionId: { type: 'string' },
+        message: { type: 'string', description: 'The follow-up message from the user' },
+        role: { type: 'string', enum: ['user', 'assistant'], default: 'user' },
+      },
+      required: ['sessionId', 'message'],
+    },
+  }),
+  destructiveTool({
+    name: 'finalize_feedback_session',
+    description: 'Finalize a feedback session and re-infer the lesson with all follow-up context.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sessionId: { type: 'string' },
+      },
+      required: ['sessionId'],
+    },
+  }),
   destructiveTool({
     name: 'webhook_deliver',
     description: 'Send a message to Teams, Slack, or Discord via webhook. Use for status reports, alerts, and notifications.',
@@ -681,6 +743,30 @@ const TOOLS = [
         webhook_url: { type: 'string', description: 'Webhook URL for the target channel' },
         title: { type: 'string', description: 'Message title' },
         message: { type: 'string', description: 'Message body (markdown supported)' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'reflect_on_feedback',
+    description: 'Run a post-mortem analysis on negative feedback. Returns a proposed rule and recurrence info.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        conversationWindow: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              role: { type: 'string', enum: ['user', 'assistant'] },
+              content: { type: 'string' },
+              timestamp: { type: 'string' },
+            },
+          },
+          description: 'Last 5-10 conversation turns before the feedback signal.',
+        },
+        context: { type: 'string', description: 'One-line context from the caller' },
+        whatWentWrong: { type: 'string', description: 'What the caller said went wrong' },
+        feedbackEventId: { type: 'string', description: 'ID of a previously captured feedback event' },
       },
     },
   }),

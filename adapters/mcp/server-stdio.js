@@ -68,6 +68,9 @@ const {
   searchLessons,
 } = require('../../scripts/lesson-search');
 const {
+  retrieveRelevantLessons,
+} = require('../../scripts/lesson-retrieval');
+const {
   searchRlhf,
 } = require('../../scripts/rlhf-search');
 const { checkLimit, UPGRADE_MESSAGE } = require('../../scripts/rate-limiter');
@@ -77,6 +80,7 @@ const {
   runHarness,
 } = require('../../scripts/natural-language-harness');
 const { TOOLS } = require('../../scripts/tool-registry');
+const { reflect: reflectOnFeedback } = require('../../scripts/reflector-agent');
 
 const PRO_CHECKOUT_URL = 'https://rlhf-feedback-loop-production.up.railway.app/checkout/pro';
 
@@ -92,8 +96,13 @@ function enforceLimit(action) {
   }
 }
 const { bootstrapInternalAgent } = require('../../scripts/internal-agent-bootstrap');
+const {
+  openSession: openFeedbackSession,
+  appendToSession: appendFeedbackContext,
+  finalizeSession: finalizeFeedbackSession,
+} = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.9.3' };
+const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.9.4' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -379,6 +388,12 @@ async function callToolInner(name, args) {
         category: args.category,
         tags: Array.isArray(args.tags) ? args.tags : [],
       }));
+    case 'retrieve_lessons':
+      return toTextResult(retrieveRelevantLessons(
+        args.toolName,
+        args.actionContext || '',
+        { maxResults: Number(args.maxResults || 5) },
+      ));
     case 'search_rlhf':
       enforceLimit('search_rlhf');
       return toTextResult(searchRlhf({
@@ -391,6 +406,14 @@ async function callToolInner(name, args) {
       return toTextResult(analyzeFeedback());
     case 'diagnose_failure':
       return buildDiagnoseFailureResponse(args);
+    case 'reflect_on_feedback':
+      return toTextResult(reflectOnFeedback({
+        conversationWindow: args.conversationWindow || [],
+        context: args.context || '',
+        whatWentWrong: args.whatWentWrong || '',
+        structuredRule: null,
+        feedbackEvent: args.feedbackEventId ? { id: args.feedbackEventId } : null,
+      }));
     case 'list_intents':
       return toTextResult(listIntents({
         mcpProfile: args.mcpProfile,
@@ -540,6 +563,12 @@ async function callToolInner(name, args) {
       return toTextResult({ harnesses: listHarnesses({ tag: args.tag }) });
     case 'run_harness':
       return toTextResult(runHarness(args.harness, args.inputs || {}, { jobId: args.jobId }));
+    case 'open_feedback_session':
+      return toTextResult(openFeedbackSession(args.feedbackEventId, args.signal, args.initialContext));
+    case 'append_feedback_context':
+      return toTextResult(appendFeedbackContext(args.sessionId, args.message, args.role));
+    case 'finalize_feedback_session':
+      return toTextResult(finalizeFeedbackSession(args.sessionId));
     default:
       throw new Error(`Unsupported tool: ${name}`);
   }

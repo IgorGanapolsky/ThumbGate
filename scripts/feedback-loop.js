@@ -82,6 +82,48 @@ const DOMAIN_CATEGORIES = [
 const HOME = process.env.HOME || process.env.USERPROFILE || '';
 const pendingBackgroundSideEffects = new Set();
 
+/**
+ * Update the statusline cache with latest lesson info after feedback capture.
+ * The statusline.sh script reads this cache to display lesson context in Claude Code's status bar.
+ */
+function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, lesson, turnCount }) {
+  try {
+    const cacheDir = process.env.RLHF_FEEDBACK_DIR || HOME || '.';
+    const cachePath = path.join(cacheDir, '.rlhf', 'statusline_cache.json');
+    let cache = {};
+    try {
+      cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    } catch { /* cache may not exist yet */ }
+
+    if (accepted) {
+      const icon = signal === 'positive' ? '\u2705' : '\u274C';
+      const summary = (lesson || '').slice(0, 80).replace(/\n/g, ' ');
+      cache.last_lesson = {
+        icon,
+        memoryId: memoryId || null,
+        feedbackId: feedbackId || null,
+        signal: signal || null,
+        summary,
+        turnCount: turnCount || 0,
+        timestamp: Math.floor(Date.now() / 1000),
+      };
+    } else {
+      cache.last_lesson = {
+        icon: '\u26A0\uFE0F',
+        memoryId: null,
+        feedbackId: feedbackId || null,
+        signal: signal || null,
+        summary: 'Feedback needs detail \u2014 describe what worked/failed',
+        turnCount: 0,
+        timestamp: Math.floor(Date.now() / 1000),
+      };
+    }
+    cache.updated_at = String(Math.floor(Date.now() / 1000));
+    fs.mkdirSync(path.dirname(cachePath), { recursive: true });
+    fs.writeFileSync(cachePath, JSON.stringify(cache));
+  } catch { /* statusline update is best-effort */ }
+}
+
 function buildPathsFromDir(d) {
   return {
     FEEDBACK_DIR: d,
@@ -767,6 +809,41 @@ function inferSemanticTags(context = '') {
   return Array.from(tags);
 }
 
+function inferLessonFromConversation(conversationWindow, signal) {
+  if (!Array.isArray(conversationWindow) || conversationWindow.length === 0) return null;
+
+  const userMessages = conversationWindow.filter(m => m.role === 'user');
+  const assistantMessages = conversationWindow.filter(m => m.role === 'assistant');
+
+  const lastUserMsg = userMessages[userMessages.length - 1]?.content || '';
+  const lastAssistantMsg = assistantMessages[assistantMessages.length - 1]?.content || '';
+
+  const userIntent = lastUserMsg.slice(0, 200);
+  const assistantAction = lastAssistantMsg.slice(0, 200);
+
+  const lesson = signal === 'negative'
+    ? `User asked: "${userIntent}" → Assistant did: "${assistantAction}" → User rejected this`
+    : `User asked: "${userIntent}" → Assistant did: "${assistantAction}" → User approved this`;
+
+  const allText = conversationWindow.map(m => m.content || '').join('\n');
+  const filePaths = [...new Set((allText.match(/(?:src\/|scripts\/|tests\/)[^\s,)'"]+/g) || []))];
+  const errorPatterns = [...new Set((allText.match(/(?:Error|FAIL|error|failed|crash|bug|broken)[:\s][^\n]{0,80}/gi) || []))];
+
+  const tags = [];
+  if (filePaths.length > 0) tags.push('has-file-context');
+  if (errorPatterns.length > 0) tags.push('has-error-context');
+
+  return {
+    lesson,
+    whatWentWrong: signal === 'negative' ? `Assistant response to "${userIntent.slice(0, 60)}..." was rejected` : null,
+    whatWorked: signal === 'positive' ? `Assistant response to "${userIntent.slice(0, 60)}..." was approved` : null,
+    tags,
+    filePaths,
+    errorPatterns,
+    messageCount: conversationWindow.length,
+  };
+}
+
 function captureFeedback(params) {
   const _captureStart = Date.now();
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
@@ -810,6 +887,48 @@ function captureFeedback(params) {
 
   const semanticTags = inferSemanticTags(context);
   const tags = Array.from(new Set([...providedTags, ...semanticTags]));
+
+  // Infer lesson from conversation window if provided
+  let inferredContext = context;
+  if (Array.isArray(params.conversationWindow) && params.conversationWindow.length > 0) {
+    const windowSummary = inferLessonFromConversation(params.conversationWindow, signal);
+    if (windowSummary) {
+      inferredContext = windowSummary.lesson;
+      if (windowSummary.tags) {
+        tags.push(...windowSummary.tags.filter(t => !tags.includes(t)));
+      }
+      if (!params.whatWentWrong && windowSummary.whatWentWrong) {
+        params.whatWentWrong = windowSummary.whatWentWrong;
+      }
+      if (!params.whatWorked && windowSummary.whatWorked) {
+        params.whatWorked = windowSummary.whatWorked;
+      }
+    }
+  }
+
+  // Infer structured IF/THEN rule from conversation
+  let structuredRule = null;
+  if (Array.isArray(params.conversationWindow) && params.conversationWindow.length >= 2) {
+    try {
+      const { inferStructuredLesson } = require('./lesson-inference');
+      structuredRule = inferStructuredLesson(params.conversationWindow, signal, inferredContext);
+    } catch (_err) { /* non-critical */ }
+  }
+
+  // Reflector agent: auto-propose rules on negative feedback
+  let reflection = null;
+  if (signal === 'negative' && Array.isArray(params.conversationWindow) && params.conversationWindow.length >= 2) {
+    try {
+      const { reflect } = require('./reflector-agent');
+      reflection = reflect({
+        conversationWindow: params.conversationWindow,
+        context: inferredContext,
+        whatWentWrong: params.whatWentWrong,
+        structuredRule,
+        feedbackEvent: null, // not yet constructed
+      });
+    } catch (_err) { /* non-critical */ }
+  }
 
   let rubricEvaluation = null;
   try {
@@ -861,7 +980,7 @@ function captureFeedback(params) {
     whatWorked,
     reasoning: params.reasoning || null,
     visualEvidence: params.visualEvidence || null,
-    conversationWindow: distillation.conversationWindow.length > 0 ? distillation.conversationWindow : null,
+    conversationWindow: Array.isArray(distillation.conversationWindow) && distillation.conversationWindow.length > 0 ? distillation.conversationWindow : null,
     distillation: distillation.usedHistory
       ? {
         source: distillation.source,
@@ -885,6 +1004,17 @@ function captureFeedback(params) {
       : null,
     actionType: action.type,
     actionReason: action.reason || null,
+    conversationWindow: Array.isArray(params.conversationWindow) && params.conversationWindow.length > 0
+      ? params.conversationWindow.slice(-10).map(m => ({
+        role: m.role,
+        content: (m.content || '').slice(0, 500),
+        timestamp: m.timestamp || null,
+      }))
+      : (Array.isArray(distillation.conversationWindow) && distillation.conversationWindow.length > 0
+        ? distillation.conversationWindow
+        : null),
+    structuredRule: structuredRule || null,
+    ...(reflection && { reflection }),
     timestamp: now,
   };
 
@@ -942,6 +1072,11 @@ function captureFeedback(params) {
       const riskScorer = getRiskScorerModule();
       if (riskScorer) riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
     } catch { /* non-critical */ }
+    updateStatuslineWithLesson({
+      accepted: false,
+      signal,
+      feedbackId: feedbackEvent.id,
+    });
     return {
       accepted: false,
       status: clarification ? 'clarification_required' : 'rejected',
@@ -989,6 +1124,7 @@ function captureFeedback(params) {
     richContext: feedbackEvent.richContext || null,
     distillation: feedbackEvent.distillation || null,
     diagnosis: storedDiagnosis,
+    structuredRule: structuredRule || null,
     sourceFeedbackId: feedbackEvent.id,
     timestamp: now,
   };
@@ -1052,6 +1188,13 @@ function captureFeedback(params) {
 
   const _captureMs = Date.now() - _captureStart;
 
+  // Auto-open feedback session for follow-up capture
+  let feedbackSession = null;
+  try {
+    const { openSession } = require('./feedback-session');
+    feedbackSession = openSession(feedbackEvent.id, signal, inferredContext);
+  } catch (_err) { /* non-critical */ }
+
   // Build result immediately — all remaining side-effects are deferred
   const result = {
     accepted: true,
@@ -1061,7 +1204,21 @@ function captureFeedback(params) {
     memoryRecord,
     _captureMs,
     ...(correctiveActions.length > 0 && { correctiveActions }),
+    ...(reflection && { reflection }),
+    ...(feedbackSession && { feedbackSession }),
   };
+
+  // Update statusline with lesson info (include proposed rule if reflection available)
+  updateStatuslineWithLesson({
+    accepted: true,
+    signal,
+    memoryId: memoryRecord.id,
+    feedbackId: feedbackEvent.id,
+    lesson: reflection?.proposedRule?.rule
+      ? `${inferredContext || context} | Rule: ${reflection.proposedRule.rule}`
+      : (inferredContext || context),
+    turnCount: Array.isArray(params.conversationWindow) ? params.conversationWindow.length : 0,
+  });
 
   // --- Synchronous side-effects (fast, needed by analyzeFeedback) ---
   const mlPaths = getFeedbackPaths();
@@ -1687,6 +1844,8 @@ module.exports = {
   inferDomain,
   inferOutcome,
   enrichFeedbackContext,
+  inferLessonFromConversation,
+  updateStatuslineWithLesson,
   waitForBackgroundSideEffects,
   getPendingBackgroundSideEffectCount,
   getFeedbackPaths,
