@@ -829,6 +829,23 @@ function copyInstall(el) {
   trackClick('.btn-free', 'install_click', { tier: 'free' });
   trackClick('.nav-cta', 'checkout_start', { tier: 'pro', source: 'nav' });
 
+  /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Team button click
+     with section context so we can distinguish pricing section vs final CTA section clicks */
+  document.querySelectorAll('.btn-pro, .btn-team, .btn-free, .nav-cta').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var section = el.closest('section');
+      var sectionId = section ? (section.id || section.className.split(' ')[0] || 'unknown') : 'unknown';
+      var tier = el.classList.contains('btn-pro') ? 'pro'
+               : el.classList.contains('btn-team') ? 'team'
+               : el.classList.contains('btn-free') ? 'free'
+               : 'nav';
+      var label = (el.textContent || '').trim().substring(0, 40);
+      if (typeof plausible === 'function') {
+        plausible('pricing_cta_click', { props: { tier: tier, section: sectionId, label: label } });
+      }
+    });
+  });
+
   /* FAQ accordion opens */
   document.querySelectorAll('.faq-q').forEach(function(el) {
     el.addEventListener('click', function() {
