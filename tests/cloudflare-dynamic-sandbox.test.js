@@ -86,11 +86,11 @@ test('buildCloudflareSandboxPlan returns a non-dispatch Railway plan when Cloudf
   assert.equal(plan.route, null);
 });
 
-test('worker package test script uses tsx glob handling so CI does not pass a literal test path', () => {
+test('worker package test script uses shell-expanded test paths so CI does not pass a literal test path', () => {
   const workerPackage = JSON.parse(
     fs.readFileSync(path.join(__dirname, '..', 'workers', 'package.json'), 'utf8'),
   );
 
-  assert.equal(workerPackage.scripts.test, 'npm run typecheck && tsx --test src/**/*.test.ts');
-  assert.doesNotMatch(workerPackage.scripts.test, /node --import tsx --test/);
+  assert.equal(workerPackage.scripts.test, 'npm run typecheck && tsx --test src/*.test.ts');
+  assert.doesNotMatch(workerPackage.scripts.test, /\*\*/);
 });
