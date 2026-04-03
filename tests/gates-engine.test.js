@@ -2,12 +2,13 @@
 
 process.env.RLHF_PRO_MODE = '1';
 
-const { test, beforeEach } = require('node:test');
+const { test, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
+const gatesEngine = require('../scripts/gates-engine');
 const {
   loadGatesConfig,
   matchesGate,
@@ -37,27 +38,40 @@ const {
   loadClaimGates,
   registerClaimGate,
   verifyClaimEvidence,
-  STATE_PATH,
-  STATS_PATH,
-  CONSTRAINTS_PATH,
-  SESSION_ACTIONS_PATH,
-  CUSTOM_CLAIM_GATES_PATH,
-  DEFAULT_CLAIM_GATES_PATH,
   TTL_MS,
   SESSION_ACTION_TTL_MS,
-} = require('../scripts/gates-engine');
+} = gatesEngine;
 const { getAutoGatesPath } = require('../scripts/auto-promote-gates');
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
+const ORIGINAL_PATHS = {
+  STATE_PATH: gatesEngine.STATE_PATH,
+  STATS_PATH: gatesEngine.STATS_PATH,
+  CONSTRAINTS_PATH: gatesEngine.CONSTRAINTS_PATH,
+  SESSION_ACTIONS_PATH: gatesEngine.SESSION_ACTIONS_PATH,
+  CUSTOM_CLAIM_GATES_PATH: gatesEngine.CUSTOM_CLAIM_GATES_PATH,
+  DEFAULT_CLAIM_GATES_PATH: gatesEngine.DEFAULT_CLAIM_GATES_PATH,
+};
+
+let sandboxDir = null;
+
+function sandboxPath(name) {
+  return path.join(sandboxDir, name);
+}
+
 function cleanupStateFiles() {
-  try { fs.unlinkSync(STATE_PATH); } catch {}
-  try { fs.unlinkSync(STATS_PATH); } catch {}
-  try { fs.unlinkSync(CONSTRAINTS_PATH); } catch {}
-  try { fs.unlinkSync(SESSION_ACTIONS_PATH); } catch {}
-  try { fs.unlinkSync(CUSTOM_CLAIM_GATES_PATH); } catch {}
+  fs.rmSync(gatesEngine.STATE_PATH, { force: true });
+  fs.rmSync(gatesEngine.STATS_PATH, { force: true });
+  fs.rmSync(gatesEngine.CONSTRAINTS_PATH, { force: true });
+  fs.rmSync(gatesEngine.SESSION_ACTIONS_PATH, { force: true });
+  fs.rmSync(gatesEngine.CUSTOM_CLAIM_GATES_PATH, { force: true });
+}
+
+function makeTempPath(name) {
+  return path.join(sandboxDir, name);
 }
 
 function withTempFeedbackDir(fn) {
@@ -90,6 +104,31 @@ function buildStripeKey() {
 function buildGitHubPat() {
   return ['gh', 'p_', 'abcdefghijklmnopqrstuvwxyz1234'].join('');
 }
+
+beforeEach(() => {
+  sandboxDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-gates-test-'));
+  gatesEngine.STATE_PATH = sandboxPath('gate-state.json');
+  gatesEngine.STATS_PATH = sandboxPath('gate-stats.json');
+  gatesEngine.CONSTRAINTS_PATH = sandboxPath('session-constraints.json');
+  gatesEngine.SESSION_ACTIONS_PATH = sandboxPath('session-actions.json');
+  gatesEngine.CUSTOM_CLAIM_GATES_PATH = sandboxPath('claim-verification.json');
+  gatesEngine.DEFAULT_CLAIM_GATES_PATH = ORIGINAL_PATHS.DEFAULT_CLAIM_GATES_PATH;
+  cleanupStateFiles();
+});
+
+afterEach(() => {
+  cleanupStateFiles();
+  gatesEngine.STATE_PATH = ORIGINAL_PATHS.STATE_PATH;
+  gatesEngine.STATS_PATH = ORIGINAL_PATHS.STATS_PATH;
+  gatesEngine.CONSTRAINTS_PATH = ORIGINAL_PATHS.CONSTRAINTS_PATH;
+  gatesEngine.SESSION_ACTIONS_PATH = ORIGINAL_PATHS.SESSION_ACTIONS_PATH;
+  gatesEngine.CUSTOM_CLAIM_GATES_PATH = ORIGINAL_PATHS.CUSTOM_CLAIM_GATES_PATH;
+  gatesEngine.DEFAULT_CLAIM_GATES_PATH = ORIGINAL_PATHS.DEFAULT_CLAIM_GATES_PATH;
+  if (sandboxDir) {
+    fs.rmSync(sandboxDir, { recursive: true, force: true });
+    sandboxDir = null;
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Config loading
@@ -136,7 +175,7 @@ test('loadGatesConfig throws on missing file', () => {
 });
 
 test('loadGatesConfig throws on invalid JSON', () => {
-  const tmpFile = path.join(os.tmpdir(), 'bad-gates.json');
+  const tmpFile = makeTempPath('bad-gates.json');
   fs.writeFileSync(tmpFile, 'not json');
   try {
     assert.throws(
@@ -144,12 +183,12 @@ test('loadGatesConfig throws on invalid JSON', () => {
       /JSON/,
     );
   } finally {
-    fs.unlinkSync(tmpFile);
+    fs.rmSync(tmpFile, { force: true });
   }
 });
 
 test('loadGatesConfig throws on missing gates array', () => {
-  const tmpFile = path.join(os.tmpdir(), 'no-gates.json');
+  const tmpFile = makeTempPath('no-gates.json');
   fs.writeFileSync(tmpFile, JSON.stringify({ version: 1 }));
   try {
     assert.throws(
@@ -157,7 +196,7 @@ test('loadGatesConfig throws on missing gates array', () => {
       /missing "gates" array/,
     );
   } finally {
-    fs.unlinkSync(tmpFile);
+    fs.rmSync(tmpFile, { force: true });
   }
 });
 
@@ -621,7 +660,7 @@ test('satisfyCondition stores all four reasoning fields', () => {
 
 test('evaluateGatesAsync skips metric gates for tools in METRIC_SKIP_TOOLS', async () => {
   // Create a temp config with a metric gate that matches everything
-  const tmpConfig = path.join(os.tmpdir(), 'metric-skip-test.json');
+  const tmpConfig = makeTempPath('metric-skip-test.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({
     version: 1,
     gates: [{
@@ -640,12 +679,12 @@ test('evaluateGatesAsync skips metric gates for tools in METRIC_SKIP_TOOLS', asy
     // The gate has metrics so skipMetrics causes `continue`, meaning no gate fires → null
     assert.equal(result, null);
   } finally {
-    fs.unlinkSync(tmpConfig);
+    fs.rmSync(tmpConfig, { force: true });
   }
 });
 
 test('evaluateGatesAsync skips metric gates for recall tool', async () => {
-  const tmpConfig = path.join(os.tmpdir(), 'metric-skip-recall.json');
+  const tmpConfig = makeTempPath('metric-skip-recall.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({
     version: 1,
     gates: [{
@@ -662,7 +701,7 @@ test('evaluateGatesAsync skips metric gates for recall tool', async () => {
     const result = await evaluateGatesAsync('recall', { command: 'test' }, tmpConfig);
     assert.equal(result, null);
   } finally {
-    fs.unlinkSync(tmpConfig);
+    fs.rmSync(tmpConfig, { force: true });
   }
 });
 
@@ -677,7 +716,7 @@ test('evaluateGatesAsync does NOT skip metric gates for non-skip tools', async (
     metrics: { revenue: 10 },
   });
 
-  const tmpConfig = path.join(os.tmpdir(), 'metric-noskip-test.json');
+  const tmpConfig = makeTempPath('metric-noskip-test.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({
     version: 1,
     gates: [{
@@ -699,7 +738,7 @@ test('evaluateGatesAsync does NOT skip metric gates for non-skip tools', async (
     assert.equal(result.gate, 'metric-gate-noskip');
   } finally {
     originalModule.getBusinessMetrics = originalGetBusinessMetrics;
-    fs.unlinkSync(tmpConfig);
+    fs.rmSync(tmpConfig, { force: true });
     cleanupStateFiles();
   }
 });
@@ -716,7 +755,7 @@ test('evaluateGatesAsync returns pass on metric timeout', async () => {
   // Override to simulate a slow metric call (never resolves within 3s)
   originalModule.getBusinessMetrics = () => new Promise(() => {});
 
-  const tmpConfig = path.join(os.tmpdir(), 'metric-timeout-test.json');
+  const tmpConfig = makeTempPath('metric-timeout-test.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({
     version: 1,
     gates: [{
@@ -737,7 +776,7 @@ test('evaluateGatesAsync returns pass on metric timeout', async () => {
     assert.equal(result, null);
   } finally {
     originalModule.getBusinessMetrics = originalGetBusinessMetrics;
-    fs.unlinkSync(tmpConfig);
+    fs.rmSync(tmpConfig, { force: true });
     cleanupStateFiles();
   }
 }).timeout = 10000;
@@ -755,7 +794,7 @@ test('evaluateGatesAsync passes when metric is within bounds', async () => {
     metrics: { revenue: 200 },
   });
 
-  const tmpConfig = path.join(os.tmpdir(), 'metric-pass-test.json');
+  const tmpConfig = makeTempPath('metric-pass-test.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({
     version: 1,
     gates: [{
@@ -775,7 +814,7 @@ test('evaluateGatesAsync passes when metric is within bounds', async () => {
     assert.equal(result, null);
   } finally {
     originalModule.getBusinessMetrics = originalGetBusinessMetrics;
-    fs.unlinkSync(tmpConfig);
+    fs.rmSync(tmpConfig, { force: true });
     cleanupStateFiles();
   }
 });
@@ -789,7 +828,7 @@ test('evaluateGatesAsync blocks when metric exceeds max', async () => {
     metrics: { churn: 25 },
   });
 
-  const tmpConfig = path.join(os.tmpdir(), 'metric-max-test.json');
+  const tmpConfig = makeTempPath('metric-max-test.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({
     version: 1,
     gates: [{
@@ -810,7 +849,7 @@ test('evaluateGatesAsync blocks when metric exceeds max', async () => {
     assert.equal(result.gate, 'metric-gate-max');
   } finally {
     originalModule.getBusinessMetrics = originalGetBusinessMetrics;
-    fs.unlinkSync(tmpConfig);
+    fs.rmSync(tmpConfig, { force: true });
     cleanupStateFiles();
   }
 });
@@ -824,7 +863,7 @@ test('evaluateGatesAsync passes when metric is undefined (missing from metrics)'
     metrics: {},
   });
 
-  const tmpConfig = path.join(os.tmpdir(), 'metric-undefined-test.json');
+  const tmpConfig = makeTempPath('metric-undefined-test.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({
     version: 1,
     gates: [{
@@ -844,7 +883,7 @@ test('evaluateGatesAsync passes when metric is undefined (missing from metrics)'
     assert.equal(result, null);
   } finally {
     originalModule.getBusinessMetrics = originalGetBusinessMetrics;
-    fs.unlinkSync(tmpConfig);
+    fs.rmSync(tmpConfig, { force: true });
     cleanupStateFiles();
   }
 });
@@ -862,7 +901,7 @@ test('evaluateGatesAsync returns warn with metricFailed reasoning', async () => 
     metrics: { revenue: 5 },
   });
 
-  const tmpConfig = path.join(os.tmpdir(), 'metric-warn-test.json');
+  const tmpConfig = makeTempPath('metric-warn-test.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({
     version: 1,
     gates: [{
@@ -883,7 +922,7 @@ test('evaluateGatesAsync returns warn with metricFailed reasoning', async () => 
     assert.ok(result.reasoning.some((s) => s.includes('Business metric')));
   } finally {
     originalModule.getBusinessMetrics = originalGetBusinessMetrics;
-    fs.unlinkSync(tmpConfig);
+    fs.rmSync(tmpConfig, { force: true });
     cleanupStateFiles();
   }
 });
@@ -912,7 +951,7 @@ test('evaluateGatesAsync returns null when no gate matches', async () => {
 
 test('evaluateGatesAsync skips gate when when-clause not satisfied', async () => {
   cleanupStateFiles();
-  const tmpConfig = path.join(os.tmpdir(), 'async-when-test.json');
+  const tmpConfig = makeTempPath('async-when-test.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({
     version: 1,
     gates: [{
@@ -929,7 +968,7 @@ test('evaluateGatesAsync skips gate when when-clause not satisfied', async () =>
     const result = await evaluateGatesAsync('Bash', { command: 'echo test' }, tmpConfig);
     assert.equal(result, null);
   } finally {
-    fs.unlinkSync(tmpConfig);
+    fs.rmSync(tmpConfig, { force: true });
     cleanupStateFiles();
   }
 });
@@ -942,7 +981,7 @@ test('evaluateGatesAsync skips gate when unless condition is satisfied', async (
   cleanupStateFiles();
   satisfyCondition('async_test_condition', 'test evidence');
 
-  const tmpConfig = path.join(os.tmpdir(), 'async-unless-test.json');
+  const tmpConfig = makeTempPath('async-unless-test.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({
     version: 1,
     gates: [{
@@ -959,7 +998,7 @@ test('evaluateGatesAsync skips gate when unless condition is satisfied', async (
     const result = await evaluateGatesAsync('Bash', { command: 'echo test' }, tmpConfig);
     assert.equal(result, null);
   } finally {
-    fs.unlinkSync(tmpConfig);
+    fs.rmSync(tmpConfig, { force: true });
     cleanupStateFiles();
   }
 });
@@ -1134,21 +1173,23 @@ test('verifyClaimEvidence verifies claims against tracked actions', () => {
   // Default claim gates include a pattern for "tests? pass"
   assert.ok(result.checks.length > 0);
   // tests_passed is tracked, so that check should pass
-  const testsCheck = result.checks.find((c) => c.claim.includes('test'));
-  if (testsCheck) {
-    assert.ok(testsCheck.passed);
-  }
+  const testsCheck = result.checks.find((check) => {
+    return Array.isArray(check.missing) && check.claim === 'tests? pass|all tests|ci.*green|ci.*pass';
+  });
+  assert.ok(testsCheck);
+  assert.ok(testsCheck.passed);
   cleanupStateFiles();
 });
 
 test('verifyClaimEvidence returns missing actions when not tracked', () => {
   cleanupStateFiles();
   const result = verifyClaimEvidence('all tests pass and ci is green');
-  const testsCheck = result.checks.find((c) => c.claim.includes('test'));
-  if (testsCheck) {
-    assert.ok(!testsCheck.passed);
-    assert.ok(testsCheck.missing.length > 0);
-  }
+  const testsCheck = result.checks.find((check) => {
+    return check.claim === 'tests? pass|all tests|ci.*green|ci.*pass';
+  });
+  assert.ok(testsCheck);
+  assert.ok(!testsCheck.passed);
+  assert.ok(testsCheck.missing.length > 0);
   cleanupStateFiles();
 });
 
@@ -1217,9 +1258,9 @@ test('loadSessionActions prunes expired actions', () => {
     old_action: { timestamp: Date.now() - SESSION_ACTION_TTL_MS - 1000, metadata: {} },
     fresh_action: { timestamp: Date.now(), metadata: {} },
   };
-  const actionsDir = path.dirname(SESSION_ACTIONS_PATH);
+  const actionsDir = path.dirname(gatesEngine.SESSION_ACTIONS_PATH);
   fs.mkdirSync(actionsDir, { recursive: true });
-  fs.writeFileSync(SESSION_ACTIONS_PATH, JSON.stringify(expiredActions, null, 2) + '\n');
+  fs.writeFileSync(gatesEngine.SESSION_ACTIONS_PATH, JSON.stringify(expiredActions, null, 2) + '\n');
 
   const actions = listSessionActions();
   assert.ok(!actions.old_action, 'expired action should be pruned');
@@ -1234,9 +1275,9 @@ test('loadSessionActions skips non-object entries', () => {
     string_entry: 'not-an-object',
     valid_entry: { timestamp: Date.now(), metadata: {} },
   };
-  const actionsDir = path.dirname(SESSION_ACTIONS_PATH);
+  const actionsDir = path.dirname(gatesEngine.SESSION_ACTIONS_PATH);
   fs.mkdirSync(actionsDir, { recursive: true });
-  fs.writeFileSync(SESSION_ACTIONS_PATH, JSON.stringify(badActions, null, 2) + '\n');
+  fs.writeFileSync(gatesEngine.SESSION_ACTIONS_PATH, JSON.stringify(badActions, null, 2) + '\n');
 
   const actions = listSessionActions();
   assert.ok(!actions.null_entry);
@@ -1274,9 +1315,9 @@ test('verifyClaimEvidence skips claims with invalid regex patterns', () => {
       { pattern: 'valid pattern', requiredActions: ['action2'], message: 'Valid' },
     ],
   };
-  const claimsDir = path.dirname(CUSTOM_CLAIM_GATES_PATH);
+  const claimsDir = path.dirname(gatesEngine.CUSTOM_CLAIM_GATES_PATH);
   fs.mkdirSync(claimsDir, { recursive: true });
-  fs.writeFileSync(CUSTOM_CLAIM_GATES_PATH, JSON.stringify(customClaims, null, 2) + '\n');
+  fs.writeFileSync(gatesEngine.CUSTOM_CLAIM_GATES_PATH, JSON.stringify(customClaims, null, 2) + '\n');
 
   // Should not throw — invalid regex is skipped
   const result = verifyClaimEvidence('valid pattern here');
@@ -1292,9 +1333,9 @@ test('verifyClaimEvidence skips claims with invalid regex patterns', () => {
 
 test('loadJSON returns empty object on corrupt JSON file', () => {
   cleanupStateFiles();
-  const stateDir = path.dirname(STATE_PATH);
+  const stateDir = path.dirname(gatesEngine.STATE_PATH);
   fs.mkdirSync(stateDir, { recursive: true });
-  fs.writeFileSync(STATE_PATH, 'not valid json!!!');
+  fs.writeFileSync(gatesEngine.STATE_PATH, 'not valid json!!!');
   const state = loadState();
   assert.deepEqual(state, {});
   cleanupStateFiles();
@@ -1330,26 +1371,26 @@ test('loadGatesConfig throws when auto gates file has no gates array', () => {
 // ---------------------------------------------------------------------------
 
 test('loadClaimGates throws when default claim gates file is missing', () => {
-  const origPath = require('../scripts/gates-engine').DEFAULT_CLAIM_GATES_PATH;
+  const origPath = gatesEngine.DEFAULT_CLAIM_GATES_PATH;
   // Temporarily point to a nonexistent file
-  require('../scripts/gates-engine').DEFAULT_CLAIM_GATES_PATH = '/tmp/nonexistent-claim-gates.json';
+  gatesEngine.DEFAULT_CLAIM_GATES_PATH = makeTempPath('nonexistent-claim-gates.json');
   try {
     assert.throws(() => loadClaimGates(), /not found/);
   } finally {
-    require('../scripts/gates-engine').DEFAULT_CLAIM_GATES_PATH = origPath;
+    gatesEngine.DEFAULT_CLAIM_GATES_PATH = origPath;
   }
 });
 
 test('loadClaimGates throws when default claim gates has invalid format', () => {
-  const origPath = require('../scripts/gates-engine').DEFAULT_CLAIM_GATES_PATH;
-  const tmpFile = path.join(os.tmpdir(), 'invalid-claims.json');
+  const origPath = gatesEngine.DEFAULT_CLAIM_GATES_PATH;
+  const tmpFile = makeTempPath('invalid-claims.json');
   fs.writeFileSync(tmpFile, JSON.stringify({ version: 1, notClaims: true }));
-  require('../scripts/gates-engine').DEFAULT_CLAIM_GATES_PATH = tmpFile;
+  gatesEngine.DEFAULT_CLAIM_GATES_PATH = tmpFile;
   try {
     assert.throws(() => loadClaimGates(), /Invalid claim gates/);
   } finally {
-    require('../scripts/gates-engine').DEFAULT_CLAIM_GATES_PATH = origPath;
-    fs.unlinkSync(tmpFile);
+    gatesEngine.DEFAULT_CLAIM_GATES_PATH = origPath;
+    fs.rmSync(tmpFile, { force: true });
   }
 });
 

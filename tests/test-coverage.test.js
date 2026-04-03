@@ -6,6 +6,8 @@ const path = require('node:path');
 
 const {
   buildCoverageArgs,
+  COVERAGE_EXCLUDE_GLOBS,
+  COVERAGE_INCLUDE_GLOBS,
   findCoverageTestFiles,
   runCoverage,
 } = require('../scripts/test-coverage');
@@ -28,6 +30,8 @@ test('buildCoverageArgs prepends Node coverage flags', () => {
     '--test',
     '--test-concurrency=1',
     '--experimental-test-coverage',
+    ...COVERAGE_INCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-include', pattern]),
+    ...COVERAGE_EXCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-exclude', pattern]),
     'tests/a.test.js',
   ]);
 });
@@ -56,6 +60,8 @@ test('runCoverage delegates to Node with test coverage flags', () => {
     '--test',
     '--test-concurrency=1',
     '--experimental-test-coverage',
+    ...COVERAGE_INCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-include', pattern]),
+    ...COVERAGE_EXCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-exclude', pattern]),
     'tests/a.test.js',
     'tests/b.test.js',
   ]);
