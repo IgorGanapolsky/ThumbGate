@@ -95,7 +95,7 @@ function proNudge(context) {
 function limitNudge(action) {
   if (process.env.RLHF_NO_NUDGE === '1') return;
   process.stderr.write(
-    `\n  ⚠️  Free tier: ${action} daily limit reached (5/day).\n` +
+    `\n  ⚠️  Free tier: ${action} daily limit reached.\n` +
     `     Upgrade to Pro for unlimited usage — ${PRO_PRICE_LABEL}:\n` +
     `     ${PRO_CHECKOUT_URL}\n\n`
   );
@@ -502,11 +502,11 @@ function init() {
   trackEvent('cli_init', { command: 'init' });
   proNudge();
   process.stderr.write(
-    '\n  ┌─────────────────────────────────────────────────┐\n' +
-    '  │  Free: unlimited captures, recalls, and gates   │\n' +
-    '  │  Pro:  + dashboard + DPO export + multi-repo    │\n' +
-    '  │        $19/mo → npx mcp-memory-gateway pro│\n' +
-    '  └─────────────────────────────────────────────────┘\n\n'
+    '\n  ┌──────────────────────────────────────────────────┐\n' +
+    '  │  Free: unlimited 👍👎 · 5 searches · 5 gates   │\n' +
+    '  │  Pro:  + dashboard + DPO export + full search   │\n' +
+    '  │        $19/mo → npx mcp-memory-gateway pro      │\n' +
+    '  └──────────────────────────────────────────────────┘\n\n'
   );
 
   try {
@@ -534,6 +534,7 @@ function capture() {
   const { captureFeedback, analyzeFeedback, feedbackSummary, writePreventionRules } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { checkLimit } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
 
+  const { getUsage } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
   const capLimit = checkLimit('capture_feedback');
   if (!capLimit.allowed) {
     limitNudge('capture_feedback');
@@ -578,7 +579,15 @@ function capture() {
     console.log(`  Feedback ID : ${ev.id}`);
     console.log(`  Signal      : ${ev.signal} (${ev.actionType})`);
     console.log(`  Memory ID   : ${mem.id}`);
-    console.log(`  Storage     : JSONL log + LanceDB vector index\n`);
+    console.log(`  Storage     : JSONL log + LanceDB vector index`);
+    if (capLimit.used != null && capLimit.limit != null && capLimit.limit !== Infinity) {
+      const pct = Math.round((capLimit.used / capLimit.limit) * 100);
+      console.log(`  Usage       : ${capLimit.used}/${capLimit.limit} captures today (${pct}%)`);
+      if (capLimit.remaining <= 1) {
+        console.log(`  ⚠️  Last capture for today. Upgrade to Pro for unlimited.`);
+      }
+    }
+    console.log('');
     proNudge();
   } else {
     console.log(`\nFeedback Recorded [${normalized.toUpperCase()}] — not promoted`);
@@ -1272,6 +1281,65 @@ switch (COMMAND) {
   case 'search-lessons':
     lessons();
     break;
+  case 'lesson-health':
+  case 'stale': {
+    const { initDB } = require(path.join(PKG_ROOT, 'scripts', 'lesson-db'));
+    const { stalenessReport, autoArchive } = require(path.join(PKG_ROOT, 'scripts', 'lesson-rotation'));
+    const staleArgs = parseArgs(process.argv.slice(3));
+    const db = initDB();
+    if (staleArgs.archive) {
+      const result = autoArchive(db);
+      console.log(`\n✅ Auto-archived ${result.archived} stale lessons (>90 days inactive)\n`);
+    } else {
+      const report = stalenessReport(db);
+      console.log(`\nLesson Health Report`);
+      console.log('─'.repeat(50));
+      console.log(`  Total active : ${report.total}`);
+      console.log(`  Healthy      : ${report.healthy}`);
+      console.log(`  Stale (>60d) : ${report.stale.length}`);
+      console.log(`  Archivable   : ${report.archivable.length}`);
+      if (report.stale.length > 0) {
+        console.log(`\n  Stale lessons:`);
+        for (const l of report.stale.slice(0, 10)) {
+          console.log(`    ${l.id.slice(0, 8)}... ${l.daysSinceActive}d inactive, ${l.triggerCount} triggers — ${l.context}`);
+        }
+        if (report.stale.length > 10) console.log(`    ... and ${report.stale.length - 10} more`);
+      }
+      if (report.archivable.length > 0) {
+        console.log(`\n  Run with --archive to auto-archive ${report.archivable.length} lessons >90 days inactive.`);
+      }
+      console.log('');
+    }
+    db.close();
+    break;
+  }
+  case 'lesson-review': {
+    const { isProTier: isProForReview } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+    if (!isProForReview(null)) {
+      process.stderr.write(`\n  🔒 Lesson Review requires Pro (${PRO_PRICE_LABEL}).\n` +
+        `     Review stale lessons and decide what to keep, archive, or promote.\n` +
+        `     Upgrade: ${PRO_CHECKOUT_URL}\n\n`);
+      process.exit(1);
+    }
+    const { initDB: initDBReview } = require(path.join(PKG_ROOT, 'scripts', 'lesson-db'));
+    const { findStaleLessons, restoreLesson, autoArchive: autoArchiveReview } = require(path.join(PKG_ROOT, 'scripts', 'lesson-rotation'));
+    const reviewDb = initDBReview();
+    const stale = findStaleLessons(reviewDb);
+    if (stale.length === 0) {
+      console.log('\n✅ No stale lessons. All lessons are active and healthy.\n');
+    } else {
+      console.log(`\n📋 Lesson Review — ${stale.length} stale lessons\n`);
+      for (const l of stale) {
+        const ageDays = Math.round((Date.now() - new Date(l.last_triggered || l.timestamp).getTime()) / 86400000);
+        console.log(`  [${l.importance || 'medium'}] ${l.id.slice(0, 12)}  ${ageDays}d inactive`);
+        console.log(`    ${(l.context || l.whatToChange || '').slice(0, 100)}`);
+        console.log('');
+      }
+      console.log(`  Run "npx mcp-memory-gateway stale --archive" to archive all ${stale.length} stale lessons.\n`);
+    }
+    reviewDb.close();
+    break;
+  }
   case 'model-fit':
     modelFit();
     break;

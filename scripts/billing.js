@@ -1829,6 +1829,8 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
       packId: pack ? pack.id : null,
       credits: pack ? pack.credits : null,
     }),
+    // 7-day free trial for subscriptions — reduces checkout abandonment
+    ...(pack ? {} : { subscription_data: { trial_period_days: 7 } }),
   };
 
   const normalizedCustomerEmail = normalizeText(customerEmail);

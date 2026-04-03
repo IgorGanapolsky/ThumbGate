@@ -941,8 +941,19 @@ function loadDemo() {
     { signal: 'up', title: 'DPO export caught systematic failure pattern', context: 'Exported 47 preference pairs revealing that 80% of negative feedback involved claiming work was done without verification. Led to a new mandatory evidence gate.', tags: ['dpo-export', 'evidence-based', 'prevention', 'metric:ROI'], timestamp: '2025-06-05T10:15:00Z' }
   ];
   isDemo = true;
-  demoData = demoResults;
-  document.getElementById('searchResults').innerHTML = demoResults.map(renderResult).join('');
+  demoData = demoResults.slice(0, 3);
+  var teaserHtml = demoData.map(renderResult).join('');
+  var upgradeWall = '<div style="position:relative;margin-top:8px;">' +
+    '<div style="filter:blur(4px);pointer-events:none;opacity:0.4;">' + demoResults.slice(3, 6).map(renderResult).join('') + '</div>' +
+    '<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;">' +
+    '<div style="text-align:center;background:rgba(10,10,15,0.92);border:1px solid #333;border-radius:12px;padding:28px 36px;">' +
+    '<div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px;">Unlock your full dashboard</div>' +
+    '<div style="color:#aaa;margin-bottom:16px;">Pro shows your real feedback, gates, and lessons — not sample data.</div>' +
+    '<a href="https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06" target="_blank" rel="noopener" ' +
+    'style="display:inline-block;background:#b85c2d;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Upgrade to Pro — $19/mo</a>' +
+    '<div style="color:#666;font-size:12px;margin-top:10px;">npx mcp-memory-gateway pro --activate --key=YOUR_KEY</div>' +
+    '</div></div></div>';
+  document.getElementById('searchResults').innerHTML = teaserHtml + upgradeWall;
   // Sample gates
   var demoGates = [
     { name: 'no-force-push', pattern: 'Block git push --force to main or master branches', action: 'block' },

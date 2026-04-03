@@ -730,8 +730,8 @@ __GA_BOOTSTRAP__
         <div class="price-sub">Forever free · Local-only, single dev</div>
         <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo devs experimenting with gates on one machine.</p>
         <ul>
-          <li>5 feedback captures/day · 10 lesson searches/day · unlimited recall</li>
-          <li>10 auto-promoted gates plus the core safety policy</li>
+          <li>Unlimited feedback captures · 5 lesson searches/day · unlimited recall</li>
+          <li>5 auto-promoted gates plus the core safety policy</li>
           <li>All MCP integrations (Claude Code, Cursor, Codex, etc.)</li>
           <li>PreToolUse hook blocking</li>
           <li>Local SQLite lesson DB</li>
@@ -747,6 +747,17 @@ __GA_BOOTSTRAP__
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
           <strong style="color:#fff;">Go Pro when:</strong> you've blocked 20+ actions, want your own dashboard, or need DPO exports without extra setup.
         </div>
+        <div class="dashboard-preview" style="margin-bottom:16px;border:1px solid #333;border-radius:8px;overflow:hidden;">
+          <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:16px;text-align:center;">
+            <div style="font-size:11px;color:var(--cyan);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">What your Pro dashboard looks like</div>
+            <div style="background:#0d0d1a;border-radius:6px;padding:12px;text-align:left;font-family:monospace;font-size:11px;line-height:1.6;">
+              <div style="color:#4ade80;">✅ gate:no-force-push — blocked 12 times</div>
+              <div style="color:#4ade80;">✅ gate:require-tests — blocked 8 times</div>
+              <div style="color:#f87171;">❌ gate:no-drop-prod — FIRED (blocked DROP TABLE)</div>
+              <div style="color:#888;margin-top:6px;">DPO pairs exported: 47 | Lessons: 23 active</div>
+            </div>
+          </div>
+        </div>
         <ul>
           <li>Everything in Free, plus:</li>
           <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">Visual gate debugger →</a> see every blocked action and the gate that fired so you can trust the system in minutes</li>
@@ -756,7 +767,12 @@ __GA_BOOTSTRAP__
           <li>Personal local dashboard — every Pro user gets their own localhost dashboard without extra cloud setup</li>
           <li>Founder-license support — we help you wire your riskiest flows (migrations, force-pushes, CI) in the first week</li>
         </ul>
-        <a href="https://buy.stripe.com/fZu9AT3Ug6zcdWh0XN3sI08" class="btn-pro">Try Pro free for 7 days → $19/mo</a>
+        <a href="https://buy.stripe.com/fZu9AT3Ug6zcdWh0XN3sI08" class="btn-pro" style="display:none" id="pro-checkout-link">Start Free Trial — then $19/mo</a>
+        <div class="trial-badge" style="background:var(--cyan);color:#000;display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:12px;">7-DAY FREE TRIAL</div>
+        <div class="email-gate" style="margin-bottom:12px;">
+          <input type="email" id="pro-email" placeholder="Your email to start trial" style="width:100%;padding:10px 14px;border:1px solid #333;border-radius:6px;background:#1a1a2e;color:#fff;font-size:14px;">
+        </div>
+        <button class="btn-pro" id="pro-trial-btn" onclick="handleProTrial()" style="width:100%;cursor:pointer;border:none;">Start 7-Day Free Trial</button>
         <p style="font-size:11px;color:#666;margin-top:8px;">Founder pricing — <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" style="color:var(--cyan);text-decoration:underline;">preserved $49 one-time founder link</a> for early buyers who still want that path.</p>
         <p style="font-size:12px;color:var(--cyan);margin-top:6px;">Mem0 Pro: $249/mo. ThumbGate Pro: $19/mo.</p>
       </div>
@@ -974,6 +990,25 @@ function copyInstall(el) {
   /* SEO/comparison page clicks */
   trackClick('.seo-card', 'seo_page_click');
 })();
+</script>
+<script>
+function handleProTrial() {
+  var email = document.getElementById('pro-email');
+  if (!email || !email.value || !email.value.includes('@')) {
+    email.style.border = '2px solid #f87171';
+    email.placeholder = 'Please enter a valid email';
+    email.focus();
+    return;
+  }
+  email.style.border = '1px solid #333';
+  var checkoutUrl = document.getElementById('pro-checkout-link').href;
+  var sep = checkoutUrl.includes('?') ? '&' : '?';
+  var finalUrl = checkoutUrl + sep + 'prefilled_email=' + encodeURIComponent(email.value);
+  if (typeof plausible === 'function') {
+    plausible('trial_email_captured', { props: { email: email.value } });
+  }
+  window.location.href = finalUrl;
+}
 </script>
 </body>
 </html>
