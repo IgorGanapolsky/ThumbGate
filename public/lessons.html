@@ -32,6 +32,8 @@
   .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 32px 0; }
   .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: border-color 0.15s, transform 0.1s; cursor: pointer; }
   .stat-card:hover { border-color: rgba(34,211,238,0.4); transform: translateY(-2px); }
+  .stat-card:active { transform: translateY(0); border-color: rgba(34,211,238,0.7); }
+  .stat-card.selected { border-color: rgba(34,211,238,0.6); background: rgba(34,211,238,0.05); }
   .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
   .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
   .stat-value.green { color: var(--green); }
@@ -142,22 +144,22 @@
     </div>
   </div>
   <div class="stats-grid">
-    <div class="stat-card" onclick="filterSeverity('all')">
+    <div class="stat-card" onclick="switchTab('rules'); filterSeverity('all')">
       <div class="stat-label">Active Rules</div>
       <div class="stat-value cyan" id="statRules">0</div>
       <div class="stat-sub">Auto-generated from feedback</div>
     </div>
-    <div class="stat-card" onclick="filterSeverity('critical')">
+    <div class="stat-card" onclick="switchTab('rules'); filterSeverity('critical')">
       <div class="stat-label">Critical</div>
       <div class="stat-value red" id="statCritical">0</div>
       <div class="stat-sub">Highest severity rules</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="switchTab('timeline')">
       <div class="stat-label">Mistakes Prevented</div>
       <div class="stat-value green" id="statPrevented">0</div>
       <div class="stat-sub">Gate blocks from learned rules</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="switchTab('insights')">
       <div class="stat-label">Approval Trend</div>
       <div class="stat-value purple" id="statTrend">--</div>
       <div class="stat-sub" id="statTrendSub">7-day rolling</div>
@@ -266,7 +268,14 @@ function formatDate(value) {
   return ts.toLocaleString();
 }
 
+function highlightCard(index) {
+  document.querySelectorAll('.stat-card').forEach(function(c, i) {
+    c.classList.toggle('selected', i === index);
+  });
+}
 function switchTab(name) {
+  var tabIndex = name === 'rules' ? 0 : name === 'timeline' ? 2 : 3;
+  highlightCard(tabIndex);
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
   document.querySelector('[onclick*="' + name + '"]').classList.add('active');
