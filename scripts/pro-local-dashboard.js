@@ -18,14 +18,14 @@ const CREATOR_SYNTHETIC_KEY = process.env.THUMBGATE_DEV_KEY || '';
  */
 function isCreatorDev({ env = process.env, homeDir = os.homedir() } = {}) {
   // Layer 1: env var with specific value
-  if (String(env[CREATOR_BYPASS_ENV] || '') === CREATOR_BYPASS_VALUE) {
+  if (CREATOR_BYPASS_VALUE && String(env[CREATOR_BYPASS_ENV] || '') === CREATOR_BYPASS_VALUE) {
     return true;
   }
   // Layer 2: persistent config file (set once, never think about it again)
   try {
     const configPath = path.join(homeDir, '.config', 'thumbgate', 'dev.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    if (config && config.bypass === CREATOR_BYPASS_VALUE) {
+    if (CREATOR_BYPASS_VALUE && config && config.bypass === CREATOR_BYPASS_VALUE) {
       return true;
     }
   } catch { /* not a dev machine */ }

@@ -1,4 +1,8 @@
 'use strict';
+// Set test bypass secrets before module load
+process.env.THUMBGATE_DEV_SECRET = 'test-bypass-secret-1234';
+process.env.THUMBGATE_DEV_KEY = 'tg_test_synthetic_key';
+
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
