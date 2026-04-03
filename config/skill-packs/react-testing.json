@@ -1,0 +1,23 @@
+{
+  "name": "react-testing",
+  "description": "Auto-generated skill pack for react-testing from 1 lessons",
+  "triggers": [
+    "react-testing",
+    "react",
+    "testing"
+  ],
+  "rules": [
+    "Always test components in isolation"
+  ],
+  "packTemplate": {
+    "namespaces": [
+      "memoryError",
+      "memoryLearning",
+      "rules"
+    ],
+    "maxItems": 8,
+    "maxChars": 6000,
+    "queryPrefix": "react-testing react testing"
+  },
+  "registeredAt": "2026-04-03T18:35:04.338Z"
+}
