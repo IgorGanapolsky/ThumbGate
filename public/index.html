@@ -684,8 +684,8 @@ __GA_BOOTSTRAP__
     <div class="section-label">FAQ</div>
     <h2 class="section-title">Common questions</h2>
     <div class="faq-list">
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support model fine-tuning?</div>
+      <div class="faq-item open">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="true" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support model fine-tuning?</div>
         <div class="faq-a">Yes. ThumbGate Pro includes a Model Hardening Advisor and LoRA JSONL export. Pro users can export their episodic memory as DPO (Direct Preference Optimization) pairs to fine-tune local models (like Llama 3 or Mistral) so they natively avoid repeating known mistakes.</div>
       </div>
       <div class="faq-item">
@@ -705,11 +705,7 @@ __GA_BOOTSTRAP__
         <div class="faq-a">No. Free gives you full local enforcement — captures, recalls, gates, and hook blocking on your machine. No cloud, no account, no signup. Pro adds a personal local dashboard on your machine plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, org dashboard, and team-wide gate visibility.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support model fine-tuning?</div>
-        <div class="faq-a">Yes. ThumbGate Pro includes a Model Hardening Advisor and LoRA JSONL export. Pro users can export their episodic memory as DPO (Direct Preference Optimization) pairs to fine-tune local models (like Llama 3 or Mistral) so they natively avoid repeating known mistakes.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from RLHF?</div>
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are pre-action gates different from prompt rules?</div>
         <div class="faq-a">Prompt rules are suggestions that agents can ignore. Pre-Action Gates are enforcement — they block the action before execution. Gates are auto-generated from your feedback and use Thompson Sampling to adapt over time.</div>
       </div>
       <div class="faq-item">
