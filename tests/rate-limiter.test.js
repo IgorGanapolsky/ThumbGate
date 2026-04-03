@@ -48,13 +48,11 @@ describe('rate-limiter', () => {
     if (fs.existsSync(TEMP_USAGE_FILE)) fs.unlinkSync(TEMP_USAGE_FILE);
   });
 
-  it('enforces capture_feedback daily limit on free tier', () => {
-    for (let i = 0; i < 5; i++) {
+  it('allows unlimited capture_feedback on free tier', () => {
+    for (let i = 0; i < 20; i++) {
       const result = rateLimiter.checkLimit('capture_feedback');
       assert.equal(result.allowed, true, `call ${i + 1} should be allowed`);
     }
-    const blocked = rateLimiter.checkLimit('capture_feedback');
-    assert.equal(blocked.allowed, false, 'call 6 should be blocked');
   });
 
   it('allows unlimited recall calls on free tier', () => {

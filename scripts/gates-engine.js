@@ -172,7 +172,7 @@ function loadStats() {
 
 function saveStats(stats) { saveJSON(module.exports.STATS_PATH, stats); }
 
-function recordStat(gateId, action) {
+function recordStat(gateId, action, gate) {
   const stats = loadStats();
   if (action === 'block') stats.blocked = (stats.blocked || 0) + 1;
   else if (action === 'warn') stats.warned = (stats.warned || 0) + 1;
@@ -182,6 +182,16 @@ function recordStat(gateId, action) {
   if (action === 'block') stats.byGate[gateId].blocked += 1;
   else if (action === 'warn') stats.byGate[gateId].warned += 1;
   saveStats(stats);
+  // Track lesson freshness when an auto-promoted gate fires
+  if (gate && gate.sourceLessonId) {
+    try {
+      const { recordTrigger } = require('./lesson-rotation');
+      const { initDB } = require('./lesson-db');
+      const db = initDB();
+      recordTrigger(db, gate.sourceLessonId);
+      db.close();
+    } catch (_) { /* lesson DB may not be available */ }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -345,7 +355,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     const reasoning = buildReasoning(gate, toolName, toolInput, { metricFailed });
 
     if (gate.action === 'block') {
-      recordStat(gate.id, 'block');
+      recordStat(gate.id, 'block', gate);
       const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -353,7 +363,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     }
 
     if (gate.action === 'warn') {
-      recordStat(gate.id, 'warn');
+      recordStat(gate.id, 'warn', gate);
       const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -393,7 +403,7 @@ function evaluateGates(toolName, toolInput, configPath) {
     const reasoning = buildReasoning(gate, toolName, toolInput);
 
     if (gate.action === 'block') {
-      recordStat(gate.id, 'block');
+      recordStat(gate.id, 'block', gate);
       const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -401,7 +411,7 @@ function evaluateGates(toolName, toolInput, configPath) {
     }
 
     if (gate.action === 'warn') {
-      recordStat(gate.id, 'warn');
+      recordStat(gate.id, 'warn', gate);
       const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
