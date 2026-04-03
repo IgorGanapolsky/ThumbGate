@@ -121,7 +121,7 @@ describe('zernio publisher', () => {
   it('publishPost throws when ZERNIO_API_KEY is not set', async () => {
     delete process.env.ZERNIO_API_KEY;
     await assert.rejects(
-      () => publishPost('Hello world', [{ platform: 'twitter', accountId: 'acc_1' }]),
+      () => publishPost('Hello world this is a long enough string to pass the quality gate', [{ platform: 'twitter', accountId: 'acc_1' }]),
       /ZERNIO_API_KEY/
     );
   });
@@ -139,14 +139,14 @@ describe('zernio publisher', () => {
     };
 
     const platforms = [{ platform: 'twitter', accountId: 'acc_xyz' }];
-    const result = await publishPost('Test content', platforms);
+    const result = await publishPost('This is test content long enough to pass the social quality gate check', platforms);
 
     assert.ok(capturedUrl.includes('/posts'), 'should hit /posts endpoint');
     assert.equal(capturedOptions.method, 'POST');
     assert.equal(capturedOptions.headers.Authorization, 'Bearer test_key_abc123');
 
     const body = JSON.parse(capturedOptions.body);
-    assert.equal(body.content, 'Test content');
+    assert.equal(body.content, 'This is test content long enough to pass the social quality gate check');
     assert.equal(body.publishNow, true);
     assert.deepEqual(body.platforms, platforms);
 
@@ -212,7 +212,7 @@ describe('zernio publisher', () => {
       throw new Error(`Unexpected URL: ${url}`);
     };
 
-    const result = await publishToAllPlatforms('Hello from all platforms');
+    const result = await publishToAllPlatforms('Hello from all platforms with enough characters to pass the quality gate');
 
     assert.equal(result.published.length, 1);
     assert.equal(result.errors.length, 0);

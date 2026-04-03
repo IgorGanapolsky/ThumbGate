@@ -272,6 +272,14 @@ async function publishToReddit({ subreddit, title, text, url, token }) {
     token ||
     (await getRedditToken(clientId, clientSecret, username, password));
 
+  const qualityGate = require('../../social-quality-gate');
+  const gateResult = qualityGate.gatePost([title, text].filter(Boolean).join('\n'));
+  if (!gateResult.allowed) {
+    const reasons = gateResult.findings.map(f => f.reason).join(', ');
+    console.error(`[reddit:publisher] BLOCKED by quality gate: ${reasons}`);
+    return { blocked: true, reasons: gateResult.findings };
+  }
+
   if (!subreddit) throw new Error('subreddit is required');
   if (!title) throw new Error('title is required');
 
