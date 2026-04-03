@@ -56,6 +56,9 @@ async function publishPost(content, platforms) {
     throw new Error('publishPost: platforms must be a non-empty array');
   }
 
+  // Validate API key first (tests expect this to throw before anything else)
+  requireApiKey();
+
   // Quality gate — block bot slop before it reaches any platform
   const qualityGate = require('../../social-quality-gate');
   const gateResult = qualityGate.gatePost(content);

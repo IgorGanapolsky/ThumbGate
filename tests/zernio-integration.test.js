@@ -139,14 +139,15 @@ describe('zernio publisher', () => {
     };
 
     const platforms = [{ platform: 'twitter', accountId: 'acc_xyz' }];
-    const result = await publishPost('Test content', platforms);
+    const testContent = 'This is a test post with enough characters to pass the quality gate check';
+    const result = await publishPost(testContent, platforms);
 
     assert.ok(capturedUrl.includes('/posts'), 'should hit /posts endpoint');
     assert.equal(capturedOptions.method, 'POST');
     assert.equal(capturedOptions.headers.Authorization, 'Bearer test_key_abc123');
 
     const body = JSON.parse(capturedOptions.body);
-    assert.equal(body.content, 'Test content');
+    assert.equal(body.content, testContent);
     assert.equal(body.publishNow, true);
     assert.deepEqual(body.platforms, platforms);
 
@@ -212,7 +213,7 @@ describe('zernio publisher', () => {
       throw new Error(`Unexpected URL: ${url}`);
     };
 
-    const result = await publishToAllPlatforms('Hello from all platforms');
+    const result = await publishToAllPlatforms('Hello from all platforms with enough content to pass quality gate');
 
     assert.equal(result.published.length, 1);
     assert.equal(result.errors.length, 0);
