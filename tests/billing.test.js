@@ -112,6 +112,35 @@ describe('billing.js — provisionApiKey', () => {
     const r2 = billing.provisionApiKey('cus_reuse_001');
     assert.equal(r1.key, r2.key);
   });
+
+  test('persists entitlement metadata on provisioned keys', () => {
+    const billing = requireFreshBilling('');
+    const result = billing.provisionApiKey('cus_team_001', {
+      planId: 'team',
+      billingCycle: 'monthly',
+      seatCount: 2,
+      source: 'stripe_checkout_session_lookup',
+    });
+    const stored = JSON.parse(fs.readFileSync(keyStorePath, 'utf-8')).keys[result.key];
+    assert.equal(stored.planId, 'team');
+    assert.equal(stored.billingCycle, 'monthly');
+    assert.equal(stored.seatCount, 3);
+  });
+
+  test('resolveEntitlement reflects stored paid plan metadata', () => {
+    const billing = requireFreshBilling('');
+    const result = billing.provisionApiKey('cus_pro_001', {
+      planId: 'pro',
+      billingCycle: 'annual',
+      source: 'stripe_checkout_session_lookup',
+    });
+    const entitlement = billing.resolveEntitlement(result.key);
+    assert.equal(entitlement.valid, true);
+    assert.equal(entitlement.tier, 'pro');
+    assert.equal(entitlement.planId, 'pro');
+    assert.equal(entitlement.billingCycle, 'annual');
+    assert.equal(entitlement.features.dashboard, true);
+  });
 });
 
 describe('billing.js — funnel ledger', () => {

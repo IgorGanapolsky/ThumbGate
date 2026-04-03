@@ -9,9 +9,9 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free stays local-first with 5 daily feedback captures, 10 daily lesson searches, unlimited recall, and gating. Vague thumbs feedback can be distilled from the last ~10 messages and failed tool call. Pro adds a personal local dashboard, **Model Hardening Advisor**, and **LoRA/PEFT export**. Team rollout starts at the shared hosted lesson DB and org dashboard.
+[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free stays local-first with 5 daily feedback captures, 10 daily lesson searches, unlimited recall, and gating. Vague thumbs feedback can be distilled from the last ~10 messages and failed tool call. Pro unlocks in the same `mcp-memory-gateway` install after checkout: activate the issued `rlhf_*` license key and reopen the local dashboard. Team rollout starts at the shared hosted lesson DB and org dashboard.
 
-**Repo boundary:** this repository is the public base runtime (`mcp-memory-gateway`). The paid overlay now lives in the separate [`mcp-memory-gateway-pro`](https://github.com/IgorGanapolsky/mcp-memory-gateway-pro) repo/package and inherits from this base instead of shipping from a `pro/` subtree here.
+**Runtime unlock model:** there is one public npm package (`mcp-memory-gateway`). Stripe checkout provisions a ThumbGate-issued `rlhf_*` license key, and that same package unlocks Pro features at runtime after `npx mcp-memory-gateway pro --activate --key=YOUR_KEY`.
 
 **Thumbs down a mistake. It never happens again.**
 

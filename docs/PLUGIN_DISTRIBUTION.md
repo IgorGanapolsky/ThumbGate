@@ -15,19 +15,20 @@ Rubric scoring and anti-hacking guardrails are shared via `config/rubrics/defaul
 
 ## Commercial packaging model
 
-1. Ship OSS core first in this repo (`mcp-memory-gateway`).
-2. Keep paid overlay code in the separate `mcp-memory-gateway-pro` repo/package.
-3. Offer managed hosted API + analytics as paid SaaS.
-4. Sell enterprise controls (SSO, audit, retention policies, support SLA).
+1. Ship one public npm package from this repo: `mcp-memory-gateway`.
+2. Stripe checkout provisions a ThumbGate-issued `rlhf_*` license key.
+3. The same installed package unlocks Pro features at runtime after `npx mcp-memory-gateway pro --activate --key=YOUR_KEY`.
+4. Offer managed hosted API + analytics as paid SaaS.
+5. Sell enterprise controls (SSO, audit, retention policies, support SLA).
 
 This avoids platform-specific rewrite cost and keeps the product under a `$10/mo` bootstrap budget until paid demand exists.
 
-## Public vs Pro repo boundary
+## Public vs private source boundary
 
-1. Public repo owns shared runtime, adapters, schemas, docs, and free/local behavior.
-2. Pro repo inherits from the published `mcp-memory-gateway` package and adds paid-only overlays.
-3. Do not ship `pro/` package code or Pro publish workflows from this public repo.
-4. Public docs may link to the Pro offer and repo, but protected implementation stays out of this tree.
+1. Public repo owns the distributed runtime, adapters, schemas, docs, free behavior, and runtime license activation path.
+2. Hosted entitlement state is the source of truth for whether a paid key unlocks Pro.
+3. Private repos may still hold internal source, experiments, or hosted-only logic, but customers should not need a second package or private registry to upgrade.
+4. Public docs should describe one install path: `mcp-memory-gateway` plus a paid `rlhf_*` key.
 
 ## ChatGPT (GPT Actions)
 

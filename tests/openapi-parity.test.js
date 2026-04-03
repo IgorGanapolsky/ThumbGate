@@ -53,6 +53,7 @@ test('canonical openapi includes monetization and funnel analytics routes', () =
   const canonical = fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf-8');
   const monetizationRoutes = [
     '/v1/billing/checkout',
+    '/v1/billing/entitlement',
     '/v1/billing/usage',
     '/v1/billing/provision',
     '/v1/billing/summary',

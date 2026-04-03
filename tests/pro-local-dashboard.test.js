@@ -25,12 +25,12 @@ const {
 
 test('pro local dashboard helper saves and reloads license keys', () => {
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-pro-home-'));
-  const licensePath = saveLicense('tg_local_saved_key', { homeDir, version: '0.8.4-test' });
+  const licensePath = saveLicense('rlhf_local_saved_key', { homeDir, version: '0.9.9-test' });
   assert.equal(licensePath, getLicensePath(homeDir));
 
   const license = readLicense({ homeDir });
-  assert.equal(license.key, 'tg_local_saved_key');
-  assert.equal(license.version, '0.8.4-test');
+  assert.equal(license.key, 'rlhf_local_saved_key');
+  assert.equal(license.version, '0.9.9-test');
   assert.match(String(license.savedAt), /^\d{4}-\d{2}-\d{2}T/);
 
   fs.rmSync(homeDir, { recursive: true, force: true });
@@ -38,17 +38,17 @@ test('pro local dashboard helper saves and reloads license keys', () => {
 
 test('pro local dashboard helper prefers RLHF_API_KEY over saved license', () => {
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-pro-env-'));
-  saveLicense('tg_saved_license', { homeDir });
+  saveLicense('rlhf_saved_license', { homeDir });
 
   const resolved = resolveProKey({
     homeDir,
     env: {
-      RLHF_API_KEY: 'tg_env_override',
+      RLHF_API_KEY: 'rlhf_env_override',
     },
   });
 
   assert.deepEqual(resolved, {
-    key: 'tg_env_override',
+    key: 'rlhf_env_override',
     source: 'env',
   });
 
@@ -56,20 +56,20 @@ test('pro local dashboard helper prefers RLHF_API_KEY over saved license', () =>
 });
 
 test('pro local dashboard helper validates keys against billing usage endpoint', async () => {
-  const valid = await validateProKey('tg_valid_key', {
+  const valid = await validateProKey('rlhf_valid_key', {
     fetchImpl: async (url, options) => {
-      assert.match(url, /\/v1\/billing\/usage$/);
-      assert.equal(options.headers.Authorization, 'Bearer tg_valid_key');
+      assert.match(url, /\/v1\/billing\/entitlement$/);
+      assert.equal(options.headers.Authorization, 'Bearer rlhf_valid_key');
       return {
         ok: true,
         async json() {
-          return { key: 'tg_valid_key' };
+          return { valid: true, tier: 'pro', planId: 'pro' };
         },
       };
     },
   });
 
-  const invalid = await validateProKey('tg_invalid_key', {
+  const invalid = await validateProKey('rlhf_invalid_key', {
     fetchImpl: async () => ({
       ok: false,
       async json() {
@@ -86,7 +86,7 @@ test('pro local dashboard helper starts localhost dashboard and seeds pro env', 
   const env = {};
   const started = [];
   const result = await startLocalProDashboard({
-    key: 'tg_launch_key',
+    key: 'rlhf_launch_key',
     env,
     port: 0,
     startServerImpl: async ({ port }) => {
@@ -100,7 +100,7 @@ test('pro local dashboard helper starts localhost dashboard and seeds pro env', 
 
   assert.deepEqual(started, [0]);
   assert.equal(env.RLHF_PRO_MODE, '1');
-  assert.equal(env.RLHF_API_KEY, 'tg_launch_key');
+  assert.equal(env.RLHF_API_KEY, 'rlhf_launch_key');
   assert.equal(env.PORT, '0');
   assert.equal(result.port, 4123);
   assert.equal(result.url, 'http://localhost:4123/dashboard');
@@ -147,10 +147,10 @@ test('resolveProKey returns creator-dev source with enterprise plan when bypass 
 
 test('creator bypass takes priority over env RLHF_API_KEY and saved license', () => {
   const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-creator-prio-'));
-  saveLicense('tg_saved_key', { homeDir: tmpHome });
+  saveLicense('rlhf_saved_key', { homeDir: tmpHome });
 
   const resolved = resolveProKey({
-    env: { [CREATOR_BYPASS_ENV]: CREATOR_BYPASS_VALUE, RLHF_API_KEY: 'tg_env_key' },
+    env: { [CREATOR_BYPASS_ENV]: CREATOR_BYPASS_VALUE, RLHF_API_KEY: 'rlhf_env_key' },
     homeDir: tmpHome,
   });
 

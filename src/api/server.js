@@ -58,6 +58,7 @@ const {
   getCheckoutSessionStatus,
   provisionApiKey,
   validateApiKey,
+  resolveEntitlement,
   recordUsage,
   rotateApiKey,
   handleWebhook,
@@ -3792,6 +3793,27 @@ async function addContext(){
         return;
       }
 
+      // GET /v1/billing/entitlement — runtime unlock status for the authenticated key
+      if (req.method === 'GET' && pathname === '/v1/billing/entitlement') {
+        const token = extractBearerToken(req);
+        const entitlement = resolveEntitlement(token);
+        if (!entitlement.valid) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.UNAUTHORIZED,
+            title: 'Unauthorized',
+            status: 401,
+            detail: 'A valid API key is required to access this endpoint.',
+          });
+          return;
+        }
+        sendJson(res, 200, {
+          key: token,
+          ...entitlement,
+          checkedAt: new Date().toISOString(),
+        });
+        return;
+      }
+
       // POST /v1/billing/provision — manually provision key (admin)
       if (req.method === 'POST' && pathname === '/v1/billing/provision') {
         if (!isStaticAdminAuthorized(req, expectedApiKey)) {
@@ -3811,6 +3833,9 @@ async function addContext(){
         const result = provisionApiKey(body.customerId, {
           installId: body.installId,
           source: 'admin_provision',
+          planId: body.planId,
+          billingCycle: body.billingCycle,
+          seatCount: body.seatCount,
         });
         sendJson(res, 200, result);
         return;

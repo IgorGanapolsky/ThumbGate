@@ -523,7 +523,8 @@ describe('bin/cli.js', () => {
     });
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
     assert.match(result.stdout, /Pro \(\$19\/mo or \$149\/yr\)/);
-    assert.match(result.stdout, /personal local dashboard/i);
+    assert.match(result.stdout, /same package, runtime unlock/i);
+    assert.match(result.stdout, /install once with mcp-memory-gateway/i);
     assert.match(result.stdout, /Launch dashboard\s*:\s*npx mcp-memory-gateway pro/);
     assert.match(result.stdout, /Activate \+ run\s*:\s*npx mcp-memory-gateway pro --activate --key=YOUR_KEY/);
     assert.match(result.stdout, /COMMERCIAL_TRUTH\.md/);
@@ -536,7 +537,7 @@ describe('bin/cli.js', () => {
     fs.mkdirSync(licenseDir, { recursive: true });
     fs.writeFileSync(
       path.join(licenseDir, 'license.json'),
-      JSON.stringify({ key: 'tg_local_dashboard_launch' }, null, 2)
+      JSON.stringify({ key: 'rlhf_local_dashboard_launch' }, null, 2)
     );
 
     const result = await waitForCliOutput(['pro'], /ThumbGate Pro dashboard: http:\/\/localhost:\d+\/dashboard/, {
@@ -561,7 +562,7 @@ describe('bin/cli.js', () => {
     fs.mkdirSync(licenseDir, { recursive: true });
     fs.writeFileSync(
       path.join(licenseDir, 'license.json'),
-      JSON.stringify({ key: 'tg_info_only' }, null, 2)
+      JSON.stringify({ key: 'rlhf_info_only' }, null, 2)
     );
 
     const result = runCliSync(['pro', '--info'], {
@@ -574,7 +575,7 @@ describe('bin/cli.js', () => {
     });
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /ThumbGate Pro — Local Dashboard/);
+    assert.match(result.stdout, /ThumbGate Pro — Same Package, Runtime Unlock/);
     assert.doesNotMatch(result.stdout, /ThumbGate Pro dashboard: http:\/\/localhost:/);
     fs.rmSync(homeDir, { recursive: true, force: true });
   });
@@ -658,7 +659,7 @@ describe('bin/cli.js', () => {
     const checkoutUrl = extractHttpUrls(result.stdout).find((candidate) => new URL(candidate).host === 'buy.stripe.com');
     assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'Pro command should include the live Stripe checkout URL');
     assert.ok(result.stdout.includes('$19/mo or $149/yr'), 'Pro command should include current pricing');
-    assert.ok(result.stdout.includes('Legacy launcher'), 'Pro command should still mention legacy launcher path');
+    assert.ok(result.stdout.includes('Same Package, Runtime Unlock'), 'Pro command should describe the single-package upgrade path');
   });
 
   test('RLHF_NO_TELEMETRY=1 prevents telemetry ping on init', () => {

@@ -244,6 +244,14 @@ components:
           type: string
         installId:
           type: string
+        planId:
+          type: string
+          enum: [pro, team]
+        billingCycle:
+          type: string
+          enum: [monthly, annual]
+        seatCount:
+          type: integer
     WorkflowSprintIntakeRequest:
       type: object
       required: [email, workflow, owner, blocker, runtime]
@@ -1193,6 +1201,14 @@ paths:
       responses:
         '200':
           description: Usage count for authenticated billing key
+        '401':
+          description: Unauthorized
+  /v1/billing/entitlement:
+    get:
+      operationId: getBillingEntitlement
+      responses:
+        '200':
+          description: Runtime Pro unlock status for the authenticated billing key
         '401':
           description: Unauthorized
   /v1/billing/provision:

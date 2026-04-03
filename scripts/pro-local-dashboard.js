@@ -3,6 +3,13 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const {
+  activateLicense,
+  fetchLicenseEntitlement,
+  getLicenseDir,
+  getLicensePath,
+  readLicense,
+} = require('./license');
 
 const DEFAULT_PRO_API = 'https://rlhf-feedback-loop-production.up.railway.app';
 const CREATOR_BYPASS_VALUE = process.env.THUMBGATE_DEV_SECRET || '';
@@ -32,35 +39,12 @@ function isCreatorDev({ env = process.env, homeDir = os.homedir() } = {}) {
   return false;
 }
 
-function getLicenseDir(homeDir = os.homedir()) {
-  return path.join(homeDir, '.thumbgate');
-}
-
-function getLicensePath(homeDir = os.homedir()) {
-  return path.join(getLicenseDir(homeDir), 'license.json');
-}
-
-function readLicense({ homeDir } = {}) {
-  try {
-    return JSON.parse(fs.readFileSync(getLicensePath(homeDir), 'utf8'));
-  } catch {
-    return null;
-  }
-}
-
 function saveLicense(key, { homeDir, version } = {}) {
-  const licenseDir = getLicenseDir(homeDir);
-  const licensePath = getLicensePath(homeDir);
-  fs.mkdirSync(licenseDir, { recursive: true });
-  fs.writeFileSync(
-    licensePath,
-    JSON.stringify({
-      key: String(key || '').trim(),
-      savedAt: new Date().toISOString(),
-      version: version || null,
-    }, null, 2) + '\n'
-  );
-  return licensePath;
+  const result = activateLicense(key, { homeDir, version });
+  if (!result.success) {
+    throw new Error(result.error || 'Unable to save license key.');
+  }
+  return result.path;
 }
 
 function resolveProKey({ env = process.env, homeDir } = {}) {
@@ -95,24 +79,8 @@ function resolveProKey({ env = process.env, homeDir } = {}) {
 }
 
 async function validateProKey(key, { apiBaseUrl = DEFAULT_PRO_API, fetchImpl = globalThis.fetch } = {}) {
-  if (!key || typeof fetchImpl !== 'function') {
-    return false;
-  }
-
-  try {
-    const res = await fetchImpl(`${apiBaseUrl}/v1/billing/usage`, {
-      headers: {
-        'Authorization': `Bearer ${String(key).trim()}`,
-      },
-    });
-    if (!res.ok) {
-      return false;
-    }
-    const data = await res.json().catch(() => ({}));
-    return Boolean(data && data.key);
-  } catch {
-    return false;
-  }
+  const entitlement = await fetchLicenseEntitlement(key, { apiBaseUrl, fetchImpl });
+  return Boolean(entitlement.valid);
 }
 
 async function startLocalProDashboard({

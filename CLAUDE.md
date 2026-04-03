@@ -6,7 +6,7 @@
 PROD_URL    = https://rlhf-feedback-loop-production.up.railway.app
 REPO        = IgorGanapolsky/ThumbGate
 NPM_PKG     = mcp-memory-gateway
-NPM_PRO_PKG = mcp-memory-gateway-pro
+PRO_UNLOCK  = Stripe-issued rlhf_* license key on the same mcp-memory-gateway package
 VERSION     = package.json  (source of truth: scripts/sync-version.js propagates release surfaces)
 DEPLOY      = Railway auto-deploys from main via Docker (2-5 min rebuild)
 ```

@@ -1601,6 +1601,30 @@ test('billing provision requires static admin key and rejects billing keys', asy
   assert.equal(res.status, 403);
 });
 
+test('billing entitlement returns runtime unlock data for a paid key', async () => {
+  const billingKey = billing.provisionApiKey('cus_entitlement_api', {
+    planId: 'team',
+    billingCycle: 'monthly',
+    seatCount: 4,
+    source: 'admin_provision',
+  }).key;
+
+  const res = await fetch(apiUrl('/v1/billing/entitlement'), {
+    headers: {
+      authorization: `Bearer ${billingKey}`,
+    },
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.key, billingKey);
+  assert.equal(body.valid, true);
+  assert.equal(body.tier, 'team');
+  assert.equal(body.planId, 'team');
+  assert.equal(body.seatCount, 4);
+  assert.equal(body.features.dashboard, true);
+  assert.equal(body.features.teamViews, true);
+});
+
 test('billing summary returns admin-only operational proxy', async () => {
   fs.writeFileSync(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'), `${JSON.stringify({
     leadId: 'lead_admin_summary',

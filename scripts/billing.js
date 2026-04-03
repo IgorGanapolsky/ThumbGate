@@ -1846,7 +1846,10 @@ async function getCheckoutSessionStatus(sessionId) {
     const provisioned = provisionApiKey(session.customer, {
       installId: session.metadata?.installId,
       credits: session.metadata?.credits,
-      source: 'local_checkout_lookup'
+      source: 'local_checkout_lookup',
+      planId: session.metadata?.planId || session.metadata?.packId,
+      billingCycle: session.metadata?.billingCycle,
+      seatCount: session.metadata?.seatCount,
     });
     return {
       found: true,
@@ -1881,7 +1884,14 @@ async function getCheckoutSessionStatus(sessionId) {
 
     const installId = session.metadata?.installId || null;
     const credits = session.metadata?.credits ? parseInt(session.metadata.credits, 10) : null;
-    const provisioned = provisionApiKey(session.customer, { installId, credits, source: 'stripe_checkout_session_lookup' });
+    const provisioned = provisionApiKey(session.customer, {
+      installId,
+      credits,
+      source: 'stripe_checkout_session_lookup',
+      planId: session.metadata?.planId || session.metadata?.packId,
+      billingCycle: session.metadata?.billingCycle,
+      seatCount: session.metadata?.seatCount,
+    });
 
     return {
       found: true,
@@ -1915,11 +1925,19 @@ function provisionApiKey(customerId, opts = {}) {
   const existing = Object.entries(store.keys).find(([, m]) => m.customerId === customerId && m.active);
 
   const creditsToAdd = normalizeInteger(opts.credits);
+  const normalizedPlanId = normalizePlanId(opts.planId);
+  const normalizedBillingCycle = normalizeBillingCycle(opts.billingCycle);
+  const normalizedSeatCount = normalizedPlanId === 'team'
+    ? normalizeSeatCount(opts.seatCount, TEAM_MIN_SEATS)
+    : 1;
 
   if (existing) {
     const key = existing[0];
     const meta = existing[1];
     if (opts.installId && !meta.installId) { meta.installId = opts.installId; }
+    if (normalizedPlanId) { meta.planId = normalizedPlanId; }
+    if (normalizedBillingCycle) { meta.billingCycle = normalizedBillingCycle; }
+    if (normalizedSeatCount) { meta.seatCount = normalizedSeatCount; }
     if (creditsToAdd !== null) {
       meta.remainingCredits = (meta.remainingCredits || 0) + creditsToAdd;
     }
@@ -1936,6 +1954,9 @@ function provisionApiKey(customerId, opts = {}) {
     createdAt,
     installId: opts.installId || null,
     source: opts.source || 'provision',
+    planId: normalizedPlanId || 'pro',
+    billingCycle: normalizedBillingCycle || 'monthly',
+    seatCount: normalizedSeatCount || 1,
     remainingCredits: creditsToAdd // null means unlimited (standard subscription)
   };
   saveKeyStore(store);
@@ -1983,6 +2004,49 @@ function validateApiKey(key) {
     installId: meta.installId || null,
     createdAt: meta.createdAt,
     metadata: meta,
+  };
+}
+
+function resolveEntitlement(key) {
+  const validation = validateApiKey(key);
+  if (!validation.valid) {
+    return {
+      valid: false,
+      tier: 'free',
+      planId: null,
+      billingCycle: null,
+      seatCount: null,
+      features: {},
+      source: null,
+    };
+  }
+
+  const metadata = validation.metadata || {};
+  const planId = normalizePlanId(metadata.planId) || 'pro';
+  const billingCycle = normalizeBillingCycle(metadata.billingCycle) || (planId === 'team' ? 'monthly' : 'monthly');
+  const seatCount = planId === 'team'
+    ? normalizeSeatCount(metadata.seatCount, TEAM_MIN_SEATS)
+    : 1;
+  const tier = planId === 'team' ? 'team' : 'pro';
+
+  return {
+    valid: true,
+    customerId: validation.customerId,
+    usageCount: validation.usageCount,
+    installId: validation.installId,
+    createdAt: validation.createdAt,
+    source: metadata.source || null,
+    tier,
+    planId,
+    billingCycle,
+    seatCount,
+    features: {
+      dashboard: true,
+      dpoExport: true,
+      databricksExport: true,
+      lessonSynthesis: true,
+      teamViews: tier === 'team',
+    },
   };
 }
 
@@ -2260,7 +2324,7 @@ function handleGithubWebhook(event) {
 }
 
 module.exports = {
-  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, resolveEntitlement, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _resolveSubscriptionCheckoutSelection: resolveSubscriptionCheckoutSelection,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,

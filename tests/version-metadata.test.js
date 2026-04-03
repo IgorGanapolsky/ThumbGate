@@ -15,7 +15,6 @@ const {
 const PROJECT_ROOT = path.join(__dirname, '..');
 const CANONICAL_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
 const CURRENT_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate';
-const PRO_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/mcp-memory-gateway-pro';
 
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, relativePath), 'utf8'));
@@ -309,10 +308,11 @@ test('commercial truth sources stay aligned across public and historical docs', 
   assert.doesNotMatch(directoryGuide, /30k\+ stars|18k\+ servers listed/i);
 });
 
-test('public repo documents the separate Pro overlay repository', () => {
+test('public repo documents the single-package Pro unlock path', () => {
   const readme = readText('README.md');
   const distributionDoc = readText('docs/PLUGIN_DISTRIBUTION.md');
-  assert.match(readme, new RegExp(PRO_REPOSITORY_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(distributionDoc, /public repo owns shared runtime/i);
-  assert.match(distributionDoc, /paid overlay code in the separate `mcp-memory-gateway-pro` repo\/package/i);
+  assert.match(readme, /Runtime unlock model/i);
+  assert.match(readme, /same package unlocks Pro features at runtime/i);
+  assert.match(distributionDoc, /public repo owns the distributed runtime/i);
+  assert.match(distributionDoc, /same installed package unlocks Pro features at runtime/i);
 });
