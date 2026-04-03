@@ -360,7 +360,8 @@ function renderTimeline(items) {
   el.innerHTML = items.map(function(item) {
     var sig = item.signal || 'down';
     var emoji = sig === 'up' ? '👍' : '👎';
-    return '<div class="timeline-item">' +
+    var fbId = item.feedbackId || item.id || '';
+    return '<div class="timeline-item" data-feedback-id="' + escHtml(fbId) + '">' +
       '<div class="timeline-dot ' + sig + '"></div>' +
       '<div class="timeline-card">' +
         '<div class="timeline-header">' +
@@ -451,7 +452,8 @@ function mapTimelineItems(payload, lessonMap) {
       signal: entry.signal || 'down',
       context: entry.context || entry.title || '',
       date: formatDate(entry.timestamp),
-      learned: linkedLesson ? linkedLesson.title : ''
+      learned: linkedLesson ? linkedLesson.title : '',
+      feedbackId: entry.id || ''
     };
   });
 }
@@ -541,7 +543,25 @@ async function loadLive() {
   }
 }
 
-loadLive();
+loadLive().then(function() {
+  // Handle #feedbackId hash — scroll to and highlight the matching item
+  var hash = window.location.hash.replace('#', '');
+  if (!hash) return;
+  // Try rule cards first
+  var el = document.querySelector('[data-rule-id="' + hash + '"]') ||
+           document.querySelector('[data-feedback-id="' + hash + '"]');
+  if (!el) {
+    // Search in timeline by switching tab
+    switchTab('timeline');
+    el = document.querySelector('[data-feedback-id="' + hash + '"]');
+  }
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.style.borderColor = 'var(--cyan)';
+    el.style.boxShadow = '0 0 12px rgba(34,211,238,0.3)';
+    setTimeout(function() { el.style.borderColor = ''; el.style.boxShadow = ''; }, 4000);
+  }
+});
 </script>
 </body>
 </html>
