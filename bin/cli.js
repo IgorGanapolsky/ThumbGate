@@ -1197,6 +1197,7 @@ function help() {
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Pre-Action Gates');
   console.log('  force-gate <PATTERN>  Immediately create a blocking gate from a pattern');
   console.log('  self-heal             Run self-healing check and auto-fix');
+  console.log('  activate <KEY>        Activate a Pro license key (from Stripe checkout)');
   console.log('  pro                   Show Pro plan ($19/mo) + hosted pilot info');
   console.log('    --upgrade           Install Pro configs into .rlhf/');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
@@ -1325,6 +1326,11 @@ switch (COMMAND) {
     selfHeal();
     break;
   case 'pro':
+    pro();
+    break;
+  case 'activate':
+    // Top-level alias: npx mcp-memory-gateway activate <key>
+    process.argv.splice(3, 0, '--activate');
     pro();
     break;
   case 'prove':
