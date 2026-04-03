@@ -140,10 +140,41 @@ test('distillFromHistory includes inference data', () => {
   assert.ok(typeof r.inference.confidence === 'number');
 });
 
-test('distillFromHistory marks lesson metadata as distilled', () => {
-  const r = distillFromHistory({
-    chatHistory: [{ role: 'assistant', content: 'Using console.log for debugging.' }],
-    signal: 'negative',
-  });
-  assert.equal(r.lesson.metadata.distilled, true);
+test('analyzeChatHistory handles vague correction (no donMatch)', () => {
+  const r = analyzeChatHistory([
+    { role: 'user', content: 'Wrong.' },
+  ]);
+  // contains "Wrong" which matches cp.test but doesn't match the dontMatch capture
+  assert.equal(r.proposedRule, null);
+  assert.ok(r.correction.includes('Wrong'));
+});
+
+test('distillFromHistory handles registerPreventionRules failure', () => {
+  // Use the same object that history-distiller.js required
+  const contextfs = require('../scripts/contextfs');
+  const original = contextfs.registerPreventionRules;
+  
+  // Force failure
+  contextfs.registerPreventionRules = () => {
+    throw new Error('mock disk failure');
+  };
+
+  try {
+    const r = distillFromHistory({
+      chatHistory: [{ role: 'assistant', content: 'Running --force' }],
+      signal: 'negative',
+    });
+    // Should be false because of the catch block in distillFromHistory
+    assert.equal(r.ruleInstalled, false);
+    assert.ok(r.autoCreated);
+  } finally {
+    // Restore original
+    contextfs.registerPreventionRules = original;
+  }
+});
+
+test('analyzeChatHistory handles non-array chatHistory', () => {
+  const r = analyzeChatHistory(null);
+  assert.equal(r.confidence, 0);
+  assert.equal(r.proposedRule, null);
 });

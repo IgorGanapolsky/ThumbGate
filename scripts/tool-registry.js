@@ -183,6 +183,27 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'infer_lesson_from_history',
+    description: 'Perform autonomous inference on chat history to identify why a failure occurred and what rule should be recorded.',
+    inputSchema: {
+      type: 'object',
+      required: ['chatHistory'],
+      properties: {
+        chatHistory: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              role: { type: 'string' },
+              content: { type: 'string' },
+            },
+          },
+        },
+        lastAction: { type: 'object' },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'list_intents',
     description: 'List available intent plans and whether each requires human approval in the active profile',
     inputSchema: {

@@ -15,11 +15,12 @@
  */
 
 const { createLesson, inferFromSurroundingMessages } = require('./lesson-inference');
-const { registerPreventionRules } = require('./contextfs');
+const contextfs = require('./contextfs');
 
 // ---------------------------------------------------------------------------
 // Chat History Analysis
 // ---------------------------------------------------------------------------
+
 
 const ANTI_PATTERNS = [
   { pattern: /\b(?:tailwind|tw-)\b/i, label: 'Tailwind CSS', ruleTemplate: 'NEVER use Tailwind CSS in this project' },
@@ -177,7 +178,7 @@ function distillFromHistory({ chatHistory = [], failedToolCall = null, feedbackC
   let ruleInstalled = false;
   if (proposedRule && analysis.confidence >= 60) {
     try {
-      registerPreventionRules(`# Auto-Distilled Rule\n\n- ${proposedRule}\n\nSource: history-distiller (confidence: ${analysis.confidence}%)`, { source: 'history-distiller', lessonId: lesson.id });
+      contextfs.registerPreventionRules(`# Auto-Distilled Rule\n\n- ${proposedRule}\n\nSource: history-distiller (confidence: ${analysis.confidence}%)`, { source: 'history-distiller', lessonId: lesson.id });
       ruleInstalled = true;
     } catch { /* non-critical */ }
   }

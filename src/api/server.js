@@ -137,6 +137,47 @@ const ACQUISITION_COOKIE_NAME = 'rlhf_acquisition_id';
 const VISITOR_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
 const BUILD_METADATA = resolveBuildMetadata();
 
+// ---------------------------------------------------------------------------
+// Stripe event tracking helpers
+// ---------------------------------------------------------------------------
+const STRIPE_EVENTS_PATH = path.resolve(__dirname, '../../.rlhf/stripe-events.jsonl');
+
+function ensureStripeEventsDir() {
+  const dir = path.dirname(STRIPE_EVENTS_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
+function appendStripeEvent(record) {
+  ensureStripeEventsDir();
+  fs.appendFileSync(STRIPE_EVENTS_PATH, JSON.stringify(record) + '\n', 'utf8');
+}
+
+function readStripeEvents() {
+  ensureStripeEventsDir();
+  if (!fs.existsSync(STRIPE_EVENTS_PATH)) return [];
+  const lines = fs.readFileSync(STRIPE_EVENTS_PATH, 'utf8').split('\n').filter(Boolean);
+  return lines.map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+}
+
+function computeConversionStats(events) {
+  const active = {};
+  const cancelled = new Set();
+  for (const ev of events) {
+    if (ev.event_type === 'customer.subscription.created' || ev.event_type === 'checkout.session.completed') {
+      if (ev.customer_email) active[ev.customer_email] = ev;
+    }
+    if (ev.event_type === 'customer.subscription.deleted') {
+      if (ev.customer_email) cancelled.add(ev.customer_email);
+    }
+  }
+  for (const email of cancelled) delete active[email];
+  const subscribers = Object.values(active);
+  const mrr = subscribers.reduce((sum, ev) => sum + (ev.amount_cents ? ev.amount_cents / 100 : 0), 0);
+  const recent = [...events].reverse().slice(0, 20);
+  return { total_subscribers: subscribers.length, mrr_dollars: Math.round(mrr * 100) / 100, recent_events: recent };
+}
+// ---------------------------------------------------------------------------
+
 function getSafeDataDir() {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
   return path.resolve(path.dirname(FEEDBACK_LOG_PATH));
@@ -3529,6 +3570,91 @@ async function addContext(){
         }
         const entry = satisfyCondition(body.gateId, body.evidence);
         sendJson(res, 200, { satisfied: true, gateId: body.gateId, ...entry });
+        return;
+      }
+
+      // POST /webhook/stripe — Track Stripe subscription events (checkout, subscription changes)
+      // TODO: Add STRIPE_WEBHOOK_SECRET to .env and enable signature verification via
+      // verifyWebhookSignature() once the webhook endpoint is registered in the Stripe Dashboard.
+      if (req.method === 'POST' && pathname === '/webhook/stripe') {
+        try {
+          const rawBody = await new Promise((resolve, reject) => {
+            const chunks = [];
+            req.on('data', (c) => chunks.push(c));
+            req.on('end', () => resolve(Buffer.concat(chunks)));
+            req.on('error', reject);
+          });
+          let event;
+          try {
+            event = JSON.parse(rawBody.toString('utf-8'));
+          } catch {
+            sendProblem(res, {
+              type: PROBLEM_TYPES.INVALID_JSON,
+              title: 'Invalid JSON',
+              status: 400,
+              detail: 'Invalid JSON in webhook body.',
+            });
+            return;
+          }
+          const TRACKED_STRIPE_EVENTS = new Set([
+            'checkout.session.completed',
+            'customer.subscription.created',
+            'customer.subscription.deleted',
+          ]);
+          if (TRACKED_STRIPE_EVENTS.has(event.type)) {
+            const obj = event.data && event.data.object ? event.data.object : {};
+            const record = {
+              timestamp: new Date().toISOString(),
+              event_type: event.type,
+              event_id: event.id || null,
+              customer_email:
+                obj.customer_email ||
+                obj.email ||
+                (obj.customer_details && obj.customer_details.email) ||
+                null,
+              plan:
+                obj.plan
+                  ? (obj.plan.nickname || obj.plan.id || null)
+                  : (
+                    obj.items &&
+                    obj.items.data &&
+                    obj.items.data[0] &&
+                    obj.items.data[0].plan
+                      ? (obj.items.data[0].plan.nickname || obj.items.data[0].plan.id)
+                      : null
+                  ),
+              amount_cents: obj.amount_total || (obj.plan && obj.plan.amount) || null,
+              currency: obj.currency || null,
+              subscription_id: obj.subscription || obj.id || null,
+            };
+            appendStripeEvent(record);
+          }
+          sendJson(res, 200, { received: true, event_type: event.type });
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INTERNAL,
+            title: 'Internal Server Error',
+            status: 500,
+            detail: err.message,
+          });
+        }
+        return;
+      }
+
+      // GET /api/conversions — Conversion stats derived from the Stripe event log
+      if (req.method === 'GET' && pathname === '/api/conversions') {
+        try {
+          const events = readStripeEvents();
+          const stats = computeConversionStats(events);
+          sendJson(res, 200, stats);
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INTERNAL,
+            title: 'Internal Server Error',
+            status: 500,
+            detail: err.message,
+          });
+        }
         return;
       }
 
