@@ -265,7 +265,7 @@ function formatDate(value) {
   if (!value) return '';
   var ts = new Date(value);
   if (Number.isNaN(ts.getTime())) return String(value);
-  return ts.toLocaleString();
+  return ts.toLocaleString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
 }
 
 function highlightCard(index) {
