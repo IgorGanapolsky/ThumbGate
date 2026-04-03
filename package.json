@@ -197,6 +197,7 @@
     "test:history-distiller": "node --test tests/history-distiller.test.js",
     "test:predictive-insights": "node --test tests/predictive-insights.test.js",
     "test:prove-predictive-insights": "node --test tests/prove-predictive-insights.test.js",
+    "prove:predictive-insights": "node scripts/prove-predictive-insights.js",
     "test:statusbar-cli": "node --test tests/statusbar-cli.test.js",
     "test:generate-instagram-card": "node --test tests/generate-instagram-card.test.js",
     "test:instagram-thumbgate-post": "node --test tests/instagram-thumbgate-post.test.js",
