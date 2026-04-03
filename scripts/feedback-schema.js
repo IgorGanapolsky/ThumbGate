@@ -10,8 +10,21 @@
 
 const GENERIC_TAGS = new Set(['feedback', 'positive', 'negative']);
 const MIN_CONTENT_LENGTH = 20;
+const MAX_TITLE_DESCRIPTION_LENGTH = 120;
 const VALID_TITLE_PREFIXES = ['SUCCESS:', 'MISTAKE:', 'LEARNING:', 'PREFERENCE:'];
 const VALID_CATEGORIES = new Set(['error', 'learning', 'preference']);
+
+/**
+ * Truncate text at a word boundary to avoid cutting mid-word.
+ * Falls back to hard truncation if no suitable space is found
+ * past the halfway point of maxLen.
+ */
+function truncateAtWord(text, maxLen) {
+  if (!text || text.length <= maxLen) return text;
+  var truncated = text.slice(0, maxLen);
+  var lastSpace = truncated.lastIndexOf(' ');
+  return lastSpace > maxLen * 0.5 ? truncated.slice(0, lastSpace) + '...' : truncated + '...';
+}
 const {
   assessFeedbackActionability,
 } = require('./feedback-quality');
@@ -167,7 +180,7 @@ function resolveFeedbackAction(params) {
       }
     }
 
-    const description = whatWentWrong ? whatWentWrong.slice(0, 60) : (context || '').slice(0, 60);
+    const description = truncateAtWord(whatWentWrong || context || '', MAX_TITLE_DESCRIPTION_LENGTH);
 
     return {
       type: 'store-mistake',
@@ -218,7 +231,7 @@ function resolveFeedbackAction(params) {
       rubricLines.push(`Rubric weighted score: ${rubricSummary.weightedScore}`);
       rubricLines.push(`Rubric criteria passed with no blocking guardrails.`);
     }
-    const description = whatWorked ? whatWorked.slice(0, 60) : (context || '').slice(0, 60);
+    const description = truncateAtWord(whatWorked || context || '', MAX_TITLE_DESCRIPTION_LENGTH);
 
     return {
       type: 'store-learning',
@@ -353,8 +366,10 @@ module.exports = {
   resolveFeedbackAction,
   prepareForStorage,
   parseTimestamp,
+  truncateAtWord,
   GENERIC_TAGS,
   MIN_CONTENT_LENGTH,
+  MAX_TITLE_DESCRIPTION_LENGTH,
   VALID_TITLE_PREFIXES,
   VALID_CATEGORIES,
 };
