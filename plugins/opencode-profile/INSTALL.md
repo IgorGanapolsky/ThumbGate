@@ -25,7 +25,7 @@ The portable profile adds this MCP server entry:
   "mcp": {
     "rlhf": {
       "type": "local",
-      "command": ["npx", "-y", "mcp-memory-gateway@0.9.7", "serve"],
+      "command": ["npx", "-y", "mcp-memory-gateway@0.9.8", "serve"],
       "enabled": true
     }
   }

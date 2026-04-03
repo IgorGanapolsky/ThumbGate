@@ -103,7 +103,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.9.7' };
+const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.9.8' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
