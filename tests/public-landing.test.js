@@ -28,7 +28,7 @@ test('public landing page uses Stripe checkout links for Pro tier', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /buy\.stripe\.com/);
-  assert.match(landingPage, /Get Pro/);
+  assert.match(landingPage, /Free Trial/);
   assert.doesNotMatch(landingPage, /gumroad\.com/);
 });
 
@@ -75,7 +75,7 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /Shared lessons/i);
   assert.match(landingPage, /\$12/);
   assert.match(landingPage, /Install Free/);
-  assert.match(landingPage, /Get Pro/);
+  assert.match(landingPage, /Free Trial/);
   assert.match(landingPage, /Start Team Rollout/);
 });
 
@@ -349,7 +349,7 @@ test('lessons page has feedback timeline with up/down signals', () => {
 test('lessons page has Pro upgrade badge in insights tab', () => {
   const html = readLessonsPage();
   assert.match(html, /Unlock Full Insights/i);
-  assert.match(html, /Get Pro/i);
+  assert.match(html, /Free Trial|Get Pro/i);
   assert.match(html, /\$19\/mo/);
 });
 
@@ -375,3 +375,19 @@ test('lessons severity filtering scopes active state to rules filter buttons', (
   assert.match(html, /document\.querySelectorAll\('#tab-rules \.filter-btn'\)/);
   assert.match(html, /if \(level === 'critical'\) \{ highlightCard\(1\); \} else \{ highlightCard\(0\); \}/);
 });
+
+test('public landing page includes 7-day free trial and email capture gate', () => {
+  const landingPage = readLandingPage();
+  assert.match(landingPage, /7-DAY FREE TRIAL/);
+  assert.match(landingPage, /pro-email/);
+  assert.match(landingPage, /handleProTrial/);
+  assert.match(landingPage, /prefilled_email/);
+});
+
+test('public landing page includes dashboard preview in Pro card', () => {
+  const landingPage = readLandingPage();
+  assert.match(landingPage, /dashboard-preview/);
+  assert.match(landingPage, /What your Pro dashboard looks like/);
+  assert.match(landingPage, /gate:no-force-push/);
+});
+
