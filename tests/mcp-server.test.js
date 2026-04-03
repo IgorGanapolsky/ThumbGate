@@ -307,6 +307,45 @@ test('reflect_on_feedback returns a proposed rule from the conversation window',
   assert.match(payload.message, /Correct\?/);
 });
 
+test('report_product_issue logs local product feedback over MCP', async () => {
+  const originalGithubToken = process.env.GITHUB_TOKEN;
+  const originalGhToken = process.env.GH_TOKEN;
+  delete process.env.GITHUB_TOKEN;
+  delete process.env.GH_TOKEN;
+  try {
+    const result = await handleRequest({
+      jsonrpc: '2.0',
+      id: 34.5,
+      method: 'tools/call',
+      params: {
+        name: 'report_product_issue',
+        arguments: {
+          title: 'Lessons tab keeps resetting',
+          body: 'The lessons tab resets every time I switch back from the dashboard.',
+          category: 'bug',
+        },
+      },
+    });
+
+    const payload = JSON.parse(result.content[0].text);
+    assert.equal(payload.success, true);
+    assert.equal(payload.issueNumber, null);
+    assert.match(payload.note, /logged locally/);
+
+    const feedbackLogPath = path.join(tmpFeedbackDir, 'user-feedback.jsonl');
+    const entries = fs.readFileSync(feedbackLogPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    const latest = entries.at(-1);
+    assert.equal(latest.title, 'Lessons tab keeps resetting');
+    assert.equal(latest.category, 'bug');
+    assert.equal(latest.source, 'mcp tool');
+  } finally {
+    if (originalGithubToken === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = originalGithubToken;
+    if (originalGhToken === undefined) delete process.env.GH_TOKEN;
+    else process.env.GH_TOKEN = originalGhToken;
+  }
+});
+
 test('feedback session tools support follow-up capture and finalization over MCP', async () => {
   const opened = await handleRequest({
     jsonrpc: '2.0',

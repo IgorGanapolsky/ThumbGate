@@ -20,9 +20,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
 <title>ThumbGate — Stop AI Coding Agents From Repeating Mistakes</title>
-<meta name="description" content="👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility.">
+<meta name="description" content="Pre-action gates for AI coding agents. Background agent governance, hallucination detection, PII scanning, Control Tower. 👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility.">
 <meta property="og:title" content="ThumbGate — Human-in-the-Loop Enforcement for AI Agents">
-<meta property="og:description" content="👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility.">
+<meta property="og:description" content="Pre-action gates for AI coding agents. Background agent governance, hallucination detection, PII scanning, Control Tower. 👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility.">
 <meta property="og:type" content="website">
 <meta name="keywords" content="ThumbGate, mcp-memory-gateway, AI agent guardrails, pre-action gates, MCP server, Claude Code, Claude Code security, Claude Code guardrails, Claw-code, Cursor, Codex, Gemini, Amp, OpenCode, vibe coding safety, SpecLock alternative, Mem0 alternative, AI coding agent memory, PreToolUse hooks, prevention rules, feedback enforcement">
 
@@ -543,7 +543,7 @@ __GA_BOOTSTRAP__
 <!-- AI CONTROL TOWER -->
 <section class="compatibility" id="control-tower">
   <div class="container">
-    <div class="section-label">New in v0.9.5</div>
+    <div class="section-label">New in v0.9.6</div>
     <h2 class="section-title">AI Control Tower: monitor, alert, and act</h2>
     <div class="agent-grid">
       <div class="agent-card">
@@ -569,6 +569,28 @@ __GA_BOOTSTRAP__
       <div class="agent-card">
         <h3>Ambient daily digest</h3>
         <p>Push Slack/Teams/Discord summary at 9am. Weekly stats export for build-in-public content. Check in once a day, not babysit.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BACKGROUND AGENT GOVERNANCE -->
+<section class="compatibility" id="background-agents">
+  <div class="container">
+    <div class="section-label">For Background Agent Teams</div>
+    <h2 class="section-title">Your agents write 57% of PRs. ThumbGate makes sure they don't repeat mistakes.</h2>
+    <div class="agent-grid">
+      <div class="agent-card">
+        <h3>Run governance gate</h3>
+        <p>Before a background agent opens a PR, check its failure history. Agents with >50% fail rate get blocked. Protected branches get extra scrutiny.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Auto-capture from CI</h3>
+        <p>CI pass/fail auto-generates structured feedback. No human in the loop. The agent learns from every merge and every rejection.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Governance report</h3>
+        <p>Per-agent pass rates, gate blocks, run types, blast radius warnings. Know which agents are reliable and which need guardrails.</p>
       </div>
     </div>
   </div>
@@ -764,7 +786,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v0.9.5</span>
+    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v0.9.6</span>
   </div>
 </footer>
 
@@ -806,6 +828,23 @@ function copyInstall(el) {
   trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
   trackClick('.btn-free', 'install_click', { tier: 'free' });
   trackClick('.nav-cta', 'checkout_start', { tier: 'pro', source: 'nav' });
+
+  /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Team button click
+     with section context so we can distinguish pricing section vs final CTA section clicks */
+  document.querySelectorAll('.btn-pro, .btn-team, .btn-free, .nav-cta').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var section = el.closest('section');
+      var sectionId = section ? (section.id || section.className.split(' ')[0] || 'unknown') : 'unknown';
+      var tier = el.classList.contains('btn-pro') ? 'pro'
+               : el.classList.contains('btn-team') ? 'team'
+               : el.classList.contains('btn-free') ? 'free'
+               : 'nav';
+      var label = (el.textContent || '').trim().substring(0, 40);
+      if (typeof plausible === 'function') {
+        plausible('pricing_cta_click', { props: { tier: tier, section: sectionId, label: label } });
+      }
+    });
+  });
 
   /* FAQ accordion opens */
   document.querySelectorAll('.faq-q').forEach(function(el) {

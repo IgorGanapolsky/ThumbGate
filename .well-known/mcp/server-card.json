@@ -1,6 +1,6 @@
 {
   "name": "mcp-memory-gateway",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "ThumbGate — 👍👎 feedback that teaches your AI agent. Thumbs down a mistake, it never happens again.",
   "homepage": "https://github.com/IgorGanapolsky/thumbgate",
   "transport": "stdio",

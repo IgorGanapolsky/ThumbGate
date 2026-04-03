@@ -27,6 +27,7 @@ function buildVerifyPlan(mode = 'quick') {
       { command: npmCommand(), args: ['run', 'prove:adapters'] },
       { command: npmCommand(), args: ['run', 'prove:automation'] },
       { command: npmCommand(), args: ['run', 'prove:claim-verification'] },
+      { command: npmCommand(), args: ['run', 'prove:cloudflare-sandbox'] },
       { command: npmCommand(), args: ['run', 'prove:data-pipeline'] },
       { command: npmCommand(), args: ['run', 'prove:evolution'] },
       { command: npmCommand(), args: ['run', 'prove:harnesses'] },
@@ -87,6 +88,14 @@ function materializeProofArtifacts(tempRoot, cwd = process.cwd()) {
     {
       source: path.join(tempRoot, 'proof-automation', 'report.md'),
       target: path.join(cwd, 'proof', 'automation', 'report.md'),
+    },
+    {
+      source: path.join(tempRoot, 'proof-adapters', 'cloudflare-sandbox-report.json'),
+      target: path.join(cwd, 'proof', 'cloudflare-sandbox-report.json'),
+    },
+    {
+      source: path.join(tempRoot, 'proof-adapters', 'cloudflare-sandbox-report.md'),
+      target: path.join(cwd, 'proof', 'cloudflare-sandbox-report.md'),
     },
     {
       source: path.join(tempRoot, 'proof-adapters', 'claim-verification-report.json'),
@@ -201,6 +210,7 @@ function recordVerifyWorkflowRun(mode = 'quick', cwd = process.cwd(), feedbackDi
       path.join(cwd, 'docs', 'VERIFICATION_EVIDENCE.md'),
       path.join(cwd, 'proof', 'compatibility', 'report.json'),
       path.join(cwd, 'proof', 'automation', 'report.json'),
+      path.join(cwd, 'proof', 'cloudflare-sandbox-report.json'),
       path.join(cwd, 'proof', 'claim-verification-report.json'),
       path.join(cwd, 'proof', 'data-pipeline-report.json'),
       path.join(cwd, 'proof', 'evolution-report.json'),

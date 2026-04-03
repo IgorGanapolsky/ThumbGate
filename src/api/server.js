@@ -46,6 +46,9 @@ const {
   bootstrapInternalAgent,
 } = require('../../scripts/internal-agent-bootstrap');
 const {
+  buildCloudflareSandboxPlan,
+} = require('../../scripts/cloudflare-dynamic-sandbox');
+const {
   loadModel,
   getReliability,
   samplePosteriors,
@@ -98,11 +101,20 @@ const {
   searchLessons,
 } = require('../../scripts/lesson-search');
 const {
+  updateRecordInJsonl,
+  deleteRecordFromJsonl,
+  readJSONLLocal,
+} = require('../../scripts/lesson-synthesis');
+const {
   searchRlhf,
 } = require('../../scripts/rlhf-search');
 const {
   appendTelemetryPing,
 } = require('../../scripts/telemetry-analytics');
+const {
+  buildProductIssueTitle,
+  submitProductIssue,
+} = require('../../scripts/product-feedback');
 const {
   resolveBuildMetadata,
 } = require('../../scripts/build-metadata');
@@ -181,6 +193,23 @@ function computeConversionStats(events) {
 function getSafeDataDir() {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
   return path.resolve(path.dirname(FEEDBACK_LOG_PATH));
+}
+
+function findRecordById(id, feedbackDir) {
+  const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
+  const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
+  let memoryRecord = null;
+  let feedbackEvent = null;
+  const memoryRecords = readJSONLLocal(memoryLogPath, { maxLines: 0 });
+  for (const rec of memoryRecords) {
+    if (rec.id === id) { memoryRecord = rec; break; }
+  }
+  const feedbackRecords = readJSONLLocal(feedbackLogPath, { maxLines: 0 });
+  for (const rec of feedbackRecords) {
+    if (rec.id === id) { feedbackEvent = rec; break; }
+  }
+  if (!memoryRecord && !feedbackEvent) return null;
+  return { feedbackEvent, memoryRecord };
 }
 
 function getPublicMcpTools() {
@@ -896,6 +925,288 @@ function loadLessonsPageHtml(req, expectedApiKey) {
     '__LESSONS_BOOTSTRAP_KEY__': serializedBootstrapKey,
     '__LESSONS_BOOTSTRAP_ENABLED__': localProBootstrap ? 'true' : 'false',
   });
+}
+
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderLessonDetailHtml(record, lessonId) {
+  if (!record) {
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lesson Not Found</title>
+<style>*{box-sizing:border-box}body{background:#0a0a0a;color:#fff;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.card{text-align:center;background:#141414;border:1px solid #222;border-radius:16px;padding:48px 40px;max-width:480px}
+a{color:#22d3ee;text-decoration:none}</style></head><body>
+<div class="card"><div style="font-size:48px;margin-bottom:12px">🔍</div>
+<h2 style="margin-bottom:8px">Lesson not found</h2>
+<p style="color:#888;font-size:14px;margin-bottom:20px">No record with ID <code style="background:#1a1a1a;padding:2px 6px;border-radius:4px">${esc(lessonId)}</code></p>
+<a href="/lessons">← Back to Lessons</a></div></body></html>`;
+  }
+
+  const fb = record.feedbackEvent || {};
+  const mem = record.memoryRecord || {};
+  const merged = { ...fb, ...mem };
+  const signal = merged.signal || 'down';
+  const emoji = signal === 'up' ? '👍' : '👎';
+  const signalColor = signal === 'up' ? '#4ade80' : '#f87171';
+  const title = merged.title || merged.context || 'Untitled Lesson';
+  const context = merged.context || '';
+  const whatWentWrong = merged.whatWentWrong || '';
+  const whatWorked = merged.whatWorked || '';
+  const tags = Array.isArray(merged.tags) ? merged.tags.join(', ') : (merged.tags || '');
+  const timestamp = merged.timestamp ? new Date(merged.timestamp).toLocaleString() : '';
+
+  // Structured rule
+  const rule = merged.structuredRule || merged.rule || null;
+  // Conversation window
+  const convoWindow = merged.conversationWindow || merged.chatHistory || [];
+  // Reflector analysis
+  const reflector = merged.reflectorAnalysis || merged.reflector || null;
+  // Diagnosis
+  const diagnosis = merged.diagnosis || null;
+  // Rubric
+  const rubric = merged.rubricEvaluation || merged.rubric || null;
+  // Synthesis
+  const synthesis = merged.synthesis || null;
+  // Bayesian
+  const bayesian = merged.bayesianBelief || merged.bayesian || null;
+
+  function sectionCard(titleText, content, id) {
+    if (!content) return '';
+    return `<div class="detail-card" id="${id || ''}"><h3>${titleText}</h3>${content}</div>`;
+  }
+
+  let structuredRuleHtml = '';
+  if (rule) {
+    structuredRuleHtml = sectionCard('Structured Rule (IF/THEN)', `
+      <table class="detail-table">
+        ${rule.trigger ? `<tr><td class="label">Trigger (IF)</td><td>${esc(rule.trigger)}</td></tr>` : ''}
+        ${rule.action ? `<tr><td class="label">Action (THEN)</td><td>${esc(rule.action)}</td></tr>` : ''}
+        ${rule.confidence !== undefined ? `<tr><td class="label">Confidence</td><td>${esc(String(rule.confidence))}</td></tr>` : ''}
+        ${rule.scope ? `<tr><td class="label">Scope</td><td>${esc(rule.scope)}</td></tr>` : ''}
+      </table>`, 'structuredRule');
+  }
+
+  let convoHtml = '';
+  if (Array.isArray(convoWindow) && convoWindow.length > 0) {
+    const msgs = convoWindow.map((m) => {
+      const role = esc(m.role || 'unknown');
+      const content = esc(typeof m.content === 'string' ? m.content : JSON.stringify(m.content));
+      return `<div class="convo-msg"><span class="convo-role">${role}</span><span class="convo-content">${content}</span></div>`;
+    }).join('');
+    convoHtml = sectionCard('Conversation Window', `<div class="convo-list">${msgs}</div>`, 'convoWindow');
+  }
+
+  let reflectorHtml = '';
+  if (reflector) {
+    const parts = [];
+    if (reflector.proposedRule) parts.push(`<tr><td class="label">Proposed Rule</td><td>${esc(reflector.proposedRule)}</td></tr>`);
+    if (reflector.recurrence) parts.push(`<tr><td class="label">Recurrence</td><td>${esc(JSON.stringify(reflector.recurrence))}</td></tr>`);
+    if (reflector.correctionsDetected) parts.push(`<tr><td class="label">Corrections</td><td>${esc(JSON.stringify(reflector.correctionsDetected))}</td></tr>`);
+    if (parts.length) reflectorHtml = sectionCard('Reflector Analysis', `<table class="detail-table">${parts.join('')}</table>`, 'reflector');
+  }
+
+  let diagnosisHtml = '';
+  if (diagnosis) {
+    const parts = [];
+    if (diagnosis.rootCause) parts.push(`<tr><td class="label">Root Cause</td><td>${esc(diagnosis.rootCause)}</td></tr>`);
+    if (diagnosis.category) parts.push(`<tr><td class="label">Category</td><td>${esc(diagnosis.category)}</td></tr>`);
+    if (diagnosis.violations) parts.push(`<tr><td class="label">Violations</td><td>${esc(JSON.stringify(diagnosis.violations))}</td></tr>`);
+    if (parts.length) diagnosisHtml = sectionCard('Diagnosis', `<table class="detail-table">${parts.join('')}</table>`, 'diagnosis');
+  }
+
+  let rubricHtml = '';
+  if (rubric) {
+    const parts = [];
+    if (rubric.scores) parts.push(`<tr><td class="label">Scores</td><td><pre>${esc(JSON.stringify(rubric.scores, null, 2))}</pre></td></tr>`);
+    if (rubric.failingCriteria) parts.push(`<tr><td class="label">Failing Criteria</td><td>${esc(JSON.stringify(rubric.failingCriteria))}</td></tr>`);
+    if (rubric.guardrails) parts.push(`<tr><td class="label">Guardrails</td><td>${esc(JSON.stringify(rubric.guardrails))}</td></tr>`);
+    if (parts.length) rubricHtml = sectionCard('Rubric Evaluation', `<table class="detail-table">${parts.join('')}</table>`, 'rubric');
+  }
+
+  let synthesisHtml = '';
+  if (synthesis) {
+    const parts = [];
+    if (synthesis.mergedCount !== undefined) parts.push(`<tr><td class="label">Merged Count</td><td>${esc(String(synthesis.mergedCount))}</td></tr>`);
+    if (synthesis.linkedFeedbackIds) parts.push(`<tr><td class="label">Linked Feedback</td><td>${esc(JSON.stringify(synthesis.linkedFeedbackIds))}</td></tr>`);
+    if (parts.length) synthesisHtml = sectionCard('Synthesis', `<table class="detail-table">${parts.join('')}</table>`, 'synthesis');
+  }
+
+  let bayesianHtml = '';
+  if (bayesian) {
+    const parts = [];
+    if (bayesian.prior !== undefined) parts.push(`<tr><td class="label">Prior</td><td>${esc(String(bayesian.prior))}</td></tr>`);
+    if (bayesian.posterior !== undefined) parts.push(`<tr><td class="label">Posterior</td><td>${esc(String(bayesian.posterior))}</td></tr>`);
+    if (bayesian.uncertainty !== undefined) parts.push(`<tr><td class="label">Uncertainty</td><td>${esc(String(bayesian.uncertainty))}</td></tr>`);
+    if (parts.length) bayesianHtml = sectionCard('Bayesian Belief', `<table class="detail-table">${parts.join('')}</table>`, 'bayesian');
+  }
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson — ${esc(title)}</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #141414; --border: #222225;
+  --text: #e8e8ec; --text-muted: #8b8b96; --cyan: #22d3ee;
+  --cyan-dim: rgba(34,211,238,0.12); --green: #4ade80; --red: #f87171;
+  --yellow: #fbbf24; --purple: #a78bfa;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
+nav .container { display: flex; justify-content: space-between; align-items: center; }
+.nav-logo { font-weight: 700; font-size: 15px; color: var(--text); text-decoration: none; }
+.nav-links { display: flex; gap: 16px; align-items: center; }
+.nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; }
+.nav-links a:hover { color: var(--text); }
+.header-card { margin: 32px 0 24px; padding: 28px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; }
+.header-top { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.signal-badge { font-size: 40px; }
+.header-title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.header-meta { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; color: var(--text-muted); }
+.header-meta code { background: var(--bg-raised); padding: 2px 8px; border-radius: 4px; font-family: var(--mono); font-size: 12px; cursor: pointer; }
+.header-meta code:hover { color: var(--cyan); }
+.detail-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+.detail-card h3 { font-size: 14px; font-weight: 600; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.form-group input, .form-group textarea { width: 100%; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 14px; font-size: 14px; font-family: var(--font); }
+.form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--cyan); }
+.form-group textarea { resize: vertical; min-height: 80px; }
+.detail-table { width: 100%; border-collapse: collapse; }
+.detail-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+.detail-table td.label { color: var(--text-muted); width: 160px; font-weight: 600; white-space: nowrap; }
+.detail-table pre { margin: 0; font-size: 12px; font-family: var(--mono); white-space: pre-wrap; color: var(--text-muted); }
+.convo-list { max-height: 400px; overflow-y: auto; }
+.convo-msg { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.convo-role { display: inline-block; font-weight: 700; color: var(--cyan); width: 80px; font-size: 11px; text-transform: uppercase; }
+.convo-content { color: var(--text-muted); }
+.actions-bar { display: flex; gap: 12px; margin: 24px 0 48px; flex-wrap: wrap; }
+.btn { padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: opacity 0.15s; }
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--cyan); color: #000; }
+.btn-secondary { background: var(--bg-card); color: var(--text); border: 1px solid var(--border); }
+.btn-danger { background: rgba(248,113,113,0.15); color: var(--red); border: 1px solid rgba(248,113,113,0.3); }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; display: none; z-index: 100; animation: slideUp .3s ease-out; }
+@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.toast-success { background: var(--green); color: #000; }
+.toast-error { background: var(--red); color: #000; }
+@media (max-width: 600px) {
+  .header-meta { flex-direction: column; gap: 8px; }
+  .actions-bar { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<nav><div class="container">
+  <a href="/dashboard" class="nav-logo">👍👎 ThumbGate</a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/lessons">Lessons</a>
+    <a href="/">Landing Page</a>
+  </div>
+</div></nav>
+
+<div class="container">
+  <div class="header-card">
+    <div class="header-top">
+      <div class="signal-badge">${emoji}</div>
+      <div class="header-title">Lesson Detail</div>
+    </div>
+    <div class="header-meta">
+      <span>ID: <code onclick="navigator.clipboard.writeText('${esc(lessonId)}').then(()=>showToast('Copied!','success'))" title="Click to copy">${esc(lessonId)}</code></span>
+      ${timestamp ? `<span>🕐 ${esc(timestamp)}</span>` : ''}
+      <span style="color:${signalColor};font-weight:600">${signal === 'up' ? 'Positive' : 'Negative'} feedback</span>
+    </div>
+  </div>
+
+  <div class="detail-card">
+    <h3>Lesson Content</h3>
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="editTitle" value="${esc(title)}">
+    </div>
+    <div class="form-group">
+      <label>Content / Context</label>
+      <textarea id="editContent" rows="4">${esc(context)}</textarea>
+    </div>
+    <div class="form-group">
+      <label>${signal === 'down' ? 'What went wrong' : 'What worked'}</label>
+      <textarea id="editDetail" rows="3">${esc(signal === 'down' ? whatWentWrong : whatWorked)}</textarea>
+    </div>
+    <div class="form-group">
+      <label>Tags (comma-separated)</label>
+      <input type="text" id="editTags" value="${esc(tags)}">
+    </div>
+  </div>
+
+  ${structuredRuleHtml}
+  ${convoHtml}
+  ${reflectorHtml}
+  ${diagnosisHtml}
+  ${rubricHtml}
+  ${synthesisHtml}
+  ${bayesianHtml}
+
+  <div class="actions-bar">
+    <button class="btn btn-primary" onclick="saveChanges()">Save Changes</button>
+    <a href="/lessons" class="btn btn-secondary">← Back to Lessons</a>
+    <button class="btn btn-danger" onclick="deleteLesson()">Delete Lesson</button>
+  </div>
+</div>
+
+<div class="toast toast-success" id="toastSuccess">✓ Saved</div>
+<div class="toast toast-error" id="toastError">✗ Error</div>
+
+<script>
+function showToast(msg, type) {
+  var el = document.getElementById(type === 'success' ? 'toastSuccess' : 'toastError');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(function() { el.style.display = 'none'; }, 3000);
+}
+
+async function saveChanges() {
+  var body = {
+    title: document.getElementById('editTitle').value,
+    content: document.getElementById('editContent').value,
+    tags: document.getElementById('editTags').value,
+  };
+  var detailVal = document.getElementById('editDetail').value;
+  if ('${signal}' === 'down') { body.whatWentWrong = detailVal; } else { body.whatWorked = detailVal; }
+  try {
+    var resp = await fetch('/lessons/${encodeURIComponent(lessonId)}/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) throw new Error('Save failed');
+    showToast('Changes saved', 'success');
+  } catch (e) {
+    showToast('Failed to save: ' + e.message, 'error');
+  }
+}
+
+async function deleteLesson() {
+  if (!confirm('Delete this lesson permanently?')) return;
+  try {
+    var resp = await fetch('/lessons/${encodeURIComponent(lessonId)}/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!resp.ok) throw new Error('Delete failed');
+    window.location.href = '/lessons';
+  } catch (e) {
+    showToast('Failed to delete: ' + e.message, 'error');
+  }
+}
+</script>
+</body>
+</html>`;
 }
 
 function renderRobotsTxt(runtimeConfig) {
@@ -1830,6 +2141,33 @@ function createApiServer() {
       return;
     }
 
+
+    // User feedback → GitHub Issues
+    if (req.method === 'POST' && pathname === '/api/feedback/submit') {
+      const chunks = [];
+      req.on('data', (chunk) => chunks.push(chunk));
+      req.on('end', async () => {
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString());
+          const { category, message } = body;
+          if (!message || message.length < 5) {
+            sendJson(res, 400, { error: 'message too short' });
+            return;
+          }
+          const result = await submitProductIssue({
+            title: buildProductIssueTitle(message, category),
+            body: message,
+            category: category || 'bug',
+            source: 'dashboard feedback widget',
+          });
+          sendJson(res, 200, result);
+        } catch (e) {
+          sendJson(res, 500, { error: 'feedback submission failed' });
+        }
+      });
+      return;
+    }
+
     if (req.method === 'POST' && pathname === '/api/newsletter') {
       const chunks = [];
       req.on('data', (chunk) => chunks.push(chunk));
@@ -1953,13 +2291,14 @@ body{background:#0a0a0a;color:#fff;font-family:system-ui,-apple-system,sans-seri
 <div class="card">
   <div class="emoji">${emoji}</div>
   <div class="msg">${label} feedback recorded</div>
-  <div class="sub">${promoted} · <span class="badge">${feedbackId}</span></div>
+  <div class="sub">${promoted} · <a href="/lessons/${feedbackId}" class="badge" style="color:#22d3ee;text-decoration:none;cursor:pointer" title="View full lesson">${feedbackId}</a></div>
   <div class="context-form" id="contextForm">
-    <label>Add follow-up context <span style="color:#555">(optional)</span></label>
-    <textarea id="contextInput" placeholder="What worked or went wrong?"></textarea>
+    <label>Add follow-up context <span style="color:#555">(what worked or went wrong?)</span></label>
+    <textarea id="contextInput" placeholder="e.g. you forgot to check the API schema first..."></textarea>
     <button onclick="addContext()">Save follow-up note</button>
   </div>
   <div class="actions">
+    <a href="/lessons/${feedbackId}" title="View the full lesson and edit it">📋 View Lesson</a>
     <a href="/feedback/quick?signal=${opposite}" title="Meant to click ${oppEmoji}?">Undo → send ${oppEmoji} instead</a>
     <a href="/dashboard">Dashboard →</a>
   </div>
@@ -2018,6 +2357,70 @@ async function addContext(){
       } catch {
         sendJson(res, 404, { error: 'Dashboard page not found' });
       }
+      return;
+    }
+
+    // --- Lesson detail: POST /lessons/:id/update ---
+    const lessonUpdateMatch = pathname.match(/^\/lessons\/([^/]+)\/update$/);
+    if (req.method === 'POST' && lessonUpdateMatch) {
+      const lessonId = decodeURIComponent(lessonUpdateMatch[1]);
+      const feedbackDir = getSafeDataDir();
+      const body = await parseJsonBody(req);
+      const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
+      const record = findRecordById(lessonId, feedbackDir);
+      if (!record) {
+        sendJson(res, 404, { error: 'Record not found' });
+        return;
+      }
+      const existing = record.memoryRecord || record.feedbackEvent || {};
+      const updated = { ...existing };
+      if (body.title !== undefined) updated.title = body.title;
+      if (body.content !== undefined) updated.context = body.content;
+      if (body.tags !== undefined) {
+        updated.tags = typeof body.tags === 'string'
+          ? body.tags.split(',').map((t) => t.trim()).filter(Boolean)
+          : body.tags;
+      }
+      if (body.whatWentWrong !== undefined) updated.whatWentWrong = body.whatWentWrong;
+      if (body.whatWorked !== undefined) updated.whatWorked = body.whatWorked;
+      const success = updateRecordInJsonl(memoryLogPath, lessonId, updated);
+      if (!success) {
+        // Try feedback log
+        const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
+        updateRecordInJsonl(feedbackLogPath, lessonId, updated);
+      }
+      sendJson(res, 200, { ok: true, updated });
+      return;
+    }
+
+    // --- Lesson detail: POST /lessons/:id/delete ---
+    const lessonDeleteMatch = pathname.match(/^\/lessons\/([^/]+)\/delete$/);
+    if (req.method === 'POST' && lessonDeleteMatch) {
+      const lessonId = decodeURIComponent(lessonDeleteMatch[1]);
+      const feedbackDir = getSafeDataDir();
+      const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
+      const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
+      const deletedMemory = deleteRecordFromJsonl(memoryLogPath, lessonId);
+      const deletedFeedback = deleteRecordFromJsonl(feedbackLogPath, lessonId);
+      if (!deletedMemory && !deletedFeedback) {
+        sendJson(res, 404, { error: 'Record not found' });
+        return;
+      }
+      sendJson(res, 200, { ok: true, deleted: lessonId });
+      return;
+    }
+
+    // --- Lesson detail page: GET /lessons/:id ---
+    const lessonDetailMatch = pathname.match(/^\/lessons\/([^/]+)$/);
+    if (isGetLikeRequest && lessonDetailMatch && lessonDetailMatch[1] !== '') {
+      const lessonId = decodeURIComponent(lessonDetailMatch[1]);
+      const feedbackDir = getSafeDataDir();
+      const record = findRecordById(lessonId, feedbackDir);
+      if (!record) {
+        sendHtml(res, 404, renderLessonDetailHtml(null, lessonId));
+        return;
+      }
+      sendHtml(res, 200, renderLessonDetailHtml(record, lessonId), {}, { headOnly: isHeadRequest });
       return;
     }
 
@@ -3013,6 +3416,45 @@ async function addContext(){
           sendJson(res, 200, result);
         } catch (err) {
           throw createHttpError(err.statusCode || 400, err.message || 'Invalid internal agent bootstrap request');
+        }
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/hosted/sandbox/dispatch') {
+        const body = await parseJsonBody(req);
+        try {
+          const result = buildCloudflareSandboxPlan({
+            source: body.source,
+            workloadType: body.workloadType || body.taskType,
+            tier: body.tier,
+            tenantId: body.tenantId || body.teamId,
+            repoPath: body.repoPath,
+            requiresRepoAccess: body.requiresRepoAccess,
+            requiresIsolation: body.requiresIsolation,
+            requiresNetwork: body.requiresNetwork,
+            untrustedCode: body.untrustedCode,
+            allowedHosts: body.allowedHosts,
+            contextTokens: body.contextTokens,
+            traceId: body.traceId,
+            context: body.context,
+            intentId: body.intentId,
+            mcpProfile: body.mcpProfile,
+            partnerProfile: body.partnerProfile,
+            delegationMode: body.delegationMode,
+            approved: body.approved === true,
+            trigger: body.trigger,
+            thread: body.thread,
+            task: body.task,
+            comments: body.comments,
+            messages: body.messages,
+            providerPreference: body.providerPreference,
+          }, {
+            sharedSecret: process.env.CLOUDFLARE_SANDBOX_SHARED_SECRET,
+            includeBootstrap: body.includeBootstrap !== false,
+          });
+          sendJson(res, 200, result);
+        } catch (err) {
+          throw createHttpError(err.statusCode || 400, err.message || 'Invalid hosted sandbox dispatch request');
         }
         return;
       }

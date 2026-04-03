@@ -1,6 +1,6 @@
 # ThumbGate — Cloudflare Workers
 
-Paid MCP server for mcp-memory-gateway Pro tier ($19/mo). Runs on Cloudflare Workers with KV storage and Stripe billing.
+Paid MCP server for mcp-memory-gateway Pro tier ($19/mo). Runs on Cloudflare Workers with KV storage, Stripe billing, and a signed hosted-sandbox dispatch lane for isolated Team automations.
 
 ## Architecture
 
@@ -8,6 +8,7 @@ Paid MCP server for mcp-memory-gateway Pro tier ($19/mo). Runs on Cloudflare Wor
 - **Storage:** Workers KV (API keys, gate state, memories, feedback)
 - **Billing:** Stripe ($19/mo payment)
 - **Protocol:** MCP JSON-RPC 2.0 over HTTP (streamable-http transport)
+- **Hosted sandbox:** signed `/sandbox/execute` dispatches for isolated Team workflows
 
 ## Tiers
 
@@ -50,6 +51,7 @@ Copy the namespace IDs into `wrangler.toml`.
 ```bash
 wrangler secret put STRIPE_SECRET_KEY
 wrangler secret put STRIPE_WEBHOOK_SECRET
+wrangler secret put SANDBOX_SHARED_SECRET
 ```
 
 ### 5. Install and Deploy
@@ -67,6 +69,7 @@ npm run deploy
 | POST | `/mcp` | MCP JSON-RPC endpoint (tools/list, tools/call) |
 | POST | `/billing/checkout` | Create Stripe checkout session |
 | POST | `/billing/webhook` | Stripe webhook handler |
+| POST | `/sandbox/execute` | Accept a signed Cloudflare sandbox dispatch envelope |
 | GET | `/health` | Health check |
 
 ## MCP Usage
@@ -119,7 +122,7 @@ curl -X POST https://your-worker.workers.dev/mcp \
 npm run dev    # Local dev server with wrangler
 npm run deploy # Deploy to Cloudflare
 npm run tail   # Live logs
-npm test       # Type-check the worker package
+npm test       # Type-check + run worker tests
 ```
 
 ## KV Schema
@@ -136,6 +139,7 @@ npm test       # Type-check the worker package
 - `memory-index:{ownerId}:{namespace}` → string[] (ordered IDs)
 - `pack:{ownerId}:{packId}` → ContextPack
 - `ratelimit:{ownerId}:{action}:{date}` → count (with 24h TTL)
+- `sandbox:{executionId}` → queued hosted sandbox dispatch envelope summary
 
 ### GATES_KV
 - `gate:{ownerId}:{gateId}` → GateState (with TTL)

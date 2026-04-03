@@ -1166,10 +1166,42 @@ function captureFeedback(params) {
 
   appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
 
-  // Dedup: skip memory write if an identical memory already exists
-  const duplicateMemory = findDuplicateMemory(MEMORY_LOG_PATH, memoryRecord);
-  if (!duplicateMemory) {
-    appendJSONL(MEMORY_LOG_PATH, memoryRecord);
+  // Synthesis: merge similar lessons instead of creating duplicates
+  let synthesisResult = null;
+  try {
+    const { findSimilarLesson, mergeIntoExisting, shouldAutoPromote, synthesizePreventionRule, appendJSONLLocal } = require('./lesson-synthesis');
+    const similar = findSimilarLesson(MEMORY_LOG_PATH, memoryRecord);
+
+    if (similar) {
+      // Merge into existing lesson
+      const merged = mergeIntoExisting(MEMORY_LOG_PATH, similar.match, memoryRecord, feedbackEvent);
+      synthesisResult = { action: 'merged', existingId: similar.match.id, similarity: similar.similarity, occurrences: merged.occurrences };
+
+      // Auto-promote if threshold reached
+      if (shouldAutoPromote(merged)) {
+        const rule = synthesizePreventionRule(merged);
+        synthesisResult.autoPromoted = true;
+        synthesisResult.preventionRule = rule;
+        // Store the synthesized rule
+        const rulesPath = path.join(path.dirname(MEMORY_LOG_PATH), 'synthesized-rules.jsonl');
+        appendJSONLLocal(rulesPath, rule);
+      }
+    } else {
+      // No similar lesson — check exact duplicate, then store
+      const duplicateMemory = findDuplicateMemory(MEMORY_LOG_PATH, memoryRecord);
+      if (!duplicateMemory) {
+        memoryRecord.occurrences = 1;
+        appendJSONL(MEMORY_LOG_PATH, memoryRecord);
+      }
+      synthesisResult = { action: duplicateMemory ? 'exact-duplicate-skipped' : 'new-lesson' };
+    }
+  } catch (_synthErr) {
+    // Fallback to original behavior
+    const duplicateMemory = findDuplicateMemory(MEMORY_LOG_PATH, memoryRecord);
+    if (!duplicateMemory) {
+      appendJSONL(MEMORY_LOG_PATH, memoryRecord);
+    }
+    synthesisResult = { action: 'fallback', error: _synthErr.message };
   }
 
   // Dual-write to SQLite lesson DB — deferred to avoid blocking response
@@ -1211,6 +1243,7 @@ function captureFeedback(params) {
     ...(correctiveActions.length > 0 && { correctiveActions }),
     ...(reflection && { reflection }),
     ...(feedbackSession && { feedbackSession }),
+    ...(synthesisResult && { synthesis: synthesisResult }),
   };
 
   // Update statusline with lesson info (include proposed rule if reflection available)
@@ -1508,27 +1541,28 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
       : (m.tags || []).find((t) => !['feedback', 'negative', 'positive'].includes(t)) || 'general';
     if (!buckets[key]) buckets[key] = { items: [], weightedCount: 0 };
     const w = decayWeight(m);
+    const occ = m.occurrences || 1;
     buckets[key].items.push(m);
-    buckets[key].weightedCount += w;
+    buckets[key].weightedCount += w * occ;
 
     const failed = m.rubricSummary && Array.isArray(m.rubricSummary.failingCriteria)
       ? m.rubricSummary.failingCriteria
       : [];
     failed.forEach((criterion) => {
       if (!rubricBuckets[criterion]) rubricBuckets[criterion] = [];
-      rubricBuckets[criterion].push(m);
+      for (let i = 0; i < occ; i++) rubricBuckets[criterion].push(m);
     });
 
     if (m.diagnosis && m.diagnosis.rootCauseCategory) {
       if (!diagnosisBuckets[m.diagnosis.rootCauseCategory]) diagnosisBuckets[m.diagnosis.rootCauseCategory] = [];
-      diagnosisBuckets[m.diagnosis.rootCauseCategory].push(m);
+      for (let i = 0; i < occ; i++) diagnosisBuckets[m.diagnosis.rootCauseCategory].push(m);
     }
 
     (m.diagnosis && Array.isArray(m.diagnosis.violations) ? m.diagnosis.violations : []).forEach((violation) => {
-      const key = violation.constraintId || violation.message;
-      if (!key) return;
-      if (!repeatedViolationBuckets[key]) repeatedViolationBuckets[key] = [];
-      repeatedViolationBuckets[key].push(m);
+      const vKey = violation.constraintId || violation.message;
+      if (!vKey) return;
+      if (!repeatedViolationBuckets[vKey]) repeatedViolationBuckets[vKey] = [];
+      for (let i = 0; i < occ; i++) repeatedViolationBuckets[vKey].push(m);
     });
   }
 

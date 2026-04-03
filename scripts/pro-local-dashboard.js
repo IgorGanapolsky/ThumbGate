@@ -5,27 +5,27 @@ const os = require('os');
 const path = require('path');
 
 const DEFAULT_PRO_API = 'https://rlhf-feedback-loop-production.up.railway.app';
-const CREATOR_BYPASS_VALUE = 'creator-dogfood-7f3a9c';
+const CREATOR_BYPASS_VALUE = process.env.THUMBGATE_DEV_SECRET || '';
 const CREATOR_BYPASS_ENV = 'THUMBGATE_DEV_BYPASS';
-const CREATOR_SYNTHETIC_KEY = 'tg_creator_dev_enterprise';
+const CREATOR_SYNTHETIC_KEY = process.env.THUMBGATE_DEV_KEY || '';
 
 /**
  * Creator/dogfooding bypass — returns true when the tool creator is running locally.
  * Two layers (PostHog/Laravel pattern):
- *   1. Config file: ~/.config/thumbgate/dev.json with {"bypass":"creator-dogfood-7f3a9c"}
- *   2. Env var: THUMBGATE_DEV_BYPASS=creator-dogfood-7f3a9c
+ *   1. Config file: ~/.config/thumbgate/dev.json with {"bypass":"[set via THUMBGATE_DEV_SECRET env var]"}
+ *   2. Env var: THUMBGATE_DEV_BYPASS=[set via THUMBGATE_DEV_SECRET env var]
  * Requires a specific non-obvious value (not boolean) to prevent accidental activation.
  */
 function isCreatorDev({ env = process.env, homeDir = os.homedir() } = {}) {
   // Layer 1: env var with specific value
-  if (String(env[CREATOR_BYPASS_ENV] || '') === CREATOR_BYPASS_VALUE) {
+  if (CREATOR_BYPASS_VALUE && String(env[CREATOR_BYPASS_ENV] || '') === CREATOR_BYPASS_VALUE) {
     return true;
   }
   // Layer 2: persistent config file (set once, never think about it again)
   try {
     const configPath = path.join(homeDir, '.config', 'thumbgate', 'dev.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    if (config && config.bypass === CREATOR_BYPASS_VALUE) {
+    if (CREATOR_BYPASS_VALUE && config && config.bypass === CREATOR_BYPASS_VALUE) {
       return true;
     }
   } catch { /* not a dev machine */ }

@@ -117,6 +117,22 @@
     .filter-row { flex-wrap: wrap; }
     .rule-meta { flex-direction: column; gap: 8px; }
   }
+
+  /* Feedback widget */
+  .feedback-widget { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+  .feedback-toggle { background: var(--cyan); color: var(--bg); border: none; border-radius: 50px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(34,211,238,0.3); transition: transform 0.15s; }
+  .feedback-toggle:hover { transform: scale(1.05); }
+  .feedback-panel { display: none; position: absolute; bottom: 56px; right: 0; width: 340px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+  .feedback-panel.open { display: block; }
+  .feedback-panel h3 { font-size: 15px; margin-bottom: 12px; }
+  .feedback-panel textarea { width: 100%; min-height: 80px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px; font-size: 13px; font-family: inherit; resize: vertical; }
+  .feedback-panel textarea:focus { outline: none; border-color: var(--cyan); }
+  .feedback-panel select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 8px 10px; font-size: 13px; margin: 8px 0; }
+  .feedback-submit { background: var(--cyan); color: var(--bg); border: none; border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 8px; }
+  .feedback-submit:hover { opacity: 0.85; }
+  .feedback-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .feedback-success { color: var(--green); font-size: 13px; text-align: center; padding: 12px 0; }
+
 </style>
 </head>
 <body>
@@ -265,7 +281,7 @@ function formatDate(value) {
   if (!value) return '';
   var ts = new Date(value);
   if (Number.isNaN(ts.getTime())) return String(value);
-  return ts.toLocaleString();
+  return ts.toLocaleString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
 }
 
 function highlightCard(index) {
@@ -339,16 +355,14 @@ function renderRules(rules) {
   if (!rules.length) { el.innerHTML = '<div class="empty">No rules match your filter</div>'; return; }
   el.innerHTML = rules.map(function(r) {
     var sev = r.severity || getSeverity(r);
-    var prevented = r.prevented || Math.max(0, Math.floor((r.occurrences || 0) * 0.6));
-    return '<div class="rule-card">' +
+    return '<div class="rule-card" data-rule-id="' + escHtml(r.id || '') + '">' +
       '<div class="rule-header">' +
-        '<div class="rule-title">' + escHtml(r.title || r.id || 'Rule') + '</div>' +
+        '<div class="rule-title"><a href="/lessons/' + encodeURIComponent(r.id || '') + '" style="color:inherit;text-decoration:none" onmouseover="this.style.color=\'var(--cyan)\'" onmouseout="this.style.color=\'inherit\'">' + escHtml(r.title || r.id || 'Rule') + '</a></div>' +
         '<span class="rule-severity ' + sev + '">' + sev + '</span>' +
       '</div>' +
       (r.context ? '<div class="rule-context">' + escHtml(r.context) + '</div>' : '') +
       '<div class="rule-meta">' +
         '<div class="rule-meta-item">Triggered <span class="value">' + (r.occurrences || 0) + '</span> times</div>' +
-        (prevented > 0 ? '<span class="rule-effectiveness">Prevented ' + prevented + ' mistakes</span>' : '') +
         (r.lastTriggered ? '<div class="rule-meta-item">Last: <span class="value">' + escHtml(r.lastTriggered) + '</span></div>' : '') +
       '</div>' +
       (r.tags && r.tags.length ? '<div class="rule-tags">' + r.tags.map(function(t) { return '<span class="tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
@@ -362,14 +376,15 @@ function renderTimeline(items) {
   el.innerHTML = items.map(function(item) {
     var sig = item.signal || 'down';
     var emoji = sig === 'up' ? '👍' : '👎';
-    return '<div class="timeline-item">' +
+    var fbId = item.feedbackId || item.id || '';
+    return '<div class="timeline-item" data-feedback-id="' + escHtml(fbId) + '">' +
       '<div class="timeline-dot ' + sig + '"></div>' +
       '<div class="timeline-card">' +
         '<div class="timeline-header">' +
           '<span class="timeline-signal ' + sig + '">' + emoji + ' ' + (sig === 'up' ? 'Positive' : 'Negative') + '</span>' +
           '<span class="timeline-date">' + escHtml(item.date || '') + '</span>' +
         '</div>' +
-        '<div class="timeline-context">' + escHtml(item.context || item.title || '') + '</div>' +
+        '<div class="timeline-context"><a href="/lessons/' + encodeURIComponent(item.feedbackId || '') + '" style="color:inherit;text-decoration:none" onmouseover="this.style.color=\'var(--cyan)\'" onmouseout="this.style.color=\'inherit\'">' + escHtml(item.context || item.title || '') + '</a></div>' +
         (item.learned ? '<div class="timeline-learned">→ Rule created: ' + escHtml(item.learned) + '</div>' : '') +
       '</div>' +
     '</div>';
@@ -381,21 +396,44 @@ function renderInsights(data) {
   var effective = document.getElementById('insightEffective');
   var stale = document.getElementById('insightStale');
 
-  var topMistakes = allRules.filter(function(r) { return r.severity === 'critical'; }).slice(0, 5);
-  var topEffective = allRules.slice().sort(function(a, b) { return (b.prevented || 0) - (a.prevented || 0); }).slice(0, 5);
-  var staleRules = allRules.filter(function(r) { return !r.lastTriggered || r.lastTriggered === 'never'; });
+  // Dedup by title — keep the one with highest occurrences
+  var seen = {};
+  var dedupedRules = allRules.filter(function(r) {
+    var key = (r.title || '').trim().toLowerCase();
+    if (!key) return false;
+    if (seen[key] && seen[key].occurrences >= (r.occurrences || 0)) return false;
+    seen[key] = r;
+    return true;
+  });
+
+  var topMistakes = dedupedRules.filter(function(r) { return r.severity === 'critical'; })
+    .sort(function(a, b) { return (b.occurrences || 0) - (a.occurrences || 0); }).slice(0, 5);
+  var topEffective = dedupedRules.slice().sort(function(a, b) { return (b.occurrences || 0) - (a.occurrences || 0); })
+    .filter(function(r) { return (r.occurrences || 0) > 1; }).slice(0, 5);
+  var staleRules = dedupedRules.filter(function(r) { return !r.lastTriggered || r.lastTriggered === 'never'; });
+
+  function insightRow(r, badge) {
+    var title = r.title.length > 80 ? r.title.slice(0, 77) + '...' : r.title;
+    return '<li style="cursor:pointer" onclick="switchTab(\'rules\'); searchAndHighlight(\'' + escHtml(r.id) + '\')">'
+      + '<span title="' + escHtml(r.title) + '">' + escHtml(title) + '</span>' + badge + '</li>';
+  }
 
   mistakes.innerHTML = topMistakes.length ? topMistakes.map(function(r) {
-    return '<li><span>' + escHtml(r.title) + '</span><span style="color:var(--red);font-weight:600">' + (r.occurrences || 0) + 'x</span></li>';
+    return insightRow(r, '<span style="color:var(--red);font-weight:600">' + (r.occurrences || 0) + 'x</span>');
   }).join('') : '<li><span style="color:var(--green)">No critical mistakes this week</span></li>';
 
   effective.innerHTML = topEffective.length ? topEffective.map(function(r) {
-    return '<li><span>' + escHtml(r.title) + '</span><span class="rule-effectiveness">Prevented ' + (r.prevented || 0) + '</span></li>';
-  }).join('') : '<li><span>No prevention data yet</span></li>';
+    return insightRow(r, '<span class="rule-effectiveness">Triggered ' + (r.occurrences || 0) + 'x</span>');
+  }).join('') : '<li><span>No high-frequency rules yet</span></li>';
 
   stale.innerHTML = staleRules.length ? staleRules.map(function(r) {
-    return '<li><span>' + escHtml(r.title) + '</span><span style="color:var(--text-muted)">Archive?</span></li>';
+    return insightRow(r, '<span style="color:var(--text-muted)">Archive?</span>');
   }).join('') : '<li><span style="color:var(--green)">All rules are active</span></li>';
+}
+
+function searchAndHighlight(ruleId) {
+  var el = document.querySelector('[data-rule-id="' + ruleId + '"]');
+  if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.style.borderColor = 'var(--cyan)'; setTimeout(function() { el.style.borderColor = ''; }, 2000); }
 }
 
 function deriveSeverity(lesson) {
@@ -430,7 +468,8 @@ function mapTimelineItems(payload, lessonMap) {
       signal: entry.signal || 'down',
       context: entry.context || entry.title || '',
       date: formatDate(entry.timestamp),
-      learned: linkedLesson ? linkedLesson.title : ''
+      learned: linkedLesson ? linkedLesson.title : '',
+      feedbackId: entry.id || ''
     };
   });
 }
@@ -520,7 +559,74 @@ async function loadLive() {
   }
 }
 
-loadLive();
+loadLive().then(function() {
+  // Default: highlight Active Rules card on page load
+  highlightCard(0);
+
+  // Handle #feedbackId hash — scroll to and highlight the matching item
+  var hash = window.location.hash.replace('#', '');
+  if (!hash) return;
+  // Try rule cards first
+  var el = document.querySelector('[data-rule-id="' + hash + '"]') ||
+           document.querySelector('[data-feedback-id="' + hash + '"]');
+  if (!el) {
+    // Search in timeline by switching tab
+    switchTab('timeline');
+    el = document.querySelector('[data-feedback-id="' + hash + '"]');
+  }
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.style.borderColor = 'var(--cyan)';
+    el.style.boxShadow = '0 0 12px rgba(34,211,238,0.3)';
+    setTimeout(function() { el.style.borderColor = ''; el.style.boxShadow = ''; }, 4000);
+  }
+});
 </script>
+
+<div class="feedback-widget">
+  <div class="feedback-panel" id="feedbackPanel">
+    <h3>Share feedback with ThumbGate team</h3>
+    <select id="feedbackCategory">
+      <option value="bug">Bug report</option>
+      <option value="feature">Feature request</option>
+      <option value="question">Question</option>
+    </select>
+    <textarea id="feedbackText" placeholder="What's on your mind? Be honest — we read every one."></textarea>
+    <button class="feedback-submit" id="feedbackSubmit" onclick="submitFeedback()">Submit</button>
+    <div id="feedbackResult"></div>
+  </div>
+  <button class="feedback-toggle" onclick="toggleFeedback()">💬 Feedback</button>
+</div>
+<script>
+function toggleFeedback() {
+  document.getElementById('feedbackPanel').classList.toggle('open');
+  document.getElementById('feedbackResult').innerHTML = '';
+}
+async function submitFeedback() {
+  var btn = document.getElementById('feedbackSubmit');
+  var text = document.getElementById('feedbackText').value.trim();
+  var category = document.getElementById('feedbackCategory').value;
+  if (!text) return;
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  try {
+    var res = await fetch('/api/feedback/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: category, message: text })
+    });
+    var data = await res.json();
+    if (data.success) {
+      document.getElementById('feedbackResult').innerHTML = '<div class="feedback-success">Thanks! Filed as <a href="' + data.issueUrl + '" target="_blank" style="color:var(--cyan)">#' + data.issueNumber + '</a></div>';
+      document.getElementById('feedbackText').value = '';
+    } else {
+      document.getElementById('feedbackResult').innerHTML = '<div style="color:var(--red);font-size:13px">Failed: ' + (data.error || 'unknown') + '</div>';
+    }
+  } catch (e) {
+    document.getElementById('feedbackResult').innerHTML = '<div style="color:var(--red);font-size:13px">Network error. Try again.</div>';
+  }
+  btn.disabled = false; btn.textContent = 'Submit';
+}
+</script>
+
 </body>
 </html>

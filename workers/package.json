@@ -7,14 +7,17 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "tail": "wrangler tail",
-    "test": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run typecheck && tsx --test src/*.test.ts",
     "types": "wrangler types"
   },
   "dependencies": {
     "stripe": "^20.4.1"
   },
   "devDependencies": {
+    "@types/node": "^24.6.0",
     "@cloudflare/workers-types": "^4.20260313.1",
+    "tsx": "^4.20.6",
     "typescript": "^5.5.0"
   }
 }
