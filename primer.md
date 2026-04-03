@@ -23,49 +23,28 @@
 
 ## Behavioral Traits
 
-_No strong behavioral patterns identified yet._
+- User prefers surgical edits over full file rewrites.
 
 ## Live Git Context
 
-### Branch: feat/conversation-context-capture
+### Branch: feat/statusbar-lessons-final
 
 ### Last 5 Commits:
 ```
-474c3e1 feat(reflector): add self-healing Reflector agent for autonomous post-mortem
-f627c77 feat(retrieval): add per-action lesson retrieval with relevance scoring
-aecb032 feat(inference): add structured IF/THEN lesson extraction from conversation windows
-4014b02 feat(statusline): show latest lesson link on feedback capture
-6ad1e9d feat(feedback): add conversation window capture for context-aware lessons
+75da5ca fix: statusline shows branded ThumbGate line with clickable links + fix CLI signal routing
+8ca118e fix(test): fix landing page FAQ tests + wire lesson auto-creation into feedback
+3d0d1a0 feat: wire lesson auto-creation into feedback pipeline + statusbar display
+619baba docs: update landing page and README with Model Hardening and LoRA features
+a2387f2 fix(test): avoid shell-based statusline invocation (#521)
 ```
 
 ### Modified Files:
 ```
- M .claude-plugin/marketplace.json
- M .claude-plugin/plugin.json
- M .cursor-plugin/marketplace.json
- M .well-known/mcp/server-card.json
- M CHANGELOG.md
- M adapters/README.md
- M adapters/claude/.mcp.json
- M adapters/opencode/opencode.json
- M docs/PLUGIN_DISTRIBUTION.md
- M docs/VERIFICATION_EVIDENCE.md
- M docs/guides/opencode-integration.md
- M docs/mcp-hub-submission.md
- M mcpize.yaml
- M package-lock.json
- M plugins/claude-codex-bridge/.claude-plugin/plugin.json
- M plugins/claude-codex-bridge/.mcp.json
- M plugins/codex-profile/.codex-plugin/plugin.json
- M plugins/codex-profile/.mcp.json
- M plugins/codex-profile/INSTALL.md
- M plugins/codex-profile/README.md
- M plugins/cursor-marketplace/.cursor-plugin/plugin.json
- M plugins/opencode-profile/INSTALL.md
+ M adapters/chatgpt/openapi.yaml
+ M openapi/openapi.yaml
  M primer.md
- M pro/package.json
- M public/index.html
- M server.json
-?? scripts/reflector-agent.js
-?? tests/reflector-agent.test.js
+ M scripts/history-distiller.js
+ M scripts/social-reply-monitor.js
+ M scripts/tool-registry.js
+ M tests/history-distiller.test.js
 ```

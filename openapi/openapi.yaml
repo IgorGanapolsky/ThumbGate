@@ -709,6 +709,20 @@ paths:
           description: Aggregated feedback statistics
         '401':
           description: Unauthorized
+  /v1/feedback/infer:
+    post:
+      operationId: inferLessonFromHistory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InferLessonRequest'
+      responses:
+        '200':
+          description: Distilled lesson from chat history
+        '401':
+          description: Unauthorized
   /v1/telemetry/ping:
     post:
       operationId: recordTelemetryPing
@@ -1208,6 +1222,16 @@ paths:
           description: Webhook accepted
         '400':
           description: Invalid webhook signature or payload
+  /v1/billing/github-webhook:
+    post:
+      operationId: githubMarketplaceWebhook
+      security: []
+      responses:
+        '200':
+          description: Webhook accepted
+        '400':
+          description: Invalid webhook signature or payload
+k signature or payload
   /v1/billing/github-webhook:
     post:
       operationId: githubMarketplaceWebhook
