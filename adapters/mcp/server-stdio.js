@@ -661,9 +661,21 @@ function writeNdjsonResponse(id, payload, error = null) {
 }
 
 /**
+ * Default staleness threshold: if a lock is older than this (ms), the holder
+ * is considered orphaned even if its PID is still alive — it likely belongs
+ * to a defunct Claude Code session whose process was never reaped.
+ */
+const LOCK_STALE_MS = Number(process.env.THUMBGATE_LOCK_STALE_MS) || 2 * 60 * 60 * 1000; // 2 hours
+
+/**
  * Acquire a file-system lock to prevent duplicate MCP server instances.
  * Returns { lockFile, cleanupLock } on success, or calls process.exit(1)
  * if another live server holds the lock.
+ *
+ * Staleness reaping: if the lock-holding process is alive but the lock is
+ * older than LOCK_STALE_MS, the holder is killed (SIGTERM) and the lock is
+ * reclaimed. This prevents orphaned `rlhf serve` processes from permanently
+ * blocking new sessions.
  */
 function acquireLock() {
   const feedbackDir = getFeedbackPaths().FEEDBACK_DIR;
@@ -674,11 +686,19 @@ function acquireLock() {
       const lockData = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
       let isRunning = false;
       try { process.kill(lockData.pid, 0); isRunning = true; } catch { /* process is dead */ }
+
       if (isRunning) {
-        process.stderr.write(`[thumbgate] FATAL: another MCP server (PID ${lockData.pid}) is already serving ${feedbackDir}. Refusing to start — would cause SQLite lock contention.\n`);
-        process.exit(1);
+        const lockAge = Date.now() - new Date(lockData.startedAt).getTime();
+        if (lockAge > LOCK_STALE_MS) {
+          // Orphaned process — kill it and take over
+          process.stderr.write(`[thumbgate] Lock held by PID ${lockData.pid} is ${Math.round(lockAge / 60000)}m old (threshold: ${Math.round(LOCK_STALE_MS / 60000)}m). Reaping orphaned process.\n`);
+          try { process.kill(lockData.pid, 'SIGTERM'); } catch { /* already gone */ }
+        } else {
+          process.stderr.write(`[thumbgate] FATAL: another MCP server (PID ${lockData.pid}) is already serving ${feedbackDir}. Refusing to start — would cause SQLite lock contention.\n`);
+          process.exit(1);
+        }
       }
-      // Stale lock from a dead process — remove it
+      // Stale lock from a dead or reaped process — remove it
       try { fs.unlinkSync(lockFile); } catch { /* already gone */ }
       process.stderr.write(`[thumbgate] Removed stale lock (PID ${lockData.pid} is no longer running).\n`);
     }
