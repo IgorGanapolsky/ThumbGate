@@ -20,9 +20,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
 <title>ThumbGate — Stop AI Coding Agents From Repeating Mistakes</title>
-<meta name="description" content="👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. Pro adds a personal local dashboard. Team adds shared lessons and org visibility.">
+<meta name="description" content="👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility.">
 <meta property="og:title" content="ThumbGate — Human-in-the-Loop Enforcement for AI Agents">
-<meta property="og:description" content="👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. Pro adds a personal local dashboard. Team adds shared lessons and org visibility.">
+<meta property="og:description" content="👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility.">
 <meta property="og:type" content="website">
 <meta name="keywords" content="ThumbGate, mcp-memory-gateway, AI agent guardrails, pre-action gates, MCP server, Claude Code, Claude Code security, Claude Code guardrails, Claw-code, Cursor, Codex, Gemini, Amp, OpenCode, vibe coding safety, SpecLock alternative, Mem0 alternative, AI coding agent memory, PreToolUse hooks, prevention rules, feedback enforcement">
 
@@ -43,7 +43,7 @@ __GA_BOOTSTRAP__
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
-  "description": "👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. Pro adds a personal local dashboard. Team adds shared lessons and org visibility.",
+  "description": "👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform",
   "license": "https://opensource.org/licenses/MIT",
@@ -373,7 +373,7 @@ __GA_BOOTSTRAP__
       <div class="signal-pill signal-up">👍 reinforces what worked across sessions</div>
     </div>
     <p class="hero-persona">For power users of Claude Code, Cursor, Codex, Gemini, Amp, and any MCP agent who are tired of fixing the same mistakes every session.</p>
-    <p>ThumbGate turns thumbs-up/down feedback into hard gates that block bad actions before they execute. Think of it as an immune system for your AI agent — it learns from your corrections and enforces them automatically. The safety net for vibe coding works across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.</p>
+    <p>ThumbGate turns thumbs-up/down feedback into hard gates that block bad actions before they execute. Think of it as an immune system for your AI agent — it learns from your corrections, can distill a vague thumbs signal from the recent conversation window, and enforces the resulting lesson automatically. The safety net for vibe coding works across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx mcp-memory-gateway init</span>
@@ -444,6 +444,10 @@ __GA_BOOTSTRAP__
         <h3>🧪 Thompson Sampling</h3>
         <p>Confidence tiers (none/low/medium/high) tell you when to trust the model vs fall back to rules. No guessing.</p>
       </div>
+      <div class="agent-card">
+        <h3>🪞 History-Aware Lessons</h3>
+        <p>When a thumbs signal is vague, ThumbGate can reuse the last ~10 messages plus the failed tool call, propose what went wrong, and turn that into one linked lesson instead of a dead-end note.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -481,71 +485,6 @@ __GA_BOOTSTRAP__
   </div>
 </section>
 
-<!-- COMPETITIVE COMPARISON -->
-<section class="compatibility" id="competitive-compare">
-  <div class="container">
-    <div class="section-label">Why ThumbGate</div>
-    <h2 class="section-title">How ThumbGate compares to other AI memory systems</h2>
-    <div style="overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;font-size:14px;color:var(--text-muted);margin:0 auto;max-width:860px;">
-        <thead>
-          <tr style="border-bottom:2px solid var(--border);text-align:left;">
-            <th style="padding:12px 16px;color:var(--text);font-weight:600;">Capability</th>
-            <th style="padding:12px 16px;color:var(--cyan);font-weight:600;">ThumbGate</th>
-            <th style="padding:12px 16px;font-weight:600;">Mem0</th>
-            <th style="padding:12px 16px;font-weight:600;">Claude Memory</th>
-            <th style="padding:12px 16px;font-weight:600;">OpenAI Memory</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:10px 16px;">Conversation context capture</td>
-            <td style="padding:10px 16px;color:var(--green);">10-turn window + follow-up sessions</td>
-            <td style="padding:10px 16px;">Raw messages only</td>
-            <td style="padding:10px 16px;">Cloud-stored summaries</td>
-            <td style="padding:10px 16px;">Cloud-stored summaries</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:10px 16px;">Post-mortem analysis</td>
-            <td style="padding:10px 16px;color:var(--green);">Autonomous on every negative signal</td>
-            <td style="padding:10px 16px;">None</td>
-            <td style="padding:10px 16px;">None</td>
-            <td style="padding:10px 16px;">None</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:10px 16px;">Rule structure</td>
-            <td style="padding:10px 16px;color:var(--green);">IF/THEN with confidence + scope</td>
-            <td style="padding:10px 16px;">Flat text</td>
-            <td style="padding:10px 16px;">Flat text</td>
-            <td style="padding:10px 16px;">Flat text</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:10px 16px;">Retrieval strategy</td>
-            <td style="padding:10px 16px;color:var(--green);">Per-action top-5 retrieval</td>
-            <td style="padding:10px 16px;">Session-start injection</td>
-            <td style="padding:10px 16px;">Passive injection</td>
-            <td style="padding:10px 16px;">Passive injection</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:10px 16px;">Action blocking</td>
-            <td style="padding:10px 16px;color:var(--green);">Pre-Action Gates (hard block)</td>
-            <td style="padding:10px 16px;color:var(--red);">No</td>
-            <td style="padding:10px 16px;color:var(--red);">No</td>
-            <td style="padding:10px 16px;color:var(--red);">No</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:10px 16px;">Data residency</td>
-            <td style="padding:10px 16px;color:var(--green);">Local-first (SQLite)</td>
-            <td style="padding:10px 16px;">Cloud-hosted</td>
-            <td style="padding:10px 16px;">Cloud-dependent</td>
-            <td style="padding:10px 16px;">Cloud-dependent</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
   <div class="container">
@@ -555,12 +494,12 @@ __GA_BOOTSTRAP__
       <div class="step">
         <div class="step-num">1</div>
         <h3>Feedback</h3>
-        <p>Give <code>👍</code> or <code>👎</code> on your AI agent's actions. Feedback is stored in a SQLite+FTS5 lesson DB. On <code>👎</code>, get corrective actions from similar past failures. Example: you 👎 a risky migration → it auto-promotes to a "never run DROP on prod" gate.</p>
+        <p>Give <code>👍</code> or <code>👎</code> on your AI agent's actions. Feedback is stored in a SQLite+FTS5 lesson DB. If the signal is vague, ThumbGate can distill it from the recent conversation window and failed tool call before promotion. Example: you 👎 a risky migration → it auto-promotes to a "never run DROP on prod" gate.</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
-        <h3>Rules</h3>
-        <p>Repeated failures auto-promote into prevention rules. Thompson Sampling adapts which rules fire — high-risk patterns get stricter enforcement while low-risk ones stay relaxed.</p>
+        <h3>Distill + Rules</h3>
+        <p>Repeated failures auto-promote into prevention rules. Thompson Sampling adapts which rules fire, and the reflector lane can propose a reusable rule from the same transcript so high-risk patterns get stricter enforcement while low-risk ones stay relaxed.</p>
       </div>
       <div class="step">
         <div class="step-num">3</div>
@@ -593,6 +532,10 @@ __GA_BOOTSTRAP__
         <h3>Log everything, learn automatically</h3>
         <p>Audit trail records every allow/deny/warn. Repeated failures auto-promote to gates. Org dashboard shows all agents across your team.</p>
       </div>
+      <div class="agent-card">
+        <h3>Keep one correction thread</h3>
+        <p>Feedback sessions let you open, append, and finalize one linked correction instead of spraying follow-up notes across separate records. Better lessons, less operator friction.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -601,27 +544,27 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="control-tower">
   <div class="container">
     <div class="section-label">New in v0.9.5</div>
-    <h2 class="section-title">Self-Healing Brain: learn, enforce, adapt</h2>
+    <h2 class="section-title">AI Control Tower: monitor, alert, and act</h2>
     <div class="agent-grid">
-      <div class="agent-card">
-        <h3>Self-Healing Brain</h3>
-        <p>ThumbGate doesn't just store feedback. It captures your full conversation context (last 10 turns), runs an autonomous post-mortem on every negative signal, detects recurring mistakes, and proposes specific rules to prevent them. No more "I'll try to remember" — the system enforces.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Feedback Sessions</h3>
-        <p>Users often explain WHY they're frustrated AFTER giving thumbs down. ThumbGate keeps a 60-second session window open, capturing follow-up messages like "you lied about X" and "you forgot Y", then folds them into the lesson.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Structured IF/THEN Rules</h3>
-        <p>Every lesson is a structured rule with trigger, action, confidence score, and scope (file-level, project-level, or global). Not flat text — queryable, rankable, enforceable.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Per-Action Retrieval</h3>
-        <p>Instead of injecting 50+ rules at session start, ThumbGate retrieves only the top-5 relevant lessons per tool call. Scales to thousands of lessons without attention dilution.</p>
-      </div>
       <div class="agent-card">
         <h3>Domain skill packs</h3>
         <p>Installable best-practice rules for Stripe, Railway, database migrations. Auto-match by task context. 100% eval pass rate with packs vs 0% without.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Tool-level KPIs</h3>
+        <p>P50/P90/P95 latency and success rate per tool. Drill from gateway health down to the exact tool causing issues.</p>
+      </div>
+      <div class="agent-card">
+        <h3>SLO alerts</h3>
+        <p>Define thresholds for success rate and latency. Breach triggers webhook alerts to Slack, Teams, or Discord automatically.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Access anomaly detection</h3>
+        <p>Tracks authorized vs failed access. Moving-average spike detection flags per-agent abuse. Security governance on autopilot.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Metered outcome pricing</h3>
+        <p>$0.10 per blocked mistake (Pro). Minimum $19/mo floor. You pay for value delivered, not seats warmed.</p>
       </div>
       <div class="agent-card">
         <h3>Ambient daily digest</h3>
@@ -669,7 +612,8 @@ __GA_BOOTSTRAP__
         <div class="price-sub">Forever free · Local-only, single dev</div>
         <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo devs experimenting with gates on one machine.</p>
         <ul>
-          <li>50 lessons · 10 recalls/day · 3 built-in gates</li>
+          <li>5 feedback captures/day · 10 lesson searches/day · unlimited recall</li>
+          <li>10 auto-promoted gates plus the core safety policy</li>
           <li>All MCP integrations (Claude Code, Cursor, Codex, etc.)</li>
           <li>PreToolUse hook blocking</li>
           <li>Local SQLite lesson DB</li>
@@ -767,14 +711,14 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
-        <div class="faq-a">No. Free gives you full local enforcement — captures, recalls, gates, and hook blocking on your machine. No cloud, no account, no signup. Pro adds a personal local dashboard on your machine plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, org dashboard, and team-wide gate visibility.</div>
+        <div class="faq-a">No. Free keeps local enforcement on your machine with 5 daily feedback captures, 10 lesson searches, unlimited recall, gates, and hook blocking. No cloud account is required. Pro adds a personal local dashboard on your machine plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, org dashboard, and team-wide gate visibility.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support model fine-tuning?</div>
-        <div class="faq-a">Yes. ThumbGate Pro includes a Model Hardening Advisor and LoRA JSONL export. Pro users can export their episodic memory as DPO (Direct Preference Optimization) pairs to fine-tune local models (like Llama 3 or Mistral) so they natively avoid repeating known mistakes.</div>
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What if my thumbs-down is vague?</div>
+        <div class="faq-a">ThumbGate can reuse the last ~10 messages, the failed tool call, and later follow-up notes to propose <code>whatWentWrong</code>, <code>whatToChange</code>, and a reusable lesson. The feedback session stays linked instead of creating duplicate records.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from RLHF?</div>
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are pre-action gates different from prompt rules?</div>
         <div class="faq-a">Prompt rules are suggestions that agents can ignore. Pre-Action Gates are enforcement — they block the action before execution. Gates are auto-generated from your feedback and use Thompson Sampling to adapt over time.</div>
       </div>
       <div class="faq-item">
@@ -862,23 +806,6 @@ function copyInstall(el) {
   trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
   trackClick('.btn-free', 'install_click', { tier: 'free' });
   trackClick('.nav-cta', 'checkout_start', { tier: 'pro', source: 'nav' });
-
-  /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Team button click
-     with section context so we can distinguish pricing section vs final CTA section clicks */
-  document.querySelectorAll('.btn-pro, .btn-team, .btn-free, .nav-cta').forEach(function(el) {
-    el.addEventListener('click', function() {
-      var section = el.closest('section');
-      var sectionId = section ? (section.id || section.className.split(' ')[0] || 'unknown') : 'unknown';
-      var tier = el.classList.contains('btn-pro') ? 'pro'
-               : el.classList.contains('btn-team') ? 'team'
-               : el.classList.contains('btn-free') ? 'free'
-               : 'nav';
-      var label = (el.textContent || '').trim().substring(0, 40);
-      if (typeof plausible === 'function') {
-        plausible('pricing_cta_click', { props: { tier: tier, section: sectionId, label: label } });
-      }
-    });
-  });
 
   /* FAQ accordion opens */
   document.querySelectorAll('.faq-q').forEach(function(el) {

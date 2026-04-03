@@ -9,7 +9,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free is fully featured (unlimited captures, recalls, gates, blocking). Pro adds a personal local dashboard, **Model Hardening Advisor**, and **LoRA/PEFT export**. Team rollout starts at the shared hosted lesson DB and org dashboard.
+[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free stays local-first with 5 daily feedback captures, 10 daily lesson searches, unlimited recall, and gating. Vague thumbs feedback can be distilled from the last ~10 messages and failed tool call. Pro adds a personal local dashboard, **Model Hardening Advisor**, and **LoRA/PEFT export**. Team rollout starts at the shared hosted lesson DB and org dashboard.
 
 **Thumbs down a mistake. It never happens again.**
 
@@ -33,7 +33,10 @@ Most memory tools only help an agent remember. ThumbGate also enforces.
 
 - `recall` injects the right context at session start.
 - `search_lessons` shows promoted lessons plus the corrective action, lifecycle state, linked rules, linked gates, and the next harness fix the system should make.
+- `retrieve_lessons` surfaces per-action lessons for the tool or workflow you are about to run.
 - `search_rlhf` searches feedback state across feedback logs, ContextFS memory, and prevention rules (context engineering, not weight training).
+- History-aware distillation turns a vague `👍` or `👎` into a concrete lesson proposal from the last ~10 messages plus the failed tool call.
+- Feedback sessions let Cursor, Claude Desktop, Codex, and the hosted API keep appending context to the same feedback record before promotion.
 - Pre-action gates physically block tool calls that match known failure patterns.
 - Session handoff and primer keep continuity across sessions without adding an extra orchestrator.
 
@@ -91,13 +94,14 @@ Source: [`.claude/skills/thumbgate/SKILL.md`](.claude/skills/thumbgate/SKILL.md)
 
 ```
 1. You give feedback    →  👎 "Force-pushed and lost commits"
-2. ThumbGate validates  →  Rejects vague signals, promotes actionable ones
-3. Rules auto-generate  →  "Block git push --force to protected branches"
-4. Gates enforce        →  PreToolUse hook fires → BLOCKED before execution
-5. Agent improves       →  Same mistake never happens again
+2. ThumbGate distills   →  Uses recent conversation + failed action when the signal is vague
+3. ThumbGate validates  →  Rejects vague signals, promotes actionable ones
+4. Rules auto-generate  →  "Block git push --force to protected branches"
+5. Gates enforce        →  PreToolUse hook fires → BLOCKED before execution
+6. Agent improves       →  Same mistake never happens again
 ```
 
-Pipeline: **Capture → Validate → Remember → Distill → Prevent → Gate → Export**
+Pipeline: **Capture → Distill recent history → Validate → Remember → Propose rule → Gate → Export**
 
 Feedback session flow:
 
@@ -108,6 +112,7 @@ Feedback session flow:
 ## What's New in v0.9.5
 
 - **Conversation Context Capture** — Captures the last 5-10 conversation turns alongside every thumbs up/down, so lessons include the full story, not just a one-liner summary.
+- **History-aware lesson distillation** — Vague thumbs feedback can reuse the recent conversation window plus the failed tool call to propose `whatWentWrong`, `whatToChange`, and a concrete lesson instead of discarding the signal.
 - **Feedback Sessions** — Follow-up messages after thumbs up/down ("you lied about X", "you forgot Y") are captured for 60 seconds and folded into the lesson.
 - **Self-Healing Reflector** — On negative feedback, automatically runs a post-mortem: analyzes what went wrong, checks for recurrence, and proposes a specific rule back to the user.
 - **Structured IF/THEN Rules** — Every lesson is extracted as a structured rule with trigger, action, confidence, and scope — not flat text.
@@ -177,8 +182,13 @@ Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
 | Tool                   | Purpose                                                                                                     |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `capture_feedback`     | Accept up/down signal + context, validate, promote to memory                                                |
+| `open_feedback_session`| Start a linked feedback session when the correction needs multiple follow-up messages                       |
+| `append_feedback_context` | Add more transcript or operator notes to the open feedback session                                      |
+| `finalize_feedback_session` | Close the linked session and promote the combined evidence into one feedback record                  |
 | `recall`               | Recall relevant past failures and rules for the current task                                                |
 | `search_lessons`       | Search promoted lessons with corrective action, lifecycle state, rules, gates                               |
+| `retrieve_lessons`     | Retrieve the highest-signal lessons for a specific tool, action, or workflow context                        |
+| `reflect_on_feedback`  | Propose a reusable rule or lesson from the recent conversation window                                       |
 | `search_rlhf`          | Search feedback state across feedback logs, ContextFS, and rules (context engineering, not weight training) |
 | `prevention_rules`     | Generate prevention rules from repeated mistakes                                                            |
 | `enforcement_matrix`   | Inspect promotion rate, active gates, and rejection ledger                                                  |
@@ -318,7 +328,8 @@ For autonomous agent runs against this or any repo using this workflow:
 | Feature                           | Free   | Pro ($19/mo or $149/yr) | Team rollout ($12/seat/mo, min 3) |
 | --------------------------------- | ------ | ----------------------- | --------------------------------- |
 | Feedback capture (thumbs up/down) | 5/day  | Unlimited               | Shared across team workflow       |
-| Lesson recall                     | 10/day | Unlimited               | Shared hosted lesson DB           |
+| Lesson search                     | 10/day | Unlimited               | Shared hosted lesson DB           |
+| Recall                            | Unlimited | Unlimited            | Shared hosted recall              |
 | Prevention rules                  | Yes    | Yes                     | Team-wide rollout                 |
 | PreToolUse gates                  | Yes    | Yes                     | Team-wide rollout                 |
 | Thompson Sampling                 | Basic  | Advanced                | Advanced                          |
@@ -329,6 +340,8 @@ For autonomous agent runs against this or any repo using this workflow:
 | Gate template library             | No     | No                      | Yes                               |
 | Workflow hardening sprint         | No     | No                      | Yes                               |
 | Priority support                  | No     | Yes                     | Yes                               |
+
+Free keeps the core safety policy, up to 10 auto-promoted gates, 5 daily feedback captures, 10 daily lesson searches, and unlimited recall on your machine.
 
 **[Get Pro — $19/mo or $149/yr](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate_cta)** — recurring self-serve for individual operators.
 

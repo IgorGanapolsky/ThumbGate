@@ -2,7 +2,7 @@
   "repo": "IgorGanapolsky/ThumbGate",
   "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
   "homepageUrl": "https://rlhf-feedback-loop-production.up.railway.app",
-  "description": "👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. Pro adds a personal local dashboard. Team adds shared lessons and org visibility.",
+  "description": "👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility.",
   "topics": [
     "thumbgate",
     "pre-action-gates",

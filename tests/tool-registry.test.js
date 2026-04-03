@@ -22,7 +22,28 @@ test('capture_feedback tool exists with required signal param', () => {
   assert.ok(captureTool, 'capture_feedback tool must exist');
   assert.ok(captureTool.inputSchema.properties.signal, 'capture_feedback must have signal property');
   assert.ok(captureTool.inputSchema.properties.chatHistory, 'capture_feedback must expose chatHistory for history-aware distillation');
+  assert.ok(captureTool.inputSchema.properties.conversationWindow, 'capture_feedback must expose conversationWindow for structured reflection');
   assert.ok(captureTool.inputSchema.properties.relatedFeedbackId, 'capture_feedback must expose relatedFeedbackId');
+});
+
+test('conversation follow-up tools exist with the expected safety hints', () => {
+  const openTool = TOOLS.find((tool) => tool.name === 'open_feedback_session');
+  const appendTool = TOOLS.find((tool) => tool.name === 'append_feedback_context');
+  const finalizeTool = TOOLS.find((tool) => tool.name === 'finalize_feedback_session');
+  const retrieveTool = TOOLS.find((tool) => tool.name === 'retrieve_lessons');
+  const reflectTool = TOOLS.find((tool) => tool.name === 'reflect_on_feedback');
+
+  assert.ok(openTool, 'open_feedback_session tool must exist');
+  assert.ok(appendTool, 'append_feedback_context tool must exist');
+  assert.ok(finalizeTool, 'finalize_feedback_session tool must exist');
+  assert.ok(retrieveTool, 'retrieve_lessons tool must exist');
+  assert.ok(reflectTool, 'reflect_on_feedback tool must exist');
+
+  assert.equal(openTool.annotations.destructiveHint, true);
+  assert.equal(appendTool.annotations.destructiveHint, true);
+  assert.equal(finalizeTool.annotations.destructiveHint, true);
+  assert.equal(retrieveTool.annotations.readOnlyHint, true);
+  assert.equal(reflectTool.annotations.readOnlyHint, true);
 });
 
 test('recall tool exists', () => {

@@ -210,6 +210,7 @@ test('commerce MCP profile has the right tools', () => {
   const expected = [
     'capture_feedback',
     'recall',
+    'retrieve_lessons',
     'search_rlhf',
     'commerce_recall',
     'track_action',

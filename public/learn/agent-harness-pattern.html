@@ -63,6 +63,8 @@
   <h1>The Agent Harness Pattern: Why Your AI Needs a Seatbelt</h1>
   <p style="color:var(--muted);">5 min read &middot; Research deep-dive for developers shipping AI agents in production</p>
 
+  <div class="tldr"><strong>TL;DR:</strong> Tsinghua researchers proved that AI agents need harnesses — contracts, verification gates, and durable state. ThumbGate is a production implementation you can ship today.</div>
+
   <h2>The problem: agents act faster than you can review</h2>
   <p>AI coding agents can write, commit, and deploy code in seconds. The gap between "agent decides to act" and "irreversible damage" is measured in milliseconds. Prompt instructions alone cannot close that gap because they live inside the same context the agent can override.</p>
   <p>Researchers at Tsinghua University formalized this problem in their work on Natural-Language Agent Harnesses (NLAH). Their key insight: the safety layer must be <strong>external to the agent</strong>, treated as a first-class object with its own contracts, verification logic, and persistent state.</p>
@@ -168,5 +170,11 @@
   </div>
 </div>
 
+
+  <div class="sticky-cta">
+    <span style="color:var(--muted)">Try it now:</span>
+    <code>npx mcp-memory-gateway init</code>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
 </body>
 </html>

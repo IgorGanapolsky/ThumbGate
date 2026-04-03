@@ -186,7 +186,7 @@
     "test:control-tower": "node --test tests/control-tower.test.js",
     "test:pii-scanner": "node --test tests/pii-scanner.test.js",
     "test:data-governance": "node --test tests/data-governance.test.js",
-    "test:lesson-inference": "node --test tests/lesson-inference.test.js",
+    "test:lesson-inference": "node --test tests/conversation-context.test.js tests/lesson-inference.test.js",
     "test:lesson-retrieval": "node --test tests/lesson-retrieval.test.js",
     "test:reflector-agent": "node --test tests/reflector-agent.test.js",
     "test:feedback-session": "node --test tests/feedback-session.test.js",

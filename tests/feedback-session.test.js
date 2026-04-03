@@ -13,6 +13,7 @@ const {
   extractComplaints,
   SESSION_TIMEOUT_MS,
   MAX_FOLLOWUP_MESSAGES,
+  scheduleTimer,
   _activeSessions,
 } = require('../scripts/feedback-session');
 
@@ -317,5 +318,16 @@ describe('auto-timeout', () => {
     const { sessionId } = openSession('fb_30', 'down');
     const session = _activeSessions.get(sessionId);
     assert.ok(session.timeoutHandle !== null);
+  });
+
+  it('unrefs timers so sessions do not pin the process', () => {
+    const handle = scheduleTimer(() => {}, 1000);
+    try {
+      if (typeof handle.hasRef === 'function') {
+        assert.equal(handle.hasRef(), false);
+      }
+    } finally {
+      clearTimeout(handle);
+    }
   });
 });
