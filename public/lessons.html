@@ -497,21 +497,39 @@ var demoTimeline = [
   { signal: 'down', context: 'Spent 45min on code when curl would have diagnosed in 30s', date: '3 days ago', learned: 'curl first, never edit .env' },
 ];
 
+function renderUpgradeWall(containerId) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  var wall = document.createElement('div');
+  wall.style.cssText = 'position:relative;margin-top:8px;';
+  wall.innerHTML = '<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;z-index:2;">' +
+    '<div style="text-align:center;background:rgba(10,10,15,0.92);border:1px solid #333;border-radius:12px;padding:28px 36px;">' +
+    '<div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px;">Unlock your full lessons</div>' +
+    '<div style="color:#aaa;margin-bottom:16px;">Pro shows your real prevention rules, timeline, and insights.</div>' +
+    '<a href="https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06" target="_blank" rel="noopener" ' +
+    'style="display:inline-block;background:#b85c2d;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Upgrade to Pro — $19/mo</a>' +
+    '<div style="color:#666;font-size:12px;margin-top:10px;">npx mcp-memory-gateway pro --activate --key=YOUR_KEY</div>' +
+    '</div></div>';
+  el.appendChild(wall);
+}
+
 function loadDemo() {
-  allRules = demoRules;
-  allTimeline = demoTimeline;
+  allRules = demoRules.slice(0, 3);
+  allTimeline = demoTimeline.slice(0, 3);
   dashboardSnapshot = null;
 
-  document.getElementById('statRules').textContent = allRules.length;
-  document.getElementById('statCritical').textContent = allRules.filter(function(r) { return r.severity === 'critical'; }).length;
-  document.getElementById('statPrevented').textContent = allRules.reduce(function(sum, r) { return sum + (r.prevented || 0); }, 0);
+  document.getElementById('statRules').textContent = demoRules.length;
+  document.getElementById('statCritical').textContent = demoRules.filter(function(r) { return r.severity === 'critical'; }).length;
+  document.getElementById('statPrevented').textContent = demoRules.reduce(function(sum, r) { return sum + (r.prevented || 0); }, 0);
   document.getElementById('statTrend').textContent = '12.5%';
   document.getElementById('statTrendSub').textContent = '7-day approval rate';
 
   renderRules(allRules);
   renderTimeline(allTimeline);
   renderInsights();
-  setMode('Demo preview — local Pro auto-connect unlocks your live lessons, timeline, and insights on localhost.', true);
+  renderUpgradeWall('rulesList');
+  renderUpgradeWall('timelineList');
+  setMode('Demo preview — upgrade to Pro to see your live lessons, timeline, and insights.', true);
   document.getElementById('proBadge').style.display = 'block';
 }
 
