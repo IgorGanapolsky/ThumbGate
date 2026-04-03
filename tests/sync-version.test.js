@@ -45,13 +45,10 @@ test('sync-version covers the MCP stdio server metadata file', () => {
   );
 });
 
-test('sync-version covers the pro package manifest', () => {
+test('sync-version no longer tracks an embedded pro package manifest', () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });
-  assert.ok(
-    result.targets.includes('pro/package.json'),
-    'pro/package.json should be a sync target'
-  );
+  assert.equal(result.targets.includes('pro/package.json'), false);
 });
 
 test('sync-version covers codex plugin manifests', () => {

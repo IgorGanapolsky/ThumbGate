@@ -15,6 +15,7 @@ const {
 const PROJECT_ROOT = path.join(__dirname, '..');
 const CANONICAL_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
 const CURRENT_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate';
+const PRO_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/mcp-memory-gateway-pro';
 
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, relativePath), 'utf8'));
@@ -30,7 +31,6 @@ test('pricing matches 2026 standard', () => {
 
 test('package version matches MCP manifests', () => {
   const packageJson = readJson('package.json');
-  const proPackage = readJson('pro/package.json');
   const serverManifest = readJson('server.json');
   const claudePlugin = readJson('.claude-plugin/plugin.json');
   const claudeMarketplace = readJson('.claude-plugin/marketplace.json');
@@ -39,7 +39,6 @@ test('package version matches MCP manifests', () => {
   const claudeCodexBridge = readJson('plugins/claude-codex-bridge/.claude-plugin/plugin.json');
   const codexPlugin = readJson('plugins/codex-profile/.codex-plugin/plugin.json');
 
-  assert.equal(proPackage.version, packageJson.version);
   assert.equal(serverManifest.version, packageJson.version);
   assert.equal(claudePlugin.version, packageJson.version);
   assert.equal(claudeMarketplace.version, packageJson.version);
@@ -272,7 +271,6 @@ test('active GTM scripts and reports point to the canonical offer without foundi
 test('commercial truth sources stay aligned across public and historical docs', () => {
   const commercialTruth = readText('docs/COMMERCIAL_TRUTH.md');
   const readme = readText('README.md');
-  const proReadme = readText('pro/README.md');
   const pricingResearch = readText('docs/PRICING_RESEARCH_2026-03-09.md');
   const crisisReport = readText('docs/PRICING_RESEARCH_2026-03-10.md');
   const packagingPlan = readText('docs/PACKAGING_AND_SALES_PLAN.md');
@@ -288,9 +286,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 
   assert.match(readme, /Commercial Truth/);
-  assert.match(proReadme, /Commercial Truth/);
   assert.doesNotMatch(readme, /500\+ agentic sessions|battle-tested/i);
-  assert.doesNotMatch(proReadme, /500\+ agentic sessions|battle-tested/i);
 
   for (const historicalDoc of [pricingResearch, crisisReport, packagingPlan, revenueSprint, xStrategy]) {
     assert.match(historicalDoc, /Historical .*note|Historical .*archived|Historical .*hypothesis/i);
@@ -311,4 +307,12 @@ test('commercial truth sources stay aligned across public and historical docs', 
   assert.doesNotMatch(workflowSprint, /^We are an official Anthropic partner\b/m);
 
   assert.doesNotMatch(directoryGuide, /30k\+ stars|18k\+ servers listed/i);
+});
+
+test('public repo documents the separate Pro overlay repository', () => {
+  const readme = readText('README.md');
+  const distributionDoc = readText('docs/PLUGIN_DISTRIBUTION.md');
+  assert.match(readme, new RegExp(PRO_REPOSITORY_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(distributionDoc, /public repo owns shared runtime/i);
+  assert.match(distributionDoc, /paid overlay code in the separate `mcp-memory-gateway-pro` repo\/package/i);
 });

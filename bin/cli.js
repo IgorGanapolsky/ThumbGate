@@ -728,7 +728,8 @@ function pro() {
     console.log('  Launch dashboard: npx mcp-memory-gateway pro');
     console.log('  Activate + run  : npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
     console.log('  Install configs : npx mcp-memory-gateway pro --upgrade');
-    console.log('  Legacy launcher : npx mcp-memory-gateway-pro\n');
+    console.log('  Legacy launcher : npx mcp-memory-gateway-pro (separate package)');
+    console.log('  Pro repo        : https://github.com/IgorGanapolsky/mcp-memory-gateway-pro\n');
   }
 
   function launchDashboard(key, eventType) {

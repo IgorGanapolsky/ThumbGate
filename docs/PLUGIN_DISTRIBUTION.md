@@ -15,11 +15,19 @@ Rubric scoring and anti-hacking guardrails are shared via `config/rubrics/defaul
 
 ## Commercial packaging model
 
-1. Ship OSS core first (this repo).
-2. Offer managed hosted API + analytics as paid SaaS.
-3. Sell enterprise controls (SSO, audit, retention policies, support SLA).
+1. Ship OSS core first in this repo (`mcp-memory-gateway`).
+2. Keep paid overlay code in the separate `mcp-memory-gateway-pro` repo/package.
+3. Offer managed hosted API + analytics as paid SaaS.
+4. Sell enterprise controls (SSO, audit, retention policies, support SLA).
 
 This avoids platform-specific rewrite cost and keeps the product under a `$10/mo` bootstrap budget until paid demand exists.
+
+## Public vs Pro repo boundary
+
+1. Public repo owns shared runtime, adapters, schemas, docs, and free/local behavior.
+2. Pro repo inherits from the published `mcp-memory-gateway` package and adds paid-only overlays.
+3. Do not ship `pro/` package code or Pro publish workflows from this public repo.
+4. Public docs may link to the Pro offer and repo, but protected implementation stays out of this tree.
 
 ## ChatGPT (GPT Actions)
 
