@@ -4,17 +4,21 @@ const path = require('path');
 const crypto = require('crypto');
 
 const LICENSE_PATH = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.thumbgate', 'license.json');
-const LICENSE_PREFIX = 'tg_pro_';
+const VALID_PREFIXES = ['rlhf_', 'tg_pro_', 'tg_'];
+
+function isValidKey(key) {
+  return key && VALID_PREFIXES.some((p) => key.startsWith(p));
+}
 
 function verifyLicense() {
   const envKey = process.env.RLHF_API_KEY || process.env.THUMBGATE_PRO_KEY;
-  if (envKey && envKey.startsWith(LICENSE_PREFIX)) {
+  if (isValidKey(envKey)) {
     return { valid: true, source: 'env', key: envKey };
   }
   try {
     if (fs.existsSync(LICENSE_PATH)) {
       const data = JSON.parse(fs.readFileSync(LICENSE_PATH, 'utf8'));
-      if (data.key && data.key.startsWith(LICENSE_PREFIX)) {
+      if (isValidKey(data.key)) {
         return { valid: true, source: 'file', key: data.key, activatedAt: data.activatedAt };
       }
     }
@@ -27,8 +31,8 @@ function isProLicensed() {
 }
 
 function activateLicense(key) {
-  if (!key || !key.startsWith(LICENSE_PREFIX)) {
-    return { success: false, error: 'Invalid key format. Expected tg_pro_...' };
+  if (!isValidKey(key)) {
+    return { success: false, error: 'Invalid key format. Expected rlhf_... or tg_pro_...' };
   }
   const dir = path.dirname(LICENSE_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -40,7 +44,7 @@ function activateLicense(key) {
 function generateLicenseKey(email) {
   const payload = `${email}:${Date.now()}`;
   const hash = crypto.createHash('sha256').update(payload).digest('hex').slice(0, 24);
-  return `${LICENSE_PREFIX}${hash}`;
+  return `tg_pro_${hash}`;
 }
 
-module.exports = { verifyLicense, isProLicensed, activateLicense, generateLicenseKey, LICENSE_PATH };
+module.exports = { verifyLicense, isProLicensed, activateLicense, generateLicenseKey, isValidKey, VALID_PREFIXES, LICENSE_PATH };
