@@ -2056,6 +2056,87 @@ test('settings status endpoint returns resolved settings and origin metadata', a
   assert.ok(body.origins.some((entry) => entry.path === 'mcp.defaultProfile'));
 });
 
+test('dashboard render-spec endpoint returns constrained hosted views', async () => {
+  const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-dashboard-render-spec-'));
+  const savedEnv = {
+    feedbackDir: process.env.RLHF_FEEDBACK_DIR,
+    apiKeysPath: process.env._TEST_API_KEYS_PATH,
+    funnelPath: process.env._TEST_FUNNEL_LEDGER_PATH,
+    revenuePath: process.env._TEST_REVENUE_LEDGER_PATH,
+    checkoutSessionsPath: process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH,
+  };
+
+  process.env.RLHF_FEEDBACK_DIR = isolatedFeedbackDir;
+  process.env._TEST_API_KEYS_PATH = path.join(isolatedFeedbackDir, 'api-keys.json');
+  process.env._TEST_FUNNEL_LEDGER_PATH = path.join(isolatedFeedbackDir, 'funnel-events.jsonl');
+  process.env._TEST_REVENUE_LEDGER_PATH = path.join(isolatedFeedbackDir, 'revenue-events.jsonl');
+  process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = path.join(isolatedFeedbackDir, 'local-checkout-sessions.json');
+
+  try {
+    fs.writeFileSync(path.join(isolatedFeedbackDir, 'feedback-log.jsonl'), [
+      JSON.stringify({
+        timestamp: '2026-03-19T14:00:00.000Z',
+        signal: 'negative',
+        context: 'Claimed done without proof',
+        whatWentWrong: 'Skipped verification',
+        whatToChange: 'Run proof before completion claim',
+        tags: ['verification', 'evidence'],
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(path.join(isolatedFeedbackDir, 'funnel-events.jsonl'), [
+      JSON.stringify({
+        timestamp: '2026-03-19T14:25:00.000Z',
+        type: 'workflow_sprint_lead',
+        source: 'producthunt',
+        email: 'team@example.com',
+        workflowType: 'team-rollout',
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(path.join(isolatedFeedbackDir, 'revenue-events.jsonl'), [
+      JSON.stringify({
+        timestamp: '2026-03-19T15:00:00.000Z',
+        type: 'paid_order',
+        source: 'producthunt',
+        amountCents: 4900,
+        amountKnown: true,
+      }),
+      '',
+    ].join('\n'));
+
+    const res = await fetch(apiUrl('/v1/dashboard/render-spec?view=workflow-rollout&window=today&timezone=America/New_York&now=2026-03-19T18:00:00.000Z'), {
+      headers: authHeader,
+    });
+
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.view, 'workflow-rollout');
+    assert.deepEqual(body.allowedComponentTypes, ['hero', 'stat_grid', 'list', 'callout']);
+    assert.ok(Array.isArray(body.availableViews));
+    assert.ok(body.availableViews.some((view) => view.id === 'team-review'));
+    assert.ok(body.components.some((component) => component.type === 'stat_grid'));
+    assert.ok(body.components.some((component) => component.title === 'Top acquisition sources'));
+  } finally {
+    process.env.RLHF_FEEDBACK_DIR = savedEnv.feedbackDir;
+    process.env._TEST_API_KEYS_PATH = savedEnv.apiKeysPath;
+    process.env._TEST_FUNNEL_LEDGER_PATH = savedEnv.funnelPath;
+    process.env._TEST_REVENUE_LEDGER_PATH = savedEnv.revenuePath;
+    process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = savedEnv.checkoutSessionsPath;
+    fs.rmSync(isolatedFeedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('dashboard render-spec endpoint rejects unsupported views', async () => {
+  const res = await fetch(apiUrl('/v1/dashboard/render-spec?view=freeform-ai-page'), {
+    headers: authHeader,
+  });
+
+  assert.equal(res.status, 400);
+  const body = await res.json();
+  assert.match(body.detail, /Unsupported dashboard render view/);
+});
+
 test('billing summary includes Stripe-reconciled revenue when live processor events are available', async () => {
   process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = JSON.stringify([
     {

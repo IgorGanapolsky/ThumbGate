@@ -776,6 +776,41 @@ paths:
                 additionalProperties: true
         '401':
           description: Unauthorized
+  /v1/dashboard/render-spec:
+    get:
+      operationId: getDashboardRenderSpec
+      parameters:
+        - in: query
+          name: view
+          schema:
+            type: string
+            enum: [team-review, incident-review, workflow-rollout]
+        - in: query
+          name: window
+          schema:
+            type: string
+            enum: [today, 7d, 30d, lifetime]
+        - in: query
+          name: timezone
+          schema:
+            type: string
+        - in: query
+          name: now
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Constrained JSON render spec for hosted Team and operations dashboard views
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          description: Invalid dashboard render view or query
+        '401':
+          description: Unauthorized
   /v1/settings/status:
     get:
       operationId: getSettingsStatus
