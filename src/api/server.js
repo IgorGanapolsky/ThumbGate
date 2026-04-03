@@ -46,6 +46,9 @@ const {
   bootstrapInternalAgent,
 } = require('../../scripts/internal-agent-bootstrap');
 const {
+  buildCloudflareSandboxPlan,
+} = require('../../scripts/cloudflare-dynamic-sandbox');
+const {
   loadModel,
   getReliability,
   samplePosteriors,
@@ -3382,6 +3385,45 @@ async function addContext(){
           sendJson(res, 200, result);
         } catch (err) {
           throw createHttpError(err.statusCode || 400, err.message || 'Invalid internal agent bootstrap request');
+        }
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/hosted/sandbox/dispatch') {
+        const body = await parseJsonBody(req);
+        try {
+          const result = buildCloudflareSandboxPlan({
+            source: body.source,
+            workloadType: body.workloadType || body.taskType,
+            tier: body.tier,
+            tenantId: body.tenantId || body.teamId,
+            repoPath: body.repoPath,
+            requiresRepoAccess: body.requiresRepoAccess,
+            requiresIsolation: body.requiresIsolation,
+            requiresNetwork: body.requiresNetwork,
+            untrustedCode: body.untrustedCode,
+            allowedHosts: body.allowedHosts,
+            contextTokens: body.contextTokens,
+            traceId: body.traceId,
+            context: body.context,
+            intentId: body.intentId,
+            mcpProfile: body.mcpProfile,
+            partnerProfile: body.partnerProfile,
+            delegationMode: body.delegationMode,
+            approved: body.approved === true,
+            trigger: body.trigger,
+            thread: body.thread,
+            task: body.task,
+            comments: body.comments,
+            messages: body.messages,
+            providerPreference: body.providerPreference,
+          }, {
+            sharedSecret: process.env.CLOUDFLARE_SANDBOX_SHARED_SECRET,
+            includeBootstrap: body.includeBootstrap !== false,
+          });
+          sendJson(res, 200, result);
+        } catch (err) {
+          throw createHttpError(err.statusCode || 400, err.message || 'Invalid hosted sandbox dispatch request');
         }
         return;
       }

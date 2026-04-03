@@ -57,6 +57,7 @@ test('buildVerifyPlan returns quick and full plans without removed legacy verifi
   assert.ok(quick.length >= 2);
   assert.ok(full.length >= 12);
   assert.ok(full.some((step) => step.args && step.args.includes('prove:claim-verification')));
+  assert.ok(full.some((step) => step.args && step.args.includes('prove:cloudflare-sandbox')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:data-pipeline')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:evolution')));
   assert.ok(full.some((step) => step.args && step.args.includes('prove:harnesses')));
@@ -104,6 +105,7 @@ test('recordVerifyWorkflowRun persists a proof-backed workflow run for full veri
   assert.equal(entry.runtime, 'node');
   assert.equal(entries.length, 1);
   assert.equal(entries[0].reviewedBy, 'automation');
+  assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'cloudflare-sandbox-report.json'))));
   assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'claim-verification-report.json'))));
   assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'data-pipeline-report.json'))));
   assert.ok(entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'evolution-report.json'))));
@@ -137,6 +139,8 @@ test('materializeProofArtifacts copies temp proof reports into repo-local proof 
     ['proof-adapters/report.md', '# compatibility\n'],
     ['proof-automation/report.json', '{"automation":true}\n'],
     ['proof-automation/report.md', '# automation\n'],
+    ['proof-adapters/cloudflare-sandbox-report.json', '{"cloudflareSandbox":true}\n'],
+    ['proof-adapters/cloudflare-sandbox-report.md', '# cloudflare sandbox\n'],
     ['proof-adapters/claim-verification-report.json', '{"claims":true}\n'],
     ['proof-adapters/claim-verification-report.md', '# claims\n'],
     ['proof-adapters/data-pipeline-report.json', '{"pipeline":true}\n'],
@@ -170,6 +174,10 @@ test('materializeProofArtifacts copies temp proof reports into repo-local proof 
   const copied = materializeProofArtifacts(tempRoot, cwd);
 
   assert.ok(copied.includes(path.join(cwd, 'proof', 'runtime-report.json')));
+  assert.equal(
+    fs.readFileSync(path.join(cwd, 'proof', 'cloudflare-sandbox-report.json'), 'utf8'),
+    '{"cloudflareSandbox":true}\n',
+  );
   assert.equal(
     fs.readFileSync(path.join(cwd, 'proof', 'claim-verification-report.json'), 'utf8'),
     '{"claims":true}\n',
@@ -235,6 +243,7 @@ test('runVerify injects proof directories and records full verification', () => 
   const proofFixtures = [
     ['proof-adapters/report.json', '{"compatibility":true}\n'],
     ['proof-automation/report.json', '{"automation":true}\n'],
+    ['proof-adapters/cloudflare-sandbox-report.json', '{"cloudflareSandbox":true}\n'],
     ['proof-adapters/claim-verification-report.json', '{"claims":true}\n'],
     ['proof-adapters/data-pipeline-report.json', '{"pipeline":true}\n'],
     ['proof-adapters/evolution-report.json', '{"evolution":true}\n'],
@@ -276,7 +285,7 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.equal(result.mode, 'full');
     assert.equal(result.tempRoot, tempRoot);
     assert.deepEqual(result.workflowRun, stubWorkflowRun);
-    assert.equal(commandCalls.length, 16);
+    assert.equal(commandCalls.length, 17);
     assert.equal(commandCalls[0].options.cwd, cwd);
     assert.equal(commandCalls[0].options.env.BASE_ENV, '1');
     assert.equal(commandCalls[0].options.env.RLHF_PROOF_DIR, path.join(tempRoot, 'proof-adapters'));
@@ -285,12 +294,14 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.equal(commandCalls[0].options.env.RLHF_RUNTIME_PROOF_DIR, path.join(tempRoot, 'proof-runtime'));
     assert.equal(commandCalls[0].options.env.RLHF_SETTINGS_PROOF_DIR, path.join(tempRoot, 'proof-settings'));
     assert.equal(appendCall.entry.source, 'verify:full');
+    assert.ok(commandCalls.some((call) => call.args.includes('prove:cloudflare-sandbox')));
     assert.ok(commandCalls.some((call) => call.args.includes('prove:claim-verification')));
     assert.ok(commandCalls.some((call) => call.args.includes('prove:evolution')));
     assert.ok(commandCalls.some((call) => call.args.includes('prove:harnesses')));
     assert.ok(commandCalls.some((call) => call.args.includes('prove:local-intelligence')));
     assert.ok(commandCalls.some((call) => call.args.includes('prove:predictive-insights')));
     assert.ok(commandCalls.some((call) => call.args.includes('prove:settings')));
+    assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'cloudflare-sandbox-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'claim-verification-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'data-pipeline-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'evolution-report.json'))));
@@ -302,6 +313,10 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'seo-gsd-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'tessl-report.json'))));
     assert.ok(appendCall.entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'xmemory-report.json'))));
+    assert.equal(
+      fs.readFileSync(path.join(cwd, 'proof', 'cloudflare-sandbox-report.json'), 'utf8'),
+      '{"cloudflareSandbox":true}\n',
+    );
     assert.equal(
       fs.readFileSync(path.join(cwd, 'proof', 'claim-verification-report.json'), 'utf8'),
       '{"claims":true}\n',
