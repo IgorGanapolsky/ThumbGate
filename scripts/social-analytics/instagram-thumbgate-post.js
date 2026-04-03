@@ -16,7 +16,7 @@ const {
   getConnectedAccounts,
 } = require('./publishers/zernio');
 
-const THUMBGATE_CAPTION = `Your AI coding agent forgets everything between sessions.
+const THUMBGATE_CAPTION = `Your AI coding agent has amnesia. It forgets everything between sessions.
 
 ThumbGate gives it memory that survives restarts. Thumbs-down a mistake → it becomes a prevention rule → the agent can't repeat it.
 

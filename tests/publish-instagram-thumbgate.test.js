@@ -12,7 +12,10 @@ const {
 const REPO_ROOT = path.resolve(__dirname, '..');
 const TEST_IMAGE_PATH = path.join(REPO_ROOT, '.rlhf', 'test-publish-instagram.png');
 
-describe('Publish Instagram ThumbGate', () => {
+let sharpAvailable = false;
+try { require('sharp'); sharpAvailable = true; } catch {}
+
+describe('Publish Instagram ThumbGate', { skip: !sharpAvailable ? 'sharp not installed' : false }, () => {
   afterEach(() => {
     // Clean up test images
     [TEST_IMAGE_PATH, IMAGE_PATH].forEach((p) => {

@@ -13,7 +13,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const sharp = require('sharp');
+let sharp;
+try { sharp = require('sharp'); } catch { /* optional dependency */ }
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const DEFAULT_OUTPUT = path.join(REPO_ROOT, '.rlhf', 'instagram-card.png');
@@ -29,7 +30,7 @@ async function generateInstagramCard(outputPath = DEFAULT_OUTPUT) {
       <rect width="${width}" height="${height}" fill="#0d1117"/>
 
       <!-- Main heading -->
-      <text x="${width / 2}" y="400" font-size="72" font-weight="bold" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-family="system-ui, -apple-system, sans-serif">
+      <text x="${width / 2}" y="400" font-size="72" font-weight="bold" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif">
         Your AI agent
       </text>
       <text x="${width / 2}" y="490" font-size="72" font-weight="bold" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif">
@@ -50,6 +51,10 @@ async function generateInstagramCard(outputPath = DEFAULT_OUTPUT) {
       </text>
     </svg>
   `;
+
+  if (!sharp) {
+    throw new Error('sharp is not installed. Run: npm install sharp');
+  }
 
   try {
     // Ensure output directory exists
