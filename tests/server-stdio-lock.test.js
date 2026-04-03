@@ -66,11 +66,11 @@ test('acquireLock: stale lock from dead PID — removes it and acquires new lock
   cleanupLock();
 });
 
-// ── Active lock (live PID): process.exit(1) ──────────────────────────
+// ── Active lock (live PID, fresh): process.exit(1) ──────────────────
 
-test('acquireLock: lock held by active PID — calls process.exit(1)', () => {
+test('acquireLock: lock held by active PID (fresh) — calls process.exit(1)', () => {
   const lockPath = path.join(tmpDir, '.mcp-server.lock');
-  // Use current PID — guaranteed to be running
+  // Use current PID — guaranteed to be running; startedAt is NOW (not stale)
   fs.writeFileSync(lockPath, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
 
   // Mock process.exit to capture the call instead of actually exiting
@@ -85,6 +85,46 @@ test('acquireLock: lock held by active PID — calls process.exit(1)', () => {
     assert.strictEqual(exitMock.mock.calls[0].arguments[0], 1, 'exit code should be 1');
   } finally {
     process.exit = origExit;
+  }
+});
+
+// ── Orphaned lock (live PID, stale): reap and take over ─────────────
+
+test('acquireLock: lock held by live PID but older than threshold — reaps and acquires', () => {
+  const lockPath = path.join(tmpDir, '.mcp-server.lock');
+  // Set threshold very low so the lock is considered stale
+  process.env.THUMBGATE_LOCK_STALE_MS = '1'; // 1ms — any lock is stale
+
+  // Spawn a real child process so we have a live PID to reap
+  const { execSync } = require('child_process');
+  const child = require('child_process').spawn('sleep', ['60'], { detached: true, stdio: 'ignore' });
+  child.unref();
+  const childPid = child.pid;
+
+  // Write lock with that PID and an old timestamp
+  fs.writeFileSync(lockPath, JSON.stringify({ pid: childPid, startedAt: '2020-01-01T00:00:00.000Z' }));
+
+  try {
+    const { acquireLock } = freshRequire();
+    // Should NOT exit — should reap the orphaned process and take over
+    const { lockFile, cleanupLock } = acquireLock();
+
+    assert.ok(fs.existsSync(lockPath), 'new lock file should be written');
+    const data = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    assert.strictEqual(data.pid, process.pid, 'lock should now belong to current process');
+
+    // Verify the child was killed
+    let childStillRunning = false;
+    try { process.kill(childPid, 0); childStillRunning = true; } catch { /* dead */ }
+    // Give SIGTERM a moment to propagate
+    if (childStillRunning) {
+      try { process.kill(childPid, 'SIGKILL'); } catch { /* already gone */ }
+    }
+
+    cleanupLock();
+  } finally {
+    delete process.env.THUMBGATE_LOCK_STALE_MS;
+    try { process.kill(childPid, 'SIGKILL'); } catch { /* cleanup */ }
   }
 });
 
