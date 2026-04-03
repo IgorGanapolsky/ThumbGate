@@ -57,6 +57,8 @@
   <h1>How to Stop AI Agents From Force-Pushing to Main</h1>
   <p style="color:var(--muted);">2 min read &middot; Works with Claude Code, Cursor, Codex, and any MCP agent</p>
 
+  <div class="tldr"><strong>TL;DR:</strong> Your AI agent will force-push to main unless you physically prevent it. One PreToolUse hook + two minutes = impossible.</div>
+
   <h2>The problem</h2>
   <p>You write <code>never force-push to main</code> in your CLAUDE.md. Your agent reads it. Then it force-pushes to main anyway. Prompt rules are suggestions. Agents can and do ignore them when the context window fills up or when a chain of reasoning overrides the instruction.</p>
 
@@ -122,5 +124,11 @@ reason: "Force-push to main blocked — destroyed 14 commits (2026-03-15)"</code
   </div>
 </div>
 
+
+  <div class="sticky-cta">
+    <span style="color:var(--muted)">Try it now:</span>
+    <code>npx mcp-memory-gateway init</code>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
 </body>
 </html>

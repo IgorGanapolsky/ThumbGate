@@ -66,6 +66,8 @@
   <h1>MCP Pre-Action Gates Explained</h1>
   <p style="color:var(--muted);">4 min read &middot; Technical deep-dive for developers building on MCP</p>
 
+  <div class="tldr"><strong>TL;DR:</strong> Pre-action gates intercept tool calls before they execute. Unlike prompt rules, they cannot be ignored. This is how enforcement actually works in MCP.</div>
+
   <h2>What is a pre-action gate?</h2>
   <p>A pre-action gate is an enforcement rule that intercepts an AI agent's tool call <em>before</em> it executes. If the tool call matches a known-bad pattern, the gate blocks it and returns a rejection to the agent. The agent then adapts its approach without ever having run the dangerous action.</p>
   <p>Gates run at the hook layer of the Model Context Protocol (MCP). They are external to the agent's reasoning chain, which means they cannot be overridden by prompt injection, context overflow, or chain-of-thought reasoning.</p>
@@ -160,5 +162,11 @@
   </div>
 </div>
 
+
+  <div class="sticky-cta">
+    <span style="color:var(--muted)">Try it now:</span>
+    <code>npx mcp-memory-gateway init</code>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
 </body>
 </html>
