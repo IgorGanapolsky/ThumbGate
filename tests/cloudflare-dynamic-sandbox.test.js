@@ -1,7 +1,9 @@
 'use strict';
 
+const fs = require('node:fs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
 
 const {
   classifyHostedExecution,
@@ -82,4 +84,13 @@ test('buildCloudflareSandboxPlan returns a non-dispatch Railway plan when Cloudf
   assert.equal(plan.provider, 'railway_control_plane');
   assert.equal(plan.shouldDispatch, false);
   assert.equal(plan.route, null);
+});
+
+test('worker package test script uses tsx glob handling so CI does not pass a literal test path', () => {
+  const workerPackage = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', 'workers', 'package.json'), 'utf8'),
+  );
+
+  assert.equal(workerPackage.scripts.test, 'npm run typecheck && tsx --test src/**/*.test.ts');
+  assert.doesNotMatch(workerPackage.scripts.test, /node --import tsx --test/);
 });
