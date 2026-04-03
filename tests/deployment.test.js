@@ -266,6 +266,14 @@ test('CI workflow runs evolution proof and uploads evolution evidence artifacts'
   assert.match(workflow, /proof\/evolution-report\.md/);
 });
 
+test('CI workflow treats GitHub About sync as best-effort but still verifies the live About state', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+
+  assert.match(workflow, /name: Sync GitHub About metadata on main[\s\S]*?continue-on-error:\s*true[\s\S]*?GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\}\}[\s\S]*?npm run github:about:sync/);
+  assert.match(workflow, /name: Verify live GitHub About congruence on main[\s\S]*?run:\s*npm run test:congruence:live/);
+  assert.doesNotMatch(workflow, /name: Verify live GitHub About congruence on main[\s\S]*?GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\}\}/);
+});
+
 test('CI workflow supports merge queue and cancels stale non-main runs', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 
