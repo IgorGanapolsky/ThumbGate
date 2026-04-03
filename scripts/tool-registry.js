@@ -791,6 +791,19 @@ const TOOLS = [
       },
     },
   }),
+  destructiveTool({
+    name: 'report_product_issue',
+    description: 'Report a bug, suggestion, or complaint about ThumbGate itself (not project feedback). Auto-files a GitHub issue with system context. Use when the user expresses frustration or requests a feature for the mcp-memory-gateway tool.',
+    inputSchema: {
+      type: 'object',
+      required: ['title', 'body'],
+      properties: {
+        title: { type: 'string', description: 'Short issue title (e.g. "Gate blocks valid migration")' },
+        body: { type: 'string', description: 'Description of the problem or suggestion, in the user own words' },
+        category: { type: 'string', enum: ['bug', 'feature', 'question'], description: 'Issue category' },
+      },
+    },
+  }),
 ];
 
 module.exports = {

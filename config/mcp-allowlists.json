@@ -41,7 +41,8 @@
       "describe_semantic_entity",
       "capture_memory_feedback",
       "get_reliability_rules",
-      "describe_reliability_entity"
+      "describe_reliability_entity",
+      "report_product_issue"
     ],
     "essential": [
       "capture_feedback",
@@ -58,7 +59,8 @@
       "verify_claim",
       "feedback_stats",
       "feedback_summary",
-      "estimate_uncertainty"
+      "estimate_uncertainty",
+      "report_product_issue"
     ],
     "commerce": [
       "capture_feedback",

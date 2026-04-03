@@ -1167,6 +1167,39 @@ test('billing checkout endpoint is public', async () => {
   assert.equal(res.headers.get('x-rlhf-trace-id'), body.traceId);
 });
 
+test('product feedback endpoint logs local issue reports without auth', async () => {
+  const originalGithubToken = process.env.GITHUB_TOKEN;
+  const originalGhToken = process.env.GH_TOKEN;
+  delete process.env.GITHUB_TOKEN;
+  delete process.env.GH_TOKEN;
+  try {
+    const res = await fetch(apiUrl('/api/feedback/submit'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        category: 'feature',
+        message: 'Please keep the product feedback widget pinned on the lessons page.',
+      }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.issueNumber, null);
+    assert.match(body.note, /logged locally/);
+
+    const entries = readJsonl(path.join(tmpFeedbackDir, 'user-feedback.jsonl'));
+    const latest = entries.at(-1);
+    assert.match(latest.title, /^\[Feature\]/);
+    assert.equal(latest.category, 'feature');
+    assert.equal(latest.source, 'dashboard feedback widget');
+  } finally {
+    if (originalGithubToken === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = originalGithubToken;
+    if (originalGhToken === undefined) delete process.env.GH_TOKEN;
+    else process.env.GH_TOKEN = originalGhToken;
+  }
+});
+
 test('workflow sprint intake endpoint captures a contactable lead', async () => {
   const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
     method: 'POST',

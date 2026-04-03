@@ -112,6 +112,10 @@ const {
   appendTelemetryPing,
 } = require('../../scripts/telemetry-analytics');
 const {
+  buildProductIssueTitle,
+  submitProductIssue,
+} = require('../../scripts/product-feedback');
+const {
   resolveBuildMetadata,
 } = require('../../scripts/build-metadata');
 const {
@@ -2134,6 +2138,33 @@ function createApiServer() {
         });
       });
       proxyReq.on('error', () => sendJson(res, 502, { error: 'Analytics proxy failed' }));
+      return;
+    }
+
+
+    // User feedback → GitHub Issues
+    if (req.method === 'POST' && pathname === '/api/feedback/submit') {
+      const chunks = [];
+      req.on('data', (chunk) => chunks.push(chunk));
+      req.on('end', async () => {
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString());
+          const { category, message } = body;
+          if (!message || message.length < 5) {
+            sendJson(res, 400, { error: 'message too short' });
+            return;
+          }
+          const result = await submitProductIssue({
+            title: buildProductIssueTitle(message, category),
+            body: message,
+            category: category || 'bug',
+            source: 'dashboard feedback widget',
+          });
+          sendJson(res, 200, result);
+        } catch (e) {
+          sendJson(res, 500, { error: 'feedback submission failed' });
+        }
+      });
       return;
     }
 
