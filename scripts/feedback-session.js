@@ -50,6 +50,7 @@ function openSession(feedbackEventId, signal, initialContext) {
       finalizeSession(sessionId);
     }
   }, SESSION_TIMEOUT_MS);
+  if (session.timeoutHandle.unref) session.timeoutHandle.unref();
 
   activeSessions.set(sessionId, session);
 
@@ -92,6 +93,7 @@ function appendToSession(sessionId, message, role = 'user') {
       finalizeSession(sessionId);
     }
   }, SESSION_TIMEOUT_MS);
+  if (session.timeoutHandle.unref) session.timeoutHandle.unref();
 
   return {
     status: 'appended',
@@ -155,7 +157,8 @@ function finalizeSession(sessionId) {
   } catch (_err) { /* non-critical */ }
 
   // Clean up from active sessions after a delay (allow reads)
-  setTimeout(() => activeSessions.delete(sessionId), 5000);
+  const cleanupTimer = setTimeout(() => activeSessions.delete(sessionId), 5000);
+  if (cleanupTimer.unref) cleanupTimer.unref();
 
   return result;
 }
