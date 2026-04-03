@@ -57,18 +57,32 @@ async function runWeeklyPost({ periodDays = 7, platforms, dryRun = false } = {})
   const generated = generateWeeklyPostFile({ periodDays });
 
   let postResult = null;
+  let zernioResult = null;
+
   if (!dryRun) {
+    // Primary: Zernio API (posts to all connected platforms — X, LinkedIn, Instagram, TikTok)
     try {
-      const { postEverywhere } = require('./post-everywhere');
-      postResult = await postEverywhere(generated.filePath, { platforms, dryRun });
+      const { publishToAllPlatforms } = require('./social-analytics/publishers/zernio');
+      zernioResult = await publishToAllPlatforms(generated.post);
     } catch (err) {
-      postResult = { error: err.message };
+      zernioResult = { error: err.message };
+    }
+
+    // Fallback: post-everywhere (if Zernio fails or specific platforms needed)
+    if (zernioResult && zernioResult.error && platforms) {
+      try {
+        const { postEverywhere } = require('./post-everywhere');
+        postResult = await postEverywhere(generated.filePath, { platforms, dryRun });
+      } catch (err) {
+        postResult = { error: err.message };
+      }
     }
   }
 
   return {
     generated,
     posted: !dryRun,
+    zernioResult,
     postResult,
     dryRun,
   };
