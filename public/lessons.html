@@ -274,20 +274,36 @@ function highlightCard(index) {
   });
 }
 function switchTab(name) {
-  var tabIndex = name === 'rules' ? 0 : name === 'timeline' ? 2 : 3;
-  highlightCard(tabIndex);
-  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  // Highlight the correct tab header (only inside .tabs, not stat cards)
+  document.querySelectorAll('.tabs .tab').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-  document.querySelector('[onclick*="' + name + '"]').classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
+  var tabHeaders = document.querySelectorAll('.tabs .tab');
+  var tabMap = { rules: 0, timeline: 1, insights: 2 };
+  if (tabHeaders[tabMap[name]]) tabHeaders[tabMap[name]].classList.add('active');
+  var content = document.getElementById('tab-' + name);
+  if (content) content.classList.add('active');
+  // Highlight the corresponding stat card
+  var cardMap = { rules: 0, timeline: 2, insights: 3 };
+  highlightCard(cardMap[name] !== undefined ? cardMap[name] : -1);
   if (typeof plausible === 'function') plausible('lessons_tab', { props: { tab: name } });
 }
 
 function filterSeverity(level, el) {
+  // Update filter button active state
+  var filterBtns = document.querySelectorAll('#tab-rules .filter-btn');
+  filterBtns.forEach(function(b) { b.classList.remove('active'); });
   if (el) {
-    document.querySelectorAll('#tab-rules .filter-btn').forEach(function(b) { b.classList.remove('active'); });
     el.classList.add('active');
+  } else {
+    // Find the matching button and activate it
+    filterBtns.forEach(function(b) {
+      if (b.textContent.trim().toLowerCase() === level || (level === 'all' && b.textContent.trim() === 'All')) {
+        b.classList.add('active');
+      }
+    });
   }
+  // Highlight Critical card (index 1) when filtering critical, else Active Rules card (index 0)
+  if (level === 'critical') { highlightCard(1); } else { highlightCard(0); }
   var filtered = level === 'all' ? allRules : allRules.filter(function(r) { return r.severity === level; });
   renderRules(filtered);
 }
