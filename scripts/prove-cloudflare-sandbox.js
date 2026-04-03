@@ -88,6 +88,8 @@ function main() {
     'exec',
     '--yes',
     '--package=typescript',
+    '--package=@cloudflare/workers-types',
+    '--package=@types/node',
     '--',
     'tsc',
     '-p',
