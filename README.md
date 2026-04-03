@@ -11,6 +11,8 @@
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
 [![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free stays local-first with 5 daily feedback captures, 10 daily lesson searches, unlimited recall, and gating. Vague thumbs feedback can be distilled from the last ~10 messages and failed tool call. Pro adds a personal local dashboard, **Model Hardening Advisor**, and **LoRA/PEFT export**. Team rollout starts at the shared hosted lesson DB and org dashboard.
 
+**Repo boundary:** this repository is the public base runtime (`mcp-memory-gateway`). The paid overlay now lives in the separate [`mcp-memory-gateway-pro`](https://github.com/IgorGanapolsky/mcp-memory-gateway-pro) repo/package and inherits from this base instead of shipping from a `pro/` subtree here.
+
 **Thumbs down a mistake. It never happens again.**
 
 The safety net for vibe coding. Give your AI agent a thumbs-down and it auto-generates a prevention rule. Give a thumbs-up and it reinforces good behavior. Pre-action gates physically block the agent before it repeats a known mistake — a reliability layer for one sharp agent, without another planner or swarm.

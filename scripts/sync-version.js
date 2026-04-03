@@ -404,21 +404,6 @@ function syncVersion(opts) {
     targets.push(mcpizePath);
   }
 
-  // 16. pro/package.json
-  const proPackagePath = 'pro/package.json';
-  const proPackageFile = path.join(PROJECT_ROOT, proPackagePath);
-  if (fs.existsSync(proPackageFile)) {
-    const proPackage = readJson(proPackagePath);
-    if (proPackage.version !== version) {
-      drifted.push({ file: proPackagePath, field: 'version', current: proPackage.version });
-      if (!checkOnly) {
-        proPackage.version = version;
-        writeJson(proPackagePath, proPackage);
-      }
-    }
-    targets.push(proPackagePath);
-  }
-
   return {
     version,
     targets,

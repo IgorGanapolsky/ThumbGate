@@ -1,59 +1,34 @@
 'use strict';
 
-/**
- * Pro Package Parity Tests
- *
- * Ensures the free and Pro npm packages stay in sync. Added 2026-03-31
- * after discovering Pro was stuck at 0.8.3 while free shipped 0.8.5 —
- * two versions behind with no CI enforcement.
- */
-
-const { describe, it } = require('node:test');
+const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 
 const PKG_ROOT = path.join(__dirname, '..');
-const freePkg = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8'));
-const proPkg = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'pro', 'package.json'), 'utf8'));
+const README_PATH = path.join(PKG_ROOT, 'README.md');
+const DISTRIBUTION_DOC_PATH = path.join(PKG_ROOT, 'docs', 'PLUGIN_DISTRIBUTION.md');
+const PRO_WORKFLOW_PATH = path.join(PKG_ROOT, '.github', 'workflows', 'publish-npm-pro.yml');
+const EMBEDDED_PRO_DIR = path.join(PKG_ROOT, 'pro');
+const SONAR_PROJECT_PATH = path.join(PKG_ROOT, 'sonar-project.properties');
+const PRO_REPO_URL = 'https://github.com/IgorGanapolsky/mcp-memory-gateway-pro';
 
-describe('pro package parity', () => {
-  it('free and pro versions match exactly', () => {
-    assert.equal(proPkg.version, freePkg.version,
-      `Version mismatch: free=${freePkg.version} pro=${proPkg.version}. ` +
-      'Run node scripts/sync-version.js to fix.'
-    );
-  });
+test('public repo points operators to the separate Pro repo', () => {
+  const readme = fs.readFileSync(README_PATH, 'utf8');
+  const distributionDoc = fs.readFileSync(DISTRIBUTION_DOC_PATH, 'utf8');
+  assert.match(readme, new RegExp(PRO_REPO_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(distributionDoc, /separate `mcp-memory-gateway-pro` repo\/package/i);
+});
 
-  it('pro package name is mcp-memory-gateway-pro', () => {
-    assert.equal(proPkg.name, 'mcp-memory-gateway-pro');
-  });
+test('public repo no longer embeds the Pro package subtree', () => {
+  assert.equal(fs.existsSync(EMBEDDED_PRO_DIR), false, 'public repo should not ship a pro/ subtree');
+});
 
-  it('pro depends on free package', () => {
-    assert.ok(proPkg.dependencies && proPkg.dependencies['mcp-memory-gateway'],
-      'Pro package must depend on mcp-memory-gateway'
-    );
-  });
+test('public repo no longer publishes the Pro package', () => {
+  assert.equal(fs.existsSync(PRO_WORKFLOW_PATH), false, 'public repo should not own Pro npm publishing');
+});
 
-  it('pro has a bin entry', () => {
-    assert.ok(proPkg.bin && Object.keys(proPkg.bin).length > 0,
-      'Pro package must have a bin entry'
-    );
-  });
-
-  it('pro has a CLI entrypoint that exists', () => {
-    const binPath = Object.values(proPkg.bin)[0];
-    const fullPath = path.join(PKG_ROOT, 'pro', binPath);
-    assert.ok(fs.existsSync(fullPath), `Pro CLI entrypoint missing: ${fullPath}`);
-  });
-
-  it('publish-npm-pro.yml workflow exists', () => {
-    const workflowPath = path.join(PKG_ROOT, '.github', 'workflows', 'publish-npm-pro.yml');
-    assert.ok(fs.existsSync(workflowPath), 'Pro publish workflow must exist');
-  });
-
-  it('publish-npm-pro.yml contains version parity check', () => {
-    const src = fs.readFileSync(path.join(PKG_ROOT, '.github', 'workflows', 'publish-npm-pro.yml'), 'utf8');
-    assert.ok(src.includes('Version mismatch'), 'Pro publish workflow must enforce version parity');
-  });
+test('public repo scanning config no longer references the deleted pro subtree', () => {
+  const sonarConfig = fs.readFileSync(SONAR_PROJECT_PATH, 'utf8');
+  assert.doesNotMatch(sonarConfig, /\*\*\/pro\/\*\*/);
 });
