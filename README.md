@@ -111,7 +111,15 @@ Feedback session flow:
 👎 Thumbs down → Session opens → User types follow-up context → Session finalizes → Lesson inferred from full conversation
 ```
 
-## What's New in v0.9.6
+## What's New in v0.9.9
+
+- **ADK-Style Progressive Disclosure** — 3-tier skill loading (L1 metadata → L2 rules → L3 resources) that cuts token usage by 82%. Skill factory auto-generates new skill packs from recurring failure patterns. `measureSkillTokens()` shows exact token cost per tier.
+- **Agent Security Hardening** — credential attestation tracks what creds each agent uses per tool call. Privilege escalation detection checks tool calls against MCP profile allowlists. Dependency attestation gate blocks known-compromised packages (event-stream, ua-parser-js).
+- **Ephemeral Agent Store** — per-agent isolated namespaces for background agents with <10s lifetimes. Auto-merge into main store with PII governance check. Data compaction removes old non-promoted entries.
+- **Prompt-Level DLP** — scans tool call inputs for PII/secrets BEFORE execution. Shadow tool detection flags actions bypassing MCP. Governance score (0-100 + letter grade A-F) per agent session.
+- **Memory Migration** — imports Claude Code MEMORY.md files into ThumbGate's SQLite lesson DB. Health check warns on the 200-line cap Mem0 exposed. Comparison data for marketing.
+
+### Previous (v0.9.6)
 
 - **Background Agent Governance** — run tracking, pre-run governance gates, CI auto-feedback capture. Blocks agents with >50% failure rate. Warns on protected branches and large blast radius. Auto-captures CI pass/fail as structured feedback — no human in the loop. Governance report shows per-agent pass rates and gate blocks.
 - **Hallucination Detector** — decomposes agent claims ("deployed", "tests pass", "PR merged") into verifiable sub-claims, checks each against evidence. Confidence-weighted gates: low confidence blocks, medium warns, high allows. Retrieval-grounded verification flags contradictions with prevention rules.
