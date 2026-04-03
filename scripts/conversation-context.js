@@ -31,9 +31,32 @@ function normalizeConversationWindow(window) {
 }
 
 function trimToken(token) {
-  return String(token || '')
-    .replace(/^[^A-Za-z0-9./_-]+/, '')
-    .replace(/[^A-Za-z0-9./_-]+$/, '');
+  const value = String(token || '');
+  let start = 0;
+  let end = value.length;
+
+  while (start < end && !isPathChar(value[start])) {
+    start += 1;
+  }
+  while (end > start && !isPathChar(value[end - 1])) {
+    end -= 1;
+  }
+
+  return value.slice(start, end);
+}
+
+function isPathChar(char) {
+  if (!char) return false;
+  const code = char.charCodeAt(0);
+  return (
+    (code >= 48 && code <= 57) ||
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122) ||
+    char === '.' ||
+    char === '/' ||
+    char === '_' ||
+    char === '-'
+  );
 }
 
 function extractPathFromToken(token) {

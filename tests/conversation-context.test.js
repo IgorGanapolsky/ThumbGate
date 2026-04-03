@@ -44,6 +44,16 @@ test('extractFilePaths finds paths inside plain text and tool calls', () => {
   assert.ok(paths.includes('adapters/mcp/server-stdio.js'));
 });
 
+test('extractFilePaths trims long punctuation runs without regex backtracking', () => {
+  const noisyPrefix = ','.repeat(2000);
+  const noisySuffix = '!'.repeat(2000);
+  const paths = extractFilePaths([
+    { role: 'user', content: `${noisyPrefix}src/api/server.js${noisySuffix}` },
+  ]);
+
+  assert.deepEqual(paths, ['src/api/server.js']);
+});
+
 test('extractToolCalls finds unique tool names across messages', () => {
   const tools = extractToolCalls([
     { role: 'assistant', content: 'Read(src/index.ts) then Bash(npm test)' },
