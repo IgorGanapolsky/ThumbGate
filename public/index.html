@@ -43,16 +43,31 @@ __GA_BOOTSTRAP__
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
-  "description": "👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility.",
+  "alternateName": "mcp-memory-gateway",
+  "description": "Pre-action gates for AI coding agents. Domain skill packs with 82% token savings via progressive disclosure. Hallucination detection decomposes agent claims into verifiable sub-claims. PII scanning blocks sensitive data before export. Background agent governance tracks per-agent pass rates. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode.",
   "applicationCategory": "DeveloperApplication",
-  "operatingSystem": "Cross-platform",
+  "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "license": "https://opensource.org/licenses/MIT",
   "url": "https://github.com/IgorGanapolsky/ThumbGate",
+  "downloadUrl": "https://www.npmjs.com/package/mcp-memory-gateway",
+  "installUrl": "https://www.npmjs.com/package/mcp-memory-gateway",
+  "dateModified": "2026-04-03",
   "creator": {
-    "@type": "SoftwareApplication",
-    "name": "Perplexity Computer",
-    "url": "https://www.perplexity.ai/computer"
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
   },
+  "featureList": [
+    "Pre-Action Gates — block known-bad tool calls before execution",
+    "Domain Skill Packs — Stripe, Railway, database migration best practices",
+    "Progressive Disclosure — 82% token savings with 3-tier L1/L2/L3 loading",
+    "Hallucination Detection — decomposes claims into verifiable sub-claims",
+    "PII Scanner — blocks emails, credit cards, SSNs in feedback and exports",
+    "Background Agent Governance — per-agent pass rates, CI auto-feedback",
+    "Memory Migration — imports Claude Code MEMORY.md into unlimited SQLite DB",
+    "Prompt-Level DLP — scans tool call inputs before execution",
+    "Per-Step Scoring — every gate decision becomes a DPO/KTO training signal"
+  ],
   "offers": [
     {
       "@type": "Offer",
@@ -84,6 +99,43 @@ __GA_BOOTSTRAP__
       "url": "https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake"
     }
   ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to prevent AI coding agents from repeating mistakes",
+  "description": "Set up ThumbGate to capture feedback, generate prevention rules, and block known-bad actions before execution.",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Install ThumbGate",
+      "text": "Run: npx mcp-memory-gateway init --agent claude-code. This adds the MCP server to your agent. No API key needed — everything runs locally."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Give feedback when something goes wrong",
+      "text": "When your agent makes a mistake, give it a thumbs down with context: what went wrong and how to avoid it. ThumbGate validates the feedback and promotes it to a reusable memory."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Prevention rules auto-generate",
+      "text": "After repeated failures in the same domain, ThumbGate auto-generates prevention rules. These rules are injected into the agent's context at the start of every session via the recall MCP tool."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Pre-action gates block the mistake",
+      "text": "When the agent tries to repeat a known-bad action, the PreToolUse hook fires and physically blocks the tool call before execution. The agent cannot repeat the mistake."
+    }
+  ],
+  "totalTime": "PT5M",
+  "tool": { "@type": "SoftwareApplication", "name": "mcp-memory-gateway", "url": "https://www.npmjs.com/package/mcp-memory-gateway" }
 }
 </script>
 
