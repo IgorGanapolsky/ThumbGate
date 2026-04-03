@@ -502,11 +502,11 @@ function init() {
   trackEvent('cli_init', { command: 'init' });
   proNudge();
   process.stderr.write(
-    '\n  ┌─────────────────────────────────────────────────┐\n' +
-    '  │  Free: 3 captures/day · 5 searches · 5 gates  │\n' +
-    '  │  Pro:  unlimited + dashboard + DPO export      │\n' +
-    '  │        $19/mo → npx mcp-memory-gateway pro     │\n' +
-    '  └─────────────────────────────────────────────────┘\n\n'
+    '\n  ┌──────────────────────────────────────────────────┐\n' +
+    '  │  Free: unlimited 👍👎 · 5 searches · 5 gates   │\n' +
+    '  │  Pro:  + dashboard + DPO export + full search   │\n' +
+    '  │        $19/mo → npx mcp-memory-gateway pro      │\n' +
+    '  └──────────────────────────────────────────────────┘\n\n'
   );
 
   try {

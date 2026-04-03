@@ -10,7 +10,7 @@ const {
 const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.rlhf', 'usage-limits.json');
 
 const FREE_TIER_LIMITS = {
-  capture_feedback: { daily: 3, label: 'feedback captures' },
+  capture_feedback: { daily: Infinity, label: 'feedback captures' },
   search_lessons: { daily: 5, label: 'lesson searches' },
   search_rlhf: { daily: 10, label: 'RLHF searches' },
   commerce_recall: { daily: 5, label: 'commerce recalls' },
