@@ -1984,6 +1984,25 @@ function isAuthorized(req, expected) {
   return false;
 }
 
+function resolveRateLimitAuthContext(req, expectedApiKey) {
+  const token = extractApiKey(req);
+  if (!token) return null;
+
+  if (expectedApiKey && token === expectedApiKey) {
+    return { tier: 'pro', source: 'static_api_key' };
+  }
+
+  const entitlement = resolveEntitlement(token);
+  if (!entitlement.valid) return null;
+
+  return {
+    tier: entitlement.tier,
+    planId: entitlement.planId,
+    seatCount: entitlement.seatCount,
+    source: entitlement.source || 'billing_key',
+  };
+}
+
 /**
  * Extract the Bearer token from a request (returns '' if absent).
  */
@@ -3537,7 +3556,10 @@ async function addContext(){
       }
 
       if (req.method === 'POST' && pathname === '/v1/feedback/capture') {
-        const captureLimit = checkLimit('capture_feedback');
+        const captureLimit = checkLimit(
+          'capture_feedback',
+          resolveRateLimitAuthContext(req, expectedApiKey)
+        );
         if (!captureLimit.allowed) {
           sendProblem(res, {
             type: PROBLEM_TYPES.RATE_LIMIT,

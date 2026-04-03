@@ -29,6 +29,7 @@ fs.writeFileSync(
 
 const { startServer, __test__ } = require('../src/api/server');
 const billing = require('../scripts/billing');
+const rateLimiter = require('../scripts/rate-limiter');
 const { buildHostedSuccessUrl } = require('../scripts/hosted-config');
 const {
   recordConversationEntry,
@@ -730,6 +731,40 @@ test('feedback capture can distill a lesson from chatHistory when the submitted 
   assert.equal(body.accepted, true);
   assert.match(body.feedbackEvent.whatWentWrong, /ignored a prior instruction/i);
   assert.equal(body.feedbackEvent.conversationWindow.length, 2);
+});
+
+test('feedback capture bypasses free-tier limits for provisioned billing keys', async (t) => {
+  const usageFile = path.join(tmpFeedbackDir, `usage-limits-${Date.now()}.json`);
+  const prevUsageFile = rateLimiter.USAGE_FILE;
+  rateLimiter.USAGE_FILE = usageFile;
+
+  t.after(() => {
+    rateLimiter.USAGE_FILE = prevUsageFile;
+    if (fs.existsSync(usageFile)) fs.unlinkSync(usageFile);
+  });
+
+  const { key } = billing.provisionApiKey(`customer-rate-limit-${Date.now()}`, {
+    planId: 'pro',
+    source: 'test-suite',
+  });
+
+  for (let index = 0; index < 7; index += 1) {
+    const res = await fetch(apiUrl('/v1/feedback/capture'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        signal: 'down',
+        context: `Provisioned key capture ${index + 1}`,
+        whatWentWrong: 'Need to verify rate-limit bypass',
+        whatToChange: 'Keep billing entitlements on the unlimited path',
+        tags: ['billing', 'rate-limit'],
+      }),
+    });
+
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.accepted, true);
+  }
 });
 
 test('feedback capture returns clarification_required for vague positive signal', async () => {

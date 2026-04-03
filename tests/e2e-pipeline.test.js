@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const rateLimiter = require('../scripts/rate-limiter');
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -202,8 +203,11 @@ test('E2E: API server feedback capture -> stats -> summary round-trip', async (t
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-e2e-api-'));
   const origFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
   const origApiKey = process.env.RLHF_API_KEY;
+  const origUsageFile = rateLimiter.USAGE_FILE;
+  const tempUsageFile = path.join(tmpDir, 'usage-limits.json');
   process.env.RLHF_FEEDBACK_DIR = tmpDir;
-  process.env.RLHF_API_KEY = 'e2e-test-key';
+  process.env.RLHF_API_KEY = 'rlhf_e2e_test_key';
+  rateLimiter.USAGE_FILE = tempUsageFile;
 
   const { startServer } = require('../src/api/server');
   const { server, port } = await startServer({ port: 0 });
@@ -211,6 +215,7 @@ test('E2E: API server feedback capture -> stats -> summary round-trip', async (t
   t.after(async () => {
     await new Promise((resolve) => server.close(resolve));
     await removeDirWithRetries(tmpDir);
+    rateLimiter.USAGE_FILE = origUsageFile;
     if (origFeedbackDir) process.env.RLHF_FEEDBACK_DIR = origFeedbackDir;
     else delete process.env.RLHF_FEEDBACK_DIR;
     if (origApiKey) process.env.RLHF_API_KEY = origApiKey;
@@ -218,7 +223,7 @@ test('E2E: API server feedback capture -> stats -> summary round-trip', async (t
   });
 
   const headers = {
-    Authorization: 'Bearer e2e-test-key',
+    Authorization: 'Bearer rlhf_e2e_test_key',
     'Content-Type': 'application/json',
   };
 
