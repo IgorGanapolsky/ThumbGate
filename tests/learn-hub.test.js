@@ -402,6 +402,29 @@ test('all learn articles link to shared stylesheet instead of inline CSS', () =>
   }
 });
 
+test('learn article stylesheet includes TL;DR and sticky CTA hooks', () => {
+  const css = readFile(path.join(learnDir, 'learn.css'));
+  assert.match(css, /\.tldr\b/, 'learn.css missing .tldr styles');
+  assert.match(css, /\.sticky-cta\b/, 'learn.css missing .sticky-cta styles');
+  assert.match(css, /body \{ padding-bottom: 52px; \}/, 'learn.css missing bottom padding for sticky CTA');
+});
+
+test('key learn articles include TL;DR and sticky CTA markup', () => {
+  const files = [
+    'stop-ai-agent-force-push.html',
+    'vibe-coding-safety-net.html',
+    'mcp-pre-action-gates-explained.html',
+    'agent-harness-pattern.html',
+    'ai-agent-persistent-memory.html'
+  ];
+  for (const file of files) {
+    const html = readFile(path.join(learnDir, file));
+    assert.match(html, /class="tldr"/, `${file} missing TL;DR hook`);
+    assert.match(html, /class="sticky-cta"/, `${file} missing sticky CTA hook`);
+    assert.match(html, /npx mcp-memory-gateway init/, `${file} missing install CTA content`);
+  }
+});
+
 // ============================================================
 // Cross-cutting: No stale content or tech debt
 // ============================================================
