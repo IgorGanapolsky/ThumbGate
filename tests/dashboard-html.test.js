@@ -12,7 +12,7 @@ function readDashboard() {
 
 function readDashboardScript() {
   const dashboard = readDashboard();
-  const match = dashboard.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i);
+  const match = dashboard.match(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/i);
   assert.ok(match, 'dashboard must contain an inline script');
   return match[1];
 }
