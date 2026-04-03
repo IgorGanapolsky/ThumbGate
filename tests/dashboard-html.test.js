@@ -12,9 +12,14 @@ function readDashboard() {
 
 function readDashboardScript() {
   const dashboard = readDashboard();
-  const match = dashboard.match(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/i);
-  assert.ok(match, 'dashboard must contain an inline script');
-  return match[1];
+  const lowerDashboard = dashboard.toLowerCase();
+  const startTagIndex = lowerDashboard.indexOf('<script');
+  assert.notEqual(startTagIndex, -1, 'dashboard must contain an inline script');
+  const scriptBodyStart = dashboard.indexOf('>', startTagIndex);
+  assert.notEqual(scriptBodyStart, -1, 'dashboard inline script must have an opening tag terminator');
+  const endTagIndex = lowerDashboard.indexOf('</script', scriptBodyStart + 1);
+  assert.notEqual(endTagIndex, -1, 'dashboard inline script must have a closing tag');
+  return dashboard.slice(scriptBodyStart + 1, endTagIndex);
 }
 
 test('dashboard escapes tag attributes and uses data-tag buttons instead of inline handlers', () => {
