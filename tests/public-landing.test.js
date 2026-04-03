@@ -362,3 +362,16 @@ test('lessons page links to dashboard in nav', () => {
   assert.match(html, /\/v1\/lessons\/search/);
   assert.match(html, /Demo preview/i);
 });
+
+test('lessons tab switching scopes active tab selection to the tab strip', () => {
+  const html = readLessonsPage();
+  assert.match(html, /document\.querySelectorAll\('\.tabs \.tab'\)/);
+  assert.match(html, /var tabMap = \{ rules: 0, timeline: 1, insights: 2 \}/);
+  assert.match(html, /document\.getElementById\('tab-' \+ name\)/);
+});
+
+test('lessons severity filtering scopes active state to rules filter buttons', () => {
+  const html = readLessonsPage();
+  assert.match(html, /document\.querySelectorAll\('#tab-rules \.filter-btn'\)/);
+  assert.match(html, /if \(level === 'critical'\) \{ highlightCard\(1\); \} else \{ highlightCard\(0\); \}/);
+});
