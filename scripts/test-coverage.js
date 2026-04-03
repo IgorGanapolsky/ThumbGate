@@ -5,6 +5,17 @@ const path = require('node:path');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const TESTS_DIR = path.join(PROJECT_ROOT, 'tests');
+const COVERAGE_INCLUDE_GLOBS = [
+  '.claude/**/*.js',
+  'adapters/**/*.js',
+  'bin/**/*.js',
+  'plugins/**/*.js',
+  'scripts/**/*.js',
+  'src/**/*.js',
+];
+const COVERAGE_EXCLUDE_GLOBS = [
+  'tests/**/*.js',
+];
 
 function findCoverageTestFiles({
   dir = TESTS_DIR,
@@ -29,7 +40,14 @@ function findCoverageTestFiles({
 }
 
 function buildCoverageArgs(files) {
-  return ['--test', '--test-concurrency=1', '--experimental-test-coverage', ...files];
+  return [
+    '--test',
+    '--test-concurrency=1',
+    '--experimental-test-coverage',
+    ...COVERAGE_INCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-include', pattern]),
+    ...COVERAGE_EXCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-exclude', pattern]),
+    ...files,
+  ];
 }
 
 function runCoverage({
@@ -68,6 +86,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  COVERAGE_EXCLUDE_GLOBS,
+  COVERAGE_INCLUDE_GLOBS,
   PROJECT_ROOT,
   TESTS_DIR,
   findCoverageTestFiles,

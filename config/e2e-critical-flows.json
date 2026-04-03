@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "flows": [
+    {
+      "id": "feedback_pipeline_roundtrip",
+      "title": "E2E: feedback capture -> memory -> DPO export -> prevention rules"
+    },
+    {
+      "id": "feedback_api_roundtrip",
+      "title": "E2E: API server feedback capture -> stats -> summary round-trip"
+    },
+    {
+      "id": "pro_team_checkout_to_dashboard",
+      "title": "E2E: public checkout -> paid local session -> usable dashboard key -> admin billing summary"
+    },
+    {
+      "id": "localhost_pro_dashboard_bootstrap",
+      "title": "E2E: localhost dashboard bootstraps Local Pro while forwarded hosts stay unbootstrapped"
+    },
+    {
+      "id": "rotated_billing_key_survives_dashboard",
+      "title": "E2E: rotated billing key disables the old key and keeps dashboard access alive"
+    },
+    {
+      "id": "history_aware_feedback_distillation",
+      "title": "E2E: vague thumbs-down distills a lesson and preserves linked follow-up context"
+    },
+    {
+      "id": "learn_hub_http_surface",
+      "title": "E2E: learn hub and article pages serve live over HTTP"
+    },
+    {
+      "id": "team_workflow_sprint_to_analytics",
+      "title": "E2E: workflow sprint intake progresses to paid team and surfaces in dashboard analytics"
+    },
+    {
+      "id": "promoted_lesson_http_crud",
+      "title": "E2E: promoted lesson can be viewed, updated, searched, and deleted through the HTTP surface"
+    },
+    {
+      "id": "bayesian_uncertainty_via_mcp",
+      "title": "E2E: contradictory feedback drives uncertainty through the MCP tool surface"
+    }
+  ]
+}
