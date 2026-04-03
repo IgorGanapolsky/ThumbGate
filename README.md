@@ -9,7 +9,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free stays local-first with 5 daily feedback captures, 10 daily lesson searches, unlimited recall, and gating. Vague thumbs feedback can be distilled from the last ~10 messages and failed tool call. Pro unlocks in the same `mcp-memory-gateway` install after checkout: activate the issued `rlhf_*` license key and reopen the local dashboard. Team rollout starts at the shared hosted lesson DB and org dashboard.
+[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free stays local-first with 5 daily feedback captures, 10 daily lesson searches, unlimited recall, and gating. Vague thumbs feedback can be distilled from the last ~10 messages and failed tool call. Pro unlocks in the same `mcp-memory-gateway` install after checkout: activate the issued `rlhf_*` license key to enable the personal local dashboard, **Model Hardening Advisor**, and **LoRA/PEFT export**. Team rollout starts at the shared hosted lesson DB, org dashboard, and generated hosted review views.
 
 **Runtime unlock model:** there is one public npm package (`mcp-memory-gateway`). Stripe checkout provisions a ThumbGate-issued `rlhf_*` license key, and that same package unlocks Pro features at runtime after `npx mcp-memory-gateway pro --activate --key=YOUR_KEY`.
 
@@ -88,7 +88,7 @@ The skill auto-triggers on keywords like "gate", "feedback", "block mistake", "p
 
 **Free skill** includes: install, capture feedback, view active gates, search lessons, health checks.
 **Pro skill** adds: multi-hop recall, DPO export, gate debugger, and gate wiring support.
-**Team rollout** adds: shared hosted lesson DB and org dashboard visibility for multi-agent workflows.
+**Team rollout** adds: shared hosted lesson DB, org dashboard visibility, and generated hosted review views for multi-agent workflows.
 
 Source: [`.claude/skills/thumbgate/SKILL.md`](.claude/skills/thumbgate/SKILL.md)
 
@@ -339,7 +339,7 @@ For autonomous agent runs against this or any repo using this workflow:
 
 **[$19/mo or $149/yr](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — personal local dashboard, DPO export, advanced data exports, and founder-license support for individual operators.
 
-**[Start Team Rollout](https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake?utm_source=github&utm_medium=readme&utm_campaign=team_rollout)** — shared hosted lesson DB, org dashboard, curated gate templates, and workflow-hardening rollout support for teams.
+**[Start Team Rollout](https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake?utm_source=github&utm_medium=readme&utm_campaign=team_rollout)** — shared hosted lesson DB, org dashboard, generated hosted review views, curated gate templates, and workflow-hardening rollout support for teams.
 
 ### Free vs Pro
 

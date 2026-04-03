@@ -752,7 +752,7 @@ async function pro() {
     const key = args.key || process.argv.slice(3).find((a) => !a.startsWith('--'));
     if (!key) {
       console.error('❌ License key required. Usage: npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
-      console.error('   You received your key by email after purchasing Pro.');
+      console.error('   Your key was shown on the checkout success page after payment.');
       process.exit(1);
     }
 

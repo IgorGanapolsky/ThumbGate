@@ -3,10 +3,11 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 
 const LICENSE_FILE = 'license.json';
-const LICENSE_PREFIXES = ['rlhf_', 'tg_'];
+const VALID_PREFIXES = ['rlhf_', 'tg_pro_', 'tg_'];
 const DEFAULT_ENTITLEMENT = {
   valid: false,
   tier: 'free',
@@ -60,29 +61,35 @@ function normalizeEntitlement(entitlement = {}) {
   };
 }
 
-function isSupportedLicenseKey(key) {
+function isValidKey(key) {
   const normalized = String(key || '').trim();
-  return LICENSE_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+  return VALID_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+}
+
+function isSupportedLicenseKey(key) {
+  return isValidKey(key);
 }
 
 function activateLicense(key, { homeDir, version, entitlement } = {}) {
   const normalizedKey = String(key || '').trim();
-  if (!isSupportedLicenseKey(normalizedKey)) {
-    return { success: false, error: 'Invalid key format. Expected a ThumbGate-issued rlhf_* license key.' };
+  if (!isValidKey(normalizedKey)) {
+    return { success: false, error: 'Invalid key format. Expected a ThumbGate-issued rlhf_*, tg_pro_*, or tg_* key.' };
   }
 
   const licenseDir = getLicenseDir(homeDir);
   const licensePath = getLicensePath(homeDir);
+  const timestamp = new Date().toISOString();
   const record = {
     key: normalizedKey,
-    savedAt: new Date().toISOString(),
-    version: version || null,
+    savedAt: timestamp,
+    activatedAt: timestamp,
+    version: version || require('../package.json').version,
   };
 
   if (entitlement) {
     record.entitlement = normalizeEntitlement({
       ...entitlement,
-      checkedAt: entitlement.checkedAt || new Date().toISOString(),
+      checkedAt: entitlement.checkedAt || timestamp,
     });
   }
 
@@ -91,13 +98,19 @@ function activateLicense(key, { homeDir, version, entitlement } = {}) {
   return { success: true, path: licensePath, license: record };
 }
 
+function generateLicenseKey(email) {
+  const payload = `${email}:${Date.now()}`;
+  const hash = crypto.createHash('sha256').update(payload).digest('hex').slice(0, 24);
+  return `tg_pro_${hash}`;
+}
+
 async function fetchLicenseEntitlement(key, {
   apiBaseUrl,
   fetchImpl = globalThis.fetch,
   extraHeaders = {},
 } = {}) {
   const normalizedKey = String(key || '').trim();
-  if (!isSupportedLicenseKey(normalizedKey) || typeof fetchImpl !== 'function') {
+  if (!isValidKey(normalizedKey) || typeof fetchImpl !== 'function') {
     return { ...DEFAULT_ENTITLEMENT };
   }
 
@@ -151,7 +164,7 @@ async function validateAndActivateLicense(key, options = {}) {
 
 function verifyLicense({ env = process.env, homeDir } = {}) {
   const envKey = String(env.RLHF_API_KEY || env.THUMBGATE_PRO_KEY || '').trim();
-  if (isSupportedLicenseKey(envKey)) {
+  if (isValidKey(envKey)) {
     return {
       valid: true,
       source: 'env',
@@ -166,7 +179,7 @@ function verifyLicense({ env = process.env, homeDir } = {}) {
 
   const license = readLicense({ homeDir });
   const storedKey = String(license && license.key ? license.key : '').trim();
-  if (!isSupportedLicenseKey(storedKey)) {
+  if (!isValidKey(storedKey)) {
     return { valid: false, source: null };
   }
 
@@ -191,12 +204,15 @@ function isProLicensed(options) {
 
 module.exports = {
   LICENSE_PATH: getLicensePath(),
+  VALID_PREFIXES,
   activateLicense,
   fetchLicenseEntitlement,
+  generateLicenseKey,
   getLicenseDir,
   getLicensePath,
   isProLicensed,
   isSupportedLicenseKey,
+  isValidKey,
   readLicense,
   validateAndActivateLicense,
   verifyLicense,

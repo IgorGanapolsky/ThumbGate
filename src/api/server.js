@@ -96,6 +96,9 @@ const {
   generateDashboard,
 } = require('../../scripts/dashboard');
 const {
+  buildDashboardRenderSpec,
+} = require('../../scripts/dashboard-render-spec');
+const {
   getSettingsStatus,
 } = require('../../scripts/settings-hierarchy');
 const {
@@ -2543,7 +2546,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/learn', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/settings/status', '/v1/dpo/export', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/learn', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/settings/status', '/v1/dpo/export', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -4029,6 +4032,46 @@ async function addContext(){
           authContext: { tier: 'pro' },
         });
         sendJson(res, 200, data);
+        return;
+      }
+
+      // GET /v1/dashboard/render-spec -- Constrained hosted dashboard JSON spec
+      if (req.method === 'GET' && pathname === '/v1/dashboard/render-spec') {
+        let summaryOptions;
+        try {
+          summaryOptions = resolveBillingSummaryOptions(parsed);
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INVALID_REQUEST,
+            title: 'Invalid render-spec query',
+            status: 400,
+            detail: err && err.message ? err.message : 'Invalid analytics window request.',
+          });
+          return;
+        }
+
+        try {
+          const { FEEDBACK_DIR } = getFeedbackPaths();
+          const billingSummary = await getBillingSummaryLive(summaryOptions);
+          const data = generateDashboard(FEEDBACK_DIR, {
+            analyticsWindow: summaryOptions,
+            billingSummary,
+            billingSource: 'live',
+            authContext: { tier: 'pro' },
+          });
+          const renderSpec = buildDashboardRenderSpec(data, {
+            view: parsed.searchParams.get('view') || undefined,
+            now: summaryOptions.now,
+          });
+          sendJson(res, 200, renderSpec);
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INVALID_REQUEST,
+            title: 'Invalid render spec request',
+            status: 400,
+            detail: err && err.message ? err.message : 'Unable to build dashboard render spec.',
+          });
+        }
         return;
       }
 
