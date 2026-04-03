@@ -13,6 +13,12 @@
 'use strict';
 
 const { retrieveRelevantLessons } = require('./lesson-retrieval');
+const {
+  extractFilePaths,
+  extractToolCalls,
+  extractErrors,
+  normalizeConversationWindow,
+} = require('./conversation-context');
 
 /**
  * Run a post-mortem analysis on a negative feedback event.
@@ -64,59 +70,26 @@ function reflect(params) {
 }
 
 function analyzeConversation(window) {
-  const userMsgs = window.filter(m => m.role === 'user');
-  const assistantMsgs = window.filter(m => m.role === 'assistant');
+  const normalizedWindow = normalizeConversationWindow(window);
+  const userMsgs = normalizedWindow.filter(m => m.role === 'user');
+  const assistantMsgs = normalizedWindow.filter(m => m.role === 'assistant');
 
   const lastUser = userMsgs[userMsgs.length - 1]?.content || '';
   const lastAssistant = assistantMsgs[assistantMsgs.length - 1]?.content || '';
-  const allText = window.map(m => m.content || '').join('\n');
-
-  // Detect correction patterns — user telling assistant to stop/change
-  const corrections = [];
-  for (const msg of userMsgs) {
-    const content = msg.content || '';
-    const correctionPatterns = [
-      /(?:don't|do not|never|stop)\s+(.{5,100})/gi,
-      /(?:wrong|incorrect|that's not|no,)\s+(.{5,100})/gi,
-      /(?:I said|I told you|I already)\s+(.{5,100})/gi,
-      /(?:use|switch to|change to)\s+(.{5,100})\s+instead/gi,
-    ];
-    for (const pattern of correctionPatterns) {
-      const matches = [...content.matchAll(pattern)];
-      corrections.push(...matches.map(m => m[1].trim()));
-    }
-  }
-
-  // Extract what tools were used
-  const toolsUsed = new Set();
-  const toolPattern = /(?:Read|Edit|Write|Bash|Grep|Glob|Agent|WebFetch|WebSearch)\s*(?:\(|tool)/gi;
-  for (const match of allText.matchAll(toolPattern)) {
-    toolsUsed.add(match[0].replace(/\s*[(\s].*/, ''));
-  }
-
-  // Extract file paths
-  const files = new Set();
-  const filePattern = /(?:src\/|scripts\/|tests\/|\.claude\/)[^\s,)'"<>]+/g;
-  for (const match of allText.matchAll(filePattern)) {
-    files.add(match[0]);
-  }
-
-  // Detect error messages
-  const errors = [];
-  const errorPattern = /(?:Error|FAIL|error|TypeError|401|403|404|500)[:\s][^\n]{0,100}/gi;
-  for (const match of allText.matchAll(errorPattern)) {
-    errors.push(match[0].trim());
-  }
+  const corrections = extractCorrections(userMsgs);
+  const toolsUsed = extractToolCalls(normalizedWindow);
+  const filesInvolved = extractFilePaths(normalizedWindow).slice(0, 10);
+  const errors = extractErrors(normalizedWindow).slice(0, 5);
 
   return {
     userIntent: lastUser.slice(0, 300),
     assistantAction: lastAssistant.slice(0, 300),
     corrections,
     errorDetected: errors.length > 0,
-    errors: errors.slice(0, 5),
-    toolsUsed: [...toolsUsed],
-    filesInvolved: [...files].slice(0, 10),
-    messageCount: window.length,
+    errors,
+    toolsUsed,
+    filesInvolved,
+    messageCount: normalizedWindow.length,
   };
 }
 
@@ -211,6 +184,38 @@ function formatReflectionMessage(proposedRule, recurrence, analysis) {
     : '';
 
   return `${prefix}${correction} I've recorded a rule${fileContext}: "${ruleText}". Correct?`;
+}
+
+function extractCorrections(userMessages) {
+  const results = [];
+  const phraseSets = [
+    ['don\'t ', 'do not ', 'never ', 'stop '],
+    ['wrong ', 'incorrect ', 'that\'s not ', 'no, '],
+    ['i said ', 'i told you ', 'i already '],
+    ['use ', 'switch to ', 'change to '],
+  ];
+
+  for (const message of userMessages) {
+    const content = String(message.content || '').trim();
+    const lower = content.toLowerCase();
+    if (!lower) continue;
+
+    for (const phrases of phraseSets) {
+      for (const phrase of phrases) {
+        const index = lower.indexOf(phrase);
+        if (index === -1) continue;
+        let detail = content.slice(index + phrase.length).trim();
+        const insteadIndex = detail.toLowerCase().indexOf(' instead');
+        if (insteadIndex >= 0) {
+          detail = detail.slice(0, insteadIndex).trim();
+        }
+        if (detail) results.push(detail.slice(0, 100));
+        break;
+      }
+    }
+  }
+
+  return results;
 }
 
 module.exports = { reflect, analyzeConversation, checkRecurrence, generateProposedRule, formatReflectionMessage };

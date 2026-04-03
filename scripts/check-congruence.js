@@ -166,6 +166,18 @@ async function main() {
     'README.md must describe the Team org dashboard'
   );
   check(
+    /history-aware/i.test(readmeMd),
+    'README.md must mention history-aware lesson distillation'
+  );
+  check(
+    /feedback session|open_feedback_session|append_feedback_context|finalize_feedback_session/i.test(readmeMd),
+    'README.md must mention the linked feedback session flow'
+  );
+  check(
+    !/unlimited captures/i.test(readmeMd),
+    'README.md must not claim unlimited free-tier feedback captures'
+  );
+  check(
     !/shared team db/i.test(readmeMd),
     'README.md must not claim Pro includes a shared team DB'
   );
@@ -203,6 +215,22 @@ async function main() {
     'public/index.html must keep the personal Pro dashboard message'
   );
   check(
+    /history-aware/i.test(landingHtml),
+    'public/index.html must mention history-aware lesson distillation'
+  );
+  check(
+    /feedback session/i.test(landingHtml),
+    'public/index.html must mention the linked feedback session flow'
+  );
+  check(
+    /5 feedback captures\/day/i.test(landingHtml) && /10 lesson searches\/day/i.test(landingHtml),
+    'public/index.html must advertise the truthful free-tier capture and lesson-search limits'
+  );
+  check(
+    /10 auto-promoted gates/i.test(landingHtml),
+    'public/index.html must advertise the truthful free-tier auto-promoted gate limit'
+  );
+  check(
     landingHtml.includes(PRODUCTHUNT_URL),
     'public/index.html must link to the live Product Hunt listing'
   );
@@ -233,6 +261,10 @@ async function main() {
   check(
     /thumbs[\s-]?down/i.test(githubAbout.description),
     'config/github-about.json description must mention thumbs-down feedback'
+  );
+  check(
+    /history-aware lessons/i.test(githubAbout.description),
+    'config/github-about.json description must mention history-aware lessons'
   );
   check(
     productHuntKit.includes(PRODUCTHUNT_URL),

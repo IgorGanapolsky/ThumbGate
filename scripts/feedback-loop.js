@@ -27,6 +27,11 @@ const {
   distillFeedbackHistory,
 } = require('./feedback-history-distiller');
 const {
+  extractFilePaths: extractConversationPaths,
+  extractErrors: extractConversationErrors,
+  normalizeConversationWindow,
+} = require('./conversation-context');
+const {
   diagnoseFailure,
   aggregateFailureDiagnostics,
 } = require('./failure-diagnostics');
@@ -810,10 +815,11 @@ function inferSemanticTags(context = '') {
 }
 
 function inferLessonFromConversation(conversationWindow, signal) {
-  if (!Array.isArray(conversationWindow) || conversationWindow.length === 0) return null;
+  const normalizedWindow = normalizeConversationWindow(conversationWindow);
+  if (normalizedWindow.length === 0) return null;
 
-  const userMessages = conversationWindow.filter(m => m.role === 'user');
-  const assistantMessages = conversationWindow.filter(m => m.role === 'assistant');
+  const userMessages = normalizedWindow.filter(m => m.role === 'user');
+  const assistantMessages = normalizedWindow.filter(m => m.role === 'assistant');
 
   const lastUserMsg = userMessages[userMessages.length - 1]?.content || '';
   const lastAssistantMsg = assistantMessages[assistantMessages.length - 1]?.content || '';
@@ -825,9 +831,8 @@ function inferLessonFromConversation(conversationWindow, signal) {
     ? `User asked: "${userIntent}" → Assistant did: "${assistantAction}" → User rejected this`
     : `User asked: "${userIntent}" → Assistant did: "${assistantAction}" → User approved this`;
 
-  const allText = conversationWindow.map(m => m.content || '').join('\n');
-  const filePaths = [...new Set((allText.match(/(?:src\/|scripts\/|tests\/)[^\s,)'"]+/g) || []))];
-  const errorPatterns = [...new Set((allText.match(/(?:Error|FAIL|error|failed|crash|bug|broken)[:\s][^\n]{0,80}/gi) || []))];
+  const filePaths = extractConversationPaths(normalizedWindow);
+  const errorPatterns = extractConversationErrors(normalizedWindow);
 
   const tags = [];
   if (filePaths.length > 0) tags.push('has-file-context');
@@ -840,7 +845,7 @@ function inferLessonFromConversation(conversationWindow, signal) {
     tags,
     filePaths,
     errorPatterns,
-    messageCount: conversationWindow.length,
+    messageCount: normalizedWindow.length,
   };
 }
 
