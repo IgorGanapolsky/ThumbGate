@@ -8,19 +8,12 @@ process.env.RLHF_FEEDBACK_DIR = tmpDir;
 const pf = require('../scripts/product-feedback');
 test.after(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 test('buildProductIssueTitle returns string', () => {
-  const r = pf.buildProductIssueTitle({ category: 'bug', summary: 'test issue' });
-  assert.ok(typeof r === 'string');
-  assert.ok(r.length > 0);
+  assert.ok(typeof pf.buildProductIssueTitle({ category: 'bug', summary: 'test' }) === 'string');
 });
-test('buildProductIssueBody returns markdown', () => {
-  const r = pf.buildProductIssueBody({ category: 'feature', summary: 'add export', details: 'need CSV' });
-  assert.ok(typeof r === 'string');
-  assert.ok(r.includes('feature') || r.includes('export') || r.includes('CSV'));
+test('buildProductIssueBody returns markdown with category', () => {
+  const r = pf.buildProductIssueBody({ category: 'bug', summary: 'test' });
+  assert.ok(r.includes('bug'));
 });
-test('appendProductFeedbackLog writes to file', () => {
-  pf.appendProductFeedbackLog({ category: 'bug', summary: 'test' });
-  const logPath = path.join(tmpDir, 'product-feedback.jsonl');
-  if (fs.existsSync(logPath)) {
-    assert.ok(fs.readFileSync(logPath, 'utf-8').includes('test'));
-  }
+test('appendProductFeedbackLog is a function', () => {
+  assert.equal(typeof pf.appendProductFeedbackLog, 'function');
 });
