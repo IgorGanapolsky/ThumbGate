@@ -143,6 +143,23 @@ function updateRecordInJsonl(filePath, recordId, updatedRecord) {
   return found;
 }
 
+/**
+ * Delete a single record from a JSONL file by ID.
+ */
+function deleteRecordFromJsonl(filePath, recordId) {
+  if (!fs.existsSync(filePath)) return false;
+  const lines = fs.readFileSync(filePath, 'utf-8').split('\n').filter(Boolean);
+  const filtered = lines.filter(function(line) {
+    try {
+      const obj = JSON.parse(line);
+      return obj.id !== recordId;
+    } catch { return true; }
+  });
+  if (filtered.length === lines.length) return false;
+  fs.writeFileSync(filePath, filtered.length ? filtered.join('\n') + '\n' : '');
+  return true;
+}
+
 function tokenize(text) {
   return (text || '').toLowerCase().split(/[\s.,;:!?()\[\]{}"'`]+/).filter(function(t) { return t.length > 3; });
 }
@@ -168,6 +185,8 @@ module.exports = {
   shouldAutoPromote,
   synthesizePreventionRule,
   updateRecordInJsonl,
+  deleteRecordFromJsonl,
+  readJSONLLocal,
   appendJSONLLocal,
   jaccardSimilarity,
   tokenize,
