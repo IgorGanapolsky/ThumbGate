@@ -70,13 +70,13 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /\$12/);
   assert.match(landingPage, /\/seat\/mo/);
   assert.match(landingPage, /Forever free/);
-  assert.match(landingPage, /Local-only, single dev/);
+  assert.match(landingPage, /Local enforcement for one developer/);
   assert.match(landingPage, /Founder pricing/);
-  assert.match(landingPage, /Shared lessons/i);
+  assert.match(landingPage, /Shared enforcement/i);
   assert.match(landingPage, /\$12/);
   assert.match(landingPage, /Install Free/);
   assert.match(landingPage, /Free Trial/);
-  assert.match(landingPage, /Start Team Rollout/);
+  assert.match(landingPage, /Start Team Pilot/);
 });
 
 test('public landing page includes Plausible analytics and search engine proof bar', () => {
@@ -114,9 +114,9 @@ test('public landing page positions ThumbGate as human-in-the-loop enforcement f
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /ThumbGate/);
-  assert.match(landingPage, /Stop AI Coding Agents From Repeating Mistakes/i);
-  assert.match(landingPage, /Human-in-the-Loop Enforcement/i);
-  assert.match(landingPage, /safety net for vibe coding/i);
+  assert.match(landingPage, /Stop bad AI PRs before they merge/i);
+  assert.match(landingPage, /AI PR and human-in-the-loop enforcement/i);
+  assert.match(landingPage, /review churn/i);
   assert.match(landingPage, /Claude Code/);
   assert.match(landingPage, /Cursor/);
   assert.match(landingPage, /Codex/);
@@ -134,21 +134,19 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
 
   // Hero big emoji must show BOTH thumbs — not just one
   assert.match(landingPage, /class="hero-thumbs">👍👎</);
-  // Headline: problem/resolution antithesis (Mem0-style, under 8 words)
-  assert.match(landingPage, /AI agents repeat mistakes/i);
-  assert.match(landingPage, /Yours won't/i);
-  // "dangerous and dumb" moved to signal pill
-  assert.match(landingPage, /dangerous and dumb mistakes/i);
+  // Headline: immediate painful job-to-be-done
+  assert.match(landingPage, /Stop bad AI PRs/i);
+  assert.match(landingPage, /before they merge/i);
+  assert.match(landingPage, /risky actions before they hit CI or prod/i);
   // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /👍 reinforces what worked/);
-  assert.match(landingPage, /👎 blocks dangerous and dumb mistakes/);
+  assert.match(landingPage, /👍 keeps good fixes and patterns reusable/);
+  assert.match(landingPage, /👎 blocks risky actions before they hit CI or prod/);
   // Persona targeting
   assert.match(landingPage, /class="hero-persona"/);
-  assert.match(landingPage, /power users of Claude Code/i);
-  // Plain-language value prop
-  assert.match(landingPage, /immune system for your AI agent/i);
+  assert.match(landingPage, /engineering teams using Claude Code/i);
+  assert.match(landingPage, /ThumbGate proves value on the next change/i);
 });
 
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
@@ -165,22 +163,22 @@ test('public landing page Pro tier uses outcome-framed bullets that justify upgr
   assert.match(landingPage, /Founder-license support/i);
   // Persona targeting for Pro
   assert.match(landingPage, /individual operators/i);
-  assert.match(landingPage, /personal local dashboard/i);
+  assert.match(landingPage, /dashboard of exactly what got blocked/i);
   // Upgrade triggers
   assert.match(landingPage, /Go Pro when:/i);
-  assert.match(landingPage, /blocked 20\+ actions/i);
+  assert.match(landingPage, /review-ready evidence/i);
 });
 
 test('public landing page includes an explicit Team rollout lane with shared workflow intake', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /<div class="tier">Team<\/div>/);
-  assert.match(landingPage, /Hosted shared lesson DB/i);
-  assert.match(landingPage, /Generated hosted review views/i);
+  assert.match(landingPage, /Shared enforcement memory/i);
+  assert.match(landingPage, /Hosted review views/i);
   assert.match(landingPage, /Org dashboard/i);
   assert.match(landingPage, /Gate template library/i);
   assert.match(landingPage, /workflow-sprint-intake/);
-  assert.match(landingPage, /Submit Team Workflow Intake/i);
+  assert.match(landingPage, /Start Team Pilot Intake/i);
   assert.match(landingPage, /name="planId" value="team"/);
   assert.match(landingPage, /name="ctaId" value="workflow_sprint_intake"/);
 });
@@ -204,9 +202,9 @@ test('public landing page includes FAQ section with accordion interaction', () =
   assert.match(landingPage, /onkeydown="handleFaqKeydown\(event\)"/);
   assert.match(landingPage, /function toggleFaq\(el\)/);
   assert.match(landingPage, /function handleFaqKeydown\(event\)/);
-  assert.match(landingPage, /personal local dashboard on your machine/i);
-  assert.match(landingPage, /shared lesson database/i);
-  assert.match(landingPage, /generated hosted review views/i);
+  assert.match(landingPage, /personal local dashboard/i);
+  assert.match(landingPage, /shared enforcement memory/i);
+  assert.match(landingPage, /hosted review views/i);
   assert.match(landingPage, /org dashboard/i);
 });
 

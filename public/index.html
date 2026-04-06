@@ -19,10 +19,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
-<title>ThumbGate — Stop AI Coding Agents From Repeating Mistakes</title>
-<meta name="description" content="Pre-action gates for AI coding agents. Skill disclosure cuts tokens. Hallucination and PII checks harden outputs. 👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility, plus generated review views.">
-<meta property="og:title" content="ThumbGate — Human-in-the-Loop Enforcement for AI Agents">
-<meta property="og:description" content="Pre-action gates for AI coding agents. Skill disclosure cuts tokens. Hallucination and PII checks harden outputs. 👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility, plus generated review views.">
+<title>ThumbGate — Stop bad AI PRs before they merge</title>
+<meta name="description" content="Stop bad AI PRs, risky deploys, and repeated agent mistakes before they merge or run. 👍 Thumbs up keeps good fixes reusable. 👎 Thumbs down blocks repeated mistakes. Free is local. Human-in-the-loop teams get history-aware lessons. Team adds shared lessons and org visibility.">
+<meta property="og:title" content="ThumbGate — Stop bad AI PRs before they merge">
+<meta property="og:description" content="Stop bad AI PRs, risky deploys, and repeated agent mistakes before they merge or run. 👍 Thumbs up keeps good fixes reusable. 👎 Thumbs down blocks repeated mistakes. Free is local. Human-in-the-loop teams get history-aware lessons. Team adds shared lessons and org visibility.">
 <meta property="og:type" content="website">
 <meta name="keywords" content="ThumbGate, thumbgate, AI agent guardrails, pre-action gates, MCP server, Claude Code, Claude Code security, Claude Code guardrails, Claw-code, Cursor, Codex, Gemini, Amp, OpenCode, vibe coding safety, SpecLock alternative, Mem0 alternative, AI coding agent memory, PreToolUse hooks, prevention rules, feedback enforcement">
 
@@ -44,7 +44,7 @@ __GA_BOOTSTRAP__
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
   "alternateName": "thumbgate",
-  "description": "👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility, plus generated review views.",
+  "description": "Stop bad AI PRs, risky deploys, and repeated agent mistakes before they merge or run. 👍 Thumbs up keeps good fixes reusable. 👎 Thumbs down blocks repeated mistakes. Free is local. Human-in-the-loop teams get history-aware lessons. Team adds shared lessons and org visibility.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "license": "https://opensource.org/licenses/MIT",
@@ -95,7 +95,7 @@ __GA_BOOTSTRAP__
     {
       "@type": "Offer",
       "name": "Team",
-      "description": "Hosted shared lesson database, generated hosted review views, org dashboard, multi-agent visibility, and workflow hardening rollout support for teams",
+      "description": "Shared enforcement memory, review visibility, org dashboard, and pilot rollout support for teams shipping AI-generated changes",
       "url": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
     }
   ]
@@ -418,14 +418,14 @@ __GA_BOOTSTRAP__
 <section class="hero">
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
-    <div class="hero-badge">● Human-in-the-Loop Enforcement for AI Agents</div>
-    <h1>AI agents repeat mistakes.<br>Yours won't.</h1>
+    <div class="hero-badge">● AI PR and human-in-the-loop enforcement for shipping teams</div>
+    <h1>Stop bad AI PRs<br>before they merge.</h1>
     <div class="hero-signals">
-      <div class="signal-pill signal-down">👎 blocks dangerous and dumb mistakes before they run</div>
-      <div class="signal-pill signal-up">👍 reinforces what worked across sessions</div>
+      <div class="signal-pill signal-down">👎 blocks risky actions before they hit CI or prod</div>
+      <div class="signal-pill signal-up">👍 keeps good fixes and patterns reusable</div>
     </div>
-    <p class="hero-persona">For power users of Claude Code, Cursor, Codex, Gemini, Amp, and any MCP agent who are tired of fixing the same mistakes every session.</p>
-    <p><strong>Every mistake makes your agent stronger.</strong> ThumbGate turns thumbs-up/down feedback into hard gates that block bad actions before they execute. Think of it as an immune system for your AI agent — it learns from your corrections, distills vague signals from conversation context, and enforces lessons automatically. More errors = stronger gates. The safety net for vibe coding that gets more valuable the more chaos it encounters.</p>
+    <p class="hero-persona">For engineering teams using Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode who are tired of review churn, repeated agent mistakes, and risky deploys.</p>
+    <p><strong>ThumbGate proves value on the next change.</strong> It catches the repeat failures that waste engineering time: skipped tests, destructive SQL, force-pushes, broken deploy steps, and other agent mistakes you already corrected once. Install locally in minutes, let the next AI-generated change hit the gates, and turn every correction into reusable enforcement.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx thumbgate init</span>
@@ -477,20 +477,20 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="social-proof">
   <div class="container">
     <div class="section-label">See It In Action</div>
-    <h2 class="section-title">Try the dashboard before you buy anything</h2>
+    <h2 class="section-title">See the enforcement before you buy anything</h2>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>🔍 Live Dashboard Demo</h3>
-        <p>Search lessons, inspect gates, see blocked actions — all with real sample data. No signup, no install required.</p>
+        <p>Search lessons, inspect gates, and see exactly why risky actions were blocked. No signup or install required.</p>
         <a href="/dashboard" style="display:inline-block;margin-top:12px;color:var(--cyan);font-weight:600;text-decoration:underline;">Open Dashboard Demo →</a>
       </div>
       <div class="agent-card">
         <h3>⛔ Gate Reasoning Chains</h3>
-        <p>Every block explains WHY: which pattern matched, what evidence triggered it, whether it was auto-promoted from your feedback or manually set.</p>
+        <p>Every block explains why: which pattern matched, what evidence triggered it, and whether the rule came from your own corrections.</p>
       </div>
       <div class="agent-card">
         <h3>📊 Org Dashboard (Pro)</h3>
-        <p>See what ALL your agents are doing. Adherence rates, risk alerts, top blocked gates — across every session in your org.</p>
+        <p>See which agents are creating review churn, which gates are saving time, and where rollout risk is still concentrated.</p>
       </div>
       <div class="agent-card">
         <h3>🧪 Thompson Sampling</h3>
@@ -541,7 +541,7 @@ __GA_BOOTSTRAP__
 <section class="how-it-works" id="how-it-works">
   <div class="container">
     <div class="section-label">How It Works</div>
-    <h2 class="section-title">Three steps to mistake-proof vibe coding</h2>
+    <h2 class="section-title">Three steps to stop repeated AI failures</h2>
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
@@ -721,14 +721,14 @@ __GA_BOOTSTRAP__
 <!-- PRICING -->
 <section class="pricing" id="pricing">
   <div class="container">
-    <div class="section-label">Pricing — 7-Day Free Trial</div>
-    <h2 class="section-title">Start free. Try Pro for 7 days. Cancel anytime.</h2>
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title">Start free. Prove value on a real workflow. Upgrade when review churn costs more than $19/mo.</h2>
     <div class="pricing-grid">
       <div class="price-card">
         <div class="tier">Free</div>
         <div class="price">$0</div>
-        <div class="price-sub">Forever free · Local-only, single dev</div>
-        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo devs experimenting with gates on one machine.</p>
+        <div class="price-sub">Forever free · Local enforcement for one developer</div>
+        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo developers who want to stop the same agent mistake from showing up twice.</p>
         <ul>
           <li>Unlimited feedback captures · 5 lesson searches/day · unlimited recall</li>
           <li>5 auto-promoted gates plus the core safety policy</li>
@@ -743,9 +743,9 @@ __GA_BOOTSTRAP__
         <div class="tier">Pro</div>
         <div class="price">$19<span style="font-size:16px;color:var(--text-dim)">/mo</span></div>
         <div class="price-sub">or $149/yr (save 35%) · Personal dashboard + exports</div>
-        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">For individual operators who want a personal local dashboard with proof-ready exports.</p>
+        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">For individual operators who need review-ready evidence, faster debugging, and a dashboard of exactly what got blocked.</p>
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">Go Pro when:</strong> you've blocked 20+ actions, want your own dashboard, or need DPO exports without extra setup.
+          <strong style="color:#fff;">Go Pro when:</strong> you want review-ready evidence, need your own dashboard, or keep correcting the same failure modes.
         </div>
         <div class="dashboard-preview" style="margin-bottom:16px;border:1px solid #333;border-radius:8px;overflow:hidden;">
           <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:16px;text-align:center;">
@@ -764,8 +764,8 @@ __GA_BOOTSTRAP__
           <li>Auto-connect — activate once with your license key, then your running agents appear automatically on your local dashboard</li>
           <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">DPO training data export →</a> turn real thumbs-downs into ready-to-use preference pairs for fine-tuning (LoRA / JSONL)</li>
           <li><strong>Model Hardening Advisor</strong> — get recommendations on when and how to fine-tune your model to natively avoid recurring failures</li>
-          <li>Personal local dashboard — every Pro user gets their own localhost dashboard without extra cloud setup</li>
-          <li>Founder-license support — we help you wire your riskiest flows (migrations, force-pushes, CI) in the first week</li>
+          <li>Personal local dashboard — every Pro user gets a localhost dashboard without extra cloud setup</li>
+          <li>Founder-license support — we help you wire the riskiest flows first: migrations, force-pushes, deploys, and CI</li>
         </ul>
         <a href="https://buy.stripe.com/fZu9AT3Ug6zcdWh0XN3sI08" class="btn-pro" style="display:none" id="pro-checkout-link">Start Free Trial — then $19/mo</a>
         <div class="trial-badge" style="background:var(--cyan);color:#000;display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:12px;">7-DAY FREE TRIAL</div>
@@ -779,21 +779,21 @@ __GA_BOOTSTRAP__
       <div class="price-card team">
         <div class="tier">Team</div>
         <div class="price">$12<span style="font-size:16px;color:var(--text-dim)">/seat/mo</span></div>
-        <div class="price-sub">Starts at $36/mo for 3 seats · or $297/yr · Shared lessons + org visibility</div>
-        <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">For teams running multiple agents across shared repos who need one lesson to protect everyone.</p>
+        <div class="price-sub">Starts at $36/mo for 3 seats · or $297/yr · Shared enforcement + org visibility</div>
+        <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">For teams shipping AI-generated changes across shared repos who need one correction to protect every reviewer and runtime.</p>
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">Start Team when:</strong> you need a shared lesson DB, org-wide metrics, or workflow hardening that survives handoffs.
+          <strong style="color:#fff;">Start Team when:</strong> you need shared enforcement, org-wide proof, or one workflow pilot that proves ROI internally.
         </div>
         <ul>
-          <li>Hosted shared lesson DB — one dev's 👎 on a bad migration protects every agent on the team</li>
+          <li>Shared enforcement memory — a shared lesson database where one developer's 👎 on a bad migration protects every agent on the team</li>
           <li>Org dashboard — active agents, gate hit rates, risk agents, and proof-backed team metrics in one place</li>
-          <li>Generated hosted review views — constrained cards, lists, and callouts assemble team, incident, and rollout dashboards without custom page work</li>
+          <li>Hosted review views — constrained cards, lists, and callouts for rollout, incident, and audit visibility</li>
           <li>Gate template library — pre-built guardrails for force-pushes, skipped tests, destructive SQL, and evidence-before-done</li>
-          <li>Workflow hardening sprint — intake, rollout plan, and evidence pack for the first shared workflow</li>
-          <li>Product Hunt and campaign attribution stay tied to the team funnel instead of generic referral traffic</li>
+          <li>Workflow proof sprint — pilot one painful workflow first, then expand once the before/after evidence is real</li>
+          <li>Rollout attribution stays tied to the team funnel instead of disappearing into generic referral traffic</li>
         </ul>
-        <a href="#workflow-sprint-intake" class="btn-team">Start Team Rollout</a>
-        <p style="font-size:11px;color:#666;margin-top:8px;">Hosted team rollout starts with the workflow sprint intake so we scope the shared workflow honestly.</p>
+        <a href="#workflow-sprint-intake" class="btn-team">Start Team Pilot</a>
+        <p style="font-size:11px;color:#666;margin-top:8px;">Hosted rollout starts with one workflow pilot so the first expansion has measurable before/after proof.</p>
       </div>
     </div>
   </div>
@@ -801,9 +801,9 @@ __GA_BOOTSTRAP__
 
 <section class="compatibility" id="workflow-sprint-intake">
   <div class="container">
-    <div class="section-label">Team Rollout</div>
-    <h2 class="section-title">Start the Team lane with one workflow that matters</h2>
-    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">The recurring value is shared enforcement. Start with one workflow, one owner, and one blocker. The hosted intake gives us a proof-backed path into the shared lesson DB, org dashboard, and team-wide gate rollout.</p>
+    <div class="section-label">Team Pilot</div>
+    <h2 class="section-title">Start with one repo, one workflow, one repeat failure</h2>
+    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">The recurring value is shared enforcement. Start with one workflow, one owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
     <form class="team-form" action="/v1/intake/workflow-sprint" method="POST">
       <input type="hidden" name="ctaId" value="workflow_sprint_intake">
       <input type="hidden" name="ctaPlacement" value="team_pricing">
@@ -816,7 +816,7 @@ __GA_BOOTSTRAP__
       <textarea class="full" name="blocker" placeholder="What repeat mistake, rollout blocker, or team handoff failure keeps happening?" required></textarea>
       <textarea class="full" name="note" placeholder="Optional context: team size, repos involved, target rollout date, or what you need to prove internally."></textarea>
       <div class="full">
-        <button type="submit" class="btn-team">Submit Team Workflow Intake</button>
+        <button type="submit" class="btn-team">Start Team Pilot Intake</button>
       </div>
     </form>
   </div>
@@ -846,7 +846,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
-        <div class="faq-a">No. Free keeps local enforcement on your machine with 5 daily feedback captures, 10 lesson searches, unlimited recall, gates, and hook blocking. No cloud account is required. Pro adds a personal local dashboard on your machine plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, generated hosted review views, org dashboard, and team-wide gate visibility.</div>
+        <div class="faq-a">No. Free keeps local enforcement on your machine with 5 daily feedback captures, 10 lesson searches, unlimited recall, gates, and hook blocking. No cloud account is required. Pro adds a personal local dashboard plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, hosted review views, org dashboard visibility, and team-wide proof.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What if my thumbs-down is vague?</div>
@@ -880,8 +880,8 @@ __GA_BOOTSTRAP__
 <!-- FINAL CTA -->
 <section class="final-cta">
   <div class="container">
-    <h2>Ready to stop fixing the same AI mistakes?</h2>
-    <p>Try the dashboard demo first. Install in 30 seconds. No account required.</p>
+    <h2>Put ThumbGate on your next AI-generated change.</h2>
+    <p>Try the dashboard demo first or install in 30 seconds. Prove the value on a real PR, deploy, or migration.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
       <a href="/dashboard" class="btn-free" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);">Try Dashboard Demo</a>
       <a href="https://buy.stripe.com/fZu9AT3Ug6zcdWh0XN3sI08" class="btn-pro">Try Pro free for 7 days → $19/mo</a>
@@ -899,7 +899,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v0.9.8</span>
+    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v0.9.10</span>
   </div>
 </footer>
 

@@ -2,7 +2,7 @@
   "repo": "IgorGanapolsky/ThumbGate",
   "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
   "homepageUrl": "https://thumbgate-production.up.railway.app",
-  "description": "Pre-action gates for AI coding agents. Skill disclosure cuts tokens. Hallucination and PII checks harden outputs. 👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility, plus generated review views.",
+  "description": "Stop bad AI PRs, risky deploys, and repeated agent mistakes before they merge or run. 👍 Thumbs up keeps good fixes reusable. 👎 Thumbs down blocks repeated mistakes. Free is local. Human-in-the-loop teams get history-aware lessons. Team adds shared lessons and org visibility.",
   "topics": [
     "thumbgate",
     "pre-action-gates",
