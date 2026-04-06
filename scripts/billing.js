@@ -71,6 +71,9 @@ const CONFIG = {
   get LOCAL_CHECKOUT_SESSIONS_PATH() {
     return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'local-checkout-sessions.json');
   },
+  get NEWSLETTER_SUBSCRIBERS_PATH() {
+    return process.env._TEST_NEWSLETTER_SUBSCRIBERS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'newsletter-subscribers.jsonl');
+  },
   CREDIT_PACKS: {
     'mistake-free-starter': {
       id: 'mistake-free-starter',
@@ -297,6 +300,11 @@ function buildBillingSourceDiagnostics(feedbackDir) {
     legacyPath: resolveLegacyBillingPath('local-checkout-sessions.json'),
     mode: 'fallback',
   });
+  const newsletterSubscribers = describeDataFile({
+    primaryPath: CONFIG.NEWSLETTER_SUBSCRIBERS_PATH,
+    legacyPath: resolveLegacyBillingPath('newsletter-subscribers.jsonl'),
+    mode: 'fallback',
+  });
   const telemetry = getTelemetrySourceDiagnostics(feedbackDir);
   const warnings = [
     ...telemetry.warnings,
@@ -338,7 +346,7 @@ function buildBillingSourceDiagnostics(feedbackDir) {
     ));
   }
 
-  const mixedRoots = [keyStore, funnelLedger, revenueLedger, checkoutSessions, telemetry]
+  const mixedRoots = [keyStore, funnelLedger, revenueLedger, checkoutSessions, newsletterSubscribers, telemetry]
     .some((descriptor) => descriptor.mixedRoots || descriptor.activeMode === 'legacy_fallback');
   if (mixedRoots) {
     warnings.push(buildSourceWarning(
@@ -357,6 +365,7 @@ function buildBillingSourceDiagnostics(feedbackDir) {
       funnelLedger,
       revenueLedger,
       checkoutSessions,
+      newsletterSubscribers,
       telemetry,
     },
     warnings,
@@ -619,6 +628,13 @@ function loadRevenueLedger() {
   return loadJsonlRecords(
     CONFIG.REVENUE_LEDGER_PATH,
     resolveLegacyBillingPath('revenue-events.jsonl')
+  );
+}
+
+function loadNewsletterSubscribers() {
+  return loadJsonlRecords(
+    CONFIG.NEWSLETTER_SUBSCRIBERS_PATH,
+    resolveLegacyBillingPath('newsletter-subscribers.jsonl')
   );
 }
 
@@ -1331,6 +1347,11 @@ function getBusinessAnalytics(options = {}) {
     analyticsWindow,
     (entry) => entry && entry.submittedAt
   );
+  const newsletterSubscribers = filterEntriesForWindow(
+    loadNewsletterSubscribers(),
+    analyticsWindow,
+    (entry) => entry && entry.subscribedAt
+  );
   const funnel = getFunnelAnalytics({ ...analyticsWindow, extraRevenueEvents });
   const acquisitionEvents = events.filter((entry) => entry && entry.stage === 'acquisition');
   const paidEvents = events.filter((entry) => entry && entry.stage === 'paid');
@@ -1544,6 +1565,17 @@ function getBusinessAnalytics(options = {}) {
   let workflowSprintLeadLatestAt = null;
   let workflowSprintLeadContactable = 0;
   let qualifiedWorkflowSprintLeadCount = 0;
+  const newsletterBySource = {};
+  const newsletterByCampaign = {};
+  const newsletterByCreator = {};
+  const newsletterByCommunity = {};
+  const newsletterByPostId = {};
+  const newsletterByCommentId = {};
+  const newsletterByCampaignVariant = {};
+  const newsletterByOfferCode = {};
+  const newsletterSubscriberKeys = new Set();
+  let newsletterLatest = null;
+  let newsletterLatestAt = null;
 
   for (const entry of workflowSprintLeads) {
     if (!entry || typeof entry !== 'object') continue;
@@ -1584,6 +1616,46 @@ function getBusinessAnalytics(options = {}) {
     }
   }
 
+  for (const entry of newsletterSubscribers) {
+    if (!entry || typeof entry !== 'object') continue;
+    const attribution = extractAttribution({
+      ...sanitizeMetadata(entry.attribution || {}),
+      ...sanitizeMetadata(entry),
+    });
+    incrementCounter(newsletterBySource, resolveAttributionSource(attribution, entry.source || 'newsletter'));
+    incrementCounter(newsletterByCampaign, resolveAttributionCampaign(attribution));
+    incrementCounter(newsletterByCreator, attribution.creator);
+    incrementCounter(newsletterByCommunity, attribution.community);
+    incrementCounter(newsletterByPostId, attribution.postId);
+    incrementCounter(newsletterByCommentId, attribution.commentId);
+    incrementCounter(newsletterByCampaignVariant, attribution.campaignVariant);
+    incrementCounter(newsletterByOfferCode, attribution.offerCode);
+
+    newsletterSubscriberKeys.add(
+      pickFirstText(
+        entry.email,
+        entry.acquisitionId,
+        entry.visitorId,
+        entry.sessionId,
+        entry.subscribedAt
+      )
+    );
+
+    if (!newsletterLatestAt || String(entry.subscribedAt || '') > newsletterLatestAt) {
+      newsletterLatestAt = entry.subscribedAt || null;
+      newsletterLatest = {
+        email: entry.email || null,
+        subscribedAt: entry.subscribedAt || null,
+        source: resolveAttributionSource(attribution, entry.source || 'newsletter'),
+        campaign: resolveAttributionCampaign(attribution),
+        creator: attribution.creator || null,
+        community: attribution.community || null,
+        landingPath: pickFirstText(entry.landingPath, attribution.landingPath),
+        referrerHost: entry.referrerHost || null,
+      };
+    }
+  }
+
   const unreconciledPaidEvents = paidEvents.filter((entry) => {
     const eventKey = resolvePaidProviderEventKey(entry);
     if (!eventKey) return true;
@@ -1603,6 +1675,7 @@ function getBusinessAnalytics(options = {}) {
     checkoutLookupFailures: telemetry.ctas ? telemetry.ctas.lookupFailures || 0 : 0,
     buyerLossFeedback: telemetry.buyerLoss ? telemetry.buyerLoss.totalSignals || 0 : 0,
     seoLandingViews: telemetry.seo ? telemetry.seo.landingViews || 0 : 0,
+    newsletterSignups: newsletterSubscribers.length,
   };
 
   const operatorGeneratedAcquisition = {
@@ -1632,6 +1705,7 @@ function getBusinessAnalytics(options = {}) {
       tracksInvoices: false,
       tracksAttribution: true,
       tracksWorkflowSprintLeads: true,
+      tracksNewsletterSubscribers: true,
       providerCoverage: {
         stripe: processorReconciledOrders > 0 ? 'booked_revenue+processor_reconciled' : 'booked_revenue',
         githubMarketplace: 'webhook_or_configured_plan_prices',
@@ -1700,6 +1774,20 @@ function getBusinessAnalytics(options = {}) {
         bySource: qualifiedWorkflowSprintLeadBySource,
         byCreator: qualifiedWorkflowSprintLeadByCreator,
       },
+    },
+    newsletter: {
+      total: newsletterSubscribers.length,
+      uniqueSubscribers: newsletterSubscriberKeys.size,
+      bySource: newsletterBySource,
+      byCampaign: newsletterByCampaign,
+      byCreator: newsletterByCreator,
+      byCommunity: newsletterByCommunity,
+      byPostId: newsletterByPostId,
+      byCommentId: newsletterByCommentId,
+      byCampaignVariant: newsletterByCampaignVariant,
+      byOfferCode: newsletterByOfferCode,
+      latestSubscribedAt: newsletterLatestAt,
+      latestSubscriber: newsletterLatest,
     },
     attribution: {
       acquisitionBySource: signupsBySource,
@@ -1822,6 +1910,7 @@ function getBillingSummary(options = {}) {
     signups: business.signups,
     revenue: business.revenue,
     pipeline: business.pipeline,
+    newsletter: business.newsletter,
     attribution: business.attribution,
     trafficMetrics: business.trafficMetrics,
     operatorGeneratedAcquisition: business.operatorGeneratedAcquisition,
@@ -2426,7 +2515,7 @@ function handleGithubWebhook(event) {
 }
 
 module.exports = {
-  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _resolveSubscriptionCheckoutSelection: resolveSubscriptionCheckoutSelection,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,

@@ -134,6 +134,55 @@ test('root serves the landing page by default', async () => {
   assert.doesNotMatch(body, /mailto:/i);
 });
 
+test('newsletter signup stores subscriber attribution and redirects', async () => {
+  const res = await fetch(apiUrl('/api/newsletter'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      referer: 'https://app.example.com/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&creator=reach_vb&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY',
+    },
+    body: 'email=builder%40example.com',
+    redirect: 'manual',
+  });
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get('location'), '/?subscribed=1');
+
+  const subscribers = readJsonl(path.join(tmpFeedbackDir, 'newsletter-subscribers.jsonl'));
+  const subscriber = subscribers.find((entry) => entry.email === 'builder@example.com');
+  assert.ok(subscriber);
+  assert.equal(subscriber.source, 'reddit');
+  assert.equal(subscriber.referrerHost, 'app.example.com');
+  assert.equal(subscriber.attribution.source, 'reddit');
+  assert.equal(subscriber.attribution.medium, 'organic_social');
+  assert.equal(subscriber.attribution.campaign, 'reddit_launch');
+  assert.equal(subscriber.attribution.creator, 'reach_vb');
+  assert.equal(subscriber.attribution.community, 'ClaudeCode');
+  assert.equal(subscriber.attribution.postId, '1rsudq0');
+  assert.equal(subscriber.attribution.commentId, 'oa9mqjf');
+  assert.equal(subscriber.attribution.campaignVariant, 'comment_problem_solution');
+  assert.equal(subscriber.attribution.offerCode, 'REDDIT-EARLY');
+});
+
+test('newsletter signup deduplicates repeated emails', async () => {
+  const initialCount = readJsonl(path.join(tmpFeedbackDir, 'newsletter-subscribers.jsonl')).length;
+  for (let index = 0; index < 2; index += 1) {
+    const res = await fetch(apiUrl('/api/newsletter'), {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: 'email=repeat%40example.com',
+      redirect: 'manual',
+    });
+    assert.equal(res.status, 302);
+  }
+
+  const subscribers = readJsonl(path.join(tmpFeedbackDir, 'newsletter-subscribers.jsonl'));
+  const repeats = subscribers.filter((entry) => entry.email === 'repeat@example.com');
+  assert.equal(repeats.length, 1);
+  assert.equal(subscribers.length, initialCount + 1);
+});
+
 test('privacy policy route covers collection, sharing, retention, and contact details', async () => {
   const res = await fetch(apiUrl('/privacy'));
   assert.equal(res.status, 200);

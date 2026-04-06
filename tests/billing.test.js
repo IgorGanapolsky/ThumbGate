@@ -108,6 +108,17 @@ function readRevenueEvents() {
   return fs.readFileSync(testRevenueLedgerPath, 'utf-8').split('\n').map((line) => line.trim()).filter(Boolean).map((line) => JSON.parse(line));
 }
 
+function writeNewsletterSubscribers(entries) {
+  const newsletterPath = path.join(testFeedbackDir, 'newsletter-subscribers.jsonl');
+  fs.mkdirSync(path.dirname(newsletterPath), { recursive: true });
+  fs.writeFileSync(
+    newsletterPath,
+    `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n`,
+    'utf8'
+  );
+  return newsletterPath;
+}
+
 describe('billing.js — provisionApiKey', () => {
   let keyStorePath;
   beforeEach(() => { keyStorePath = setupTempStore(); });
@@ -335,6 +346,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.coverage.tracksBookedRevenue, true);
     assert.equal(summary.coverage.tracksPaidOrders, true);
     assert.equal(summary.coverage.tracksWorkflowSprintLeads, true);
+    assert.equal(summary.coverage.tracksNewsletterSubscribers, true);
     assert.equal(summary.funnel.stageCounts.acquisition, 1);
     assert.equal(summary.funnel.stageCounts.activation, 1);
     assert.equal(summary.funnel.stageCounts.paid, 1);
@@ -401,6 +413,57 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(disabledCustomer.activeKeys, 0);
     assert.equal(disabledCustomer.source, 'github_marketplace_purchased');
     assert.equal(disabledKey.customerId, 'cus_summary_b');
+  });
+
+  test('getBillingSummary reports newsletter subscribers separately from acquisition events', () => {
+    const billing = requireFreshBilling('');
+    fs.mkdirSync(testFeedbackDir, { recursive: true });
+    writeNewsletterSubscribers([
+      {
+        email: 'first@example.com',
+        subscribedAt: '2026-04-06T14:00:00.000Z',
+        source: 'reddit',
+        referrerHost: 'www.reddit.com',
+        landingPath: '/',
+        attribution: {
+          source: 'reddit',
+          campaign: 'reddit_launch',
+          creator: 'reach_vb',
+          community: 'ClaudeCode',
+          postId: '1rsudq0',
+          commentId: 'oa9mqjf',
+          campaignVariant: 'comment_problem_solution',
+          offerCode: 'REDDIT-EARLY',
+        },
+      },
+      {
+        email: 'second@example.com',
+        subscribedAt: '2026-04-06T15:00:00.000Z',
+        source: 'x',
+        referrerHost: 'x.com',
+        landingPath: '/',
+        attribution: {
+          source: 'x',
+          campaign: 'x_launch',
+        },
+      },
+    ]);
+
+    const summary = billing.getBillingSummary();
+    assert.equal(summary.newsletter.total, 2);
+    assert.equal(summary.newsletter.uniqueSubscribers, 2);
+    assert.equal(summary.newsletter.bySource.reddit, 1);
+    assert.equal(summary.newsletter.bySource.x, 1);
+    assert.equal(summary.newsletter.byCampaign.reddit_launch, 1);
+    assert.equal(summary.newsletter.byCampaign.x_launch, 1);
+    assert.equal(summary.newsletter.byCreator.reach_vb, 1);
+    assert.equal(summary.newsletter.byCommunity.ClaudeCode, 1);
+    assert.equal(summary.newsletter.byPostId['1rsudq0'], 1);
+    assert.equal(summary.newsletter.byCommentId.oa9mqjf, 1);
+    assert.equal(summary.newsletter.byCampaignVariant.comment_problem_solution, 1);
+    assert.equal(summary.newsletter.byOfferCode['REDDIT-EARLY'], 1);
+    assert.equal(summary.newsletter.latestSubscriber.email, 'second@example.com');
+    assert.equal(summary.trafficMetrics.newsletterSignups, 2);
   });
 
   test('handleGithubWebhook records paid order with unknown amount when plan pricing is not configured', () => {
