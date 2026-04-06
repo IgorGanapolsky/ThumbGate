@@ -916,6 +916,7 @@ describe('bin/cli.js', () => {
       cwd: isolatedDir,
       env: {
         ...process.env,
+        THUMBGATE_METRICS_SOURCE: 'local',
         _TEST_API_KEYS_PATH: apiKeysPath,
         _TEST_FUNNEL_LEDGER_PATH: ledgerPath,
         _TEST_REVENUE_LEDGER_PATH: revenuePath,
@@ -1054,6 +1055,7 @@ describe('bin/cli.js', () => {
       cwd: isolatedDir,
       env: {
         ...process.env,
+        THUMBGATE_METRICS_SOURCE: 'local',
         _TEST_API_KEYS_PATH: apiKeysPath,
         _TEST_FUNNEL_LEDGER_PATH: ledgerPath,
         _TEST_REVENUE_LEDGER_PATH: revenuePath,
@@ -1080,6 +1082,7 @@ describe('bin/cli.js', () => {
       cwd: isolatedDir,
       env: {
         ...process.env,
+        THUMBGATE_METRICS_SOURCE: 'local',
         THUMBGATE_FEEDBACK_DIR: feedbackDir,
         _TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON: JSON.stringify([
           {
@@ -1397,6 +1400,7 @@ describe('bin/cli.js', () => {
       cwd: isolatedDir,
       env: {
         ...process.env,
+        THUMBGATE_METRICS_SOURCE: 'local',
         THUMBGATE_FEEDBACK_DIR: feedbackDir,
       },
     });
