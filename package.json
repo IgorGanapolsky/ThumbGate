@@ -266,7 +266,7 @@
     "node": ">=18.18.0"
   },
   "dependencies": {
-    "@google/genai": "^1.47.0",
+    "@google/genai": "^1.48.0",
     "@huggingface/transformers": "^3.8.1",
     "@lancedb/lancedb": "^0.27.1",
     "apache-arrow": "^18.1.0",
