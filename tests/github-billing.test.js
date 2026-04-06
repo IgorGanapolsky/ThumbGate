@@ -76,7 +76,7 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     const result = billing.handleGithubWebhook(event);
     assert.equal(result.handled, true);
     assert.equal(result.action, 'provisioned_api_key');
-    assert.ok(result.result.key.startsWith('rlhf_'));
+    assert.ok(result.result.key.startsWith('tg_'));
     assert.equal(result.result.customerId, 'github_user_12345');
 
     // Verify key is valid
@@ -237,7 +237,7 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     const result = billing.handleGithubWebhook(event);
     assert.equal(result.handled, true);
     assert.equal(result.action, 'plan_changed');
-    assert.ok(result.result.key.startsWith('rlhf_'));
+    assert.ok(result.result.key.startsWith('tg_'));
     assert.equal(result.result.customerId, 'github_organization_67890');
   });
 

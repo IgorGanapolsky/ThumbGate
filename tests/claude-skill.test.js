@@ -52,6 +52,6 @@ test('mcp-use integration guide exists', () => {
   assert.ok(fs.existsSync(guidePath), 'docs/guides/mcp-use-integration.md should exist');
   const content = fs.readFileSync(guidePath, 'utf8');
   assert.match(content, /mcp-use/, 'Should reference mcp-use SDK');
-  assert.match(content, /mcp-memory-gateway/, 'Should reference our npm package');
+  assert.match(content, /thumbgate/, 'Should reference our npm package');
   assert.match(content, /commerce/, 'Should mention commerce profile');
 });

@@ -10,17 +10,17 @@ The agent makes the same mistake next session. And the session after that.
 
 SEO became ACO. Now ACO needs a feedback loop.
 
-3/6: We built MCP Memory Gateway — the feedback and memory layer for AI shopping agents.
+3/6: We built ThumbGate — the feedback and memory layer for AI shopping agents.
 
 It captures thumbs up/down signals, auto-generates prevention rules from repeated failures, and makes agents measurably better over time.
 
-One line to install: npx rlhf-feedback-loop serve
+One line to install: npx thumbgate serve
 
 4/6: It plugs directly into the agentic commerce stack:
 
 UCP + ACP + AMP = product discovery
 MCP = standard tool interface
-MCP Memory Gateway = quality layer
+ThumbGate = quality layer
 
 All three protocols support MCP transport. Zero custom integration needed.
 

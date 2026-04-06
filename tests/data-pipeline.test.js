@@ -149,7 +149,7 @@ test('resolvePipelinePaths nests artifacts under an agentic-data-pipeline root',
 });
 
 test('materializeAgenticDataPipeline builds staged snapshots and writes artifacts', async () => {
-  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-data-pipeline-test-'));
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-data-pipeline-test-'));
   try {
     const snapshot = await materializeAgenticDataPipeline({
       feedbackDir,
@@ -182,7 +182,7 @@ test('materializeAgenticDataPipeline builds staged snapshots and writes artifact
 });
 
 test('materializeAgenticDataPipeline reruns stay idempotent and mark noop when sources do not change', async () => {
-  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-data-pipeline-test-'));
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-data-pipeline-test-'));
   try {
     const options = {
       feedbackDir,

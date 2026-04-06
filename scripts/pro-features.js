@@ -32,7 +32,7 @@ function requirePro(
     `\n  🔒 Pro Feature Required: ${desc}\n` +
     `     Upgrade to ThumbGate Pro — ${PRO_PRICE_LABEL}:\n` +
     `     ${PRO_URL}\n` +
-    `     Or run: npx mcp-memory-gateway pro\n\n`
+    `     Or run: npx thumbgate pro\n\n`
   );
   return false;
 }

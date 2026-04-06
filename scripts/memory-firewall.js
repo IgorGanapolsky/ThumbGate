@@ -76,7 +76,7 @@ function buildIngressRecord(feedbackEvent = {}, memoryRecord = null) {
     ),
     tags: [...tags],
     metadata: {
-      project: 'mcp-memory-gateway',
+      project: 'thumbgate',
       feedbackSignal: feedbackPayload.signal || null,
       memoryCategory: memoryPayload ? memoryPayload.category : null,
     },

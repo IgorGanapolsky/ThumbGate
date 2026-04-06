@@ -1753,7 +1753,7 @@ function runTests() {
     }
   }
 
-  const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'rlhf-loop-test-'));
+  const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'thumbgate-loop-test-'));
   const localFeedbackLog = path.join(tmpDir, 'feedback-log.jsonl');
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 

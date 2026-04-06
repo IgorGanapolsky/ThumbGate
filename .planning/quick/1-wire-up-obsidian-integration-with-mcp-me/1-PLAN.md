@@ -14,7 +14,7 @@ requirements: [OBS-01, OBS-02, OBS-03]
 must_haves:
   truths:
     - "OBSIDIAN_SETUP.md contains only real, verifiable file paths and features from this repo"
-    - "Reddit post draft references actual mcp-memory-gateway capabilities, not fabricated ones"
+    - "Reddit post draft references actual thumbgate capabilities, not fabricated ones"
     - "Verification script proves every claim in both docs maps to real artifacts"
   artifacts:
     - path: "docs/OBSIDIAN_SETUP.md"
@@ -69,14 +69,14 @@ Create `docs/OBSIDIAN_SETUP.md` with these sections:
    ```json
    {
      "mcpServers": {
-       "mcp-memory-gateway": {
+       "thumbgate": {
          "command": "npx",
-         "args": ["mcp-memory-gateway", "serve"]
+         "args": ["thumbgate", "serve"]
        }
      }
    }
    ```
-4. **Vault structure for RLHF browsing** — Recommend creating an `AI-Memories/rlhf/` folder in the vault with these files:
+4. **Vault structure for RLHF browsing** — Recommend creating an `AI-Memories/thumbgate/` folder in the vault with these files:
    - `Memory Log.md` — symlink or periodic export from `.claude/memory/feedback/memory-log.jsonl`
    - `Primer.md` — symlink or copy of `primer.md` for session context
    - `Prevention Rules.md` — symlink or copy of `.claude/memory/feedback/prevention-rules.md`
@@ -108,7 +108,7 @@ Structure:
   - Setup summary: Install BRAT > add obsidian-claude-ide > configure MCP server > create AI-Memories folder > symlink memory files
   - What you see: Prevention rules as browsable notes, feedback stats, memory graph in Obsidian's graph view
   - Link to full setup: `docs/OBSIDIAN_SETUP.md` in the repo
-  - CTA: GitHub link to mcp-memory-gateway, mention it's open source (MIT)
+  - CTA: GitHub link to thumbgate, mention it's open source (MIT)
   - Keep it authentic — this is a "sharing my setup" post, not an ad
 
 Reference ONLY real features: feedback capture (up/down), prevention rules auto-generation, DPO export, Thompson Sampling gates, memory-log.jsonl, contextfs. Do NOT claim Obsidian sync, real-time updates, or any feature that doesn't exist.
@@ -126,7 +126,7 @@ Create `scripts/verify-obsidian-setup.sh` (bash, executable) that:
 1. **Validates OBSIDIAN_SETUP.md references:**
    - Extract every npm script referenced (e.g., `npm run feedback:stats`) and verify each exists in `package.json` scripts section
    - Extract every file path referenced (e.g., `.claude/memory/feedback/memory-log.jsonl`) and verify it either exists on disk OR is documented as local-only/git-ignored in CLAUDE.md
-   - Verify the MCP config JSON snippet uses the correct package name (`mcp-memory-gateway`)
+   - Verify the MCP config JSON snippet uses the correct package name (`thumbgate`)
    - Verify the plugin repo reference (`petersolopov/obsidian-claude-ide`) is correct
 
 2. **Validates reddit-obsidian-post.md claims:**

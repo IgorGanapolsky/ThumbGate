@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-metaclaw-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-metaclaw-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const billing = require('../scripts/metered-billing');

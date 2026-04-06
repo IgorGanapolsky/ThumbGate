@@ -18,7 +18,7 @@ Pre-action gates that stop AI coding agents from repeating known mistakes.
 ## Quick Start
 
 ```bash
-npx mcp-memory-gateway init
+npx thumbgate init
 ```
 
 This installs the MCP server and wires it into your agent's tool configuration. No API keys required for the free tier.
@@ -26,8 +26,8 @@ This installs the MCP server and wires it into your agent's tool configuration. 
 Or install globally:
 
 ```bash
-npm install -g mcp-memory-gateway
-mcp-memory-gateway init
+npm install -g thumbgate
+thumbgate init
 ```
 
 ### MCP Configuration
@@ -39,7 +39,7 @@ Add to your agent's MCP config (e.g., `claude_desktop_config.json` or `.cursor/m
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway"]
+      "args": ["-y", "thumbgate"]
     }
   }
 }
@@ -109,6 +109,6 @@ ThumbGate works with any MCP-compatible agent:
 
 ## Links
 
-- NPM: [mcp-memory-gateway](https://www.npmjs.com/package/mcp-memory-gateway)
+- NPM: [thumbgate](https://www.npmjs.com/package/thumbgate)
 - Repository: [IgorGanapolsky/ThumbGate](https://github.com/IgorGanapolsky/ThumbGate)
 - Dashboard: <https://thumbgate-production.up.railway.app/dashboard>

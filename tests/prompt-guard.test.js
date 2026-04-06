@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-prompt-guard-test-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-prompt-guard-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 process.env.THUMBGATE_SECRET_SCAN_PROVIDER = 'heuristic';
 

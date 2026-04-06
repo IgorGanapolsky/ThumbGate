@@ -28,13 +28,13 @@ Works with Claude Code, Codex, Gemini, Amp, Cursor, OpenCode.
 Install:
 
 ```
-npx mcp-memory-gateway init
+npx thumbgate init
 ```
 
 Or wire it to a specific agent:
 
 ```
-npx mcp-memory-gateway init --agent claude-code
+npx thumbgate init --agent claude-code
 ```
 
 MIT licensed. Pro is $19/mo or $149/yr for individual operators, while Team rollout stays intake-first for buyers who want hosted analytics and shared lessons.
@@ -66,13 +66,13 @@ The key difference from memory tools like Mem0: this doesn't just store context 
 Install in one command:
 
 ```
-npx mcp-memory-gateway init
+npx thumbgate init
 ```
 
 Or add it directly:
 
 ```
-claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
+claude mcp add thumbgate -- npx -y thumbgate serve
 ```
 
 Works with Claude Code, Codex, Gemini, Amp, and Cursor. MIT licensed, fully open source.
@@ -102,7 +102,7 @@ After setting up gates on my top 10 failure patterns, those specific mistakes dr
 It works with any MCP-compatible agent. One command to set up:
 
 ```
-npx mcp-memory-gateway init
+npx thumbgate init
 ```
 
 The core is open source and MIT licensed. There's a Pro tier at $19/mo or $149/yr if you want the personal local dashboard and exports.
@@ -152,7 +152,7 @@ Works with Claude Code, Codex, Gemini, Amp, Cursor.
 
 One command:
 ```
-npx mcp-memory-gateway init
+npx thumbgate init
 ```
 
 Fully free and unlimited. MIT licensed.
@@ -178,10 +178,10 @@ GitHub: github.com/IgorGanapolsky/ThumbGate
 
 ## 6. mcp.so Submission
 
-ThumbGate is a pre-action gate engine for AI coding agents. Unlike memory servers that store and retrieve context (Mem0, Zep), this server enforces behavior change: repeated failures are auto-promoted into prevention rules, and PreToolUse hooks physically block tool calls that match known failure patterns before they execute. Capture structured up/down feedback, validate it against a rubric engine (vague signals are rejected), promote to searchable JSONL + LanceDB vector memory, and recall relevant context at session start. The gate engine is the differentiator — agents don't just remember past mistakes, they are blocked from repeating them. Works with Claude Code, Codex, Gemini, Amp, Cursor, and any MCP-compatible agent. Install with `npx mcp-memory-gateway init`. MIT licensed.
+ThumbGate is a pre-action gate engine for AI coding agents. Unlike memory servers that store and retrieve context (Mem0, Zep), this server enforces behavior change: repeated failures are auto-promoted into prevention rules, and PreToolUse hooks physically block tool calls that match known failure patterns before they execute. Capture structured up/down feedback, validate it against a rubric engine (vague signals are rejected), promote to searchable JSONL + LanceDB vector memory, and recall relevant context at session start. The gate engine is the differentiator — agents don't just remember past mistakes, they are blocked from repeating them. Works with Claude Code, Codex, Gemini, Amp, Cursor, and any MCP-compatible agent. Install with `npx thumbgate init`. MIT licensed.
 
 ---
 
 ## 7. smithery.ai Submission
 
-ThumbGate captures explicit structured feedback from AI coding agents, validates it against a rubric engine, and auto-promotes repeated failures into prevention rules enforced via PreToolUse hooks. Pre-action gates physically block tool calls matching known failure patterns before execution — turning past mistakes into hard constraints rather than suggestions. Supports semantic recall via LanceDB vectors, DPO/KTO export for downstream fine-tuning, and a file watcher bridge for external signal ingestion. Compatible with Claude Code, Codex, Gemini, Amp, Cursor, and OpenCode. Install with `npx mcp-memory-gateway init` or `claude mcp add thumbgate -- npx -y mcp-memory-gateway serve`. MIT licensed, open source.
+ThumbGate captures explicit structured feedback from AI coding agents, validates it against a rubric engine, and auto-promotes repeated failures into prevention rules enforced via PreToolUse hooks. Pre-action gates physically block tool calls matching known failure patterns before execution — turning past mistakes into hard constraints rather than suggestions. Supports semantic recall via LanceDB vectors, DPO/KTO export for downstream fine-tuning, and a file watcher bridge for external signal ingestion. Compatible with Claude Code, Codex, Gemini, Amp, Cursor, and OpenCode. Install with `npx thumbgate init` or `claude mcp add thumbgate -- npx -y thumbgate serve`. MIT licensed, open source.

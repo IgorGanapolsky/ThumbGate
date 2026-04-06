@@ -65,9 +65,9 @@ metrics:
   PASS  npm run self-heal:check exists in package.json
 
 [ MCP Server References ]
-  PASS  OBSIDIAN_SETUP.md references correct MCP package name (mcp-memory-gateway)
+  PASS  OBSIDIAN_SETUP.md references correct MCP package name (thumbgate)
   PASS  adapters/mcp/server-stdio.js exists (local MCP run command)
-  PASS  OBSIDIAN_SETUP.md includes npx mcp-memory-gateway serve command
+  PASS  OBSIDIAN_SETUP.md includes npx thumbgate serve command
 
 [ Plugin Reference ]
   PASS  OBSIDIAN_SETUP.md references petersolopov/obsidian-claude-ide

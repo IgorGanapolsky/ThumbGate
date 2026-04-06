@@ -22,7 +22,7 @@ function loadFresh(modulePath) {
 }
 
 function setupTempFeedbackDir() {
-  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-xmemory-proof-'));
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-xmemory-proof-'));
   process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
   return feedbackDir;
 }
@@ -243,7 +243,7 @@ async function run() {
           throw new Error('verify:full is missing prove:xmemory');
         }
 
-        const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-xmemory-proof-cwd-'));
+        const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-xmemory-proof-cwd-'));
         try {
           const entry = recordVerifyWorkflowRun('full', cwd, feedbackDir);
           if (!entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'xmemory-report.json')))) {

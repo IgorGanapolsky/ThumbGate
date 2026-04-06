@@ -36,7 +36,7 @@ const {
 } = require('../scripts/auto-wire-hooks');
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-wire-hooks-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-wire-hooks-test-'));
 }
 
 describe('auto-wire-hooks', () => {
@@ -408,7 +408,7 @@ describe('auto-wire-hooks', () => {
 
   describe('loadJsonFile', () => {
     test('returns null for non-existent file', () => {
-      assert.equal(loadJsonFile('/tmp/does-not-exist-rlhf-test.json'), null);
+      assert.equal(loadJsonFile('/tmp/does-not-exist-thumbgate-test.json'), null);
     });
 
     test('returns parsed JSON for valid file', () => {

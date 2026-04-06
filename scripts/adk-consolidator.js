@@ -22,7 +22,7 @@ const { trackEvent, shouldInjectReminder, injectReminder } = require('./reminder
 const { validateApiKey } = require('./billing');
 
 // Keep track of the last processed ID to avoid re-consolidating the exact same logs
-const STATE_FILE = process.env.ADK_STATE_FILE || path.join(PROJECT_ROOT, '.rlhf', 'adk-state.json');
+const STATE_FILE = process.env.ADK_STATE_FILE || path.join(PROJECT_ROOT, '.thumbgate', 'adk-state.json');
 
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
@@ -193,7 +193,7 @@ Output ONLY valid JSON:
         if (shouldInjectReminder('guardrail_spike')) {
           const topRule = criticalInsights[0].rule;
           const reminderTurns = injectReminder([], 'guardrail_spike', { rule: topRule });
-          const reminderPath = path.join(PROJECT_ROOT, '.rlhf', `reminder_${Date.now()}.json`);
+          const reminderPath = path.join(PROJECT_ROOT, '.thumbgate', `reminder_${Date.now()}.json`);
           fs.writeFileSync(reminderPath, JSON.stringify(reminderTurns[0], null, 2));
           console.log(`[ADK Consolidator] Emitted system reminder: ${reminderPath}`);
         }
@@ -202,7 +202,7 @@ Output ONLY valid JSON:
       // Emit A2UI components (New Model)
       result.consolidatedInsights.forEach(insight => {
         const proposal = createRuleProposal(insight.pattern, insight.rule, insight.severity);
-        const a2uiPath = path.join(PROJECT_ROOT, '.rlhf', `a2ui_proposal_${Date.now()}.json`);
+        const a2uiPath = path.join(PROJECT_ROOT, '.thumbgate', `a2ui_proposal_${Date.now()}.json`);
         fs.writeFileSync(a2uiPath, JSON.stringify(proposal, null, 2));
         console.log(`[ADK Consolidator] Emitted A2UI Proposal: ${a2uiPath}`);
       });

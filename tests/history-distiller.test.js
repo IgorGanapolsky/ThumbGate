@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-distill-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-distill-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const { ANTI_PATTERNS, analyzeChatHistory, distillFromHistory } = require('../scripts/history-distiller');

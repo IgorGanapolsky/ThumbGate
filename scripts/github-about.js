@@ -10,7 +10,7 @@ const {
 
 const ROOT = path.join(__dirname, '..');
 const CONFIG_RELATIVE_PATH = path.join('config', 'github-about.json');
-const LEGACY_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/mcp-memory-gateway';
+const LEGACY_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/thumbgate';
 const GITHUB_API_BASE_URL = 'https://api.github.com';
 
 function readText(root, relativePath) {
@@ -79,7 +79,7 @@ function buildCanonicalRepoUrls(about) {
     licenseUrl: `${about.repositoryUrl}/blob/main/LICENSE`,
     quickStartUrl: `${about.repositoryUrl}#quick-start`,
     pluginsUrl: `${about.repositoryUrl}/tree/main/plugins`,
-    readmeImageUrl: `https://raw.githubusercontent.com/${about.repo}/main/docs/diagrams/rlhf-architecture-pb.png`,
+    readmeImageUrl: `https://raw.githubusercontent.com/${about.repo}/main/docs/diagrams/thumbgate-architecture-pb.png`,
     verificationEvidenceUrl: `${about.repositoryUrl}/blob/main/docs/VERIFICATION_EVIDENCE.md`,
     compatibilityReportUrl: `${about.repositoryUrl}/blob/main/proof/compatibility/report.json`,
     automationReportUrl: `${about.repositoryUrl}/blob/main/proof/automation/report.json`,

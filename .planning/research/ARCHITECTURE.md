@@ -496,7 +496,7 @@ Phase 10 — Subway receives Self-Healing Monitor (rlhf → Subway)
 
 **What people do:** Point thumbgate's new LanceDB integration at the same path as Subway's `~/.shieldcortex/lancedb/`.
 **Why it's wrong:** Cross-repo table writes cause schema conflicts. Subway uses tables: `teams_messages`, `memories`, `links`, `boxes`. rlhf needs its own namespace.
-**Do this instead:** Use a per-repo LanceDB path: `memory/feedback/lancedb/` in each repo's local directory structure. Tables: `rlhf_memories`, `rlhf_errors`, `rlhf_learnings`.
+**Do this instead:** Use a per-repo LanceDB path: `memory/feedback/lancedb/` in each repo's local directory structure. Tables: `thumbgate_memories`, `rlhf_errors`, `rlhf_learnings`.
 
 ### Anti-Pattern 4: Thompson Sampling Without Time Decay
 

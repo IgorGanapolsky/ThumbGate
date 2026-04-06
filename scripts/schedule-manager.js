@@ -7,7 +7,7 @@ const os = require('os');
 const { execSync } = require('child_process');
 const { buildAgenticDataPipelineJobSpec } = require('./agentic-data-pipeline');
 
-const SCHEDULES_DIR = path.join(os.homedir(), '.rlhf', 'schedules');
+const SCHEDULES_DIR = path.join(os.homedir(), '.thumbgate', 'schedules');
 const PLIST_PREFIX = 'com.thumbgate.schedule';
 
 function ensureDir() {
@@ -73,7 +73,7 @@ function generatePlist(schedule) {
   }
   intervalXml += '    </dict>';
 
-  const logDir = escapePlistString(path.join(os.homedir(), '.rlhf', 'logs'));
+  const logDir = escapePlistString(path.join(os.homedir(), '.thumbgate', 'logs'));
   const workingDirectory = escapePlistString(schedule.workingDirectory || os.homedir());
   const command = escapePlistString(schedule.command);
   const homeDir = escapePlistString(os.homedir());
@@ -192,7 +192,7 @@ function createSchedule(params) {
   if (process.platform === 'darwin') {
     const plistContent = generatePlist(schedule);
     const plistPath = path.join(os.homedir(), 'Library', 'LaunchAgents', `${PLIST_PREFIX}.${id}.plist`);
-    const logDir = path.join(os.homedir(), '.rlhf', 'logs');
+    const logDir = path.join(os.homedir(), '.thumbgate', 'logs');
     if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
     fs.mkdirSync(path.dirname(plistPath), { recursive: true });
 

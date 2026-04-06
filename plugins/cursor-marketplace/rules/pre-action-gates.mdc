@@ -1,5 +1,5 @@
 ---
-description: Before risky tool calls (git push, rm -rf, npm publish, deploy), check prevention rules via the rlhf MCP server. If a rule matches, STOP and explain why.
+description: Before risky tool calls (git push, rm -rf, npm publish, deploy), check prevention rules via the thumbgate MCP server. If a rule matches, STOP and explain why.
 alwaysApply: true
 ---
 

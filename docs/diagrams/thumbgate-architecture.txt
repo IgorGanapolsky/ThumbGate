@@ -1,0 +1,13 @@
+The ThumbGate system has five phases arranged left to right.
+
+CAPTURE PHASE: A user or AI agent gives thumbs up/down feedback. A Capture Layer enriches the signal with context, tags, and rubric scores. Raw feedback is appended to a JSONL feedback log file.
+
+VALIDATE PHASE: An Action Resolver maps each signal to store-learning, store-mistake, or no-action. A Schema Validator enforces strict JSON structure. Invalid entries are discarded.
+
+LEARN PHASE: Valid records are written to a JSONL memory log, categorized as learning or error. A LanceDB vector store indexes memories for semantic similarity search. A DPO Export module pairs learning and error memories into prompt/chosen/rejected JSONL training data.
+
+PREVENT PHASE: An Analytics layer tracks quality trends and recurrence patterns. A Prevention Rule Engine converts repeated mistakes into hard guardrails that block future similar errors.
+
+EXPORT PHASE: DPO training pairs export as JSONL for model fine-tuning. Code Reasoning Traces capture confidence scores and evidence chains.
+
+Storage technologies shown explicitly: JSONL files for logs, LanceDB for vector search, Context Packs for context assembly.

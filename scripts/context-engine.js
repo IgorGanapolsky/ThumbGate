@@ -9,7 +9,7 @@
  * topical bundles and route queries to the most relevant subset. This reduces
  * MCP tool calls and context window consumption.
  *
- * Ported from Subway_RN_Demo/scripts/context-engine.js for mcp-memory-gateway.
+ * Ported from Subway_RN_Demo/scripts/context-engine.js for ThumbGate.
  * PATH: PROJECT_ROOT = path.join(__dirname, '..') — 1 level up from scripts/
  */
 
@@ -311,7 +311,7 @@ function routeQuery(query, indexPath, topN) {
   if (lowerQuery.includes('build') || lowerQuery.includes('ci')) intentBoost = 'ci-cd';
   if (lowerQuery.includes('security') || lowerQuery.includes('audit')) intentBoost = 'security';
   if (lowerQuery.includes('mobile') || lowerQuery.includes('android')) intentBoost = 'mobile-dev';
-  if (lowerQuery.includes('memory') || lowerQuery.includes('rlhf')) intentBoost = 'mcp-ai';
+  if (lowerQuery.includes('memory') || lowerQuery.includes('thumbgate')) intentBoost = 'mcp-ai';
 
   // Step 2: Contextual Ranking
   const queryTokens = query

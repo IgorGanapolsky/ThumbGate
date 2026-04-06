@@ -1,6 +1,0 @@
-{
-  "role": "user",
-  "content": "[System Reminder] Safety guardrails triggered 50 times. Re-apply rule: ALWAYS verify environment, approvals, and rollout prerequisites before executing workflow changes",
-  "injectedAt": "2026-03-20T19:27:34.804Z",
-  "eventType": "guardrail_spike"
-}

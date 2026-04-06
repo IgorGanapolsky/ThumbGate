@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const { normalizeOrigin } = require('./hosted-config');
+const { DEFAULT_PUBLIC_APP_ORIGIN, normalizeOrigin } = require('./hosted-config');
 
 const SECRET_POLICY = {
   THUMBGATE_API_KEY: { rotatedAtEnv: 'THUMBGATE_API_KEY_ROTATED_AT', maxAgeDays: 30 },
@@ -38,6 +38,36 @@ const PROFILE_DEFS = {
     requiredVars: [],
   },
 };
+
+const ENV_ALIASES = {
+  THUMBGATE_API_KEY: ['THUMBGATE_API_KEY'],
+  THUMBGATE_API_KEY_ROTATED_AT: ['THUMBGATE_API_KEY_ROTATED_AT'],
+  THUMBGATE_PUBLIC_APP_ORIGIN: ['THUMBGATE_PUBLIC_APP_ORIGIN'],
+  THUMBGATE_BILLING_API_BASE_URL: [
+    'THUMBGATE_BILLING_API_BASE_URL',
+    'THUMBGATE_CANONICAL_API_BASE_URL',
+  ],
+};
+
+function resolveEnvValue(name, env = process.env) {
+  const aliases = ENV_ALIASES[name] || [name];
+  for (const alias of aliases) {
+    const value = String(env[alias] || '').trim();
+    if (value) {
+      return value;
+    }
+  }
+
+  if (name === 'THUMBGATE_PUBLIC_APP_ORIGIN') {
+    return DEFAULT_PUBLIC_APP_ORIGIN;
+  }
+
+  if (name === 'THUMBGATE_BILLING_API_BASE_URL') {
+    return resolveEnvValue('THUMBGATE_PUBLIC_APP_ORIGIN', env);
+  }
+
+  return '';
+}
 
 function parseTimestamp(value) {
   if (!value || typeof value !== 'string') {
@@ -98,7 +128,7 @@ function evaluateDeployPolicy(env = process.env, { profiles = ['runtime'], now =
   const errors = [];
 
   for (const name of requiredVars) {
-    const value = String(env[name] || '').trim();
+    const value = resolveEnvValue(name, env);
     if (!value) {
       errors.push({ type: 'missing_variable', name, message: `${name} is required` });
       continue;
@@ -114,7 +144,7 @@ function evaluateDeployPolicy(env = process.env, { profiles = ['runtime'], now =
   }
 
   for (const name of requiredSecrets) {
-    const secretValue = String(env[name] || '');
+    const secretValue = resolveEnvValue(name, env);
     if (!secretValue.trim()) {
       errors.push({ type: 'missing_secret', name, message: `${name} is required` });
       continue;
@@ -125,7 +155,7 @@ function evaluateDeployPolicy(env = process.env, { profiles = ['runtime'], now =
       continue;
     }
 
-    const rotatedAtRaw = String(env[policy.rotatedAtEnv] || '').trim();
+    const rotatedAtRaw = resolveEnvValue(policy.rotatedAtEnv, env);
     if (!rotatedAtRaw) {
       errors.push({
         type: 'missing_rotation_timestamp',
@@ -222,6 +252,7 @@ module.exports = {
   PROFILE_DEFS,
   parseTimestamp,
   getAgeDays,
+  resolveEnvValue,
   evaluateDeployPolicy,
   formatReport,
 };

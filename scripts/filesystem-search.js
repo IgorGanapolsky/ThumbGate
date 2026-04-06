@@ -327,7 +327,7 @@ function getLastEmbeddingProfile() {
 
 function getVersionSnapshot() {
   return Promise.resolve({
-    rlhf_memories: null,
+    thumbgate_memories: null,
     prevention_rules: null,
     context_packs: null,
     engine: 'filesystem-search',
@@ -393,7 +393,7 @@ module.exports = {
   getEmbeddingConfig,
   getLastEmbeddingProfile,
   getVersionSnapshot,
-  TABLE_NAME: 'rlhf_memories',
+  TABLE_NAME: 'thumbgate_memories',
   TABLE_PREVENTION_RULES: 'prevention_rules',
   TABLE_CONTEXT_PACKS: 'context_packs',
 

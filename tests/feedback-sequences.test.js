@@ -11,7 +11,7 @@ describe('Sequence Tracking (ML-03)', () => {
   let tmpDir;
 
   before(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-seq-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-seq-test-'));
     process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   });
 

@@ -13,19 +13,19 @@ export interface ProblemDetail {
 }
 
 export const PROBLEM_TYPES = {
-  RATE_LIMIT: 'urn:rlhf:error:rate-limit-exceeded',
-  UNAUTHORIZED: 'urn:rlhf:error:unauthorized',
-  FORBIDDEN: 'urn:rlhf:error:forbidden',
-  NOT_FOUND: 'urn:rlhf:error:not-found',
-  BAD_REQUEST: 'urn:rlhf:error:bad-request',
-  INVALID_JSON: 'urn:rlhf:error:invalid-json',
-  PAYMENT_REQUIRED: 'urn:rlhf:error:payment-required',
-  INTERNAL: 'urn:rlhf:error:internal-server-error',
-  WEBHOOK_INVALID: 'urn:rlhf:error:webhook-invalid-signature',
-  SERVICE_UNAVAILABLE: 'urn:rlhf:error:service-unavailable',
-  INVALID_REQUEST: 'urn:rlhf:error:invalid-request',
-  METHOD_NOT_FOUND: 'urn:rlhf:error:method-not-found',
-  INVALID_PARAMS: 'urn:rlhf:error:invalid-params',
+  RATE_LIMIT: 'urn:thumbgate:error:rate-limit-exceeded',
+  UNAUTHORIZED: 'urn:thumbgate:error:unauthorized',
+  FORBIDDEN: 'urn:thumbgate:error:forbidden',
+  NOT_FOUND: 'urn:thumbgate:error:not-found',
+  BAD_REQUEST: 'urn:thumbgate:error:bad-request',
+  INVALID_JSON: 'urn:thumbgate:error:invalid-json',
+  PAYMENT_REQUIRED: 'urn:thumbgate:error:payment-required',
+  INTERNAL: 'urn:thumbgate:error:internal-server-error',
+  WEBHOOK_INVALID: 'urn:thumbgate:error:webhook-invalid-signature',
+  SERVICE_UNAVAILABLE: 'urn:thumbgate:error:service-unavailable',
+  INVALID_REQUEST: 'urn:thumbgate:error:invalid-request',
+  METHOD_NOT_FOUND: 'urn:thumbgate:error:method-not-found',
+  INVALID_PARAMS: 'urn:thumbgate:error:invalid-params',
 } as const;
 
 export function problemResponse(opts: ProblemDetail): Response {

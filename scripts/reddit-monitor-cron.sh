@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_DIR="/Users/igorganapolsky/workspace/git/igor/rlhf"
+REPO_DIR="/Users/igorganapolsky/workspace/git/igor/thumbgate"
 LOG_FILE="${REPO_DIR}/.thumbgate/reddit-monitor.log"
 
-mkdir -p "${REPO_DIR}/.rlhf"
+mkdir -p "${REPO_DIR}/.thumbgate"
 
 # Load environment
 if [ -f "${REPO_DIR}/.env" ]; then

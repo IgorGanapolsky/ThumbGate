@@ -1,5 +1,5 @@
 {
-  "name": "mcp-memory-gateway",
+  "name": "thumbgate",
   "displayName": "ThumbGate",
   "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
   "version": "0.9.9",

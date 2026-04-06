@@ -11,7 +11,7 @@ const {
 } = require('../scripts/agent-readiness');
 
 test('collectBootstrapFiles reports missing required context files', () => {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-bootstrap-missing-'));
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bootstrap-missing-'));
   fs.writeFileSync(path.join(projectRoot, 'AGENTS.md'), '# Agents\n');
 
   const readiness = collectBootstrapFiles(projectRoot);
@@ -53,13 +53,13 @@ test('summarizePermissionTier exposes dispatch as a safe remote ops tier', () =>
 });
 
 test('generateAgentReadinessReport aligns bootstrap and permission findings', () => {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-bootstrap-ready-'));
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bootstrap-ready-'));
   for (const fileName of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
     fs.writeFileSync(path.join(projectRoot, fileName), `# ${fileName}\n`);
   }
   fs.writeFileSync(path.join(projectRoot, '.mcp.json'), JSON.stringify({ mcpServers: {} }, null, 2));
-  fs.mkdirSync(path.join(projectRoot, '.rlhf'), { recursive: true });
-  fs.writeFileSync(path.join(projectRoot, '.rlhf', 'config.json'), JSON.stringify({ version: 1 }, null, 2));
+  fs.mkdirSync(path.join(projectRoot, '.thumbgate'), { recursive: true });
+  fs.writeFileSync(path.join(projectRoot, '.thumbgate', 'config.json'), JSON.stringify({ version: 1 }, null, 2));
 
   const previousContainer = process.env.container;
   process.env.container = '1';

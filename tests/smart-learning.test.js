@@ -16,7 +16,7 @@ const {
 } = require('../scripts/feedback-loop');
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-smart-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-smart-test-'));
 }
 
 function appendJSONL(filePath, record) {

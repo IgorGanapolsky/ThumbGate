@@ -59,7 +59,7 @@ async function runAutomationProof(options = {}) {
 
   if (writeArtifacts) ensureDir(proofDir);
 
-  const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-automation-proof-'));
+  const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-automation-proof-'));
   const previousCodegraphStub = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
   process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
   process.env.THUMBGATE_API_KEY = 'automation-proof-key';

@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-pack-templates-test-'));
+const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-pack-templates-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 
 const {

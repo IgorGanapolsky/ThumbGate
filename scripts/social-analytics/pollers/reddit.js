@@ -9,7 +9,7 @@
  *   REDDIT_CLIENT_SECRET  — OAuth2 application client secret (required)
  *   REDDIT_USERNAME       — Reddit account username (required)
  *   REDDIT_PASSWORD       — Reddit account password (required)
- *   REDDIT_USER_AGENT     — Custom User-Agent string (default: mcp-memory-gateway/1.0 by <username>)
+ *   REDDIT_USER_AGENT     — Custom User-Agent string (default: thumbgate/1.0 by <username>)
  *
  * Reddit API reference:
  *   POST https://www.reddit.com/api/v1/access_token  — token exchange
@@ -50,7 +50,7 @@ async function getRedditToken(clientId, clientSecret, username, password) {
     headers: {
       Authorization: `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': `mcp-memory-gateway/1.0 by ${username}`,
+      'User-Agent': `thumbgate/1.0 by ${username}`,
     },
     body: body.toString(),
   });
@@ -196,7 +196,7 @@ async function pollReddit(db) {
   const username = process.env.REDDIT_USERNAME;
   const password = process.env.REDDIT_PASSWORD;
   const userAgent =
-    process.env.REDDIT_USER_AGENT || `mcp-memory-gateway/1.0 by ${username}`;
+    process.env.REDDIT_USER_AGENT || `thumbgate/1.0 by ${username}`;
 
   if (!clientId) throw new Error('REDDIT_CLIENT_ID environment variable is required');
   if (!clientSecret) throw new Error('REDDIT_CLIENT_SECRET environment variable is required');

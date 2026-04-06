@@ -52,7 +52,7 @@
       "@type": "HowToStep",
       "position": 1,
       "name": "Install ThumbGate",
-      "text": "Run npx mcp-memory-gateway init to auto-detect your agent and configure hooks."
+      "text": "Run npx thumbgate init to auto-detect your agent and configure hooks."
     },
     {
       "@type": "HowToStep",
@@ -86,7 +86,7 @@
       "name": "How do I stop my AI coding agent from repeating mistakes?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Install ThumbGate (npx mcp-memory-gateway init). When your agent makes a mistake, give it a thumbs-down with context. ThumbGate captures the feedback, and after repeated failures, auto-generates a prevention rule. Pre-action gates then block the same mistake before it executes in future sessions."
+        "text": "Install ThumbGate (npx thumbgate init). When your agent makes a mistake, give it a thumbs-down with context. ThumbGate captures the feedback, and after repeated failures, auto-generates a prevention rule. Pre-action gates then block the same mistake before it executes in future sessions."
       }
     },
     {
@@ -134,7 +134,7 @@
       "name": "How do I set up PreToolUse hooks in Claude Code?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Run npx mcp-memory-gateway init --agent claude-code. This auto-configures PreToolUse hooks in your .claude/settings.json. The hooks fire before every tool call and check it against your prevention rules and gates."
+        "text": "Run npx thumbgate init --agent claude-code. This auto-configures PreToolUse hooks in your .claude/settings.json. The hooks fire before every tool call and check it against your prevention rules and gates."
       }
     },
     {
@@ -142,7 +142,7 @@
       "name": "What AI coding agents does ThumbGate work with?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent. Install with npx mcp-memory-gateway init to auto-detect your agent."
+        "text": "ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent. Install with npx thumbgate init to auto-detect your agent."
       }
     }
   ]
@@ -223,13 +223,13 @@ Agent: git push origin feature-branch
 
 <h2>Install (One Command)</h2>
 <pre><code># Auto-detect your agent and configure hooks
-npx mcp-memory-gateway init
+npx thumbgate init
 
 # Or specify your agent directly
-npx mcp-memory-gateway init --agent claude-code
-npx mcp-memory-gateway init --agent codex
-npx mcp-memory-gateway init --agent cursor
-npx mcp-memory-gateway init --agent gemini</code></pre>
+npx thumbgate init --agent claude-code
+npx thumbgate init --agent codex
+npx thumbgate init --agent cursor
+npx thumbgate init --agent gemini</code></pre>
 
 <h2>How It Works</h2>
 
@@ -291,7 +291,7 @@ npx mcp-memory-gateway init --agent gemini</code></pre>
   <tr><td>Learns from feedback</td><td>Yes — thumbs up/down</td><td>No — manual specs</td><td>Yes — auto-capture</td></tr>
   <tr><td>Auto-generates rules</td><td>Yes — from repeated failures</td><td>No</td><td>No</td></tr>
   <tr><td>Agent support</td><td>Claude Code, Codex, Gemini, Amp, Cursor, OpenCode</td><td>Claude Code, Cursor, Windsurf, Cline</td><td>Claude, Cursor</td></tr>
-  <tr><td>Install</td><td><code>npx mcp-memory-gateway init</code></td><td><code>npx speclock setup</code></td><td>Cloud signup</td></tr>
+  <tr><td>Install</td><td><code>npx thumbgate init</code></td><td><code>npx speclock setup</code></td><td>Cloud signup</td></tr>
   <tr><td>Cost</td><td>Free (Pro $19/mo or $149/yr, Team rollout $12/seat/mo)</td><td>Free</td><td>Free tier + paid</td></tr>
 </table>
 
@@ -307,7 +307,7 @@ npx mcp-memory-gateway init --agent gemini</code></pre>
 <p>Give a thumbs-down: "called staging API in production code." The gate blocks tool calls that reference staging URLs in production contexts.</p>
 
 <h2>Get Started</h2>
-<pre><code>npx mcp-memory-gateway init</code></pre>
+<pre><code>npx thumbgate init</code></pre>
 <p>One command. Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode. Claude Code can also call Codex for review, adversarial review, and second-pass handoffs through the repo-local bridge plugin.</p>
 <a href="https://thumbgate-production.up.railway.app/checkout/pro?utm_source=guide&utm_medium=cta_button&utm_campaign=pro_pack" class="cta">Get Pro — $19/mo or $149/yr</a>
 <p style="color:var(--muted); font-size:0.85rem;">Free keeps local enforcement with 5 daily feedback captures, 10 lesson searches, unlimited recall, blocking, and history-aware lesson distillation. Pro adds a personal local dashboard and DPO export. Team rollout adds the hosted shared lesson DB, org dashboard, and generated review views. <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" style="color:inherit;text-decoration:underline;">Founder $49 one-time link</a> stays preserved.</p>

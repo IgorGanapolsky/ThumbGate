@@ -1,7 +1,7 @@
 {
   "version": 2,
   "public": true,
-  "name": "mcp-memory-gateway",
+  "name": "thumbgate",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]

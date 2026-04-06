@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-gates-test-'));
+const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-gates-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 
 const { handleRequest, TOOLS } = require('../adapters/mcp/server-stdio');
@@ -22,7 +22,7 @@ test.after(() => {
 });
 
 beforeEach(() => {
-  runtimeSandboxDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-gates-runtime-'));
+  runtimeSandboxDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-gates-runtime-'));
   gatesEngine.SESSION_ACTIONS_PATH = path.join(runtimeSandboxDir, 'session-actions.json');
   gatesEngine.CUSTOM_CLAIM_GATES_PATH = path.join(runtimeSandboxDir, 'claim-verification.json');
   fs.rmSync(gatesEngine.SESSION_ACTIONS_PATH, { force: true });

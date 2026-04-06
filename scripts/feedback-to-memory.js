@@ -119,7 +119,7 @@ function runTests() {
   const pos = convertFeedbackToMemory({
     signal: 'positive',
     whatWorked: 'Built schema-validated feedback system with prevention rules',
-    tags: ['architecture', 'rlhf'],
+    tags: ['architecture', 'thumbgate'],
   });
   assert(pos.ok === true, 'valid positive → ok');
   assert(pos.actionType === 'store-learning', 'positive → store-learning');
@@ -151,7 +151,7 @@ function runTests() {
   const ctxNeg = convertFeedbackToMemory({
     signal: 'negative',
     context: 'Showed fake ThumbGate statistics panel to user',
-    tags: ['rlhf'],
+    tags: ['thumbgate'],
   });
   assert(ctxNeg.ok === true, 'context-only negative → ok');
 

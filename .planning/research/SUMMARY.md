@@ -109,7 +109,7 @@ Research reveals a clear dependency graph that dictates phase order. The file-sy
 ### Phase 4: LanceDB Vector Storage into thumbgate
 
 **Rationale:** LanceDB is the highest-complexity addition (native Rust binaries, cross-language schema compatibility, ESM in a CommonJS project). Isolating it into its own phase allows the smoke test (Python creates table, Node.js reads it) to gate the entire phase before any production use. Dependency: Phase 1 (memory-log.jsonl format must be stable).
-**Delivers:** `@lancedb/lancedb` integration; `lancedb/` directory under `.claude/memory/feedback/`; hybrid search (vector + BM25/FTS); `rlhf_memories` table with 384-dim embeddings
+**Delivers:** `@lancedb/lancedb` integration; `lancedb/` directory under `.claude/memory/feedback/`; hybrid search (vector + BM25/FTS); `thumbgate_memories` table with 384-dim embeddings
 **Uses:** `@lancedb/lancedb@0.26.2`, `apache-arrow@18.1.0`, `@huggingface/transformers@3.8.1` (all 3 new npm packages)
 **Implements:** LanceDB hybrid search pattern; dynamic import pattern for ESM in CommonJS; per-repo LanceDB path namespacing
 **Avoids:** LanceDB platform/version mismatch (Pitfall 4); shared LanceDB path without namespace (Architecture Anti-Pattern 3)

@@ -9,7 +9,7 @@ describe('RFC 9457 Problem Detail', () => {
       title: 'Rate limit exceeded',
       status: 429,
     });
-    assert.equal(p.type, 'urn:rlhf:error:rate-limit-exceeded');
+    assert.equal(p.type, 'urn:thumbgate:error:rate-limit-exceeded');
     assert.equal(p.title, 'Rate limit exceeded');
     assert.equal(p.status, 429);
     assert.equal(p.detail, undefined);
@@ -37,7 +37,7 @@ describe('RFC 9457 Problem Detail', () => {
 
   test('all PROBLEM_TYPES are URN strings', () => {
     for (const [key, val] of Object.entries(PROBLEM_TYPES)) {
-      assert.ok(val.startsWith('urn:rlhf:error:'), `${key} should be a URN`);
+      assert.ok(val.startsWith('urn:thumbgate:error:'), `${key} should be a URN`);
     }
   });
 

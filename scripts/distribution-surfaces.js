@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
-const PRODUCTHUNT_URL = 'https://www.producthunt.com/products/mcp-memory-gateway';
+const PRODUCTHUNT_URL = 'https://www.producthunt.com/products/thumbgate';
 const CLAUDE_PLUGIN_LATEST_ASSET_NAME = 'thumbgate-claude-desktop.mcpb';
 
 function readJson(root, relativePath) {

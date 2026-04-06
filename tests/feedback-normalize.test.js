@@ -8,7 +8,7 @@ const os = require('node:os');
 const SCRIPT = path.join(__dirname, '..', '.claude', 'scripts', 'feedback', 'capture-feedback.js');
 
 function run(feedbackValue, extraArgs = []) {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-normalize-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-normalize-'));
   try {
     return spawnSync('node', [SCRIPT, `--feedback=${feedbackValue}`, '--context=fuzzy-test', ...extraArgs], {
       encoding: 'utf-8',

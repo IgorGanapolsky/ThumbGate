@@ -69,7 +69,7 @@ test('learn hub has article cards with titles, descriptions, and tags', () => {
 
 test('learn hub has CTA with npx install command', () => {
   const html = readFile(learnHubPath);
-  assert.match(html, /npx mcp-memory-gateway init/);
+  assert.match(html, /npx thumbgate init/);
 });
 
 test('learn hub has nav with links to main site and guide', () => {
@@ -104,7 +104,7 @@ test('force-push article has canonical URL', () => {
 
 test('force-push article has install CTA', () => {
   const html = readFile(path.join(learnDir, 'stop-ai-agent-force-push.html'));
-  assert.match(html, /npx mcp-memory-gateway init/);
+  assert.match(html, /npx thumbgate init/);
 });
 
 test('force-push article has breadcrumb back to learn hub', () => {
@@ -150,7 +150,7 @@ test('vibe-coding article has canonical and OG tags', () => {
 
 test('vibe-coding article has install CTA', () => {
   const html = readFile(path.join(learnDir, 'vibe-coding-safety-net.html'));
-  assert.match(html, /npx mcp-memory-gateway init/);
+  assert.match(html, /npx thumbgate init/);
 });
 
 test('vibe-coding article has related links', () => {
@@ -201,7 +201,7 @@ test('mcp-gates article has canonical and OG tags', () => {
 
 test('mcp-gates article has install CTA', () => {
   const html = readFile(path.join(learnDir, 'mcp-pre-action-gates-explained.html'));
-  assert.match(html, /npx mcp-memory-gateway init/);
+  assert.match(html, /npx thumbgate init/);
 });
 
 test('mcp-gates article lists supported agents', () => {
@@ -247,7 +247,7 @@ test('agent-harness article has canonical and OG tags', () => {
 
 test('agent-harness article has install CTA', () => {
   const html = readFile(path.join(learnDir, 'agent-harness-pattern.html'));
-  assert.match(html, /npx mcp-memory-gateway init/);
+  assert.match(html, /npx thumbgate init/);
 });
 
 test('agent-harness article has breadcrumb back to learn hub', () => {
@@ -318,7 +318,7 @@ test('persistent-memory article mentions SQLite and FTS5', () => {
 
 test('persistent-memory article has install CTA', () => {
   const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
-  assert.match(html, /npx mcp-memory-gateway init/);
+  assert.match(html, /npx thumbgate init/);
 });
 
 test('persistent-memory article has breadcrumb back to learn hub', () => {
@@ -421,7 +421,7 @@ test('key learn articles include TL;DR and sticky CTA markup', () => {
     const html = readFile(path.join(learnDir, file));
     assert.match(html, /class="tldr"/, `${file} missing TL;DR hook`);
     assert.match(html, /class="sticky-cta"/, `${file} missing sticky CTA hook`);
-    assert.match(html, /npx mcp-memory-gateway init/, `${file} missing install CTA content`);
+    assert.match(html, /npx thumbgate init/, `${file} missing install CTA content`);
   }
 });
 

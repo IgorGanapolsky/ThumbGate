@@ -17,7 +17,7 @@
 | r/ClaudeAI | Large, growing | High — feature discussions, tool comparisons |
 | r/ClaudeHomies | Niche | High — detailed coding performance analysis |
 | r/LocalLLaMA | Large | Medium — self-hosted crowd, DPO/KTO interest |
-| r/MachineLearning | Large | Medium — RLHF/DPO academic interest |
+| r/MachineLearning | Large | Medium — DPO and preference-optimization academic interest |
 | r/SideProject | Active | Medium — devs launching tools |
 
 ### Discord Servers
@@ -100,7 +100,7 @@
 
 ### Auto-Indexing Sources
 - **npm:** PulseMCP and MCPMarket auto-index from npm registry. Ensure `keywords` include `mcp`, `model-context-protocol`, `claude-code`, `agent-memory`.
-- **GitHub Topics:** Tag repo with `mcp-server`, `model-context-protocol`, `agent-memory`, `rlhf`, `claude-code`.
+- **GitHub Topics:** Tag repo with `mcp-server`, `model-context-protocol`, `agent-memory`, `thumbgate`, `claude-code`.
 - **PyPI mirror:** Not applicable (Node.js package).
 
 ---
@@ -118,7 +118,7 @@ Retired experiment: the `$5/mo`, `$10/mo`, and scarcity-based tiers below are pr
 
 | Tier | Price | What's Included | Conversion Target |
 |------|-------|-----------------|-------------------|
-| **Free** | $0 | `npx mcp-memory-gateway serve` local, 1000 feedback captures/mo | Funnel entry |
+| **Free** | $0 | `npx thumbgate serve` local, 1000 feedback captures/mo | Funnel entry |
 | **Founding Member** | **$5/mo forever** (locked, first 50 users) | Hosted gateway, 10K captures/mo, team sharing (3 seats), DPO export, dashboard | **Day-1 conversion** |
 | **Pro** | $10/mo | 50K captures/mo, 10 seats, priority support, custom guardrails | Standard |
 | **Team** | $29/mo | Unlimited captures, unlimited seats, SSO, audit log, SLA | Upsell target |
@@ -166,7 +166,7 @@ Based on research, the top Claude Code YouTube creators have substantial audienc
 ```bash
 npm install -g @mcpize/cli
 mcpize login
-mcpize init mcp-memory-gateway
+mcpize init thumbgate
 mcpize deploy
 # Set pricing: Founding $5/mo, Pro $10/mo via MCPize dashboard
 # Connect Stripe for payouts
@@ -191,7 +191,7 @@ Title: "I built persistent memory for Claude Code — never lose context between
 Body:
 - Problem: Claude forgets everything between sessions
 - Solution: ThumbGate captures feedback, prevents repeated mistakes
-- Free: npx mcp-memory-gateway serve
+- Free: npx thumbgate serve
 - Hosted: $5/mo founding member (50 spots)
 - Demo: [Railway URL]
 - GitHub: [repo URL]

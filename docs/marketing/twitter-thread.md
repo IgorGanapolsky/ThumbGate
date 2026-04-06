@@ -1,4 +1,4 @@
-# X/Twitter Launch Thread — mcp-memory-gateway
+# X/Twitter Launch Thread — thumbgate
 
 > Draft thread. Do not post without review.
 
@@ -8,7 +8,7 @@
 
 I got tired of my AI agent making the same mistakes across sessions. So I built an MCP server that captures feedback and blocks repeated failures.
 
-mcp-memory-gateway — open source, works with Claude/Codex/Gemini/Amp/Cursor.
+thumbgate — open source, works with Claude/Codex/Gemini/Amp/Cursor.
 
 #MCP #AIAgents #DevTools
 
@@ -19,7 +19,7 @@ mcp-memory-gateway — open source, works with Claude/Codex/Gemini/Amp/Cursor.
 One command. Zero config.
 
 ```
-npx mcp-memory-gateway
+npx thumbgate
 ```
 
 It's an MCP server that plugs into Claude, Codex, Gemini, Amp, or Cursor.
@@ -28,7 +28,7 @@ Captures feedback. Blocks repeated mistakes. Exports DPO training pairs.
 
 Listed on the official MCP Registry. MIT licensed.
 
-#MCP #RLHF
+#MCP #ContextEngineering
 
 ---
 
@@ -44,7 +44,7 @@ The loop:
 
 All local. All auditable. All yours.
 
-#RLHF #DPO
+#FeedbackLoops #DPO
 
 ---
 
@@ -64,13 +64,13 @@ That's engineering validation, not customer proof.
 
 ## Tweet 5 (DPO angle)
 
-Most RLHF tools stop at "collect feedback."
+Most feedback-loop tools stop at "collect feedback."
 
 This one exports real DPO training pairs: chosen vs rejected completions with full context.
 
 Feed them into your fine-tuning pipeline. Make your agent actually improve, not just apologize better.
 
-#DPO #RLHF
+#DPO #AgentGuardrails
 
 ---
 
@@ -79,11 +79,11 @@ Feed them into your fine-tuning pipeline. Make your agent actually improve, not 
 Get started:
 
 ```
-npm install mcp-memory-gateway
+npm install thumbgate
 ```
 
 GitHub: github.com/IgorGanapolsky/ThumbGate
-npm: npmjs.com/package/mcp-memory-gateway
+npm: npmjs.com/package/thumbgate
 Pro ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
 Hosted demo: thumbgate-production.up.railway.app
 
@@ -99,4 +99,4 @@ If you're building with AI coding agents and want them to stop repeating mistake
 
 @AnthropicAI @OpenAI @GoogleDeepMind @llama_index
 
-#MCP #RLHF #AIAgents #DPO #DevTools
+#MCP #AIAgents #DPO #DevTools #ContextEngineering

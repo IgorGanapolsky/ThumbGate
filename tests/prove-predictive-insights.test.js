@@ -10,7 +10,7 @@ const { execSync } = require('node:child_process');
 const ROOT = path.join(__dirname, '..');
 
 test('prove-predictive-insights: proof gate passes with 6/6 checks', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-predictive-proof-test-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-predictive-proof-test-'));
   try {
     const output = execSync('node scripts/prove-predictive-insights.js', {
       cwd: ROOT,
@@ -26,7 +26,7 @@ test('prove-predictive-insights: proof gate passes with 6/6 checks', () => {
 });
 
 test('prove-predictive-insights: report.json is valid JSON with all requirements', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-predictive-proof-json-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-predictive-proof-json-'));
   try {
     execSync('node scripts/prove-predictive-insights.js', {
       cwd: ROOT,
@@ -49,7 +49,7 @@ test('prove-predictive-insights: report.json is valid JSON with all requirements
 });
 
 test('prove-predictive-insights: report.md contains all requirement checkboxes', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-predictive-proof-md-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-predictive-proof-md-'));
   try {
     execSync('node scripts/prove-predictive-insights.js', {
       cwd: ROOT,

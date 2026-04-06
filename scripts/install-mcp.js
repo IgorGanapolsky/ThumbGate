@@ -16,7 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const { resolveMcpEntry } = require('./mcp-config');
 
-const MCP_SERVER_KEY = 'rlhf';
+const MCP_SERVER_KEY = 'thumbgate';
 const PKG_ROOT = path.join(__dirname, '..');
 const PKG_VERSION = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8')).version;
 

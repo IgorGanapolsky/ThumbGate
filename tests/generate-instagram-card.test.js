@@ -9,7 +9,7 @@ let sharpAvailable = false;
 try { require('sharp'); sharpAvailable = true; } catch {}
 
 const REPO_ROOT = path.resolve(__dirname, '..');
-const TEST_OUTPUT = path.join(REPO_ROOT, '.rlhf', 'test-instagram-card.png');
+const TEST_OUTPUT = path.join(REPO_ROOT, '.thumbgate', 'test-instagram-card.png');
 
 describe('Generate Instagram Card', { skip: !sharpAvailable ? 'sharp not installed' : false }, () => {
   const { generateInstagramCard, DEFAULT_OUTPUT } = require('../scripts/social-analytics/generate-instagram-card');

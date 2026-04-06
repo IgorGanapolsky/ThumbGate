@@ -1,5 +1,5 @@
 ---
-name: rlhf-feedback
+name: thumbgate-feedback
 description: >
   Capture thumbs up/down feedback into structured memories and prevention rules.
   Use when user gives explicit quality signals about agent work (e.g. "that worked",

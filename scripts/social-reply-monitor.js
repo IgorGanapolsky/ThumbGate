@@ -20,7 +20,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 
-const STATE_FILE = path.resolve(__dirname, '..', '.rlhf', 'reply-monitor-state.json');
+const STATE_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-monitor-state.json');
 const REDDIT_API_BASE = 'https://oauth.reddit.com';
 
 // ---------------------------------------------------------------------------
@@ -50,7 +50,7 @@ function saveState(state) {
 // Draft file for human review (Reddit replies are NEVER auto-posted)
 // ---------------------------------------------------------------------------
 
-const DRAFT_FILE = path.resolve(__dirname, '..', '.rlhf', 'reply-drafts.jsonl');
+const DRAFT_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-drafts.jsonl');
 
 function saveDraft(draft) {
   const dir = path.dirname(DRAFT_FILE);
@@ -111,7 +111,7 @@ async function generateReply(comment, context) {
 
   // Build response that addresses THEIR specific point
   if (mentionsSetup && isQuestion) {
-    return `\`npx mcp-memory-gateway init\` auto-detects your agent and wires the hooks. Takes about 30 seconds. What agent are you using?`;
+    return `\`npx thumbgate init\` auto-detects your agent and wires the hooks. Takes about 30 seconds. What agent are you using?`;
   }
   if (mentionsSkeptical) {
     return `Fair question. The difference from rules files or memory tools: this physically blocks the action before execution, not after. The agent can't ignore a gate the way it can ignore a system prompt. Whether that tradeoff is worth it depends on how often your agent repeats mistakes.`;
@@ -156,7 +156,7 @@ async function getRedditToken() {
     headers: {
       Authorization: `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': `mcp-memory-gateway/1.0 by ${REDDIT_USERNAME}`,
+      'User-Agent': `thumbgate/1.0 by ${REDDIT_USERNAME}`,
     },
     body: new URLSearchParams({ grant_type: 'password', username: REDDIT_USERNAME, password: REDDIT_PASSWORD }).toString(),
   });
@@ -177,7 +177,7 @@ async function checkRedditReplies(state, dryRun) {
     return [];
   }
 
-  const userAgent = `mcp-memory-gateway/1.0 by ${process.env.REDDIT_USERNAME}`;
+  const userAgent = `thumbgate/1.0 by ${process.env.REDDIT_USERNAME}`;
 
   // Fetch inbox (comment replies)
   const res = await fetch(`${REDDIT_API_BASE}/message/inbox?limit=25`, {
@@ -270,7 +270,7 @@ async function checkXReplies(state, dryRun) {
   // Search for recent mentions
   let mentions;
   try {
-    mentions = await xModule.searchTweets('mcp-memory-gateway OR ThumbGate OR "pre-action gates"');
+    mentions = await xModule.searchTweets('thumbgate OR ThumbGate OR "pre-action gates"');
   } catch (err) {
     console.warn(`[reply-monitor] X search failed: ${err.message}`);
     return [];

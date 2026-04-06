@@ -70,7 +70,7 @@ describe('funnel invariant: free tier has real limits', () => {
 describe('funnel invariant: MCP server enforces limits on gated tools', () => {
   it('server-stdio.js calls enforceLimit for rate-limited tools', () => {
     const src = fs.readFileSync(path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js'), 'utf8');
-    const gatedTools = ['search_rlhf', 'export_dpo', 'export_databricks', 'commerce_recall'];
+    const gatedTools = ['search_thumbgate', 'export_dpo', 'export_databricks', 'commerce_recall'];
     for (const tool of gatedTools) {
       assert.ok(src.includes(`enforceLimit('${tool}')`), `MCP server must call enforceLimit('${tool}'). Without this, free users never see the upgrade prompt for ${tool}.`);
     }
@@ -111,7 +111,7 @@ describe('funnel invariant: CLI surfaces upgrade path', () => {
 });
 
 // Snapshot ledger at module load time — before other test suites can contaminate it
-const _ledgerPath = path.join(PKG_ROOT, '.rlhf', 'funnel-events.jsonl');
+const _ledgerPath = path.join(PKG_ROOT, '.thumbgate', 'funnel-events.jsonl');
 const _ledgerSnapshot = fs.existsSync(_ledgerPath) ? fs.readFileSync(_ledgerPath, 'utf8').trim() : '';
 
 describe('funnel invariant: ledger data integrity', () => {

@@ -15,7 +15,7 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
 
   assert.match(landingPage, /"@type": "SoftwareApplication"/);
   assert.match(landingPage, /"@type": "FAQPage"/);
-  assert.match(landingPage, /How is ThumbGate different from RLHF-the-concept\?/);
+  assert.match(landingPage, /How is ThumbGate different from model-training feedback loops\?/);
   assert.match(landingPage, /What is the ThumbGate tech stack\?/);
   assert.match(landingPage, /What AI agents does ThumbGate work with\?/);
   assert.match(landingPage, /How are pre-action gates different from prompt rules\?/);
@@ -35,7 +35,7 @@ test('public landing page uses Stripe checkout links for Pro tier', () => {
 test('public landing page includes copy-to-clipboard install command', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /npx mcp-memory-gateway init/);
+  assert.match(landingPage, /npx thumbgate init/);
   assert.match(landingPage, /function copyInstall/);
   assert.match(landingPage, /navigator\.clipboard\.writeText/);
 });
@@ -190,7 +190,7 @@ test('public landing page includes FAQ section with accordion interaction', () =
 
   assert.match(landingPage, /id="faq"/);
   assert.match(landingPage, /Common questions/);
-  assert.match(landingPage, /How is ThumbGate different from RLHF-the-concept\?/);
+  assert.match(landingPage, /How is ThumbGate different from model-training feedback loops\?/);
   assert.match(landingPage, /What's the tech stack\?/);
   assert.match(landingPage, /What AI agents and editors does this work with\?/);
   assert.match(landingPage, /Do I need a cloud account\?/);
@@ -273,7 +273,7 @@ test('public landing page internally links to comparison and guide pages without
 test('public landing page FAQ defaults first item open for credibility', () => {
   const landingPage = readLandingPage();
 
-  // "How is ThumbGate different from RLHF-the-concept?" should be open by default to address the #1 credibility question
+  // The model-training comparison question should be open by default to address the #1 credibility question
   assert.match(landingPage, /class="faq-item open"/);
 });
 
@@ -392,4 +392,3 @@ test('public landing page includes dashboard preview in Pro card', () => {
   assert.match(landingPage, /What your Pro dashboard looks like/);
   assert.match(landingPage, /gate:no-force-push/);
 });
-

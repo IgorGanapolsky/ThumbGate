@@ -25,7 +25,7 @@ const {
 } = require('../scripts/auto-promote-gates');
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-gate-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gate-test-'));
 }
 
 function appendJSONL(filePath, record) {

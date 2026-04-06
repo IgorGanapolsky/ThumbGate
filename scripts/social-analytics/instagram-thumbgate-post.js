@@ -20,7 +20,7 @@ const THUMBGATE_CAPTION = `Your AI coding agent has amnesia. It forgets everythi
 
 ThumbGate gives it memory that survives restarts. Thumbs-down a mistake → it becomes a prevention rule → the agent can't repeat it.
 
-One command: npx mcp-memory-gateway init
+One command: npx thumbgate init
 
 Works with Claude Code, Cursor, Codex, Gemini.
 

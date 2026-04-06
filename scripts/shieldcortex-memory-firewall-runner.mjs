@@ -11,7 +11,7 @@ async function main() {
     const { ShieldCortexGuardedMemoryBridge } = await import('shieldcortex');
 
     const backend = {
-      name: 'mcp-memory-gateway-ingress',
+      name: 'thumbgate-ingress',
       async save() {
         return { id: 'memory-ingress-probe' };
       },

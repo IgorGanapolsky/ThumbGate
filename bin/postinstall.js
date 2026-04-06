@@ -23,14 +23,14 @@ process.stderr.write(`
   │   ThumbGate installed successfully.                 │
   │                                                     │
   │   Quick start:                                      │
-  │     npx mcp-memory-gateway init                     │
-  │     npx mcp-memory-gateway stats                    │
+  │     npx thumbgate init                     │
+  │     npx thumbgate stats                    │
   │                                                     │
   │   Unlock Pro (personal local dashboard, DPO export, │
   │   optional hosted API key) — ${PRO_PRICE_LABEL}:      │
   │     ${PRO_MONTHLY_PAYMENT_LINK}       │
   │                                                     │
-  │   Or run: npx mcp-memory-gateway pro                │
+  │   Or run: npx thumbgate pro                │
   │                                                     │
   └─────────────────────────────────────────────────────┘
 

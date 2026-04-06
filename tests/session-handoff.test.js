@@ -5,7 +5,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { spawnSync } = require('node:child_process');
 
-const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-session-test-'));
+const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-session-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 
 const {
@@ -69,7 +69,7 @@ test('writeSessionHandoff records provenance event', () => {
 });
 
 test('readSessionHandoff returns null when no primer exists', () => {
-  const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-empty-'));
+  const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-empty-'));
   const origDir = process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.THUMBGATE_FEEDBACK_DIR = emptyDir;
 

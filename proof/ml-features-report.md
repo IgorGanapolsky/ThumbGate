@@ -115,7 +115,7 @@ rewardSequence: [ 1, 1 ]
 ```
 
 Sequence entry schema: id, timestamp, targetReward, targetTags, features, label
-targetReward encoding: 1 (positive) / -1 (negative) — correct per rlhf signal schema
+targetReward encoding: 1 (positive) / -1 (negative) — correct per ThumbGate signal schema
 Sliding window size: N=10 (SEQUENCE_WINDOW constant in feedback-loop.js)
 
 ### SC-4: diversity-tracking.json contains per-domain coverage_score and diversityScore
@@ -164,7 +164,7 @@ New test files:
 
 ## Anti-Pattern Compliance
 
-- rlhf signal field: `f.signal === 'positive'` (NOT `f.reward`) — Subway schema differs
+- ThumbGate signal field: `f.signal === 'positive'` (NOT `f.reward`) — Subway schema differs
 - Python PROJECT_ROOT: `Path(__file__).parent.parent` (2 levels, not Subway's 4)
 - Thompson update: always uses `timeDecayWeight(timestamp)`, never raw weight=1.0
 - Side-effects: wrapped in try/catch — captureFeedback() never blocks on ML failures

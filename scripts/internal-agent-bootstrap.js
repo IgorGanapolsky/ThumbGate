@@ -17,7 +17,7 @@ const { formatCodeGraphRecallSection } = require('./codegraph-context');
 
 const KNOWN_SOURCES = new Set(['github', 'slack', 'linear', 'api', 'cli']);
 const DEFAULT_SOURCE = 'api';
-const DEFAULT_SANDBOX_ROOT = path.join(os.tmpdir(), 'rlhf-internal-agent-sandboxes');
+const DEFAULT_SANDBOX_ROOT = path.join(os.tmpdir(), 'thumbgate-internal-agent-sandboxes');
 
 function normalizeText(value) {
   if (value === undefined || value === null) return '';

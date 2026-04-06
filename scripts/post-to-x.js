@@ -9,7 +9,7 @@
  * CLI usage:
  *   node scripts/post-to-x.js "Your tweet text here"
  *   node scripts/post-to-x.js --thread
- *   node scripts/post-to-x.js --search "MCP memory gateway"
+ *   node scripts/post-to-x.js --search "ThumbGate"
  *   node scripts/post-to-x.js --reply <tweetId> "Reply text"
  *   node scripts/post-to-x.js --dry-run "Preview this tweet"
  *   node scripts/post-to-x.js --dry-run --thread
@@ -290,11 +290,11 @@ async function main() {
   } else if (command === '--scheduled') {
     const tips = [
       '🧠 Did you know? ThumbGate uses Thompson Sampling to decide which feedback signals matter most. Less noise, better training data.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
-      '🛡️ AI agents repeat the same mistakes because they have no memory across sessions. ThumbGate fixes that with local-first feedback loops.\n\nnpx mcp-memory-gateway init',
+      '🛡️ AI agents repeat the same mistakes because they have no memory across sessions. ThumbGate fixes that with local-first feedback loops.\n\nnpx thumbgate init',
       '📊 The learning curve dashboard shows your agent actually getting smarter — approval rate climbing, failure domains shrinking, prevention rules firing.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
-      '🔄 Capture → Validate → Remember → Prevent → Export. Five phases to turn agent mistakes into training data.\n\nThumbGate — local-first ThumbGate for AI agents.\n\nnpx mcp-memory-gateway init',
+      '🔄 Capture → Validate → Remember → Prevent → Export. Five phases to turn agent mistakes into training data.\n\nThumbGate — local-first ThumbGate for AI agents.\n\nnpx thumbgate init',
       '💡 Prevention rules generated from repeated failures = an immune system for your AI agent. No cloud required.\n\nPro $19/mo or $149/yr → https://thumbgate-production.up.railway.app/checkout/pro',
-      '⚡ Works with Claude Code, Amp, Codex, Gemini CLI, Cursor. One install, all agents learn.\n\nnpx mcp-memory-gateway init\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
+      '⚡ Works with Claude Code, Amp, Codex, Gemini CLI, Cursor. One install, all agents learn.\n\nnpx thumbgate init\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
     ];
     const dayIndex = Math.floor(Date.now() / 86400000) % tips.length;
     const tip = tips[dayIndex];
@@ -338,7 +338,7 @@ Captures 👍/👎 → promotes memories → generates prevention rules → expo
 
 Works with Claude, Codex, Amp, Gemini.
 
-npm: npx mcp-memory-gateway init
+npm: npx thumbgate init
 Pro: $19/mo or $149/yr
 
 ⭐ https://github.com/IgorGanapolsky/ThumbGate`;

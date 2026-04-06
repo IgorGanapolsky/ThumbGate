@@ -1,7 +1,7 @@
 // SET ENVIRONMENT VARIABLE FIRST
 const fs = require('fs');
 const path = require('path');
-const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'rlhf-bayes-e2e-'));
+const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'thumbgate-bayes-e2e-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const { captureFeedback, readJSONL } = require('../scripts/feedback-loop');

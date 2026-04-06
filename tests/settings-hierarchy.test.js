@@ -31,8 +31,8 @@ test('resolveSettingsPaths returns managed, user, project, and local paths', () 
 });
 
 test('resolveSettingsHierarchy applies managed > local > project > user > defaults precedence', () => {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-precedence-'));
-  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-home-'));
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-precedence-'));
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-home-'));
 
   writeJson(path.join(homeDir, '.thumbgate', 'settings.json'), {
     mcp: { defaultProfile: 'commerce' },
@@ -56,8 +56,8 @@ test('resolveSettingsHierarchy applies managed > local > project > user > defaul
 });
 
 test('getSetting and getSettingOrigin resolve repo defaults when files are absent', () => {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-defaults-'));
-  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-home-defaults-'));
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-defaults-'));
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-home-defaults-'));
 
   assert.equal(getSetting('mcp.defaultProfile', { projectRoot, homeDir }), 'essential');
   assert.equal(getSettingOrigin('mcp.defaultProfile', { projectRoot, homeDir }).scope, 'defaults');
@@ -67,8 +67,8 @@ test('getSetting and getSettingOrigin resolve repo defaults when files are absen
 });
 
 test('getSettingsStatus returns active layers, warnings, and origin metadata', () => {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-status-'));
-  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-home-status-'));
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-status-'));
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-home-status-'));
 
   writeJson(path.join(projectRoot, 'config', 'thumbgate-settings.managed.json'), {
     dashboard: { showPolicyOrigins: true },

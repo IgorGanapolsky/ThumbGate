@@ -121,7 +121,7 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
-    name: 'search_rlhf',
+    name: 'search_thumbgate',
     description: 'Search raw ThumbGate state across feedback logs, ContextFS memory, and prevention rules.',
     inputSchema: {
       type: 'object',
@@ -793,7 +793,7 @@ const TOOLS = [
   }),
   destructiveTool({
     name: 'report_product_issue',
-    description: 'Report a bug, suggestion, or complaint about ThumbGate itself (not project feedback). Auto-files a GitHub issue with system context. Use when the user expresses frustration or requests a feature for the mcp-memory-gateway tool.',
+    description: 'Report a bug, suggestion, or complaint about ThumbGate itself (not project feedback). Auto-files a GitHub issue with system context. Use when the user expresses frustration or requests a feature for the thumbgate tool.',
     inputSchema: {
       type: 'object',
       required: ['title', 'body'],

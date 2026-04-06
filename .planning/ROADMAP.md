@@ -69,9 +69,9 @@ Plans:
 **Depends on**: Phase 2
 **Requirements**: VEC-01, VEC-02, VEC-03, VEC-04, VEC-05
 **Success Criteria** (what must be TRUE):
-  1. A Python script creates a `rlhf_memories` LanceDB table and a Node.js script reads it back with the correct row count — cross-language smoke test passes
+  1. A Python script creates a `thumbgate_memories` LanceDB table and a Node.js script reads it back with the correct row count — cross-language smoke test passes
   2. `@lancedb/lancedb@0.26.2` and `apache-arrow@18.1.0` are installed and imported via `await import()` dynamic pattern with no `require()` ESM errors
-  3. A semantic similarity search query against the `rlhf_memories` table returns historically relevant feedback entries ranked by 384-dim embedding distance
+  3. A semantic similarity search query against the `thumbgate_memories` table returns historically relevant feedback entries ranked by 384-dim embedding distance
   4. All LanceDB features pass unit tests and `proof/lancedb-report.md` exists with cross-language schema verification evidence
 **Plans**: 4 plans
 

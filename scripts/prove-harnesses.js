@@ -61,7 +61,7 @@ function makeAcceptedVerification() {
 }
 
 async function withHarnessRuntime(callback) {
-  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-harness-proof-'));
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-harness-proof-'));
   process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
   try {
     resetModules();
@@ -233,7 +233,7 @@ async function run() {
       fn: async () => {
         await withHarnessRuntime(({ verifyRun }) => {
           const plan = verifyRun.buildVerifyPlan('full');
-          const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-harness-run-'));
+          const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-harness-run-'));
           try {
             const workflowRun = verifyRun.recordVerifyWorkflowRun('full', ROOT, feedbackDir);
             if (!plan.some((step) => Array.isArray(step.args) && step.args.includes('prove:harnesses'))) {

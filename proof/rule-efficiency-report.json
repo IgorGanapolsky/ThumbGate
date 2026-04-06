@@ -87,7 +87,7 @@
         "intent": "mcp-ai",
         "query": "How to update agent memory?",
         "expectedKeywords": [
-          "rlhf",
+          "thumbgate",
           "feedback",
           "memory"
         ]
@@ -125,7 +125,7 @@
     }
   ],
   "config": {
-    "rulesPath": "/Users/ganapolsky_i/workspace/git/igor/rlhf/.thumbgate/prevention-rules.md",
+    "rulesPath": "/Users/ganapolsky_i/workspace/git/igor/thumbgate/.thumbgate/prevention-rules.md",
     "adaptiveRetrieval": true,
     "zeroWasteCaching": true
   }

@@ -17,12 +17,12 @@
       ]
     },
     {
-      "id": "rlhf-feedback",
-      "tileName": "rlhf-feedback",
+      "id": "thumbgate-feedback",
+      "tileName": "thumbgate-feedback",
       "summary": "Thumbs up and thumbs down capture that turns agent feedback into structured memories and prevention rules.",
       "private": false,
       "sourceSkills": [
-        "rlhf-feedback"
+        "thumbgate-feedback"
       ]
     }
   ]

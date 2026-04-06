@@ -5,14 +5,14 @@ Install the ThumbGate skill for Amp in under 60 seconds. No manual file editing 
 ## One-Command Install
 
 ```bash
-cp plugins/amp-skill/SKILL.md .amp/skills/rlhf-feedback.md
+cp plugins/amp-skill/SKILL.md .amp/skills/thumbgate-feedback.md
 ```
 
 Or from the npm package:
 
 ```bash
-npx mcp-memory-gateway init
-cp node_modules/mcp-memory-gateway/plugins/amp-skill/SKILL.md .amp/skills/rlhf-feedback.md
+npx thumbgate init
+cp node_modules/thumbgate/plugins/amp-skill/SKILL.md .amp/skills/thumbgate-feedback.md
 ```
 
 ## What This Does
@@ -43,10 +43,10 @@ node .thumbgate/capture-feedback.js --feedback=down --context="..." --what-went-
 
 - Amp (any version with skills support)
 - Node.js 18+ in PATH
-- `.thumbgate/` directory (created by `npx mcp-memory-gateway init`)
+- `.thumbgate/` directory (created by `npx thumbgate init`)
 
 ## Uninstall
 
 ```bash
-rm .amp/skills/rlhf-feedback.md
+rm .amp/skills/thumbgate-feedback.md
 ```

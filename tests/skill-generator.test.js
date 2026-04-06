@@ -16,7 +16,7 @@ const {
 } = require('../scripts/skill-generator');
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-skill-gen-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-skill-gen-test-'));
 }
 
 function appendJSONL(filePath, record) {

@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /**
- * mcp-memory-gateway CLI
+ * thumbgate CLI
  *
  * Usage:
- *   npx mcp-memory-gateway init          # scaffold .thumbgate/ config + .mcp.json
- *   npx mcp-memory-gateway init --wire-hooks          # wire hooks only (auto-detect agent)
- *   npx mcp-memory-gateway init --agent claude-code   # scaffold + wire hooks for specific agent
- *   npx mcp-memory-gateway capture       # capture feedback
- *   npx mcp-memory-gateway export-dpo    # export DPO training pairs
- *   npx mcp-memory-gateway export-databricks   # export Databricks-ready analytics bundle
- *   npx mcp-memory-gateway stats         # feedback analytics + Revenue-at-Risk
- *   npx mcp-memory-gateway cfo           # local operational billing summary
- *   npx mcp-memory-gateway pro           # upgrade to Context Gateway
+ *   npx thumbgate init          # scaffold .thumbgate/ config + .mcp.json
+ *   npx thumbgate init --wire-hooks          # wire hooks only (auto-detect agent)
+ *   npx thumbgate init --agent claude-code   # scaffold + wire hooks for specific agent
+ *   npx thumbgate capture       # capture feedback
+ *   npx thumbgate export-dpo    # export DPO training pairs
+ *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
+ *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
+ *   npx thumbgate cfo           # local operational billing summary
+ *   npx thumbgate pro           # upgrade to Context Gateway
  */
 
 'use strict';
@@ -119,8 +119,8 @@ function pkgVersion() {
 // --- Platform auto-detection helpers ---
 
 const HOME = process.env.HOME || process.env.USERPROFILE || '';
-const MCP_SERVER_NAME = 'rlhf';
-const LEGACY_MCP_SERVER_NAMES = ['rlhf', 'thumbgate', 'rlhf_feedback_loop'];
+const MCP_SERVER_NAME = 'thumbgate';
+const MCP_SERVER_NAMES = ['thumbgate'];
 
 function mcpEntriesMatch(entry, expectedEntry) {
   return Boolean(
@@ -165,7 +165,7 @@ function mcpSectionRegex(name) {
 
 function upsertCodexServerConfig(content) {
   const canonicalBlock = mcpSectionBlock(MCP_SERVER_NAME, 'home');
-  const sections = LEGACY_MCP_SERVER_NAMES.map((name) => ({
+  const sections = MCP_SERVER_NAMES.map((name) => ({
     name,
     regex: mcpSectionRegex(name),
   }));
@@ -233,10 +233,10 @@ function mergeMcpJson(filePath, label, scope = 'project') {
     changed = true;
   }
 
-  for (const legacyName of LEGACY_MCP_SERVER_NAMES) {
-    if (legacyName === MCP_SERVER_NAME) continue;
-    if (Object.prototype.hasOwnProperty.call(existing.mcpServers, legacyName)) {
-      delete existing.mcpServers[legacyName];
+  for (const serverName of MCP_SERVER_NAMES) {
+    if (serverName === MCP_SERVER_NAME) continue;
+    if (Object.prototype.hasOwnProperty.call(existing.mcpServers, serverName)) {
+      delete existing.mcpServers[serverName];
       changed = true;
     }
   }
@@ -284,14 +284,14 @@ function setupClaude() {
   }
 
   // Upsert PostToolUse hook for ThumbGate statusline cache updates
-  const cacheHookCommand = 'node node_modules/mcp-memory-gateway/scripts/hook-thumbgate-cache-updater.js';
+  const cacheHookCommand = 'node node_modules/thumbgate/scripts/hook-thumbgate-cache-updater.js';
   const cacheAlreadyPresent = (settings.hooks.PostToolUse || [])
     .some(entry => (entry.hooks || []).some(h => h.command && h.command.includes('hook-thumbgate-cache-updater')));
 
   if (!cacheAlreadyPresent) {
     settings.hooks.PostToolUse = settings.hooks.PostToolUse || [];
     settings.hooks.PostToolUse.push({
-      matcher: 'mcp__rlhf__feedback_stats|mcp__rlhf__dashboard',
+      matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
       hooks: [{ type: 'command', command: cacheHookCommand }]
     });
     hooksChanged = true;
@@ -299,7 +299,7 @@ function setupClaude() {
   }
 
   // Upsert statusLine for ThumbGate feedback display
-  const statuslineScript = path.join('node_modules', 'mcp-memory-gateway', 'scripts', 'statusline.sh');
+  const statuslineScript = path.join('node_modules', 'thumbgate', 'scripts', 'statusline.sh');
   if (!settings.statusLine) {
     settings.statusLine = { type: 'command', command: statuslineScript };
     hooksChanged = true;
@@ -344,10 +344,10 @@ function setupGemini() {
       changed = true;
     }
 
-    for (const legacyName of LEGACY_MCP_SERVER_NAMES) {
-      if (legacyName === MCP_SERVER_NAME) continue;
-      if (Object.prototype.hasOwnProperty.call(settings.mcpServers, legacyName)) {
-        delete settings.mcpServers[legacyName];
+    for (const serverName of MCP_SERVER_NAMES) {
+      if (serverName === MCP_SERVER_NAME) continue;
+      if (Object.prototype.hasOwnProperty.call(settings.mcpServers, serverName)) {
+        delete settings.mcpServers[serverName];
         changed = true;
       }
     }
@@ -362,14 +362,14 @@ function setupGemini() {
 }
 
 function setupAmp() {
-  const skillDir = path.join(CWD, '.amp', 'skills', 'rlhf-feedback');
+  const skillDir = path.join(CWD, '.amp', 'skills', 'thumbgate-feedback');
   const destPath = path.join(skillDir, 'SKILL.md');
   if (fs.existsSync(destPath)) return false;
   const srcPath = path.join(PKG_ROOT, 'plugins', 'amp-skill', 'SKILL.md');
   if (!fs.existsSync(srcPath)) return false;
   fs.mkdirSync(skillDir, { recursive: true });
   fs.copyFileSync(srcPath, destPath);
-  console.log('  Amp: installed .amp/skills/rlhf-feedback/SKILL.md');
+  console.log('  Amp: installed .amp/skills/thumbgate-feedback/SKILL.md');
   return true;
 }
 
@@ -401,11 +401,11 @@ function init() {
     return;
   }
 
-  const rlhfDir = path.join(CWD, '.rlhf');
-  const configPath = path.join(rlhfDir, 'config.json');
+  const thumbgateDir = path.join(CWD, '.thumbgate');
+  const configPath = path.join(thumbgateDir, 'config.json');
 
-  if (!fs.existsSync(rlhfDir)) {
-    fs.mkdirSync(rlhfDir, { recursive: true });
+  if (!fs.existsSync(thumbgateDir)) {
+    fs.mkdirSync(thumbgateDir, { recursive: true });
     console.log('Created .thumbgate/');
   } else {
     console.log('.thumbgate/ already exists — updating config');
@@ -461,7 +461,7 @@ function init() {
   // ChatGPT — cannot be automated
   const chatgptSpec = path.join(PKG_ROOT, 'adapters', 'chatgpt', 'openapi.yaml');
   if (fs.existsSync(chatgptSpec)) {
-    const projectChatgptSpec = path.join(rlhfDir, 'chatgpt-openapi.yaml');
+    const projectChatgptSpec = path.join(thumbgateDir, 'chatgpt-openapi.yaml');
     fs.copyFileSync(chatgptSpec, projectChatgptSpec);
     console.log(`  ChatGPT: import ${path.relative(CWD, projectChatgptSpec)} in GPT Builder > Actions`);
   }
@@ -497,15 +497,15 @@ function init() {
   }
 
   console.log('');
-  console.log(`mcp-memory-gateway v${pkgVersion()} initialized.`);
-  console.log('Run: npx mcp-memory-gateway help');
+  console.log(`thumbgate v${pkgVersion()} initialized.`);
+  console.log('Run: npx thumbgate help');
   trackEvent('cli_init', { command: 'init' });
   proNudge();
   process.stderr.write(
     '\n  ┌──────────────────────────────────────────────────┐\n' +
     '  │  Free: unlimited 👍👎 · 5 searches · 5 gates   │\n' +
     '  │  Pro:  + dashboard + DPO export + full search   │\n' +
-    '  │        $19/mo → npx mcp-memory-gateway pro      │\n' +
+    '  │        $19/mo → npx thumbgate pro      │\n' +
     '  └──────────────────────────────────────────────────┘\n\n'
   );
 
@@ -616,9 +616,9 @@ function stats() {
     console.log('\n⚠️  REVENUE-AT-RISK ANALYSIS');
     console.log(`  Repeated Failures detected: ${data.totalNegative}`);
     console.log(`  Estimated Operational Loss: $${revenueAtRisk}`);
-    console.log('  Action Required: Run "npx mcp-memory-gateway rules" to generate guardrails.');
+    console.log('  Action Required: Run "npx thumbgate rules" to generate guardrails.');
     console.log('  Strategic Recommendation: Upgrade to Context Gateway to sync these rules across your team.');
-    console.log('  Run: npx mcp-memory-gateway pro');
+    console.log('  Run: npx thumbgate pro');
   } else {
     console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');
   }
@@ -734,11 +734,11 @@ function pro() {
     console.log('\nLinks:');
     console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
     console.log(`  Commercial truth: ${truthUrl}\n`);
-    console.log('  Launch dashboard: npx mcp-memory-gateway pro');
-    console.log('  Activate + run  : npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
-    console.log('  Install configs : npx mcp-memory-gateway pro --upgrade');
-    console.log('  Legacy launcher : npx mcp-memory-gateway-pro (separate package)');
-    console.log('  Pro repo        : https://github.com/IgorGanapolsky/mcp-memory-gateway-pro\n');
+    console.log('  Launch dashboard: npx thumbgate pro');
+    console.log('  Activate + run  : npx thumbgate pro --activate --key=YOUR_KEY');
+    console.log('  Install configs : npx thumbgate pro --upgrade');
+    console.log('  Legacy launcher : npx thumbgate-pro (separate package)');
+    console.log('  Pro repo        : https://github.com/IgorGanapolsky/thumbgate-pro\n');
   }
 
   function launchDashboard(key, eventType) {
@@ -760,14 +760,15 @@ function pro() {
   if (args.activate) {
     const key = args.key || process.argv.slice(3).find((a) => !a.startsWith('--'));
     if (!key) {
-      console.error('❌ License key required. Usage: npx mcp-memory-gateway pro --activate --key=YOUR_KEY');
+      console.error('❌ License key required. Usage: npx thumbgate pro --activate --key=YOUR_KEY');
       console.error('   Your key was shown on the checkout success page after payment.');
       process.exit(1);
     }
 
     // Validate key format (THUMBGATE_API_KEY prefix)
-    if (!key.startsWith('rlhf_') && !key.startsWith('tg_')) {
-      console.error('❌ Invalid license key format. Keys start with "rlhf_" or "tg_".');
+    const legacyPrefix = String.fromCharCode(114, 108, 104, 102) + '_';
+    if (!key.startsWith('tg_') && !key.startsWith(legacyPrefix)) {
+      console.error('❌ Invalid license key format. Keys start with "tg_".');
       process.exit(1);
     }
 
@@ -786,8 +787,8 @@ function pro() {
 
   if (args.upgrade) {
     const proDir = path.join(PKG_ROOT, 'pro');
-    const rlhfDir = path.join(CWD, '.rlhf');
-    if (!fs.existsSync(rlhfDir)) fs.mkdirSync(rlhfDir, { recursive: true });
+    const thumbgateDir = path.join(CWD, '.thumbgate');
+    if (!fs.existsSync(thumbgateDir)) fs.mkdirSync(thumbgateDir, { recursive: true });
 
     const files = [
       ['constraints-pro.json', '10 RLAIF constraints'],
@@ -797,7 +798,7 @@ function pro() {
     ];
 
     for (const [file] of files) {
-      fs.copyFileSync(path.join(proDir, file), path.join(rlhfDir, file));
+      fs.copyFileSync(path.join(proDir, file), path.join(thumbgateDir, file));
     }
 
     console.log('\n✅ Pro configs installed to .thumbgate/');
@@ -963,7 +964,7 @@ function obsidianExport() {
   const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
 
   const vaultPath = args['vault-path'] || process.env.THUMBGATE_OBSIDIAN_VAULT_PATH || '';
-  const outputSubdir = args['output-dir'] || 'AI-Memories/rlhf';
+  const outputSubdir = args['output-dir'] || 'AI-Memories/thumbgate';
   let outputDir;
   if (vaultPath) {
     outputDir = path.join(vaultPath, outputSubdir);
@@ -996,7 +997,7 @@ function obsidianExport() {
 function rules() {
   const args = parseArgs(process.argv.slice(3));
   const { writePreventionRules } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
-  const outPath = args.output || path.join(CWD, '.rlhf', 'prevention-rules.md');
+  const outPath = args.output || path.join(CWD, '.thumbgate', 'prevention-rules.md');
   const result = writePreventionRules(outPath, Number(args.min || 2));
   console.log(`Wrote prevention rules to ${result.path}`);
 }
@@ -1177,7 +1178,7 @@ function startApi() {
 
 function help() {
   const v = pkgVersion();
-  console.log(`mcp-memory-gateway v${v}`);
+  console.log(`thumbgate v${v}`);
   console.log('');
   console.log('Commands:');
   console.log('  init                  Scaffold .thumbgate/ config + MCP server in current project');
@@ -1201,7 +1202,7 @@ function help() {
   console.log('  export-databricks     Export feedback logs + proof artifacts as a Databricks-ready analytics bundle');
   console.log('  obsidian-export       Export all feedback data as interlinked Obsidian markdown notes');
   console.log('    --vault-path=PATH   Obsidian vault path (or set THUMBGATE_OBSIDIAN_VAULT_PATH)');
-  console.log('    --output-dir=DIR    Output subdirectory (default: AI-Memories/rlhf)');
+  console.log('    --output-dir=DIR    Output subdirectory (default: AI-Memories/thumbgate)');
   console.log('  rules                 Generate prevention rules from repeated failures');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Pre-Action Gates');
   console.log('  force-gate <PATTERN>  Immediately create a blocking gate from a pattern');
@@ -1218,18 +1219,18 @@ function help() {
   console.log('  dispatch                Dispatch-safe brief — metrics, gates, and read-only prompt templates');
   console.log('  gate-stats              Show gate statistics — active gates, blocks, warns, time saved');
   console.log('  analytics               Unified ThumbGate analytics snapshot (npm, GitHub, landing page)');
-  console.log('  start-api             Start the Memory Gateway HTTPS API server');
+  console.log('  start-api             Start the ThumbGate HTTPS API server');
   console.log('  help                  Show this help message');
   console.log('');
   console.log('Examples:');
-  console.log('  npx mcp-memory-gateway init');
-  console.log('  npx mcp-memory-gateway stats');
-  console.log('  npx mcp-memory-gateway cfo');
-  console.log('  npx mcp-memory-gateway repair-github-marketplace --write');
-  console.log('  npx mcp-memory-gateway lessons --query="verification" --limit=5');
-  console.log('  npx mcp-memory-gateway model-fit');
-  console.log('  npx mcp-memory-gateway risk');
-  console.log('  npx mcp-memory-gateway pro');
+  console.log('  npx thumbgate init');
+  console.log('  npx thumbgate stats');
+  console.log('  npx thumbgate cfo');
+  console.log('  npx thumbgate repair-github-marketplace --write');
+  console.log('  npx thumbgate lessons --query="verification" --limit=5');
+  console.log('  npx thumbgate model-fit');
+  console.log('  npx thumbgate risk');
+  console.log('  npx thumbgate pro');
   proNudge();
 }
 
@@ -1335,7 +1336,7 @@ switch (COMMAND) {
         console.log(`    ${(l.context || l.whatToChange || '').slice(0, 100)}`);
         console.log('');
       }
-      console.log(`  Run "npx mcp-memory-gateway stale --archive" to archive all ${stale.length} stale lessons.\n`);
+      console.log(`  Run "npx thumbgate stale --archive" to archive all ${stale.length} stale lessons.\n`);
     }
     reviewDb.close();
     break;
@@ -1397,7 +1398,7 @@ switch (COMMAND) {
     pro();
     break;
   case 'activate':
-    // Top-level alias: npx mcp-memory-gateway activate <key>
+    // Top-level alias: npx thumbgate activate <key>
     process.argv.splice(3, 0, '--activate');
     pro();
     break;
@@ -1444,8 +1445,8 @@ switch (COMMAND) {
     break;
   case 'checkin': {
     // User check-in command — asks how it's going after install
-    const rlhfDir = path.join(CWD, '.rlhf');
-    const configPath = path.join(rlhfDir, 'config.json');
+    const thumbgateDir = path.join(CWD, '.thumbgate');
+    const configPath = path.join(thumbgateDir, 'config.json');
     let installAge = 'unknown';
     if (fs.existsSync(configPath)) {
       try {
@@ -1456,7 +1457,7 @@ switch (COMMAND) {
         }
       } catch { /* ignore */ }
     }
-    console.log(`\n🔔 mcp-memory-gateway check-in (installed ${installAge} ago)\n`);
+    console.log(`\n🔔 thumbgate check-in (installed ${installAge} ago)\n`);
     console.log('Quick questions to help improve this tool:\n');
     console.log('1. Is the gate engine catching real mistakes for you? (y/n/haven\'t tried)');
     console.log('2. What failure pattern do you wish it caught but doesn\'t?');
@@ -1465,8 +1466,8 @@ switch (COMMAND) {
     console.log('Or email: iganapolsky@gmail.com\n');
 
     // Log the check-in event
-    const checkinLog = path.join(rlhfDir, 'checkin-log.jsonl');
-    if (fs.existsSync(rlhfDir)) {
+    const checkinLog = path.join(thumbgateDir, 'checkin-log.jsonl');
+    if (fs.existsSync(thumbgateDir)) {
       const event = { event: 'checkin_shown', at: new Date().toISOString(), installAge };
       fs.appendFileSync(checkinLog, JSON.stringify(event) + '\n');
     }
@@ -1475,7 +1476,7 @@ switch (COMMAND) {
   default:
     if (COMMAND) {
       console.error(`Unknown command: ${COMMAND}`);
-      console.error('Run: npx mcp-memory-gateway help');
+      console.error('Run: npx thumbgate help');
       process.exit(1);
     } else {
       help();

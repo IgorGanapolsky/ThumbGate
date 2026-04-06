@@ -2,7 +2,7 @@
 # ThumbGate Status Line for Claude Code
 # Shows ThumbGate feedback stats + most recent lesson at a glance.
 # Thumbs icons trigger CLI feedback capture inline (no browser).
-# Installed by: npx mcp-memory-gateway init --agent claude-code
+# Installed by: npx thumbgate init --agent claude-code
 
 # Resolve script directory safely (CodeQL: no uncontrolled paths)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -18,7 +18,7 @@ CTX_PCT="${CTX_PCT:-0}"
 # ── ThumbGate stats from cache ────────────────────────────────────────
 THUMBGATE_CACHE=""
 for base in "${THUMBGATE_FEEDBACK_DIR:-.}" "." "${HOME}"; do
-  for rel in ".thumbgate/statusline_cache.json" ".rlhf/statusline_cache.json"; do
+  for rel in ".thumbgate/statusline_cache.json"; do
     if [ -f "${base}/${rel}" ]; then
       THUMBGATE_CACHE="${base}/${rel}"
       break 2
@@ -44,7 +44,7 @@ fi
 _NOW=$(date +%s)
 if [ $(( _NOW - ${CACHE_TS:-0} )) -gt 120 ]; then
   (
-    _R=$(curl -s --max-time 3 "http://localhost:9876/v1/feedback/stats" -H "Authorization: Bearer tg_creator_dev_enterprise" 2>/dev/null)
+    _R=$(curl -s --max-time 3 "http://localhost:3456/v1/feedback/stats" -H "Authorization: Bearer ${THUMBGATE_API_KEY:-tg_creator_dev_enterprise}" 2>/dev/null)
     [ -z "$_R" ] && exit 0
     echo "$_R" | python3 -c "
 import json,sys,time,os

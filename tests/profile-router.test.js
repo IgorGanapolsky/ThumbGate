@@ -36,8 +36,8 @@ function withEnv(overrides, fn) {
 }
 
 function withEmptySettingsSandbox(fn) {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-profile-project-'));
-  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-profile-home-'));
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-profile-project-'));
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-profile-home-'));
   try {
     return fn({ projectRoot, homeDir });
   } finally {
@@ -109,7 +109,7 @@ test('routeProfile routes to readonly when no write intent', () => {
 });
 
 test('routeProfile uses settings hierarchy for default profile fallback', () => {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-profile-settings-'));
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-profile-settings-'));
   fs.mkdirSync(path.join(projectRoot, 'config'), { recursive: true });
   fs.writeFileSync(
     path.join(projectRoot, 'config', 'thumbgate-settings.managed.json'),
@@ -126,7 +126,7 @@ test('routeProfile uses settings hierarchy for default profile fallback', () => 
 });
 
 test('routeProfile uses settings hierarchy for readonly profile fallback', () => {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-profile-readonly-'));
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-profile-readonly-'));
   fs.mkdirSync(path.join(projectRoot, 'config'), { recursive: true });
   fs.writeFileSync(
     path.join(projectRoot, 'config', 'thumbgate-settings.managed.json'),
@@ -156,8 +156,8 @@ test('findMostRestrictiveProfile returns locked for search_lessons', () => {
   assert.equal(profile, 'locked');
 });
 
-test('findMostRestrictiveProfile returns locked for search_rlhf', () => {
-  const profile = findMostRestrictiveProfile('search_rlhf');
+test('findMostRestrictiveProfile returns locked for search_thumbgate', () => {
+  const profile = findMostRestrictiveProfile('search_thumbgate');
   assert.equal(profile, 'commerce');
 });
 

@@ -10,5 +10,5 @@
   <text x="120" y="780" fill="#C9CCD5" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="38">The next generation of agent tooling wins by making the whole loop feel complete.</text>
   <rect x="120" y="920" width="840" height="138" rx="24" fill="#F4EDE1"/>
   <text x="165" y="1004" fill="#17181C" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="34" font-weight="700">ThumbGate  /  AI Reliability System for Coding Agents</text>
-  <text x="120" y="1145" fill="#F6C75A" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="28">rlhf-feedback-loop-production.up.railway.app</text>
+  <text x="120" y="1145" fill="#F6C75A" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="28">thumbgate-production.up.railway.app</text>
 </svg>

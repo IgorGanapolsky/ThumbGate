@@ -8,12 +8,12 @@ const path = require('node:path');
 
 const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-consolidator-'));
 const thumbgateDir = path.join(projectDir, '.thumbgate');
-const rlhfDir = path.join(projectDir, '.rlhf');
+const rlhfDir = path.join(projectDir, '.thumbgate');
 const legacyDir = path.join(projectDir, '.claude', 'memory', 'feedback');
 
 const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
 const savedLegacyDir = process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
-const savedRlhfDir = process.env.THUMBGATE_RLHF_FEEDBACK_DIR;
+const savedFallbackDir = process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
 const savedTestApiKeysPath = process.env._TEST_API_KEYS_PATH;
 const savedTestFunnelPath = process.env._TEST_FUNNEL_LEDGER_PATH;
 const savedTestRevenuePath = process.env._TEST_REVENUE_LEDGER_PATH;
@@ -26,7 +26,7 @@ test.before(() => {
 
   fs.writeFileSync(path.join(legacyDir, 'api-keys.json'), `${JSON.stringify({
     keys: {
-      rlhf_test_key: {
+      thumbgate_test_key: {
         customerId: 'cus_consolidated',
         active: true,
         source: 'provision',
@@ -65,8 +65,8 @@ test.after(() => {
   else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
   if (savedLegacyDir === undefined) delete process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
   else process.env.THUMBGATE_LEGACY_FEEDBACK_DIR = savedLegacyDir;
-  if (savedRlhfDir === undefined) delete process.env.THUMBGATE_RLHF_FEEDBACK_DIR;
-  else process.env.THUMBGATE_RLHF_FEEDBACK_DIR = savedRlhfDir;
+  if (savedFallbackDir === undefined) delete process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
+  else process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR = savedFallbackDir;
   if (savedTestApiKeysPath === undefined) delete process.env._TEST_API_KEYS_PATH;
   else process.env._TEST_API_KEYS_PATH = savedTestApiKeysPath;
   if (savedTestFunnelPath === undefined) delete process.env._TEST_FUNNEL_LEDGER_PATH;
@@ -101,7 +101,7 @@ test('billing summary is clean after consolidation even when legacy roots still 
   consolidateFeedbackRoot({ cwd: projectDir, write: true });
 
   process.env.THUMBGATE_FEEDBACK_DIR = thumbgateDir;
-  process.env.THUMBGATE_RLHF_FEEDBACK_DIR = rlhfDir;
+  process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR = rlhfDir;
   process.env.THUMBGATE_LEGACY_FEEDBACK_DIR = legacyDir;
   delete process.env._TEST_API_KEYS_PATH;
   delete process.env._TEST_FUNNEL_LEDGER_PATH;

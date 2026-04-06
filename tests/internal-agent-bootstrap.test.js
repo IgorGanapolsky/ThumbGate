@@ -5,7 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
-const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-bootstrap-feedback-'));
+const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bootstrap-feedback-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 
 const {
@@ -16,10 +16,10 @@ const {
 } = require('../scripts/internal-agent-bootstrap');
 
 function initGitRepo() {
-  const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-bootstrap-repo-'));
+  const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bootstrap-repo-'));
   execFileSync('git', ['init', '-b', 'main'], { cwd: repoPath, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.name', 'ThumbGate Test'], { cwd: repoPath, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.email', 'rlhf@example.com'], { cwd: repoPath, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'thumbgate@example.com'], { cwd: repoPath, stdio: 'ignore' });
   fs.writeFileSync(path.join(repoPath, 'README.md'), '# temp repo\n');
   execFileSync('git', ['add', 'README.md'], { cwd: repoPath, stdio: 'ignore' });
   execFileSync('git', ['commit', '-m', 'init'], { cwd: repoPath, stdio: 'ignore' });
@@ -74,7 +74,7 @@ test('buildStartupContext assembles trigger, task, and history sections', () => 
 
 test('ensureWorktreeSandbox creates and reuses a git worktree sandbox', () => {
   const repoPath = initGitRepo();
-  const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-bootstrap-sandbox-'));
+  const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bootstrap-sandbox-'));
 
   try {
     const first = ensureWorktreeSandbox({
@@ -104,7 +104,7 @@ test('ensureWorktreeSandbox creates and reuses a git worktree sandbox', () => {
 
 test('bootstrapInternalAgent returns recall, sandbox, and reviewer-lane plan', () => {
   const repoPath = initGitRepo();
-  const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-bootstrap-agent-'));
+  const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bootstrap-agent-'));
   const previousStub = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
   process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
     source: 'stub',

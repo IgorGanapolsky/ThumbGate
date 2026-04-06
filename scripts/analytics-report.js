@@ -8,14 +8,14 @@ const { getFeedbackPaths } = require('./feedback-loop');
 const { buildPredictiveInsights } = require('./predictive-insights');
 const { getTelemetryAnalytics } = require('./telemetry-analytics');
 
-const NPM_PACKAGE = 'mcp-memory-gateway';
+const NPM_PACKAGE = 'thumbgate';
 const GITHUB_REPO = 'IgorGanapolsky/ThumbGate';
 const PLAUSIBLE_URL = 'https://plausible.io/thumbgate-production.up.railway.app';
 const LANDING_PAGE = 'https://thumbgate-production.up.railway.app';
 
 function httpsGet(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'mcp-memory-gateway-analytics' } }, (res) => {
+    https.get(url, { headers: { 'User-Agent': 'thumbgate-analytics' } }, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
@@ -234,7 +234,7 @@ function formatReport(monthly, weekly, github, npmMeta, telemetry = null, billin
     '║          ThumbGate — Unified Analytics Snapshot                  ║',
     '╚══════════════════════════════════════════════════════════════════╝',
     '',
-    '📦 npm — mcp-memory-gateway (REPORTED)',
+    '📦 npm — thumbgate (REPORTED)',
     `   Weekly downloads:  ${weeklyDownloads.toLocaleString()}`,
     `   Monthly downloads: ${monthlyDownloads.toLocaleString()}`,
     `   Daily trend (7d):  ${trend}  [${dailyValues.join(', ')}]`,

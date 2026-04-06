@@ -10,7 +10,7 @@ const { execSync } = require('node:child_process');
 const ROOT = path.join(__dirname, '..');
 
 test('prove-claim-verification: proof gate passes with 6/6 checks', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-claim-proof-test-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-claim-proof-test-'));
   try {
     const output = execSync('node scripts/prove-claim-verification.js', {
       cwd: ROOT,
@@ -26,7 +26,7 @@ test('prove-claim-verification: proof gate passes with 6/6 checks', () => {
 });
 
 test('prove-claim-verification: report.json captures all requirements', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-claim-proof-json-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-claim-proof-json-'));
   try {
     execSync('node scripts/prove-claim-verification.js', {
       cwd: ROOT,
@@ -49,7 +49,7 @@ test('prove-claim-verification: report.json captures all requirements', () => {
 });
 
 test('prove-claim-verification: report.md contains all requirement checkboxes', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-claim-proof-md-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-claim-proof-md-'));
   try {
     execSync('node scripts/prove-claim-verification.js', {
       cwd: ROOT,

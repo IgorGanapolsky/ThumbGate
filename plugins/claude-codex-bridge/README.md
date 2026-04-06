@@ -6,7 +6,7 @@ This repo-local Claude Code plugin brings Codex into the same workflow for three
 - skeptical adversarial review before risky merges or deploys
 - second-pass handoff when you want a different agent to take another shot
 
-The plugin keeps ThumbGate's local reliability memory available through the bundled `rlhf` MCP server while the bridge script persists Codex artifacts in `${CLAUDE_PLUGIN_DATA}`.
+The plugin keeps ThumbGate's local reliability memory available through the bundled `thumbgate` MCP server while the bridge script persists Codex artifacts in `${CLAUDE_PLUGIN_DATA}`.
 
 ## Shipped skills
 

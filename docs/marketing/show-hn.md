@@ -11,10 +11,10 @@ Every time you start a new Claude Code, Codex, or Gemini session, your agent for
 
 ThumbGate is an MCP server that gives AI agents a persistent feedback memory. During any session you give a thumbs-up or thumbs-down with brief context. That signal gets written to a local JSONL log and indexed with LanceDB. On future sessions the agent queries that history before acting, so it stops repeating known-bad approaches. Three or more identical failures auto-generate a CLAUDE.md prevention rule. You can also export all the data as DPO pairs (chosen/rejected) for fine-tuning.
 
-The self-hosted version is free. Install in 30 seconds: npx mcp-memory-gateway serve. It works with Claude Code, Codex CLI, Gemini CLI, Amp, and Cursor. All data stays local. The public self-serve commercial offer today is Pro at $19/mo or $149/yr via https://thumbgate-production.up.railway.app/checkout/pro, which gives every licensed user a personal local dashboard. Team rollout remains intake-first at https://thumbgate-production.up.railway.app
+The self-hosted version is free. Install in 30 seconds: npx thumbgate serve. It works with Claude Code, Codex CLI, Gemini CLI, Amp, and Cursor. All data stays local. The public self-serve commercial offer today is Pro at $19/mo or $149/yr via https://thumbgate-production.up.railway.app/checkout/pro, which gives every licensed user a personal local dashboard. Team rollout remains intake-first at https://thumbgate-production.up.railway.app
 
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
-npm: https://www.npmjs.com/package/mcp-memory-gateway
+npm: https://www.npmjs.com/package/thumbgate
 Live hosted: https://thumbgate-production.up.railway.app
 
 Happy to answer questions on the protocol, the DPO export format, or how the prevention-rule generation works.

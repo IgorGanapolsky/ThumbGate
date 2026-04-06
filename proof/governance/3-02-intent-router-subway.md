@@ -8,12 +8,12 @@
 
 | File | Source | Status |
 |------|--------|--------|
-| `.claude/scripts/feedback/mcp-policy.js` | `rlhf/scripts/mcp-policy.js` | Ported with PATH SURGERY |
-| `.claude/scripts/feedback/intent-router.js` | `rlhf/scripts/intent-router.js` | Ported with PATH SURGERY |
-| `.claude/config/mcp-allowlists.json` | `rlhf/config/mcp-allowlists.json` | Copied verbatim |
-| `.claude/config/subagent-profiles.json` | `rlhf/config/subagent-profiles.json` | Copied verbatim |
-| `.claude/config/policy-bundles/default-v1.json` | `rlhf/config/policy-bundles/default-v1.json` | Copied + _comment key |
-| `.claude/config/policy-bundles/constrained-v1.json` | `rlhf/config/policy-bundles/constrained-v1.json` | Copied + _comment key |
+| `.claude/scripts/feedback/mcp-policy.js` | `thumbgate/scripts/mcp-policy.js` | Ported with PATH SURGERY |
+| `.claude/scripts/feedback/intent-router.js` | `thumbgate/scripts/intent-router.js` | Ported with PATH SURGERY |
+| `.claude/config/mcp-allowlists.json` | `thumbgate/config/mcp-allowlists.json` | Copied verbatim |
+| `.claude/config/subagent-profiles.json` | `thumbgate/config/subagent-profiles.json` | Copied verbatim |
+| `.claude/config/policy-bundles/default-v1.json` | `thumbgate/config/policy-bundles/default-v1.json` | Copied + _comment key |
+| `.claude/config/policy-bundles/constrained-v1.json` | `thumbgate/config/policy-bundles/constrained-v1.json` | Copied + _comment key |
 | `scripts/__tests__/intent-router.test.js` | NEW — GOV-05 | 10 Jest tests |
 
 ## PATH SURGERY Applied
@@ -60,7 +60,7 @@ result status: ready
 Tests: 10 passed, 0 failed
 ```
 
-## rlhf Regression Check
+## ThumbGate Regression Check
 
 ```
 npm run test:api => tests 58, pass 58, fail 0

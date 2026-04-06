@@ -12,11 +12,11 @@ function getProfilePath() {
   if (process.env.THUMBGATE_FEEDBACK_DIR) {
     return path.join(process.env.THUMBGATE_FEEDBACK_DIR, PROFILE_FILENAME);
   }
-  const localRlhf = path.join(process.cwd(), '.rlhf');
-  if (fs.existsSync(localRlhf)) {
-    return path.join(localRlhf, PROFILE_FILENAME);
+  const localFallback = path.join(process.cwd(), '.thumbgate');
+  if (fs.existsSync(localFallback)) {
+    return path.join(localFallback, PROFILE_FILENAME);
   }
-  return path.join(os.homedir(), '.rlhf', PROFILE_FILENAME);
+  return path.join(os.homedir(), '.thumbgate', PROFILE_FILENAME);
 }
 
 function loadProfile() {

@@ -85,7 +85,7 @@ jobs:
       matrix:
         tile:
           - agent-memory
-          - rlhf-feedback
+          - thumbgate-feedback
     steps:
       - uses: actions/checkout@v6
 

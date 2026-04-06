@@ -132,7 +132,7 @@ test('collectHealthReport captures output tail on failure', () => {
 });
 
 test('collectHealthReport can persist unhealthy diagnoses for shared analytics', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-self-heal-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-self-heal-'));
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   const report = collectHealthReport({

@@ -210,11 +210,11 @@ function syncVersion(opts) {
   const codexPluginConfigPath = 'plugins/codex-profile/.mcp.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, codexPluginConfigPath))) {
     const codexPluginConfig = readJson(codexPluginConfigPath);
-    const server = codexPluginConfig.mcpServers && codexPluginConfig.mcpServers.rlhf;
-    const expectedArgs = ['-y', `mcp-memory-gateway@${version}`, 'serve'];
+    const server = codexPluginConfig.mcpServers && codexPluginConfig.mcpServers.thumbgate;
+    const expectedArgs = ['-y', `thumbgate@${version}`, 'serve'];
     const currentArgs = server && Array.isArray(server.args) ? server.args : [];
     if (server && server.command === 'npx' && JSON.stringify(currentArgs) !== JSON.stringify(expectedArgs)) {
-      drifted.push({ file: codexPluginConfigPath, field: 'mcpServers.rlhf.args', current: JSON.stringify(currentArgs) });
+      drifted.push({ file: codexPluginConfigPath, field: 'mcpServers.thumbgate.args', current: JSON.stringify(currentArgs) });
       if (!checkOnly) {
         server.args = expectedArgs.slice();
         writeJson(codexPluginConfigPath, codexPluginConfig);
@@ -242,11 +242,11 @@ function syncVersion(opts) {
   const claudeCodexBridgeConfigPath = 'plugins/claude-codex-bridge/.mcp.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, claudeCodexBridgeConfigPath))) {
     const bridgeConfig = readJson(claudeCodexBridgeConfigPath);
-    const server = bridgeConfig.mcpServers && bridgeConfig.mcpServers.rlhf;
-    const expectedArgs = ['-y', `mcp-memory-gateway@${version}`, 'serve'];
+    const server = bridgeConfig.mcpServers && bridgeConfig.mcpServers.thumbgate;
+    const expectedArgs = ['-y', `thumbgate@${version}`, 'serve'];
     const currentArgs = server && Array.isArray(server.args) ? server.args : [];
     if (server && server.command === 'npx' && JSON.stringify(currentArgs) !== JSON.stringify(expectedArgs)) {
-      drifted.push({ file: claudeCodexBridgeConfigPath, field: 'mcpServers.rlhf.args', current: JSON.stringify(currentArgs) });
+      drifted.push({ file: claudeCodexBridgeConfigPath, field: 'mcpServers.thumbgate.args', current: JSON.stringify(currentArgs) });
       if (!checkOnly) {
         server.args = expectedArgs.slice();
         writeJson(claudeCodexBridgeConfigPath, bridgeConfig);
@@ -259,11 +259,11 @@ function syncVersion(opts) {
   const cursorPluginConfigPath = 'plugins/cursor-marketplace/mcp.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, cursorPluginConfigPath))) {
     const cursorPluginConfig = readJson(cursorPluginConfigPath);
-    const server = cursorPluginConfig.mcpServers && cursorPluginConfig.mcpServers.rlhf;
-    const expectedArgs = ['-y', 'mcp-memory-gateway@latest', 'serve'];
+    const server = cursorPluginConfig.mcpServers && cursorPluginConfig.mcpServers.thumbgate;
+    const expectedArgs = ['-y', 'thumbgate@latest', 'serve'];
     const currentArgs = server && Array.isArray(server.args) ? server.args : [];
     if (server && server.command === 'npx' && JSON.stringify(currentArgs) !== JSON.stringify(expectedArgs)) {
-      drifted.push({ file: cursorPluginConfigPath, field: 'mcpServers.rlhf.args', current: JSON.stringify(currentArgs) });
+      drifted.push({ file: cursorPluginConfigPath, field: 'mcpServers.thumbgate.args', current: JSON.stringify(currentArgs) });
       if (!checkOnly) {
         server.args = expectedArgs.slice();
         writeJson(cursorPluginConfigPath, cursorPluginConfig);
@@ -287,17 +287,17 @@ function syncVersion(opts) {
     'plugins/codex-profile/INSTALL.md',
     'plugins/opencode-profile/INSTALL.md',
   ];
-  const pinnedPackagePattern = /mcp-memory-gateway@\d+\.\d+\.\d+/g;
+  const pinnedPackagePattern = /thumbgate@\d+\.\d+\.\d+/g;
   for (const relPath of pinnedPackageTargets) {
     const filePath = path.join(PROJECT_ROOT, relPath);
     if (!fs.existsSync(filePath)) continue;
     const content = fs.readFileSync(filePath, 'utf-8');
     const matches = content.match(pinnedPackagePattern) || [];
-    const hasDrift = matches.some((match) => match !== `mcp-memory-gateway@${version}`);
+    const hasDrift = matches.some((match) => match !== `thumbgate@${version}`);
     if (hasDrift) {
       drifted.push({ file: relPath, field: 'package-version-string', current: matches.join(', ') });
       if (!checkOnly) {
-        fs.writeFileSync(filePath, content.replace(pinnedPackagePattern, `mcp-memory-gateway@${version}`));
+        fs.writeFileSync(filePath, content.replace(pinnedPackagePattern, `thumbgate@${version}`));
       }
     }
     targets.push(relPath);

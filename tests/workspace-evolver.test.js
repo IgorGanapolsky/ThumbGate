@@ -16,7 +16,7 @@ function resetModules() {
 }
 
 function withFeedbackDir(fn) {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-test-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evolution-test-'));
   const original = process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   resetModules();

@@ -10,7 +10,7 @@ const { execSync } = require('node:child_process');
 const ROOT = path.join(__dirname, '..');
 
 test('prove-autoresearch: proof gate passes with 6/6 checks', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-autoresearch-proof-test-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-autoresearch-proof-test-'));
   try {
     const output = execSync('node scripts/prove-autoresearch.js', {
       cwd: ROOT,
@@ -26,7 +26,7 @@ test('prove-autoresearch: proof gate passes with 6/6 checks', () => {
 });
 
 test('prove-autoresearch: report.json is valid JSON with all requirements', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-autoresearch-proof-json-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-autoresearch-proof-json-'));
   try {
     execSync('node scripts/prove-autoresearch.js', {
       cwd: ROOT,
@@ -49,7 +49,7 @@ test('prove-autoresearch: report.json is valid JSON with all requirements', () =
 });
 
 test('prove-autoresearch: report.md contains all requirement checkboxes', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-autoresearch-proof-md-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-autoresearch-proof-md-'));
   try {
     execSync('node scripts/prove-autoresearch.js', {
       cwd: ROOT,

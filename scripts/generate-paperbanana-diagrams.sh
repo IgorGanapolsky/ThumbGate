@@ -48,7 +48,7 @@ budget_check() {
 
 mkdir -p docs/diagrams
 
-cat > docs/diagrams/rlhf-architecture.txt <<'TXT'
+cat > docs/diagrams/thumbgate-architecture.txt <<'TXT'
 The system starts when a user gives explicit thumbs up/down feedback. A capture layer enriches the signal with context and tags.
 An action resolver maps the signal to store-learning, store-mistake, or no-action.
 A schema validator enforces strict structure before memory promotion.
@@ -73,14 +73,14 @@ TXT
 
 budget_check "$PB_ESTIMATE_PER_DIAGRAM"
 paperbanana generate \
-  --input docs/diagrams/rlhf-architecture.txt \
+  --input docs/diagrams/thumbgate-architecture.txt \
   --caption "ThumbGate architecture for AI coding agents with schema gate, memory store, prevention rules, and DPO export" \
   --vlm-provider gemini \
   --vlm-model "$PB_VLM_MODEL" \
   --image-provider google_imagen \
   --image-model "$PB_IMAGE_MODEL" \
   --iterations "$PB_MAX_ITERATIONS" \
-  --output docs/diagrams/rlhf-architecture.png
+  --output docs/diagrams/thumbgate-architecture.png
 node scripts/budget-guard.js --add="$PB_ESTIMATE_PER_DIAGRAM" --source=paperbanana --note="architecture-overview"
 
 budget_check "$PB_ESTIMATE_PER_DIAGRAM"

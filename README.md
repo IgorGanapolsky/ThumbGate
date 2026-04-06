@@ -1,17 +1,17 @@
 # ThumbGate
 
-> **npm package:** `mcp-memory-gateway` — install with `npx mcp-memory-gateway init`
+> **npm package:** `thumbgate` — install with `npx thumbgate init`
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![Self-Healing](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/self-healing-monitor.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/self-healing-monitor.yml)
-[![npm](https://img.shields.io/npm/v/mcp-memory-gateway)](https://www.npmjs.com/package/mcp-memory-gateway)
+[![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
 [![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free stays local-first with 5 daily feedback captures, 10 daily lesson searches, unlimited recall, and gating. Vague thumbs feedback can be distilled from the last ~10 messages and failed tool call. Pro adds a personal local dashboard, **Model Hardening Advisor**, and **LoRA/PEFT export**. Team rollout starts at the shared hosted lesson DB, org dashboard, and generated hosted review views.
 
-**Repo boundary:** this repository is the public base runtime (`mcp-memory-gateway`). The paid overlay now lives in the separate [`mcp-memory-gateway-pro`](https://github.com/IgorGanapolsky/mcp-memory-gateway-pro) repo/package and inherits from this base instead of shipping from a `pro/` subtree here.
+**Repo boundary:** this repository is the public base runtime (`thumbgate`). The paid overlay now lives in the separate [`thumbgate-pro`](https://github.com/IgorGanapolsky/thumbgate-pro) repo/package and inherits from this base instead of shipping from a `pro/` subtree here.
 
 **Thumbs down a mistake. It never happens again.**
 
@@ -29,25 +29,25 @@ Most memory tools only help an agent remember. ThumbGate also enforces.
 
 > BEFORE: Agent force-pushes to main. You correct it. Next session, it force-pushes again.
 
-**With ThumbGate (`mcp-memory-gateway`):**
+**With ThumbGate (`thumbgate`):**
 
 > AFTER: Gate blocks the force-push before it executes. Agent can't repeat the mistake.
 
 - `recall` injects the right context at session start.
 - `search_lessons` shows promoted lessons plus the corrective action, lifecycle state, linked rules, linked gates, and the next harness fix the system should make.
 - `retrieve_lessons` surfaces per-action lessons for the tool or workflow you are about to run.
-- `search_rlhf` searches feedback state across feedback logs, ContextFS memory, and prevention rules (context engineering, not weight training).
+- `search_thumbgate` searches feedback state across feedback logs, ContextFS memory, and prevention rules (context engineering, not weight training).
 - History-aware distillation turns a vague `👍` or `👎` into a concrete lesson proposal from the last ~10 messages plus the failed tool call.
 - Feedback sessions let Cursor, Claude Desktop, Codex, and the hosted API keep appending context to the same feedback record before promotion.
 - Pre-action gates physically block tool calls that match known failure patterns.
 - Session handoff and primer keep continuity across sessions without adding an extra orchestrator.
 
-Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx mcp-memory-gateway lessons`.
+Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx thumbgate lessons`.
 
 ## See it in action
 
 ```
-$ npx mcp-memory-gateway serve
+$ npx thumbgate serve
 [gate] ⛔ Blocked: git push --force (rule: no-force-push, confidence: 0.94)
 [gate] ✅ Passed: git push origin feature-branch
 ```
@@ -56,23 +56,23 @@ $ npx mcp-memory-gateway serve
 
 ```bash
 # One command install — auto-detects your agent
-npx mcp-memory-gateway init
+npx thumbgate init
 
 # Or add the MCP server directly
-claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
-codex mcp add thumbgate -- npx -y mcp-memory-gateway serve
-amp mcp add thumbgate -- npx -y mcp-memory-gateway serve
-gemini mcp add thumbgate "npx -y mcp-memory-gateway serve"
+claude mcp add thumbgate -- npx -y thumbgate serve
+codex mcp add thumbgate -- npx -y thumbgate serve
+amp mcp add thumbgate -- npx -y thumbgate serve
+gemini mcp add thumbgate "npx -y thumbgate serve"
 
 # Wire PreToolUse enforcement hooks
-npx mcp-memory-gateway init --agent claude-code
-npx mcp-memory-gateway init --agent codex
-npx mcp-memory-gateway init --agent gemini
+npx thumbgate init --agent claude-code
+npx thumbgate init --agent codex
+npx thumbgate init --agent gemini
 
 # Health check and inspect lessons
-npx mcp-memory-gateway doctor
-npx mcp-memory-gateway lessons
-npx mcp-memory-gateway dashboard
+npx thumbgate doctor
+npx thumbgate lessons
+npx thumbgate dashboard
 ```
 
 ## Claude Code Skill
@@ -158,7 +158,7 @@ Feedback session flow:
 - **Funnel invariant CI** — 13 tests prevent checkout path regression; Pro parity enforced across free/Pro npm packages
 - **Dual-signal feedback** — optional `failureType` ("decision" vs "execution") on `capture_feedback` creates separate Thompson Sampling sub-arms per failure dimension, inspired by Gen-Searcher's dual reward system
 
-![Context Engineering Architecture](https://raw.githubusercontent.com/IgorGanapolsky/ThumbGate/main/docs/diagrams/rlhf-architecture-pb.png)
+![Context Engineering Architecture](https://raw.githubusercontent.com/IgorGanapolsky/ThumbGate/main/docs/diagrams/thumbgate-architecture-pb.png)
 
 ## Pre-Action Gates
 
@@ -190,7 +190,7 @@ Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
 | `search_lessons` exposes corrective actions, lifecycle state, linked rules, linked gates, and next harness fixes | Feedback stats automatically improving behavior by themselves |
 | Natural-language harness specs keep workflow control legible and portable across runtimes                        | Re-implementing the same agent-control logic in every adapter |
 | Pre-action gates block known-bad tool calls before execution                                                     | Agents self-correcting without context injection or gates     |
-| Auto-promotion turns repeated failures into warn/block rules                                                     | Calling this "RLHF-style feedback" in the strict training sense              |
+| Auto-promotion turns repeated failures into warn/block rules                                                     | Calling this model training in the strict sense                              |
 | Rejection ledger shows why vague feedback was rejected                                                           | Vague signals silently helping the system                     |
 
 ## Core MCP Tools
@@ -207,7 +207,7 @@ Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
 | `search_lessons`       | Search promoted lessons with corrective action, lifecycle state, rules, gates                               |
 | `retrieve_lessons`     | Retrieve the highest-signal lessons for a specific tool, action, or workflow context                        |
 | `reflect_on_feedback`  | Propose a reusable rule or lesson from the recent conversation window                                       |
-| `search_rlhf`          | Search feedback state across feedback logs, ContextFS, and rules (context engineering, not weight training) |
+| `search_thumbgate`          | Search feedback state across feedback logs, ContextFS, and rules (context engineering, not weight training) |
 | `prevention_rules`     | Generate prevention rules from repeated mistakes                                                            |
 | `enforcement_matrix`   | Inspect promotion rate, active gates, and rejection ledger                                                  |
 | `feedback_stats`       | Approval rate and failure-domain summary                                                                    |
@@ -241,18 +241,18 @@ ThumbGate treats IndexCache-style acceleration as a backend capability, not a bl
 Lean install for recall + gates + lesson search only:
 
 ```bash
-THUMBGATE_MCP_PROFILE=essential claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
+THUMBGATE_MCP_PROFILE=essential claude mcp add thumbgate -- npx -y thumbgate serve
 ```
 
-Free and self-hosted users can invoke `search_lessons` directly through MCP to inspect corrective action per lesson. For broader retrieval across feedback logs, ContextFS memory, and prevention rules, use `search_rlhf` (searches feedback state, not model weights) through MCP or the authenticated `GET /v1/search` API.
+Free and self-hosted users can invoke `search_lessons` directly through MCP to inspect corrective action per lesson. For broader retrieval across feedback logs, ContextFS memory, and prevention rules, use `search_thumbgate` (searches feedback state, not model weights) through MCP or the authenticated `GET /v1/search` API.
 
 ### Dispatch profile
 
 Phone-safe read-only surface for remote ops:
 
 ```bash
-THUMBGATE_MCP_PROFILE=dispatch claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
-npx mcp-memory-gateway dispatch
+THUMBGATE_MCP_PROFILE=dispatch claude mcp add thumbgate -- npx -y thumbgate serve
+npx thumbgate dispatch
 ```
 
 Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
@@ -266,7 +266,7 @@ Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
 | Works across sessions            | **Yes** — SQLite + JSONL                          | Yes — encrypted store                          | Yes — cloud        | No — per-project |
 | Auto-generates rules             | **Yes** — from repeated failures                  | No — manual or Gemini compile                  | No                 | No               |
 | Agent support                    | Claude Code, Codex, Gemini, Amp, Cursor, OpenCode | Claude Code, Cursor, Windsurf, Cline, Bolt.new | Claude, Cursor     | Cursor only      |
-| Install                          | `npx mcp-memory-gateway init`                     | `npx speclock setup`                           | Cloud signup       | Edit file        |
+| Install                          | `npx thumbgate init`                     | `npx speclock setup`                           | Cloud signup       | Edit file        |
 | Cost                             | **Free** ($19/mo or $149/yr Pro; Team rollout starts at $12/seat/mo) | Free                                           | Free tier + paid   | Free             |
 | npm weekly downloads             | **724**                                           | 98                                             | N/A                | N/A              |
 
@@ -289,7 +289,7 @@ Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
 - **MCP stdio:** [adapters/mcp/server-stdio.js](adapters/mcp/server-stdio.js)
 - **HTTP API:** [src/api/server.js](src/api/server.js)
 - **OpenAPI surfaces:** [openapi/openapi.yaml](openapi/openapi.yaml), [adapters/chatgpt/openapi.yaml](adapters/chatgpt/openapi.yaml)
-- **CLI:** `npx mcp-memory-gateway ...`
+- **CLI:** `npx thumbgate ...`
 
 ### Storage and retrieval
 

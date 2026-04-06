@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-budget-test-'));
+const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-budget-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_MONTHLY_BUDGET_USD = '1';
 
@@ -61,7 +61,7 @@ test('getMonthlyBudget returns number greater than 0', () => {
 });
 
 test('getBudgetStatus on fresh ledger shows full remaining budget', () => {
-  const freshTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-budget-fresh-'));
+  const freshTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-budget-fresh-'));
   const prevDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const prevBudget = process.env.THUMBGATE_MONTHLY_BUDGET_USD;
   process.env.THUMBGATE_FEEDBACK_DIR = freshTmpDir;

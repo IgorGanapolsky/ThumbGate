@@ -23,9 +23,9 @@ The portable profile adds this MCP server entry:
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "rlhf": {
+    "thumbgate": {
       "type": "local",
-      "command": ["npx", "-y", "mcp-memory-gateway@0.9.9", "serve"],
+      "command": ["npx", "-y", "thumbgate@0.9.9", "serve"],
       "enabled": true
     }
   }
@@ -34,7 +34,7 @@ The portable profile adds this MCP server entry:
 
 ## Verify
 
-Run OpenCode in any project and confirm the `rlhf` MCP server is available:
+Run OpenCode in any project and confirm the `thumbgate` MCP server is available:
 
 ```bash
 opencode
@@ -43,8 +43,8 @@ opencode
 For this repository specifically, the committed `opencode.json` also enables:
 
 - repo-local worktree-safe permissions
-- a read-only `rlhf-review` subagent in `.opencode/agents/rlhf-review.md`
-- concise workflow instructions in `.opencode/instructions/rlhf-workflow.md`
+- a read-only `thumbgate-review` subagent in `.opencode/agents/thumbgate-review.md`
+- concise workflow instructions in `.opencode/instructions/thumbgate-workflow.md`
 
 ## Requirements
 

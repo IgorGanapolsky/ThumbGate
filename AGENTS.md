@@ -1,6 +1,6 @@
 # ThumbGate — The Pre-Action Gates
 
-> npm package: `mcp-memory-gateway` | Brand: **ThumbGate**
+> npm package: `thumbgate` | Brand: **ThumbGate**
 
 ## Autonomy Directive
 

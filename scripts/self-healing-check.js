@@ -51,7 +51,7 @@ function createCheckEnvironment(check) {
   let cleanup = null;
 
   if (check.useTempProofDir) {
-    const proofDir = fs.mkdtempSync(path.join(os.tmpdir(), `rlhf-${check.name}-`));
+    const proofDir = fs.mkdtempSync(path.join(os.tmpdir(), `thumbgate-${check.name}-`));
     environment.THUMBGATE_PROOF_DIR = proofDir;
     if (check.name === 'prove_automation') {
       environment.THUMBGATE_AUTOMATION_PROOF_DIR = proofDir;

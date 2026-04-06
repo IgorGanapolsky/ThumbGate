@@ -10,7 +10,7 @@ const {
 } = require('./analytics-window');
 const {
   getLegacyFeedbackDir,
-  getRlhfFeedbackDir,
+  getFallbackFeedbackDir,
   resolveFallbackArtifactPath,
 } = require('./feedback-paths');
 
@@ -20,8 +20,8 @@ function shouldIncludeLegacyTelemetry() {
   if (
     process.env._TEST_LEGACY_FEEDBACK_DIR ||
     process.env.THUMBGATE_LEGACY_FEEDBACK_DIR ||
-    process.env._TEST_RLHF_FEEDBACK_DIR ||
-    process.env.THUMBGATE_RLHF_FEEDBACK_DIR
+    process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR ||
+    process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR
   ) {
     return true;
   }
@@ -121,7 +121,7 @@ function getTelemetrySourceDiagnostics(feedbackDir) {
     fileName: TELEMETRY_FILE_NAME,
     primaryPath,
     legacyPath,
-    rlhfPath: path.join(getRlhfFeedbackDir({ feedbackDir }), TELEMETRY_FILE_NAME),
+    fallbackPath: path.join(getFallbackFeedbackDir({ feedbackDir }), TELEMETRY_FILE_NAME),
     legacyFeedbackPath: path.join(getLegacyFeedbackDir({ feedbackDir }), TELEMETRY_FILE_NAME),
     primaryExists,
     legacyExists,

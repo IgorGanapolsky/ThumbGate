@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 
-const TEMP_USAGE_FILE = path.join(__dirname, '..', '.rlhf', 'test-usage-limits.json');
+const TEMP_USAGE_FILE = path.join(__dirname, '..', '.thumbgate', 'test-usage-limits.json');
 const LICENSE_PATH = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.thumbgate', 'license.json');
 const LICENSE_BAK = LICENSE_PATH + '.test-bak';
 
@@ -97,7 +97,7 @@ describe('rate-limiter', () => {
     assert.ok(keys.includes('capture_feedback'), 'should limit capture_feedback');
     assert.ok(keys.includes('export_dpo'), 'should limit export_dpo');
     assert.ok(keys.includes('export_databricks'), 'should limit export_databricks');
-    assert.ok(keys.includes('search_rlhf'), 'should limit search_rlhf');
+    assert.ok(keys.includes('search_thumbgate'), 'should limit search_thumbgate');
     assert.ok(keys.includes('commerce_recall'), 'should limit commerce_recall');
     assert.equal(rateLimiter.FREE_TIER_LIMITS.export_dpo.daily, 0, 'DPO export should be Pro-only');
   });

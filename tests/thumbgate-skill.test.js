@@ -39,7 +39,7 @@ describe('thumbgate-skill', () => {
   test('SKILL.md body includes quick start, commands, and architecture', () => {
     const content = fs.readFileSync(SKILL_MD, 'utf-8');
 
-    assert.ok(content.includes('npx mcp-memory-gateway init'), 'has install command');
+    assert.ok(content.includes('npx thumbgate init'), 'has install command');
     assert.ok(content.includes('capture_feedback'), 'documents capture_feedback tool');
     assert.ok(content.includes('search_lessons'), 'documents search_lessons tool');
     assert.ok(content.includes('recall'), 'documents recall tool');
@@ -81,7 +81,7 @@ describe('thumbgate-skill', () => {
     assert.ok(guides.includes('Codex'), 'covers Codex');
     assert.ok(guides.includes('Gemini'), 'covers Gemini');
     assert.ok(guides.includes('Claude Desktop'), 'covers Claude Desktop');
-    assert.ok(guides.includes('mcp-memory-gateway'), 'references npm package');
+    assert.ok(guides.includes('thumbgate'), 'references npm package');
   });
 
   test('gate-config reference documents Thompson Sampling and custom gates', () => {

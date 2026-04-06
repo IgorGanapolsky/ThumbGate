@@ -18,7 +18,7 @@ function resolveProofPaths() {
 }
 
 async function run() {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-seo-gsd-proof-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-seo-gsd-proof-'));
   const results = { passed: 0, failed: 0, requirements: {} };
   const { proofDir, reportJson, reportMd } = resolveProofPaths();
 

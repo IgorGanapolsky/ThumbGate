@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const DEFAULT_STATE_PATH = path.join(PROJECT_ROOT, '.rlhf', 'reminder-state.json');
+const DEFAULT_STATE_PATH = path.join(PROJECT_ROOT, '.thumbgate', 'reminder-state.json');
 
 const REMINDER_TEMPLATES = {
   guardrail_spike: 'Safety guardrails triggered {{count}} times. Re-apply rule: {{rule}}',

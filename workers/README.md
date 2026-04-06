@@ -1,6 +1,6 @@
 # ThumbGate — Cloudflare Workers
 
-Paid MCP server for mcp-memory-gateway Pro tier ($19/mo). Runs on Cloudflare Workers with KV storage, Stripe billing, and a signed hosted-sandbox dispatch lane for isolated Team automations.
+Paid MCP server for thumbgate Pro tier ($19/mo). Runs on Cloudflare Workers with KV storage, Stripe billing, and a signed hosted-sandbox dispatch lane for isolated Team automations.
 
 ## Architecture
 

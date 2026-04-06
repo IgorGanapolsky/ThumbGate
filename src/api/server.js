@@ -109,7 +109,7 @@ const {
   readJSONLLocal,
 } = require('../../scripts/lesson-synthesis');
 const {
-  searchRlhf,
+  searchThumbgate,
 } = require('../../scripts/thumbgate-search');
 const {
   appendTelemetryPing,
@@ -1454,7 +1454,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
       <h2>Launch your personal dashboard</h2>
       <p>Run this command once to save your license key and open ThumbGate locally on <code>localhost</code>:</p>
       <pre id="activate-block">Waiting for provisioning...</pre>
-      <p class="muted">Your key is saved to <code>~/.thumbgate/license.json</code>. After that, rerun <code>npx mcp-memory-gateway pro</code> any time to reopen your dashboard.</p>
+      <p class="muted">Your key is saved to <code>~/.thumbgate/license.json</code>. After that, rerun <code>npx thumbgate pro</code> any time to reopen your dashboard.</p>
     </div>
 
     <div class="card">
@@ -1550,7 +1550,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
     }
 
     function sendTelemetryOnce(eventType, extra = {}) {
-      const marker = ['rlhf', eventType, sessionId || traceId || 'unknown'].join(':');
+      const marker = ['thumbgate', eventType, sessionId || traceId || 'unknown'].join(':');
       try {
         if (window.sessionStorage && window.sessionStorage.getItem(marker)) {
           return;
@@ -1603,7 +1603,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
           : 'Your Pro key is ready. Save it once, launch your local dashboard, and keep the optional hosted snippet for team workflows.';
         keyBlock.textContent = body.apiKey || 'Provisioned, but no key was returned.';
         activateBlock.textContent = body.apiKey
-          ? 'npx mcp-memory-gateway pro --activate --key=' + body.apiKey
+          ? 'npx thumbgate pro --activate --key=' + body.apiKey
           : 'Key not available yet — refresh this page.';
         envBlock.textContent = body.nextSteps && body.nextSteps.env ? body.nextSteps.env : 'Environment snippet unavailable.';
         curlBlock.textContent = body.nextSteps && body.nextSteps.curl ? body.nextSteps.curl : 'curl snippet unavailable.';
@@ -2089,7 +2089,7 @@ function createApiServer() {
                 result: {
                   protocolVersion: '2024-11-05',
                   capabilities: { tools: {} },
-                  serverInfo: { name: 'mcp-memory-gateway', version: pkg.version },
+                  serverInfo: { name: 'thumbgate', version: pkg.version },
                 },
               });
             } else if (msg.method === 'notifications/initialized') {
@@ -2125,7 +2125,7 @@ function createApiServer() {
       if (req.method === 'GET') {
         // SSE upgrade or capability probe
         sendJson(res, 200, {
-          name: 'mcp-memory-gateway',
+          name: 'thumbgate',
           version: pkg.version,
           transport: ['streamable-http', 'stdio'],
         });
@@ -2535,7 +2535,7 @@ async function addContext(){
     if (isGetLikeRequest && pathname === '/') {
       if (wantsJson(req, parsed)) {
         sendJson(res, 200, {
-          name: 'mcp-memory-gateway',
+          name: 'thumbgate',
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
@@ -2753,10 +2753,10 @@ async function addContext(){
     if (isGetLikeRequest && pathname === '/.well-known/mcp/server-card.json') {
       sendJson(res, 200, {
         serverInfo: {
-          name: 'mcp-memory-gateway',
+          name: 'thumbgate',
           version: pkg.version,
         },
-        name: 'mcp-memory-gateway',
+        name: 'thumbgate',
         description: 'Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor, OpenCode, and any MCP-compatible agent.',
         version: pkg.version,
         tools: getServerCardTools(),
@@ -3102,7 +3102,7 @@ async function addContext(){
     if (isGetLikeRequest && pathname === '/privacy') {
       sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Privacy Policy — ThumbGate</title></head><body>
 <h1>Privacy Policy</h1>
-<p><strong>ThumbGate</strong> (npm: mcp-memory-gateway)</p>
+<p><strong>ThumbGate</strong> (npm: thumbgate)</p>
 <p>Last updated: 2026-03-11</p>
 <h2>Data Collection</h2>
 <p>The self-hosted version stores workflow data locally on your machine. Local feedback, memory entries, proof artifacts, and context packs stay in your project files unless you explicitly point the system at a hosted endpoint.</p>
@@ -3521,7 +3521,7 @@ async function addContext(){
         const signal = parsed.searchParams.get('signal') || null;
         let results;
         try {
-          results = searchRlhf({
+          results = searchThumbgate({
             query,
             limit: Number.isFinite(limit) ? limit : 10,
             source,
@@ -3538,7 +3538,7 @@ async function addContext(){
         const body = await parseJsonBody(req);
         let results;
         try {
-          results = searchRlhf({
+          results = searchThumbgate({
             query: body.query || body.q || '',
             limit: body.limit,
             source: body.source,

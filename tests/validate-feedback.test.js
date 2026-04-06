@@ -225,7 +225,7 @@ describe('inferOutcome (QUAL-03)', () => {
   let tmpDir;
 
   before(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-qual-infer-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-qual-infer-'));
     ({ inferOutcome } = freshFeedbackLoop(tmpDir));
   });
 
@@ -264,7 +264,7 @@ describe('captureFeedback richContext enrichment (QUAL-02)', () => {
   let tmpDir;
 
   before(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-qual-capture-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-qual-capture-'));
     ({ captureFeedback } = freshFeedbackLoop(tmpDir));
   });
 

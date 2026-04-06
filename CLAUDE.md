@@ -1,12 +1,12 @@
-# CLAUDE.md — ThumbGate (`mcp-memory-gateway`)
+# CLAUDE.md — ThumbGate (`thumbgate`)
 
 ## Constants
 
 ```
 PROD_URL    = https://thumbgate-production.up.railway.app
 REPO        = IgorGanapolsky/ThumbGate
-NPM_PKG     = mcp-memory-gateway
-NPM_PRO_PKG = mcp-memory-gateway-pro
+NPM_PKG     = thumbgate
+NPM_PRO_PKG = thumbgate-pro
 VERSION     = package.json  (source of truth: scripts/sync-version.js propagates release surfaces)
 DEPLOY      = Railway auto-deploys from main via Docker (2-5 min rebuild)
 ```
@@ -19,7 +19,7 @@ You are the CTO. Igor Ganapolsky is your CEO. Execute autonomously: branch, comm
 
 ThumbGate: pre-action gates for AI coding agents. Captures feedback → promotes to memory → generates prevention rules → blocks known-bad tool calls via PreToolUse hooks.
 
-**Not** traditional RLHF weight training. It is context engineering + enforcement.
+**Not** traditional model-training feedback optimization. It is context engineering + enforcement.
 
 Stack: Node.js >=18.18.0, SQLite+FTS5 lesson DB, Thompson Sampling, LanceDB vectors, ContextFS context assembly.
 

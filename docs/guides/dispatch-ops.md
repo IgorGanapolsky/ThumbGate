@@ -17,14 +17,14 @@ That keeps the remote workflow aligned with the Reliability Gateway instead of b
 Install the MCP server in the paired Claude Desktop session with the Dispatch profile:
 
 ```bash
-THUMBGATE_MCP_PROFILE=dispatch claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
+THUMBGATE_MCP_PROFILE=dispatch claude mcp add thumbgate -- npx -y thumbgate serve
 ```
 
 Verify the tier locally:
 
 ```bash
-THUMBGATE_MCP_PROFILE=dispatch npx mcp-memory-gateway doctor --json
-npx mcp-memory-gateway dispatch
+THUMBGATE_MCP_PROFILE=dispatch npx thumbgate doctor --json
+npx thumbgate dispatch
 ```
 
 ## What Dispatch is allowed to do

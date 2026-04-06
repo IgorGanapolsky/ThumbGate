@@ -19,7 +19,7 @@ let _lancedbLoader = null;
 const _pipelineCache = new Map();
 let _lastEmbeddingProfile = null;
 let _pipelineLoader = null;
-const TABLE_NAME = 'rlhf_memories';
+const TABLE_NAME = 'thumbgate_memories';
 
 async function getLanceDB() {
   if (!_lancedb) {

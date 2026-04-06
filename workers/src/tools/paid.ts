@@ -61,7 +61,7 @@ export const PAID_TOOLS: McpTool[] = [
   {
     name: 'dashboard',
     description:
-      '[Pro] Full RLHF dashboard with feedback trends, memory stats, gate status, and health metrics.',
+      '[Pro] Full ThumbGate dashboard with feedback trends, memory stats, gate status, and health metrics.',
     inputSchema: {
       type: 'object',
       properties: {},

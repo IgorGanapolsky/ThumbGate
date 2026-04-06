@@ -36,9 +36,9 @@ Add the following to your Claude Code MCP configuration
 ```json
 {
   "mcpServers": {
-    "mcp-memory-gateway": {
+    "thumbgate": {
       "command": "npx",
-      "args": ["mcp-memory-gateway", "serve"]
+      "args": ["thumbgate", "serve"]
     }
   }
 }
@@ -54,14 +54,14 @@ Restart Claude Code after updating the config. You can verify the MCP server is 
 checking Claude Code's MCP panel or running:
 
 ```bash
-npx mcp-memory-gateway serve
+npx thumbgate serve
 ```
 
 ---
 
 ## Step 3: Set Up Your Vault Structure for ThumbGate Browsing
 
-Create an `AI-Memories/rlhf/` folder inside your Obsidian vault. This folder becomes your
+Create an `AI-Memories/thumbgate/` folder inside your Obsidian vault. This folder becomes your
 live view into Claude Code's memory system.
 
 **Recommended files to populate in this folder:**
@@ -77,8 +77,8 @@ Tracks episodic feedback events. Sourced from the local ThumbGate store:
 This file is local-only and git-ignored. To expose it in Obsidian, create a symlink:
 
 ```bash
-# From your vault's AI-Memories/rlhf/ directory
-ln -s /path/to/mcp-memory-gateway/.claude/memory/feedback/memory-log.jsonl "Memory Log.md"
+# From your vault's AI-Memories/thumbgate/ directory
+ln -s /path/to/thumbgate/.claude/memory/feedback/memory-log.jsonl "Memory Log.md"
 ```
 
 Or export a human-readable snapshot periodically from within the repo.
@@ -90,7 +90,7 @@ Sourced from `primer.md` in the repo root.
 
 ```bash
 # Symlink or copy
-ln -s /path/to/mcp-memory-gateway/primer.md Primer.md
+ln -s /path/to/thumbgate/primer.md Primer.md
 ```
 
 ### Prevention Rules.md
@@ -104,7 +104,7 @@ Auto-generated prevention rules from repeated AI mistakes. Sourced from:
 This file is local-only and git-ignored. Symlink it to your vault:
 
 ```bash
-ln -s /path/to/mcp-memory-gateway/.claude/memory/feedback/prevention-rules.md "Prevention Rules.md"
+ln -s /path/to/thumbgate/.claude/memory/feedback/prevention-rules.md "Prevention Rules.md"
 ```
 
 ### Feedback Stats.md
@@ -115,13 +115,13 @@ Paste the output of the feedback stats command periodically to track your feedba
 npm run feedback:stats
 ```
 
-Copy the output into `AI-Memories/rlhf/Feedback Stats.md` for historical reference.
+Copy the output into `AI-Memories/thumbgate/Feedback Stats.md` for historical reference.
 
 ---
 
 ## Step 4: Usage Workflow
 
-1. Open Obsidian and navigate to any note in `AI-Memories/rlhf/`
+1. Open Obsidian and navigate to any note in `AI-Memories/thumbgate/`
 2. Press Cmd/Ctrl + P to open the command palette
 3. Type `/ide` and select the **Claude IDE** command
 4. Claude Code opens with your current note as context — it can read your memory logs and
@@ -182,7 +182,7 @@ These files are git-ignored and exist only on your local machine:
 ## Troubleshooting
 
 **MCP server not connecting:**
-Verify `npx mcp-memory-gateway serve` runs without error. Check Node.js version >= 18.18.0.
+Verify `npx thumbgate serve` runs without error. Check Node.js version >= 18.18.0.
 
 **Symlinks not resolving in Obsidian:**
 Enable "Detect all file extensions" in Obsidian Settings > Files and Links > Detect all file extensions.

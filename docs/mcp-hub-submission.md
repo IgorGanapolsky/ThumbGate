@@ -15,7 +15,7 @@ Also submit to: https://mcp.so (community MCP directory)
 ## Server Name
 
 ```
-mcp-memory-gateway
+thumbgate
 ```
 
 ---
@@ -51,7 +51,7 @@ Works in local mode (zero config, no API key) or connected to the Context Gatewa
 ### Option A: Local mode (OSS, no API key needed)
 
 ```bash
-claude mcp add thumbgate -- npx -y mcp-memory-gateway@0.9.9 serve
+claude mcp add thumbgate -- npx -y thumbgate@0.9.9 serve
 ```
 
 Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/settings.json`):
@@ -59,9 +59,9 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 ```json
 {
   "mcpServers": {
-    "rlhf": {
+    "thumbgate": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.9.9", "serve"],
+      "args": ["-y", "thumbgate@0.9.9", "serve"],
       "env": {
         "THUMBGATE_BASE_URL": "http://localhost:8787"
       }
@@ -75,12 +75,12 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 ```json
 {
   "mcpServers": {
-    "rlhf": {
+    "thumbgate": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.9.9", "serve"],
+      "args": ["-y", "thumbgate@0.9.9", "serve"],
       "env": {
         "THUMBGATE_BASE_URL": "https://thumbgate-production.up.railway.app",
-        "THUMBGATE_API_KEY": "rlhf_YOUR_KEY_HERE"
+        "THUMBGATE_API_KEY": "tg_YOUR_KEY_HERE"
       }
     }
   }
@@ -125,7 +125,7 @@ Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/doc
 
 ## Transport
 
-- **stdio** (primary): `npx -y mcp-memory-gateway@0.9.9 serve` — version-pinned portable MCP launcher for Claude Code desktop and CLI
+- **stdio** (primary): `npx -y thumbgate@0.9.9 serve` — version-pinned portable MCP launcher for Claude Code desktop and CLI
 - **HTTP** (secondary): `src/api/server.js` — REST API (`POST /v1/feedback/capture`, `GET /v1/feedback/summary`, `POST /v1/dpo/export`)
 
 ---
@@ -141,12 +141,12 @@ https://github.com/IgorGanapolsky/ThumbGate
 ## npm Package
 
 ```
-https://www.npmjs.com/package/mcp-memory-gateway
+https://www.npmjs.com/package/thumbgate
 ```
 
 Install:
 ```bash
-npm install mcp-memory-gateway
+npm install thumbgate
 ```
 
 ---
@@ -159,7 +159,7 @@ MIT
 
 ## Tags / Categories
 
-- `rlhf`
+- `thumbgate`
 - `feedback`
 - `ai-training`
 - `dpo`
@@ -193,7 +193,7 @@ npm test
   ```markdown
   - **[ThumbGate](https://github.com/IgorGanapolsky/ThumbGate)** — Capture feedback from AI coding agents, prevent repeated mistakes, export DPO training pairs. Works with Claude Code, ChatGPT, Gemini, Codex, and Amp.
   ```
-- [ ] Open PR titled: `Add mcp-memory-gateway community server`
+- [ ] Open PR titled: `Add thumbgate community server`
 - [ ] Verify CI passes on the PR
 
 ## Submission Checklist (mcp.so)
@@ -201,5 +201,5 @@ npm test
 - [ ] Go to https://mcp.so/submit
 - [ ] Paste GitHub URL: `https://github.com/IgorGanapolsky/ThumbGate`
 - [ ] Verify auto-populated fields (name, description, tools)
-- [ ] Add tags: `rlhf`, `feedback`, `dpo`, `coding-agent`
+- [ ] Add tags: `thumbgate`, `feedback`, `dpo`, `coding-agent`
 - [ ] Submit

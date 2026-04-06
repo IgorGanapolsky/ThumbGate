@@ -9,7 +9,7 @@ The best way to sell Claude Code is not "AI employee."
 
 It is one workflow that is finally safe enough to ship.
 
-We built mcp-memory-gateway as Claude workflow hardening:
+We built thumbgate as Claude workflow hardening:
 
 - recall
 - prevention rules

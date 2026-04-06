@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// rlhf: scripts/ is 1 level below repo root (not 2 like Subway .claude/scripts/feedback/)
+// ThumbGate repo: scripts/ is 1 level below repo root (not 2 like Subway .claude/scripts/feedback/)
 const ROOT = path.join(__dirname, '..');
 const PATHS = {
   actionLog: path.join(ROOT, '.claude', 'memory', 'feedback', 'action-log.jsonl'),

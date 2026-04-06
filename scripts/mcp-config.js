@@ -76,7 +76,7 @@ function resolveLocalServerPath(pkgRoot, scope = 'project') {
 function portableMcpEntry(pkgVersion) {
   return {
     command: 'npx',
-    args: ['-y', `mcp-memory-gateway@${pkgVersion}`, 'serve'],
+    args: ['-y', `thumbgate@${pkgVersion}`, 'serve'],
   };
 }
 
@@ -90,7 +90,7 @@ function localMcpEntry(pkgRoot, scope = 'project') {
 const publicationCache = new Map();
 
 function publishedVersionOverride() {
-  const override = String(process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE || '').trim().toLowerCase();
+  const override = String(process.env.THUMBGATE_PUBLISH_STATE || '').trim().toLowerCase();
   if (override === 'published') {
     return true;
   }
@@ -111,7 +111,7 @@ function isVersionPublished(pkgVersion) {
 
   let published = false;
   try {
-    execFileSync('npm', ['view', `mcp-memory-gateway@${pkgVersion}`, 'version'], {
+    execFileSync('npm', ['view', `thumbgate@${pkgVersion}`, 'version'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
       timeout: 5000,

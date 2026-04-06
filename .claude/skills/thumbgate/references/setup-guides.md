@@ -3,7 +3,7 @@
 ## Claude Code
 
 ```bash
-npx mcp-memory-gateway init
+npx thumbgate init
 ```
 
 This auto-configures `.mcp.json` with the ThumbGate MCP server. Claude Code
@@ -25,7 +25,7 @@ Or use the MCP config approach — add to `.cursor/mcp.json`:
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway"]
+      "args": ["-y", "thumbgate"]
     }
   }
 }
@@ -36,7 +36,7 @@ Or use the MCP config approach — add to `.cursor/mcp.json`:
 Codex uses a repo-local app plugin profile:
 
 ```bash
-npx mcp-memory-gateway init --codex
+npx thumbgate init --codex
 ```
 
 This creates `.codex/plugins/thumbgate/` with the app plugin manifest.
@@ -50,7 +50,7 @@ All MCP-compatible CLIs use the same `.mcp.json` config:
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway"]
+      "args": ["-y", "thumbgate"]
     }
   }
 }
@@ -61,7 +61,7 @@ All MCP-compatible CLIs use the same `.mcp.json` config:
 Install the Claude Desktop extension:
 
 ```bash
-npx mcp-memory-gateway init --claude-desktop
+npx thumbgate init --claude-desktop
 ```
 
 Or grab the packaged `.mcpb` bundle from GitHub Releases.

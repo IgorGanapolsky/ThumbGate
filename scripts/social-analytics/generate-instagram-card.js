@@ -17,7 +17,7 @@ let sharp;
 try { sharp = require('sharp'); } catch { /* optional dependency */ }
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
-const DEFAULT_OUTPUT = path.join(REPO_ROOT, '.rlhf', 'instagram-card.png');
+const DEFAULT_OUTPUT = path.join(REPO_ROOT, '.thumbgate', 'instagram-card.png');
 
 async function generateInstagramCard(outputPath = DEFAULT_OUTPUT) {
   const width = 1080;

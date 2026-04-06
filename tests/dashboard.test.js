@@ -4,9 +4,9 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-dashboard-test-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-dashboard-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
-process.env._TEST_RLHF_FEEDBACK_DIR = tmpDir;
+process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR = tmpDir;
 process.env._TEST_LEGACY_FEEDBACK_DIR = tmpDir;
 process.env._TEST_API_KEYS_PATH = path.join(tmpDir, 'api-keys.json');
 process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpDir, 'funnel-events.jsonl');

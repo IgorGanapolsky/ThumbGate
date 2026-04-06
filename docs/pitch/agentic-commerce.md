@@ -59,7 +59,7 @@ UCP, ACP, and AMP all support MCP transport. Our server runs as a standard MCP t
 - **DPO export**: Training data to fine-tune platform-specific shopping agents
 
 ### For Agent Builders (OpenAI, Google, Anthropic ecosystem)
-- **Drop-in MCP server**: `claude mcp add thumbgate -- npx -y mcp-memory-gateway serve`
+- **Drop-in MCP server**: `claude mcp add thumbgate -- npx -y thumbgate serve`
 - **Protocol-native**: Works with UCP, ACP, AMP without custom adapters
 - **Local-first**: No data leaves the merchant's infrastructure
 
@@ -97,7 +97,7 @@ Export preference pairs for fine-tuning commerce-specific agent models. This is 
 
 - 384 tests, 100% pass rate
 - 5 agent adapters: Claude, Codex, Gemini, Amp, Cursor
-- npm package: `mcp-memory-gateway`
+- npm package: `thumbgate`
 - Open source: MIT license
 - Commercial traction is early; use verification evidence for engineering proof and pilots/orders for market proof
 
@@ -113,4 +113,4 @@ Export preference pairs for fine-tuning commerce-specific agent models. This is 
 
 Contact: Igor Ganapolsky, CEO
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
-npm: https://www.npmjs.com/package/mcp-memory-gateway
+npm: https://www.npmjs.com/package/thumbgate

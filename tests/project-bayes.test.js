@@ -3,7 +3,7 @@ const path = require('path');
 const { captureFeedback, getFeedbackPaths, readJSONL } = require('../scripts/feedback-loop');
 const assert = require('assert');
 
-const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'rlhf-bayes-test-'));
+const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'thumbgate-bayes-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 console.log('Testing Project Bayes (Bayesian Memory)...');

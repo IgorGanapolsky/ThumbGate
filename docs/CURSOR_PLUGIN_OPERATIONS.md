@@ -9,13 +9,13 @@
 ## Canonical identity
 
 - Display name: `ThumbGate`
-- Plugin slug: `mcp-memory-gateway`
-- npm package: `mcp-memory-gateway`
-- MCP server label inside the plugin config: `rlhf`
+- Plugin slug: `thumbgate`
+- npm package: `thumbgate`
+- MCP server label inside the plugin config: `thumbgate`
 
 ## Update behavior
 
-- Runtime path: the Cursor plugin launches `npx -y mcp-memory-gateway@latest serve`.
+- Runtime path: the Cursor plugin launches `npx -y thumbgate@latest serve`.
 - npm releases: publishing a new npm package can update the runtime that Cursor installs or launches.
 - Marketplace metadata: `npm publish` does not update the listing description, screenshots, README copy, or directory profile.
 - Team refresh: if a Team Marketplace is repo-backed, enable Auto Refresh when the admin UI exposes it.
@@ -23,7 +23,7 @@
 ## Release workflow
 
 1. Merge the version bump to `main`; `publish-npm.yml` auto-publishes unpublished versions and creates the matching `vX.Y.Z` GitHub Release.
-2. Verify the latest package is available with `npm view mcp-memory-gateway version`.
+2. Verify the latest package is available with `npm view thumbgate version`.
 3. Bump plugin manifests when plugin copy, assets, or packaging changed.
 4. Refresh the public Marketplace submission or Team Marketplace repo when metadata changed.
 5. Refresh Cursor Directory copy separately when the positioning changes.

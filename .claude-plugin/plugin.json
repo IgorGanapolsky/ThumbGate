@@ -1,5 +1,5 @@
 {
-  "name": "mcp-memory-gateway",
+  "name": "thumbgate",
   "description": "Pre-action gates that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.",
   "version": "0.9.9",
   "author": {

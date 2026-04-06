@@ -160,7 +160,7 @@ async function run() {
       desc: 'materializeAgenticDataPipeline builds raw, staging, semantic, and lineage layers from billing and telemetry inputs',
       fn: async () => {
         const { materializeAgenticDataPipeline } = loadFresh('./agentic-data-pipeline');
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-data-pipeline-proof-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-data-pipeline-proof-'));
         try {
           const snapshot = await materializeAgenticDataPipeline({
             feedbackDir,
@@ -202,7 +202,7 @@ async function run() {
       desc: 'pipeline reruns are idempotent and downgrade to noop when source hashes do not change',
       fn: async () => {
         const { materializeAgenticDataPipeline } = loadFresh('./agentic-data-pipeline');
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-data-pipeline-proof-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-data-pipeline-proof-'));
         try {
           const first = await materializeAgenticDataPipeline({
             feedbackDir,
@@ -237,7 +237,7 @@ async function run() {
       desc: 'reconciliation flags unreconciled paid events and telemetry coverage drift as warnings',
       fn: async () => {
         const { materializeAgenticDataPipeline } = loadFresh('./agentic-data-pipeline');
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-data-pipeline-proof-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-data-pipeline-proof-'));
         try {
           const snapshot = await materializeAgenticDataPipeline({
             feedbackDir,
@@ -332,8 +332,8 @@ async function run() {
           throw new Error('verify:full is missing prove:data-pipeline');
         }
 
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-data-pipeline-proof-'));
-        const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-data-pipeline-proof-cwd-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-data-pipeline-proof-'));
+        const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-data-pipeline-proof-cwd-'));
         try {
           const entry = recordVerifyWorkflowRun('full', cwd, feedbackDir);
           if (!entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'data-pipeline-report.json')))) {

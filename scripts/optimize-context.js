@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const CLAUDE_MD_PATH = path.join(process.cwd(), 'CLAUDE.md');
-const THUMBGATE_DIR = path.join(process.cwd(), '.rlhf');
+const THUMBGATE_DIR = path.join(process.cwd(), '.thumbgate');
 const RULES_PATH = path.join(THUMBGATE_DIR, 'prevention-rules.md');
 function optimize() {
   console.log('🚀 [Context Optimizer] Starting CLAUDE.md migration...');

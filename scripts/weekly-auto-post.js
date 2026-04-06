@@ -15,7 +15,7 @@ const os = require('os');
 const { generateWeeklyStatsPost } = require('./daily-digest');
 const { createSchedule } = require('./schedule-manager');
 
-const POSTS_DIR = path.join(os.homedir(), '.rlhf', 'weekly-posts');
+const POSTS_DIR = path.join(os.homedir(), '.thumbgate', 'weekly-posts');
 
 function ensureDir(p) { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
 

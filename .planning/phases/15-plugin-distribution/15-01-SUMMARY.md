@@ -70,10 +70,10 @@ metrics:
 
 ### Platform INSTALL.md files
 
-- **Claude Code**: `cp plugins/claude-skill/SKILL.md .claude/skills/rlhf-feedback.md`
+- **Claude Code**: `cp plugins/claude-skill/SKILL.md .claude/skills/thumbgate-feedback.md`
 - **Codex**: `cat adapters/codex/config.toml >> ~/.codex/config.toml`
 - **Gemini**: `cp adapters/gemini/function-declarations.json .gemini/rlhf-tools.json`
-- **Amp**: `cp plugins/amp-skill/SKILL.md .amp/skills/rlhf-feedback.md`
+- **Amp**: `cp plugins/amp-skill/SKILL.md .amp/skills/thumbgate-feedback.md`
 - **ChatGPT**: GPT Builder Actions → Import `adapters/chatgpt/openapi.yaml`
 
 ### README.md Quick Install section

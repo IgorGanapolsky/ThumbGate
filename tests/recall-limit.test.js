@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-recall-limit-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-recall-limit-'));
 const tmpUsageFile = path.join(tmpDir, 'usage-limits.json');
 const savedEnv = {
   THUMBGATE_API_KEY: process.env.THUMBGATE_API_KEY,

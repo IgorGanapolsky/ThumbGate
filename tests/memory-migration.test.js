@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-migrate-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-migrate-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const mm = require('../scripts/memory-migration');

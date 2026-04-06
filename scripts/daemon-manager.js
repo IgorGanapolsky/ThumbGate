@@ -6,11 +6,11 @@ const path = require('path');
 const { execSync } = require('child_process');
 const os = require('os');
 
-const LABEL = 'com.thumbgate.mcp-memory-gateway';
+const LABEL = 'com.thumbgate.daemon';
 const PLIST_PATH = path.join(os.homedir(), 'Library', 'LaunchAgents', `${LABEL}.plist`);
 const NODE_PATH = process.execPath;
 const GATEWAY_BIN = path.join(__dirname, '..', 'bin', 'cli.js');
-const LOG_DIR = path.join(os.homedir(), '.rlhf', 'logs');
+const LOG_DIR = path.join(os.homedir(), '.thumbgate', 'logs');
 
 function generatePlist() {
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -98,7 +98,7 @@ function manageDaemon(subCommand) {
         console.log(`🔧 ThumbGate Daemon: ${pid} (${status})`);
         console.log(`   Plist: ${PLIST_PATH}`);
       } catch {
-        console.log('ℹ️  Daemon not installed. Run: mcp-memory-gateway daemon install');
+        console.log('ℹ️  Daemon not installed. Run: thumbgate daemon install');
       }
       break;
     }

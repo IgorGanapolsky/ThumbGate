@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cli-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-cli-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const { processInlineFeedback, formatCliOutput } = require('../scripts/cli-feedback');
@@ -62,7 +62,7 @@ test('formatCliOutput shows thumbs down with distilled lesson', () => {
   const output = formatCliOutput({
     feedbackResult: { accepted: true, signal: 'negative', id: 'fb_123' },
     distillResult: { proposedWhatWentWrong: 'Used Tailwind', proposedRule: 'NEVER use Tailwind', ruleInstalled: true, confirmation: 'Correct?' },
-    recentLesson: { lesson: 'Never use Tailwind', link: 'http://localhost:9876/lessons#lesson_1' },
+    recentLesson: { lesson: 'Never use Tailwind', link: 'http://localhost:3456/lessons#lesson_1' },
     stats: { positive: 5, negative: 3, total: 8, avgConfidence: 72 },
   });
   assert.ok(output.includes('👎'));

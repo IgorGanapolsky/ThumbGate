@@ -223,7 +223,7 @@ def is_positive(entry: Dict) -> bool:
     """Determine if a feedback entry is positive."""
     if entry.get("reward", 0) > 0:
         return True
-    # rlhf uses signal field: 'positive' or 'negative'
+    # ThumbGate uses signal field: 'positive' or 'negative'
     signal = entry.get("signal", "").lower()
     if signal in ("positive", "up", "thumbsup"):
         return True

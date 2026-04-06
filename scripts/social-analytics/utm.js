@@ -64,7 +64,7 @@ function buildSocialLinks(baseUrl, campaign) {
 const TRACKABLE_DOMAINS = [
   'thumbgate-production.up.railway.app',
   'github.com/IgorGanapolsky/ThumbGate',
-  'github.com/IgorGanapolsky/mcp-memory-gateway',
+  'github.com/IgorGanapolsky/thumbgate',
 ];
 
 /**

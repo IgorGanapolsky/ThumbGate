@@ -19,7 +19,7 @@ npm run diagrams:paperbanana
 
 ## Outputs
 
-- `docs/diagrams/rlhf-architecture.png`
+- `docs/diagrams/thumbgate-architecture.png`
 - `docs/diagrams/plugin-topology.png`
 
 ## Spending status

@@ -430,7 +430,7 @@ test('launchd plist targets publish-queue on a fixed interval', () => {
   const plist = buildLaunchAgentPlist({
     label: 'io.github.IgorGanapolsky.test-social',
     repoRoot,
-    queuePath: path.join(repoRoot, '.rlhf', 'social-post-queue.json'),
+    queuePath: path.join(repoRoot, '.thumbgate', 'social-post-queue.json'),
     intervalMinutes: 30,
     nodeBin: '/usr/local/bin/node',
     scriptPath: path.join(repoRoot, 'scripts', 'social-pipeline.js'),

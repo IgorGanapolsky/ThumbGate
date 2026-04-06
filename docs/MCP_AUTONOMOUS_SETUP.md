@@ -73,7 +73,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 - [ ] Relaunch Claude Desktop
 - [ ] Verify MCP servers appear in Claude Desktop settings → MCP
 - [ ] Test Gmail: ask Claude to "send a test email to yourself"
-- [ ] Test GitHub: ask Claude to "list open PRs on igorganapolsky/mcp-memory-gateway"
+- [ ] Test GitHub: ask Claude to "list open PRs on igorganapolsky/thumbgate"
 
 ---
 

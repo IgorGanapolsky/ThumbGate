@@ -21,7 +21,7 @@ function getCheck(name) {
 }
 
 test('adapter proof harness setup', async () => {
-  tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-proof-test-'));
+  tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-proof-test-'));
   report = await runProof({ proofDir: tmpProofDir, port: 0 });
 });
 

@@ -61,7 +61,7 @@ async function loadFeedback(filePath) {
   for await (const line of rl) {
     const obj = parseLine(line);
     if (obj && obj.timestamp) {
-      // Support both 'feedback' (Subway) and 'signal' (rlhf) field names
+      // Support both 'feedback' (Subway) and 'signal' (ThumbGate) field names
       const feedbackVal = obj.feedback || obj.signal;
       if (feedbackVal) {
         // Normalize to 'positive'/'negative' regardless of source schema

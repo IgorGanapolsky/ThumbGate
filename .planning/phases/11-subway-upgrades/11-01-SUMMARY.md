@@ -16,7 +16,7 @@ key_files:
 decisions:
   - "PROJECT_ROOT = path.join(__dirname, '..', '..', '..') — 3 levels up from .claude/scripts/feedback/"
   - "THUMBGATE_VECTOR_STUB_EMBED=true returns deterministic 384-dim unit vector — no ONNX download in tests"
-  - "TABLE_NAME = rlhf_memories — JS-only table, same as rlhf for cross-language compatibility"
+  - "TABLE_NAME = thumbgate_memories — JS-only table, same as rlhf for cross-language compatibility"
   - "Jest tests require NODE_OPTIONS=--experimental-vm-modules for dynamic import() support"
 metrics:
   duration: 4min
@@ -37,7 +37,7 @@ Ported rlhf's vector-store.js to Subway's .claude/scripts/feedback/ with 3-level
 - Stub embed: THUMBGATE_VECTOR_STUB_EMBED=true for Jest test isolation
 
 `Subway/scripts/__tests__/vector-store.test.js` — 6 Jest tests:
-- TABLE_NAME equals 'rlhf_memories'
+- TABLE_NAME equals 'thumbgate_memories'
 - upsertFeedback creates LanceDB table on first upsert
 - upsertFeedback adds to existing table on second upsert
 - searchSimilar returns empty array when no data

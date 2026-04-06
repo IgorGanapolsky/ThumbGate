@@ -30,7 +30,7 @@ function resolveProofPaths() {
 }
 
 function run() {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-qual-proof-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-qual-proof-'));
   const results = { passed: 0, failed: 0, requirements: {} };
   const { proofDir, reportJson, reportMd } = resolveProofPaths();
 

@@ -12,7 +12,7 @@ Give your agent persistent memory across sessions. Before starting any task, rec
 Add the MCP server (one-time):
 
 ```bash
-claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
+claude mcp add thumbgate -- npx -y thumbgate serve
 ```
 
 No API key needed. All data stays local.
@@ -79,7 +79,7 @@ Call the `feedback_stats` MCP tool to see approval rate, top failure domains, an
 | `commerce` | 6 tools + commerce_recall | Agentic commerce agents |
 | `default` | 12 tools | Full pipeline including DPO export |
 
-Set profile: `THUMBGATE_MCP_PROFILE=essential npx mcp-memory-gateway serve`
+Set profile: `THUMBGATE_MCP_PROFILE=essential npx thumbgate serve`
 
 ## How Prevention Rules Work
 
@@ -92,6 +92,6 @@ This is the core value. The agent doesn't learn — but it reads the rules and f
 
 ## Links
 
-- [GitHub](https://github.com/IgorGanapolsky/mcp-memory-gateway)
-- [npm](https://www.npmjs.com/package/mcp-memory-gateway)
+- [GitHub](https://github.com/IgorGanapolsky/thumbgate)
+- [npm](https://www.npmjs.com/package/thumbgate)
 - [MCP Registry](https://registry.modelcontextprotocol.io)

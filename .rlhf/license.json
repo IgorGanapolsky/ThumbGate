@@ -1,6 +1,0 @@
-{
-  "tier": "pro",
-  "plan": "Pro",
-  "activatedAt": "2026-03-01T00:00:00Z",
-  "features": ["dashboard", "dpo-export", "control-tower", "vector-search", "priority-support"]
-}
