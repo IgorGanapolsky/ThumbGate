@@ -36,9 +36,10 @@ test.after(() => {
 });
 
 test.beforeEach(() => {
-  delete process.env._TEST_LEGACY_FEEDBACK_DIR;
+  // Point fallback dirs to empty temp dirs so tests don't pick up repo artifacts
+  process.env._TEST_LEGACY_FEEDBACK_DIR = path.join(tmpDir, 'empty-legacy');
   delete process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
-  delete process.env._TEST_RLHF_FEEDBACK_DIR;
+  process.env._TEST_RLHF_FEEDBACK_DIR = path.join(tmpDir, 'empty-rlhf');
   delete process.env.THUMBGATE_RLHF_FEEDBACK_DIR;
   fs.rmSync(path.join(tmpDir, 'telemetry-pings.jsonl'), { force: true });
   fs.rmSync(path.join(legacyDir, 'telemetry-pings.jsonl'), { force: true });
