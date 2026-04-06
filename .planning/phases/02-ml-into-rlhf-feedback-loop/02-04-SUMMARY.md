@@ -1,7 +1,7 @@
 ---
-phase: 02-ml-into-rlhf-feedback-loop
+phase: 02-ml-into-thumbgate
 plan: "04"
-subsystem: rlhf-feedback-loop
+subsystem: thumbgate
 tags: [tdd, tests, ml, sequence-tracking, diversity-tracking, node-test]
 dependency_graph:
   requires: [02-02]
@@ -9,7 +9,7 @@ dependency_graph:
   affects: [package.json test:api]
 tech_stack:
   added: []
-  patterns: [node:test describe/it, tmpdir isolation via RLHF_FEEDBACK_DIR env, require.cache busting per test]
+  patterns: [node:test describe/it, tmpdir isolation via THUMBGATE_FEEDBACK_DIR env, require.cache busting per test]
 key_files:
   created:
     - tests/feedback-sequences.test.js
@@ -17,7 +17,7 @@ key_files:
   modified:
     - package.json
 decisions:
-  - require.cache invalidation per test ensures env var changes (RLHF_FEEDBACK_DIR) are honored by re-required modules
+  - require.cache invalidation per test ensures env var changes (THUMBGATE_FEEDBACK_DIR) are honored by re-required modules
   - fresh tmpdir used per describe block; additional fresh tmpdir used for edge-case "first entry" test in diversity suite
   - thompson-sampling.test.js already present in package.json test:api from plan 02-03 — appended new files after it
 metrics:
@@ -72,7 +72,7 @@ npm test (full suite)
 
 ## Decisions Made
 
-1. `require.cache` invalidation per test — each `it` block deletes the feedback-loop module from cache before re-requiring so that `process.env.RLHF_FEEDBACK_DIR` changes are picked up fresh.
+1. `require.cache` invalidation per test — each `it` block deletes the feedback-loop module from cache before re-requiring so that `process.env.THUMBGATE_FEEDBACK_DIR` changes are picked up fresh.
 2. The diversity "first entry edge case" test (pitch#8 in Research) uses its own `mkdtempSync` fresh directory to guarantee no pre-existing `diversity-tracking.json` exists, avoiding pollution from the `before()` block.
 3. `thompson-sampling.test.js` was already in the test:api list from plan 02-03 execution. New files were appended after it without reordering.
 

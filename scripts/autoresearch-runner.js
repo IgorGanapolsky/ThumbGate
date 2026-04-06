@@ -3,7 +3,7 @@
 /**
  * Autoresearch Runner (AUTORESEARCH-02)
  *
- * Karpathy-inspired self-optimizing loop for the RLHF feedback studio.
+ * Karpathy-inspired self-optimizing loop for the ThumbGate feedback studio.
  * Each iteration: mutate local evolution state → run primary + holdout checks
  * → measure score → keep/discard with rollback snapshots.
  *

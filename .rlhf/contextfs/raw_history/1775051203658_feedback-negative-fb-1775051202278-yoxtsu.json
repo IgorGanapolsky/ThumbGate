@@ -1,0 +1,17 @@
+{
+  "id": "1775051203658_feedback-negative-fb-1775051202278-yoxtsu",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775051202278_yoxtsu",
+  "content": "{\"id\":\"fb_1775051202278_yoxtsu\",\"signal\":\"negative\",\"context\":\"test context\",\"lastAction\":null,\"whatWentWrong\":\"something failed\",\"whatToChange\":\"fix the issue\",\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"debugging\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-01T13:46:42.278Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "debugging"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-01T13:46:43.658Z",
+  "lastUsedAt": null
+}

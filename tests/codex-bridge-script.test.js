@@ -56,7 +56,7 @@ test('codex bridge setup reports readiness using the configured Codex binary', (
   const stubPath = makeStubCodex(tmpDir);
   const dataDir = path.join(tmpDir, 'data');
   const output = runBridge(['setup'], {
-    RLHF_CODEX_BIN: stubPath,
+    THUMBGATE_CODEX_BIN: stubPath,
     CLAUDE_PLUGIN_DATA: dataDir,
     CLAUDE_PLUGIN_ROOT: path.join(ROOT, 'plugins', 'claude-codex-bridge'),
   });
@@ -76,7 +76,7 @@ test('codex bridge review persists latest metadata and result artifacts', () => 
   const pluginRoot = path.join(ROOT, 'plugins', 'claude-codex-bridge');
 
   const output = runBridge(['review', '--base', 'main', '--prompt', 'Look for regressions'], {
-    RLHF_CODEX_BIN: stubPath,
+    THUMBGATE_CODEX_BIN: stubPath,
     CLAUDE_PLUGIN_DATA: dataDir,
     CLAUDE_PLUGIN_ROOT: pluginRoot,
   });
@@ -100,7 +100,7 @@ test('codex bridge status and result replay the latest saved run', () => {
   const dataDir = path.join(tmpDir, 'data');
   const pluginRoot = path.join(ROOT, 'plugins', 'claude-codex-bridge');
   const env = {
-    RLHF_CODEX_BIN: stubPath,
+    THUMBGATE_CODEX_BIN: stubPath,
     CLAUDE_PLUGIN_DATA: dataDir,
     CLAUDE_PLUGIN_ROOT: pluginRoot,
   };

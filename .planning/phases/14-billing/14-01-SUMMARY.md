@@ -24,7 +24,7 @@ decisions:
   - "Keys stored in .claude/memory/feedback/api-keys.json — in gitignore, adjacent to other memory files"
   - "Webhook route placed BEFORE auth middleware — Stripe webhooks carry no Bearer token, HMAC-verified instead"
   - "STRIPE_SECRET_KEY absent = local mode — createCheckoutSession returns local_ session, verifyWebhookSignature skips check"
-  - "Auth middleware updated to accept any valid provisioned billing key alongside static RLHF_API_KEY"
+  - "Auth middleware updated to accept any valid provisioned billing key alongside static THUMBGATE_API_KEY"
   - "Usage metering middleware fires on every request authenticated with a billing key (not the static key)"
 metrics:
   duration_minutes: 25
@@ -64,7 +64,7 @@ New routes:
 - `POST /v1/billing/provision` — Admin endpoint to manually provision a key by customerId.
 
 Auth middleware updates:
-- `isAuthorized()` now accepts any valid provisioned billing key alongside the static `RLHF_API_KEY`.
+- `isAuthorized()` now accepts any valid provisioned billing key alongside the static `THUMBGATE_API_KEY`.
 - New `extractBearerToken()` helper extracts the Bearer token from Authorization header.
 - Usage metering middleware fires after auth passes — records usage for billing keys (not the static key).
 

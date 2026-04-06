@@ -4,7 +4,7 @@
 
 ## Scope
 
-Repository-wide audit performed in dedicated worktrees only. Metrics below use tracked repository files and exclude `node_modules/` trees. Runtime `.rlhf/*` artifacts were reviewed locally during the audit but not committed.
+Repository-wide audit performed in dedicated worktrees only. Metrics below use tracked repository files and exclude `node_modules/` trees. Runtime `.thumbgate/*` artifacts were reviewed locally during the audit but not committed.
 
 ## Audit Report
 
@@ -77,4 +77,4 @@ New checks added: test:ops, npm-test parity guard for repository test files
 
 - Queried local feedback memory and runtime state before editing.
 - Reviewed the local runtime lessons created during verification.
-- Kept all `.rlhf/*` runtime artifacts local and uncommitted, per repo policy.
+- Kept all `.thumbgate/*` runtime artifacts local and uncommitted, per repo policy.

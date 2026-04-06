@@ -74,7 +74,7 @@ test('claude .mcp.json is valid JSON with mcpServers key', () => {
 test('codex config.toml contains mcp_servers section', () => {
   const filePath = path.join(root, 'adapters/codex/config.toml');
   const content = fs.readFileSync(filePath, 'utf-8');
-  assert.match(content, /\[mcp_servers\.rlhf\]/, 'config.toml must contain canonical rlhf section');
+  assert.match(content, /\[mcp_servers\.thumbgate\]/, 'config.toml must contain canonical thumbgate section');
   
   if (content.includes('command = "npx"')) {
     assert.match(
@@ -91,10 +91,10 @@ test('codex config.toml contains mcp_servers section', () => {
 test('opencode adapter is valid JSON with a version-pinned local MCP server', () => {
   const filePath = path.join(root, 'adapters/opencode/opencode.json');
   const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  const rlhf = payload.mcp && payload.mcp.rlhf;
+  const rlhf = payload.mcp && payload.mcp.thumbgate;
 
   assert.equal(payload.$schema, 'https://opencode.ai/config.json');
-  assert.ok(rlhf, 'opencode adapter must define mcp.rlhf');
+  assert.ok(rlhf, 'opencode adapter must define mcp.thumbgate');
   assert.equal(rlhf.type, 'local');
   assert.equal(rlhf.enabled, true);
   assert.deepEqual(rlhf.command, ['npx', '-y', `mcp-memory-gateway@${packageVersion}`, 'serve']);
@@ -108,11 +108,11 @@ test('repo opencode.json enforces worktree-safe defaults', () => {
   const editPermissions = permissions.edit || {};
 
   assert.deepEqual(payload.instructions, ['.opencode/instructions/rlhf-workflow.md']);
-  assert.deepEqual(payload.mcp.rlhf.command, ['node', 'bin/cli.js', 'serve']);
+  assert.deepEqual(payload.mcp.thumbgate.command, ['node', 'bin/cli.js', 'serve']);
   assert.equal(bashPermissions['git push*'], 'deny');
   assert.equal(bashPermissions['git reset*'], 'deny');
   assert.equal(bashPermissions['git checkout --*'], 'deny');
-  assert.equal(editPermissions['.rlhf/**'], 'deny');
+  assert.equal(editPermissions['.thumbgate/**'], 'deny');
   assert.equal(editPermissions['.claude/worktrees/**'], 'deny');
 });
 
@@ -152,7 +152,7 @@ test('cursor marketplace plugin keeps metadata versioned while runtime tracks th
   assert.equal(marketplace.plugins[0].name, pluginManifest.name);
   assert.equal(pluginManifest.version, packageVersion);
   assert.deepEqual(pluginConfig.mcpServers.rlhf.args, ['-y', 'mcp-memory-gateway@latest', 'serve']);
-  assert.equal(pluginManifest.homepage, 'https://rlhf-feedback-loop-production.up.railway.app');
+  assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
 });
 
@@ -174,14 +174,14 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.ok(pluginManifest.keywords.includes('pre-action-gates'));
   assert.ok(pluginManifest.keywords.includes('ai-agent-safety'));
   assert.ok(marketplaceEntry.metadata.keywords.includes('pre-action-gates'));
-  assert.equal(pluginManifest.homepage, 'https://rlhf-feedback-loop-production.up.railway.app');
+  assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
-  assert.equal(marketplaceEntry.metadata.homepage, 'https://rlhf-feedback-loop-production.up.railway.app');
+  assert.equal(marketplaceEntry.metadata.homepage, 'https://thumbgate-production.up.railway.app');
   assert.match(readme, /Privacy Policy/i);
   assert.match(readme, /Data Collection/i);
   assert.match(readme, /Support/i);
   assert.match(readme, /Examples/i);
-  assert.match(readme, /claude mcp add rlhf -- npx -y mcp-memory-gateway serve/i);
+  assert.match(readme, /claude mcp add thumbgate -- npx -y mcp-memory-gateway serve/i);
   assert.match(readme, /build:claude-mcpb/i);
   assert.match(readme, new RegExp(getClaudePluginLatestDownloadUrl(root).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.ok(readme.includes(PRODUCTHUNT_URL));
@@ -219,7 +219,7 @@ test('codex app plugin surface is present and aligned to ThumbGate metadata', ()
   const pluginEntry = marketplace.plugins.find((plugin) => plugin.name === pluginManifest.name);
 
   assert.equal(pluginManifest.version, packageVersion);
-  assert.equal(pluginManifest.homepage, 'https://rlhf-feedback-loop-production.up.railway.app');
+  assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(pluginManifest.interface.displayName, 'ThumbGate for Codex');
   assert.equal(pluginManifest.mcpServers, './.mcp.json');
@@ -234,7 +234,7 @@ test('Claude Codex bridge plugin surface is present and aligned to ThumbGate met
   const readme = fs.readFileSync(path.join(root, 'plugins/claude-codex-bridge/README.md'), 'utf-8');
 
   assert.equal(pluginManifest.version, packageVersion);
-  assert.equal(pluginManifest.homepage, 'https://rlhf-feedback-loop-production.up.railway.app');
+  assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(pluginManifest.name, 'codex-bridge');
   assert.deepEqual(pluginConfig.mcpServers.rlhf.args, ['-y', `mcp-memory-gateway@${packageVersion}`, 'serve']);

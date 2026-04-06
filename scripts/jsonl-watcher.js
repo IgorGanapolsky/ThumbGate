@@ -12,7 +12,7 @@
  *   node scripts/jsonl-watcher.js --once             # process pending, exit
  *   node scripts/jsonl-watcher.js --source amp-plugin-bridge  # filter by source
  *
- * The watcher tracks its position via .rlhf/.watcher-offset to avoid
+ * The watcher tracks its position via .thumbgate/.watcher-offset to avoid
  * reprocessing entries on restart.
  */
 

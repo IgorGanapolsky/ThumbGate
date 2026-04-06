@@ -1,0 +1,23 @@
+{
+  "id": "1774024895464_mistake-gate-protected-branch-push-blocked-tool-bash-direct-pus",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Gate \"protected-branch-push\" blocked tool \"Bash\": Direct pus",
+  "content": "Context: Gate \"protected-branch-push\" blocked tool \"Bash\": Direct push to protected branch. Use feature branches and PRs.\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "audit-trail",
+    "auto-capture",
+    "gate:protected-branch-push",
+    "gates-engine",
+    "entity:Customer"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775168512556_9jddbf"
+  },
+  "createdAt": "2026-03-20T16:41:35.464Z",
+  "lastUsedAt": null
+}

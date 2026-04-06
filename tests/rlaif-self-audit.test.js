@@ -7,7 +7,7 @@ const path = require('path');
 const os = require('os');
 
 function freshModule(tmpDir) {
-  if (tmpDir) process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  if (tmpDir) process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   delete require.cache[require.resolve('../scripts/rlaif-self-audit')];
   return require('../scripts/rlaif-self-audit');
 }
@@ -136,7 +136,7 @@ describe('rlaif-self-audit — selfAuditAndLog()', () => {
       assert.ok(typeof parsed.score === 'number', 'score present in log entry');
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 
@@ -159,7 +159,7 @@ describe('rlaif-self-audit — selfAuditAndLog()', () => {
       assert.strictEqual(lines.length, 2, 'two entries appended');
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 });

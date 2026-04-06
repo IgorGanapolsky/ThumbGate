@@ -44,4 +44,4 @@ gh pr view --json reviewDecision,comments,reviewThreads \
 
 ## Why This Exists
 
-Copilot and human reviewers add threads asynchronously after push. Declaring done without re-checking causes review loops. This was identified as a recurring failure pattern in the RLHF pipeline.
+Copilot and human reviewers add threads asynchronously after push. Declaring done without re-checking causes review loops. This was identified as a recurring failure pattern in the ThumbGate pipeline.

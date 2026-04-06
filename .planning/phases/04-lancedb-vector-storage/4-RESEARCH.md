@@ -9,7 +9,7 @@
 
 | ID | Description | Research Support |
 |----|-------------|-----------------|
-| VEC-01 | LanceDB embedded table stores feedback vectors in rlhf-feedback-loop | Dynamic import pattern proven; storage path `.claude/memory/feedback/lancedb/`; table schema defined in code examples |
+| VEC-01 | LanceDB embedded table stores feedback vectors in thumbgate | Dynamic import pattern proven; storage path `.claude/memory/feedback/lancedb/`; table schema defined in code examples |
 | VEC-02 | ESM/CJS compatibility resolved via dynamic import pattern | Confirmed: `const { connect } = await import('@lancedb/lancedb')` is the required pattern for CJS host + ESM package |
 | VEC-03 | apache-arrow pinned to compatible version (<=18.1.0) | Confirmed: peer dep is `>=15.0.0 <=18.1.0`; current arrow 21.x is out of range; must pin to 18.1.0 |
 | VEC-04 | Semantic similarity search returns relevant historical feedback | Hybrid search pattern (vector + BM25) verified in Subway Python reference implementation |
@@ -20,7 +20,7 @@
 
 ## Summary
 
-Phase 4 adds LanceDB embedded vector storage to `rlhf-feedback-loop`, enabling semantic similarity search over historical feedback. The project is CommonJS (`"type": "commonjs"`) but `@lancedb/lancedb@0.26.2` is ESM-only — every call site must use `await import('@lancedb/lancedb')` dynamic import. This is the single most critical integration constraint: failing to use dynamic import will produce `require() of ES Module` errors at runtime.
+Phase 4 adds LanceDB embedded vector storage to `thumbgate`, enabling semantic similarity search over historical feedback. The project is CommonJS (`"type": "commonjs"`) but `@lancedb/lancedb@0.26.2` is ESM-only — every call site must use `await import('@lancedb/lancedb')` dynamic import. This is the single most critical integration constraint: failing to use dynamic import will produce `require() of ES Module` errors at runtime.
 
 The cross-language compatibility concern (Python writes Lance files, Node.js reads them) is now **confirmed safe for this project**. The Subway venv uses Python lancedb **0.26.1** (not 0.27.1 as the system pip shows — the system pip is a different install). The Node.js SDK is `@lancedb/lancedb@0.26.2`. Both 0.26.x versions share the same Lance file format version (the manifest binary confirms format version compatible with both). The `rlhf_feedback.lance` table in Subway was written by Python 0.26.1 and has one manifest version — the format is stable within the 0.26.x line.
 
@@ -124,8 +124,8 @@ async function embed(text) {
 }
 
 async function upsertFeedback(feedbackEvent) {
-  const lanceDir = process.env.RLHF_FEEDBACK_DIR
-    ? path.join(process.env.RLHF_FEEDBACK_DIR, 'lancedb')
+  const lanceDir = process.env.THUMBGATE_FEEDBACK_DIR
+    ? path.join(process.env.THUMBGATE_FEEDBACK_DIR, 'lancedb')
     : DEFAULT_LANCE_DIR;
 
   const { connect } = await getLanceDB();
@@ -160,8 +160,8 @@ async function upsertFeedback(feedbackEvent) {
 }
 
 async function searchSimilar(queryText, limit = 5) {
-  const lanceDir = process.env.RLHF_FEEDBACK_DIR
-    ? path.join(process.env.RLHF_FEEDBACK_DIR, 'lancedb')
+  const lanceDir = process.env.THUMBGATE_FEEDBACK_DIR
+    ? path.join(process.env.THUMBGATE_FEEDBACK_DIR, 'lancedb')
     : DEFAULT_LANCE_DIR;
 
   const { connect } = await getLanceDB();
@@ -367,8 +367,8 @@ const path = require('path');
 
 test('vector store upserts and retrieves feedback', async (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-vec-test-'));
-  const origDir = process.env.RLHF_FEEDBACK_DIR;
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  const origDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   try {
     const { upsertFeedback, searchSimilar } = require('../scripts/vector-store');
@@ -385,7 +385,7 @@ test('vector store upserts and retrieves feedback', async (t) => {
     assert.ok(results.length >= 1, 'should find at least one similar result');
     assert.equal(results[0].id, 'fb_test_001');
   } finally {
-    process.env.RLHF_FEEDBACK_DIR = origDir || '';
+    process.env.THUMBGATE_FEEDBACK_DIR = origDir || '';
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
@@ -430,7 +430,7 @@ const report = {
 1. **HuggingFace CDN availability in CI**
    - What we know: First-run model download requires outbound HTTPS to `huggingface.co` CDN (~22MB)
    - What's unclear: Whether the CI environment (local `npm test`) has the model cached already
-   - Recommendation: In `vector-store.test.js`, mock the `embed()` function with a fixed 384-dim vector to avoid network dependency in unit tests. Write a separate integration test that uses real embedding. Gate the integration test with `RLHF_VEC_INTEGRATION=true` env var.
+   - Recommendation: In `vector-store.test.js`, mock the `embed()` function with a fixed 384-dim vector to avoid network dependency in unit tests. Write a separate integration test that uses real embedding. Gate the integration test with `THUMBGATE_VEC_INTEGRATION=true` env var.
 
 2. **First-run initialization latency in captureFeedback()**
    - What we know: `pipeline()` takes 200-400ms on first call; subsequent calls use in-process cache

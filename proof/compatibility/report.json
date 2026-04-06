@@ -73,28 +73,28 @@
       "name": "mcp.initialize",
       "passed": true,
       "details": {
-        "server": "rlhf-feedback-loop-mcp"
+        "server": "thumbgate-mcp"
       }
     },
     {
       "name": "mcp.stdio.framed.initialize",
       "passed": true,
       "details": {
-        "server": "rlhf-feedback-loop-mcp"
+        "server": "thumbgate-mcp"
       }
     },
     {
       "name": "mcp.stdio.ndjson.initialize",
       "passed": true,
       "details": {
-        "server": "rlhf-feedback-loop-mcp"
+        "server": "thumbgate-mcp"
       }
     },
     {
       "name": "mcp.cli.serve.bad_home.initialize",
       "passed": true,
       "details": {
-        "server": "rlhf-feedback-loop-mcp"
+        "server": "thumbgate-mcp"
       }
     },
     {

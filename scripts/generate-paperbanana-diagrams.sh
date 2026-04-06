@@ -60,7 +60,7 @@ All channels (ChatGPT Actions, Claude MCP, Codex MCP, Gemini tools, Amp skills) 
 TXT
 
 cat > docs/diagrams/plugin-topology.txt <<'TXT'
-Show a central RLHF Feedback API with five adapters around it.
+Show a central ThumbGate Feedback API with five adapters around it.
 Adapter 1: ChatGPT via GPT Actions OpenAPI.
 Adapter 2: Claude via local MCP server and .mcp.json.
 Adapter 3: Codex via MCP server config.toml.
@@ -86,7 +86,7 @@ node scripts/budget-guard.js --add="$PB_ESTIMATE_PER_DIAGRAM" --source=paperbana
 budget_check "$PB_ESTIMATE_PER_DIAGRAM"
 paperbanana generate \
   --input docs/diagrams/plugin-topology.txt \
-  --caption "Go-to-market plugin topology: ChatGPT Actions, Claude MCP, Codex MCP, Gemini function calling, and Amp skills through one RLHF API core" \
+  --caption "Go-to-market plugin topology: ChatGPT Actions, Claude MCP, Codex MCP, Gemini function calling, and Amp skills through one ThumbGate API core" \
   --vlm-provider gemini \
   --vlm-model "$PB_VLM_MODEL" \
   --image-provider google_imagen \

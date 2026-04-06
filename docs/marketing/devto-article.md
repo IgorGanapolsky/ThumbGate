@@ -99,7 +99,7 @@ npx mcp-memory-gateway serve
 GitHub: [github.com/IgorGanapolsky/ThumbGate](https://github.com/IgorGanapolsky/ThumbGate)
 npm: [mcp-memory-gateway](https://www.npmjs.com/package/mcp-memory-gateway)
 
-If you want a personal local dashboard, DPO export, and an optional hosted API key for team workflows, there is a [Pro tier at $19/mo or $149/yr](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro). The core local feedback loop still works on its own.
+If you want a personal local dashboard, DPO export, and an optional hosted API key for team workflows, there is a [Pro tier at $19/mo or $149/yr](https://thumbgate-production.up.railway.app/checkout/pro). The core local feedback loop still works on its own.
 
 I have been running this on my own projects for months. The difference between session 1 and session 50 is noticeable — the agent stops making the same classes of mistakes. Not because it got smarter, but because the gates will not let it repeat what already failed.
 

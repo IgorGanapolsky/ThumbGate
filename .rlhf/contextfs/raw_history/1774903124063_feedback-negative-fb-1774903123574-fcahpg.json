@@ -1,0 +1,19 @@
+{
+  "id": "1774903124063_feedback-negative-fb-1774903123574-fcahpg",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774903123574_fcahpg",
+  "content": "{\"id\":\"fb_1774903123574_fcahpg\",\"signal\":\"negative\",\"context\":\"skipped tests before claiming done\",\"lastAction\":null,\"whatWentWrong\":\"no tests run\",\"whatToChange\":\"always run tests\",\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"testing\",\"watcher-ingested\",\"bridged-from:amp-plugin-bridge\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-30T20:38:43.574Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"},\"diagnosis\":{\"rootCauseCategory\":\"tool_output_misread\",\"criticalFailureStep\":\"feedback_capture\",\"violations\":[],\"evidence\":[{\"type\":\"context\",\"value\":\"skipped tests before claiming done\"}]}}",
+  "tags": [
+    "testing",
+    "watcher-ingested",
+    "bridged-from:amp-plugin-bridge"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-30T20:38:44.063Z",
+  "lastUsedAt": null
+}

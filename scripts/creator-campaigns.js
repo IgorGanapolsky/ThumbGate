@@ -66,7 +66,7 @@ function applyAttributionParams(url, attribution = {}) {
 }
 
 function buildCreatorCampaignLinks(options = {}, runtimeConfig = resolveHostedBillingConfig({
-  requestOrigin: 'https://rlhf-feedback-loop-production.up.railway.app',
+  requestOrigin: 'https://thumbgate-production.up.railway.app',
 })) {
   const creator = normalizeCreatorHandle(options.creator || options.handle);
   if (!creator) {

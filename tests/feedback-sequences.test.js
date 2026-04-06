@@ -12,14 +12,14 @@ describe('Sequence Tracking (ML-03)', () => {
 
   before(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-seq-test-'));
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   });
 
   after(() => {
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     } finally {
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 

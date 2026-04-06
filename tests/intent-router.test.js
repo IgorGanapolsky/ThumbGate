@@ -271,8 +271,8 @@ test('rankActions front-loads evidence producers for strict reviewers', () => {
 });
 
 test('planIntent adds codegraph impact and structural verification checks for coding workflows', () => {
-  const previous = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-  process.env.RLHF_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
+  const previous = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+  process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
     source: 'stub',
     symbols: ['planIntent'],
     callers: ['src/api/server.js -> planIntent'],
@@ -296,8 +296,8 @@ test('planIntent adds codegraph impact and structural verification checks for co
       'expected structural dead-code verification check',
     );
   } finally {
-    if (previous === undefined) delete process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-    else process.env.RLHF_CODEGRAPH_STUB_RESPONSE = previous;
+    if (previous === undefined) delete process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+    else process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = previous;
   }
 });
 

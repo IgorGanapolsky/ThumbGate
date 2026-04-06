@@ -66,6 +66,6 @@ The goal is to determine:
 
 ## Core Links
 
-- Product: https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake
+- Product: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Sprint brief: [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md)
 - Proof pack: [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md)

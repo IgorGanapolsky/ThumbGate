@@ -92,7 +92,7 @@ Best fit:
 
 ## Buyer Story
 
-The buyer does not need a lecture about RLHF internals. The buyer needs a clear before-and-after:
+The buyer does not need a lecture about ThumbGate internals. The buyer needs a clear before-and-after:
 
 - before: Claude work is sharp some days, chaotic on others, and repeated mistakes drain senior engineering time
 - after: one workflow has memory, Pre-Action Gates, prevention rules, and proof artifacts that reduce repeated failures

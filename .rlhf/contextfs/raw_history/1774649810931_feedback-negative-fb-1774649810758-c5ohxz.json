@@ -1,0 +1,17 @@
+{
+  "id": "1774649810931_feedback-negative-fb-1774649810758-c5ohxz",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774649810758_c5ohxz",
+  "content": "{\"id\":\"fb_1774649810758_c5ohxz\",\"signal\":\"negative\",\"context\":\"Test dedup inline write\",\"lastAction\":null,\"whatWentWrong\":\"Something broke again\",\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"dedup-test\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-27T22:16:50.758Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "dedup-test"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-27T22:16:50.931Z",
+  "lastUsedAt": null
+}

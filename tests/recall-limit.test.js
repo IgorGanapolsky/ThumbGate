@@ -9,19 +9,19 @@ const fs = require('node:fs');
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-recall-limit-'));
 const tmpUsageFile = path.join(tmpDir, 'usage-limits.json');
 const savedEnv = {
-  RLHF_API_KEY: process.env.RLHF_API_KEY,
-  RLHF_PRO_MODE: process.env.RLHF_PRO_MODE,
-  RLHF_NO_RATE_LIMIT: process.env.RLHF_NO_RATE_LIMIT,
-  RLHF_FEEDBACK_DIR: process.env.RLHF_FEEDBACK_DIR,
-  RLHF_MCP_PROFILE: process.env.RLHF_MCP_PROFILE,
+  THUMBGATE_API_KEY: process.env.THUMBGATE_API_KEY,
+  THUMBGATE_PRO_MODE: process.env.THUMBGATE_PRO_MODE,
+  THUMBGATE_NO_RATE_LIMIT: process.env.THUMBGATE_NO_RATE_LIMIT,
+  THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
+  THUMBGATE_MCP_PROFILE: process.env.THUMBGATE_MCP_PROFILE,
 };
 
-// CI exports RLHF_API_KEY for hosted API checks, but this suite verifies free-tier behavior.
-delete process.env.RLHF_API_KEY;
-delete process.env.RLHF_PRO_MODE;
-delete process.env.RLHF_NO_RATE_LIMIT;
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
-process.env.RLHF_MCP_PROFILE = 'default';
+// CI exports THUMBGATE_API_KEY for hosted API checks, but this suite verifies free-tier behavior.
+delete process.env.THUMBGATE_API_KEY;
+delete process.env.THUMBGATE_PRO_MODE;
+delete process.env.THUMBGATE_NO_RATE_LIMIT;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_MCP_PROFILE = 'default';
 
 const { callTool } = require('../adapters/mcp/server-stdio');
 const rateLimiter = require('../scripts/rate-limiter');
@@ -58,16 +58,16 @@ describe('recall free tier (unlimited)', { concurrency: false }, () => {
 });
 
 test.after(() => {
-  if (savedEnv.RLHF_API_KEY !== undefined) process.env.RLHF_API_KEY = savedEnv.RLHF_API_KEY;
-  else delete process.env.RLHF_API_KEY;
-  if (savedEnv.RLHF_PRO_MODE !== undefined) process.env.RLHF_PRO_MODE = savedEnv.RLHF_PRO_MODE;
-  else delete process.env.RLHF_PRO_MODE;
-  if (savedEnv.RLHF_NO_RATE_LIMIT !== undefined) process.env.RLHF_NO_RATE_LIMIT = savedEnv.RLHF_NO_RATE_LIMIT;
-  else delete process.env.RLHF_NO_RATE_LIMIT;
-  if (savedEnv.RLHF_FEEDBACK_DIR !== undefined) process.env.RLHF_FEEDBACK_DIR = savedEnv.RLHF_FEEDBACK_DIR;
-  else delete process.env.RLHF_FEEDBACK_DIR;
-  if (savedEnv.RLHF_MCP_PROFILE !== undefined) process.env.RLHF_MCP_PROFILE = savedEnv.RLHF_MCP_PROFILE;
-  else delete process.env.RLHF_MCP_PROFILE;
+  if (savedEnv.THUMBGATE_API_KEY !== undefined) process.env.THUMBGATE_API_KEY = savedEnv.THUMBGATE_API_KEY;
+  else delete process.env.THUMBGATE_API_KEY;
+  if (savedEnv.THUMBGATE_PRO_MODE !== undefined) process.env.THUMBGATE_PRO_MODE = savedEnv.THUMBGATE_PRO_MODE;
+  else delete process.env.THUMBGATE_PRO_MODE;
+  if (savedEnv.THUMBGATE_NO_RATE_LIMIT !== undefined) process.env.THUMBGATE_NO_RATE_LIMIT = savedEnv.THUMBGATE_NO_RATE_LIMIT;
+  else delete process.env.THUMBGATE_NO_RATE_LIMIT;
+  if (savedEnv.THUMBGATE_FEEDBACK_DIR !== undefined) process.env.THUMBGATE_FEEDBACK_DIR = savedEnv.THUMBGATE_FEEDBACK_DIR;
+  else delete process.env.THUMBGATE_FEEDBACK_DIR;
+  if (savedEnv.THUMBGATE_MCP_PROFILE !== undefined) process.env.THUMBGATE_MCP_PROFILE = savedEnv.THUMBGATE_MCP_PROFILE;
+  else delete process.env.THUMBGATE_MCP_PROFILE;
   try { fs.unlinkSync(tmpUsageFile); } catch (_) {}
   try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}
 });

@@ -21,7 +21,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
 function resolveProofPaths() {
-  const proofDir = process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+  const proofDir = process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
   return {
     proofDir,
     reportJson: path.join(proofDir, 'loop-closure-report.json'),
@@ -177,7 +177,7 @@ function run() {
       fn: () => {
         const out = execSync('node --test tests/loop-closure.test.js', {
           cwd: ROOT,
-          env: { ...process.env, RLHF_FEEDBACK_DIR: tmpDir },
+          env: { ...process.env, THUMBGATE_FEEDBACK_DIR: tmpDir },
           encoding: 'utf8',
           stdio: 'pipe',
         });

@@ -193,10 +193,10 @@ function hashText(text) {
  */
 function buildHybridState(opts) {
   const o = opts || {};
-  const feedbackLogPath = o.feedbackLogPath || process.env.RLHF_FEEDBACK_LOG || PATHS.feedbackLog;
-  const inboxPath = o.inboxPath || process.env.RLHF_FEEDBACK_INBOX || PATHS.inbox;
-  const pendingSyncPath = o.pendingSyncPath || process.env.RLHF_PENDING_SYNC || PATHS.pendingSync;
-  const attributedFeedbackPath = o.attributedFeedbackPath || process.env.RLHF_ATTRIBUTED_FEEDBACK || PATHS.attributedFeedback;
+  const feedbackLogPath = o.feedbackLogPath || process.env.THUMBGATE_FEEDBACK_LOG || PATHS.feedbackLog;
+  const inboxPath = o.inboxPath || process.env.THUMBGATE_FEEDBACK_INBOX || PATHS.inbox;
+  const pendingSyncPath = o.pendingSyncPath || process.env.THUMBGATE_PENDING_SYNC || PATHS.pendingSync;
+  const attributedFeedbackPath = o.attributedFeedbackPath || process.env.THUMBGATE_ATTRIBUTED_FEEDBACK || PATHS.attributedFeedback;
 
   const feedbackEntries = readJsonl(feedbackLogPath);
   const inboxEntries = readJsonl(inboxPath);
@@ -462,7 +462,7 @@ function writeGuardArtifact(filePath, artifact) {
  * @returns {Object|null} artifact or null if invalid/missing
  */
 function readGuardArtifact(filePath) {
-  const inPath = filePath || process.env.RLHF_GUARDS_PATH || PATHS.guardArtifact;
+  const inPath = filePath || process.env.THUMBGATE_GUARDS_PATH || PATHS.guardArtifact;
   if (!fs.existsSync(inPath)) return null;
   try {
     const raw = fs.readFileSync(inPath, 'utf8');
@@ -587,7 +587,7 @@ function evaluatePretool(toolName, toolInput, opts) {
   const o = opts || {};
 
   // Fast path: compiled artifact
-  const artifactPath = o.guardArtifactPath || process.env.RLHF_GUARDS_PATH || PATHS.guardArtifact;
+  const artifactPath = o.guardArtifactPath || process.env.THUMBGATE_GUARDS_PATH || PATHS.guardArtifact;
   const artifact = readGuardArtifact(artifactPath);
   if (artifact) {
     const result = evaluateCompiledGuards(artifact, toolName, toolInput);

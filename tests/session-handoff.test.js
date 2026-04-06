@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const { spawnSync } = require('node:child_process');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-session-test-'));
-process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 
 const {
   NAMESPACES,
@@ -70,14 +70,14 @@ test('writeSessionHandoff records provenance event', () => {
 
 test('readSessionHandoff returns null when no primer exists', () => {
   const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-empty-'));
-  const origDir = process.env.RLHF_FEEDBACK_DIR;
-  process.env.RLHF_FEEDBACK_DIR = emptyDir;
+  const origDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = emptyDir;
 
   // Re-require to pick up new dir — but since module is cached, test the function directly
   const primerPath = path.join(emptyDir, 'contextfs', 'session', 'primer.json');
   assert.equal(fs.existsSync(primerPath), false);
 
-  process.env.RLHF_FEEDBACK_DIR = origDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = origDir;
   fs.rmSync(emptyDir, { recursive: true, force: true });
 });
 
@@ -125,12 +125,12 @@ test('obsidian sync exits cleanly when vault env is missing', () => {
     cwd: process.cwd(),
     env: {
       ...process.env,
-      RLHF_OBSIDIAN_VAULT_PATH: '',
+      THUMBGATE_OBSIDIAN_VAULT_PATH: '',
     },
     encoding: 'utf8',
   });
 
   assert.equal(result.status, 0);
   assert.equal(result.stderr, '');
-  assert.match(result.stdout, /RLHF_OBSIDIAN_VAULT_PATH not set\. Skipping sync\./);
+  assert.match(result.stdout, /THUMBGATE_OBSIDIAN_VAULT_PATH not set\. Skipping sync\./);
 });

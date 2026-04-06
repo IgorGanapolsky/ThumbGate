@@ -1,0 +1,18 @@
+{
+  "id": "1775253406239_feedback-positive-fb-1775253406147-am5fau",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775253406147_am5fau",
+  "content": "{\"id\":\"fb_1775253406147_am5fau\",\"signal\":\"positive\",\"context\":\"Implemented with tests and evidence\",\"submittedContext\":\"Implemented with tests and evidence\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Used proof harness and verification logs\",\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"verification\",\"automation\"],\"skill\":null,\"failureType\":null,\"rubric\":{\"rubricId\":\"default-v1\",\"weightedScore\":0.6,\"failingCriteria\":[],\"failingGuardrails\":[],\"judgeDisagreements\":[],\"promotionEligible\":true},\"actionType\":\"store-learning\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T21:56:46.147Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "verification",
+    "automation"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-03T21:56:46.239Z",
+  "lastUsedAt": null
+}

@@ -16,8 +16,8 @@ const DEFAULT_SETTINGS = Object.freeze({
 });
 
 function resolveFeedbackDir() {
-  if (process.env.RLHF_FEEDBACK_DIR) {
-    return process.env.RLHF_FEEDBACK_DIR;
+  if (process.env.THUMBGATE_FEEDBACK_DIR) {
+    return process.env.THUMBGATE_FEEDBACK_DIR;
   }
 
   if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {

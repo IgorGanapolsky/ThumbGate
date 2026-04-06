@@ -10,8 +10,8 @@ const MCP_SERVER_PATH = require.resolve('../adapters/mcp/server-stdio');
 const VERIFY_RUN_PATH = require.resolve('./verify-run');
 
 function resolveProofPaths() {
-  const proofDir = process.env.RLHF_CLAIM_VERIFICATION_PROOF_DIR
-    || process.env.RLHF_PROOF_DIR
+  const proofDir = process.env.THUMBGATE_CLAIM_VERIFICATION_PROOF_DIR
+    || process.env.THUMBGATE_PROOF_DIR
     || path.join(ROOT, 'proof');
   return {
     proofDir,
@@ -28,14 +28,14 @@ function resetModules() {
 
 async function withIsolatedRuntime(fn) {
   const previousHome = process.env.HOME;
-  const previousFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
-  const previousNoRateLimit = process.env.RLHF_NO_RATE_LIMIT;
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const previousNoRateLimit = process.env.THUMBGATE_NO_RATE_LIMIT;
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-claim-home-'));
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-claim-feedback-'));
 
   process.env.HOME = homeDir;
-  process.env.RLHF_FEEDBACK_DIR = feedbackDir;
-  process.env.RLHF_NO_RATE_LIMIT = '1';
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
+  process.env.THUMBGATE_NO_RATE_LIMIT = '1';
   resetModules();
 
   try {
@@ -47,10 +47,10 @@ async function withIsolatedRuntime(fn) {
     resetModules();
     if (previousHome === undefined) delete process.env.HOME;
     else process.env.HOME = previousHome;
-    if (previousFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-    else process.env.RLHF_FEEDBACK_DIR = previousFeedbackDir;
-    if (previousNoRateLimit === undefined) delete process.env.RLHF_NO_RATE_LIMIT;
-    else process.env.RLHF_NO_RATE_LIMIT = previousNoRateLimit;
+    if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+    if (previousNoRateLimit === undefined) delete process.env.THUMBGATE_NO_RATE_LIMIT;
+    else process.env.THUMBGATE_NO_RATE_LIMIT = previousNoRateLimit;
     fs.rmSync(homeDir, { recursive: true, force: true });
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }

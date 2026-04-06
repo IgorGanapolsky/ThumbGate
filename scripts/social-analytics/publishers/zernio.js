@@ -8,6 +8,10 @@
  *   ZERNIO_API_KEY — Bearer token for https://zernio.com/api/v1
  */
 
+const { tagUrlsInText } = require('../utm');
+
+const ZERNIO_UTM = { source: 'zernio', medium: 'social', campaign: 'organic' };
+
 const ZERNIO_BASE = 'https://zernio.com/api/v1';
 
 function requireApiKey() {
@@ -55,6 +59,9 @@ async function publishPost(content, platforms) {
   if (!Array.isArray(platforms) || platforms.length === 0) {
     throw new Error('publishPost: platforms must be a non-empty array');
   }
+
+  // Tag trackable URLs with Zernio UTM parameters before publishing
+  content = tagUrlsInText(content, ZERNIO_UTM);
 
   const qualityGate = require('../../social-quality-gate');
   const gateResult = qualityGate.gatePost(content);

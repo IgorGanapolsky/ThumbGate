@@ -28,7 +28,7 @@ jobs:
       STRIPE_PRODUCT_ID: ${{ secrets.STRIPE_PRODUCT_ID }}
       STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
       STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-      RLHF_API_KEY: ${{ secrets.RLHF_API_KEY }}
+      THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6

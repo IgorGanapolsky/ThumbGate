@@ -1,0 +1,17 @@
+{
+  "id": "1774646849803_feedback-positive-fb-1774646849481-aalscf",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774646849481_aalscf",
+  "content": "{\"id\":\"fb_1774646849481_aalscf\",\"signal\":\"positive\",\"context\":\"security review completed\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"vulnerability patched correctly\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"security\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-27T21:27:29.481Z\",\"richContext\":{\"domain\":\"security\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "security"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-27T21:27:29.804Z",
+  "lastUsedAt": null
+}

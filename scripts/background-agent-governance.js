@@ -18,7 +18,7 @@ const path = require('path');
 
 const RUNS_FILE = 'agent-runs.jsonl';
 
-function getFeedbackDir() { return process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf'); }
+function getFeedbackDir() { return process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf'); }
 function getRunsPath() { return path.join(getFeedbackDir(), RUNS_FILE); }
 
 function readJsonl(fp) {

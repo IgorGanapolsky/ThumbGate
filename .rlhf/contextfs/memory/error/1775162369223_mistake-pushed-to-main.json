@@ -1,0 +1,19 @@
+{
+  "id": "1775162369223_mistake-pushed-to-main",
+  "namespace": "memory/error",
+  "title": "MISTAKE: pushed to main",
+  "content": "What went wrong: pushed to main\nHow to avoid: Inspect and correct the failing step before repeating it: Last action: Bash",
+  "tags": [
+    "feedback",
+    "negative",
+    "test-persist"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775484666585_hshg1a"
+  },
+  "createdAt": "2026-04-02T20:39:29.223Z",
+  "lastUsedAt": null
+}

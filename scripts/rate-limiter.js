@@ -12,7 +12,7 @@ const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.rlhf', 'usage-limits.
 const FREE_TIER_LIMITS = {
   capture_feedback: { daily: Infinity, label: 'feedback captures' },
   search_lessons: { daily: 5, label: 'lesson searches' },
-  search_rlhf: { daily: 10, label: 'RLHF searches' },
+  search_rlhf: { daily: 10, label: 'ThumbGate searches' },
   commerce_recall: { daily: 5, label: 'commerce recalls' },
   export_dpo: { daily: 0, label: 'DPO exports (Pro only)' },
   export_databricks: { daily: 0, label: 'Databricks exports (Pro only)' },
@@ -24,7 +24,7 @@ const UPGRADE_MESSAGE = `Upgrade to Pro ($19/mo) for a personal local dashboard,
 
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;
-  if (process.env.RLHF_API_KEY || process.env.RLHF_PRO_MODE === '1' || process.env.RLHF_NO_RATE_LIMIT === '1') return true;
+  if (process.env.THUMBGATE_API_KEY || process.env.THUMBGATE_PRO_MODE === '1' || process.env.THUMBGATE_NO_RATE_LIMIT === '1') return true;
   // Also check license file for real customer Pro verification
   try {
     const { isProLicensed } = require('./license');

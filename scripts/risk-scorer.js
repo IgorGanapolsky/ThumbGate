@@ -29,7 +29,7 @@ const SAFETY_WORD_RE = /\b(budget|path|guardrail|safe|security|risk)\b/i;
 const SUCCESS_WORD_RE = /\b(pass|worked|fixed|success|verified)\b/i;
 
 function resolveFeedbackDir(feedbackDir) {
-  return feedbackDir || process.env.RLHF_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
+  return feedbackDir || process.env.THUMBGATE_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
 }
 
 function readJSONL(filePath) {

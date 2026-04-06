@@ -27,7 +27,7 @@ const LESSONS_FILE = 'lessons-index.jsonl';
 const RECENT_LESSON_FILE = 'recent-lesson.json';
 
 function getFeedbackDir() {
-  return process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  return process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
 }
 
 function getLessonsPath() { return path.join(getFeedbackDir(), LESSONS_FILE); }

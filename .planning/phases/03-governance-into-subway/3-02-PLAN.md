@@ -60,7 +60,7 @@ must_haves:
 ---
 
 <objective>
-Port mcp-policy.js, intent-router.js, and all four config files from rlhf-feedback-loop into Subway_RN_Demo with path-variable surgery, then write the intent-router Jest test suite.
+Port mcp-policy.js, intent-router.js, and all four config files from thumbgate into Subway_RN_Demo with path-variable surgery, then write the intent-router Jest test suite.
 
 Purpose: GOV-02 covers risk-stratified intent planning. mcp-policy.js and the config files are prerequisites for intent-router.js — they ship together. This plan runs in parallel with Plan 01 (no shared files).
 

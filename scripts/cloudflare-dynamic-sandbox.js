@@ -238,7 +238,7 @@ function buildCloudflareSandboxPlan(input = {}, options = {}) {
   const executionId = normalizeText(options.executionId) || buildExecutionId();
   const secret = options.sharedSecret
     || process.env.CLOUDFLARE_SANDBOX_SHARED_SECRET
-    || process.env.RLHF_CLOUDFLARE_SANDBOX_SECRET
+    || process.env.THUMBGATE_CLOUDFLARE_SANDBOX_SECRET
     || '';
   const networkPolicy = buildNetworkPolicy(request);
   const bindings = buildBindings(request);

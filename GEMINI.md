@@ -18,7 +18,7 @@ Gemini should use ThumbGate as a tool-backed skill. ThumbGate is a pre-action ga
 
 - This repo does not use Vertex AI RAG.
 - Gemini should read and write only the local RLHF memory and context stores unless a real external system is explicitly added later.
-- Gemini must not commit ephemeral `.claude/worktrees/*` lanes or live `.rlhf/*` runtime state.
+- Gemini must not commit ephemeral `.claude/worktrees/*` lanes or live `.thumbgate/*` runtime state.
 
 ## Tool Actions
 
@@ -36,7 +36,7 @@ Source of truth for Gemini declarations:
 - Always include actionable context.
 - Map `up` to learning memory, `down` to mistake memory.
 - For low-context signals, preserve event but avoid memory promotion.
-- Keep tool calls within local safe paths unless `RLHF_ALLOW_EXTERNAL_PATHS=true`.
+- Keep tool calls within local safe paths unless `THUMBGATE_ALLOW_EXTERNAL_PATHS=true`.
 - Provide `rubricScores` + `guardrails` when available so reward-hacking checks can block unsafe positive promotion.
 - Use context-pack cache metadata (`cache.hit`, `cache.similarity`) to reduce repetitive retrieval work.
 - Prefer clean worktrees for verification and branch maintenance rather than a dirty primary checkout.

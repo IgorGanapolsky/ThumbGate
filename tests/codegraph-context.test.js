@@ -33,8 +33,8 @@ test('extractSymbolHints safely handles long non-symbol noise before PascalCase 
 });
 
 test('analyzeCodeGraphImpact normalizes stub evidence and verification hints', () => {
-  const previous = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-  process.env.RLHF_CODEGRAPH_STUB_RESPONSE = STUB_RESPONSE;
+  const previous = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+  process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = STUB_RESPONSE;
 
   try {
     const impact = analyzeCodeGraphImpact({
@@ -48,14 +48,14 @@ test('analyzeCodeGraphImpact normalizes stub evidence and verification hints', (
     assert.equal(impact.evidence.deadCodeCount, 1);
     assert.ok(impact.verificationHints.some((hint) => /dead code/i.test(hint)));
   } finally {
-    if (previous === undefined) delete process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-    else process.env.RLHF_CODEGRAPH_STUB_RESPONSE = previous;
+    if (previous === undefined) delete process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+    else process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = previous;
   }
 });
 
 test('analyzeCodeGraphImpact ignores malformed stub JSON', () => {
-  const previous = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-  process.env.RLHF_CODEGRAPH_STUB_RESPONSE = '{invalid json';
+  const previous = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+  process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = '{invalid json';
 
   try {
     const impact = analyzeCodeGraphImpact({
@@ -66,8 +66,8 @@ test('analyzeCodeGraphImpact ignores malformed stub JSON', () => {
     assert.equal(impact.hasImpact, false);
     assert.equal(impact.summary, '');
   } finally {
-    if (previous === undefined) delete process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-    else process.env.RLHF_CODEGRAPH_STUB_RESPONSE = previous;
+    if (previous === undefined) delete process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+    else process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = previous;
   }
 });
 

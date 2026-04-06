@@ -1,0 +1,19 @@
+{
+  "id": "1775249355656_feedback-positive-fb-1775249355591-py8r1f",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775249355591_py8r1f",
+  "content": "{\"id\":\"fb_1775249355591_py8r1f\",\"signal\":\"positive\",\"context\":\"first entry\",\"submittedContext\":\"first entry\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"worked well\",\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"testing\",\"watcher-ingested\",\"bridged-from:amp-plugin-bridge\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T20:49:15.591Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "testing",
+    "watcher-ingested",
+    "bridged-from:amp-plugin-bridge"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-03T20:49:15.656Z",
+  "lastUsedAt": null
+}

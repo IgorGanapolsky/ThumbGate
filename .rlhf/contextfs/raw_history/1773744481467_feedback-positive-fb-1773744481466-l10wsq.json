@@ -1,0 +1,20 @@
+{
+  "id": "1773744481467_feedback-positive-fb-1773744481466-l10wsq",
+  "title": "feedback_positive_fb_1773744481466_l10wsq",
+  "content": "{\"id\":\"fb_1773744481466_l10wsq\",\"signal\":\"positive\",\"context\":\"Technical debt audit stayed stable by using a dedicated worktree, deleting tracked runtime caches, wiring new regression tests into npm test, and rerunning the full verification suite serially with captured evidence tails.\",\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Keeping verification serial avoided false negatives, removing tracked LanceDB artifacts aligned the repo with its local-only memory policy, and promoting new landing-page plus telemetry regressions into test:api prevented CI blind spots.\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"technical-debt\",\"verification\",\"git-hygiene\",\"local-memory\",\"test-coverage\"],\"skill\":null,\"rubric\":{\"rubricId\":\"default-v1\",\"weightedScore\":0,\"failingCriteria\":[],\"failingGuardrails\":[],\"judgeDisagreements\":[],\"promotionEligible\":true},\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-17T10:48:01.466Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "technical-debt",
+    "verification",
+    "git-hygiene",
+    "local-memory",
+    "test-coverage"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-17T10:48:01.467Z",
+  "lastUsedAt": null
+}

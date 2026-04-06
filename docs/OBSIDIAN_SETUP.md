@@ -1,6 +1,6 @@
 # Obsidian + ThumbGate Integration Guide
 
-Connect your Obsidian vault to ThumbGate so Claude Code's persistent RLHF memory
+Connect your Obsidian vault to ThumbGate so Claude Code's persistent ThumbGate memory
 is browsable, searchable, and linkable inside Obsidian.
 
 ---
@@ -59,7 +59,7 @@ npx mcp-memory-gateway serve
 
 ---
 
-## Step 3: Set Up Your Vault Structure for RLHF Browsing
+## Step 3: Set Up Your Vault Structure for ThumbGate Browsing
 
 Create an `AI-Memories/rlhf/` folder inside your Obsidian vault. This folder becomes your
 live view into Claude Code's memory system.
@@ -68,7 +68,7 @@ live view into Claude Code's memory system.
 
 ### Memory Log.md
 
-Tracks episodic feedback events. Sourced from the local RLHF store:
+Tracks episodic feedback events. Sourced from the local ThumbGate store:
 
 ```
 .claude/memory/feedback/memory-log.jsonl
@@ -130,7 +130,7 @@ Copy the output into `AI-Memories/rlhf/Feedback Stats.md` for historical referen
    your prevention rules and memory logs update automatically
 6. Refresh symlinked files or re-paste stats to see updates in Obsidian
 
-The RLHF feedback loop becomes visible in Obsidian's **Graph View** as your memory files
+The ThumbGate feedback loop becomes visible in Obsidian's **Graph View** as your memory files
 develop connections across sessions.
 
 ---

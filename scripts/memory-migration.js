@@ -253,7 +253,7 @@ function migrateAllMemory() {
  */
 function generateComparisonData() {
   const health = checkMemoryHealth();
-  const feedbackDir = process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
   let lessonCount = 0;
   const lessonsPath = path.join(feedbackDir, 'lessons-index.jsonl');
   if (fs.existsSync(lessonsPath)) {

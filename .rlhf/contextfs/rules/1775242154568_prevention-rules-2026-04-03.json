@@ -1,0 +1,17 @@
+{
+  "id": "1775242154568_prevention-rules-2026-04-03",
+  "namespace": "rules",
+  "title": "prevention_rules_2026-04-03",
+  "content": "# Skill Pack: e2e-test-pack\n\nE2E test pack\n\n1. NEVER deployed without health check and broke production\n2. Always pin dependency versions in package.json",
+  "tags": [
+    "rules",
+    "prevention"
+  ],
+  "source": "feedback-loop",
+  "ttl": null,
+  "metadata": {
+    "skillPack": "e2e-test-pack"
+  },
+  "createdAt": "2026-04-03T18:49:14.568Z",
+  "lastUsedAt": null
+}

@@ -29,7 +29,7 @@ async function getLanceDB() {
 }
 
 function getFeedbackDir() {
-  return resolveFeedbackDir(process.env.RLHF_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR);
+  return resolveFeedbackDir(process.env.THUMBGATE_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR);
 }
 
 function getLanceDir() {
@@ -54,7 +54,7 @@ async function loadPipelineForProfile(profile) {
     return _pipelineCache.get(cacheKey);
   }
 
-  if (process.env.RLHF_VECTOR_FORCE_PRIMARY_FAILURE === 'true' && profile.id !== 'fallback') {
+  if (process.env.THUMBGATE_VECTOR_FORCE_PRIMARY_FAILURE === 'true' && profile.id !== 'fallback') {
     throw new Error('Forced primary embedding profile failure');
   }
 
@@ -98,11 +98,11 @@ async function getEmbeddingPipeline() {
 }
 
 // Stub embed support for unit tests — avoids HuggingFace ONNX model download.
-// Set RLHF_VECTOR_STUB_EMBED=true to get a deterministic 384-dim unit vector.
+// Set THUMBGATE_VECTOR_STUB_EMBED=true to get a deterministic 384-dim unit vector.
 // The real embed() is used in production and integration tests
 // (gated by absence of this env var).
 async function embed(text) {
-  if (process.env.RLHF_VECTOR_STUB_EMBED === 'true') {
+  if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') {
     // Deterministic 384-dim unit vector: first element = 1.0, rest = 0.0
     const stub = Array(384).fill(0);
     stub[0] = 1.0;

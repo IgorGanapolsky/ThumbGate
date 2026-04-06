@@ -10,8 +10,8 @@ It exists so we can ship founder-style IG and TikTok content without filming, ma
 2. Builds a TikTok-safe `1080x1920` MP4 fallback from those same slides.
 3. Validates that the rendered bundle contains exactly `5` non-empty `1080x1080` PNG slides and records SHA-256 hashes in the bundle manifest.
 4. Writes a bundle manifest with canonical asset paths, caption paths, and proof-friendly asset metadata.
-5. Queues timed posts under local runtime state in `.rlhf/social-post-queue.json`.
-6. Blocks duplicate live publishes via `.rlhf/social-post-history.jsonl` unless `--force` is supplied.
+5. Queues timed posts under local runtime state in `.thumbgate/social-post-queue.json`.
+6. Blocks duplicate live publishes via `.thumbgate/social-post-history.jsonl` unless `--force` is supplied.
 7. Publishes through the already-authenticated Chrome session for Instagram and TikTok.
 
 ## Canonical Source
@@ -120,8 +120,8 @@ npm run social:scheduler:install -- --dry-run
 
 - Instagram uses the same 5-slide carousel bundle directly.
 - TikTok publish now prefers a same-slide photo carousel when the live web surface exposes image uploads. On the current account surface, TikTok Studio exposes a `video/*` uploader, so the pipeline falls back to the generated MP4 truthfully and automatically.
-- Queue state lives under `.rlhf/` and is intentionally local-only.
-- Publish history also lives under `.rlhf/` and is intentionally local-only.
+- Queue state lives under `.thumbgate/` and is intentionally local-only.
+- Publish history also lives under `.thumbgate/` and is intentionally local-only.
 - The pipeline supports `--dry-run` and `--no-share` so browser automation can be verified without pushing duplicate live posts.
 - The currently verified backend in this worktree is the copied-profile Playwright lane (`--backend playwright`), not AppleScript.
 - March 21, 2026 proof from this branch:

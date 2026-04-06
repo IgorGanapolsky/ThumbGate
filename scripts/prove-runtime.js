@@ -14,7 +14,7 @@ const EXPERIMENT_TRACKER_PATH = require.resolve('./experiment-tracker');
 const VERIFY_RUN_PATH = require.resolve('./verify-run');
 
 function resolveProofPaths() {
-  const proofDir = process.env.RLHF_RUNTIME_PROOF_DIR || process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+  const proofDir = process.env.THUMBGATE_RUNTIME_PROOF_DIR || process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
   return {
     proofDir,
     reportJson: path.join(proofDir, 'runtime-report.json'),
@@ -85,7 +85,7 @@ function makeRejectedVerification() {
 }
 
 function loadRuntimeHarness(feedbackDir, verificationLoopImpl) {
-  process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
   resetModules();
   stubModule(VERIFICATION_PATH, {
     runVerificationLoop: verificationLoopImpl,
@@ -99,7 +99,7 @@ function loadRuntimeHarness(feedbackDir, verificationLoopImpl) {
 
 function cleanupHarness(feedbackDir) {
   resetModules();
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
   fs.rmSync(feedbackDir, { recursive: true, force: true });
 }
 
@@ -253,7 +253,7 @@ async function run() {
         const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runtime-proof-'));
         const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runtime-proof-cwd-'));
         try {
-          process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+          process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
           resetModules();
           const { buildVerifyPlan, recordVerifyWorkflowRun } = require('./verify-run');
           const plan = buildVerifyPlan('full');
@@ -269,7 +269,7 @@ async function run() {
           }
         } finally {
           resetModules();
-          delete process.env.RLHF_FEEDBACK_DIR;
+          delete process.env.THUMBGATE_FEEDBACK_DIR;
           fs.rmSync(feedbackDir, { recursive: true, force: true });
           fs.rmSync(cwd, { recursive: true, force: true });
         }

@@ -1,0 +1,22 @@
+{
+  "id": "1774887876530_feedback-positive-fb-1774887876251-yd0iwb",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774887876251_yd0iwb",
+  "content": "{\"id\":\"fb_1774887876251_yd0iwb\",\"signal\":\"positive\",\"context\":\"Technical debt audit reminder: verify the exact main merge commit and production /health buildSha before claiming completion; when feedback analytics supports both JSONL and SQLite, explicit logPath runs must bypass unrelated SQLite state and normalize the analysis shape to keep CLI/reporting contracts stable.\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"audit\",\"verification\",\"feedback-loop\",\"ci\",\"deployment\",\"entity:Customer\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-30T16:24:36.251Z\",\"richContext\":{\"domain\":\"git-workflow\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "audit",
+    "verification",
+    "feedback-loop",
+    "ci",
+    "deployment",
+    "entity:Customer"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-30T16:24:36.531Z",
+  "lastUsedAt": null
+}

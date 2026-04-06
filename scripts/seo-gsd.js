@@ -10,7 +10,7 @@ const PRODUCT = {
   name: 'ThumbGate',
   npm: 'mcp-memory-gateway',
   repoUrl: 'https://github.com/IgorGanapolsky/ThumbGate',
-  homepageUrl: 'https://rlhf-feedback-loop-production.up.railway.app',
+  homepageUrl: 'https://thumbgate-production.up.railway.app',
   verificationUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
   automationUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json',
   compatibility: ['Claude Code', 'Cursor', 'Codex', 'Gemini', 'Amp', 'OpenCode'],
@@ -293,7 +293,7 @@ const PAGE_BLUEPRINTS = [
           'Run this in your terminal and Claude Desktop picks up ThumbGate automatically:',
           'npx mcp-memory-gateway init --claude-desktop',
           'Or add the MCP server directly:',
-          'claude mcp add rlhf -- npx -y mcp-memory-gateway serve',
+          'claude mcp add thumbgate -- npx -y mcp-memory-gateway serve',
         ],
       },
       {

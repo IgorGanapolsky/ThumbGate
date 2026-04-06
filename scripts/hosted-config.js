@@ -7,7 +7,7 @@ const {
   PRO_PRICE_LABEL,
 } = require('./commercial-offer');
 
-const DEFAULT_PUBLIC_APP_ORIGIN = 'https://rlhf-feedback-loop-production.up.railway.app';
+const DEFAULT_PUBLIC_APP_ORIGIN = 'https://thumbgate-production.up.railway.app';
 const DEFAULT_CHECKOUT_FALLBACK_URL = PRO_MONTHLY_PAYMENT_LINK;
 const DEFAULT_PRO_PRICE_DOLLARS = PRO_MONTHLY_PRICE_DOLLARS;
 const DEFAULT_PRO_PRICE_LABEL = PRO_PRICE_LABEL;
@@ -114,14 +114,14 @@ function buildHostedCancelUrl(appOrigin, traceId) {
 
 function resolveHostedBillingConfig({ requestOrigin } = {}) {
   const inferredOrigin = normalizeOrigin(requestOrigin) || DEFAULT_PUBLIC_APP_ORIGIN;
-  const appOrigin = normalizeOrigin(process.env.RLHF_PUBLIC_APP_ORIGIN) || inferredOrigin;
+  const appOrigin = normalizeOrigin(process.env.THUMBGATE_PUBLIC_APP_ORIGIN) || inferredOrigin;
   const billingApiBaseUrl = normalizeOrigin(
-    process.env.RLHF_BILLING_API_BASE_URL || process.env.RLHF_CANONICAL_API_BASE_URL || appOrigin
+    process.env.THUMBGATE_BILLING_API_BASE_URL || process.env.THUMBGATE_CANONICAL_API_BASE_URL || appOrigin
   ) || appOrigin;
-  const proPriceDollars = normalizePriceDollars(process.env.RLHF_PRO_PRICE_DOLLARS) || DEFAULT_PRO_PRICE_DOLLARS;
-  const proPriceLabel = process.env.RLHF_PRO_PRICE_LABEL || DEFAULT_PRO_PRICE_LABEL;
-  const gaMeasurementId = normalizeTrackingId(process.env.RLHF_GA_MEASUREMENT_ID, GA_MEASUREMENT_ID_PATTERN);
-  const googleSiteVerification = normalizeTrackingId(process.env.RLHF_GOOGLE_SITE_VERIFICATION);
+  const proPriceDollars = normalizePriceDollars(process.env.THUMBGATE_PRO_PRICE_DOLLARS) || DEFAULT_PRO_PRICE_DOLLARS;
+  const proPriceLabel = process.env.THUMBGATE_PRO_PRICE_LABEL || DEFAULT_PRO_PRICE_LABEL;
+  const gaMeasurementId = normalizeTrackingId(process.env.THUMBGATE_GA_MEASUREMENT_ID, GA_MEASUREMENT_ID_PATTERN);
+  const googleSiteVerification = normalizeTrackingId(process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION);
 
   return {
     appOrigin,
@@ -129,7 +129,7 @@ function resolveHostedBillingConfig({ requestOrigin } = {}) {
     checkoutEndpoint: joinPublicUrl(billingApiBaseUrl, '/v1/billing/checkout'),
     sessionEndpoint: joinPublicUrl(billingApiBaseUrl, '/v1/billing/session'),
     checkoutFallbackUrl: normalizeAbsoluteUrl(
-      process.env.RLHF_CHECKOUT_FALLBACK_URL || DEFAULT_CHECKOUT_FALLBACK_URL
+      process.env.THUMBGATE_CHECKOUT_FALLBACK_URL || DEFAULT_CHECKOUT_FALLBACK_URL
     ) || DEFAULT_CHECKOUT_FALLBACK_URL,
     proPriceDollars,
     proPriceLabel,

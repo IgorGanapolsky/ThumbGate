@@ -6,8 +6,8 @@
  * Each experiment = a config mutation + test run + measurable score.
  * Keeps/discards based on whether score improves over baseline.
  *
- * Persists experiments to .rlhf/experiments.jsonl and writes a progress
- * summary to .rlhf/experiment-progress.json.
+ * Persists experiments to .thumbgate/experiments.jsonl and writes a progress
+ * summary to .thumbgate/experiment-progress.json.
  *
  * Zero external dependencies — uses only node:* and existing project modules.
  *

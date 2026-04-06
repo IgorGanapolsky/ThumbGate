@@ -1,0 +1,18 @@
+{
+  "id": "1774886285461_feedback-positive-fb-1774886285281-c55bbo",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774886285281_c55bbo",
+  "content": "{\"id\":\"fb_1774886285281_c55bbo\",\"signal\":\"positive\",\"context\":\"Job batch-2 passed verification after 1 attempt(s)\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Verification loop accepted output\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"api\",\"verification-loop\"],\"skill\":\"async-job-runner\",\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-30T15:58:05.281Z\",\"richContext\":{\"domain\":\"api-integration\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "api",
+    "verification-loop"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-30T15:58:05.461Z",
+  "lastUsedAt": null
+}

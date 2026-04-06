@@ -1,0 +1,19 @@
+{
+  "id": "1773865737229_feedback-negative-fb-1773865737220-3t3xzc",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1773865737220_3t3xzc",
+  "content": "{\"id\":\"fb_1773865737220_3t3xzc\",\"signal\":\"negative\",\"context\":\"Claimed Cursor plugin was published via npx and registry while 401 errors were still active. Over-reported GTM readiness without verification.\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"gtm\",\"hallucination\",\"verification-failure\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-18T20:28:57.220Z\",\"richContext\":{\"domain\":\"debugging\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"},\"diagnosis\":{\"rootCauseCategory\":\"tool_output_misread\",\"criticalFailureStep\":\"feedback_capture\",\"violations\":[],\"evidence\":[{\"type\":\"context\",\"value\":\"Claimed Cursor plugin was published via npx and registry while 401 errors were still active. Over-reported GTM readiness without verification.\"}]}}",
+  "tags": [
+    "gtm",
+    "hallucination",
+    "verification-failure"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-18T20:28:57.229Z",
+  "lastUsedAt": null
+}

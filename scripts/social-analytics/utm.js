@@ -40,6 +40,8 @@ function buildUTMLink(baseUrl, { source, medium = 'social', campaign, content } 
  *   tiktok: string,
  *   x: string,
  *   github: string,
+ *   reddit: string,
+ *   zernio: string,
  * }}
  */
 function buildSocialLinks(baseUrl, campaign) {
@@ -51,7 +53,47 @@ function buildSocialLinks(baseUrl, campaign) {
     tiktok: buildUTMLink(baseUrl, { source: 'tiktok', medium: 'social', campaign }),
     x: buildUTMLink(baseUrl, { source: 'x', medium: 'social', campaign }),
     github: buildUTMLink(baseUrl, { source: 'github', medium: 'social', campaign }),
+    reddit: buildUTMLink(baseUrl, { source: 'reddit', medium: 'social', campaign }),
+    zernio: buildUTMLink(baseUrl, { source: 'zernio', medium: 'social', campaign }),
   };
+}
+
+/**
+ * Known trackable domains — URLs matching these will have UTM params injected.
+ */
+const TRACKABLE_DOMAINS = [
+  'thumbgate-production.up.railway.app',
+  'github.com/IgorGanapolsky/ThumbGate',
+  'github.com/IgorGanapolsky/mcp-memory-gateway',
+];
+
+/**
+ * Replace raw trackable URLs in text with UTM-tagged versions.
+ *
+ * Scans the input for URLs containing any of the known trackable domains
+ * and appends UTM parameters to them.
+ *
+ * @param {string} text - The content to scan for URLs.
+ * @param {{ source: string, medium?: string, campaign: string }} utmOptions
+ * @returns {string} Text with trackable URLs replaced by UTM-tagged versions.
+ */
+function tagUrlsInText(text, { source, medium = 'social', campaign }) {
+  if (!text) return text;
+
+  // Match http(s) URLs
+  const urlPattern = /https?:\/\/[^\s)"\]]+/g;
+
+  return text.replace(urlPattern, (match) => {
+    const isTrackable = TRACKABLE_DOMAINS.some((domain) => match.includes(domain));
+    if (!isTrackable) return match;
+
+    try {
+      return buildUTMLink(match, { source, medium, campaign });
+    } catch {
+      // If URL parsing fails, return the original
+      return match;
+    }
+  });
 }
 
 /**
@@ -74,6 +116,8 @@ module.exports = {
   buildUTMLink,
   buildSocialLinks,
   shortenWithDub,
+  tagUrlsInText,
+  TRACKABLE_DOMAINS,
 };
 
 // Allow running directly:

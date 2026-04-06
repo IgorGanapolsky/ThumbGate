@@ -1,0 +1,22 @@
+{
+  "id": "1775253701744_feedback-positive-fb-1775253701705-suh3df",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775253701705_suh3df",
+  "content": "{\"id\":\"fb_1775253701705_suh3df\",\"signal\":\"positive\",\"context\":\"Job runtime-harness-job passed verification after 1 attempt(s)\",\"submittedContext\":\"Job runtime-harness-job passed verification after 1 attempt(s)\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Verification loop accepted output\",\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"verification\",\"dogfood\",\"quality\",\"natural-language-harness\",\"repo-full-verification\",\"verification-loop\"],\"skill\":\"natural-language-harness\",\"failureType\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T22:01:41.705Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "verification",
+    "dogfood",
+    "quality",
+    "natural-language-harness",
+    "repo-full-verification",
+    "verification-loop"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-03T22:01:41.744Z",
+  "lastUsedAt": null
+}

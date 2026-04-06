@@ -84,8 +84,8 @@ npm install mcp-memory-gateway
 
 GitHub: github.com/IgorGanapolsky/ThumbGate
 npm: npmjs.com/package/mcp-memory-gateway
-Pro ($19/mo or $149/yr): https://rlhf-feedback-loop-production.up.railway.app/checkout/pro
-Hosted demo: rlhf-feedback-loop-production.up.railway.app
+Pro ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
+Hosted demo: thumbgate-production.up.railway.app
 
 #DevTools #MCP
 

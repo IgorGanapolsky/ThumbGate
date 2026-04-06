@@ -1,0 +1,19 @@
+{
+  "id": "1774554427823_mistake-pushed-to-main",
+  "namespace": "memory/error",
+  "title": "MISTAKE: pushed to main",
+  "content": "What went wrong: pushed to main\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "test-persist"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775141865213_qt5bow"
+  },
+  "createdAt": "2026-03-26T19:47:07.823Z",
+  "lastUsedAt": null
+}

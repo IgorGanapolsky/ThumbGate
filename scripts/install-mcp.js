@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * install-mcp.js — Wire the RLHF MCP server into Claude Code settings.
+ * install-mcp.js — Wire the ThumbGate MCP server into Claude Code settings.
  *
  * Usage:
  *   node scripts/install-mcp.js            # global install (~/.claude/settings.json)
@@ -99,7 +99,7 @@ function installMcp(flags) {
   let settings = loadSettings(settingsPath);
 
   if (isAlreadyInstalled(settings, flags)) {
-    console.log(`RLHF MCP server already installed in ${scope} settings.`);
+    console.log(`ThumbGate MCP server already installed in ${scope} settings.`);
     console.log(`  Path: ${settingsPath}`);
     return { installed: false, path: settingsPath, reason: 'already-installed' };
   }
@@ -131,7 +131,7 @@ function installMcp(flags) {
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
   }
 
-  console.log(`RLHF MCP server installed (${scope}).`);
+  console.log(`ThumbGate MCP server installed (${scope}).`);
   console.log(`  Path: ${settingsPath}`);
   console.log(`  Added: mcpServers.${MCP_SERVER_KEY}`);
   console.log(`  Config: ${JSON.stringify(serverConfig)}`);

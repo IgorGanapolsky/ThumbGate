@@ -18,9 +18,9 @@ If that is unavailable, open an issue with minimal reproduction details and no s
 
 ## Hardening Recommendations
 
-- Set `RLHF_API_KEY` in all non-local deployments.
-- Keep `RLHF_ALLOW_EXTERNAL_PATHS` disabled.
+- Set `THUMBGATE_API_KEY` in all non-local deployments.
+- Keep `THUMBGATE_ALLOW_EXTERNAL_PATHS` disabled.
 - Rotate keys regularly.
 - Record every production secret rotation in its matching `*_ROTATED_AT` variable.
-- Keep `RLHF_PUBLIC_APP_ORIGIN` and `RLHF_BILLING_API_BASE_URL` aligned with the canonical hosted flow before deploying.
+- Keep `THUMBGATE_PUBLIC_APP_ORIGIN` and `THUMBGATE_BILLING_API_BASE_URL` aligned with the canonical hosted flow before deploying.
 - Run `npm run deploy:policy -- --profiles=runtime,billing,deploy` before any production deploy.

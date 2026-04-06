@@ -14,7 +14,7 @@ must_haves:
   truths:
     - "extractMetaPolicyRules() reads memory-log.jsonl, groups by category, and produces at least one rule when >= 2 entries exist for a category"
     - "Each rule has category, confidence (float [0,0.95]), trend (improving|deteriorating|needs_attention|stable), and occurrence_count fields"
-    - "Output is written to meta-policy-rules.json in RLHF_FEEDBACK_DIR — NOT to prevention-rules.md (different artifact)"
+    - "Output is written to meta-policy-rules.json in THUMBGATE_FEEDBACK_DIR — NOT to prevention-rules.md (different artifact)"
     - "npm run ml:meta-policy executes without error"
   artifacts:
     - path: "scripts/meta-policy.js"
@@ -72,7 +72,7 @@ const { inferDomain } = require('./feedback-loop');
 
 **`extractMetaPolicyRules(opts = {})`:**
 
-1. Resolve `feedbackDir = opts.feedbackDir || process.env.RLHF_FEEDBACK_DIR || path.join(os.homedir(), '.claude/memory/feedback')`
+1. Resolve `feedbackDir = opts.feedbackDir || process.env.THUMBGATE_FEEDBACK_DIR || path.join(os.homedir(), '.claude/memory/feedback')`
 2. Read `memory-log.jsonl` from feedbackDir line-by-line (fs.readFileSync, split '\n', filter empty, JSON.parse)
 3. Filter to only negative memories (`entry.signal === 'negative'` OR `entry.feedback === 'down'`)
 4. Group by domain using `inferDomain(entry)` — result: `Map<string, entry[]>`

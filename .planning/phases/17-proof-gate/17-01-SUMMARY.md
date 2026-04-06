@@ -17,7 +17,7 @@ key_files:
     - proof/v3-milestone-report.md
   modified: []
 decisions:
-  - RLHF_ALLOW_INSECURE=true must not be set during npm test — it disables auth middleware and breaks the auth test suite
+  - THUMBGATE_ALLOW_INSECURE=true must not be set during npm test — it disables auth middleware and breaks the auth test suite
   - provisionApiKey returns { key, customerId, createdAt } not { apiKey, ... } — checked field name against actual billing.js return value
   - Test count parsing sums all ℹ pass N lines across multiple sub-scripts in the npm test pipeline
   - Server startup for PROOF-01 uses a non-standard port (13877) to avoid colliding with default 3000
@@ -51,7 +51,7 @@ metrics:
 | PROOF-01c: /health returns 200 with version+uptime | PASS | HTTP 200, version=0.5.0, uptime=0.268s |
 | PROOF-02a: billing.js exports 5 required functions | PASS | createCheckoutSession, provisionApiKey, validateApiKey, recordUsage, handleWebhook |
 | PROOF-02b: provisionApiKey + validateApiKey round-trip | PASS | Key provisioned (rlhf_273b5d3b0...) and validated successfully |
-| PROOF-03: cli init creates .rlhf/ and config.json | PASS | .rlhf/ created, config.json has keys: version, apiUrl, logPath, memoryPath, createdAt |
+| PROOF-03: cli init creates .thumbgate/ and config.json | PASS | .thumbgate/ created, config.json has keys: version, apiUrl, logPath, memoryPath, createdAt |
 | PROOF-04: npm test >= 314 passing, 0 failures | PASS | 362 tests passed, 0 failures (threshold: 314+) |
 
 **Overall: PASS (7/7)**
@@ -60,17 +60,17 @@ metrics:
 
 - PROOF-01: Dockerfile exists, /health returns 200 — COMPLETE
 - PROOF-02: Billing exports verified, key provision+validate round-trip works — COMPLETE
-- PROOF-03: CLI init creates .rlhf/ and config.json in clean tmpdir — COMPLETE
+- PROOF-03: CLI init creates .thumbgate/ and config.json in clean tmpdir — COMPLETE
 - PROOF-04: 362 tests pass, 0 failures, exit code 0 — COMPLETE
 
 ## Deviations from Plan
 
 ### Auto-fixed Issues
 
-**1. [Rule 1 - Bug] RLHF_ALLOW_INSECURE=true breaks auth test**
+**1. [Rule 1 - Bug] THUMBGATE_ALLOW_INSECURE=true breaks auth test**
 - Found during: PROOF-04 (first run)
-- Issue: Setting RLHF_ALLOW_INSECURE=true in the proof script's npm test env caused the API server under test to bypass auth middleware, making the `unauthorized without bearer token` test return 200 instead of 401
-- Fix: Removed RLHF_ALLOW_INSECURE from the npm test env; kept it only for the PROOF-01 health check server
+- Issue: Setting THUMBGATE_ALLOW_INSECURE=true in the proof script's npm test env caused the API server under test to bypass auth middleware, making the `unauthorized without bearer token` test return 200 instead of 401
+- Fix: Removed THUMBGATE_ALLOW_INSECURE from the npm test env; kept it only for the PROOF-01 health check server
 - Files modified: scripts/prove-v3-milestone.js
 - Commit: ab90e04 (included in final)
 

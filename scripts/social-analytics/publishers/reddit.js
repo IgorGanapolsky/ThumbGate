@@ -19,6 +19,10 @@
  *   POST https://oauth.reddit.com/api/comment  — submit a reply/comment
  */
 
+const { tagUrlsInText, buildUTMLink } = require('../utm');
+
+const REDDIT_UTM = { source: 'reddit', medium: 'social', campaign: 'organic' };
+
 const REDDIT_API_BASE = 'https://oauth.reddit.com';
 const REDDIT_TOKEN_URL = 'https://www.reddit.com/api/v1/access_token';
 
@@ -283,8 +287,11 @@ async function publishToReddit({ subreddit, title, text, url, token }) {
   if (!subreddit) throw new Error('subreddit is required');
   if (!title) throw new Error('title is required');
 
+  // Tag trackable URLs with Reddit UTM parameters
+  if (text) text = tagUrlsInText(text, REDDIT_UTM);
   if (url) {
-    return submitLinkPost(accessToken, userAgent, { subreddit, title, url });
+    const taggedUrl = tagUrlsInText(url, REDDIT_UTM);
+    return submitLinkPost(accessToken, userAgent, { subreddit, title, url: taggedUrl });
   }
 
   if (!text) throw new Error('text is required when url is not provided');

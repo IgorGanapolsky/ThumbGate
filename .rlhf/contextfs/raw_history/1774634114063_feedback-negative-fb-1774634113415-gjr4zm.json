@@ -1,0 +1,17 @@
+{
+  "id": "1774634114063_feedback-negative-fb-1774634113415-gjr4zm",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774634113415_gjr4zm",
+  "content": "{\"id\":\"fb_1774634113415_gjr4zm\",\"signal\":\"negative\",\"context\":\"wrong file edited\",\"lastAction\":{\"tool\":\"Edit\",\"contextKey\":\"Edit:config\",\"file\":\"src/config/prod.ts\",\"timestamp\":\"2026-03-15T17:00:00Z\"},\"whatWentWrong\":\"edited production config\",\"whatToChange\":\"check file path first\",\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"test-attribution\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-27T17:55:13.415Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"factual-error\"}}",
+  "tags": [
+    "test-attribution"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-27T17:55:14.063Z",
+  "lastUsedAt": null
+}

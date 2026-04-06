@@ -13,13 +13,13 @@ function normalizeText(value) {
 }
 
 function shouldPreferHostedDashboard() {
-  return String(process.env.RLHF_METRICS_SOURCE || '').trim().toLowerCase() !== 'local';
+  return String(process.env.THUMBGATE_METRICS_SOURCE || '').trim().toLowerCase() !== 'local';
 }
 
 function resolveHostedDashboardConfig() {
   const runtimeConfig = resolveHostedBillingConfig();
-  const apiBaseUrl = normalizeText(process.env.RLHF_BILLING_API_BASE_URL) || runtimeConfig.billingApiBaseUrl;
-  const apiKey = normalizeText(process.env.RLHF_API_KEY);
+  const apiBaseUrl = normalizeText(process.env.THUMBGATE_BILLING_API_BASE_URL) || runtimeConfig.billingApiBaseUrl;
+  const apiKey = normalizeText(process.env.THUMBGATE_API_KEY);
   return {
     apiBaseUrl,
     apiKey,

@@ -73,7 +73,7 @@ Key design decisions:
 - `embed()` converts `Float32Array` output to `number[]` via `Array.from()` — required for Arrow FixedSizeList schema
 - `upsertFeedback()` checks `db.tableNames()` to decide create vs add
 - `searchSimilar()` returns `[]` if table doesn't exist yet (safe default)
-- `RLHF_FEEDBACK_DIR` env var support for test isolation
+- `THUMBGATE_FEEDBACK_DIR` env var support for test isolation
 - TABLE_NAME = `'rlhf_memories'` — JS-only table, never crosses into Python Subway tables
 
 ## Verification Evidence

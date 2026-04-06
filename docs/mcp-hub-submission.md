@@ -51,7 +51,7 @@ Works in local mode (zero config, no API key) or connected to the Context Gatewa
 ### Option A: Local mode (OSS, no API key needed)
 
 ```bash
-claude mcp add rlhf -- npx -y mcp-memory-gateway@0.9.9 serve
+claude mcp add thumbgate -- npx -y mcp-memory-gateway@0.9.9 serve
 ```
 
 Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/settings.json`):
@@ -63,7 +63,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
       "command": "npx",
       "args": ["-y", "mcp-memory-gateway@0.9.9", "serve"],
       "env": {
-        "RLHF_BASE_URL": "http://localhost:8787"
+        "THUMBGATE_BASE_URL": "http://localhost:8787"
       }
     }
   }
@@ -79,8 +79,8 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
       "command": "npx",
       "args": ["-y", "mcp-memory-gateway@0.9.9", "serve"],
       "env": {
-        "RLHF_BASE_URL": "https://rlhf-feedback-loop-production.up.railway.app",
-        "RLHF_API_KEY": "rlhf_YOUR_KEY_HERE"
+        "THUMBGATE_BASE_URL": "https://thumbgate-production.up.railway.app",
+        "THUMBGATE_API_KEY": "rlhf_YOUR_KEY_HERE"
       }
     }
   }
@@ -88,7 +88,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 ```
 
 Hosted API access is currently pilot/by-request rather than a public self-serve monthly subscription.
-Current self-serve commercial offer: Pro ($19/mo or $149/yr): https://rlhf-feedback-loop-production.up.railway.app/checkout/pro
+Current self-serve commercial offer: Pro ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
 Team rollout pricing anchor: $12/seat/mo (min 3 seats), intake-first on the landing page.
 Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
@@ -103,7 +103,7 @@ Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/doc
 | `get_prevention_rules` | Retrieve prevention rules auto-generated from repeated failure patterns |
 | `export_dpo_pairs` | Export feedback as DPO preference pairs for fine-tuning |
 | `get_feedback_stats` | Get per-category Thompson Sampling posteriors |
-| `validate_feedback` | Validate a feedback entry against the RLHF schema without capturing |
+| `validate_feedback` | Validate a feedback entry against the ThumbGate schema without capturing |
 
 ---
 

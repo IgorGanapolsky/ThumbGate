@@ -24,10 +24,10 @@ const savedApiKeysPath = process.env._TEST_API_KEYS_PATH;
 const savedFunnelPath = process.env._TEST_FUNNEL_LEDGER_PATH;
 const savedRevenuePath = process.env._TEST_REVENUE_LEDGER_PATH;
 const savedLocalCheckoutSessionsPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
-const savedGithubPlanPricing = process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
+const savedGithubPlanPricing = process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
 const savedStripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const savedStripePriceId = process.env.STRIPE_PRICE_ID;
-const savedFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
 const savedTestStripeReconciledRevenueEvents = process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
 
 // Initial setup
@@ -35,7 +35,7 @@ process.env._TEST_API_KEYS_PATH = testApiKeysPath;
 process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
 process.env._TEST_REVENUE_LEDGER_PATH = testRevenueLedgerPath;
 process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = testLocalCheckoutSessionsPath;
-process.env.RLHF_FEEDBACK_DIR = testFeedbackDir;
+process.env.THUMBGATE_FEEDBACK_DIR = testFeedbackDir;
 process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';
 
@@ -50,10 +50,10 @@ after(() => {
   else process.env._TEST_REVENUE_LEDGER_PATH = savedRevenuePath;
   if (savedLocalCheckoutSessionsPath === undefined) delete process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
   else process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = savedLocalCheckoutSessionsPath;
-  if (savedGithubPlanPricing === undefined) delete process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
-  else process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = savedGithubPlanPricing;
-  if (savedFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-  else process.env.RLHF_FEEDBACK_DIR = savedFeedbackDir;
+  if (savedGithubPlanPricing === undefined) delete process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
+  else process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = savedGithubPlanPricing;
+  if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+  else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
   if (savedTestStripeReconciledRevenueEvents === undefined) delete process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
   else process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = savedTestStripeReconciledRevenueEvents;
   fs.rmSync(billingTestRoot, { recursive: true, force: true });
@@ -120,7 +120,7 @@ describe('billing.js — funnel ledger', () => {
     delete require.cache[require.resolve('../scripts/billing')];
     process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
     process.env._TEST_REVENUE_LEDGER_PATH = testRevenueLedgerPath;
-    delete process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
+    delete process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
   });
 
   test('createCheckoutSession emits acquisition event', async () => {
@@ -405,7 +405,7 @@ describe('billing.js — funnel ledger', () => {
   });
 
   test('handleGithubWebhook records booked revenue when plan pricing is configured', () => {
-    process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
+    process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
       7: { amountCents: 4900, currency: 'USD', recurringInterval: null },
     });
     const billing = requireFreshBilling('');
@@ -458,7 +458,7 @@ describe('billing.js — funnel ledger', () => {
   });
 
   test('getBillingSummary backfills legacy github marketplace amounts from configured plan pricing at read time', () => {
-    process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
+    process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
       70: { amountCents: 4900, currency: 'USD', recurringInterval: 'month' },
     });
     const billing = requireFreshBilling('');
@@ -499,7 +499,7 @@ describe('billing.js — funnel ledger', () => {
   });
 
   test('repairGithubMarketplaceRevenueLedger writes repaired github marketplace amounts into the local ledger', () => {
-    process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
+    process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
       71: { amountCents: 9900, currency: 'USD', recurringInterval: 'year' },
     });
     const billing = requireFreshBilling('');
@@ -827,7 +827,7 @@ describe('billing.js — rotateApiKey', () => {
 describe('API server — /v1/billing/* routes', () => {
   let server, port, billing;
   before(async () => {
-    process.env.RLHF_ALLOW_INSECURE = 'true';
+    process.env.THUMBGATE_ALLOW_INSECURE = 'true';
     process.env._TEST_API_KEYS_PATH = testApiKeysPath;
     process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
     process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = testLocalCheckoutSessionsPath;
@@ -843,7 +843,7 @@ describe('API server — /v1/billing/* routes', () => {
   });
   after(async () => {
     await new Promise(r => server.close(r));
-    delete process.env.RLHF_ALLOW_INSECURE;
+    delete process.env.THUMBGATE_ALLOW_INSECURE;
   });
 
   test('POST /v1/billing/checkout returns sessionId', async () => {
@@ -857,7 +857,7 @@ describe('API server — /v1/billing/* routes', () => {
     const body = await res.json();
     assert.ok(body && body.sessionId && body.sessionId.startsWith('test_session_'));
     assert.match(body.traceId, /^checkout_/);
-    assert.equal(res.headers.get('x-rlhf-trace-id'), body.traceId);
+    assert.equal(res.headers.get('x-thumbgate-trace-id'), body.traceId);
   });
 });
 

@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const TELEMETRY_ENDPOINT = 'https://rlhf-feedback-loop-production.up.railway.app/v1/telemetry/ping';
+const TELEMETRY_ENDPOINT = 'https://thumbgate-production.up.railway.app/v1/telemetry/ping';
 const INSTALL_ID_PATH = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.thumbgate', 'install-id');
 
 /**
@@ -51,10 +51,10 @@ function classifyInstall() {
 
 /**
  * Send anonymous telemetry ping. Fire-and-forget, never blocks CLI.
- * Respects RLHF_NO_TELEMETRY=1 opt-out.
+ * Respects THUMBGATE_NO_TELEMETRY=1 opt-out.
  */
 function trackEvent(eventType, metadata = {}) {
-  if (process.env.RLHF_NO_TELEMETRY === '1' || process.env.DO_NOT_TRACK === '1') return;
+  if (process.env.THUMBGATE_NO_TELEMETRY === '1' || process.env.DO_NOT_TRACK === '1') return;
 
   const payload = JSON.stringify({
     eventType,

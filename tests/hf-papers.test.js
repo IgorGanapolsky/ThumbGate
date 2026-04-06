@@ -7,7 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-hf-papers-test-'));
-process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 
 const {
   CONTEXTFS_ROOT,
@@ -38,7 +38,7 @@ const SAMPLE_PAPER = {
 
 test.after(() => {
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
 });
 
 test('buildSearchUrls returns documented-first fallback order', () => {

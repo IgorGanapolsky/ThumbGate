@@ -1,0 +1,17 @@
+{
+  "id": "1775253107577_feedback-positive-fb-1775253107511-8ppkjr",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775253107511_8ppkjr",
+  "content": "{\"id\":\"fb_1775253107511_8ppkjr\",\"signal\":\"positive\",\"context\":\"test context for ML verification call 1\",\"submittedContext\":\"test context for ML verification call 1\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"the feature worked correctly\",\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"testing\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T21:51:47.511Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "testing"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-03T21:51:47.577Z",
+  "lastUsedAt": null
+}

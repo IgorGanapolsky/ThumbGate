@@ -1,0 +1,17 @@
+{
+  "id": "1775226405379_feedback-negative-fb-1775226405234-lsbqay",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775226405234_lsbqay",
+  "content": "{\"id\":\"fb_1775226405234_lsbqay\",\"signal\":\"negative\",\"context\":\"Ignored project's preference for Vanilla CSS by suggesting Tailwind.\",\"relatedFeedbackId\":null,\"lastAction\":{\"tool\":\"write_file\",\"contextKey\":null,\"file\":null,\"timestamp\":null},\"whatWentWrong\":\"Ignored project's preference for Vanilla CSS by suggesting Tailwind.\",\"whatToChange\":\"NEVER: use TailwindCSS in this project. INSTEAD: use standard Vanilla CSS files.\",\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"chatHistory\":[{\"role\":\"user\",\"content\":\"Use Vanilla CSS only please.\"},{\"role\":\"assistant\",\"content\":\"Okay, I will use Vanilla CSS.\"},{\"role\":\"assistant\",\"content\":\"Actually, I will use Tailwind because it is faster.\"}],\"inferredLesson\":{\"whatWentWrong\":\"Ignored project's preference for Vanilla CSS by suggesting Tailwind.\",\"whatToChange\":\"NEVER: use TailwindCSS in this project. INSTEAD: use standard Vanilla CSS files.\",\"category\":\"intent_plan_misalignment\",\"confidence\":0.95,\"source\":\"mock\"},\"tags\":[\"entity:Customer\"],\"skill\":null,\"failureType\":\"intent_plan_misalignment\",\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-03T14:26:45.234Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "entity:Customer"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-03T14:26:45.379Z",
+  "lastUsedAt": null
+}

@@ -58,7 +58,7 @@ const SESSION_ACTION_TTL_MS = 60 * 60 * 1000; // 1 hour
 // ---------------------------------------------------------------------------
 
 function loadGatesConfig(configPath) {
-  const primaryPath = configPath || process.env.RLHF_GATES_CONFIG || DEFAULT_CONFIG_PATH;
+  const primaryPath = configPath || process.env.THUMBGATE_GATES_CONFIG || DEFAULT_CONFIG_PATH;
 
   if (!fs.existsSync(primaryPath)) {
     throw new Error(`Gates config not found: ${primaryPath}`);

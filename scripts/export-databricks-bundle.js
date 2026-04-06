@@ -7,7 +7,7 @@ const path = require('path');
 const { getFeedbackPaths } = require('./feedback-loop');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const DEFAULT_PROOF_DIR = process.env.RLHF_PROOF_DIR
+const DEFAULT_PROOF_DIR = process.env.THUMBGATE_PROOF_DIR
   || path.join(PROJECT_ROOT, 'proof');
 
 function parseArgs(argv) {
@@ -144,7 +144,7 @@ function exportDatabricksBundle(feedbackDir = getDefaultFeedbackDir(), outputPat
     {
       tableName: 'feedback_events',
       sourcePath: path.join(resolvedFeedbackDir, 'feedback-log.jsonl'),
-      description: 'Raw RLHF feedback events from feedback-log.jsonl',
+      description: 'Raw ThumbGate feedback events from feedback-log.jsonl',
     },
     {
       tableName: 'memory_records',

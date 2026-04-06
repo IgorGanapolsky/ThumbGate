@@ -1,0 +1,19 @@
+{
+  "id": "1775482590462_feedback-positive-fb-1775482590346-n5sip3",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775482590346_n5sip3",
+  "content": "{\"id\":\"fb_1775482590346_n5sip3\",\"signal\":\"positive\",\"context\":\"User prefers tabs\",\"submittedContext\":\"User prefers tabs\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Switched to tabs\",\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"style\",\"formatting\",\"entity:Customer\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-06T13:36:30.346Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "style",
+    "formatting",
+    "entity:Customer"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-06T13:36:30.462Z",
+  "lastUsedAt": null
+}

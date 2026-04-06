@@ -38,10 +38,10 @@ test('classifyInstall returns real_user when not CI or owner', () => {
 });
 
 test('trackEvent does not throw with telemetry disabled', () => {
-  const orig = process.env.RLHF_NO_TELEMETRY;
-  process.env.RLHF_NO_TELEMETRY = '1';
+  const orig = process.env.THUMBGATE_NO_TELEMETRY;
+  process.env.THUMBGATE_NO_TELEMETRY = '1';
   assert.doesNotThrow(() => trackEvent('test_event', { foo: 'bar' }));
-  if (orig) process.env.RLHF_NO_TELEMETRY = orig; else delete process.env.RLHF_NO_TELEMETRY;
+  if (orig) process.env.THUMBGATE_NO_TELEMETRY = orig; else delete process.env.THUMBGATE_NO_TELEMETRY;
 });
 
 test('trackEvent does not throw with DO_NOT_TRACK', () => {

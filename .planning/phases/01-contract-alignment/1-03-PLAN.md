@@ -178,7 +178,7 @@ PART C — Write proof/baseline-test-count.md:
 **Recorded:** {new Date().toISOString()}
 **Purpose:** Authoritative pre-Phase-2 CI gate. Phase 2 and 3 may not begin until this baseline is confirmed green.
 
-## rlhf-feedback-loop (Node.js repo)
+## thumbgate (Node.js repo)
 
 | Runner | Count | Command |
 |--------|-------|---------|

@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const DEFAULT_PRO_API = 'https://rlhf-feedback-loop-production.up.railway.app';
+const DEFAULT_PRO_API = 'https://thumbgate-production.up.railway.app';
 const CREATOR_BYPASS_VALUE = process.env.THUMBGATE_DEV_SECRET || '';
 const CREATOR_BYPASS_ENV = 'THUMBGATE_DEV_BYPASS';
 const CREATOR_SYNTHETIC_KEY = process.env.THUMBGATE_DEV_KEY || '';
@@ -73,7 +73,7 @@ function resolveProKey({ env = process.env, homeDir } = {}) {
     };
   }
 
-  const envKey = String(env.RLHF_API_KEY || '').trim();
+  const envKey = String(env.THUMBGATE_API_KEY || '').trim();
   if (envKey) {
     return {
       key: envKey,
@@ -127,8 +127,8 @@ async function startLocalProDashboard({
     throw new Error('Pro license key required.');
   }
 
-  env.RLHF_PRO_MODE = '1';
-  env.RLHF_API_KEY = normalizedKey;
+  env.THUMBGATE_PRO_MODE = '1';
+  env.THUMBGATE_API_KEY = normalizedKey;
 
   const desiredPort = Number(port ?? env.PORT ?? 3456);
   env.PORT = String(desiredPort);

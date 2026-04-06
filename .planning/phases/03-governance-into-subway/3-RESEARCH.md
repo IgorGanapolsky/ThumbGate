@@ -1,7 +1,7 @@
 # Phase 3: Governance into Subway - Research
 
 **Researched:** 2026-03-04
-**Domain:** Node.js governance scripts — file-system port from rlhf-feedback-loop to Subway_RN_Demo
+**Domain:** Node.js governance scripts — file-system port from thumbgate to Subway_RN_Demo
 **Confidence:** HIGH
 
 <phase_requirements>
@@ -9,9 +9,9 @@
 
 | ID | Description | Research Support |
 |----|-------------|-----------------|
-| GOV-01 | Budget guard enforces $10/month cap with atomic ledger in Subway | budget-guard.js is zero-dependency; ports verbatim with RLHF_FEEDBACK_DIR → Subway path; ledger at `.claude/memory/feedback/budget-ledger.json` |
+| GOV-01 | Budget guard enforces $10/month cap with atomic ledger in Subway | budget-guard.js is zero-dependency; ports verbatim with THUMBGATE_FEEDBACK_DIR → Subway path; ledger at `.claude/memory/feedback/budget-ledger.json` |
 | GOV-02 | Intent router with policy bundles provides risk-stratified action planning in Subway | intent-router.js requires mcp-policy.js; full dependency set confirmed; policy bundles + allowlists + subagent-profiles all port as JSON config files |
-| GOV-03 | ContextFS with semantic cache (Jaccard, threshold=0.7, TTL=86400s) operates in Subway | contextfs.js is zero-dependency; Jaccard and TTL confirmed in source; env vars RLHF_SEMANTIC_CACHE_THRESHOLD and RLHF_SEMANTIC_CACHE_TTL_SECONDS configurable |
+| GOV-03 | ContextFS with semantic cache (Jaccard, threshold=0.7, TTL=86400s) operates in Subway | contextfs.js is zero-dependency; Jaccard and TTL confirmed in source; env vars THUMBGATE_SEMANTIC_CACHE_THRESHOLD and THUMBGATE_SEMANTIC_CACHE_TTL_SECONDS configurable |
 | GOV-04 | Self-healing monitor detects CI failures and runs fix scripts in Subway | self-heal.js + self-healing-check.js confirmed; KNOWN_FIX_SCRIPTS must be redefined for Subway's package.json; lint:fix (not lint:check) and format are available; Subway ESLint confirmed NO auto-import-sort |
 | GOV-05 | All governance features have unit tests proving correct behavior | rlhf has 298 lines across 5 test files (node:test runner); Subway uses Jest (jest-expo preset); port tests to Jest/describe syntax; use scripts/__tests__/ directory pattern confirmed in Subway |
 | GOV-06 | Proof report generated in proof/ directory for governance features | proof/ pattern confirmed: automation/report.md + automation/report.json; generate at end of phase in rlhf repo (commits happen in rlhf only) |
@@ -21,7 +21,7 @@
 
 ## Summary
 
-Phase 3 ports four governance scripts from rlhf-feedback-loop into Subway_RN_Demo: budget-guard.js, intent-router.js (+ mcp-policy.js + config files), contextfs.js, and self-heal.js / self-healing-check.js. Every script is zero-dependency CommonJS. No npm packages are installed. All five scripts use only Node.js built-ins (`fs`, `path`, `child_process`). The port is path-variable surgery plus config adaptation — not a rewrite.
+Phase 3 ports four governance scripts from thumbgate into Subway_RN_Demo: budget-guard.js, intent-router.js (+ mcp-policy.js + config files), contextfs.js, and self-heal.js / self-healing-check.js. Every script is zero-dependency CommonJS. No npm packages are installed. All five scripts use only Node.js built-ins (`fs`, `path`, `child_process`). The port is path-variable surgery plus config adaptation — not a rewrite.
 
 The most complex part of this phase is not the code; it is the test infrastructure gap. rlhf's tests use `node:test` runner. Subway's `scripts/__tests__/` directory uses Jest (confirmed by `autonomy-cli.test.js`, `feedback-loop.test.js`). The ported tests must be rewritten from `node:test` syntax into Jest syntax. This is mechanical but must not be skipped — GOV-05 requires tests proving behavior.
 
@@ -117,12 +117,12 @@ Subway_RN_Demo/
 ```javascript
 // rlhf original (scripts/ is one level below PROJECT_ROOT)
 const PROJECT_ROOT = path.join(__dirname, '..');
-const FEEDBACK_DIR = process.env.RLHF_FEEDBACK_DIR
+const FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR
   || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
 
 // Subway port (.claude/scripts/feedback/ is three levels below PROJECT_ROOT)
 const PROJECT_ROOT = path.join(__dirname, '..', '..', '..');
-const FEEDBACK_DIR = process.env.RLHF_FEEDBACK_DIR
+const FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR
   || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
 ```
 
@@ -166,7 +166,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-test-'));
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 test('adds spend', () => {
   const result = addSpend({ amountUsd: 0.25, source: 'test', note: 'unit' });
@@ -181,14 +181,14 @@ const path = require('path');
 let tmpDir;
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'subway-gov-test-'));
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
-  process.env.RLHF_MONTHLY_BUDGET_USD = '1';
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_MONTHLY_BUDGET_USD = '1';
 });
 
 afterEach(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
-  delete process.env.RLHF_FEEDBACK_DIR;
-  delete process.env.RLHF_MONTHLY_BUDGET_USD;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_MONTHLY_BUDGET_USD;
 });
 
 test('adds spend', () => {
@@ -210,7 +210,7 @@ test('adds spend', () => {
 
 - **Copying DEFAULT_CHECKS verbatim from self-healing-check.js:** The rlhf-specific npm scripts (`budget:status`, `prove:adapters`, `prove:automation`) do not exist in Subway. The check will fail immediately on the first run.
 - **Setting env vars at module scope in Jest tests:** Jest re-uses the same process; module-level env vars persist across tests in unexpected ways. Use `beforeEach`/`afterEach` with `jest.resetModules()`.
-- **Using `require()` for budget-guard at test-file top level:** The module reads `RLHF_FEEDBACK_DIR` at require time via the closure in `loadLedger()`. Require AFTER setting the env var, or refactor to accept path as argument (simpler: require in beforeEach after setting env).
+- **Using `require()` for budget-guard at test-file top level:** The module reads `THUMBGATE_FEEDBACK_DIR` at require time via the closure in `loadLedger()`. Require AFTER setting the env var, or refactor to accept path as argument (simpler: require in beforeEach after setting env).
 - **Putting config files at repo root:** Policy bundles and mcp-allowlists belong in `.claude/config/`, not at repo root. `mcp-policy.js` looks for them relative to `PROJECT_ROOT/config/` — with the correct `PROJECT_ROOT` depth, this resolves to `.claude/config/` automatically.
 
 ---
@@ -239,9 +239,9 @@ test('adds spend', () => {
 
 ### Pitfall 2: Jest module cache trapping wrong env vars
 
-**What goes wrong:** Tests use different `RLHF_FEEDBACK_DIR` values but the cached require() returns the module from the first test's env.
+**What goes wrong:** Tests use different `THUMBGATE_FEEDBACK_DIR` values but the cached require() returns the module from the first test's env.
 **Why it happens:** Jest caches modules between tests. `budget-guard.js` closes over `LEDGER_PATH` at module load time.
-**How to avoid:** In each test that needs an isolated tmpDir: (1) set env var, (2) call `jest.resetModules()`, (3) require module inside the test or `beforeEach`. Alternatively, patch `RLHF_FEEDBACK_DIR` before any require in the file, as the rlhf tests do — but scope it correctly with `beforeEach`/`afterEach` in Jest.
+**How to avoid:** In each test that needs an isolated tmpDir: (1) set env var, (2) call `jest.resetModules()`, (3) require module inside the test or `beforeEach`. Alternatively, patch `THUMBGATE_FEEDBACK_DIR` before any require in the file, as the rlhf tests do — but scope it correctly with `beforeEach`/`afterEach` in Jest.
 **Warning signs:** Two tests sharing the same ledger file when they should have separate tmp dirs.
 
 ### Pitfall 3: Self-healing-check DEFAULT_CHECKS with invalid npm scripts
@@ -279,7 +279,7 @@ Verified patterns from direct source inspection:
 // Path surgery: change PROJECT_ROOT to path.join(__dirname, '..', '..', '..')
 
 function addSpend({ amountUsd, source, note }) {
-  const budgetUsd = getMonthlyBudget(); // reads RLHF_MONTHLY_BUDGET_USD env var
+  const budgetUsd = getMonthlyBudget(); // reads THUMBGATE_MONTHLY_BUDGET_USD env var
   const lockFd = acquireLock({ timeoutMs: 30000, staleMs: 60000 }); // increase from 5000/15000
   try {
     const ledger = loadLedger(); // reads FEEDBACK_DIR/budget-ledger.json
@@ -299,9 +299,9 @@ function addSpend({ amountUsd, source, note }) {
 ```javascript
 // Source: /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/contextfs.js
 // Jaccard threshold=0.7, TTL=86400s are ENV-configurable defaults:
-// RLHF_SEMANTIC_CACHE_THRESHOLD=0.7
-// RLHF_SEMANTIC_CACHE_TTL_SECONDS=86400
-// RLHF_SEMANTIC_CACHE_ENABLED=true (set to 'false' to disable)
+// THUMBGATE_SEMANTIC_CACHE_THRESHOLD=0.7
+// THUMBGATE_SEMANTIC_CACHE_TTL_SECONDS=86400
+// THUMBGATE_SEMANTIC_CACHE_ENABLED=true (set to 'false' to disable)
 
 const pack = constructContextPack({
   query: 'ESLint import order fix failed',
@@ -363,15 +363,15 @@ let budgetGuard;
 
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'subway-budget-test-'));
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
-  process.env.RLHF_MONTHLY_BUDGET_USD = '1';
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_MONTHLY_BUDGET_USD = '1';
   jest.resetModules();
   budgetGuard = require('../../.claude/scripts/feedback/budget-guard');
 });
 
 afterEach(() => {
-  delete process.env.RLHF_FEEDBACK_DIR;
-  delete process.env.RLHF_MONTHLY_BUDGET_USD;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_MONTHLY_BUDGET_USD;
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
@@ -473,6 +473,6 @@ test('blocks overspend', () => {
 - Subway scripts live at: `.claude/scripts/feedback/` (3 levels below PROJECT_ROOT)
 - Config files land at: `.claude/config/` (resolved automatically if PROJECT_ROOT is correct)
 - Lock timeout for Subway: `timeoutMs: 30000, staleMs: 60000` (increased from rlhf defaults)
-- Jaccard threshold: `0.7` (env: `RLHF_SEMANTIC_CACHE_THRESHOLD`)
-- Cache TTL: `86400` seconds (env: `RLHF_SEMANTIC_CACHE_TTL_SECONDS`)
-- Monthly budget cap: `$10` USD (env: `RLHF_MONTHLY_BUDGET_USD`)
+- Jaccard threshold: `0.7` (env: `THUMBGATE_SEMANTIC_CACHE_THRESHOLD`)
+- Cache TTL: `86400` seconds (env: `THUMBGATE_SEMANTIC_CACHE_TTL_SECONDS`)
+- Monthly budget cap: `$10` USD (env: `THUMBGATE_MONTHLY_BUDGET_USD`)

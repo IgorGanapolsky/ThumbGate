@@ -4,7 +4,7 @@ const { captureFeedback, getFeedbackPaths, readJSONL } = require('../scripts/fee
 const assert = require('assert');
 
 const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'rlhf-bayes-test-'));
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 console.log('Testing Project Bayes (Bayesian Memory)...');
 
@@ -59,4 +59,4 @@ assert.ok(memories[2].bayesian.uncertainty > memories[1].bayesian.uncertainty);
 console.log('PASS: Project Bayes');
 
 fs.rmSync(tmpDir, { recursive: true, force: true });
-delete process.env.RLHF_FEEDBACK_DIR;
+delete process.env.THUMBGATE_FEEDBACK_DIR;

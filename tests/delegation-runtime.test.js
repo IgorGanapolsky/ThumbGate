@@ -5,8 +5,8 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-delegation-test-'));
-process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
-process.env.RLHF_NO_RATE_LIMIT = '1';
+process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.THUMBGATE_NO_RATE_LIMIT = '1';
 
 const { planIntent } = require('../scripts/intent-router');
 const {

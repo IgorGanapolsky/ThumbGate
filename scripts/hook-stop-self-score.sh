@@ -10,15 +10,15 @@
 # This hook is NON-BLOCKING — it exits 0 regardless of errors.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-RLHF_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+THUMBGATE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Run the self-score via Node.js — sync, no API calls, ~5ms
 node -e '
   "use strict";
   const path = require("path");
 
-  // Resolve modules relative to RLHF package root
-  const rlhfRoot = process.env.RLHF_ROOT;
+  // Resolve modules relative to ThumbGate package root
+  const rlhfRoot = process.env.THUMBGATE_ROOT;
   const { selfAuditAndLog } = require(path.join(rlhfRoot, "scripts", "rlaif-self-audit"));
   const { getFeedbackPaths } = require(path.join(rlhfRoot, "scripts", "feedback-loop"));
 

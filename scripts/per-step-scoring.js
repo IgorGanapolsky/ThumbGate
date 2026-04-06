@@ -15,7 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 
-function getFeedbackDir() { return process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf'); }
+function getFeedbackDir() { return process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf'); }
 function ensureDir(fp) { const d = path.dirname(fp); if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); }
 function readJsonl(fp) { if (!fs.existsSync(fp)) return []; const raw = fs.readFileSync(fp, 'utf-8').trim(); if (!raw) return []; return raw.split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean); }
 

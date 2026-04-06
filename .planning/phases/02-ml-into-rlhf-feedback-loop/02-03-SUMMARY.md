@@ -1,5 +1,5 @@
 ---
-phase: 02-ml-into-rlhf-feedback-loop
+phase: 02-ml-into-thumbgate
 plan: "03"
 subsystem: thompson-sampling-tests
 tags: [tdd, thompson-sampling, node-test, ml-tests, beta-bernoulli]

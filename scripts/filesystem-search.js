@@ -29,11 +29,11 @@ const DEFAULT_CONTEXTFS_DIR = path.join(DEFAULT_FEEDBACK_DIR, 'contextfs');
 // ---------------------------------------------------------------------------
 
 function getFeedbackDir() {
-  return process.env.RLHF_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
+  return process.env.THUMBGATE_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
 }
 
 function getContextFsDir() {
-  return process.env.RLHF_CONTEXTFS_DIR || path.join(getFeedbackDir(), 'contextfs');
+  return process.env.THUMBGATE_CONTEXTFS_DIR || path.join(getFeedbackDir(), 'contextfs');
 }
 
 function readJsonl(filePath) {

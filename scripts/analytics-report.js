@@ -10,8 +10,8 @@ const { getTelemetryAnalytics } = require('./telemetry-analytics');
 
 const NPM_PACKAGE = 'mcp-memory-gateway';
 const GITHUB_REPO = 'IgorGanapolsky/ThumbGate';
-const PLAUSIBLE_URL = 'https://plausible.io/rlhf-feedback-loop-production.up.railway.app';
-const LANDING_PAGE = 'https://rlhf-feedback-loop-production.up.railway.app';
+const PLAUSIBLE_URL = 'https://plausible.io/thumbgate-production.up.railway.app';
+const LANDING_PAGE = 'https://thumbgate-production.up.railway.app';
 
 function httpsGet(url) {
   return new Promise((resolve, reject) => {

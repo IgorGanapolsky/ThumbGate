@@ -70,7 +70,7 @@ Ran all test suites matching /budget-guard|contextfs|intent-router|self-heal/i.
 ℹ todo 0
 ℹ duration_ms 386.596125
 
-> rlhf-feedback-loop@0.5.0 test:proof
+> thumbgate@0.5.0 test:proof
 > node --test tests/prove-adapters.test.js tests/prove-automation.test.js
 
 ✔ adapter proof harness passes all checks (113.369917ms)

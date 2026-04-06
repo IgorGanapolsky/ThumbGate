@@ -7,13 +7,13 @@ const path = require('path');
 const os = require('os');
 
 // Each test block creates its own tmpdir and invalidates require.cache
-// to get a fresh module with the correct RLHF_FEEDBACK_DIR env var.
+// to get a fresh module with the correct THUMBGATE_FEEDBACK_DIR env var.
 
 function freshModule(tmpDir) {
   // Clear any cached LanceDB / pipeline singletons in the module
   delete require.cache[require.resolve('../scripts/vector-store')];
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
-  process.env.RLHF_VECTOR_STUB_EMBED = 'true';
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_VECTOR_STUB_EMBED = 'true';
   const mod = require('../scripts/vector-store');
   mod.setLanceLoaderForTests(async () => {
     const tables = new Map();
@@ -80,17 +80,17 @@ describe('vector-store — embedding config', () => {
   it('exposes hardware-aware embedding config', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-config-'));
     try {
-      process.env.RLHF_FEEDBACK_DIR = tmpDir;
-      process.env.RLHF_RAM_BYTES_OVERRIDE = String(4 * 1024 ** 3);
-      process.env.RLHF_CPU_COUNT_OVERRIDE = '4';
+      process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+      process.env.THUMBGATE_RAM_BYTES_OVERRIDE = String(4 * 1024 ** 3);
+      process.env.THUMBGATE_CPU_COUNT_OVERRIDE = '4';
       delete require.cache[require.resolve('../scripts/vector-store')];
       const { getEmbeddingConfig } = require('../scripts/vector-store');
       const resolved = getEmbeddingConfig();
       assert.equal(resolved.selectedProfile.id, 'compact');
       assert.equal(resolved.selectedProfile.quantized, true);
     } finally {
-      delete process.env.RLHF_RAM_BYTES_OVERRIDE;
-      delete process.env.RLHF_CPU_COUNT_OVERRIDE;
+      delete process.env.THUMBGATE_RAM_BYTES_OVERRIDE;
+      delete process.env.THUMBGATE_CPU_COUNT_OVERRIDE;
       delete require.cache[require.resolve('../scripts/vector-store')];
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -156,10 +156,10 @@ describe('vector-store — fallback profile', () => {
   it('falls back to the safe profile when the primary profile load fails', async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-fallback-'));
     try {
-      process.env.RLHF_FEEDBACK_DIR = tmpDir;
-      delete process.env.RLHF_VECTOR_STUB_EMBED;
-      process.env.RLHF_MODEL_FIT_PROFILE = 'quality';
-      process.env.RLHF_VECTOR_FORCE_PRIMARY_FAILURE = 'true';
+      process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+      delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
+      process.env.THUMBGATE_MODEL_FIT_PROFILE = 'quality';
+      process.env.THUMBGATE_VECTOR_FORCE_PRIMARY_FAILURE = 'true';
       delete require.cache[require.resolve('../scripts/vector-store')];
       const vectorStore = require('../scripts/vector-store');
       vectorStore.setLanceLoaderForTests(async () => {
@@ -207,9 +207,9 @@ describe('vector-store — fallback profile', () => {
       assert.equal(profile.activeProfile.id, 'fallback');
       assert.match(profile.fallbackReason, /Forced primary embedding profile failure/);
     } finally {
-      delete process.env.RLHF_MODEL_FIT_PROFILE;
-      delete process.env.RLHF_VECTOR_FORCE_PRIMARY_FAILURE;
-      delete process.env.RLHF_VECTOR_STUB_EMBED;
+      delete process.env.THUMBGATE_MODEL_FIT_PROFILE;
+      delete process.env.THUMBGATE_VECTOR_FORCE_PRIMARY_FAILURE;
+      delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
       delete require.cache[require.resolve('../scripts/vector-store')];
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

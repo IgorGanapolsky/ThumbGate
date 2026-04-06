@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "gates": [
+    {
+      "id": "auto-promoted-mnnc0m7o",
+      "pattern": "repeated.*problem.*context",
+      "action": "block",
+      "message": "Automatically blocked due to repeated failures: NEVER repeated problem context string",
+      "severity": "critical",
+      "source": "feedback-auto-promotion"
+    }
+  ]
+}

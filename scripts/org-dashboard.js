@@ -26,7 +26,7 @@ const { isProTier } = require('./rate-limiter');
 const REGISTRY_FILENAME = 'agent-registry.jsonl';
 
 function getRegistryPath() {
-  const feedbackDir = process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
   return path.join(feedbackDir, REGISTRY_FILENAME);
 }
 
@@ -181,7 +181,7 @@ function generateOrgDashboard(opts = {}) {
   };
 
   if (!pro) {
-    summary.upgradeMessage = 'Upgrade to Pro for full org visibility — all agents, all gates, all history. https://rlhf-feedback-loop-production.up.railway.app/checkout/pro';
+    summary.upgradeMessage = 'Upgrade to Pro for full org visibility — all agents, all gates, all history. https://thumbgate-production.up.railway.app/checkout/pro';
   }
 
   return summary;

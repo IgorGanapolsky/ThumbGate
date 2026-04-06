@@ -1,0 +1,17 @@
+{
+  "id": "1775083215733_feedback-negative-fb-1775083215697-ybdqxp",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775083215697_ybdqxp",
+  "content": "{\"id\":\"fb_1775083215697_ybdqxp\",\"signal\":\"negative\",\"context\":\"bad push\",\"relatedFeedbackId\":null,\"lastAction\":{\"tool\":\"Bash\",\"contextKey\":\"Bash:git_push\",\"file\":null,\"timestamp\":null},\"whatWentWrong\":\"pushed to main\",\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"test-persist\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-01T22:40:15.697Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "test-persist"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-01T22:40:15.733Z",
+  "lastUsedAt": null
+}

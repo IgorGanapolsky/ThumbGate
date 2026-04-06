@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ThumbGate Dashboard — Gate Stats, Approval Rate, Prevention Impact</title>
 <meta name="description" content="Live dashboard showing gate enforcement stats, approval rate trends, prevention impact, and system health for ThumbGate pre-action gates.">
-<link rel="canonical" href="https://rlhf-feedback-loop-production.up.railway.app/dashboard">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/dashboard">
 <meta name="robots" content="noindex">
 <!-- Privacy-friendly analytics by Plausible -->
-<script defer data-domain="rlhf-feedback-loop-production.up.railway.app" data-api="/api/event" src="/js/analytics.js"></script>
+<script defer data-domain="thumbgate-production.up.railway.app" data-api="/api/event" src="/js/analytics.js"></script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -180,10 +180,10 @@
   <div class="container">
     <div style="margin-bottom:10px;">
       <span style="font-size:14px;font-weight:600;">Connect your API key</span>
-      <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Pro auto-connects locally when you launch with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx mcp-memory-gateway pro</code>. Otherwise paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">RLHF_API_KEY</code> manually.</span>
+      <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Pro auto-connects locally when you launch with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx mcp-memory-gateway pro</code>. Otherwise paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code> manually.</span>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
-      <input type="password" class="auth-input" id="apiKey" placeholder="Paste your API key here (RLHF_API_KEY or THUMBGATE_PRO_KEY)..." />
+      <input type="password" class="auth-input" id="apiKey" placeholder="Paste your API key here (THUMBGATE_API_KEY or THUMBGATE_PRO_KEY)..." />
       <button class="btn" id="connectBtn" onclick="connect()">Connect</button>
        <button class="btn-outline" id="demoBtn" onclick="loadDemo()">Try Demo</button>
        <span class="auth-status" id="authStatus"></span>
@@ -390,7 +390,7 @@ async function connect(options) {
     status.className = 'auth-status err';
     status.textContent = '✗ ' + e.message;
     if (opts.localPro) {
-      document.getElementById('authHelp').textContent = 'Local Pro bootstrap failed. Paste your RLHF_API_KEY manually or retry the local launcher.';
+      document.getElementById('authHelp').textContent = 'Local Pro bootstrap failed. Paste your THUMBGATE_API_KEY manually or retry the local launcher.';
     }
   }
   if (!opts.localPro) {

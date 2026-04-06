@@ -20,7 +20,7 @@ const DLP_LOG_FILE = 'dlp-events.jsonl';
 const DEFAULT_MAX_SENSITIVITY = 'internal'; // block sensitive + restricted
 
 function getDlpLogPath() {
-  const d = process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  const d = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
   return path.join(d, DLP_LOG_FILE);
 }
 
@@ -102,7 +102,7 @@ const KNOWN_GATED_TOOLS = new Set([
 const SHADOW_LOG_FILE = 'shadow-actions.jsonl';
 
 function getShadowLogPath() {
-  const d = process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  const d = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
   return path.join(d, SHADOW_LOG_FILE);
 }
 

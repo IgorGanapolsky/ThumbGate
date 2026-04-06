@@ -9,7 +9,7 @@
 ### Cursor Directory (cursor.directory/mcp-memory-gateway)
 > Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
-### Public Landing Page (rlhf-feedback-loop-production.up.railway.app)
+### Public Landing Page (thumbgate-production.up.railway.app)
 > Pre-action gates for AI coding agents. Skill disclosure cuts tokens. Hallucination and PII checks harden outputs. 👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility, plus generated review views.
 
 ### NPM package.json
@@ -32,7 +32,7 @@
 
 | Old Term | New Term (Lead with this) |
 |---|---|
-| RLHF feedback loop | feedback-to-enforcement pipeline |
+| ThumbGate feedback loop | feedback-to-enforcement pipeline |
 | Veto Layer | Pre-Action Gates |
 | Agentic Feedback Studio | [DROP] |
 | ShieldCortex | [DROP] |

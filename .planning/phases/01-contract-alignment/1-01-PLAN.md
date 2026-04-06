@@ -64,7 +64,7 @@ Output: scripts/contract-audit.js (runnable), proof/contract-audit-report.md (ev
 Create scripts/contract-audit.js using ONLY Node.js built-ins (path, fs, require). No external dependencies.
 
 The script must:
-1. Define RLHF_ROOT = path.join(__dirname, '..') and SUBWAY_ROOT = '/Users/ganapolsky_i/workspace/git/Subway_RN_Demo'
+1. Define THUMBGATE_ROOT = path.join(__dirname, '..') and SUBWAY_ROOT = '/Users/ganapolsky_i/workspace/git/Subway_RN_Demo'
 2. Define SHARED_SCRIPTS = ['scripts/feedback-schema.js', 'scripts/feedback-loop.js', 'scripts/export-dpo-pairs.js']
 3. For each script, require() it from both repos and compute:
    - rlhfKeys: Object.keys(rlhfMod).sort()

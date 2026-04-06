@@ -97,7 +97,7 @@ test('buildHarnessJob converts run steps into command stages and appends success
 
 test('runHarness executes a natural-language harness through the async runtime', () => {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-harness-runtime-test-'));
-  process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
   resetRuntimeModules();
   stubModule(VERIFICATION_PATH, {
     runVerificationLoop: () => makeAcceptedVerification(),
@@ -120,7 +120,7 @@ test('runHarness executes a natural-language harness through the async runtime',
     assert.match(state.currentContext, /Success evidence required:/);
   } finally {
     resetRuntimeModules();
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
 });

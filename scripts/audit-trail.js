@@ -5,7 +5,7 @@
  * Audit Trail — OpenShell-inspired governance layer
  *
  * Records every gate decision (allow/deny/warn) into a structured audit log,
- * then auto-feeds deny/warn decisions into the RLHF feedback pipeline as
+ * then auto-feeds deny/warn decisions into the ThumbGate feedback pipeline as
  * negative signal. This closes the loop: gate blocks → feedback capture →
  * prevention rule generation → stronger gates.
  */
@@ -20,7 +20,7 @@ const AUDIT_LOG_FILENAME = 'audit-trail.jsonl';
 // ---------------------------------------------------------------------------
 
 function getAuditLogPath() {
-  const feedbackDir = process.env.RLHF_FEEDBACK_DIR
+  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR
     || path.join(process.cwd(), '.rlhf');
   return path.join(feedbackDir, AUDIT_LOG_FILENAME);
 }
@@ -97,7 +97,7 @@ function sanitizeToolInput(toolInput) {
 // ---------------------------------------------------------------------------
 
 /**
- * Converts deny/warn audit events into RLHF feedback signal.
+ * Converts deny/warn audit events into ThumbGate feedback signal.
  * This is the core OpenShell insight: policy decisions ARE training signal.
  */
 function auditToFeedback(auditRecord) {
@@ -249,7 +249,7 @@ function evaluateSelfHealTrigger(opts = {}) {
 const CACHE_TUNE_STATE_FILENAME = 'cache-tune-state.json';
 
 /**
- * Auto-tunes RLHF_SEMANTIC_CACHE_THRESHOLD based on audit trail feedback.
+ * Auto-tunes THUMBGATE_SEMANTIC_CACHE_THRESHOLD based on audit trail feedback.
  * If deny rate is high → tighten cache (raise threshold, fewer false hits).
  * If deny rate is low → loosen cache (lower threshold, more cache hits).
  *
@@ -261,7 +261,7 @@ function tuneCacheThreshold(logPath) {
   const total = stats.total || 1;
   const denyRate = stats.deny / total;
 
-  const currentThreshold = parseFloat(process.env.RLHF_SEMANTIC_CACHE_THRESHOLD || '0.7');
+  const currentThreshold = parseFloat(process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD || '0.7');
   const MIN_THRESHOLD = 0.5;
   const MAX_THRESHOLD = 0.95;
   const STEP = 0.02;

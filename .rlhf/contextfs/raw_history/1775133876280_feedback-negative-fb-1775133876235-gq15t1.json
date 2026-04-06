@@ -1,0 +1,17 @@
+{
+  "id": "1775133876280_feedback-negative-fb-1775133876235-gq15t1",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775133876235_gq15t1",
+  "content": "{\"id\":\"fb_1775133876235_gq15t1\",\"signal\":\"negative\",\"context\":\"Actually I hate tabs now\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":\"User asked for spaces\",\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"style\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-02T12:44:36.235Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "style"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-02T12:44:36.280Z",
+  "lastUsedAt": null
+}

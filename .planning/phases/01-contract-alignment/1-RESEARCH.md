@@ -22,7 +22,7 @@ Phase 1 is a pure audit-and-normalize phase. No new features are built. The goal
 
 Direct code inspection of both repos reveals that the shared scripts (`feedback-schema.js`, `feedback-loop.js`, `export-dpo-pairs.js`) have diverged at three specific points. The exports differ significantly between `feedback-loop.js` files (rlhf exports `captureFeedback` / `buildPreventionRules` / `writePreventionRules` / `readJSONL` / `getFeedbackPaths`; Subway exports `recordFeedback` / `selfScore` / constants). The `resolveFeedbackAction` function in rlhf's `feedback-schema.js` accepts a `rubricEvaluation` parameter and gates positive promotion through it — Subway's version does not. For timestamps, both repos already use `new Date().toISOString()` (which always produces ISO 8601 with Z suffix), but the Python `train_from_feedback.py` strips the Z with `.replace("Z", "")` before parsing. A `parseTimestamp()` helper function does not exist in either repo and must be created as part of CNTR-03.
 
-The baseline test count for rlhf-feedback-loop is: 54 node-runner tests (52 from `test:api` + 2 from `test:proof`) and 23 script-runner tests (7 schema + 10 loop + 6 dpo) = 77 total assertions. The ROADMAP's "54" refers specifically to the `node --test` runner count. All 77 currently pass and CI is green.
+The baseline test count for thumbgate is: 54 node-runner tests (52 from `test:api` + 2 from `test:proof`) and 23 script-runner tests (7 schema + 10 loop + 6 dpo) = 77 total assertions. The ROADMAP's "54" refers specifically to the `node --test` runner count. All 77 currently pass and CI is green.
 
 **Primary recommendation:** Write a `scripts/contract-audit.js` script that programmatically extracts exports from both repos' shared scripts and emits a compatibility report. Then add `rubricEvaluation` support to Subway's `feedback-schema.js` to match rlhf. Then add a shared `parseTimestamp()` helper to `feedback-schema.js` in both repos. Write tests for all three deliverables.
 
@@ -76,10 +76,10 @@ proof/
 **Example:**
 ```javascript
 // scripts/contract-audit.js
-const RLHF_ROOT = path.join(__dirname, '..');
+const THUMBGATE_ROOT = path.join(__dirname, '..');
 const SUBWAY_ROOT = '/path/to/Subway_RN_Demo';
 
-const rlhfSchema = require(path.join(RLHF_ROOT, 'scripts/feedback-schema'));
+const rlhfSchema = require(path.join(THUMBGATE_ROOT, 'scripts/feedback-schema'));
 const subwaySchema = require(path.join(SUBWAY_ROOT, 'scripts/feedback-schema'));
 
 const rlhfKeys = Object.keys(rlhfSchema);
@@ -208,7 +208,7 @@ assert(!isNaN(parseTimestamp('2026-03-04T12:00:00.000Z').getTime()), 'no NaN');
 
 ### Pitfall 3: Baseline Test Count Confusion
 
-**What goes wrong:** The ROADMAP says "54 for rlhf-feedback-loop" but `npm test` currently runs 77 total assertions (52 from `node --test` in `test:api`, 2 from `test:proof`, 7+10+6=23 from inline script runners).
+**What goes wrong:** The ROADMAP says "54 for thumbgate" but `npm test` currently runs 77 total assertions (52 from `node --test` in `test:api`, 2 from `test:proof`, 7+10+6=23 from inline script runners).
 
 **Why it happens:** "54" = the `node --test` runner count only (52 + 2 = 54). The 23 inline script tests use `process.exit()` which bypasses the `node --test` counter.
 
@@ -237,7 +237,7 @@ Verified patterns from direct code inspection:
 const path = require('path');
 const fs = require('fs');
 
-const RLHF_ROOT = path.join(__dirname, '..');
+const THUMBGATE_ROOT = path.join(__dirname, '..');
 const SUBWAY_ROOT = '/Users/ganapolsky_i/workspace/git/Subway_RN_Demo';
 
 const SHARED_SCRIPTS = [
@@ -247,7 +247,7 @@ const SHARED_SCRIPTS = [
 ];
 
 function auditScript(relPath) {
-  const rlhfMod = require(path.join(RLHF_ROOT, relPath));
+  const rlhfMod = require(path.join(THUMBGATE_ROOT, relPath));
   const subwayMod = require(path.join(SUBWAY_ROOT, relPath));
   const rlhfKeys = Object.keys(rlhfMod).sort();
   const subwayKeys = Object.keys(subwayMod).sort();
@@ -380,7 +380,7 @@ function parseTimestamp(ts) {
 - Direct `Read` of `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/train_from_feedback.py` — lines 132-144 confirm Python Z-stripping pattern
 
 ### Secondary (MEDIUM confidence)
-- `.planning/ROADMAP.md` — confirmed "54 for rlhf-feedback-loop" refers to node --test count (52 test:api + 2 test:proof)
+- `.planning/ROADMAP.md` — confirmed "54 for thumbgate" refers to node --test count (52 test:api + 2 test:proof)
 - `.planning/REQUIREMENTS.md` — confirmed CNTR-01, CNTR-02, CNTR-03 scope
 
 ### Tertiary (LOW confidence)

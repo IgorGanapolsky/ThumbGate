@@ -1,0 +1,17 @@
+{
+  "id": "1775482709573_feedback-negative-fb-1775482709540-unlbpd",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775482709540_unlbpd",
+  "content": "{\"id\":\"fb_1775482709540_unlbpd\",\"signal\":\"negative\",\"context\":\"Test dedup inline write\",\"submittedContext\":\"Test dedup inline write\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":\"Something broke again\",\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"dedup-test\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-06T13:38:29.540Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "dedup-test"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-06T13:38:29.573Z",
+  "lastUsedAt": null
+}

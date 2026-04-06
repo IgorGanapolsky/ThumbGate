@@ -1,5 +1,5 @@
 ---
-phase: 02-ml-into-rlhf-feedback-loop
+phase: 02-ml-into-thumbgate
 plan: "02"
 subsystem: ml-training
 tags: [thompson-sampling, sequence-tracking, diversity-tracking, feedback-loop, python]
@@ -106,6 +106,6 @@ None — plan executed exactly as written.
 
 - FOUND: scripts/train_from_feedback.py
 - FOUND: scripts/feedback-loop.js
-- FOUND: .planning/phases/02-ml-into-rlhf-feedback-loop/02-02-SUMMARY.md
+- FOUND: .planning/phases/02-ml-into-thumbgate/02-02-SUMMARY.md
 - FOUND: commit 88a81a9 (feat(02-02): add Python Thompson Sampling trainer)
 - FOUND: commit 1e333c0 (feat(02-02): add sequence tracking and diversity tracking)

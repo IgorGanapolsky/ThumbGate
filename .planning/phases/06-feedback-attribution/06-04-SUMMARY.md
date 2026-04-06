@@ -1,7 +1,7 @@
 ---
 phase: "06"
 plan: "04"
-subsystem: rlhf-feedback-loop
+subsystem: thumbgate
 tags: [proof-gate, attribution, test-coverage, ci-gate, requirements-closure]
 dependency_graph:
   requires: [06-03]

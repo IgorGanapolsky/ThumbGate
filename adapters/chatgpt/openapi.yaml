@@ -8,7 +8,7 @@ info:
     Bare up/down signals are logged immediately, but the API returns
     clarification_required until one sentence explains what worked or failed.
 servers:
-  - url: https://rlhf-feedback-loop-production.up.railway.app
+  - url: https://thumbgate-production.up.railway.app
 security:
   - bearerAuth: []
 components:
@@ -768,7 +768,7 @@ paths:
             format: date-time
       responses:
         '200':
-          description: Full RLHF dashboard with feedback, telemetry, funnel, and observability analytics
+          description: Full ThumbGate dashboard with feedback, telemetry, funnel, and observability analytics
           content:
             application/json:
               schema:
@@ -1012,7 +1012,7 @@ paths:
           name: q
           schema:
             type: string
-          description: Search query for raw RLHF state.
+          description: Search query for raw ThumbGate state.
         - in: query
           name: limit
           schema:
@@ -1247,7 +1247,7 @@ paths:
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden - requires static RLHF_API_KEY admin token
+          description: Forbidden - requires static THUMBGATE_API_KEY admin token
   /v1/billing/webhook:
     post:
       operationId: stripeBillingWebhook

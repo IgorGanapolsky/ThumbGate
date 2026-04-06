@@ -24,10 +24,10 @@ This project uses a local-first **Reliability Gateway** operational loop.
 ## Local Memory Only
 
 - We do not use Vertex AI RAG in this repo.
-- Query and update the local RLHF memory system instead:
+- Query and update the local ThumbGate memory system instead:
   - `.claude/memory/feedback/*`
-  - `.rlhf/*`
-- Never commit ephemeral `.claude/worktrees/*` lanes or live `.rlhf/*` runtime state. Keep them local, disposable, and git-ignored.
+  - `.thumbgate/*`
+- Never commit ephemeral `.claude/worktrees/*` lanes or live `.thumbgate/*` runtime state. Keep them local, disposable, and git-ignored.
 - Do not mention Vertex, LangSmith, or any other external memory stack unless it is actually configured in this repository.
 
 ### SEO & GEO Command Center Directive
@@ -85,7 +85,7 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 ## Session Directive: PR Management & System Hygiene
 
 ### CTO Protocol
-1. **Research:** Read directives and local RLHF memory first.
+1. **Research:** Read directives and local ThumbGate memory first.
 2. **PRs:** Inspect all open PRs with `npm run pr:manage`. Merge green, non-blocking ones.
 3. **Orphans:** Delete branches/worktrees without PRs after evaluation.
 4. **Integrity:** `main` must be 100% green. Fix regressions on sight.

@@ -8,7 +8,7 @@
  * Usage:
  *   node generate-instagram-card.js [--output=path/to/output.png]
  *
- * Output: .rlhf/instagram-card.png (default)
+ * Output: .thumbgate/instagram-card.png (default)
  */
 
 const fs = require('fs');

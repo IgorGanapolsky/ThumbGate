@@ -11,10 +11,10 @@
 ### Pitfall 1: API Name Collision — Same Concept, Different Function Names
 
 **What goes wrong:**
-The two repos use different names for the same conceptual operation. Subway's `feedback-loop.js` exports `recordFeedback()`, but rlhf-feedback-loop exports `captureFeedback()`. Subway has `selfScore()` (RLAIF); rlhf has no equivalent yet. When syncing, tests importing from one module by name will silently pass in their own repo and immediately break in the other. The failure mode is not a crash at import time — it's a `TypeError: undefined is not a function` at call time, inside a test that looks correct.
+The two repos use different names for the same conceptual operation. Subway's `feedback-loop.js` exports `recordFeedback()`, but thumbgate exports `captureFeedback()`. Subway has `selfScore()` (RLAIF); rlhf has no equivalent yet. When syncing, tests importing from one module by name will silently pass in their own repo and immediately break in the other. The failure mode is not a crash at import time — it's a `TypeError: undefined is not a function` at call time, inside a test that looks correct.
 
 **Why it happens:**
-Both repos were developed independently after the initial extraction. Subway added `recordFeedback` + `selfScore` as new primitives. rlhf-feedback-loop added `captureFeedback` as a renamed, extended version that also accepts rubric payloads. Neither was intended to break the other, but the names diverged silently.
+Both repos were developed independently after the initial extraction. Subway added `recordFeedback` + `selfScore` as new primitives. thumbgate added `captureFeedback` as a renamed, extended version that also accepts rubric payloads. Neither was intended to break the other, but the names diverged silently.
 
 **How to avoid:**
 Before porting any function, run: `grep -n "module.exports" scripts/feedback-loop.js` in both repos and diff the exports. Write an integration adapter that aliases the function names during the sync phase rather than renaming the canonical implementation. Tests for ported code must `require()` the local path directly — never assume name parity.
@@ -35,7 +35,7 @@ Phase 1 (Setup / Contract Mapping) — establish a function-name audit before an
 The `resolveFeedbackAction()` function in both repos accepts a `params` object, but their signatures diverged: rlhf's version accepts `rubricEvaluation` as a top-level param and uses it to gate positive feedback via `promotionEligible`. Subway's version has no `rubricEvaluation` param. If you sync the feedback-loop from rlhf → Subway without also syncing the rubric engine and schema changes, the positive feedback path silently skips the rubric gate — meaning Subway will accept feedback that rlhf would block.
 
 **Why it happens:**
-Rubric-based scoring was added to rlhf-feedback-loop as a governance feature after the original extraction. The addition was backward-compatible within rlhf (rubricEvaluation is optional), but no corresponding update was made to Subway's copy.
+Rubric-based scoring was added to thumbgate as a governance feature after the original extraction. The addition was backward-compatible within rlhf (rubricEvaluation is optional), but no corresponding update was made to Subway's copy.
 
 **How to avoid:**
 Treat `resolveFeedbackAction` as an atomic unit: never sync it without also syncing the rubric-engine dependency and updating the tests to assert rubric gate behavior. Run `diff scripts/feedback-schema.js` across both repos before any sync and resolve all signature differences explicitly.
@@ -67,7 +67,7 @@ Normalize all timestamps to RFC 3339 (`YYYY-MM-DDTHH:mm:ssZ`) at the boundary �
 - `last_updated` timestamps using both `"Z"` and microsecond formats in the same JSON
 
 **Phase to address:**
-Phase 3 (Port Thompson Sampling to rlhf-feedback-loop). Write a timestamp normalizer before writing any posterior read/write code.
+Phase 3 (Port Thompson Sampling to thumbgate). Write a timestamp normalizer before writing any posterior read/write code.
 
 ---
 
@@ -91,7 +91,7 @@ LanceDB's Node.js bindings are compiled Rust. Alpine uses musl libc; the default
 - Python and Node.js read different row counts from the same Lance directory
 
 **Phase to address:**
-Phase 3 (Port LanceDB to rlhf-feedback-loop). The first task in that phase must be a platform compatibility check and version pinning.
+Phase 3 (Port LanceDB to thumbgate). The first task in that phase must be a platform compatibility check and version pinning.
 
 ---
 
@@ -140,13 +140,13 @@ Phase 5 (Port self-healing monitor to Subway). The test for self-heal must verif
 ### Pitfall 7: Subway's `selfScore` Is Heuristic-Only — Porting It as "RLAIF" Overstates Its Capabilities
 
 **What goes wrong:**
-Subway's `selfScore()` function scores based on boolean flags: `evidenceProvided`, `testsRun`, `filesModified.length > 5`. The docstring explicitly says "This is NOT real RLHF — it's a heuristic scorer." If this function is ported to rlhf-feedback-loop and labeled as RLAIF self-scoring in API docs or test descriptions, downstream consumers (or future developers) will treat it as a model-backed scorer and build logic that depends on score precision. The score has only 4 effective values (1.0, 0.9, 0.8, 0.7... via 0.2 and 0.1 deductions), not a continuous distribution.
+Subway's `selfScore()` function scores based on boolean flags: `evidenceProvided`, `testsRun`, `filesModified.length > 5`. The docstring explicitly says "This is NOT real RLHF — it's a heuristic scorer." If this function is ported to thumbgate and labeled as RLAIF self-scoring in API docs or test descriptions, downstream consumers (or future developers) will treat it as a model-backed scorer and build logic that depends on score precision. The score has only 4 effective values (1.0, 0.9, 0.8, 0.7... via 0.2 and 0.1 deductions), not a continuous distribution.
 
 **Why it happens:**
 The "RLAIF" label in comments creates a false impression of ML-backed scoring. When the feature is re-documented during the port, the nuance is easily lost.
 
 **How to avoid:**
-Rename the function to `selfAudit()` or `constitutionalCheck()` in rlhf-feedback-loop to make clear it is rule-based, not model-based. Add JSDoc explicitly stating the score is heuristic. Write tests that assert specific score values given known inputs — this makes the discrete, non-continuous nature of the scorer visible and tested.
+Rename the function to `selfAudit()` or `constitutionalCheck()` in thumbgate to make clear it is rule-based, not model-based. Add JSDoc explicitly stating the score is heuristic. Write tests that assert specific score values given known inputs — this makes the discrete, non-continuous nature of the scorer visible and tested.
 
 **Warning signs:**
 - PR descriptions or tests referring to "RLAIF score" without a "heuristic" qualifier
@@ -154,7 +154,7 @@ Rename the function to `selfAudit()` or `constitutionalCheck()` in rlhf-feedback
 - Test assertions like `expect(score).toBeGreaterThan(0.7)` rather than `expect(score).toBe(0.8)`
 
 **Phase to address:**
-Phase 3 (Bring RLAIF self-scoring into rlhf-feedback-loop). The PR description must explicitly acknowledge the heuristic nature.
+Phase 3 (Bring RLAIF self-scoring into thumbgate). The PR description must explicitly acknowledge the heuristic nature.
 
 ---
 
@@ -223,7 +223,7 @@ Things that appear complete but are missing critical pieces.
 - [ ] **Budget guard in Subway:** Often missing the lock timeout stress test — verify `addSpend()` works correctly under 5+ concurrent callers before declaring complete
 - [ ] **Self-heal in Subway:** Often missing verification that the fix plan does NOT over-trigger — verify `buildFixPlan()` returns only scripts that exist in Subway's `package.json`
 - [ ] **RLAIF self-scoring:** Often missing tests for the discrete score values — verify tests assert exact scores (`0.8`, `1.0`) not ranges, to make the heuristic nature visible
-- [ ] **ContextFS semantic cache:** Often missing expiry validation — verify that entries older than `RLHF_SEMANTIC_CACHE_TTL_SECONDS` are actually evicted on read, not just skipped
+- [ ] **ContextFS semantic cache:** Often missing expiry validation — verify that entries older than `THUMBGATE_SEMANTIC_CACHE_TTL_SECONDS` are actually evicted on read, not just skipped
 - [ ] **Diversity tracking:** Often treated as a display feature — verify diversity scores feed back into the Thompson update path (alpha/beta) rather than just being logged
 - [ ] **Test count verification:** PROJECT.md says rlhf has 54 tests — verify count does not decrease after each sync phase; add test count assertion to CI
 

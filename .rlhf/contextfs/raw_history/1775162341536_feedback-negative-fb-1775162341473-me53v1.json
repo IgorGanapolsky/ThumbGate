@@ -1,0 +1,17 @@
+{
+  "id": "1775162341536_feedback-negative-fb-1775162341473-me53v1",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775162341473_me53v1",
+  "content": "{\"id\":\"fb_1775162341473_me53v1\",\"signal\":\"negative\",\"context\":\"Test dedup inline write\",\"submittedContext\":\"Test dedup inline write\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":\"Something broke\",\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"dedup-test\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-02T20:39:01.473Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "dedup-test"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-02T20:39:01.536Z",
+  "lastUsedAt": null
+}

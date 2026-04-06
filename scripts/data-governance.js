@@ -28,7 +28,7 @@ const DEFAULT_PREFERENCES = {
 };
 
 function getPreferencesPath() {
-  const d = process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  const d = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
   return path.join(d, PREFERENCES_FILE);
 }
 
@@ -107,7 +107,7 @@ function governedDpoExport(pairs) {
  */
 function enforceRetention() {
   const prefs = loadPreferences();
-  const feedbackDir = process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
   const logPath = path.join(feedbackDir, 'feedback-log.jsonl');
   if (!fs.existsSync(logPath)) return { purged: 0, remaining: 0 };
 
@@ -136,7 +136,7 @@ function enforceRetention() {
  */
 function generateDataUsageSummary() {
   const prefs = loadPreferences();
-  const feedbackDir = process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
   const logPath = path.join(feedbackDir, 'feedback-log.jsonl');
   let entryCount = 0;
   if (fs.existsSync(logPath)) {

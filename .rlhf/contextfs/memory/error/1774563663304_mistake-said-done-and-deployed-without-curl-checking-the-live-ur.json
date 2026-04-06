@@ -1,0 +1,22 @@
+{
+  "id": "1774563663304_mistake-said-done-and-deployed-without-curl-checking-the-live-ur",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Said 'done' and 'deployed' without curl-checking the live UR",
+  "content": "What went wrong: Said 'done' and 'deployed' without curl-checking the live URL for the actual new code. Did this 3+ times in one session.\nHow to avoid: Never claim deployment is complete without first curling the live URL and grep-confirming the specific new code is present. Wait for Railway build cycle (3-5 min) before verifying.",
+  "tags": [
+    "feedback",
+    "negative",
+    "verification",
+    "deployment",
+    "trust",
+    "claiming-done-without-proof"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1774563662976_qs1ha3"
+  },
+  "createdAt": "2026-03-26T22:21:03.304Z",
+  "lastUsedAt": null
+}

@@ -80,7 +80,7 @@ function readJsonlTail(filePath, limit = DEFAULT_HISTORY_LIMIT) {
 
 function resolveFeedbackDir(feedbackDir) {
   if (feedbackDir) return feedbackDir;
-  if (process.env.RLHF_FEEDBACK_DIR) return process.env.RLHF_FEEDBACK_DIR;
+  if (process.env.THUMBGATE_FEEDBACK_DIR) return process.env.THUMBGATE_FEEDBACK_DIR;
   if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
     return path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'feedback');
   }

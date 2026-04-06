@@ -1,0 +1,23 @@
+{
+  "id": "1774637968141_mistake-reported-completion-before-exact-main-merge-commit-was-fully",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Reported completion before exact main merge commit was fully",
+  "content": "What went wrong: Reported completion before exact main merge commit was fully green and before temp branch/worktree cleanup was finished. Release workflow allowed routine merges without version bumps to fail main.\nHow to avoid: Require exact-main verification before completion claims and make publish workflow a no-op success when package version tag already exists, while adding CI evidence that only version-bump merges attempt a publish.\nRubric weighted score: 0\nGuardrails failed: testsPassed",
+  "tags": [
+    "feedback",
+    "negative",
+    "ci",
+    "release",
+    "verification",
+    "completion-claims",
+    "workflow-hygiene"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1774637967873_l898jo"
+  },
+  "createdAt": "2026-03-27T18:59:28.141Z",
+  "lastUsedAt": null
+}

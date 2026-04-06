@@ -1,0 +1,22 @@
+{
+  "id": "1774034829050_mistake-gate-push-without-thread-check-blocked-tool-any-tool-ch",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Gate \"push-without-thread-check\" blocked tool \"any_tool\": Ch",
+  "content": "Context: Gate \"push-without-thread-check\" blocked tool \"any_tool\": Check PR review threads (reviewThreads first:50) before pushing. Use satisfy_gate('pr_threads_checked', 'evidence') to bypass.\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "audit-trail",
+    "auto-capture",
+    "gate:push-without-thread-check",
+    "gates-engine"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1774034829039_pzd2t7"
+  },
+  "createdAt": "2026-03-20T19:27:09.050Z",
+  "lastUsedAt": null
+}

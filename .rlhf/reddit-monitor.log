@@ -1,0 +1,1547 @@
+=== Reddit Monitor Run: 2026-04-02T15:07:28Z ===
+[dotenv@17.3.1] injecting env (19) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Deep_Ad1959: "the tricky part with hard blocks is sometimes the thing that was wrong in one co..."
+[reply-monitor] Could not generate reply for t1_odrnxdu
+[reply-monitor] New Reddit reply from u/regocregoc: "Messing with .md is causing most of your issues.
+Mine is completely empty...."
+[reply-monitor] Could not generate reply for t1_odfzw03
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": []
+}
+[cron] Drafts in queue: 0
+[cron] Run complete at 2026-04-02T15:07:41Z
+
+=== Reddit Monitor Run: 2026-04-02T15:09:18Z ===
+[dotenv@17.3.1] injecting env (19) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Deep_Ad1959: "the tricky part with hard blocks is sometimes the thing that was wrong in one co..."
+[reply-monitor] Could not generate reply for t1_odrnxdu
+[reply-monitor] New Reddit reply from u/regocregoc: "Messing with .md is causing most of your issues.
+Mine is completely empty...."
+[reply-monitor] Could not generate reply for t1_odfzw03
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": []
+}
+[cron] Drafts in queue: 0
+[cron] Run complete at 2026-04-02T15:09:21Z
+
+=== Reddit Monitor Run: 2026-04-02T15:13:46Z ===
+[dotenv@17.3.1] injecting env (19) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": []
+}
+[cron] Drafts in queue: 0
+[cron] Run complete at 2026-04-02T15:13:51Z
+
+[2026-04-02T19:10:49Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/game-of-kton: "Nice! Yes, hooks do a lot of magic and are essential, also using the PreToolUse ..."
+[reply-monitor] Could not generate reply for t1_odwfs6e
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] New X mention: "I will kick Noah’s ass for the sake of Foxxie because we were on emergency call ..."
+[reply-monitor] New X mention: "Noah watching me create ThumbGate outta sheer shock and copemaxxing: https://t.c..."
+[reply-monitor] New X mention: "#ThumbGate https://t.co/t5FLFZvZ2K..."
+[reply-monitor] New X mention: "#thumbgate RELEASE THE THUMB FILES #foah https://t.co/eXaXNGFXgE https://t.co/vP..."
+[reply-monitor] New X mention: "# ThumbGate 🚬🚬🚬🚬🚬🫩 @hondatetzuro https://t.co/ul7hQ8mpxE https://t.co/1U5R..."
+[reply-monitor] New X mention: "WHAT JUST DROPPED
+
+Here is what Hermes v0.6.0 ships today:
+
+Profiles: run multip..."
+[reply-monitor] Generated X reply: "Fair question. The difference from rules files or memory tools: this physically blocks the action be..."
+  ✗ Tweet failed (403): {"detail":"Reply to this conversation is not allowed because you have not been mentioned or otherwise engaged by the author of the post you are replying to.","type":"about:blank","title":"Forbidden","status":403}
+[reply-monitor] Replied to tweet 2038874922953691158
+[reply-monitor] New X mention: "Hermes Agent v0.6 just dropped -- and it's the multi-instance release.
+
+OpenClaw..."
+[reply-monitor] Generated X reply: "The key difference from memory tools: memory helps agents remember, but they can still ignore what t..."
+  ✗ Tweet failed (403): {"detail":"Reply to this conversation is not allowed because you have not been mentioned or otherwise engaged by the author of the post you are replying to.","type":"about:blank","title":"Forbidden","status":403}
+[reply-monitor] Replied to tweet 2038667626982117663
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 2 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [
+    {
+      "tweetId": "2038874922953691158",
+      "reply": "Fair question. The difference from rules files or memory tools: this physically blocks the action before execution, not after. The agent can't ignore a gate the way it can ignore a system prompt. Whether that tradeoff is worth it depends on how often your agent repeats mista...",
+      "posted": true
+    },
+    {
+      "tweetId": "2038667626982117663",
+      "reply": "The key difference from memory tools: memory helps agents remember, but they can still ignore what they remember. Gates enforce — if there's a rule against force-pushing, the agent physically can't do it. It's enforcement, not suggestion.",
+      "posted": true
+    }
+  ],
+  "linkedin": []
+}
+[2026-04-02T19:10:51Z] Reddit monitor run complete
+[2026-04-02T20:00:11Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-02T20:00:13Z] Reddit monitor run complete
+[2026-04-02T21:00:13Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-02T21:00:15Z] Reddit monitor run complete
+[2026-04-02T22:00:15Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-02T22:00:21Z] Reddit monitor run complete
+[2026-04-02T22:12:30Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-02T22:12:32Z] Reddit monitor run complete
+[2026-04-02T23:12:32Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-02T23:12:34Z] Reddit monitor run complete
+[2026-04-03T00:12:35Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T00:12:37Z] Reddit monitor run complete
+[2026-04-03T01:12:37Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T01:12:39Z] Reddit monitor run complete
+[2026-04-03T02:12:39Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T02:12:41Z] Reddit monitor run complete
+[2026-04-03T03:12:42Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T03:12:44Z] Reddit monitor run complete
+[2026-04-03T04:12:44Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T04:12:46Z] Reddit monitor run complete
+[2026-04-03T05:12:46Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T05:12:48Z] Reddit monitor run complete
+[2026-04-03T06:12:48Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T06:12:50Z] Reddit monitor run complete
+[2026-04-03T07:12:50Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T07:12:52Z] Reddit monitor run complete
+[2026-04-03T08:12:52Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/game-of-kton: "Nice. We're working less with tools. We use the hook to check. But most importan..."
+[reply-monitor] Could not generate reply for t1_oe18hjg
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T08:12:54Z] Reddit monitor run complete
+[2026-04-03T09:12:55Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/game-of-kton: "Nice. We're working less with tools. We use the hook to check. But most importan..."
+[reply-monitor] Could not generate reply for t1_oe18hjg
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T09:12:57Z] Reddit monitor run complete
+[2026-04-03T10:12:57Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/game-of-kton: "Nice. We're working less with tools. We use the hook to check. But most importan..."
+[reply-monitor] Could not generate reply for t1_oe18hjg
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T10:12:59Z] Reddit monitor run complete
+[2026-04-03T11:12:59Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/game-of-kton: "Nice. We're working less with tools. We use the hook to check. But most importan..."
+[reply-monitor] Could not generate reply for t1_oe18hjg
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T11:13:01Z] Reddit monitor run complete
+[2026-04-03T12:13:02Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/game-of-kton: "Nice. We're working less with tools. We use the hook to check. But most importan..."
+[reply-monitor] Could not generate reply for t1_oe18hjg
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T12:13:04Z] Reddit monitor run complete
+[2026-04-03T13:13:04Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/game-of-kton: "Nice. We're working less with tools. We use the hook to check. But most importan..."
+[reply-monitor] Could not generate reply for t1_oe18hjg
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T13:13:07Z] Reddit monitor run complete
+[2026-04-03T14:13:07Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+[reply-monitor] Checking Dev.to comments...
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": [],
+  "devto": []
+}
+[2026-04-03T14:13:09Z] Reddit monitor run complete
+[2026-04-03T15:13:09Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-03T15:13:11Z] Reddit monitor run complete
+[2026-04-03T16:13:11Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-03T16:13:12Z] Reddit monitor run complete
+[2026-04-03T17:13:12Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-03T17:13:14Z] Reddit monitor run complete
+[2026-04-03T18:13:14Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-03T18:13:17Z] Reddit monitor run complete
+[2026-04-03T19:13:17Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-03T19:13:19Z] Reddit monitor run complete
+[2026-04-03T20:13:19Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-03T20:13:20Z] Reddit monitor run complete
+[2026-04-03T21:13:21Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-03T21:13:24Z] Reddit monitor run complete
+[2026-04-03T22:13:24Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-03T22:13:26Z] Reddit monitor run complete
+[2026-04-03T23:13:26Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-03T23:13:28Z] Reddit monitor run complete
+[2026-04-04T00:13:28Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T00:13:30Z] Reddit monitor run complete
+[2026-04-04T01:13:30Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T01:13:32Z] Reddit monitor run complete
+[2026-04-04T02:13:32Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T02:13:34Z] Reddit monitor run complete
+[2026-04-04T03:13:34Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T03:13:36Z] Reddit monitor run complete
+[2026-04-04T04:13:36Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T04:13:38Z] Reddit monitor run complete
+[2026-04-04T05:13:38Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T05:13:40Z] Reddit monitor run complete
+[2026-04-04T06:13:40Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T06:13:42Z] Reddit monitor run complete
+[2026-04-04T07:13:42Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T07:13:43Z] Reddit monitor run complete
+[2026-04-04T08:13:44Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T08:13:46Z] Reddit monitor run complete
+[2026-04-04T09:13:46Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T09:13:47Z] Reddit monitor run complete
+[2026-04-04T10:13:48Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T10:13:49Z] Reddit monitor run complete
+[2026-04-04T11:13:49Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T11:13:51Z] Reddit monitor run complete
+[2026-04-04T12:13:51Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T12:13:53Z] Reddit monitor run complete
+[2026-04-04T13:13:53Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T13:13:55Z] Reddit monitor run complete
+[2026-04-04T14:13:55Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T14:13:57Z] Reddit monitor run complete
+[2026-04-04T15:13:57Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T15:13:59Z] Reddit monitor run complete
+[2026-04-04T16:13:59Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T16:14:01Z] Reddit monitor run complete
+[2026-04-04T17:14:01Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T17:14:03Z] Reddit monitor run complete
+[2026-04-04T18:14:03Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T18:14:05Z] Reddit monitor run complete
+[2026-04-04T19:14:05Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] New X mention: "@IgorGanapolsky Pre-action gates on top of memory is exactly right. Context wind..."
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T19:14:07Z] Reddit monitor run complete
+[2026-04-04T20:14:07Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T20:14:10Z] Reddit monitor run complete
+[2026-04-04T21:14:10Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T21:14:12Z] Reddit monitor run complete
+[2026-04-04T22:14:12Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T22:14:14Z] Reddit monitor run complete
+[2026-04-04T23:14:14Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-04T23:14:16Z] Reddit monitor run complete
+[2026-04-05T00:14:16Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T00:14:18Z] Reddit monitor run complete
+[2026-04-05T01:14:18Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T01:14:20Z] Reddit monitor run complete
+[2026-04-05T02:14:20Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T02:14:22Z] Reddit monitor run complete
+[2026-04-05T03:14:22Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T03:14:24Z] Reddit monitor run complete
+[2026-04-05T04:14:24Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T04:14:25Z] Reddit monitor run complete
+[2026-04-05T05:14:26Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T05:14:27Z] Reddit monitor run complete
+[2026-04-05T06:14:27Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T06:14:29Z] Reddit monitor run complete
+[2026-04-05T07:14:29Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T07:14:31Z] Reddit monitor run complete
+[2026-04-05T08:14:31Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T08:14:33Z] Reddit monitor run complete
+[2026-04-05T09:14:33Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T09:14:35Z] Reddit monitor run complete
+[2026-04-05T10:14:35Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T10:14:37Z] Reddit monitor run complete
+[2026-04-05T11:14:37Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T11:14:39Z] Reddit monitor run complete
+[2026-04-05T12:14:39Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T12:14:41Z] Reddit monitor run complete
+[2026-04-05T13:14:41Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T13:14:42Z] Reddit monitor run complete
+[2026-04-05T14:14:43Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T14:14:44Z] Reddit monitor run complete
+[2026-04-05T15:14:45Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T15:14:46Z] Reddit monitor run complete
+[2026-04-05T16:14:47Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T16:14:48Z] Reddit monitor run complete
+[2026-04-05T17:14:48Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T17:14:51Z] Reddit monitor run complete
+[2026-04-05T18:14:51Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T18:14:53Z] Reddit monitor run complete
+[2026-04-05T19:14:53Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T19:14:55Z] Reddit monitor run complete
+[2026-04-05T20:14:55Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T20:14:57Z] Reddit monitor run complete
+[2026-04-05T21:14:57Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T21:14:59Z] Reddit monitor run complete
+[2026-04-05T22:14:59Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T22:15:01Z] Reddit monitor run complete
+[2026-04-05T23:15:01Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] New X mention: "💡 ThumbGate Implements Tsinghua's Natural-Language Agent Harness Pattern for AI..."
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-05T23:15:03Z] Reddit monitor run complete
+[2026-04-06T00:15:03Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T00:15:05Z] Reddit monitor run complete
+[2026-04-06T01:15:05Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T01:15:09Z] Reddit monitor run complete
+[2026-04-06T02:15:10Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T02:15:11Z] Reddit monitor run complete
+[2026-04-06T03:15:11Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T03:15:13Z] Reddit monitor run complete
+[2026-04-06T04:15:13Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T04:15:15Z] Reddit monitor run complete
+[2026-04-06T05:15:15Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T05:15:17Z] Reddit monitor run complete
+[2026-04-06T06:15:17Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T06:15:20Z] Reddit monitor run complete
+[2026-04-06T07:15:20Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T07:15:22Z] Reddit monitor run complete
+[2026-04-06T08:15:22Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T08:15:24Z] Reddit monitor run complete
+[2026-04-06T09:15:24Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T09:15:26Z] Reddit monitor run complete
+[2026-04-06T10:15:26Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T10:15:27Z] Reddit monitor run complete
+[2026-04-06T11:15:28Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T11:15:29Z] Reddit monitor run complete
+[2026-04-06T12:15:29Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T12:15:31Z] Reddit monitor run complete
+[2026-04-06T13:15:31Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T13:15:33Z] Reddit monitor run complete
+[2026-04-06T14:15:33Z] Reddit monitor run starting
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[reply-monitor] Checking Reddit inbox...
+[reply-monitor] New Reddit reply from u/Campaign_Delicious: "Great response to an arrogant loser who thinks they are God. Dont let anyone kil..."
+[reply-monitor] Could not generate reply for t1_oejgm2k
+[reply-monitor] Checking X/Twitter mentions...
+[reply-monitor] Checking LinkedIn comments...
+[reply-monitor] LinkedIn credentials not configured, skipping
+
+[reply-monitor] Done. 0 replies posted.
+
+[reply-monitor] Summary: {
+  "reddit": [],
+  "x": [],
+  "linkedin": []
+}
+[2026-04-06T14:15:35Z] Reddit monitor run complete

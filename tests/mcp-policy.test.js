@@ -42,18 +42,18 @@ test('assertToolAllowed throws for denied tools', () => {
 });
 
 test('subagent profile resolves mcp profile and conflicts are rejected', () => {
-  const prevSubagent = process.env.RLHF_SUBAGENT_PROFILE;
-  const prevMcpProfile = process.env.RLHF_MCP_PROFILE;
+  const prevSubagent = process.env.THUMBGATE_SUBAGENT_PROFILE;
+  const prevMcpProfile = process.env.THUMBGATE_MCP_PROFILE;
 
-  process.env.RLHF_SUBAGENT_PROFILE = 'review_workflow';
-  delete process.env.RLHF_MCP_PROFILE;
+  process.env.THUMBGATE_SUBAGENT_PROFILE = 'review_workflow';
+  delete process.env.THUMBGATE_MCP_PROFILE;
   assert.equal(getActiveMcpProfile(), 'readonly');
 
-  process.env.RLHF_MCP_PROFILE = 'default';
+  process.env.THUMBGATE_MCP_PROFILE = 'default';
   assert.throws(() => getActiveMcpProfile(), /MCP profile conflict/);
 
-  if (typeof prevSubagent === 'string') process.env.RLHF_SUBAGENT_PROFILE = prevSubagent;
-  else delete process.env.RLHF_SUBAGENT_PROFILE;
-  if (typeof prevMcpProfile === 'string') process.env.RLHF_MCP_PROFILE = prevMcpProfile;
-  else delete process.env.RLHF_MCP_PROFILE;
+  if (typeof prevSubagent === 'string') process.env.THUMBGATE_SUBAGENT_PROFILE = prevSubagent;
+  else delete process.env.THUMBGATE_SUBAGENT_PROFILE;
+  if (typeof prevMcpProfile === 'string') process.env.THUMBGATE_MCP_PROFILE = prevMcpProfile;
+  else delete process.env.THUMBGATE_MCP_PROFILE;
 });

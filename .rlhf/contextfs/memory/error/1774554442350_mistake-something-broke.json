@@ -1,0 +1,19 @@
+{
+  "id": "1774554442350_mistake-something-broke",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Something broke",
+  "content": "What went wrong: Something broke\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "dedup-test"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775484679688_eejnil"
+  },
+  "createdAt": "2026-03-26T19:47:22.350Z",
+  "lastUsedAt": null
+}

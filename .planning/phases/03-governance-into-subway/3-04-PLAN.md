@@ -85,7 +85,7 @@ Proof report format reference:
        Capture: node-runner count, pass/fail
 
     5. Budget guard smoke test (GOV-01 evidence):
-       RLHF_FEEDBACK_DIR=/tmp/gov-proof-budget RLHF_MONTHLY_BUDGET_USD=10 node -e "
+       THUMBGATE_FEEDBACK_DIR=/tmp/gov-proof-budget THUMBGATE_MONTHLY_BUDGET_USD=10 node -e "
          const { addSpend, getBudgetStatus } = require('/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/budget-guard');
          addSpend({ amountUsd: 0.25, source: 'proof-test', note: 'GOV-01 verify' });
          const s = getBudgetStatus();
@@ -94,7 +94,7 @@ Proof report format reference:
        Capture: JSON output (shows month, totalUsd, budgetUsd, remainingUsd)
 
     6. Budget overspend rejection (GOV-01 evidence):
-       RLHF_FEEDBACK_DIR=/tmp/gov-proof-over RLHF_MONTHLY_BUDGET_USD=0.10 node -e "
+       THUMBGATE_FEEDBACK_DIR=/tmp/gov-proof-over THUMBGATE_MONTHLY_BUDGET_USD=0.10 node -e "
          const { addSpend } = require('/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/budget-guard');
          try {
            addSpend({ amountUsd: 0.20, source: 'proof-test' });
@@ -116,7 +116,7 @@ Proof report format reference:
        bundle first and use a valid intentId from it.
 
     8. ContextFS smoke test (GOV-03 evidence):
-       RLHF_FEEDBACK_DIR=/tmp/gov-proof-ctx node -e "
+       THUMBGATE_FEEDBACK_DIR=/tmp/gov-proof-ctx node -e "
          const { constructContextPack } = require('/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/contextfs');
          console.log('constructContextPack:', typeof constructContextPack);
        "

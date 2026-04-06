@@ -1,0 +1,17 @@
+{
+  "id": "1774647020179_feedback-negative-fb-1774647019029-pcvzap",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774647019029_pcvzap",
+  "content": "{\"id\":\"fb_1774647019029_pcvzap\",\"signal\":\"negative\",\"context\":\"test context\",\"lastAction\":null,\"whatWentWrong\":\"something failed\",\"whatToChange\":\"fix the issue\",\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"debugging\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-27T21:30:19.029Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "debugging"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-27T21:30:20.179Z",
+  "lastUsedAt": null
+}

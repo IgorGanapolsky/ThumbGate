@@ -1,5 +1,5 @@
 # Codex MCP profile (copy into ~/.codex/config.toml or merge section)
-[mcp_servers.rlhf]
+[mcp_servers.thumbgate]
 command = "node"
 args = ["bin/cli.js", "serve"]
 

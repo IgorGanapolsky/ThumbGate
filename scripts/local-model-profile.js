@@ -98,24 +98,24 @@ function isSparseAttentionFamily(modelFamily) {
 }
 
 function resolveProviderMode(env = process.env) {
-  const explicit = normalizeSlug(env.RLHF_PROVIDER_MODE || env.RLHF_MODEL_PROVIDER_MODE);
+  const explicit = normalizeSlug(env.THUMBGATE_PROVIDER_MODE || env.THUMBGATE_MODEL_PROVIDER_MODE);
   if (explicit === 'local' || explicit === 'managed') return explicit;
-  if (env.RLHF_LOCAL_MODEL_FAMILY || env.RLHF_LOCAL_MODEL_SERVER) return 'local';
+  if (env.THUMBGATE_LOCAL_MODEL_FAMILY || env.THUMBGATE_LOCAL_MODEL_SERVER) return 'local';
   return 'managed';
 }
 
 function resolveServerEngine(env = process.env, providerMode = resolveProviderMode(env)) {
-  const explicit = normalizeSlug(env.RLHF_LOCAL_MODEL_SERVER || env.RLHF_MODEL_SERVER);
+  const explicit = normalizeSlug(env.THUMBGATE_LOCAL_MODEL_SERVER || env.THUMBGATE_MODEL_SERVER);
   if (explicit) return explicit;
   return providerMode === 'local' ? 'generic' : 'api';
 }
 
 function resolveModelFamily(env = process.env) {
   return normalizeSlug(
-    env.RLHF_LOCAL_MODEL_FAMILY
-      || env.RLHF_MODEL_FAMILY
-      || env.RLHF_LOCAL_MODEL
-      || env.RLHF_MODEL_ID,
+    env.THUMBGATE_LOCAL_MODEL_FAMILY
+      || env.THUMBGATE_MODEL_FAMILY
+      || env.THUMBGATE_LOCAL_MODEL
+      || env.THUMBGATE_MODEL_ID,
     'unknown',
   );
 }
@@ -135,7 +135,7 @@ function detectInferenceBackend(env = process.env) {
   const indexCacheEligible = providerMode === 'local'
     && supportsSparseAttention
     && INDEXCACHE_SERVER_ENGINES.has(serverEngine);
-  const indexCacheEnabled = indexCacheEligible && parseBoolean(env.RLHF_INDEXCACHE_ENABLED, false);
+  const indexCacheEnabled = indexCacheEligible && parseBoolean(env.THUMBGATE_INDEXCACHE_ENABLED, false);
   const id = providerMode === 'managed'
     ? 'managed-api'
     : supportsSparseAttention
@@ -232,17 +232,17 @@ function recommendInferenceBackend(task = {}, env = process.env) {
 }
 
 function resolveFeedbackDir(explicitDir) {
-  return explicitDir || process.env.RLHF_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
+  return explicitDir || process.env.THUMBGATE_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
 }
 
 function detectHardware(env = process.env) {
-  const totalMemBytes = parseNumber(env.RLHF_RAM_BYTES_OVERRIDE, os.totalmem());
+  const totalMemBytes = parseNumber(env.THUMBGATE_RAM_BYTES_OVERRIDE, os.totalmem());
   const ramGb = Math.round((totalMemBytes / (1024 ** 3)) * 10) / 10;
-  const cpuCount = Math.max(1, Math.floor(parseNumber(env.RLHF_CPU_COUNT_OVERRIDE, os.cpus().length || 1)));
-  const platform = env.RLHF_PLATFORM_OVERRIDE || process.platform;
-  const arch = env.RLHF_ARCH_OVERRIDE || process.arch;
+  const cpuCount = Math.max(1, Math.floor(parseNumber(env.THUMBGATE_CPU_COUNT_OVERRIDE, os.cpus().length || 1)));
+  const platform = env.THUMBGATE_PLATFORM_OVERRIDE || process.platform;
+  const arch = env.THUMBGATE_ARCH_OVERRIDE || process.arch;
   const ci = parseBoolean(env.CI, false);
-  const accelerator = env.RLHF_ACCELERATOR
+  const accelerator = env.THUMBGATE_ACCELERATOR
     || (platform === 'darwin' && arch === 'arm64' ? 'metal' : 'cpu');
 
   return {
@@ -277,7 +277,7 @@ function cloneProfile(profile) {
 
 function resolveEmbeddingProfile(env = process.env) {
   const hardware = detectHardware(env);
-  const requestedProfile = String(env.RLHF_MODEL_FIT_PROFILE || 'auto').trim().toLowerCase();
+  const requestedProfile = String(env.THUMBGATE_MODEL_FIT_PROFILE || 'auto').trim().toLowerCase();
 
   const baseProfile = requestedProfile !== 'auto' && EMBEDDING_PROFILES[requestedProfile]
     ? EMBEDDING_PROFILES[requestedProfile]
@@ -288,11 +288,11 @@ function resolveEmbeddingProfile(env = process.env) {
     ? 'profile_override'
     : 'auto';
 
-  if (env.RLHF_EMBED_MODEL) {
-    profile.model = String(env.RLHF_EMBED_MODEL).trim();
+  if (env.THUMBGATE_EMBED_MODEL) {
+    profile.model = String(env.THUMBGATE_EMBED_MODEL).trim();
   }
-  profile.quantized = parseBoolean(env.RLHF_EMBED_QUANTIZED, profile.quantized);
-  profile.maxChars = Math.max(256, Math.floor(parseNumber(env.RLHF_EMBED_MAX_CHARS, profile.maxChars)));
+  profile.quantized = parseBoolean(env.THUMBGATE_EMBED_QUANTIZED, profile.quantized);
+  profile.maxChars = Math.max(256, Math.floor(parseNumber(env.THUMBGATE_EMBED_MAX_CHARS, profile.maxChars)));
 
   const fallback = cloneProfile(EMBEDDING_PROFILES.balanced);
   fallback.id = 'fallback';
@@ -309,7 +309,7 @@ function resolveEmbeddingProfile(env = process.env) {
  * Resolve the LLM model ID for a given workload role.
  *
  * Roles: normal, thinking, critique, compaction, vlm
- * Each role can be overridden via RLHF_MODEL_ROLE_<ROLE> env var.
+ * Each role can be overridden via THUMBGATE_MODEL_ROLE_<ROLE> env var.
  *
  * @param {string} role - One of the valid model roles
  * @param {object} [env=process.env]
@@ -321,7 +321,7 @@ function resolveModelRole(role, env) {
   if (!MODEL_ROLES[normalized]) {
     throw new Error(`Unknown model role: '${normalized}'. Valid roles: ${VALID_MODEL_ROLES.join(', ')}`);
   }
-  const envKey = `RLHF_MODEL_ROLE_${normalized.toUpperCase()}`;
+  const envKey = `THUMBGATE_MODEL_ROLE_${normalized.toUpperCase()}`;
   const model = (e[envKey] && String(e[envKey]).trim()) || MODEL_ROLES[normalized];
   return { role: normalized, model, provider: 'gemini', envKey };
 }

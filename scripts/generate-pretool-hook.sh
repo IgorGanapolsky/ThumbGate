@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# generate-pretool-hook.sh — PreToolUse hook for RLHF gate checking.
+# generate-pretool-hook.sh — PreToolUse hook for ThumbGate gate checking.
 #
 # Installed as a Claude Code / Codex / Gemini PreToolUse hook.
 # Reads tool call JSON from stdin, pipes it to the gate-check engine,

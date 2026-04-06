@@ -51,7 +51,7 @@ This avoids platform-specific rewrite cost and keeps the product under a `$10/mo
 - Bundle build command: `npm run build:claude-mcpb`
 - Release workflow: `.github/workflows/publish-claude-plugin.yml`
 - Latest direct download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
-- Local install path: `claude mcp add rlhf -- npx -y mcp-memory-gateway@0.9.9 serve`
+- Local install path: `claude mcp add thumbgate -- npx -y mcp-memory-gateway@0.9.9 serve`
 - Promotion rule: treat directory inclusion as a discoverability lane, not customer proof
 
 Build the `.mcpb` for Claude Desktop review or direct installation with:
@@ -111,15 +111,15 @@ Promotion and release operations are tracked in [CURSOR_PLUGIN_OPERATIONS.md](CU
 
 ## Deployment notes
 
-1. Set `RLHF_API_KEY` in hosted deployments.
-2. Keep `RLHF_ALLOW_EXTERNAL_PATHS` unset in production.
+1. Set `THUMBGATE_API_KEY` in hosted deployments.
+2. Keep `THUMBGATE_ALLOW_EXTERNAL_PATHS` unset in production.
 3. Keep monthly spend bounded with budget guard scripts (`npm run budget:status`).
-4. Enforce MCP least-privilege with `RLHF_MCP_PROFILE` (`default`, `essential`, `commerce`, `readonly`, `dispatch`, `locked`).
+4. Enforce MCP least-privilege with `THUMBGATE_MCP_PROFILE` (`default`, `essential`, `commerce`, `readonly`, `dispatch`, `locked`).
 
 ## Sales-ready evidence checklist
 
 1. `npm test` output is green.
 2. `npm run prove:adapters` produces [proof/compatibility/report.md](../proof/compatibility/report.md) and [proof/compatibility/report.json](../proof/compatibility/report.json).
 3. README links to evidence + platform adapter files.
-4. GitHub About text calls out cross-agent RLHF loop + DPO export.
+4. GitHub About text calls out cross-agent ThumbGate loop + DPO export.
 5. Verification narrative is published in [docs/VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).

@@ -10,7 +10,7 @@ Without a feedback loop:
 - Agents ignore regulatory constraints (FDA/DSHEA) — silently
 - Bad recommendations repeat because nothing captures what went wrong
 
-**SEO became ACO. Now ACO needs RLHF.**
+**SEO became ACO. Now ACO needs ThumbGate.**
 
 ## Our System
 
@@ -59,7 +59,7 @@ UCP, ACP, and AMP all support MCP transport. Our server runs as a standard MCP t
 - **DPO export**: Training data to fine-tune platform-specific shopping agents
 
 ### For Agent Builders (OpenAI, Google, Anthropic ecosystem)
-- **Drop-in MCP server**: `claude mcp add rlhf -- npx -y mcp-memory-gateway serve`
+- **Drop-in MCP server**: `claude mcp add thumbgate -- npx -y mcp-memory-gateway serve`
 - **Protocol-native**: Works with UCP, ACP, AMP without custom adapters
 - **Local-first**: No data leaves the merchant's infrastructure
 

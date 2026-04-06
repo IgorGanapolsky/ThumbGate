@@ -110,7 +110,7 @@ const {
 } = require('../../scripts/lesson-synthesis');
 const {
   searchRlhf,
-} = require('../../scripts/rlhf-search');
+} = require('../../scripts/thumbgate-search');
 const {
   appendTelemetryPing,
 } = require('../../scripts/telemetry-analytics');
@@ -146,16 +146,16 @@ const LESSONS_PAGE_PATH = path.resolve(__dirname, '../../public/lessons.html');
 const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
-const VISITOR_COOKIE_NAME = 'rlhf_visitor_id';
-const SESSION_COOKIE_NAME = 'rlhf_session_id';
-const ACQUISITION_COOKIE_NAME = 'rlhf_acquisition_id';
+const VISITOR_COOKIE_NAME = 'thumbgate_visitor_id';
+const SESSION_COOKIE_NAME = 'thumbgate_session_id';
+const ACQUISITION_COOKIE_NAME = 'thumbgate_acquisition_id';
 const VISITOR_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
 const BUILD_METADATA = resolveBuildMetadata();
 
 // ---------------------------------------------------------------------------
 // Stripe event tracking helpers
 // ---------------------------------------------------------------------------
-const STRIPE_EVENTS_PATH = path.resolve(__dirname, '../../.rlhf/stripe-events.jsonl');
+const STRIPE_EVENTS_PATH = path.resolve(__dirname, '../../.thumbgate/stripe-events.jsonl');
 
 function ensureStripeEventsDir() {
   const dir = path.dirname(STRIPE_EVENTS_PATH);
@@ -767,11 +767,11 @@ function getPublicBillingHeaders(traceId = '') {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-RLHF-Trace-Id',
-    'Access-Control-Expose-Headers': 'X-RLHF-Trace-Id',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-ThumbGate-Trace-Id',
+    'Access-Control-Expose-Headers': 'X-ThumbGate-Trace-Id',
   };
   if (traceId) {
-    headers['X-RLHF-Trace-Id'] = traceId;
+    headers['X-ThumbGate-Trace-Id'] = traceId;
   }
   return headers;
 }
@@ -906,7 +906,7 @@ function loadDashboardPageHtml(req, expectedApiKey) {
   const hostHeader = Array.isArray(forwardedHost)
     ? forwardedHost[0]
     : forwardedHost || req.headers.host || '';
-  const localProBootstrap = process.env.RLHF_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
+  const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
   const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : '').replace(/</g, '\\u003c');
 
   return fillTemplate(template, {
@@ -921,7 +921,7 @@ function loadLessonsPageHtml(req, expectedApiKey) {
   const hostHeader = Array.isArray(forwardedHost)
     ? forwardedHost[0]
     : forwardedHost || req.headers.host || '';
-  const localProBootstrap = process.env.RLHF_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
+  const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
   const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : '').replace(/</g, '\\u003c');
 
   return fillTemplate(template, {
@@ -1962,10 +1962,10 @@ function parseOptionalObject(input, name) {
 }
 
 function getExpectedApiKey() {
-  if (process.env.RLHF_ALLOW_INSECURE === 'true') return null;
-  const configured = process.env.RLHF_API_KEY;
+  if (process.env.THUMBGATE_ALLOW_INSECURE === 'true') return null;
+  const configured = process.env.THUMBGATE_API_KEY;
   if (!configured) {
-    throw new Error('RLHF_API_KEY is required unless RLHF_ALLOW_INSECURE=true');
+    throw new Error('THUMBGATE_API_KEY is required unless THUMBGATE_ALLOW_INSECURE=true');
   }
   return configured;
 }
@@ -1974,7 +1974,7 @@ function isAuthorized(req, expected) {
   if (!expected) return true;
   const token = extractApiKey(req);
 
-  // Check static RLHF_API_KEY first
+  // Check static THUMBGATE_API_KEY first
   if (token === expected) return true;
 
   // Also accept any valid provisioned billing key
@@ -2013,7 +2013,7 @@ function extractApiKey(req) {
 }
 
 /**
- * Admin-only guard for static RLHF_API_KEY.
+ * Admin-only guard for static THUMBGATE_API_KEY.
  * Billing keys are intentionally excluded from admin actions.
  */
 function isStaticAdminAuthorized(req, expected) {
@@ -2033,7 +2033,7 @@ function extractTags(input) {
 }
 
 function resolveSafePath(inputPath, { mustExist = false } = {}) {
-  const allowExternal = process.env.RLHF_ALLOW_EXTERNAL_PATHS === 'true';
+  const allowExternal = process.env.THUMBGATE_ALLOW_EXTERNAL_PATHS === 'true';
   const resolved = path.resolve(String(inputPath || ''));
   const SAFE_DATA_DIR = getSafeDataDir();
   const inSafeRoot = resolved === SAFE_DATA_DIR || resolved.startsWith(`${SAFE_DATA_DIR}${path.sep}`);
@@ -3093,8 +3093,8 @@ async function addContext(){
 <p>Last updated: 2026-03-11</p>
 <h2>Data Collection</h2>
 <p>The self-hosted version stores workflow data locally on your machine. Local feedback, memory entries, proof artifacts, and context packs stay in your project files unless you explicitly point the system at a hosted endpoint.</p>
-<p>The hosted tier (rlhf-feedback-loop-production.up.railway.app) stores feedback signals, memory entries, and related workflow metadata associated with your API key.</p>
-<p>Optional CLI telemetry is best-effort and covers install or usage metadata needed to understand adoption and failures. You can disable it with <code>RLHF_NO_TELEMETRY=1</code>.</p>
+<p>The hosted tier (thumbgate-production.up.railway.app) stores feedback signals, memory entries, and related workflow metadata associated with your API key.</p>
+<p>Optional CLI telemetry is best-effort and covers install or usage metadata needed to understand adoption and failures. You can disable it with <code>THUMBGATE_NO_TELEMETRY=1</code>.</p>
 <h2>Data Stored</h2><ul>
 <li>Feedback signals (thumbs up/down) with context you provide</li>
 <li>Promoted memory entries</li>
@@ -3276,7 +3276,7 @@ async function addContext(){
           appOrigin: hostedConfig.appOrigin,
           apiBaseUrl: hostedConfig.billingApiBaseUrl,
           nextSteps: {
-            env: `RLHF_API_KEY=${result.apiKey || ''}\nRLHF_API_BASE_URL=${hostedConfig.billingApiBaseUrl}`,
+            env: `THUMBGATE_API_KEY=${result.apiKey || ''}\nTHUMBGATE_API_BASE_URL=${hostedConfig.billingApiBaseUrl}`,
             curl: `curl -X POST ${hostedConfig.billingApiBaseUrl}/v1/feedback/capture \\\n  -H 'Authorization: Bearer ${result.apiKey || ''}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{"signal":"down","context":"example","whatWentWrong":"example","whatToChange":"example"}'`,
           },
         }, getPublicBillingHeaders(resolvedTraceId));
@@ -3302,7 +3302,7 @@ async function addContext(){
       return;
     }
 
-    // Usage metering — record request for billing keys (not static RLHF_API_KEY)
+    // Usage metering — record request for billing keys (not static THUMBGATE_API_KEY)
     const _token = extractBearerToken(req);
     if (_token && _token !== expectedApiKey) {
       recordUsage(_token);
@@ -3515,7 +3515,7 @@ async function addContext(){
             signal,
           });
         } catch (err) {
-          throw createHttpError(400, err.message || 'Invalid RLHF search request');
+          throw createHttpError(400, err.message || 'Invalid ThumbGate search request');
         }
         sendJson(res, 200, results);
         return;
@@ -3532,7 +3532,7 @@ async function addContext(){
             signal: body.signal,
           });
         } catch (err) {
-          throw createHttpError(400, err.message || 'Invalid RLHF search request');
+          throw createHttpError(400, err.message || 'Invalid ThumbGate search request');
         }
         sendJson(res, 200, results);
         return;
@@ -3961,7 +3961,7 @@ async function addContext(){
         return;
       }
 
-      // GET /v1/dashboard -- Full RLHF dashboard JSON
+      // GET /v1/dashboard -- Full ThumbGate dashboard JSON
       if (req.method === 'GET' && pathname === '/v1/dashboard') {
         let summaryOptions;
         try {
@@ -4188,6 +4188,6 @@ module.exports = {
 
 if (require.main === module) {
   startServer().then(({ port }) => {
-    console.log(`RLHF API listening on http://localhost:${port}`);
+    console.log(`ThumbGate API listening on http://localhost:${port}`);
   });
 }

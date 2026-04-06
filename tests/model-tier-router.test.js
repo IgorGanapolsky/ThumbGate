@@ -270,10 +270,10 @@ test('recommendExecutionPlan combines tier escalation with IndexCache-aware back
     contextTokens: 260000,
     tags: ['retrieval-heavy'],
   }, {
-    RLHF_PROVIDER_MODE: 'local',
-    RLHF_LOCAL_MODEL_FAMILY: 'deepseek-v3',
-    RLHF_LOCAL_MODEL_SERVER: 'sglang',
-    RLHF_INDEXCACHE_ENABLED: 'true',
+    THUMBGATE_PROVIDER_MODE: 'local',
+    THUMBGATE_LOCAL_MODEL_FAMILY: 'deepseek-v3',
+    THUMBGATE_LOCAL_MODEL_SERVER: 'sglang',
+    THUMBGATE_INDEXCACHE_ENABLED: 'true',
   });
 
   assert.equal(plan.tier, 'frontier');

@@ -6,7 +6,7 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_RUBRIC_PATH = path.join(PROJECT_ROOT, 'config', 'rubrics', 'default-v1.json');
 
 function getRubricPath() {
-  return process.env.RLHF_RUBRIC_PATH || DEFAULT_RUBRIC_PATH;
+  return process.env.THUMBGATE_RUBRIC_PATH || DEFAULT_RUBRIC_PATH;
 }
 
 function loadRubricConfig() {

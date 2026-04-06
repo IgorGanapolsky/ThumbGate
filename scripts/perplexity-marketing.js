@@ -30,11 +30,11 @@ const PRODUCT = {
   name: 'ThumbGate',
   npm: 'mcp-memory-gateway',
   repo: 'https://github.com/IgorGanapolsky/ThumbGate',
-  checkout: 'https://rlhf-feedback-loop-production.up.railway.app/checkout/pro',
+  checkout: 'https://thumbgate-production.up.railway.app/checkout/pro',
   sponsor: 'https://github.com/sponsors/IgorGanapolsky',
   coffee: 'https://buymeacoffee.com/igorganapolsky',
   tagline: 'Local-first memory and feedback pipeline for AI agents. Captures thumbs-up/down signals, promotes reusable memories, generates prevention rules from repeated failures, and exports KTO/DPO pairs for fine-tuning.',
-  keywords: ['MCP', 'RLHF', 'DPO', 'KTO', 'Thompson Sampling', 'AI agent memory', 'Claude Code', 'Amp', 'Gemini CLI', 'context engineering', 'prevention rules', 'Pre-Action Gates'],
+  keywords: ['MCP', 'ThumbGate', 'DPO', 'KTO', 'Thompson Sampling', 'AI agent memory', 'Claude Code', 'Amp', 'Gemini CLI', 'context engineering', 'prevention rules', 'Pre-Action Gates'],
   proPrice: '$19/mo or $149/yr',
 };
 
@@ -96,8 +96,8 @@ async function deepResearch() {
 I built "${PRODUCT.name}" — ${PRODUCT.tagline}
 
 Research and provide:
-1. **Competitor Analysis**: What similar tools exist? (LangSmith, Weights & Biases, custom RLHF pipelines, etc.) What do they charge? What gaps does my tool fill?
-2. **Target Buyer Personas**: Who would pay $19/mo or $149/yr for a Pro plan with curated RLHF configs? (AI engineers, dev tool builders, agent framework users)
+1. **Competitor Analysis**: What similar tools exist? (LangSmith, Weights & Biases, custom ThumbGate pipelines, etc.) What do they charge? What gaps does my tool fill?
+2. **Target Buyer Personas**: Who would pay $19/mo or $149/yr for a Pro plan with curated ThumbGate configs? (AI engineers, dev tool builders, agent framework users)
 3. **Distribution Channels**: Specific subreddits, Discord servers, Slack communities, newsletters, and forums where MCP/RLHF tool buyers hang out. Include URLs.
 4. **SEO/GEO Keywords**: High-intent search terms people use when looking for this type of tool
 5. **Launch Strategy**: Specific steps to get first 10 paying customers this week
@@ -205,7 +205,7 @@ Also generate 3 alternative titles to A/B test.`,
       name: 'reddit',
       file: '03-reddit-post.md',
       prompt: `Write Reddit posts for ${PRODUCT.name} for these subreddits:
-1. r/MachineLearning — focus on RLHF/DPO pipeline, academic angle
+1. r/MachineLearning — focus on ThumbGate/DPO pipeline, academic angle
 2. r/LocalLLaMA — focus on local-first, no cloud dependency
 3. r/ClaudeAI — focus on Claude Code integration, MCP tools
 4. r/programming — focus on the engineering of the feedback loop
@@ -230,7 +230,7 @@ Product: ${PRODUCT.tagline}
 npm: npx ${PRODUCT.npm} init
 GitHub: ${PRODUCT.repo}
 
-Write a technical tutorial titled something like "How I Built a Self-Improving AI Agent Memory System" or "Teaching AI Agents to Learn from Their Mistakes with RLHF".
+Write a technical tutorial titled something like "How I Built a Self-Improving AI Agent Memory System or Teaching AI Agents to Learn from Their Mistakes with ThumbGate".
 
 Requirements:
 - dev.to frontmatter (title, published, description, tags, cover_image)
@@ -349,7 +349,7 @@ Generate:
 1. **FAQ Page Content** — 10 Q&As that match high-intent developer searches (format as JSON-LD FAQPage schema)
 2. **Meta Descriptions** — for GitHub README, npm page, landing page
 3. **Long-tail Keyword Targets** — 20 specific phrases developers search for
-4. **Comparison Content** — "ThumbGate vs LangSmith", "ThumbGate vs custom RLHF", "ThumbGate vs Weights & Biases"
+4. **Comparison Content** — "ThumbGate vs LangSmith", "ThumbGate vs custom ThumbGate setup", "ThumbGate vs Weights & Biases"
 5. **Structured Data** — JSON-LD SoftwareApplication schema for the product
 
 Make all content factually accurate and technically specific.`,

@@ -1,0 +1,20 @@
+{
+  "id": "1775246583932_feedback-negative-fb-1775246583759-csoqzu",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775246583759_csoqzu",
+  "content": "{\"id\":\"fb_1775246583759_csoqzu\",\"signal\":\"negative\",\"context\":\"Gate \\\"goal-drift-invariant\\\" blocked tool \\\"Bash\\\": Original intent was to FIX, but current action is DESTRUCTIVE: Bash\",\"submittedContext\":\"Gate \\\"goal-drift-invariant\\\" blocked tool \\\"Bash\\\": Original intent was to FIX, but current action is DESTRUCTIVE: Bash\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:goal-drift-invariant\",\"gates-engine\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T20:03:03.759Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:goal-drift-invariant",
+    "gates-engine"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-03T20:03:03.932Z",
+  "lastUsedAt": null
+}

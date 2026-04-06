@@ -92,9 +92,9 @@ test('compileToCodexPlugin includes .mcp.json with correct tool list', () => {
   const mcp = codex.mcpJson;
 
   assert.ok(mcp.mcpServers);
-  assert.ok(mcp.mcpServers.rlhf);
-  assert.equal(mcp.mcpServers.rlhf.command, 'npx');
-  assert.deepEqual(mcp.mcpServers.rlhf.tools, spec.tools);
+  assert.ok(mcp.mcpServers.thumbgate);
+  assert.equal(mcp.mcpServers.thumbgate.command, 'npx');
+  assert.deepEqual(mcp.mcpServers.thumbgate.tools, spec.tools);
 });
 
 test('exportSkill writes files to dist/skills/{name}/', () => {
@@ -178,7 +178,7 @@ test('round-trip: spec → codex export → validate required fields present', (
     assert.equal(typeof codex.pluginJson.version, 'string', `${name}: plugin version`);
     assert.equal(typeof codex.pluginJson.description, 'string', `${name}: plugin description`);
     assert.equal(codex.pluginJson.mcpServers, './.mcp.json', `${name}: mcpServers ref`);
-    assert.ok(codex.mcpJson.mcpServers.rlhf, `${name}: mcp rlhf`);
+    assert.ok(codex.mcpJson.mcpServers.thumbgate, `${name}: mcp thumbgate`);
     assert.equal(typeof codex.agentsMd, 'string', `${name}: AGENTS.md`);
   }
 });

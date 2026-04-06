@@ -7,8 +7,8 @@ const os = require('os');
 const path = require('path');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-prompt-guard-test-'));
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
-process.env.RLHF_SECRET_SCAN_PROVIDER = 'heuristic';
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_SECRET_SCAN_PROVIDER = 'heuristic';
 
 const { evaluatePromptGuard } = require('../scripts/prompt-guard');
 

@@ -14,7 +14,7 @@ function runPostinstall(envOverrides = {}) {
   if (!('CI' in envOverrides)) delete env.CI;
   if (!('CONTINUOUS_INTEGRATION' in envOverrides)) delete env.CONTINUOUS_INTEGRATION;
   if (!('GITHUB_ACTIONS' in envOverrides)) delete env.GITHUB_ACTIONS;
-  if (!('RLHF_NO_NUDGE' in envOverrides)) delete env.RLHF_NO_NUDGE;
+  if (!('THUMBGATE_NO_NUDGE' in envOverrides)) delete env.THUMBGATE_NO_NUDGE;
   const result = spawnSync(process.execPath, [POSTINSTALL], {
     encoding: 'utf8',
     env,
@@ -56,8 +56,8 @@ describe('postinstall banner', () => {
     assert.equal(stderr.trim(), '', 'should produce no stderr in CI');
   });
 
-  it('exits silently with RLHF_NO_NUDGE=1', () => {
-    const { stdout, stderr, exitCode } = runPostinstall({ RLHF_NO_NUDGE: '1' });
+  it('exits silently with THUMBGATE_NO_NUDGE=1', () => {
+    const { stdout, stderr, exitCode } = runPostinstall({ THUMBGATE_NO_NUDGE: '1' });
     assert.equal(exitCode, 0);
     assert.equal(stdout.trim(), '', 'should produce no stdout when nudge disabled');
     assert.equal(stderr.trim(), '', 'should produce no stderr when nudge disabled');

@@ -44,7 +44,7 @@ must_haves:
 <objective>
 Install LanceDB, Arrow, and HuggingFace Transformers, then create the vector-store.js module with dynamic-import ESM/CJS compatibility.
 
-Purpose: rlhf-feedback-loop is CommonJS but @lancedb/lancedb is ESM-only. The dynamic import pattern is the only correct approach — this plan establishes the integration boundary with zero ERR_REQUIRE_ESM errors.
+Purpose: thumbgate is CommonJS but @lancedb/lancedb is ESM-only. The dynamic import pattern is the only correct approach — this plan establishes the integration boundary with zero ERR_REQUIRE_ESM errors.
 Output: package.json with pinned deps, scripts/vector-store.js with upsertFeedback() and searchSimilar().
 </objective>
 
@@ -101,7 +101,7 @@ Output: package.json with pinned deps, scripts/vector-store.js with upsertFeedba
     3. `getLanceDB()` does `_lancedb = await import('@lancedb/lancedb')` — NEVER `require()`.
     4. `getEmbeddingPipeline()` does `await import('@huggingface/transformers')` then `pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { quantized: true })`.
     5. `embed(text)` calls the pipeline with `{ pooling: 'mean', normalize: true }` and returns `Array.from(output.data)` — MUST convert Float32Array to plain number[] or LanceDB throws TypeError on Arrow serialization.
-    6. `upsertFeedback(feedbackEvent)` builds `lanceDir` from `process.env.RLHF_FEEDBACK_DIR` (appending `/lancedb`) OR falls back to `path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback', 'lancedb')`. Calls `db.tableNames()` to check if table exists, uses `db.openTable()` + `table.add([record])` if yes, `db.createTable(TABLE_NAME, [record])` if no. Table name: `'rlhf_memories'`.
+    6. `upsertFeedback(feedbackEvent)` builds `lanceDir` from `process.env.THUMBGATE_FEEDBACK_DIR` (appending `/lancedb`) OR falls back to `path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback', 'lancedb')`. Calls `db.tableNames()` to check if table exists, uses `db.openTable()` + `table.add([record])` if yes, `db.createTable(TABLE_NAME, [record])` if no. Table name: `'rlhf_memories'`.
     7. Record schema: `{ id, text, vector, signal, tags, timestamp, context }` where:
        - `text` = joined string of feedbackEvent.context, feedbackEvent.tags, feedbackEvent.whatWentWrong, feedbackEvent.whatWorked (filtered, joined with '. ')
        - `tags` = `(feedbackEvent.tags || []).join(',')` (stored as string)

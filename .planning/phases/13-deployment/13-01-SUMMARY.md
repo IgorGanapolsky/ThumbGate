@@ -91,7 +91,7 @@ Excludes: `.git`, `node_modules`, `.planning`, `.agents`, `.claude/memory`, `.om
 - Response body has numeric `uptime >= 0`
 - Content-Type is `application/json`
 - `PORT` env var wires correctly
-- `RLHF_ALLOW_INSECURE=true` bypasses API key
+- `THUMBGATE_ALLOW_INSECURE=true` bypasses API key
 - Feedback endpoint responds under insecure mode
 
 ## Verification Evidence
@@ -99,9 +99,9 @@ Excludes: `.git`, `node_modules`, `.planning`, `.agents`, `.claude/memory`, `.om
 ### Docker Build
 
 ```
-docker build -t rlhf-feedback-loop:latest .
+docker build -t thumbgate:latest .
 #20 writing image sha256:77ef6a2bd4af1a28ac15b1e9d34883b04f0482abcc21c93c3125547d92c29f78 done
-#20 naming to docker.io/library/rlhf-feedback-loop:latest done
+#20 naming to docker.io/library/thumbgate:latest done
 ```
 
 Build result: **SUCCESS** — image built with no errors.
@@ -110,8 +110,8 @@ Build result: **SUCCESS** — image built with no errors.
 
 ```bash
 docker run -d --name rlhf-test -p 18787:8787 \
-  -e RLHF_ALLOW_INSECURE=true -e PORT=8787 \
-  rlhf-feedback-loop:latest
+  -e THUMBGATE_ALLOW_INSECURE=true -e PORT=8787 \
+  thumbgate:latest
 
 curl http://localhost:18787/health
 {"status":"ok","version":"0.5.0","uptime":3.04892471}
@@ -136,7 +136,7 @@ Fail: 0
 ✔ GET /health returns numeric uptime
 ✔ GET /health content-type is application/json
 ✔ PORT env var controls listen port
-✔ RLHF_ALLOW_INSECURE=true bypasses API key requirement
+✔ THUMBGATE_ALLOW_INSECURE=true bypasses API key requirement
 ✔ feedback endpoint returns valid JSON under insecure mode
 tests 8 | pass 8 | fail 0
 ```
@@ -146,7 +146,7 @@ tests 8 | pass 8 | fail 0
 DEPLOY-02 requires actual Railway account credentials and a live deployment. All required assets are complete:
 - Dockerfile builds and produces a working image
 - railway.json is configured with correct build/deploy/healthcheck settings
-- Environment variables are fully configurable (RLHF_API_KEY, PORT, RLHF_FEEDBACK_DIR, RLHF_ALLOW_INSECURE)
+- Environment variables are fully configurable (THUMBGATE_API_KEY, PORT, THUMBGATE_FEEDBACK_DIR, THUMBGATE_ALLOW_INSECURE)
 
 To deploy: create Railway account, `railway login`, `railway init`, `railway up` — no code changes needed.
 

@@ -16,7 +16,7 @@ const fs = require('fs');
 const readline = require('readline');
 const path = require('path');
 
-const FEEDBACK_DIR = process.env.RLHF_FEEDBACK_DIR
+const FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR
   || path.join(__dirname, '..', '.claude', 'memory', 'feedback');
 
 const METRICS_PATH = process.env.METRICS_PATH

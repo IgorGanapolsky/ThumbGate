@@ -65,7 +65,7 @@ function evaluatePromptGuard(prompt, options = {}) {
 }
 
 function main() {
-  const prompt = process.env.CLAUDE_USER_PROMPT || process.env.RLHF_USER_PROMPT || '';
+  const prompt = process.env.CLAUDE_USER_PROMPT || process.env.THUMBGATE_USER_PROMPT || '';
   const result = evaluatePromptGuard(prompt);
   if (!result) {
     return;

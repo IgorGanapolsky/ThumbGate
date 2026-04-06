@@ -1,0 +1,17 @@
+{
+  "id": "1775082381769_feedback-negative-fb-1775082381682-wu50oa",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775082381682_wu50oa",
+  "content": "{\"id\":\"fb_1775082381682_wu50oa\",\"signal\":\"negative\",\"context\":\"Pipeline integration test failure 3\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":\"Integration broke\",\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"pipeline-integration-test\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-01T22:26:21.682Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "pipeline-integration-test"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-01T22:26:21.769Z",
+  "lastUsedAt": null
+}

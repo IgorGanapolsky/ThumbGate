@@ -7,7 +7,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
 function resolveProofPaths() {
-  const proofDir = process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+  const proofDir = process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
   return {
     proofDir,
     reportJson: path.join(proofDir, 'xmemory-report.json'),
@@ -23,7 +23,7 @@ function loadFresh(modulePath) {
 
 function setupTempFeedbackDir() {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-xmemory-proof-'));
-  process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
   return feedbackDir;
 }
 
@@ -309,7 +309,7 @@ async function run() {
   fs.writeFileSync(reportMd, `${markdown}\n`);
 
   fs.rmSync(feedbackDir, { recursive: true, force: true });
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
 
   console.log(`\nResult: ${results.passed} passed, ${results.failed} failed`);
   console.log(`Report: ${reportJson}`);

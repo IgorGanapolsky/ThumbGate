@@ -1,0 +1,21 @@
+{
+  "id": "1775253670967_feedback-negative-fb-1775253670785-pw1h7r",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775253670785_pw1h7r",
+  "content": "{\"id\":\"fb_1775253670785_pw1h7r\",\"signal\":\"negative\",\"context\":\"Gate \\\"metric-gate-noskip\\\" blocked tool \\\"Bash\\\": Revenue too low\",\"submittedContext\":\"Gate \\\"metric-gate-noskip\\\" blocked tool \\\"Bash\\\": Revenue too low\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:metric-gate-noskip\",\"gates-engine\",\"entity:Revenue\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T22:01:10.785Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:metric-gate-noskip",
+    "gates-engine",
+    "entity:Revenue"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-03T22:01:10.967Z",
+  "lastUsedAt": null
+}

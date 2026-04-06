@@ -1,0 +1,18 @@
+{
+  "id": "1775167944944_feedback-negative-fb-1775167944797-so7tub",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775167944797_so7tub",
+  "content": "{\"id\":\"fb_1775167944797_so7tub\",\"signal\":\"negative\",\"context\":\"test\",\"submittedContext\":\"test\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":\"test problem\",\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"cli-feedback\",\"negative\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-02T22:12:24.797Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "cli-feedback",
+    "negative"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-02T22:12:24.944Z",
+  "lastUsedAt": null
+}

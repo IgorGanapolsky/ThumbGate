@@ -11,7 +11,7 @@
 #   /tmp/.thumbgate-last-deploy-verify — written by hook-verify-before-done.sh
 # Exit code: Always 0 (informational only).
 
-PROD_URL="rlhf-feedback-loop-production.up.railway.app"
+PROD_URL="thumbgate-production.up.railway.app"
 VERIFICATION_MARKER="/tmp/.thumbgate-last-deploy-verify"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"

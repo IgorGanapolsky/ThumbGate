@@ -73,9 +73,9 @@ Output: scripts/prove-lancedb.js, proof/lancedb-report.md, npm run prove:lancedb
     The script must:
     1. Run a smoke test using real LanceDB (not stub embed): insert a test feedback entry, search for it, verify result returned.
        - Use os.mkdtempSync() for tmpdir; clean up in finally.
-       - Set process.env.RLHF_FEEDBACK_DIR = tmpDir before requiring vector-store.
+       - Set process.env.THUMBGATE_FEEDBACK_DIR = tmpDir before requiring vector-store.
        - Invalidate require.cache before requiring to pick up env var.
-       - If RLHF_VECTOR_STUB_EMBED env var is used in vector-store.js, set it to false (or unset) to use real embedding. If the test env has no network, catch and mark VEC-04 as 'warn' (network-dependent) not 'fail'.
+       - If THUMBGATE_VECTOR_STUB_EMBED env var is used in vector-store.js, set it to false (or unset) to use real embedding. If the test env has no network, catch and mark VEC-04 as 'warn' (network-dependent) not 'fail'.
     2. Inspect package.json to verify apache-arrow version and lancedb version for VEC-02, VEC-03 evidence.
     3. Grep scripts/vector-store.js for "await import" count to provide VEC-02 file evidence.
     4. Run `node --test tests/vector-store.test.js` as a child_process and capture pass/fail for VEC-05 evidence.

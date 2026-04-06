@@ -6,7 +6,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-bootstrap-feedback-'));
-process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 
 const {
   normalizeInvocation,
@@ -18,7 +18,7 @@ const {
 function initGitRepo() {
   const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-bootstrap-repo-'));
   execFileSync('git', ['init', '-b', 'main'], { cwd: repoPath, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.name', 'RLHF Test'], { cwd: repoPath, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.name', 'ThumbGate Test'], { cwd: repoPath, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.email', 'rlhf@example.com'], { cwd: repoPath, stdio: 'ignore' });
   fs.writeFileSync(path.join(repoPath, 'README.md'), '# temp repo\n');
   execFileSync('git', ['add', 'README.md'], { cwd: repoPath, stdio: 'ignore' });
@@ -105,8 +105,8 @@ test('ensureWorktreeSandbox creates and reuses a git worktree sandbox', () => {
 test('bootstrapInternalAgent returns recall, sandbox, and reviewer-lane plan', () => {
   const repoPath = initGitRepo();
   const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-bootstrap-agent-'));
-  const previousStub = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-  process.env.RLHF_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
+  const previousStub = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+  process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
     source: 'stub',
     symbols: ['planIntent'],
     callers: ['src/api/server.js -> planIntent'],
@@ -142,8 +142,8 @@ test('bootstrapInternalAgent returns recall, sandbox, and reviewer-lane plan', (
 
     removeWorktree(repoPath, payload.sandbox.path);
   } finally {
-    if (previousStub === undefined) delete process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-    else process.env.RLHF_CODEGRAPH_STUB_RESPONSE = previousStub;
+    if (previousStub === undefined) delete process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+    else process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = previousStub;
     fs.rmSync(repoPath, { recursive: true, force: true });
     fs.rmSync(sandboxRoot, { recursive: true, force: true });
   }

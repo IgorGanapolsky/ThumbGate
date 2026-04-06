@@ -142,7 +142,7 @@ function runTests() {
   // Context-only negative → ok
   const ctxNeg = convertFeedbackToMemory({
     signal: 'negative',
-    context: 'Showed fake RLHF statistics panel to user',
+    context: 'Showed fake ThumbGate statistics panel to user',
     tags: ['rlhf'],
   });
   assert(ctxNeg.ok === true, 'context-only negative → ok');

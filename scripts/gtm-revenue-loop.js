@@ -69,7 +69,7 @@ function normalizeText(value) {
 }
 
 function buildRevenueLinks(config = resolveHostedBillingConfig({
-  requestOrigin: 'https://rlhf-feedback-loop-production.up.railway.app',
+  requestOrigin: 'https://thumbgate-production.up.railway.app',
 })) {
   const appOrigin = config.appOrigin;
   return {

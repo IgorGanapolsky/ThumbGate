@@ -72,7 +72,7 @@ npx mcp-memory-gateway init
 Or add it directly:
 
 ```
-claude mcp add rlhf -- npx -y mcp-memory-gateway serve
+claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
 ```
 
 Works with Claude Code, Codex, Gemini, Amp, and Cursor. MIT licensed, fully open source.
@@ -184,4 +184,4 @@ ThumbGate is a pre-action gate engine for AI coding agents. Unlike memory server
 
 ## 7. smithery.ai Submission
 
-ThumbGate captures explicit structured feedback from AI coding agents, validates it against a rubric engine, and auto-promotes repeated failures into prevention rules enforced via PreToolUse hooks. Pre-action gates physically block tool calls matching known failure patterns before execution — turning past mistakes into hard constraints rather than suggestions. Supports semantic recall via LanceDB vectors, DPO/KTO export for downstream fine-tuning, and a file watcher bridge for external signal ingestion. Compatible with Claude Code, Codex, Gemini, Amp, Cursor, and OpenCode. Install with `npx mcp-memory-gateway init` or `claude mcp add rlhf -- npx -y mcp-memory-gateway serve`. MIT licensed, open source.
+ThumbGate captures explicit structured feedback from AI coding agents, validates it against a rubric engine, and auto-promotes repeated failures into prevention rules enforced via PreToolUse hooks. Pre-action gates physically block tool calls matching known failure patterns before execution — turning past mistakes into hard constraints rather than suggestions. Supports semantic recall via LanceDB vectors, DPO/KTO export for downstream fine-tuning, and a file watcher bridge for external signal ingestion. Compatible with Claude Code, Codex, Gemini, Amp, Cursor, and OpenCode. Install with `npx mcp-memory-gateway init` or `claude mcp add thumbgate -- npx -y mcp-memory-gateway serve`. MIT licensed, open source.

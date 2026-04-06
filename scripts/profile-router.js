@@ -4,7 +4,7 @@
 /**
  * Profile Router — OpenShell-inspired auto MCP profile selection
  *
- * Instead of manually setting RLHF_MCP_PROFILE, this module analyzes the
+ * Instead of manually setting THUMBGATE_MCP_PROFILE, this module analyzes the
  * current context (tool name, input, session state) and automatically selects
  * the most restrictive profile that still permits the required operation.
  *
@@ -36,7 +36,7 @@ const { recommendInferenceBackend } = require('./local-model-profile');
  */
 function routeProfile(params = {}) {
   const { toolName, sessionType, hasWriteIntent, settingsOptions } = params;
-  const explicitProfile = process.env.RLHF_MCP_PROFILE;
+  const explicitProfile = process.env.THUMBGATE_MCP_PROFILE;
   const defaultProfile = getSetting('mcp.defaultProfile', settingsOptions) || 'essential';
   const readonlyProfile = getSetting('mcp.readonlySessionProfile', settingsOptions) || 'readonly';
   const defaultOrigin = getSettingOrigin('mcp.defaultProfile', settingsOptions);
@@ -46,7 +46,7 @@ function routeProfile(params = {}) {
   if (explicitProfile) {
     return {
       profile: explicitProfile,
-      reason: `explicit override via RLHF_MCP_PROFILE=${explicitProfile}`,
+      reason: `explicit override via THUMBGATE_MCP_PROFILE=${explicitProfile}`,
       wasAutoRouted: false,
       settingsOrigin: null,
     };
@@ -131,9 +131,9 @@ function isReadOnlySession() {
   // CI review context
   if (process.env.CI && process.env.GITHUB_EVENT_NAME === 'pull_request') return true;
   // Explicit read-only marker
-  if (process.env.RLHF_SESSION_TYPE === 'review') return true;
+  if (process.env.THUMBGATE_SESSION_TYPE === 'review') return true;
   // Subagent review profile
-  if (process.env.RLHF_SUBAGENT_PROFILE === 'review_workflow') return true;
+  if (process.env.THUMBGATE_SUBAGENT_PROFILE === 'review_workflow') return true;
   return false;
 }
 

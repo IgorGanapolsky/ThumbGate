@@ -26,7 +26,7 @@ If ThumbGate is not yet installed in this project:
 npx mcp-memory-gateway init
 ```
 
-This bootstraps `.rlhf/` data directory and `.mcp.json` config. Works with
+This bootstraps `.thumbgate/` data directory and `.mcp.json` config. Works with
 Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent.
 
 ## Core Commands

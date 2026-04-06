@@ -43,7 +43,7 @@ function saveState(state, stateFile) {
 /**
  * Increment the event counter for a given event type.
  * @param {string} eventType - One of the keys in REMINDER_TEMPLATES
- * @param {string} [stateFile] - Path to state JSON (default: .rlhf/reminder-state.json)
+ * @param {string} [stateFile] - Path to state JSON (default: .thumbgate/reminder-state.json)
  * @returns {number} New count after incrementing
  */
 function trackEvent(eventType, stateFile) {

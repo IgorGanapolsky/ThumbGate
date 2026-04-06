@@ -97,7 +97,7 @@ test('formatReport includes honest metrics and share links', () => {
   assert.match(report, /ThumbGate — Unified Analytics Snapshot/);
   assert.match(report, /ORGANIC ESTIMATE/);
   assert.match(report, /Publish-day avg:\s+200\/day/);
-  assert.match(report, /Twitter:\s+https:\/\/rlhf-feedback-loop-production\.up\.railway\.app\?utm_source=twitter/);
+  assert.match(report, /Twitter:\s+https:\/\/thumbgate-production\.up\.railway\.app\?utm_source=twitter/);
   assert.match(report, /Real npm traction:\s+~77 downloads\/week/);
   assert.match(report, /GitHub stars:\s+9/);
   assert.match(report, /Tracked:\s+utm_source=producthunt/);

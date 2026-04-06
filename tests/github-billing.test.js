@@ -34,7 +34,7 @@ function cleanupTempStore() {
   delete process.env._TEST_API_KEYS_PATH;
   delete process.env._TEST_REVENUE_LEDGER_PATH;
   delete process.env._TEST_FUNNEL_LEDGER_PATH;
-  delete process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
+  delete process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
 }
 
 function readRevenueEvents() {
@@ -91,7 +91,7 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
   });
 
   test('handleGithubWebhook — purchased uses configured plan pricing when available', () => {
-    process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
+    process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
       11: { amountCents: 4900, currency: 'USD', recurringInterval: null },
     });
     delete require.cache[require.resolve('../scripts/billing')];
@@ -120,7 +120,7 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     assert.equal(latest.recurringInterval, null);
     assert.equal(latest.metadata.githubMarketplaceAmountSource, 'configured_plan_price');
 
-    delete process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
+    delete process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
     delete require.cache[require.resolve('../scripts/billing')];
     billing = require('../scripts/billing');
   });
@@ -281,7 +281,7 @@ describe('API server — GitHub Webhook Route', () => {
 
   before(async () => {
     setupTempStore();
-    process.env.RLHF_ALLOW_INSECURE = 'true';
+    process.env.THUMBGATE_ALLOW_INSECURE = 'true';
     delete process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET;
 
     const { startServer } = require('../src/api/server');
@@ -293,7 +293,7 @@ describe('API server — GitHub Webhook Route', () => {
   after(async () => {
     await new Promise((resolve) => server.close(resolve));
     cleanupTempStore();
-    delete process.env.RLHF_ALLOW_INSECURE;
+    delete process.env.THUMBGATE_ALLOW_INSECURE;
   });
 
   async function apiRequest(method, path, body, headers = {}) {

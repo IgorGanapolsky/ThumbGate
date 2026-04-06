@@ -11,7 +11,7 @@
 | **Prevention rules** | Auto-promoted from repeated failures — regression-tested |
 | **Filesystem search** | 1,651 ContextFS files searchable without embeddings — 17 tests |
 | **Social analytics** | 10-platform polling pipeline — 26 Zernio + 16 analytics tests |
-| **RLHF search** | Two-tier search (MCP tool + REST API) — 18 tests |
+| **ThumbGate search** | Two-tier search (MCP tool + REST API) — 18 tests |
 | **MCP/API parity** | Every MCP tool has a matching REST endpoint — proven by OpenAPI parity tests |
 | **CI pipeline** | All PRs require green CI (tests + CodeQL + GitGuardian + Socket Security) |
 | **Railway deployment** | Auto-deploy on merge, SHA-verified, health-checked |
@@ -35,7 +35,7 @@ npm run test:coverage       # Coverage report
 
 # Paid tier — authenticated REST API
 curl -H "Authorization: Bearer YOUR_KEY" \
-  "https://rlhf-feedback-loop-production.up.railway.app/v1/search?q=test+failure"
+  "https://thumbgate-production.up.railway.app/v1/search?q=test+failure"
 ```
 
 ---
@@ -88,8 +88,8 @@ PY
 node --test tests/feedback-loop.test.js tests/intelligence.test.js
 npm test >/tmp/mcp_npm_test_fix_rlhf_source_labels.log 2>&1
 npm run test:coverage >/tmp/mcp_test_coverage_fix_rlhf_source_labels.log 2>&1
-RLHF_PROOF_DIR=/tmp/mcp_proof_adapters_fix_rlhf npm run prove:adapters >/tmp/mcp_prove_adapters_fix_rlhf.log 2>&1
-RLHF_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_rlhf npm run prove:automation >/tmp/mcp_prove_automation_fix_rlhf.log 2>&1
+THUMBGATE_PROOF_DIR=/tmp/mcp_proof_adapters_fix_rlhf npm run prove:adapters >/tmp/mcp_prove_adapters_fix_rlhf.log 2>&1
+THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_rlhf npm run prove:automation >/tmp/mcp_prove_automation_fix_rlhf.log 2>&1
 npm run self-heal:check >/tmp/mcp_self_heal_check_fix_rlhf.log 2>&1
 git diff --check
 ```
@@ -107,15 +107,15 @@ Observed result:
   - `threatIndicators: ["credential_leak"]`
 - `node --test tests/feedback-loop.test.js tests/intelligence.test.js` exited `0`: `74` passed, `0` failed.
 - `npm test` exited `0` on the patched worktree (`/tmp/mcp_npm_test_fix_rlhf_source_labels.log`).
-- The full-suite rerun included the new RLHF/security checks:
+- The full-suite rerun included the new ThumbGate/security checks:
   - `evaluateMemoryIngress: ShieldCortex blocks secret-bearing payload when explicitly enabled`
   - `captureFeedback: blocks secret-bearing feedback before any raw memory write`
 - `npm run test:coverage` exited `0` with all-files coverage at:
   - `89.71` lines
   - `75.40` branches
   - `93.21` functions
-- `RLHF_PROOF_DIR=/tmp/mcp_proof_adapters_fix_rlhf npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `RLHF_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_rlhf npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `THUMBGATE_PROOF_DIR=/tmp/mcp_proof_adapters_fix_rlhf npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_rlhf npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4 healthy` checks.
 - `git diff --check` exited `0`.
 
@@ -130,7 +130,7 @@ Requirements verified:
 - Secret-bearing or hostile feedback can now be blocked before any raw memory promotion write.
 - When ShieldCortex is installed, the ingress firewall can use it directly; when it is absent, the gateway falls back to the local secret scanner without breaking runtime operation.
 - The runtime memory manifest no longer falsely claims `shieldcortex` as a live memory source.
-- The change did not break the RLHF feedback loop, adapter contracts, automation contracts, or self-healing checks.
+- The change did not break the ThumbGate feedback loop, adapter contracts, automation contracts, or self-healing checks.
 
 ## March 21, 2026: Social publish hardening + self-heal reliability fix + archive-WIP retirement decision
 
@@ -166,8 +166,8 @@ npm run social:publish -- \
   --profile-dir Default
 npm test
 npm run test:coverage
-tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
-tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+tmp=$(mktemp -d) && THUMBGATE_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && THUMBGATE_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
 npm run self-heal:check
 git diff --check
 git cherry -v main codex/archive-primary-dirty-20260320
@@ -183,8 +183,8 @@ Observed result:
 - `node --test tests/social-pipeline.test.js tests/social-marketing-assets.test.js` exited `0`: `19` passed, `0` failed.
 - `npm test` exited `0`.
 - The first `npm run test:coverage` run exposed a full-suite CLI handshake timeout in `tests/cli.test.js`; widening the helper timeout from `10s` to `20s` removed that flake. The rerun then exited `0` with all-files coverage at `88.01` lines, `75.59` branches, and `92.54` functions.
-- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks (`budget_status 150ms`, `tests 61973ms`, `prove_adapters 1151ms`, `prove_automation 1159ms`).
 - `git diff --check` exited `0`.
 - The Chrome cookie scan on this machine showed:
@@ -244,8 +244,8 @@ node --test tests/session-handoff.test.js
 ./bin/memory.sh
 npm test
 npm run test:coverage
-tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp" npm run prove:adapters
-tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp" npm run prove:automation
+tmp=$(mktemp -d) && THUMBGATE_PROOF_DIR="$tmp" npm run prove:adapters
+tmp=$(mktemp -d) && THUMBGATE_AUTOMATION_PROOF_DIR="$tmp" npm run prove:automation
 npm run self-heal:check
 git diff --check
 npm run revenue:status -- --json
@@ -258,11 +258,11 @@ Observed result:
 - `node --test tests/api-server.test.js` exited `0`: `55` passed, `0` failed.
 - `node --test tests/public-landing.test.js` exited `0`: `12` passed, `0` failed.
 - `node --test tests/session-handoff.test.js` exited `0`: `10` passed, `0` failed.
-- `./bin/memory.sh` exited `0` and now cleanly reports `RLHF_OBSIDIAN_VAULT_PATH not set. Skipping sync.` with no shell errors.
+- `./bin/memory.sh` exited `0` and now cleanly reports `THUMBGATE_OBSIDIAN_VAULT_PATH not set. Skipping sync.` with no shell errors.
 - `npm test` exited `0`.
 - `npm run test:coverage` exited `0` with all-files coverage at `89.68` lines, `75.72` branches, and `93.16` functions.
-- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks on a serial rerun (`tests 99171ms`, `prove_adapters 7235ms`, `prove_automation 3873ms`).
 - `git diff --check` exited `0`.
 - `npm run revenue:status -- --json` exited `0` with `source: hosted-via-railway-env`; public probes returned `/health 200`, `/ 200`, and `/v1/telemetry/ping 204`.
@@ -305,13 +305,13 @@ npm ci
 node --test tests/deployment.test.js
 npm test
 npm run test:coverage
-tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
-tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+tmp=$(mktemp -d) && THUMBGATE_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && THUMBGATE_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
 npm run self-heal:check
 git diff --check
 gh run view 23355558359 --repo IgorGanapolsky/mcp-memory-gateway --log-failed
-curl -sS https://rlhf-feedback-loop-production.up.railway.app/health
-sleep 90 && curl -sS https://rlhf-feedback-loop-production.up.railway.app/health
+curl -sS https://thumbgate-production.up.railway.app/health
+sleep 90 && curl -sS https://thumbgate-production.up.railway.app/health
 ```
 
 Observed result:
@@ -320,8 +320,8 @@ Observed result:
 - `node --test tests/deployment.test.js` exited `0`: `14` passed, `0` failed.
 - `npm test` exited `0`.
 - `npm run test:coverage` exited `0` with all-files coverage at `89.68` lines, `75.72` branches, and `93.16` functions.
-- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
 - `git diff --check` exited `0`.
 - Root-cause evidence from GitHub Actions run `23355558359`:
@@ -342,7 +342,7 @@ Requirements verified:
 Scope:
 
 - Added `scripts/build-metadata.js` plus tracked `config/build-metadata.json` so deploys stamp an immutable build SHA into the shipped artifact instead of trusting mutable Railway runtime variables.
-- Updated `.github/workflows/deploy-railway.yml` to generate build metadata during the deploy workflow and removed the old `RLHF_BUILD_SHA` runtime-variable sync.
+- Updated `.github/workflows/deploy-railway.yml` to generate build metadata during the deploy workflow and removed the old `THUMBGATE_BUILD_SHA` runtime-variable sync.
 - Updated `src/api/server.js` so `/health` reads the stamped build metadata and protected endpoints accept `x-api-key` as an alternate auth header in addition to `Authorization: Bearer ...`.
 - Added regression coverage in `tests/api-server.test.js` and `tests/deployment.test.js` for stamped build metadata, alternate auth headers, and the public server-card schema contract.
 - Added the missing empty-object `inputSchema` to `get_reliability_rules` in `scripts/tool-registry.js` so Smithery and other directory scanners can enumerate the tool list without schema errors.
@@ -354,8 +354,8 @@ npm ci
 node --test tests/api-server.test.js tests/deployment.test.js tests/mcp-server.test.js
 npm test
 npm run test:coverage
-tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
-tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+tmp=$(mktemp -d) && THUMBGATE_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && THUMBGATE_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
 npm run self-heal:check
 git diff --check
 ```
@@ -366,8 +366,8 @@ Observed result:
 - `node --test tests/api-server.test.js tests/deployment.test.js tests/mcp-server.test.js` exited `0`: `86` passed, `0` failed.
 - `npm test` exited `0`.
 - `npm run test:coverage` exited `0` with all-files coverage at `89.67` lines, `75.73` branches, and `93.14` functions.
-- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
 - Local targeted proof confirmed the new behavior directly:
   - `/health` returned the stamped `buildSha` from the metadata file instead of reading a mutable env var.
@@ -389,7 +389,7 @@ Scope:
 - Added `scripts/revenue-status.js` and repointed `npm run revenue:status` to prefer hosted Railway-backed truth before falling back to the local CFO summary.
 - Preserved the old local-only operator path as `npm run revenue:status:local` instead of deleting it, so the change removes a blind spot without breaking existing local workflows.
 - Added targeted regression coverage in `tests/revenue-status.test.js` for GitHub variable parsing, public landing signal detection, hosted diagnosis, and the hosted-audit happy path.
-- Set Railway production runtime vars `RLHF_PUBLIC_APP_ORIGIN` and `RLHF_BILLING_API_BASE_URL` explicitly to the canonical hosted origin so the deployed app no longer relies on implicit defaults.
+- Set Railway production runtime vars `THUMBGATE_PUBLIC_APP_ORIGIN` and `THUMBGATE_BILLING_API_BASE_URL` explicitly to the canonical hosted origin so the deployed app no longer relies on implicit defaults.
 - Verified the live public app, live telemetry ingress, live hosted billing summary, and the repo-standard verification suite from a dedicated clean worktree.
 
 Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-analytics-revenue-audit`:
@@ -400,13 +400,13 @@ node --check scripts/revenue-status.js
 node --test tests/revenue-status.test.js
 npm test
 npm run test:coverage
-tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
-tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+tmp=$(mktemp -d) && THUMBGATE_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && THUMBGATE_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
 npm run self-heal:check
 npm run revenue:status -- --json
-railway variable set -s rlhf-feedback-loop -e production \
-  RLHF_PUBLIC_APP_ORIGIN=https://rlhf-feedback-loop-production.up.railway.app \
-  RLHF_BILLING_API_BASE_URL=https://rlhf-feedback-loop-production.up.railway.app --json
+railway variable set -s thumbgate -e production \
+  THUMBGATE_PUBLIC_APP_ORIGIN=https://thumbgate-production.up.railway.app \
+  THUMBGATE_BILLING_API_BASE_URL=https://thumbgate-production.up.railway.app --json
 git diff --check
 ```
 
@@ -417,8 +417,8 @@ Observed result:
 - `node --test tests/revenue-status.test.js` exited `0`: `4` passed, `0` failed.
 - `npm test` exited `0`.
 - `npm run test:coverage` exited `0` with all-files coverage at `89.37`, `75.65`, and `92.99` on the tool's aggregate line.
-- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
 - `npm run revenue:status -- --json` exited `0` with `source: hosted-via-railway-env`.
 - The live public probes inside `npm run revenue:status -- --json` reported:
@@ -434,17 +434,17 @@ Observed result:
   - `dataQuality.telemetryCoverage`, `dataQuality.attributionCoverage`, and `dataQuality.amountKnownCoverage` were all `1`.
   - `diagnosis.primaryIssue` was `operator_blind_spot_local_fallback`, not missing analytics or missing revenue data.
 - Live runtime presence in Railway reported:
-  - `RLHF_FEEDBACK_DIR: true`
-  - `RLHF_API_KEY: true`
-  - `RLHF_PUBLIC_APP_ORIGIN: true`
-  - `RLHF_BILLING_API_BASE_URL: true`
-  - `RLHF_GA_MEASUREMENT_ID: false`
-  - `RLHF_CHECKOUT_FALLBACK_URL: true`
+  - `THUMBGATE_FEEDBACK_DIR: true`
+  - `THUMBGATE_API_KEY: true`
+  - `THUMBGATE_PUBLIC_APP_ORIGIN: true`
+  - `THUMBGATE_BILLING_API_BASE_URL: true`
+  - `THUMBGATE_GA_MEASUREMENT_ID: false`
+  - `THUMBGATE_CHECKOUT_FALLBACK_URL: true`
   - `STRIPE_SECRET_KEY: true`
 - Live container inspection over Railway SSH confirmed durable analytics persistence under `/data/feedback`:
   - `telemetry-pings.jsonl` existed and contained `850` lines.
   - `funnel-events.jsonl` existed and contained `6` lines.
-- `railway variable set ... --json` succeeded for `RLHF_PUBLIC_APP_ORIGIN` and `RLHF_BILLING_API_BASE_URL`, and Railway redeployed the production service with the explicit canonical values.
+- `railway variable set ... --json` succeeded for `THUMBGATE_PUBLIC_APP_ORIGIN` and `THUMBGATE_BILLING_API_BASE_URL`, and Railway redeployed the production service with the explicit canonical values.
 - `git diff --check` exited `0`.
 
 Requirements verified:
@@ -452,7 +452,7 @@ Requirements verified:
 - Production analytics and tracking are implemented and live; the earlier zeroed local output was a local operator fallback, not evidence that nobody uses the system.
 - Production revenue evidence exists and is queryable from the hosted admin surface; the truthful statement for March 20, 2026 is still `$0.00` booked today and `$20.00` booked historically.
 - The no-tech-debt path is in place: the repo now has a hosted-first operator audit command with no new dependencies, no duplicate billing logic, and a preserved local fallback.
-- The remaining live gap is external configuration, not product logic: GA4 is still missing a Railway `RLHF_GA_MEASUREMENT_ID`, so the page exposes GA hooks but does not load the GA script.
+- The remaining live gap is external configuration, not product logic: GA4 is still missing a Railway `THUMBGATE_GA_MEASUREMENT_ID`, so the page exposes GA hooks but does not load the GA script.
 
 ## March 19, 2026: Railway deploy health verification retry hardening
 
@@ -468,8 +468,8 @@ Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igo
 node --test tests/deployment.test.js tests/deploy-policy.test.js
 npm test
 npm run test:coverage
-tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
-tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+tmp=$(mktemp -d) && THUMBGATE_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && THUMBGATE_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
 npm run self-heal:check
 git diff --check
 ```
@@ -479,13 +479,13 @@ Observed result:
 - `node --test tests/deployment.test.js tests/deploy-policy.test.js` exited `0`: `17` passed, `0` failed.
 - `npm test` exited `0`.
 - `npm run test:coverage` exited `0` with all-files coverage at `89.49%` lines, `75.89%` branches, and `93.11%` functions.
-- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
 - `git diff --check` exited `0`.
 - Root-cause proof from the failed post-merge deploy run on `main`:
   - Railway variable sync timed out once at `https://backboard.railway.com/graphql/v2`, then succeeded on rerun.
-  - The remaining deploy failure was the health verifier receiving a transient `502` from `https://rlhf-feedback-loop-production.up.railway.app/health` after a single 30-second wait.
+  - The remaining deploy failure was the health verifier receiving a transient `502` from `https://thumbgate-production.up.railway.app/health` after a single 30-second wait.
   - The production app still reported healthy via `/healthz` with durable feedback paths under `/data/feedback`.
 
 Requirements verified:
@@ -507,8 +507,8 @@ Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igo
 node --test tests/intent-router.test.js
 npm test
 npm run test:coverage
-tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
-tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+tmp=$(mktemp -d) && THUMBGATE_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && THUMBGATE_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
 npm run self-heal:check
 git diff --check
 ```
@@ -518,8 +518,8 @@ Observed result:
 - `node --test tests/intent-router.test.js` exited `0`: `21` passed, `0` failed.
 - `npm test` exited `0`.
 - `npm run test:coverage` exited `0` with all-files coverage at `89.49%` lines, `75.89%` branches, and `93.05%` functions.
-- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
 - `git diff --check` exited `0`.
 
@@ -532,10 +532,10 @@ Requirements verified:
 
 Scope:
 
-- Added a Railway-aware default in `scripts/feedback-loop.js` so hosted deployments automatically persist telemetry under `RAILWAY_VOLUME_MOUNT_PATH/feedback` when `RLHF_FEEDBACK_DIR` is not explicitly set.
+- Added a Railway-aware default in `scripts/feedback-loop.js` so hosted deployments automatically persist telemetry under `RAILWAY_VOLUME_MOUNT_PATH/feedback` when `THUMBGATE_FEEDBACK_DIR` is not explicitly set.
 - Fixed `scripts/billing.js` so hosted Stripe checkout session creation omits `customer_email` unless a real email is present, instead of passing `null` and triggering live Stripe API failures.
 - Added targeted regression coverage for the Railway volume fallback and the hosted checkout payload contract.
-- Provisioned a real Railway production volume mounted at `/data`, set `RLHF_FEEDBACK_DIR=/data/feedback`, and redeployed production so funnel and memory logs survive restarts.
+- Provisioned a real Railway production volume mounted at `/data`, set `THUMBGATE_FEEDBACK_DIR=/data/feedback`, and redeployed production so funnel and memory logs survive restarts.
 - Verified the live hosted `/checkout/pro` route now creates a real Stripe Checkout Session redirect and that live attribution events persist to the durable telemetry ledger.
 
 Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-fix-prod-analytics`:
@@ -545,17 +545,17 @@ npm ci
 node --test tests/billing.test.js tests/feedback-loop.test.js
 npm test
 npm run test:coverage
-tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
-tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+tmp=$(mktemp -d) && THUMBGATE_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && THUMBGATE_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
 npm run self-heal:check
 git diff --check
 railway volume add -m /data --json
-railway variable set RLHF_FEEDBACK_DIR=/data/feedback RAILWAY_RUN_UID=0 --json
+railway variable set THUMBGATE_FEEDBACK_DIR=/data/feedback RAILWAY_RUN_UID=0 --json
 railway up -d -m "fix(billing): omit null stripe customer_email and default Railway feedback volume"
 python3 - <<'PY'
 import json, urllib.request
 req = urllib.request.Request(
-    'https://rlhf-feedback-loop-production.up.railway.app/checkout/pro',
+    'https://thumbgate-production.up.railway.app/checkout/pro',
     headers={'User-Agent': 'codex'},
     method='GET'
 )
@@ -571,9 +571,9 @@ PY
 railway run -- python3 - <<'PY'
 import json, os, urllib.request
 req = urllib.request.Request(
-    'https://rlhf-feedback-loop-production.up.railway.app/v1/billing/summary',
+    'https://thumbgate-production.up.railway.app/v1/billing/summary',
     headers={
-        'Authorization': f"Bearer {os.environ['RLHF_API_KEY']}",
+        'Authorization': f"Bearer {os.environ['THUMBGATE_API_KEY']}",
         'User-Agent': 'codex'
     }
 )
@@ -603,13 +603,13 @@ Observed result:
 - `node --test tests/billing.test.js tests/feedback-loop.test.js` exited `0`: `32` passed, `0` failed.
 - `npm test` exited `0`.
 - `npm run test:coverage` exited `0` with all-files coverage at `89.46%` lines, `75.83%` branches, and `93.05%` functions.
-- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
 - `git diff --check` exited `0`.
 - Railway production volume `cd9d854e-4925-4c53-9b41-8f8840ebc889` was created and mounted at `/data`.
 - Railway production variables now include:
-  - `RLHF_FEEDBACK_DIR=/data/feedback`
+  - `THUMBGATE_FEEDBACK_DIR=/data/feedback`
   - `RAILWAY_RUN_UID=0`
   - `RAILWAY_VOLUME_MOUNT_PATH=/data`
 - Railway deployment `a8c3e0cb-9d0a-4018-8f1a-60984ea44929` succeeded for the exact code fix.
@@ -658,15 +658,15 @@ npm run prove:adapters
 npm run prove:automation
 npm run self-heal:check
 git diff --check
-railway variable set RLHF_CHECKOUT_FALLBACK_URL=https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05
+railway variable set THUMBGATE_CHECKOUT_FALLBACK_URL=https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05
 railway up -d -m "revenue proof analytics + stripe checkout fallback"
 railway run node - <<'NODE'
 const https = require('https');
 const options = {
-  hostname: 'rlhf-feedback-loop-production.up.railway.app',
+  hostname: 'thumbgate-production.up.railway.app',
   path: '/v1/billing/summary',
   headers: {
-    authorization: `Bearer ${process.env.RLHF_API_KEY}`,
+    authorization: `Bearer ${process.env.THUMBGATE_API_KEY}`,
     'user-agent': 'codex'
   }
 };
@@ -691,7 +691,7 @@ Observed result:
 - `npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks.
 - `git diff --check` exited `0`.
-- Railway env-only redeploy `32717506-102b-4316-88d6-eddb6fdf7150` succeeded after setting `RLHF_CHECKOUT_FALLBACK_URL` to the Stripe payment link.
+- Railway env-only redeploy `32717506-102b-4316-88d6-eddb6fdf7150` succeeded after setting `THUMBGATE_CHECKOUT_FALLBACK_URL` to the Stripe payment link.
 - Production `GET /checkout/pro` now returns `302` to `https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05...` instead of the old Gumroad URL.
 - Railway code deployment `a5fbff33-c410-46bf-b795-ced4163495ac` succeeded for the exact worktree diff.
 - The live admin billing summary now returns `200` and reports:
@@ -728,8 +728,8 @@ npm ci
 node --test tests/internal-agent-bootstrap.test.js tests/mcp-server.test.js tests/openapi-parity.test.js tests/prove-adapters.test.js tests/cli.test.js tests/recall-limit.test.js
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR='/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.1Y2VqtnO1F/proof' npm run prove:adapters
-env RLHF_AUTOMATION_PROOF_DIR='/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.2gfdnB5cPh/proof-automation' npm run prove:automation
+env THUMBGATE_PROOF_DIR='/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.1Y2VqtnO1F/proof' npm run prove:adapters
+env THUMBGATE_AUTOMATION_PROOF_DIR='/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.2gfdnB5cPh/proof-automation' npm run prove:automation
 npm run self-heal:check
 git status --short
 git diff --stat
@@ -741,8 +741,8 @@ Observed result:
 - Focused Open SWE regression pack exited `0`: `111` passed, `0` failed. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.QAW02kTBU1/open-swe-regression.log`
 - `npm test` exited `0` end-to-end in the clean worktree. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.gkSlebXonX/npm-test.log`
 - `npm run test:coverage` exited `0` with all-files coverage at `86.97%` lines, `75.15%` branches, and `92.49%` functions. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.omsAOIgi5P/test-coverage.log`
-- `env RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.1Y2VqtnO1F/prove-adapters.log`
-- `env RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.2gfdnB5cPh/prove-automation.log`
+- `env THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.1Y2VqtnO1F/prove-adapters.log`
+- `env THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.2gfdnB5cPh/prove-automation.log`
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.gqN6I7Gfkp/self-heal-check.log`
 - Current tracked diff after the implementation:
   - `16` changed paths in the worktree
@@ -752,8 +752,8 @@ Observed result:
   - `npm ci` exited `0`. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.l6cgkKKJVv/npm-ci-merge.log`
   - `npm test` exited `0`. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.RRXVoXMSMg/npm-test-merge.log`
   - `npm run test:coverage` exited `0` with all-files coverage at `89.57%` lines, `75.72%` branches, and `93.10%` functions. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.S5vGznS7oW/test-coverage-merge.log`
-  - `env RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.0QvYuLywFK/prove-adapters-merge.log`
-  - `env RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.LIxnkdcu80/prove-automation-merge.log`
+  - `env THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.0QvYuLywFK/prove-adapters-merge.log`
+  - `env THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.LIxnkdcu80/prove-automation-merge.log`
   - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4` healthy checks. Log: `/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/tmp.Xr81UMZGaf/self-heal-check-merge.log`
 
 Requirements verified:
@@ -772,9 +772,9 @@ Scope:
 - Added `scripts/workflow-runs.js` as a dedicated local ledger for proof-backed workflow runs, reviewed runs, paid team runs, and named pilot agreements.
 - Added a first-class `north-star` CLI command and a `🎯 North Star` section in the dashboard so the repo now reports the stated product metric directly instead of only adjacent revenue and telemetry proxies.
 - Added `scripts/verify-run.js` so `npm run verify:full` records a proof-backed workflow run after the full suite passes.
-- Fixed billing and dashboard truth surfaces to use the active feedback directory discovery logic instead of being split between `.rlhf/` and legacy `.claude/memory/feedback/` defaults.
+- Fixed billing and dashboard truth surfaces to use the active feedback directory discovery logic instead of being split between `.thumbgate/` and legacy `.claude/memory/feedback/` defaults.
 - Added safe reconciliation logic for historical paid-provider events so legacy paid funnel events become honest `paidOrders` without fabricating booked revenue.
-- Wired hosted deployment examples and secret sync flows for durable runtime feedback storage and optional analytics/search-console variables: `RLHF_FEEDBACK_DIR`, `RLHF_GA_MEASUREMENT_ID`, and `RLHF_GOOGLE_SITE_VERIFICATION`.
+- Wired hosted deployment examples and secret sync flows for durable runtime feedback storage and optional analytics/search-console variables: `THUMBGATE_FEEDBACK_DIR`, `THUMBGATE_GA_MEASUREMENT_ID`, and `THUMBGATE_GOOGLE_SITE_VERIFICATION`.
 - Added regression coverage for workflow-run persistence, North Star CLI output, dashboard reporting, direct local telemetry persistence, and billing reconciliation when the revenue ledger is absent.
 
 Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/rlhf-northstar-20260318-135757`:
@@ -856,8 +856,8 @@ Commands run in the dedicated clean verification worktree at `/tmp/rlhf-verify-f
 npm ci
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-adapters npm run prove:adapters
-env RLHF_AUTOMATION_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-automation npm run prove:automation
+env THUMBGATE_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-adapters npm run prove:adapters
+env THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-automation npm run prove:automation
 npm run self-heal:check
 git status --short
 ```
@@ -874,8 +874,8 @@ Observed result:
 - `npm test` passed end-to-end on exact branch head `ba83de2`.
 - `npm run test:coverage` passed with `1108` passed, `0` failed, `1` skipped.
 - All-files coverage on the verified tree: `90.18%` lines, `76.29%` branches, `93.55%` functions.
-- `env RLHF_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-adapters npm run prove:adapters`: `46` passed, `0` failed.
-- `env RLHF_AUTOMATION_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-automation npm run prove:automation`: `55` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-adapters npm run prove:adapters`: `46` passed, `0` failed.
+- `env THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-automation npm run prove:automation`: `55` passed, `0` failed.
 - `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
 - `git status --short` remained empty after the full clean-worktree suite.
 - Targeted GTM/commercial regression pack passed with `98` tests passed, `0` failed.
@@ -894,7 +894,7 @@ Scope:
 - Fixed the merged Databricks analytics export so its default output root now uses `getFeedbackPaths()` instead of a legacy `.claude` fallback, keeping implicit bundle writes inside the same safe data boundary used by the API and MCP adapters.
 - Normalized Databricks bundle-relative paths to POSIX separators before embedding them in `manifest.json` and `load_databricks.sql`, preventing Windows-hosted exports from generating backslash-separated paths that Databricks SQL cannot read.
 - Added regression coverage for:
-  - default export-path selection when `.rlhf/` is present
+  - default export-path selection when `.thumbgate/` is present
   - API default export path behavior
   - MCP default export path behavior
   - bundle-relative path normalization
@@ -906,8 +906,8 @@ npm ci
 node --test tests/databricks-export.test.js tests/api-server.test.js tests/mcp-server.test.js
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
 npm run self-heal:check
 ```
 
@@ -918,21 +918,21 @@ Observed result:
 - `npm test` passed end-to-end on the follow-up branch after the post-merge fixes were applied.
 - `npm run test:coverage` passed with `1041` tests, `1040` passed, `0` failed, `1` skipped.
 - All-files coverage on the follow-up branch: `83.47%` lines, `69.70%` branches, `86.40%` functions.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `47` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `47` passed, `0` failed.
 - `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
 
 Requirements verified:
 
 - The Databricks export no longer escapes the safe feedback root when no explicit `outputPath` is provided.
 - The Databricks SQL bootstrap always uses forward-slash bundle-relative paths, including on Windows-originated exports.
-- API and MCP default exports now inherit the same root-selection behavior as the shared RLHF feedback pipeline.
+- API and MCP default exports now inherit the same root-selection behavior as the shared ThumbGate feedback pipeline.
 
 ## March 16, 2026: Databricks analytics bundle export
 
 Scope:
 
-- Added `scripts/export-databricks-bundle.js` to export the local RLHF control plane into a Databricks-ready analytics bundle instead of coupling the runtime system to an external warehouse.
+- Added `scripts/export-databricks-bundle.js` to export the local ThumbGate control plane into a Databricks-ready analytics bundle instead of coupling the runtime system to an external warehouse.
 - Export now emits `feedback_events.jsonl`, `memory_records.jsonl`, `feedback_sequences.jsonl`, `feedback_attributions.jsonl`, `proof_reports.jsonl`, `manifest.json`, and a bootstrap `load_databricks.sql` template with catalog/schema placeholders.
 - Added the bundle export to every primary surface:
   - CLI: `npx mcp-memory-gateway export-databricks`
@@ -946,8 +946,8 @@ Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igo
 ```bash
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
 npm run self-heal:check
 ```
 
@@ -957,14 +957,14 @@ Observed result:
 - `npm test` passed end-to-end on the worktree after the analytics export surface and smart-learning fix were combined.
 - `npm run test:coverage` passed with `1024` tests, `1023` passed, `0` failed, `1` skipped.
 - All-files coverage on the verified tree: `83.44%` lines, `69.92%` branches, `86.33%` functions.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `43` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `43` passed, `0` failed.
 - `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
 
 Requirements verified:
 
 - The Databricks export is reachable and consistent across CLI, HTTP API, MCP, ChatGPT OpenAPI, and Gemini declarations.
-- The bundle contains local RLHF memory, attribution, sequence, and proof-report tables without mutating the control-plane storage model.
+- The bundle contains local ThumbGate memory, attribution, sequence, and proof-report tables without mutating the control-plane storage model.
 - The generated SQL bootstrap keeps external warehouse details parameterized rather than hard-coding catalog/schema paths into the product.
 - Codegraph-aware intent planning, recall, and proof flows still pass after the analytics export path was introduced.
 
@@ -1021,7 +1021,7 @@ Requirements verified:
 Scope:
 
 - Removed accidental tracked `.claude/worktrees/agent-*` gitlinks from the repository index so disposable worktree lanes stop polluting `main`.
-- Removed tracked live `.rlhf/*` runtime artifacts from version control and aligned `.gitignore` with the repo policy that RLHF memory/state is local operational data.
+- Removed tracked live `.thumbgate/*` runtime artifacts from version control and aligned `.gitignore` with the repo policy that ThumbGate memory/state is local operational data.
 - Persisted the runtime-state hygiene rule in `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md`.
 - Archived unique orphan branches before deletion and removed clean redundant worktrees/branches with no active PR or verification role.
 
@@ -1031,11 +1031,11 @@ Commands run:
 git fetch --all --prune
 git worktree add /Users/ganapolsky_i/workspace/git/igor/rlhf-pr-hygiene-20260313 -b chore/pr-hygiene-20260313 origin/main
 npm ci
-env RLHF_API_KEY=ci-secret npm test
-env RLHF_API_KEY=ci-secret npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check
+env THUMBGATE_API_KEY=ci-secret npm test
+env THUMBGATE_API_KEY=ci-secret npm run test:coverage
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run self-heal:check
 npm audit --json
 git diff --check
 ```
@@ -1045,11 +1045,11 @@ Observed result:
 - GitHub open PRs: `0`.
 - `main` CI was already green on `bbfa45576d3ea7136e544e68662253079646feeb`.
 - `npm ci` completed with `0` vulnerabilities.
-- `env RLHF_API_KEY=ci-secret npm test` passed end-to-end.
-- `env RLHF_API_KEY=ci-secret npm run test:coverage` passed with `971` passed, `0` failed, `1` skipped and all-files coverage at `82.59%` lines, `68.77%` branches, `85.37%` functions.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `37` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
+- `env THUMBGATE_API_KEY=ci-secret npm test` passed end-to-end.
+- `env THUMBGATE_API_KEY=ci-secret npm run test:coverage` passed with `971` passed, `0` failed, `1` skipped and all-files coverage at `82.59%` lines, `68.77%` branches, `85.37%` functions.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `37` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
 - `npm audit --json` reported `0` open vulnerabilities.
 - `git diff --check` passed with no whitespace or patch-format defects.
 
@@ -1079,7 +1079,7 @@ Cleanup evidence:
 Requirements verified:
 
 - Disposable worktree lanes are no longer a versioned part of the product repository.
-- RLHF runtime state now matches the documented local-only operating model instead of creating tracked churn in every session.
+- ThumbGate runtime state now matches the documented local-only operating model instead of creating tracked churn in every session.
 - Unique orphan branches were preserved before deletion, while clean redundant lanes were removed outright.
 - The verification suite still passes after moving runtime state out of version control.
 
@@ -1090,10 +1090,10 @@ Scope:
 - Fixed the free-tier gate loading regression in `scripts/gates-engine.js` so core default gates always load and free-tier capping applies only to auto-promoted add-on gates.
 - Removed dead duplicate `/healthz` routing in `src/api/server.js`.
 - Removed the legacy in-memory recall limiter in `adapters/mcp/server-stdio.js`, switched recall usage to the shared rate-limiter, and kept the free-tier upgrade nudge without dropping recall results.
-- Hardened `tests/recall-limit.test.js` so CI-provided secrets like `RLHF_API_KEY` cannot bypass the free-tier assertions.
+- Hardened `tests/recall-limit.test.js` so CI-provided secrets like `THUMBGATE_API_KEY` cannot bypass the free-tier assertions.
 - Added exact feedback-memory deduplication in `scripts/contextfs.js` so repeated identical lessons no longer create duplicate ContextFS entries.
 - Hardened CI to install and verify the `workers/` package, aligned Stripe worker code with the current SDK API version, and removed the repo-local `wrangler` dependency because the current npm advisories did not leave a clean vendored release line.
-- Deleted six duplicate RLHF memory entries that were already storing the same lessons.
+- Deleted six duplicate ThumbGate memory entries that were already storing the same lessons.
 
 Baseline snapshot before changes:
 
@@ -1125,17 +1125,17 @@ npm ci
 npm --prefix workers ci
 npm run test:gates
 node --test tests/contextfs.test.js
-RLHF_API_KEY=ci-secret node --test tests/recall-limit.test.js
-RLHF_API_KEY=ci-secret npm run test:api
+THUMBGATE_API_KEY=ci-secret node --test tests/recall-limit.test.js
+THUMBGATE_API_KEY=ci-secret npm run test:api
 node --test tests/mcp-server.test.js tests/api-server.test.js
-RLHF_API_KEY=ci-secret npm test
-RLHF_API_KEY=ci-secret npm run test:coverage
+THUMBGATE_API_KEY=ci-secret npm test
+THUMBGATE_API_KEY=ci-secret npm run test:coverage
 npm run test:workers
-env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:automation
-env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:workflow-contract
-env RLHF_PROOF_DIR="$(mktemp -d)" RLHF_API_KEY=ci-secret npm run prove:autoresearch
-RLHF_API_KEY=ci-secret npm run self-heal:check
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" THUMBGATE_API_KEY=ci-secret npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" THUMBGATE_API_KEY=ci-secret npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" THUMBGATE_API_KEY=ci-secret npm run prove:workflow-contract
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" THUMBGATE_API_KEY=ci-secret npm run prove:autoresearch
+THUMBGATE_API_KEY=ci-secret npm run self-heal:check
 npm --prefix workers audit --json
 wrangler deploy --dry-run
 ```
@@ -1145,14 +1145,14 @@ Observed result:
 - `npm test` passed end-to-end after the audit changes.
 - `npm run test:coverage` passed with `968` passed, `0` failed, `1` skipped.
 - Current coverage summary on the final audit head: `82.42%` lines, `68.76%` branches, `85.10%` functions.
-- `npm run test:gates`, `node --test tests/contextfs.test.js`, `RLHF_API_KEY=ci-secret node --test tests/recall-limit.test.js`, and `node --test tests/mcp-server.test.js tests/api-server.test.js` all passed.
-- `RLHF_API_KEY=ci-secret npm run test:api` passed, proving the recall-limit regression is fixed under the same hosted-key environment GitHub Actions uses.
+- `npm run test:gates`, `node --test tests/contextfs.test.js`, `THUMBGATE_API_KEY=ci-secret node --test tests/recall-limit.test.js`, and `node --test tests/mcp-server.test.js tests/api-server.test.js` all passed.
+- `THUMBGATE_API_KEY=ci-secret npm run test:api` passed, proving the recall-limit regression is fixed under the same hosted-key environment GitHub Actions uses.
 - `npm run test:workers` passed after the worker package gained a dedicated type-check test script.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `37` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:workflow-contract`: `6` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:autoresearch`: `Phase 9 proof: 5 passed, 0 failed`.
-- `RLHF_API_KEY=ci-secret npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `37` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:workflow-contract`: `6` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:autoresearch`: `Phase 9 proof: 5 passed, 0 failed`.
+- `THUMBGATE_API_KEY=ci-secret npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
 - `npm --prefix workers ci`, `npm run test:workers`, and `npm --prefix workers audit --json` all passed with `0` vulnerabilities after removing the direct `wrangler` dependency from the repo-local worker package.
 - `wrangler deploy --dry-run` passed from `workers/` via the globally installed Wrangler CLI (`4.63.0`).
 
@@ -1182,9 +1182,9 @@ node --test tests/intent-router.test.js tests/verification-loop.test.js tests/th
 node --test tests/api-server.test.js tests/mcp-server.test.js tests/prove-automation.test.js
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run self-heal:check
 ```
 
 Observed result:
@@ -1192,14 +1192,14 @@ Observed result:
 - Both targeted regression commands passed with `0` failures across partner orchestration, API, MCP, and automation-proof coverage.
 - `npm test` passed end-to-end after adding partner-aware orchestration.
 - `npm run test:coverage` passed with all-files coverage at `82.52%` lines, `68.69%` branches, and `85.19%` functions.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `37` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `37` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
 
 Evidence artifacts:
 
 - Targeted `node --test` output covering `tests/intent-router.test.js`, `tests/verification-loop.test.js`, `tests/thompson-sampling.test.js`, `tests/async-job-runner.test.js`, `tests/api-server.test.js`, `tests/mcp-server.test.js`, and `tests/prove-automation.test.js`.
-- Ephemeral adapter and automation proof reports emitted under temporary `RLHF_PROOF_DIR` directories so verification did not leave tracked proof churn in the repository.
+- Ephemeral adapter and automation proof reports emitted under temporary `THUMBGATE_PROOF_DIR` directories so verification did not leave tracked proof churn in the repository.
 
 Requirements verified:
 
@@ -1242,9 +1242,9 @@ Commands run:
 node --test tests/billing.test.js tests/api-server.test.js tests/cli.test.js tests/openapi-parity.test.js
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run self-heal:check
 ```
 
 Observed result:
@@ -1252,14 +1252,14 @@ Observed result:
 - Targeted regression coverage passed: `63` tests passed, `0` failed across billing, API server, CLI, and OpenAPI parity.
 - `npm test` passed end-to-end after adding the CFO control plane.
 - `npm run test:coverage` passed with all-files coverage at `82.18%` lines, `68.13%` branches, and `84.90%` functions.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `35` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `38` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `35` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run self-heal:check`: `Overall: HEALTHY` with `4/4` checks healthy.
 
 Evidence artifacts:
 
 - Command output from the targeted regression run is the primary proof for the new CFO control plane.
-- Ephemeral `RLHF_PROOF_DIR` directories were used for adapter and automation proof runs to avoid tracked proof churn.
+- Ephemeral `THUMBGATE_PROOF_DIR` directories were used for adapter and automation proof runs to avoid tracked proof churn.
 
 Requirements verified:
 
@@ -1324,9 +1324,9 @@ Commands:
 node --test tests/deployment.test.js
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run self-heal:check
 ```
 
 Observed result:
@@ -1334,14 +1334,14 @@ Observed result:
 - Targeted deployment verification passed: `9` tests passed, `0` failed in `tests/deployment.test.js`.
 - `npm test` passed end-to-end on the narrowed hotfix diff with only the Railway deploy regression coverage added.
 - `npm run test:coverage` passed with overall coverage at `82.97%` lines, `69.36%` branches, and `86.81%` functions.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `24 passed`, `0 failed`.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `14 passed`, `0 failed`.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run self-heal:check`: `HEALTHY` with `4/4` checks healthy.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `24 passed`, `0 failed`.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `14 passed`, `0 failed`.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run self-heal:check`: `HEALTHY` with `4/4` checks healthy.
 
 Evidence artifacts:
 
 - Focused deployment regression output from `node --test tests/deployment.test.js`.
-- Ephemeral machine-readable proof reports emitted under temporary `RLHF_PROOF_DIR` directories during the adapter and automation proof runs.
+- Ephemeral machine-readable proof reports emitted under temporary `THUMBGATE_PROOF_DIR` directories during the adapter and automation proof runs.
 
 Requirements verified:
 
@@ -1359,7 +1359,7 @@ node --test --test-concurrency=1 tests/prove-adapters.test.js
 npm test
 npm run test:coverage
 npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
 npm run self-heal:check
 ```
 
@@ -1371,7 +1371,7 @@ Observed result:
 - `npm run test:coverage` passed with `720` tests passed, `0` failed, and `1` skipped.
 - Coverage summary: `83.17%` lines, `69.34%` branches, `86.86%` functions.
 - `npm run prove:adapters`: `24 passed`, `0 failed`.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `14 passed`, `0 failed`.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `14 passed`, `0 failed`.
 - `npm run self-heal:check`: `HEALTHY` with `4/4` checks healthy.
 
 Evidence artifacts:
@@ -1581,7 +1581,7 @@ Observed result:
   - API auth and feedback/context/intents routes
   - Rubric-based gating for positive feedback (`422` when guardrails/disagreement fail)
   - Rubric-aware context evaluation payloads
-  - API auth config hardening (`RLHF_API_KEY` required unless insecure mode enabled)
+  - API auth config hardening (`THUMBGATE_API_KEY` required unless insecure mode enabled)
   - Context namespace traversal rejection on API + MCP surfaces
   - Intent router checkpoint flow (`checkpoint_required` for unapproved high-risk intents)
   - MCP initialize/list/call flow (including `plan_intent` and rubric-gated `capture_feedback`)
@@ -1637,7 +1637,7 @@ Observed result:
 
 Command sequence:
 
-- Start API with `RLHF_API_KEY=test-key` on port `8791`
+- Start API with `THUMBGATE_API_KEY=test-key` on port `8791`
 - `GET /healthz` with bearer token
 - `GET /v1/feedback/stats` without token (expect 401)
 - `POST /v1/feedback/capture` with valid payload
@@ -1653,7 +1653,7 @@ Observed results:
 ## Security regression checks
 
 - Unauthorized API request returns `401` (default auth required).
-- API initialization fails fast if `RLHF_API_KEY` is missing and insecure mode is not explicitly enabled.
+- API initialization fails fast if `THUMBGATE_API_KEY` is missing and insecure mode is not explicitly enabled.
 - API rejects external output paths outside feedback root.
 - MCP `prevention_rules` blocks external `outputPath`.
 - MCP `export_dpo_pairs` blocks external `memoryLogPath`.
@@ -1841,11 +1841,11 @@ Files changed:
 - `tests/dashboard.test.js`
 - `tests/lesson-search.test.js`
 
-## 2026-03-23 RLHF raw search + pack template verification
+## 2026-03-23 ThumbGate raw search + pack template verification
 
 Scope:
 
-- Added `search_rlhf` as a read-only MCP tool for raw RLHF search across feedback logs, ContextFS memory, and prevention rules.
+- Added `search_thumbgate` as a read-only MCP tool for raw ThumbGate search across feedback logs, ContextFS memory, and prevention rules.
 - Added authenticated `GET /v1/search` and `POST /v1/search` API routes with OpenAPI parity.
 - Restored reusable ContextFS pack templates for bug investigation, session resume, sales-call prep, and competitor scans.
 - Preserved `search_lessons` as the canonical promoted-lesson search surface while salvaging the broader raw-search lane.
@@ -1854,7 +1854,7 @@ Commands run:
 
 ```bash
 npm ci
-node --test --test-concurrency=1 tests/pack-templates.test.js tests/rlhf-search.test.js tests/openapi-parity.test.js tests/commerce-quality.test.js tests/profile-router.test.js tests/intent-router.test.js
+node --test --test-concurrency=1 tests/pack-templates.test.js tests/thumbgate-search.test.js tests/openapi-parity.test.js tests/commerce-quality.test.js tests/profile-router.test.js tests/intent-router.test.js
 npm test
 npm run test:coverage
 npm run prove:adapters
@@ -1864,7 +1864,7 @@ npm run self-heal:check
 
 Observed results:
 
-- Targeted RLHF search suite: `75/75` passing.
+- Targeted ThumbGate search suite: `75/75` passing.
 - `npm test`: exit `0`.
 - `npm run test:coverage`: exit `0` with `all files | 88.44 | 74.11 | 92.50`.
 - `npm run prove:adapters`: exit `0` with `48/48` passing.
@@ -1873,9 +1873,9 @@ Observed results:
 
 Behavioral proof points:
 
-- `search_rlhf` is registered as read-only in the MCP tool registry and returns merged or source-filtered RLHF search results.
+- `search_thumbgate` is registered as read-only in the MCP tool registry and returns merged or source-filtered ThumbGate search results.
 - `/v1/search` is present in the API root JSON listing and in both canonical and ChatGPT OpenAPI specs.
-- `search_lessons` call semantics remain unchanged while `search_rlhf` adds broader retrieval over raw RLHF state.
+- `search_lessons` call semantics remain unchanged while `search_thumbgate` adds broader retrieval over raw ThumbGate state.
 - ContextFS pack templates are exported, enumerable, and validated by dedicated tests.
 
 ## 2026-03-23 README trim + explicit tech stack verification
@@ -2003,8 +2003,8 @@ Commands run:
 node --test tests/deployment.test.js
 npm test
 npm run test:coverage
-RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-RLHF_AUTOMATION_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+THUMBGATE_AUTOMATION_PROOF_DIR="$(mktemp -d)" npm run prove:automation
 npm run self-heal:check
 git diff --check
 ```
@@ -2036,10 +2036,10 @@ Problem verified before the fix:
 
 - The public Smithery page for `rlhf-loop/mcp-memory-gateway-v2` was live, but showed `No capabilities found` and `No deployments found`.
 - Production already exposed unauthenticated metadata endpoints:
-  - `GET https://rlhf-feedback-loop-production.up.railway.app/.well-known/mcp/server-card.json` -> `200`
-  - `GET https://rlhf-feedback-loop-production.up.railway.app/mcp` -> `200`
-  - `POST https://rlhf-feedback-loop-production.up.railway.app/mcp` with `initialize` -> `200`
-  - `POST https://rlhf-feedback-loop-production.up.railway.app/mcp` with `tools/list` -> `200`
+  - `GET https://thumbgate-production.up.railway.app/.well-known/mcp/server-card.json` -> `200`
+  - `GET https://thumbgate-production.up.railway.app/mcp` -> `200`
+  - `POST https://thumbgate-production.up.railway.app/mcp` with `initialize` -> `200`
+  - `POST https://thumbgate-production.up.railway.app/mcp` with `tools/list` -> `200`
 - The bug was that the live server-card route stripped `inputSchema`, which made the static server card materially weaker than `tools/list`.
 
 Commands run:
@@ -2050,8 +2050,8 @@ npm --prefix workers ci
 node --test tests/api-server.test.js
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
-env RLHF_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
+env THUMBGATE_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
 npm run self-heal:check
 git diff --check
 ```
@@ -2075,8 +2075,8 @@ Artifacts updated:
 
 Scope:
 
-- Exposed `buildSha` on `GET /health` from `RLHF_BUILD_SHA`.
-- Updated the Railway deploy workflow to set `RLHF_BUILD_SHA` for each deploy and wait until the live `/health` payload reports the exact `GITHUB_SHA`.
+- Exposed `buildSha` on `GET /health` from `THUMBGATE_BUILD_SHA`.
+- Updated the Railway deploy workflow to set `THUMBGATE_BUILD_SHA` for each deploy and wait until the live `/health` payload reports the exact `GITHUB_SHA`.
 - Closed the observed blind spot where a healthy old revision could satisfy the deploy job before the new revision was actually serving traffic.
 
 Problem verified before the fix:
@@ -2091,8 +2091,8 @@ Commands run:
 node --test tests/api-server.test.js
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
-env RLHF_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
+env THUMBGATE_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
 npm run self-heal:check
 git diff --check
 ```
@@ -2118,7 +2118,7 @@ Artifacts updated:
 Scope:
 
 - Added a least-privilege `dispatch` MCP profile for remote review, recall, planning, diagnostics, and metrics.
-- Blocked handoff and write workflows when `RLHF_MCP_PROFILE=dispatch`.
+- Blocked handoff and write workflows when `THUMBGATE_MCP_PROFILE=dispatch`.
 - Added a `dispatch` CLI brief so paired-device operators can get a phone-safe operational snapshot without opening write-capable surfaces.
 - Updated docs so Dispatch usage routes code and memory mutations back into a dedicated worktree with the `default` profile.
 
@@ -2130,8 +2130,8 @@ node --test tests/mcp-policy.test.js tests/agent-readiness.test.js tests/delegat
 npm run test:cli
 npm test
 npm run test:coverage
-RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-RLHF_AUTOMATION_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+THUMBGATE_AUTOMATION_PROOF_DIR="$(mktemp -d)" npm run prove:automation
 npm run self-heal:check
 ```
 
@@ -2250,8 +2250,8 @@ npm ci
 npm --prefix workers ci
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
-env RLHF_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
+env THUMBGATE_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
 npm run self-heal:check
 npm audit --json
 npm --prefix workers audit --json
@@ -2318,7 +2318,7 @@ Behavioral proof points:
 - `POST /v1/intake/workflow-sprint/advance` is admin-only and rejects non-static billing keys with `403`.
 - Sprint lead advancement appends immutable lead snapshots, creates workflow-run evidence for `named_pilot`, `proof_backed_run`, and `paid_team`, and preserves deduplicated North Star counts.
 - `GET /v1/dashboard` now accepts `window`, `timezone`, and `now`, and its revenue/traffic numbers follow the live billing-summary path for that window.
-- `north-star` now prefers the hosted operational dashboard when `RLHF_BILLING_API_BASE_URL`, `RLHF_API_KEY`, and `RLHF_METRICS_SOURCE=hosted` are configured.
+- `north-star` now prefers the hosted operational dashboard when `THUMBGATE_BILLING_API_BASE_URL`, `THUMBGATE_API_KEY`, and `THUMBGATE_METRICS_SOURCE=hosted` are configured.
 - The pricing section now includes `data-cta-id="pricing_sprint"` pointing directly to `#workflow-sprint-intake`.
 - Canonical OpenAPI and ChatGPT adapter specs stay byte-aligned after adding `/v1/intake/workflow-sprint/advance`.
 
@@ -2328,8 +2328,8 @@ Full verification protocol:
 npm ci
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
-env RLHF_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
+env THUMBGATE_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
 npm run self-heal:check
 git diff --check
 ```
@@ -2401,8 +2401,8 @@ npm ci
 node --test tests/public-landing.test.js tests/api-server.test.js tests/social-marketing-assets.test.js tests/version-metadata.test.js tests/anthropic-partner-strategy.test.js tests/workflow-hardening-sprint.test.js
 npm test
 npm run test:coverage
-RLHF_PROOF_DIR=/tmp/rlhf-workflow-hardening-20260317T133407/proof/compatibility npm run prove:adapters
-RLHF_AUTOMATION_PROOF_DIR=/tmp/rlhf-workflow-hardening-20260317T133407/proof/automation npm run prove:automation
+THUMBGATE_PROOF_DIR=/tmp/rlhf-workflow-hardening-20260317T133407/proof/compatibility npm run prove:adapters
+THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/rlhf-workflow-hardening-20260317T133407/proof/automation npm run prove:automation
 npm run self-heal:check
 ```
 
@@ -2445,7 +2445,7 @@ Artifacts updated:
 
 Scope:
 
-- Fixed `scripts/self-healing-check.js` so proof-bearing health checks run with an isolated temporary `RLHF_PROOF_DIR`.
+- Fixed `scripts/self-healing-check.js` so proof-bearing health checks run with an isolated temporary `THUMBGATE_PROOF_DIR`.
 - Prevented `self-heal:check` from failing on clean merge commits due to shared tracked `proof/` artifacts instead of real behavioral regressions.
 - Added regression coverage to prove the health checker both injects and cleans temporary proof directories.
 
@@ -2457,8 +2457,8 @@ node --test tests/self-healing-check.test.js
 npm ci
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
 npm run self-heal:check
 ```
 
@@ -2469,14 +2469,14 @@ Observed results:
 - `npm ci`: completed successfully; `audited 151 packages` and `found 0 vulnerabilities`.
 - `npm test`: passed.
 - `npm run test:coverage`: `1100` tests, `1099` passed, `0` failed, `1` skipped; coverage `84.40%` lines, `70.77%` branches, `87.18%` functions.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `55` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `55` passed, `0` failed.
 - `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
 
 Behavioral proof points:
 
 - `DEFAULT_CHECKS` now marks both `prove_adapters` and `prove_automation` for proof-directory isolation.
-- `collectHealthReport` provisions a temp `RLHF_PROOF_DIR` per proof check and removes it after execution.
+- `collectHealthReport` provisions a temp `THUMBGATE_PROOF_DIR` per proof check and removes it after execution.
 - The repaired `self-heal:check` now stays healthy under the same heavy `tests + prove_*` workload that failed on merge commit `9b5f5a1`.
 
 Artifacts updated:
@@ -2498,8 +2498,8 @@ Commands run in the implementation worktree:
 npm ci
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
 npm run self-heal:check
 ```
 
@@ -2607,8 +2607,8 @@ Commands run:
 node --test tests/public-landing.test.js tests/positioning-contract.test.js
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
 npm run self-heal:check
 npm run test:workflow
 git diff --check
@@ -2658,8 +2658,8 @@ node scripts/sync-version.js --check
 node --test tests/adapters.test.js tests/version-metadata.test.js tests/cursor-plugin.test.js
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
 npm run self-heal:check
 git diff --check
 ```
@@ -2672,8 +2672,8 @@ Observed result:
 - Targeted Cursor packaging regressions passed: `18` tests passed, `0` failed.
 - `npm test` passed end-to-end on the Cursor marketplace branch.
 - `npm run test:coverage` passed with all-files coverage of `83.92%` lines, `70.52%` branches, and `86.81%` functions.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `47` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `47` passed, `0` failed.
 - `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
 - `git diff --check` completed cleanly.
 
@@ -2698,10 +2698,10 @@ Commands run:
 
 ```bash
 npm ci
-env RLHF_API_KEY=test-api-key node --test tests/billing.test.js tests/api-server.test.js tests/github-billing.test.js tests/cli.test.js tests/stripe-webhook-route.test.js
-env RLHF_API_KEY=test-api-key node --test tests/openapi-parity.test.js tests/adapters.test.js tests/commerce-quality.test.js
-env RLHF_API_KEY=ci-secret npm test
-env RLHF_API_KEY=ci-secret npm run test:coverage
+env THUMBGATE_API_KEY=test-api-key node --test tests/billing.test.js tests/api-server.test.js tests/github-billing.test.js tests/cli.test.js tests/stripe-webhook-route.test.js
+env THUMBGATE_API_KEY=test-api-key node --test tests/openapi-parity.test.js tests/adapters.test.js tests/commerce-quality.test.js
+env THUMBGATE_API_KEY=ci-secret npm test
+env THUMBGATE_API_KEY=ci-secret npm run test:coverage
 npm run prove:adapters
 npm run prove:automation
 npm run self-heal:check
@@ -2740,7 +2740,7 @@ Scope:
 
 - Hardware-aware local embedding profile selection with machine-readable fit evidence.
 - Safe fallback embedding profile selection when the primary local profile fails.
-- Boosted local risk scorer trained from RLHF feedback sequences.
+- Boosted local risk scorer trained from ThumbGate feedback sequences.
 - CLI surface for `model-fit`, `risk`, and `prove --target=local-intelligence`.
 
 Commands run:
@@ -2805,8 +2805,8 @@ node --test --test-concurrency=1 tests/api-server.test.js
 node --test tests/dashboard.test.js
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
 npm run self-heal:check
 ```
 
@@ -2822,8 +2822,8 @@ Observed results:
   - `tests/dashboard.test.js`: passed.
 - `npm test`: `1070` tests, `1069` passed, `0` failed, `1` skipped.
 - `npm run test:coverage`: `1070` tests, `1069` passed, `0` failed, `1` skipped; coverage `84.14%` lines, `70.74%` branches, `86.83%` functions.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
-- `env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `47` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters`: `46` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation`: `47` passed, `0` failed.
 - `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
 
 Behavioral proof points:
@@ -2855,8 +2855,8 @@ Commands run:
 npm ci
 npm test
 npm run test:coverage
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
-env RLHF_PROOF_DIR="$(mktemp -d)" npm run prove:automation
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:adapters
+env THUMBGATE_PROOF_DIR="$(mktemp -d)" npm run prove:automation
 npm run self-heal:check
 ```
 

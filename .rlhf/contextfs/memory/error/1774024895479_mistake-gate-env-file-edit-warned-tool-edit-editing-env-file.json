@@ -1,0 +1,22 @@
+{
+  "id": "1774024895479_mistake-gate-env-file-edit-warned-tool-edit-editing-env-file",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Gate \"env-file-edit\" warned tool \"Edit\": Editing .env file —",
+  "content": "Context: Gate \"env-file-edit\" warned tool \"Edit\": Editing .env file — verify you are not deleting existing tokens\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "audit-trail",
+    "auto-capture",
+    "gate:env-file-edit",
+    "gates-engine"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775168513217_dgn76c"
+  },
+  "createdAt": "2026-03-20T16:41:35.479Z",
+  "lastUsedAt": null
+}

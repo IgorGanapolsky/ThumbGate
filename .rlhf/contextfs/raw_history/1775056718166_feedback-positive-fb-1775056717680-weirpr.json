@@ -1,0 +1,17 @@
+{
+  "id": "1775056718166_feedback-positive-fb-1775056717680-weirpr",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775056717680_weirpr",
+  "content": "{\"id\":\"fb_1775056717680_weirpr\",\"signal\":\"positive\",\"context\":\"unit tests added for edge cases\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"testing\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-04-01T15:18:37.680Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[\"src/api.js\"],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "testing"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-01T15:18:38.166Z",
+  "lastUsedAt": null
+}

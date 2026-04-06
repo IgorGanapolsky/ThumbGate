@@ -7,9 +7,9 @@ const { execFileSync } = require('node:child_process');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-test-'));
 const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-proof-'));
-process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
-process.env.RLHF_PROOF_DIR = tmpProofDir;
-process.env.RLHF_NO_RATE_LIMIT = '1'; // bypass free-tier rate limits during tests
+process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
+process.env.THUMBGATE_NO_RATE_LIMIT = '1'; // bypass free-tier rate limits during tests
 
 const RUNNER_PATH = require.resolve('../scripts/async-job-runner');
 const HARNESS_PATH = require.resolve('../scripts/natural-language-harness');
@@ -20,7 +20,7 @@ const { handleRequest, TOOLS, SAFE_DATA_DIR } = require('../adapters/mcp/server-
 function initGitRepo() {
   const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-repo-'));
   execFileSync('git', ['init', '-b', 'main'], { cwd: repoPath, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.name', 'RLHF Test'], { cwd: repoPath, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.name', 'ThumbGate Test'], { cwd: repoPath, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.email', 'rlhf@example.com'], { cwd: repoPath, stdio: 'ignore' });
   fs.writeFileSync(path.join(repoPath, 'README.md'), '# temp repo\n');
   execFileSync('git', ['add', 'README.md'], { cwd: repoPath, stdio: 'ignore' });
@@ -521,8 +521,8 @@ test('start_handoff and complete_handoff expose sequential delegation over MCP',
 test('bootstrap_internal_agent creates a sandbox and reviewer plan over MCP', async () => {
   const repoPath = initGitRepo();
   const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-bootstrap-'));
-  const previous = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-  process.env.RLHF_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
+  const previous = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+  process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
     source: 'stub',
     symbols: ['planIntent'],
     callers: ['src/api/server.js -> planIntent'],
@@ -564,8 +564,8 @@ test('bootstrap_internal_agent creates a sandbox and reviewer plan over MCP', as
 
     removeWorktree(repoPath, payload.sandbox.path);
   } finally {
-    if (previous === undefined) delete process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-    else process.env.RLHF_CODEGRAPH_STUB_RESPONSE = previous;
+    if (previous === undefined) delete process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+    else process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = previous;
     fs.rmSync(repoPath, { recursive: true, force: true });
     fs.rmSync(sandboxRoot, { recursive: true, force: true });
   }
@@ -620,8 +620,8 @@ test('diagnose_failure honors MCP profile allowlists', async () => {
 });
 
 test('plan_intent includes codegraph impact for coding workflows', async () => {
-  const previous = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-  process.env.RLHF_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
+  const previous = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+  process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
     source: 'stub',
     symbols: ['planIntent'],
     callers: ['src/api/server.js -> planIntent'],
@@ -648,14 +648,14 @@ test('plan_intent includes codegraph impact for coding workflows', async () => {
     assert.equal(plan.codegraphImpact.evidence.deadCodeCount, 1);
     assert.ok(plan.partnerStrategy.recommendedChecks.some((check) => /dead code/i.test(check)));
   } finally {
-    if (previous === undefined) delete process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-    else process.env.RLHF_CODEGRAPH_STUB_RESPONSE = previous;
+    if (previous === undefined) delete process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+    else process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = previous;
   }
 });
 
 test('recall includes code graph impact section for coding workflows', async () => {
-  const previous = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-  process.env.RLHF_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
+  const previous = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+  process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
     source: 'stub',
     symbols: ['planIntent'],
     callers: ['src/api/server.js -> planIntent'],
@@ -679,8 +679,8 @@ test('recall includes code graph impact section for coding workflows', async () 
     assert.match(result.content[0].text, /## Code Graph Impact/);
     assert.match(result.content[0].text, /Potential dead code/);
   } finally {
-    if (previous === undefined) delete process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-    else process.env.RLHF_CODEGRAPH_STUB_RESPONSE = previous;
+    if (previous === undefined) delete process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+    else process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = previous;
   }
 });
 

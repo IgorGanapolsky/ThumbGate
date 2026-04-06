@@ -80,10 +80,10 @@ It's a personal knowledge loop, not a SaaS product pretending to be one.
 # 3. Create AI-Memories/rlhf/ in your vault and symlink memory files
 ```
 
-Open source, MIT licensed. Core is free. There's a $19/mo or $149/yr Pro tier for a personal local
-dashboard and optional hosted sync for teams, but the memory system works fully offline.
+Open source, MIT licensed. Core is free. There is a Pro tier for a personal local dashboard and optional hosted sync for teams, but the memory system works fully offline.
 
-GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway
+Try free for 7 days (no credit card): https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content=obsidian_post&community=ObsidianMD
 
-Happy to answer questions about the prevention rules system or the Obsidian setup — this is
-genuinely how I use it daily.
+Source code: https://github.com/IgorGanapolsky/ThumbGate
+
+Happy to answer questions about the prevention rules system or the Obsidian setup -- this is genuinely how I use it daily.

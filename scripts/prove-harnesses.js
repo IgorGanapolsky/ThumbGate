@@ -13,7 +13,7 @@ const VERIFY_RUN_PATH = require.resolve('./verify-run');
 const SERVER_STDIO_PATH = require.resolve('../adapters/mcp/server-stdio');
 
 function resolveProofPaths() {
-  const proofDir = process.env.RLHF_HARNESSES_PROOF_DIR || process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+  const proofDir = process.env.THUMBGATE_HARNESSES_PROOF_DIR || process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
   return {
     proofDir,
     reportJson: path.join(proofDir, 'harnesses-report.json'),
@@ -62,7 +62,7 @@ function makeAcceptedVerification() {
 
 async function withHarnessRuntime(callback) {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-harness-proof-'));
-  process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
   try {
     resetModules();
     stubModule(VERIFICATION_PATH, {
@@ -76,7 +76,7 @@ async function withHarnessRuntime(callback) {
     });
   } finally {
     resetModules();
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
 }

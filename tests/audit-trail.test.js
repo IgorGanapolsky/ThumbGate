@@ -25,13 +25,13 @@ const {
 
 function withTempDir(fn) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-audit-'));
-  const origDir = process.env.RLHF_FEEDBACK_DIR;
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  const origDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   try {
     return fn(tmpDir);
   } finally {
-    if (origDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-    else process.env.RLHF_FEEDBACK_DIR = origDir;
+    if (origDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = origDir;
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 }
@@ -254,16 +254,16 @@ test('tuneCacheThreshold recommends tighter threshold on high deny rate', () => 
     recordAuditEvent({ toolName: 'Read', decision: 'allow' });
     recordAuditEvent({ toolName: 'Read', decision: 'allow' });
 
-    const origThreshold = process.env.RLHF_SEMANTIC_CACHE_THRESHOLD;
-    process.env.RLHF_SEMANTIC_CACHE_THRESHOLD = '0.7';
+    const origThreshold = process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD;
+    process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD = '0.7';
     try {
       const result = tuneCacheThreshold();
       assert.equal(result.currentThreshold, 0.7);
       assert.equal(result.recommendedThreshold, 0.72);
       assert.equal(result.applied, true);
     } finally {
-      if (origThreshold === undefined) delete process.env.RLHF_SEMANTIC_CACHE_THRESHOLD;
-      else process.env.RLHF_SEMANTIC_CACHE_THRESHOLD = origThreshold;
+      if (origThreshold === undefined) delete process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD;
+      else process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD = origThreshold;
     }
   });
 });
@@ -275,16 +275,16 @@ test('tuneCacheThreshold recommends looser threshold on low deny rate', () => {
       recordAuditEvent({ toolName: 'Read', decision: 'allow' });
     }
 
-    const origThreshold = process.env.RLHF_SEMANTIC_CACHE_THRESHOLD;
-    process.env.RLHF_SEMANTIC_CACHE_THRESHOLD = '0.7';
+    const origThreshold = process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD;
+    process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD = '0.7';
     try {
       const result = tuneCacheThreshold();
       assert.equal(result.currentThreshold, 0.7);
       assert.equal(result.recommendedThreshold, 0.68);
       assert.equal(result.applied, true);
     } finally {
-      if (origThreshold === undefined) delete process.env.RLHF_SEMANTIC_CACHE_THRESHOLD;
-      else process.env.RLHF_SEMANTIC_CACHE_THRESHOLD = origThreshold;
+      if (origThreshold === undefined) delete process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD;
+      else process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD = origThreshold;
     }
   });
 });
@@ -309,14 +309,14 @@ test('tuneCacheThreshold does not exceed bounds', () => {
       recordAuditEvent({ toolName: 'Bash', decision: 'deny', gateId: 'g1' });
     }
 
-    const origThreshold = process.env.RLHF_SEMANTIC_CACHE_THRESHOLD;
-    process.env.RLHF_SEMANTIC_CACHE_THRESHOLD = '0.94';
+    const origThreshold = process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD;
+    process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD = '0.94';
     try {
       const result = tuneCacheThreshold();
       assert.ok(result.recommendedThreshold <= 0.95);
     } finally {
-      if (origThreshold === undefined) delete process.env.RLHF_SEMANTIC_CACHE_THRESHOLD;
-      else process.env.RLHF_SEMANTIC_CACHE_THRESHOLD = origThreshold;
+      if (origThreshold === undefined) delete process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD;
+      else process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD = origThreshold;
     }
   });
 });

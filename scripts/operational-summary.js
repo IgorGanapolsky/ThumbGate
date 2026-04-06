@@ -11,13 +11,13 @@ function normalizeText(value) {
 }
 
 function shouldPreferHostedSummary() {
-  return String(process.env.RLHF_METRICS_SOURCE || '').trim().toLowerCase() !== 'local';
+  return String(process.env.THUMBGATE_METRICS_SOURCE || '').trim().toLowerCase() !== 'local';
 }
 
 function resolveHostedSummaryConfig() {
   const runtimeConfig = resolveHostedBillingConfig();
-  const apiBaseUrl = normalizeText(process.env.RLHF_BILLING_API_BASE_URL) || runtimeConfig.billingApiBaseUrl;
-  const apiKey = normalizeText(process.env.RLHF_API_KEY);
+  const apiBaseUrl = normalizeText(process.env.THUMBGATE_BILLING_API_BASE_URL) || runtimeConfig.billingApiBaseUrl;
+  const apiKey = normalizeText(process.env.THUMBGATE_API_KEY);
   return {
     apiBaseUrl,
     apiKey,
@@ -73,10 +73,14 @@ async function getOperationalBillingSummary(options = {}) {
       fallbackReason: null,
     };
   } catch (err) {
+    const reason = err && err.message ? err.message : 'hosted_summary_unavailable';
+    // TODO: Configure hosted billing via THUMBGATE_BILLING_API_BASE_URL and THUMBGATE_API_KEY
+    // to avoid falling back to local state. See docs/PRICING_RESEARCH_2026-03-10.md
+    console.warn(`[operational-summary] Hosted billing not configured — falling back to local state. Reason: ${reason}`);
     return {
       source: 'local',
       summary: await getBillingSummaryLive(analyticsWindow),
-      fallbackReason: err && err.message ? err.message : 'hosted_summary_unavailable',
+      fallbackReason: reason,
     };
   }
 }

@@ -1,0 +1,20 @@
+{
+  "id": "1775253560636_feedback-negative-fb-1775253560058-ugcjgw",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775253560058_ugcjgw",
+  "content": "{\"id\":\"fb_1775253560058_ugcjgw\",\"signal\":\"negative\",\"context\":\"Gate \\\"metric-gate-max\\\" warned tool \\\"Bash\\\": Churn too high\",\"submittedContext\":\"Gate \\\"metric-gate-max\\\" warned tool \\\"Bash\\\": Churn too high\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:metric-gate-max\",\"gates-engine\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T21:59:20.058Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:metric-gate-max",
+    "gates-engine"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-03T21:59:20.636Z",
+  "lastUsedAt": null
+}

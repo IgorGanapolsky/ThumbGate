@@ -13,7 +13,7 @@ const serverModulePath = require.resolve('../src/api/server');
 
 const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'stripe-webhook-route-'));
 const savedEnv = {
-  RLHF_ALLOW_INSECURE: process.env.RLHF_ALLOW_INSECURE,
+  THUMBGATE_ALLOW_INSECURE: process.env.THUMBGATE_ALLOW_INSECURE,
   _TEST_API_KEYS_PATH: process.env._TEST_API_KEYS_PATH,
   _TEST_FUNNEL_LEDGER_PATH: process.env._TEST_FUNNEL_LEDGER_PATH,
   _TEST_REVENUE_LEDGER_PATH: process.env._TEST_REVENUE_LEDGER_PATH,
@@ -34,7 +34,7 @@ function restoreEnv() {
 }
 
 function primeBillingEnv() {
-  process.env.RLHF_ALLOW_INSECURE = 'true';
+  process.env.THUMBGATE_ALLOW_INSECURE = 'true';
   process.env._TEST_API_KEYS_PATH = path.join(tmpRoot, 'api-keys.json');
   process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpRoot, 'funnel-events.jsonl');
   process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpRoot, 'revenue-events.jsonl');

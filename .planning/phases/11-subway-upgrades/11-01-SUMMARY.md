@@ -15,7 +15,7 @@ key_files:
   modified: []
 decisions:
   - "PROJECT_ROOT = path.join(__dirname, '..', '..', '..') — 3 levels up from .claude/scripts/feedback/"
-  - "RLHF_VECTOR_STUB_EMBED=true returns deterministic 384-dim unit vector — no ONNX download in tests"
+  - "THUMBGATE_VECTOR_STUB_EMBED=true returns deterministic 384-dim unit vector — no ONNX download in tests"
   - "TABLE_NAME = rlhf_memories — JS-only table, same as rlhf for cross-language compatibility"
   - "Jest tests require NODE_OPTIONS=--experimental-vm-modules for dynamic import() support"
 metrics:
@@ -34,7 +34,7 @@ Ported rlhf's vector-store.js to Subway's .claude/scripts/feedback/ with 3-level
 `Subway/.claude/scripts/feedback/vector-store.js` — LanceDB vector store port:
 - Identical API to rlhf: `upsertFeedback(event)`, `searchSimilar(query, limit)`, `TABLE_NAME`
 - PATH fix: PROJECT_ROOT uses 3 levels up (not 1 level as in rlhf)
-- Stub embed: RLHF_VECTOR_STUB_EMBED=true for Jest test isolation
+- Stub embed: THUMBGATE_VECTOR_STUB_EMBED=true for Jest test isolation
 
 `Subway/scripts/__tests__/vector-store.test.js` — 6 Jest tests:
 - TABLE_NAME equals 'rlhf_memories'

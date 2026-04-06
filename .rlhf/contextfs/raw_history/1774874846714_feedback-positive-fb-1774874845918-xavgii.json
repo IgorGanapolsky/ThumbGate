@@ -1,0 +1,17 @@
+{
+  "id": "1774874846714_feedback-positive-fb-1774874845918-xavgii",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774874845918_xavgii",
+  "content": "{\"id\":\"fb_1774874845918_xavgii\",\"signal\":\"positive\",\"context\":\"test context for ML verification\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"the feature worked correctly\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"testing\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-30T12:47:25.918Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "testing"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-30T12:47:26.714Z",
+  "lastUsedAt": null
+}

@@ -44,7 +44,7 @@ must_haves:
   key_links:
     - from: "tests/rlaif-self-audit.test.js"
       to: "scripts/rlaif-self-audit.js"
-      via: "require + require.cache invalidation + tmpdir RLHF_FEEDBACK_DIR pattern"
+      via: "require + require.cache invalidation + tmpdir THUMBGATE_FEEDBACK_DIR pattern"
       pattern: "require.cache"
     - from: "scripts/prove-rlaif.js"
       to: "scripts/prove-lancedb.js"
@@ -89,7 +89,7 @@ Output: 3 test files (node:test), prove-rlaif.js, proof/rlaif-report.md, proof/r
   <name>Task 1: Write three node:test test files for rlaif-self-audit, dpo-optimizer, and meta-policy</name>
   <files>tests/rlaif-self-audit.test.js, tests/dpo-optimizer.test.js, tests/meta-policy.test.js</files>
   <action>
-Use the canonical pattern from `tests/vector-store.test.js`: `describe/it`, `require.cache` invalidation, `fs.mkdtempSync()` + `process.env.RLHF_FEEDBACK_DIR = tmpDir`.
+Use the canonical pattern from `tests/vector-store.test.js`: `describe/it`, `require.cache` invalidation, `fs.mkdtempSync()` + `process.env.THUMBGATE_FEEDBACK_DIR = tmpDir`.
 
 **tests/rlaif-self-audit.test.js** (>= 4 test cases):
 - `it('returns score < 0.5 for vague negative feedback')`: event = {signal:'negative', context:'bad', tags:[], timestamp:ISO}; assert result.score < 0.5
@@ -139,7 +139,7 @@ const ROOT = path.join(__dirname, '..');
 
 async function runProof() {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'prove-rlaif-'));
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   const report = {
     phase: '05-rlaif-and-dpo-optimization',

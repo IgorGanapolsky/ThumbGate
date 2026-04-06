@@ -1,0 +1,19 @@
+{
+  "id": "1774554427840_mistake-integration-broke",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Integration broke",
+  "content": "What went wrong: Integration broke\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "pipeline-integration-test"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775484666431_d46rw6"
+  },
+  "createdAt": "2026-03-26T19:47:07.840Z",
+  "lastUsedAt": null
+}

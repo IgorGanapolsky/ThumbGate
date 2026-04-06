@@ -6,11 +6,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memalign-test-'));
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 after(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
 });
 
 const {

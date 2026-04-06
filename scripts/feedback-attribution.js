@@ -155,7 +155,7 @@ function scoreCandidate(action, feedbackNormalized, feedbackTokens, nowMs) {
 }
 
 function recordAction(toolName, toolInput, opts = {}) {
-  const actionLogPath = opts.actionLogPath || process.env.RLHF_ACTION_LOG || PATHS.actionLog;
+  const actionLogPath = opts.actionLogPath || process.env.THUMBGATE_ACTION_LOG || PATHS.actionLog;
   const tool = String(toolName || 'unknown');
   const inputSummary = summarizeToolInput(tool, toolInput);
   const normalized = normalize(inputSummary);
@@ -175,9 +175,9 @@ function recordAction(toolName, toolInput, opts = {}) {
 
 function attributeFeedback(signal, feedbackContext, opts = {}) {
   const sig = String(signal || '').toLowerCase().trim();
-  const actionLogPath = opts.actionLogPath || process.env.RLHF_ACTION_LOG || PATHS.actionLog;
-  const attributionsPath = opts.attributionsPath || process.env.RLHF_FEEDBACK_ATTRIBUTIONS || PATHS.attributions;
-  const attributedFeedbackPath = opts.attributedFeedbackPath || process.env.RLHF_ATTRIBUTED_FEEDBACK || PATHS.attributedFeedback;
+  const actionLogPath = opts.actionLogPath || process.env.THUMBGATE_ACTION_LOG || PATHS.actionLog;
+  const attributionsPath = opts.attributionsPath || process.env.THUMBGATE_FEEDBACK_ATTRIBUTIONS || PATHS.attributions;
+  const attributedFeedbackPath = opts.attributedFeedbackPath || process.env.THUMBGATE_ATTRIBUTED_FEEDBACK || PATHS.attributedFeedback;
 
   if (sig !== 'negative' && sig !== 'positive') {
     return { ok: true, skipped: true, reason: 'signal_not_supported' };
@@ -187,7 +187,7 @@ function attributeFeedback(signal, feedbackContext, opts = {}) {
   const feedbackText = stripFeedbackPrefix(feedbackContext);
   const feedbackNormalized = normalize(feedbackText);
   const feedbackTokens = tokenize(feedbackText);
-  const windowMs = Number(opts.windowMs || process.env.RLHF_ATTRIBUTION_WINDOW_MS || (20 * 60 * 1000));
+  const windowMs = Number(opts.windowMs || process.env.THUMBGATE_ATTRIBUTION_WINDOW_MS || (20 * 60 * 1000));
   const maxActions = Number(opts.maxActions || 80);
   const topK = Number(opts.topK || 3);
   const threshold = Number(opts.threshold || (sig === 'negative' ? 0.33 : 0.38));

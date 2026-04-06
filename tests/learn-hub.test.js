@@ -43,7 +43,7 @@ test('learn hub has OG meta tags', () => {
 
 test('learn hub has Plausible analytics', () => {
   const html = readFile(learnHubPath);
-  assert.match(html, /data-domain="rlhf-feedback-loop-production\.up\.railway\.app"/);
+  assert.match(html, /data-domain="thumbgate-production\.up\.railway\.app"/);
   assert.match(html, /src="\/js\/analytics\.js"/);
 });
 

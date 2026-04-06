@@ -4,7 +4,7 @@
 **Product**: ThumbGate
 **npm**: mcp-memory-gateway
 **Repo**: IgorGanapolsky/mcp-memory-gateway
-**Live URL**: https://rlhf-feedback-loop-production.up.railway.app
+**Live URL**: https://thumbgate-production.up.railway.app
 
 ---
 

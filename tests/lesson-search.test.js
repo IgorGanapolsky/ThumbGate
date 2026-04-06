@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const savedFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
 
 function writeJsonl(filePath, rows) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -14,8 +14,8 @@ function writeJsonl(filePath, rows) {
 }
 
 test.after(() => {
-  if (savedFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-  else process.env.RLHF_FEEDBACK_DIR = savedFeedbackDir;
+  if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+  else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
 });
 
 test('parseLessonContent extracts corrective-action fields', () => {
@@ -35,7 +35,7 @@ test('parseLessonContent extracts corrective-action fields', () => {
 
 test('searchLessons returns linked corrective actions, prevention rules, and gates', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-search-'));
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   try {
     writeJsonl(path.join(tmpDir, 'feedback-log.jsonl'), [
@@ -108,7 +108,7 @@ test('searchLessons returns linked corrective actions, prevention rules, and gat
 
 test('searchLessons can list recent lessons and filter by category/tags', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-search-list-'));
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   try {
     writeJsonl(path.join(tmpDir, 'memory-log.jsonl'), [

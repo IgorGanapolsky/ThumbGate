@@ -41,13 +41,13 @@ metrics:
 
 # Phase 15 Plan 01: Plugin Distribution Summary
 
-**One-liner:** npm CLI + per-platform INSTALL.md for all 5 platforms — `npx rlhf-feedback-loop init` scaffolds local config with standalone capture-feedback.js, README Quick Install section updated with one-liners for Claude Code, Codex, Gemini, Amp, and ChatGPT GPT Actions.
+**One-liner:** npm CLI + per-platform INSTALL.md for all 5 platforms — `npx thumbgate init` scaffolds local config with standalone capture-feedback.js, README Quick Install section updated with one-liners for Claude Code, Codex, Gemini, Amp, and ChatGPT GPT Actions.
 
 ## Tasks Completed
 
 | Task | Description | Commit | Key Files |
 |------|-------------|--------|-----------|
-| 1 | bin/cli.js — npx rlhf-feedback-loop init | 6f7e2a1 | bin/cli.js, package.json |
+| 1 | bin/cli.js — npx thumbgate init | 6f7e2a1 | bin/cli.js, package.json |
 | 2 | Plugin INSTALL.md for all 5 platforms | 59f953a | plugins/*/INSTALL.md, adapters/chatgpt/INSTALL.md |
 | 3 | README.md Quick Install section | 279e887 | README.md |
 | 4 | CLI tests (13 tests) + test:cli wired | 53f98dc | tests/cli.test.js, package.json |
@@ -56,15 +56,15 @@ metrics:
 
 ### bin/cli.js
 
-- `npx rlhf-feedback-loop init` creates `.rlhf/` with `config.json` and standalone `capture-feedback.js`
+- `npx thumbgate init` creates `.thumbgate/` with `config.json` and standalone `capture-feedback.js`
 - Standalone script has no dependencies — runs on any machine with Node.js 18+
-- Captures feedback signals to `.rlhf/feedback-log.jsonl` in JSONL format
+- Captures feedback signals to `.thumbgate/feedback-log.jsonl` in JSONL format
 - Updates `.gitignore` automatically with RLHF data paths
 - Idempotent — running init twice is safe
 
 ### package.json publish fields
 
-- `"bin"`: `{"rlhf-feedback-loop": "./bin/cli.js"}` — enables `npx rlhf-feedback-loop`
+- `"bin"`: `{"thumbgate": "./bin/cli.js"}` — enables `npx thumbgate`
 - `"files"`: explicit allowlist for npm publish (bin/, scripts/, src/, adapters/, plugins/, openapi/, config/)
 - `"main"`: unchanged at `scripts/feedback-loop.js`
 
@@ -79,7 +79,7 @@ metrics:
 ### README.md Quick Install section
 
 Added at top of README (before Value Proposition), above the fold:
-- Universal: `npx rlhf-feedback-loop init`
+- Universal: `npx thumbgate init`
 - All 5 platform one-liners with links to full INSTALL.md guides
 
 ### tests/cli.test.js (13 tests)
@@ -87,7 +87,7 @@ Added at top of README (before Value Proposition), above the fold:
 - CLI file exists and is executable
 - help / --help / no-arg exits 0
 - unknown command exits 1
-- init creates .rlhf/ directory
+- init creates .thumbgate/ directory
 - init creates config.json with required fields (version, apiUrl, logPath, createdAt)
 - init creates capture-feedback.js
 - init output includes "Setup complete"
@@ -116,7 +116,7 @@ New: 13 CLI tests (100% pass)
 
 ## Requirements Fulfilled
 
-- PLUG-01: npm package publish-ready with bin field — `npx rlhf-feedback-loop init` works
+- PLUG-01: npm package publish-ready with bin field — `npx thumbgate init` works
 - PLUG-02: Claude Code skill installable via one command
 - PLUG-03: Codex MCP plugin installable via config.toml one-liner
 - PLUG-04: Gemini extension installable via function declaration import

@@ -37,14 +37,14 @@ test('activateLicense accepts rlhf_ keys from Stripe', () => {
 });
 
 test('Pro feature gate blocks without license', () => {
-  const origKey = process.env.RLHF_API_KEY;
+  const origKey = process.env.THUMBGATE_API_KEY;
   const origPro = process.env.THUMBGATE_PRO_KEY;
-  const origMode = process.env.RLHF_PRO_MODE;
-  const origNoLimit = process.env.RLHF_NO_RATE_LIMIT;
-  delete process.env.RLHF_API_KEY;
+  const origMode = process.env.THUMBGATE_PRO_MODE;
+  const origNoLimit = process.env.THUMBGATE_NO_RATE_LIMIT;
+  delete process.env.THUMBGATE_API_KEY;
   delete process.env.THUMBGATE_PRO_KEY;
-  delete process.env.RLHF_PRO_MODE;
-  delete process.env.RLHF_NO_RATE_LIMIT;
+  delete process.env.THUMBGATE_PRO_MODE;
+  delete process.env.THUMBGATE_NO_RATE_LIMIT;
   // Clear module cache so license check re-reads env
   delete require.cache[require.resolve('../scripts/pro-features')];
   delete require.cache[require.resolve('../scripts/license')];
@@ -56,8 +56,8 @@ test('Pro feature gate blocks without license', () => {
   process.stderr.write = origWrite;
   assert.equal(result, false);
   assert.ok(output.includes('Pro Feature Required'));
-  if (origKey) process.env.RLHF_API_KEY = origKey;
+  if (origKey) process.env.THUMBGATE_API_KEY = origKey;
   if (origPro) process.env.THUMBGATE_PRO_KEY = origPro;
-  if (origMode) process.env.RLHF_PRO_MODE = origMode;
-  if (origNoLimit) process.env.RLHF_NO_RATE_LIMIT = origNoLimit;
+  if (origMode) process.env.THUMBGATE_PRO_MODE = origMode;
+  if (origNoLimit) process.env.THUMBGATE_NO_RATE_LIMIT = origNoLimit;
 });

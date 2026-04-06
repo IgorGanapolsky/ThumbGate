@@ -1,0 +1,17 @@
+{
+  "id": "1773590666017_feedback-positive-fb-1773590666015-aldu7a",
+  "title": "feedback_positive_fb_1773590666015_aldu7a",
+  "content": "{\"id\":\"fb_1773590666015_aldu7a\",\"signal\":\"positive\",\"context\":\"adapter proof harness\",\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"end-to-end verification flow\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"verification\",\"proof\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-15T16:04:26.015Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "verification",
+    "proof"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-15T16:04:26.017Z",
+  "lastUsedAt": null
+}

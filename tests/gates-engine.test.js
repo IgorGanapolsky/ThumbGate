@@ -1,6 +1,6 @@
 'use strict';
 
-process.env.RLHF_PRO_MODE = '1';
+process.env.THUMBGATE_PRO_MODE = '1';
 
 const { test, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
@@ -75,23 +75,23 @@ function makeTempPath(name) {
 }
 
 function withTempFeedbackDir(fn) {
-  const originalFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
-  const originalProvider = process.env.RLHF_SECRET_SCAN_PROVIDER;
+  const originalFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const originalProvider = process.env.THUMBGATE_SECRET_SCAN_PROVIDER;
   const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-gates-secret-'));
-  process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
-  process.env.RLHF_SECRET_SCAN_PROVIDER = 'heuristic';
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+  process.env.THUMBGATE_SECRET_SCAN_PROVIDER = 'heuristic';
   try {
     return fn(tmpFeedbackDir);
   } finally {
     if (originalFeedbackDir === undefined) {
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     } else {
-      process.env.RLHF_FEEDBACK_DIR = originalFeedbackDir;
+      process.env.THUMBGATE_FEEDBACK_DIR = originalFeedbackDir;
     }
     if (originalProvider === undefined) {
-      delete process.env.RLHF_SECRET_SCAN_PROVIDER;
+      delete process.env.THUMBGATE_SECRET_SCAN_PROVIDER;
     } else {
-      process.env.RLHF_SECRET_SCAN_PROVIDER = originalProvider;
+      process.env.THUMBGATE_SECRET_SCAN_PROVIDER = originalProvider;
     }
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
   }
@@ -474,13 +474,13 @@ test('run blocks bash commands that expose inline secrets', () => {
 // Config via env var
 // ---------------------------------------------------------------------------
 
-test('evaluateGates returns null with bad RLHF_GATES_CONFIG', () => {
-  const orig = process.env.RLHF_GATES_CONFIG;
-  process.env.RLHF_GATES_CONFIG = '/tmp/nonexistent.json';
+test('evaluateGates returns null with bad THUMBGATE_GATES_CONFIG', () => {
+  const orig = process.env.THUMBGATE_GATES_CONFIG;
+  process.env.THUMBGATE_GATES_CONFIG = '/tmp/nonexistent.json';
   const result = evaluateGates('Bash', { command: 'git push' });
   assert.equal(result, null); // graceful fallback
-  if (orig) process.env.RLHF_GATES_CONFIG = orig;
-  else delete process.env.RLHF_GATES_CONFIG;
+  if (orig) process.env.THUMBGATE_GATES_CONFIG = orig;
+  else delete process.env.THUMBGATE_GATES_CONFIG;
 });
 
 // ---------------------------------------------------------------------------

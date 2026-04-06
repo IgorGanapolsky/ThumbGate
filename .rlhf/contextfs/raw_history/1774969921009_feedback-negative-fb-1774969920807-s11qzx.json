@@ -1,0 +1,18 @@
+{
+  "id": "1774969921009_feedback-negative-fb-1774969920807-s11qzx",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774969920807_s11qzx",
+  "content": "{\"id\":\"fb_1774969920807_s11qzx\",\"signal\":\"negative\",\"context\":\"Job verification-fail-job failed verification after 2 attempt(s): webhook signature mismatch\",\"lastAction\":null,\"whatWentWrong\":\"Failed 2 verification attempts\",\"whatToChange\":\"Improve output to avoid known mistake patterns\",\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"billing\",\"verification-loop\"],\"skill\":\"billing-guard\",\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-31T15:12:00.807Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "billing",
+    "verification-loop"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-31T15:12:01.009Z",
+  "lastUsedAt": null
+}

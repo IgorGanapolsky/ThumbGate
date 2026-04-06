@@ -12,11 +12,11 @@ let tmpDir;
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lock-test-'));
   // Point getFeedbackPaths at our temp dir
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 });
 
 afterEach(() => {
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
   // Clean up temp dir
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });

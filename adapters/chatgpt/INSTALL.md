@@ -5,7 +5,7 @@ Import the OpenAPI spec into a Custom GPT in under 5 minutes. No coding required
 ## Prerequisites
 
 - A ChatGPT Plus or Team account (Custom GPTs require a paid plan)
-- RLHF API running at a public HTTPS URL (see [Deployment docs](../../docs/deployment.md))
+- ThumbGate API running at a public HTTPS URL (see [Deployment docs](../../docs/deployment.md))
 
 ## Step 1 — Open GPT Builder
 
@@ -32,7 +32,7 @@ In the Actions panel:
 
 1. Select **Authentication type: API Key**
 2. **Auth type**: Bearer
-3. **API Key**: paste your `RLHF_API_KEY` value
+3. **API Key**: paste your `THUMBGATE_API_KEY` value
 
 ## Step 4 — Update the Server URL
 
@@ -78,6 +78,6 @@ Full spec: `adapters/chatgpt/openapi.yaml`
 
 ## Troubleshooting
 
-- **401 Unauthorized**: Verify `RLHF_API_KEY` is set and matches the Bearer token
+- **401 Unauthorized**: Verify `THUMBGATE_API_KEY` is set and matches the Bearer token
 - **Connection refused**: Confirm Railway deployment is live (`curl https://<domain>/health`)
 - **Schema errors**: Ensure you are using the latest `openapi.yaml` (version 1.1.0+)

@@ -72,7 +72,7 @@ const {
 } = require('../../scripts/lesson-retrieval');
 const {
   searchRlhf,
-} = require('../../scripts/rlhf-search');
+} = require('../../scripts/thumbgate-search');
 const { checkLimit, UPGRADE_MESSAGE } = require('../../scripts/rate-limiter');
 const { generateOrgDashboard } = require('../../scripts/org-dashboard');
 const {
@@ -83,7 +83,7 @@ const { TOOLS } = require('../../scripts/tool-registry');
 const { reflect: reflectOnFeedback } = require('../../scripts/reflector-agent');
 const { submitProductIssue } = require('../../scripts/product-feedback');
 
-const PRO_CHECKOUT_URL = 'https://rlhf-feedback-loop-production.up.railway.app/checkout/pro';
+const PRO_CHECKOUT_URL = 'https://thumbgate-production.up.railway.app/checkout/pro';
 
 function enforceLimit(action) {
   const limit = checkLimit(action);
@@ -178,8 +178,8 @@ function buildRecallResponse(args = {}) {
   if (!limit.allowed) {
     text += '\n\n---\n';
     text += 'Upgrade to Context Gateway for unlimited recall, shared workflow memory, and hosted rollout.\n';
-    text += 'Hosted API: https://rlhf-feedback-loop-production.up.railway.app\n';
-    text += 'Pro pack: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro';
+    text += 'Hosted API: https://thumbgate-production.up.railway.app\n';
+    text += 'Pro pack: https://thumbgate-production.up.railway.app/checkout/pro';
   }
 
   return toTextResult(text);

@@ -48,7 +48,7 @@ const CONFIG = {
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   GITHUB_MARKETPLACE_WEBHOOK_SECRET: process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '',
-  GITHUB_MARKETPLACE_PLAN_PRICES_JSON: process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON || '',
+  GITHUB_MARKETPLACE_PLAN_PRICES_JSON: process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON || '',
   STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || PRO_MONTHLY_PRICE_ID,
   STRIPE_PRICE_ID_PRO_MONTHLY: process.env.STRIPE_PRICE_ID_PRO_MONTHLY || PRO_MONTHLY_PRICE_ID,
   STRIPE_PRICE_ID_PRO_ANNUAL: process.env.STRIPE_PRICE_ID_PRO_ANNUAL || PRO_ANNUAL_PRICE_ID,
@@ -58,10 +58,10 @@ const CONFIG = {
     return process.env._TEST_API_KEYS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'api-keys.json');
   },
   get FUNNEL_LEDGER_PATH() {
-    return process.env._TEST_FUNNEL_LEDGER_PATH || process.env.RLHF_FUNNEL_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'funnel-events.jsonl');
+    return process.env._TEST_FUNNEL_LEDGER_PATH || process.env.THUMBGATE_FUNNEL_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'funnel-events.jsonl');
   },
   get REVENUE_LEDGER_PATH() {
-    return process.env._TEST_REVENUE_LEDGER_PATH || process.env.RLHF_REVENUE_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'revenue-events.jsonl');
+    return process.env._TEST_REVENUE_LEDGER_PATH || process.env.THUMBGATE_REVENUE_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'revenue-events.jsonl');
   },
   get LOCAL_CHECKOUT_SESSIONS_PATH() {
     return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'local-checkout-sessions.json');
@@ -77,9 +77,13 @@ const CONFIG = {
   }
 };
 
+const RLHF_FEEDBACK_DIR = path.resolve(__dirname, '../.rlhf');
 const LEGACY_FEEDBACK_DIR = path.resolve(__dirname, '../.claude/memory/feedback');
 
 function resolveLegacyBillingPath(fileName) {
+  // Check .rlhf/ before falling back to .claude/memory/feedback/
+  const rlhfPath = path.join(RLHF_FEEDBACK_DIR, fileName);
+  if (fs.existsSync(rlhfPath)) return rlhfPath;
   return path.join(LEGACY_FEEDBACK_DIR, fileName);
 }
 
@@ -2094,6 +2098,21 @@ async function handleWebhook(rawBody, signature) {
           metadata: funnelRecord.metadata,
         });
       }
+      // Write checkout_paid_confirmed event with amount/currency for funnel analytics
+      appendFunnelEvent({
+        stage: 'paid',
+        event: 'checkout_paid_confirmed',
+        installId,
+        traceId,
+        evidence: session.id,
+        metadata: {
+          source: 'stripe_webhook_checkout_completed',
+          amount: session.amount_total,
+          currency: session.currency,
+          customerId,
+          ...funnelRecord.metadata,
+        },
+      });
       const revenueRecord = {
         provider: 'stripe',
         event: 'stripe_checkout_completed',

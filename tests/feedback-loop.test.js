@@ -84,9 +84,9 @@ test('enrichFeedbackContext: returns object with richContext', () => {
 
 test('captureFeedback: valid negative feedback returns accepted=true', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -104,9 +104,9 @@ test('captureFeedback: valid negative feedback returns accepted=true', (t) => {
 
 test('captureFeedback: valid positive feedback returns accepted=true', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -143,11 +143,11 @@ test('evaluateMemoryIngress: ShieldCortex blocks secret-bearing payload when exp
 
 test('captureFeedback: blocks secret-bearing feedback before any raw memory write', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
-  process.env.RLHF_MEMORY_FIREWALL_PROVIDER = 'local';
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_MEMORY_FIREWALL_PROVIDER = 'local';
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
-    delete process.env.RLHF_MEMORY_FIREWALL_PROVIDER;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_MEMORY_FIREWALL_PROVIDER;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -172,9 +172,9 @@ test('captureFeedback: blocks secret-bearing feedback before any raw memory writ
 
 test('captureFeedback: rejects vague negative (no context/whatWentWrong/whatToChange)', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -187,9 +187,9 @@ test('captureFeedback: rejects vague negative (no context/whatWentWrong/whatToCh
 
 test('captureFeedback: rejects generic positive context and requests clarification', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -207,9 +207,9 @@ test('captureFeedback: rejects generic positive context and requests clarificati
 
 test('captureFeedback: promotes vague negative feedback when chatHistory supplies a concrete failure', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -235,9 +235,9 @@ test('captureFeedback: promotes vague negative feedback when chatHistory supplie
 
 test('captureFeedback: can distill a statusline follow-up from local conversation history', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -263,9 +263,9 @@ test('captureFeedback: can distill a statusline follow-up from local conversatio
 
 test('analyzeFeedback: returns correct counts on populated log', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -283,38 +283,38 @@ test('analyzeFeedback: returns correct counts on populated log', (t) => {
 });
 
 test('getFeedbackPaths falls back to global dir when neither .rlhf nor .claude exists', () => {
-  const savedFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+  const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const savedRailwayVolumeMountPath = process.env.RAILWAY_VOLUME_MOUNT_PATH;
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
   delete process.env.RAILWAY_VOLUME_MOUNT_PATH;
 
   // This test exercises the global fallback path (lines 89-93)
-  // which happens when neither .rlhf nor .claude/memory/feedback exist in cwd.
-  // Since the test runs from the project root which has .rlhf, we just verify
+  // which happens when neither .thumbgate nor .claude/memory/feedback exist in cwd.
+  // Since the test runs from the project root which has .thumbgate, we just verify
   // the function returns valid paths.
   const paths = getFeedbackPaths();
   assert.ok(paths.FEEDBACK_DIR, 'should have FEEDBACK_DIR');
   assert.ok(paths.FEEDBACK_LOG_PATH, 'should have FEEDBACK_LOG_PATH');
   assert.ok(paths.FEEDBACK_LOG_PATH.endsWith('feedback-log.jsonl'));
 
-  if (savedFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-  else process.env.RLHF_FEEDBACK_DIR = savedFeedbackDir;
+  if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+  else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
   if (savedRailwayVolumeMountPath === undefined) delete process.env.RAILWAY_VOLUME_MOUNT_PATH;
   else process.env.RAILWAY_VOLUME_MOUNT_PATH = savedRailwayVolumeMountPath;
 });
 
 test('getFeedbackPaths prefers Railway volume mount when explicit feedback dir is absent', () => {
-  const savedFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+  const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const savedRailwayVolumeMountPath = process.env.RAILWAY_VOLUME_MOUNT_PATH;
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.RAILWAY_VOLUME_MOUNT_PATH = '/data';
 
   const paths = getFeedbackPaths();
   assert.equal(paths.FEEDBACK_DIR, path.join('/data', 'feedback'));
   assert.equal(paths.FEEDBACK_LOG_PATH, path.join('/data', 'feedback', 'feedback-log.jsonl'));
 
-  if (savedFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-  else process.env.RLHF_FEEDBACK_DIR = savedFeedbackDir;
+  if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+  else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
   if (savedRailwayVolumeMountPath === undefined) delete process.env.RAILWAY_VOLUME_MOUNT_PATH;
   else process.env.RAILWAY_VOLUME_MOUNT_PATH = savedRailwayVolumeMountPath;
 });
@@ -323,9 +323,9 @@ test('getFeedbackPaths prefers Railway volume mount when explicit feedback dir i
 
 test('buildPreventionRules: returns markdown string with header', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -336,9 +336,9 @@ test('buildPreventionRules: returns markdown string with header', (t) => {
 
 test('buildPreventionRules: includes diagnostic sections for repeated root causes', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -375,9 +375,9 @@ test('buildPreventionRules: includes diagnostic sections for repeated root cause
 
 test('feedbackSummary: returns string with "Positive:"', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -396,11 +396,11 @@ test('feedbackSummary: returns string with "Positive:"', (t) => {
 
 test('analyzeFeedback: includes boosted risk summary after sequence training rows exist', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
-  process.env.RLHF_VECTOR_STUB_EMBED = 'true';
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_VECTOR_STUB_EMBED = 'true';
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
-    delete process.env.RLHF_VECTOR_STUB_EMBED;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -455,14 +455,14 @@ test('analyzeFeedback: includes boosted risk summary after sequence training row
 
 test('analyzeFeedback: SQLite fast path stays scoped to the active feedback dir and preserves the full shape', (t) => {
   const tmpDir = makeTmpDir();
-  const prevFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+  const prevFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const prevLessonDbPath = process.env.LESSON_DB_PATH;
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   delete process.env.LESSON_DB_PATH;
 
   t.after(() => {
-    if (prevFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-    else process.env.RLHF_FEEDBACK_DIR = prevFeedbackDir;
+    if (prevFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = prevFeedbackDir;
     if (prevLessonDbPath === undefined) delete process.env.LESSON_DB_PATH;
     else process.env.LESSON_DB_PATH = prevLessonDbPath;
     delete require.cache[require.resolve('../scripts/feedback-loop')];
@@ -502,14 +502,14 @@ test('analyzeFeedback: explicit logPath bypasses unrelated SQLite state', (t) =>
   const feedbackDir = makeTmpDir();
   const isolatedDir = makeTmpDir();
   const isolatedLogPath = path.join(isolatedDir, 'feedback-log.jsonl');
-  const prevFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+  const prevFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const prevLessonDbPath = process.env.LESSON_DB_PATH;
-  process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
   delete process.env.LESSON_DB_PATH;
 
   t.after(() => {
-    if (prevFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-    else process.env.RLHF_FEEDBACK_DIR = prevFeedbackDir;
+    if (prevFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = prevFeedbackDir;
     if (prevLessonDbPath === undefined) delete process.env.LESSON_DB_PATH;
     else process.env.LESSON_DB_PATH = prevLessonDbPath;
     delete require.cache[require.resolve('../scripts/feedback-loop')];
@@ -539,9 +539,9 @@ test('analyzeFeedback: explicit logPath bypasses unrelated SQLite state', (t) =>
 
 test('analyzeFeedback and prevention rules include persisted diagnostic records outside feedback capture', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -569,7 +569,7 @@ test('analyzeFeedback and prevention rules include persisted diagnostic records 
 
 test('captureFeedback: waitForBackgroundSideEffects drains deferred vector writes', async (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   await waitForBackgroundSideEffects();
 
   // Patch upsertFeedback on BOTH modules so whichever getVectorStoreModule()
@@ -594,7 +594,7 @@ test('captureFeedback: waitForBackgroundSideEffects drains deferred vector write
   t.after(() => {
     fsSearch.upsertFeedback = origFsUpsert;
     if (vectorStore) vectorStore.upsertFeedback = origVsUpsert;
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -619,7 +619,7 @@ test('captureFeedback: waitForBackgroundSideEffects drains deferred vector write
 
 test('rejected feedback is written to rejection-ledger.jsonl with revival condition', () => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   const result = captureFeedback({ signal: 'down' });
   assert.equal(result.accepted, false);
@@ -634,12 +634,12 @@ test('rejected feedback is written to rejection-ledger.jsonl with revival condit
   assert.equal(entries[0].signal, 'negative');
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
 });
 
 test('rejected positive feedback is also recorded in rejection ledger', () => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   const result = captureFeedback({ signal: 'up' });
   assert.equal(result.accepted, false);
@@ -651,14 +651,14 @@ test('rejected positive feedback is also recorded in rejection ledger', () => {
   assert.ok(entries[0].revivalCondition.includes('whatWorked'));
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
 });
 
 // -- Enforcement Matrix --
 
 test('listEnforcementMatrix returns pipeline, gates, and rejectionLedger', () => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   captureFeedback({
     signal: 'up',
@@ -681,7 +681,7 @@ test('listEnforcementMatrix returns pipeline, gates, and rejectionLedger', () =>
   assert.ok(Array.isArray(matrix.rejectionLedger.recentRejections));
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
 });
 
 // -- Branch coverage: inferDomain additional domains --
@@ -879,7 +879,7 @@ test('inferLessonFromConversation: extracts file paths and error patterns', () =
 
 test('captureFeedback: conversationWindow enriches context and is stored', () => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_DATA_DIR = tmpDir;
+  process.env.THUMBGATE_DATA_DIR = tmpDir;
 
   const window = [
     { role: 'user', content: 'Fix the cart total calculation' },
@@ -904,6 +904,6 @@ test('captureFeedback: conversationWindow enriches context and is stored', () =>
     assert.ok(result.feedbackEvent.conversationWindow[0].content.length <= 500);
   }
 
-  delete process.env.RLHF_DATA_DIR;
+  delete process.env.THUMBGATE_DATA_DIR;
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });

@@ -12,14 +12,14 @@ describe('verification-loop', () => {
 
   before(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vloop-test-'));
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
     delete require.cache[require.resolve('../scripts/verification-loop')];
     m = require('../scripts/verification-loop');
   });
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
   });
 
   it('exports MAX_RETRIES as 3', () => {

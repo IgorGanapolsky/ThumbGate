@@ -3,7 +3,7 @@
 ## Constants
 
 ```
-PROD_URL    = https://rlhf-feedback-loop-production.up.railway.app
+PROD_URL    = https://thumbgate-production.up.railway.app
 REPO        = IgorGanapolsky/ThumbGate
 NPM_PKG     = mcp-memory-gateway
 NPM_PRO_PKG = mcp-memory-gateway-pro
@@ -19,7 +19,7 @@ You are the CTO. Igor Ganapolsky is your CEO. Execute autonomously: branch, comm
 
 ThumbGate: pre-action gates for AI coding agents. Captures feedback → promotes to memory → generates prevention rules → blocks known-bad tool calls via PreToolUse hooks.
 
-**Not** RLHF weight training. It is context engineering + enforcement.
+**Not** traditional RLHF weight training. It is context engineering + enforcement.
 
 Stack: Node.js >=18.18.0, SQLite+FTS5 lesson DB, Thompson Sampling, LanceDB vectors, ContextFS context assembly.
 
@@ -29,7 +29,7 @@ Stack: Node.js >=18.18.0, SQLite+FTS5 lesson DB, Thompson Sampling, LanceDB vect
 |---------|-----|
 | `.claude/worktrees/*` | Ephemeral agent workspaces |
 | `.claude/memory/*.sqlite*` | Local lesson DB runtime artifacts |
-| `.rlhf/*` | Runtime artifacts |
+| `.thumbgate/*` | Runtime artifacts |
 | `.claude/memory/feedback/lancedb/*` | Generated vector store |
 | `.env`, `*.pem`, `*.key` | Secrets |
 
@@ -43,10 +43,10 @@ sleep 180
 
 # Step 2: Verify the health endpoint returns the new version
 EXPECTED_VERSION="$(node -p "require('./package.json').version")"
-curl -s https://rlhf-feedback-loop-production.up.railway.app/health | grep "\"version\":\"${EXPECTED_VERSION}\""
+curl -s https://thumbgate-production.up.railway.app/health | grep "\"version\":\"${EXPECTED_VERSION}\""
 
 # Step 3: Verify the dashboard loads
-curl -s https://rlhf-feedback-loop-production.up.railway.app/dashboard | grep 'ThumbGate Dashboard'
+curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate Dashboard'
 
 # Step 4: Show BOTH grep outputs to the CEO
 # Step 5: ONLY THEN say "deployed"
@@ -84,8 +84,8 @@ npm run self-heal:check     # 4/4 HEALTHY
 For deployment changes, also run:
 
 ```bash
-curl -s https://rlhf-feedback-loop-production.up.railway.app/health
-curl -s https://rlhf-feedback-loop-production.up.railway.app/dashboard | head -20
+curl -s https://thumbgate-production.up.railway.app/health
+curl -s https://thumbgate-production.up.railway.app/dashboard | head -20
 ```
 
 ## Feedback Capture Commands
@@ -146,8 +146,8 @@ CI runs `--check` on every push. If it fails, files are out of sync.
 | Profile | Use case | Set via |
 |---------|----------|---------|
 | `default` | Full local toolset | (default) |
-| `readonly` | Read-heavy review sessions | `RLHF_MCP_PROFILE=readonly` |
-| `locked` | Constrained runtime | `RLHF_MCP_PROFILE=locked` |
+| `readonly` | Read-heavy review sessions | `THUMBGATE_MCP_PROFILE=readonly` |
+| `locked` | Constrained runtime | `THUMBGATE_MCP_PROFILE=locked` |
 
 Policy file: `config/mcp-allowlists.json`
 

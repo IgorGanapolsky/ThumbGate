@@ -11,7 +11,7 @@ test('local intelligence proof script exits 0', () => {
   const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'prove-local-intel-'));
   const result = spawnSync('node', ['scripts/prove-local-intelligence.js'], {
     cwd: path.join(__dirname, '..'),
-    env: { ...process.env, RLHF_PROOF_DIR: tmpProofDir },
+    env: { ...process.env, THUMBGATE_PROOF_DIR: tmpProofDir },
     encoding: 'utf8',
     timeout: 120000,
   });

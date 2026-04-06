@@ -1,0 +1,17 @@
+{
+  "id": "1775168098903_feedback-positive-fb-1775168098771-rvrkqn",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775168098771_rvrkqn",
+  "content": "{\"id\":\"fb_1775168098771_rvrkqn\",\"signal\":\"positive\",\"context\":\"test context for ML verification\",\"submittedContext\":\"test context for ML verification\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"the feature worked correctly\",\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"testing\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-04-02T22:14:58.771Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "testing"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-02T22:14:58.903Z",
+  "lastUsedAt": null
+}

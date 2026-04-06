@@ -8,8 +8,8 @@ const fs = require('node:fs');
 
 // Isolated temp dir for all commerce quality tests
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-commerce-test-'));
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
-process.env.RLHF_API_KEY = 'test-commerce-key';
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_API_KEY = 'test-commerce-key';
 process.env._TEST_API_KEYS_PATH = path.join(tmpDir, 'api-keys.json');
 process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpDir, 'funnel-events.jsonl');
 process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpDir, 'revenue-events.jsonl');
@@ -152,12 +152,12 @@ test('GET /v1/quality/rules returns structured rules', async () => {
 test('GET /v1/quality/rules returns empty when no rules exist', async () => {
   // Use a fresh dir
   const freshDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-commerce-empty-'));
-  const origDir = process.env.RLHF_FEEDBACK_DIR;
-  process.env.RLHF_FEEDBACK_DIR = freshDir;
+  const origDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = freshDir;
 
   // Need a separate server for this test since feedback dir is cached at startup
   // Instead, just verify the rules file doesn't interfere
-  process.env.RLHF_FEEDBACK_DIR = origDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = origDir;
   fs.rmSync(freshDir, { recursive: true, force: true });
   // This test validates the endpoint doesn't crash — the main test above validates parsing
   assert.ok(true);
@@ -234,13 +234,13 @@ test('commerce_recall MCP tool returns quality scores', async () => {
   saveModel(model, modelPath);
 
   // Set MCP profile to commerce
-  const origProfile = process.env.RLHF_MCP_PROFILE;
-  process.env.RLHF_MCP_PROFILE = 'commerce';
+  const origProfile = process.env.THUMBGATE_MCP_PROFILE;
+  process.env.THUMBGATE_MCP_PROFILE = 'commerce';
 
   const { callTool } = require('../adapters/mcp/server-stdio');
   const result = await callTool('commerce_recall', { query: 'product recommendation for skincare' });
   assert.ok(result.content[0].text.includes('Commerce Quality Scores'));
   assert.ok(result.content[0].text.includes('brand_compliance'));
 
-  process.env.RLHF_MCP_PROFILE = origProfile || '';
+  process.env.THUMBGATE_MCP_PROFILE = origProfile || '';
 });

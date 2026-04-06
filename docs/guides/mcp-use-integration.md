@@ -66,7 +66,7 @@ If you prefer the hosted API instead of a local MCP server:
 ```python
 import httpx
 
-API = "https://rlhf-feedback-loop-production.up.railway.app"
+API = "https://thumbgate-production.up.railway.app"
 KEY = "your_api_key"
 headers = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
 
@@ -88,7 +88,7 @@ httpx.post(f"{API}/v1/feedback/capture", headers=headers, json={
 For agentic commerce use cases, use the `commerce` MCP profile:
 
 ```bash
-RLHF_MCP_PROFILE=commerce npx mcp-memory-gateway serve
+THUMBGATE_MCP_PROFILE=commerce npx mcp-memory-gateway serve
 ```
 
 This exposes `commerce_recall` with quality scores for: product_recommendation, brand_compliance, sizing, pricing, regulatory.
@@ -98,7 +98,7 @@ This exposes `commerce_recall` with quality scores for: product_recommendation, 
 For paired phone + desktop review sessions, use the `dispatch` MCP profile:
 
 ```bash
-RLHF_MCP_PROFILE=dispatch npx mcp-memory-gateway serve
+THUMBGATE_MCP_PROFILE=dispatch npx mcp-memory-gateway serve
 ```
 
 This keeps the surface read-only for metrics, diagnostics, recall, planning, and dashboard access. It intentionally excludes handoffs and mutation tools.

@@ -28,10 +28,16 @@ Curious how others are handling cross-session reliability. Are `.cursorrules` an
 
 ---
 
-**Comment (post immediately after, only if the post stays up):**
+**Comment (post immediately after the main post):**
 
-For those asking how the 👍/👎 system works — I built it as an open-source MCP server. Repo is here: https://github.com/IgorGanapolsky/ThumbGate
+The problem: AI coding agents repeat the same mistakes every session. You correct a force-push, it does it again tomorrow. Cursor rules get ignored when context is tight.
 
-👍 reinforces good behavior. 👎 auto-generates a prevention rule that blocks the action before it executes. MIT licensed, fully local. Happy to answer questions.
+ThumbGate fixes this with enforcement, not memory. You give a thumbs-down, it auto-generates a prevention rule, and a gate physically blocks the agent from repeating that action. Thumbs-up reinforces good behavior.
+
+Works with Cursor, Claude Code, Codex, Gemini, and Amp. Fully local, MIT licensed.
+
+Try free for 7 days (no credit card, 2-minute setup): https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content=cursor_post&community=cursor
+
+Source code: https://github.com/IgorGanapolsky/ThumbGate
 
 Disclosure: I built this.

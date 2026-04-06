@@ -15,7 +15,7 @@ const { discoverFeedbackDir } = require('./skill-generator');
 function materializeSkills(options = {}) {
   const feedbackDir = options.feedbackDir || discoverFeedbackDir();
   const proposalsDir = path.join(feedbackDir, 'skill-proposals');
-  const skillsOutDir = options.skillsOutDir || process.env.RLHF_SKILLS_DIR || path.join(process.cwd(), 'skills');
+  const skillsOutDir = options.skillsOutDir || process.env.THUMBGATE_SKILLS_DIR || path.join(process.cwd(), 'skills');
 
   if (!fs.existsSync(proposalsDir)) {
     console.log('No proposals directory found.');

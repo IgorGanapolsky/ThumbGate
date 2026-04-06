@@ -4,7 +4,7 @@
 /**
  * auto-wire-hooks.js — Auto-wire PreToolUse hooks into AI agent settings.
  *
- * Detects the AI agent (claude-code, codex, gemini) and injects RLHF gate
+ * Detects the AI agent (claude-code, codex, gemini) and injects ThumbGate gate
  * hooks into the agent's settings file. Preserves existing hooks.
  *
  * Usage:

@@ -71,7 +71,7 @@ Tests:       17 passed, 17 total
 ### 5. Budget guard smoke test
 
 ```
-RLHF_FEEDBACK_DIR=/tmp/subway-gov-smoke node -e "
+THUMBGATE_FEEDBACK_DIR=/tmp/subway-gov-smoke node -e "
   const { addSpend, getBudgetStatus } = require('.claude/scripts/feedback/budget-guard');
   addSpend({ amountUsd: 0.25, source: 'smoke-test', note: 'plan 01 verify' });
   const s = getBudgetStatus();

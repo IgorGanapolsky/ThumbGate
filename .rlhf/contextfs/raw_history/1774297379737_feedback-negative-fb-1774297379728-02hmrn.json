@@ -1,0 +1,18 @@
+{
+  "id": "1774297379737_feedback-negative-fb-1774297379728-02hmrn",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774297379728_02hmrn",
+  "content": "{\"id\":\"fb_1774297379728_02hmrn\",\"signal\":\"negative\",\"context\":\"Skipped verification before completion claim\",\"lastAction\":null,\"whatWentWrong\":\"No test evidence\",\"whatToChange\":\"Always include test output\",\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"verification\",\"automation\"],\"skill\":null,\"rubric\":{\"rubricId\":\"default-v1\",\"weightedScore\":0.17,\"failingCriteria\":[\"correctness\",\"verification_evidence\"],\"failingGuardrails\":[\"testsPassed\"],\"judgeDisagreements\":[],\"promotionEligible\":false},\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-23T20:22:59.728Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"},\"diagnosis\":{\"rootCauseCategory\":\"guardrail_triggered\",\"criticalFailureStep\":\"feedback_capture\",\"violations\":[{\"source\":\"rubric_guardrail\",\"constraintId\":\"rubric:correctness\",\"message\":\"Rubric criterion \\\"correctness\\\" failed.\"},{\"source\":\"rubric_guardrail\",\"constraintId\":\"rubric:verification_evidence\",\"message\":\"Rubric criterion \\\"verification_evidence\\\" failed.\"},{\"source\":\"rubric_guardrail\",\"constraintId\":\"guardrail:testsPassed\",\"message\":\"Guardrail \\\"testsPassed\\\" failed.\"}],\"evidence\":[{\"type\":\"context\",\"value\":\"Skipped verification before completion claim\"}]}}",
+  "tags": [
+    "verification",
+    "automation"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-23T20:22:59.737Z",
+  "lastUsedAt": null
+}

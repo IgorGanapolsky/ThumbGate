@@ -16,7 +16,7 @@ test('prove-cloudflare-sandbox passes all proof checks', () => {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: 'pipe',
-      env: { ...process.env, RLHF_PROOF_DIR: tmpProofDir },
+      env: { ...process.env, THUMBGATE_PROOF_DIR: tmpProofDir },
     });
 
     assert.match(output, /Cloudflare sandbox proof written/);
@@ -35,7 +35,7 @@ test('prove-cloudflare-sandbox writes markdown evidence', () => {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: 'pipe',
-      env: { ...process.env, RLHF_PROOF_DIR: tmpProofDir },
+      env: { ...process.env, THUMBGATE_PROOF_DIR: tmpProofDir },
     });
 
     const markdown = fs.readFileSync(path.join(tmpProofDir, 'cloudflare-sandbox-report.md'), 'utf8');

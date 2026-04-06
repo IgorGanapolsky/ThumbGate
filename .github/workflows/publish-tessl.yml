@@ -41,7 +41,7 @@ jobs:
         run: npm run tessl:verify
 
       - name: Run Tessl proof
-        run: env RLHF_PROOF_DIR=.artifacts/proof npm run prove:tessl
+        run: env THUMBGATE_PROOF_DIR=.artifacts/proof npm run prove:tessl
 
       - name: Export Tessl tiles
         run: npm run tessl:export -- --out-dir=.artifacts/tessl

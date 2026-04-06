@@ -20,7 +20,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
 function resolveProofPaths() {
-  const proofDir = process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+  const proofDir = process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
   return {
     proofDir,
     reportJson: path.join(proofDir, 'autoresearch-report.json'),
@@ -38,7 +38,7 @@ async function run() {
       id: 'AUTORESEARCH-01',
       desc: 'experiment-tracker.js: createExperiment() returns valid experiment with id, status=pending',
       fn: () => {
-        process.env.RLHF_FEEDBACK_DIR = tmpDir;
+        process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
         delete require.cache[require.resolve('./experiment-tracker')];
         delete require.cache[require.resolve('./feedback-loop')];
         const m = require('./experiment-tracker');
@@ -63,7 +63,7 @@ async function run() {
       id: 'AUTORESEARCH-02',
       desc: 'experiment-tracker.js: recordResult() keeps improved experiments, discards regressions',
       fn: () => {
-        process.env.RLHF_FEEDBACK_DIR = tmpDir;
+        process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
         delete require.cache[require.resolve('./experiment-tracker')];
         delete require.cache[require.resolve('./feedback-loop')];
         const m = require('./experiment-tracker');
@@ -89,7 +89,7 @@ async function run() {
       id: 'AUTORESEARCH-03',
       desc: 'experiment-tracker.js: getProgress() returns valid progress with keepRate',
       fn: () => {
-        process.env.RLHF_FEEDBACK_DIR = tmpDir;
+        process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
         delete require.cache[require.resolve('./experiment-tracker')];
         delete require.cache[require.resolve('./feedback-loop')];
         const m = require('./experiment-tracker');
@@ -153,7 +153,7 @@ async function run() {
       id: 'AUTORESEARCH-06',
       desc: 'research-backed autoresearch ingests paper context, records citations, and preserves score execution flow',
       fn: async () => {
-        process.env.RLHF_FEEDBACK_DIR = tmpDir;
+        process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
         delete require.cache[require.resolve('./contextfs')];
         delete require.cache[require.resolve('./hf-papers')];
         delete require.cache[require.resolve('./autoresearch-runner')];
@@ -246,7 +246,7 @@ async function run() {
   try {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   } catch {}
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
 
   // Write proof artifacts
   fs.mkdirSync(proofDir, { recursive: true });

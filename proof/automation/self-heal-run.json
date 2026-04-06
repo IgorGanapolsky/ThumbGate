@@ -15,7 +15,7 @@
         "exitCode": 0,
         "durationMs": 207,
         "error": null,
-        "outputTail": "> rlhf-feedback-loop@0.6.10 feedback:rules\n> node .claude/scripts/feedback/capture-feedback.js --rules\n\nWrote prevention rules to /Users/ganapolsky_i/workspace/git/igor/_worktrees/rlhf-tech-debt/.claude/memory/feedback/prevention-rules.md",
+        "outputTail": "> thumbgate@0.6.10 feedback:rules\n> node .claude/scripts/feedback/capture-feedback.js --rules\n\nWrote prevention rules to /Users/ganapolsky_i/workspace/git/igor/_worktrees/rlhf-tech-debt/.claude/memory/feedback/prevention-rules.md",
         "changedFiles": []
       }
     ]
@@ -23,8 +23,8 @@
   "preExistingChanges": [
     ".claude/context-engine/knowledge-index.json",
     ".claude/context-engine/quality-log.json",
-    ".rlhf/feedback-log.jsonl",
-    ".rlhf/feedback-summary.json",
+    ".thumbgate/feedback-log.jsonl",
+    ".thumbgate/feedback-summary.json",
     "proof/attribution-report.json",
     "proof/attribution-report.md",
     "proof/automation/report.json",

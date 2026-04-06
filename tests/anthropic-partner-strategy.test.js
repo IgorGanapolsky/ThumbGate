@@ -29,6 +29,6 @@ test('X launch thread aligns the public story with workflow hardening instead of
   assert.match(thread, /Workflow Hardening Sprint/i);
   assert.match(thread, /Not an "AI employee\."/i);
   assert.match(thread, /Code modernization partners/i);
-  assert.match(thread, /rlhf-feedback-loop-production\.up\.railway\.app/);
+  assert.match(thread, /thumbgate-production\.up\.railway\.app/);
   assert.doesNotMatch(thread, /VERIFICATION_EVIDENCE\.md/);
 });

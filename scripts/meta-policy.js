@@ -7,7 +7,7 @@
  * recency-weighted confidence scores, detects trend direction, and writes
  * meta-policy-rules.json.
  *
- * Output file: {RLHF_FEEDBACK_DIR}/meta-policy-rules.json
+ * Output file: {THUMBGATE_FEEDBACK_DIR}/meta-policy-rules.json
  *
  * This is a different artifact from prevention-rules.md (simpler occurrence counts).
  * Meta-policy rules have confidence + trend + recency weighting.
@@ -30,12 +30,12 @@ const RECENT_MS = RECENT_DAYS * 24 * 3600 * 1000;
  * Extract meta-policy rules from memory-log.jsonl feedback trends.
  *
  * @param {object} opts
- * @param {string} [opts.feedbackDir] - Override feedback directory (default: RLHF_FEEDBACK_DIR or ~/.claude/memory/feedback)
+ * @param {string} [opts.feedbackDir] - Override feedback directory (default: THUMBGATE_FEEDBACK_DIR or ~/.claude/memory/feedback)
  * @returns {Array<{category: string, confidence: number, trend: string, occurrence_count: number, last_seen: string}>}
  */
 function extractMetaPolicyRules(opts = {}) {
   const feedbackDir = opts.feedbackDir
-    || process.env.RLHF_FEEDBACK_DIR
+    || process.env.THUMBGATE_FEEDBACK_DIR
     || path.join(os.homedir(), '.claude', 'memory', 'feedback');
 
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
@@ -161,7 +161,7 @@ function extractMetaPolicyRules(opts = {}) {
  */
 function run(opts = {}) {
   const feedbackDir = opts.feedbackDir
-    || process.env.RLHF_FEEDBACK_DIR
+    || process.env.THUMBGATE_FEEDBACK_DIR
     || path.join(os.homedir(), '.claude', 'memory', 'feedback');
 
   const rules = extractMetaPolicyRules({ ...opts, feedbackDir });

@@ -3,7 +3,7 @@ name: rlhf-feedback
 description: Dual-write feedback to Amp MCP memory AND mcp-memory-gateway for DPO export, analytics, and cross-platform portability
 ---
 
-# RLHF Feedback Skill (Dual-Write)
+# ThumbGate Feedback Skill (Dual-Write)
 
 This skill captures feedback in TWO places simultaneously:
 1. **Amp MCP memory** — for immediate in-session recall (native to Amp)

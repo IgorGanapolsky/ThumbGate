@@ -1,0 +1,18 @@
+{
+  "id": "1774901488513_feedback-positive-fb-1774901486865-io5usc",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774901486865_io5usc",
+  "content": "{\"id\":\"fb_1774901486865_io5usc\",\"signal\":\"positive\",\"context\":\"Job taskfn-test passed verification after 1 attempt(s)\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Verification loop accepted output\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"api\",\"verification-loop\"],\"skill\":\"async-job-runner\",\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-30T20:11:26.865Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "api",
+    "verification-loop"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-30T20:11:28.513Z",
+  "lastUsedAt": null
+}

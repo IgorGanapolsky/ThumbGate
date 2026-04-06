@@ -78,11 +78,11 @@
     },
     {
       "name": "search_rlhf",
-      "description": "Search raw RLHF state across feedback logs, ContextFS memory, and prevention rules.",
+      "description": "Search raw ThumbGate state across feedback logs, ContextFS memory, and prevention rules.",
       "parameters": {
         "type": "object",
         "properties": {
-          "q": { "type": "string", "description": "Search query for RLHF state." },
+          "q": { "type": "string", "description": "Search query for ThumbGate state." },
           "limit": { "type": "integer", "default": 10 },
           "source": { "type": "string", "enum": ["all", "feedback", "context", "rules"], "default": "all" },
           "signal": { "type": "string", "enum": ["up", "down", "positive", "negative"] }
@@ -168,7 +168,7 @@
     },
     {
       "name": "export_databricks_bundle",
-      "description": "Export RLHF logs and proof artifacts as a Databricks-ready bundle",
+      "description": "Export ThumbGate logs and proof artifacts as a Databricks-ready bundle",
       "parameters": {
         "type": "object",
         "properties": {

@@ -15,7 +15,7 @@ Root:
 - `contextfs/session/`
 
 By default this lives under `.claude/memory/feedback/contextfs`.
-Override with `RLHF_CONTEXTFS_DIR`.
+Override with `THUMBGATE_CONTEXTFS_DIR`.
 
 ## Components
 
@@ -26,9 +26,9 @@ Override with `RLHF_CONTEXTFS_DIR`.
 
 ## Semantic Cache Controls
 
-- `RLHF_SEMANTIC_CACHE_ENABLED` (default `true`)
-- `RLHF_SEMANTIC_CACHE_THRESHOLD` (default `0.7`)
-- `RLHF_SEMANTIC_CACHE_TTL_SECONDS` (default `86400`)
+- `THUMBGATE_SEMANTIC_CACHE_ENABLED` (default `true`)
+- `THUMBGATE_SEMANTIC_CACHE_THRESHOLD` (default `0.7`)
+- `THUMBGATE_SEMANTIC_CACHE_TTL_SECONDS` (default `86400`)
 
 `constructContextPack()` now returns cache metadata:
 

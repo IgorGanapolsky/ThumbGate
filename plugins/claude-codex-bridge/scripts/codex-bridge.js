@@ -17,7 +17,7 @@ function getRunsDir() {
 }
 
 function getCodexBin() {
-  return process.env.RLHF_CODEX_BIN || 'codex';
+  return process.env.THUMBGATE_CODEX_BIN || 'codex';
 }
 
 function ensureDir(dirPath) {

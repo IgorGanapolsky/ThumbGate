@@ -18,7 +18,7 @@ This is the metric that matters most. Stars, visits, and installs matter only if
 
 ### Tier 1: Open Source Core (Free)
 
-- Local RLHF feedback capture
+- Local ThumbGate feedback capture
 - Schema validation
 - Prevention rules
 - DPO export

@@ -50,8 +50,8 @@ function withEmptySettingsSandbox(fn) {
 // routeProfile
 // ---------------------------------------------------------------------------
 
-test('routeProfile returns explicit profile when RLHF_MCP_PROFILE is set', () => {
-  withEnv({ RLHF_MCP_PROFILE: 'locked', RLHF_SUBAGENT_PROFILE: undefined }, () => {
+test('routeProfile returns explicit profile when THUMBGATE_MCP_PROFILE is set', () => {
+  withEnv({ THUMBGATE_MCP_PROFILE: 'locked', THUMBGATE_SUBAGENT_PROFILE: undefined }, () => {
     const result = routeProfile({ toolName: 'recall' });
     assert.equal(result.profile, 'locked');
     assert.equal(result.wasAutoRouted, false);
@@ -60,7 +60,7 @@ test('routeProfile returns explicit profile when RLHF_MCP_PROFILE is set', () =>
 
 test('routeProfile auto-routes to readonly for review sessions', () => {
   withEmptySettingsSandbox(({ projectRoot, homeDir }) => {
-    withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: 'review', RLHF_SUBAGENT_PROFILE: undefined }, () => {
+    withEnv({ THUMBGATE_MCP_PROFILE: undefined, THUMBGATE_SESSION_TYPE: 'review', THUMBGATE_SUBAGENT_PROFILE: undefined }, () => {
       const result = routeProfile({ toolName: 'recall', settingsOptions: { projectRoot, homeDir } });
       assert.equal(result.profile, 'readonly');
       assert.equal(result.wasAutoRouted, true);
@@ -70,7 +70,7 @@ test('routeProfile auto-routes to readonly for review sessions', () => {
 
 test('routeProfile auto-routes to readonly for subagent review_workflow', () => {
   withEmptySettingsSandbox(({ projectRoot, homeDir }) => {
-    withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SUBAGENT_PROFILE: 'review_workflow', RLHF_SESSION_TYPE: undefined }, () => {
+    withEnv({ THUMBGATE_MCP_PROFILE: undefined, THUMBGATE_SUBAGENT_PROFILE: 'review_workflow', THUMBGATE_SESSION_TYPE: undefined }, () => {
       const result = routeProfile({ settingsOptions: { projectRoot, homeDir } });
       assert.equal(result.profile, 'readonly');
       assert.equal(result.wasAutoRouted, true);
@@ -80,7 +80,7 @@ test('routeProfile auto-routes to readonly for subagent review_workflow', () => 
 
 test('routeProfile defaults to essential for least privilege', () => {
   withEmptySettingsSandbox(({ projectRoot, homeDir }) => {
-    withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined, CI: undefined, GITHUB_EVENT_NAME: undefined }, () => {
+    withEnv({ THUMBGATE_MCP_PROFILE: undefined, THUMBGATE_SESSION_TYPE: undefined, THUMBGATE_SUBAGENT_PROFILE: undefined, CI: undefined, GITHUB_EVENT_NAME: undefined }, () => {
       const result = routeProfile({ settingsOptions: { projectRoot, homeDir } });
       assert.equal(result.profile, 'essential');
       assert.equal(result.wasAutoRouted, true);
@@ -89,7 +89,7 @@ test('routeProfile defaults to essential for least privilege', () => {
 });
 
 test('routeProfile selects most restrictive profile for a known tool', () => {
-  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined, CI: undefined, GITHUB_EVENT_NAME: undefined }, () => {
+  withEnv({ THUMBGATE_MCP_PROFILE: undefined, THUMBGATE_SESSION_TYPE: undefined, THUMBGATE_SUBAGENT_PROFILE: undefined, CI: undefined, GITHUB_EVENT_NAME: undefined }, () => {
     // 'diagnose_failure' is in locked (4 tools), readonly (14), default (31)
     // Most restrictive = locked
     const result = routeProfile({ toolName: 'diagnose_failure' });
@@ -100,7 +100,7 @@ test('routeProfile selects most restrictive profile for a known tool', () => {
 
 test('routeProfile routes to readonly when no write intent', () => {
   withEmptySettingsSandbox(({ projectRoot, homeDir }) => {
-    withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined }, () => {
+    withEnv({ THUMBGATE_MCP_PROFILE: undefined, THUMBGATE_SESSION_TYPE: undefined, THUMBGATE_SUBAGENT_PROFILE: undefined }, () => {
       const result = routeProfile({ hasWriteIntent: false, settingsOptions: { projectRoot, homeDir } });
       assert.equal(result.profile, 'readonly');
       assert.ok(result.wasAutoRouted);
@@ -116,7 +116,7 @@ test('routeProfile uses settings hierarchy for default profile fallback', () => 
     JSON.stringify({ mcp: { defaultProfile: 'dispatch' } }, null, 2),
   );
 
-  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined, CI: undefined, GITHUB_EVENT_NAME: undefined }, () => {
+  withEnv({ THUMBGATE_MCP_PROFILE: undefined, THUMBGATE_SESSION_TYPE: undefined, THUMBGATE_SUBAGENT_PROFILE: undefined, CI: undefined, GITHUB_EVENT_NAME: undefined }, () => {
     const result = routeProfile({ settingsOptions: { projectRoot, homeDir: projectRoot } });
     assert.equal(result.profile, 'dispatch');
     assert.equal(result.settingsOrigin.scope, 'managed');
@@ -133,7 +133,7 @@ test('routeProfile uses settings hierarchy for readonly profile fallback', () =>
     JSON.stringify({ mcp: { readonlySessionProfile: 'locked' } }, null, 2),
   );
 
-  withEnv({ RLHF_MCP_PROFILE: undefined, RLHF_SESSION_TYPE: 'review', RLHF_SUBAGENT_PROFILE: undefined }, () => {
+  withEnv({ THUMBGATE_MCP_PROFILE: undefined, THUMBGATE_SESSION_TYPE: 'review', THUMBGATE_SUBAGENT_PROFILE: undefined }, () => {
     const result = routeProfile({ settingsOptions: { projectRoot, homeDir: projectRoot } });
     assert.equal(result.profile, 'locked');
     assert.equal(result.settingsOrigin.scope, 'managed');
@@ -226,7 +226,7 @@ test('routeInference keeps sensitive long-context workloads local even if curren
     contextTokens: 220000,
     tags: ['xmemory'],
     env: {
-      RLHF_PROVIDER_MODE: 'managed',
+      THUMBGATE_PROVIDER_MODE: 'managed',
     },
   });
 
@@ -243,10 +243,10 @@ test('routeInference surfaces IndexCache-ready sparse local backend recommendati
     contextTokens: 180000,
     tags: ['retrieval-heavy'],
     env: {
-      RLHF_PROVIDER_MODE: 'local',
-      RLHF_LOCAL_MODEL_FAMILY: 'glm-4.5',
-      RLHF_LOCAL_MODEL_SERVER: 'vllm',
-      RLHF_INDEXCACHE_ENABLED: 'true',
+      THUMBGATE_PROVIDER_MODE: 'local',
+      THUMBGATE_LOCAL_MODEL_FAMILY: 'glm-4.5',
+      THUMBGATE_LOCAL_MODEL_SERVER: 'vllm',
+      THUMBGATE_INDEXCACHE_ENABLED: 'true',
     },
   });
 
@@ -260,13 +260,13 @@ test('routeInference surfaces IndexCache-ready sparse local backend recommendati
 // ---------------------------------------------------------------------------
 
 test('isReadOnlySession detects CI PR context', () => {
-  withEnv({ CI: 'true', GITHUB_EVENT_NAME: 'pull_request', RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined }, () => {
+  withEnv({ CI: 'true', GITHUB_EVENT_NAME: 'pull_request', THUMBGATE_SESSION_TYPE: undefined, THUMBGATE_SUBAGENT_PROFILE: undefined }, () => {
     assert.equal(isReadOnlySession(), true);
   });
 });
 
 test('isReadOnlySession returns false by default', () => {
-  withEnv({ CI: undefined, GITHUB_EVENT_NAME: undefined, RLHF_SESSION_TYPE: undefined, RLHF_SUBAGENT_PROFILE: undefined }, () => {
+  withEnv({ CI: undefined, GITHUB_EVENT_NAME: undefined, THUMBGATE_SESSION_TYPE: undefined, THUMBGATE_SUBAGENT_PROFILE: undefined }, () => {
     assert.equal(isReadOnlySession(), false);
   });
 });

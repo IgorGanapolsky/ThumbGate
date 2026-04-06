@@ -24,7 +24,7 @@ test('Claude Codex bridge plugin ships a repo-local Claude Code plugin surface',
 
   assert.equal(plugin.name, 'codex-bridge');
   assert.equal(plugin.version, packageVersion);
-  assert.equal(plugin.homepage, 'https://rlhf-feedback-loop-production.up.railway.app');
+  assert.equal(plugin.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(plugin.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.deepEqual(mcpConfig.mcpServers.rlhf.args, ['-y', `mcp-memory-gateway@${packageVersion}`, 'serve']);
   assert.match(readme, /Codex review/i);

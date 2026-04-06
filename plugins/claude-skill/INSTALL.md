@@ -1,4 +1,4 @@
-# Claude Code: RLHF Feedback Skill Install
+# Claude Code: ThumbGate Feedback Skill Install
 
 Install the skill in under 60 seconds. No manual file editing required.
 
@@ -33,7 +33,7 @@ After copying, restart Claude Code and run:
 Then test it:
 
 ```bash
-node .rlhf/capture-feedback.js --feedback=up --context="skill install verified" --tags="install"
+node .thumbgate/capture-feedback.js --feedback=up --context="skill install verified" --tags="install"
 ```
 
 ## What You Get
@@ -46,7 +46,7 @@ node .rlhf/capture-feedback.js --feedback=up --context="skill install verified" 
 
 - Claude Code (any version)
 - Node.js 18+ in PATH
-- `.rlhf/` directory (created by `npx mcp-memory-gateway init`)
+- `.thumbgate/` directory (created by `npx mcp-memory-gateway init`)
 
 ## Uninstall
 

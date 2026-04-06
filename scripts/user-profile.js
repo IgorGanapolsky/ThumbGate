@@ -9,8 +9,8 @@ const CHAR_LIMIT = 2200;
 const PROFILE_FILENAME = 'USER_PROFILE.md';
 
 function getProfilePath() {
-  if (process.env.RLHF_FEEDBACK_DIR) {
-    return path.join(process.env.RLHF_FEEDBACK_DIR, PROFILE_FILENAME);
+  if (process.env.THUMBGATE_FEEDBACK_DIR) {
+    return path.join(process.env.THUMBGATE_FEEDBACK_DIR, PROFILE_FILENAME);
   }
   const localRlhf = path.join(process.cwd(), '.rlhf');
   if (fs.existsSync(localRlhf)) {

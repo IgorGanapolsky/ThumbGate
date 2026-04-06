@@ -6,9 +6,9 @@ const fs = require('node:fs');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-api-test-'));
 const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-api-proof-'));
-process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
-process.env.RLHF_PROOF_DIR = tmpProofDir;
-process.env.RLHF_API_KEY = 'test-api-key';
+process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
+process.env.THUMBGATE_API_KEY = 'test-api-key';
 process.env._TEST_API_KEYS_PATH = path.join(tmpFeedbackDir, 'api-keys.json');
 process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpFeedbackDir, 'funnel-events.jsonl');
 process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpFeedbackDir, 'revenue-events.jsonl');
@@ -17,13 +17,13 @@ process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = path.join(tmpFeedbackDir, 'loca
 // Force local mode for billing tests by clearing Stripe keys
 process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';
-process.env.RLHF_PUBLIC_APP_ORIGIN = 'https://app.example.com';
-process.env.RLHF_BILLING_API_BASE_URL = 'https://billing.example.com';
-process.env.RLHF_GA_MEASUREMENT_ID = 'G-TEST1234';
-process.env.RLHF_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
-process.env.RLHF_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
+process.env.THUMBGATE_PUBLIC_APP_ORIGIN = 'https://app.example.com';
+process.env.THUMBGATE_BILLING_API_BASE_URL = 'https://billing.example.com';
+process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
+process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
+process.env.THUMBGATE_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
 fs.writeFileSync(
-  process.env.RLHF_BUILD_METADATA_PATH,
+  process.env.THUMBGATE_BUILD_METADATA_PATH,
   JSON.stringify({ buildSha: 'test-build-sha', generatedAt: '2026-03-20T00:00:00.000Z' }, null, 2)
 );
 
@@ -70,9 +70,9 @@ test.before(async () => {
 
 test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
-  delete process.env.RLHF_PUBLIC_APP_ORIGIN;
-  delete process.env.RLHF_BILLING_API_BASE_URL;
-  delete process.env.RLHF_BUILD_METADATA_PATH;
+  delete process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
+  delete process.env.THUMBGATE_BILLING_API_BASE_URL;
+  delete process.env.THUMBGATE_BUILD_METADATA_PATH;
   try {
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
     fs.rmSync(tmpProofDir, { recursive: true, force: true });
@@ -242,9 +242,9 @@ test('root seeds journey cookies, injects server telemetry IDs, and records land
   const setCookies = typeof res.headers.getSetCookie === 'function'
     ? res.headers.getSetCookie()
     : [];
-  const visitorId = extractCookieValue(setCookies, 'rlhf_visitor_id');
-  const sessionId = extractCookieValue(setCookies, 'rlhf_session_id');
-  const acquisitionId = extractCookieValue(setCookies, 'rlhf_acquisition_id');
+  const visitorId = extractCookieValue(setCookies, 'thumbgate_visitor_id');
+  const sessionId = extractCookieValue(setCookies, 'thumbgate_session_id');
+  const acquisitionId = extractCookieValue(setCookies, 'thumbgate_acquisition_id');
   assert.match(String(visitorId), /^visitor_/);
   assert.match(String(sessionId), /^session_/);
   assert.match(String(acquisitionId), /^acq_/);
@@ -269,9 +269,9 @@ test('root seeds journey cookies, injects server telemetry IDs, and records land
 
 test('root reuses journey cookies and records SEO landing telemetry from search referrers', async () => {
   const cookieHeader = [
-    'rlhf_visitor_id=visitor_seeded',
-    'rlhf_session_id=session_seeded',
-    'rlhf_acquisition_id=acq_seeded',
+    'thumbgate_visitor_id=visitor_seeded',
+    'thumbgate_session_id=session_seeded',
+    'thumbgate_acquisition_id=acq_seeded',
   ].join('; ');
   const res = await fetch(apiUrl('/'), {
     headers: {
@@ -310,9 +310,9 @@ test('root reuses journey cookies and records SEO landing telemetry from search 
 
 test('SEO comparison pages serve HTML, reuse journey cookies, and record page-specific search telemetry', async () => {
   const cookieHeader = [
-    'rlhf_visitor_id=visitor_compare',
-    'rlhf_session_id=session_compare',
-    'rlhf_acquisition_id=acq_compare',
+    'thumbgate_visitor_id=visitor_compare',
+    'thumbgate_session_id=session_compare',
+    'thumbgate_acquisition_id=acq_compare',
   ].join('; ');
   const res = await fetch(apiUrl('/compare/speclock'), {
     headers: {
@@ -476,8 +476,8 @@ test('success page serves hosted onboarding shell and records first-party teleme
 });
 
 test('dashboard auto-bootstraps local Pro auth only for localhost requests', async () => {
-  const previousProMode = process.env.RLHF_PRO_MODE;
-  process.env.RLHF_PRO_MODE = '1';
+  const previousProMode = process.env.THUMBGATE_PRO_MODE;
+  process.env.THUMBGATE_PRO_MODE = '1';
 
   try {
     const localRes = await fetch(apiUrl('/dashboard'));
@@ -500,9 +500,9 @@ test('dashboard auto-bootstraps local Pro auth only for localhost requests', asy
     assert.doesNotMatch(forwardedBody, /const BOOTSTRAP_API_KEY = "test-api-key";/);
   } finally {
     if (previousProMode === undefined) {
-      delete process.env.RLHF_PRO_MODE;
+      delete process.env.THUMBGATE_PRO_MODE;
     } else {
-      process.env.RLHF_PRO_MODE = previousProMode;
+      process.env.THUMBGATE_PRO_MODE = previousProMode;
     }
   }
 });
@@ -616,9 +616,9 @@ test('checkout bootstrap route preserves attribution and records first-party tel
 
 test('checkout bootstrap falls back to seeded journey cookies when query IDs are absent', async () => {
   const cookieHeader = [
-    'rlhf_visitor_id=visitor_cookie_checkout',
-    'rlhf_session_id=session_cookie_checkout',
-    'rlhf_acquisition_id=acq_cookie_checkout',
+    'thumbgate_visitor_id=visitor_cookie_checkout',
+    'thumbgate_session_id=session_cookie_checkout',
+    'thumbgate_acquisition_id=acq_cookie_checkout',
   ].join('; ');
   const res = await fetch(
     apiUrl('/checkout/pro?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro'),
@@ -931,8 +931,8 @@ test('handoff endpoints expose sequential delegation over HTTP', async () => {
 });
 
 test('intent plan returns codegraph impact for coding workflows', async () => {
-  const previous = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-  process.env.RLHF_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
+  const previous = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+  process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
     source: 'stub',
     symbols: ['planIntent'],
     callers: ['src/api/server.js -> planIntent'],
@@ -957,8 +957,8 @@ test('intent plan returns codegraph impact for coding workflows', async () => {
     assert.equal(body.codegraphImpact.evidence.deadCodeCount, 1);
     assert.ok(body.partnerStrategy.recommendedChecks.some((check) => /dead code/i.test(check)));
   } finally {
-    if (previous === undefined) delete process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-    else process.env.RLHF_CODEGRAPH_STUB_RESPONSE = previous;
+    if (previous === undefined) delete process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+    else process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = previous;
   }
 });
 
@@ -1164,7 +1164,7 @@ test('billing checkout endpoint is public', async () => {
   assert.equal(body.billingCycle, 'monthly');
   assert.equal(body.price, 19);
   assert.equal(body.type, 'subscription');
-  assert.equal(res.headers.get('x-rlhf-trace-id'), body.traceId);
+  assert.equal(res.headers.get('x-thumbgate-trace-id'), body.traceId);
 });
 
 test('product feedback endpoint logs local issue reports without auth', async () => {
@@ -1245,9 +1245,9 @@ test('workflow sprint intake endpoint captures a contactable lead', async () => 
 
 test('workflow sprint intake falls back to journey cookies when IDs are omitted from the payload', async () => {
   const cookieHeader = [
-    'rlhf_visitor_id=visitor_cookie_lead',
-    'rlhf_session_id=session_cookie_lead',
-    'rlhf_acquisition_id=acq_cookie_lead',
+    'thumbgate_visitor_id=visitor_cookie_lead',
+    'thumbgate_session_id=session_cookie_lead',
+    'thumbgate_acquisition_id=acq_cookie_lead',
   ].join('; ');
 
   const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
@@ -1309,9 +1309,9 @@ test('workflow sprint intake accepts form posts, seeds journey cookies, and retu
   const setCookies = typeof res.headers.getSetCookie === 'function'
     ? res.headers.getSetCookie()
     : [];
-  const visitorId = extractCookieValue(setCookies, 'rlhf_visitor_id');
-  const sessionId = extractCookieValue(setCookies, 'rlhf_session_id');
-  const acquisitionId = extractCookieValue(setCookies, 'rlhf_acquisition_id');
+  const visitorId = extractCookieValue(setCookies, 'thumbgate_visitor_id');
+  const sessionId = extractCookieValue(setCookies, 'thumbgate_session_id');
+  const acquisitionId = extractCookieValue(setCookies, 'thumbgate_acquisition_id');
   assert.match(String(visitorId), /^visitor_/);
   assert.match(String(sessionId), /^session_/);
   assert.match(String(acquisitionId), /^acq_/);
@@ -1529,8 +1529,8 @@ test('billing session endpoint returns provisioned local checkout details', asyn
   assert.equal(sessionBody.appOrigin, 'https://app.example.com');
   assert.equal(sessionBody.apiBaseUrl, 'https://billing.example.com');
   assert.match(sessionBody.traceId, /^checkout_/);
-  assert.match(sessionBody.nextSteps.env, /RLHF_API_KEY=/);
-  assert.match(sessionBody.nextSteps.env, /RLHF_API_BASE_URL=https:\/\/billing\.example\.com/);
+  assert.match(sessionBody.nextSteps.env, /THUMBGATE_API_KEY=/);
+  assert.match(sessionBody.nextSteps.env, /THUMBGATE_API_BASE_URL=https:\/\/billing\.example\.com/);
   assert.match(sessionBody.nextSteps.curl, /https:\/\/billing\.example\.com\/v1\/feedback\/capture/);
 });
 
@@ -1683,14 +1683,14 @@ test('billing summary returns admin-only operational proxy', async () => {
 test('billing summary applies today window query params for admin users', async () => {
   const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-api-window-'));
   const savedEnv = {
-    feedbackDir: process.env.RLHF_FEEDBACK_DIR,
+    feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
     apiKeysPath: process.env._TEST_API_KEYS_PATH,
     funnelPath: process.env._TEST_FUNNEL_LEDGER_PATH,
     revenuePath: process.env._TEST_REVENUE_LEDGER_PATH,
     checkoutSessionsPath: process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH,
   };
 
-  process.env.RLHF_FEEDBACK_DIR = isolatedFeedbackDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = isolatedFeedbackDir;
   process.env._TEST_API_KEYS_PATH = path.join(isolatedFeedbackDir, 'api-keys.json');
   process.env._TEST_FUNNEL_LEDGER_PATH = path.join(isolatedFeedbackDir, 'funnel-events.jsonl');
   process.env._TEST_REVENUE_LEDGER_PATH = path.join(isolatedFeedbackDir, 'revenue-events.jsonl');
@@ -1846,7 +1846,7 @@ test('billing summary applies today window query params for admin users', async 
     assert.equal(body.pipeline.workflowSprintLeads.total, 1);
     assert.equal(body.trafficMetrics.pageViews, 1);
   } finally {
-    process.env.RLHF_FEEDBACK_DIR = savedEnv.feedbackDir;
+    process.env.THUMBGATE_FEEDBACK_DIR = savedEnv.feedbackDir;
     process.env._TEST_API_KEYS_PATH = savedEnv.apiKeysPath;
     process.env._TEST_FUNNEL_LEDGER_PATH = savedEnv.funnelPath;
     process.env._TEST_REVENUE_LEDGER_PATH = savedEnv.revenuePath;
@@ -1858,14 +1858,14 @@ test('billing summary applies today window query params for admin users', async 
 test('dashboard applies analytics window query params with live billing truth', async () => {
   const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-dashboard-window-'));
   const savedEnv = {
-    feedbackDir: process.env.RLHF_FEEDBACK_DIR,
+    feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
     apiKeysPath: process.env._TEST_API_KEYS_PATH,
     funnelPath: process.env._TEST_FUNNEL_LEDGER_PATH,
     revenuePath: process.env._TEST_REVENUE_LEDGER_PATH,
     checkoutSessionsPath: process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH,
   };
 
-  process.env.RLHF_FEEDBACK_DIR = isolatedFeedbackDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = isolatedFeedbackDir;
   process.env._TEST_API_KEYS_PATH = path.join(isolatedFeedbackDir, 'api-keys.json');
   process.env._TEST_FUNNEL_LEDGER_PATH = path.join(isolatedFeedbackDir, 'funnel-events.jsonl');
   process.env._TEST_REVENUE_LEDGER_PATH = path.join(isolatedFeedbackDir, 'revenue-events.jsonl');
@@ -2035,7 +2035,7 @@ test('dashboard applies analytics window query params with live billing truth', 
     assert.equal(body.predictive.revenueForecast.predictedBookedRevenueCents, 4900);
     assert.equal(body.predictive.anomalySummary.count, 0);
   } finally {
-    process.env.RLHF_FEEDBACK_DIR = savedEnv.feedbackDir;
+    process.env.THUMBGATE_FEEDBACK_DIR = savedEnv.feedbackDir;
     process.env._TEST_API_KEYS_PATH = savedEnv.apiKeysPath;
     process.env._TEST_FUNNEL_LEDGER_PATH = savedEnv.funnelPath;
     process.env._TEST_REVENUE_LEDGER_PATH = savedEnv.revenuePath;
@@ -2059,14 +2059,14 @@ test('settings status endpoint returns resolved settings and origin metadata', a
 test('dashboard render-spec endpoint returns constrained hosted views', async () => {
   const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-dashboard-render-spec-'));
   const savedEnv = {
-    feedbackDir: process.env.RLHF_FEEDBACK_DIR,
+    feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
     apiKeysPath: process.env._TEST_API_KEYS_PATH,
     funnelPath: process.env._TEST_FUNNEL_LEDGER_PATH,
     revenuePath: process.env._TEST_REVENUE_LEDGER_PATH,
     checkoutSessionsPath: process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH,
   };
 
-  process.env.RLHF_FEEDBACK_DIR = isolatedFeedbackDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = isolatedFeedbackDir;
   process.env._TEST_API_KEYS_PATH = path.join(isolatedFeedbackDir, 'api-keys.json');
   process.env._TEST_FUNNEL_LEDGER_PATH = path.join(isolatedFeedbackDir, 'funnel-events.jsonl');
   process.env._TEST_REVENUE_LEDGER_PATH = path.join(isolatedFeedbackDir, 'revenue-events.jsonl');
@@ -2118,7 +2118,7 @@ test('dashboard render-spec endpoint returns constrained hosted views', async ()
     assert.ok(body.components.some((component) => component.type === 'stat_grid'));
     assert.ok(body.components.some((component) => component.title === 'Top acquisition sources'));
   } finally {
-    process.env.RLHF_FEEDBACK_DIR = savedEnv.feedbackDir;
+    process.env.THUMBGATE_FEEDBACK_DIR = savedEnv.feedbackDir;
     process.env._TEST_API_KEYS_PATH = savedEnv.apiKeysPath;
     process.env._TEST_FUNNEL_LEDGER_PATH = savedEnv.funnelPath;
     process.env._TEST_REVENUE_LEDGER_PATH = savedEnv.revenuePath;

@@ -1,0 +1,22 @@
+{
+  "id": "1773958924728_success-used-exact-sha-checks-live-railway-head-probes-and-local-r",
+  "namespace": "memory/learning",
+  "title": "SUCCESS: Used exact SHA checks, live Railway HEAD probes, and local r",
+  "content": "What worked: Used exact SHA checks, live Railway HEAD probes, and local repo sync to separate fast-moving branch noise from actual CI health.",
+  "tags": [
+    "feedback",
+    "positive",
+    "verification",
+    "testing",
+    "implementation",
+    "entity:Customer"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "learning",
+    "sourceFeedbackId": "fb_1773958924718_j7z7j8"
+  },
+  "createdAt": "2026-03-19T22:22:04.729Z",
+  "lastUsedAt": null
+}

@@ -11,14 +11,14 @@ const VALID_MODES = new Set(['strict', 'balanced', 'permissive']);
 
 function resolveMemoryFirewallProvider(provider) {
   const configured = String(
-    provider || process.env.RLHF_MEMORY_FIREWALL_PROVIDER || 'auto'
+    provider || process.env.THUMBGATE_MEMORY_FIREWALL_PROVIDER || 'auto'
   ).trim().toLowerCase();
   return VALID_PROVIDERS.has(configured) ? configured : 'auto';
 }
 
 function resolveMemoryFirewallMode(mode) {
   const configured = String(
-    mode || process.env.RLHF_MEMORY_FIREWALL_MODE || 'strict'
+    mode || process.env.THUMBGATE_MEMORY_FIREWALL_MODE || 'strict'
   ).trim().toLowerCase();
   return VALID_MODES.has(configured) ? configured : 'strict';
 }

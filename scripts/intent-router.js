@@ -19,12 +19,12 @@ const DEFAULT_BUNDLE_DIR = path.join(PROJECT_ROOT, 'config', 'policy-bundles');
 const RISK_LEVELS = ['low', 'medium', 'high', 'critical'];
 
 function getDefaultBundleId() {
-  return process.env.RLHF_POLICY_BUNDLE || 'default-v1';
+  return process.env.THUMBGATE_POLICY_BUNDLE || 'default-v1';
 }
 
 function getBundlePath(bundleId = getDefaultBundleId()) {
-  if (process.env.RLHF_POLICY_BUNDLE_PATH) {
-    return process.env.RLHF_POLICY_BUNDLE_PATH;
+  if (process.env.THUMBGATE_POLICY_BUNDLE_PATH) {
+    return process.env.THUMBGATE_POLICY_BUNDLE_PATH;
   }
   // Prevent path traversal: resolve and verify result stays within bundle dir (CodeQL S2083)
   const candidate = path.resolve(DEFAULT_BUNDLE_DIR, `${bundleId}.json`);
@@ -274,7 +274,7 @@ const ACTION_CATEGORY_MAP = {
 };
 
 function getDefaultModelPath() {
-  const feedbackDir = process.env.RLHF_FEEDBACK_DIR
+  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR
     || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
   return path.join(feedbackDir, 'feedback_model.json');
 }
