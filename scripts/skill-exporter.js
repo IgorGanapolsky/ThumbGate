@@ -154,7 +154,7 @@ function compileToCodexPlugin(spec) {
 
   const mcpJson = {
     mcpServers: {
-      rlhf: {
+      thumbgate: {
         command: 'npx',
         args: ['-y', `mcp-memory-gateway@${PKG.version}`, 'serve'],
         tools: spec.tools || []

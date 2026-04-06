@@ -16,11 +16,17 @@ eval "$(cat | jq -r '
 CTX_PCT="${CTX_PCT:-0}"
 
 # ── ThumbGate stats from cache ────────────────────────────────────────
-THUMBGATE_CACHE="${THUMBGATE_FEEDBACK_DIR:-.}/.thumbgate/statusline_cache.json"
-if [ ! -f "$THUMBGATE_CACHE" ]; then
-  for dir in "." "${HOME}"; do
-    [ -f "${dir}/.thumbgate/statusline_cache.json" ] && THUMBGATE_CACHE="${dir}/.thumbgate/statusline_cache.json" && break
+THUMBGATE_CACHE=""
+for base in "${THUMBGATE_FEEDBACK_DIR:-.}" "." "${HOME}"; do
+  for rel in ".thumbgate/statusline_cache.json" ".rlhf/statusline_cache.json"; do
+    if [ -f "${base}/${rel}" ]; then
+      THUMBGATE_CACHE="${base}/${rel}"
+      break 2
+    fi
   done
+done
+if [ -z "$THUMBGATE_CACHE" ]; then
+  THUMBGATE_CACHE="${THUMBGATE_FEEDBACK_DIR:-.}/.thumbgate/statusline_cache.json"
 fi
 
 UP="0"; DOWN="0"; LESSONS="0"; TREND="?"; CACHE_TS="0"
