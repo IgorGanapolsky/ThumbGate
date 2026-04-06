@@ -73,6 +73,17 @@ function getLessonDB() {
     _lessonDBPath = desiredPath;
     return _lessonDB;
   } catch (_err) {
+    // Keep the DB path scoped to the active feedback root even when SQLite
+    // cannot open (for example, native module ABI drift in local dev).
+    if (desiredPath) {
+      try {
+        fs.mkdirSync(path.dirname(desiredPath), { recursive: true });
+        fs.closeSync(fs.openSync(desiredPath, 'a'));
+        _lessonDBPath = desiredPath;
+      } catch {
+        // Ignore file materialization failures and degrade gracefully below.
+      }
+    }
     return null; // SQLite unavailable — degrade gracefully
   }
 }
