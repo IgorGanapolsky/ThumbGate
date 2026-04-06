@@ -16,6 +16,9 @@ This document is the source of truth for product, pricing, traction, and proof c
 - The active local commercial snapshot on April 6, 2026 shows **0 paid customers**, **0 paid orders**, **0 booked revenue**, and **0 checkout starts** in the current `.thumbgate` path.
 - Historical revenue is not current traction. Do not present the March 19, 2026 charges as proof of current demand.
 - Verified cumulative booked revenue through March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product; there is no evidence of any additional same-day booked charge beyond that cumulative total.
+- Historical booked revenue evidence tied to the current product exists: **$20.00** from `2` reconciled Stripe charges on March 19, 2026.
+- The active local commercial snapshot on April 6, 2026 shows **0 paid customers**, **0 paid orders**, **0 booked revenue**, and **0 checkout starts** in the current `.thumbgate` path.
+- Historical revenue is not current traction. Do not present the March 19, 2026 charges as proof of current demand.
 - Engineering verification is strong and should be cited through `docs/VERIFICATION_EVIDENCE.md` and machine-readable proof reports.
 
 ## Product Tiers
