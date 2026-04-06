@@ -333,6 +333,10 @@ async function publishToReddit({ subreddit, title, text, url, token, followUpCom
     if (!commentText) {
       return postData;
     }
+  if (followUpComment && postData.name) {
+    const commentText = typeof followUpComment === 'string'
+      ? followUpComment
+      : buildFollowUpComment(subreddit, utmContent);
 
     const commentGate = qualityGate.gatePost(commentText);
     if (!commentGate.allowed) {

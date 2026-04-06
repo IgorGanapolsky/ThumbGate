@@ -256,10 +256,6 @@ __GA_BOOTSTRAP__
   .hero-install .cmd { color: var(--cyan); }
   .hero-install .copy-hint { font-size: 11px; color: var(--text-muted); font-family: var(--font); margin-left: 8px; }
   .hero-install .copied { color: var(--green); }
-  .hero-cta-group { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 0 auto 12px; }
-  .hero-cta-note { font-size: 13px; color: var(--text-dim); max-width: 720px; margin: 0 auto 28px; line-height: 1.6; }
-  .hero-cta-note a { color: var(--green); text-decoration: none; font-weight: 600; }
-  .hero-cta-note a:hover { text-decoration: underline; }
 
   /* SOCIAL PROOF BAR */
   .proof-bar { display: flex; justify-content: center; flex-wrap: wrap; gap: 24px; font-size: 13px; color: var(--text-muted); padding: 0 0 8px; }
@@ -349,10 +345,6 @@ __GA_BOOTSTRAP__
   .price-card.pro li::before { color: var(--cyan); }
   .btn-free { display: block; text-align: center; padding: 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; transition: border-color 0.15s; }
   .btn-free:hover { border-color: var(--text-muted); }
-  .btn-demo { display: block; text-align: center; padding: 10px; border: 1px solid rgba(34,211,238,0.35); border-radius: 8px; color: var(--cyan); background: rgba(34,211,238,0.08); text-decoration: none; font-size: 14px; font-weight: 600; transition: border-color 0.15s, opacity 0.15s; }
-  .btn-demo:hover { border-color: var(--cyan); opacity: 0.9; }
-  .btn-proof { display: block; text-align: center; padding: 10px; border: 1px solid rgba(74,222,128,0.35); border-radius: 8px; color: var(--green); background: rgba(74,222,128,0.08); text-decoration: none; font-size: 14px; font-weight: 600; transition: border-color 0.15s, opacity 0.15s; }
-  .btn-proof:hover { border-color: var(--green); opacity: 0.9; }
   .btn-pro { display: block; text-align: center; padding: 10px; background: var(--cyan); color: var(--bg); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: opacity 0.15s; }
   .btn-pro:hover { opacity: 0.85; }
   .btn-team { display: block; text-align: center; padding: 10px; background: rgba(74,222,128,0.14); color: var(--green); border: 1px solid rgba(74,222,128,0.4); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: border-color 0.15s, transform 0.15s; }
@@ -378,21 +370,6 @@ __GA_BOOTSTRAP__
   .final-cta h2 { font-size: clamp(24px, 3vw, 32px); font-weight: 700; letter-spacing: -0.025em; margin-bottom: 12px; }
   .final-cta p { font-size: 15px; color: var(--text-muted); margin-bottom: 28px; }
   .final-cta .btn-pro, .final-cta .btn-team { display: inline-block; padding: 12px 32px; font-size: 15px; border-radius: 8px; margin: 0 6px; }
-  .buyer-loss-card { max-width: 760px; margin: 40px auto 0; padding: 24px; border: 1px solid var(--border); border-radius: 16px; background: linear-gradient(180deg, rgba(17,17,19,0.98) 0%, rgba(22,22,24,0.96) 100%); text-align: left; }
-  .buyer-loss-card h3 { font-size: 20px; margin-bottom: 10px; letter-spacing: -0.02em; }
-  .buyer-loss-card p { margin-bottom: 16px; }
-  .buyer-loss-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-  .buyer-loss-grid button,
-  .interest-grid button { background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 999px; padding: 10px 14px; font: inherit; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
-  .buyer-loss-grid button:hover,
-  .interest-grid button:hover { border-color: var(--cyan); color: var(--cyan); }
-  .buyer-loss-grid button.selected,
-  .interest-grid button.selected { border-color: var(--cyan); color: var(--cyan); background: rgba(34,211,238,0.08); }
-  .interest-label { font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
-  .interest-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-  .buyer-loss-card textarea { width: 100%; min-height: 96px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); padding: 12px 14px; font: inherit; resize: vertical; margin-bottom: 14px; }
-  .buyer-loss-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-  .buyer-loss-status { font-size: 13px; color: var(--text-dim); margin: 0; }
 
   /* FOOTER */
   footer { border-top: 1px solid var(--border); padding: 32px 0; }
@@ -432,7 +409,7 @@ __GA_BOOTSTRAP__
       <a href="/guide">Setup Guide</a>
       <a href="/learn">Learn</a>
       <a href="/dashboard">Dashboard Demo</a>
-      <a href="#pricing" class="nav-cta" data-cta-id="nav_view_pricing" data-cta-placement="nav">View Plans</a>
+      <a href="#pricing" class="nav-cta">View Plans</a>
     </div>
   </div>
 </nav>
@@ -456,13 +433,6 @@ __GA_BOOTSTRAP__
     </div>
     <p class="hero-persona">For engineering teams using Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode who are tired of review churn, repeated agent mistakes, and risky deploys.</p>
     <p><strong>ThumbGate proves value on the next change.</strong> It catches the repeat failures that waste engineering time: skipped tests, destructive SQL, force-pushes, broken deploy steps, and other agent mistakes you already corrected once. Install locally in minutes, let the next AI-generated change hit the gates, and turn every correction into reusable enforcement.</p>
-    <p>Thumbs-down blocks the bad pattern. Thumbs-up reinforces the fix that worked. ThumbGate keeps both across future sessions so your agent stops repeating the same wrong move and starts repeating the right one. Like an immune system for your AI agent. Works with Claude Code, Cursor, Codex, Gemini, Amp, and any MCP agent.</p>
-    <p class="hero-cta-note">Start Free — local install, no cloud account needed. Running multiple agents? <a href="#workflow-sprint-intake">Start the Team rollout.</a></p>
-    <div class="hero-cta-group">
-      <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free" data-cta-id="hero_install_free" data-cta-placement="hero" data-plan-id="free">Install Free</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener" class="btn-proof" data-cta-id="hero_proof_pack" data-cta-placement="hero">See Proof Pack</a>
-      <a href="/checkout/pro?plan_id=pro&billing_cycle=monthly&utm_source=website&utm_medium=cta_button&utm_campaign=landing_page&utm_content=hero&cta_id=hero_pro_trial&cta_placement=hero&landing_path=/" class="btn-pro" data-cta-id="hero_pro_trial" data-cta-placement="hero" data-plan-id="pro">Start 7-Day Pro Trial</a>
-    </div>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx thumbgate init</span>
@@ -602,20 +572,20 @@ __GA_BOOTSTRAP__
 <!-- PROENTROPIC -->
 <section class="compatibility" id="proentropic">
   <div class="container">
-    <div class="section-label">Concrete Value</div>
-    <h2 class="section-title">The daily agent loops ThumbGate is built to stop</h2>
+    <div class="section-label">Proentropic Infrastructure</div>
+    <h2 class="section-title">Built to get stronger from chaos, not break from it</h2>
     <div class="agent-grid">
       <div class="agent-card">
-        <h3>The same fix every session</h3>
-        <p>You already corrected the import path, test command, or repo convention yesterday. ThumbGate makes that correction stick so the agent does not wander back into the same mistake tomorrow.</p>
+        <h3>Errors are fuel</h3>
+        <p>Every agent mistake becomes a prevention rule. Every thumbs-down becomes a gate. The more your agents fail, the more ThumbGate learns. Fragile systems break under chaos — ThumbGate feeds on it.</p>
       </div>
       <div class="agent-card">
-        <h3>Re-explaining what good looks like</h3>
-        <p>Thumbs-up is not decoration. It tells ThumbGate which approach, structure, and workflow you want repeated, so the agent keeps the pattern that passed instead of improvising again.</p>
+        <h3>Organizational learning</h3>
+        <p>One developer's thumbs-down becomes the whole team's protection. Lessons compound across agents, sessions, and projects. Your 100th agent inherits everything the first 99 learned.</p>
       </div>
       <div class="agent-card">
-        <h3>Rejected work coming back</h3>
-        <p>When you reject a change once, that lesson stays alive across sessions. You stop burning review time on the same rejected refactor, repo mistake, or workflow detour over and over.</p>
+        <h3>Enterprise-grade governance</h3>
+        <p>CISOs fear agent chaos. ThumbGate turns that chaos into structured audit trails, per-agent governance scores, PII scanning, and credential attestation. Compliance officers get a single dashboard, not scattered logs.</p>
       </div>
     </div>
   </div>
@@ -674,8 +644,8 @@ __GA_BOOTSTRAP__
         <p>Tracks authorized vs failed access. Moving-average spike detection flags per-agent abuse. Security governance on autopilot.</p>
       </div>
       <div class="agent-card">
-        <h3>Simple Pro pricing</h3>
-        <p>Pro stays on the actual public plan: $19/mo or $149/yr. Use it when one blocked destructive action or one avoided recovery loop is already worth more than the subscription.</p>
+        <h3>Metered outcome pricing</h3>
+        <p>$0.10 per blocked mistake (Pro). Minimum $19/mo floor. You pay for value delivered, not seats warmed.</p>
       </div>
       <div class="agent-card">
         <h3>Ambient daily digest</h3>
@@ -711,7 +681,7 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="background-agents">
   <div class="container">
     <div class="section-label">For Background Agent Teams</div>
-    <h2 class="section-title">As your agents handle more PR work, ThumbGate makes sure they don't repeat mistakes.</h2>
+    <h2 class="section-title">Your agents write 57% of PRs. ThumbGate makes sure they don't repeat mistakes.</h2>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>Run governance gate</h3>
@@ -775,7 +745,6 @@ __GA_BOOTSTRAP__
           <li><a href="/guide" style="color:var(--cyan);text-decoration:underline;">Setup guide for all agents →</a></li>
         </ul>
         <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free">Install Free</a>
-        <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free" data-cta-id="pricing_free_install" data-cta-placement="pricing_card" data-plan-id="free">Install Free</a>
       </div>
       <div class="price-card pro" data-price-dollars="__PRO_PRICE_DOLLARS__">
         <div class="tier">Pro</div>
@@ -785,7 +754,6 @@ __GA_BOOTSTRAP__
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
           <strong style="color:#fff;">Go Pro when:</strong> you've blocked 20+ actions, want your own dashboard, or one avoided rollback already pays for the month.
           <strong style="color:#fff;">Go Pro when:</strong> you want review-ready evidence, need your own dashboard, or keep correcting the same failure modes.
-          <strong style="color:#fff;">Go Pro when:</strong> you've blocked 20+ actions, want your own dashboard, or one avoided rollback already pays for the month.
         </div>
         <div class="dashboard-preview" style="margin-bottom:16px;border:1px solid #333;border-radius:8px;overflow:hidden;">
           <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:16px;text-align:center;">
@@ -807,14 +775,14 @@ __GA_BOOTSTRAP__
           <li>Personal local dashboard — every Pro user gets a localhost dashboard without extra cloud setup</li>
           <li>Founder-license support — we help you wire the riskiest flows first: migrations, force-pushes, deploys, and CI</li>
         </ul>
-        <a href="/checkout/pro?plan_id=pro&billing_cycle=monthly&utm_source=website&utm_medium=cta_button&utm_campaign=landing_page&utm_content=pricing_card&cta_id=pricing_pro_trial_email_gate&cta_placement=pricing_card&landing_path=/" class="btn-pro" style="display:none" id="pro-checkout-link" data-cta-id="pricing_pro_trial_email_gate" data-cta-placement="pricing_card" data-plan-id="pro">Start Free Trial — then $19/mo</a>
+        <a href="https://buy.stripe.com/fZu9AT3Ug6zcdWh0XN3sI08" class="btn-pro" style="display:none" id="pro-checkout-link">Start Free Trial — then $19/mo</a>
         <div class="trial-badge" style="background:var(--cyan);color:#000;display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:12px;">7-DAY FREE TRIAL</div>
         <div class="email-gate" style="margin-bottom:12px;">
           <input type="email" id="pro-email" placeholder="Your email to start trial" style="width:100%;padding:10px 14px;border:1px solid #333;border-radius:6px;background:#1a1a2e;color:#fff;font-size:14px;">
         </div>
-        <button class="btn-pro" id="pro-trial-btn" onclick="handleProTrial()" style="width:100%;cursor:pointer;border:none;" data-cta-id="pricing_pro_trial_email_gate" data-cta-placement="pricing_card" data-plan-id="pro">Start 7-Day Free Trial</button>
+        <button class="btn-pro" id="pro-trial-btn" onclick="handleProTrial()" style="width:100%;cursor:pointer;border:none;">Start 7-Day Free Trial</button>
         <p style="font-size:11px;color:#666;margin-top:8px;">Founder pricing — <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" style="color:var(--cyan);text-decoration:underline;">preserved $49 one-time founder link</a> for early buyers who still want that path.</p>
-        <p style="font-size:12px;color:var(--cyan);margin-top:6px;">Start here if you want local enforcement that is cheaper than one bad migration cleanup, one broken deploy, or one wasted review cycle.</p>
+        <p style="font-size:12px;color:var(--cyan);margin-top:6px;">Mem0 Pro: $249/mo. ThumbGate Pro: $19/mo.</p>
       </div>
       <div class="price-card team">
         <div class="tier">Team</div>
@@ -836,8 +804,6 @@ __GA_BOOTSTRAP__
         <p style="font-size:11px;color:#666;margin-top:8px;">Hosted team rollout starts with the workflow sprint intake so we scope the shared workflow honestly.</p>
         <a href="#workflow-sprint-intake" class="btn-team">Start Team Pilot</a>
         <p style="font-size:11px;color:#666;margin-top:8px;">Hosted rollout starts with one workflow pilot so the first expansion has measurable before/after proof.</p>
-        <a href="#workflow-sprint-intake" class="btn-team" data-cta-id="pricing_team_rollout" data-cta-placement="pricing_card" data-plan-id="team">Start Team Rollout</a>
-        <p style="font-size:11px;color:#666;margin-top:8px;">Hosted team rollout starts with the workflow sprint intake so we scope the shared workflow honestly.</p>
       </div>
     </div>
   </div>
@@ -892,7 +858,6 @@ __GA_BOOTSTRAP__
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
         <div class="faq-a">No. Free keeps local enforcement on your machine with unlimited feedback captures, 5 lesson searches/day, unlimited recall, gates, and hook blocking. No cloud account is required. Pro adds a personal local dashboard on your machine plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, generated hosted review views, org dashboard, and team-wide gate visibility.</div>
         <div class="faq-a">No. Free keeps local enforcement on your machine with 5 daily feedback captures, 10 lesson searches, unlimited recall, gates, and hook blocking. No cloud account is required. Pro adds a personal local dashboard plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, hosted review views, org dashboard visibility, and team-wide proof.</div>
-        <div class="faq-a">No. Free keeps local enforcement on your machine with unlimited feedback captures, 5 lesson searches/day, unlimited recall, gates, and hook blocking. No cloud account is required. Pro adds a personal local dashboard on your machine plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, generated hosted review views, org dashboard, and team-wide gate visibility.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What if my thumbs-down is vague?</div>
@@ -930,38 +895,9 @@ __GA_BOOTSTRAP__
     <p>Install Free if you want local enforcement with no cloud account. Try the dashboard demo if you want proof first. Start Pro when repeated mistakes are already expensive and one avoided recovery loop covers the subscription.</p>
     <h2>Put ThumbGate on your next AI-generated change.</h2>
     <p>Try the dashboard demo first or install in 30 seconds. Prove the value on a real PR, deploy, or migration.</p>
-    <h2>Ready to stop force-pushes, skipped tests, and destructive SQL before they run?</h2>
-    <p>Install Free if you want local enforcement with no cloud account. Try the dashboard demo if you want proof first. Start Pro when repeated mistakes are already expensive and one avoided recovery loop covers the subscription.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free" data-cta-id="final_install_free" data-cta-placement="final_cta" data-plan-id="free">Install Free</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener" class="btn-proof" data-cta-id="final_proof_pack" data-cta-placement="final_cta">See Proof Pack</a>
-      <a href="/dashboard" class="btn-demo" data-cta-id="final_dashboard_demo" data-cta-placement="final_cta">Try Dashboard Demo</a>
-      <a href="/checkout/pro?plan_id=pro&billing_cycle=monthly&utm_source=website&utm_medium=cta_button&utm_campaign=landing_page&utm_content=final_cta&cta_id=final_pro_trial&cta_placement=final_cta&landing_path=/" class="btn-pro" data-cta-id="final_pro_trial" data-cta-placement="final_cta" data-plan-id="pro">Try Pro free for 7 days → $19/mo</a>
-    </div>
-    <p style="font-size:12px;color:var(--text-dim);margin-top:12px;">Teams start at $36/mo for 3 seats when one lesson needs to protect multiple engineers.</p>
-    <div class="buyer-loss-card" id="buyer-loss-feedback">
-      <h3>Not buying yet?</h3>
-      <p>Tell us the blocker. This writes straight into first-party telemetry so we can fix the real objection instead of guessing.</p>
-      <div class="buyer-loss-grid">
-        <button type="button" data-reason="too_expensive">Too expensive</button>
-        <button type="button" data-reason="not_ready">Just researching</button>
-        <button type="button" data-reason="need_team_features">Need team workflow features</button>
-        <button type="button" data-reason="need_team_approval">Need team approval</button>
-        <button type="button" data-reason="need_more_proof">Need more proof or trust</button>
-        <button type="button" data-reason="integration_unclear">Integration is unclear</button>
-      </div>
-      <div class="interest-label">How close are you?</div>
-      <div class="interest-grid">
-        <button type="button" data-interest="high">Ready this week</button>
-        <button type="button" data-interest="medium">Maybe this month</button>
-        <button type="button" data-interest="low">Just exploring</button>
-      </div>
-      <textarea id="buyer-loss-note" placeholder="Optional detail: team size, runtime, workflow, competitor, trust blocker, or missing feature."></textarea>
-      <div class="buyer-loss-actions">
-        <button type="button" id="buyer-loss-submit" class="btn-demo">Send feedback</button>
-        <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener" class="btn-proof" data-cta-id="buyer_loss_proof_pack" data-cta-placement="buyer_loss">See Proof Pack</a>
-        <p class="buyer-loss-status" id="buyer-loss-status">No feedback sent yet.</p>
-      </div>
+      <a href="/dashboard" class="btn-free" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);">Try Dashboard Demo</a>
+      <a href="https://buy.stripe.com/fZu9AT3Ug6zcdWh0XN3sI08" class="btn-pro">Try Pro free for 7 days → $19/mo</a>
     </div>
   </div>
 </section>
@@ -993,87 +929,10 @@ function copyInstall(el) {
 
 /* ── Plausible custom event tracking ── */
 (function() {
-  function pickFirstText() {
-    for (var i = 0; i < arguments.length; i += 1) {
-      var value = arguments[i];
-      if (value === undefined || value === null) continue;
-      var text = String(value).trim();
-      if (text) return text;
-    }
-    return null;
-  }
-
-  function sendFirstPartyTelemetry(payload) {
-    var body = JSON.stringify(payload);
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon('/v1/telemetry/ping', new Blob([body], { type: 'application/json' }));
-      return;
-    }
-    fetch('/v1/telemetry/ping', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: body,
-      keepalive: true,
-    }).catch(function() {});
-  }
-
-  function buildCtaTelemetryPayload(el, extra) {
-    var pageParams = new URLSearchParams(window.location.search);
-    var href = el.getAttribute('href');
-    var targetUrl = null;
-    try {
-      if (href) targetUrl = new URL(href, window.location.origin);
-    } catch (_) {
-      targetUrl = null;
-    }
-    var targetParams = targetUrl ? targetUrl.searchParams : null;
-    return Object.assign({
-      eventType: 'cta_click',
-      clientType: 'web',
-      visitorId: serverVisitorId || undefined,
-      sessionId: serverSessionId || undefined,
-      acquisitionId: serverAcquisitionId || undefined,
-      source: pickFirstText(pageParams.get('utm_source'), 'website'),
-      utmSource: pickFirstText(pageParams.get('utm_source'), 'website'),
-      utmMedium: pageParams.get('utm_medium') || undefined,
-      utmCampaign: pageParams.get('utm_campaign') || undefined,
-      utmContent: pageParams.get('utm_content') || undefined,
-      utmTerm: pageParams.get('utm_term') || undefined,
-      creator: pickFirstText(pageParams.get('creator'), pageParams.get('creator_handle')) || undefined,
-      community: pickFirstText(pageParams.get('community'), pageParams.get('subreddit')) || undefined,
-      postId: pageParams.get('post_id') || undefined,
-      commentId: pageParams.get('comment_id') || undefined,
-      campaignVariant: pageParams.get('campaign_variant') || undefined,
-      offerCode: pageParams.get('offer_code') || undefined,
-      ctaId: pickFirstText(el.getAttribute('data-cta-id'), targetParams && targetParams.get('cta_id')) || undefined,
-      ctaPlacement: pickFirstText(el.getAttribute('data-cta-placement'), targetParams && targetParams.get('cta_placement')) || undefined,
-      planId: pickFirstText(el.getAttribute('data-plan-id'), targetParams && targetParams.get('plan_id')) || undefined,
-      billingCycle: targetParams && targetParams.get('billing_cycle') || undefined,
-      landingPath: window.location.pathname || '/',
-      page: window.location.pathname || '/',
-      referrer: document.referrer || undefined,
-    }, extra || {});
-  }
-
-  function bindToggleButtons(selector, stateKey) {
-    document.querySelectorAll(selector).forEach(function(button) {
-      button.addEventListener('click', function() {
-        document.querySelectorAll(selector).forEach(function(candidate) {
-          candidate.classList.remove('selected');
-        });
-        button.classList.add('selected');
-        window[stateKey] = button.getAttribute(stateKey === '__thumbgateReason' ? 'data-reason' : 'data-interest');
-      });
-    });
-  }
-
-  function trackClick(selector, eventName, props, telemetryExtra) {
+  function trackClick(selector, eventName, props) {
     document.querySelectorAll(selector).forEach(function(el) {
       el.addEventListener('click', function() {
         if (typeof plausible === 'function') plausible(eventName, { props: props || {} });
-        if (telemetryExtra) {
-          sendFirstPartyTelemetry(buildCtaTelemetryPayload(el, telemetryExtra));
-        }
       });
     });
   }
@@ -1090,27 +949,20 @@ function copyInstall(el) {
     toggleFaq(event.currentTarget);
   }
 
-  window.__thumbgateReason = null;
-  window.__thumbgateInterest = null;
-
   /* CTA clicks */
-  trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 19, billing: 'monthly' }, { eventType: 'cta_click' });
-  trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' }, { eventType: 'cta_click' });
-  trackClick('.btn-free', 'install_click', { tier: 'free' }, { eventType: 'cta_click' });
-  trackClick('.btn-demo', 'dashboard_demo_click', { tier: 'demo' }, { eventType: 'cta_click' });
-  trackClick('.btn-proof', 'proof_pack_click', { tier: 'proof' }, { eventType: 'cta_click' });
-  trackClick('.nav-cta', 'view_pricing_click', { source: 'nav' }, { eventType: 'cta_click' });
+  trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 19, billing: 'monthly' });
+  trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
+  trackClick('.btn-free', 'install_click', { tier: 'free' });
+  trackClick('.nav-cta', 'checkout_start', { tier: 'pro', source: 'nav' });
 
   /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Team button click
      with section context so we can distinguish pricing section vs final CTA section clicks */
-  document.querySelectorAll('.btn-pro, .btn-team, .btn-free, .btn-demo, .btn-proof, .nav-cta').forEach(function(el) {
+  document.querySelectorAll('.btn-pro, .btn-team, .btn-free, .nav-cta').forEach(function(el) {
     el.addEventListener('click', function() {
       var section = el.closest('section');
       var sectionId = section ? (section.id || section.className.split(' ')[0] || 'unknown') : 'unknown';
       var tier = el.classList.contains('btn-pro') ? 'pro'
                : el.classList.contains('btn-team') ? 'team'
-               : el.classList.contains('btn-proof') ? 'proof'
-               : el.classList.contains('btn-demo') ? 'demo'
                : el.classList.contains('btn-free') ? 'free'
                : 'nav';
       var label = (el.textContent || '').trim().substring(0, 40);
@@ -1150,47 +1002,6 @@ function copyInstall(el) {
 
   /* SEO/comparison page clicks */
   trackClick('.seo-card', 'seo_page_click');
-
-  bindToggleButtons('[data-reason]', '__thumbgateReason');
-  bindToggleButtons('[data-interest]', '__thumbgateInterest');
-
-  var buyerLossButton = document.getElementById('buyer-loss-submit');
-  if (buyerLossButton) {
-    buyerLossButton.addEventListener('click', function() {
-      var noteEl = document.getElementById('buyer-loss-note');
-      var statusEl = document.getElementById('buyer-loss-status');
-      sendFirstPartyTelemetry({
-        eventType: 'reason_not_buying',
-        clientType: 'web',
-        visitorId: serverVisitorId || undefined,
-        sessionId: serverSessionId || undefined,
-        acquisitionId: serverAcquisitionId || undefined,
-        source: 'website',
-        utmSource: 'website',
-        utmMedium: 'landing_feedback',
-        utmCampaign: 'landing_page',
-        reasonCode: window.__thumbgateReason || 'unspecified',
-        reasonDetail: noteEl && noteEl.value ? noteEl.value : undefined,
-        pricingInterest: window.__thumbgateInterest || undefined,
-        landingPath: window.location.pathname || '/',
-        page: window.location.pathname || '/',
-        referrer: document.referrer || undefined,
-      });
-      if (typeof plausible === 'function') {
-        plausible('buyer_loss_feedback', {
-          props: {
-            reason: window.__thumbgateReason || 'unspecified',
-            interest: window.__thumbgateInterest || 'unknown',
-          },
-        });
-      }
-      if (statusEl) {
-        statusEl.textContent = window.__thumbgateReason
-          ? 'Feedback saved: ' + window.__thumbgateReason.replaceAll('_', ' ') + '.'
-          : 'Feedback saved.';
-      }
-    });
-  }
 })();
 </script>
 <script>
@@ -1205,9 +1016,9 @@ function handleProTrial() {
   email.style.border = '1px solid #333';
   var checkoutUrl = document.getElementById('pro-checkout-link').href;
   var sep = checkoutUrl.includes('?') ? '&' : '?';
-  var finalUrl = checkoutUrl + sep + 'customer_email=' + encodeURIComponent(email.value);
+  var finalUrl = checkoutUrl + sep + 'prefilled_email=' + encodeURIComponent(email.value);
   if (typeof plausible === 'function') {
-    plausible('trial_email_captured', { props: { email: email.value, ctaId: 'pricing_pro_trial_email_gate' } });
+    plausible('trial_email_captured', { props: { email: email.value } });
   }
   window.location.href = finalUrl;
 }
