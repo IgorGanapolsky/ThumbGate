@@ -10,6 +10,7 @@ const {
   COVERAGE_INCLUDE_GLOBS,
   findCoverageTestFiles,
   runCoverage,
+  supportsCoveragePatternFlags,
 } = require('../scripts/test-coverage');
 
 test('findCoverageTestFiles returns sorted nested test files', () => {
@@ -36,8 +37,39 @@ test('buildCoverageArgs prepends Node coverage flags', () => {
   ]);
 });
 
+test('buildCoverageArgs omits pattern flags when the runtime does not support them', () => {
+  assert.deepEqual(buildCoverageArgs(['tests/a.test.js'], { supportsPatternFlags: false }), [
+    '--test',
+    '--test-concurrency=1',
+    '--experimental-test-coverage',
+    'tests/a.test.js',
+  ]);
+});
+
+test('supportsCoveragePatternFlags detects runtimes with the include and exclude flags', () => {
+  const result = supportsCoveragePatternFlags({
+    spawn: () => ({
+      stdout: '  --test-coverage-include\n  --test-coverage-exclude\n',
+      stderr: '',
+    }),
+  });
+
+  assert.equal(result, true);
+});
+
+test('supportsCoveragePatternFlags returns false when the runtime lacks coverage pattern flags', () => {
+  const result = supportsCoveragePatternFlags({
+    spawn: () => ({
+      stdout: '--experimental-test-coverage\n',
+      stderr: '',
+    }),
+  });
+
+  assert.equal(result, false);
+});
+
 test('runCoverage returns error when no test files are provided', () => {
-  const result = runCoverage({ files: [] });
+  const result = runCoverage({ files: [], supportsPatternFlags: false });
 
   assert.equal(result.exitCode, 1);
   assert.equal(result.error, 'No test files found for coverage run.');
@@ -48,6 +80,7 @@ test('runCoverage delegates to Node with test coverage flags', () => {
   const result = runCoverage({
     files: ['tests/a.test.js', 'tests/b.test.js'],
     cwd: '/tmp/coverage',
+    supportsPatternFlags: true,
     spawn: (cmd, args, options) => {
       captured = { cmd, args, options };
       return { status: 0, error: null };

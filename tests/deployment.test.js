@@ -291,6 +291,15 @@ test('CI workflow gives the full suite enough runtime budget', () => {
   assert.ok(Number(timeoutMatch[1]) >= 45, 'CI timeout must leave enough room for the full suite');
 });
 
+test('CI workflow runs budget status and coverage gates before proof lanes', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+
+  assert.match(workflow, /Run budget status gate/);
+  assert.match(workflow, /npm run budget:status/);
+  assert.match(workflow, /Run coverage/);
+  assert.match(workflow, /npm run test:coverage/);
+});
+
 test('CodeQL workflow supports merge queue and cancels stale non-main runs', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'codeql.yml'), 'utf8');
 

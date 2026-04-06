@@ -176,7 +176,10 @@ describe('synthetic-dpo', () => {
   });
 
   test('augmentDpoExport returns proRequired when not licensed', () => {
-    const result = augmentDpoExport(MOCK_DPO_EXPORT, { skipProCheck: false });
+    const result = augmentDpoExport(MOCK_DPO_EXPORT, {
+      skipProCheck: false,
+      requireProFn: () => false,
+    });
 
     assert.equal(result.proRequired, true, 'proRequired flag set');
     assert.equal(result.syntheticPairs, 0, 'no synthetic pairs without Pro');

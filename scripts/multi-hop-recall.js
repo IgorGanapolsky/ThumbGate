@@ -127,6 +127,7 @@ function scoreRelevance(lesson, expansionTerms) {
  * @param {number} [options.totalLimit=15] - Max total results across all hops
  * @param {string} [options.signal] - Filter by 'positive' or 'negative'
  * @param {boolean} [options.skipProCheck=false] - Skip Pro license check (for testing)
+ * @param {Function} [options.requireProFn=requirePro] - Injectable Pro gate helper for testing
  * @returns {{ results: object[], hops: object[], totalHops: number, expansionTerms: string[] }}
  */
 function multiHopRecall(searchFn, query, options = {}) {
@@ -136,10 +137,11 @@ function multiHopRecall(searchFn, query, options = {}) {
     totalLimit = 15,
     signal,
     skipProCheck = false,
+    requireProFn = requirePro,
   } = options;
 
   // Pro gate (unless testing)
-  if (!skipProCheck && !requirePro('multi-hop-recall')) {
+  if (!skipProCheck && !requireProFn('multi-hop-recall')) {
     return { results: [], hops: [], totalHops: 0, expansionTerms: [], proRequired: true };
   }
 
