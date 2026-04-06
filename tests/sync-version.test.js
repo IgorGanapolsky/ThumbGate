@@ -71,3 +71,20 @@ test('sync-version covers codex plugin manifests', () => {
     'plugins/claude-codex-bridge/.mcp.json should be a sync target'
   );
 });
+
+test('sync-version detects landing page hero badge drift without relying on trailing punctuation', () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const landingPath = path.join(ROOT, 'public', 'index.html');
+  const original = fs.readFileSync(landingPath, 'utf8');
+
+  try {
+    fs.writeFileSync(landingPath, original.replace(/New in v\d+\.\d+\.\d+:?/, 'New in v0.0.1'));
+    const result = syncVersion({ checkOnly: true });
+    assert.ok(
+      result.drifted.some((entry) => entry.file === 'public/index.html' && entry.field === 'hero-release-note'),
+      `expected hero badge drift, found: ${JSON.stringify(result.drifted)}`
+    );
+  } finally {
+    fs.writeFileSync(landingPath, original);
+  }
+});

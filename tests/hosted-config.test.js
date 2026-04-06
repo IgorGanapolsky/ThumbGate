@@ -41,4 +41,13 @@ describe('hosted-config', () => {
     assert.ok(id1.startsWith('test_'));
     assert.notStrictEqual(id1, id2);
   });
+
+  it('resolveHostedBillingConfig accepts legacy Railway env aliases during the rename window', () => {
+    const config = resolveHostedBillingConfig({}, {
+      RLHF_PUBLIC_APP_ORIGIN: 'https://rlhf-feedback-loop-production.up.railway.app',
+      RLHF_BILLING_API_BASE_URL: 'https://rlhf-feedback-loop-production.up.railway.app',
+    });
+    assert.strictEqual(config.appOrigin, 'https://rlhf-feedback-loop-production.up.railway.app');
+    assert.strictEqual(config.billingApiBaseUrl, 'https://rlhf-feedback-loop-production.up.railway.app');
+  });
 });

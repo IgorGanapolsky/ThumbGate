@@ -21,8 +21,8 @@ jobs:
       RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
       RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
       RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL || 'https://thumbgate-production.up.railway.app/health' }}
-      THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
-      THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
+      THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN || vars.RLHF_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
+      THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || vars.RLHF_BILLING_API_BASE_URL || vars.THUMBGATE_PUBLIC_APP_ORIGIN || vars.RLHF_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_FEEDBACK_DIR: ${{ vars.THUMBGATE_FEEDBACK_DIR }}
       THUMBGATE_GA_MEASUREMENT_ID: ${{ vars.THUMBGATE_GA_MEASUREMENT_ID }}
       THUMBGATE_GOOGLE_SITE_VERIFICATION: ${{ vars.THUMBGATE_GOOGLE_SITE_VERIFICATION }}
@@ -111,6 +111,9 @@ jobs:
           if [ -n "$RAILWAY_SERVICE" ]; then
             SERVICE_ARGS+=(--service "$RAILWAY_SERVICE")
           fi
+          retry_railway "set THUMBGATE_API_KEY" railway variables set THUMBGATE_API_KEY="$THUMBGATE_API_KEY" "${SERVICE_ARGS[@]}"
+          retry_railway "set THUMBGATE_PUBLIC_APP_ORIGIN" railway variables set THUMBGATE_PUBLIC_APP_ORIGIN="$THUMBGATE_PUBLIC_APP_ORIGIN" "${SERVICE_ARGS[@]}"
+          retry_railway "set THUMBGATE_BILLING_API_BASE_URL" railway variables set THUMBGATE_BILLING_API_BASE_URL="$THUMBGATE_BILLING_API_BASE_URL" "${SERVICE_ARGS[@]}"
           retry_railway "set STRIPE_SECRET_KEY" railway variables set STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" "${SERVICE_ARGS[@]}"
           retry_railway "set STRIPE_WEBHOOK_SECRET" railway variables set STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" "${SERVICE_ARGS[@]}"
           if [ -n "$THUMBGATE_FEEDBACK_DIR" ]; then

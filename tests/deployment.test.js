@@ -182,6 +182,9 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_PROJECT_ID/);
   assert.match(workflow, /RAILWAY_ENVIRONMENT_ID/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_URL/);
+  assert.match(workflow, /secrets\.THUMBGATE_API_KEY \|\| secrets\.RLHF_API_KEY/);
+  assert.match(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| vars\.RLHF_PUBLIC_APP_ORIGIN/);
+  assert.match(workflow, /vars\.THUMBGATE_BILLING_API_BASE_URL \|\| vars\.RLHF_BILLING_API_BASE_URL/);
   assert.match(workflow, /THUMBGATE_PUBLIC_APP_ORIGIN/);
   assert.match(workflow, /THUMBGATE_BILLING_API_BASE_URL/);
   assert.match(workflow, /railway up/);
@@ -210,6 +213,9 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
 
   assert.match(workflow, /retry_railway\(\) \{/);
   assert.match(workflow, /max_attempts=4/);
+  assert.match(workflow, /set THUMBGATE_API_KEY/);
+  assert.match(workflow, /set THUMBGATE_PUBLIC_APP_ORIGIN/);
+  assert.match(workflow, /set THUMBGATE_BILLING_API_BASE_URL/);
   assert.match(workflow, /set STRIPE_SECRET_KEY/);
   assert.match(workflow, /set STRIPE_WEBHOOK_SECRET/);
   assert.match(workflow, /deploy with railway up/);
