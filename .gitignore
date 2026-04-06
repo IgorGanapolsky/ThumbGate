@@ -6,6 +6,7 @@ node_modules/
 .claude/settings.local.json
 .claude/debug/
 .claude/worktrees/
+.claude/context-engine/quality-log.json
 .claude/memory/*.sqlite*
 .claude/memory/feedback/*.json
 .claude/memory/feedback/*.jsonl

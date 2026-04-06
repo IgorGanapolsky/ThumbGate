@@ -39,31 +39,54 @@ function findCoverageTestFiles({
   return files.sort();
 }
 
-function buildCoverageArgs(files) {
-  return [
+function supportsCoveragePatternFlags({
+  spawn = spawnSync,
+} = {}) {
+  const result = spawn(process.execPath, ['--help'], {
+    encoding: 'utf8',
+  });
+
+  if (result.error) {
+    return false;
+  }
+
+  const help = `${result.stdout || ''}\n${result.stderr || ''}`;
+  return help.includes('--test-coverage-include') && help.includes('--test-coverage-exclude');
+}
+
+function buildCoverageArgs(files, { supportsPatternFlags = true } = {}) {
+  const args = [
     '--test',
     '--test-concurrency=1',
     '--experimental-test-coverage',
-    ...COVERAGE_INCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-include', pattern]),
-    ...COVERAGE_EXCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-exclude', pattern]),
-    ...files,
   ];
+
+  if (supportsPatternFlags) {
+    args.push(
+      ...COVERAGE_INCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-include', pattern]),
+      ...COVERAGE_EXCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-exclude', pattern]),
+    );
+  }
+
+  args.push(...files);
+  return args;
 }
 
 function runCoverage({
   files = findCoverageTestFiles(),
   cwd = PROJECT_ROOT,
   spawn = spawnSync,
+  supportsPatternFlags = supportsCoveragePatternFlags({ spawn }),
 } = {}) {
   if (files.length === 0) {
     return {
       exitCode: 1,
       error: 'No test files found for coverage run.',
-      args: buildCoverageArgs(files),
+      args: buildCoverageArgs(files, { supportsPatternFlags }),
     };
   }
 
-  const args = buildCoverageArgs(files);
+  const args = buildCoverageArgs(files, { supportsPatternFlags });
   const result = spawn(process.execPath, args, {
     cwd,
     env: process.env,
@@ -93,4 +116,5 @@ module.exports = {
   findCoverageTestFiles,
   buildCoverageArgs,
   runCoverage,
+  supportsCoveragePatternFlags,
 };

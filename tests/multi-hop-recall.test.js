@@ -228,10 +228,10 @@ describe('multi-hop-recall', () => {
   });
 
   test('multi-hop recall returns proRequired when not licensed', () => {
-    // Don't skip Pro check — should fail gracefully
     const result = multiHopRecall(mockSearch, 'test', {
       maxHops: 2,
       skipProCheck: false,
+      requireProFn: () => false,
     });
 
     assert.equal(result.proRequired, true, 'proRequired flag set');
