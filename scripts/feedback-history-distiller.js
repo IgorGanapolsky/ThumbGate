@@ -2,9 +2,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir: resolveSharedFeedbackDir } = require('./feedback-paths');
 
 const DEFAULT_HISTORY_LIMIT = 10;
-const HOME = process.env.HOME || process.env.USERPROFILE || '';
 
 const CORRECTION_PATTERNS = [
   /\bdon['’]?t\b/i,
@@ -79,18 +79,7 @@ function readJsonlTail(filePath, limit = DEFAULT_HISTORY_LIMIT) {
 }
 
 function resolveFeedbackDir(feedbackDir) {
-  if (feedbackDir) return feedbackDir;
-  if (process.env.THUMBGATE_FEEDBACK_DIR) return process.env.THUMBGATE_FEEDBACK_DIR;
-  if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
-    return path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'feedback');
-  }
-
-  const cwd = process.cwd();
-  const localRlhf = path.join(cwd, '.rlhf');
-  const localClaude = path.join(cwd, '.claude', 'memory', 'feedback');
-  if (fs.existsSync(localRlhf)) return localRlhf;
-  if (fs.existsSync(localClaude)) return localClaude;
-  return path.join(HOME, '.rlhf', 'projects', path.basename(cwd) || 'default');
+  return resolveSharedFeedbackDir({ feedbackDir });
 }
 
 function getConversationPaths(feedbackDir) {

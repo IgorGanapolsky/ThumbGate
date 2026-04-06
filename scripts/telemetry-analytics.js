@@ -8,21 +8,29 @@ const {
   resolveAnalyticsWindow,
   serializeAnalyticsWindow,
 } = require('./analytics-window');
+const {
+  getLegacyFeedbackDir,
+  getRlhfFeedbackDir,
+  resolveFallbackArtifactPath,
+} = require('./feedback-paths');
 
 const TELEMETRY_FILE_NAME = 'telemetry-pings.jsonl';
-const DEFAULT_LEGACY_FEEDBACK_DIR = path.resolve(__dirname, '../.claude/memory/feedback');
-
-function getLegacyFeedbackDir() {
-  return process.env._TEST_LEGACY_FEEDBACK_DIR
-    || process.env.THUMBGATE_LEGACY_FEEDBACK_DIR
-    || DEFAULT_LEGACY_FEEDBACK_DIR;
-}
 
 function shouldIncludeLegacyTelemetry() {
-  if (process.env._TEST_LEGACY_FEEDBACK_DIR || process.env.THUMBGATE_LEGACY_FEEDBACK_DIR) {
+  if (
+    process.env._TEST_LEGACY_FEEDBACK_DIR ||
+    process.env.THUMBGATE_LEGACY_FEEDBACK_DIR ||
+    process.env._TEST_RLHF_FEEDBACK_DIR ||
+    process.env.THUMBGATE_RLHF_FEEDBACK_DIR
+  ) {
     return true;
   }
   return process.env.NODE_ENV !== 'test';
+}
+
+function shouldMergeLegacyTelemetry() {
+  return process.env._TEST_INCLUDE_LEGACY_TELEMETRY === '1'
+    || process.env.THUMBGATE_INCLUDE_LEGACY_TELEMETRY === '1';
 }
 
 function normalizeText(value, maxLength = 160) {
@@ -61,12 +69,15 @@ function getTelemetryPath(feedbackDir) {
 }
 
 function getLegacyTelemetryPath(feedbackDir) {
-  const legacyDir = getLegacyFeedbackDir();
-  if (!legacyDir) return null;
+  const resolvedFallbackPath = resolveFallbackArtifactPath(TELEMETRY_FILE_NAME, {
+    feedbackDir,
+  });
+  if (!resolvedFallbackPath) return null;
   const resolvedFeedbackDir = path.resolve(feedbackDir || '.');
-  const resolvedLegacyDir = path.resolve(legacyDir);
-  if (resolvedFeedbackDir === resolvedLegacyDir) return null;
-  return path.join(resolvedLegacyDir, TELEMETRY_FILE_NAME);
+  if (path.resolve(path.dirname(resolvedFallbackPath)) === resolvedFeedbackDir) {
+    return null;
+  }
+  return resolvedFallbackPath;
 }
 
 function buildSourceWarning(code, message) {
@@ -82,18 +93,18 @@ function getTelemetrySourceDiagnostics(feedbackDir) {
   const warnings = [];
   let activeMode = 'missing';
 
-  if (primaryExists) activePaths.push(primaryPath);
-  if (legacyExists) activePaths.push(legacyPath);
-
-  if (primaryExists && legacyExists) {
+  if (primaryExists && legacyExists && shouldMergeLegacyTelemetry()) {
+    activePaths.push(primaryPath, legacyPath);
     activeMode = 'merged';
     warnings.push(buildSourceWarning(
       'telemetry_mixed_roots',
       'Telemetry exists in both the active and legacy feedback directories; analytics merged both sources.'
     ));
   } else if (primaryExists) {
+    activePaths.push(primaryPath);
     activeMode = 'primary';
   } else if (legacyExists) {
+    activePaths.push(legacyPath);
     activeMode = 'legacy_fallback';
     warnings.push(buildSourceWarning(
       'telemetry_legacy_fallback',
@@ -110,6 +121,8 @@ function getTelemetrySourceDiagnostics(feedbackDir) {
     fileName: TELEMETRY_FILE_NAME,
     primaryPath,
     legacyPath,
+    rlhfPath: path.join(getRlhfFeedbackDir({ feedbackDir }), TELEMETRY_FILE_NAME),
+    legacyFeedbackPath: path.join(getLegacyFeedbackDir({ feedbackDir }), TELEMETRY_FILE_NAME),
     primaryExists,
     legacyExists,
     activeMode,

@@ -18,7 +18,12 @@ const path = require('path');
 const crypto = require('crypto');
 const Stripe = require('stripe');
 const { createTraceId } = require('./hosted-config');
-const { getFeedbackPaths } = require('./feedback-loop');
+const {
+  getFeedbackPaths,
+  getLegacyFeedbackDir,
+  getRlhfFeedbackDir,
+  resolveFallbackArtifactPath,
+} = require('./feedback-paths');
 const { getTelemetryAnalytics, getTelemetrySourceDiagnostics } = require('./telemetry-analytics');
 const { loadWorkflowSprintLeads } = require('./workflow-sprint-intake');
 const {
@@ -77,26 +82,10 @@ const CONFIG = {
   }
 };
 
-const DEFAULT_RLHF_FEEDBACK_DIR = path.resolve(__dirname, '../.rlhf');
-const DEFAULT_LEGACY_FEEDBACK_DIR = path.resolve(__dirname, '../.claude/memory/feedback');
-
-function getRlhfFeedbackDir() {
-  return process.env._TEST_RLHF_FEEDBACK_DIR
-    || process.env.THUMBGATE_RLHF_FEEDBACK_DIR
-    || DEFAULT_RLHF_FEEDBACK_DIR;
-}
-
-function getLegacyFeedbackDir() {
-  return process.env._TEST_LEGACY_FEEDBACK_DIR
-    || process.env.THUMBGATE_LEGACY_FEEDBACK_DIR
-    || DEFAULT_LEGACY_FEEDBACK_DIR;
-}
-
 function resolveLegacyBillingPath(fileName) {
-  // Check .rlhf/ before falling back to .claude/memory/feedback/
-  const rlhfPath = path.join(getRlhfFeedbackDir(), fileName);
-  if (fs.existsSync(rlhfPath)) return rlhfPath;
-  return path.join(getLegacyFeedbackDir(), fileName);
+  return resolveFallbackArtifactPath(fileName, {
+    feedbackDir: getFeedbackPaths().FEEDBACK_DIR,
+  });
 }
 
 let _stripeClient = null;
@@ -119,16 +108,9 @@ const IS_TEST = !!(
   process.env.NODE_ENV === 'test'
 );
 
-function shouldIncludeLegacyBillingData() {
-  if (
-    process.env._TEST_LEGACY_FEEDBACK_DIR ||
-    process.env.THUMBGATE_LEGACY_FEEDBACK_DIR ||
-    process.env._TEST_RLHF_FEEDBACK_DIR ||
-    process.env.THUMBGATE_RLHF_FEEDBACK_DIR
-  ) {
-    return true;
-  }
-  return !IS_TEST;
+function shouldMergeLegacyBillingData() {
+  return process.env._TEST_INCLUDE_LEGACY_BILLING_DATA === '1'
+    || process.env.THUMBGATE_INCLUDE_LEGACY_BILLING_DATA === '1';
 }
 
 function safeCompareHex(expectedHex, actualHex) {
@@ -176,8 +158,16 @@ function appendJsonlRecord(filePath, payload) {
 
 function loadJsonlRecords(filePath, legacyPath = null) {
   try {
-    const paths = [filePath];
-    if (!IS_TEST && legacyPath && legacyPath !== filePath) {
+    const paths = [];
+    const primaryExists = Boolean(filePath && fs.existsSync(filePath));
+    const legacyExists = Boolean(legacyPath && legacyPath !== filePath && fs.existsSync(legacyPath));
+
+    if (primaryExists) {
+      paths.push(filePath);
+      if (legacyExists && shouldMergeLegacyBillingData()) {
+        paths.push(legacyPath);
+      }
+    } else if (legacyExists) {
       paths.push(legacyPath);
     }
 
@@ -249,8 +239,8 @@ function buildSourceWarning(code, message) {
   return { code, message };
 }
 
-function describeDataFile({ primaryPath, legacyPath = null, mode = 'merge' } = {}) {
-  const includeLegacy = shouldIncludeLegacyBillingData();
+function describeDataFile({ primaryPath, legacyPath = null, mode = 'fallback' } = {}) {
+  const includeLegacy = Boolean(legacyPath);
   const samePath = Boolean(
     includeLegacy &&
     legacyPath &&
@@ -262,7 +252,7 @@ function describeDataFile({ primaryPath, legacyPath = null, mode = 'merge' } = {
   const activePaths = [];
   let activeMode = 'missing';
 
-  if (mode === 'merge') {
+  if (mode === 'merge' && shouldMergeLegacyBillingData()) {
     if (primaryExists) activePaths.push(primaryPath);
     if (legacyExists) activePaths.push(normalizedLegacyPath);
     if (primaryExists && legacyExists) activeMode = 'merged';
@@ -295,12 +285,12 @@ function buildBillingSourceDiagnostics(feedbackDir) {
   const funnelLedger = describeDataFile({
     primaryPath: CONFIG.FUNNEL_LEDGER_PATH,
     legacyPath: resolveLegacyBillingPath('funnel-events.jsonl'),
-    mode: 'merge',
+    mode: 'fallback',
   });
   const revenueLedger = describeDataFile({
     primaryPath: CONFIG.REVENUE_LEDGER_PATH,
     legacyPath: resolveLegacyBillingPath('revenue-events.jsonl'),
-    mode: 'merge',
+    mode: 'fallback',
   });
   const checkoutSessions = describeDataFile({
     primaryPath: CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH,

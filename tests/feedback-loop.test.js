@@ -39,6 +39,7 @@ function appendJSONL(filePath, record) {
 function loadFreshFeedbackLoop() {
   delete require.cache[require.resolve('../scripts/feedback-loop')];
   delete require.cache[require.resolve('../scripts/lesson-db')];
+  try { delete require.cache[require.resolve('../scripts/feedback-paths')]; } catch {}
   return require('../scripts/feedback-loop');
 }
 

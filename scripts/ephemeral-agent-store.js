@@ -13,8 +13,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
-function getFeedbackDir() { return process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf'); }
+function getFeedbackDir() { return resolveFeedbackDir(); }
 function ensureDir(p) { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
 
 function readJsonl(fp) {

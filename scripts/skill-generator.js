@@ -3,8 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-
-const HOME = process.env.HOME || process.env.USERPROFILE || '';
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const NEG = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
 const POS = new Set(['positive', 'positive_strong', 'up', 'thumbs_up']);
@@ -28,18 +27,7 @@ const MIN_TAG_OVERLAP = 2;
  * @returns {string} Resolved feedback directory path
  */
 function discoverFeedbackDir() {
-  if (process.env.THUMBGATE_FEEDBACK_DIR) {
-    return process.env.THUMBGATE_FEEDBACK_DIR;
-  }
-
-  const localRlhf = path.join(process.cwd(), '.rlhf');
-  const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback');
-
-  if (fs.existsSync(localRlhf)) return localRlhf;
-  if (fs.existsSync(localClaude)) return localClaude;
-
-  const projectName = path.basename(process.cwd()) || 'default';
-  return path.join(HOME, '.rlhf', 'projects', projectName);
+  return resolveFeedbackDir();
 }
 
 // ---------------------------------------------------------------------------

@@ -11,9 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const os = require('os');
-const PROJECT_ROOT = path.join(__dirname, '..');
-const HOME = os.homedir();
+const { resolveFeedbackDir } = require('./feedback-paths');
 const {
   retrieveHierarchicalDocuments,
   shouldUseHierarchicalRetrieval,
@@ -22,16 +20,7 @@ const {
 const CONTEXTFS_RETRIEVAL_VERSION = 'xmemory-lite-v1';
 
 function getFeedbackBaseDir() {
-  if (process.env.THUMBGATE_FEEDBACK_DIR) return process.env.THUMBGATE_FEEDBACK_DIR;
-
-  const localRlhf = path.join(process.cwd(), '.rlhf');
-  const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback');
-  
-  if (fs.existsSync(localRlhf)) return localRlhf;
-  if (fs.existsSync(localClaude)) return localClaude;
-
-  const projectName = path.basename(process.cwd()) || 'default';
-  return path.join(HOME, '.rlhf', 'projects', projectName);
+  return resolveFeedbackDir();
 }
 
 const FEEDBACK_DIR = getFeedbackBaseDir();

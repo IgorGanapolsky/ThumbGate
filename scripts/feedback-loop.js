@@ -36,6 +36,10 @@ const {
   aggregateFailureDiagnostics,
 } = require('./failure-diagnostics');
 const { getEffectiveSetting } = require('./evolution-state');
+const {
+  buildFeedbackPathsFromDir,
+  getFeedbackPaths: resolveFeedbackPaths,
+} = require('./feedback-paths');
 
 // Lesson DB — SQLite+FTS5 backing store (dual-write alongside JSONL)
 let _lessonDB = null;
@@ -72,9 +76,6 @@ function getLessonDB() {
     return null; // SQLite unavailable — degrade gracefully
   }
 }
-
-const PROJECT_ROOT = path.join(__dirname, '..');
-const DEFAULT_FEEDBACK_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
 
 // ML sequence tracking constants (ML-03)
 const SEQUENCE_WINDOW = 10;
@@ -129,49 +130,8 @@ function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, le
   } catch { /* statusline update is best-effort */ }
 }
 
-function buildPathsFromDir(d) {
-  return {
-    FEEDBACK_DIR: d,
-    FEEDBACK_LOG_PATH: path.join(d, 'feedback-log.jsonl'),
-    DIAGNOSTIC_LOG_PATH: path.join(d, 'diagnostic-log.jsonl'),
-    MEMORY_LOG_PATH: path.join(d, 'memory-log.jsonl'),
-    REJECTION_LEDGER_PATH: path.join(d, 'rejection-ledger.jsonl'),
-    SUMMARY_PATH: path.join(d, 'feedback-summary.json'),
-    PREVENTION_RULES_PATH: path.join(d, 'prevention-rules.md'),
-  };
-}
-
 function getFeedbackPaths() {
-  if (process.env.THUMBGATE_FEEDBACK_DIR) {
-    return buildPathsFromDir(process.env.THUMBGATE_FEEDBACK_DIR);
-  }
-
-  if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
-    return buildPathsFromDir(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'feedback'));
-  }
-
-  // Auto-discovery order:
-  // 1. .thumbgate/ (Standard)
-  // 2. .rlhf/ (Intermediate — RLHF runtime artifacts)
-  // 3. .claude/memory/feedback/ (Legacy Claude)
-  // 4. ~/.thumbgate/projects/<cwd-basename>/ (Global fallback for true plug-and-play)
-
-  const localThumbgate = path.join(process.cwd(), '.thumbgate');
-  const localRlhf = path.join(process.cwd(), '.rlhf');
-  const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback');
-
-  let baseDir = localThumbgate;
-  if (!fs.existsSync(localThumbgate) && fs.existsSync(localRlhf)) {
-    baseDir = localRlhf;
-  } else if (!fs.existsSync(localThumbgate) && fs.existsSync(localClaude)) {
-    baseDir = localClaude;
-  } else if (!fs.existsSync(localThumbgate)) {
-    // Zero-Config Global Fallback
-    const projectName = path.basename(process.cwd()) || 'default';
-    baseDir = path.join(HOME, '.thumbgate', 'projects', projectName);
-  }
-
-  return buildPathsFromDir(baseDir);
+  return resolveFeedbackPaths();
 }
 
 function getContextFsModule() {
@@ -1335,7 +1295,7 @@ function analyzeFeedback(logPath) {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
   const resolvedLogPath = logPath || FEEDBACK_LOG_PATH;
   const feedbackDir = path.dirname(resolvedLogPath);
-  const paths = buildPathsFromDir(feedbackDir);
+  const paths = buildFeedbackPathsFromDir(feedbackDir);
   const shouldUseSQLite = !logPath || path.resolve(resolvedLogPath) === path.resolve(FEEDBACK_LOG_PATH);
   const entries = readJSONL(resolvedLogPath, { maxLines: 0 });
   const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');

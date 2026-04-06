@@ -137,10 +137,37 @@ function scoreRecord(queryTokens, queryText, record) {
 
 function searchFeedbackLog(queryText, limit = 5, options = {}) {
   const logPath = path.join(getFeedbackDir(), 'feedback-log.jsonl');
-  const records = readJsonl(logPath);
-  const queryTokens = tokenize(queryText);
+  let records = readJsonl(logPath);
 
-  let scored = records.map((r) => scoreRecord(queryTokens, queryText, r));
+  // SQLite fallback: if JSONL is empty/tiny, pull records from the lesson DB
+  if (records.length <= 1) {
+    try {
+      const { initDB } = require('./lesson-db');
+      const db = initDB();
+      const rows = db.prepare('SELECT * FROM lessons ORDER BY timestamp DESC LIMIT 500').all();
+      if (rows.length > records.length) {
+        records = rows.map((r) => ({
+          id: r.id,
+          signal: r.signal,
+          context: r.context,
+          title: r.title || r.context,
+          tags: r.tags ? JSON.parse(r.tags) : [],
+          timestamp: r.timestamp,
+          whatWentWrong: r.what_went_wrong,
+          whatWorked: r.what_worked,
+          whatToChange: r.what_to_change,
+        }));
+      }
+    } catch { /* lesson-db not available */ }
+  }
+
+  // Wildcard query: return all records sorted by recency
+  const isWildcard = queryText === '*' || queryText === '';
+  const queryTokens = isWildcard ? [] : tokenize(queryText);
+
+  let scored = isWildcard
+    ? records.map((r) => ({ score: recencyScore(r.timestamp) || 0.01, record: r, matchedTokens: [] }))
+    : records.map((r) => scoreRecord(queryTokens, queryText, r));
 
   if (options.where) {
     scored = scored.filter((s) => {

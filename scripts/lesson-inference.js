@@ -16,6 +16,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 const {
   buildStableId,
   extractFilePaths,
@@ -27,7 +28,7 @@ const LESSONS_FILE = 'lessons-index.jsonl';
 const RECENT_LESSON_FILE = 'recent-lesson.json';
 
 function getFeedbackDir() {
-  return process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  return resolveFeedbackDir();
 }
 
 function getLessonsPath() { return path.join(getFeedbackDir(), LESSONS_FILE); }

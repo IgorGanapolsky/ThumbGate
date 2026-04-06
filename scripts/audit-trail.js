@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const AUDIT_LOG_FILENAME = 'audit-trail.jsonl';
 
@@ -20,9 +21,7 @@ const AUDIT_LOG_FILENAME = 'audit-trail.jsonl';
 // ---------------------------------------------------------------------------
 
 function getAuditLogPath() {
-  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR
-    || path.join(process.cwd(), '.rlhf');
-  return path.join(feedbackDir, AUDIT_LOG_FILENAME);
+  return path.join(resolveFeedbackDir(), AUDIT_LOG_FILENAME);
 }
 
 function ensureDir(dirPath) {

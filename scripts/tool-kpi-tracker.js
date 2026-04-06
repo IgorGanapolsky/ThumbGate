@@ -2,7 +2,8 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-function getKpiLogPath() { const d = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf'); return path.join(d, 'tool-kpi.jsonl'); }
+const { resolveFeedbackDir } = require('./feedback-paths');
+function getKpiLogPath() { return path.join(resolveFeedbackDir(), 'tool-kpi.jsonl'); }
 function readJsonl(fp) { if (!fs.existsSync(fp)) return []; const raw = fs.readFileSync(fp, 'utf-8').trim(); if (!raw) return []; return raw.split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean); }
 function recordToolCall({ toolName, serverName, latencyMs, success, agentId, metadata } = {}) { const lp = getKpiLogPath(); const dir = path.dirname(lp); if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); const e = { id: `kpi_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, timestamp: new Date().toISOString(), toolName: toolName || 'unknown', serverName: serverName || 'default', latencyMs: typeof latencyMs === 'number' ? latencyMs : 0, success: success !== false, agentId: agentId || 'unknown', metadata: metadata || {} }; fs.appendFileSync(lp, JSON.stringify(e) + '\n'); return e; }
 function percentile(sorted, p) { if (sorted.length === 0) return 0; const idx = Math.ceil((p / 100) * sorted.length) - 1; return sorted[Math.max(0, idx)]; }

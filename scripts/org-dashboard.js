@@ -16,6 +16,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 const { readAuditLog, auditStats, skillAdherence } = require('./audit-trail');
 const { isProTier } = require('./rate-limiter');
 
@@ -26,8 +27,7 @@ const { isProTier } = require('./rate-limiter');
 const REGISTRY_FILENAME = 'agent-registry.jsonl';
 
 function getRegistryPath() {
-  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
-  return path.join(feedbackDir, REGISTRY_FILENAME);
+  return path.join(resolveFeedbackDir(), REGISTRY_FILENAME);
 }
 
 /**

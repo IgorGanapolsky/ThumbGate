@@ -12,6 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const { scanForPii, redactPii, gateDpoExport } = require('./pii-scanner');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const PREFERENCES_FILE = 'data-usage-preferences.json';
 
@@ -28,8 +29,7 @@ const DEFAULT_PREFERENCES = {
 };
 
 function getPreferencesPath() {
-  const d = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
-  return path.join(d, PREFERENCES_FILE);
+  return path.join(resolveFeedbackDir(), PREFERENCES_FILE);
 }
 
 function loadPreferences() {
@@ -107,7 +107,7 @@ function governedDpoExport(pairs) {
  */
 function enforceRetention() {
   const prefs = loadPreferences();
-  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  const feedbackDir = resolveFeedbackDir();
   const logPath = path.join(feedbackDir, 'feedback-log.jsonl');
   if (!fs.existsSync(logPath)) return { purged: 0, remaining: 0 };
 

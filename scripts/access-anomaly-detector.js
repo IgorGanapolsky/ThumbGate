@@ -2,7 +2,8 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-function getAccessLogPath() { const d = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf'); return path.join(d, 'access-log.jsonl'); }
+const { resolveFeedbackDir } = require('./feedback-paths');
+function getAccessLogPath() { return path.join(resolveFeedbackDir(), 'access-log.jsonl'); }
 function readJsonl(fp) { if (!fs.existsSync(fp)) return []; const raw = fs.readFileSync(fp, 'utf-8').trim(); if (!raw) return []; return raw.split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean); }
 function recordAccessAttempt({ agentId, authorized, reason, source } = {}) { const lp = getAccessLogPath(); const dir = path.dirname(lp); if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); const e = { id: `access_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, timestamp: new Date().toISOString(), agentId: agentId || 'unknown', authorized: authorized !== false, reason: reason || '', source: source || 'unknown' }; fs.appendFileSync(lp, JSON.stringify(e) + '\n'); return e; }
 function computeAccessStats({ periodHours = 24 } = {}) { const entries = readJsonl(getAccessLogPath()); const cutoff = Date.now() - periodHours * 60 * 60 * 1000; const recent = entries.filter((e) => new Date(e.timestamp).getTime() > cutoff); const authorized = recent.filter((e) => e.authorized).length; const failed = recent.filter((e) => !e.authorized).length; const total = recent.length; const failRate = total > 0 ? Math.round((failed / total) * 1000) / 10 : 0; const byAgent = {}; for (const e of recent) { if (!byAgent[e.agentId]) byAgent[e.agentId] = { authorized: 0, failed: 0 }; if (e.authorized) byAgent[e.agentId].authorized++; else byAgent[e.agentId].failed++; } return { periodHours, total, authorized, failed, failRate, byAgent }; }
