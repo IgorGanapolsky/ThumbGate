@@ -1,0 +1,20 @@
+{
+  "id": "1774901765942_feedback-negative-fb-1774901765342-gav68k",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774901765342_gav68k",
+  "content": "{\"id\":\"fb_1774901765342_gav68k\",\"signal\":\"negative\",\"context\":\"Gate \\\"secret-exfiltration\\\" blocked tool \\\"Bash\\\": Secret material detected in tool input\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:secret-exfiltration\",\"secret-guard\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-30T20:16:05.342Z\",\"richContext\":{\"domain\":\"security\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:secret-exfiltration",
+    "secret-guard"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-30T20:16:05.942Z",
+  "lastUsedAt": null
+}

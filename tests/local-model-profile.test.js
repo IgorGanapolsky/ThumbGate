@@ -19,10 +19,10 @@ const {
 
 test('detectHardware respects env overrides', () => {
   const hardware = detectHardware({
-    RLHF_RAM_BYTES_OVERRIDE: String(6 * 1024 ** 3),
-    RLHF_CPU_COUNT_OVERRIDE: '4',
-    RLHF_PLATFORM_OVERRIDE: 'linux',
-    RLHF_ARCH_OVERRIDE: 'x64',
+    THUMBGATE_RAM_BYTES_OVERRIDE: String(6 * 1024 ** 3),
+    THUMBGATE_CPU_COUNT_OVERRIDE: '4',
+    THUMBGATE_PLATFORM_OVERRIDE: 'linux',
+    THUMBGATE_ARCH_OVERRIDE: 'x64',
     CI: 'true',
   });
 
@@ -35,8 +35,8 @@ test('detectHardware respects env overrides', () => {
 
 test('resolveEmbeddingProfile chooses compact profile on low-memory hardware', () => {
   const resolved = resolveEmbeddingProfile({
-    RLHF_RAM_BYTES_OVERRIDE: String(4 * 1024 ** 3),
-    RLHF_CPU_COUNT_OVERRIDE: '4',
+    THUMBGATE_RAM_BYTES_OVERRIDE: String(4 * 1024 ** 3),
+    THUMBGATE_CPU_COUNT_OVERRIDE: '4',
   });
 
   assert.equal(resolved.selectedProfile.id, 'compact');
@@ -45,12 +45,12 @@ test('resolveEmbeddingProfile chooses compact profile on low-memory hardware', (
 
 test('resolveEmbeddingProfile honors explicit env overrides', () => {
   const resolved = resolveEmbeddingProfile({
-    RLHF_MODEL_FIT_PROFILE: 'quality',
-    RLHF_EMBED_MODEL: 'custom/model',
-    RLHF_EMBED_QUANTIZED: 'false',
-    RLHF_EMBED_MAX_CHARS: '1234',
-    RLHF_RAM_BYTES_OVERRIDE: String(32 * 1024 ** 3),
-    RLHF_CPU_COUNT_OVERRIDE: '10',
+    THUMBGATE_MODEL_FIT_PROFILE: 'quality',
+    THUMBGATE_EMBED_MODEL: 'custom/model',
+    THUMBGATE_EMBED_QUANTIZED: 'false',
+    THUMBGATE_EMBED_MAX_CHARS: '1234',
+    THUMBGATE_RAM_BYTES_OVERRIDE: String(32 * 1024 ** 3),
+    THUMBGATE_CPU_COUNT_OVERRIDE: '10',
   });
 
   assert.equal(resolved.source, 'profile_override');
@@ -65,8 +65,8 @@ test('writeModelFitReport persists machine-readable evidence', () => {
   try {
     const { reportPath, report } = writeModelFitReport(tmpDir, {
       resolved: resolveEmbeddingProfile({
-        RLHF_RAM_BYTES_OVERRIDE: String(12 * 1024 ** 3),
-        RLHF_CPU_COUNT_OVERRIDE: '8',
+        THUMBGATE_RAM_BYTES_OVERRIDE: String(12 * 1024 ** 3),
+        THUMBGATE_CPU_COUNT_OVERRIDE: '8',
       }),
     });
 
@@ -98,7 +98,7 @@ test('resolveModelRole compaction role uses lighter model than normal', () => {
 });
 
 test('resolveModelRole respects env override', () => {
-  const result = resolveModelRole('normal', { RLHF_MODEL_ROLE_NORMAL: 'gemini-custom-model' });
+  const result = resolveModelRole('normal', { THUMBGATE_MODEL_ROLE_NORMAL: 'gemini-custom-model' });
   assert.equal(result.model, 'gemini-custom-model');
 });
 
@@ -116,10 +116,10 @@ test('detectInferenceBackend defaults to managed API and is not IndexCache-eligi
 
 test('detectInferenceBackend recognizes local sparse-attention backend with IndexCache readiness', () => {
   const backend = detectInferenceBackend({
-    RLHF_PROVIDER_MODE: 'local',
-    RLHF_LOCAL_MODEL_FAMILY: 'deepseek-r1',
-    RLHF_LOCAL_MODEL_SERVER: 'sglang',
-    RLHF_INDEXCACHE_ENABLED: 'true',
+    THUMBGATE_PROVIDER_MODE: 'local',
+    THUMBGATE_LOCAL_MODEL_FAMILY: 'deepseek-r1',
+    THUMBGATE_LOCAL_MODEL_SERVER: 'sglang',
+    THUMBGATE_INDEXCACHE_ENABLED: 'true',
   });
 
   assert.equal(backend.providerMode, 'local');
@@ -135,9 +135,9 @@ test('recommendInferenceBackend highlights IndexCache eligibility for long-conte
     contextTokens: 180000,
     tags: ['xmemory'],
   }, {
-    RLHF_PROVIDER_MODE: 'local',
-    RLHF_LOCAL_MODEL_FAMILY: 'glm-4.5',
-    RLHF_LOCAL_MODEL_SERVER: 'vllm',
+    THUMBGATE_PROVIDER_MODE: 'local',
+    THUMBGATE_LOCAL_MODEL_FAMILY: 'glm-4.5',
+    THUMBGATE_LOCAL_MODEL_SERVER: 'vllm',
   });
 
   assert.equal(recommendation.workloadClass, 'long_context');

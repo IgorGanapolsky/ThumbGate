@@ -1,0 +1,6 @@
+{"id":"step_1775244794764_a4o2od","timestamp":"2026-04-03T19:33:14.762Z","toolName":"Bash","agentId":"unknown","decision":"allow","score":1,"gateId":null,"context":"npm test"}
+{"id":"step_1775244794764_mj3n1w","timestamp":"2026-04-03T19:33:14.763Z","toolName":"Edit","agentId":"unknown","decision":"allow","score":1,"gateId":null,"context":"fixed deploy.js"}
+{"id":"step_1775244794764_2iajku","timestamp":"2026-04-03T19:33:14.763Z","toolName":"Bash","agentId":"unknown","decision":"deny","score":-1,"gateId":"force-push","context":"git push --force blocked"}
+{"id":"step_1775244794764_l96z4v","timestamp":"2026-04-03T19:33:14.763Z","toolName":"Write","agentId":"unknown","decision":"warn","score":-0.5,"gateId":"env-file","context":".env file edit"}
+{"id":"step_1775244794764_83yhig","timestamp":"2026-04-03T19:33:14.763Z","toolName":"Bash","agentId":"unknown","decision":"allow","score":1,"gateId":null,"context":"git push origin feat/x"}
+{"id":"step_1775244794764_k69jmn","timestamp":"2026-04-03T19:33:14.763Z","toolName":"Bash","agentId":"unknown","decision":"deny","score":-1,"gateId":"rm-rf","context":"rm -rf / blocked"}

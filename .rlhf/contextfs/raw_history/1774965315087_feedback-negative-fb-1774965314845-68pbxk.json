@@ -1,0 +1,20 @@
+{
+  "id": "1774965315087_feedback-negative-fb-1774965314845-68pbxk",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774965314845_68pbxk",
+  "content": "{\"id\":\"fb_1774965314845_68pbxk\",\"signal\":\"negative\",\"context\":\"Gate \\\"env-file-edit\\\" warned tool \\\"Edit\\\": Editing .env file — verify you are not deleting existing tokens\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:env-file-edit\",\"gates-engine\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-31T13:55:14.845Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:env-file-edit",
+    "gates-engine"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-31T13:55:15.087Z",
+  "lastUsedAt": null
+}

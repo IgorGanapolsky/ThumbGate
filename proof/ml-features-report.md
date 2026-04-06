@@ -1,6 +1,6 @@
 # ML Features Proof Report
 
-**Phase:** 02-ml-into-rlhf-feedback-loop
+**Phase:** 02-ml-into-thumbgate
 **Generated:** 2026-03-04
 **Baseline:** 60 node-runner tests (Phase 1 gate)
 

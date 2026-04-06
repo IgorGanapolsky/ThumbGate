@@ -314,7 +314,7 @@ Contact:
 |------------|-------|---------|---------------|
 | doobidoo/mcp-memory-service | Active | Free/OSS | We have DPO/KTO export, Thompson Sampling, guardrails |
 | mkreyman/mcp-memory-keeper | Small | Free/OSS | We have hosted option, team sharing |
-| yuvalsuede/memory-mcp | Small | Free/OSS | We have RLHF loop, not just memory storage |
+| yuvalsuede/memory-mcp | Small | Free/OSS | We have ThumbGate loop, not just memory storage |
 | thedotmack/claude-mem | Small | Free/OSS | We have MCP registry listing, production hosting |
 | cbunting99/enhanced-mcp-memory | Active | Free/OSS | We have billing, API, multi-agent support |
 

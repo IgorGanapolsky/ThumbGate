@@ -1,0 +1,19 @@
+{
+  "id": "1774554378564_mistake-something-failed",
+  "namespace": "memory/error",
+  "title": "MISTAKE: something failed",
+  "content": "What went wrong: something failed\nHow to avoid: fix the issue",
+  "tags": [
+    "feedback",
+    "negative",
+    "debugging"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775489742156_45uvn2"
+  },
+  "createdAt": "2026-03-26T19:46:18.564Z",
+  "lastUsedAt": null
+}

@@ -7,7 +7,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
-const DEFAULT_PROOF_DIR = process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+const DEFAULT_PROOF_DIR = process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
 
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
@@ -63,8 +63,8 @@ async function main() {
     const { routeInference } = require('./profile-router');
     const { reportPath, report: modelFitReport } = writeModelFitReport(tmpFeedbackDir, {
       resolved: require('./local-model-profile').resolveEmbeddingProfile({
-        RLHF_RAM_BYTES_OVERRIDE: String(4 * 1024 ** 3),
-        RLHF_CPU_COUNT_OVERRIDE: '4',
+        THUMBGATE_RAM_BYTES_OVERRIDE: String(4 * 1024 ** 3),
+        THUMBGATE_CPU_COUNT_OVERRIDE: '4',
       }),
     });
     addResult(
@@ -73,10 +73,10 @@ async function main() {
       `model-fit report written; selected profile=${modelFitReport.selectedProfile.id}; maxChars=${modelFitReport.selectedProfile.maxChars}`
     );
 
-    process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
-    process.env.RLHF_MODEL_FIT_PROFILE = 'quality';
-    process.env.RLHF_VECTOR_FORCE_PRIMARY_FAILURE = 'true';
-    delete process.env.RLHF_VECTOR_STUB_EMBED;
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+    process.env.THUMBGATE_MODEL_FIT_PROFILE = 'quality';
+    process.env.THUMBGATE_VECTOR_FORCE_PRIMARY_FAILURE = 'true';
+    delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
     delete require.cache[require.resolve('./vector-store')];
     const vectorStore = require('./vector-store');
     vectorStore.setLanceLoaderForTests(async () => {
@@ -131,10 +131,10 @@ async function main() {
     );
 
     const sparseBackend = detectInferenceBackend({
-      RLHF_PROVIDER_MODE: 'local',
-      RLHF_LOCAL_MODEL_FAMILY: 'deepseek-r1',
-      RLHF_LOCAL_MODEL_SERVER: 'sglang',
-      RLHF_INDEXCACHE_ENABLED: 'true',
+      THUMBGATE_PROVIDER_MODE: 'local',
+      THUMBGATE_LOCAL_MODEL_FAMILY: 'deepseek-r1',
+      THUMBGATE_LOCAL_MODEL_SERVER: 'sglang',
+      THUMBGATE_INDEXCACHE_ENABLED: 'true',
     });
     addResult(
       'IDX-01',
@@ -147,9 +147,9 @@ async function main() {
       contextTokens: 240000,
       tags: ['xmemory'],
     }, {
-      RLHF_PROVIDER_MODE: 'local',
-      RLHF_LOCAL_MODEL_FAMILY: 'glm-4.5',
-      RLHF_LOCAL_MODEL_SERVER: 'vllm',
+      THUMBGATE_PROVIDER_MODE: 'local',
+      THUMBGATE_LOCAL_MODEL_FAMILY: 'glm-4.5',
+      THUMBGATE_LOCAL_MODEL_SERVER: 'vllm',
     });
     addResult(
       'IDX-02',
@@ -162,10 +162,10 @@ async function main() {
       contextTokens: 260000,
       tags: ['retrieval-heavy'],
     }, {
-      RLHF_PROVIDER_MODE: 'local',
-      RLHF_LOCAL_MODEL_FAMILY: 'deepseek-v3',
-      RLHF_LOCAL_MODEL_SERVER: 'sglang',
-      RLHF_INDEXCACHE_ENABLED: 'true',
+      THUMBGATE_PROVIDER_MODE: 'local',
+      THUMBGATE_LOCAL_MODEL_FAMILY: 'deepseek-v3',
+      THUMBGATE_LOCAL_MODEL_SERVER: 'sglang',
+      THUMBGATE_INDEXCACHE_ENABLED: 'true',
     });
     addResult(
       'IDX-03',
@@ -180,7 +180,7 @@ async function main() {
       contextTokens: 220000,
       tags: ['xmemory'],
       env: {
-        RLHF_PROVIDER_MODE: 'managed',
+        THUMBGATE_PROVIDER_MODE: 'managed',
       },
     });
     addResult(
@@ -296,10 +296,10 @@ async function main() {
       `accepted=${fallback.accepted}; whatWorked=${fallback.feedbackEvent.whatWorked || 'n/a'}`
     );
   } finally {
-    delete process.env.RLHF_FEEDBACK_DIR;
-    delete process.env.RLHF_MODEL_FIT_PROFILE;
-    delete process.env.RLHF_VECTOR_FORCE_PRIMARY_FAILURE;
-    delete process.env.RLHF_VECTOR_STUB_EMBED;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_MODEL_FIT_PROFILE;
+    delete process.env.THUMBGATE_VECTOR_FORCE_PRIMARY_FAILURE;
+    delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
   }
 

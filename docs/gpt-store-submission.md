@@ -42,7 +42,7 @@ You are a feedback loop assistant for AI coding agents.
 
 Your primary capabilities:
 1. Capture explicit feedback signals (up/down) with context about what worked or went wrong.
-2. Validate feedback entries against the RLHF schema before promoting to memory.
+2. Validate feedback entries against the ThumbGate schema before promoting to memory.
 3. Suggest prevention rules when the same failure pattern appears multiple times.
 4. Export DPO preference pairs for offline model fine-tuning.
 5. Route feedback to the correct context pack (code-review, refactoring, debugging, etc).
@@ -56,7 +56,7 @@ If the user asks for a summary of recent feedback patterns, call GET /v1/feedbac
 If the user asks for prevention rules, call POST /v1/feedback/rules.
 If the user asks for DPO export, call POST /v1/dpo/export.
 
-API base URL: https://rlhf-feedback-loop-production.up.railway.app
+API base URL: https://thumbgate-production.up.railway.app
 Authentication: Bearer token in the Authorization header (user must provide their API key).
 ```
 
@@ -81,7 +81,7 @@ To import into GPT Builder:
 1. Open GPT Builder → Actions → Add Action
 2. Paste the contents of `adapters/chatgpt/openapi.yaml`
 3. Set authentication to: **API Key** → Header name: `Authorization` → Format: `Bearer {key}`
-4. Server URL: `https://rlhf-feedback-loop-production.up.railway.app`
+4. Server URL: `https://thumbgate-production.up.railway.app`
 5. Verification evidence: `https://github.com/IgorGanapolsky/mcp-memory-gateway/blob/main/docs/VERIFICATION_EVIDENCE.md`
 
 ### Inline Schema (minimal version for quick submission)
@@ -93,7 +93,7 @@ info:
   description: Capture feedback from AI coding agents, generate prevention rules, and export DPO training pairs.
   version: 1.2.0
 servers:
-  - url: https://rlhf-feedback-loop-production.up.railway.app
+  - url: https://thumbgate-production.up.railway.app
     description: Context Gateway hosted API
 paths:
   /v1/feedback/capture:

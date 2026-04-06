@@ -15,7 +15,7 @@
       "exitCode": 0,
       "durationMs": 208,
       "error": null,
-      "outputTail": "> rlhf-feedback-loop@0.6.10 budget:status\n> node scripts/budget-guard.js --status\n\n{\n  \"month\": \"2026-03\",\n  \"totalUsd\": 0,\n  \"budgetUsd\": 10,\n  \"remainingUsd\": 10\n}"
+      "outputTail": "> thumbgate@0.6.10 budget:status\n> node scripts/budget-guard.js --status\n\n{\n  \"month\": \"2026-03\",\n  \"totalUsd\": 0,\n  \"budgetUsd\": 10,\n  \"remainingUsd\": 10\n}"
     },
     {
       "name": "tests",
@@ -24,7 +24,7 @@
       "exitCode": 0,
       "durationMs": 11560,
       "error": null,
-      "outputTail": "d (1.125375ms)\n  ✔ POST /v1/billing/webhook handles customer.subscription.deleted (1.605542ms)\n  ✔ POST /v1/billing/provision without customerId returns 400 (0.412459ms)\n  ✔ invalid Bearer key returns 401 on protected route (0.6475ms)\n  ✔ usage metering increments after authenticated API call (3.021167ms)\n  ✔ GET /v1/analytics/funnel returns counts and conversion rates (0.491916ms)\n✔ API server — /v1/billing/* routes (26.657625ms)\n▶ API server — admin provision boundary\n  ✔ admin static token can call POST /v1/billing/provision (1.112375ms)\n  ✔ billing key is forbidden from POST /v1/billing/provision (0.783458ms)\n✔ API server — admin provision boundary (3.280834ms)\nℹ tests 34\nℹ suites 10\nℹ pass 34\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 134.464208\n\n> rlhf-feedback-loop@0.6.10 test:cli\n> node --test tests/cli.test.js\n\n▶ bin/cli.js\n  ✔ CLI file exists and is executable (0.50025ms)\n  ✔ help command exits 0 and lists subcommands (62.628417ms)\n  ✔ --help flag exits 0 (63.610833ms)\n  ✔ no-arg invocation exits 0 with help (63.3185ms)\n  ✔ unknown command exits 1 (60.491459ms)\n  ✔ init creates .rlhf/ directory (126.110667ms)\n  ✔ init creates config.json with required fields (0.308375ms)\n  ✔ init emits acquisition funnel event correlated by installId (109.821375ms)\n  ✔ init creates .mcp.json with server entry (0.23525ms)\n  ✔ init output includes initialized message and platform detection (111.585584ms)\n  ✔ capture --feedback=up routes to full engine (61.553167ms)\n  ✔ capture --feedback=down routes to full engine (65.015542ms)\n  ✔ serve responds to initialize over Content-Length framed transport (63.472375ms)\n  ✔ serve responds to initialize over newline-delimited JSON transport (65.656875ms)\n  ✔ serve returns ndjson error envelope for malformed ndjson input (65.741416ms)\n  ✔ init is idempotent — running twice exits 0 (121.265667ms)\n✔ bin/cli.js (1043.833625ms)\nℹ tests 16\nℹ suites 1\nℹ pass 16\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1125.3925"
+      "outputTail": "d (1.125375ms)\n  ✔ POST /v1/billing/webhook handles customer.subscription.deleted (1.605542ms)\n  ✔ POST /v1/billing/provision without customerId returns 400 (0.412459ms)\n  ✔ invalid Bearer key returns 401 on protected route (0.6475ms)\n  ✔ usage metering increments after authenticated API call (3.021167ms)\n  ✔ GET /v1/analytics/funnel returns counts and conversion rates (0.491916ms)\n✔ API server — /v1/billing/* routes (26.657625ms)\n▶ API server — admin provision boundary\n  ✔ admin static token can call POST /v1/billing/provision (1.112375ms)\n  ✔ billing key is forbidden from POST /v1/billing/provision (0.783458ms)\n✔ API server — admin provision boundary (3.280834ms)\nℹ tests 34\nℹ suites 10\nℹ pass 34\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 134.464208\n\n> thumbgate@0.6.10 test:cli\n> node --test tests/cli.test.js\n\n▶ bin/cli.js\n  ✔ CLI file exists and is executable (0.50025ms)\n  ✔ help command exits 0 and lists subcommands (62.628417ms)\n  ✔ --help flag exits 0 (63.610833ms)\n  ✔ no-arg invocation exits 0 with help (63.3185ms)\n  ✔ unknown command exits 1 (60.491459ms)\n  ✔ init creates .thumbgate/ directory (126.110667ms)\n  ✔ init creates config.json with required fields (0.308375ms)\n  ✔ init emits acquisition funnel event correlated by installId (109.821375ms)\n  ✔ init creates .mcp.json with server entry (0.23525ms)\n  ✔ init output includes initialized message and platform detection (111.585584ms)\n  ✔ capture --feedback=up routes to full engine (61.553167ms)\n  ✔ capture --feedback=down routes to full engine (65.015542ms)\n  ✔ serve responds to initialize over Content-Length framed transport (63.472375ms)\n  ✔ serve responds to initialize over newline-delimited JSON transport (65.656875ms)\n  ✔ serve returns ndjson error envelope for malformed ndjson input (65.741416ms)\n  ✔ init is idempotent — running twice exits 0 (121.265667ms)\n✔ bin/cli.js (1043.833625ms)\nℹ tests 16\nℹ suites 1\nℹ pass 16\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1125.3925"
     },
     {
       "name": "prove_adapters",
@@ -33,7 +33,7 @@
       "exitCode": 0,
       "durationMs": 577,
       "error": null,
-      "outputTail": "> rlhf-feedback-loop@0.6.10 prove:adapters\n> node scripts/prove-adapters.js\n\n{\n  \"passed\": 21,\n  \"failed\": 0\n}\n\ndtype not specified for \"model\". Using the default dtype (fp32) for this device (cpu)."
+      "outputTail": "> thumbgate@0.6.10 prove:adapters\n> node scripts/prove-adapters.js\n\n{\n  \"passed\": 21,\n  \"failed\": 0\n}\n\ndtype not specified for \"model\". Using the default dtype (fp32) for this device (cpu)."
     },
     {
       "name": "prove_automation",
@@ -42,7 +42,7 @@
       "exitCode": 0,
       "durationMs": 901,
       "error": null,
-      "outputTail": "> rlhf-feedback-loop@0.6.10 prove:automation\n> node scripts/prove-automation.js\n\n{\n  \"passed\": 14,\n  \"failed\": 0\n}\n\ndtype not specified for \"model\". Using the default dtype (fp32) for this device (cpu).\ndtype not specified for \"model\". Using the default dtype (fp32) for this device (cpu)."
+      "outputTail": "> thumbgate@0.6.10 prove:automation\n> node scripts/prove-automation.js\n\n{\n  \"passed\": 14,\n  \"failed\": 0\n}\n\ndtype not specified for \"model\". Using the default dtype (fp32) for this device (cpu).\ndtype not specified for \"model\". Using the default dtype (fp32) for this device (cpu)."
     }
   ]
 }

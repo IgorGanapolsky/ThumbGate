@@ -36,7 +36,7 @@ key-decisions:
   - "Lock timeout adjusted from 5000/15000 to 30000/60000 in budget-guard.js — handles 4+ concurrent GSD agent API calls"
   - "Contextfs Jaccard threshold=0.7 and TTL=86400s preserved verbatim from rlhf source"
   - "Tests use jest.scripts.config.js (created in Plan 3-02) because main jest.config.js excludes scripts/ via testPathIgnorePatterns"
-  - "RLHF_CONTEXTFS_DIR env var used in contextfs tests to isolate storage to tmpDir directly"
+  - "THUMBGATE_CONTEXTFS_DIR env var used in contextfs tests to isolate storage to tmpDir directly"
 
 patterns-established:
   - "jest.resetModules() + env var set before require() ensures each test gets a fresh module bound to its own tmpDir"

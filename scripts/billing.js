@@ -18,8 +18,13 @@ const path = require('path');
 const crypto = require('crypto');
 const Stripe = require('stripe');
 const { createTraceId } = require('./hosted-config');
-const { getFeedbackPaths } = require('./feedback-loop');
-const { getTelemetryAnalytics } = require('./telemetry-analytics');
+const {
+  getFeedbackPaths,
+  getLegacyFeedbackDir,
+  getRlhfFeedbackDir,
+  resolveFallbackArtifactPath,
+} = require('./feedback-paths');
+const { getTelemetryAnalytics, getTelemetrySourceDiagnostics } = require('./telemetry-analytics');
 const { loadWorkflowSprintLeads } = require('./workflow-sprint-intake');
 const {
   PRO_MONTHLY_PRICE_ID,
@@ -48,7 +53,7 @@ const CONFIG = {
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   GITHUB_MARKETPLACE_WEBHOOK_SECRET: process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '',
-  GITHUB_MARKETPLACE_PLAN_PRICES_JSON: process.env.RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON || '',
+  GITHUB_MARKETPLACE_PLAN_PRICES_JSON: process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON || '',
   STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || PRO_MONTHLY_PRICE_ID,
   STRIPE_PRICE_ID_PRO_MONTHLY: process.env.STRIPE_PRICE_ID_PRO_MONTHLY || PRO_MONTHLY_PRICE_ID,
   STRIPE_PRICE_ID_PRO_ANNUAL: process.env.STRIPE_PRICE_ID_PRO_ANNUAL || PRO_ANNUAL_PRICE_ID,
@@ -58,10 +63,10 @@ const CONFIG = {
     return process.env._TEST_API_KEYS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'api-keys.json');
   },
   get FUNNEL_LEDGER_PATH() {
-    return process.env._TEST_FUNNEL_LEDGER_PATH || process.env.RLHF_FUNNEL_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'funnel-events.jsonl');
+    return process.env._TEST_FUNNEL_LEDGER_PATH || process.env.THUMBGATE_FUNNEL_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'funnel-events.jsonl');
   },
   get REVENUE_LEDGER_PATH() {
-    return process.env._TEST_REVENUE_LEDGER_PATH || process.env.RLHF_REVENUE_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'revenue-events.jsonl');
+    return process.env._TEST_REVENUE_LEDGER_PATH || process.env.THUMBGATE_REVENUE_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'revenue-events.jsonl');
   },
   get LOCAL_CHECKOUT_SESSIONS_PATH() {
     return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'local-checkout-sessions.json');
@@ -77,10 +82,10 @@ const CONFIG = {
   }
 };
 
-const LEGACY_FEEDBACK_DIR = path.resolve(__dirname, '../.claude/memory/feedback');
-
 function resolveLegacyBillingPath(fileName) {
-  return path.join(LEGACY_FEEDBACK_DIR, fileName);
+  return resolveFallbackArtifactPath(fileName, {
+    feedbackDir: getFeedbackPaths().FEEDBACK_DIR,
+  });
 }
 
 let _stripeClient = null;
@@ -102,6 +107,11 @@ const IS_TEST = !!(
   process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH ||
   process.env.NODE_ENV === 'test'
 );
+
+function shouldMergeLegacyBillingData() {
+  return process.env._TEST_INCLUDE_LEGACY_BILLING_DATA === '1'
+    || process.env.THUMBGATE_INCLUDE_LEGACY_BILLING_DATA === '1';
+}
 
 function safeCompareHex(expectedHex, actualHex) {
   try {
@@ -148,8 +158,16 @@ function appendJsonlRecord(filePath, payload) {
 
 function loadJsonlRecords(filePath, legacyPath = null) {
   try {
-    const paths = [filePath];
-    if (!IS_TEST && legacyPath && legacyPath !== filePath) {
+    const paths = [];
+    const primaryExists = Boolean(filePath && fs.existsSync(filePath));
+    const legacyExists = Boolean(legacyPath && legacyPath !== filePath && fs.existsSync(legacyPath));
+
+    if (primaryExists) {
+      paths.push(filePath);
+      if (legacyExists && shouldMergeLegacyBillingData()) {
+        paths.push(legacyPath);
+      }
+    } else if (legacyExists) {
       paths.push(legacyPath);
     }
 
@@ -215,6 +233,134 @@ function writeJsonlRecords(filePath, rows = []) {
   } catch (err) {
     return { written: false, reason: 'write_failed', error: err.message };
   }
+}
+
+function buildSourceWarning(code, message) {
+  return { code, message };
+}
+
+function describeDataFile({ primaryPath, legacyPath = null, mode = 'fallback' } = {}) {
+  const includeLegacy = Boolean(legacyPath);
+  const samePath = Boolean(
+    includeLegacy &&
+    legacyPath &&
+    path.resolve(primaryPath || '.') === path.resolve(legacyPath || '__missing__')
+  );
+  const normalizedLegacyPath = includeLegacy && !samePath ? legacyPath : null;
+  const primaryExists = Boolean(primaryPath && fs.existsSync(primaryPath));
+  const legacyExists = Boolean(normalizedLegacyPath && fs.existsSync(normalizedLegacyPath));
+  const activePaths = [];
+  let activeMode = 'missing';
+
+  if (mode === 'merge' && shouldMergeLegacyBillingData()) {
+    if (primaryExists) activePaths.push(primaryPath);
+    if (legacyExists) activePaths.push(normalizedLegacyPath);
+    if (primaryExists && legacyExists) activeMode = 'merged';
+    else if (primaryExists) activeMode = 'primary';
+    else if (legacyExists) activeMode = 'legacy_fallback';
+  } else {
+    const activePath = primaryExists ? primaryPath : (legacyExists ? normalizedLegacyPath : null);
+    if (activePath) activePaths.push(activePath);
+    if (primaryExists) activeMode = 'primary';
+    else if (legacyExists) activeMode = 'legacy_fallback';
+  }
+
+  return {
+    primaryPath,
+    legacyPath: normalizedLegacyPath,
+    primaryExists,
+    legacyExists,
+    activeMode,
+    activePaths,
+    mixedRoots: activeMode === 'merged',
+  };
+}
+
+function buildBillingSourceDiagnostics(feedbackDir) {
+  const keyStore = describeDataFile({
+    primaryPath: CONFIG.API_KEYS_PATH,
+    legacyPath: resolveLegacyBillingPath('api-keys.json'),
+    mode: 'fallback',
+  });
+  const funnelLedger = describeDataFile({
+    primaryPath: CONFIG.FUNNEL_LEDGER_PATH,
+    legacyPath: resolveLegacyBillingPath('funnel-events.jsonl'),
+    mode: 'fallback',
+  });
+  const revenueLedger = describeDataFile({
+    primaryPath: CONFIG.REVENUE_LEDGER_PATH,
+    legacyPath: resolveLegacyBillingPath('revenue-events.jsonl'),
+    mode: 'fallback',
+  });
+  const checkoutSessions = describeDataFile({
+    primaryPath: CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH,
+    legacyPath: resolveLegacyBillingPath('local-checkout-sessions.json'),
+    mode: 'fallback',
+  });
+  const telemetry = getTelemetrySourceDiagnostics(feedbackDir);
+  const warnings = [
+    ...telemetry.warnings,
+  ];
+
+  if (keyStore.activeMode === 'legacy_fallback') {
+    warnings.push(buildSourceWarning(
+      'key_store_legacy_fallback',
+      'API keys are loading from a legacy feedback directory because the active feedback directory has no key store.'
+    ));
+  } else if (keyStore.activeMode === 'missing') {
+    warnings.push(buildSourceWarning(
+      'key_store_missing',
+      'API key state is missing from both the active and legacy feedback directories.'
+    ));
+  }
+
+  if (funnelLedger.activeMode === 'legacy_fallback') {
+    warnings.push(buildSourceWarning(
+      'funnel_ledger_legacy_fallback',
+      'Funnel events are loading only from a legacy feedback directory.'
+    ));
+  } else if (funnelLedger.activeMode === 'missing') {
+    warnings.push(buildSourceWarning(
+      'funnel_ledger_missing',
+      'Funnel events are missing from both the active and legacy feedback directories.'
+    ));
+  }
+
+  if (revenueLedger.activeMode === 'legacy_fallback') {
+    warnings.push(buildSourceWarning(
+      'revenue_ledger_legacy_fallback',
+      'Revenue events are loading only from a legacy feedback directory.'
+    ));
+  } else if (revenueLedger.activeMode === 'missing') {
+    warnings.push(buildSourceWarning(
+      'revenue_ledger_missing',
+      'Revenue events are missing from both the active and legacy feedback directories.'
+    ));
+  }
+
+  const mixedRoots = [keyStore, funnelLedger, revenueLedger, checkoutSessions, telemetry]
+    .some((descriptor) => descriptor.mixedRoots || descriptor.activeMode === 'legacy_fallback');
+  if (mixedRoots) {
+    warnings.push(buildSourceWarning(
+      'mixed_feedback_roots',
+      'Analytics are mixing active and legacy feedback roots. Consolidate runtime state before claiming full observability.'
+    ));
+  }
+
+  return {
+    feedbackDir,
+    rlhfFeedbackDir: getRlhfFeedbackDir(),
+    legacyFeedbackDir: getLegacyFeedbackDir(),
+    mixedRoots,
+    files: {
+      keyStore,
+      funnelLedger,
+      revenueLedger,
+      checkoutSessions,
+      telemetry,
+    },
+    warnings,
+  };
 }
 
 function normalizeText(value) {
@@ -1173,6 +1319,7 @@ function getBusinessAnalytics(options = {}) {
   const extraRevenueEvents = Array.isArray(options.extraRevenueEvents) ? options.extraRevenueEvents : [];
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const telemetry = getTelemetryAnalytics(FEEDBACK_DIR, analyticsWindow);
+  const sourceDiagnostics = buildBillingSourceDiagnostics(FEEDBACK_DIR);
   const events = filterEntriesForWindow(
     loadFunnelLedger(),
     analyticsWindow,
@@ -1594,6 +1741,7 @@ function getBusinessAnalytics(options = {}) {
     trafficMetrics,
     operatorGeneratedAcquisition,
     dataQuality,
+    sourceDiagnostics,
   };
 }
 
@@ -1678,6 +1826,7 @@ function getBillingSummary(options = {}) {
     trafficMetrics: business.trafficMetrics,
     operatorGeneratedAcquisition: business.operatorGeneratedAcquisition,
     dataQuality: business.dataQuality,
+    sourceDiagnostics: business.sourceDiagnostics,
     keys: {
       scope: 'current_state',
       windowed: false,
@@ -2094,6 +2243,21 @@ async function handleWebhook(rawBody, signature) {
           metadata: funnelRecord.metadata,
         });
       }
+      // Write checkout_paid_confirmed event with amount/currency for funnel analytics
+      appendFunnelEvent({
+        stage: 'paid',
+        event: 'checkout_paid_confirmed',
+        installId,
+        traceId,
+        evidence: session.id,
+        metadata: {
+          source: 'stripe_webhook_checkout_completed',
+          amount: session.amount_total,
+          currency: session.currency,
+          customerId,
+          ...funnelRecord.metadata,
+        },
+      });
       const revenueRecord = {
         provider: 'stripe',
         event: 'stripe_checkout_completed',

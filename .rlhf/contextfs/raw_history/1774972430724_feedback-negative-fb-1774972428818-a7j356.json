@@ -1,0 +1,21 @@
+{
+  "id": "1774972430724_feedback-negative-fb-1774972428818-a7j356",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774972428818_a7j356",
+  "content": "{\"id\":\"fb_1774972428818_a7j356\",\"signal\":\"negative\",\"context\":\"Gate \\\"protected-branch-push\\\" blocked tool \\\"Bash\\\": Direct push to protected branch. Use feature branches and PRs.\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:protected-branch-push\",\"gates-engine\",\"entity:Customer\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-31T15:53:48.818Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:protected-branch-push",
+    "gates-engine",
+    "entity:Customer"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-31T15:53:50.724Z",
+  "lastUsedAt": null
+}

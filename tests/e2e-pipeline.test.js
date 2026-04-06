@@ -25,13 +25,13 @@ async function removeDirWithRetries(dirPath, attempts = 5, delayMs = 80) {
 
 test('E2E: feedback capture -> memory -> DPO export -> prevention rules', async (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-e2e-'));
-  const origFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  const origFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   t.after(async () => {
     await removeDirWithRetries(tmpDir);
-    if (origFeedbackDir) process.env.RLHF_FEEDBACK_DIR = origFeedbackDir;
-    else delete process.env.RLHF_FEEDBACK_DIR;
+    if (origFeedbackDir) process.env.THUMBGATE_FEEDBACK_DIR = origFeedbackDir;
+    else delete process.env.THUMBGATE_FEEDBACK_DIR;
   });
 
   const {
@@ -200,10 +200,10 @@ test('E2E: feedback capture -> memory -> DPO export -> prevention rules', async 
 
 test('E2E: API server feedback capture -> stats -> summary round-trip', async (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-e2e-api-'));
-  const origFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
-  const origApiKey = process.env.RLHF_API_KEY;
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
-  process.env.RLHF_API_KEY = 'e2e-test-key';
+  const origFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const origApiKey = process.env.THUMBGATE_API_KEY;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_API_KEY = 'e2e-test-key';
 
   const { startServer } = require('../src/api/server');
   const { server, port } = await startServer({ port: 0 });
@@ -211,10 +211,10 @@ test('E2E: API server feedback capture -> stats -> summary round-trip', async (t
   t.after(async () => {
     await new Promise((resolve) => server.close(resolve));
     await removeDirWithRetries(tmpDir);
-    if (origFeedbackDir) process.env.RLHF_FEEDBACK_DIR = origFeedbackDir;
-    else delete process.env.RLHF_FEEDBACK_DIR;
-    if (origApiKey) process.env.RLHF_API_KEY = origApiKey;
-    else delete process.env.RLHF_API_KEY;
+    if (origFeedbackDir) process.env.THUMBGATE_FEEDBACK_DIR = origFeedbackDir;
+    else delete process.env.THUMBGATE_FEEDBACK_DIR;
+    if (origApiKey) process.env.THUMBGATE_API_KEY = origApiKey;
+    else delete process.env.THUMBGATE_API_KEY;
   });
 
   const headers = {

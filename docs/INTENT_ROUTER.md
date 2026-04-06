@@ -21,8 +21,8 @@ Versioned bundles live in `config/policy-bundles/`:
 
 Runtime selection:
 
-- `RLHF_POLICY_BUNDLE=default-v1`
-- Optional direct path override: `RLHF_POLICY_BUNDLE_PATH=/abs/path/bundle.json`
+- `THUMBGATE_POLICY_BUNDLE=default-v1`
+- Optional direct path override: `THUMBGATE_POLICY_BUNDLE_PATH=/abs/path/bundle.json`
 
 ## Interfaces
 

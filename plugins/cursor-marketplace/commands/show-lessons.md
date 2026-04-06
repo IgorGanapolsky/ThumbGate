@@ -5,7 +5,7 @@ description: Display promoted lessons and their corrective actions.
 
 # Show Lessons
 
-Display promoted lessons from the project's RLHF memory along with their corrective actions and linked prevention rules.
+Display promoted lessons from the project's ThumbGate memory along with their corrective actions and linked prevention rules.
 
 ## Usage
 

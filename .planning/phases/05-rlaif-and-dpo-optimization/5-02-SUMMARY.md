@@ -6,13 +6,13 @@ tags: [meta-policy, dpo, feedback-trends, confidence-scoring, rule-extraction, j
 
 # Dependency graph
 requires:
-  - phase: 02-ml-into-rlhf-feedback-loop
+  - phase: 02-ml-into-thumbgate
     provides: inferDomain() in feedback-loop.js, timeDecayWeight() in thompson-sampling.js, memory-log.jsonl data format
   - phase: 01-contract-alignment
     provides: parseTimestamp() in feedback-schema.js
 provides:
   - extractMetaPolicyRules() — reads memory-log.jsonl, groups by inferDomain(), computes recency-weighted confidence + trend
-  - run() — writes meta-policy-rules.json to RLHF_FEEDBACK_DIR
+  - run() — writes meta-policy-rules.json to THUMBGATE_FEEDBACK_DIR
   - ml:meta-policy npm script
   - inferDomain export added to feedback-loop.js module.exports
 affects:

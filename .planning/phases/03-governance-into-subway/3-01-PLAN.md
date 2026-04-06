@@ -37,8 +37,8 @@ must_haves:
   key_links:
     - from: "/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/budget-guard.js"
       to: "/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/memory/feedback/budget-ledger.json"
-      via: "loadLedger() using RLHF_FEEDBACK_DIR env var"
-      pattern: "RLHF_FEEDBACK_DIR.*budget-ledger"
+      via: "loadLedger() using THUMBGATE_FEEDBACK_DIR env var"
+      pattern: "THUMBGATE_FEEDBACK_DIR.*budget-ledger"
     - from: "/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/budget-guard.test.js"
       to: "/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/budget-guard.js"
       via: "jest.resetModules() then require() inside beforeEach"
@@ -50,7 +50,7 @@ must_haves:
 ---
 
 <objective>
-Port budget-guard.js and contextfs.js from rlhf-feedback-loop into Subway_RN_Demo, with path-variable surgery, lock timeout adjustment, and Jest test suites.
+Port budget-guard.js and contextfs.js from thumbgate into Subway_RN_Demo, with path-variable surgery, lock timeout adjustment, and Jest test suites.
 
 Purpose: GOV-01 and GOV-03 are zero-dependency scripts — they port independently and can run in parallel with Plan 02 (intent-router). Completing these first unblocks the self-healing check in Plan 03 which needs the budget-guard script available.
 
@@ -169,8 +169,8 @@ Subway test pattern reference (confirm Jest syntax in use):
     2. The contextfs runtime directories (raw_history, memory/error, memory/learning, rules, tools, provenance)
        are created at runtime by the script itself when first called. Do NOT pre-create them.
 
-    3. No other logic changes. Jaccard threshold=0.7 (RLHF_SEMANTIC_CACHE_THRESHOLD),
-       TTL=86400 (RLHF_SEMANTIC_CACHE_TTL_SECONDS), and all exports are copied verbatim.
+    3. No other logic changes. Jaccard threshold=0.7 (THUMBGATE_SEMANTIC_CACHE_THRESHOLD),
+       TTL=86400 (THUMBGATE_SEMANTIC_CACHE_TTL_SECONDS), and all exports are copied verbatim.
 
     Verify:
       node -e "const c = require('/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/contextfs.js'); console.log(typeof c.constructContextPack);"
@@ -199,15 +199,15 @@ Subway test pattern reference (confirm Jest syntax in use):
 
     beforeEach(() => {
       tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'subway-budget-test-'));
-      process.env.RLHF_FEEDBACK_DIR = tmpDir;
-      process.env.RLHF_MONTHLY_BUDGET_USD = '1';
+      process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+      process.env.THUMBGATE_MONTHLY_BUDGET_USD = '1';
       jest.resetModules();
       budgetGuard = require('../../.claude/scripts/feedback/budget-guard');
     });
 
     afterEach(() => {
-      delete process.env.RLHF_FEEDBACK_DIR;
-      delete process.env.RLHF_MONTHLY_BUDGET_USD;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_MONTHLY_BUDGET_USD;
       fs.rmSync(tmpDir, { recursive: true, force: true });
     });
     ```
@@ -222,13 +222,13 @@ Subway test pattern reference (confirm Jest syntax in use):
 
     Create /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/contextfs.test.js
 
-    CRITICAL: contextfs.js reads RLHF_FEEDBACK_DIR at module load to determine its storage paths.
+    CRITICAL: contextfs.js reads THUMBGATE_FEEDBACK_DIR at module load to determine its storage paths.
     Use jest.resetModules() in beforeEach with isolated tmpDir, same pattern as budget-guard tests.
 
     Required test cases (minimum):
     1. "stores and retrieves context entry" — call storeContext or equivalent export with {namespace:'rules', content:'test rule', query:'test'}, then constructContextPack({query:'test', namespaces:['rules']}) returns item with that content
     2. "returns cache hit for Jaccard-similar query (>=0.7)" — store entry with query 'ESLint import fix failed'; second call with query 'ESLint import order fix' (high token overlap) should return cache.hit=true
-    3. "respects TTL by returning stale=true for expired entries" — set RLHF_SEMANTIC_CACHE_TTL_SECONDS='1' (1 second), store entry, wait 1100ms (jest.useFakeTimers or real await), second lookup returns cache.hit=false OR expired entry not included
+    3. "respects TTL by returning stale=true for expired entries" — set THUMBGATE_SEMANTIC_CACHE_TTL_SECONDS='1' (1 second), store entry, wait 1100ms (jest.useFakeTimers or real await), second lookup returns cache.hit=false OR expired entry not included
 
     Note: Read contextfs.js exports carefully before writing tests — use the actual exported function names from the source, not assumed names.
   </action>
@@ -269,7 +269,7 @@ From Subway_RN_Demo root:
   Expected: all tests pass, 0 failures
 
 Budget guard smoke test with real ledger:
-  RLHF_FEEDBACK_DIR=/tmp/subway-gov-smoke node -e "
+  THUMBGATE_FEEDBACK_DIR=/tmp/subway-gov-smoke node -e "
     const { addSpend, getBudgetStatus } = require('/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/budget-guard');
     addSpend({ amountUsd: 0.25, source: 'smoke-test', note: 'plan 01 verify' });
     const s = getBudgetStatus();
@@ -278,7 +278,7 @@ Budget guard smoke test with real ledger:
   Expected: JSON with month, totalUsd, budgetUsd fields — no errors
 
 ContextFS smoke test:
-  RLHF_FEEDBACK_DIR=/tmp/subway-ctx-smoke node -e "
+  THUMBGATE_FEEDBACK_DIR=/tmp/subway-ctx-smoke node -e "
     const { constructContextPack } = require('/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/contextfs');
     console.log(typeof constructContextPack);
   "

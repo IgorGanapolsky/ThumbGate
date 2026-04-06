@@ -4,11 +4,11 @@
 /**
  * Post-install banner — the ONE place every npm user sees ThumbGate.
  * Prints to stderr so it never contaminates piped output.
- * Respects RLHF_NO_NUDGE=1 and CI environments.
+ * Respects THUMBGATE_NO_NUDGE=1 and CI environments.
  */
 
 const isCI = !!(process.env.CI || process.env.CONTINUOUS_INTEGRATION || process.env.GITHUB_ACTIONS);
-const isQuiet = process.env.RLHF_NO_NUDGE === '1' || process.env.npm_config_loglevel === 'silent';
+const isQuiet = process.env.THUMBGATE_NO_NUDGE === '1' || process.env.npm_config_loglevel === 'silent';
 
 if (isCI || isQuiet) process.exit(0);
 

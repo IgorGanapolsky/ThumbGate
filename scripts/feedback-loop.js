@@ -36,6 +36,10 @@ const {
   aggregateFailureDiagnostics,
 } = require('./failure-diagnostics');
 const { getEffectiveSetting } = require('./evolution-state');
+const {
+  buildFeedbackPathsFromDir,
+  getFeedbackPaths: resolveFeedbackPaths,
+} = require('./feedback-paths');
 
 // Lesson DB — SQLite+FTS5 backing store (dual-write alongside JSONL)
 let _lessonDB = null;
@@ -43,7 +47,7 @@ let _lessonDBPath = null;
 
 function resolveLessonDbPath() {
   if (process.env.LESSON_DB_PATH) return process.env.LESSON_DB_PATH;
-  if (process.env.RLHF_FEEDBACK_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+  if (process.env.THUMBGATE_FEEDBACK_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH) {
     return path.join(getFeedbackPaths().FEEDBACK_DIR, 'lessons.sqlite');
   }
   return null;
@@ -69,12 +73,20 @@ function getLessonDB() {
     _lessonDBPath = desiredPath;
     return _lessonDB;
   } catch (_err) {
+    // Keep the DB path scoped to the active feedback root even when SQLite
+    // cannot open (for example, native module ABI drift in local dev).
+    if (desiredPath) {
+      try {
+        fs.mkdirSync(path.dirname(desiredPath), { recursive: true });
+        fs.closeSync(fs.openSync(desiredPath, 'a'));
+        _lessonDBPath = desiredPath;
+      } catch {
+        // Ignore file materialization failures and degrade gracefully below.
+      }
+    }
     return null; // SQLite unavailable — degrade gracefully
   }
 }
-
-const PROJECT_ROOT = path.join(__dirname, '..');
-const DEFAULT_FEEDBACK_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
 
 // ML sequence tracking constants (ML-03)
 const SEQUENCE_WINDOW = 10;
@@ -93,8 +105,8 @@ const pendingBackgroundSideEffects = new Set();
  */
 function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, lesson, turnCount }) {
   try {
-    const cacheDir = process.env.RLHF_FEEDBACK_DIR || HOME || '.';
-    const cachePath = path.join(cacheDir, '.rlhf', 'statusline_cache.json');
+    const cacheDir = process.env.THUMBGATE_FEEDBACK_DIR || HOME || '.';
+    const cachePath = path.join(cacheDir, '.thumbgate', 'statusline_cache.json');
     let cache = {};
     try {
       cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
@@ -129,45 +141,8 @@ function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, le
   } catch { /* statusline update is best-effort */ }
 }
 
-function buildPathsFromDir(d) {
-  return {
-    FEEDBACK_DIR: d,
-    FEEDBACK_LOG_PATH: path.join(d, 'feedback-log.jsonl'),
-    DIAGNOSTIC_LOG_PATH: path.join(d, 'diagnostic-log.jsonl'),
-    MEMORY_LOG_PATH: path.join(d, 'memory-log.jsonl'),
-    REJECTION_LEDGER_PATH: path.join(d, 'rejection-ledger.jsonl'),
-    SUMMARY_PATH: path.join(d, 'feedback-summary.json'),
-    PREVENTION_RULES_PATH: path.join(d, 'prevention-rules.md'),
-  };
-}
-
 function getFeedbackPaths() {
-  if (process.env.RLHF_FEEDBACK_DIR) {
-    return buildPathsFromDir(process.env.RLHF_FEEDBACK_DIR);
-  }
-
-  if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
-    return buildPathsFromDir(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'feedback'));
-  }
-
-  // Auto-discovery order:
-  // 1. .rlhf/ (Standard)
-  // 2. .claude/memory/feedback/ (Legacy Claude)
-  // 3. ~/.rlhf/projects/<cwd-basename>/ (Global fallback for true plug-and-play)
-
-  const localRlhf = path.join(process.cwd(), '.rlhf');
-  const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback');
-  
-  let baseDir = localRlhf;
-  if (!fs.existsSync(localRlhf) && fs.existsSync(localClaude)) {
-    baseDir = localClaude;
-  } else if (!fs.existsSync(localRlhf)) {
-    // Zero-Config Global Fallback
-    const projectName = path.basename(process.cwd()) || 'default';
-    baseDir = path.join(HOME, '.rlhf', 'projects', projectName);
-  }
-
-  return buildPathsFromDir(baseDir);
+  return resolveFeedbackPaths();
 }
 
 function getContextFsModule() {
@@ -1331,7 +1306,7 @@ function analyzeFeedback(logPath) {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
   const resolvedLogPath = logPath || FEEDBACK_LOG_PATH;
   const feedbackDir = path.dirname(resolvedLogPath);
-  const paths = buildPathsFromDir(feedbackDir);
+  const paths = buildFeedbackPathsFromDir(feedbackDir);
   const shouldUseSQLite = !logPath || path.resolve(resolvedLogPath) === path.resolve(FEEDBACK_LOG_PATH);
   const entries = readJSONL(resolvedLogPath, { maxLines: 0 });
   const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');
@@ -1780,7 +1755,7 @@ function runTests() {
 
   const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'rlhf-loop-test-'));
   const localFeedbackLog = path.join(tmpDir, 'feedback-log.jsonl');
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   appendJSONL(localFeedbackLog, { signal: 'positive', tags: ['testing'], skill: 'verify' });
   appendJSONL(localFeedbackLog, { signal: 'negative', tags: ['testing'], skill: 'verify' });
@@ -1831,7 +1806,7 @@ function runTests() {
   assert(postStats.rubric.blockedPromotions >= 1, 'analyzeFeedback tracks blocked rubric promotions');
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
   console.log(`\nResults: ${passed} passed, ${failed} failed\n`);
   process.exit(failed > 0 ? 1 : 0);
 }

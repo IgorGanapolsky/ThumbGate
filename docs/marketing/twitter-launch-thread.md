@@ -17,7 +17,7 @@ ThumbGate gives Claude Code, Codex, and Gemini persistent memory across sessions
 Thumbs-up/down feedback → stored locally → queried before every action → repeated failures auto-blocked.
 
 Self-serve Pro ($19/mo or $149/yr):
-https://rlhf-feedback-loop-production.up.railway.app/checkout/pro
+https://thumbgate-production.up.railway.app/checkout/pro
 
 ---
 
@@ -60,6 +60,6 @@ This does all three.
 
 **Tweet 7 (close + dual CTA):**
 Free self-hosted: npx mcp-memory-gateway serve
-Pro ($19/mo or $149/yr): https://rlhf-feedback-loop-production.up.railway.app/checkout/pro
-Hosted demo: https://rlhf-feedback-loop-production.up.railway.app
+Pro ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
+Hosted demo: https://thumbgate-production.up.railway.app
 GitHub: https://github.com/IgorGanapolsky/ThumbGate

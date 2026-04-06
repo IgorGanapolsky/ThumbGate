@@ -52,9 +52,9 @@ function createCheckEnvironment(check) {
 
   if (check.useTempProofDir) {
     const proofDir = fs.mkdtempSync(path.join(os.tmpdir(), `rlhf-${check.name}-`));
-    environment.RLHF_PROOF_DIR = proofDir;
+    environment.THUMBGATE_PROOF_DIR = proofDir;
     if (check.name === 'prove_automation') {
-      environment.RLHF_AUTOMATION_PROOF_DIR = proofDir;
+      environment.THUMBGATE_AUTOMATION_PROOF_DIR = proofDir;
     }
     cleanup = () => {
       fs.rmSync(proofDir, { recursive: true, force: true });

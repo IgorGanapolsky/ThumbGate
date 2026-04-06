@@ -199,13 +199,13 @@ test('distillFeedbackHistory can reuse related feedback context when follow-up a
 
 test('getConversationPaths honors feedback-dir environment overrides and cwd fallbacks', () => {
   const tmpDir = makeTmpDir();
-  const savedFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+  const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const savedRailwayDir = process.env.RAILWAY_VOLUME_MOUNT_PATH;
 
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   assert.equal(getConversationPaths().feedbackDir, tmpDir);
 
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.RAILWAY_VOLUME_MOUNT_PATH = tmpDir;
   assert.equal(getConversationPaths().feedbackDir, path.join(tmpDir, 'feedback'));
 
@@ -223,8 +223,8 @@ test('getConversationPaths honors feedback-dir environment overrides and cwd fal
   );
   process.chdir(prevCwd);
 
-  if (savedFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-  else process.env.RLHF_FEEDBACK_DIR = savedFeedbackDir;
+  if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+  else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
   if (savedRailwayDir === undefined) delete process.env.RAILWAY_VOLUME_MOUNT_PATH;
   else process.env.RAILWAY_VOLUME_MOUNT_PATH = savedRailwayDir;
 
@@ -233,21 +233,21 @@ test('getConversationPaths honors feedback-dir environment overrides and cwd fal
 });
 
 test('getConversationPaths falls back to HOME project path when no local dirs exist', () => {
-  const savedFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+  const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const savedRailwayDir = process.env.RAILWAY_VOLUME_MOUNT_PATH;
   const prevCwd = process.cwd();
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-history-home-fallback-'));
 
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
   delete process.env.RAILWAY_VOLUME_MOUNT_PATH;
   process.chdir(cwd);
 
-  const expected = path.join(process.env.HOME || process.env.USERPROFILE || '', '.rlhf', 'projects', path.basename(cwd));
+  const expected = path.join(process.env.HOME || process.env.USERPROFILE || '', '.thumbgate', 'projects', path.basename(cwd));
   assert.equal(getConversationPaths().feedbackDir, expected);
 
   process.chdir(prevCwd);
-  if (savedFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-  else process.env.RLHF_FEEDBACK_DIR = savedFeedbackDir;
+  if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+  else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
   if (savedRailwayDir === undefined) delete process.env.RAILWAY_VOLUME_MOUNT_PATH;
   else process.env.RAILWAY_VOLUME_MOUNT_PATH = savedRailwayDir;
   fs.rmSync(cwd, { recursive: true, force: true });

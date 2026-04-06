@@ -4,7 +4,7 @@
     ".opencode/instructions/rlhf-workflow.md"
   ],
   "mcp": {
-    "rlhf": {
+    "thumbgate": {
       "type": "local",
       "command": [
         "node",
@@ -49,7 +49,7 @@
     "edit": {
       "*": "allow",
       ".claude/worktrees/**": "deny",
-      ".rlhf/**": "deny",
+      ".thumbgate/**": "deny",
       ".claude/memory/feedback/*.json": "deny",
       ".claude/memory/feedback/*.jsonl": "deny",
       ".claude/memory/feedback/*.md": "deny",

@@ -1,0 +1,17 @@
+{
+  "id": "1774965033464_feedback-positive-fb-1774965033128-qe32mc",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774965033128_qe32mc",
+  "content": "{\"id\":\"fb_1774965033128_qe32mc\",\"signal\":\"positive\",\"context\":\"security review completed\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"vulnerability patched correctly\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"security\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-31T13:50:33.128Z\",\"richContext\":{\"domain\":\"security\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "security"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-31T13:50:33.464Z",
+  "lastUsedAt": null
+}

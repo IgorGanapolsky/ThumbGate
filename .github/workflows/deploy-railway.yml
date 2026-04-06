@@ -14,20 +14,20 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      RLHF_API_KEY: ${{ secrets.RLHF_API_KEY }}
+      THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
       RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
       RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
       RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
       RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL }}
-      RLHF_PUBLIC_APP_ORIGIN: ${{ vars.RLHF_PUBLIC_APP_ORIGIN }}
-      RLHF_BILLING_API_BASE_URL: ${{ vars.RLHF_BILLING_API_BASE_URL }}
-      RLHF_FEEDBACK_DIR: ${{ vars.RLHF_FEEDBACK_DIR }}
-      RLHF_GA_MEASUREMENT_ID: ${{ vars.RLHF_GA_MEASUREMENT_ID }}
-      RLHF_GOOGLE_SITE_VERIFICATION: ${{ vars.RLHF_GOOGLE_SITE_VERIFICATION }}
+      THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN }}
+      THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL }}
+      THUMBGATE_FEEDBACK_DIR: ${{ vars.THUMBGATE_FEEDBACK_DIR }}
+      THUMBGATE_GA_MEASUREMENT_ID: ${{ vars.THUMBGATE_GA_MEASUREMENT_ID }}
+      THUMBGATE_GOOGLE_SITE_VERIFICATION: ${{ vars.THUMBGATE_GOOGLE_SITE_VERIFICATION }}
       RAILWAY_TOKEN_ROTATED_AT: ${{ vars.RAILWAY_TOKEN_ROTATED_AT }}
-      RLHF_API_KEY_ROTATED_AT: ${{ vars.RLHF_API_KEY_ROTATED_AT }}
+      THUMBGATE_API_KEY_ROTATED_AT: ${{ vars.THUMBGATE_API_KEY_ROTATED_AT }}
       STRIPE_SECRET_KEY_ROTATED_AT: ${{ vars.STRIPE_SECRET_KEY_ROTATED_AT }}
       STRIPE_WEBHOOK_SECRET_ROTATED_AT: ${{ vars.STRIPE_WEBHOOK_SECRET_ROTATED_AT }}
     steps:
@@ -113,14 +113,14 @@ jobs:
           fi
           retry_railway "set STRIPE_SECRET_KEY" railway variables set STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" "${SERVICE_ARGS[@]}"
           retry_railway "set STRIPE_WEBHOOK_SECRET" railway variables set STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" "${SERVICE_ARGS[@]}"
-          if [ -n "$RLHF_FEEDBACK_DIR" ]; then
-            retry_railway "set RLHF_FEEDBACK_DIR" railway variables set RLHF_FEEDBACK_DIR="$RLHF_FEEDBACK_DIR" "${SERVICE_ARGS[@]}"
+          if [ -n "$THUMBGATE_FEEDBACK_DIR" ]; then
+            retry_railway "set THUMBGATE_FEEDBACK_DIR" railway variables set THUMBGATE_FEEDBACK_DIR="$THUMBGATE_FEEDBACK_DIR" "${SERVICE_ARGS[@]}"
           fi
-          if [ -n "$RLHF_GA_MEASUREMENT_ID" ]; then
-            retry_railway "set RLHF_GA_MEASUREMENT_ID" railway variables set RLHF_GA_MEASUREMENT_ID="$RLHF_GA_MEASUREMENT_ID" "${SERVICE_ARGS[@]}"
+          if [ -n "$THUMBGATE_GA_MEASUREMENT_ID" ]; then
+            retry_railway "set THUMBGATE_GA_MEASUREMENT_ID" railway variables set THUMBGATE_GA_MEASUREMENT_ID="$THUMBGATE_GA_MEASUREMENT_ID" "${SERVICE_ARGS[@]}"
           fi
-          if [ -n "$RLHF_GOOGLE_SITE_VERIFICATION" ]; then
-            retry_railway "set RLHF_GOOGLE_SITE_VERIFICATION" railway variables set RLHF_GOOGLE_SITE_VERIFICATION="$RLHF_GOOGLE_SITE_VERIFICATION" "${SERVICE_ARGS[@]}"
+          if [ -n "$THUMBGATE_GOOGLE_SITE_VERIFICATION" ]; then
+            retry_railway "set THUMBGATE_GOOGLE_SITE_VERIFICATION" railway variables set THUMBGATE_GOOGLE_SITE_VERIFICATION="$THUMBGATE_GOOGLE_SITE_VERIFICATION" "${SERVICE_ARGS[@]}"
           fi
       - name: Deploy to Railway
         if: steps.railway-config.outputs.enabled == 'true'

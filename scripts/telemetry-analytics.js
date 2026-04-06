@@ -8,8 +8,30 @@ const {
   resolveAnalyticsWindow,
   serializeAnalyticsWindow,
 } = require('./analytics-window');
+const {
+  getLegacyFeedbackDir,
+  getRlhfFeedbackDir,
+  resolveFallbackArtifactPath,
+} = require('./feedback-paths');
 
 const TELEMETRY_FILE_NAME = 'telemetry-pings.jsonl';
+
+function shouldIncludeLegacyTelemetry() {
+  if (
+    process.env._TEST_LEGACY_FEEDBACK_DIR ||
+    process.env.THUMBGATE_LEGACY_FEEDBACK_DIR ||
+    process.env._TEST_RLHF_FEEDBACK_DIR ||
+    process.env.THUMBGATE_RLHF_FEEDBACK_DIR
+  ) {
+    return true;
+  }
+  return process.env.NODE_ENV !== 'test';
+}
+
+function shouldMergeLegacyTelemetry() {
+  return process.env._TEST_INCLUDE_LEGACY_TELEMETRY === '1'
+    || process.env.THUMBGATE_INCLUDE_LEGACY_TELEMETRY === '1';
+}
 
 function normalizeText(value, maxLength = 160) {
   if (value === undefined || value === null) return null;
@@ -44,6 +66,70 @@ function safeRate(num, den) {
 
 function getTelemetryPath(feedbackDir) {
   return path.join(feedbackDir, TELEMETRY_FILE_NAME);
+}
+
+function getLegacyTelemetryPath(feedbackDir) {
+  const resolvedFallbackPath = resolveFallbackArtifactPath(TELEMETRY_FILE_NAME, {
+    feedbackDir,
+  });
+  if (!resolvedFallbackPath) return null;
+  const resolvedFeedbackDir = path.resolve(feedbackDir || '.');
+  if (path.resolve(path.dirname(resolvedFallbackPath)) === resolvedFeedbackDir) {
+    return null;
+  }
+  return resolvedFallbackPath;
+}
+
+function buildSourceWarning(code, message) {
+  return { code, message };
+}
+
+function getTelemetrySourceDiagnostics(feedbackDir) {
+  const primaryPath = getTelemetryPath(feedbackDir);
+  const legacyPath = shouldIncludeLegacyTelemetry() ? getLegacyTelemetryPath(feedbackDir) : null;
+  const primaryExists = fs.existsSync(primaryPath);
+  const legacyExists = Boolean(legacyPath && fs.existsSync(legacyPath));
+  const activePaths = [];
+  const warnings = [];
+  let activeMode = 'missing';
+
+  if (primaryExists && legacyExists && shouldMergeLegacyTelemetry()) {
+    activePaths.push(primaryPath, legacyPath);
+    activeMode = 'merged';
+    warnings.push(buildSourceWarning(
+      'telemetry_mixed_roots',
+      'Telemetry exists in both the active and legacy feedback directories; analytics merged both sources.'
+    ));
+  } else if (primaryExists) {
+    activePaths.push(primaryPath);
+    activeMode = 'primary';
+  } else if (legacyExists) {
+    activePaths.push(legacyPath);
+    activeMode = 'legacy_fallback';
+    warnings.push(buildSourceWarning(
+      'telemetry_legacy_fallback',
+      'Telemetry exists only in the legacy feedback directory; analytics fell back to legacy telemetry.'
+    ));
+  } else {
+    warnings.push(buildSourceWarning(
+      'telemetry_missing',
+      'Telemetry is missing from both the active and legacy feedback directories.'
+    ));
+  }
+
+  return {
+    fileName: TELEMETRY_FILE_NAME,
+    primaryPath,
+    legacyPath,
+    rlhfPath: path.join(getRlhfFeedbackDir({ feedbackDir }), TELEMETRY_FILE_NAME),
+    legacyFeedbackPath: path.join(getLegacyFeedbackDir({ feedbackDir }), TELEMETRY_FILE_NAME),
+    primaryExists,
+    legacyExists,
+    activeMode,
+    activePaths,
+    mixedRoots: activeMode === 'merged',
+    warnings,
+  };
 }
 
 function inferClientType(payload) {
@@ -228,10 +314,9 @@ function appendTelemetryEvent(feedbackDir, payload = {}, headers = {}) {
   return entry;
 }
 
-function loadTelemetryEvents(feedbackDir) {
-  const telemetryPath = getTelemetryPath(feedbackDir);
-  if (!fs.existsSync(telemetryPath)) return [];
-  const raw = fs.readFileSync(telemetryPath, 'utf-8').trim();
+function loadTelemetryEventsFromPath(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  const raw = fs.readFileSync(filePath, 'utf-8').trim();
   if (!raw) return [];
   return raw
     .split('\n')
@@ -248,6 +333,24 @@ function loadTelemetryEvents(feedbackDir) {
       }
     })
     .filter(Boolean);
+}
+
+function loadTelemetryEvents(feedbackDir) {
+  const diagnostics = getTelemetrySourceDiagnostics(feedbackDir);
+  const merged = [];
+  const seen = new Set();
+
+  for (const filePath of diagnostics.activePaths) {
+    const rows = loadTelemetryEventsFromPath(filePath);
+    for (const row of rows) {
+      const key = JSON.stringify(row);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(row);
+    }
+  }
+
+  return merged;
 }
 
 function summarizeRecentEvents(events) {
@@ -711,6 +814,7 @@ module.exports = {
   sanitizeTelemetryPayload,
   appendTelemetryPing,
   appendTelemetryEvent,
+  getTelemetrySourceDiagnostics,
   loadTelemetryEvents,
   getTelemetryAnalytics,
   inferTrafficChannel,

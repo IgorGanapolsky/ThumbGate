@@ -1,0 +1,19 @@
+{
+  "id": "1775249407405_feedback-positive-fb-1775249407366-6jarta",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775249407366_6jarta",
+  "content": "{\"id\":\"fb_1775249407366_6jarta\",\"signal\":\"positive\",\"context\":\"adapter proof harness\",\"submittedContext\":\"adapter proof harness\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"end-to-end verification flow\",\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"verification\",\"proof\",\"entity:Customer\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T20:50:07.366Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "verification",
+    "proof",
+    "entity:Customer"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-03T20:50:07.405Z",
+  "lastUsedAt": null
+}

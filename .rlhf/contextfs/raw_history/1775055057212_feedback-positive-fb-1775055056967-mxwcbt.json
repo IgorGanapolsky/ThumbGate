@@ -1,0 +1,19 @@
+{
+  "id": "1775055057212_feedback-positive-fb-1775055056967-mxwcbt",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775055056967_mxwcbt",
+  "content": "{\"id\":\"fb_1775055056967_mxwcbt\",\"signal\":\"positive\",\"context\":\"adapter proof harness\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"end-to-end verification flow\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"verification\",\"proof\",\"entity:Customer\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-04-01T14:50:56.967Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "verification",
+    "proof",
+    "entity:Customer"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-01T14:50:57.212Z",
+  "lastUsedAt": null
+}

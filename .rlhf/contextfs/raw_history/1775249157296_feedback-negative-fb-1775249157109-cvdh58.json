@@ -1,0 +1,17 @@
+{
+  "id": "1775249157296_feedback-negative-fb-1775249157109-cvdh58",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775249157109_cvdh58",
+  "content": "{\"id\":\"fb_1775249157109_cvdh58\",\"signal\":\"negative\",\"context\":\"test context\",\"submittedContext\":\"test context\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":\"something failed\",\"whatToChange\":\"fix the issue\",\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"debugging\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T20:45:57.109Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "debugging"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-03T20:45:57.296Z",
+  "lastUsedAt": null
+}

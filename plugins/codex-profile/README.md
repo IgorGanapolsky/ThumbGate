@@ -27,7 +27,7 @@ Copy the MCP profile from `adapters/codex/config.toml` into `~/.codex/config.tom
 That profile launches:
 
 ```toml
-[mcp_servers.rlhf]
+[mcp_servers.thumbgate]
 command = "npx"
 args = ["-y", "mcp-memory-gateway@0.9.9", "serve"]
 ```

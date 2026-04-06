@@ -7,7 +7,7 @@ const path = require('path');
 const os = require('os');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'org-dash-test-'));
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const {
   registerAgent,
@@ -97,15 +97,15 @@ describe('org dashboard', () => {
   });
 
   it('shows upgrade message on free tier', () => {
-    const origPro = process.env.RLHF_PRO_MODE;
-    delete process.env.RLHF_PRO_MODE;
-    delete process.env.RLHF_API_KEY;
+    const origPro = process.env.THUMBGATE_PRO_MODE;
+    delete process.env.THUMBGATE_PRO_MODE;
+    delete process.env.THUMBGATE_API_KEY;
     const dash = generateOrgDashboard();
     assert.ok(dash.proRequired === true || dash.proRequired === false);
     if (dash.proRequired) {
       assert.ok(dash.upgradeMessage.includes('checkout'));
     }
-    if (origPro !== undefined) process.env.RLHF_PRO_MODE = origPro;
+    if (origPro !== undefined) process.env.THUMBGATE_PRO_MODE = origPro;
   });
 
   it('agents have adherenceRate computed', () => {

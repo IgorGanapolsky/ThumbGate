@@ -10,19 +10,19 @@
 
 This milestone adds features in two directions:
 
-1. **Into `rlhf-feedback-loop` (Node.js):** Thompson Sampling posteriors, LanceDB vector storage, LSTM sequence features, diversity tracking, RLAIF self-scoring
+1. **Into `thumbgate` (Node.js):** Thompson Sampling posteriors, LanceDB vector storage, LSTM sequence features, diversity tracking, RLAIF self-scoring
 2. **Into `Subway_RN_Demo` (React Native):** budget guard, intent router, policy bundles, ContextFS, self-healing monitor
 
 The existing stack baseline is:
 
-- `rlhf-feedback-loop` v0.5.0: **zero npm dependencies** — pure CommonJS Node.js >=25 (confirmed: `node v25.6.1`)
+- `thumbgate` v0.5.0: **zero npm dependencies** — pure CommonJS Node.js >=25 (confirmed: `node v25.6.1`)
 - `Subway_RN_Demo` v100.1.0: React Native 0.81.4 + Expo 54 + TypeScript, Python venv at `.claude/scripts/feedback/venv/`
 
 ---
 
 ## Recommended Stack
 
-### Core Technologies — rlhf-feedback-loop additions
+### Core Technologies — thumbgate additions
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
@@ -35,9 +35,9 @@ The existing stack baseline is:
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| Pure JS/CommonJS (copy from rlhf-feedback-loop) | — | budget-guard.js, intent-router.js, contextfs.js, self-healing-check.js, mcp-policy.js | These scripts use zero npm dependencies; they are file-system and `child_process` based; direct copy + Subway path adaptation is the right approach — no new packages required |
+| Pure JS/CommonJS (copy from thumbgate) | — | budget-guard.js, intent-router.js, contextfs.js, self-healing-check.js, mcp-policy.js | These scripts use zero npm dependencies; they are file-system and `child_process` based; direct copy + Subway path adaptation is the right approach — no new packages required |
 
-### Supporting Libraries — rlhf-feedback-loop
+### Supporting Libraries — thumbgate
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
@@ -50,7 +50,7 @@ The existing stack baseline is:
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| Node.js built-in test runner (`node --test`) | Unit tests for all new rlhf-feedback-loop scripts | Already the test runner used by the project; do NOT add jest or vitest |
+| Node.js built-in test runner (`node --test`) | Unit tests for all new thumbgate scripts | Already the test runner used by the project; do NOT add jest or vitest |
 | Python 3.14 (system) | Run Thompson Sampling trainer and venv scripts | Already at 3.14.3; no version change needed |
 | Python venv at `.claude/scripts/feedback/venv/` | Isolated deps for Subway feedback scripts | Already has lancedb 0.27.1, sentence-transformers 3.0.1, torch, scipy installed |
 
@@ -58,11 +58,11 @@ The existing stack baseline is:
 
 ## Installation
 
-### For rlhf-feedback-loop (new deps only)
+### For thumbgate (new deps only)
 
 ```bash
 # Only these three are new — everything else stays zero-dependency
-cd /path/to/rlhf-feedback-loop
+cd /path/to/thumbgate
 
 npm install @lancedb/lancedb@0.26.2
 npm install apache-arrow@18.1.0
@@ -71,7 +71,7 @@ npm install @huggingface/transformers@3.8.1
 
 ### For Subway_RN_Demo (no new npm deps)
 
-The governance scripts (budget-guard, intent-router, contextfs, self-healing, mcp-policy) require no npm packages. They copy directly from rlhf-feedback-loop with path adjustments only.
+The governance scripts (budget-guard, intent-router, contextfs, self-healing, mcp-policy) require no npm packages. They copy directly from thumbgate with path adjustments only.
 
 ```bash
 # No npm install needed.
@@ -97,7 +97,7 @@ The governance scripts (budget-guard, intent-router, contextfs, self-healing, mc
 | `@huggingface/transformers` v3 | Python subprocess + sentence-transformers | Only if you need embedding quality beyond all-MiniLM-L6-v2 (e.g., e5-base-v2) and cannot use Node.js inference; adds process spawning latency |
 | Native `Math.random()` Beta | `jStat` or `ml-stat` | Only if you need a full statistical distribution library elsewhere in the codebase; overkill for a single Beta-Bernoulli sampler |
 | `@huggingface/transformers` v3 | Anthropic Embeddings API | Do NOT use for embeddings — violates the $10/month budget cap; local inference is free |
-| Native Node.js `node --test` | Jest / Vitest | Never for rlhf-feedback-loop — the project already uses `node --test`; adding a test framework breaks the zero-dependency stance |
+| Native Node.js `node --test` | Jest / Vitest | Never for thumbgate — the project already uses `node --test`; adding a test framework breaks the zero-dependency stance |
 
 ---
 
@@ -111,44 +111,44 @@ The governance scripts (budget-guard, intent-router, contextfs, self-healing, mc
 | `@lancedb/lancedb@0.27.0-beta.*` | Beta; API includes breaking changes (`napi-rs v3` upgrade); may affect native binary loading | `@lancedb/lancedb@0.26.2` (stable) |
 | Anthropic API for embeddings | Costs money per call; violates $10/month budget cap | `@huggingface/transformers` local ONNX inference |
 | `chromadb` (npm or Python) | Subway's local-rag.py uses ChromaDB as a fallback, but LanceDB is already the primary store (see `lance-index-state.json`); ChromaDB adds a second vector DB with no benefit | `@lancedb/lancedb` exclusively |
-| Any Python ML library added to rlhf-feedback-loop | rlhf-feedback-loop is a Node.js-only project; adding Python deps breaks the architecture | Node.js-native alternatives (@huggingface/transformers for embeddings) |
+| Any Python ML library added to thumbgate | thumbgate is a Node.js-only project; adding Python deps breaks the architecture | Node.js-native alternatives (@huggingface/transformers for embeddings) |
 
 ---
 
 ## Stack Patterns by Variant
 
-**If adding Thompson Sampling to rlhf-feedback-loop (JS):**
+**If adding Thompson Sampling to thumbgate (JS):**
 - Implement `BetaBernoulliModel` as a pure JS class with `alpha`/`beta` per category
 - Use `Math.random()` for `betavariate` approximation (Johnk's method or accept stdlib approximation)
 - Store model state in `feedback_model.json` (mirrors Subway's `train_from_feedback.py` storage)
 - Because Node.js 25 has no `scipy.stats` equivalent, implement the Beta inverse CDF using the regularized incomplete Beta function — OR use the simpler approximation: `sample = -Math.log(Math.random()) / alpha` which is a Gamma approximation sufficient for bandit exploration
 
-**If adding LanceDB vector storage to rlhf-feedback-loop (JS):**
+**If adding LanceDB vector storage to thumbgate (JS):**
 - Use ESM import (`import { connect } from '@lancedb/lancedb'`) — the package is ESM-only in 0.26.x
-- BUT rlhf-feedback-loop is CommonJS (`"type": "commonjs"` in package.json) — use dynamic import: `const { connect } = await import('@lancedb/lancedb')`
+- BUT thumbgate is CommonJS (`"type": "commonjs"` in package.json) — use dynamic import: `const { connect } = await import('@lancedb/lancedb')`
 - Store the LanceDB files in `FEEDBACK_DIR/lancedb/` to mirror Subway's path layout
 - Use `all-MiniLM-L6-v2` via `@huggingface/transformers` for 384-dim embeddings (same model Subway uses)
 
-**If adding LSTM sequence features to rlhf-feedback-loop (JS):**
+**If adding LSTM sequence features to thumbgate (JS):**
 - The LSTM architecture in Subway is purely data-structural (no actual PyTorch LSTM): `buildSequenceFeatures()` produces `rewardSequence`, `tagFrequency`, `recentTrend`, `timeGaps` arrays
 - Port the JavaScript implementation directly from `capture-feedback.js` in Subway — no ML library required
 - Store sequences in `feedback-sequences.jsonl` (same schema as Subway)
 
-**If adding diversity tracking to rlhf-feedback-loop (JS):**
+**If adding diversity tracking to thumbgate (JS):**
 - Track category distribution across `DOMAIN_CATEGORIES` array
 - Compute Gini coefficient or Shannon entropy over category counts to detect representation collapse
 - Store in `diversity-tracking.json` (mirrors Subway's `DIVERSITY_FILE`)
 - No external library needed — pure JS arithmetic
 
-**If adding RLAIF self-scoring to rlhf-feedback-loop:**
+**If adding RLAIF self-scoring to thumbgate:**
 - Call the Claude API (Anthropic SDK `@anthropic-ai/sdk@0.78.0`) to score rubric criteria automatically
 - Budget guard MUST wrap every RLAIF call — charge $0.001–$0.01 per scoring call to the ledger
-- Only invoke RLAIF when `RLHF_ENABLE_RLAIF=true` env var is set (opt-in to prevent surprise costs)
+- Only invoke RLAIF when `THUMBGATE_ENABLE_RLAIF=true` env var is set (opt-in to prevent surprise costs)
 
 **If porting governance scripts to Subway_RN_Demo:**
-- Scripts are CommonJS with zero deps; copy verbatim, then set `RLHF_FEEDBACK_DIR` to point to Subway's `.claude/memory/feedback/`
-- The `RLHF_MONTHLY_BUDGET_USD` env var defaults to `10` — matches the project constraint
-- Self-healing monitor wraps existing `jest --watchman=false` and Expo prebuild commands (not the same checks as rlhf-feedback-loop's `npm test`)
+- Scripts are CommonJS with zero deps; copy verbatim, then set `THUMBGATE_FEEDBACK_DIR` to point to Subway's `.claude/memory/feedback/`
+- The `THUMBGATE_MONTHLY_BUDGET_USD` env var defaults to `10` — matches the project constraint
+- Self-healing monitor wraps existing `jest --watchman=false` and Expo prebuild commands (not the same checks as thumbgate's `npm test`)
 
 ---
 

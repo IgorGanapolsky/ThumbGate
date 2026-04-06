@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const DEFAULT_PRO_API = 'https://rlhf-feedback-loop-production.up.railway.app';
+const DEFAULT_PRO_API = 'https://thumbgate-production.up.railway.app';
 const CREATOR_BYPASS_VALUE = process.env.THUMBGATE_DEV_SECRET || '';
 const CREATOR_BYPASS_ENV = 'THUMBGATE_DEV_BYPASS';
 const CREATOR_SYNTHETIC_KEY = process.env.THUMBGATE_DEV_KEY || '';
@@ -30,6 +30,21 @@ function isCreatorDev({ env = process.env, homeDir = os.homedir() } = {}) {
     }
   } catch { /* not a dev machine */ }
   return false;
+}
+
+/**
+ * Developer override: returns true when ~/.config/thumbgate/dev.json exists
+ * with any non-empty bypass value. No env var needed — just the config file.
+ * Used by the server to skip auth on localhost during local development.
+ */
+function hasDevOverride(homeDir = os.homedir()) {
+  // Disabled during test runs to avoid interfering with auth assertions
+  if (process.env.NODE_TEST_CONTEXT || process.env.THUMBGATE_TESTING) return false;
+  try {
+    const configPath = path.join(homeDir, '.config', 'thumbgate', 'dev.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    return config && typeof config.bypass === 'string' && config.bypass.length > 0;
+  } catch { return false; }
 }
 
 function getLicenseDir(homeDir = os.homedir()) {
@@ -73,7 +88,7 @@ function resolveProKey({ env = process.env, homeDir } = {}) {
     };
   }
 
-  const envKey = String(env.RLHF_API_KEY || '').trim();
+  const envKey = String(env.THUMBGATE_API_KEY || '').trim();
   if (envKey) {
     return {
       key: envKey,
@@ -127,8 +142,8 @@ async function startLocalProDashboard({
     throw new Error('Pro license key required.');
   }
 
-  env.RLHF_PRO_MODE = '1';
-  env.RLHF_API_KEY = normalizedKey;
+  env.THUMBGATE_PRO_MODE = '1';
+  env.THUMBGATE_API_KEY = normalizedKey;
 
   const desiredPort = Number(port ?? env.PORT ?? 3456);
   env.PORT = String(desiredPort);
@@ -149,6 +164,7 @@ module.exports = {
   DEFAULT_PRO_API,
   getLicenseDir,
   getLicensePath,
+  hasDevOverride,
   isCreatorDev,
   readLicense,
   saveLicense,

@@ -1,0 +1,17 @@
+{
+  "id": "1773744179936_feedback-positive-fb-1773744179935-hpoe8e",
+  "title": "feedback_positive_fb_1773744179935_hpoe8e",
+  "content": "{\"id\":\"fb_1773744179935_hpoe8e\",\"signal\":\"positive\",\"context\":\"Implemented with tests and evidence\",\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Used proof harness and verification logs\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"verification\",\"automation\"],\"skill\":null,\"rubric\":{\"rubricId\":\"default-v1\",\"weightedScore\":0.6,\"failingCriteria\":[],\"failingGuardrails\":[],\"judgeDisagreements\":[],\"promotionEligible\":true},\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-17T10:42:59.935Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "verification",
+    "automation"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-17T10:42:59.936Z",
+  "lastUsedAt": null
+}

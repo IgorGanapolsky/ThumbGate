@@ -1,0 +1,19 @@
+{
+  "id": "1774646813668_feedback-positive-fb-1774646813020-d3yyrp",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774646813020_d3yyrp",
+  "content": "{\"id\":\"fb_1774646813020_d3yyrp\",\"signal\":\"positive\",\"context\":\"ran tests and verified output\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"evidence-first approach\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"verification\",\"watcher-ingested\",\"bridged-from:amp-plugin-bridge\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-27T21:26:53.020Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "verification",
+    "watcher-ingested",
+    "bridged-from:amp-plugin-bridge"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-27T21:26:53.669Z",
+  "lastUsedAt": null
+}

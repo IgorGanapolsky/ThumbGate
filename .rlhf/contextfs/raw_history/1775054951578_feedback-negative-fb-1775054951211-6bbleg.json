@@ -1,0 +1,20 @@
+{
+  "id": "1775054951578_feedback-negative-fb-1775054951211-6bbleg",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775054951211_6bbleg",
+  "content": "{\"id\":\"fb_1775054951211_6bbleg\",\"signal\":\"negative\",\"context\":\"Gate \\\"secret-exfiltration\\\" blocked tool \\\"Read\\\": Secret material detected in tool input\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:secret-exfiltration\",\"secret-guard\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-01T14:49:11.211Z\",\"richContext\":{\"domain\":\"security\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:secret-exfiltration",
+    "secret-guard"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-01T14:49:11.578Z",
+  "lastUsedAt": null
+}

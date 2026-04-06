@@ -1,0 +1,17 @@
+{
+  "id": "1774965597843_feedback-positive-fb-1774965597445-osuabm",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774965597445_osuabm",
+  "content": "{\"id\":\"fb_1774965597445_osuabm\",\"signal\":\"positive\",\"context\":\"security review completed\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"vulnerability patched correctly\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"security\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-31T13:59:57.445Z\",\"richContext\":{\"domain\":\"security\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "security"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-31T13:59:57.843Z",
+  "lastUsedAt": null
+}

@@ -5,8 +5,8 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-budget-test-'));
-process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
-process.env.RLHF_MONTHLY_BUDGET_USD = '1';
+process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.THUMBGATE_MONTHLY_BUDGET_USD = '1';
 
 const {
   addSpend,
@@ -36,16 +36,16 @@ test('budget guard blocks overspend', () => {
 });
 
 test('invalid budget env value is rejected', () => {
-  assert.throws(() => parseMonthlyBudget('NaN'), /Invalid RLHF_MONTHLY_BUDGET_USD/);
+  assert.throws(() => parseMonthlyBudget('NaN'), /Invalid THUMBGATE_MONTHLY_BUDGET_USD/);
 });
 
 test('parseMonthlyBudget returns default (10) for undefined', () => {
   const { getMonthlyBudget } = require('../scripts/budget-guard');
-  const prevBudget = process.env.RLHF_MONTHLY_BUDGET_USD;
-  delete process.env.RLHF_MONTHLY_BUDGET_USD;
+  const prevBudget = process.env.THUMBGATE_MONTHLY_BUDGET_USD;
+  delete process.env.THUMBGATE_MONTHLY_BUDGET_USD;
   const result = getMonthlyBudget();
   assert.equal(result, 10, 'default monthly budget should be 10');
-  process.env.RLHF_MONTHLY_BUDGET_USD = prevBudget || '1';
+  process.env.THUMBGATE_MONTHLY_BUDGET_USD = prevBudget || '1';
 });
 
 test('parseMonthlyBudget parses valid number string', () => {
@@ -62,10 +62,10 @@ test('getMonthlyBudget returns number greater than 0', () => {
 
 test('getBudgetStatus on fresh ledger shows full remaining budget', () => {
   const freshTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-budget-fresh-'));
-  const prevDir = process.env.RLHF_FEEDBACK_DIR;
-  const prevBudget = process.env.RLHF_MONTHLY_BUDGET_USD;
-  process.env.RLHF_FEEDBACK_DIR = freshTmpDir;
-  process.env.RLHF_MONTHLY_BUDGET_USD = '5';
+  const prevDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const prevBudget = process.env.THUMBGATE_MONTHLY_BUDGET_USD;
+  process.env.THUMBGATE_FEEDBACK_DIR = freshTmpDir;
+  process.env.THUMBGATE_MONTHLY_BUDGET_USD = '5';
 
   // Re-require to pick up new env
   delete require.cache[require.resolve('../scripts/budget-guard')];
@@ -75,7 +75,7 @@ test('getBudgetStatus on fresh ledger shows full remaining budget', () => {
   assert.equal(status.remainingUsd, 5, 'remaining should equal full budget');
 
   fs.rmSync(freshTmpDir, { recursive: true, force: true });
-  process.env.RLHF_FEEDBACK_DIR = prevDir;
-  process.env.RLHF_MONTHLY_BUDGET_USD = prevBudget || '1';
+  process.env.THUMBGATE_FEEDBACK_DIR = prevDir;
+  process.env.THUMBGATE_MONTHLY_BUDGET_USD = prevBudget || '1';
   delete require.cache[require.resolve('../scripts/budget-guard')];
 });

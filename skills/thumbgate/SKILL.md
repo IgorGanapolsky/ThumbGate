@@ -111,4 +111,4 @@ ThumbGate works with any MCP-compatible agent:
 
 - NPM: [mcp-memory-gateway](https://www.npmjs.com/package/mcp-memory-gateway)
 - Repository: [IgorGanapolsky/ThumbGate](https://github.com/IgorGanapolsky/ThumbGate)
-- Dashboard: <https://rlhf-feedback-loop-production.up.railway.app/dashboard>
+- Dashboard: <https://thumbgate-production.up.railway.app/dashboard>

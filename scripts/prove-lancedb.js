@@ -32,7 +32,7 @@ function status(condition) {
 }
 
 async function runProof(options = {}) {
-  const proofDir = options.proofDir || process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+  const proofDir = options.proofDir || process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
   const report = {
     phase: '04-lancedb-vector-storage',
     generated: new Date().toISOString(),
@@ -57,8 +57,8 @@ async function runProof(options = {}) {
   try {
     // Invalidate require.cache to pick up env var
     delete require.cache[require.resolve('./vector-store')];
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
-    process.env.RLHF_VECTOR_STUB_EMBED = 'true';
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+    process.env.THUMBGATE_VECTOR_STUB_EMBED = 'true';
 
     const { upsertFeedback, searchSimilar } = require('./vector-store');
 
@@ -183,8 +183,8 @@ async function runProof(options = {}) {
   try {
     // Re-run a second search to independently verify VEC-04
     delete require.cache[require.resolve('./vector-store')];
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
-    process.env.RLHF_VECTOR_STUB_EMBED = 'true';
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+    process.env.THUMBGATE_VECTOR_STUB_EMBED = 'true';
 
     const { upsertFeedback: upsert2, searchSimilar: search2 } = require('./vector-store');
 
@@ -208,7 +208,7 @@ async function runProof(options = {}) {
         `searchSimilar() returned ${results2.length} result(s). ` +
         `proof-vec01 present: ${hasVec01}. proof-vec04-b present: ${hasVec04b}. ` +
         `API: searchSimilar(queryText, limit=10) returns vector-ranked rows from rlhf_memories table. ` +
-        `Note: stub embed (RLHF_VECTOR_STUB_EMBED=true) returns identical 384-dim unit vectors — ` +
+        `Note: stub embed (THUMBGATE_VECTOR_STUB_EMBED=true) returns identical 384-dim unit vectors — ` +
         `ranking is insertion-order with stub, cosine similarity with real ONNX model.`;
     } else {
       vec04Status = 'fail';
@@ -221,7 +221,7 @@ async function runProof(options = {}) {
       vec04Evidence =
         `searchSimilar() threw network/model error: ${err.message}. ` +
         `VEC-04 behavior is verified by unit tests (tests/vector-store.test.js) which use ` +
-        `RLHF_VECTOR_STUB_EMBED=true. Real embedding requires ONNX model download (network-gated).`;
+        `THUMBGATE_VECTOR_STUB_EMBED=true. Real embedding requires ONNX model download (network-gated).`;
     } else {
       vec04Status = 'fail';
       vec04Evidence = `searchSimilar() threw unexpected error: ${err.message}`;
@@ -234,8 +234,8 @@ async function runProof(options = {}) {
       // ignore cleanup errors
     }
     // Restore env
-    delete process.env.RLHF_FEEDBACK_DIR;
-    delete process.env.RLHF_VECTOR_STUB_EMBED;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
     delete require.cache[require.resolve('./vector-store')];
   }
   addResult('VEC-04', vec04Status, vec04Evidence);

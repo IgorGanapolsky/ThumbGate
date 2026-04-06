@@ -1,0 +1,17 @@
+{
+  "id": "1774991784399_feedback-positive-fb-1774991784030-fvszmi",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774991784030_fvszmi",
+  "content": "{\"id\":\"fb_1774991784030_fvszmi\",\"signal\":\"positive\",\"context\":\"good work\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"evidence-based approach\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"test-no-attribution\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-31T21:16:24.030Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "test-no-attribution"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-31T21:16:24.399Z",
+  "lastUsedAt": null
+}

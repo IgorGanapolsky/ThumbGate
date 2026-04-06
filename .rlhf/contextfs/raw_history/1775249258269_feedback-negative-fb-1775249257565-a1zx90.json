@@ -1,0 +1,20 @@
+{
+  "id": "1775249258269_feedback-negative-fb-1775249257565-a1zx90",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775249257565_a1zx90",
+  "content": "{\"id\":\"fb_1775249257565_a1zx90\",\"signal\":\"negative\",\"context\":\"Gate \\\"push-without-thread-check\\\" blocked tool \\\"Bash\\\": Check PR review threads (reviewThreads first:50) before pushing. Use satisfy_gate('pr_threads_checked', 'evidence') to bypass.\",\"submittedContext\":\"Gate \\\"push-without-thread-check\\\" blocked tool \\\"Bash\\\": Check PR review threads (reviewThreads first:50) before pushing. Use satisfy_gate('pr_threads_checked', 'evidence') to bypass.\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:push-without-thread-check\",\"gates-engine\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T20:47:37.564Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:push-without-thread-check",
+    "gates-engine"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-03T20:47:38.269Z",
+  "lastUsedAt": null
+}

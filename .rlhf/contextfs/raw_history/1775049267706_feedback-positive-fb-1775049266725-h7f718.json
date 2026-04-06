@@ -1,0 +1,17 @@
+{
+  "id": "1775049267706_feedback-positive-fb-1775049266725-h7f718",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775049266725_h7f718",
+  "content": "{\"id\":\"fb_1775049266725_h7f718\",\"signal\":\"positive\",\"context\":\"test context for ML verification\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"the feature worked correctly\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"testing\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-04-01T13:14:26.725Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "testing"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-01T13:14:27.706Z",
+  "lastUsedAt": null
+}

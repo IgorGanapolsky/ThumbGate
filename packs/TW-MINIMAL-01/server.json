@@ -9,7 +9,7 @@
         "packs/TW-MINIMAL-01"
       ],
       "env": {
-        "RLHF_ALLOW_INSECURE": "true"
+        "THUMBGATE_ALLOW_INSECURE": "true"
       }
     }
   }

@@ -17,13 +17,13 @@ That keeps the remote workflow aligned with the Reliability Gateway instead of b
 Install the MCP server in the paired Claude Desktop session with the Dispatch profile:
 
 ```bash
-RLHF_MCP_PROFILE=dispatch claude mcp add rlhf -- npx -y mcp-memory-gateway serve
+THUMBGATE_MCP_PROFILE=dispatch claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
 ```
 
 Verify the tier locally:
 
 ```bash
-RLHF_MCP_PROFILE=dispatch npx mcp-memory-gateway doctor --json
+THUMBGATE_MCP_PROFILE=dispatch npx mcp-memory-gateway doctor --json
 npx mcp-memory-gateway dispatch
 ```
 
@@ -42,7 +42,7 @@ npx mcp-memory-gateway dispatch
 - Write feedback, context packs, or gate evidence.
 - Hit admin-only billing or workflow mutation endpoints.
 
-When a task needs edits, open a dedicated worktree and switch back to `RLHF_MCP_PROFILE=default`.
+When a task needs edits, open a dedicated worktree and switch back to `THUMBGATE_MCP_PROFILE=default`.
 
 ## Recommended prompts
 

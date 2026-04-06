@@ -1,0 +1,20 @@
+{
+  "id": "1774902946968_mistake-failed-2-verification-attempts",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Failed 2 verification attempts",
+  "content": "What went wrong: Failed 2 verification attempts\nHow to avoid: Improve output to avoid known mistake patterns",
+  "tags": [
+    "feedback",
+    "negative",
+    "billing",
+    "verification-loop"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775489739960_pv568u"
+  },
+  "createdAt": "2026-03-30T20:35:46.968Z",
+  "lastUsedAt": null
+}

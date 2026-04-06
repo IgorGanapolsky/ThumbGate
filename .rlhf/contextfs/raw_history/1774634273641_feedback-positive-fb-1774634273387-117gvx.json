@@ -1,0 +1,18 @@
+{
+  "id": "1774634273641_feedback-positive-fb-1774634273387-117gvx",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774634273387_117gvx",
+  "content": "{\"id\":\"fb_1774634273387_117gvx\",\"signal\":\"positive\",\"context\":\"Research-backed HF papers context was integrated by adding research-only ContextFS templates plus metadata capture in autoresearch/GTM flows, while keeping verification semantics unchanged. Successful pattern: verify in a dedicated clean worktree with npm ci, full standard suite, proof artifacts in the temp worktree, then byte-compare changed source files back to the primary checkout and remove stray local proof artifacts.\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"entity:Customer\",\"entity:Funnel\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-27T17:57:53.387Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "entity:Customer",
+    "entity:Funnel"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-27T17:57:53.641Z",
+  "lastUsedAt": null
+}

@@ -11,7 +11,7 @@
  * Ported from Subway_RN_Demo with rlhf schema adaptations:
  * - Uses 'signal' (not 'feedback') with values 'positive'/'negative'
  * - Uses 'id' as required field (not 'source')
- * - RLHF_FEEDBACK_DIR env var for path resolution
+ * - THUMBGATE_FEEDBACK_DIR env var for path resolution
  *
  * Usage (CLI):
  *   echo '{"signal":"positive",...}' | node validate-feedback.js
@@ -34,7 +34,7 @@ const path = require('path');
 const DEFAULT_FEEDBACK_DIR = path.join(__dirname, '..', '.claude', 'memory', 'feedback');
 
 function getFeedbackDir() {
-  return process.env.RLHF_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
+  return process.env.THUMBGATE_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
 }
 
 function getFeedbackPaths() {

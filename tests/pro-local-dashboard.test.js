@@ -36,14 +36,14 @@ test('pro local dashboard helper saves and reloads license keys', () => {
   fs.rmSync(homeDir, { recursive: true, force: true });
 });
 
-test('pro local dashboard helper prefers RLHF_API_KEY over saved license', () => {
+test('pro local dashboard helper prefers THUMBGATE_API_KEY over saved license', () => {
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-pro-env-'));
   saveLicense('tg_saved_license', { homeDir });
 
   const resolved = resolveProKey({
     homeDir,
     env: {
-      RLHF_API_KEY: 'tg_env_override',
+      THUMBGATE_API_KEY: 'tg_env_override',
     },
   });
 
@@ -99,8 +99,8 @@ test('pro local dashboard helper starts localhost dashboard and seeds pro env', 
   });
 
   assert.deepEqual(started, [0]);
-  assert.equal(env.RLHF_PRO_MODE, '1');
-  assert.equal(env.RLHF_API_KEY, 'tg_launch_key');
+  assert.equal(env.THUMBGATE_PRO_MODE, '1');
+  assert.equal(env.THUMBGATE_API_KEY, 'tg_launch_key');
   assert.equal(env.PORT, '0');
   assert.equal(result.port, 4123);
   assert.equal(result.url, 'http://localhost:4123/dashboard');
@@ -145,12 +145,12 @@ test('resolveProKey returns creator-dev source with enterprise plan when bypass 
   assert.equal(resolved.plan, 'enterprise');
 });
 
-test('creator bypass takes priority over env RLHF_API_KEY and saved license', () => {
+test('creator bypass takes priority over env THUMBGATE_API_KEY and saved license', () => {
   const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-creator-prio-'));
   saveLicense('tg_saved_key', { homeDir: tmpHome });
 
   const resolved = resolveProKey({
-    env: { [CREATOR_BYPASS_ENV]: CREATOR_BYPASS_VALUE, RLHF_API_KEY: 'tg_env_key' },
+    env: { [CREATOR_BYPASS_ENV]: CREATOR_BYPASS_VALUE, THUMBGATE_API_KEY: 'tg_env_key' },
     homeDir: tmpHome,
   });
 
@@ -169,5 +169,5 @@ test('startLocalProDashboard works without key when creator bypass is active', a
     startServerImpl: async ({ port }) => ({ server: { close() {} }, port: 5555 }),
   });
   assert.equal(result.port, 5555);
-  assert.equal(env.RLHF_PRO_MODE, '1');
+  assert.equal(env.THUMBGATE_PRO_MODE, '1');
 });

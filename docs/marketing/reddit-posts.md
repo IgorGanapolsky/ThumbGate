@@ -57,11 +57,13 @@ Curious if this framing resonates more than “memory” or “AI employee” do
 **Top comment:**
 
 ```text
-If useful, here is the self-hosted project link:
+If useful, I built this as an open-source project. You can try it free for 7 days — no credit card, installs in 2 minutes:
 
-https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=claudecode_post&community=ClaudeCode&campaign_variant=workflow_hardening_sprint&offer_code=REDDIT-SPRINT#workflow-sprint-intake
+Try free: https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=claudecode_post&community=ClaudeCode&campaign_variant=workflow_hardening_sprint&offer_code=REDDIT-SPRINT#workflow-sprint-intake
 
-I am trying to make this local-first and practical, not just another generic memory layer.
+Source code (MIT licensed): https://github.com/IgorGanapolsky/ThumbGate
+
+Local-first — your feedback stays on your machine. The free tier covers the full workflow-sprint-intake and hardening loop.
 ```
 
 ## r/ClaudeAI Showcase-Safe Variant
@@ -84,6 +86,28 @@ Claude Code helped implement the tool surface, tests, docs, and verification loo
 What is free:
 The self-hosted version is free to try. Paid tiers are optional, but the core local workflow can be used without paying.
 
-Free try:
-https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=claudeai_showcase&community=ClaudeAI&campaign_variant=showcase_safe&offer_code=REDDIT-EARLY#workflow-sprint-intake
+Try free for 7 days (no credit card):
+https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=claudeai_showcase&community=ClaudeAI&campaign_variant=showcase_safe&offer_code=REDDIT-EARLY#workflow-sprint-intake
+
+Source code: https://github.com/IgorGanapolsky/ThumbGate
+```
+
+---
+
+## Standard Follow-Up Comment Template
+
+Use this as the first comment on every Reddit post. Adapt the `{subreddit}` and `{utm_content}` values per post.
+
+```text
+The problem: AI coding agents repeat the same mistakes every session. You correct a force-push, it does it again tomorrow. CLAUDE.md rules get ignored after context compaction.
+
+ThumbGate fixes this with enforcement, not memory. You give a thumbs-down, it auto-generates a prevention rule, and a gate physically blocks the agent from repeating that action. Thumbs-up reinforces good behavior. Over time it builds an immune system from your feedback.
+
+Works with Claude Code, Cursor, Codex, Gemini, and Amp. Fully local, MIT licensed.
+
+Try free for 7 days (no credit card, 2-minute setup): https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content={utm_content}&community={subreddit}#workflow-sprint-intake
+
+Source code: https://github.com/IgorGanapolsky/ThumbGate
+
+Disclosure: I built this.
 ```

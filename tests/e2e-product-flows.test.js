@@ -35,8 +35,8 @@ async function removeDirWithRetries(dirPath, attempts = 5, delayMs = 80) {
 async function startIsolatedServer(t, prefix) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   const savedEnv = {
-    feedbackDir: process.env.RLHF_FEEDBACK_DIR,
-    apiKey: process.env.RLHF_API_KEY,
+    feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
+    apiKey: process.env.THUMBGATE_API_KEY,
     apiKeysPath: process.env._TEST_API_KEYS_PATH,
     funnelPath: process.env._TEST_FUNNEL_LEDGER_PATH,
     revenuePath: process.env._TEST_REVENUE_LEDGER_PATH,
@@ -44,8 +44,8 @@ async function startIsolatedServer(t, prefix) {
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   };
 
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
-  process.env.RLHF_API_KEY = 'e2e-admin-key';
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_API_KEY = 'e2e-admin-key';
   process.env._TEST_API_KEYS_PATH = path.join(tmpDir, 'api-keys.json');
   process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpDir, 'funnel-events.jsonl');
   process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpDir, 'revenue-events.jsonl');
@@ -58,10 +58,10 @@ async function startIsolatedServer(t, prefix) {
   t.after(async () => {
     await new Promise((resolve) => server.close(resolve));
     await removeDirWithRetries(tmpDir);
-    if (savedEnv.feedbackDir) process.env.RLHF_FEEDBACK_DIR = savedEnv.feedbackDir;
-    else delete process.env.RLHF_FEEDBACK_DIR;
-    if (savedEnv.apiKey) process.env.RLHF_API_KEY = savedEnv.apiKey;
-    else delete process.env.RLHF_API_KEY;
+    if (savedEnv.feedbackDir) process.env.THUMBGATE_FEEDBACK_DIR = savedEnv.feedbackDir;
+    else delete process.env.THUMBGATE_FEEDBACK_DIR;
+    if (savedEnv.apiKey) process.env.THUMBGATE_API_KEY = savedEnv.apiKey;
+    else delete process.env.THUMBGATE_API_KEY;
     if (savedEnv.apiKeysPath) process.env._TEST_API_KEYS_PATH = savedEnv.apiKeysPath;
     else delete process.env._TEST_API_KEYS_PATH;
     if (savedEnv.funnelPath) process.env._TEST_FUNNEL_LEDGER_PATH = savedEnv.funnelPath;
@@ -126,7 +126,7 @@ test('E2E: public checkout -> paid local session -> usable dashboard key -> admi
   assert.equal(sessionBody.localMode, true);
   assert.equal(sessionBody.planId, 'team');
   assert.ok(sessionBody.apiKey);
-  assert.ok(sessionBody.nextSteps.env.includes('RLHF_API_KEY='));
+  assert.ok(sessionBody.nextSteps.env.includes('THUMBGATE_API_KEY='));
 
   const renderRes = await fetch(apiUrl(port, '/v1/dashboard/render-spec?view=workflow-rollout&window=lifetime'), {
     headers: {
@@ -156,14 +156,14 @@ test('E2E: public checkout -> paid local session -> usable dashboard key -> admi
 
 test('E2E: localhost dashboard bootstraps Local Pro while forwarded hosts stay unbootstrapped', async (t) => {
   const { port } = await startIsolatedServer(t, 'rlhf-e2e-dashboard-bootstrap-');
-  const previousProMode = process.env.RLHF_PRO_MODE;
-  process.env.RLHF_PRO_MODE = '1';
+  const previousProMode = process.env.THUMBGATE_PRO_MODE;
+  process.env.THUMBGATE_PRO_MODE = '1';
 
   t.after(() => {
     if (previousProMode === undefined) {
-      delete process.env.RLHF_PRO_MODE;
+      delete process.env.THUMBGATE_PRO_MODE;
     } else {
-      process.env.RLHF_PRO_MODE = previousProMode;
+      process.env.THUMBGATE_PRO_MODE = previousProMode;
     }
   });
 
@@ -312,7 +312,7 @@ test('E2E: learn hub and article pages serve live over HTTP', async (t) => {
   const learnHtml = await learnRes.text();
   assert.match(learnHtml, /CollectionPage/);
   assert.match(learnHtml, /Persistent Memory Across Sessions/);
-  assert.match(learnHtml, /data-domain="rlhf-feedback-loop-production\.up\.railway\.app"/);
+  assert.match(learnHtml, /data-domain="thumbgate-production\.up\.railway\.app"/);
 
   const articleRes = await fetch(apiUrl(port, '/learn/agent-harness-pattern'));
   assert.equal(articleRes.status, 200);
@@ -463,12 +463,12 @@ test('E2E: promoted lesson can be viewed, updated, searched, and deleted through
 
 test('E2E: contradictory feedback drives uncertainty through the MCP tool surface', async (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-e2e-uncertainty-'));
-  const savedFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   t.after(async () => {
-    if (savedFeedbackDir) process.env.RLHF_FEEDBACK_DIR = savedFeedbackDir;
-    else delete process.env.RLHF_FEEDBACK_DIR;
+    if (savedFeedbackDir) process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
+    else delete process.env.THUMBGATE_FEEDBACK_DIR;
     await removeDirWithRetries(tmpDir);
   });
 

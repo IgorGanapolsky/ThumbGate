@@ -39,7 +39,7 @@ function parseLeadingJson(text) {
 function initGitRepo() {
   const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-proof-repo-'));
   execFileSync('git', ['init', '-b', 'main'], { cwd: repoPath, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.name', 'RLHF Proof'], { cwd: repoPath, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.name', 'ThumbGate Proof'], { cwd: repoPath, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.email', 'proof@example.com'], { cwd: repoPath, stdio: 'ignore' });
   fs.writeFileSync(path.join(repoPath, 'README.md'), '# proof repo\n');
   execFileSync('git', ['add', 'README.md'], { cwd: repoPath, stdio: 'ignore' });
@@ -181,7 +181,7 @@ async function proveMcpStdioTransport({
 }
 
 async function runProof(options = {}) {
-  const proofDir = options.proofDir || process.env.RLHF_PROOF_DIR || DEFAULT_PROOF_DIR;
+  const proofDir = options.proofDir || process.env.THUMBGATE_PROOF_DIR || DEFAULT_PROOF_DIR;
   const writeArtifacts = options.writeArtifacts !== false;
   const proofPort = options.port ?? 0;
 
@@ -190,14 +190,14 @@ async function runProof(options = {}) {
   }
 
   const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-proof-'));
-  const previousFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
-  const previousApiKey = process.env.RLHF_API_KEY;
-  const previousMcpProfile = process.env.RLHF_MCP_PROFILE;
-  const previousCodegraphStub = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-  process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
-  process.env.RLHF_API_KEY = 'proof-key';
-  process.env.RLHF_MCP_PROFILE = 'default';
-  process.env.RLHF_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const previousApiKey = process.env.THUMBGATE_API_KEY;
+  const previousMcpProfile = process.env.THUMBGATE_MCP_PROFILE;
+  const previousCodegraphStub = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+  process.env.THUMBGATE_API_KEY = 'proof-key';
+  process.env.THUMBGATE_MCP_PROFILE = 'default';
+  process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
     source: 'stub',
     symbols: ['planIntent'],
     callers: ['src/api/server.js -> planIntent', 'adapters/mcp/server-stdio.js -> planIntent'],
@@ -726,7 +726,7 @@ async function runProof(options = {}) {
 
     {
       currentCheck = 'mcp.policy.locked_profile_denies_write_tool';
-      process.env.RLHF_MCP_PROFILE = 'locked';
+      process.env.THUMBGATE_MCP_PROFILE = 'locked';
       let denied = false;
       try {
         await handleRequest({
@@ -741,7 +741,7 @@ async function runProof(options = {}) {
       } catch (err) {
         denied = /not allowed/i.test(String(err.message));
       }
-      process.env.RLHF_MCP_PROFILE = 'default';
+      process.env.THUMBGATE_MCP_PROFILE = 'default';
       check(denied, 'locked profile should deny capture_feedback');
       addResult('mcp.policy.locked_profile_denies_write_tool', true, { denied });
     }
@@ -816,14 +816,14 @@ async function runProof(options = {}) {
     await new Promise((resolve) => server.close(resolve));
     await waitForBackgroundSideEffects();
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
-    if (previousFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-    else process.env.RLHF_FEEDBACK_DIR = previousFeedbackDir;
-    if (previousApiKey === undefined) delete process.env.RLHF_API_KEY;
-    else process.env.RLHF_API_KEY = previousApiKey;
-    if (previousMcpProfile === undefined) delete process.env.RLHF_MCP_PROFILE;
-    else process.env.RLHF_MCP_PROFILE = previousMcpProfile;
-    if (previousCodegraphStub === undefined) delete process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-    else process.env.RLHF_CODEGRAPH_STUB_RESPONSE = previousCodegraphStub;
+    if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+    if (previousApiKey === undefined) delete process.env.THUMBGATE_API_KEY;
+    else process.env.THUMBGATE_API_KEY = previousApiKey;
+    if (previousMcpProfile === undefined) delete process.env.THUMBGATE_MCP_PROFILE;
+    else process.env.THUMBGATE_MCP_PROFILE = previousMcpProfile;
+    if (previousCodegraphStub === undefined) delete process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+    else process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = previousCodegraphStub;
   }
 
   if (writeArtifacts) {

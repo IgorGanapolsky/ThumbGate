@@ -30,7 +30,7 @@ describe('experiment-tracker', () => {
 
   before(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-exp-test-'));
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
     delete require.cache[require.resolve('../scripts/experiment-tracker')];
     delete require.cache[require.resolve('../scripts/feedback-loop')];
     tracker = require('../scripts/experiment-tracker');
@@ -38,7 +38,7 @@ describe('experiment-tracker', () => {
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
   });
 
   it('exports all required functions', () => {
@@ -198,13 +198,13 @@ describe('experiment-tracker', () => {
 
   it('getBestExperiment returns null when no kept experiments', () => {
     const freshTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-exp-empty-'));
-    process.env.RLHF_FEEDBACK_DIR = freshTmp;
+    process.env.THUMBGATE_FEEDBACK_DIR = freshTmp;
     delete require.cache[require.resolve('../scripts/experiment-tracker')];
     delete require.cache[require.resolve('../scripts/feedback-loop')];
     const fresh = require('../scripts/experiment-tracker');
     assert.equal(fresh.getBestExperiment(), null);
     fs.rmSync(freshTmp, { recursive: true, force: true });
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   });
 
   it('updateProgress computes keepRate correctly', () => {
@@ -226,7 +226,7 @@ describe('autoresearch-runner', () => {
 
   before(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runner-test-'));
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
     delete require.cache[require.resolve('../scripts/autoresearch-runner')];
     delete require.cache[require.resolve('../scripts/experiment-tracker')];
     delete require.cache[require.resolve('../scripts/feedback-loop')];
@@ -237,7 +237,7 @@ describe('autoresearch-runner', () => {
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
   });
 
   it('exports all required functions', () => {
@@ -339,7 +339,7 @@ describe('autoresearch integration', () => {
 
   before(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-integration-'));
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
     delete require.cache[require.resolve('../scripts/experiment-tracker')];
     delete require.cache[require.resolve('../scripts/autoresearch-runner')];
     delete require.cache[require.resolve('../scripts/feedback-loop')];
@@ -351,7 +351,7 @@ describe('autoresearch integration', () => {
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
   });
 
   it('experiment tracker and runner share the same paths', () => {

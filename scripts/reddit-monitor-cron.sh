@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO_DIR="/Users/igorganapolsky/workspace/git/igor/rlhf"
-LOG_FILE="${REPO_DIR}/.rlhf/reddit-monitor.log"
+LOG_FILE="${REPO_DIR}/.thumbgate/reddit-monitor.log"
 
 mkdir -p "${REPO_DIR}/.rlhf"
 

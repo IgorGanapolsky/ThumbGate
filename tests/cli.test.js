@@ -5,7 +5,7 @@
  *
  * Verifies:
  *   1. CLI runs without error
- *   2. init command creates .rlhf/ directory with config.json
+ *   2. init command creates .thumbgate/ directory with config.json
  *   3. init command creates/updates .mcp.json with server entry
  *   4. help command exits 0 with usage text listing subcommands
  *   5. Unknown command exits 1
@@ -254,8 +254,8 @@ function unlicensedProEnv(homeDir, overrides = {}) {
     ...process.env,
     HOME: homeDir,
     USERPROFILE: homeDir,
-    RLHF_API_KEY: '',
-    RLHF_PRO_MODE: '',
+    THUMBGATE_API_KEY: '',
+    THUMBGATE_PRO_MODE: '',
     ...overrides,
   };
 }
@@ -544,9 +544,9 @@ describe('bin/cli.js', () => {
         ...process.env,
         HOME: homeDir,
         USERPROFILE: homeDir,
-        RLHF_NO_NUDGE: '1',
-        RLHF_API_KEY: '',
-        RLHF_PRO_MODE: '',
+        THUMBGATE_NO_NUDGE: '1',
+        THUMBGATE_API_KEY: '',
+        THUMBGATE_PRO_MODE: '',
         PORT: '0',
       },
     });
@@ -569,7 +569,7 @@ describe('bin/cli.js', () => {
         ...process.env,
         HOME: homeDir,
         USERPROFILE: homeDir,
-        RLHF_NO_NUDGE: '1',
+        THUMBGATE_NO_NUDGE: '1',
       },
     });
 
@@ -621,8 +621,8 @@ describe('bin/cli.js', () => {
     const result = runCliSync(['lessons', '--query=shipping'], {
       env: {
         ...process.env,
-        RLHF_FEEDBACK_DIR: feedbackDir,
-        RLHF_NO_NUDGE: '1',
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_NO_NUDGE: '1',
       },
     });
 
@@ -636,18 +636,18 @@ describe('bin/cli.js', () => {
 
   test('help command shows Pro nudge on stderr', () => {
     const result = runCliSync(['help'], {
-      env: { ...process.env, RLHF_NO_NUDGE: undefined },
+      env: { ...process.env, THUMBGATE_NO_NUDGE: undefined },
     });
     assert.strictEqual(result.status, 0);
     assert.ok(result.stderr.includes('Pro'), 'Pro nudge should appear on stderr');
   });
 
-  test('RLHF_NO_NUDGE=1 suppresses Pro nudge', () => {
+  test('THUMBGATE_NO_NUDGE=1 suppresses Pro nudge', () => {
     const result = runCliSync(['help'], {
-      env: { ...process.env, RLHF_NO_NUDGE: '1' },
+      env: { ...process.env, THUMBGATE_NO_NUDGE: '1' },
     });
     assert.strictEqual(result.status, 0);
-    assert.ok(!result.stderr.includes('Pro'), 'Pro nudge should be suppressed when RLHF_NO_NUDGE=1');
+    assert.ok(!result.stderr.includes('Pro'), 'Pro nudge should be suppressed when THUMBGATE_NO_NUDGE=1');
   });
 
   test('pro command includes hosted link', () => {
@@ -661,15 +661,15 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('Legacy launcher'), 'Pro command should still mention legacy launcher path');
   });
 
-  test('RLHF_NO_TELEMETRY=1 prevents telemetry ping on init', () => {
+  test('THUMBGATE_NO_TELEMETRY=1 prevents telemetry ping on init', () => {
     const initDir = makeTmpDir();
     const result = runCliSync(['init'], {
       cwd: initDir,
       env: {
         ...process.env,
-        RLHF_NO_TELEMETRY: '1',
-        RLHF_NO_NUDGE: '1',
-        RLHF_API_URL: 'http://127.0.0.1:1',
+        THUMBGATE_NO_TELEMETRY: '1',
+        THUMBGATE_NO_NUDGE: '1',
+        THUMBGATE_API_URL: 'http://127.0.0.1:1',
         HOME: testHomeDir,
         USERPROFILE: testHomeDir,
       },
@@ -686,9 +686,9 @@ describe('bin/cli.js', () => {
       cwd: initDir,
       env: {
         ...process.env,
-        RLHF_NO_NUDGE: '1',
-        RLHF_FEEDBACK_DIR: feedbackDir,
-        RLHF_API_URL: 'http://127.0.0.1:1',
+        THUMBGATE_NO_NUDGE: '1',
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_API_URL: 'http://127.0.0.1:1',
         HOME: testHomeDir,
         USERPROFILE: testHomeDir,
       },
@@ -738,8 +738,8 @@ describe('bin/cli.js', () => {
       cwd: doctorDir,
       env: {
         ...process.env,
-        RLHF_NO_NUDGE: '1',
-        RLHF_MCP_PROFILE: 'default',
+        THUMBGATE_NO_NUDGE: '1',
+        THUMBGATE_MCP_PROFILE: 'default',
         container: '1',
       },
     });
@@ -791,10 +791,10 @@ describe('bin/cli.js', () => {
       cwd: isolatedDir,
       env: {
         ...process.env,
-        RLHF_NO_NUDGE: '1',
-        RLHF_METRICS_SOURCE: 'local',
-        RLHF_MCP_PROFILE: 'dispatch',
-        RLHF_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_NO_NUDGE: '1',
+        THUMBGATE_METRICS_SOURCE: 'local',
+        THUMBGATE_MCP_PROFILE: 'dispatch',
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
         _TEST_API_KEYS_PATH: apiKeysPath,
         _TEST_FUNNEL_LEDGER_PATH: ledgerPath,
         _TEST_REVENUE_LEDGER_PATH: revenuePath,
@@ -919,7 +919,7 @@ describe('bin/cli.js', () => {
         _TEST_API_KEYS_PATH: apiKeysPath,
         _TEST_FUNNEL_LEDGER_PATH: ledgerPath,
         _TEST_REVENUE_LEDGER_PATH: revenuePath,
-        RLHF_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
       },
     });
     assert.equal(result.status, 0, `cfo failed:\n${result.stderr}`);
@@ -1057,7 +1057,7 @@ describe('bin/cli.js', () => {
         _TEST_API_KEYS_PATH: apiKeysPath,
         _TEST_FUNNEL_LEDGER_PATH: ledgerPath,
         _TEST_REVENUE_LEDGER_PATH: revenuePath,
-        RLHF_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
       },
     });
     assert.equal(result.status, 0, `cfo failed:\n${result.stderr}`);
@@ -1080,7 +1080,7 @@ describe('bin/cli.js', () => {
       cwd: isolatedDir,
       env: {
         ...process.env,
-        RLHF_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
         _TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON: JSON.stringify([
           {
             timestamp: '2025-11-18T10:36:00.000Z',
@@ -1143,7 +1143,7 @@ describe('bin/cli.js', () => {
     const env = {
       ...process.env,
       _TEST_REVENUE_LEDGER_PATH: revenuePath,
-      RLHF_GITHUB_MARKETPLACE_PLAN_PRICES_JSON: JSON.stringify({
+      THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON: JSON.stringify({
         80: { amountCents: 4900, currency: 'USD', recurringInterval: 'month' },
       }),
     };
@@ -1215,15 +1215,15 @@ describe('bin/cli.js', () => {
     })}\n`);
 
     const savedEnv = {
-      RLHF_FEEDBACK_DIR: process.env.RLHF_FEEDBACK_DIR,
-      RLHF_API_KEY: process.env.RLHF_API_KEY,
+      THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
+      THUMBGATE_API_KEY: process.env.THUMBGATE_API_KEY,
       _TEST_API_KEYS_PATH: process.env._TEST_API_KEYS_PATH,
       _TEST_FUNNEL_LEDGER_PATH: process.env._TEST_FUNNEL_LEDGER_PATH,
       _TEST_REVENUE_LEDGER_PATH: process.env._TEST_REVENUE_LEDGER_PATH,
     };
 
-    process.env.RLHF_FEEDBACK_DIR = remoteFeedbackDir;
-    process.env.RLHF_API_KEY = 'remote-admin-key';
+    process.env.THUMBGATE_FEEDBACK_DIR = remoteFeedbackDir;
+    process.env.THUMBGATE_API_KEY = 'remote-admin-key';
     process.env._TEST_API_KEYS_PATH = remoteApiKeysPath;
     process.env._TEST_FUNNEL_LEDGER_PATH = remoteFunnelPath;
     process.env._TEST_REVENUE_LEDGER_PATH = remoteRevenuePath;
@@ -1236,9 +1236,9 @@ describe('bin/cli.js', () => {
         cwd: makeTmpDir(),
         env: {
           ...process.env,
-          RLHF_BILLING_API_BASE_URL: remoteBaseUrl,
-          RLHF_API_KEY: 'remote-admin-key',
-          RLHF_METRICS_SOURCE: 'hosted',
+          THUMBGATE_BILLING_API_BASE_URL: remoteBaseUrl,
+          THUMBGATE_API_KEY: 'remote-admin-key',
+          THUMBGATE_METRICS_SOURCE: 'hosted',
         },
       });
 
@@ -1250,8 +1250,8 @@ describe('bin/cli.js', () => {
       assert.equal(payload.summary.revenue.paidOrders, 1);
     } finally {
       await new Promise((resolve) => handle.server.close(resolve));
-      process.env.RLHF_FEEDBACK_DIR = savedEnv.RLHF_FEEDBACK_DIR;
-      process.env.RLHF_API_KEY = savedEnv.RLHF_API_KEY;
+      process.env.THUMBGATE_FEEDBACK_DIR = savedEnv.THUMBGATE_FEEDBACK_DIR;
+      process.env.THUMBGATE_API_KEY = savedEnv.THUMBGATE_API_KEY;
       process.env._TEST_API_KEYS_PATH = savedEnv._TEST_API_KEYS_PATH;
       process.env._TEST_FUNNEL_LEDGER_PATH = savedEnv._TEST_FUNNEL_LEDGER_PATH;
       process.env._TEST_REVENUE_LEDGER_PATH = savedEnv._TEST_REVENUE_LEDGER_PATH;
@@ -1266,9 +1266,9 @@ describe('bin/cli.js', () => {
       cwd: isolatedDir,
       env: {
         ...process.env,
-        RLHF_FEEDBACK_DIR: feedbackDir,
-        RLHF_RAM_BYTES_OVERRIDE: String(4 * 1024 * 1024 * 1024),
-        RLHF_CPU_COUNT_OVERRIDE: '2',
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_RAM_BYTES_OVERRIDE: String(4 * 1024 * 1024 * 1024),
+        THUMBGATE_CPU_COUNT_OVERRIDE: '2',
       },
     });
     assert.equal(result.status, 0, `model-fit failed:\n${result.stderr}`);
@@ -1288,7 +1288,7 @@ describe('bin/cli.js', () => {
       cwd: isolatedDir,
       env: {
         ...process.env,
-        RLHF_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
       },
     });
     assert.equal(result.status, 0, `risk failed:\n${result.stderr}`);
@@ -1315,7 +1315,7 @@ describe('bin/cli.js', () => {
       cwd: isolatedDir,
       env: {
         ...process.env,
-        RLHF_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
       },
     });
     assert.equal(result.status, 0, `risk scoring failed:\n${result.stderr}`);
@@ -1327,11 +1327,11 @@ describe('bin/cli.js', () => {
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
 
-  test('init creates .rlhf/ directory', () => {
+  test('init creates .thumbgate/ directory', () => {
     const result = runCliSync(['init'], { cwd: tmpDir });
     assert.strictEqual(result.status, 0, `init failed:\n${result.stderr}`);
     const rlhfDir = path.join(tmpDir, '.rlhf');
-    assert.ok(fs.existsSync(rlhfDir), '.rlhf/ directory should be created');
+    assert.ok(fs.existsSync(rlhfDir), '.thumbgate/ directory should be created');
   });
 
   test('init creates config.json with required fields', () => {
@@ -1397,7 +1397,7 @@ describe('bin/cli.js', () => {
       cwd: isolatedDir,
       env: {
         ...process.env,
-        RLHF_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
       },
     });
 
@@ -1455,15 +1455,15 @@ describe('bin/cli.js', () => {
     })}\n`);
 
     const savedEnv = {
-      RLHF_FEEDBACK_DIR: process.env.RLHF_FEEDBACK_DIR,
-      RLHF_API_KEY: process.env.RLHF_API_KEY,
+      THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
+      THUMBGATE_API_KEY: process.env.THUMBGATE_API_KEY,
       _TEST_API_KEYS_PATH: process.env._TEST_API_KEYS_PATH,
       _TEST_FUNNEL_LEDGER_PATH: process.env._TEST_FUNNEL_LEDGER_PATH,
       _TEST_REVENUE_LEDGER_PATH: process.env._TEST_REVENUE_LEDGER_PATH,
     };
 
-    process.env.RLHF_FEEDBACK_DIR = remoteFeedbackDir;
-    process.env.RLHF_API_KEY = 'remote-admin-key';
+    process.env.THUMBGATE_FEEDBACK_DIR = remoteFeedbackDir;
+    process.env.THUMBGATE_API_KEY = 'remote-admin-key';
     process.env._TEST_API_KEYS_PATH = remoteApiKeysPath;
     process.env._TEST_FUNNEL_LEDGER_PATH = remoteFunnelPath;
     process.env._TEST_REVENUE_LEDGER_PATH = remoteRevenuePath;
@@ -1476,9 +1476,9 @@ describe('bin/cli.js', () => {
         cwd: makeTmpDir(),
         env: {
           ...process.env,
-          RLHF_BILLING_API_BASE_URL: remoteBaseUrl,
-          RLHF_API_KEY: 'remote-admin-key',
-          RLHF_METRICS_SOURCE: 'hosted',
+          THUMBGATE_BILLING_API_BASE_URL: remoteBaseUrl,
+          THUMBGATE_API_KEY: 'remote-admin-key',
+          THUMBGATE_METRICS_SOURCE: 'hosted',
         },
       });
 
@@ -1489,8 +1489,8 @@ describe('bin/cli.js', () => {
       assert.match(result.stdout, /Booked revenue\s*:\s*\$49\.00/);
     } finally {
       await new Promise((resolve) => handle.server.close(resolve));
-      process.env.RLHF_FEEDBACK_DIR = savedEnv.RLHF_FEEDBACK_DIR;
-      process.env.RLHF_API_KEY = savedEnv.RLHF_API_KEY;
+      process.env.THUMBGATE_FEEDBACK_DIR = savedEnv.THUMBGATE_FEEDBACK_DIR;
+      process.env.THUMBGATE_API_KEY = savedEnv.THUMBGATE_API_KEY;
       process.env._TEST_API_KEYS_PATH = savedEnv._TEST_API_KEYS_PATH;
       process.env._TEST_FUNNEL_LEDGER_PATH = savedEnv._TEST_FUNNEL_LEDGER_PATH;
       process.env._TEST_REVENUE_LEDGER_PATH = savedEnv._TEST_REVENUE_LEDGER_PATH;
@@ -1573,7 +1573,7 @@ describe('bin/cli.js', () => {
     fs.mkdirSync(codexHome, { recursive: true });
     fs.writeFileSync(
       configPath,
-      '[mcp_servers.rlhf]\ncommand = "node"\nargs = ["/tmp/disposable-worktree/adapters/mcp/server-stdio.js"]\n'
+      '[mcp_servers.thumbgate]\ncommand = "node"\nargs = ["/tmp/disposable-worktree/adapters/mcp/server-stdio.js"]\n'
     );
 
     const result = runCliSync(['init'], {

@@ -16,7 +16,7 @@ const { execSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 function getProofDir() {
-  return process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+  return process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
 }
 
 function ensureDir(d) {

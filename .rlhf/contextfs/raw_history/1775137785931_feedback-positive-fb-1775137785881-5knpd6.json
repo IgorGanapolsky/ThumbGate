@@ -1,0 +1,22 @@
+{
+  "id": "1775137785931_feedback-positive-fb-1775137785881-5knpd6",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775137785881_5knpd6",
+  "content": "{\"id\":\"fb_1775137785881_5knpd6\",\"signal\":\"positive\",\"context\":\"Job async-runner-harness-job passed verification after 1 attempt(s)\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Verification loop accepted output\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"verification\",\"dogfood\",\"quality\",\"natural-language-harness\",\"repo-full-verification\",\"verification-loop\"],\"skill\":\"natural-language-harness\",\"failureType\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-04-02T13:49:45.881Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "verification",
+    "dogfood",
+    "quality",
+    "natural-language-harness",
+    "repo-full-verification",
+    "verification-loop"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-02T13:49:45.931Z",
+  "lastUsedAt": null
+}

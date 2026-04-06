@@ -4,13 +4,13 @@
 const fs = require('fs');
 const path = require('path');
 const { createSchedule } = require('./schedule-manager');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const IDLE_THRESHOLD_MINUTES = 30;
 const SLOW_LOOP_STATE_FILE = 'slow-loop-state.json';
 
 function getStatePath() {
-  const feedbackDir = process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
-  return path.join(feedbackDir, SLOW_LOOP_STATE_FILE);
+  return path.join(resolveFeedbackDir(), SLOW_LOOP_STATE_FILE);
 }
 
 function loadState() {
@@ -27,7 +27,7 @@ function saveState(state) {
 }
 
 function isIdle({ thresholdMinutes = IDLE_THRESHOLD_MINUTES } = {}) {
-  const feedbackDir = process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  const feedbackDir = resolveFeedbackDir();
   const logPath = path.join(feedbackDir, 'feedback-log.jsonl');
   if (!fs.existsSync(logPath)) return true;
   try {
@@ -42,7 +42,7 @@ function runSlowLoop({ thresholdMinutes = IDLE_THRESHOLD_MINUTES, force = false 
   const idle = force || isIdle({ thresholdMinutes });
   if (!idle) { state.lastIdleCheckAt = new Date().toISOString(); saveState(state); return { action: 'skipped', reason: 'system not idle', idle: false, state }; }
 
-  const feedbackDir = process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  const feedbackDir = resolveFeedbackDir();
   const logPath = path.join(feedbackDir, 'feedback-log.jsonl');
   let newEntries = 0;
   if (fs.existsSync(logPath)) {

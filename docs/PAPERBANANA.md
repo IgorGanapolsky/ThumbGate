@@ -3,7 +3,7 @@
 ## Budget-safe policy
 
 - Monthly cap enforced by `scripts/budget-guard.js`.
-- Default cap: `$10/month` (`RLHF_MONTHLY_BUDGET_USD=10`).
+- Default cap: `$10/month` (`THUMBGATE_MONTHLY_BUDGET_USD=10`).
 - Diagram generation script blocks projected overspend before calls and logs spend only after successful generation.
 
 ## Setup

@@ -47,7 +47,7 @@ function toMarkdown(report) {
 }
 
 function runWorkflowContractProof(options = {}) {
-  const proofDir = options.proofDir || process.env.RLHF_WORKFLOW_CONTRACT_PROOF_DIR || DEFAULT_PROOF_DIR;
+  const proofDir = options.proofDir || process.env.THUMBGATE_WORKFLOW_CONTRACT_PROOF_DIR || DEFAULT_PROOF_DIR;
   const writeArtifacts = options.writeArtifacts !== false;
   const validation = runWorkflowContractValidation({ projectRoot: options.projectRoot || PROJECT_ROOT });
 

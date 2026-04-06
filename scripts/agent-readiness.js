@@ -29,7 +29,7 @@ const BOOTSTRAP_FILES = [
   { id: 'claude', path: 'CLAUDE.md', required: true },
   { id: 'gemini', path: 'GEMINI.md', required: true },
   { id: 'mcp', path: '.mcp.json', required: true },
-  { id: 'rlhfConfig', path: '.rlhf/config.json', required: false },
+  { id: 'rlhfConfig', path: '.thumbgate/config.json', required: false },
 ];
 
 const MCP_PROFILE_TIERS = {

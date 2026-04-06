@@ -11,7 +11,7 @@ const {
 } = require('./cloudflare-dynamic-sandbox');
 
 const ROOT = path.join(__dirname, '..');
-const DEFAULT_PROOF_DIR = process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+const DEFAULT_PROOF_DIR = process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
 
 function npmCommand() {
   return process.platform === 'win32' ? 'npm.cmd' : 'npm';

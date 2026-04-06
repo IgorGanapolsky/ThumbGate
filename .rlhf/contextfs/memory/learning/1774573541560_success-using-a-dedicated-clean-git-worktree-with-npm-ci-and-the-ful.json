@@ -1,0 +1,23 @@
+{
+  "id": "1774573541560_success-using-a-dedicated-clean-git-worktree-with-npm-ci-and-the-ful",
+  "namespace": "memory/learning",
+  "title": "SUCCESS: Using a dedicated clean git worktree with npm ci and the ful",
+  "content": "What worked: Using a dedicated clean git worktree with npm ci and the full verify suite caught environment-sensitive CLI assumptions without trusting the dirty primary checkout.\nRubric weighted score: 0\nRubric criteria passed with no blocking guardrails.",
+  "tags": [
+    "feedback",
+    "positive",
+    "tech-debt-audit",
+    "verification",
+    "worktree-hygiene",
+    "clean-worktree",
+    "repo-hygiene"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "learning",
+    "sourceFeedbackId": "fb_1774573541342_gh0yn4"
+  },
+  "createdAt": "2026-03-27T01:05:41.560Z",
+  "lastUsedAt": null
+}

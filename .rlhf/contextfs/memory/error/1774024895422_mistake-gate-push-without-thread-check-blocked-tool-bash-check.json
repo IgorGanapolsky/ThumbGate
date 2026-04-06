@@ -1,0 +1,22 @@
+{
+  "id": "1774024895422_mistake-gate-push-without-thread-check-blocked-tool-bash-check",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Gate \"push-without-thread-check\" blocked tool \"Bash\": Check ",
+  "content": "Context: Gate \"push-without-thread-check\" blocked tool \"Bash\": Check PR review threads (reviewThreads first:50) before pushing. Use satisfy_gate('pr_threads_checked', 'evidence') to bypass.\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "audit-trail",
+    "auto-capture",
+    "gate:push-without-thread-check",
+    "gates-engine"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775168513098_gcdbyp"
+  },
+  "createdAt": "2026-03-20T16:41:35.422Z",
+  "lastUsedAt": null
+}

@@ -3,8 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-
-const HOME = process.env.HOME || process.env.USERPROFILE || '';
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const NEG = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
 const POS = new Set(['positive', 'positive_strong', 'up', 'thumbs_up']);
@@ -20,26 +19,15 @@ const MIN_TAG_OVERLAP = 2;
 // ---------------------------------------------------------------------------
 
 /**
- * Discover the feedback directory using the standard RLHF resolution order:
- *   1. RLHF_FEEDBACK_DIR env var
- *   2. .rlhf/ in cwd
+ * Discover the feedback directory using the standard ThumbGate resolution order:
+ *   1. THUMBGATE_FEEDBACK_DIR env var
+ *   2. .thumbgate/ in cwd
  *   3. .claude/memory/feedback/ in cwd
- *   4. ~/.rlhf/projects/<cwd-basename>/
+ *   4. ~/.thumbgate/projects/<cwd-basename>/
  * @returns {string} Resolved feedback directory path
  */
 function discoverFeedbackDir() {
-  if (process.env.RLHF_FEEDBACK_DIR) {
-    return process.env.RLHF_FEEDBACK_DIR;
-  }
-
-  const localRlhf = path.join(process.cwd(), '.rlhf');
-  const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback');
-
-  if (fs.existsSync(localRlhf)) return localRlhf;
-  if (fs.existsSync(localClaude)) return localClaude;
-
-  const projectName = path.basename(process.cwd()) || 'default';
-  return path.join(HOME, '.rlhf', 'projects', projectName);
+  return resolveFeedbackDir();
 }
 
 // ---------------------------------------------------------------------------
@@ -319,7 +307,7 @@ function generateSkillFromCluster(cluster) {
 }
 
 /**
- * Generate skill files from RLHF feedback logs.
+ * Generate skill files from ThumbGate feedback logs.
  *
  * Reads the feedback log, clusters negative feedback by tag overlap,
  * and produces SKILL.md files for clusters with 3+ entries.

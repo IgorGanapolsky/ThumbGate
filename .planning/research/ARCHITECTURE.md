@@ -30,7 +30,7 @@
 └──────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────┐   ┌──────────────────────────────┐
-│   rlhf-feedback-loop (product)   │   │   Subway_RN_Demo (app)        │
+│   thumbgate (product)   │   │   Subway_RN_Demo (app)        │
 │                                  │   │                              │
 │ GOVERNANCE LAYER                 │   │ ML LAYER                     │
 │  budget-guard.js                 │◄──►  train_from_feedback.py      │
@@ -62,7 +62,7 @@
 | `feedback-loop.js` | Capture thumbs signals, invoke RLAIF self-score, propagate to autonomy/context engines, write JSONL | Both repos (shared core) |
 | `feedback-schema.js` | Typed schema validation; discriminated union of action types; reject invalid data at boundary | Both repos (identical) |
 | `rubric-engine.js` | Load weighted criteria JSON, score responses, flag guardrail failures, emit promotion-eligible flag | Both repos |
-| `export-dpo-pairs.js` | Read memory-log.jsonl, pair errors+learnings into DPO triples, write dpo-pairs.jsonl | rlhf-feedback-loop |
+| `export-dpo-pairs.js` | Read memory-log.jsonl, pair errors+learnings into DPO triples, write dpo-pairs.jsonl | thumbgate |
 | `train_from_feedback.py` | Beta-Bernoulli Thompson Sampling; per-category alpha/beta posteriors; exponential time decay; DPO batch optimization | Subway (to receive in rlhf) |
 | `semantic-memory-v2.py` / `agentic-memory.py` | LanceDB vector + FTS hybrid search; A-Mem Zettelkasten linking; BM25 fusion | Subway (to receive in rlhf) |
 | `capture-feedback.js` (Subway variant) | LSTM/Transformer sequence tracking; diversity tracking; action-outcome patterns; streak analytics | Subway (to receive in rlhf) |
@@ -80,7 +80,7 @@
 
 ## Recommended Project Structure
 
-### rlhf-feedback-loop (after receiving Subway ML features)
+### thumbgate (after receiving Subway ML features)
 
 ```
 scripts/
@@ -119,7 +119,7 @@ adapters/                     # Platform shims
 tests/                        # 15 test files (54+ tests)
 ```
 
-### Subway_RN_Demo (after receiving rlhf-feedback-loop governance)
+### Subway_RN_Demo (after receiving thumbgate governance)
 
 ```
 scripts/
@@ -180,7 +180,7 @@ appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
 
 **When to use:** To rank which categories need intervention, select highest-confidence action strategies, and drive DPO training batch selection.
 
-**Trade-offs:** Requires 10+ feedback entries per category to converge. With 264+ entries in Subway, posteriors are already meaningful. rlhf-feedback-loop starts with uniform Beta(1,1) priors.
+**Trade-offs:** Requires 10+ feedback entries per category to converge. With 264+ entries in Subway, posteriors are already meaningful. thumbgate starts with uniform Beta(1,1) priors.
 
 **Example:**
 ```python
@@ -200,7 +200,7 @@ def update_category(model, cat_name, positive, weight=1.0):
 
 **When to use:** Alongside every feedback capture. No separate invocation needed.
 
-**Trade-offs:** Adds ~5ms per capture event (file read + feature extraction). Sequence file grows at ~1KB/entry; manageable for 264+ entries (< 1MB). For rlhf-feedback-loop at 54 tests with fewer feedback entries, the corpus is thin initially.
+**Trade-offs:** Adds ~5ms per capture event (file read + feature extraction). Sequence file grows at ~1KB/entry; manageable for 264+ entries (< 1MB). For thumbgate at 54 tests with fewer feedback entries, the corpus is thin initially.
 
 **Example:**
 ```javascript
@@ -277,7 +277,7 @@ appendJSONL(feedback-log.jsonl)
 appendJSONL(memory-log.jsonl) [validated memory record]
 ```
 
-### Thompson Sampling Training Flow (Subway → rlhf-feedback-loop)
+### Thompson Sampling Training Flow (Subway → thumbgate)
 
 ```
 feedback-log.jsonl
@@ -298,7 +298,7 @@ feedback_model.json (Beta-Bernoulli posteriors)
 --dpo-train → batch DPO optimization from posteriors
 ```
 
-### LanceDB Context Retrieval Flow (Subway → rlhf-feedback-loop)
+### LanceDB Context Retrieval Flow (Subway → thumbgate)
 
 ```
 query string
@@ -355,7 +355,7 @@ agent action request
 intent-router.js: planIntent(intentId)
         |
         +--> loadPolicyBundle(bundleId) → validate JSON
-        +--> getActiveMcpProfile() [from RLHF_MCP_PROFILE or subagent profile]
+        +--> getActiveMcpProfile() [from THUMBGATE_MCP_PROFILE or subagent profile]
         +--> getRequiredApprovalRisks(bundle, profile)
         |
         v
@@ -482,8 +482,8 @@ Phase 10 — Subway receives Self-Healing Monitor (rlhf → Subway)
 
 ### Anti-Pattern 1: Full Merge Instead of Cherry-Pick
 
-**What people do:** Attempt to merge the entire rlhf-feedback-loop codebase into Subway or vice versa.
-**Why it's wrong:** Repos serve different purposes. Subway is a React Native app; rlhf-feedback-loop is a Node.js product library with 5 platform adapters. A full merge would pollute the app with API server code, and pollute the library with RN-specific scripts.
+**What people do:** Attempt to merge the entire thumbgate codebase into Subway or vice versa.
+**Why it's wrong:** Repos serve different purposes. Subway is a React Native app; thumbgate is a Node.js product library with 5 platform adapters. A full merge would pollute the app with API server code, and pollute the library with RN-specific scripts.
 **Do this instead:** Cherry-pick specific scripts. Each script is designed to be standalone (no framework coupling, lazy peer requires).
 
 ### Anti-Pattern 2: Direct Python → Node.js API Calls
@@ -494,7 +494,7 @@ Phase 10 — Subway receives Self-Healing Monitor (rlhf → Subway)
 
 ### Anti-Pattern 3: Shared LanceDB Path Without Table Namespacing
 
-**What people do:** Point rlhf-feedback-loop's new LanceDB integration at the same path as Subway's `~/.shieldcortex/lancedb/`.
+**What people do:** Point thumbgate's new LanceDB integration at the same path as Subway's `~/.shieldcortex/lancedb/`.
 **Why it's wrong:** Cross-repo table writes cause schema conflicts. Subway uses tables: `teams_messages`, `memories`, `links`, `boxes`. rlhf needs its own namespace.
 **Do this instead:** Use a per-repo LanceDB path: `memory/feedback/lancedb/` in each repo's local directory structure. Tables: `rlhf_memories`, `rlhf_errors`, `rlhf_learnings`.
 

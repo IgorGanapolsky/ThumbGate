@@ -14,7 +14,7 @@ function run(feedbackValue, extraArgs = []) {
       encoding: 'utf-8',
       timeout: 10000,
       cwd: path.join(__dirname, '..'),
-      env: { ...process.env, RLHF_FEEDBACK_DIR: tmpDir },
+      env: { ...process.env, THUMBGATE_FEEDBACK_DIR: tmpDir },
     });
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });

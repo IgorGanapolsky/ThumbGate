@@ -10,7 +10,7 @@ const path = require('path');
 const { traceForDpoPair, aggregateTraces } = require('./code-reasoning');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const FEEDBACK_DIR = process.env.RLHF_FEEDBACK_DIR || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+const FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
 const DEFAULT_LOCAL_MEMORY_LOG = path.join(FEEDBACK_DIR, 'memory-log.jsonl');
 
 function readJSONL(filePath) {

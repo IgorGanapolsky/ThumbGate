@@ -1,0 +1,23 @@
+{
+  "id": "1775162335910_mistake-gate-metric-warn-gate-warned-tool-bash-low-revenue-warn",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Gate \"metric-warn-gate\" warned tool \"Bash\": Low revenue warn",
+  "content": "Context: Gate \"metric-warn-gate\" warned tool \"Bash\": Low revenue warning\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "audit-trail",
+    "auto-capture",
+    "gate:metric-warn-gate",
+    "gates-engine",
+    "entity:Revenue"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775168516610_i56hks"
+  },
+  "createdAt": "2026-04-02T20:38:55.910Z",
+  "lastUsedAt": null
+}

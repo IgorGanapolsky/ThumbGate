@@ -59,9 +59,9 @@ test('shouldIngest: respects sourceFilter parameter', () => {
 
 test('processNewEntries: processes new bridged entries and returns correct counts', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -89,9 +89,9 @@ test('processNewEntries: processes new bridged entries and returns correct count
 
 test('processNewEntries: skips already-processed entries (idempotency via offset)', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -115,9 +115,9 @@ test('processNewEntries: skips already-processed entries (idempotency via offset
 
 test('processNewEntries: creates memory records for accepted entries', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 

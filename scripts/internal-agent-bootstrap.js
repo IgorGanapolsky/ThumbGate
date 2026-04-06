@@ -142,7 +142,7 @@ function normalizeInvocation(input = {}) {
   const threadId = deriveThreadId({ source, trigger, thread, task, context });
   const intentId = normalizeText(input.intentId) || inferIntentId({ task, context });
   const prepareSandbox = input.prepareSandbox !== false && Boolean(repoPath);
-  const sandboxRoot = path.resolve(input.sandboxRoot || process.env.RLHF_AGENT_SANDBOX_ROOT || DEFAULT_SANDBOX_ROOT);
+  const sandboxRoot = path.resolve(input.sandboxRoot || process.env.THUMBGATE_AGENT_SANDBOX_ROOT || DEFAULT_SANDBOX_ROOT);
 
   return {
     source,
@@ -276,7 +276,7 @@ function ensureWorktreeSandbox({ repoPath, sandboxRoot, threadId }) {
   }
 
   if (fs.existsSync(sandboxPath) && fs.readdirSync(sandboxPath).length > 0) {
-    throw new Error(`Sandbox path already exists and is not an RLHF worktree: ${sandboxPath}`);
+    throw new Error(`Sandbox path already exists and is not a ThumbGate worktree: ${sandboxPath}`);
   }
 
   execFileSync('git', ['-C', repoPath, 'worktree', 'add', '--detach', sandboxPath, 'HEAD'], {

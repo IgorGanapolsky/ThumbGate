@@ -9,17 +9,17 @@ const path = require('node:path');
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cf-sandbox-feedback-'));
 const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cf-sandbox-proof-'));
 
-process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
-process.env.RLHF_PROOF_DIR = tmpProofDir;
-process.env.RLHF_API_KEY = 'test-api-key';
+process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
+process.env.THUMBGATE_API_KEY = 'test-api-key';
 process.env.CLOUDFLARE_SANDBOX_SHARED_SECRET = 'sandbox-secret';
 process.env._TEST_API_KEYS_PATH = path.join(tmpFeedbackDir, 'api-keys.json');
 process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpFeedbackDir, 'funnel-events.jsonl');
 process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpFeedbackDir, 'revenue-events.jsonl');
 process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = path.join(tmpFeedbackDir, 'local-checkout-sessions.json');
-process.env.RLHF_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
+process.env.THUMBGATE_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
 fs.writeFileSync(
-  process.env.RLHF_BUILD_METADATA_PATH,
+  process.env.THUMBGATE_BUILD_METADATA_PATH,
   JSON.stringify({ buildSha: 'cf-sandbox-build', generatedAt: '2026-04-03T00:00:00.000Z' }, null, 2),
 );
 

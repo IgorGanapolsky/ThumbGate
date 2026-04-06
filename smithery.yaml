@@ -14,4 +14,4 @@ startCommand:
       - "-y"
       - "mcp-memory-gateway"
       - "serve"
-description: "Agent quality feedback loop with Pre-Action Gates — configurable checkpoints that block dangerous tool calls before they execute. Includes prevention rules, RLHF capture, and commerce quality scores."
+description: "Agent quality feedback loop with Pre-Action Gates — configurable checkpoints that block dangerous tool calls before they execute. Includes prevention rules, ThumbGate capture, and commerce quality scores."

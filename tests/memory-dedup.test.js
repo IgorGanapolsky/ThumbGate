@@ -13,17 +13,17 @@ describe('memory dedup', () => {
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dedup-test-'));
-    origEnv = process.env.RLHF_FEEDBACK_DIR;
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
+    origEnv = process.env.THUMBGATE_FEEDBACK_DIR;
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
     // Clear require cache so getFeedbackPaths picks up new env
     delete require.cache[require.resolve('../scripts/feedback-loop')];
   });
 
   afterEach(() => {
     if (origEnv !== undefined) {
-      process.env.RLHF_FEEDBACK_DIR = origEnv;
+      process.env.THUMBGATE_FEEDBACK_DIR = origEnv;
     } else {
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });

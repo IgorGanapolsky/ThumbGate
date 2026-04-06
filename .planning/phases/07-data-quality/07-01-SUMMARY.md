@@ -15,7 +15,7 @@ key_files:
   modified: []
 decisions:
   - "REQUIRED_FIELDS uses ['timestamp','signal','id'] not Subway's ['timestamp','feedback','source'] — rlhf uses normalized signal"
-  - "RLHF_FEEDBACK_DIR env var for path resolution, resolved at call time not module init"
+  - "THUMBGATE_FEEDBACK_DIR env var for path resolution, resolved at call time not module init"
   - "require.main === module guard ensures library and CLI modes coexist"
 metrics:
   duration: 4min

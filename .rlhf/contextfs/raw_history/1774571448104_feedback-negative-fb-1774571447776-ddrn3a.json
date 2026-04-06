@@ -1,0 +1,20 @@
+{
+  "id": "1774571448104_feedback-negative-fb-1774571447776-ddrn3a",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774571447776_ddrn3a",
+  "content": "{\"id\":\"fb_1774571447776_ddrn3a\",\"signal\":\"negative\",\"context\":\"Gate \\\"force-push\\\" blocked tool \\\"Bash\\\": Force push blocked\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:force-push\",\"gates-engine\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-27T00:30:47.776Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:force-push",
+    "gates-engine"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-27T00:30:48.104Z",
+  "lastUsedAt": null
+}

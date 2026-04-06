@@ -1,0 +1,17 @@
+{
+  "id": "1774899384545_feedback-negative-fb-1774899384364-cqv5y4",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774899384364_cqv5y4",
+  "content": "{\"id\":\"fb_1774899384364_cqv5y4\",\"signal\":\"negative\",\"context\":\"bad push\",\"lastAction\":{\"tool\":\"Bash\",\"contextKey\":\"Bash:git_push\",\"file\":null,\"timestamp\":null},\"whatWentWrong\":\"pushed to main\",\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"test-persist\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-30T19:36:24.364Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "test-persist"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-30T19:36:24.545Z",
+  "lastUsedAt": null
+}

@@ -3,7 +3,7 @@
  * mcp-memory-gateway CLI
  *
  * Usage:
- *   npx mcp-memory-gateway init          # scaffold .rlhf/ config + .mcp.json
+ *   npx mcp-memory-gateway init          # scaffold .thumbgate/ config + .mcp.json
  *   npx mcp-memory-gateway init --wire-hooks          # wire hooks only (auto-detect agent)
  *   npx mcp-memory-gateway init --agent claude-code   # scaffold + wire hooks for specific agent
  *   npx mcp-memory-gateway capture       # capture feedback
@@ -31,11 +31,11 @@ const COMMAND = process.argv[2];
 const CWD = process.cwd();
 const PKG_ROOT = path.join(__dirname, '..');
 
-const PRO_URL = 'https://rlhf-feedback-loop-production.up.railway.app';
+const PRO_URL = 'https://thumbgate-production.up.railway.app';
 const PRO_CHECKOUT_URL = PRO_MONTHLY_PAYMENT_LINK;
 
 function upgradeNudge() {
-  if (process.env.RLHF_NO_NUDGE === '1') return;
+  if (process.env.THUMBGATE_NO_NUDGE === '1') return;
   try {
     const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
     if (isProTier()) return;
@@ -56,7 +56,7 @@ function appendLocalTelemetry(payload) {
 }
 
 function telemetryPing(installId) {
-  if (process.env.RLHF_NO_TELEMETRY === '1') return;
+  if (process.env.THUMBGATE_NO_TELEMETRY === '1') return;
   const payloadObject = {
     installId,
     eventType: 'cli_init',
@@ -68,7 +68,7 @@ function telemetryPing(installId) {
     timestamp: new Date().toISOString(),
   };
   appendLocalTelemetry(payloadObject);
-  const apiUrl = process.env.RLHF_API_URL || 'https://rlhf-feedback-loop-production.up.railway.app';
+  const apiUrl = process.env.THUMBGATE_API_URL || 'https://thumbgate-production.up.railway.app';
   const payload = JSON.stringify(payloadObject);
   try {
     const url = new URL('/v1/telemetry/ping', apiUrl);
@@ -81,7 +81,7 @@ function telemetryPing(installId) {
 }
 
 function proNudge(context) {
-  if (process.env.RLHF_NO_NUDGE === '1') return;
+  if (process.env.THUMBGATE_NO_NUDGE === '1') return;
   const messages = [
     `\n  💡 Unlock Pro (${PRO_PRICE_LABEL}): searchable dashboard, DPO export, multi-repo sync\n     ${PRO_CHECKOUT_URL}\n`,
     `\n  💡 Pro tip: export your feedback as DPO training pairs to improve your models.\n     Get Pro: ${PRO_CHECKOUT_URL}\n`,
@@ -93,7 +93,7 @@ function proNudge(context) {
 }
 
 function limitNudge(action) {
-  if (process.env.RLHF_NO_NUDGE === '1') return;
+  if (process.env.THUMBGATE_NO_NUDGE === '1') return;
   process.stderr.write(
     `\n  ⚠️  Free tier: ${action} daily limit reached.\n` +
     `     Upgrade to Pro for unlimited usage — ${PRO_PRICE_LABEL}:\n` +
@@ -120,7 +120,7 @@ function pkgVersion() {
 
 const HOME = process.env.HOME || process.env.USERPROFILE || '';
 const MCP_SERVER_NAME = 'rlhf';
-const LEGACY_MCP_SERVER_NAMES = ['rlhf', 'rlhf-feedback-loop', 'rlhf_feedback_loop'];
+const LEGACY_MCP_SERVER_NAMES = ['rlhf', 'thumbgate', 'rlhf_feedback_loop'];
 
 function mcpEntriesMatch(entry, expectedEntry) {
   return Boolean(
@@ -283,10 +283,10 @@ function setupClaude() {
     console.log('  Claude Code: installed Stop hook');
   }
 
-  // Upsert PostToolUse hook for RLHF statusline cache updates
-  const cacheHookCommand = 'node node_modules/mcp-memory-gateway/scripts/hook-rlhf-cache-updater.js';
+  // Upsert PostToolUse hook for ThumbGate statusline cache updates
+  const cacheHookCommand = 'node node_modules/mcp-memory-gateway/scripts/hook-thumbgate-cache-updater.js';
   const cacheAlreadyPresent = (settings.hooks.PostToolUse || [])
-    .some(entry => (entry.hooks || []).some(h => h.command && h.command.includes('hook-rlhf-cache-updater')));
+    .some(entry => (entry.hooks || []).some(h => h.command && h.command.includes('hook-thumbgate-cache-updater')));
 
   if (!cacheAlreadyPresent) {
     settings.hooks.PostToolUse = settings.hooks.PostToolUse || [];
@@ -295,7 +295,7 @@ function setupClaude() {
       hooks: [{ type: 'command', command: cacheHookCommand }]
     });
     hooksChanged = true;
-    console.log('  Claude Code: installed RLHF cache updater hook');
+    console.log('  Claude Code: installed ThumbGate cache updater hook');
   }
 
   // Upsert statusLine for ThumbGate feedback display
@@ -406,9 +406,9 @@ function init() {
 
   if (!fs.existsSync(rlhfDir)) {
     fs.mkdirSync(rlhfDir, { recursive: true });
-    console.log('Created .rlhf/');
+    console.log('Created .thumbgate/');
   } else {
-    console.log('.rlhf/ already exists — updating config');
+    console.log('.thumbgate/ already exists — updating config');
   }
 
   let existingInstallId = null;
@@ -425,15 +425,15 @@ function init() {
 
   const config = {
     version: pkgVersion(),
-    apiUrl: process.env.RLHF_API_URL || 'http://localhost:3000',
-    logPath: '.rlhf/feedback-log.jsonl',
-    memoryPath: '.rlhf/memory-log.jsonl',
+    apiUrl: process.env.THUMBGATE_API_URL || 'http://localhost:3000',
+    logPath: '.thumbgate/feedback-log.jsonl',
+    memoryPath: '.thumbgate/memory-log.jsonl',
     installId: existingInstallId || crypto.randomUUID(),
     createdAt: new Date().toISOString(),
   };
 
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
-  console.log('Wrote .rlhf/config.json');
+  console.log('Wrote .thumbgate/config.json');
 
   // Always create .mcp.json (project-level MCP config used by Claude, Codex, Cursor)
   mergeMcpJson(path.join(CWD, '.mcp.json'), 'MCP');
@@ -488,10 +488,10 @@ function init() {
   const gitignorePath = path.join(CWD, '.gitignore');
   if (fs.existsSync(gitignorePath)) {
     const gitignore = fs.readFileSync(gitignorePath, 'utf8');
-    const entries = ['.rlhf/feedback-log.jsonl', '.rlhf/memory-log.jsonl'];
+    const entries = ['.thumbgate/feedback-log.jsonl', '.thumbgate/memory-log.jsonl'];
     const missing = entries.filter((e) => !gitignore.includes(e));
     if (missing.length > 0) {
-      fs.appendFileSync(gitignorePath, '\n# RLHF local feedback data\n' + missing.join('\n') + '\n');
+      fs.appendFileSync(gitignorePath, '\n# ThumbGate local feedback data\n' + missing.join('\n') + '\n');
       console.log('Updated .gitignore');
     }
   }
@@ -721,7 +721,7 @@ function pro() {
   } = require(path.join(PKG_ROOT, 'scripts', 'pro-local-dashboard'));
 
   function printProInfo() {
-    const hostedUrl = 'https://rlhf-feedback-loop-production.up.railway.app';
+    const hostedUrl = 'https://thumbgate-production.up.railway.app';
     const truthUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
     console.log('\nThumbGate Pro — Local Dashboard');
     console.log('─'.repeat(50));
@@ -765,7 +765,7 @@ function pro() {
       process.exit(1);
     }
 
-    // Validate key format (RLHF_API_KEY prefix)
+    // Validate key format (THUMBGATE_API_KEY prefix)
     if (!key.startsWith('rlhf_') && !key.startsWith('tg_')) {
       console.error('❌ Invalid license key format. Keys start with "rlhf_" or "tg_".');
       process.exit(1);
@@ -800,7 +800,7 @@ function pro() {
       fs.copyFileSync(path.join(proDir, file), path.join(rlhfDir, file));
     }
 
-    console.log('\n✅ Pro configs installed to .rlhf/');
+    console.log('\n✅ Pro configs installed to .thumbgate/');
     for (const [file, desc] of files) {
       console.log(`  - ${file} (${desc})`);
     }
@@ -962,7 +962,7 @@ function obsidianExport() {
   const { exportAll } = require(path.join(PKG_ROOT, 'scripts', 'obsidian-export'));
   const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
 
-  const vaultPath = args['vault-path'] || process.env.RLHF_OBSIDIAN_VAULT_PATH || '';
+  const vaultPath = args['vault-path'] || process.env.THUMBGATE_OBSIDIAN_VAULT_PATH || '';
   const outputSubdir = args['output-dir'] || 'AI-Memories/rlhf';
   let outputDir;
   if (vaultPath) {
@@ -1180,7 +1180,7 @@ function help() {
   console.log(`mcp-memory-gateway v${v}`);
   console.log('');
   console.log('Commands:');
-  console.log('  init                  Scaffold .rlhf/ config + MCP server in current project');
+  console.log('  init                  Scaffold .thumbgate/ config + MCP server in current project');
   console.log('    --agent=NAME        Wire PreToolUse hooks for agent (claude-code|codex|gemini)');
   console.log('    --wire-hooks        Wire hooks only (auto-detect agent, skip scaffolding)');
   console.log('    --dry-run           Preview hook changes without writing');
@@ -1200,7 +1200,7 @@ function help() {
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
   console.log('  export-databricks     Export feedback logs + proof artifacts as a Databricks-ready analytics bundle');
   console.log('  obsidian-export       Export all feedback data as interlinked Obsidian markdown notes');
-  console.log('    --vault-path=PATH   Obsidian vault path (or set RLHF_OBSIDIAN_VAULT_PATH)');
+  console.log('    --vault-path=PATH   Obsidian vault path (or set THUMBGATE_OBSIDIAN_VAULT_PATH)');
   console.log('    --output-dir=DIR    Output subdirectory (default: AI-Memories/rlhf)');
   console.log('  rules                 Generate prevention rules from repeated failures');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Pre-Action Gates');
@@ -1208,9 +1208,9 @@ function help() {
   console.log('  self-heal             Run self-healing check and auto-fix');
   console.log('  activate <KEY>        Activate a Pro license key (from Stripe checkout)');
   console.log('  pro                   Show Pro plan ($19/mo) + hosted pilot info');
-  console.log('    --upgrade           Install Pro configs into .rlhf/');
+  console.log('    --upgrade           Install Pro configs into .thumbgate/');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
-  console.log('  watch [flags]           Watch .rlhf/ for external signals and ingest through pipeline (--once, --source=X)');
+  console.log('  watch [flags]           Watch .thumbgate/ for external signals and ingest through pipeline (--once, --source=X)');
   console.log('  status                  Show feedback tracking dashboard — approval trend + failure domains');
   console.log('  dashboard               Full ThumbGate dashboard — approval rate, gate stats, prevention impact');
   console.log('  funnel                  Show marketing & revenue conversion funnel analytics');

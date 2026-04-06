@@ -1,0 +1,20 @@
+{
+  "id": "1774991395401_feedback-negative-fb-1774991395067-7emkjr",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774991395067_7emkjr",
+  "content": "{\"id\":\"fb_1774991395067_7emkjr\",\"signal\":\"negative\",\"context\":\"Gate \\\"secret-exfiltration\\\" blocked tool \\\"Read\\\": Secret material detected in tool input\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:secret-exfiltration\",\"secret-guard\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-31T21:09:55.067Z\",\"richContext\":{\"domain\":\"security\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:secret-exfiltration",
+    "secret-guard"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-31T21:09:55.401Z",
+  "lastUsedAt": null
+}

@@ -1,0 +1,22 @@
+{
+  "id": "1773869065024_success-the-github-account-guard-check-caught-that-the-active-gh-key",
+  "namespace": "memory/learning",
+  "title": "SUCCESS: The github-account-guard check caught that the active gh key",
+  "content": "What worked: The github-account-guard check caught that the active gh keyring account and the effective push identity were different. Clearing/inspecting env auth separately from gh keyring state prevented publishing under the wrong assumption.\nRubric weighted score: 0\nRubric criteria passed with no blocking guardrails.",
+  "tags": [
+    "feedback",
+    "positive",
+    "git-workflow",
+    "github-auth",
+    "commercial-truth",
+    "verification"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "learning",
+    "sourceFeedbackId": "fb_1773869064995_3vugat"
+  },
+  "createdAt": "2026-03-18T21:24:25.025Z",
+  "lastUsedAt": null
+}

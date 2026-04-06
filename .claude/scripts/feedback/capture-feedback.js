@@ -111,7 +111,7 @@ function main() {
     const ev = result.feedbackEvent;
     const mem = result.memoryRecord;
     console.log('');
-    console.log(`RLHF Feedback Captured [${feedback.toUpperCase()}]`);
+    console.log(`ThumbGate Feedback Captured [${feedback.toUpperCase()}]`);
     console.log('─'.repeat(50));
     console.log(`  Feedback ID : ${ev.id}`);
     console.log(`  Signal      : ${ev.signal} (${ev.actionType})`);
@@ -132,7 +132,7 @@ function main() {
 
   if (result.needsClarification) {
     console.log('');
-    console.log(`RLHF Signal Logged [${feedback.toUpperCase()}] — clarification required`);
+    console.log(`ThumbGate Signal Logged [${feedback.toUpperCase()}] — clarification required`);
     console.log('─'.repeat(50));
     console.log(`  Feedback ID : ${result.feedbackEvent ? result.feedbackEvent.id : 'n/a'}`);
     console.log(`  Reason      : ${result.reason}`);
@@ -145,7 +145,7 @@ function main() {
   }
 
   console.log('');
-  console.log(`RLHF Feedback Logged [${feedback.toUpperCase()}] — not promoted`);
+  console.log(`ThumbGate Feedback Logged [${feedback.toUpperCase()}] — not promoted`);
   console.log('─'.repeat(50));
   console.log(`  Feedback ID : ${result.feedbackEvent ? result.feedbackEvent.id : 'n/a'}`);
   console.log(`  Reason      : ${result.reason}`);

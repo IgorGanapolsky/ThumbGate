@@ -1,0 +1,19 @@
+{
+  "id": "1775051287273_feedback-positive-fb-1775051286528-8aeva6",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775051286528_8aeva6",
+  "content": "{\"id\":\"fb_1775051286528_8aeva6\",\"signal\":\"positive\",\"context\":\"User prefers tabs\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Switched to tabs\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"style\",\"formatting\",\"entity:Customer\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-04-01T13:48:06.528Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "style",
+    "formatting",
+    "entity:Customer"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-01T13:48:07.273Z",
+  "lastUsedAt": null
+}

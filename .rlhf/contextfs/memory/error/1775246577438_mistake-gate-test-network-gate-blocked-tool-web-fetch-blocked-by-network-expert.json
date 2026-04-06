@@ -1,0 +1,22 @@
+{
+  "id": "1775246577438_mistake-gate-test-network-gate-blocked-tool-web-fetch-blocked-by-network-expert",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Gate \"test-network-gate\" blocked tool \"web_fetch\": Blocked by network expert",
+  "content": "Context: Gate \"test-network-gate\" blocked tool \"web_fetch\": Blocked by network expert\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "audit-trail",
+    "auto-capture",
+    "gate:test-network-gate",
+    "gates-engine"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775246577288_01jqg7"
+  },
+  "createdAt": "2026-04-03T20:02:57.438Z",
+  "lastUsedAt": null
+}

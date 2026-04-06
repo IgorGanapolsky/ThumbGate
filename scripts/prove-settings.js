@@ -16,7 +16,7 @@ const TOOL_REGISTRY_PATH = require.resolve('./tool-registry');
 const MCP_ALLOWLISTS_PATH = require.resolve('../config/mcp-allowlists.json');
 
 function resolveProofPaths() {
-  const proofDir = process.env.RLHF_SETTINGS_PROOF_DIR || process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+  const proofDir = process.env.THUMBGATE_SETTINGS_PROOF_DIR || process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
   return {
     proofDir,
     reportJson: path.join(proofDir, 'settings-report.json'),
@@ -153,7 +153,7 @@ async function run() {
         });
         try {
           const routed = withClearedEnv(
-            ['RLHF_MCP_PROFILE', 'CI', 'GITHUB_EVENT_NAME', 'RLHF_SESSION_TYPE', 'RLHF_SUBAGENT_PROFILE'],
+            ['THUMBGATE_MCP_PROFILE', 'CI', 'GITHUB_EVENT_NAME', 'THUMBGATE_SESSION_TYPE', 'THUMBGATE_SUBAGENT_PROFILE'],
             () => {
               const { routeProfile } = require('./profile-router');
               return routeProfile({ settingsOptions: { projectRoot, homeDir: projectRoot } });

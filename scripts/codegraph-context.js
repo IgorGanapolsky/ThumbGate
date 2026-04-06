@@ -200,22 +200,22 @@ function parseGraphItems(output, limit = DEFAULT_ITEM_LIMIT) {
 }
 
 function getTimeoutMs(options = {}) {
-  return parsePositiveInt(options.timeoutMs || process.env.RLHF_CODEGRAPH_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
+  return parsePositiveInt(options.timeoutMs || process.env.THUMBGATE_CODEGRAPH_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
 }
 
 function isCodeGraphEnabled() {
-  const disabled = String(process.env.RLHF_CODEGRAPH_DISABLED || '').toLowerCase();
+  const disabled = String(process.env.THUMBGATE_CODEGRAPH_DISABLED || '').toLowerCase();
   return disabled !== '1' && disabled !== 'true';
 }
 
 function shouldAutoIndex() {
-  const raw = String(process.env.RLHF_CODEGRAPH_AUTO_INDEX || '').toLowerCase();
+  const raw = String(process.env.THUMBGATE_CODEGRAPH_AUTO_INDEX || '').toLowerCase();
   if (!raw) return true;
   return raw !== '0' && raw !== 'false';
 }
 
 function getCodeGraphBin() {
-  return process.env.RLHF_CODEGRAPH_BIN || 'cgc';
+  return process.env.THUMBGATE_CODEGRAPH_BIN || 'cgc';
 }
 
 function runCodeGraph(bin, args, options = {}) {
@@ -382,7 +382,7 @@ function analyzeCodeGraphImpact(options = {}) {
     context.repoPath = resolveRepoPath();
   }
 
-  const stub = parseStubImpact(options.stubResponse || process.env.RLHF_CODEGRAPH_STUB_RESPONSE, context);
+  const stub = parseStubImpact(options.stubResponse || process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE, context);
   if (stub) {
     return stub;
   }

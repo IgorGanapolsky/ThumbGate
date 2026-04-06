@@ -11,7 +11,7 @@ function isValidKey(key) {
 }
 
 function verifyLicense() {
-  const envKey = process.env.RLHF_API_KEY || process.env.THUMBGATE_PRO_KEY;
+  const envKey = process.env.THUMBGATE_API_KEY || process.env.THUMBGATE_PRO_KEY;
   if (isValidKey(envKey)) {
     return { valid: true, source: 'env', key: envKey };
   }

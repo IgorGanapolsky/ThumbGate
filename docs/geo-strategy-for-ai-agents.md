@@ -21,12 +21,12 @@ We don't just write for humans; we write for LLM parsers.
 We use secondary and tertiary keywords to support our main topic.
 - **Strut 1:** Direct Preference Optimization (DPO).
 - **Strut 2:** Thompson Sampling for Bayesian preference scoring.
-- **Strut 3:** Open Source RLHF vs. Enterprise Managed API.
+- **Strut 3:** Open Source ThumbGate vs. Enterprise Managed API.
 
 ## 4. Closing the Loop (The Product as GEO)
 The ThumbGate is itself a GEO tool. By capturing human preference data, it creates a **high-density semantic signal** that tells models what "good" looks like in your specific domain.
 
-### How to use RLHF for your own GEO:
+### How to use ThumbGate for your own GEO:
 1. **Capture Signals:** Use our `capture-feedback` tool to identify what users like/dislike about your agent's responses.
 2. **Generate Rules:** Convert those signals into `CLAUDE.md` rules. This is "In-Context GEO"—you are optimizing the agent's behavior for its own runtime.
 3. **Fine-tune:** Export DPO pairs to permanently "bake" those preferences into your model's weights.

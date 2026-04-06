@@ -1,0 +1,19 @@
+{
+  "id": "1775224121762_mistake-test-from-verification",
+  "namespace": "memory/error",
+  "title": "MISTAKE: test from verification",
+  "content": "What went wrong: test from verification\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "cli-feedback"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775224121613_citej3"
+  },
+  "createdAt": "2026-04-03T13:48:41.762Z",
+  "lastUsedAt": null
+}

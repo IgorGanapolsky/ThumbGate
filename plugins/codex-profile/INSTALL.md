@@ -29,7 +29,7 @@ cat adapters/codex/config.toml >> ~/.codex/config.toml
 The following block is appended to `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.rlhf]
+[mcp_servers.thumbgate]
 command = "npx"
 args = ["-y", "mcp-memory-gateway@0.9.9", "serve"]
 ```
@@ -63,4 +63,4 @@ Then restart Codex. The `rlhf` MCP server will appear in the tool list.
 
 ## Uninstall
 
-Remove the `[mcp_servers.rlhf]` section from `~/.codex/config.toml`.
+Remove the `[mcp_servers.thumbgate]` section from `~/.codex/config.toml`.

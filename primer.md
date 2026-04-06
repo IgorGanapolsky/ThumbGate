@@ -23,28 +23,24 @@
 
 ## Behavioral Traits
 
-_No strong behavioral patterns identified yet._
+- User prefers surgical edits over full file rewrites.
 
 ## Live Git Context
 
-### Branch: fix/conversion-gaps
+### Branch: feat/coverage-v2
 
 ### Last 5 Commits:
 ```
-3f7d9f4 feat: lesson rotation — staleness scoring, auto-archive, Pro review
-de3e597 fix: keep feedback captures unlimited for free users
-2e220a6 feat: hard-gate dashboard and lessons behind Pro upgrade wall
-ba08ea2 feat: tighten free-to-Pro funnel — lower limits, add usage counter
-7d4c124 fix: license key prefix mismatch + conversion gaps (#563)
+f3f33bc chore(deps): Bump actions/checkout from 4 to 6 (#584)
+a2ac119 chore(release): bump version to 0.9.9 and sync all manifests (#586)
+5bd8f12 fix: wire social-quality-gate into all publishers — block bot slop before posting (#585)
+c4675b2 chore(deps): Bump playwright-core from 1.58.2 to 1.59.1 (#580)
+69162cc chore(deps): Bump stripe from 21.0.1 to 22.0.0 (#582)
 ```
 
 ### Modified Files:
 ```
  M config/skill-packs/react-testing.json
  M primer.md
- M public/index.html
- M scripts/billing.js
- M tests/public-landing.test.js
-?? scripts/_apply-checkout-fixes.js
-?? scripts/_fix-test-assertions.js
+?? .claude/memory/feedback/analytics.db
 ```

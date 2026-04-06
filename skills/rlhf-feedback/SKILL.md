@@ -18,7 +18,7 @@ negative_triggers:
   - run tests
 ---
 
-# RLHF Feedback Skill
+# ThumbGate Feedback Skill
 
 When user provides feedback, execute:
 

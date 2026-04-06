@@ -29,9 +29,9 @@ must_haves:
       via: "require('../scripts/vector-store') after env var set"
       pattern: "require\\('\\.\\./scripts/vector-store'\\)"
     - from: "tests/vector-store.test.js"
-      to: "process.env.RLHF_FEEDBACK_DIR"
+      to: "process.env.THUMBGATE_FEEDBACK_DIR"
       via: "tmpdir injection before module require"
-      pattern: "RLHF_FEEDBACK_DIR.*tmpDir"
+      pattern: "THUMBGATE_FEEDBACK_DIR.*tmpDir"
 ---
 
 <objective>
@@ -79,10 +79,10 @@ Output: tests/vector-store.test.js with RED→GREEN cycle complete.
 
     Embedding strategy: To avoid HuggingFace CDN download, override the module's internal embed function by
     monkey-patching process.env or by requiring a local override. The safest approach:
-    - Set RLHF_VECTOR_STUB_EMBED=true before requiring vector-store.js
+    - Set THUMBGATE_VECTOR_STUB_EMBED=true before requiring vector-store.js
     - In vector-store.js, check this env var in embed() to return a deterministic 384-dim stub vector
       (e.g., Array(384).fill(0).map((_, i) => i === 0 ? 1.0 : 0.0) for all inputs — this is fine for unit tests since we only care about storage/retrieval, not ranking accuracy)
-    - NOTE: The real embed() is still used in integration tests (gated by RLHF_VEC_INTEGRATION=true env var)
+    - NOTE: The real embed() is still used in integration tests (gated by THUMBGATE_VEC_INTEGRATION=true env var)
 
     ALTERNATIVELY (simpler): Patch vector-store.js to export an internal `_setEmbedFn(fn)` function
     that tests can call to inject a stub. This avoids env var complexity. Use whichever approach

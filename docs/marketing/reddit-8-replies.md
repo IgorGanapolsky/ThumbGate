@@ -1,6 +1,13 @@
 # Reddit Reply Comments for r/ClaudeCode Threads
 
-Guidelines: Each reply should feel human, empathetic, and lead with the 👍/👎 concept. Keep it conversational. Don't link the repo unless someone explicitly asks.
+Guidelines: Each reply should feel human, empathetic, and lead with the problem/solution. Keep it conversational. When the reply describes a solution, include the trial link. Do not wait for someone to ask -- the link is the conversion path.
+
+**Standard closing line for any reply that describes the solution:**
+
+```text
+I built this as ThumbGate -- try free for 7 days: https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_reply&utm_content=claudecode_reply&community=ClaudeCode
+Source: https://github.com/IgorGanapolsky/ThumbGate
+```
 
 ## 1. "Claude forgets everything between sessions"
 

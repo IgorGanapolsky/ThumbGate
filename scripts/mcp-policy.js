@@ -7,7 +7,7 @@ const DEFAULT_POLICY_PATH = path.join(PROJECT_ROOT, 'config', 'mcp-allowlists.js
 const DEFAULT_SUBAGENT_PROFILE_PATH = path.join(PROJECT_ROOT, 'config', 'subagent-profiles.json');
 
 function getPolicyPath() {
-  return process.env.RLHF_MCP_POLICY_PATH || DEFAULT_POLICY_PATH;
+  return process.env.THUMBGATE_MCP_POLICY_PATH || DEFAULT_POLICY_PATH;
 }
 
 function loadMcpPolicy() {
@@ -21,7 +21,7 @@ function loadMcpPolicy() {
 }
 
 function loadSubagentProfiles() {
-  const profilePath = process.env.RLHF_SUBAGENT_PROFILE_PATH || DEFAULT_SUBAGENT_PROFILE_PATH;
+  const profilePath = process.env.THUMBGATE_SUBAGENT_PROFILE_PATH || DEFAULT_SUBAGENT_PROFILE_PATH;
   const raw = fs.readFileSync(profilePath, 'utf-8');
   const parsed = JSON.parse(raw);
   if (!parsed.profiles || typeof parsed.profiles !== 'object') {
@@ -31,9 +31,9 @@ function loadSubagentProfiles() {
 }
 
 function getActiveMcpProfile(toolName) {
-  const explicitProfile = process.env.RLHF_MCP_PROFILE || null;
-  const runtimeSubagentProfile = process.env.RLHF_SUBAGENT_PROFILE || null;
-  const autoRoute = process.env.RLHF_AUTO_PROFILE_ROUTING !== 'false';
+  const explicitProfile = process.env.THUMBGATE_MCP_PROFILE || null;
+  const runtimeSubagentProfile = process.env.THUMBGATE_SUBAGENT_PROFILE || null;
+  const autoRoute = process.env.THUMBGATE_AUTO_PROFILE_ROUTING !== 'false';
 
   if (!runtimeSubagentProfile) {
     // Auto-route when no explicit profile and auto-routing is enabled
@@ -53,7 +53,7 @@ function getActiveMcpProfile(toolName) {
 
   if (explicitProfile && explicitProfile !== subagent.mcpProfile) {
     throw new Error(
-      `MCP profile conflict: RLHF_MCP_PROFILE='${explicitProfile}' does not match subagent profile '${runtimeSubagentProfile}' (${subagent.mcpProfile})`,
+      `MCP profile conflict: THUMBGATE_MCP_PROFILE='${explicitProfile}' does not match subagent profile '${runtimeSubagentProfile}' (${subagent.mcpProfile})`,
     );
   }
 

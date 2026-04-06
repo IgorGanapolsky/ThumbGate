@@ -4,7 +4,7 @@
 const { normalizeOrigin } = require('./hosted-config');
 
 const SECRET_POLICY = {
-  RLHF_API_KEY: { rotatedAtEnv: 'RLHF_API_KEY_ROTATED_AT', maxAgeDays: 30 },
+  THUMBGATE_API_KEY: { rotatedAtEnv: 'THUMBGATE_API_KEY_ROTATED_AT', maxAgeDays: 30 },
   STRIPE_SECRET_KEY: { rotatedAtEnv: 'STRIPE_SECRET_KEY_ROTATED_AT', maxAgeDays: 30 },
   STRIPE_WEBHOOK_SECRET: { rotatedAtEnv: 'STRIPE_WEBHOOK_SECRET_ROTATED_AT', maxAgeDays: 30 },
   RAILWAY_TOKEN: { rotatedAtEnv: 'RAILWAY_TOKEN_ROTATED_AT', maxAgeDays: 90 },
@@ -16,12 +16,12 @@ const SECRET_POLICY = {
 
 const PROFILE_DEFS = {
   runtime: {
-    requiredSecrets: ['RLHF_API_KEY'],
+    requiredSecrets: ['THUMBGATE_API_KEY'],
     requiredVars: [],
   },
   billing: {
     requiredSecrets: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'],
-    requiredVars: ['RLHF_PUBLIC_APP_ORIGIN', 'RLHF_BILLING_API_BASE_URL'],
+    requiredVars: ['THUMBGATE_PUBLIC_APP_ORIGIN', 'THUMBGATE_BILLING_API_BASE_URL'],
   },
   deploy: {
     requiredSecrets: ['RAILWAY_TOKEN'],
@@ -29,8 +29,8 @@ const PROFILE_DEFS = {
       'RAILWAY_PROJECT_ID',
       'RAILWAY_ENVIRONMENT_ID',
       'RAILWAY_HEALTHCHECK_URL',
-      'RLHF_PUBLIC_APP_ORIGIN',
-      'RLHF_BILLING_API_BASE_URL',
+      'THUMBGATE_PUBLIC_APP_ORIGIN',
+      'THUMBGATE_BILLING_API_BASE_URL',
     ],
   },
   github_marketplace: {

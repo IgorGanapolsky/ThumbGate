@@ -31,7 +31,7 @@ function ensureDir(dirPath) {
 }
 
 async function runProof(options = {}) {
-  const proofDir = options.proofDir || process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+  const proofDir = options.proofDir || process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
   const report = {
     phase: '06-feedback-attribution',
     generated: new Date().toISOString(),
@@ -51,16 +51,16 @@ async function runProof(options = {}) {
   // - call recordAction('Bash', '{"command":"git push --force"}')
   // - assert result.ok === true, result.action.intent === 'git-risk'
   // - call attributeFeedback('negative', 'bad git push force broke main')
-  // - assert fs.existsSync(RLHF_FEEDBACK_ATTRIBUTIONS path)
+  // - assert fs.existsSync(THUMBGATE_FEEDBACK_ATTRIBUTIONS path)
   // - parse JSONL, assert attribution_id and signal === 'negative'
   // ─────────────────────────────────────────────────────────────────────────
   const tmpDir01 = fs.mkdtempSync(path.join(os.tmpdir(), 'prove-attr01-'));
   let attr01Status = 'fail';
   let attr01Evidence = '';
   try {
-    process.env.RLHF_ACTION_LOG = path.join(tmpDir01, 'action-log.jsonl');
-    process.env.RLHF_FEEDBACK_ATTRIBUTIONS = path.join(tmpDir01, 'feedback-attributions.jsonl');
-    process.env.RLHF_ATTRIBUTED_FEEDBACK = path.join(tmpDir01, 'attributed-feedback.jsonl');
+    process.env.THUMBGATE_ACTION_LOG = path.join(tmpDir01, 'action-log.jsonl');
+    process.env.THUMBGATE_FEEDBACK_ATTRIBUTIONS = path.join(tmpDir01, 'feedback-attributions.jsonl');
+    process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = path.join(tmpDir01, 'attributed-feedback.jsonl');
 
     // Invalidate module cache so env vars take effect
     for (const key of Object.keys(require.cache)) {
@@ -120,9 +120,9 @@ async function runProof(options = {}) {
     attr01Evidence = `ATTR-01 threw: ${err.message}`;
   } finally {
     try { fs.rmSync(tmpDir01, { recursive: true, force: true }); } catch (_) {}
-    delete process.env.RLHF_ACTION_LOG;
-    delete process.env.RLHF_FEEDBACK_ATTRIBUTIONS;
-    delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
+    delete process.env.THUMBGATE_ACTION_LOG;
+    delete process.env.THUMBGATE_FEEDBACK_ATTRIBUTIONS;
+    delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
   }
   addResult('ATTR-01', attr01Status, attr01Evidence);
 
@@ -138,9 +138,9 @@ async function runProof(options = {}) {
   let attr02Status = 'fail';
   let attr02Evidence = '';
   try {
-    process.env.RLHF_FEEDBACK_LOG = path.join(tmpDir02, 'feedback-log.jsonl');
-    process.env.RLHF_ATTRIBUTED_FEEDBACK = path.join(tmpDir02, 'attributed-feedback.jsonl');
-    process.env.RLHF_GUARDS_PATH = path.join(tmpDir02, 'pretool-guards.json');
+    process.env.THUMBGATE_FEEDBACK_LOG = path.join(tmpDir02, 'feedback-log.jsonl');
+    process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = path.join(tmpDir02, 'attributed-feedback.jsonl');
+    process.env.THUMBGATE_GUARDS_PATH = path.join(tmpDir02, 'pretool-guards.json');
 
     // Seed attributed-feedback.jsonl with 3 identical negative entries
     const attrFeedbackPath = path.join(tmpDir02, 'attributed-feedback.jsonl');
@@ -225,9 +225,9 @@ async function runProof(options = {}) {
     attr02Evidence = `ATTR-02 threw: ${err.message}`;
   } finally {
     try { fs.rmSync(tmpDir02, { recursive: true, force: true }); } catch (_) {}
-    delete process.env.RLHF_FEEDBACK_LOG;
-    delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
-    delete process.env.RLHF_GUARDS_PATH;
+    delete process.env.THUMBGATE_FEEDBACK_LOG;
+    delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+    delete process.env.THUMBGATE_GUARDS_PATH;
   }
   addResult('ATTR-02', attr02Status, attr02Evidence);
 

@@ -1,6 +1,6 @@
-# Gemini: RLHF Function Declarations Install
+# Gemini: ThumbGate Function Declarations Install
 
-Import the RLHF function declarations into your Gemini agent in under 60 seconds.
+Import the ThumbGate function declarations into your Gemini agent in under 60 seconds.
 
 ## One-Command Install (Node.js)
 
@@ -14,7 +14,7 @@ cp adapters/gemini/function-declarations.json .gemini/rlhf-tools.json
 ```javascript
 const fs = require('fs');
 
-// Load RLHF tool declarations
+// Load ThumbGate tool declarations
 const rlhfTools = JSON.parse(
   fs.readFileSync('adapters/gemini/function-declarations.json', 'utf8')
 );
@@ -40,8 +40,8 @@ const model = genAI.getGenerativeModel({
 Set the base URL in your Gemini function handler:
 
 ```javascript
-const RLHF_API_URL = process.env.RLHF_API_URL || 'http://localhost:3000';
-const RLHF_API_KEY = process.env.RLHF_API_KEY;
+const THUMBGATE_API_URL = process.env.THUMBGATE_API_URL || 'http://localhost:3000';
+const THUMBGATE_API_KEY = process.env.THUMBGATE_API_KEY;
 
 async function callRlhfTool(name, params) {
   const endpoints = {
@@ -53,14 +53,14 @@ async function callRlhfTool(name, params) {
   };
   const { method, path } = endpoints[name];
   
-  const url = new URL(`${RLHF_API_URL}${path}`);
+  const url = new URL(`${THUMBGATE_API_URL}${path}`);
   if (method === 'GET' && params) {
     Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
   }
 
   const res = await fetch(url.toString(), {
     method,
-    headers: { Authorization: `Bearer ${RLHF_API_KEY}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${THUMBGATE_API_KEY}`, 'Content-Type': 'application/json' },
     body: method === 'POST' ? JSON.stringify(params) : undefined,
   });
   return res.json();
@@ -71,7 +71,7 @@ async function callRlhfTool(name, params) {
 
 - Google Gemini SDK (`@google/generative-ai`)
 - Node.js 18+ or Python 3.9+
-- RLHF API running (local or hosted)
+- ThumbGate API running (local or hosted)
 
 ## Branding Alignment (Google Cloud)
 

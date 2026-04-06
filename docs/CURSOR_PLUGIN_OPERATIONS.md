@@ -52,4 +52,4 @@ When the feedback is vague, ThumbGate can distill the lesson from the last ~10 m
 - Name: `ThumbGate`
 - Description: `👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.`
 - Repository URL: `https://github.com/IgorGanapolsky/ThumbGate`
-- Homepage: `https://rlhf-feedback-loop-production.up.railway.app`
+- Homepage: `https://thumbgate-production.up.railway.app`

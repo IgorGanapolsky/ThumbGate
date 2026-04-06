@@ -256,7 +256,7 @@ function computeEfficiencyMetrics(feedbackDir) {
   }, 0);
 
   return {
-    semanticCacheEnabled: process.env.RLHF_SEMANTIC_CACHE_ENABLED !== 'false',
+    semanticCacheEnabled: process.env.THUMBGATE_SEMANTIC_CACHE_ENABLED !== 'false',
     contextPackRequests: packs.length,
     semanticCacheHits: cacheHits.length,
     semanticCacheHitRate: safeRate(cacheHits.length, packs.length),

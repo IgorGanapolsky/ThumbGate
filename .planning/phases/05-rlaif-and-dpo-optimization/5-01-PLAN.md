@@ -19,7 +19,7 @@ must_haves:
     - "selfAudit(feedbackEvent) returns a float score in [0,1] and a constraints array without any API call"
     - "dpoOptimizer.run() reads feedback-log.jsonl pairs, writes dpo-model.json with per-category adjustments, and calls saveModel() to persist updated Thompson posteriors"
     - "captureFeedback() fires selfAuditAndLog() as a non-blocking side-effect after vector upsert — no await, no latency impact"
-    - "npm run ml:dpo executes without error and produces dpo-model.json in RLHF_FEEDBACK_DIR"
+    - "npm run ml:dpo executes without error and produces dpo-model.json in THUMBGATE_FEEDBACK_DIR"
   artifacts:
     - path: "scripts/rlaif-self-audit.js"
       provides: "selfAudit() and selfAuditAndLog() exports"
@@ -136,7 +136,7 @@ Exports: `{ run, buildPreferencePairs, applyDpoAdjustments, dpoLogRatio }`
 - Return adjustments object
 
 `run(opts = {})`:
-- `feedbackDir = opts.feedbackDir || process.env.RLHF_FEEDBACK_DIR || path.join(os.homedir(), '.claude/memory/feedback')`
+- `feedbackDir = opts.feedbackDir || process.env.THUMBGATE_FEEDBACK_DIR || path.join(os.homedir(), '.claude/memory/feedback')`
 - `modelPath = opts.modelPath || path.join(process.cwd(), '.claude/memory/feedback/feedback_model.json')`
 - Build pairs via `buildPreferencePairs(feedbackDir)`
 - Apply adjustments via `applyDpoAdjustments(modelPath, pairs)`

@@ -212,7 +212,7 @@ Output ONLY valid JSON:
     saveState(state);
 
     // Hosted consolidation can run with a valid cloud key, but it is not metered usage billing.
-    const cloudKey = process.env.RLHF_API_KEY;
+    const cloudKey = process.env.THUMBGATE_API_KEY;
     if (cloudKey) {
       const validation = validateApiKey(cloudKey);
       if (validation.valid) {

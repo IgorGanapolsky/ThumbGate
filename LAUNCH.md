@@ -35,7 +35,7 @@ ThumbGate is a **human-in-the-loop enforcement layer** for AI coding agents — 
 > Pro ($19/mo): auto-gate promotion, unlimited custom gates, multi-repo sync
 >
 > OSS core: https://github.com/IgorGanapolsky/mcp-memory-gateway
-> Pro: https://rlhf-feedback-loop-production.up.railway.app/checkout/pro"
+> Pro: https://thumbgate-production.up.railway.app/checkout/pro"
 
 ### LinkedIn
 

@@ -1,4 +1,4 @@
-# Codex RLHF Add-on
+# Codex ThumbGate Add-on
 
 ## Trigger
 If user gives explicit positive/negative outcome feedback, capture it immediately.

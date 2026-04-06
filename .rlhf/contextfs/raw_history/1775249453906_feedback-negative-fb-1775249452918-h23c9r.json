@@ -1,0 +1,21 @@
+{
+  "id": "1775249453906_feedback-negative-fb-1775249452918-h23c9r",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775249452918_h23c9r",
+  "content": "{\"id\":\"fb_1775249452918_h23c9r\",\"signal\":\"negative\",\"context\":\"Gate \\\"protected-branch-push\\\" blocked tool \\\"Bash\\\": Direct push to protected branch. Use feature branches and PRs.\",\"submittedContext\":\"Gate \\\"protected-branch-push\\\" blocked tool \\\"Bash\\\": Direct push to protected branch. Use feature branches and PRs.\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:protected-branch-push\",\"gates-engine\",\"entity:Customer\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T20:50:52.918Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:protected-branch-push",
+    "gates-engine",
+    "entity:Customer"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-03T20:50:53.906Z",
+  "lastUsedAt": null
+}

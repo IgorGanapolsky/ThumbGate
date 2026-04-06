@@ -26,12 +26,12 @@
         {
           "filename": "PACKAGING_AND_SALES_PLAN.md",
           "title": "Packaging and Sales Plan",
-          "summary": "- Local RLHF feedback capture - Schema validation - Prevention rules"
+          "summary": "- Local ThumbGate feedback capture - Schema validation - Prevention rules"
         },
         {
           "filename": "PAPERBANANA.md",
           "title": "PaperBanana Diagrams",
-          "summary": "- Monthly cap enforced by `scripts/budget-guard.js`. - Default cap: `$10/month` (`RLHF_MONTHLY_BUDGET_USD=10`). - Diagram generation script blocks projected overspend before calls and logs spend only after successful generation."
+          "summary": "- Monthly cap enforced by `scripts/budget-guard.js`. - Default cap: `$10/month` (`THUMBGATE_MONTHLY_BUDGET_USD=10`). - Diagram generation script blocks projected overspend before calls and logs spend only after successful generation."
         },
         {
           "filename": "PITCH.md",

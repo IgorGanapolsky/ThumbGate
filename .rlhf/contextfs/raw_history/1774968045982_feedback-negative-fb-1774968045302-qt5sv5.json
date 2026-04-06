@@ -1,0 +1,21 @@
+{
+  "id": "1774968045982_feedback-negative-fb-1774968045302-qt5sv5",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774968045302_qt5sv5",
+  "content": "{\"id\":\"fb_1774968045302_qt5sv5\",\"signal\":\"negative\",\"context\":\"Gate \\\"local-only-git-writes\\\" blocked tool \\\"Bash\\\": User requested local-only work. Git writes and PR operations are blocked.\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:local-only-git-writes\",\"gates-engine\",\"entity:Customer\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-31T14:40:45.302Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:local-only-git-writes",
+    "gates-engine",
+    "entity:Customer"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-31T14:40:45.982Z",
+  "lastUsedAt": null
+}

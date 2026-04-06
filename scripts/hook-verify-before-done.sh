@@ -10,7 +10,7 @@
 #   CLAUDE_TOOL_INPUT — the Bash command about to execute (set by Claude Code)
 # Exit code: Always 0 (never blocks tool calls).
 
-PROD_URL="rlhf-feedback-loop-production.up.railway.app"
+PROD_URL="thumbgate-production.up.railway.app"
 VERIFICATION_MARKER="/tmp/.thumbgate-last-deploy-verify"
 
 if echo "${CLAUDE_TOOL_INPUT:-}" | grep -q "curl.*${PROD_URL}"; then

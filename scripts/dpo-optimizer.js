@@ -4,7 +4,7 @@
  *
  * Builds (chosen, rejected) preference pairs from feedback-log.jsonl memories,
  * computes DPO log-ratio adjustments using Thompson Sampling posteriors,
- * and writes dpo-model.json to RLHF_FEEDBACK_DIR.
+ * and writes dpo-model.json to THUMBGATE_FEEDBACK_DIR.
  *
  * Does NOT call any external API. Pure offline batch optimization.
  *
@@ -148,14 +148,14 @@ function applyDpoAdjustments(modelPath, pairs) {
  * 3. Write dpo-model.json to feedbackDir
  *
  * @param {Object} [opts]
- * @param {string} [opts.feedbackDir] - Override RLHF_FEEDBACK_DIR
+ * @param {string} [opts.feedbackDir] - Override THUMBGATE_FEEDBACK_DIR
  * @param {string} [opts.modelPath]   - Override Thompson model path
  * @returns {{ adjustments: Object, pairs_processed: number }}
  */
 function run(opts) {
   const options = opts || {};
   const feedbackDir = options.feedbackDir ||
-    process.env.RLHF_FEEDBACK_DIR ||
+    process.env.THUMBGATE_FEEDBACK_DIR ||
     path.join(os.homedir(), '.claude', 'memory', 'feedback');
   const modelPath = options.modelPath ||
     path.join(process.cwd(), '.claude', 'memory', 'feedback', 'feedback_model.json');

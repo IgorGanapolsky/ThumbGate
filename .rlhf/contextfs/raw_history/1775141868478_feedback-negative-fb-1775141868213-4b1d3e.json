@@ -1,0 +1,21 @@
+{
+  "id": "1775141868478_feedback-negative-fb-1775141868213-4b1d3e",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775141868213_4b1d3e",
+  "content": "{\"id\":\"fb_1775141868213_4b1d3e\",\"signal\":\"negative\",\"context\":\"Gate \\\"gh-pr-create-restricted\\\" blocked tool \\\"Bash\\\": PR creation requires explicit 'pr_create_allowed' satisfaction with evidence of user permission.\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:gh-pr-create-restricted\",\"gates-engine\",\"entity:Customer\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-02T14:57:48.213Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:gh-pr-create-restricted",
+    "gates-engine",
+    "entity:Customer"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-02T14:57:48.478Z",
+  "lastUsedAt": null
+}

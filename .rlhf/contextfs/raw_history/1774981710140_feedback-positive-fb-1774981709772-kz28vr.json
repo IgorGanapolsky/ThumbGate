@@ -1,0 +1,17 @@
+{
+  "id": "1774981710140_feedback-positive-fb-1774981709772-kz28vr",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774981709772_kz28vr",
+  "content": "{\"id\":\"fb_1774981709772_kz28vr\",\"signal\":\"positive\",\"context\":\"security review completed\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"vulnerability patched correctly\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"security\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-31T18:28:29.772Z\",\"richContext\":{\"domain\":\"security\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "security"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-31T18:28:30.140Z",
+  "lastUsedAt": null
+}

@@ -1,0 +1,20 @@
+{
+  "id": "1775249257183_feedback-negative-fb-1775249256973-99qls5",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775249256973_99qls5",
+  "content": "{\"id\":\"fb_1775249256973_99qls5\",\"signal\":\"negative\",\"context\":\"Gate \\\"force-push\\\" blocked tool \\\"Bash\\\": Force push blocked\",\"submittedContext\":\"Gate \\\"force-push\\\" blocked tool \\\"Bash\\\": Force push blocked\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:force-push\",\"gates-engine\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T20:47:36.973Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:force-push",
+    "gates-engine"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-03T20:47:37.183Z",
+  "lastUsedAt": null
+}

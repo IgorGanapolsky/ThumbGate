@@ -1,7 +1,7 @@
 ---
-phase: 02-ml-into-rlhf-feedback-loop
+phase: 02-ml-into-thumbgate
 plan: "05"
-subsystem: rlhf-feedback-loop
+subsystem: thumbgate
 tags: [ml, thompson-sampling, proof, npm-scripts, python-trainer]
 dependency_graph:
   requires: [02-01, 02-02, 02-03, 02-04]

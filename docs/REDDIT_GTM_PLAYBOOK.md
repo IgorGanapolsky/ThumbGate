@@ -19,7 +19,7 @@ Every Reddit link should carry explicit attribution because Reddit app/browser f
 Recommended URL shape:
 
 ```text
-https://rlhf-feedback-loop-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_content=comment_problem_solution&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY
+https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_content=comment_problem_solution&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY
 ```
 
 Required fields:

@@ -12,7 +12,7 @@ echo "🤖 [Memory Stack] Refreshing context..."
 
 # 1. Behavioral Extraction (Layer 4)
 node scripts/behavioral-extraction.js > /dev/null
-TRAITS_FILE=".rlhf/behavioral-traits.json"
+TRAITS_FILE=".thumbgate/behavioral-traits.json"
 if [ ! -f "$TRAITS_FILE" ]; then
   TRAITS_FILE=".claude/memory/feedback/behavioral-traits.json"
 fi

@@ -1,11 +1,8 @@
 'use strict';
 
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
-
-const PROJECT_ROOT = path.join(__dirname, '..');
-const HOME = process.env.HOME || process.env.USERPROFILE || os.homedir() || '';
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const DEFAULT_SETTINGS = Object.freeze({
   half_life_days: 7,
@@ -14,30 +11,6 @@ const DEFAULT_SETTINGS = Object.freeze({
   verification_max_retries: 3,
   dpo_beta: 0.1,
 });
-
-function resolveFeedbackDir() {
-  if (process.env.RLHF_FEEDBACK_DIR) {
-    return process.env.RLHF_FEEDBACK_DIR;
-  }
-
-  if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
-    return path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'feedback');
-  }
-
-  const localRlhf = path.join(process.cwd(), '.rlhf');
-  const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback');
-
-  if (fs.existsSync(localRlhf)) {
-    return localRlhf;
-  }
-
-  if (fs.existsSync(localClaude)) {
-    return localClaude;
-  }
-
-  const projectName = path.basename(process.cwd() || PROJECT_ROOT) || 'default';
-  return path.join(HOME, '.rlhf', 'projects', projectName);
-}
 
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {

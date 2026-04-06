@@ -98,7 +98,7 @@ function runSelfHeal({ reason = 'unknown', cwd = PROJECT_ROOT } = {}) {
   const beforeSet = new Set(beforeChanges);
   const scripts = loadPackageScripts();
   const plan = buildFixPlan(scripts);
-  const adaptive = process.env.RLHF_ADAPTIVE_HEAL !== 'false';
+  const adaptive = process.env.THUMBGATE_ADAPTIVE_HEAL !== 'false';
   const execution = runFixPlan({ plan, cwd, adaptive });
   const afterChanges = listChangedFiles({ cwd });
   const changedFiles = afterChanges.filter((filePath) => !beforeSet.has(filePath));

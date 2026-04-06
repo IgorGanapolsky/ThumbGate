@@ -9,14 +9,14 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-deploy-test-'));
-process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
-process.env.RLHF_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
+process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.THUMBGATE_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
 fs.writeFileSync(
-  process.env.RLHF_BUILD_METADATA_PATH,
+  process.env.THUMBGATE_BUILD_METADATA_PATH,
   JSON.stringify({ buildSha: 'deploy-test-build-sha', generatedAt: '2026-03-20T00:00:00.000Z' }, null, 2)
 );
 // Use insecure mode so auth doesn't interfere with /health unauthenticated check
-process.env.RLHF_ALLOW_INSECURE = 'true';
+process.env.THUMBGATE_ALLOW_INSECURE = 'true';
 
 const { startServer } = require('../src/api/server');
 const pkg = require('../package.json');
@@ -37,7 +37,7 @@ test.before(async () => {
 test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
-  delete process.env.RLHF_BUILD_METADATA_PATH;
+  delete process.env.THUMBGATE_BUILD_METADATA_PATH;
 });
 
 test('GET /health returns 200 without authentication', async () => {
@@ -151,7 +151,7 @@ test('PORT env var controls listen port (server started on custom port)', async 
   assert.equal(res.status, 200);
 });
 
-test('RLHF_ALLOW_INSECURE=true bypasses API key requirement', async () => {
+test('THUMBGATE_ALLOW_INSECURE=true bypasses API key requirement', async () => {
   // No Authorization header; if API key bypass is broken, this returns 401
   const res = await fetch(deployUrl('/v1/feedback/stats'));
   assert.equal(res.status, 200);
@@ -169,7 +169,7 @@ test('CI workflow stays test-only and leaves Railway deploys to the dedicated wo
   assert.doesNotMatch(workflow, /Check Railway deployment configuration/);
   assert.doesNotMatch(workflow, /railway up/);
   assert.doesNotMatch(workflow, /RAILWAY_PROJECT_ID/);
-  assert.doesNotMatch(workflow, /https:\/\/rlhf-feedback-loop-710216278770\.us-central1\.run\.app\/health/);
+  assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
 });
 
 test('Deploy to Railway workflow is the single authoritative Railway deploy lane', () => {
@@ -182,15 +182,15 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_PROJECT_ID/);
   assert.match(workflow, /RAILWAY_ENVIRONMENT_ID/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_URL/);
-  assert.match(workflow, /RLHF_PUBLIC_APP_ORIGIN/);
-  assert.match(workflow, /RLHF_BILLING_API_BASE_URL/);
+  assert.match(workflow, /THUMBGATE_PUBLIC_APP_ORIGIN/);
+  assert.match(workflow, /THUMBGATE_BILLING_API_BASE_URL/);
   assert.match(workflow, /railway up/);
   assert.match(workflow, /--ci/);
   assert.match(workflow, /--detach/);
   assert.match(workflow, /--project "\$RAILWAY_PROJECT_ID"/);
   assert.match(workflow, /--environment "\$RAILWAY_ENVIRONMENT_ID"/);
   assert.match(workflow, /MAX_ATTEMPTS=30/);
-  assert.doesNotMatch(workflow, /https:\/\/rlhf-feedback-loop-710216278770\.us-central1\.run\.app\/health/);
+  assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
 });
 
 test('Deploy to Railway workflow waits long enough to verify the promoted build SHA', () => {

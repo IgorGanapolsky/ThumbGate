@@ -15,7 +15,7 @@ const AUTORESEARCH_PATH = require.resolve('./autoresearch-runner');
 const VERIFY_RUN_PATH = require.resolve('./verify-run');
 
 function resolveProofPaths() {
-  const proofDir = process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+  const proofDir = process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
   return {
     proofDir,
     reportJson: path.join(proofDir, 'evolution-report.json'),
@@ -95,7 +95,7 @@ async function run() {
       fn: () => {
         const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-proof-'));
         try {
-          process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+          process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
           resetModules();
           const state = require('./evolution-state');
           const initial = state.readEvolutionState();
@@ -110,7 +110,7 @@ async function run() {
           if (!accepted.rollbackSnapshot.snapshotId) throw new Error('Expected rollback snapshot id');
           if (state.readEvolutionState().settings.half_life_days !== 9) throw new Error('Accepted mutation did not persist');
         } finally {
-          delete process.env.RLHF_FEEDBACK_DIR;
+          delete process.env.THUMBGATE_FEEDBACK_DIR;
           resetModules();
           fs.rmSync(feedbackDir, { recursive: true, force: true });
         }
@@ -122,7 +122,7 @@ async function run() {
       fn: () => {
         const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-proof-'));
         try {
-          process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+          process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
           resetModules();
           const { runWorkspaceEvolution } = require('./workspace-evolver');
           const { readEvolutionState } = require('./evolution-state');
@@ -139,7 +139,7 @@ async function run() {
           if (!result.metrics.rollbackSnapshotId) throw new Error('Expected rollback snapshot metadata');
           if (readEvolutionState().settings.half_life_days !== 8) throw new Error('Accepted evolution state not applied');
         } finally {
-          delete process.env.RLHF_FEEDBACK_DIR;
+          delete process.env.THUMBGATE_FEEDBACK_DIR;
           resetModules();
           fs.rmSync(feedbackDir, { recursive: true, force: true });
         }
@@ -151,7 +151,7 @@ async function run() {
       fn: () => {
         const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-proof-'));
         try {
-          process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+          process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
           resetModules();
           const { runWorkspaceEvolution, restoreWorkspaceEvolution } = require('./workspace-evolver');
           const { readEvolutionState } = require('./evolution-state');
@@ -167,7 +167,7 @@ async function run() {
           restoreWorkspaceEvolution(result.metrics.rollbackSnapshotId);
           if (readEvolutionState().settings.half_life_days !== 7) throw new Error('Rollback did not restore default state');
         } finally {
-          delete process.env.RLHF_FEEDBACK_DIR;
+          delete process.env.THUMBGATE_FEEDBACK_DIR;
           resetModules();
           fs.rmSync(feedbackDir, { recursive: true, force: true });
         }
@@ -179,7 +179,7 @@ async function run() {
       fn: async () => {
         const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-proof-'));
         try {
-          process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+          process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
           resetModules();
           const runner = require('./autoresearch-runner');
           const result = await runner.runIteration({
@@ -206,7 +206,7 @@ async function run() {
           if (!result.metrics.researchPaperIds.includes('2603.01896')) throw new Error('Research paper id missing');
           if (!result.metrics.rollbackSnapshotId) throw new Error('Rollback snapshot metadata missing');
         } finally {
-          delete process.env.RLHF_FEEDBACK_DIR;
+          delete process.env.THUMBGATE_FEEDBACK_DIR;
           resetModules();
           fs.rmSync(feedbackDir, { recursive: true, force: true });
         }
@@ -218,7 +218,7 @@ async function run() {
       fn: () => {
         const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-proof-'));
         try {
-          process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+          process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
           resetModules();
           stubModule(VERIFICATION_PATH, {
             runVerificationLoop: () => makeRejectedVerification(),
@@ -240,7 +240,7 @@ async function run() {
             throw new Error('Missing workspace evolver replay command');
           }
         } finally {
-          delete process.env.RLHF_FEEDBACK_DIR;
+          delete process.env.THUMBGATE_FEEDBACK_DIR;
           resetModules();
           fs.rmSync(feedbackDir, { recursive: true, force: true });
         }

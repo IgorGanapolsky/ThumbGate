@@ -5,7 +5,9 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-dashboard-test-'));
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+process.env._TEST_RLHF_FEEDBACK_DIR = tmpDir;
+process.env._TEST_LEGACY_FEEDBACK_DIR = tmpDir;
 process.env._TEST_API_KEYS_PATH = path.join(tmpDir, 'api-keys.json');
 process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpDir, 'funnel-events.jsonl');
 process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpDir, 'revenue-events.jsonl');
@@ -124,14 +126,14 @@ test('generateDashboard handles empty state (no files)', () => {
 });
 
 test('generateDashboard surfaces tracking readiness and instrumentation truth', () => {
-  const previousGaId = process.env.RLHF_GA_MEASUREMENT_ID;
-  const previousGoogleVerification = process.env.RLHF_GOOGLE_SITE_VERIFICATION;
-  const previousMcpProfile = process.env.RLHF_MCP_PROFILE;
+  const previousGaId = process.env.THUMBGATE_GA_MEASUREMENT_ID;
+  const previousGoogleVerification = process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION;
+  const previousMcpProfile = process.env.THUMBGATE_MCP_PROFILE;
   const previousContainer = process.env.container;
   const repoHasMcpConfig = fs.existsSync(path.join(__dirname, '..', '.mcp.json'));
-  process.env.RLHF_GA_MEASUREMENT_ID = 'G-TEST1234';
-  process.env.RLHF_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
-  process.env.RLHF_MCP_PROFILE = 'default';
+  process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
+  process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
+  process.env.THUMBGATE_MCP_PROFILE = 'default';
   process.env.container = '1';
 
   try {
@@ -185,19 +187,19 @@ test('generateDashboard surfaces tracking readiness and instrumentation truth', 
     }
   } finally {
     if (previousGaId === undefined) {
-      delete process.env.RLHF_GA_MEASUREMENT_ID;
+      delete process.env.THUMBGATE_GA_MEASUREMENT_ID;
     } else {
-      process.env.RLHF_GA_MEASUREMENT_ID = previousGaId;
+      process.env.THUMBGATE_GA_MEASUREMENT_ID = previousGaId;
     }
     if (previousGoogleVerification === undefined) {
-      delete process.env.RLHF_GOOGLE_SITE_VERIFICATION;
+      delete process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION;
     } else {
-      process.env.RLHF_GOOGLE_SITE_VERIFICATION = previousGoogleVerification;
+      process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION = previousGoogleVerification;
     }
     if (previousMcpProfile === undefined) {
-      delete process.env.RLHF_MCP_PROFILE;
+      delete process.env.THUMBGATE_MCP_PROFILE;
     } else {
-      process.env.RLHF_MCP_PROFILE = previousMcpProfile;
+      process.env.THUMBGATE_MCP_PROFILE = previousMcpProfile;
     }
     if (previousContainer === undefined) {
       delete process.env.container;
@@ -624,12 +626,12 @@ test('generateDashboard separates repeated CTA clicks from unique checkout start
       page: '/',
     },
     {
-      receivedAt: new Date().toISOString(),
+      receivedAt: new Date(Date.now() + 1).toISOString(),
       eventType: 'checkout_bootstrap',
       clientType: 'web',
       acquisitionId: 'acq_repeat_1',
       visitorId: 'visitor_repeat_1',
-      sessionId: 'session_repeat_1',
+      sessionId: 'session_repeat_2',
       ctaId: 'pricing_pro',
       page: '/',
     },

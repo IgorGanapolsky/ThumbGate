@@ -1,0 +1,20 @@
+{
+  "id": "1774148638942_feedback-negative-fb-1774148638931-wyfjux",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774148638931_wyfjux",
+  "content": "{\"id\":\"fb_1774148638931_wyfjux\",\"signal\":\"negative\",\"context\":\"Gate \\\"force-push\\\" blocked tool \\\"Bash\\\": Force push blocked. This is destructive and irreversible.\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:force-push\",\"gates-engine\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-22T03:03:58.931Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:force-push",
+    "gates-engine"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-22T03:03:58.943Z",
+  "lastUsedAt": null
+}

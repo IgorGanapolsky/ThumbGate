@@ -181,7 +181,7 @@ function dpoLogRatio(chosenWeight, rejectedWeight, beta = DPO_BETA) {
 - **Reimplementing buildDpoPairs():** It already exists in `export-dpo-pairs.js` with tests. Import it; don't copy.
 - **Reimplementing inferDomain():** It already exists in `feedback-loop.js`. Import it.
 - **Using jest in new test files:** All tests in this repo use `node:test` + `node:assert/strict`. The `test:api` npm script lists test files explicitly — new test files MUST be added to `test:api` or to a new `test:rlaif` script wired into the `test` aggregate.
-- **Writing to production feedback dirs in tests:** All tests must use `fs.mkdtempSync()` + `process.env.RLHF_FEEDBACK_DIR = tmpDir` pattern + `require.cache` invalidation. See `vector-store.test.js` for the canonical pattern.
+- **Writing to production feedback dirs in tests:** All tests must use `fs.mkdtempSync()` + `process.env.THUMBGATE_FEEDBACK_DIR = tmpDir` pattern + `require.cache` invalidation. See `vector-store.test.js` for the canonical pattern.
 - **Treating dpo-model.json as the Thompson model:** `dpo-model.json` stores DPO adjustment metadata only. The authoritative Thompson model is `feedback_model.json`. DPO adjusts priors in `feedback_model.json` via `thompson-sampling.js`'s `saveModel()`.
 
 ---
@@ -241,7 +241,7 @@ function dpoLogRatio(chosenWeight, rejectedWeight, beta = DPO_BETA) {
 ### Pitfall 6: prove-rlaif.js uses live feedback data instead of fixtures
 
 **What goes wrong:** If `prove-rlaif.js` reads from `.claude/memory/feedback/feedback-log.jsonl` (production log) instead of a tmpdir fixture, the test is non-deterministic and may fail in CI where the log is empty.
-**Why it happens:** Not following the `prove-lancedb.js` pattern of `fs.mkdtempSync()` + `process.env.RLHF_FEEDBACK_DIR = tmpDir`.
+**Why it happens:** Not following the `prove-lancedb.js` pattern of `fs.mkdtempSync()` + `process.env.THUMBGATE_FEEDBACK_DIR = tmpDir`.
 **How to avoid:** All proof scripts use tmpdir + env var override. Seed fixture data explicitly in the proof script before running smoke tests.
 **Warning signs:** `prove-rlaif.js` passes locally but fails in a fresh checkout.
 
@@ -363,7 +363,7 @@ async function runProof() {
 
   // DPO-01: selfAudit() produces float score, writes self-score-log.jsonl
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'prove-rlaif-'));
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   // ... smoke test ...
 
   // DPO-02: dpoOptimizer() produces dpo-model.json with adjustments
@@ -434,7 +434,7 @@ Using the lazy-require pattern (`getSelfAuditModule()` like `getContextFsModule(
 
 The aggregate `test` script needs updating to include `test:rlaif`.
 
-### Output files (all git-ignored, written to RLHF_FEEDBACK_DIR)
+### Output files (all git-ignored, written to THUMBGATE_FEEDBACK_DIR)
 
 | File | Written by | Read by |
 |------|-----------|---------|

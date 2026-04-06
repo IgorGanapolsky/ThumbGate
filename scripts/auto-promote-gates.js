@@ -12,8 +12,8 @@ const WINDOW_DAYS = 30;
 const NEG_SIGNALS = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
 
 function getFeedbackLogPath() {
-  if (process.env.RLHF_FEEDBACK_DIR) {
-    return path.join(process.env.RLHF_FEEDBACK_DIR, 'feedback-log.jsonl');
+  if (process.env.THUMBGATE_FEEDBACK_DIR) {
+    return path.join(process.env.THUMBGATE_FEEDBACK_DIR, 'feedback-log.jsonl');
   }
   const localRlhf = path.join(process.cwd(), '.rlhf', 'feedback-log.jsonl');
   const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback', 'feedback-log.jsonl');

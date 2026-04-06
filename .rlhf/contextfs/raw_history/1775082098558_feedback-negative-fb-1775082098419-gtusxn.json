@@ -1,0 +1,18 @@
+{
+  "id": "1775082098558_feedback-negative-fb-1775082098419-gtusxn",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775082098419_gtusxn",
+  "content": "{\"id\":\"fb_1775082098419_gtusxn\",\"signal\":\"negative\",\"context\":\"skipped tests and shipped a regression\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":\"verification skipped\",\"whatToChange\":\"always run tests first\",\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"testing\",\"verification\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-01T22:21:38.419Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"},\"diagnosis\":{\"rootCauseCategory\":\"tool_output_misread\",\"criticalFailureStep\":\"feedback_capture\",\"violations\":[],\"evidence\":[{\"type\":\"context\",\"value\":\"skipped tests and shipped a regression\"}]}}",
+  "tags": [
+    "testing",
+    "verification"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-01T22:21:38.558Z",
+  "lastUsedAt": null
+}

@@ -1,0 +1,23 @@
+{
+  "id": "1774025076788_mistake-gate-local-only-git-writes-blocked-tool-bash-user-reque",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Gate \"local-only-git-writes\" blocked tool \"Bash\": User reque",
+  "content": "Context: Gate \"local-only-git-writes\" blocked tool \"Bash\": User requested local-only work. Git writes and PR operations are blocked.\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "audit-trail",
+    "auto-capture",
+    "gate:local-only-git-writes",
+    "gates-engine",
+    "entity:Customer"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775168520125_r84j9x"
+  },
+  "createdAt": "2026-03-20T16:44:36.788Z",
+  "lastUsedAt": null
+}

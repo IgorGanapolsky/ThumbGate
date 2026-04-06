@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "created": "2026-03-17T11:43:30.425Z",
+  "updated": "2026-04-06T15:35:43.129Z",
+  "total_entries": 5150,
+  "categories": {
+    "code_edit": {
+      "alpha": 1,
+      "beta": 1,
+      "samples": 0,
+      "last_updated": null
+    },
+    "git": {
+      "alpha": 1,
+      "beta": 1,
+      "samples": 0,
+      "last_updated": null
+    },
+    "testing": {
+      "alpha": 1770.9999999312354,
+      "beta": 1,
+      "samples": 885,
+      "last_updated": "2026-03-30T20:27:57.128Z"
+    },
+    "pr_review": {
+      "alpha": 1,
+      "beta": 1,
+      "samples": 0,
+      "last_updated": null
+    },
+    "search": {
+      "alpha": 1,
+      "beta": 1,
+      "samples": 0,
+      "last_updated": null
+    },
+    "architecture": {
+      "alpha": 1,
+      "beta": 1,
+      "samples": 0,
+      "last_updated": null
+    },
+    "security": {
+      "alpha": 1,
+      "beta": 1,
+      "samples": 0,
+      "last_updated": null
+    },
+    "debugging": {
+      "alpha": 1,
+      "beta": 1,
+      "samples": 0,
+      "last_updated": null
+    },
+    "product_recommendation": {
+      "alpha": 1,
+      "beta": 1,
+      "samples": 0,
+      "last_updated": null
+    },
+    "brand_compliance": {
+      "alpha": 1,
+      "beta": 1,
+      "samples": 0,
+      "last_updated": null
+    },
+    "sizing": {
+      "alpha": 1,
+      "beta": 1,
+      "samples": 0,
+      "last_updated": null
+    },
+    "pricing": {
+      "alpha": 1,
+      "beta": 1,
+      "samples": 0,
+      "last_updated": null
+    },
+    "regulatory": {
+      "alpha": 1,
+      "beta": 1,
+      "samples": 0,
+      "last_updated": null
+    },
+    "uncategorized": {
+      "alpha": 4130.999999954159,
+      "beta": 1,
+      "samples": 2065,
+      "last_updated": "2026-03-30T20:27:56.962Z"
+    },
+    "partner_balanced": {
+      "alpha": 8932.999999752465,
+      "beta": 778.9999999793706,
+      "samples": 4855,
+      "last_updated": "2026-04-06T15:35:43.129Z"
+    },
+    "api": {
+      "alpha": 1180.9999999977078,
+      "beta": 1,
+      "samples": 590,
+      "last_updated": "2026-03-30T20:27:57.297Z"
+    },
+    "partner_strict_reviewer": {
+      "alpha": 590.9999999977078,
+      "beta": 1,
+      "samples": 295,
+      "last_updated": "2026-03-30T20:27:55.727Z"
+    },
+    "delegation": {
+      "alpha": 2442.9999998670573,
+      "beta": 778.9999999793706,
+      "samples": 1610,
+      "last_updated": "2026-04-06T15:35:43.129Z"
+    },
+    "intent:improve_response_quality": {
+      "alpha": 2442.9999998670573,
+      "beta": 778.9999999793706,
+      "samples": 1610,
+      "last_updated": "2026-04-06T15:35:43.129Z"
+    },
+    "delegate:pr_workflow": {
+      "alpha": 2442.9999998670573,
+      "beta": 778.9999999793706,
+      "samples": 1610,
+      "last_updated": "2026-04-06T15:35:43.129Z"
+    }
+  }
+}

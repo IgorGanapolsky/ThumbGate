@@ -1,0 +1,20 @@
+{
+  "id": "1775054993797_feedback-negative-fb-1775054988917-t4x64h",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775054988917_t4x64h",
+  "content": "{\"id\":\"fb_1775054988917_t4x64h\",\"signal\":\"negative\",\"context\":\"Gate \\\"push-without-thread-check\\\" blocked tool \\\"Bash\\\": Check PR review threads (reviewThreads first:50) before pushing. Use satisfy_gate('pr_threads_checked', 'evidence') to bypass.\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:push-without-thread-check\",\"gates-engine\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-01T14:49:48.917Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:push-without-thread-check",
+    "gates-engine"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-01T14:49:53.797Z",
+  "lastUsedAt": null
+}

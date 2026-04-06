@@ -96,7 +96,7 @@
       "layer": "Supply Chain",
       "trigger": "Skill:load",
       "pattern": ".*",
-      "when": { "constraints": { "RLHF_DELEGATION_MODE": true } },
+      "when": { "constraints": { "THUMBGATE_DELEGATION_MODE": true } },
       "action": "warn",
       "unless": "skill_verified",
       "message": "Skill provenance check failed. Run 'npm run skill:verify' or satisfy 'skill_verified' with a valid signature to proceed.",
@@ -108,7 +108,7 @@
       "trigger": "Bash:exec",
       "pattern": ".*",
       "executable_hash": "237adf8f3747cad8b9b62fcfd0d9c8d509a64e550337707f55100afcb79e8900",
-      "when": { "constraints": { "RLHF_DELEGATION_MODE": true } },
+      "when": { "constraints": { "THUMBGATE_DELEGATION_MODE": true } },
       "action": "block",
       "message": "Blocked npx execution by content hash. Renaming the binary does not bypass this gate.",
       "severity": "critical"

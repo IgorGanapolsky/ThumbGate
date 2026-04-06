@@ -67,7 +67,7 @@ The system is built on five layers that work together:
 - **LanceDB + Apache Arrow** for local vector search with Hugging Face embeddings
 - **ContextFS** for structured context assembly and provenance tracking
 
-Everything runs locally. No cloud account required. No model weights are modified — this is context engineering plus enforcement, not RLHF in the training sense.
+Everything runs locally. No cloud account required. No model weights are modified — this is context engineering plus enforcement, not traditional RLHF in the training sense.
 
 ## What Actually Works vs. What Doesn't
 
@@ -88,7 +88,7 @@ One command installs the full system for any MCP-compatible agent:
 npx mcp-memory-gateway init
 ```
 
-This scaffolds the `.rlhf/` directory, wires PreToolUse hooks for your agent (Claude Code, Codex, Gemini, Cursor, etc.), and starts the MCP server that exposes `capture_feedback`, `recall`, `search_lessons`, and gate enforcement.
+This scaffolds the `.thumbgate/` directory, wires PreToolUse hooks for your agent (Claude Code, Codex, Gemini, Cursor, etc.), and starts the MCP server that exposes `capture_feedback`, `recall`, `search_lessons`, and gate enforcement.
 
 ## The Vibe Coding Safety Net
 

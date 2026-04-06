@@ -1,4 +1,4 @@
-# Phase 2: ML into rlhf-feedback-loop - Research
+# Phase 2: ML into thumbgate - Research
 
 **Researched:** 2026-03-04
 **Domain:** Thompson Sampling, exponential time-decay, LSTM sequence tracking, diversity tracking — pure JS port from Subway_RN_Demo Python/JS source
@@ -21,7 +21,7 @@
 
 ## Summary
 
-Phase 2 ports four ML features from Subway_RN_Demo into rlhf-feedback-loop. All four features have been directly read in their source implementations — Thompson Sampling in Python (`train_from_feedback.py`, 910 lines), sequence tracking and diversity in JavaScript (`capture-feedback.js`, 974 lines). The port is largely mechanical: the Python Thompson/time-decay logic translates directly to JS using `Math.pow` and the `parseTimestamp()` helper added in Phase 1, while the JS sequence tracking and diversity code can be adapted with path and API adjustments.
+Phase 2 ports four ML features from Subway_RN_Demo into thumbgate. All four features have been directly read in their source implementations — Thompson Sampling in Python (`train_from_feedback.py`, 910 lines), sequence tracking and diversity in JavaScript (`capture-feedback.js`, 974 lines). The port is largely mechanical: the Python Thompson/time-decay logic translates directly to JS using `Math.pow` and the `parseTimestamp()` helper added in Phase 1, while the JS sequence tracking and diversity code can be adapted with path and API adjustments.
 
 The critical architectural decision for this phase is WHERE the ML features live. Thompson Sampling and time-decay need a `train_from_feedback.js` script (JS rewrite of the Python trainer) plus the Python script copied into `scripts/` for users who want batch retraining. Sequence tracking and diversity tracking need to be integrated into the `captureFeedback()` hot path in `feedback-loop.js` — specifically as post-capture side effects that append to `feedback-sequences.jsonl` and `diversity-tracking.json` without blocking the primary feedback write. This mirrors the Subway architecture exactly: `saveFeedback()` calls `saveSequence()` and `updateDiversityTracking()` after the primary append.
 
@@ -45,7 +45,7 @@ The zero-npm-dependency constraint for this phase is confirmed met: Thompson Sam
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
 | `parseTimestamp()` (Phase 1 helper) | in `feedback-schema.js` | Normalize timestamps before decay weight calculation | Every call to `timeDecayWeight()` in JS |
-| `RLHF_FEEDBACK_DIR` env var | existing pattern | Locate sequence and diversity files | Same pattern as `getFeedbackPaths()` |
+| `THUMBGATE_FEEDBACK_DIR` env var | existing pattern | Locate sequence and diversity files | Same pattern as `getFeedbackPaths()` |
 
 ### Alternatives Considered
 | Instead of | Could Use | Tradeoff |
@@ -632,7 +632,7 @@ const score = Math.max(0, 100 - Math.sqrt(variance) * 10);
 - Direct `Read` of `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/capture-feedback.js` — 974 lines, full sequence tracking + diversity tracking implementation verified
 - Direct `Read` of `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/memory/feedback/feedback_model.json` — live alpha/beta values for 9 categories confirmed; confirms model schema
 - Direct `Read` of `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/memory/feedback/diversity-tracking.json` — live 76.2% diversity score confirmed; confirms formula produces expected output
-- Direct `Read` of `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/feedback-loop.js` — confirmed `captureFeedback()` signature, `readJSONL()`, `appendJSONL()`, `getFeedbackPaths()`, `RLHF_FEEDBACK_DIR` pattern
+- Direct `Read` of `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/feedback-loop.js` — confirmed `captureFeedback()` signature, `readJSONL()`, `appendJSONL()`, `getFeedbackPaths()`, `THUMBGATE_FEEDBACK_DIR` pattern
 - `Bash: npm test` in rlhf — confirmed 60 node-runner tests passing (58 test:api + 2 test:proof), 23 script-runner tests; all green
 - `Bash: python3 --version` — confirmed Python 3.14.3 available at `/opt/homebrew/bin/python3`
 - `Bash: node --version` — confirmed Node.js 25.6.1

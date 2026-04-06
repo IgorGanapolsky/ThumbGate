@@ -21,7 +21,7 @@ The extension path is useful when a team wants Claude Desktop to keep one workfl
 Use the portable npm launcher:
 
 ```bash
-claude mcp add rlhf -- npx -y mcp-memory-gateway serve
+claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
 ```
 
 Or use the project bootstrap:
@@ -67,8 +67,8 @@ Optional hosted path:
       "command": "npx",
       "args": ["-y", "mcp-memory-gateway", "serve"],
       "env": {
-        "RLHF_BASE_URL": "https://rlhf-feedback-loop-production.up.railway.app",
-        "RLHF_API_KEY": "rlhf_YOUR_KEY_HERE"
+        "THUMBGATE_BASE_URL": "https://thumbgate-production.up.railway.app",
+        "THUMBGATE_API_KEY": "rlhf_YOUR_KEY_HERE"
       }
     }
   }
@@ -111,13 +111,13 @@ Optional hosted path:
 
 ## Privacy Policy
 
-For complete privacy information, see: https://rlhf-feedback-loop-production.up.railway.app/privacy
+For complete privacy information, see: https://thumbgate-production.up.railway.app/privacy
 
 ### Data Collection
 
 - Local installs store workflow memory, feedback entries, and proof artifacts in local project files.
-- Optional hosted mode sends feedback and memory data to the configured `RLHF_BASE_URL`.
-- Optional CLI telemetry is best-effort and can be disabled with `RLHF_NO_TELEMETRY=1`.
+- Optional hosted mode sends feedback and memory data to the configured `THUMBGATE_BASE_URL`.
+- Optional CLI telemetry is best-effort and can be disabled with `THUMBGATE_NO_TELEMETRY=1`.
 - We do not sell customer data; retention and deletion details live in the public privacy policy.
 
 ## Support

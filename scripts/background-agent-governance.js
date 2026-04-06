@@ -15,10 +15,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const RUNS_FILE = 'agent-runs.jsonl';
 
-function getFeedbackDir() { return process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf'); }
+function getFeedbackDir() { return resolveFeedbackDir(); }
 function getRunsPath() { return path.join(getFeedbackDir(), RUNS_FILE); }
 
 function readJsonl(fp) {

@@ -5,7 +5,7 @@ alwaysApply: false
 
 # Session Continuity
 
-Maintain context across coding sessions using the RLHF memory system.
+Maintain context across coding sessions using the ThumbGate memory system.
 
 ## Session start
 

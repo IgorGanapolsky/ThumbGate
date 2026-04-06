@@ -21,17 +21,17 @@ test('parseGhVariableList reads gh variable output', () => {
   const parsed = parseGhVariableList([
     'RAILWAY_PROJECT_ID\tproj_123\t2026-03-20T00:00:00Z',
     'RAILWAY_ENVIRONMENT_ID\tenv_456\t2026-03-20T00:00:00Z',
-    'RAILWAY_SERVICE\trlhf-feedback-loop\t2026-03-20T00:00:00Z',
+    'RAILWAY_SERVICE\tthumbgate\t2026-03-20T00:00:00Z',
   ].join('\n'));
 
   assert.equal(parsed.RAILWAY_PROJECT_ID, 'proj_123');
   assert.equal(parsed.RAILWAY_ENVIRONMENT_ID, 'env_456');
-  assert.equal(parsed.RAILWAY_SERVICE, 'rlhf-feedback-loop');
+  assert.equal(parsed.RAILWAY_SERVICE, 'thumbgate');
 });
 
 test('parseHtmlSignals detects telemetry and tracking hooks', () => {
   const signals = parseHtmlSignals(`
-    <script defer data-domain="rlhf-feedback-loop-production.up.railway.app" data-api="/api/event" src="/js/analytics.js"></script>
+    <script defer data-domain="thumbgate-production.up.railway.app" data-api="/api/event" src="/js/analytics.js"></script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-TEST1234"></script>
     <script>window.gtag('event', 'checkout_start');</script>
     <script>fetch('/v1/telemetry/ping', { method: 'POST' });</script>
@@ -61,9 +61,9 @@ test('buildDiagnosis identifies local fallback blind spot and runtime gaps', () 
     },
     hostedAudit: {
       runtimePresence: {
-        RLHF_GA_MEASUREMENT_ID: false,
-        RLHF_PUBLIC_APP_ORIGIN: false,
-        RLHF_BILLING_API_BASE_URL: false,
+        THUMBGATE_GA_MEASUREMENT_ID: false,
+        THUMBGATE_PUBLIC_APP_ORIGIN: false,
+        THUMBGATE_BILLING_API_BASE_URL: false,
       },
       summaries: {
         today: {
@@ -106,9 +106,9 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
           stdout: [
             'RAILWAY_PROJECT_ID\tproj_123\t2026-03-20T00:00:00Z',
             'RAILWAY_ENVIRONMENT_ID\tenv_456\t2026-03-20T00:00:00Z',
-            'RAILWAY_SERVICE\trlhf-feedback-loop\t2026-03-20T00:00:00Z',
-            'RLHF_PUBLIC_APP_ORIGIN\thttps://example.com\t2026-03-20T00:00:00Z',
-            'RLHF_BILLING_API_BASE_URL\thttps://example.com\t2026-03-20T00:00:00Z',
+            'RAILWAY_SERVICE\tthumbgate\t2026-03-20T00:00:00Z',
+            'THUMBGATE_PUBLIC_APP_ORIGIN\thttps://example.com\t2026-03-20T00:00:00Z',
+            'THUMBGATE_BILLING_API_BASE_URL\thttps://example.com\t2026-03-20T00:00:00Z',
           ].join('\n'),
           stderr: '',
           error: null,
@@ -120,12 +120,12 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
           status: 0,
           stdout: JSON.stringify({
             runtimePresence: {
-              RLHF_FEEDBACK_DIR: true,
-              RLHF_API_KEY: true,
-              RLHF_PUBLIC_APP_ORIGIN: false,
-              RLHF_BILLING_API_BASE_URL: false,
-              RLHF_GA_MEASUREMENT_ID: false,
-              RLHF_CHECKOUT_FALLBACK_URL: true,
+              THUMBGATE_FEEDBACK_DIR: true,
+              THUMBGATE_API_KEY: true,
+              THUMBGATE_PUBLIC_APP_ORIGIN: false,
+              THUMBGATE_BILLING_API_BASE_URL: false,
+              THUMBGATE_GA_MEASUREMENT_ID: false,
+              THUMBGATE_CHECKOUT_FALLBACK_URL: true,
               STRIPE_SECRET_KEY: true,
             },
             summaries: {

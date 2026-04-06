@@ -234,7 +234,7 @@ describe('context-engine: TOOL_CONSOLIDATION', () => {
     m = require('../scripts/context-engine.js');
   });
 
-  it('uses local RLHF storage labels for memory query sources', () => {
+  it('uses local ThumbGate storage labels for memory query sources', () => {
     assert.deepEqual(
       m.TOOL_CONSOLIDATION['memory:query'].sources,
       ['jsonl-memory', 'lancedb-vectors']

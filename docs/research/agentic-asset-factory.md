@@ -21,7 +21,7 @@ When we generate a product (e.g., `TW-NEON-01`), we don't just create images. We
 ```text
 packs/TW-NEON-01/
 ├── assets/                  # The generated visual assets (PNG/WEBP)
-├── .rlhf/
+├── .thumbgate/
 │   ├── prevention-rules.md  # Brand-specific QA rules (e.g., "NEVER use pastels")
 │   └── feedback-log.jsonl   # Pre-trained reliability scores
 ├── brand-dna.md             # The core system prompt / constraints
@@ -34,5 +34,5 @@ packs/TW-NEON-01/
 1.  **Define constraints:** Write the `brand-dna.md`.
 2.  **Seed the vector store:** Mount the pack folder so `contextfs` indexes the DNA.
 3.  **Run the Jobs:** Use `async-job-runner.js` to iterate through the asset list (Overlays, Emotes, Alerts).
-4.  **Auto-QA:** If an output violates the `brand-dna.md`, the `rubric-engine.js` throws a veto, and a new `prevention_rule` is written to the pack's local `.rlhf/` directory.
+4.  **Auto-QA:** If an output violates the `brand-dna.md`, the `rubric-engine.js` throws a veto, and a new `prevention_rule` is written to the pack's local `.thumbgate/` directory.
 5.  **Package:** Zip the directory. The buyer mounts `server.json` and instantly gets an agent perfectly tuned to their new visual brand.

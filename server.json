@@ -3,7 +3,7 @@
   "name": "io.github.IgorGanapolsky/mcp-memory-gateway",
   "description": "Pre-action gates that block AI agents from repeating known mistakes.",
   "title": "ThumbGate",
-  "websiteUrl": "https://rlhf-feedback-loop-production.up.railway.app",
+  "websiteUrl": "https://thumbgate-production.up.railway.app",
   "repository": {
     "source": "github",
     "url": "https://github.com/IgorGanapolsky/ThumbGate"

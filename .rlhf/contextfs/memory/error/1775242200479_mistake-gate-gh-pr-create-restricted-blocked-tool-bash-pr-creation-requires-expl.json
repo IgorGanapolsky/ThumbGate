@@ -1,0 +1,23 @@
+{
+  "id": "1775242200479_mistake-gate-gh-pr-create-restricted-blocked-tool-bash-pr-creation-requires-expl",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Gate \"gh-pr-create-restricted\" blocked tool \"Bash\": PR creation requires explicit 'pr_create_allowed' satisfaction with...",
+  "content": "Context: Gate \"gh-pr-create-restricted\" blocked tool \"Bash\": PR creation requires explicit 'pr_create_allowed' satisfaction with evidence of user permission.\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "audit-trail",
+    "auto-capture",
+    "gate:gh-pr-create-restricted",
+    "gates-engine",
+    "entity:Customer"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775484675435_8v8chr"
+  },
+  "createdAt": "2026-04-03T18:50:00.479Z",
+  "lastUsedAt": null
+}

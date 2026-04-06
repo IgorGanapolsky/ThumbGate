@@ -7,7 +7,7 @@ const path = require('path');
 const os = require('os');
 
 function freshModule(tmpDir) {
-  if (tmpDir) process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  if (tmpDir) process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   // Invalidate all relevant cached modules so env var change takes effect
   for (const key of Object.keys(require.cache)) {
     if (key.includes('meta-policy') || key.includes('feedback-loop') || key.includes('thompson-sampling')) {
@@ -28,7 +28,7 @@ describe('meta-policy — extractMetaPolicyRules()', () => {
       assert.strictEqual(result.length, 0, 'empty when no memories');
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 
@@ -68,7 +68,7 @@ describe('meta-policy — extractMetaPolicyRules()', () => {
       }
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 });
@@ -87,7 +87,7 @@ describe('meta-policy — run()', () => {
       assert.ok(Array.isArray(parsed.rules), 'output has rules array');
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 });

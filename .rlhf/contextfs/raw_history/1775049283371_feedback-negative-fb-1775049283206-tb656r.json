@@ -1,0 +1,20 @@
+{
+  "id": "1775049283371_feedback-negative-fb-1775049283206-tb656r",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775049283206_tb656r",
+  "content": "{\"id\":\"fb_1775049283206_tb656r\",\"signal\":\"negative\",\"context\":\"Delegation was re-attempted while a handoff was still unresolved for intent 'improve_response_quality'.\",\"lastAction\":null,\"whatWentWrong\":\"A second handoff started before the first one completed.\",\"whatToChange\":\"Finish or abort the active handoff before starting another one on the same task.\",\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"delegation\",\"unresolved_handoff_exists\",\"intent:improve_response_quality\",\"entity:Customer\"],\"skill\":\"delegation_runtime\",\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-01T13:14:43.206Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "delegation",
+    "unresolved_handoff_exists",
+    "intent:improve_response_quality",
+    "entity:Customer"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-01T13:14:43.371Z",
+  "lastUsedAt": null
+}

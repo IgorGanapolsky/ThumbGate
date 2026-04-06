@@ -13,12 +13,12 @@ describe('rate-limiter', () => {
   let licenseMoved = false;
 
   beforeEach(() => {
-    savedEnv.RLHF_API_KEY = process.env.RLHF_API_KEY;
-    savedEnv.RLHF_PRO_MODE = process.env.RLHF_PRO_MODE;
-    savedEnv.RLHF_NO_RATE_LIMIT = process.env.RLHF_NO_RATE_LIMIT;
-    delete process.env.RLHF_API_KEY;
-    delete process.env.RLHF_PRO_MODE;
-    delete process.env.RLHF_NO_RATE_LIMIT;
+    savedEnv.THUMBGATE_API_KEY = process.env.THUMBGATE_API_KEY;
+    savedEnv.THUMBGATE_PRO_MODE = process.env.THUMBGATE_PRO_MODE;
+    savedEnv.THUMBGATE_NO_RATE_LIMIT = process.env.THUMBGATE_NO_RATE_LIMIT;
+    delete process.env.THUMBGATE_API_KEY;
+    delete process.env.THUMBGATE_PRO_MODE;
+    delete process.env.THUMBGATE_NO_RATE_LIMIT;
 
     // Temporarily hide the license file so isProTier() returns false
     if (fs.existsSync(LICENSE_PATH)) {
@@ -35,12 +35,12 @@ describe('rate-limiter', () => {
   });
 
   afterEach(() => {
-    if (savedEnv.RLHF_API_KEY !== undefined) process.env.RLHF_API_KEY = savedEnv.RLHF_API_KEY;
-    else delete process.env.RLHF_API_KEY;
-    if (savedEnv.RLHF_PRO_MODE !== undefined) process.env.RLHF_PRO_MODE = savedEnv.RLHF_PRO_MODE;
-    else delete process.env.RLHF_PRO_MODE;
-    if (savedEnv.RLHF_NO_RATE_LIMIT !== undefined) process.env.RLHF_NO_RATE_LIMIT = savedEnv.RLHF_NO_RATE_LIMIT;
-    else delete process.env.RLHF_NO_RATE_LIMIT;
+    if (savedEnv.THUMBGATE_API_KEY !== undefined) process.env.THUMBGATE_API_KEY = savedEnv.THUMBGATE_API_KEY;
+    else delete process.env.THUMBGATE_API_KEY;
+    if (savedEnv.THUMBGATE_PRO_MODE !== undefined) process.env.THUMBGATE_PRO_MODE = savedEnv.THUMBGATE_PRO_MODE;
+    else delete process.env.THUMBGATE_PRO_MODE;
+    if (savedEnv.THUMBGATE_NO_RATE_LIMIT !== undefined) process.env.THUMBGATE_NO_RATE_LIMIT = savedEnv.THUMBGATE_NO_RATE_LIMIT;
+    else delete process.env.THUMBGATE_NO_RATE_LIMIT;
     if (licenseMoved && fs.existsSync(LICENSE_BAK)) {
       fs.renameSync(LICENSE_BAK, LICENSE_PATH);
       licenseMoved = false;
@@ -62,8 +62,8 @@ describe('rate-limiter', () => {
     }
   });
 
-  it('RLHF_API_KEY marks pro tier', () => {
-    process.env.RLHF_API_KEY = 'test-key-123';
+  it('THUMBGATE_API_KEY marks pro tier', () => {
+    process.env.THUMBGATE_API_KEY = 'test-key-123';
     assert.equal(rateLimiter.isProTier(), true);
     for (let i = 0; i < 10; i++) {
       const result = rateLimiter.checkLimit('capture_feedback');
@@ -71,8 +71,8 @@ describe('rate-limiter', () => {
     }
   });
 
-  it('RLHF_PRO_MODE=1 marks pro tier', () => {
-    process.env.RLHF_PRO_MODE = '1';
+  it('THUMBGATE_PRO_MODE=1 marks pro tier', () => {
+    process.env.THUMBGATE_PRO_MODE = '1';
     assert.equal(rateLimiter.isProTier(), true);
     for (let i = 0; i < 10; i++) {
       const result = rateLimiter.checkLimit('capture_feedback');
@@ -109,7 +109,7 @@ describe('rate-limiter', () => {
   });
 
   it('pro tier bypasses export_dpo limit', () => {
-    process.env.RLHF_PRO_MODE = '1';
+    process.env.THUMBGATE_PRO_MODE = '1';
     for (let i = 0; i < 5; i++) {
       assert.equal(rateLimiter.checkLimit('export_dpo').allowed, true);
     }

@@ -11,9 +11,9 @@ const path = require('path');
 // ---------------------------------------------------------------------------
 
 function freshModule(tmpDir) {
-  process.env.RLHF_ACTION_LOG = path.join(tmpDir, 'action-log.jsonl');
-  process.env.RLHF_FEEDBACK_ATTRIBUTIONS = path.join(tmpDir, 'attributions.jsonl');
-  process.env.RLHF_ATTRIBUTED_FEEDBACK = path.join(tmpDir, 'attributed-feedback.jsonl');
+  process.env.THUMBGATE_ACTION_LOG = path.join(tmpDir, 'action-log.jsonl');
+  process.env.THUMBGATE_FEEDBACK_ATTRIBUTIONS = path.join(tmpDir, 'attributions.jsonl');
+  process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = path.join(tmpDir, 'attributed-feedback.jsonl');
   delete require.cache[require.resolve('../scripts/feedback-attribution')];
   return require('../scripts/feedback-attribution');
 }
@@ -39,9 +39,9 @@ describe('recordAction', () => {
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.RLHF_ACTION_LOG;
-    delete process.env.RLHF_FEEDBACK_ATTRIBUTIONS;
-    delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
+    delete process.env.THUMBGATE_ACTION_LOG;
+    delete process.env.THUMBGATE_FEEDBACK_ATTRIBUTIONS;
+    delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
   });
 
   it('writes action-log.jsonl and returns ok:true with valid action_id', () => {
@@ -110,9 +110,9 @@ describe('attributeFeedback', () => {
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.RLHF_ACTION_LOG;
-    delete process.env.RLHF_FEEDBACK_ATTRIBUTIONS;
-    delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
+    delete process.env.THUMBGATE_ACTION_LOG;
+    delete process.env.THUMBGATE_FEEDBACK_ATTRIBUTIONS;
+    delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
   });
 
   it('returns ok:true for positive signal', () => {

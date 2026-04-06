@@ -30,7 +30,7 @@ test('codex plugin manifest uses ThumbGate branding and local MCP config', () =>
 
   assert.equal(plugin.name, 'codex-profile');
   assert.equal(plugin.interface.displayName, 'ThumbGate for Codex');
-  assert.equal(plugin.homepage, 'https://rlhf-feedback-loop-production.up.railway.app');
+  assert.equal(plugin.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(plugin.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(plugin.mcpServers, './.mcp.json');
   const pkgVersion = require('../package.json').version;

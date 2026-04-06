@@ -122,14 +122,14 @@ const TOOLS = [
   }),
   readOnlyTool({
     name: 'search_rlhf',
-    description: 'Search raw RLHF state across feedback logs, ContextFS memory, and prevention rules.',
+    description: 'Search raw ThumbGate state across feedback logs, ContextFS memory, and prevention rules.',
     inputSchema: {
       type: 'object',
       required: ['query'],
       properties: {
-        query: { type: 'string', description: 'Search query for RLHF state.' },
+        query: { type: 'string', description: 'Search query for ThumbGate state.' },
         limit: { type: 'number', description: 'Maximum results to return (default 10)' },
-        source: { type: 'string', enum: ['all', 'feedback', 'context', 'rules'], description: 'Restrict search to a single RLHF source.' },
+        source: { type: 'string', enum: ['all', 'feedback', 'context', 'rules'], description: 'Restrict search to a single ThumbGate source.' },
         signal: { type: 'string', enum: ['up', 'down', 'positive', 'negative'], description: 'Optional feedback-signal filter when searching feedback data.' },
       },
     },
@@ -401,7 +401,7 @@ const TOOLS = [
   }),
   destructiveTool({
     name: 'export_databricks_bundle',
-    description: 'Export RLHF logs and proof artifacts as a Databricks-ready analytics bundle',
+    description: 'Export ThumbGate logs and proof artifacts as a Databricks-ready analytics bundle',
     inputSchema: {
       type: 'object',
       properties: {
@@ -562,7 +562,7 @@ const TOOLS = [
   }),
   readOnlyTool({
     name: 'dashboard',
-    description: 'Get full RLHF dashboard -- Harness Score, gate stats, prevention impact, proof, and system health',
+    description: 'Get full ThumbGate dashboard -- Harness Score, gate stats, prevention impact, proof, and system health',
     inputSchema: {
       type: 'object',
       properties: {},

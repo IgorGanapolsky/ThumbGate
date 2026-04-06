@@ -1,4 +1,4 @@
-# OpenCode: RLHF MCP Profile Install
+# OpenCode: ThumbGate MCP Profile Install
 
 This repo already ships a project-scoped `opencode.json` for local work inside the source tree.
 
@@ -13,7 +13,7 @@ mkdir -p ~/.config/opencode
 cp adapters/opencode/opencode.json ~/.config/opencode/opencode.json
 ```
 
-If you already have `~/.config/opencode/opencode.json`, merge in the `mcp.rlhf` block from `adapters/opencode/opencode.json` instead of overwriting your config.
+If you already have `~/.config/opencode/opencode.json`, merge in the `mcp.thumbgate` block from `adapters/opencode/opencode.json` instead of overwriting your config.
 
 ## What Gets Added
 
@@ -54,4 +54,4 @@ For this repository specifically, the committed `opencode.json` also enables:
 
 ## Uninstall
 
-Remove the `mcp.rlhf` entry from your OpenCode config.
+Remove the `mcp.thumbgate` entry from your OpenCode config.

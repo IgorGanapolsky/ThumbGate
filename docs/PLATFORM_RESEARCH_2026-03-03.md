@@ -76,7 +76,7 @@ This research was done on March 3, 2026 using official documentation or official
 
 ## Packaging Decision
 
-- Core product: RLHF API + MCP server.
+- Core product: ThumbGate API + MCP server.
 - Distribution wrappers: ChatGPT Actions spec, Claude MCP config, Codex MCP config, Gemini tool definitions, Amp skill template.
 - Add policy-driven intent routing with checkpoint gates as the cross-platform orchestration layer.
 - Revenue path: OSS core + hosted control plane + enterprise support.

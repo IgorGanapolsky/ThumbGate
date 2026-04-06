@@ -169,7 +169,7 @@ test('buildPreventionRules applies time-weighted decay', () => {
     });
   }
 
-  process.env.RLHF_FEEDBACK_DIR = tmp;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmp;
   try {
     // With decay half-life of 7 days, old mistakes (60 days) have weight ~0.0025 each
     // 5 * 0.0025 = 0.0125 (below threshold of 2)
@@ -188,7 +188,7 @@ test('buildPreventionRules applies time-weighted decay', () => {
       }
     }
   } finally {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     fs.rmSync(tmp, { recursive: true });
   }
 });
@@ -204,12 +204,12 @@ test('buildPreventionRules header mentions half-life', () => {
     timestamp: new Date().toISOString(),
   });
 
-  process.env.RLHF_FEEDBACK_DIR = tmp;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmp;
   try {
     const rules = buildPreventionRules(1, { decayHalfLifeDays: 14 });
     assert.ok(rules.includes('half-life: 14d'), 'header should mention half-life');
   } finally {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     fs.rmSync(tmp, { recursive: true });
   }
 });
@@ -230,12 +230,12 @@ test('buildPreventionRules keeps default threshold behavior for two recent mista
     });
   }
 
-  process.env.RLHF_FEEDBACK_DIR = tmp;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmp;
   try {
     const rules = buildPreventionRules(2, { decayHalfLifeDays: 7 });
     assert.ok(rules.includes('recent-pattern'), 'two recent mistakes should still meet the default threshold');
   } finally {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     fs.rmSync(tmp, { recursive: true });
   }
 });
@@ -246,7 +246,7 @@ test('buildPreventionRules keeps default threshold behavior for two recent mista
 
 test('captureFeedback stores lastAction when provided', () => {
   const tmp = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmp;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmp;
   try {
     const result = captureFeedback({
       signal: 'down',
@@ -272,14 +272,14 @@ test('captureFeedback stores lastAction when provided', () => {
     assert.strictEqual(event.lastAction.contextKey, 'Edit:config');
     assert.strictEqual(event.lastAction.file, 'src/config/prod.ts');
   } finally {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     fs.rmSync(tmp, { recursive: true });
   }
 });
 
 test('captureFeedback lastAction is null when not provided', () => {
   const tmp = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmp;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmp;
   try {
     const result = captureFeedback({
       signal: 'up',
@@ -291,14 +291,14 @@ test('captureFeedback lastAction is null when not provided', () => {
     const event = result.feedbackEvent;
     assert.strictEqual(event.lastAction, null, 'lastAction should be null when not provided');
   } finally {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     fs.rmSync(tmp, { recursive: true });
   }
 });
 
 test('captureFeedback lastAction persists to JSONL', () => {
   const tmp = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmp;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmp;
   try {
     captureFeedback({
       signal: 'down',
@@ -315,7 +315,7 @@ test('captureFeedback lastAction persists to JSONL', () => {
     assert.strictEqual(last.lastAction.tool, 'Bash');
     assert.strictEqual(last.lastAction.contextKey, 'Bash:git_push');
   } finally {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     fs.rmSync(tmp, { recursive: true });
   }
 });

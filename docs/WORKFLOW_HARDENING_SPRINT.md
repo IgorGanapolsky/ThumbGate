@@ -54,7 +54,7 @@ Only move forward when the buyer has:
 
 Primary intake:
 
-- https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake
+- https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
 Email fallback:
 

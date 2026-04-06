@@ -7,7 +7,7 @@ const path = require('path');
 
 // Override feedback dir so tests don't pollute real data
 const TEST_DIR = path.join(__dirname, '..', '.test-marketing-' + Date.now());
-process.env.RLHF_FEEDBACK_DIR = TEST_DIR;
+process.env.THUMBGATE_FEEDBACK_DIR = TEST_DIR;
 
 const {
   createMarketingExperiment,

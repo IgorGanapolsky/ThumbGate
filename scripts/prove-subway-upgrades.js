@@ -76,7 +76,7 @@ function run() {
             cwd: SUBWAY_ROOT,
             encoding: 'utf8',
             stdio: 'pipe',
-            env: { ...process.env, RLHF_VECTOR_STUB_EMBED: 'true', NODE_OPTIONS: '--experimental-vm-modules' },
+            env: { ...process.env, THUMBGATE_VECTOR_STUB_EMBED: 'true', NODE_OPTIONS: '--experimental-vm-modules' },
           }
         );
         if (out.includes('FAIL ')) throw new Error(`Jest tests failed:\n${out.slice(-300)}`);
@@ -185,7 +185,7 @@ function run() {
             {
               cwd: SUBWAY_ROOT,
               encoding: 'utf8',
-              env: { ...process.env, RLHF_VECTOR_STUB_EMBED: 'true', NODE_OPTIONS: '--experimental-vm-modules' },
+              env: { ...process.env, THUMBGATE_VECTOR_STUB_EMBED: 'true', NODE_OPTIONS: '--experimental-vm-modules' },
             }
           );
         } catch (err) {

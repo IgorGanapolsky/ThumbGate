@@ -19,6 +19,10 @@
  *   POST https://oauth.reddit.com/api/comment  — submit a reply/comment
  */
 
+const { tagUrlsInText, buildUTMLink } = require('../utm');
+
+const REDDIT_UTM = { source: 'reddit', medium: 'social', campaign: 'organic' };
+
 const REDDIT_API_BASE = 'https://oauth.reddit.com';
 const REDDIT_TOKEN_URL = 'https://www.reddit.com/api/v1/access_token';
 
@@ -253,14 +257,39 @@ async function submitComment(token, userAgent, { parentId, text }) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Build the standard follow-up comment for a Reddit post.
+ * This comment contains the trial CTA and source code link.
+ *
+ * @param {string} subreddit - The subreddit name (used for UTM tracking)
+ * @param {string} [utmContent] - Optional UTM content tag (defaults to subreddit name)
+ * @returns {string} The follow-up comment text
+ */
+function buildFollowUpComment(subreddit, utmContent) {
+  const content = utmContent || `${subreddit}_post`;
+  const trialUrl = `https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content=${encodeURIComponent(content)}&community=${encodeURIComponent(subreddit)}`;
+  return [
+    'The problem: AI coding agents repeat the same mistakes every session. You correct a force-push, it does it again tomorrow. Prompt rules get ignored after context compaction.',
+    '',
+    'ThumbGate fixes this with enforcement, not memory. You give a thumbs-down, it auto-generates a prevention rule, and a gate physically blocks the agent from repeating that action. Thumbs-up reinforces good behavior.',
+    '',
+    `Try free for 7 days (no credit card, 2-minute setup): ${trialUrl}`,
+    '',
+    'Source code (MIT licensed): https://github.com/IgorGanapolsky/ThumbGate',
+    '',
+    'Disclosure: I built this.',
+  ].join('\n');
+}
+
+/**
  * Publish to Reddit — submits a link post if url is provided, otherwise a text post.
+ * Optionally posts a follow-up comment with the trial CTA.
  *
  * Reads credentials from environment variables if token is not supplied.
  *
- * @param {{ subreddit: string, title: string, text?: string, url?: string, token?: string }} options
+ * @param {{ subreddit: string, title: string, text?: string, url?: string, token?: string, followUpComment?: boolean|string, utmContent?: string }} options
  * @returns {Promise<object>} Reddit API response data for the submitted post
  */
-async function publishToReddit({ subreddit, title, text, url, token }) {
+async function publishToReddit({ subreddit, title, text, url, token, followUpComment, utmContent }) {
   const clientId = process.env.REDDIT_CLIENT_ID;
   const clientSecret = process.env.REDDIT_CLIENT_SECRET;
   const username = process.env.REDDIT_USERNAME;
@@ -283,12 +312,36 @@ async function publishToReddit({ subreddit, title, text, url, token }) {
   if (!subreddit) throw new Error('subreddit is required');
   if (!title) throw new Error('title is required');
 
+  // Tag trackable URLs with Reddit UTM parameters
+  if (text) text = tagUrlsInText(text, REDDIT_UTM);
   if (url) {
-    return submitLinkPost(accessToken, userAgent, { subreddit, title, url });
+    const taggedUrl = tagUrlsInText(url, REDDIT_UTM);
+    return submitLinkPost(accessToken, userAgent, { subreddit, title, url: taggedUrl });
   }
 
   if (!text) throw new Error('text is required when url is not provided');
-  return submitTextPost(accessToken, userAgent, { subreddit, title, text });
+  const postData = await submitTextPost(accessToken, userAgent, { subreddit, title, text });
+
+  // Post follow-up comment with trial CTA if requested
+  if (followUpComment && postData.name) {
+    const commentText = typeof followUpComment === 'string'
+      ? followUpComment
+      : buildFollowUpComment(subreddit, utmContent);
+
+    const commentGate = qualityGate.gatePost(commentText);
+    if (!commentGate.allowed) {
+      console.error('[reddit:publisher] Follow-up comment BLOCKED by quality gate');
+    } else {
+      try {
+        await submitComment(accessToken, userAgent, { parentId: postData.name, text: commentText });
+        console.log('[reddit:publisher] Follow-up comment with trial CTA posted');
+      } catch (err) {
+        console.error('[reddit:publisher] Follow-up comment failed:', err.message);
+      }
+    }
+  }
+
+  return postData;
 }
 
 module.exports = {
@@ -297,6 +350,7 @@ module.exports = {
   submitLinkPost,
   submitComment,
   publishToReddit,
+  buildFollowUpComment,
 };
 
 // ---------------------------------------------------------------------------
@@ -315,15 +369,17 @@ if (require.main === module) {
   const title = getArg('--title');
   const text = getArg('--text');
   const url = getArg('--url');
+  const followUp = args.includes('--follow-up');
+  const utmContent = getArg('--utm-content');
 
   if (!subreddit || !title || (!text && !url)) {
     console.error(
-      'Usage: node reddit.js --subreddit=<sub> --title=<title> [--text=<body> | --url=<url>]'
+      'Usage: node reddit.js --subreddit=<sub> --title=<title> [--text=<body> | --url=<url>] [--follow-up] [--utm-content=<tag>]'
     );
     process.exit(1);
   }
 
-  publishToReddit({ subreddit, title, text, url })
+  publishToReddit({ subreddit, title, text, url, followUpComment: followUp, utmContent })
     .then((data) => {
       console.log(`[reddit:publisher] Done. response=${JSON.stringify(data)}`);
     })

@@ -7,7 +7,7 @@ const path = require('path');
 const os = require('os');
 
 function freshModule(tmpDir) {
-  if (tmpDir) process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  if (tmpDir) process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   delete require.cache[require.resolve('../scripts/disagreement-mining')];
   delete require.cache[require.resolve('../scripts/thompson-sampling')];
   delete require.cache[require.resolve('../scripts/feedback-loop')];
@@ -49,7 +49,7 @@ describe('mineDisagreements()', () => {
       assert.strictEqual(result.disagreements.length, 0, 'expected 0 disagreements');
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 
@@ -81,7 +81,7 @@ describe('mineDisagreements()', () => {
       assert.ok(d.disagreementStrength > 0, `disagreementStrength should be > 0, got ${d.disagreementStrength}`);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 
@@ -106,7 +106,7 @@ describe('mineDisagreements()', () => {
       assert.ok(result.disagreements.length >= 1, `expected >= 1 disagreement, got ${result.disagreements.length}`);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 
@@ -131,7 +131,7 @@ describe('mineDisagreements()', () => {
       assert.strictEqual(result.disagreements.length, 0, `expected 0 disagreements, got ${result.disagreements.length}`);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 
@@ -160,7 +160,7 @@ describe('mineDisagreements()', () => {
       assert.ok(typeof result.stats.disagreementRate === 'number', 'rate must be a number');
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 });
@@ -175,7 +175,7 @@ describe('amplifyFromDisagreements()', () => {
       assert.strictEqual(pairs.length, 0, 'expected 0 pairs');
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 
@@ -222,7 +222,7 @@ describe('amplifyFromDisagreements()', () => {
       }
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 });
@@ -238,7 +238,7 @@ describe('calibratePreventionRules()', () => {
       assert.strictEqual(result.concordanceRate, 1, 'concordanceRate should be 1 (vacuous)');
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 
@@ -264,7 +264,7 @@ describe('calibratePreventionRules()', () => {
       assert.ok(result.concordanceRate > 0, `concordanceRate should be > 0, got ${result.concordanceRate}`);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 
@@ -291,7 +291,7 @@ describe('calibratePreventionRules()', () => {
       assert.ok(result.concordanceRate < 1.0, `concordanceRate should be < 1.0, got ${result.concordanceRate}`);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 });

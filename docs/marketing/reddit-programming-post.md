@@ -40,8 +40,14 @@ Curious if others have explored enforcement-based feedback (not just context/mem
 
 ---
 
-**Comment (post alongside or when asked):**
+**Comment (post immediately after the main post):**
 
-Implementation is open source: https://github.com/IgorGanapolsky/ThumbGate — 👍 reinforces, 👎 blocks. Works with Claude Code, Cursor, Codex, Gemini, Amp. MIT licensed.
+Implementation is open source and free to try.
+
+Try free for 7 days (no credit card, 2-minute setup): https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content=programming_post&community=programming
+
+Source code (MIT licensed): https://github.com/IgorGanapolsky/ThumbGate
+
+Works with Claude Code, Cursor, Codex, Gemini, Amp. Fully local -- your feedback stays on your machine.
 
 Disclosure: I built this.

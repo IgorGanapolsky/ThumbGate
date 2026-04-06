@@ -7,7 +7,7 @@ Make one Claude workflow safe enough to sell and ship team-wide.
 ThumbGate is the AI reliability system behind one workflow with business value. It is not another horizontal agent platform. The front-line offer is a **Workflow Hardening Sprint** that gives teams shared memory, guardrails, and proof-ready runs so one workflow can be deployed, audited, and improved over time.
 
 - **Primary Goal:** Turn "vibe coding" into a controlled rollout for one sharp agent.
-- **Secondary Goal:** Convert real operator feedback into prevention rules, Thompson Sampling signals, and RLHF-ready datasets such as KTO/DPO pairs.
+- **Secondary Goal:** Convert real operator feedback into prevention rules, Thompson Sampling signals, and ThumbGate-ready datasets such as KTO/DPO pairs.
 
 # Buyer Promise
 

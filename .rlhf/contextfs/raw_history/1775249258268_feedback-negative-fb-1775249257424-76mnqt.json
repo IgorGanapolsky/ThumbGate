@@ -1,0 +1,20 @@
+{
+  "id": "1775249258268_feedback-negative-fb-1775249257424-76mnqt",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775249257424_76mnqt",
+  "content": "{\"id\":\"fb_1775249257424_76mnqt\",\"signal\":\"negative\",\"context\":\"Gate \\\"env-file-edit\\\" warned tool \\\"Edit\\\": Editing .env file — verify you are not deleting existing tokens\",\"submittedContext\":\"Gate \\\"env-file-edit\\\" warned tool \\\"Edit\\\": Editing .env file — verify you are not deleting existing tokens\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:env-file-edit\",\"gates-engine\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-03T20:47:37.424Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:env-file-edit",
+    "gates-engine"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-03T20:47:38.268Z",
+  "lastUsedAt": null
+}

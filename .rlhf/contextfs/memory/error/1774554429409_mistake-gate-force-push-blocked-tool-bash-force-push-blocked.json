@@ -1,0 +1,22 @@
+{
+  "id": "1774554429409_mistake-gate-force-push-blocked-tool-bash-force-push-blocked",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Gate \"force-push\" blocked tool \"Bash\": Force push blocked",
+  "content": "Context: Gate \"force-push\" blocked tool \"Bash\": Force push blocked\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "audit-trail",
+    "auto-capture",
+    "gate:force-push",
+    "gates-engine"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775484667329_q5gtay"
+  },
+  "createdAt": "2026-03-26T19:47:09.409Z",
+  "lastUsedAt": null
+}

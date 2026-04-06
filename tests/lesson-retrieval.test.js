@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const savedFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
+const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
 
 function writeJsonl(filePath, rows) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -14,8 +14,8 @@ function writeJsonl(filePath, rows) {
 }
 
 test.after(() => {
-  if (savedFeedbackDir === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-  else process.env.RLHF_FEEDBACK_DIR = savedFeedbackDir;
+  if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+  else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
 });
 
 test('retrieveRelevantLessons returns empty array when no memories', () => {

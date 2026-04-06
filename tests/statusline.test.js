@@ -7,7 +7,7 @@ const os = require('os');
 const { execFileSync } = require('child_process');
 
 const STATUSLINE_PATH = path.join(__dirname, '..', 'scripts', 'statusline.sh');
-const CACHE_UPDATER_PATH = path.join(__dirname, '..', 'scripts', 'hook-rlhf-cache-updater.js');
+const CACHE_UPDATER_PATH = path.join(__dirname, '..', 'scripts', 'hook-thumbgate-cache-updater.js');
 const AUTO_CAPTURE_HOOK_PATH = path.join(__dirname, '..', 'scripts', 'hook-auto-capture.sh');
 
 test('statusline script exists and is executable', () => {
@@ -16,7 +16,7 @@ test('statusline script exists and is executable', () => {
   assert.ok(stat.mode & 0o111, 'scripts/statusline.sh must be executable');
 });
 
-test('statusline script reads jq input and outputs RLHF line', () => {
+test('statusline script reads jq input and outputs ThumbGate line', () => {
   const tmpCache = path.join(__dirname, '..', '.rlhf', 'statusline_cache.json');
   const cacheDir = path.dirname(tmpCache);
   fs.mkdirSync(cacheDir, { recursive: true });
@@ -32,7 +32,7 @@ test('statusline script reads jq input and outputs RLHF line', () => {
     const out = execFileSync('bash', [STATUSLINE_PATH], {
       encoding: 'utf8',
       input: sessionJson,
-      env: { ...process.env, RLHF_FEEDBACK_DIR: path.join(__dirname, '..') },
+      env: { ...process.env, THUMBGATE_FEEDBACK_DIR: path.join(__dirname, '..') },
       timeout: 5000
     });
     assert.ok(out.includes('10'), 'should show thumbs up count');
@@ -61,7 +61,7 @@ test('statusline shows "no feedback yet" when cache has zeros', () => {
     const out = execFileSync('bash', [STATUSLINE_PATH], {
       encoding: 'utf8',
       input: sessionJson,
-      env: { ...process.env, RLHF_FEEDBACK_DIR: path.join(__dirname, '..') },
+      env: { ...process.env, THUMBGATE_FEEDBACK_DIR: path.join(__dirname, '..') },
       timeout: 5000
     });
     assert.ok(out.includes('no feedback yet'), 'should show no-data message');
@@ -72,7 +72,7 @@ test('statusline shows "no feedback yet" when cache has zeros', () => {
 });
 
 test('cache updater hook script exists', () => {
-  assert.ok(fs.existsSync(CACHE_UPDATER_PATH), 'scripts/hook-rlhf-cache-updater.js must exist');
+  assert.ok(fs.existsSync(CACHE_UPDATER_PATH), 'scripts/hook-thumbgate-cache-updater.js must exist');
 });
 
 test('user prompt hook records recent conversation history for statusline distillation', () => {
@@ -83,7 +83,7 @@ test('user prompt hook records recent conversation history for statusline distil
     encoding: 'utf8',
     env: {
       ...process.env,
-      RLHF_FEEDBACK_DIR: tmpDir,
+      THUMBGATE_FEEDBACK_DIR: tmpDir,
       CLAUDE_USER_PROMPT: 'Need proof before saying deployed',
     },
     timeout: 5000,
@@ -114,7 +114,7 @@ test('cache updater writes cache from feedback_stats input', () => {
   execFileSync(process.execPath, [CACHE_UPDATER_PATH], {
     encoding: 'utf8',
     input: JSON.stringify(event),
-    env: { ...process.env, RLHF_FEEDBACK_DIR: tmpDir },
+    env: { ...process.env, THUMBGATE_FEEDBACK_DIR: tmpDir },
     timeout: 5000
   });
 
@@ -131,6 +131,6 @@ test('cache updater writes cache from feedback_stats input', () => {
 test('setupClaude wires statusLine and cache hook into settings', () => {
   const cliSource = fs.readFileSync(path.join(__dirname, '..', 'bin', 'cli.js'), 'utf8');
   assert.ok(cliSource.includes('statusLine'), 'cli.js must wire statusLine');
-  assert.ok(cliSource.includes('hook-rlhf-cache-updater'), 'cli.js must wire cache updater hook');
+  assert.ok(cliSource.includes('hook-thumbgate-cache-updater'), 'cli.js must wire cache updater hook');
   assert.ok(cliSource.includes('statusline.sh'), 'cli.js must reference statusline.sh');
 });

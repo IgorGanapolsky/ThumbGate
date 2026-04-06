@@ -1,0 +1,25 @@
+{
+  "id": "1774570951863_success-three-high-roi-fixes-1-default-github-plan-prices-hardcod",
+  "namespace": "memory/learning",
+  "title": "SUCCESS: Three high-ROI fixes: (1) DEFAULT_GITHUB_PLAN_PRICES hardcod",
+  "content": "What worked: Three high-ROI fixes: (1) DEFAULT_GITHUB_PLAN_PRICES hardcoded in billing.js so revenue tracking never depends on env vars, (2) landing page CTAs now route through /checkout/pro for attribution capture, (3) client-side telemetry script added for CTA click and page view tracking with UTM passthrough",
+  "tags": [
+    "feedback",
+    "positive",
+    "[\"revenue\"",
+    "\"attribution\"",
+    "\"marketing-autoresearch\"",
+    "\"first-dollar\"",
+    "\"billing\"",
+    "\"landing-page\"]",
+    "metric:ROI"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "learning",
+    "sourceFeedbackId": "fb_1774570951656_zgd4xz"
+  },
+  "createdAt": "2026-03-27T00:22:31.863Z",
+  "lastUsedAt": null
+}

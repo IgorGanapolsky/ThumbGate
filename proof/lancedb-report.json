@@ -16,7 +16,7 @@
     },
     "VEC-04": {
       "status": "pass",
-      "evidence": "searchSimilar() returned 2 result(s). proof-vec01 present: true. proof-vec04-b present: true. API: searchSimilar(queryText, limit=10) returns vector-ranked rows from rlhf_memories table. Note: stub embed (RLHF_VECTOR_STUB_EMBED=true) returns identical 384-dim unit vectors — ranking is insertion-order with stub, cosine similarity with real ONNX model."
+      "evidence": "searchSimilar() returned 2 result(s). proof-vec01 present: true. proof-vec04-b present: true. API: searchSimilar(queryText, limit=10) returns vector-ranked rows from rlhf_memories table. Note: stub embed (THUMBGATE_VECTOR_STUB_EMBED=true) returns identical 384-dim unit vectors — ranking is insertion-order with stub, cosine similarity with real ONNX model."
     },
     "VEC-05": {
       "status": "pass",

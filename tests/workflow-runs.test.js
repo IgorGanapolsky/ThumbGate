@@ -7,8 +7,8 @@ const os = require('node:os');
 const path = require('node:path');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'workflow-runs-test-'));
-const previousFeedbackDir = process.env.RLHF_FEEDBACK_DIR;
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
+const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const {
   appendWorkflowRun,
@@ -23,9 +23,9 @@ test.beforeEach(() => {
 
 test.after(() => {
   if (previousFeedbackDir === undefined) {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
   } else {
-    process.env.RLHF_FEEDBACK_DIR = previousFeedbackDir;
+    process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
   }
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });

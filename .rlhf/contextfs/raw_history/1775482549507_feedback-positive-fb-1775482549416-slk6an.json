@@ -1,0 +1,18 @@
+{
+  "id": "1775482549507_feedback-positive-fb-1775482549416-slk6an",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775482549416_slk6an",
+  "content": "{\"id\":\"fb_1775482549416_slk6an\",\"signal\":\"positive\",\"context\":\"Implemented with tests and evidence\",\"submittedContext\":\"Implemented with tests and evidence\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Used proof harness and verification logs\",\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"verification\",\"automation\"],\"skill\":null,\"failureType\":null,\"rubric\":{\"rubricId\":\"default-v1\",\"weightedScore\":0.6,\"failingCriteria\":[],\"failingGuardrails\":[],\"judgeDisagreements\":[],\"promotionEligible\":true},\"actionType\":\"store-learning\",\"actionReason\":null,\"structuredRule\":null,\"timestamp\":\"2026-04-06T13:35:49.416Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "verification",
+    "automation"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-06T13:35:49.507Z",
+  "lastUsedAt": null
+}

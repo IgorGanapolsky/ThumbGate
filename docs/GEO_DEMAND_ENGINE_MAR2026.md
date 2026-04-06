@@ -127,7 +127,7 @@ For each priority cluster, maintain all of these:
 
 Current canonical assets:
 
-- Hosted landing page: `https://rlhf-feedback-loop-production.up.railway.app`
+- Hosted landing page: `https://thumbgate-production.up.railway.app`
 - Proof pack: [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md)
 - Sprint brief: [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md)
 - Commercial truth: [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md)

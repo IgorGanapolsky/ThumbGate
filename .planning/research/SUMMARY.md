@@ -7,9 +7,9 @@
 
 ## Executive Summary
 
-This is a surgical bidirectional sync between two live, production-grade systems — `rlhf-feedback-loop` (a Node.js RLHF product library, v0.5.0, zero npm dependencies) and `Subway_RN_Demo` (a React Native app with a Python ML feedback stack). Neither repo is greenfield; the sync cherry-picks specific features in two directions: ML capabilities (Thompson Sampling, LanceDB vector storage, LSTM sequence tracking, diversity tracking, RLAIF self-scoring) flow from Subway into rlhf-feedback-loop, while governance capabilities (budget guard, intent router, ContextFS, self-healing monitor, MCP policy) flow from rlhf-feedback-loop into Subway. A full merge is explicitly out of scope and architecturally wrong — the library/prototype boundary must be preserved.
+This is a surgical bidirectional sync between two live, production-grade systems — `thumbgate` (a Node.js RLHF product library, v0.5.0, zero npm dependencies) and `Subway_RN_Demo` (a React Native app with a Python ML feedback stack). Neither repo is greenfield; the sync cherry-picks specific features in two directions: ML capabilities (Thompson Sampling, LanceDB vector storage, LSTM sequence tracking, diversity tracking, RLAIF self-scoring) flow from Subway into thumbgate, while governance capabilities (budget guard, intent router, ContextFS, self-healing monitor, MCP policy) flow from thumbgate into Subway. A full merge is explicitly out of scope and architecturally wrong — the library/prototype boundary must be preserved.
 
-The recommended implementation approach is file-system-boundary isolation: Node.js writes JSONL, Python reads JSONL and writes JSON model files, Node.js reads the JSON output. No HTTP, no sockets, no subprocess coupling in the hot path. All new npm dependencies for rlhf-feedback-loop are pinned and confirmed (`@lancedb/lancedb@0.26.2`, `apache-arrow@18.1.0`, `@huggingface/transformers@3.8.1`); Subway requires zero new npm packages for the governance port. The Python stack is already complete (lancedb 0.27.1, sentence-transformers 3.0.1, scipy in the venv). The Bayesian core (Thompson Sampling) requires no external library — pure JS Beta approximation with `Math.random()` is sufficient and mirrors Subway's stdlib `random.betavariate`.
+The recommended implementation approach is file-system-boundary isolation: Node.js writes JSONL, Python reads JSONL and writes JSON model files, Node.js reads the JSON output. No HTTP, no sockets, no subprocess coupling in the hot path. All new npm dependencies for thumbgate are pinned and confirmed (`@lancedb/lancedb@0.26.2`, `apache-arrow@18.1.0`, `@huggingface/transformers@3.8.1`); Subway requires zero new npm packages for the governance port. The Python stack is already complete (lancedb 0.27.1, sentence-transformers 3.0.1, scipy in the venv). The Bayesian core (Thompson Sampling) requires no external library — pure JS Beta approximation with `Math.random()` is sufficient and mirrors Subway's stdlib `random.betavariate`.
 
 The critical risks are silent API name collisions (`captureFeedback` vs `recordFeedback`), schema divergence on the rubric gate, and LanceDB cross-language schema format mismatches. Each has a clear prevention strategy: export diff before any code movement, never sync `resolveFeedbackAction` without its rubric engine, and pin both Python and Node.js LanceDB to matching Lance file format versions. A timestamp normalization shim is mandatory before any Node.js reads of `feedback_model.json` — mixed ISO 8601 formats will silently produce `NaN` decay weights and corrupt Thompson posteriors. These are not speculative risks; all have been confirmed by direct code inspection.
 
@@ -19,10 +19,10 @@ The critical risks are silent API name collisions (`captureFeedback` vs `recordF
 
 ### Recommended Stack
 
-rlhf-feedback-loop adds exactly 3 npm packages to its currently zero-dependency baseline: `@lancedb/lancedb@0.26.2` (vector storage), `apache-arrow@18.1.0` (required peer dep — Arrow 21.x is out of range, must pin), and `@huggingface/transformers@3.8.1` (local ONNX embeddings, ~22MB model, ~50ms inference). Everything else — Thompson Sampling, LSTM sequence features, diversity tracking — is pure JS with no library. The package is CommonJS; LanceDB and Transformers.js are ESM; all three must be accessed via `await import()` dynamic imports. Subway receives zero new npm packages; governance scripts copy verbatim with path variable adjustments only.
+thumbgate adds exactly 3 npm packages to its currently zero-dependency baseline: `@lancedb/lancedb@0.26.2` (vector storage), `apache-arrow@18.1.0` (required peer dep — Arrow 21.x is out of range, must pin), and `@huggingface/transformers@3.8.1` (local ONNX embeddings, ~22MB model, ~50ms inference). Everything else — Thompson Sampling, LSTM sequence features, diversity tracking — is pure JS with no library. The package is CommonJS; LanceDB and Transformers.js are ESM; all three must be accessed via `await import()` dynamic imports. Subway receives zero new npm packages; governance scripts copy verbatim with path variable adjustments only.
 
 **Core technologies:**
-- `@lancedb/lancedb@0.26.2`: Vector + FTS hybrid search for rlhf-feedback-loop — only stable version compatible with the Lance file format already in use by Subway's Python stack
+- `@lancedb/lancedb@0.26.2`: Vector + FTS hybrid search for thumbgate — only stable version compatible with the Lance file format already in use by Subway's Python stack
 - `apache-arrow@18.1.0`: Required peer dep for LanceDB JS — pin strictly; Arrow 19+ is out of range
 - `@huggingface/transformers@3.8.1`: Local ONNX embedding inference — eliminates Python subprocess latency and API costs; v4 is preview-only, do not use
 - Native `Math.random()` + custom Beta: Thompson Sampling posteriors — no library needed; mirrors Subway's `random.betavariate` exactly
@@ -32,7 +32,7 @@ rlhf-feedback-loop adds exactly 3 npm packages to its currently zero-dependency 
 
 This is a sync milestone, not a feature launch. "Must have" is defined by what blocks other features.
 
-**Must have — Phase 1 (ML into rlhf-feedback-loop):**
+**Must have — Phase 1 (ML into thumbgate):**
 - Thompson Sampling posteriors (Beta-Bernoulli) — prerequisite for RLAIF/DPO; enables per-category reliability with O(sqrt(T)) regret bound
 - Exponential time-decay on feedback — mandatory companion to Thompson Sampling; without it, old feedback corrupts posteriors (7-day half-life, already tuned in Subway)
 - Diversity tracking — lightweight JSON; prevents representation collapse; feeds back into Thompson alpha/beta path
@@ -56,7 +56,7 @@ This is a sync milestone, not a feature launch. "Must have" is defined by what b
 
 ### Architecture Approach
 
-The system separates governance (rlhf-feedback-loop) and ML capability (Subway) across a file-system boundary: Node.js writes to JSONL logs, Python training scripts read from those logs and write JSON model state, Node.js reads the JSON state for inference. No inter-process communication occurs in the feedback hot path. All data is local and embedded — no external services except the Claude API for RLAIF (budget-guarded). The two repos share an identical schema layer (`feedback-schema.js`, `rubric-engine.js`) but diverge at capability: rlhf holds the governance layer, Subway holds the ML layer. Post-sync, both hold both layers.
+The system separates governance (thumbgate) and ML capability (Subway) across a file-system boundary: Node.js writes to JSONL logs, Python training scripts read from those logs and write JSON model state, Node.js reads the JSON state for inference. No inter-process communication occurs in the feedback hot path. All data is local and embedded — no external services except the Claude API for RLAIF (budget-guarded). The two repos share an identical schema layer (`feedback-schema.js`, `rubric-engine.js`) but diverge at capability: rlhf holds the governance layer, Subway holds the ML layer. Post-sync, both hold both layers.
 
 **Major components:**
 1. `feedback-loop.js` + `feedback-schema.js` — shared core capture and boundary validation; identical in both repos
@@ -88,7 +88,7 @@ Research reveals a clear dependency graph that dictates phase order. The file-sy
 **Addresses:** Table stakes — schema validation, JSONL storage parity
 **Avoids:** API name collision, rubric gate bypass, unbounded test regression
 
-### Phase 2: ML Features into rlhf-feedback-loop (Thompson Sampling + Sequence + Diversity)
+### Phase 2: ML Features into thumbgate (Thompson Sampling + Sequence + Diversity)
 
 **Rationale:** Thompson Sampling is the prerequisite for RLAIF/DPO and the highest-value ML upgrade. Sequence tracking and diversity tracking are lightweight additions that share the same capture-path extension. Grouping them minimizes the number of times the capture hot path is modified.
 **Delivers:** `train_from_feedback.py` in rlhf; `feedback_model.json` posteriors; `feedback-sequences.jsonl`; `diversity-tracking.json`; `parseTimestamp()` normalizer
@@ -101,12 +101,12 @@ Research reveals a clear dependency graph that dictates phase order. The file-sy
 
 **Rationale:** Governance features are independent of Phase 2 ML work and can proceed in parallel or immediately after Phase 1. Budget guard must land before intent router (budget awareness before policy enforcement). Self-heal lands last because it requires the full governance stack to know what "healthy" means.
 **Delivers:** `budget-guard.js` in Subway; `intent-router.js` + policy bundles; `contextfs.js` with 5 namespaces; `self-heal.js` + `self-healing-check.js`; npm scripts `self-heal:check` and `self-heal:run`
-**Uses:** Zero new npm packages (all scripts copy verbatim with RLHF_FEEDBACK_DIR env var adjustments)
+**Uses:** Zero new npm packages (all scripts copy verbatim with THUMBGATE_FEEDBACK_DIR env var adjustments)
 **Implements:** File-lock budget ledger pattern; intent classification with approval requirements; namespaced context store with Jaccard semantic cache; health check runner with fix plan
 **Avoids:** Budget guard lock contention (Pitfall 5); self-heal over-triggering (Pitfall 6); Subway lint:fix must be audited before self-heal is enabled
 **Research flag:** Standard pattern for budget-guard, intent-router, contextfs; self-heal port needs Subway `package.json` script audit before implementation
 
-### Phase 4: LanceDB Vector Storage into rlhf-feedback-loop
+### Phase 4: LanceDB Vector Storage into thumbgate
 
 **Rationale:** LanceDB is the highest-complexity addition (native Rust binaries, cross-language schema compatibility, ESM in a CommonJS project). Isolating it into its own phase allows the smoke test (Python creates table, Node.js reads it) to gate the entire phase before any production use. Dependency: Phase 1 (memory-log.jsonl format must be stable).
 **Delivers:** `@lancedb/lancedb` integration; `lancedb/` directory under `.claude/memory/feedback/`; hybrid search (vector + BM25/FTS); `rlhf_memories` table with 384-dim embeddings

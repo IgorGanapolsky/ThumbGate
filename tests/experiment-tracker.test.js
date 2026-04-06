@@ -11,13 +11,13 @@ describe('experiment-tracker', () => {
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exp-test-'));
-    origEnv = process.env.RLHF_FEEDBACK_DIR;
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
+    origEnv = process.env.THUMBGATE_FEEDBACK_DIR;
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   });
 
   afterEach(() => {
-    if (origEnv === undefined) delete process.env.RLHF_FEEDBACK_DIR;
-    else process.env.RLHF_FEEDBACK_DIR = origEnv;
+    if (origEnv === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = origEnv;
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 

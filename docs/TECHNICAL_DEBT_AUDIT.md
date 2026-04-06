@@ -4,7 +4,7 @@
 
 ## Scope
 
-Repository-wide audit executed from a dedicated clean worktree. The audit combined repository inventory scans, local RLHF memory review, full verification-suite runs, and targeted repairs for the debt uncovered during the audit.
+Repository-wide audit executed from a dedicated clean worktree. The audit combined repository inventory scans, local ThumbGate memory review, full verification-suite runs, and targeted repairs for the debt uncovered during the audit.
 
 ## Pre-Audit Snapshot
 
@@ -97,6 +97,7 @@ New checks added: budget status gate, Node 20-safe coverage gate
 
 ## RAG Cleanup Summary
 
-- Queried local RLHF memory before changes with `npm run feedback:stats --silent`.
-- Kept all `.rlhf/*` state and local feedback artifacts untracked, per repo policy.
+- Queried local feedback memory and runtime state before editing.
+- Reviewed the local runtime lessons created during verification.
+- Kept all `.thumbgate/*` runtime artifacts local and uncommitted, per repo policy.
 - No tracked memory/rules exports were added or deleted by this audit.

@@ -106,11 +106,11 @@ function hasSonarInstalled() {
 }
 
 function resolveProvider(provider) {
-  const configured = String(provider || process.env.RLHF_SECRET_SCAN_PROVIDER || 'heuristic').trim().toLowerCase();
+  const configured = String(provider || process.env.THUMBGATE_SECRET_SCAN_PROVIDER || 'heuristic').trim().toLowerCase();
   if (configured === 'sonar') return 'sonar';
   if (configured === 'heuristic') return 'heuristic';
   if (configured === 'off') return 'off';
-  const allowAutoSonar = process.env.RLHF_SECRET_SCAN_AUTO_SONAR === '1';
+  const allowAutoSonar = process.env.THUMBGATE_SECRET_SCAN_AUTO_SONAR === '1';
   return allowAutoSonar && hasSonarInstalled() ? 'sonar' : 'heuristic';
 }
 

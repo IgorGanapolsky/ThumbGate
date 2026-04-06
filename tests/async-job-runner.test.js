@@ -80,7 +80,7 @@ function loadRuntimeHarness({
   feedbackDir,
   verificationLoopImpl = () => makeAcceptedVerification(),
 } = {}) {
-  process.env.RLHF_FEEDBACK_DIR = feedbackDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
   resetRuntimeModules();
   stubModule(VERIFICATION_PATH, {
     runVerificationLoop: verificationLoopImpl,
@@ -93,7 +93,7 @@ function loadRuntimeHarness({
     experimentTracker,
     cleanup() {
       resetRuntimeModules();
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     },
   };
 }

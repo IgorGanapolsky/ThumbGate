@@ -5,7 +5,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cli-'));
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const { processInlineFeedback, formatCliOutput } = require('../scripts/cli-feedback');
 const { getStatusbarLessonData, createLesson } = require('../scripts/lesson-inference');
@@ -93,7 +93,7 @@ test('statusline-lesson.js outputs valid JSON', () => {
   const { execFileSync } = require('child_process');
   const result = execFileSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'statusline-lesson.js')], {
     encoding: 'utf-8',
-    env: { ...process.env, RLHF_FEEDBACK_DIR: tmpDir },
+    env: { ...process.env, THUMBGATE_FEEDBACK_DIR: tmpDir },
   });
   const parsed = JSON.parse(result);
   assert.equal(parsed.hasLesson, true);

@@ -1,0 +1,18 @@
+{
+  "id": "1773949084090_prevention-rules-2026-03-19",
+  "namespace": "rules",
+  "title": "prevention_rules_2026-03-19",
+  "content": "# Prevention Rules\n\nNo mistake memories recorded yet.",
+  "tags": [
+    "rules",
+    "prevention"
+  ],
+  "source": "feedback-loop",
+  "ttl": null,
+  "metadata": {
+    "minOccurrences": 2,
+    "outputPath": "/var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/branding-aliases-test-qYAcMv/prevention-rules.md"
+  },
+  "createdAt": "2026-03-19T19:38:04.090Z",
+  "lastUsedAt": null
+}

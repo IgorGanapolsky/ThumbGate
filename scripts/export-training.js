@@ -18,7 +18,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const FEEDBACK_DIR = process.env.RLHF_FEEDBACK_DIR
+const FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR
   || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
 const SEQUENCE_WINDOW = 10;
 

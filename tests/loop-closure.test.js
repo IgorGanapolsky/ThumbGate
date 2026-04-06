@@ -413,7 +413,7 @@ describe('feedback-to-memory', () => {
   it('convertFeedbackToMemory: context-only negative returns ok=true', () => {
     const result = m.convertFeedbackToMemory({
       signal: 'negative',
-      context: 'Showed fake RLHF statistics panel to user without real data',
+      context: 'Showed fake ThumbGate statistics panel to user without real data',
       tags: ['rlhf'],
     });
     assert.equal(result.ok, true);

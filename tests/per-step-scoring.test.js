@@ -5,7 +5,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-step-'));
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const pss = require('../scripts/per-step-scoring');
 

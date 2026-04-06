@@ -1,7 +1,7 @@
-# RLHF Workflow Rules
+# ThumbGate Workflow Rules
 
 - Work from a dedicated linked git worktree. Never edit the repository's primary checkout.
-- Keep runtime state local and disposable. Do not modify or commit `.rlhf/**`, `.claude/worktrees/**`, or live feedback JSON/JSONL artifacts.
+- Keep runtime state local and disposable. Do not modify or commit `.thumbgate/**`, `.claude/worktrees/**`, or live feedback JSON/JSONL artifacts.
 - Before claiming completion, run the repo verification suite:
   - `npm test`
   - `npm run test:coverage`

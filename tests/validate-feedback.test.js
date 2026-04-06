@@ -11,7 +11,7 @@ const path = require('path');
 // ---------------------------------------------------------------------------
 
 function freshFeedbackLoop(tmpDir) {
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   // Clear caches for modules that read env at require time
   [
     '../scripts/feedback-loop',
@@ -231,7 +231,7 @@ describe('inferOutcome (QUAL-03)', () => {
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
   });
 
   it('returns quick-success for positive + "first try"', () => {
@@ -276,7 +276,7 @@ describe('captureFeedback richContext enrichment (QUAL-02)', () => {
     } catch {
       // Non-critical — OS will clean up tmp dir eventually
     }
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
   });
 
   it('feedbackEvent.richContext contains domain, filePaths, errorType, outcomeCategory', () => {

@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-process.env.RLHF_SECRET_SCAN_PROVIDER = 'heuristic';
+process.env.THUMBGATE_SECRET_SCAN_PROVIDER = 'heuristic';
 
 const {
   redactText,

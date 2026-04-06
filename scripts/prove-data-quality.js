@@ -21,7 +21,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
 function resolveProofPaths() {
-  const proofDir = process.env.RLHF_PROOF_DIR || path.join(ROOT, 'proof');
+  const proofDir = process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
   return {
     proofDir,
     reportJson: path.join(proofDir, 'data-quality-report.json'),
@@ -76,7 +76,7 @@ function run() {
       id: 'QUAL-02',
       desc: 'captureFeedback produces richContext with domain, filePaths, errorType, outcomeCategory',
       fn: () => {
-        process.env.RLHF_FEEDBACK_DIR = tmpDir;
+        process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
         // Clear module cache so env var takes effect
         [
           './feedback-loop',
@@ -141,7 +141,7 @@ function run() {
       fn: () => {
         const out = execSync('node --test tests/validate-feedback.test.js', {
           cwd: ROOT,
-          env: { ...process.env, RLHF_FEEDBACK_DIR: tmpDir },
+          env: { ...process.env, THUMBGATE_FEEDBACK_DIR: tmpDir },
           encoding: 'utf8',
           stdio: 'pipe',
         });
@@ -178,7 +178,7 @@ function run() {
   try {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   } catch {}
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
 
   // Write proof artifacts
   fs.mkdirSync(proofDir, { recursive: true });

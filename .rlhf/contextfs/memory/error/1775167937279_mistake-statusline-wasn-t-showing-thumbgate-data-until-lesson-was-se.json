@@ -1,0 +1,19 @@
+{
+  "id": "1775167937279_mistake-statusline-wasn-t-showing-thumbgate-data-until-lesson-was-se",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Statusline wasn't showing ThumbGate data until lesson was se",
+  "content": "What went wrong: Statusline wasn't showing ThumbGate data until lesson was seeded\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "cli-feedback"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775167972605_yjvfuo"
+  },
+  "createdAt": "2026-04-02T22:12:17.279Z",
+  "lastUsedAt": null
+}

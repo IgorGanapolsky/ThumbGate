@@ -45,7 +45,7 @@ pipeline = PaperBananaPipeline(settings=settings)
 result = asyncio.run(pipeline.generate(
     GenerationInput(
         source_context=open("docs/diagrams/rlhf-architecture.txt").read(),
-        communicative_intent="System architecture showing the RLHF feedback capture, validation, memory promotion, and training export pipeline.",
+        communicative_intent="System architecture showing the ThumbGate feedback capture, validation, memory promotion, and training export pipeline.",
         diagram_type=DiagramType.METHODOLOGY,
     )
 ))
@@ -82,4 +82,4 @@ output:
 - Methodology text should describe components, data flow, and relationships
 - Use `--optimize` to let the Planner agent improve your input
 - Use `--auto` to let the Critic agent refine until satisfied
-- For RLHF repo: generate both architecture overview and plugin topology diagrams
+- For ThumbGate repo: generate both architecture overview and plugin topology diagrams

@@ -1,0 +1,22 @@
+{
+  "id": "1775246577434_mistake-gate-goal-drift-invariant-blocked-tool-bash-original-intent-was-to-fix-b",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Gate \"goal-drift-invariant\" blocked tool \"Bash\": Original intent was to FIX, but current action is DESTRUCTIVE: Bash",
+  "content": "Context: Gate \"goal-drift-invariant\" blocked tool \"Bash\": Original intent was to FIX, but current action is DESTRUCTIVE: Bash\nAction needed: investigate and prevent recurrence",
+  "tags": [
+    "feedback",
+    "negative",
+    "audit-trail",
+    "auto-capture",
+    "gate:goal-drift-invariant",
+    "gates-engine"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775246583759_csoqzu"
+  },
+  "createdAt": "2026-04-03T20:02:57.434Z",
+  "lastUsedAt": null
+}

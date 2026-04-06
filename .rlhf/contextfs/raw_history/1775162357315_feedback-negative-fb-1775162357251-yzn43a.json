@@ -1,0 +1,20 @@
+{
+  "id": "1775162357315_feedback-negative-fb-1775162357251-yzn43a",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775162357251_yzn43a",
+  "content": "{\"id\":\"fb_1775162357251_yzn43a\",\"signal\":\"negative\",\"context\":\"Gate \\\"secret-exfiltration\\\" blocked tool \\\"Read\\\": Secret material detected in tool input\",\"submittedContext\":\"Gate \\\"secret-exfiltration\\\" blocked tool \\\"Read\\\": Secret material detected in tool input\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:secret-exfiltration\",\"secret-guard\"],\"skill\":null,\"failureType\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-02T20:39:17.251Z\",\"richContext\":{\"domain\":\"security\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:secret-exfiltration",
+    "secret-guard"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-02T20:39:17.315Z",
+  "lastUsedAt": null
+}

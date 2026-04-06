@@ -3,7 +3,7 @@
 > Historical research note: this document describes a pricing and packaging pivot proposal. It is not the current product truth. Use `docs/COMMERCIAL_TRUTH.md` for current pricing and proof language. All subscription references below describe the March 2026 situation being analyzed, not the current offer.
 
 ## The Core Problem: Why The Funnel Was At $0.00 In This March 2026 Analysis
-At the time, the go-to-market (GTM) strategy was misaligned with the March 2026 AI developer ecosystem. We had built a powerful local-first "RLHF Feedback Studio," but we also put massive friction between the developer and the commercial surface.
+At the time, the go-to-market (GTM) strategy was misaligned with the March 2026 AI developer ecosystem. We had built a powerful local-first "ThumbGate Feedback Studio," but we also put massive friction between the developer and the commercial surface.
 
 Here is the empirical breakdown of why our funnel is failing:
 
@@ -13,7 +13,7 @@ At the time, developers in 2026 wanted zero-friction "agentic primitives." We re
 ### 2. Pricing Model Mismatch
 The March 2026 market for agent tooling was operating largely on **consumption-based credit systems** or "per-agent identity" models (like Okta for Agents). This report argued that the flat `$10/month` subscription felt outdated. The thesis was that developers would rather pay for the *inference and storage costs* associated with "Always-On" memory than for a recurring fee on a local tool.
 
-### 3. Misaligned Positioning (RLHF vs. MCP Gateway)
+### 3. Misaligned Positioning (ThumbGate vs. MCP Gateway)
 We are marketing ourselves as an "ThumbGate." However, the March 2026 market data shows that the highest revenue growth is in **MCP (Model Context Protocol) Gateways and Observability**. MCP has become the "USB-C of AI." We already have deep MCP integration, but we aren't selling ourselves as an "MCP Memory & Context Hub." 
 
 ---
@@ -24,7 +24,7 @@ To move from $0 to revenue immediately, we must execute the following pivot in "
 
 ### Phase 1: Expose the Monetization Surface
 1.  **Deploy a Public Hosted Dashboard:** Stop relying on local HTML files. Deploy our Next.js/React frontend to a public domain (e.g., Vercel/Railway).
-2.  **Frictionless Onboarding:** Allow users to authenticate via GitHub OAuth, instantly generate an `RLHF_API_KEY`, and view their local agent's memory graph in the cloud.
+2.  **Frictionless Onboarding:** Allow users to authenticate via GitHub OAuth, instantly generate an `THUMBGATE_API_KEY`, and view their local agent's memory graph in the cloud.
 
 ### Phase 2: Pivot the Pricing Model
 1.  **Usage-Based Billing:** Shift from a $10/mo flat fee to a consumption model via Stripe Metered Billing. Charge per 1,000 "Context Consolidations" or per GB of "Agent Memory Stored."

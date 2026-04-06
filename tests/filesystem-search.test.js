@@ -13,13 +13,13 @@ describe('filesystem-search', () => {
   before(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fs-search-test-'));
     originalEnv = {
-      RLHF_FEEDBACK_DIR: process.env.RLHF_FEEDBACK_DIR,
-      RLHF_CONTEXTFS_DIR: process.env.RLHF_CONTEXTFS_DIR,
+      THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
+      THUMBGATE_CONTEXTFS_DIR: process.env.THUMBGATE_CONTEXTFS_DIR,
     };
 
     // Set up test data
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
-    process.env.RLHF_CONTEXTFS_DIR = path.join(tmpDir, 'contextfs');
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+    process.env.THUMBGATE_CONTEXTFS_DIR = path.join(tmpDir, 'contextfs');
 
     // Create feedback log
     const feedbackLog = [
@@ -56,10 +56,10 @@ describe('filesystem-search', () => {
   });
 
   after(() => {
-    process.env.RLHF_FEEDBACK_DIR = originalEnv.RLHF_FEEDBACK_DIR || '';
-    process.env.RLHF_CONTEXTFS_DIR = originalEnv.RLHF_CONTEXTFS_DIR || '';
-    if (!originalEnv.RLHF_FEEDBACK_DIR) delete process.env.RLHF_FEEDBACK_DIR;
-    if (!originalEnv.RLHF_CONTEXTFS_DIR) delete process.env.RLHF_CONTEXTFS_DIR;
+    process.env.THUMBGATE_FEEDBACK_DIR = originalEnv.THUMBGATE_FEEDBACK_DIR || '';
+    process.env.THUMBGATE_CONTEXTFS_DIR = originalEnv.THUMBGATE_CONTEXTFS_DIR || '';
+    if (!originalEnv.THUMBGATE_FEEDBACK_DIR) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    if (!originalEnv.THUMBGATE_CONTEXTFS_DIR) delete process.env.THUMBGATE_CONTEXTFS_DIR;
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 

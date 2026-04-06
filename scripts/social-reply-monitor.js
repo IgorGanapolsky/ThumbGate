@@ -13,7 +13,7 @@
  * Env vars: see individual publisher modules.
  * Reply generation uses smart templates (zero cost, no external API).
  *
- * State file: .rlhf/reply-monitor-state.json — tracks which replies we've already responded to.
+ * State file: .thumbgate/reply-monitor-state.json — tracks which replies we've already responded to.
  */
 
 require('dotenv').config();
@@ -237,7 +237,7 @@ async function checkRedditReplies(state, dryRun) {
     saveDraft(draft);
     state.repliedTo[commentId] = { at: new Date().toISOString(), platform: 'reddit', drafted: true };
     results.push({ commentId, reply: generatedReply, posted: false, drafted: true });
-    console.log(`[reply-monitor] 📝 DRAFTED reply for ${commentId} (saved to .rlhf/reply-drafts.jsonl — post manually)`);
+    console.log(`[reply-monitor] 📝 DRAFTED reply for ${commentId} (saved to .thumbgate/reply-drafts.jsonl — post manually)`);
 
   }
 

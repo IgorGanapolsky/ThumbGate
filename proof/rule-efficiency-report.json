@@ -125,7 +125,7 @@
     }
   ],
   "config": {
-    "rulesPath": "/Users/ganapolsky_i/workspace/git/igor/rlhf/.rlhf/prevention-rules.md",
+    "rulesPath": "/Users/ganapolsky_i/workspace/git/igor/rlhf/.thumbgate/prevention-rules.md",
     "adaptiveRetrieval": true,
     "zeroWasteCaching": true
   }

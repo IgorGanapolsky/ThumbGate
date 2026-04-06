@@ -11,9 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const os = require('os');
-const PROJECT_ROOT = path.join(__dirname, '..');
-const HOME = os.homedir();
+const { resolveFeedbackDir } = require('./feedback-paths');
 const {
   retrieveHierarchicalDocuments,
   shouldUseHierarchicalRetrieval,
@@ -22,20 +20,11 @@ const {
 const CONTEXTFS_RETRIEVAL_VERSION = 'xmemory-lite-v1';
 
 function getFeedbackBaseDir() {
-  if (process.env.RLHF_FEEDBACK_DIR) return process.env.RLHF_FEEDBACK_DIR;
-
-  const localRlhf = path.join(process.cwd(), '.rlhf');
-  const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback');
-  
-  if (fs.existsSync(localRlhf)) return localRlhf;
-  if (fs.existsSync(localClaude)) return localClaude;
-
-  const projectName = path.basename(process.cwd()) || 'default';
-  return path.join(HOME, '.rlhf', 'projects', projectName);
+  return resolveFeedbackDir();
 }
 
 const FEEDBACK_DIR = getFeedbackBaseDir();
-const CONTEXTFS_ROOT = process.env.RLHF_CONTEXTFS_DIR
+const CONTEXTFS_ROOT = process.env.THUMBGATE_CONTEXTFS_DIR
   || (FEEDBACK_DIR.endsWith('contextfs') ? FEEDBACK_DIR : path.join(FEEDBACK_DIR, 'contextfs'));
 
 const NAMESPACES = {
@@ -213,9 +202,9 @@ function buildSemanticCacheKey({ namespaces, maxItems, maxChars }) {
 }
 
 function getSemanticCacheConfig() {
-  const enabled = process.env.RLHF_SEMANTIC_CACHE_ENABLED !== 'false';
-  const thresholdRaw = Number(process.env.RLHF_SEMANTIC_CACHE_THRESHOLD || '0.7');
-  const ttlSecondsRaw = Number(process.env.RLHF_SEMANTIC_CACHE_TTL_SECONDS || '86400');
+  const enabled = process.env.THUMBGATE_SEMANTIC_CACHE_ENABLED !== 'false';
+  const thresholdRaw = Number(process.env.THUMBGATE_SEMANTIC_CACHE_THRESHOLD || '0.7');
+  const ttlSecondsRaw = Number(process.env.THUMBGATE_SEMANTIC_CACHE_TTL_SECONDS || '86400');
   const threshold = Number.isFinite(thresholdRaw) ? Math.min(1, Math.max(0, thresholdRaw)) : 0.7;
   const ttlSeconds = Number.isFinite(ttlSecondsRaw) ? Math.max(60, ttlSecondsRaw) : 86400;
   return { enabled, threshold, ttlSeconds };

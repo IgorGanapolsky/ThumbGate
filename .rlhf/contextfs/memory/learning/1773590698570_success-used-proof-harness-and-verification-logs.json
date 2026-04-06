@@ -1,0 +1,19 @@
+{
+  "id": "1773590698570_success-used-proof-harness-and-verification-logs",
+  "title": "SUCCESS: Used proof harness and verification logs",
+  "content": "What worked: Used proof harness and verification logs\nRubric weighted score: 0.6\nRubric criteria passed with no blocking guardrails.",
+  "tags": [
+    "feedback",
+    "positive",
+    "verification",
+    "automation"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "learning",
+    "sourceFeedbackId": "fb_1773590698566_1xooxc"
+  },
+  "createdAt": "2026-03-15T16:04:58.570Z",
+  "lastUsedAt": null
+}

@@ -1,0 +1,18 @@
+{
+  "id": "1774901488514_feedback-positive-fb-1774901487031-eunfny",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774901487031_eunfny",
+  "content": "{\"id\":\"fb_1774901487031_eunfny\",\"signal\":\"positive\",\"context\":\"Job partner-job passed verification after 1 attempt(s)\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Verification loop accepted output\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"testing\",\"verification-loop\"],\"skill\":\"async-job-runner\",\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-30T20:11:27.031Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "testing",
+    "verification-loop"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-30T20:11:28.514Z",
+  "lastUsedAt": null
+}

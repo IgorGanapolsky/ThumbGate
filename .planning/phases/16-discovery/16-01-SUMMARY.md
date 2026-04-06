@@ -46,7 +46,7 @@ metrics:
 ## What Was Built
 
 ### docs/landing-page.html
-- Hero: "RLHF for AI Coding Agents — Stop Repeating Mistakes"
+- Hero: "ThumbGate for AI Coding Agents — Stop Repeating Mistakes"
 - 6 value prop cards (capture/score, prevention, Thompson Sampling, DPO export, 5 platforms, 314+ tests)
 - Stats row: 5 platforms, 314+ tests, $0 to start, <5min time-to-first-signal
 - Terminal demo: local npx init + curl to cloud API

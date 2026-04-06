@@ -1,6 +1,6 @@
 #!/bin/bash
 # ThumbGate Status Line for Claude Code
-# Shows RLHF feedback stats + most recent lesson at a glance.
+# Shows ThumbGate feedback stats + most recent lesson at a glance.
 # Thumbs icons trigger CLI feedback capture inline (no browser).
 # Installed by: npx mcp-memory-gateway init --agent claude-code
 
@@ -15,23 +15,29 @@ eval "$(cat | jq -r '
 ' 2>/dev/null)"
 CTX_PCT="${CTX_PCT:-0}"
 
-# ── RLHF stats from cache ────────────────────────────────────────
-RLHF_CACHE="${RLHF_FEEDBACK_DIR:-.}/.rlhf/statusline_cache.json"
-if [ ! -f "$RLHF_CACHE" ]; then
-  for dir in "." "${HOME}"; do
-    [ -f "${dir}/.rlhf/statusline_cache.json" ] && RLHF_CACHE="${dir}/.rlhf/statusline_cache.json" && break
+# ── ThumbGate stats from cache ────────────────────────────────────────
+THUMBGATE_CACHE=""
+for base in "${THUMBGATE_FEEDBACK_DIR:-.}" "." "${HOME}"; do
+  for rel in ".thumbgate/statusline_cache.json" ".rlhf/statusline_cache.json"; do
+    if [ -f "${base}/${rel}" ]; then
+      THUMBGATE_CACHE="${base}/${rel}"
+      break 2
+    fi
   done
+done
+if [ -z "$THUMBGATE_CACHE" ]; then
+  THUMBGATE_CACHE="${THUMBGATE_FEEDBACK_DIR:-.}/.thumbgate/statusline_cache.json"
 fi
 
 UP="0"; DOWN="0"; LESSONS="0"; TREND="?"; CACHE_TS="0"
-if [ -f "$RLHF_CACHE" ]; then
+if [ -f "$THUMBGATE_CACHE" ]; then
   eval "$(jq -r '
     @sh "UP=\(.thumbs_up // "0")",
     @sh "DOWN=\(.thumbs_down // "0")",
     @sh "LESSONS=\(.lessons // "0")",
     @sh "TREND=\(.trend // "?")",
     @sh "CACHE_TS=\(.updated_at // "0")"
-  ' "$RLHF_CACHE" 2>/dev/null)"
+  ' "$THUMBGATE_CACHE" 2>/dev/null)"
 fi
 
 # Background refresh from REST API when cache is stale (>120s)
@@ -45,8 +51,8 @@ import json,sys,time,os
 try:
   d=json.load(sys.stdin)
   c={'thumbs_up':str(d.get('totalPositive',0)),'thumbs_down':str(d.get('totalNegative',0)),'lessons':str(d.get('rubric',{}).get('samples',0)),'approval_rate':str(round(d.get('approvalRate',0)*100,1)),'trend':d.get('trend','?'),'total_feedback':str(d.get('total',0)),'updated_at':str(int(time.time()))}
-  os.makedirs(os.path.dirname('$RLHF_CACHE'),exist_ok=True)
-  json.dump(c,open('$RLHF_CACHE','w'))
+  os.makedirs(os.path.dirname('$THUMBGATE_CACHE'),exist_ok=True)
+  json.dump(c,open('$THUMBGATE_CACHE','w'))
 except:pass
 " 2>/dev/null
   ) &>/dev/null &

@@ -21,7 +21,7 @@ tech_stack:
   patterns:
     - proof script pattern (mirrors prove-adapters.js / prove-automation.js)
     - os.mkdtempSync + finally cleanup for smoke test isolation
-    - RLHF_VECTOR_STUB_EMBED=true for offline LanceDB smoke test
+    - THUMBGATE_VECTOR_STUB_EMBED=true for offline LanceDB smoke test
     - require.cache invalidation for env var isolation
     - execSync to capture node:test output for VEC-05 evidence
 key_files:
@@ -32,7 +32,7 @@ key_files:
   modified:
     - package.json  # added prove:lancedb script entry
 decisions:
-  - prove-lancedb.js uses RLHF_VECTOR_STUB_EMBED=true for deterministic offline smoke test — mirrors test pattern from 4-03
+  - prove-lancedb.js uses THUMBGATE_VECTOR_STUB_EMBED=true for deterministic offline smoke test — mirrors test pattern from 4-03
   - VEC-02 evidence: grep scripts/vector-store.js for "await import(" at specific line numbers — concrete file+line reference
   - VEC-03 evidence: parse apache-arrow version from package.json and verify <= 18.1.0 ceiling programmatically
   - VEC-04 smoke: runs two upserts then searches; verifies both records returned; warns (not fails) on network/ONNX errors
@@ -55,7 +55,7 @@ Phase gate proof script generating lancedb-report.md with per-requirement eviden
 
 Proof script following the prove-adapters.js pattern:
 
-1. **VEC-01 smoke test** — creates tmpdir, sets `RLHF_FEEDBACK_DIR` and `RLHF_VECTOR_STUB_EMBED=true`, invalidates `require.cache`, calls `upsertFeedback()` then `searchSimilar()`, verifies lancedb dir created and record returned.
+1. **VEC-01 smoke test** — creates tmpdir, sets `THUMBGATE_FEEDBACK_DIR` and `THUMBGATE_VECTOR_STUB_EMBED=true`, invalidates `require.cache`, calls `upsertFeedback()` then `searchSimilar()`, verifies lancedb dir created and record returned.
 2. **VEC-02 evidence** — reads `scripts/vector-store.js`, greps for `await import(` occurrences, reports exact file + line numbers for both `@lancedb/lancedb` and `@huggingface/transformers` dynamic imports.
 3. **VEC-03 evidence** — parses `apache-arrow` version from `package.json`, verifies `<= 18.1.0` constraint programmatically.
 4. **VEC-04 evidence** — second search call with two records in the store, verifies both IDs returned. Network/ONNX errors are `warn` (not `fail`).

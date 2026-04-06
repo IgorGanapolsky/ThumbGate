@@ -16,7 +16,7 @@ function normalizeNullableText(value) {
 function resolveBuildMetadata({ env = process.env, filePath } = {}) {
   const resolvedPath =
     normalizeNullableText(filePath) ||
-    normalizeNullableText(env.RLHF_BUILD_METADATA_PATH) ||
+    normalizeNullableText(env.THUMBGATE_BUILD_METADATA_PATH) ||
     DEFAULT_BUILD_METADATA_PATH;
 
   try {

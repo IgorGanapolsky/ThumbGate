@@ -288,11 +288,11 @@ test('runVerify injects proof directories and records full verification', () => 
     assert.equal(commandCalls.length, 17);
     assert.equal(commandCalls[0].options.cwd, cwd);
     assert.equal(commandCalls[0].options.env.BASE_ENV, '1');
-    assert.equal(commandCalls[0].options.env.RLHF_PROOF_DIR, path.join(tempRoot, 'proof-adapters'));
-    assert.equal(commandCalls[0].options.env.RLHF_AUTOMATION_PROOF_DIR, path.join(tempRoot, 'proof-automation'));
-    assert.equal(commandCalls[0].options.env.RLHF_HARNESSES_PROOF_DIR, path.join(tempRoot, 'proof-harnesses'));
-    assert.equal(commandCalls[0].options.env.RLHF_RUNTIME_PROOF_DIR, path.join(tempRoot, 'proof-runtime'));
-    assert.equal(commandCalls[0].options.env.RLHF_SETTINGS_PROOF_DIR, path.join(tempRoot, 'proof-settings'));
+    assert.equal(commandCalls[0].options.env.THUMBGATE_PROOF_DIR, path.join(tempRoot, 'proof-adapters'));
+    assert.equal(commandCalls[0].options.env.THUMBGATE_AUTOMATION_PROOF_DIR, path.join(tempRoot, 'proof-automation'));
+    assert.equal(commandCalls[0].options.env.THUMBGATE_HARNESSES_PROOF_DIR, path.join(tempRoot, 'proof-harnesses'));
+    assert.equal(commandCalls[0].options.env.THUMBGATE_RUNTIME_PROOF_DIR, path.join(tempRoot, 'proof-runtime'));
+    assert.equal(commandCalls[0].options.env.THUMBGATE_SETTINGS_PROOF_DIR, path.join(tempRoot, 'proof-settings'));
     assert.equal(appendCall.entry.source, 'verify:full');
     assert.ok(commandCalls.some((call) => call.args.includes('prove:cloudflare-sandbox')));
     assert.ok(commandCalls.some((call) => call.args.includes('prove:claim-verification')));

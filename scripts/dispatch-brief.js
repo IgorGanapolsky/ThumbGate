@@ -9,7 +9,7 @@ const DISPATCH_TASK_DESCRIPTIONS = {
   feedback_summary: 'Summarize recent wins, failures, and operator notes.',
   search_lessons: 'Search promoted lessons and inspect what corrective action the system linked to each one.',
   retrieve_lessons: 'Retrieve top-K relevant lessons for a given tool/action context (per-action guidance).',
-  search_rlhf: 'Search raw RLHF feedback, ContextFS memory, and prevention rules.',
+  search_rlhf: 'Search raw ThumbGate feedback, ContextFS memory, and prevention rules.',
   feedback_stats: 'Inspect approval trends and failure domains.',
   diagnose_failure: 'Explain why a run failed or was blocked.',
   list_intents: 'List available workflow plans without executing them.',

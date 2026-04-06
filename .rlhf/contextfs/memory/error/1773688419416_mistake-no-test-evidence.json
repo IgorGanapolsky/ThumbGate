@@ -1,0 +1,21 @@
+{
+  "id": "1773688419416_mistake-no-test-evidence",
+  "title": "MISTAKE: No test evidence",
+  "content": "What went wrong: No test evidence\nHow to avoid: Always include test output\nRubric weighted score: 0.17\nRubric failing criteria: correctness, verification_evidence\nGuardrails failed: testsPassed",
+  "tags": [
+    "feedback",
+    "negative",
+    "verification",
+    "automation",
+    "rubric-correctness",
+    "rubric-verification_evidence"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1773688419414_p8f29y"
+  },
+  "createdAt": "2026-03-16T19:13:39.416Z",
+  "lastUsedAt": null
+}

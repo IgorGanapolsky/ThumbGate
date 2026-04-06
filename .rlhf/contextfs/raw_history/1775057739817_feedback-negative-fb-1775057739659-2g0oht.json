@@ -1,0 +1,17 @@
+{
+  "id": "1775057739817_feedback-negative-fb-1775057739659-2g0oht",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1775057739659_2g0oht",
+  "content": "{\"id\":\"fb_1775057739659_2g0oht\",\"signal\":\"negative\",\"context\":\"test context\",\"lastAction\":null,\"whatWentWrong\":\"something failed\",\"whatToChange\":\"fix the issue\",\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"debugging\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-04-01T15:35:39.659Z\",\"richContext\":{\"domain\":\"testing\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "debugging"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-04-01T15:35:39.817Z",
+  "lastUsedAt": null
+}

@@ -1,0 +1,19 @@
+{
+  "id": "1775226320984_mistake-ignored-project-s-preference-for-vanilla-css-by-suggesting-t",
+  "namespace": "memory/error",
+  "title": "MISTAKE: Ignored project's preference for Vanilla CSS by suggesting T",
+  "content": "What went wrong: Ignored project's preference for Vanilla CSS by suggesting Tailwind.\nHow to avoid: NEVER: use TailwindCSS in this project. INSTEAD: use standard Vanilla CSS files.",
+  "tags": [
+    "feedback",
+    "negative",
+    "entity:Customer"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775226405234_lsbqay"
+  },
+  "createdAt": "2026-04-03T14:25:20.985Z",
+  "lastUsedAt": null
+}

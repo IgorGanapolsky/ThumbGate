@@ -1,0 +1,18 @@
+{
+  "id": "1775168132987_feedback-positive-fb-1775168132871-w4zlb5",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1775168132871_w4zlb5",
+  "content": "{\"id\":\"fb_1775168132871_w4zlb5\",\"signal\":\"positive\",\"context\":\"Job checkpoint-job passed verification after 1 attempt(s)\",\"submittedContext\":\"Job checkpoint-job passed verification after 1 attempt(s)\",\"relatedFeedbackId\":null,\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"Verification loop accepted output\",\"reasoning\":null,\"visualEvidence\":null,\"conversationWindow\":null,\"distillation\":null,\"tags\":[\"runtime\",\"verification-loop\"],\"skill\":\"async-job-runner\",\"failureType\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-04-02T22:15:32.871Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "runtime",
+    "verification-loop"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-04-02T22:15:32.987Z",
+  "lastUsedAt": null
+}

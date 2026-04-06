@@ -13,7 +13,7 @@ const path = require('path');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 
 const APP_ORIGIN = resolveHostedBillingConfig({
-  requestOrigin: 'https://rlhf-feedback-loop-production.up.railway.app',
+  requestOrigin: 'https://thumbgate-production.up.railway.app',
 }).appOrigin;
 const SPRINT_LINK = `${APP_ORIGIN}/#workflow-sprint-intake`;
 

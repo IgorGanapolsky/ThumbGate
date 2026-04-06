@@ -3,7 +3,7 @@ name: rlhf-feedback
 description: Capture thumbs feedback and apply prevention rules before coding
 ---
 
-# Amp RLHF Skill
+# Amp ThumbGate Skill
 
 On explicit user feedback:
 

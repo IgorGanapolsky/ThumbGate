@@ -10,7 +10,7 @@
 
 This is not a greenfield project. Both repos are live systems. The sync is surgical:
 
-| Feature | rlhf-feedback-loop | Subway_RN_Demo | Direction |
+| Feature | thumbgate | Subway_RN_Demo | Direction |
 |---------|-------------------|----------------|-----------|
 | Feedback capture + schema validation | YES | YES | Already synced |
 | Prevention rules from failures | YES | YES | Already synced |
@@ -21,11 +21,11 @@ This is not a greenfield project. Both repos are live systems. The sync is surgi
 | Intent router + policy bundles | YES | NO | -> Subway |
 | ContextFS with semantic cache | YES | NO | -> Subway |
 | Self-healing monitor + auto-fix | YES | NO | -> Subway |
-| Thompson Sampling posteriors (Beta-Bernoulli) | NO | YES | -> rlhf-feedback-loop |
-| LanceDB vector storage | NO | YES | -> rlhf-feedback-loop |
-| LSTM/Transformer sequence tracking | NO | YES | -> rlhf-feedback-loop |
-| Diversity tracking (domain coverage) | NO | YES | -> rlhf-feedback-loop |
-| RLAIF self-scoring (DPO batch optimization) | NO | YES | -> rlhf-feedback-loop |
+| Thompson Sampling posteriors (Beta-Bernoulli) | NO | YES | -> thumbgate |
+| LanceDB vector storage | NO | YES | -> thumbgate |
+| LSTM/Transformer sequence tracking | NO | YES | -> thumbgate |
+| Diversity tracking (domain coverage) | NO | YES | -> thumbgate |
+| RLAIF self-scoring (DPO batch optimization) | NO | YES | -> thumbgate |
 
 ---
 
@@ -43,7 +43,7 @@ These are features that any RLHF sync system must have to be considered complete
 | Prevention rules from recurring failures | The output of learning must surface as actionable rules | MEDIUM | Already in both repos via `writePreventionRules()` |
 | Rubric-based quality scoring | Scalar feedback insufficient — rubrics force structured evaluation | MEDIUM | Already in both repos via `rubric-engine.js` |
 | CI test gates | Every sync must have tests; no unproven claims | LOW | Already in both repos |
-| Budget enforcement | Cost spikes are catastrophic at $10/month cap | MEDIUM | Exists in `budget-guard.js` in rlhf-feedback-loop only |
+| Budget enforcement | Cost spikes are catastrophic at $10/month cap | MEDIUM | Exists in `budget-guard.js` in thumbgate only |
 | Feedback stats and summary API | Operators need visibility into what's been captured | LOW | Already in both repos via `/v1/feedback/stats` |
 
 ### Differentiators (Competitive Advantage)
@@ -56,14 +56,14 @@ These are the features that make this system significantly more capable than a b
 | Exponential time-decay on feedback | Recent mistakes matter more than old ones; half-life=7 days prevents stale data from polluting posteriors | MEDIUM | Implemented in Subway with configurable `HALF_LIFE_DAYS`; toggle between step-decay and exponential |
 | LanceDB vector storage | Enables semantic similarity search over historical feedback; native FTS via DuckDB/Tantivy integration as of 2026 | HIGH | Subway has live `rlhf_feedback.lance` table; LanceDB 0.26.1 installed in venv |
 | Hybrid semantic search (BM25 + vector fusion) | Lexical + semantic retrieval beats either alone; handles cases where exact keywords appear in different wording | HIGH | Subway's `semantic-memory-v2.py` implements this pattern; LanceDB native FTS added Feb 2026 |
-| LSTM/Transformer sequence tracking | Captures temporal patterns across N feedback interactions (window=10); enables sequence-level rather than point-level learning | HIGH | Subway's `capture-feedback.js` writes `feedback-sequences.jsonl`; identified as critical gap in rlhf-feedback-loop |
+| LSTM/Transformer sequence tracking | Captures temporal patterns across N feedback interactions (window=10); enables sequence-level rather than point-level learning | HIGH | Subway's `capture-feedback.js` writes `feedback-sequences.jsonl`; identified as critical gap in thumbgate |
 | Diversity tracking (domain coverage) | Prevents representation collapse — ensures feedback covers all domain categories, not just easy ones | MEDIUM | Subway has live `diversity-tracking.json` with `diversityScore` metric; 10 domain categories tracked |
 | RLAIF self-scoring via DPO batch optimization | Builds (chosen, rejected) preference pairs from positive/negative feedback; applies DPO-style closed-form update without explicit reward model | HIGH | Subway's `train_from_feedback.py --dpo-train`; based on Rafailov et al. 2023 (arXiv:2305.18290); integrated with Thompson Sampling |
-| Intent router + policy bundles | Structured governance for agentic actions — each intent has risk level (low/medium/high/critical), approval requirements, and allowed actions | MEDIUM | Fully in rlhf-feedback-loop via `intent-router.js` and `config/policy-bundles/*.json`; not in Subway |
-| ContextFS with semantic cache | Persistent, file-system-native context store with TTL-aware semantic similarity matching (Jaccard tokenization, threshold=0.7); avoids re-computing identical context packs | MEDIUM | Fully in rlhf-feedback-loop via `contextfs.js`; 5 namespaces (raw_history, memory/error, memory/learning, rules, tools, provenance) |
-| Self-healing monitor + auto-fix workflows | System detects its own CI failures and runs fix scripts automatically; generates health report with per-check status | MEDIUM | rlhf-feedback-loop has `self-heal.js` + `self-healing-check.js`; runs lint:fix, format, fix, feedback:rules scripts |
-| MCP profile-based tool allowlisting | Limits which tools subagents can use based on named profiles; prevents privilege escalation | MEDIUM | rlhf-feedback-loop has `mcp-policy.js` with `mcp-allowlists.json`; not in Subway |
-| DPO pair export for ML training | Produces structured JSONL preference pairs consumable by any DPO training pipeline | MEDIUM | rlhf-feedback-loop has `export-dpo-pairs.js` and `/v1/dpo/export` endpoint |
+| Intent router + policy bundles | Structured governance for agentic actions — each intent has risk level (low/medium/high/critical), approval requirements, and allowed actions | MEDIUM | Fully in thumbgate via `intent-router.js` and `config/policy-bundles/*.json`; not in Subway |
+| ContextFS with semantic cache | Persistent, file-system-native context store with TTL-aware semantic similarity matching (Jaccard tokenization, threshold=0.7); avoids re-computing identical context packs | MEDIUM | Fully in thumbgate via `contextfs.js`; 5 namespaces (raw_history, memory/error, memory/learning, rules, tools, provenance) |
+| Self-healing monitor + auto-fix workflows | System detects its own CI failures and runs fix scripts automatically; generates health report with per-check status | MEDIUM | thumbgate has `self-heal.js` + `self-healing-check.js`; runs lint:fix, format, fix, feedback:rules scripts |
+| MCP profile-based tool allowlisting | Limits which tools subagents can use based on named profiles; prevents privilege escalation | MEDIUM | thumbgate has `mcp-policy.js` with `mcp-allowlists.json`; not in Subway |
+| DPO pair export for ML training | Produces structured JSONL preference pairs consumable by any DPO training pipeline | MEDIUM | thumbgate has `export-dpo-pairs.js` and `/v1/dpo/export` endpoint |
 | Meta-policy rules with trend analysis | Extracts reusable rules from repeated negative feedback patterns; tracks trend (improving/deteriorating/stable) per category | HIGH | Subway's `train_from_feedback.py --extract-rules`; based on Meta-Policy Reflexion arXiv:2509.03990 |
 | Model snapshot for lift comparison | Before/after snapshots enable measuring whether a sync actually improved reliability (lift-gate: >=5% required) | LOW | Subway's `save_snapshot()` and `skill_eval.py --lift --gate` |
 
@@ -72,7 +72,7 @@ These are the features that make this system significantly more capable than a b
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
 | Multi-adapter pattern for Subway | "One codebase, many providers" sounds good | Subway only uses Claude; adding 4 adapters adds dead code, test burden, and drift risk | Explicitly out of scope per PROJECT.md — Subway stays Claude-only |
-| Full repo merge into one codebase | Simpler to maintain one repo | Repos serve different purposes: rlhf-feedback-loop is a productized library, Subway_RN_Demo is an app-level prototype | Cherry-pick sync is the right model; merging destroys the product/prototype boundary |
+| Full repo merge into one codebase | Simpler to maintain one repo | Repos serve different purposes: thumbgate is a productized library, Subway_RN_Demo is an app-level prototype | Cherry-pick sync is the right model; merging destroys the product/prototype boundary |
 | Real-time streaming feedback aggregation | Lower latency sounds better | JSONL append is atomic and crash-safe; streaming adds complexity without benefit at this scale | Keep JSONL append model; add batch processing for ML (DPO pairs) |
 | External database (PostgreSQL, Redis) for feedback | "Scale to production" | $10/month budget constraint makes external infra risky; LanceDB and file-based JSONL work offline and cost $0 | LanceDB embedded + JSONL; upgrade path exists when budget allows |
 | PaperBanana PNG architecture diagrams | Visual documentation is valuable | Blocked on Gemini API quota; explicitly out of scope per PROJECT.md | Mermaid diagrams sufficient; already flagged as out of scope |
@@ -139,7 +139,7 @@ These are the features that make this system significantly more capable than a b
 
 This is a sync milestone, not a greenfield MVP. "MVP" here means minimum viable sync — the features that must land first because others depend on them.
 
-### Sync Phase 1 — ML Features Into rlhf-feedback-loop (v1)
+### Sync Phase 1 — ML Features Into thumbgate (v1)
 
 These land first because they are self-contained and have no dependencies on governance features:
 

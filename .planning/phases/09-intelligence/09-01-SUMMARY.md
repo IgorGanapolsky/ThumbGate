@@ -35,7 +35,7 @@ metrics:
 
 # Phase 9 Plan 09-01: Intelligence Summary
 
-Ported context-engine and skill-quality-tracker from Subway_RN_Demo to rlhf-feedback-loop for INTL-01, INTL-02, INTL-03.
+Ported context-engine and skill-quality-tracker from Subway_RN_Demo to thumbgate for INTL-01, INTL-02, INTL-03.
 
 ## What Was Built
 

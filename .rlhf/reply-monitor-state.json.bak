@@ -1,0 +1,135 @@
+{
+  "repliedTo": {
+    "t1_ocfbriv": {
+      "at": "2026-03-25T23:00:18.800Z",
+      "platform": "reddit",
+      "skipped": "bot/mod"
+    },
+    "t1_ocajmfg": {
+      "at": "2026-03-25T23:00:19.064Z",
+      "platform": "reddit"
+    },
+    "t1_ocadg6p": {
+      "at": "2026-03-25T23:00:19.064Z",
+      "platform": "reddit",
+      "skipped": "bot/mod"
+    },
+    "t1_oc0kpzj": {
+      "at": "2026-03-25T23:00:19.064Z",
+      "platform": "reddit",
+      "skipped": "bot/mod"
+    },
+    "t1_obm08bx": {
+      "at": "2026-03-25T23:00:19.399Z",
+      "platform": "reddit"
+    },
+    "t1_obj0jdw": {
+      "at": "2026-03-25T23:00:19.399Z",
+      "platform": "reddit",
+      "skipped": "bot/mod"
+    },
+    "t1_obj0e3c": {
+      "at": "2026-03-25T23:00:19.399Z",
+      "platform": "reddit",
+      "skipped": "bot/mod"
+    },
+    "t1_obish0v": {
+      "at": "2026-03-25T23:00:19.680Z",
+      "platform": "reddit"
+    },
+    "t1_obi2lj9": {
+      "at": "2026-03-25T23:00:20.040Z",
+      "platform": "reddit"
+    },
+    "t1_obi1etg": {
+      "at": "2026-03-25T23:00:20.217Z",
+      "platform": "reddit"
+    },
+    "t1_obdg3bm": {
+      "at": "2026-03-25T23:00:20.447Z",
+      "platform": "reddit"
+    },
+    "t1_ob6jkxv": {
+      "at": "2026-03-25T23:00:20.706Z",
+      "platform": "reddit"
+    },
+    "t1_oaxundi": {
+      "at": "2026-03-25T23:00:20.958Z",
+      "platform": "reddit"
+    },
+    "t1_oaxpcic": {
+      "at": "2026-03-25T23:00:21.220Z",
+      "platform": "reddit"
+    },
+    "t1_oa9mqjf": {
+      "at": "2026-03-25T23:00:21.475Z",
+      "platform": "reddit"
+    },
+    "t1_o9wobb7": {
+      "at": "2026-03-25T23:00:21.799Z",
+      "platform": "reddit"
+    },
+    "t1_o9woaol": {
+      "at": "2026-03-25T23:00:21.799Z",
+      "platform": "reddit",
+      "skipped": "bot/mod"
+    },
+    "t1_o9wjp12": {
+      "at": "2026-03-25T23:00:22.048Z",
+      "platform": "reddit"
+    },
+    "t1_nuz5c09": {
+      "at": "2026-03-25T23:00:22.335Z",
+      "platform": "reddit"
+    },
+    "t1_oclcdof": {
+      "at": "2026-03-26T15:12:07.651Z",
+      "platform": "reddit"
+    },
+    "x_2036866233031893090": {
+      "at": "2026-03-26T15:12:07.987Z",
+      "platform": "x"
+    },
+    "x_2036294567700344988": {
+      "at": "2026-03-26T15:12:08.107Z",
+      "platform": "x"
+    },
+    "x_2035026849160425809": {
+      "at": "2026-03-26T15:12:08.478Z",
+      "platform": "x"
+    },
+    "x_2035024144874525136": {
+      "at": "2026-03-26T15:12:08.726Z",
+      "platform": "x"
+    },
+    "x_2035024137584808359": {
+      "at": "2026-03-26T15:12:08.973Z",
+      "platform": "x"
+    },
+    "x_2035024136129356163": {
+      "at": "2026-03-26T15:12:09.239Z",
+      "platform": "x"
+    },
+    "x_2034999628643385562": {
+      "at": "2026-03-26T15:12:09.342Z",
+      "platform": "x"
+    },
+    "t1_ocls7wn": {
+      "at": "2026-03-26T16:27:36.976Z",
+      "platform": "reddit"
+    },
+    "x_2037185842460901870": {
+      "at": "2026-03-26T16:27:37.617Z",
+      "platform": "x"
+    },
+    "x_2037204837998182911": {
+      "at": "2026-03-26T16:49:19.663Z",
+      "platform": "x",
+      "skipped": "own_tweet"
+    }
+  },
+  "lastCheck": {
+    "reddit": "2026-03-26T16:49:19.390Z",
+    "x": "2026-03-26T16:49:19.664Z"
+  }
+}

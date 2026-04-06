@@ -19,16 +19,16 @@ tech_stack:
     - node:test with describe/it
     - require.cache invalidation for env-var-isolated tests
     - mkdtempSync + finally cleanup per test
-    - RLHF_VECTOR_STUB_EMBED env var for deterministic 384-dim unit vector
+    - THUMBGATE_VECTOR_STUB_EMBED env var for deterministic 384-dim unit vector
 key_files:
   created:
     - tests/vector-store.test.js
   modified:
-    - scripts/vector-store.js  # added RLHF_VECTOR_STUB_EMBED guard in embed()
+    - scripts/vector-store.js  # added THUMBGATE_VECTOR_STUB_EMBED guard in embed()
     - package.json             # added vector-store.test.js to test:api script
 decisions:
-  - RLHF_VECTOR_STUB_EMBED=true causes embed() to return Array(384).fill(0) with stub[0]=1.0 — deterministic, offline, fast
-  - Each test invalidates require.cache to get fresh module state with correct RLHF_FEEDBACK_DIR
+  - THUMBGATE_VECTOR_STUB_EMBED=true causes embed() to return Array(384).fill(0) with stub[0]=1.0 — deterministic, offline, fast
+  - Each test invalidates require.cache to get fresh module state with correct THUMBGATE_FEEDBACK_DIR
   - Tests use it() style (not test()) per node:test describe/it pattern matching thompson-sampling.test.js
   - With stub embed all records get same vector so ranking is insertion-order — test 4 verifies presence not strict rank
 metrics:
@@ -41,7 +41,7 @@ metrics:
 
 # Phase 4 Plan 03: LanceDB Vector-Store Unit Tests Summary
 
-TDD RED/GREEN cycle for vector-store.js: 4 node:test cases stub the HuggingFace embedding pipeline via RLHF_VECTOR_STUB_EMBED=true to run fully offline, covering upsertFeedback() persistence and searchSimilar() semantic retrieval.
+TDD RED/GREEN cycle for vector-store.js: 4 node:test cases stub the HuggingFace embedding pipeline via THUMBGATE_VECTOR_STUB_EMBED=true to run fully offline, covering upsertFeedback() persistence and searchSimilar() semantic retrieval.
 
 ## What Was Built
 
@@ -55,7 +55,7 @@ Two files were changed and one created:
 
 2. `scripts/vector-store.js` — added stub embed guard:
    ```js
-   if (process.env.RLHF_VECTOR_STUB_EMBED === 'true') {
+   if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') {
      const stub = Array(384).fill(0);
      stub[0] = 1.0;
      return stub;
@@ -74,7 +74,7 @@ Error: Load model from .../onnx/model.onnx failed: Protobuf parsing failed.
 Confirmed the HuggingFace ONNX pipeline is broken in this environment and stub is required.
 
 ### GREEN (commit f69ec0c)
-Added `RLHF_VECTOR_STUB_EMBED` guard to `embed()`. All 4 tests passed. `npm test` passed with 93 total tests, zero regressions.
+Added `THUMBGATE_VECTOR_STUB_EMBED` guard to `embed()`. All 4 tests passed. `npm test` passed with 93 total tests, zero regressions.
 
 ## Verification Evidence
 

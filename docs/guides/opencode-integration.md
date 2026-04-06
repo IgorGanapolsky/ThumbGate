@@ -15,7 +15,7 @@ This repository now includes a repo-local OpenCode profile plus a portable adapt
 From a linked worktree, OpenCode picks up `opencode.json` automatically. That profile:
 
 - enables the local `node bin/cli.js serve` MCP server
-- denies edits to `.rlhf/**`, `.claude/worktrees/**`, and live feedback memory artifacts
+- denies edits to `.thumbgate/**`, `.claude/worktrees/**`, and live feedback memory artifacts
 - denies destructive git commands like `git push*`, `git reset*`, and `git checkout --*`
 - limits the `plan` agent to read-only repo inspection
 - allows the `build` agent to delegate only to the read-only `rlhf-review` subagent
@@ -24,7 +24,7 @@ That gives OpenCode a repo-native permission surface instead of bolting on a sec
 
 ## Portable Adapter
 
-If you want the same MCP server in a different OpenCode project, copy `adapters/opencode/opencode.json` into your OpenCode config and merge the `mcp.rlhf` block.
+If you want the same MCP server in a different OpenCode project, copy `adapters/opencode/opencode.json` into your OpenCode config and merge the `mcp.thumbgate` block.
 
 The portable profile stays version-pinned to `mcp-memory-gateway@0.9.9`, and `scripts/sync-version.js` now checks it for drift.
 

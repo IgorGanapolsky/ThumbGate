@@ -1,0 +1,17 @@
+{
+  "id": "1774631874863_feedback-positive-fb-1774631874514-3wt8mo",
+  "namespace": "raw_history",
+  "title": "feedback_positive_fb_1774631874514_3wt8mo",
+  "content": "{\"id\":\"fb_1774631874514_3wt8mo\",\"signal\":\"positive\",\"context\":\"security review completed\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":\"vulnerability patched correctly\",\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"security\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-learning\",\"actionReason\":null,\"timestamp\":\"2026-03-27T17:17:54.514Z\",\"richContext\":{\"domain\":\"security\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-success\"}}",
+  "tags": [
+    "security"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "positive",
+    "actionType": "store-learning"
+  },
+  "createdAt": "2026-03-27T17:17:54.863Z",
+  "lastUsedAt": null
+}

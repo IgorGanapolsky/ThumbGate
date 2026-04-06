@@ -53,18 +53,18 @@ async function fetchWithRetry(url, options, { retries = 5, delayMs = 100 } = {})
 }
 
 async function runAutomationProof(options = {}) {
-  const proofDir = options.proofDir || process.env.RLHF_AUTOMATION_PROOF_DIR || DEFAULT_PROOF_DIR;
+  const proofDir = options.proofDir || process.env.THUMBGATE_AUTOMATION_PROOF_DIR || DEFAULT_PROOF_DIR;
   const writeArtifacts = options.writeArtifacts !== false;
   const proofPort = options.port ?? 0;
 
   if (writeArtifacts) ensureDir(proofDir);
 
   const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-automation-proof-'));
-  const previousCodegraphStub = process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-  process.env.RLHF_FEEDBACK_DIR = tmpFeedbackDir;
-  process.env.RLHF_API_KEY = 'automation-proof-key';
-  process.env.RLHF_MCP_PROFILE = 'default';
-  process.env.RLHF_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
+  const previousCodegraphStub = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+  process.env.THUMBGATE_API_KEY = 'automation-proof-key';
+  process.env.THUMBGATE_MCP_PROFILE = 'default';
+  process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
     source: 'stub',
     symbols: ['planIntent'],
     callers: ['src/api/server.js -> planIntent', 'adapters/mcp/server-stdio.js -> planIntent'],
@@ -617,8 +617,8 @@ async function runAutomationProof(options = {}) {
     await new Promise((resolve) => server.close(resolve));
     await waitForBackgroundSideEffects();
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
-    if (previousCodegraphStub === undefined) delete process.env.RLHF_CODEGRAPH_STUB_RESPONSE;
-    else process.env.RLHF_CODEGRAPH_STUB_RESPONSE = previousCodegraphStub;
+    if (previousCodegraphStub === undefined) delete process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
+    else process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = previousCodegraphStub;
   }
 
   if (writeArtifacts) {

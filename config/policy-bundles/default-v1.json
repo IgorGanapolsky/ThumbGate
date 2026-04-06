@@ -59,7 +59,7 @@
     },
     {
       "id": "publish_databricks_analytics_bundle",
-      "description": "Export RLHF analytics and proof artifacts as a Databricks-ready bundle.",
+      "description": "Export ThumbGate analytics and proof artifacts as a Databricks-ready bundle.",
       "risk": "high",
       "actions": [
         {

@@ -98,7 +98,7 @@ summarizeToolInput,overlapScore,scoreCandidate,recordAction,attributeFeedback
 
 # attributeFeedback output
 { "ok": true, "signal": "negative", "attributedCount": 1, "topConfidence": 0.5684,
-  "actionLogPath": "...rlhf/.claude/memory/feedback/action-log.jsonl" }
+  "actionLogPath": "...thumbgate/.claude/memory/feedback/action-log.jsonl" }
 
 # test:loop
 Results: 10 passed, 0 failed

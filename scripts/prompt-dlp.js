@@ -15,13 +15,13 @@ const { scanForPii, redactPii, sensitivityRank } = require('./pii-scanner');
 const { SECRET_PATTERNS } = require('./secret-scanner');
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const DLP_LOG_FILE = 'dlp-events.jsonl';
 const DEFAULT_MAX_SENSITIVITY = 'internal'; // block sensitive + restricted
 
 function getDlpLogPath() {
-  const d = process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
-  return path.join(d, DLP_LOG_FILE);
+  return path.join(resolveFeedbackDir(), DLP_LOG_FILE);
 }
 
 function ensureDir(fp) { const d = path.dirname(fp); if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); }
@@ -102,8 +102,7 @@ const KNOWN_GATED_TOOLS = new Set([
 const SHADOW_LOG_FILE = 'shadow-actions.jsonl';
 
 function getShadowLogPath() {
-  const d = process.env.RLHF_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
-  return path.join(d, SHADOW_LOG_FILE);
+  return path.join(resolveFeedbackDir(), SHADOW_LOG_FILE);
 }
 
 /**

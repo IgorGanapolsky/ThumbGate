@@ -59,9 +59,9 @@ test('generateSkills: empty feedback log returns empty array', (t) => {
   const logFile = readFeedbackLog(tmpDir);
   fs.mkdirSync(path.dirname(logFile), { recursive: true });
   fs.writeFileSync(logFile, '');
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -75,9 +75,9 @@ test('generateSkills: empty feedback log returns empty array', (t) => {
 test('generateSkills: fewer than 3 entries per cluster returns empty array', (t) => {
   const tmpDir = makeTmpDir();
   const logFile = readFeedbackLog(tmpDir);
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -95,9 +95,9 @@ test('generateSkills: fewer than 3 entries per cluster returns empty array', (t)
 test('generateSkills: 3+ negative entries sharing tags generates skill file', (t) => {
   const tmpDir = makeTmpDir();
   const logFile = readFeedbackLog(tmpDir);
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -120,9 +120,9 @@ test('generateSkills: 3+ negative entries sharing tags generates skill file', (t
 test('generated SKILL.md contains correct frontmatter (name, description)', (t) => {
   const tmpDir = makeTmpDir();
   const logFile = readFeedbackLog(tmpDir);
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -147,9 +147,9 @@ test('generated SKILL.md contains correct frontmatter (name, description)', (t) 
 test('generated SKILL.md contains DO rules from positive feedback', (t) => {
   const tmpDir = makeTmpDir();
   const logFile = readFeedbackLog(tmpDir);
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -176,9 +176,9 @@ test('generated SKILL.md contains DO rules from positive feedback', (t) => {
 test('generated SKILL.md contains INSTEAD rules from negative patterns', (t) => {
   const tmpDir = makeTmpDir();
   const logFile = readFeedbackLog(tmpDir);
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -201,9 +201,9 @@ test('generated SKILL.md contains INSTEAD rules from negative patterns', (t) => 
 test('generated SKILL.md contains evidence section with counts', (t) => {
   const tmpDir = makeTmpDir();
   const logFile = readFeedbackLog(tmpDir);
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -229,9 +229,9 @@ test('generated SKILL.md contains evidence section with counts', (t) => {
 test('multiple clusters generate multiple skill files', (t) => {
   const tmpDir = makeTmpDir();
   const logFile = readFeedbackLog(tmpDir);
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
@@ -258,9 +258,9 @@ test('multiple clusters generate multiple skill files', (t) => {
 test('skill files are written to generated-skills/ directory', (t) => {
   const tmpDir = makeTmpDir();
   const logFile = readFeedbackLog(tmpDir);
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 

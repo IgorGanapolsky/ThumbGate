@@ -19,7 +19,7 @@
   1. Running `grep -n "module.exports"` across both repos produces an explicit alias map with zero unresolved name collisions
   2. `rubricEvaluation` parameter is handled identically in both `feedback-schema.js` files with a documented diff resolution
   3. All timestamp fields in both repos produce valid `Date` objects when parsed through a shared `parseTimestamp()` helper — no `NaN` values
-  4. A baseline test count is recorded for both repos (54 for rlhf-feedback-loop) and CI passes green before any ports begin
+  4. A baseline test count is recorded for both repos (54 for thumbgate) and CI passes green before any ports begin
 **Plans**: 3 plans
 
 Plans:
@@ -27,12 +27,12 @@ Plans:
 - [x] 1-02-PLAN.md — rubricEvaluation gate + parseTimestamp() in Subway's feedback-schema.js (CNTR-02, CNTR-03 Subway)
 - [x] 1-03-PLAN.md — parseTimestamp() in rlhf's feedback-schema.js + test suite + baseline count record (CNTR-03 rlhf)
 
-### Phase 2: ML into rlhf-feedback-loop
-**Goal**: rlhf-feedback-loop gains Thompson Sampling posteriors, exponential time-decay, LSTM/Transformer sequence tracking, and diversity tracking — all tested and verified against Subway's implementation
+### Phase 2: ML into thumbgate
+**Goal**: thumbgate gains Thompson Sampling posteriors, exponential time-decay, LSTM/Transformer sequence tracking, and diversity tracking — all tested and verified against Subway's implementation
 **Depends on**: Phase 1
 **Requirements**: ML-01, ML-02, ML-03, ML-04, ML-05, ML-06
 **Success Criteria** (what must be TRUE):
-  1. `train_from_feedback.py` runs in rlhf-feedback-loop and produces `feedback_model.json` with per-category `alpha`/`beta` posteriors and `reliability_score` fields
+  1. `train_from_feedback.py` runs in thumbgate and produces `feedback_model.json` with per-category `alpha`/`beta` posteriors and `reliability_score` fields
   2. Feedback older than 7 days receives a lower weight than recent feedback — verifiable by inspecting the exponential decay calculation in `parseTimestamp()` + decay weight output
   3. `feedback-sequences.jsonl` is written and contains sliding windows of N=10 feedback entries per category
   4. `diversity-tracking.json` exists and contains per-domain `coverage_score` and a `diversityScore` metric
@@ -47,7 +47,7 @@ Plans:
 - [x] 02-05-PLAN.md — npm ml:* scripts + proof/ml-features-report.md — ML-06
 
 ### Phase 3: Governance into Subway
-**Goal**: Subway gains production-grade governance — budget enforcement, risk-stratified action planning, semantic context caching, and self-healing CI — all ported from rlhf-feedback-loop with zero new npm dependencies
+**Goal**: Subway gains production-grade governance — budget enforcement, risk-stratified action planning, semantic context caching, and self-healing CI — all ported from thumbgate with zero new npm dependencies
 **Depends on**: Phase 1
 **Requirements**: GOV-01, GOV-02, GOV-03, GOV-04, GOV-05, GOV-06
 **Success Criteria** (what must be TRUE):
@@ -65,7 +65,7 @@ Plans:
 - [x] 3-04-PLAN.md — Generate proof report + mark GOV requirements complete (GOV-06)
 
 ### Phase 4: LanceDB Vector Storage
-**Goal**: rlhf-feedback-loop stores feedback vectors in an embedded LanceDB table with cross-language schema compatibility verified against Subway's Python stack
+**Goal**: thumbgate stores feedback vectors in an embedded LanceDB table with cross-language schema compatibility verified against Subway's Python stack
 **Depends on**: Phase 2
 **Requirements**: VEC-01, VEC-02, VEC-03, VEC-04, VEC-05
 **Success Criteria** (what must be TRUE):
@@ -82,7 +82,7 @@ Plans:
 - [x] 4-04-PLAN.md — Proof report script + proof/lancedb-report.md + REQUIREMENTS.md update (VEC-05)
 
 ### Phase 5: RLAIF and DPO Optimization
-**Goal**: rlhf-feedback-loop gains self-auditing (RLAIF heuristic scoring against CLAUDE.md constraints) and DPO batch optimization that builds preference pairs from stable Thompson posteriors
+**Goal**: thumbgate gains self-auditing (RLAIF heuristic scoring against CLAUDE.md constraints) and DPO batch optimization that builds preference pairs from stable Thompson posteriors
 **Depends on**: Phase 2, Phase 3
 **Requirements**: DPO-01, DPO-02, DPO-03, DPO-04
 **Success Criteria** (what must be TRUE):
@@ -253,7 +253,7 @@ Plans:
 **Depends on**: Phase 13
 **Requirements**: PLUG-01, PLUG-02, PLUG-03, PLUG-04, PLUG-05, PLUG-06
 **Success Criteria** (what must be TRUE):
-  1. Running `npx rlhf-feedback-loop init` on a clean machine with no prior setup creates a working local config and captures a test feedback entry
+  1. Running `npx thumbgate init` on a clean machine with no prior setup creates a working local config and captures a test feedback entry
   2. Following the Claude Code plugin README installs the skill and the `capture-feedback` command is available in Claude Code without any manual file editing
   3. Following the Codex config.toml README installs the MCP plugin and Codex can invoke the feedback capture tool
   4. Each of the 5 platform READMEs contains a complete setup walkthrough that a developer can follow in under 5 minutes with zero prior knowledge of RLHF
@@ -280,7 +280,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. `curl https://<railway-domain>/v1/feedback` returns valid JSON — confirming internet-accessible deployed API
   2. A Stripe test-mode checkout completes end-to-end: payment succeeds, API key is provisioned, key authenticates a subsequent request
-  3. Running `npx rlhf-feedback-loop init` on a clean machine with the published npm package completes without error
+  3. Running `npx thumbgate init` on a clean machine with the published npm package completes without error
   4. Running `npm test` passes all 314+ tests with 0 failures — no regressions from v3 changes
 **Plans**: 1 plan
 
@@ -302,7 +302,7 @@ Phase 13 → Phase 14 + Phase 15 (parallel after 13) → Phase 16 (after 14 + 15
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1. Contract Alignment | v1.0 | 3/3 | Complete | 2026-03-04 |
-| 2. ML into rlhf-feedback-loop | v1.0 | 5/5 | Complete | 2026-03-04 |
+| 2. ML into thumbgate | v1.0 | 5/5 | Complete | 2026-03-04 |
 | 3. Governance into Subway | v1.0 | 4/4 | Complete | 2026-03-04 |
 | 4. LanceDB Vector Storage | v1.0 | 4/4 | Complete | 2026-03-04 |
 | 5. RLAIF and DPO Optimization | v1.0 | 3/3 | Complete | 2026-03-04 |

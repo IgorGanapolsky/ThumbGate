@@ -233,11 +233,11 @@ function runVerify(mode = 'quick', baseEnv = process.env, cwd = process.cwd()) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-verify-'));
   const env = {
     ...baseEnv,
-    RLHF_PROOF_DIR: path.join(tempRoot, 'proof-adapters'),
-    RLHF_AUTOMATION_PROOF_DIR: path.join(tempRoot, 'proof-automation'),
-    RLHF_HARNESSES_PROOF_DIR: path.join(tempRoot, 'proof-harnesses'),
-    RLHF_RUNTIME_PROOF_DIR: path.join(tempRoot, 'proof-runtime'),
-    RLHF_SETTINGS_PROOF_DIR: path.join(tempRoot, 'proof-settings'),
+    THUMBGATE_PROOF_DIR: path.join(tempRoot, 'proof-adapters'),
+    THUMBGATE_AUTOMATION_PROOF_DIR: path.join(tempRoot, 'proof-automation'),
+    THUMBGATE_HARNESSES_PROOF_DIR: path.join(tempRoot, 'proof-harnesses'),
+    THUMBGATE_RUNTIME_PROOF_DIR: path.join(tempRoot, 'proof-runtime'),
+    THUMBGATE_SETTINGS_PROOF_DIR: path.join(tempRoot, 'proof-settings'),
   };
 
   runPlan(buildVerifyPlan(mode), env, cwd);

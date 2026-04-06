@@ -3,13 +3,13 @@
 # obsidian-sync.sh
 #
 # Layer 5: Obsidian Knowledge Bridge
-# Exports RLHF data as interlinked Obsidian markdown notes to a vault.
+# Exports ThumbGate data as interlinked Obsidian markdown notes to a vault.
 
-VAULT_PATH=$RLHF_OBSIDIAN_VAULT_PATH
+VAULT_PATH=$THUMBGATE_OBSIDIAN_VAULT_PATH
 PROJECT_NAME=$(basename "$(pwd)")
 
 if [ -z "$VAULT_PATH" ]; then
-  echo "🤖 [Layer 5] RLHF_OBSIDIAN_VAULT_PATH not set. Skipping sync."
+  echo "🤖 [Layer 5] THUMBGATE_OBSIDIAN_VAULT_PATH not set. Skipping sync."
   exit 0
 fi
 

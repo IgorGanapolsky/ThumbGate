@@ -1,0 +1,21 @@
+{
+  "id": "1774901474101_feedback-negative-fb-1774901472888-arxe48",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774901472888_arxe48",
+  "content": "{\"id\":\"fb_1774901472888_arxe48\",\"signal\":\"negative\",\"context\":\"Gate \\\"protected-branch-push\\\" blocked tool \\\"Bash\\\": Direct push to protected branch. Use feature branches and PRs.\",\"lastAction\":null,\"whatWentWrong\":null,\"whatToChange\":null,\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"audit-trail\",\"auto-capture\",\"gate:protected-branch-push\",\"gates-engine\",\"entity:Customer\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-30T20:11:12.888Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"}}",
+  "tags": [
+    "audit-trail",
+    "auto-capture",
+    "gate:protected-branch-push",
+    "gates-engine",
+    "entity:Customer"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-30T20:11:14.101Z",
+  "lastUsedAt": null
+}

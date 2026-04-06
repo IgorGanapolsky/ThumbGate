@@ -1,0 +1,21 @@
+{
+  "id": "1774554423671_mistake-no-tests-run",
+  "namespace": "memory/error",
+  "title": "MISTAKE: no tests run",
+  "content": "What went wrong: no tests run\nHow to avoid: always run tests",
+  "tags": [
+    "feedback",
+    "negative",
+    "testing",
+    "watcher-ingested",
+    "bridged-from:amp-plugin-bridge"
+  ],
+  "source": "feedback-memory",
+  "ttl": null,
+  "metadata": {
+    "category": "error",
+    "sourceFeedbackId": "fb_1775484665618_rwi7ne"
+  },
+  "createdAt": "2026-03-26T19:47:03.671Z",
+  "lastUsedAt": null
+}

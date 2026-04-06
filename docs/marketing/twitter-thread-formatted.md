@@ -13,7 +13,7 @@ I built a fix. 🧵
 Thumbs-up/down feedback → stored locally → queried before every action → repeated failures auto-blocked.
 
 Pro ($19/mo or $149/yr):
-https://rlhf-feedback-loop-production.up.railway.app/checkout/pro
+https://thumbgate-production.up.railway.app/checkout/pro
 
 ---
 
@@ -49,7 +49,7 @@ This does all three.
 ---
 
 **7/7:** Free self-hosted: npx mcp-memory-gateway serve
-Pro ($19/mo or $149/yr): https://rlhf-feedback-loop-production.up.railway.app/checkout/pro
+Pro ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
 npm install mcp-memory-gateway

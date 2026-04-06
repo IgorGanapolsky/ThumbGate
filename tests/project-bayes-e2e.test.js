@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'rlhf-bayes-e2e-'));
-process.env.RLHF_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const { captureFeedback, readJSONL } = require('../scripts/feedback-loop');
 const { callTool } = require('../adapters/mcp/server-stdio');
@@ -51,5 +51,5 @@ run().catch(err => {
   process.exit(1);
 }).finally(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
 });

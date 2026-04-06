@@ -8,22 +8,22 @@ const {
 } = require('./hosted-config');
 
 const DEFAULT_REPO = 'IgorGanapolsky/ThumbGate';
-const DEFAULT_RAILWAY_SERVICE = 'rlhf-feedback-loop';
+const DEFAULT_RAILWAY_SERVICE = 'thumbgate';
 const HOSTED_WINDOWS = ['today', '30d', 'lifetime'];
 const RUNTIME_KEYS = [
-  'RLHF_FEEDBACK_DIR',
-  'RLHF_API_KEY',
-  'RLHF_PUBLIC_APP_ORIGIN',
-  'RLHF_BILLING_API_BASE_URL',
-  'RLHF_GA_MEASUREMENT_ID',
-  'RLHF_CHECKOUT_FALLBACK_URL',
+  'THUMBGATE_FEEDBACK_DIR',
+  'THUMBGATE_API_KEY',
+  'THUMBGATE_PUBLIC_APP_ORIGIN',
+  'THUMBGATE_BILLING_API_BASE_URL',
+  'THUMBGATE_GA_MEASUREMENT_ID',
+  'THUMBGATE_CHECKOUT_FALLBACK_URL',
   'STRIPE_SECRET_KEY',
 ];
 
 function parseArgs(argv = []) {
   const options = {
     json: false,
-    repo: process.env.RLHF_GITHUB_REPO || DEFAULT_REPO,
+    repo: process.env.THUMBGATE_GITHUB_REPO || DEFAULT_REPO,
     timeZone: process.env.TZ || 'America/New_York',
   };
 
@@ -117,14 +117,14 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   }
 
   const gaps = [];
-  if (!runtimePresence.RLHF_GA_MEASUREMENT_ID) {
+  if (!runtimePresence.THUMBGATE_GA_MEASUREMENT_ID) {
     gaps.push('GA4 runtime env is missing in Railway');
   }
-  if (!runtimePresence.RLHF_PUBLIC_APP_ORIGIN) {
-    gaps.push('RLHF_PUBLIC_APP_ORIGIN is not explicitly set in Railway runtime');
+  if (!runtimePresence.THUMBGATE_PUBLIC_APP_ORIGIN) {
+    gaps.push('THUMBGATE_PUBLIC_APP_ORIGIN is not explicitly set in Railway runtime');
   }
-  if (!runtimePresence.RLHF_BILLING_API_BASE_URL) {
-    gaps.push('RLHF_BILLING_API_BASE_URL is not explicitly set in Railway runtime');
+  if (!runtimePresence.THUMBGATE_BILLING_API_BASE_URL) {
+    gaps.push('THUMBGATE_BILLING_API_BASE_URL is not explicitly set in Railway runtime');
   }
   if (trackingImplemented && !publicProbe.root.signals.gaLoaderScript) {
     gaps.push('GA event hooks exist in the page, but the GA loader script is absent');
@@ -283,7 +283,7 @@ function buildRailwayAuditSnippet({ appOrigin, timeZone }) {
         url.searchParams.set('timezone', ${JSON.stringify(timeZone)});
         const response = await fetch(url, {
           headers: {
-            authorization: 'Bearer ' + process.env.RLHF_API_KEY,
+            authorization: 'Bearer ' + process.env.THUMBGATE_API_KEY,
             accept: 'application/json',
           },
         });
@@ -363,7 +363,7 @@ async function generateRevenueStatusReport({
     repoVarError = error;
   }
 
-  const appOrigin = repoVars.RLHF_PUBLIC_APP_ORIGIN || DEFAULT_PUBLIC_APP_ORIGIN;
+  const appOrigin = repoVars.THUMBGATE_PUBLIC_APP_ORIGIN || DEFAULT_PUBLIC_APP_ORIGIN;
   const publicProbe = await fetchPublicProbe(appOrigin);
 
   try {
@@ -375,7 +375,7 @@ async function generateRevenueStatusReport({
       projectId: repoVars.RAILWAY_PROJECT_ID,
       environmentId: repoVars.RAILWAY_ENVIRONMENT_ID,
       service: repoVars.RAILWAY_SERVICE || DEFAULT_RAILWAY_SERVICE,
-      appOrigin: repoVars.RLHF_BILLING_API_BASE_URL || appOrigin,
+      appOrigin: repoVars.THUMBGATE_BILLING_API_BASE_URL || appOrigin,
       timeZone,
       runCommandFn,
     });
@@ -388,8 +388,8 @@ async function generateRevenueStatusReport({
         RAILWAY_PROJECT_ID: Boolean(repoVars.RAILWAY_PROJECT_ID),
         RAILWAY_ENVIRONMENT_ID: Boolean(repoVars.RAILWAY_ENVIRONMENT_ID),
         RAILWAY_SERVICE: repoVars.RAILWAY_SERVICE || DEFAULT_RAILWAY_SERVICE,
-        RLHF_PUBLIC_APP_ORIGIN: appOrigin,
-        RLHF_BILLING_API_BASE_URL: repoVars.RLHF_BILLING_API_BASE_URL || appOrigin,
+        THUMBGATE_PUBLIC_APP_ORIGIN: appOrigin,
+        THUMBGATE_BILLING_API_BASE_URL: repoVars.THUMBGATE_BILLING_API_BASE_URL || appOrigin,
       },
       publicProbe,
       hostedAudit,
@@ -408,8 +408,8 @@ async function generateRevenueStatusReport({
         RAILWAY_PROJECT_ID: Boolean(repoVars.RAILWAY_PROJECT_ID),
         RAILWAY_ENVIRONMENT_ID: Boolean(repoVars.RAILWAY_ENVIRONMENT_ID),
         RAILWAY_SERVICE: repoVars.RAILWAY_SERVICE || DEFAULT_RAILWAY_SERVICE,
-        RLHF_PUBLIC_APP_ORIGIN: appOrigin,
-        RLHF_BILLING_API_BASE_URL: repoVars.RLHF_BILLING_API_BASE_URL || appOrigin,
+        THUMBGATE_PUBLIC_APP_ORIGIN: appOrigin,
+        THUMBGATE_BILLING_API_BASE_URL: repoVars.THUMBGATE_BILLING_API_BASE_URL || appOrigin,
       },
       publicProbe,
       hostedAudit: {

@@ -12,14 +12,14 @@ describe('Diversity Tracking (ML-04)', () => {
 
   before(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-div-test-'));
-    process.env.RLHF_FEEDBACK_DIR = tmpDir;
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   });
 
   after(() => {
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     } finally {
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     }
   });
 
@@ -141,7 +141,7 @@ describe('Diversity Tracking (ML-04)', () => {
   it('diversityScore is not NaN or Infinity on first entry (edge case)', () => {
     // Use a fresh tmpdir for this edge-case test to simulate first entry
     const freshDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-div-fresh-'));
-    process.env.RLHF_FEEDBACK_DIR = freshDir;
+    process.env.THUMBGATE_FEEDBACK_DIR = freshDir;
     delete require.cache[require.resolve('../scripts/feedback-loop')];
     const { captureFeedback } = require('../scripts/feedback-loop');
 
@@ -166,7 +166,7 @@ describe('Diversity Tracking (ML-04)', () => {
     } finally {
       fs.rmSync(freshDir, { recursive: true, force: true });
       // Restore the suite's tmpDir
-      process.env.RLHF_FEEDBACK_DIR = tmpDir;
+      process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
       delete require.cache[require.resolve('../scripts/feedback-loop')];
     }
   });

@@ -88,8 +88,8 @@ test('collectHealthReport injects and cleans temp proof dirs for proof checks', 
   const report = collectHealthReport({
     checks: [{ name: 'prove_automation', command: ['npm', 'run', 'prove:automation'], useTempProofDir: true }],
     runner: (_command, options) => {
-      capturedProofDir = options.env.RLHF_PROOF_DIR;
-      capturedAutomationProofDir = options.env.RLHF_AUTOMATION_PROOF_DIR;
+      capturedProofDir = options.env.THUMBGATE_PROOF_DIR;
+      capturedAutomationProofDir = options.env.THUMBGATE_AUTOMATION_PROOF_DIR;
       assert.ok(capturedProofDir);
       assert.equal(capturedProofDir, capturedAutomationProofDir);
       assert.equal(fs.existsSync(capturedProofDir), true);
@@ -133,7 +133,7 @@ test('collectHealthReport captures output tail on failure', () => {
 
 test('collectHealthReport can persist unhealthy diagnoses for shared analytics', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-self-heal-'));
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   const report = collectHealthReport({
     checks: [{ name: 'failing', command: ['mock'] }],
@@ -153,7 +153,7 @@ test('collectHealthReport can persist unhealthy diagnoses for shared analytics',
   assert.equal(entries.length, 1);
   assert.equal(entries[0].source, 'self_heal_check');
 
-  delete process.env.RLHF_FEEDBACK_DIR;
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 

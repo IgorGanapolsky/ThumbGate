@@ -52,10 +52,10 @@ function setup() {
 function runConsolidator() {
   console.log('[Test Execution] Running adk-consolidator.js...');
   
-  // We override RLHF_FEEDBACK_DIR so it points to our test directory
+  // We override THUMBGATE_FEEDBACK_DIR so it points to our test directory
   const env = { 
     ...process.env, 
-    RLHF_FEEDBACK_DIR: TEST_DIR,
+    THUMBGATE_FEEDBACK_DIR: TEST_DIR,
     ADK_STATE_FILE: path.join(TEST_DIR, 'adk-state.json'),
     ADK_FAKE_CONSOLIDATION: 'true',
     NODE_ENV: 'test' 

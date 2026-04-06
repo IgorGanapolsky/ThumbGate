@@ -9,7 +9,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free stays local-first with 5 daily feedback captures, 10 daily lesson searches, unlimited recall, and gating. Vague thumbs feedback can be distilled from the last ~10 messages and failed tool call. Pro adds a personal local dashboard, **Model Hardening Advisor**, and **LoRA/PEFT export**. Team rollout starts at the shared hosted lesson DB, org dashboard, and generated hosted review views.
+[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free stays local-first with 5 daily feedback captures, 10 daily lesson searches, unlimited recall, and gating. Vague thumbs feedback can be distilled from the last ~10 messages and failed tool call. Pro adds a personal local dashboard, **Model Hardening Advisor**, and **LoRA/PEFT export**. Team rollout starts at the shared hosted lesson DB, org dashboard, and generated hosted review views.
 
 **Repo boundary:** this repository is the public base runtime (`mcp-memory-gateway`). The paid overlay now lives in the separate [`mcp-memory-gateway-pro`](https://github.com/IgorGanapolsky/mcp-memory-gateway-pro) repo/package and inherits from this base instead of shipping from a `pro/` subtree here.
 
@@ -21,7 +21,7 @@ The safety net for vibe coding. Give your AI agent a thumbs-down and it auto-gen
 
 Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
 
-**[Live Demo Dashboard](https://rlhf-feedback-loop-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Setup Guide](https://rlhf-feedback-loop-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Landing Page](https://rlhf-feedback-loop-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Verification Evidence](docs/VERIFICATION_EVIDENCE.md)**
+**[Live Demo Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Setup Guide](https://thumbgate-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Landing Page](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Verification Evidence](docs/VERIFICATION_EVIDENCE.md)**
 
 Most memory tools only help an agent remember. ThumbGate also enforces.
 
@@ -59,10 +59,10 @@ $ npx mcp-memory-gateway serve
 npx mcp-memory-gateway init
 
 # Or add the MCP server directly
-claude mcp add rlhf -- npx -y mcp-memory-gateway serve
-codex mcp add rlhf -- npx -y mcp-memory-gateway serve
-amp mcp add rlhf -- npx -y mcp-memory-gateway serve
-gemini mcp add rlhf "npx -y mcp-memory-gateway serve"
+claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
+codex mcp add thumbgate -- npx -y mcp-memory-gateway serve
+amp mcp add thumbgate -- npx -y mcp-memory-gateway serve
+gemini mcp add thumbgate "npx -y mcp-memory-gateway serve"
 
 # Wire PreToolUse enforcement hooks
 npx mcp-memory-gateway init --agent claude-code
@@ -190,7 +190,7 @@ Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
 | `search_lessons` exposes corrective actions, lifecycle state, linked rules, linked gates, and next harness fixes | Feedback stats automatically improving behavior by themselves |
 | Natural-language harness specs keep workflow control legible and portable across runtimes                        | Re-implementing the same agent-control logic in every adapter |
 | Pre-action gates block known-bad tool calls before execution                                                     | Agents self-correcting without context injection or gates     |
-| Auto-promotion turns repeated failures into warn/block rules                                                     | Calling this "RLHF" in the strict training sense              |
+| Auto-promotion turns repeated failures into warn/block rules                                                     | Calling this "RLHF-style feedback" in the strict training sense              |
 | Rejection ledger shows why vague feedback was rejected                                                           | Vague signals silently helping the system                     |
 
 ## Core MCP Tools
@@ -229,10 +229,10 @@ node scripts/async-job-runner.js --run-harness=repo-full-verification --harness-
 Long-context local backends can now expose sparse-attention routing hints through the profile router:
 
 ```bash
-RLHF_PROVIDER_MODE=local \
-RLHF_LOCAL_MODEL_FAMILY=deepseek-r1 \
-RLHF_LOCAL_MODEL_SERVER=sglang \
-RLHF_INDEXCACHE_ENABLED=true \
+THUMBGATE_PROVIDER_MODE=local \
+THUMBGATE_LOCAL_MODEL_FAMILY=deepseek-r1 \
+THUMBGATE_LOCAL_MODEL_SERVER=sglang \
+THUMBGATE_INDEXCACHE_ENABLED=true \
 npm run profile:route
 ```
 
@@ -241,7 +241,7 @@ ThumbGate treats IndexCache-style acceleration as a backend capability, not a bl
 Lean install for recall + gates + lesson search only:
 
 ```bash
-RLHF_MCP_PROFILE=essential claude mcp add rlhf -- npx -y mcp-memory-gateway serve
+THUMBGATE_MCP_PROFILE=essential claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
 ```
 
 Free and self-hosted users can invoke `search_lessons` directly through MCP to inspect corrective action per lesson. For broader retrieval across feedback logs, ContextFS memory, and prevention rules, use `search_rlhf` (searches feedback state, not model weights) through MCP or the authenticated `GET /v1/search` API.
@@ -251,7 +251,7 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP to i
 Phone-safe read-only surface for remote ops:
 
 ```bash
-RLHF_MCP_PROFILE=dispatch claude mcp add rlhf -- npx -y mcp-memory-gateway serve
+THUMBGATE_MCP_PROFILE=dispatch claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
 npx mcp-memory-gateway dispatch
 ```
 
@@ -293,7 +293,7 @@ Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
 
 ### Storage and retrieval
 
-- **Local memory:** JSONL logs in `.claude/memory/feedback` or `.rlhf/*`
+- **Local memory:** JSONL logs in `.claude/memory/feedback` or `.thumbgate/*`
 - **Lesson DB (v0.8.0):** SQLite + FTS5 full-text search via `better-sqlite3` — dual-written alongside JSONL. Indexed by signal, domain, tags, importance. Replaces linear Jaccard token-overlap with sub-millisecond ranked search.
 - **Corrective actions (v0.8.0):** On negative feedback, `capture_feedback` returns `correctiveActions[]` — top 3 remediation steps inferred from similar past failures by tag/domain overlap.
 - **Context assembly:** ContextFS packs and provenance logs
@@ -337,9 +337,9 @@ For autonomous agent runs against this or any repo using this workflow:
 
 ## Pro Pack
 
-**[$19/mo or $149/yr](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — personal local dashboard, DPO export, advanced data exports, and founder-license support for individual operators.
+**[$19/mo or $149/yr](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — personal local dashboard, DPO export, advanced data exports, and founder-license support for individual operators.
 
-**[Start Team Rollout](https://rlhf-feedback-loop-production.up.railway.app/#workflow-sprint-intake?utm_source=github&utm_medium=readme&utm_campaign=team_rollout)** — shared hosted lesson DB, org dashboard, generated hosted review views, curated gate templates, and workflow-hardening rollout support for teams.
+**[Start Team Rollout](https://thumbgate-production.up.railway.app/#workflow-sprint-intake?utm_source=github&utm_medium=readme&utm_campaign=team_rollout)** — shared hosted lesson DB, org dashboard, generated hosted review views, curated gate templates, and workflow-hardening rollout support for teams.
 
 ### Free vs Pro
 
@@ -361,7 +361,7 @@ For autonomous agent runs against this or any repo using this workflow:
 
 Free keeps the core safety policy, up to 10 auto-promoted gates, 5 daily feedback captures, 10 daily lesson searches, and unlimited recall on your machine.
 
-**[Get Pro — $19/mo or $149/yr](https://rlhf-feedback-loop-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate_cta)** — recurring self-serve for individual operators.
+**[Get Pro — $19/mo or $149/yr](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate_cta)** — recurring self-serve for individual operators.
 
 **[Founder one-time offer — $49](https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05)** — preserved legacy founder checkout path.
 

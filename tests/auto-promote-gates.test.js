@@ -84,11 +84,11 @@ test('extractPatternKey: returns null for short context and no tags', () => {
 
 test('getAutoGatesPath: resolves inside the active feedback directory', () => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   try {
     assert.strictEqual(getAutoGatesPath(), path.join(tmpDir, 'auto-promoted-gates.json'));
   } finally {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
@@ -165,9 +165,9 @@ test('groupNegativeFeedback: also groups repeated diagnostic categories', () => 
 test('promote: repeated failures below block threshold trigger warn gate', (t) => {
   const tmpDir = makeTmpDir();
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
@@ -194,9 +194,9 @@ test('promote: repeated failures below block threshold trigger warn gate', (t) =
 test('promote: block threshold upgrades gate from warn to block', (t) => {
   const tmpDir = makeTmpDir();
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
@@ -226,9 +226,9 @@ test('promote: block threshold upgrades gate from warn to block', (t) => {
 test('promote: does not create duplicate gates', (t) => {
   const tmpDir = makeTmpDir();
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
@@ -254,9 +254,9 @@ test('promote: does not create duplicate gates', (t) => {
 test('promote: rotates oldest when exceeding MAX_AUTO_GATES', (t) => {
   const tmpDir = makeTmpDir();
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
@@ -281,7 +281,7 @@ test('promote: rotates oldest when exceeding MAX_AUTO_GATES', (t) => {
 test('promote: fewer than WARN_THRESHOLD occurrences does not create a gate', (t) => {
   const tmpDir = makeTmpDir();
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   const autoGatesPath = getAutoGatesPath();
 
   // Save and clear auto-promoted.json to isolate this test
@@ -289,7 +289,7 @@ test('promote: fewer than WARN_THRESHOLD occurrences does not create a gate', (t
   saveAutoGates({ version: 1, gates: [], promotionLog: [] });
 
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     // Restore original auto-promoted.json
     if (savedData !== null) {
       fs.writeFileSync(autoGatesPath, savedData);
@@ -312,9 +312,9 @@ test('promote: fewer than WARN_THRESHOLD occurrences does not create a gate', (t
 
 test('promote: called from feedback-loop on negative capture', (t) => {
   const tmpDir = makeTmpDir();
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
@@ -373,11 +373,11 @@ test('runCli: supports force-block without falling through to a second entrypoin
   const tmpDir = makeTmpDir();
   const lines = [];
   const originalLog = console.log;
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   console.log = (line) => lines.push(line);
   t.after(() => {
     console.log = originalLog;
-    delete process.env.RLHF_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 

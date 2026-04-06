@@ -11,9 +11,9 @@ const path = require('path');
 // ---------------------------------------------------------------------------
 
 function freshModule(tmpDir) {
-  process.env.RLHF_FEEDBACK_LOG = path.join(tmpDir, 'feedback-log.jsonl');
-  process.env.RLHF_ATTRIBUTED_FEEDBACK = path.join(tmpDir, 'attributed-feedback.jsonl');
-  process.env.RLHF_GUARDS_PATH = path.join(tmpDir, 'pretool-guards.json');
+  process.env.THUMBGATE_FEEDBACK_LOG = path.join(tmpDir, 'feedback-log.jsonl');
+  process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = path.join(tmpDir, 'attributed-feedback.jsonl');
+  process.env.THUMBGATE_GUARDS_PATH = path.join(tmpDir, 'pretool-guards.json');
   delete require.cache[require.resolve('../scripts/hybrid-feedback-context')];
   return require('../scripts/hybrid-feedback-context');
 }
@@ -39,9 +39,9 @@ describe('evaluatePretool — no prior data', () => {
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.RLHF_FEEDBACK_LOG;
-    delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
-    delete process.env.RLHF_GUARDS_PATH;
+    delete process.env.THUMBGATE_FEEDBACK_LOG;
+    delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+    delete process.env.THUMBGATE_GUARDS_PATH;
   });
 
   it('returns mode:allow for never-seen tool+input', () => {
@@ -108,9 +108,9 @@ describe('evaluatePretool — with seeded negative patterns', () => {
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.RLHF_FEEDBACK_LOG;
-    delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
-    delete process.env.RLHF_GUARDS_PATH;
+    delete process.env.THUMBGATE_FEEDBACK_LOG;
+    delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+    delete process.env.THUMBGATE_GUARDS_PATH;
   });
 
   it('returns mode:block for critical recurring pattern (count >= 3)', () => {
@@ -158,9 +158,9 @@ describe('evaluatePretool — with seeded negative patterns', () => {
       ]);
 
       // freshModule for warn tmpDir
-      process.env.RLHF_FEEDBACK_LOG = path.join(warnTmpDir, 'feedback-log.jsonl');
-      process.env.RLHF_ATTRIBUTED_FEEDBACK = warnAttrPath;
-      process.env.RLHF_GUARDS_PATH = path.join(warnTmpDir, 'pretool-guards.json');
+      process.env.THUMBGATE_FEEDBACK_LOG = path.join(warnTmpDir, 'feedback-log.jsonl');
+      process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = warnAttrPath;
+      process.env.THUMBGATE_GUARDS_PATH = path.join(warnTmpDir, 'pretool-guards.json');
       delete require.cache[require.resolve('../scripts/hybrid-feedback-context')];
       const { buildHybridState: bhs, evaluatePretoolFromState: eps } = require('../scripts/hybrid-feedback-context');
 
@@ -213,9 +213,9 @@ describe('compileGuardArtifact + writeGuardArtifact + readGuardArtifact', () => 
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.RLHF_FEEDBACK_LOG;
-    delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
-    delete process.env.RLHF_GUARDS_PATH;
+    delete process.env.THUMBGATE_FEEDBACK_LOG;
+    delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+    delete process.env.THUMBGATE_GUARDS_PATH;
   });
 
   it('compile produces valid artifact with guards array', () => {
@@ -296,9 +296,9 @@ describe('buildHybridState', () => {
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.RLHF_FEEDBACK_LOG;
-    delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
-    delete process.env.RLHF_GUARDS_PATH;
+    delete process.env.THUMBGATE_FEEDBACK_LOG;
+    delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+    delete process.env.THUMBGATE_GUARDS_PATH;
   });
 
   it('returns total count from seeded feedback-log.jsonl', () => {

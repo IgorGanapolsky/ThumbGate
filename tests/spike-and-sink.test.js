@@ -22,11 +22,11 @@ function restoreEnv(snapshot) {
 }
 
 test('Inverse Sink Weighting - penalizes generic logs', async (t) => {
-  const envSnapshot = snapshotEnv(['RLHF_VECTOR_STUB_EMBED', 'RLHF_FEEDBACK_DIR']);
+  const envSnapshot = snapshotEnv(['THUMBGATE_VECTOR_STUB_EMBED', 'THUMBGATE_FEEDBACK_DIR']);
   // Use stub embed for speed/determinism
-  process.env.RLHF_VECTOR_STUB_EMBED = 'true';
+  process.env.THUMBGATE_VECTOR_STUB_EMBED = 'true';
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-sink-test-'));
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
     restoreEnv(envSnapshot);
     fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -67,7 +67,7 @@ test('Inverse Sink Weighting - penalizes generic logs', async (t) => {
 
 test('Anchor-Memory Management - keeps foundational logs in context', async (t) => {
   const envSnapshot = snapshotEnv([
-    'RLHF_FEEDBACK_DIR',
+    'THUMBGATE_FEEDBACK_DIR',
     'ADK_STATE_FILE',
     'ADK_FAKE_CONSOLIDATION',
     'GEMINI_API_KEY',
@@ -80,7 +80,7 @@ test('Anchor-Memory Management - keeps foundational logs in context', async (t) 
   };
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-anchor-test-'));
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   process.env.ADK_STATE_FILE = path.join(tmpDir, 'state.json');
   process.env.ADK_FAKE_CONSOLIDATION = 'true';
   process.env.NODE_ENV = 'test';

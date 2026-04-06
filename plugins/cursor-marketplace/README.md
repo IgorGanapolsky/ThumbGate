@@ -39,7 +39,7 @@ How it works:
 
 | Agent | Description |
 |-------|-------------|
-| `reliability-reviewer` | A reliability-focused reviewer that checks code changes against known failure patterns from the project's RLHF memory. |
+| `reliability-reviewer` | A reliability-focused reviewer that checks code changes against known failure patterns from the project's ThumbGate memory. |
 
 ### Commands
 
@@ -106,7 +106,7 @@ Or copy the plugin MCP config into `.cursor/mcp.json`:
 
 ## Feedback
 
-Use the `/capture-feedback` command or the `capture_feedback` MCP tool to send structured feedback directly to the RLHF memory system. Feedback drives prevention rule generation — repeated failure patterns are auto-promoted into enforceable gates.
+Use the `/capture-feedback` command or the `capture_feedback` MCP tool to send structured feedback directly to the ThumbGate memory system. Feedback drives prevention rule generation — repeated failure patterns are auto-promoted into enforceable gates.
 
 When the user only gives a quick `thumbs_down`, `wrong`, or `correct`, the Cursor plugin should include the last ~10 messages and the failed tool call in `chatHistory` so ThumbGate can propose the lesson automatically. If the explanation comes later, reuse the earlier event with `relatedFeedbackId` instead of creating an isolated duplicate.
 

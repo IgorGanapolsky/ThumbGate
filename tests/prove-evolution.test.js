@@ -16,7 +16,7 @@ test('prove-evolution: proof gate passes with 6/6 checks', () => {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: 'pipe',
-      env: { ...process.env, RLHF_PROOF_DIR: tmpProofDir },
+      env: { ...process.env, THUMBGATE_PROOF_DIR: tmpProofDir },
     });
 
     assert.ok(output.includes('6 passed, 0 failed'), `Expected 6/6 pass, got: ${output}`);
@@ -32,7 +32,7 @@ test('prove-evolution: report.json is valid JSON with all requirements', () => {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: 'pipe',
-      env: { ...process.env, RLHF_PROOF_DIR: tmpProofDir },
+      env: { ...process.env, THUMBGATE_PROOF_DIR: tmpProofDir },
     });
 
     const reportPath = path.join(tmpProofDir, 'evolution-report.json');
@@ -55,7 +55,7 @@ test('prove-evolution: report.md contains all requirement checkboxes', () => {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: 'pipe',
-      env: { ...process.env, RLHF_PROOF_DIR: tmpProofDir },
+      env: { ...process.env, THUMBGATE_PROOF_DIR: tmpProofDir },
     });
 
     const markdownPath = path.join(tmpProofDir, 'evolution-report.md');

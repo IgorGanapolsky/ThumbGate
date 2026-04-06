@@ -1,8 +1,8 @@
 # Adapter Compatibility Proof
 
-Generated: 2026-03-11T16:21:57.743Z
+Generated: 2026-04-06T15:30:43.554Z
 
-Passed: 24
+Passed: 32
 Failed: 0
 
 ## Checks
@@ -10,6 +10,8 @@ Failed: 0
 - PASS api.auth.required
 - PASS api.intents.catalog
 - PASS api.intents.plan
+- PASS api.intents.plan.codegraph
+- PASS api.internal_agent.bootstrap
 - PASS api.capture_feedback
 - PASS api.capture_feedback.clarification
 - PASS api.capture_feedback.rubric_gate
@@ -21,7 +23,13 @@ Failed: 0
 - PASS mcp.cli.serve.bad_home.initialize
 - PASS mcp.tools.list
 - PASS mcp.tools.call.feedback_summary
+- PASS mcp.tools.call.diagnose_failure
 - PASS mcp.tools.call.plan_intent
+- PASS mcp.tools.call.plan_intent.codegraph
+- PASS mcp.tools.call.get_business_metrics
+- PASS mcp.tools.call.describe_semantic_entity
+- PASS mcp.tools.call.recall.codegraph
+- PASS mcp.tools.call.bootstrap_internal_agent
 - PASS mcp.tools.call.capture_feedback.rubric_gate
 - PASS mcp.tools.call.capture_feedback.clarification
 - PASS mcp.policy.locked_profile_denies_write_tool

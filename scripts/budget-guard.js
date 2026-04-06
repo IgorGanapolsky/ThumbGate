@@ -3,20 +3,20 @@ const fs = require('fs');
 const path = require('path');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const FEEDBACK_DIR = process.env.RLHF_FEEDBACK_DIR || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+const FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
 const LEDGER_PATH = path.join(FEEDBACK_DIR, 'budget-ledger.json');
 const LOCK_PATH = `${LEDGER_PATH}.lock`;
 
 function parseMonthlyBudget(rawValue) {
   const parsed = Number(rawValue);
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`Invalid RLHF_MONTHLY_BUDGET_USD value: '${rawValue}'`);
+    throw new Error(`Invalid THUMBGATE_MONTHLY_BUDGET_USD value: '${rawValue}'`);
   }
   return parsed;
 }
 
 function getMonthlyBudget() {
-  const rawValue = process.env.RLHF_MONTHLY_BUDGET_USD || '10';
+  const rawValue = process.env.THUMBGATE_MONTHLY_BUDGET_USD || '10';
   return parseMonthlyBudget(rawValue);
 }
 

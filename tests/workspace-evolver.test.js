@@ -17,17 +17,17 @@ function resetModules() {
 
 function withFeedbackDir(fn) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-test-'));
-  const original = process.env.RLHF_FEEDBACK_DIR;
-  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  const original = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   resetModules();
 
   try {
     return fn(tmpDir);
   } finally {
     if (original === undefined) {
-      delete process.env.RLHF_FEEDBACK_DIR;
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
     } else {
-      process.env.RLHF_FEEDBACK_DIR = original;
+      process.env.THUMBGATE_FEEDBACK_DIR = original;
     }
     resetModules();
     fs.rmSync(tmpDir, { recursive: true, force: true });

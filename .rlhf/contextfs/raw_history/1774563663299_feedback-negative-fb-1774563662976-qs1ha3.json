@@ -1,0 +1,20 @@
+{
+  "id": "1774563663299_feedback-negative-fb-1774563662976-qs1ha3",
+  "namespace": "raw_history",
+  "title": "feedback_negative_fb_1774563662976_qs1ha3",
+  "content": "{\"id\":\"fb_1774563662976_qs1ha3\",\"signal\":\"negative\",\"context\":\"Claimed dashboard features were deployed multiple times before verifying Railway had actually rebuilt and served the new code\",\"lastAction\":null,\"whatWentWrong\":\"Said 'done' and 'deployed' without curl-checking the live URL for the actual new code. Did this 3+ times in one session.\",\"whatToChange\":\"Never claim deployment is complete without first curling the live URL and grep-confirming the specific new code is present. Wait for Railway build cycle (3-5 min) before verifying.\",\"whatWorked\":null,\"reasoning\":null,\"visualEvidence\":null,\"tags\":[\"verification\",\"deployment\",\"trust\",\"claiming-done-without-proof\"],\"skill\":null,\"rubric\":null,\"actionType\":\"store-mistake\",\"actionReason\":null,\"timestamp\":\"2026-03-26T22:21:02.976Z\",\"richContext\":{\"domain\":\"general\",\"filePaths\":[],\"errorType\":null,\"outcomeCategory\":\"standard-failure\"},\"diagnosis\":{\"rootCauseCategory\":\"tool_output_misread\",\"criticalFailureStep\":\"feedback_capture\",\"violations\":[],\"evidence\":[{\"type\":\"context\",\"value\":\"Claimed dashboard features were deployed multiple times before verifying Railway had actually rebuilt and served the new code\"}]}}",
+  "tags": [
+    "verification",
+    "deployment",
+    "trust",
+    "claiming-done-without-proof"
+  ],
+  "source": "feedback-event",
+  "ttl": null,
+  "metadata": {
+    "signal": "negative",
+    "actionType": "store-mistake"
+  },
+  "createdAt": "2026-03-26T22:21:03.299Z",
+  "lastUsedAt": null
+}

@@ -7,7 +7,7 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_SUBAGENT_PROFILE_PATH = path.join(PROJECT_ROOT, 'config', 'subagent-profiles.json');
 
 function getSubagentProfilePath() {
-  return process.env.RLHF_SUBAGENT_PROFILE_PATH || DEFAULT_SUBAGENT_PROFILE_PATH;
+  return process.env.THUMBGATE_SUBAGENT_PROFILE_PATH || DEFAULT_SUBAGENT_PROFILE_PATH;
 }
 
 function loadSubagentProfiles() {

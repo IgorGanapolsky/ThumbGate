@@ -17,11 +17,13 @@ node_modules/
 !.claude/memory/feedback/.gitkeep
 # Billing key store — contains provisioned API keys, never commit
 .claude/memory/feedback/api-keys.json
-.rlhf/adk-state.json
-.rlhf/adk-test-run/
-.rlhf/a2ui_proposal_*.json
-.rlhf/reminder-state.json
-.rlhf/reminder_*.json
+.thumbgate/adk-state.json
+.thumbgate/adk-test-run/
+.thumbgate/a2ui_proposal_*.json
+.thumbgate/reminder-state.json
+.thumbgate/reminder_*.json
+.thumbgate/
+# Legacy runtime dir (will be removed after migration)
 .rlhf/
 .artifacts/
 .npmrc
@@ -35,9 +37,9 @@ __pycache__/
 *.pyc
 test-vault-*/
 
-# RLHF local feedback data
-.rlhf/feedback-log.jsonl
-.rlhf/memory-log.jsonl
+# ThumbGate local feedback data
+.thumbgate/feedback-log.jsonl
+.thumbgate/memory-log.jsonl
 
 coverage/
 undefined/

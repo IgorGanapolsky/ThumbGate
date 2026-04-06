@@ -1,5 +1,5 @@
 ---
-phase: 02-ml-into-rlhf-feedback-loop
+phase: 02-ml-into-thumbgate
 plan: 01
 subsystem: ml
 tags: [thompson-sampling, beta-bernoulli, time-decay, marsaglia-tsang, gamma-sampling, rlhf, js]
@@ -108,11 +108,11 @@ None — no external service configuration required. Module uses Node.js built-i
 - No blockers. Baseline 60 node-runner tests still green.
 
 ---
-*Phase: 02-ml-into-rlhf-feedback-loop*
+*Phase: 02-ml-into-thumbgate*
 *Completed: 2026-03-04*
 
 ## Self-Check: PASSED
 
 - FOUND: scripts/thompson-sampling.js
-- FOUND: .planning/phases/02-ml-into-rlhf-feedback-loop/02-01-SUMMARY.md
+- FOUND: .planning/phases/02-ml-into-thumbgate/02-01-SUMMARY.md
 - FOUND commit: 11bb2b3

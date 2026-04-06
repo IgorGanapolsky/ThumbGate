@@ -24,6 +24,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { tagUrlsInText } = require('./social-analytics/utm');
 
 // ---------------------------------------------------------------------------
 // Publisher imports (lazy — only loaded when needed)
@@ -218,8 +219,17 @@ async function postEverywhere(filePath, { platforms, dryRun } = {}) {
   // Determine which platforms to post to
   const targetPlatforms = platforms || (parsed.platform ? [parsed.platform] : Object.keys(DISPATCHERS));
 
+  // Preserve original body/comment so each platform gets a fresh UTM tag
+  const originalBody = parsed.body;
+  const originalComment = parsed.comment;
+
+  // Tag trackable URLs with per-platform UTM parameters before dispatching
   const results = {};
   for (const platform of targetPlatforms) {
+    const utmOpts = { source: platform, medium: 'social', campaign: 'organic' };
+    parsed.body = originalBody ? tagUrlsInText(originalBody, utmOpts) : originalBody;
+    parsed.comment = originalComment ? tagUrlsInText(originalComment, utmOpts) : originalComment;
+
     const dispatcher = DISPATCHERS[platform];
     if (!dispatcher) {
       console.warn(`[post-everywhere] No dispatcher for platform: ${platform}, skipping`);
