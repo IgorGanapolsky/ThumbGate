@@ -745,9 +745,26 @@ test('feedback capture returns clarification_required for vague positive signal'
   assert.equal(res.status, 422);
   const body = await res.json();
   assert.equal(body.accepted, false);
+  assert.equal(body.signalLogged, true);
   assert.equal(body.status, 'clarification_required');
   assert.equal(body.needsClarification, true);
   assert.match(body.prompt, /What specifically worked that should be repeated/);
+});
+
+test('feedback capture promotes specific positive feedback even when tags are omitted', async () => {
+  const res = await fetch(apiUrl('/v1/feedback/capture'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      signal: 'up',
+      context: 'ThumbGate automation and Claude statusline repair',
+      whatWorked: 'Verified the live ThumbGate version and fixed the stale Claude statusline wiring',
+    }),
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.accepted, true);
+  assert.ok(body.memoryRecord.tags.includes('thumbgate'));
 });
 
 test('quick feedback capture via GET /feedback/quick?signal=up returns HTML confirmation', async () => {
