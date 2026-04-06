@@ -242,7 +242,7 @@ test('getConversationPaths falls back to HOME project path when no local dirs ex
   delete process.env.RAILWAY_VOLUME_MOUNT_PATH;
   process.chdir(cwd);
 
-  const expected = path.join(process.env.HOME || process.env.USERPROFILE || '', '.rlhf', 'projects', path.basename(cwd));
+  const expected = path.join(process.env.HOME || process.env.USERPROFILE || '', '.thumbgate', 'projects', path.basename(cwd));
   assert.equal(getConversationPaths().feedbackDir, expected);
 
   process.chdir(prevCwd);

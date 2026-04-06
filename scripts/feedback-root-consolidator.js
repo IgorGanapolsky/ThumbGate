@@ -4,8 +4,8 @@
 const fs = require('fs');
 const path = require('path');
 const {
+  getThumbgateFeedbackDir,
   listFeedbackArtifactPaths,
-  resolveFeedbackDir,
 } = require('./feedback-paths');
 
 const JSONL_ARTIFACTS = new Set([
@@ -194,7 +194,9 @@ function consolidateArtifact(fileName, options = {}) {
 }
 
 function consolidateFeedbackRoot(options = {}) {
-  const feedbackDir = resolveFeedbackDir(options);
+  const feedbackDir = options.feedbackDir
+    || process.env.THUMBGATE_FEEDBACK_DIR
+    || getThumbgateFeedbackDir(options);
   const artifacts = CONSOLIDATED_ARTIFACTS.map((fileName) => consolidateArtifact(fileName, {
     ...options,
     feedbackDir,
