@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "thumbgate@0.9.9",
+        "thumbgate@0.9.10",
         "serve"
       ]
     }

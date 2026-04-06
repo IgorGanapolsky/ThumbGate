@@ -3,9 +3,28 @@ const assert = require('node:assert/strict');
 const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
+const { execFileSync } = require('node:child_process');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-spd-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+const trackedReactTestingPackPath = path.join(__dirname, '..', 'config', 'skill-packs', 'react-testing.json');
+let trackedReactTestingPackOriginal = null;
+
+try {
+  trackedReactTestingPackOriginal = execFileSync(
+    'git',
+    ['show', 'HEAD:config/skill-packs/react-testing.json'],
+    {
+      cwd: path.join(__dirname, '..'),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }
+  );
+} catch {
+  trackedReactTestingPackOriginal = fs.existsSync(trackedReactTestingPackPath)
+    ? fs.readFileSync(trackedReactTestingPackPath, 'utf8')
+    : null;
+}
 
 const sp = require('../scripts/skill-packs');
 
@@ -17,6 +36,11 @@ test.after(() => {
     if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
     const f = path.join(sp.SKILL_PACKS_DIR, `${name}.json`);
     if (fs.existsSync(f)) fs.unlinkSync(f);
+  }
+  if (trackedReactTestingPackOriginal === null) {
+    fs.rmSync(trackedReactTestingPackPath, { force: true });
+  } else {
+    fs.writeFileSync(trackedReactTestingPackPath, trackedReactTestingPackOriginal);
   }
 });
 
