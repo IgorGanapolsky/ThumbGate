@@ -1,80 +1,103 @@
 # Technical Debt Audit
 
-> Live audit snapshot for March 20, 2026 on `codex/tech-debt-audit-20260320`. This supersedes the older historical note. Verification evidence for this audit is recorded in `docs/VERIFICATION_EVIDENCE.md`.
+> Live audit snapshot for April 6, 2026 on `chore/thumbgate-technical-debt-audit-20260406` (original audit worktree lane: `ops/thumbgate-audit-20260406c`). This report replaces the stale March 20, 2026 audit. Verification evidence for this audit is recorded in `docs/VERIFICATION_EVIDENCE.md` plus the command outputs captured in this worktree.
 
 ## Scope
 
-Repository-wide audit performed in dedicated worktrees only. Metrics below use tracked repository files and exclude `node_modules/` trees. Runtime `.thumbgate/*` artifacts were reviewed locally during the audit but not committed.
+Repository-wide audit executed from a dedicated clean worktree. The audit combined repository inventory scans, local ThumbGate memory review, full verification-suite runs, and targeted repairs for the debt uncovered during the audit.
+
+## Pre-Audit Snapshot
+
+- Local memory source verified with `npm run feedback:stats --silent`:
+  - `total=51`
+  - `totalPositive=3`
+  - `totalNegative=48`
+  - `trend=stable`
+- Open PR state before edits: `0` open PRs in `IgorGanapolsky/ThumbGate`.
+- Local worktree state before cleanup:
+  - tracked files: `924`
+  - tracked lines: `213187`
+- Verification baseline:
+  - `npm run budget:status` passed
+  - `npm run test:coverage` failed on Node 20 before the fix with `/opt/homebrew/Cellar/node@20/20.20.1/bin/node: bad option: --test-coverage-include`
+  - Pro-gated tests were brittle because they depended on an operator's saved local Pro license state
 
 ## Audit Report
 
 ```text
-Files scanned: 573
-Issues found: 5
-Issues fixed: 5
+Files scanned: 924 tracked repository files
+Issues found: 10
+Issues fixed: 10
 Files deleted: 1
-Lines removed: 3119 net
-RAG entries cleaned: 0 tracked entries changed; local runtime lessons reviewed and kept local-only
+Lines removed: 30 from stale tracked runtime artifacts
+RAG entries cleaned: 0 tracked entries changed; local RLHF memory reviewed and kept local-only
 ```
 
 ## Metrics
 
 ```text
-Tracked files before: 573
-Tracked files after: 573
-Tracked lines before: 115434
-Tracked lines after: 112315
-Coverage before: 89.50% lines / 75.64% branches / 92.90% functions
-Coverage after: 89.57% lines / 75.48% branches / 93.06% functions
-CI before: PASSING on main at fb78e8ae1a36dbdb92dd93867a278c60c92a41c0
-CI after: verified locally before PR creation; GitHub Actions link added after merge
+Tracked files before: 924
+Tracked files after: 923
+Tracked lines before: 213187
+Tracked lines after: 213398
+Net tracked line delta in the final rebased tree: +211
+Audit-only net line delta before rebasing onto newer main commits: +117
+Coverage before: not measurable on Node 20; the coverage runner exited with "bad option: --test-coverage-include"
+Coverage after: 90.26% lines / 76.57% branches / 93.73% functions
+CI before: no open PRs; latest main activity visible in GitHub Actions
+CI after: locally passing on the rebased audit branch; final main merge verification follows the Trunk queue result
 ```
 
 ## Fixed Debt
 
-1. `scripts/pr-manager.js`: no longer crashes when the current worktree branch has no PR; it now falls back to repo-wide open PR inspection and returns a clean noop when none exist.
-2. `tests/pr-manager.test.js`: expanded coverage for no-PR, open-PR fallback, noop, and repo-wide merge-ready paths.
-3. `package.json`: `npm test` now includes the previously omitted operational test bucket via `test:ops`.
-4. `tests/test-suite-parity.test.js`: added a guard that fails if any repository test file is omitted from `npm test`.
-5. `test_output.txt`: deleted as a stale checked-in test transcript with no runtime or documentation references.
+1. `scripts/test-coverage.js` now feature-detects Node coverage include/exclude flags before passing them, so supported Node LTS runtimes that lack those flags no longer fail the audit gate.
+2. `tests/test-coverage.test.js` now covers both supported and unsupported coverage-flag runtimes and protects the fallback path.
+3. `scripts/pro-features.js` now supports injected license and output functions so Pro gates can be tested deterministically.
+4. `scripts/multi-hop-recall.js` and `tests/multi-hop-recall.test.js` no longer depend on operator-local Pro state to verify the unlicensed path.
+5. `scripts/synthetic-dpo.js` and `tests/synthetic-dpo.test.js` no longer depend on operator-local Pro state to verify the unlicensed path.
+6. `tests/license.test.js` now exercises the Pro gate through injection instead of mutable process-global environment state.
+7. `.github/workflows/ci.yml` now runs both `npm run budget:status` and `npm run test:coverage` before proof lanes, so CI catches the exact failures this audit exposed.
+8. `tests/deployment.test.js` now enforces the CI workflow contract for those budget and coverage gates.
+9. `.claude/context-engine/quality-log.json` was removed from tracked history and added to `.gitignore` because it is generated runtime output, not source.
+10. `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` now encode the new prevention rules from this audit: feature-detect Node coverage flags, inject Pro gates in tests, and keep context-engine logs out of git.
 
 ## Deleted Files
 
-- `test_output.txt` — obsolete captured `npm test` output. It was not referenced anywhere in code, docs, scripts, or CI.
+- `.claude/context-engine/quality-log.json` — 30-line generated context-engine runtime log. It is recreated by the context engine at runtime and should not live in tracked history.
 
 ## Test Coverage Report
 
 ```text
-Before: 89.50% lines / 75.64% branches / 92.90% functions
-After: 89.57% lines / 75.48% branches / 93.06% functions
-New tests added: 1
-Existing tests hardened: 1
-Gaps remaining: src/api/server.js, scripts/validate-workflow-contract.js, scripts/workflow-sprint-intake.js, scripts/verification-loop.js
+Before: coverage run crashed on Node 20 before producing a percentage report
+After: 90.26% lines / 76.57% branches / 93.73% functions
+New tests added: 5
+Existing tests hardened: 3
+Gaps remaining: all-files coverage is still below 100%; future audits should target the lowest-coverage operational scripts next
 ```
 
 ## CI Health Report
 
 ```text
-Pipeline status: locally passing before PR creation
+Pipeline status: locally passing in the rebased audit worktree before final Trunk merge
 Flaky tests fixed: 0
-New checks added: test:ops, npm-test parity guard for repository test files
+New checks added: budget status gate, Node 20-safe coverage gate
 ```
 
 ## Core-System Snapshot
 
-- AI RAG reliability: `tests/contextfs.test.js`, `tests/feedback-to-memory.test.js`, and `tests/vector-store.test.js` passed in the baseline snapshot.
-- Orchestration functionality: `tests/mcp-server.test.js`, `tests/intent-router.test.js`, and `tests/async-job-runner.test.js` passed in the baseline snapshot.
-- Monitoring and health: `npm run self-heal:check` finished `4/4 healthy` before and after cleanup.
-- CI pipeline status: GitHub `main` was green on `fb78e8ae1a36dbdb92dd93867a278c60c92a41c0` before the audit started.
+- AI RAG reliability: local RLHF memory remained readable; no tracked memory files were changed.
+- Orchestration functionality: `npm run self-heal:check` finished `6/6 healthy`.
+- CI pipeline status: the audit added coverage and budget gates to CI so the same regressions are caught remotely.
+- Monitoring: the context engine log remains runtime-local and no monitored paths were broken by the cleanup.
 
 ## Security Summary
 
-- `npm audit --json`: `0` vulnerabilities.
-- `npm --prefix workers audit --json`: `0` vulnerabilities.
-- GitHub code scanning, Dependabot, and secret scanning were already at `0` open alerts before this audit branch.
+- No secrets or env files were introduced by the audit.
+- The only tracked artifact deleted during this cleanup was a generated runtime log.
 
 ## RAG Cleanup Summary
 
 - Queried local feedback memory and runtime state before editing.
 - Reviewed the local runtime lessons created during verification.
 - Kept all `.thumbgate/*` runtime artifacts local and uncommitted, per repo policy.
+- No tracked memory/rules exports were added or deleted by this audit.

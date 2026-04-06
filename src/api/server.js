@@ -907,11 +907,14 @@ function loadDashboardPageHtml(req, expectedApiKey) {
     ? forwardedHost[0]
     : forwardedHost || req.headers.host || '';
   const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
-  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : '').replace(/</g, '\\u003c');
+  // Developer override: auth is disabled (expectedApiKey===null), auto-connect with dummy key
+  const devOverride = expectedApiKey === null && isLoopbackHost(hostHeader);
+  const bootstrapActive = localProBootstrap || devOverride;
+  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : devOverride ? 'dev-override' : '').replace(/</g, '\\u003c');
 
   return fillTemplate(template, {
     '__DASHBOARD_BOOTSTRAP_KEY__': serializedBootstrapKey,
-    '__DASHBOARD_BOOTSTRAP_ENABLED__': localProBootstrap ? 'true' : 'false',
+    '__DASHBOARD_BOOTSTRAP_ENABLED__': bootstrapActive ? 'true' : 'false',
   });
 }
 
@@ -922,11 +925,13 @@ function loadLessonsPageHtml(req, expectedApiKey) {
     ? forwardedHost[0]
     : forwardedHost || req.headers.host || '';
   const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
-  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : '').replace(/</g, '\\u003c');
+  const devOverride = expectedApiKey === null && isLoopbackHost(hostHeader);
+  const bootstrapActive = localProBootstrap || devOverride;
+  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : devOverride ? 'dev-override' : '').replace(/</g, '\\u003c');
 
   return fillTemplate(template, {
     '__LESSONS_BOOTSTRAP_KEY__': serializedBootstrapKey,
-    '__LESSONS_BOOTSTRAP_ENABLED__': localProBootstrap ? 'true' : 'false',
+    '__LESSONS_BOOTSTRAP_ENABLED__': bootstrapActive ? 'true' : 'false',
   });
 }
 
@@ -1964,6 +1969,14 @@ function parseOptionalObject(input, name) {
 function getExpectedApiKey() {
   if (process.env.THUMBGATE_ALLOW_INSECURE === 'true') return null;
   const configured = process.env.THUMBGATE_API_KEY;
+  // Developer override: ~/.config/thumbgate/dev.json bypass skips API key requirement
+  // Only applies when no THUMBGATE_API_KEY is explicitly configured (avoids test interference)
+  if (!configured) {
+    try {
+      const { hasDevOverride } = require('../../scripts/pro-local-dashboard');
+      if (hasDevOverride()) return null;
+    } catch { /* pro-local-dashboard not available */ }
+  }
   if (!configured) {
     throw new Error('THUMBGATE_API_KEY is required unless THUMBGATE_ALLOW_INSECURE=true');
   }

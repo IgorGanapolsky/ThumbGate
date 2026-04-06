@@ -1088,6 +1088,7 @@ function captureFeedback(params) {
     });
     return {
       accepted: false,
+      signalLogged: true,
       status: clarification ? 'clarification_required' : 'rejected',
       reason: action.reason,
       message: clarification ? clarification.message : 'Signal logged, but reusable memory was not created.',
@@ -1119,6 +1120,7 @@ function captureFeedback(params) {
     } catch { /* non-critical */ }
     return {
       accepted: false,
+      signalLogged: true,
       status: 'rejected',
       reason: `Schema validation failed: ${prepared.issues.join('; ')}`,
       message: 'Signal logged, but reusable memory was not created.',

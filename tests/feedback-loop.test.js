@@ -119,6 +119,24 @@ test('captureFeedback: valid positive feedback returns accepted=true', (t) => {
   assert.strictEqual(result.accepted, true);
 });
 
+test('captureFeedback: specific positive feedback without manual tags infers a domain tag', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.RLHF_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    delete process.env.RLHF_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const result = captureFeedback({
+    signal: 'up',
+    context: 'ThumbGate automation and Claude statusline repair',
+    whatWorked: 'Verified the live ThumbGate version and fixed the stale Claude statusline wiring',
+  });
+
+  assert.strictEqual(result.accepted, true);
+  assert.ok(result.memoryRecord.tags.includes('thumbgate'));
+});
+
 test('evaluateMemoryIngress: ShieldCortex blocks secret-bearing payload when explicitly enabled', () => {
   const decision = evaluateMemoryIngress({
     feedbackEvent: {

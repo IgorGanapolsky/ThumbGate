@@ -32,6 +32,21 @@ function isCreatorDev({ env = process.env, homeDir = os.homedir() } = {}) {
   return false;
 }
 
+/**
+ * Developer override: returns true when ~/.config/thumbgate/dev.json exists
+ * with any non-empty bypass value. No env var needed — just the config file.
+ * Used by the server to skip auth on localhost during local development.
+ */
+function hasDevOverride(homeDir = os.homedir()) {
+  // Disabled during test runs to avoid interfering with auth assertions
+  if (process.env.NODE_TEST_CONTEXT || process.env.THUMBGATE_TESTING) return false;
+  try {
+    const configPath = path.join(homeDir, '.config', 'thumbgate', 'dev.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    return config && typeof config.bypass === 'string' && config.bypass.length > 0;
+  } catch { return false; }
+}
+
 function getLicenseDir(homeDir = os.homedir()) {
   return path.join(homeDir, '.thumbgate');
 }
@@ -149,6 +164,7 @@ module.exports = {
   DEFAULT_PRO_API,
   getLicenseDir,
   getLicensePath,
+  hasDevOverride,
   isCreatorDev,
   readLicense,
   saveLicense,

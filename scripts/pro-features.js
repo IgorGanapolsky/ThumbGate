@@ -7,8 +7,14 @@ const {
 
 const PRO_URL = PRO_MONTHLY_PAYMENT_LINK;
 
-function requirePro(featureName) {
-  if (isProLicensed()) return true;
+function requirePro(
+  featureName,
+  {
+    isProLicensedFn = isProLicensed,
+    write = (message) => process.stderr.write(message),
+  } = {}
+) {
+  if (isProLicensedFn()) return true;
   const descriptions = {
     'dpo-export': 'Export feedback as DPO training pairs for model fine-tuning',
     'dpo-synthesis': 'Generate synthetic DPO pairs from existing feedback patterns',
@@ -22,7 +28,7 @@ function requirePro(featureName) {
     'team-sharing': 'Share lesson databases across team members',
   };
   const desc = descriptions[featureName] || featureName;
-  process.stderr.write(
+  write(
     `\n  🔒 Pro Feature Required: ${desc}\n` +
     `     Upgrade to ThumbGate Pro — ${PRO_PRICE_LABEL}:\n` +
     `     ${PRO_URL}\n` +

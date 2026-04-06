@@ -16,7 +16,7 @@
  *   whatWentWrong: string — for negative: what failed
  *   whatToChange: string — for negative: how to avoid
  *   whatWorked: string — for positive: the pattern to repeat
- *   tags: string[] — domain tags (at least 1 non-generic)
+ *   tags: string[] — optional domain tags; a fallback domain tag is inferred when omitted
  *
  * Output (stdout JSON):
  *   { ok: true, memory: { title, content, category, importance, tags } }
@@ -125,6 +125,14 @@ function runTests() {
   assert(pos.actionType === 'store-learning', 'positive → store-learning');
   assert(pos.memory.title.startsWith('SUCCESS:'), 'positive → SUCCESS: prefix');
   assert(pos.memory.category === 'learning', 'positive → learning category');
+
+  const inferredPos = convertFeedbackToMemory({
+    signal: 'positive',
+    context: 'ThumbGate automation and Claude statusline repair',
+    whatWorked: 'Verified the live ThumbGate version and fixed the stale Claude statusline wiring',
+  });
+  assert(inferredPos.ok === true, 'specific positive without tags → ok');
+  assert(inferredPos.memory.tags.includes('thumbgate'), 'infers a non-generic domain tag');
 
   // Bare thumbs down → rejected
   const bare = convertFeedbackToMemory({ signal: 'negative' });

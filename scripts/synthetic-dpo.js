@@ -162,6 +162,7 @@ function buildContrastivePairs(unpairedErrors, unpairedLearnings) {
  * @param {boolean} [options.contrastivePairing=true] - Pair unmatched errors/learnings
  * @param {boolean} [options.principleExtraction=true] - Extract abstract principles
  * @param {boolean} [options.skipProCheck=false] - Skip Pro check (for testing)
+ * @param {Function} [options.requireProFn=requirePro] - Injectable Pro gate helper for testing
  * @returns {{ originalPairs: number, syntheticPairs: number, totalPairs: number, pairs: object[], principles: object[] }}
  */
 function augmentDpoExport(dpoExport, options = {}) {
@@ -170,10 +171,11 @@ function augmentDpoExport(dpoExport, options = {}) {
     contrastivePairing = true,
     principleExtraction = true,
     skipProCheck = false,
+    requireProFn = requirePro,
   } = options;
 
   // Pro gate (unless testing)
-  if (!skipProCheck && !requirePro('dpo-synthesis')) {
+  if (!skipProCheck && !requireProFn('dpo-synthesis')) {
     return {
       originalPairs: dpoExport.pairs?.length || 0,
       syntheticPairs: 0,

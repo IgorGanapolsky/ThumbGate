@@ -27,7 +27,22 @@ function truncateAtWord(text, maxLen) {
 }
 const {
   assessFeedbackActionability,
+  normalizeFeedbackText,
 } = require('./feedback-quality');
+
+const INFERRED_TAG_RULES = [
+  { tag: 'thumbgate', keywords: ['thumbgate', 'rlhf', 'statusline', 'dashboard', 'mcp'] },
+  { tag: 'testing', keywords: ['test', 'testing', 'jest', 'coverage', 'verify', 'verification'] },
+  { tag: 'security', keywords: ['security', 'secret', 'credential', 'token', 'auth'] },
+  { tag: 'performance', keywords: ['perf', 'performance', 'latency', 'slow'] },
+  { tag: 'ui-components', keywords: ['ui', 'component', 'layout', 'style', 'figma'] },
+  { tag: 'api-integration', keywords: ['api', 'endpoint', 'request', 'response', 'server'] },
+  { tag: 'git-workflow', keywords: ['git', 'commit', 'branch', 'pr', 'pull request'] },
+  { tag: 'documentation', keywords: ['doc', 'docs', 'readme'] },
+  { tag: 'debugging', keywords: ['debug', 'debugging', 'error', 'bug', 'fix'] },
+  { tag: 'architecture', keywords: ['design', 'architecture', 'system'] },
+  { tag: 'data-modeling', keywords: ['schema', 'data', 'model', 'migration'] },
+];
 
 function validateFeedbackMemory(memory) {
   const issues = [];
@@ -115,6 +130,28 @@ function validateFeedbackMemory(memory) {
   return { valid: issues.length === 0, issues };
 }
 
+function inferFallbackDomainTag(params = {}) {
+  const explicitDomainTags = (params.tags || []).filter((tag) => !GENERIC_TAGS.has(tag));
+  if (explicitDomainTags.length > 0) return explicitDomainTags[0];
+
+  const text = normalizeFeedbackText([
+    params.context,
+    params.whatWorked,
+    params.whatWentWrong,
+    params.whatToChange,
+  ].filter(Boolean).join(' '));
+
+  if (!text) return 'general';
+
+  for (const rule of INFERRED_TAG_RULES) {
+    if (rule.keywords.some((keyword) => text.includes(keyword))) {
+      return rule.tag;
+    }
+  }
+
+  return 'general';
+}
+
 function resolveFeedbackAction(params) {
   const {
     signal,
@@ -132,7 +169,17 @@ function resolveFeedbackAction(params) {
     return { type: 'no-action', reason: 'No context provided — cannot create actionable memory' };
   }
 
-  const domainTags = (tags || []).filter((t) => !GENERIC_TAGS.has(t));
+  const inferredDomainTag = inferFallbackDomainTag({
+    tags,
+    context,
+    whatWentWrong,
+    whatToChange,
+    whatWorked,
+  });
+  const domainTags = [...new Set([
+    ...(tags || []).filter((t) => !GENERIC_TAGS.has(t)),
+    inferredDomainTag,
+  ].filter(Boolean))];
   const rubricSummary = rubricEvaluation
     ? {
       rubricId: rubricEvaluation.rubricId,

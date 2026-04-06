@@ -39,6 +39,9 @@ Source of truth for Gemini declarations:
 - Keep tool calls within local safe paths unless `THUMBGATE_ALLOW_EXTERNAL_PATHS=true`.
 - Provide `rubricScores` + `guardrails` when available so reward-hacking checks can block unsafe positive promotion.
 - Use context-pack cache metadata (`cache.hit`, `cache.similarity`) to reduce repetitive retrieval work.
+- Feature-detect Node coverage include/exclude flags before constructing coverage runs; do not assume identical CLI support across supported LTS versions.
+- For Pro-gated tests, inject or stub the gate check instead of relying on an operator's saved local license state.
+- Treat `.claude/context-engine/quality-log.json` as disposable runtime output and keep it out of git history.
 - Prefer clean worktrees for verification and branch maintenance rather than a dirty primary checkout.
 - Do not report PR completion until the exact merge commit is green on `main`.
 - Pending CI checks and `REVIEW_REQUIRED` are blockers, not mergeable states; do not admin-merge around them.

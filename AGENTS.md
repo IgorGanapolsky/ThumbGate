@@ -65,6 +65,9 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
   - `npm run prove:adapters`
   - `npm run prove:automation`
   - `npm run self-heal:check`
+- Feature-detect Node test coverage include/exclude flags before using them; do not assume every supported Node LTS exposes `--test-coverage-include` or `--test-coverage-exclude`.
+- Tests for Pro-gated features must inject or stub the license gate. Never make CI depend on an operator's saved local Pro license or local env state.
+- `.claude/context-engine/quality-log.json` is runtime output and must stay git-ignored and untracked.
 - Prefer temp output directories or env overrides when proof scripts support them so verification does not churn tracked `proof/` artifacts.
 
 ## Communication Standard

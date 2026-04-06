@@ -7,6 +7,8 @@ info:
     prevention rule generation, and DPO export.
     Bare up/down signals are logged immediately, but the API returns
     clarification_required until one sentence explains what worked or failed.
+    When the explanation is specific enough, ThumbGate infers a domain tag if
+    the caller omitted manual tags so the feedback can still promote cleanly.
 servers:
   - url: https://thumbgate-production.up.railway.app
 security:
@@ -67,6 +69,7 @@ components:
               items:
                 type: string
             - type: string
+          description: Optional domain tags. If omitted, ThumbGate infers one from the feedback text before promotion.
         skill:
           type: string
     IntentPlanRequest:
