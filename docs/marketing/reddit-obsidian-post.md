@@ -26,9 +26,9 @@ Every Claude Code session starts from zero. Same mistakes, same "oh I see, let m
 
 - You give thumbs up/down feedback on what the agent does
 - It auto-promotes repeated failures into **prevention rules** — structured constraints the agent checks before executing any tool call
-- Prevention rules are stored as a plain `.md` file: `.claude/memory/feedback/prevention-rules.md`
+- Prevention rules are stored as a plain `.md` file: `.thumbgate/prevention-rules.md`
 - Thompson Sampling gates adapt which rules fire based on success/failure rates
-- Memory is captured in `.claude/memory/feedback/memory-log.jsonl` — a local, git-ignored file
+- Memory is captured in `.thumbgate/memory-log.jsonl` — a local, git-ignored file
 
 None of this is cloud sync or real-time updates. It's local files that persist between sessions and get smarter as you use it.
 
@@ -40,7 +40,7 @@ My setup:
 
 1. Create `AI-Memories/thumbgate/` folder in your vault
 2. Symlink the memory files into it:
-   - `Prevention Rules.md` → `.claude/memory/feedback/prevention-rules.md`
+   - `Prevention Rules.md` → `.thumbgate/prevention-rules.md`
    - `Primer.md` → `primer.md` (active session context: next steps, blockers, revenue truth)
 3. Periodically paste `npm run feedback:stats` output into a `Feedback Stats.md` note
 4. Open any memory note, run `/ide` — Claude Code reads your vault note as context and can write back updates

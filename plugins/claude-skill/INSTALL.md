@@ -13,6 +13,7 @@ Or from the published npm package:
 ```bash
 npx thumbgate init
 cp node_modules/thumbgate/plugins/claude-skill/SKILL.md .claude/skills/thumbgate-feedback.md
+cp node_modules/thumbgate/plugins/claude-skill/SKILL.md .claude/skills/rlhf-feedback.md
 ```
 
 ## What This Does

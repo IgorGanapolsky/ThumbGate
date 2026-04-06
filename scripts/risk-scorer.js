@@ -3,9 +3,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir: resolveSharedFeedbackDir } = require('./feedback-paths');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const DEFAULT_FEEDBACK_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+const DEFAULT_FEEDBACK_DIR = resolveSharedFeedbackDir();
 const DEFAULT_MODEL_PATH = path.join(DEFAULT_FEEDBACK_DIR, 'risk-model.json');
 const DEFAULT_SEQUENCE_PATH = path.join(DEFAULT_FEEDBACK_DIR, 'feedback-sequences.jsonl');
 
@@ -29,7 +30,7 @@ const SAFETY_WORD_RE = /\b(budget|path|guardrail|safe|security|risk)\b/i;
 const SUCCESS_WORD_RE = /\b(pass|worked|fixed|success|verified)\b/i;
 
 function resolveFeedbackDir(feedbackDir) {
-  return feedbackDir || process.env.THUMBGATE_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
+  return resolveSharedFeedbackDir({ feedbackDir });
 }
 
 function readJSONL(filePath) {

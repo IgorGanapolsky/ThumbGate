@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const MAX_AUTO_GATES = 10;
 const WARN_THRESHOLD = 3; // 3+ repeated failures surface a warning gate
@@ -20,6 +21,7 @@ function getFeedbackLogPath() {
   if (fs.existsSync(localFallback)) return localFallback;
   if (fs.existsSync(localClaude)) return localClaude;
   return localFallback; // default even if doesn't exist
+  return path.join(resolveFeedbackDir(), 'feedback-log.jsonl');
 }
 
 function getAutoGatesPath() {

@@ -9,7 +9,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free stays local-first with 5 daily feedback captures, 10 daily lesson searches, unlimited recall, and gating. Vague thumbs feedback can be distilled from the last ~10 messages and failed tool call. Pro adds a personal local dashboard, **Model Hardening Advisor**, and **LoRA/PEFT export**. Team rollout starts at the shared hosted lesson DB, org dashboard, and generated hosted review views.
+[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free stays local-first with unlimited feedback captures, 5 daily lesson searches, unlimited recall, and gating. Vague thumbs feedback can be distilled from the last ~10 messages and failed tool call. Pro adds a personal local dashboard, **Model Hardening Advisor**, and **LoRA/PEFT export**. Team rollout starts at the shared hosted lesson DB, org dashboard, and generated hosted review views.
 
 **Repo boundary:** this repository is the public base runtime (`thumbgate`). The paid overlay now lives in the separate [`thumbgate-pro`](https://github.com/IgorGanapolsky/thumbgate-pro) repo/package and inherits from this base instead of shipping from a `pro/` subtree here.
 
@@ -359,7 +359,7 @@ For autonomous agent runs against this or any repo using this workflow:
 | Workflow hardening sprint         | No     | No                      | Yes                               |
 | Priority support                  | No     | Yes                     | Yes                               |
 
-Free keeps the core safety policy, up to 10 auto-promoted gates, 5 daily feedback captures, 10 daily lesson searches, and unlimited recall on your machine.
+Free keeps the core safety policy, up to 10 auto-promoted gates, unlimited feedback captures, 5 daily lesson searches, and unlimited recall on your machine.
 
 **[Get Pro — $19/mo or $149/yr](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate_cta)** — recurring self-serve for individual operators.
 

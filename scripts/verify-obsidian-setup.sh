@@ -134,9 +134,9 @@ check_path_documented() {
   fi
 }
 
-check_path_documented ".claude/memory/feedback/memory-log.jsonl" "memory-log.jsonl"
-check_path_documented ".claude/memory/feedback/prevention-rules.md" "prevention-rules.md"
-check_path_documented ".claude/memory/feedback/feedback-log.jsonl" "feedback-log.jsonl"
+check_path_documented ".thumbgate/memory-log.jsonl" "memory-log.jsonl"
+check_path_documented ".thumbgate/prevention-rules.md" "prevention-rules.md"
+check_path_documented ".thumbgate/feedback-log.jsonl" "feedback-log.jsonl"
 
 # primer.md must exist (it is committed)
 if [ -f "$REPO_ROOT/primer.md" ]; then

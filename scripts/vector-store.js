@@ -8,8 +8,7 @@ const {
   resolveFeedbackDir,
 } = require('./local-model-profile');
 
-const PROJECT_ROOT = path.join(__dirname, '..');
-const DEFAULT_FEEDBACK_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+const DEFAULT_FEEDBACK_DIR = resolveFeedbackDir();
 const DEFAULT_LANCE_DIR = path.join(DEFAULT_FEEDBACK_DIR, 'lancedb');
 
 // Module-level cache — prevents re-importing on every upsertFeedback() call
@@ -29,7 +28,7 @@ async function getLanceDB() {
 }
 
 function getFeedbackDir() {
-  return resolveFeedbackDir(process.env.THUMBGATE_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR);
+  return resolveFeedbackDir();
 }
 
 function getLanceDir() {

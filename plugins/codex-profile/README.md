@@ -30,6 +30,7 @@ That profile launches:
 [mcp_servers.thumbgate]
 command = "npx"
 args = ["-y", "thumbgate@0.9.10", "serve"]
+args = ["-y", "thumbgate@0.9.10", "serve"]
 ```
 
 ## Why this exists

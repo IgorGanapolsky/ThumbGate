@@ -1,24 +1,9 @@
 'use strict';
 
-require('dotenv').config({ path: require('node:path').resolve(__dirname, '..', '..', '.env') });
 const path = require('node:path');
-const fs = require('node:fs');
+const { loadLocalEnv } = require('./load-env');
 
-// Load .env if available
-const envPath = path.resolve(__dirname, '..', '..', '.env');
-if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, 'utf8');
-  for (const line of envContent.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx > 0) {
-      const key = trimmed.slice(0, eqIdx);
-      const value = trimmed.slice(eqIdx + 1);
-      if (!process.env[key]) process.env[key] = value;
-    }
-  }
-}
+loadLocalEnv({ envPath: path.resolve(__dirname, '..', '..', '.env') });
 
 const { initDb } = require('./store');
 

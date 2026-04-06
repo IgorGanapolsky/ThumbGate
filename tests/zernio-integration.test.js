@@ -2,6 +2,9 @@
 
 const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 // ---------------------------------------------------------------------------
 // normalizeZernioMetric tests
@@ -98,7 +101,13 @@ describe('normalizeZernioMetric', () => {
 
 describe('zernio publisher', () => {
   const publisher = require('../scripts/social-analytics/publishers/zernio');
-  const { publishPost, schedulePost, getConnectedAccounts, publishToAllPlatforms } = publisher;
+  const {
+    getConnectedAccounts,
+    publishPost,
+    publishToAllPlatforms,
+    schedulePost,
+    uploadLocalMedia,
+  } = publisher;
 
   let originalFetch;
   let originalApiKey;
@@ -171,8 +180,8 @@ describe('zernio publisher', () => {
         ok: true,
         json: async () => ({
           data: [
-            { platform: 'twitter', accountId: 'acc_t1', name: 'Twitter Account' },
-            { platform: 'instagram', accountId: 'acc_i1', name: 'Instagram Account' },
+            { platform: 'twitter', _id: 'acc_t1', name: 'Twitter Account' },
+            { platform: 'instagram', id: 'acc_i1', name: 'Instagram Account' },
           ],
         }),
       };
@@ -185,10 +194,13 @@ describe('zernio publisher', () => {
     assert.equal(capturedOptions.headers.Authorization, 'Bearer test_key_abc123');
     assert.equal(accounts.length, 2);
     assert.equal(accounts[0].platform, 'twitter');
+    assert.equal(accounts[0].accountId, 'acc_t1');
+    assert.equal(accounts[1].accountId, 'acc_i1');
   });
 
-  it('publishToAllPlatforms calls getConnectedAccounts then publishPost', async () => {
+  it('publishToAllPlatforms groups by platform and tags each publish separately', async () => {
     let fetchCallCount = 0;
+    const publishedBodies = [];
 
     global.fetch = async (url, options) => {
       fetchCallCount++;
@@ -197,13 +209,15 @@ describe('zernio publisher', () => {
           ok: true,
           json: async () => ({
             data: [
-              { platform: 'twitter', accountId: 'acc_t1', name: 'Twitter' },
+              { platform: 'twitter', _id: 'acc_t1', name: 'Twitter' },
+              { platform: 'twitter', accountId: 'acc_t2', name: 'Twitter Backup' },
               { platform: 'instagram', accountId: 'acc_i1', name: 'Instagram' },
             ],
           }),
         };
       }
       if (url.includes('/posts')) {
+        publishedBodies.push(JSON.parse(options.body));
         return {
           ok: true,
           json: async () => ({ data: { id: 'bulk_post_456', status: 'published' } }),
@@ -212,11 +226,19 @@ describe('zernio publisher', () => {
       throw new Error(`Unexpected URL: ${url}`);
     };
 
-    const result = await publishToAllPlatforms('Hello from all platforms with enough characters to pass the quality gate');
+    const result = await publishToAllPlatforms(
+      'Hello from all platforms with enough characters to pass the quality gate https://thumbgate-production.up.railway.app/?utm_content=bulk_publish_test'
+    );
 
-    assert.equal(result.published.length, 1);
+    assert.equal(result.published.length, 2);
     assert.equal(result.errors.length, 0);
-    assert.equal(fetchCallCount, 2, 'should make exactly 2 fetch calls: /accounts then /posts');
+    assert.equal(fetchCallCount, 3, 'should make exactly 3 fetch calls: /accounts then one /posts per platform');
+    assert.equal(publishedBodies[0].platforms.length, 2);
+    assert.equal(publishedBodies[0].platforms[0].platform, 'twitter');
+    assert.match(publishedBodies[0].content, /utm_source=twitter/);
+    assert.equal(publishedBodies[1].platforms.length, 1);
+    assert.equal(publishedBodies[1].platforms[0].platform, 'instagram');
+    assert.match(publishedBodies[1].content, /utm_source=instagram/);
   });
 
   it('schedulePost includes scheduledFor and timezone in body', async () => {
@@ -255,6 +277,50 @@ describe('zernio publisher', () => {
       () => schedulePost('Content', [{ platform: 'twitter', accountId: 'acc_1' }], '2026-04-01T10:00:00Z', ''),
       /timezone is required/
     );
+  });
+
+  it('uploadLocalMedia presigns then uploads a local file', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-zernio-'));
+    const filePath = path.join(tmpDir, 'card.png');
+    fs.writeFileSync(filePath, Buffer.from('test-image'));
+
+    const calls = [];
+    global.fetch = async (url, options) => {
+      calls.push({ url, options });
+      if (url.includes('/media/presign')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              uploadUrl: 'https://uploads.example.com/card.png',
+              publicUrl: 'https://cdn.example.com/card.png',
+              key: 'uploads/card.png',
+              type: 'image',
+            },
+          }),
+        };
+      }
+
+      if (url === 'https://uploads.example.com/card.png') {
+        return {
+          ok: true,
+          text: async () => '',
+        };
+      }
+
+      throw new Error(`Unexpected URL: ${url}`);
+    };
+
+    const result = await uploadLocalMedia(filePath);
+
+    assert.equal(calls.length, 2);
+    assert.ok(calls[0].url.includes('/media/presign'));
+    assert.equal(calls[1].url, 'https://uploads.example.com/card.png');
+    assert.equal(calls[1].options.method, 'PUT');
+    assert.equal(result.url, 'https://cdn.example.com/card.png');
+    assert.equal(result.type, 'image');
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 });
 

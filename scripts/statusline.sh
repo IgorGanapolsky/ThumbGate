@@ -18,7 +18,7 @@ CTX_PCT="${CTX_PCT:-0}"
 # ── ThumbGate stats from cache ────────────────────────────────────────
 THUMBGATE_CACHE=""
 for base in "${THUMBGATE_FEEDBACK_DIR:-.}" "." "${HOME}"; do
-  for rel in ".thumbgate/statusline_cache.json"; do
+  for rel in ".thumbgate/statusline_cache.json" "statusline_cache.json"; do
     if [ -f "${base}/${rel}" ]; then
       THUMBGATE_CACHE="${base}/${rel}"
       break 2
@@ -26,7 +26,7 @@ for base in "${THUMBGATE_FEEDBACK_DIR:-.}" "." "${HOME}"; do
   done
 done
 if [ -z "$THUMBGATE_CACHE" ]; then
-  THUMBGATE_CACHE="${THUMBGATE_FEEDBACK_DIR:-.}/.thumbgate/statusline_cache.json"
+  THUMBGATE_CACHE="${THUMBGATE_FEEDBACK_DIR:-.}/statusline_cache.json"
 fi
 
 UP="0"; DOWN="0"; LESSONS="0"; TREND="?"; CACHE_TS="0"

@@ -27,6 +27,10 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
 test('public landing page uses Stripe checkout links for Pro tier', () => {
   const landingPage = readLandingPage();
 
+  assert.match(landingPage, /\/checkout\/pro\?plan_id=pro/);
+  assert.match(landingPage, /cta_id=hero_pro_trial/);
+  assert.match(landingPage, /cta_id=pricing_pro_trial_email_gate/);
+  assert.match(landingPage, /cta_id=final_pro_trial/);
   assert.match(landingPage, /buy\.stripe\.com/);
   assert.match(landingPage, /Free Trial/);
   assert.doesNotMatch(landingPage, /gumroad\.com/);
@@ -116,7 +120,7 @@ test('public landing page positions ThumbGate as human-in-the-loop enforcement f
   assert.match(landingPage, /ThumbGate/);
   assert.match(landingPage, /Stop AI Coding Agents From Repeating Mistakes/i);
   assert.match(landingPage, /Human-in-the-Loop Enforcement/i);
-  assert.match(landingPage, /safety net for vibe coding/i);
+  assert.match(landingPage, /immune system/i);
   assert.match(landingPage, /Claude Code/);
   assert.match(landingPage, /Cursor/);
   assert.match(landingPage, /Codex/);
@@ -149,6 +153,22 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
   assert.match(landingPage, /power users of Claude Code/i);
   // Plain-language value prop
   assert.match(landingPage, /immune system for your AI agent/i);
+  assert.match(landingPage, /skipped tests/i);
+  assert.match(landingPage, /destructive SQL/i);
+  assert.match(landingPage, /force-pushes/i);
+});
+
+test('public landing page hero routes visitors into free, pro, and team lanes', () => {
+  const landingPage = readLandingPage();
+  const heroMatch = landingPage.match(/<section class="hero">[\s\S]*?<\/section>/);
+
+  assert.ok(heroMatch, 'Hero section must exist');
+  assert.match(heroMatch[0], /Install Free/);
+  assert.match(heroMatch[0], /Start 7-Day Pro Trial/);
+  assert.match(heroMatch[0], /no cloud account/i);
+  assert.match(heroMatch[0], /Start the Team rollout/i);
+  assert.match(heroMatch[0], /data-cta-id="hero_install_free"/);
+  assert.match(heroMatch[0], /cta_id=hero_pro_trial/);
 });
 
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
@@ -169,6 +189,16 @@ test('public landing page Pro tier uses outcome-framed bullets that justify upgr
   // Upgrade triggers
   assert.match(landingPage, /Go Pro when:/i);
   assert.match(landingPage, /blocked 20\+ actions/i);
+  assert.match(landingPage, /avoided rollback/i);
+});
+
+test('public landing page avoids unverified traction and pricing claims', () => {
+  const landingPage = readLandingPage();
+
+  assert.doesNotMatch(landingPage, /57% of PRs/i);
+  assert.doesNotMatch(landingPage, /\$0\.10 per blocked mistake/i);
+  assert.doesNotMatch(landingPage, /bootstraps \.rlhf/i);
+  assert.match(landingPage, /\$19\/mo or \$149\/yr/i);
 });
 
 test('public landing page includes an explicit Team rollout lane with shared workflow intake', () => {
@@ -239,7 +269,11 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
-  assert.match(landingPage, /trackClick\('.nav-cta', 'checkout_start'/);
+  assert.match(landingPage, /trackClick\('.btn-demo', 'dashboard_demo_click'/);
+  assert.match(landingPage, /trackClick\('.nav-cta', 'view_pricing_click'/);
+  assert.match(landingPage, /sendFirstPartyTelemetry/);
+  assert.match(landingPage, /\/v1\/telemetry\/ping/);
+  assert.match(landingPage, /eventType: 'cta_click'/);
   assert.match(landingPage, /plausible\('faq_open'/);
   assert.match(landingPage, /plausible\('scroll_depth'/);
   assert.match(landingPage, /trackClick\('.proof-bar a', 'proof_bar_click'\)/);
@@ -299,6 +333,18 @@ test('landing page has newsletter signup', () => {
   const html = readLandingPage();
   assert.ok(html.includes('newsletter'), 'must include newsletter section');
   assert.ok(html.includes('type="email"'), 'must include email input');
+});
+
+test('landing page captures buyer-loss feedback before checkout bounce', () => {
+  const html = readLandingPage();
+  assert.ok(html.includes('buyer-loss-feedback'), 'must include buyer loss feedback card');
+  assert.match(html, /Not buying yet\?/);
+  assert.match(html, /data-reason="too_expensive"/);
+  assert.match(html, /data-reason="need_team_approval"/);
+  assert.match(html, /data-interest="high"/);
+  assert.match(html, /eventType: 'reason_not_buying'/);
+  assert.match(html, /plausible\('buyer_loss_feedback'/);
+  assert.match(html, /landing_feedback/);
 });
 
 test('landing page has social links in footer', () => {
@@ -383,7 +429,8 @@ test('public landing page includes 7-day free trial and email capture gate', () 
   assert.match(landingPage, /7-DAY FREE TRIAL/);
   assert.match(landingPage, /pro-email/);
   assert.match(landingPage, /handleProTrial/);
-  assert.match(landingPage, /prefilled_email/);
+  assert.match(landingPage, /customer_email/);
+  assert.match(landingPage, /pricing_pro_trial_email_gate/);
 });
 
 test('public landing page includes dashboard preview in Pro card', () => {

@@ -16,12 +16,15 @@
  * State file: .thumbgate/reply-monitor-state.json — tracks which replies we've already responded to.
  */
 
-require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const { loadLocalEnv } = require('./social-analytics/load-env');
 
 const STATE_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-monitor-state.json');
 const REDDIT_API_BASE = 'https://oauth.reddit.com';
+const DEFAULT_X_HANDLE = 'IgorGanapolsky';
+
+loadLocalEnv();
 
 // ---------------------------------------------------------------------------
 // State management
@@ -56,6 +59,85 @@ function saveDraft(draft) {
   const dir = path.dirname(DRAFT_FILE);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.appendFileSync(DRAFT_FILE, JSON.stringify(draft) + '\n');
+}
+
+function normalizeArray(value) {
+  if (value && Array.isArray(value.data)) {
+    return value.data;
+  }
+  return Array.isArray(value) ? value : [];
+}
+
+function isRevenueRelevantXTweet(tweet = {}) {
+  const text = String(tweet.text || '').toLowerCase();
+  if (!text) return false;
+  return /thumbgate|thumbgate-production|checkout\/pro|workflow-sprint|pre-action gates|vibe coding/.test(text);
+}
+
+function buildOwnedConversationQuery(tweetId, username = DEFAULT_X_HANDLE) {
+  const normalizedId = String(tweetId || '').trim();
+  const normalizedUsername = String(username || DEFAULT_X_HANDLE).trim();
+  if (!normalizedId) {
+    return '';
+  }
+  return `conversation_id:${normalizedId} -from:${normalizedUsername}`;
+}
+
+async function collectXSearchCandidates(options = {}) {
+  const searchTweets = options.searchTweets;
+  if (typeof searchTweets !== 'function') {
+    return { tweets: [], searchMode: 'unavailable', queryLog: [] };
+  }
+
+  const username = options.username || process.env.X_USERNAME || DEFAULT_X_HANDLE;
+  const ownUserId = options.ownUserId || process.env.X_USER_ID || '1733256637199073280';
+  const queryLog = [];
+  const aggregate = [];
+  const seenTweetIds = new Set();
+  let ownedCandidates = [];
+
+  if (typeof options.fetchOwnedTweets === 'function') {
+    try {
+      const recentTweets = await options.fetchOwnedTweets();
+      ownedCandidates = normalizeArray(recentTweets)
+        .filter((tweet) => String(tweet.author_id || ownUserId) === ownUserId)
+        .filter(isRevenueRelevantXTweet)
+        .slice(0, 6);
+    } catch (err) {
+      console.warn(`[reply-monitor] Could not fetch own X tweets: ${err.message}`);
+    }
+  }
+
+  for (const tweet of ownedCandidates) {
+    const query = buildOwnedConversationQuery(tweet.id, username);
+    if (!query) continue;
+    queryLog.push(query);
+    const replies = normalizeArray(await searchTweets(query, { maxResults: 10 }));
+    for (const reply of replies) {
+      if (!reply || seenTweetIds.has(reply.id)) continue;
+      seenTweetIds.add(reply.id);
+      aggregate.push(reply);
+    }
+  }
+
+  if (aggregate.length > 0) {
+    return {
+      tweets: aggregate,
+      ownTweets: ownedCandidates.map((tweet) => ({ id: tweet.id, text: tweet.text || '' })),
+      queryLog,
+      searchMode: 'owned_conversations',
+    };
+  }
+
+  const fallbackQuery = 'thumbgate OR ThumbGate OR "pre-action gates"';
+  queryLog.push(fallbackQuery);
+  const fallbackTweets = normalizeArray(await searchTweets(fallbackQuery, { maxResults: 10 }));
+  return {
+    tweets: fallbackTweets,
+    ownTweets: ownedCandidates.map((tweet) => ({ id: tweet.id, text: tweet.text || '' })),
+    queryLog,
+    searchMode: 'keyword_fallback',
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -260,28 +342,40 @@ async function checkXReplies(state, dryRun) {
 
   // Use the post-to-x module for OAuth signing
   let xModule;
+  let xPoller;
   try {
     xModule = require('./post-to-x.js');
+    xPoller = require('./social-analytics/pollers/x.js');
   } catch {
-    console.warn('[reply-monitor] Could not load post-to-x.js, skipping X');
+    console.warn('[reply-monitor] Could not load X modules, skipping X');
     return [];
   }
 
-  // Search for recent mentions
-  let mentions;
+  let searchResult;
   try {
-    mentions = await xModule.searchTweets('thumbgate OR ThumbGate OR "pre-action gates"');
+    searchResult = await collectXSearchCandidates({
+      searchTweets: xModule.searchTweets,
+      fetchOwnedTweets: process.env.X_BEARER_TOKEN && process.env.X_USER_ID
+        ? async () => {
+          const response = await xPoller.fetchUserTweets(process.env.X_BEARER_TOKEN, process.env.X_USER_ID);
+          return response && response.data;
+        }
+        : null,
+      ownUserId: process.env.X_USER_ID || '1733256637199073280',
+      username: process.env.X_USERNAME || DEFAULT_X_HANDLE,
+    });
   } catch (err) {
     console.warn(`[reply-monitor] X search failed: ${err.message}`);
     return [];
   }
 
-  // searchTweets returns the array directly, not {data: [...]}
-  const mentionsList = Array.isArray(mentions) ? mentions : mentions?.data;
+  const mentionsList = normalizeArray(searchResult && searchResult.tweets);
   if (!mentionsList || mentionsList.length === 0) {
     console.log('[reply-monitor] No X mentions found');
     return [];
   }
+
+  console.log(`[reply-monitor] X candidate search mode: ${searchResult.searchMode}`);
 
   const results = [];
   const repliesSentThisRun = new Set(); // Track reply text to prevent duplicates
@@ -400,7 +494,14 @@ async function monitor({ platforms, dryRun } = {}) {
   return allResults;
 }
 
-module.exports = { monitor, generateReply };
+module.exports = {
+  buildOwnedConversationQuery,
+  checkXReplies,
+  collectXSearchCandidates,
+  generateReply,
+  isRevenueRelevantXTweet,
+  monitor,
+};
 
 // ---------------------------------------------------------------------------
 // CLI
@@ -417,22 +518,6 @@ if (require.main === module) {
 
   const platformArg = getArg('--platform');
   const platforms = platformArg ? [platformArg] : null;
-
-  // Load .env
-  const envPath = path.resolve(__dirname, '..', '.env');
-  if (fs.existsSync(envPath)) {
-    const envContent = fs.readFileSync(envPath, 'utf8');
-    for (const line of envContent.split('\n')) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      const eqIdx = trimmed.indexOf('=');
-      if (eqIdx > 0) {
-        const key = trimmed.slice(0, eqIdx);
-        const value = trimmed.slice(eqIdx + 1);
-        if (!process.env[key]) process.env[key] = value;
-      }
-    }
-  }
 
   monitor({ platforms, dryRun })
     .then((results) => {

@@ -10,10 +10,11 @@
  *
  * Options:
  *   --image-only    Generate image only, don't post
- *   --post-only     Post caption only, don't generate image (caption can work without image on Zernio)
+ *   --post-only     Post an existing image without regenerating it
  */
 
 const path = require('path');
+const fs = require('node:fs');
 const { generateInstagramCard } = require('./generate-instagram-card');
 const { postThumbGateToInstagram, THUMBGATE_CAPTION } = require('./instagram-thumbgate-post');
 
@@ -22,9 +23,13 @@ const IMAGE_PATH = path.join(REPO_ROOT, '.thumbgate', 'instagram-card.png');
 
 async function publishInstagramThumbGate(options = {}) {
   const {
+    caption = THUMBGATE_CAPTION,
     imageOnly = false,
     postOnly = false,
     imagePath = IMAGE_PATH,
+    schedule = '',
+    timezone = 'America/New_York',
+    utm,
   } = options;
 
   try {
@@ -38,18 +43,32 @@ async function publishInstagramThumbGate(options = {}) {
         console.log('[workflow] Image-only mode. Stopping here.');
         return { imagePath: generatedPath };
       }
+    } else if (!fs.existsSync(imagePath)) {
+      throw new Error(`Image file is required for --post-only mode: ${imagePath}`);
     }
 
     // Step 2: Post to Instagram (unless --image-only)
     if (!imageOnly) {
       console.log('[workflow] Step 2: Publishing to Instagram via Zernio...');
-      const postResult = await postThumbGateToInstagram();
-      console.log(`[workflow] ✅ Post published: ${postResult.id || postResult.data?.id}`);
+      const postResult = await postThumbGateToInstagram({
+        caption,
+        imagePath,
+        schedule,
+        timezone,
+        utm,
+      });
+      if (schedule) {
+        console.log(`[workflow] ✅ Post scheduled: ${postResult.id || postResult.data?.id}`);
+      } else {
+        console.log(`[workflow] ✅ Post published: ${postResult.id || postResult.data?.id}`);
+      }
 
       return {
         success: true,
         imagePath: postOnly ? undefined : imagePath,
         postId: postResult.id || postResult.data?.id,
+        scheduled: Boolean(schedule),
+        scheduledFor: schedule || undefined,
       };
     }
   } catch (err) {

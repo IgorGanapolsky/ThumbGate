@@ -60,6 +60,7 @@ How it works:
 | Server | Command |
 |--------|---------|
 | `thumbgate` | `npx -y thumbgate@latest serve` |
+| `rlhf` | `npx -y thumbgate@latest serve` |
 
 ## Install
 
