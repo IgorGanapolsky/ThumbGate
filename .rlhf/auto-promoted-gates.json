@@ -2,7 +2,7 @@
   "version": 1,
   "gates": [
     {
-      "id": "auto-promoted-mnnc0m7o",
+      "id": "auto-promoted-mnncatol",
       "pattern": "repeated.*problem.*context",
       "action": "block",
       "message": "Automatically blocked due to repeated failures: NEVER repeated problem context string",

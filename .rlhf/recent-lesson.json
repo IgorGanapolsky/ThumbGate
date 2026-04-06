@@ -1,16 +1,20 @@
 {
-  "id": "lesson_c8d0a9ddbdaf",
-  "feedbackId": "fb_1775488840220_fqmp30",
+  "id": "lesson_e1640a0204da",
+  "feedbackId": "fb_1775488986914_9uc4qo",
   "signal": "positive",
-  "lesson": "SUCCESS: Evidence-first verification flow",
+  "lesson": "SUCCESS: Verification loop accepted output",
   "triggerMessage": "",
   "priorSummary": "",
   "confidence": 70,
   "tags": [
     "verification",
-    "testing"
+    "dogfood",
+    "quality",
+    "natural-language-harness",
+    "repo-full-verification",
+    "verification-loop"
   ],
   "metadata": {},
-  "createdAt": "2026-04-06T15:20:40.255Z",
-  "link": "http://localhost:9876/lessons#lesson_c8d0a9ddbdaf"
+  "createdAt": "2026-04-06T15:23:06.954Z",
+  "link": "http://localhost:9876/lessons#lesson_e1640a0204da"
 }

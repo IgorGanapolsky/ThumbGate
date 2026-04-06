@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-11T16:21:57.743Z",
+  "generatedAt": "2026-04-06T15:30:43.554Z",
   "checks": [
     {
       "name": "api.healthz",
@@ -19,7 +19,7 @@
       "name": "api.intents.catalog",
       "passed": true,
       "details": {
-        "intents": 4,
+        "intents": 5,
         "profile": "locked"
       }
     },
@@ -29,6 +29,22 @@
       "details": {
         "status": "checkpoint_required",
         "risk": "high"
+      }
+    },
+    {
+      "name": "api.intents.plan.codegraph",
+      "passed": true,
+      "details": {
+        "source": "stub",
+        "impactScore": 8
+      }
+    },
+    {
+      "name": "api.internal_agent.bootstrap",
+      "passed": true,
+      "details": {
+        "sandboxReady": true,
+        "executionMode": "sequential_delegate"
       }
     },
     {
@@ -57,8 +73,8 @@
       "name": "api.context.construct",
       "passed": true,
       "details": {
-        "packId": "pack_1773246118000_hprntm",
-        "items": 5
+        "packId": "pack_1775489445547_su9va2",
+        "items": 3
       }
     },
     {
@@ -73,42 +89,50 @@
       "name": "mcp.initialize",
       "passed": true,
       "details": {
-        "server": "thumbgate-mcp"
+        "server": "mcp-memory-gateway-mcp"
       }
     },
     {
       "name": "mcp.stdio.framed.initialize",
       "passed": true,
       "details": {
-        "server": "thumbgate-mcp"
+        "server": "mcp-memory-gateway-mcp"
       }
     },
     {
       "name": "mcp.stdio.ndjson.initialize",
       "passed": true,
       "details": {
-        "server": "thumbgate-mcp"
+        "server": "mcp-memory-gateway-mcp"
       }
     },
     {
       "name": "mcp.cli.serve.bad_home.initialize",
       "passed": true,
       "details": {
-        "server": "thumbgate-mcp"
+        "server": "mcp-memory-gateway-mcp"
       }
     },
     {
       "name": "mcp.tools.list",
       "passed": true,
       "details": {
-        "tools": 11
+        "tools": 50
       }
     },
     {
       "name": "mcp.tools.call.feedback_summary",
       "passed": true,
       "details": {
-        "contentLength": 370
+        "contentLength": 590
+      }
+    },
+    {
+      "name": "mcp.tools.call.diagnose_failure",
+      "passed": true,
+      "details": {
+        "rootCauseCategory": "intent_plan_misalignment",
+        "toolSchemaCount": 41
       }
     },
     {
@@ -116,6 +140,42 @@
       "passed": true,
       "details": {
         "status": "checkpoint_required"
+      }
+    },
+    {
+      "name": "mcp.tools.call.plan_intent.codegraph",
+      "passed": true,
+      "details": {
+        "impactScore": 8
+      }
+    },
+    {
+      "name": "mcp.tools.call.get_business_metrics",
+      "passed": true,
+      "details": {
+        "generatedAt": "2026-04-06T15:30:45.736Z"
+      }
+    },
+    {
+      "name": "mcp.tools.call.describe_semantic_entity",
+      "passed": true,
+      "details": {
+        "type": "Customer"
+      }
+    },
+    {
+      "name": "mcp.tools.call.recall.codegraph",
+      "passed": true,
+      "details": {
+        "contentLength": 1150
+      }
+    },
+    {
+      "name": "mcp.tools.call.bootstrap_internal_agent",
+      "passed": true,
+      "details": {
+        "sandboxReady": true,
+        "executionMode": "sequential_delegate"
       }
     },
     {
@@ -151,14 +211,14 @@
       "name": "adapter.gemini.declarations",
       "passed": true,
       "details": {
-        "tools": 4
+        "tools": 14
       }
     },
     {
       "name": "adapter.files.present",
       "passed": true,
       "details": {
-        "files": 3
+        "files": 9
       }
     },
     {
@@ -176,13 +236,13 @@
       "name": "mcp.policy.profile_differentiation",
       "passed": true,
       "details": {
-        "defaultTools": 11,
-        "lockedTools": 3
+        "defaultTools": 41,
+        "lockedTools": 10
       }
     }
   ],
   "summary": {
-    "passed": 24,
+    "passed": 32,
     "failed": 0
   }
 }

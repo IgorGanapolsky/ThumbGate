@@ -15,7 +15,7 @@ const TEAM_ANNUAL_PRICE_DOLLARS = 99;
 const TEAM_MIN_SEATS = 3;
 
 const PRO_PRICE_LABEL = '$19/mo or $149/yr';
-const TEAM_PRICE_LABEL = '$12/seat/mo (min 3 seats)';
+const TEAM_PRICE_LABEL = 'Starts at $36/mo for 3 seats, then $12/seat/mo';
 
 function normalizePlanId(value) {
   const text = String(value || '').trim().toLowerCase();

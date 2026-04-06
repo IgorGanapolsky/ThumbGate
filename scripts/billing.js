@@ -19,7 +19,7 @@ const crypto = require('crypto');
 const Stripe = require('stripe');
 const { createTraceId } = require('./hosted-config');
 const { getFeedbackPaths } = require('./feedback-loop');
-const { getTelemetryAnalytics } = require('./telemetry-analytics');
+const { getTelemetryAnalytics, getTelemetrySourceDiagnostics } = require('./telemetry-analytics');
 const { loadWorkflowSprintLeads } = require('./workflow-sprint-intake');
 const {
   PRO_MONTHLY_PRICE_ID,
@@ -77,14 +77,26 @@ const CONFIG = {
   }
 };
 
-const RLHF_FEEDBACK_DIR = path.resolve(__dirname, '../.rlhf');
-const LEGACY_FEEDBACK_DIR = path.resolve(__dirname, '../.claude/memory/feedback');
+const DEFAULT_RLHF_FEEDBACK_DIR = path.resolve(__dirname, '../.rlhf');
+const DEFAULT_LEGACY_FEEDBACK_DIR = path.resolve(__dirname, '../.claude/memory/feedback');
+
+function getRlhfFeedbackDir() {
+  return process.env._TEST_RLHF_FEEDBACK_DIR
+    || process.env.THUMBGATE_RLHF_FEEDBACK_DIR
+    || DEFAULT_RLHF_FEEDBACK_DIR;
+}
+
+function getLegacyFeedbackDir() {
+  return process.env._TEST_LEGACY_FEEDBACK_DIR
+    || process.env.THUMBGATE_LEGACY_FEEDBACK_DIR
+    || DEFAULT_LEGACY_FEEDBACK_DIR;
+}
 
 function resolveLegacyBillingPath(fileName) {
   // Check .rlhf/ before falling back to .claude/memory/feedback/
-  const rlhfPath = path.join(RLHF_FEEDBACK_DIR, fileName);
+  const rlhfPath = path.join(getRlhfFeedbackDir(), fileName);
   if (fs.existsSync(rlhfPath)) return rlhfPath;
-  return path.join(LEGACY_FEEDBACK_DIR, fileName);
+  return path.join(getLegacyFeedbackDir(), fileName);
 }
 
 let _stripeClient = null;
@@ -106,6 +118,18 @@ const IS_TEST = !!(
   process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH ||
   process.env.NODE_ENV === 'test'
 );
+
+function shouldIncludeLegacyBillingData() {
+  if (
+    process.env._TEST_LEGACY_FEEDBACK_DIR ||
+    process.env.THUMBGATE_LEGACY_FEEDBACK_DIR ||
+    process.env._TEST_RLHF_FEEDBACK_DIR ||
+    process.env.THUMBGATE_RLHF_FEEDBACK_DIR
+  ) {
+    return true;
+  }
+  return !IS_TEST;
+}
 
 function safeCompareHex(expectedHex, actualHex) {
   try {
@@ -219,6 +243,134 @@ function writeJsonlRecords(filePath, rows = []) {
   } catch (err) {
     return { written: false, reason: 'write_failed', error: err.message };
   }
+}
+
+function buildSourceWarning(code, message) {
+  return { code, message };
+}
+
+function describeDataFile({ primaryPath, legacyPath = null, mode = 'merge' } = {}) {
+  const includeLegacy = shouldIncludeLegacyBillingData();
+  const samePath = Boolean(
+    includeLegacy &&
+    legacyPath &&
+    path.resolve(primaryPath || '.') === path.resolve(legacyPath || '__missing__')
+  );
+  const normalizedLegacyPath = includeLegacy && !samePath ? legacyPath : null;
+  const primaryExists = Boolean(primaryPath && fs.existsSync(primaryPath));
+  const legacyExists = Boolean(normalizedLegacyPath && fs.existsSync(normalizedLegacyPath));
+  const activePaths = [];
+  let activeMode = 'missing';
+
+  if (mode === 'merge') {
+    if (primaryExists) activePaths.push(primaryPath);
+    if (legacyExists) activePaths.push(normalizedLegacyPath);
+    if (primaryExists && legacyExists) activeMode = 'merged';
+    else if (primaryExists) activeMode = 'primary';
+    else if (legacyExists) activeMode = 'legacy_fallback';
+  } else {
+    const activePath = primaryExists ? primaryPath : (legacyExists ? normalizedLegacyPath : null);
+    if (activePath) activePaths.push(activePath);
+    if (primaryExists) activeMode = 'primary';
+    else if (legacyExists) activeMode = 'legacy_fallback';
+  }
+
+  return {
+    primaryPath,
+    legacyPath: normalizedLegacyPath,
+    primaryExists,
+    legacyExists,
+    activeMode,
+    activePaths,
+    mixedRoots: activeMode === 'merged',
+  };
+}
+
+function buildBillingSourceDiagnostics(feedbackDir) {
+  const keyStore = describeDataFile({
+    primaryPath: CONFIG.API_KEYS_PATH,
+    legacyPath: resolveLegacyBillingPath('api-keys.json'),
+    mode: 'fallback',
+  });
+  const funnelLedger = describeDataFile({
+    primaryPath: CONFIG.FUNNEL_LEDGER_PATH,
+    legacyPath: resolveLegacyBillingPath('funnel-events.jsonl'),
+    mode: 'merge',
+  });
+  const revenueLedger = describeDataFile({
+    primaryPath: CONFIG.REVENUE_LEDGER_PATH,
+    legacyPath: resolveLegacyBillingPath('revenue-events.jsonl'),
+    mode: 'merge',
+  });
+  const checkoutSessions = describeDataFile({
+    primaryPath: CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH,
+    legacyPath: resolveLegacyBillingPath('local-checkout-sessions.json'),
+    mode: 'fallback',
+  });
+  const telemetry = getTelemetrySourceDiagnostics(feedbackDir);
+  const warnings = [
+    ...telemetry.warnings,
+  ];
+
+  if (keyStore.activeMode === 'legacy_fallback') {
+    warnings.push(buildSourceWarning(
+      'key_store_legacy_fallback',
+      'API keys are loading from a legacy feedback directory because the active feedback directory has no key store.'
+    ));
+  } else if (keyStore.activeMode === 'missing') {
+    warnings.push(buildSourceWarning(
+      'key_store_missing',
+      'API key state is missing from both the active and legacy feedback directories.'
+    ));
+  }
+
+  if (funnelLedger.activeMode === 'legacy_fallback') {
+    warnings.push(buildSourceWarning(
+      'funnel_ledger_legacy_fallback',
+      'Funnel events are loading only from a legacy feedback directory.'
+    ));
+  } else if (funnelLedger.activeMode === 'missing') {
+    warnings.push(buildSourceWarning(
+      'funnel_ledger_missing',
+      'Funnel events are missing from both the active and legacy feedback directories.'
+    ));
+  }
+
+  if (revenueLedger.activeMode === 'legacy_fallback') {
+    warnings.push(buildSourceWarning(
+      'revenue_ledger_legacy_fallback',
+      'Revenue events are loading only from a legacy feedback directory.'
+    ));
+  } else if (revenueLedger.activeMode === 'missing') {
+    warnings.push(buildSourceWarning(
+      'revenue_ledger_missing',
+      'Revenue events are missing from both the active and legacy feedback directories.'
+    ));
+  }
+
+  const mixedRoots = [keyStore, funnelLedger, revenueLedger, checkoutSessions, telemetry]
+    .some((descriptor) => descriptor.mixedRoots || descriptor.activeMode === 'legacy_fallback');
+  if (mixedRoots) {
+    warnings.push(buildSourceWarning(
+      'mixed_feedback_roots',
+      'Analytics are mixing active and legacy feedback roots. Consolidate runtime state before claiming full observability.'
+    ));
+  }
+
+  return {
+    feedbackDir,
+    rlhfFeedbackDir: getRlhfFeedbackDir(),
+    legacyFeedbackDir: getLegacyFeedbackDir(),
+    mixedRoots,
+    files: {
+      keyStore,
+      funnelLedger,
+      revenueLedger,
+      checkoutSessions,
+      telemetry,
+    },
+    warnings,
+  };
 }
 
 function normalizeText(value) {
@@ -1177,6 +1329,7 @@ function getBusinessAnalytics(options = {}) {
   const extraRevenueEvents = Array.isArray(options.extraRevenueEvents) ? options.extraRevenueEvents : [];
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const telemetry = getTelemetryAnalytics(FEEDBACK_DIR, analyticsWindow);
+  const sourceDiagnostics = buildBillingSourceDiagnostics(FEEDBACK_DIR);
   const events = filterEntriesForWindow(
     loadFunnelLedger(),
     analyticsWindow,
@@ -1598,6 +1751,7 @@ function getBusinessAnalytics(options = {}) {
     trafficMetrics,
     operatorGeneratedAcquisition,
     dataQuality,
+    sourceDiagnostics,
   };
 }
 
@@ -1682,6 +1836,7 @@ function getBillingSummary(options = {}) {
     trafficMetrics: business.trafficMetrics,
     operatorGeneratedAcquisition: business.operatorGeneratedAcquisition,
     dataQuality: business.dataQuality,
+    sourceDiagnostics: business.sourceDiagnostics,
     keys: {
       scope: 'current_state',
       windowed: false,

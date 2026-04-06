@@ -1012,7 +1012,7 @@ paths:
           name: q
           schema:
             type: string
-          description: Search query for raw RLHF state.
+          description: Search query for raw ThumbGate state.
         - in: query
           name: limit
           schema:

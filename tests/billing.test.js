@@ -29,6 +29,10 @@ const savedStripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const savedStripePriceId = process.env.STRIPE_PRICE_ID;
 const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
 const savedTestStripeReconciledRevenueEvents = process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
+const savedTestLegacyFeedbackDir = process.env._TEST_LEGACY_FEEDBACK_DIR;
+const savedTestRlhfFeedbackDir = process.env._TEST_RLHF_FEEDBACK_DIR;
+const savedLegacyFeedbackDir = process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
+const savedRlhfFeedbackDir = process.env.THUMBGATE_RLHF_FEEDBACK_DIR;
 
 // Initial setup
 process.env._TEST_API_KEYS_PATH = testApiKeysPath;
@@ -38,6 +42,10 @@ process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = testLocalCheckoutSessionsPath;
 process.env.THUMBGATE_FEEDBACK_DIR = testFeedbackDir;
 process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';
+delete process.env._TEST_LEGACY_FEEDBACK_DIR;
+delete process.env._TEST_RLHF_FEEDBACK_DIR;
+delete process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
+delete process.env.THUMBGATE_RLHF_FEEDBACK_DIR;
 
 after(() => {
   process.env.STRIPE_SECRET_KEY = savedStripeSecretKey || '';
@@ -56,6 +64,14 @@ after(() => {
   else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
   if (savedTestStripeReconciledRevenueEvents === undefined) delete process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
   else process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = savedTestStripeReconciledRevenueEvents;
+  if (savedTestLegacyFeedbackDir === undefined) delete process.env._TEST_LEGACY_FEEDBACK_DIR;
+  else process.env._TEST_LEGACY_FEEDBACK_DIR = savedTestLegacyFeedbackDir;
+  if (savedTestRlhfFeedbackDir === undefined) delete process.env._TEST_RLHF_FEEDBACK_DIR;
+  else process.env._TEST_RLHF_FEEDBACK_DIR = savedTestRlhfFeedbackDir;
+  if (savedLegacyFeedbackDir === undefined) delete process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
+  else process.env.THUMBGATE_LEGACY_FEEDBACK_DIR = savedLegacyFeedbackDir;
+  if (savedRlhfFeedbackDir === undefined) delete process.env.THUMBGATE_RLHF_FEEDBACK_DIR;
+  else process.env.THUMBGATE_RLHF_FEEDBACK_DIR = savedRlhfFeedbackDir;
   fs.rmSync(billingTestRoot, { recursive: true, force: true });
 });
 
@@ -766,6 +782,12 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.trafficMetrics.pageViews, 1);
     assert.equal(summary.trafficMetrics.checkoutStarts, 1);
     assert.equal(summary.trafficMetrics.checkoutPaidConfirmations, 1);
+    assert.equal(summary.sourceDiagnostics.files.keyStore.activeMode, 'primary');
+    assert.equal(summary.sourceDiagnostics.files.funnelLedger.activeMode, 'primary');
+    assert.equal(summary.sourceDiagnostics.files.revenueLedger.activeMode, 'primary');
+    assert.equal(summary.sourceDiagnostics.files.telemetry.activeMode, 'primary');
+    assert.equal(summary.sourceDiagnostics.mixedRoots, false);
+    assert.deepEqual(summary.sourceDiagnostics.warnings, []);
     assert.equal(summary.keys.scope, 'current_state');
     assert.equal(summary.keys.windowed, false);
   });
