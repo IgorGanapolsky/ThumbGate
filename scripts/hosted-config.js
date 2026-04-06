@@ -12,12 +12,6 @@ const DEFAULT_CHECKOUT_FALLBACK_URL = PRO_MONTHLY_PAYMENT_LINK;
 const DEFAULT_PRO_PRICE_DOLLARS = PRO_MONTHLY_PRICE_DOLLARS;
 const DEFAULT_PRO_PRICE_LABEL = PRO_PRICE_LABEL;
 const GA_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/i;
-const PUBLIC_APP_ORIGIN_KEYS = ['THUMBGATE_PUBLIC_APP_ORIGIN', 'RLHF_PUBLIC_APP_ORIGIN'];
-const BILLING_API_BASE_URL_KEYS = [
-  'THUMBGATE_BILLING_API_BASE_URL',
-  'RLHF_BILLING_API_BASE_URL',
-  'THUMBGATE_CANONICAL_API_BASE_URL',
-];
 
 function normalizeOrigin(value) {
   if (!value || typeof value !== 'string') {
@@ -82,14 +76,8 @@ function normalizeTrackingId(value, pattern) {
   return trimmed;
 }
 
-function resolveNormalizedOrigin(env, keys, fallback = '') {
-  for (const key of keys) {
-    const normalized = normalizeOrigin(env[key]);
-    if (normalized) {
-      return normalized;
-    }
-  }
-  return normalizeOrigin(fallback);
+function resolveNormalizedOrigin(value, fallback = '') {
+  return normalizeOrigin(value) || normalizeOrigin(fallback);
 }
 
 function joinPublicUrl(baseOrigin, pathname) {
@@ -130,8 +118,8 @@ function buildHostedCancelUrl(appOrigin, traceId) {
 
 function resolveHostedBillingConfig({ requestOrigin } = {}, env = process.env) {
   const inferredOrigin = normalizeOrigin(requestOrigin) || DEFAULT_PUBLIC_APP_ORIGIN;
-  const appOrigin = resolveNormalizedOrigin(env, PUBLIC_APP_ORIGIN_KEYS, inferredOrigin) || inferredOrigin;
-  const billingApiBaseUrl = resolveNormalizedOrigin(env, BILLING_API_BASE_URL_KEYS, appOrigin) || appOrigin;
+  const appOrigin = resolveNormalizedOrigin(env.THUMBGATE_PUBLIC_APP_ORIGIN, inferredOrigin) || inferredOrigin;
+  const billingApiBaseUrl = resolveNormalizedOrigin(env.THUMBGATE_BILLING_API_BASE_URL, appOrigin) || appOrigin;
   const proPriceDollars = normalizePriceDollars(env.THUMBGATE_PRO_PRICE_DOLLARS) || DEFAULT_PRO_PRICE_DOLLARS;
   const proPriceLabel = env.THUMBGATE_PRO_PRICE_LABEL || DEFAULT_PRO_PRICE_LABEL;
   const gaMeasurementId = normalizeTrackingId(env.THUMBGATE_GA_MEASUREMENT_ID, GA_MEASUREMENT_ID_PATTERN);
