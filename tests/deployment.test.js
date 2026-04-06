@@ -378,7 +378,7 @@ test('Sentry release workflow serializes main release stamping', () => {
   assert.match(workflow, /concurrency:/);
   assert.match(workflow, /group:\s*sentry-release-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*true/);
-  assert.match(workflow, /uses: getsentry\/action-release@v1/);
+  assert.match(workflow, /uses: getsentry\/action-release@v3/);
 });
 
 test('GitHub Actions workflows never use bare npm ci for onnxruntime installs', () => {
