@@ -651,7 +651,7 @@ describe('skill-quality-tracker: loadFeedback', () => {
     const now = new Date().toISOString();
     const entries = [
       { timestamp: now, feedback: 'up' },                    // Subway format
-      { timestamp: now, signal: 'positive' },                 // rlhf format
+      { timestamp: now, signal: 'positive' },                 // ThumbGate signal format
       { timestamp: now, feedback: 'down', tool_name: 'Read' }, // with tool_name
     ];
     fs.writeFileSync(feedbackPath, entries.map((e) => JSON.stringify(e)).join('\n'));

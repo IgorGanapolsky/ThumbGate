@@ -10,7 +10,7 @@ const { execSync } = require('node:child_process');
 const ROOT = path.join(__dirname, '..');
 
 test('prove-xmemory: proof gate passes with 6/6 checks', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-xmemory-proof-test-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-xmemory-proof-test-'));
   try {
     const output = execSync('node scripts/prove-xmemory.js', {
       cwd: ROOT,
@@ -26,7 +26,7 @@ test('prove-xmemory: proof gate passes with 6/6 checks', () => {
 });
 
 test('prove-xmemory: report.json is valid JSON with all requirements', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-xmemory-proof-json-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-xmemory-proof-json-'));
   try {
     execSync('node scripts/prove-xmemory.js', {
       cwd: ROOT,
@@ -49,7 +49,7 @@ test('prove-xmemory: report.json is valid JSON with all requirements', () => {
 });
 
 test('prove-xmemory: report.md contains all requirement checkboxes', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-xmemory-proof-md-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-xmemory-proof-md-'));
   try {
     execSync('node scripts/prove-xmemory.js', {
       cwd: ROOT,

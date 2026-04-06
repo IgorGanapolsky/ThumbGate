@@ -17,7 +17,7 @@ function writeJsonl(filePath, rows) {
 
 describe('exportDatabricksBundle', () => {
   it('writes manifest, sql template, and analytics tables', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-dbx-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-dbx-'));
     const feedbackDir = path.join(tmpDir, 'feedback');
     const proofDir = path.join(tmpDir, 'proof');
     const outputDir = path.join(tmpDir, 'bundle');
@@ -61,7 +61,7 @@ describe('exportDatabricksBundle', () => {
   });
 
   it('handles missing optional inputs by emitting empty tables', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-dbx-empty-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-dbx-empty-'));
     const feedbackDir = path.join(tmpDir, 'feedback');
     const outputDir = path.join(tmpDir, 'bundle');
     fs.mkdirSync(feedbackDir, { recursive: true });
@@ -72,14 +72,14 @@ describe('exportDatabricksBundle', () => {
   });
 
   it('defaults to the active feedback directory discovery logic when feedbackDir is omitted', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-dbx-default-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-dbx-default-'));
     const projectDir = path.join(tmpDir, 'project');
     const proofDir = path.join(tmpDir, 'proof');
     const previousCwd = process.cwd();
     const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
     const previousProofDir = process.env.THUMBGATE_PROOF_DIR;
 
-    fs.mkdirSync(path.join(projectDir, '.rlhf'), { recursive: true });
+    fs.mkdirSync(path.join(projectDir, '.thumbgate'), { recursive: true });
     fs.mkdirSync(path.join(projectDir, '.claude', 'memory', 'feedback'), { recursive: true });
     fs.mkdirSync(proofDir, { recursive: true });
 
@@ -89,7 +89,7 @@ describe('exportDatabricksBundle', () => {
     try {
       process.chdir(projectDir);
       const result = exportDatabricksBundle(undefined, undefined, { proofDir });
-      assert.match(result.bundlePath, new RegExp(`[\\\\/]\\.rlhf[\\\\/]analytics[\\\\/]databricks-`));
+      assert.match(result.bundlePath, new RegExp(`[\\\\/]\\.thumbgate[\\\\/]analytics[\\\\/]databricks-`));
     } finally {
       process.chdir(previousCwd);
       if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;

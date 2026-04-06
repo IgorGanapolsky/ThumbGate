@@ -136,10 +136,10 @@ No ML. No fine-tuning. No prompt engineering. Just a regex matcher that runs bef
 
 ## Try it
 
-mcp-memory-gateway v0.7.0 ships the gates engine, the auto-promotion pipeline, and the PreToolUse hook integration for Claude Code.
+thumbgate v0.7.0 ships the gates engine, the auto-promotion pipeline, and the PreToolUse hook integration for Claude Code.
 
 ```bash
-npx mcp-memory-gateway init --agent claude-code
+npx thumbgate init --agent claude-code
 ```
 
 This sets up:
@@ -152,4 +152,4 @@ The gates config is just JSON. Add your own patterns, set your own thresholds, d
 
 MIT licensed. Early-stage project.
 
-GitHub: [github.com/IgorGanapolsky/mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)
+GitHub: [github.com/IgorGanapolsky/thumbgate](https://github.com/IgorGanapolsky/thumbgate)

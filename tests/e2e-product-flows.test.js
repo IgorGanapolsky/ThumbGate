@@ -89,7 +89,7 @@ function apiUrl(port, pathname) {
 }
 
 test('E2E: public checkout -> paid local session -> usable dashboard key -> admin billing summary', async (t) => {
-  const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'rlhf-e2e-checkout-');
+  const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'thumbgate-e2e-checkout-');
 
   const checkoutRes = await fetch(apiUrl(port, '/v1/billing/checkout'), {
     method: 'POST',
@@ -155,7 +155,7 @@ test('E2E: public checkout -> paid local session -> usable dashboard key -> admi
 });
 
 test('E2E: localhost dashboard bootstraps Local Pro while forwarded hosts stay unbootstrapped', async (t) => {
-  const { port } = await startIsolatedServer(t, 'rlhf-e2e-dashboard-bootstrap-');
+  const { port } = await startIsolatedServer(t, 'thumbgate-e2e-dashboard-bootstrap-');
   const previousProMode = process.env.THUMBGATE_PRO_MODE;
   process.env.THUMBGATE_PRO_MODE = '1';
 
@@ -188,7 +188,7 @@ test('E2E: localhost dashboard bootstraps Local Pro while forwarded hosts stay u
 });
 
 test('E2E: rotated billing key disables the old key and keeps dashboard access alive', async (t) => {
-  const { port } = await startIsolatedServer(t, 'rlhf-e2e-rotate-');
+  const { port } = await startIsolatedServer(t, 'thumbgate-e2e-rotate-');
 
   const checkoutRes = await fetch(apiUrl(port, '/v1/billing/checkout'), {
     method: 'POST',
@@ -242,7 +242,7 @@ test('E2E: rotated billing key disables the old key and keeps dashboard access a
 });
 
 test('E2E: vague thumbs-down distills a lesson and preserves linked follow-up context', async (t) => {
-  const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'rlhf-e2e-distill-');
+  const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'thumbgate-e2e-distill-');
 
   const captureRes = await fetch(apiUrl(port, '/v1/feedback/capture'), {
     method: 'POST',
@@ -305,7 +305,7 @@ test('E2E: vague thumbs-down distills a lesson and preserves linked follow-up co
 });
 
 test('E2E: learn hub and article pages serve live over HTTP', async (t) => {
-  const { port } = await startIsolatedServer(t, 'rlhf-e2e-learn-');
+  const { port } = await startIsolatedServer(t, 'thumbgate-e2e-learn-');
 
   const learnRes = await fetch(apiUrl(port, '/learn'));
   assert.equal(learnRes.status, 200);
@@ -319,11 +319,11 @@ test('E2E: learn hub and article pages serve live over HTTP', async (t) => {
   const articleHtml = await articleRes.text();
   assert.match(articleHtml, /The Agent Harness Pattern/);
   assert.match(articleHtml, /"@type":\s*"TechArticle"/);
-  assert.match(articleHtml, /npx mcp-memory-gateway init/);
+  assert.match(articleHtml, /npx thumbgate init/);
 });
 
 test('E2E: workflow sprint intake progresses to paid team and surfaces in dashboard analytics', async (t) => {
-  const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'rlhf-e2e-sprint-');
+  const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'thumbgate-e2e-sprint-');
 
   const intakeRes = await fetch(apiUrl(port, '/v1/intake/workflow-sprint'), {
     method: 'POST',
@@ -388,7 +388,7 @@ test('E2E: workflow sprint intake progresses to paid team and surfaces in dashbo
 });
 
 test('E2E: promoted lesson can be viewed, updated, searched, and deleted through the HTTP surface', async (t) => {
-  const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'rlhf-e2e-lessons-');
+  const { tmpDir, port, adminHeaders } = await startIsolatedServer(t, 'thumbgate-e2e-lessons-');
 
   const captureRes = await fetch(apiUrl(port, '/v1/feedback/capture'), {
     method: 'POST',
@@ -462,7 +462,7 @@ test('E2E: promoted lesson can be viewed, updated, searched, and deleted through
 });
 
 test('E2E: contradictory feedback drives uncertainty through the MCP tool surface', async (t) => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-e2e-uncertainty-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-e2e-uncertainty-'));
   const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 

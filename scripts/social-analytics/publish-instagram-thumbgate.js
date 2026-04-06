@@ -18,7 +18,7 @@ const { generateInstagramCard } = require('./generate-instagram-card');
 const { postThumbGateToInstagram, THUMBGATE_CAPTION } = require('./instagram-thumbgate-post');
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
-const IMAGE_PATH = path.join(REPO_ROOT, '.rlhf', 'instagram-card.png');
+const IMAGE_PATH = path.join(REPO_ROOT, '.thumbgate', 'instagram-card.png');
 
 async function publishInstagramThumbGate(options = {}) {
   const {

@@ -29,7 +29,7 @@ function resolveProofPaths() {
 }
 
 async function run() {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-autoresearch-proof-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-autoresearch-proof-'));
   const results = { passed: 0, failed: 0, requirements: {} };
   const { proofDir, reportJson, reportMd } = resolveProofPaths();
 

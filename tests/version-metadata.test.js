@@ -15,7 +15,7 @@ const {
 const PROJECT_ROOT = path.join(__dirname, '..');
 const CANONICAL_APP_ORIGIN = 'https://thumbgate-production.up.railway.app';
 const CURRENT_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate';
-const PRO_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/mcp-memory-gateway-pro';
+const PRO_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/thumbgate-pro';
 
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, relativePath), 'utf8'));
@@ -74,7 +74,7 @@ test('public docs render the current package version', () => {
   assert.match(claudePluginReadme, /Privacy Policy/i);
   assert.match(claudePluginReadme, /Data Collection/i);
   assert.match(claudePluginReadme, /Support/i);
-  assert.match(claudePluginReadme, /claude mcp add thumbgate -- npx -y mcp-memory-gateway serve/i);
+  assert.match(claudePluginReadme, /claude mcp add thumbgate -- npx -y thumbgate serve/i);
   assert.match(claudePluginReadme, /npm run build:claude-mcpb/i);
   assert.match(claudePluginReadme, new RegExp(getClaudePluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(claudeCodexBridgeReadme, /claude --plugin-dir/i);
@@ -127,7 +127,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.equal(serverManifest.websiteUrl, CANONICAL_APP_ORIGIN);
 
   assert.match(publicLanding, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
-  assert.match(publicLanding, /mcp-memory-gateway/i);
+  assert.match(publicLanding, /thumbgate/i);
   assert.match(publicLanding, /\$19/);
   assert.match(publicLanding, /\$149/);
   assert.match(publicLanding, /__PRO_PRICE_DOLLARS__/);
@@ -139,10 +139,10 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
   assert.doesNotMatch(publicLanding, /github\.com\/IgorGanapolsky\/thumbgate/);
-  assert.doesNotMatch(publicLanding, /github\.com\/IgorGanapolsky\/mcp-memory-gateway/);
+  assert.doesNotMatch(publicLanding, /github\.com\/IgorGanapolsky\/thumbgate/);
 
   assert.match(serverSource, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
-  assert.doesNotMatch(serverSource, /github\.com\/IgorGanapolsky\/mcp-memory-gateway/);
+  assert.doesNotMatch(serverSource, /github\.com\/IgorGanapolsky\/thumbgate/);
   assert.doesNotMatch(serverSource, /github\.com\/IgorGanapolsky\/thumbgate/);
   assert.equal(claudePlugin.homepage, CANONICAL_APP_ORIGIN);
   assert.equal(claudePlugin.repository, CURRENT_REPOSITORY_URL);
@@ -153,7 +153,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.equal(claudeCodexBridge.repository, CURRENT_REPOSITORY_URL);
   assert.equal(codexPlugin.homepage, CANONICAL_APP_ORIGIN);
   assert.equal(codexPlugin.repository, CURRENT_REPOSITORY_URL);
-  assert.doesNotMatch(claudeReadme, /github\.com\/IgorGanapolsky\/mcp-memory-gateway/);
+  assert.doesNotMatch(claudeReadme, /github\.com\/IgorGanapolsky\/thumbgate/);
 
   assert.match(twitterThread, /Hosted demo: thumbgate-production\.up\.railway\.app/);
   assert.match(twitterThread, /engineering validation, not customer proof/i);
@@ -314,5 +314,5 @@ test('public repo documents the separate Pro overlay repository', () => {
   const distributionDoc = readText('docs/PLUGIN_DISTRIBUTION.md');
   assert.match(readme, new RegExp(PRO_REPOSITORY_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(distributionDoc, /public repo owns shared runtime/i);
-  assert.match(distributionDoc, /paid overlay code in the separate `mcp-memory-gateway-pro` repo\/package/i);
+  assert.match(distributionDoc, /paid overlay code in the separate `thumbgate-pro` repo\/package/i);
 });

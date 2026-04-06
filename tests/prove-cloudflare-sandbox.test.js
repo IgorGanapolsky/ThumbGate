@@ -10,7 +10,7 @@ const { execSync } = require('node:child_process');
 const ROOT = path.join(__dirname, '..');
 
 test('prove-cloudflare-sandbox passes all proof checks', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cloudflare-sandbox-proof-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-cloudflare-sandbox-proof-'));
   try {
     const output = execSync('node scripts/prove-cloudflare-sandbox.js', {
       cwd: ROOT,
@@ -29,7 +29,7 @@ test('prove-cloudflare-sandbox passes all proof checks', () => {
 });
 
 test('prove-cloudflare-sandbox writes markdown evidence', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cloudflare-sandbox-proof-md-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-cloudflare-sandbox-proof-md-'));
   try {
     execSync('node scripts/prove-cloudflare-sandbox.js', {
       cwd: ROOT,

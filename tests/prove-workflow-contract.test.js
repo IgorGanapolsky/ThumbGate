@@ -10,7 +10,7 @@ let proofDir;
 let report;
 
 test('workflow contract proof harness setup', () => {
-  proofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-workflow-contract-proof-'));
+  proofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-workflow-contract-proof-'));
   report = runWorkflowContractProof({ proofDir });
 });
 

@@ -12,7 +12,7 @@ dependency_graph:
     - getVectorStoreModule() helper in scripts/feedback-loop.js using same lazy-require pattern as getContextFsModule()
   affects:
     - scripts/feedback-loop.js
-    - any future plan that reads from the rlhf_memories vector table
+    - any future plan that reads from the thumbgate_memories vector table
 
 tech-stack:
   added: []

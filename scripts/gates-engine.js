@@ -45,11 +45,11 @@ const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'default.json');
 const DEFAULT_CLAIM_GATES_PATH = path.join(__dirname, '..', 'config', 'gates', 'claim-verification.json');
-const STATE_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'gate-state.json');
-const CONSTRAINTS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'session-constraints.json');
-const STATS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'gate-stats.json');
-const SESSION_ACTIONS_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'session-actions.json');
-const CUSTOM_CLAIM_GATES_PATH = path.join(process.env.HOME || '/tmp', '.rlhf', 'claim-verification.json');
+const STATE_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'gate-state.json');
+const CONSTRAINTS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'session-constraints.json');
+const STATS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'gate-stats.json');
+const SESSION_ACTIONS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'session-actions.json');
+const CUSTOM_CLAIM_GATES_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'claim-verification.json');
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
 const SESSION_ACTION_TTL_MS = 60 * 60 * 1000; // 1 hour
 

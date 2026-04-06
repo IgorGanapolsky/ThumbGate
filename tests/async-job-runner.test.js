@@ -12,7 +12,7 @@ const VERIFICATION_PATH = require.resolve('../scripts/verification-loop');
 const EXPERIMENT_TRACKER_PATH = require.resolve('../scripts/experiment-tracker');
 
 function createFeedbackDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-async-runner-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-async-runner-test-'));
 }
 
 function resetRuntimeModules() {

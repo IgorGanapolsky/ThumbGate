@@ -31,6 +31,11 @@ function getFeedbackDir() {
   return resolveFeedbackDir();
 }
 
+function getLessonBaseUrl() {
+  const configuredOrigin = String(process.env.THUMBGATE_PUBLIC_APP_ORIGIN || '').trim().replace(/\/+$/, '');
+  return configuredOrigin || 'http://localhost:3456';
+}
+
 function getLessonsPath() { return path.join(getFeedbackDir(), LESSONS_FILE); }
 function getRecentLessonPath() { return path.join(getFeedbackDir(), RECENT_LESSON_FILE); }
 
@@ -138,7 +143,7 @@ function createLesson({ feedbackId, signal, inferredLesson, triggerMessage, prio
   };
 
   // Stable link: dashboard deep-link to this lesson
-  lesson.link = `http://localhost:9876/lessons#${lesson.id}`;
+  lesson.link = `${getLessonBaseUrl()}/lessons#${lesson.id}`;
 
   const lessonsPath = getLessonsPath();
   ensureDir(lessonsPath);

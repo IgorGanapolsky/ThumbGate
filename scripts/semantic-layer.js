@@ -2,7 +2,7 @@
 /**
  * scripts/semantic-layer.js
  * 
- * The Foundation of Enterprise AI for mcp-memory-gateway.
+ * The Foundation of Enterprise AI for thumbgate.
  * Centralizes business logic, metrics, and entity definitions.
  */
 const { materializeAgenticDataPipeline } = require('./agentic-data-pipeline');

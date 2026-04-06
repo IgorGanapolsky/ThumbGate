@@ -6,7 +6,7 @@ If you use Claude Code, Cursor, or any AI coding agent daily, you've probably no
 2. **Hallucinated completions** — Claude says "Done, all tests passing" when nothing actually passes.
 3. **Repeated mistakes** — You fix the same bug three times this week because the agent keeps making the same error.
 
-I got frustrated enough to build a solution: [mcp-memory-gateway](https://github.com/IgorGanapolsky/ThumbGate).
+I got frustrated enough to build a solution: [thumbgate](https://github.com/IgorGanapolsky/ThumbGate).
 
 ## What it is
 
@@ -65,7 +65,7 @@ The gate engine uses a default-deny model for high-risk actions. The agent must 
 ## Install
 
 ```bash
-npx mcp-memory-gateway serve
+npx thumbgate serve
 ```
 
 Or add to your MCP config:
@@ -75,7 +75,7 @@ Or add to your MCP config:
   "mcpServers": {
     "memory-gateway": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway", "serve"]
+      "args": ["-y", "thumbgate", "serve"]
     }
   }
 }

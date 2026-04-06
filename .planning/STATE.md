@@ -21,7 +21,7 @@ Last activity: 2026-03-23 - Completed quick task 2: Integrate Zernio unified pub
 - [v3.1]: $49 one-time payment model — lowest friction for first dollar at zero-traction stage
 - [v3.1]: Stripe price_1TCOL1GGBpd520QY8CyhR9Dd ($49 one-time) live on Railway
 - [v3.1]: Dead Cloud Run webhook disabled; Railway sole active Stripe webhook
-- [v3.1]: Official MCP Registry published (io.github.IgorGanapolsky/mcp-memory-gateway)
+- [v3.1]: Official MCP Registry published (io.github.IgorGanapolsky/thumbgate)
 - [v3.1]: npm v0.7.2 published with mcpName field
 - [v3.1]: PulseMCP already lists us (auto-indexed)
 - [v3.1]: Reddit standalone post already published on r/ClaudeCode

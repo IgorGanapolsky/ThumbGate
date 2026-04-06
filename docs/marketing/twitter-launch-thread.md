@@ -24,7 +24,7 @@ https://thumbgate-production.up.railway.app/checkout/pro
 **Tweet 3 (free self-hosted CTA):**
 Self-hosting is free and takes 30 seconds.
 
-npx mcp-memory-gateway serve
+npx thumbgate serve
 
 That's it. Works with Claude Code, Codex CLI, Gemini CLI, Amp, Cursor. All data stays on your machine.
 
@@ -59,7 +59,7 @@ This does all three.
 ---
 
 **Tweet 7 (close + dual CTA):**
-Free self-hosted: npx mcp-memory-gateway serve
+Free self-hosted: npx thumbgate serve
 Pro ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
 Hosted demo: https://thumbgate-production.up.railway.app
 GitHub: https://github.com/IgorGanapolsky/ThumbGate

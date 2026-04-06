@@ -19,6 +19,6 @@ child.on('exit', (code, signal) => {
 });
 
 child.on('error', (error) => {
-  console.error(`[mcp-memory-gateway] Failed to launch Claude Desktop bundle runtime: ${error.message}`);
+  console.error(`[thumbgate] Failed to launch Claude Desktop bundle runtime: ${error.message}`);
   process.exit(1);
 });

@@ -10,7 +10,7 @@ const { execSync } = require('node:child_process');
 const ROOT = path.join(__dirname, '..');
 
 test('prove-data-pipeline: proof gate passes with 6/6 checks', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-data-pipeline-proof-test-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-data-pipeline-proof-test-'));
   try {
     const output = execSync('node scripts/prove-data-pipeline.js', {
       cwd: ROOT,
@@ -26,7 +26,7 @@ test('prove-data-pipeline: proof gate passes with 6/6 checks', () => {
 });
 
 test('prove-data-pipeline: report.json is valid JSON with all requirements', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-data-pipeline-proof-json-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-data-pipeline-proof-json-'));
   try {
     execSync('node scripts/prove-data-pipeline.js', {
       cwd: ROOT,
@@ -49,7 +49,7 @@ test('prove-data-pipeline: report.json is valid JSON with all requirements', () 
 });
 
 test('prove-data-pipeline: report.md contains all requirement checkboxes', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-data-pipeline-proof-md-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-data-pipeline-proof-md-'));
   try {
     execSync('node scripts/prove-data-pipeline.js', {
       cwd: ROOT,

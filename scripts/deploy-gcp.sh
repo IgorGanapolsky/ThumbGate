@@ -4,7 +4,7 @@
 set -euo pipefail
 
 PROJECT_ID=$(gcloud config get-value project)
-SERVICE_NAME="rlhf-control-plane"
+SERVICE_NAME="thumbgate-control-plane"
 REGION="us-central1"
 
 : "${THUMBGATE_API_KEY:?THUMBGATE_API_KEY is required}"

@@ -1,5 +1,5 @@
 {
-  "name": "mcp-memory-gateway",
+  "name": "thumbgate",
   "version": "0.9.9",
   "description": "ThumbGate — Pre-action gates that block AI coding agents from repeating known mistakes. SQLite+FTS5 lesson DB with corrective-action inference. MemAlign-inspired dual recall (principles + episodic context). Thompson Sampling for adaptive gate sensitivity. LanceDB vector search. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.",
   "homepage": "https://thumbgate-production.up.railway.app",
@@ -12,8 +12,7 @@
   },
   "main": "scripts/feedback-loop.js",
   "bin": {
-    "mcp-memory-gateway": "bin/cli.js",
-    "rlhf": "bin/cli.js"
+    "thumbgate": "bin/cli.js"
   },
   "files": [
     "bin/",
@@ -221,7 +220,6 @@
     "test:feedback-root-consolidator": "node --test tests/feedback-root-consolidator.test.js"
   },
   "keywords": [
-    "rlhf",
     "mcp",
     "mcp-server",
     "ai-agents",
@@ -281,5 +279,5 @@
       "path-to-regexp": "0.1.13"
     }
   },
-  "mcpName": "io.github.IgorGanapolsky/mcp-memory-gateway"
+  "mcpName": "io.github.IgorGanapolsky/thumbgate"
 }

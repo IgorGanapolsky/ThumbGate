@@ -62,12 +62,12 @@ function getThumbgateFeedbackDir(options = {}) {
   return path.join(cwd, '.thumbgate');
 }
 
-function getRlhfFeedbackDir(options = {}) {
+function getFallbackFeedbackDir(options = {}) {
   const env = options.env || process.env;
-  if (env._TEST_RLHF_FEEDBACK_DIR) return env._TEST_RLHF_FEEDBACK_DIR;
-  if (env.THUMBGATE_RLHF_FEEDBACK_DIR) return env.THUMBGATE_RLHF_FEEDBACK_DIR;
+  if (env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR) return env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
+  if (env.THUMBGATE_FALLBACK_FEEDBACK_DIR) return env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
   const cwd = options.cwd || process.cwd();
-  return path.join(cwd, '.rlhf');
+  return path.join(cwd, '.thumbgate-compat');
 }
 
 function getLegacyFeedbackDir(options = {}) {
@@ -91,8 +91,8 @@ function resolveFeedbackDir(options = {}) {
   const localThumbgate = getThumbgateFeedbackDir(options);
   if (dirExists(localThumbgate)) return localThumbgate;
 
-  const localRlhf = getRlhfFeedbackDir(options);
-  if (dirExists(localRlhf)) return localRlhf;
+  const localFallback = getFallbackFeedbackDir(options);
+  if (dirExists(localFallback)) return localFallback;
 
   const localLegacy = getLegacyFeedbackDir(options);
   if (dirExists(localLegacy)) return localLegacy;
@@ -107,7 +107,7 @@ function getFeedbackPaths(options = {}) {
 function listFallbackFeedbackDirs(options = {}) {
   const activeDir = path.resolve(resolveFeedbackDir(options));
   return uniquePaths([
-    getRlhfFeedbackDir(options),
+    getFallbackFeedbackDir(options),
     getLegacyFeedbackDir(options),
   ]).filter((dirPath) => path.resolve(dirPath) !== activeDir);
 }
@@ -136,7 +136,7 @@ module.exports = {
   getFeedbackPaths,
   getGlobalFeedbackDir,
   getLegacyFeedbackDir,
-  getRlhfFeedbackDir,
+  getFallbackFeedbackDir,
   getThumbgateFeedbackDir,
   listFallbackFeedbackDirs,
   listFeedbackArtifactPaths,

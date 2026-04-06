@@ -17,10 +17,10 @@ ThumbGate is a **human-in-the-loop enforcement layer** for AI coding agents — 
 
 | Channel | URL |
 |---------|-----|
-| npm | https://www.npmjs.com/package/mcp-memory-gateway |
-| Smithery | https://smithery.ai/server/mcp-memory-gateway |
+| npm | https://www.npmjs.com/package/thumbgate |
+| Smithery | https://smithery.ai/server/thumbgate |
 | MCP Marketplace | https://github.com/anthropics/mcp-marketplace |
-| GitHub | https://github.com/IgorGanapolsky/mcp-memory-gateway |
+| GitHub | https://github.com/IgorGanapolsky/thumbgate |
 | Hacker News | Show HN post (see outreach below) |
 
 ## 3. Acquisition: Social Post Templates
@@ -34,7 +34,7 @@ ThumbGate is a **human-in-the-loop enforcement layer** for AI coding agents — 
 > Free: 5 built-in gates + feedback capture + prevention rules
 > Pro ($19/mo): auto-gate promotion, unlimited custom gates, multi-repo sync
 >
-> OSS core: https://github.com/IgorGanapolsky/mcp-memory-gateway
+> OSS core: https://github.com/IgorGanapolsky/thumbgate
 > Pro: https://thumbgate-production.up.railway.app/checkout/pro"
 
 ### LinkedIn
@@ -45,7 +45,7 @@ ThumbGate is a **human-in-the-loop enforcement layer** for AI coding agents — 
 >
 > Free OSS core with 5 built-in gates. Pro at $19/mo adds auto-gate promotion, unlimited custom gates, and multi-repo sync.
 >
-> GitHub: https://github.com/IgorGanapolsky/mcp-memory-gateway"
+> GitHub: https://github.com/IgorGanapolsky/thumbgate"
 
 ### Show HN
 
@@ -57,11 +57,11 @@ ThumbGate is a **human-in-the-loop enforcement layer** for AI coding agents — 
 >
 > Free + MIT licensed. Pro at $19/mo for teams that need auto-gate promotion and multi-repo sync.
 >
-> https://github.com/IgorGanapolsky/mcp-memory-gateway"
+> https://github.com/IgorGanapolsky/thumbgate"
 
 ## 4. High-Intent Direct Messages
 
-> "Hey, I just shipped Pre-Action Gates in ThumbGate v0.7.0 — configurable checkpoints that block dangerous AI agent tool calls before they fire. The OSS core has 5 built-in gates and feedback capture for free. Pro is $19/mo for auto-gate promotion and multi-repo sync. Would love your honest feedback: https://github.com/IgorGanapolsky/mcp-memory-gateway"
+> "Hey, I just shipped Pre-Action Gates in ThumbGate v0.7.0 — configurable checkpoints that block dangerous AI agent tool calls before they fire. The OSS core has 5 built-in gates and feedback capture for free. Pro is $19/mo for auto-gate promotion and multi-repo sync. Would love your honest feedback: https://github.com/IgorGanapolsky/thumbgate"
 
 ## 5. Commercial Truth
 

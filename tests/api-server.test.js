@@ -4,8 +4,8 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-api-test-'));
-const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-api-proof-'));
+const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-api-test-'));
+const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-api-proof-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
 process.env.THUMBGATE_API_KEY = 'test-api-key';
@@ -108,7 +108,7 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Stop AI Coding Agents From Repeating Mistakes/i);
   assert.match(body, /Human-in-the-Loop Enforcement/i);
   assert.match(body, /safety net for vibe coding/i);
-  assert.match(body, /npx mcp-memory-gateway init/);
+  assert.match(body, /npx thumbgate init/);
   assert.match(body, /Pre-Action Gates/i);
   assert.match(body, /Thompson Sampling/i);
   assert.match(body, /FAQPage/);
@@ -219,7 +219,7 @@ test('public server card exposes MCP tool schemas for directory scanners', async
   assert.match(String(res.headers.get('content-type')), /application\/json/);
 
   const body = await res.json();
-  assert.equal(body.name, 'mcp-memory-gateway');
+  assert.equal(body.name, 'thumbgate');
   assert.ok(Array.isArray(body.tools));
   assert.ok(body.tools.length > 0);
 
@@ -393,7 +393,7 @@ test('provisioning endpoint works', async () => {
   });
   assert.equal(res.status, 200);
   const body = await res.json();
-  assert.ok(body.key.startsWith('rlhf_'));
+  assert.ok(body.key.startsWith('tg_'));
   
   // Verify isolated path
   assert.equal(billing._API_KEYS_PATH(), path.join(tmpFeedbackDir, 'api-keys.json'));
@@ -407,7 +407,7 @@ test('root still serves JSON status when explicitly requested', async () => {
   assert.match(String(res.headers.get('content-type')), /application\/json/);
 
   const body = await res.json();
-  assert.equal(body.name, 'mcp-memory-gateway');
+  assert.equal(body.name, 'thumbgate');
   assert.equal(body.status, 'ok');
 });
 
@@ -454,7 +454,7 @@ test('success page serves hosted onboarding shell and records first-party teleme
   const body = await res.text();
   assert.match(body, /Your local Pro dashboard is ready\./);
   assert.match(body, /Launch your personal dashboard/);
-  assert.match(body, /npx mcp-memory-gateway pro --activate --key=/);
+  assert.match(body, /npx thumbgate pro --activate --key=/);
   assert.match(body, /const sessionEndpoint = "https:\/\/billing\.example\.com\/v1\/billing\/session";/);
   assert.match(body, /\+ '\?sessionId=' \+ encodeURIComponent\(sessionId\)/);
   assert.match(body, /sendTelemetryOnce\('checkout_session_lookup_started'/);
@@ -1542,7 +1542,7 @@ test('billing session endpoint returns provisioned local checkout details', asyn
   const sessionBody = await sessionRes.json();
   assert.equal(sessionBody.paid, true);
   assert.equal(sessionBody.installId, 'inst_public_checkout_lookup');
-  assert.ok(sessionBody.apiKey.startsWith('rlhf_'));
+  assert.ok(sessionBody.apiKey.startsWith('tg_'));
   assert.equal(sessionBody.appOrigin, 'https://app.example.com');
   assert.equal(sessionBody.apiBaseUrl, 'https://billing.example.com');
   assert.match(sessionBody.traceId, /^checkout_/);
@@ -1698,7 +1698,7 @@ test('billing summary returns admin-only operational proxy', async () => {
 });
 
 test('billing summary applies today window query params for admin users', async () => {
-  const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-api-window-'));
+  const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-api-window-'));
   const savedEnv = {
     feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
     apiKeysPath: process.env._TEST_API_KEYS_PATH,
@@ -1873,7 +1873,7 @@ test('billing summary applies today window query params for admin users', async 
 });
 
 test('dashboard applies analytics window query params with live billing truth', async () => {
-  const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-dashboard-window-'));
+  const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-dashboard-window-'));
   const savedEnv = {
     feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
     apiKeysPath: process.env._TEST_API_KEYS_PATH,
@@ -2074,7 +2074,7 @@ test('settings status endpoint returns resolved settings and origin metadata', a
 });
 
 test('dashboard render-spec endpoint returns constrained hosted views', async () => {
-  const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-dashboard-render-spec-'));
+  const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-dashboard-render-spec-'));
   const savedEnv = {
     feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
     apiKeysPath: process.env._TEST_API_KEYS_PATH,

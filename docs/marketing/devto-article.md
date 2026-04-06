@@ -1,7 +1,7 @@
 ---
 title: "I Built Persistent Memory for Claude Code — Here's What I Learned"
 published: false
-tags: ai, mcp, rlhf, devtools
+tags: ai, mcp, thumbgate, devtools
 cover_image:
 canonical_url: https://github.com/IgorGanapolsky/ThumbGate
 ---
@@ -30,7 +30,7 @@ None of these worked reliably. The missing piece was not retrieval — it was **
 
 The breakthrough came when I stopped treating feedback as passive context and started treating it as active control flow.
 
-[mcp-memory-gateway](https://github.com/IgorGanapolsky/ThumbGate) is an MCP server that sits inside your agent's tool chain. The core loop:
+[thumbgate](https://github.com/IgorGanapolsky/ThumbGate) is an MCP server that sits inside your agent's tool chain. The core loop:
 
 1. You rate agent actions (thumbs up or down) with a brief note
 2. Feedback gets stored in JSONL and indexed in LanceDB
@@ -40,7 +40,7 @@ The breakthrough came when I stopped treating feedback as passive context and st
 The install is one line:
 
 ```bash
-npx mcp-memory-gateway serve
+npx thumbgate serve
 ```
 
 Then add it to your MCP config (Claude Code example):
@@ -48,9 +48,9 @@ Then add it to your MCP config (Claude Code example):
 ```json
 {
   "mcpServers": {
-    "memory-gateway": {
+    "thumbgate": {
       "command": "npx",
-      "args": ["mcp-memory-gateway", "serve"]
+      "args": ["thumbgate", "serve"]
     }
   }
 }
@@ -93,11 +93,11 @@ I have not fine-tuned a model with this data yet, but the export pipeline is tes
 The core is open source under MIT:
 
 ```bash
-npx mcp-memory-gateway serve
+npx thumbgate serve
 ```
 
 GitHub: [github.com/IgorGanapolsky/ThumbGate](https://github.com/IgorGanapolsky/ThumbGate)
-npm: [mcp-memory-gateway](https://www.npmjs.com/package/mcp-memory-gateway)
+npm: [thumbgate](https://www.npmjs.com/package/thumbgate)
 
 If you want a personal local dashboard, DPO export, and an optional hosted API key for team workflows, there is a [Pro tier at $19/mo or $149/yr](https://thumbgate-production.up.railway.app/checkout/pro). The core local feedback loop still works on its own.
 

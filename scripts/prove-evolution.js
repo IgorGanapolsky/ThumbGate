@@ -93,7 +93,7 @@ async function run() {
       id: 'EVOLVE-01',
       desc: 'evolution-state loads defaults and captures rollback snapshots',
       fn: () => {
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-proof-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evolution-proof-'));
         try {
           process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
           resetModules();
@@ -120,7 +120,7 @@ async function run() {
       id: 'EVOLVE-02',
       desc: 'workspace-evolver accepts improved candidates only when primary and holdout checks pass',
       fn: () => {
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-proof-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evolution-proof-'));
         try {
           process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
           resetModules();
@@ -149,7 +149,7 @@ async function run() {
       id: 'EVOLVE-03',
       desc: 'restoreWorkspaceEvolution rolls accepted state back to the previous snapshot',
       fn: () => {
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-proof-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evolution-proof-'));
         try {
           process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
           resetModules();
@@ -177,7 +177,7 @@ async function run() {
       id: 'EVOLVE-04',
       desc: 'autoresearch-runner delegates to workspace evolver and records research metadata plus rollback evidence',
       fn: async () => {
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-proof-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evolution-proof-'));
         try {
           process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
           resetModules();
@@ -216,7 +216,7 @@ async function run() {
       id: 'EVOLVE-05',
       desc: 'async-job-runner follow-up experiments include a recommended evolution target and replay command',
       fn: () => {
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-proof-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evolution-proof-'));
         try {
           process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
           resetModules();
@@ -258,8 +258,8 @@ async function run() {
           throw new Error('verify:full is missing prove:evolution');
         }
 
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-proof-feedback-'));
-        const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evolution-proof-cwd-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evolution-proof-feedback-'));
+        const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evolution-proof-cwd-'));
         try {
           const entry = recordVerifyWorkflowRun('full', cwd, feedbackDir);
           if (!entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'evolution-report.json')))) {

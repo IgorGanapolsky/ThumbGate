@@ -11,13 +11,13 @@ const DISTRIBUTION_DOC_PATH = path.join(PKG_ROOT, 'docs', 'PLUGIN_DISTRIBUTION.m
 const PRO_WORKFLOW_PATH = path.join(PKG_ROOT, '.github', 'workflows', 'publish-npm-pro.yml');
 const EMBEDDED_PRO_DIR = path.join(PKG_ROOT, 'pro');
 const SONAR_PROJECT_PATH = path.join(PKG_ROOT, 'sonar-project.properties');
-const PRO_REPO_URL = 'https://github.com/IgorGanapolsky/mcp-memory-gateway-pro';
+const PRO_REPO_URL = 'https://github.com/IgorGanapolsky/thumbgate-pro';
 
 test('public repo points operators to the separate Pro repo', () => {
   const readme = fs.readFileSync(README_PATH, 'utf8');
   const distributionDoc = fs.readFileSync(DISTRIBUTION_DOC_PATH, 'utf8');
   assert.match(readme, new RegExp(PRO_REPO_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(distributionDoc, /separate `mcp-memory-gateway-pro` repo\/package/i);
+  assert.match(distributionDoc, /separate `thumbgate-pro` repo\/package/i);
 });
 
 test('public repo no longer embeds the Pro package subtree', () => {

@@ -136,7 +136,7 @@ function enforceRetention() {
  */
 function generateDataUsageSummary() {
   const prefs = loadPreferences();
-  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.thumbgate');
   const logPath = path.join(feedbackDir, 'feedback-log.jsonl');
   let entryCount = 0;
   if (fs.existsSync(logPath)) {

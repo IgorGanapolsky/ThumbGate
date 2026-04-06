@@ -27,7 +27,7 @@ const { evaluateMemoryIngress } = require('../scripts/memory-firewall');
 const { recordConversationEntry } = require('../scripts/feedback-history-distiller');
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-loop-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-loop-test-'));
 }
 
 function appendJSONL(filePath, record) {
@@ -301,7 +301,7 @@ test('analyzeFeedback: returns correct counts on populated log', (t) => {
   assert.equal(stats.diagnostics.totalDiagnosed, 0);
 });
 
-test('getFeedbackPaths falls back to global dir when neither .rlhf nor .claude exists', () => {
+test('getFeedbackPaths falls back to global dir when neither .thumbgate nor .claude exists', () => {
   const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const savedRailwayVolumeMountPath = process.env.RAILWAY_VOLUME_MOUNT_PATH;
   delete process.env.THUMBGATE_FEEDBACK_DIR;

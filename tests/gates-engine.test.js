@@ -77,7 +77,7 @@ function makeTempPath(name) {
 function withTempFeedbackDir(fn) {
   const originalFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const originalProvider = process.env.THUMBGATE_SECRET_SCAN_PROVIDER;
-  const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-gates-secret-'));
+  const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gates-secret-'));
   process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
   process.env.THUMBGATE_SECRET_SCAN_PROVIDER = 'heuristic';
   try {
@@ -106,7 +106,7 @@ function buildGitHubPat() {
 }
 
 beforeEach(() => {
-  sandboxDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-gates-test-'));
+  sandboxDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gates-test-'));
   gatesEngine.STATE_PATH = sandboxPath('gate-state.json');
   gatesEngine.STATS_PATH = sandboxPath('gate-stats.json');
   gatesEngine.CONSTRAINTS_PATH = sandboxPath('session-constraints.json');

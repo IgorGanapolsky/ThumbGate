@@ -7,7 +7,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 // Isolated temp dir for all commerce quality tests
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-commerce-test-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-commerce-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 process.env.THUMBGATE_API_KEY = 'test-commerce-key';
 process.env._TEST_API_KEYS_PATH = path.join(tmpDir, 'api-keys.json');
@@ -151,7 +151,7 @@ test('GET /v1/quality/rules returns structured rules', async () => {
 
 test('GET /v1/quality/rules returns empty when no rules exist', async () => {
   // Use a fresh dir
-  const freshDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-commerce-empty-'));
+  const freshDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-commerce-empty-'));
   const origDir = process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.THUMBGATE_FEEDBACK_DIR = freshDir;
 
@@ -211,7 +211,7 @@ test('commerce MCP profile has the right tools', () => {
     'capture_feedback',
     'recall',
     'retrieve_lessons',
-    'search_rlhf',
+    'search_thumbgate',
     'commerce_recall',
     'track_action',
     'verify_claim',

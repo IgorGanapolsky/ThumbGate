@@ -71,7 +71,7 @@ const {
   retrieveRelevantLessons,
 } = require('../../scripts/lesson-retrieval');
 const {
-  searchRlhf,
+  searchThumbgate,
 } = require('../../scripts/thumbgate-search');
 const { checkLimit, UPGRADE_MESSAGE } = require('../../scripts/rate-limiter');
 const { generateOrgDashboard } = require('../../scripts/org-dashboard');
@@ -103,7 +103,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.9.9' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '0.9.9' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -395,9 +395,9 @@ async function callToolInner(name, args) {
         args.actionContext || '',
         { maxResults: Number(args.maxResults || 5) },
       ));
-    case 'search_rlhf':
-      enforceLimit('search_rlhf');
-      return toTextResult(searchRlhf({
+    case 'search_thumbgate':
+      enforceLimit('search_thumbgate');
+      return toTextResult(searchThumbgate({
         query: args.query,
         limit: args.limit,
         source: args.source,
@@ -682,7 +682,7 @@ const LOCK_STALE_MS = Number(process.env.THUMBGATE_LOCK_STALE_MS) || 2 * 60 * 60
  *
  * Staleness reaping: if the lock-holding process is alive but the lock is
  * older than LOCK_STALE_MS, the holder is killed (SIGTERM) and the lock is
- * reclaimed. This prevents orphaned `rlhf serve` processes from permanently
+ * reclaimed. This prevents orphaned `thumbgate serve` processes from permanently
  * blocking new sessions.
  */
 function acquireLock() {

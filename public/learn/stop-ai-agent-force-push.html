@@ -77,7 +77,7 @@
   <p>A pre-action gate intercepts the tool call <em>before</em> it executes. It pattern-matches the command against known-bad actions and blocks them. The agent cannot bypass it because the gate runs outside the agent's control, at the MCP hook layer.</p>
 
   <h3>Step 1: Install ThumbGate</h3>
-  <pre><code>npx mcp-memory-gateway init</code></pre>
+  <pre><code>npx thumbgate init</code></pre>
   <p>This auto-detects your agent (Claude Code, Cursor, etc.) and configures the PreToolUse hook.</p>
 
   <h3>Step 2: Give feedback</h3>
@@ -113,7 +113,7 @@ reason: "Force-push to main blocked — destroyed 14 commits (2026-03-15)"</code
   <div class="cta-box">
     <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Try it now</h2>
     <p>One command. Your agent stops repeating mistakes today.</p>
-    <div class="cta-install">$ npx mcp-memory-gateway init</div>
+    <div class="cta-install">$ npx thumbgate init</div>
   </div>
 
   <div class="related">
@@ -127,7 +127,7 @@ reason: "Force-push to main blocked — destroyed 14 commits (2026-03-15)"</code
 
   <div class="sticky-cta">
     <span style="color:var(--muted)">Try it now:</span>
-    <code>npx mcp-memory-gateway init</code>
+    <code>npx thumbgate init</code>
     <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
   </div>
 </body>

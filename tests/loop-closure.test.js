@@ -385,7 +385,7 @@ describe('feedback-to-memory', () => {
     const result = m.convertFeedbackToMemory({
       signal: 'positive',
       whatWorked: 'Built schema-validated feedback system with prevention rules',
-      tags: ['architecture', 'rlhf'],
+      tags: ['architecture', 'thumbgate'],
     });
     assert.equal(result.ok, true);
     assert.equal(result.actionType, 'store-learning');
@@ -414,7 +414,7 @@ describe('feedback-to-memory', () => {
     const result = m.convertFeedbackToMemory({
       signal: 'negative',
       context: 'Showed fake ThumbGate statistics panel to user without real data',
-      tags: ['rlhf'],
+      tags: ['thumbgate'],
     });
     assert.equal(result.ok, true);
     assert.ok(result.memory.title.startsWith('MISTAKE:'));

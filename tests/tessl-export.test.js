@@ -21,11 +21,11 @@ test('tile config focuses on the two first-party ThumbGate skills with highest T
   const tileNames = config.tiles.map((tile) => tile.tileName);
 
   assert.equal(config.defaultWorkspace, 'thumbgate');
-  assert.deepEqual(tileNames, ['agent-memory', 'rlhf-feedback']);
+  assert.deepEqual(tileNames, ['agent-memory', 'thumbgate-feedback']);
 });
 
 test('exportTiles writes publishable Tessl tile folders with manifests, docs, and copied skills', () => {
-  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-tessl-export-'));
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-tessl-export-'));
 
   try {
     const exported = exportTiles({ outDir });
@@ -47,19 +47,19 @@ test('exportTiles writes publishable Tessl tile folders with manifests, docs, an
 });
 
 test('exportTiles supports workspace overrides for publish-time targeting', () => {
-  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-tessl-workspace-'));
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-tessl-workspace-'));
 
   try {
     exportTiles({ outDir, workspace: 'igorganapolsky' });
-    const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'rlhf-feedback', 'tile.json'), 'utf8'));
-    assert.equal(manifest.name, 'igorganapolsky/rlhf-feedback');
+    const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'thumbgate-feedback', 'tile.json'), 'utf8'));
+    assert.equal(manifest.name, 'igorganapolsky/thumbgate-feedback');
   } finally {
     fs.rmSync(outDir, { recursive: true, force: true });
   }
 });
 
 test('exportTiles copies all files from richer skill bundles, not just SKILL.md', () => {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-tessl-copy-'));
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-tessl-copy-'));
   const skillsDir = path.join(tempRoot, 'skills');
   const configPath = path.join(tempRoot, 'tessl-tiles.json');
   const outDir = path.join(tempRoot, 'out');
@@ -103,7 +103,7 @@ test('verifyTiles succeeds against the canonical repo configuration', () => {
   const result = verifyTiles();
   assert.equal(result.ok, true);
   assert.equal(result.tileCount, 2);
-  assert.deepEqual(result.tiles, ['thumbgate/agent-memory', 'thumbgate/rlhf-feedback']);
+  assert.deepEqual(result.tiles, ['thumbgate/agent-memory', 'thumbgate/thumbgate-feedback']);
 });
 
 test('tessl-export CLI supports verify and JSON output', () => {

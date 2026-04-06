@@ -9,7 +9,7 @@
  *   REDDIT_CLIENT_SECRET  — OAuth2 application client secret (required)
  *   REDDIT_USERNAME       — Reddit account username (required)
  *   REDDIT_PASSWORD       — Reddit account password (required)
- *   REDDIT_USER_AGENT     — Custom User-Agent string (default: mcp-memory-gateway/1.0 by <username>)
+ *   REDDIT_USER_AGENT     — Custom User-Agent string (default: thumbgate/1.0 by <username>)
  *
  * Target subreddits for our product:
  *   r/ClaudeCode, r/ClaudeAI, r/MCP, r/LocalLLaMA, r/SideProject
@@ -59,7 +59,7 @@ async function getRedditToken(clientId, clientSecret, username, password) {
     headers: {
       Authorization: `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': `mcp-memory-gateway/1.0 by ${username}`,
+      'User-Agent': `thumbgate/1.0 by ${username}`,
     },
     body: body.toString(),
   });
@@ -295,7 +295,7 @@ async function publishToReddit({ subreddit, title, text, url, token, followUpCom
   const username = process.env.REDDIT_USERNAME;
   const password = process.env.REDDIT_PASSWORD;
   const userAgent =
-    process.env.REDDIT_USER_AGENT || `mcp-memory-gateway/1.0 by ${username}`;
+    process.env.REDDIT_USER_AGENT || `thumbgate/1.0 by ${username}`;
 
   const accessToken =
     token ||

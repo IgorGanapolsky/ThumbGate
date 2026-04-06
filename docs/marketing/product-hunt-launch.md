@@ -1,9 +1,9 @@
 # Product Hunt Listing Kit — ThumbGate v0.8.4
 
-Status: live listing at https://www.producthunt.com/products/mcp-memory-gateway
+Status: live listing at https://www.producthunt.com/products/thumbgate
 
 ## Name
-ThumbGate (mcp-memory-gateway)
+ThumbGate (thumbgate)
 
 ## Tagline (60 chars max)
 👍 reinforce wins. 👎 block repeated mistakes.
@@ -20,9 +20,9 @@ Free + Open Source (Pro $19/mo or $149/yr for individual operators; Team rollout
 ## Links
 - **Website:** https://thumbgate-production.up.railway.app
 - **GitHub:** https://github.com/IgorGanapolsky/ThumbGate
-- **npm:** https://www.npmjs.com/package/mcp-memory-gateway
+- **npm:** https://www.npmjs.com/package/thumbgate
 - **Live Dashboard:** https://thumbgate-production.up.railway.app/dashboard
-- **Product Hunt:** https://www.producthunt.com/products/mcp-memory-gateway
+- **Product Hunt:** https://www.producthunt.com/products/thumbgate
 - **Claude plugin bundle:** https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb
 - **Claude plugin guide:** https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md
 
@@ -51,7 +51,7 @@ Every AI coding agent has the same problem: **you correct a mistake, and next se
 
 **Zero config install:**
 ```
-npx mcp-memory-gateway init
+npx thumbgate init
 ```
 Auto-detects your agent (Claude Code, Cursor, Codex, Gemini, Amp, OpenCode) and wires everything up.
 
@@ -62,7 +62,7 @@ Auto-detects your agent (Claude Code, Cursor, Codex, Gemini, Amp, OpenCode) and 
 **What makes ThumbGate different from memory tools like Mem0 or .cursorrules:**
 Most memory tools help agents *remember*. ThumbGate also *enforces*. A gate doesn't ask the agent to cooperate — it blocks the action before execution.
 
-**Honest disclaimer:** This is not traditional RLHF weight training. It's context engineering + enforcement. Feedback → searchable memory → prevention rules → gates that block known-bad actions.
+**Honest disclaimer:** This is not model-training feedback optimization. It's context engineering + enforcement. Feedback → searchable memory → prevention rules → gates that block known-bad actions.
 
 Free and open source. Pro adds a personal local dashboard and exports for individual operators. Team rollout stays intake-first for shared lessons and org visibility.
 
@@ -81,7 +81,7 @@ Clean, dark background with green/amber/red color coding.
 ### Image 3: Terminal Demo
 **Concept:** Real terminal screenshot showing:
 ```
-$ npx mcp-memory-gateway serve
+$ npx thumbgate serve
 [gate] ⛔ Blocked: git push --force (rule: no-force-push, confidence: 0.94)
 [gate] ✅ Passed: git push origin feature-branch
 ```
@@ -90,7 +90,7 @@ $ npx mcp-memory-gateway serve
 **Concept:** Screenshot of live dashboard at https://thumbgate-production.up.railway.app/dashboard showing enforcement matrix, gate stats, and feedback summary.
 
 ### Image 5: Agent Compatibility
-**Concept:** Logo grid showing supported agents: Claude Code, Cursor, Codex, Gemini, Amp, OpenCode. Center text: "One install. Every agent." with `npx mcp-memory-gateway init` command.
+**Concept:** Logo grid showing supported agents: Claude Code, Cursor, Codex, Gemini, Amp, OpenCode. Center text: "One install. Every agent." with `npx thumbgate init` command.
 
 ### Image 6: Comparison Table
 **Concept:** Feature comparison vs Mem0, SpecLock, .cursorrules showing ThumbGate's unique "Blocks mistakes before execution" and "Auto-generates rules from feedback" capabilities.
@@ -105,9 +105,9 @@ ThumbGate — pre-action gates that physically block AI coding agents from repea
 
 Works with Claude Code, Cursor, Codex, Gemini, Amp.
 
-npx mcp-memory-gateway init
+npx thumbgate init
 
-Live on Product Hunt → https://www.producthunt.com/products/mcp-memory-gateway
+Live on Product Hunt → https://www.producthunt.com/products/thumbgate
 ```
 
 ### LinkedIn
@@ -120,9 +120,9 @@ Give your AI coding agent a thumbs-down → it auto-generates a prevention rule 
 
 36 MCP tools. Zero config. Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.
 
-Free and open source: npx mcp-memory-gateway init
+Free and open source: npx thumbgate init
 
-We just updated our Product Hunt listing → https://www.producthunt.com/products/mcp-memory-gateway
+We just updated our Product Hunt listing → https://www.producthunt.com/products/thumbgate
 ```
 
 ### Reddit (r/ClaudeAI, r/cursor, r/MachineLearning)
@@ -135,10 +135,10 @@ How it works: 👎 → prevention rule → gate blocks the action before executi
 
 36 MCP tools, SQLite+FTS5 for sub-ms search, Thompson Sampling for adaptive gate sensitivity.
 
-npx mcp-memory-gateway init — auto-detects your agent.
+npx thumbgate init — auto-detects your agent.
 
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
-Product Hunt: https://www.producthunt.com/products/mcp-memory-gateway
+Product Hunt: https://www.producthunt.com/products/thumbgate
 Claude plugin: https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb
 ```
 

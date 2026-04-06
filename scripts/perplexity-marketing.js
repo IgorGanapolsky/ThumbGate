@@ -28,7 +28,7 @@ const SONAR_URL = 'https://api.perplexity.ai/chat/completions';
 
 const PRODUCT = {
   name: 'ThumbGate',
-  npm: 'mcp-memory-gateway',
+  npm: 'thumbgate',
   repo: 'https://github.com/IgorGanapolsky/ThumbGate',
   checkout: 'https://thumbgate-production.up.railway.app/checkout/pro',
   sponsor: 'https://github.com/sponsors/IgorGanapolsky',
@@ -98,7 +98,7 @@ I built "${PRODUCT.name}" — ${PRODUCT.tagline}
 Research and provide:
 1. **Competitor Analysis**: What similar tools exist? (LangSmith, Weights & Biases, custom ThumbGate pipelines, etc.) What do they charge? What gaps does my tool fill?
 2. **Target Buyer Personas**: Who would pay $19/mo or $149/yr for a Pro plan with curated ThumbGate configs? (AI engineers, dev tool builders, agent framework users)
-3. **Distribution Channels**: Specific subreddits, Discord servers, Slack communities, newsletters, and forums where MCP/RLHF tool buyers hang out. Include URLs.
+3. **Distribution Channels**: Specific subreddits, Discord servers, Slack communities, newsletters, and forums where MCP and AI agent reliability tool buyers hang out. Include URLs.
 4. **SEO/GEO Keywords**: High-intent search terms people use when looking for this type of tool
 5. **Launch Strategy**: Specific steps to get first 10 paying customers this week
 6. **Pricing Validation**: Is $19/mo or $149/yr right for a Pro plan? What would similar tools charge?

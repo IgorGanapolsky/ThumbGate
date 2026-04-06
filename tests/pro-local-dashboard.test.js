@@ -24,7 +24,7 @@ const {
 } = require('../scripts/pro-local-dashboard');
 
 test('pro local dashboard helper saves and reloads license keys', () => {
-  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-pro-home-'));
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-pro-home-'));
   const licensePath = saveLicense('tg_local_saved_key', { homeDir, version: '0.8.4-test' });
   assert.equal(licensePath, getLicensePath(homeDir));
 
@@ -37,7 +37,7 @@ test('pro local dashboard helper saves and reloads license keys', () => {
 });
 
 test('pro local dashboard helper prefers THUMBGATE_API_KEY over saved license', () => {
-  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-pro-env-'));
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-pro-env-'));
   saveLicense('tg_saved_license', { homeDir });
 
   const resolved = resolveProKey({

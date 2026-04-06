@@ -80,10 +80,10 @@ THUMBGATE_FEEDBACK_DIR=/tmp/subway-gov-smoke node -e "
 # Output: status: {"month":"2026-03","totalUsd":0.5,"budgetUsd":10,"remainingUsd":9.5}
 ```
 
-### 6. rlhf baseline — not regressed
+### 6. ThumbGate baseline — not regressed
 
 ```
-cd /Users/ganapolsky_i/workspace/git/igor/rlhf
+cd /Users/ganapolsky_i/workspace/git/igor/thumbgate
 npm run test:api  → 89 pass, 0 fail
 npm test          → 2 proof tests pass, 0 fail
 Total: 91 tests (baseline was 60 when Phase 3 started; grew due to Phase 2 ML plans)

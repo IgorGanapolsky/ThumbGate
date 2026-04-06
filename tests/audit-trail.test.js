@@ -24,7 +24,7 @@ const {
 // ---------------------------------------------------------------------------
 
 function withTempDir(fn) {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-audit-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-audit-'));
   const origDir = process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   try {

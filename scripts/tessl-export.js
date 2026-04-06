@@ -235,7 +235,7 @@ function exportTiles({
 }
 
 function verifyTiles(options = {}) {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-tessl-verify-'));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-tessl-verify-'));
 
   try {
     const results = exportTiles({

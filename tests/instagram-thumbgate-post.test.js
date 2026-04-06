@@ -16,7 +16,7 @@ describe('Instagram ThumbGate Post', () => {
     assert.match(THUMBGATE_CAPTION, /#AIAgents/);
     assert.match(THUMBGATE_CAPTION, /#DeveloperTools/);
     assert.match(THUMBGATE_CAPTION, /#ThumbGate/);
-    assert.match(THUMBGATE_CAPTION, /npx mcp-memory-gateway init/);
+    assert.match(THUMBGATE_CAPTION, /npx thumbgate init/);
   });
 
   it('should post to Instagram when ZERNIO_API_KEY is set', async (t) => {

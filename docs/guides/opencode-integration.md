@@ -5,8 +5,8 @@ This repository now includes a repo-local OpenCode profile plus a portable adapt
 ## What Ships
 
 - `opencode.json` for repo-local OpenCode usage
-- `.opencode/instructions/rlhf-workflow.md` for worktree-only execution and evidence-first verification
-- `.opencode/agents/rlhf-review.md` for a read-only review subagent focused on regressions and proof gaps
+- `.opencode/instructions/thumbgate-workflow.md` for worktree-only execution and evidence-first verification
+- `.opencode/agents/thumbgate-review.md` for a read-only review subagent focused on regressions and proof gaps
 - `adapters/opencode/opencode.json` for a version-pinned portable OpenCode MCP profile
 - `plugins/opencode-profile/INSTALL.md` for installing the portable profile outside this repo
 
@@ -18,7 +18,7 @@ From a linked worktree, OpenCode picks up `opencode.json` automatically. That pr
 - denies edits to `.thumbgate/**`, `.claude/worktrees/**`, and live feedback memory artifacts
 - denies destructive git commands like `git push*`, `git reset*`, and `git checkout --*`
 - limits the `plan` agent to read-only repo inspection
-- allows the `build` agent to delegate only to the read-only `rlhf-review` subagent
+- allows the `build` agent to delegate only to the read-only `thumbgate-review` subagent
 
 That gives OpenCode a repo-native permission surface instead of bolting on a second orchestration layer.
 
@@ -26,13 +26,13 @@ That gives OpenCode a repo-native permission surface instead of bolting on a sec
 
 If you want the same MCP server in a different OpenCode project, copy `adapters/opencode/opencode.json` into your OpenCode config and merge the `mcp.thumbgate` block.
 
-The portable profile stays version-pinned to `mcp-memory-gateway@0.9.9`, and `scripts/sync-version.js` now checks it for drift.
+The portable profile stays version-pinned to `thumbgate@0.9.9`, and `scripts/sync-version.js` now checks it for drift.
 
 ## Why This Is High ROI
 
 - OpenCode is another client surface for the same local-first Reliability Gateway.
 - The repo-local profile encodes worktree safety and runtime-state boundaries directly in the client config.
-- The read-only `rlhf-review` agent gives a cheap verification pass without creating another edit-capable worker.
+- The read-only `thumbgate-review` agent gives a cheap verification pass without creating another edit-capable worker.
 
 ## Boundaries
 

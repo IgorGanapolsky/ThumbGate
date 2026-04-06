@@ -10,7 +10,7 @@ const os = require('os');
 const { processNewEntries, shouldIngest, ingestEntry } = require('../scripts/jsonl-watcher');
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-watcher-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-watcher-test-'));
 }
 
 function appendJSONL(filePath, record) {

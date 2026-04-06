@@ -8,7 +8,7 @@ const DEFAULT_OUTPUT_DIR = path.join(ROOT, 'docs', 'seo-gsd');
 
 const PRODUCT = {
   name: 'ThumbGate',
-  npm: 'mcp-memory-gateway',
+  npm: 'thumbgate',
   repoUrl: 'https://github.com/IgorGanapolsky/ThumbGate',
   homepageUrl: 'https://thumbgate-production.up.railway.app',
   verificationUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
@@ -291,9 +291,9 @@ const PAGE_BLUEPRINTS = [
         heading: 'Install with one command',
         paragraphs: [
           'Run this in your terminal and Claude Desktop picks up ThumbGate automatically:',
-          'npx mcp-memory-gateway init --claude-desktop',
+          'npx thumbgate init --claude-desktop',
           'Or add the MCP server directly:',
-          'claude mcp add thumbgate -- npx -y mcp-memory-gateway serve',
+          'claude mcp add thumbgate -- npx -y thumbgate serve',
         ],
       },
       {
@@ -320,7 +320,7 @@ const PAGE_BLUEPRINTS = [
       {
         heading: 'Verify it works',
         paragraphs: [
-          'After install, run npx mcp-memory-gateway doctor to confirm all subsystems are healthy. You should see 4/4 HEALTHY.',
+          'After install, run npx thumbgate doctor to confirm all subsystems are healthy. You should see 4/4 HEALTHY.',
         ],
       },
     ],
@@ -335,7 +335,7 @@ const PAGE_BLUEPRINTS = [
       },
       {
         question: 'Does this work with Claude Code too?',
-        answer: 'Yes. The same npx mcp-memory-gateway init command works for both Claude Desktop and Claude Code. Use --claude-desktop for the Desktop-specific setup.',
+        answer: 'Yes. The same npx thumbgate init command works for both Claude Desktop and Claude Code. Use --claude-desktop for the Desktop-specific setup.',
       },
     ],
     relatedPaths: ['/guides/claude-code-feedback', '/guides/pre-action-gates'],

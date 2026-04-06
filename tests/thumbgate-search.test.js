@@ -150,22 +150,22 @@ async function apiFetch(pathname, options = {}) {
 
 const authHeader = { authorization: 'Bearer test-search-key' };
 
-test('MCP registers search_rlhf as a read-only tool', () => {
+test('MCP registers search_thumbgate as a read-only tool', () => {
   const { TOOLS } = loadMcpServer();
-  const tool = TOOLS.find((entry) => entry.name === 'search_rlhf');
-  assert.ok(tool, 'search_rlhf must be registered');
+  const tool = TOOLS.find((entry) => entry.name === 'search_thumbgate');
+  assert.ok(tool, 'search_thumbgate must be registered');
   assert.deepEqual(tool.inputSchema.required, ['query']);
   assert.equal(tool.annotations && tool.annotations.readOnlyHint, true);
 });
 
-test('MCP search_rlhf returns merged results for source=all', async () => {
+test('MCP search_thumbgate returns merged results for source=all', async () => {
   const { handleRequest } = loadMcpServer();
   const result = await handleRequest({
     jsonrpc: '2.0',
     id: 10,
     method: 'tools/call',
     params: {
-      name: 'search_rlhf',
+      name: 'search_thumbgate',
       arguments: { query: 'database testing', limit: 5, source: 'all' },
     },
   });
@@ -178,14 +178,14 @@ test('MCP search_rlhf returns merged results for source=all', async () => {
   assert.ok(payload.results.some((entry) => entry.source === 'feedback'));
 });
 
-test('MCP search_rlhf filters feedback-only results', async () => {
+test('MCP search_thumbgate filters feedback-only results', async () => {
   const { handleRequest } = loadMcpServer();
   const result = await handleRequest({
     jsonrpc: '2.0',
     id: 11,
     method: 'tools/call',
     params: {
-      name: 'search_rlhf',
+      name: 'search_thumbgate',
       arguments: { query: 'database', source: 'feedback' },
     },
   });
@@ -197,14 +197,14 @@ test('MCP search_rlhf filters feedback-only results', async () => {
   });
 });
 
-test('MCP search_rlhf filters context-only results', async () => {
+test('MCP search_thumbgate filters context-only results', async () => {
   const { handleRequest } = loadMcpServer();
   const result = await handleRequest({
     jsonrpc: '2.0',
     id: 12,
     method: 'tools/call',
     params: {
-      name: 'search_rlhf',
+      name: 'search_thumbgate',
       arguments: { query: 'database timeout', source: 'context' },
     },
   });
@@ -216,14 +216,14 @@ test('MCP search_rlhf filters context-only results', async () => {
   });
 });
 
-test('MCP search_rlhf filters prevention-rule results', async () => {
+test('MCP search_thumbgate filters prevention-rule results', async () => {
   const { handleRequest } = loadMcpServer();
   const result = await handleRequest({
     jsonrpc: '2.0',
     id: 13,
     method: 'tools/call',
     params: {
-      name: 'search_rlhf',
+      name: 'search_thumbgate',
       arguments: { query: 'mock database', source: 'rules' },
     },
   });
@@ -235,14 +235,14 @@ test('MCP search_rlhf filters prevention-rule results', async () => {
   });
 });
 
-test('MCP search_rlhf honors signal filters across signal aliases', async () => {
+test('MCP search_thumbgate honors signal filters across signal aliases', async () => {
   const { handleRequest } = loadMcpServer();
   const result = await handleRequest({
     jsonrpc: '2.0',
     id: 14,
     method: 'tools/call',
     params: {
-      name: 'search_rlhf',
+      name: 'search_thumbgate',
       arguments: { query: 'lint', source: 'feedback', signal: 'negative' },
     },
   });
@@ -254,7 +254,7 @@ test('MCP search_rlhf honors signal filters across signal aliases', async () => 
   });
 });
 
-test('MCP search_rlhf rejects a missing query', async () => {
+test('MCP search_thumbgate rejects a missing query', async () => {
   const { handleRequest } = loadMcpServer();
   await assert.rejects(
     () => handleRequest({
@@ -262,7 +262,7 @@ test('MCP search_rlhf rejects a missing query', async () => {
       id: 15,
       method: 'tools/call',
       params: {
-        name: 'search_rlhf',
+        name: 'search_thumbgate',
         arguments: {},
       },
     }),

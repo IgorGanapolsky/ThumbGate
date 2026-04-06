@@ -1,7 +1,7 @@
 # ThumbGate — for Cursor
 
 `ThumbGate` is the human-facing plugin name in Cursor listings.
-`mcp-memory-gateway` stays the plugin slug, npm package, and launcher target.
+`thumbgate` stays the plugin slug, npm package, and launcher target.
 
 The canonical short description is:
 
@@ -22,7 +22,7 @@ How it works:
 
 | File | Always on | Description |
 |------|-----------|-------------|
-| `rules/pre-action-gates.mdc` | Yes | Before risky tool calls (git push, rm -rf, npm publish, deploy), check prevention rules via the rlhf MCP server. Blocks and explains if a rule matches. |
+| `rules/pre-action-gates.mdc` | Yes | Before risky tool calls (git push, rm -rf, npm publish, deploy), check prevention rules via the thumbgate MCP server. Blocks and explains if a rule matches. |
 | `rules/feedback-capture.mdc` | No | After any mistake or unexpected behavior, prompt to capture structured feedback with context and tags. |
 | `rules/session-continuity.mdc` | No | At session start, recall past context; at session end, hand off state for next session. |
 
@@ -53,13 +53,13 @@ How it works:
 
 | Hook | Trigger | Description |
 |------|---------|-------------|
-| `beforeShellExecution` | `git push`, `rm -rf`, `npm publish`, `deploy` | Runs `scripts/gate-check.sh` to perform a pre-action health check via `mcp-memory-gateway doctor`. |
+| `beforeShellExecution` | `git push`, `rm -rf`, `npm publish`, `deploy` | Runs `scripts/gate-check.sh` to perform a pre-action health check via `thumbgate doctor`. |
 
 ### MCP Server
 
 | Server | Command |
 |--------|---------|
-| `rlhf` | `npx -y mcp-memory-gateway@latest serve` |
+| `thumbgate` | `npx -y thumbgate@latest serve` |
 
 ## Install
 
@@ -82,7 +82,7 @@ If a manual submission form asks for `Name`, use `ThumbGate` instead of the slug
 Use the existing project bootstrap:
 
 ```bash
-npx mcp-memory-gateway init
+npx thumbgate init
 ```
 
 Or copy the plugin MCP config into `.cursor/mcp.json`:
@@ -90,9 +90,9 @@ Or copy the plugin MCP config into `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "rlhf": {
+    "thumbgate": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@latest", "serve"]
+      "args": ["-y", "thumbgate@latest", "serve"]
     }
   }
 }
@@ -100,7 +100,7 @@ Or copy the plugin MCP config into `.cursor/mcp.json`:
 
 ## Update behavior
 
-- Runtime updates: the plugin asks npm for `mcp-memory-gateway@latest`, so new npm releases can flow into the Cursor runtime without editing the plugin config.
+- Runtime updates: the plugin asks npm for `thumbgate@latest`, so new npm releases can flow into the Cursor runtime without editing the plugin config.
 - Metadata updates: `npm publish` does not refresh the marketplace description, screenshots, README, or directory listing copy. Republish the plugin bundle when those assets change.
 - Guaranteed rollouts: if you need deterministic behavior for a specific release, pin a version manually in local config instead of relying on `@latest`.
 

@@ -43,7 +43,7 @@ describe('postinstall banner', () => {
     const checkoutUrl = extractHttpUrls(stderr).find((candidate) => new URL(candidate).host === 'buy.stripe.com');
     assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'should include checkout URL');
     assert.ok(stderr.includes('ThumbGate'), 'should mention ThumbGate');
-    assert.ok(stderr.includes('npx mcp-memory-gateway'), 'should include quick start');
+    assert.ok(stderr.includes('npx thumbgate'), 'should include quick start');
     assert.match(stderr, /personal local dashboard/i);
     assert.match(stderr, /optional hosted API key/i);
     assert.match(stderr, /\$19\/mo or \$149\/yr/i);

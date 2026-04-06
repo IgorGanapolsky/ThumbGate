@@ -13,10 +13,11 @@
 
 const http = require('http');
 const https = require('https');
+const { DEFAULT_PUBLIC_APP_ORIGIN } = require('./hosted-config');
 
 const ENDPOINTS = [
-  { url: 'http://localhost:9876/v1/feedback/capture', key: 'tg_creator_dev_enterprise', label: 'local' },
-  { url: 'http://localhost:3456/v1/feedback/capture', key: 'tg_creator_dev_enterprise', label: 'local-alt' },
+  { url: 'http://localhost:3456/v1/feedback/capture', key: process.env.THUMBGATE_API_KEY || 'tg_creator_dev_enterprise', label: 'local' },
+  { url: `${DEFAULT_PUBLIC_APP_ORIGIN}/v1/feedback/capture`, key: process.env.THUMBGATE_API_KEY || 'tg_creator_dev_enterprise', label: 'hosted' },
 ];
 
 function parseArgs() {

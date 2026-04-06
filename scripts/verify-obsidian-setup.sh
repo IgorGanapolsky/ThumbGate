@@ -72,10 +72,10 @@ echo "[ MCP Server References ]"
 
 # Package name in MCP config JSON must match package.json name
 PKG_NAME=$(node -e "const p=require('$PACKAGE_JSON'); process.stdout.write(p.name);" 2>/dev/null || echo "")
-if grep -q "mcp-memory-gateway" "$SETUP_DOC"; then
-  check "OBSIDIAN_SETUP.md references correct MCP package name (mcp-memory-gateway)" "pass"
+if grep -q "thumbgate" "$SETUP_DOC"; then
+  check "OBSIDIAN_SETUP.md references correct MCP package name (thumbgate)" "pass"
 else
-  check "OBSIDIAN_SETUP.md references correct MCP package name (mcp-memory-gateway)" "fail"
+  check "OBSIDIAN_SETUP.md references correct MCP package name (thumbgate)" "fail"
 fi
 
 # MCP server-stdio.js must exist
@@ -86,10 +86,10 @@ else
 fi
 
 # npx command in setup doc
-if grep -q "npx mcp-memory-gateway serve" "$SETUP_DOC"; then
-  check "OBSIDIAN_SETUP.md includes npx mcp-memory-gateway serve command" "pass"
+if grep -q "npx thumbgate serve" "$SETUP_DOC"; then
+  check "OBSIDIAN_SETUP.md includes npx thumbgate serve command" "pass"
 else
-  check "OBSIDIAN_SETUP.md includes npx mcp-memory-gateway serve command" "fail"
+  check "OBSIDIAN_SETUP.md includes npx thumbgate serve command" "fail"
 fi
 
 # --- Section 5: Plugin reference ---

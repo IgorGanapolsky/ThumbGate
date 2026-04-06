@@ -94,7 +94,7 @@ function runTests() {
   const entries = [
     { signal: 'negative', context: 'Bad thing happened', tags: ['testing'] },
     { signal: 'positive', context: 'Good thing happened', tags: ['testing'] },
-    { signal: 'negative', context: 'Another bad thing', tags: ['rlhf'] },
+    { signal: 'negative', context: 'Another bad thing', tags: ['thumbgate'] },
   ];
   fs.writeFileSync(tmpInbox, entries.map((e) => JSON.stringify(e)).join('\n') + '\n');
 

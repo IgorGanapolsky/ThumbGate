@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Tests for bin/cli.js — npx mcp-memory-gateway
+ * Tests for bin/cli.js — npx thumbgate
  *
  * Verifies:
  *   1. CLI runs without error
@@ -35,10 +35,10 @@ const savedHome = process.env.HOME;
 const savedUserProfile = process.env.USERPROFILE;
 const savedStripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const savedStripePriceId = process.env.STRIPE_PRICE_ID;
-const savedPublishState = process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE;
+const savedPublishState = process.env.THUMBGATE_PUBLISH_STATE;
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cli-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-cli-test-'));
 }
 
 function writeSequenceLog(feedbackDir, rows) {
@@ -450,7 +450,7 @@ describe('bin/cli.js', () => {
     process.env.USERPROFILE = testHomeDir;
     process.env.STRIPE_SECRET_KEY = '';
     process.env.STRIPE_PRICE_ID = '';
-    process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE = 'published';
+    process.env.THUMBGATE_PUBLISH_STATE = 'published';
   });
 
   after(() => {
@@ -482,9 +482,9 @@ describe('bin/cli.js', () => {
       process.env.STRIPE_PRICE_ID = savedStripePriceId;
     }
     if (savedPublishState === undefined) {
-      delete process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE;
+      delete process.env.THUMBGATE_PUBLISH_STATE;
     } else {
-      process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE = savedPublishState;
+      process.env.THUMBGATE_PUBLISH_STATE = savedPublishState;
     }
   });
 
@@ -497,7 +497,7 @@ describe('bin/cli.js', () => {
   test('help command exits 0 and lists subcommands', () => {
     const result = runCliSync(['help']);
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
-    assert.ok(result.stdout.includes('mcp-memory-gateway'), 'Help should include CLI name');
+    assert.ok(result.stdout.includes('thumbgate'), 'Help should include CLI name');
     assert.ok(result.stdout.includes('init'), 'Help should mention init');
     assert.ok(result.stdout.includes('capture'), 'Help should mention capture');
     assert.ok(result.stdout.includes('cfo'), 'Help should mention cfo');
@@ -524,8 +524,8 @@ describe('bin/cli.js', () => {
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
     assert.match(result.stdout, /Pro \(\$19\/mo or \$149\/yr\)/);
     assert.match(result.stdout, /personal local dashboard/i);
-    assert.match(result.stdout, /Launch dashboard\s*:\s*npx mcp-memory-gateway pro/);
-    assert.match(result.stdout, /Activate \+ run\s*:\s*npx mcp-memory-gateway pro --activate --key=YOUR_KEY/);
+    assert.match(result.stdout, /Launch dashboard\s*:\s*npx thumbgate pro/);
+    assert.match(result.stdout, /Activate \+ run\s*:\s*npx thumbgate pro --activate --key=YOUR_KEY/);
     assert.match(result.stdout, /COMMERCIAL_TRUTH\.md/);
     assert.doesNotMatch(result.stdout, /\$10\/mo|38 spots remaining|first 50 users|Founding Member/i);
   });
@@ -680,7 +680,7 @@ describe('bin/cli.js', () => {
 
   test('init records local CLI telemetry when telemetry is enabled', () => {
     const initDir = makeTmpDir();
-    const feedbackDir = path.join(initDir, '.rlhf');
+    const feedbackDir = path.join(initDir, '.thumbgate');
     const telemetryPath = path.join(feedbackDir, 'telemetry-pings.jsonl');
     const result = runCliSync(['init'], {
       cwd: initDir,
@@ -728,9 +728,9 @@ describe('bin/cli.js', () => {
     fs.writeFileSync(path.join(doctorDir, 'CLAUDE.md'), '# Claude\n');
     fs.writeFileSync(path.join(doctorDir, 'GEMINI.md'), '# Gemini\n');
     fs.writeFileSync(path.join(doctorDir, '.mcp.json'), JSON.stringify({ mcpServers: {} }, null, 2));
-    fs.mkdirSync(path.join(doctorDir, '.rlhf'), { recursive: true });
+    fs.mkdirSync(path.join(doctorDir, '.thumbgate'), { recursive: true });
     fs.writeFileSync(
-      path.join(doctorDir, '.rlhf', 'config.json'),
+      path.join(doctorDir, '.thumbgate', 'config.json'),
       JSON.stringify({ version: 1 }, null, 2)
     );
 
@@ -822,7 +822,7 @@ describe('bin/cli.js', () => {
     const leadsPath = path.join(feedbackDir, 'workflow-sprint-leads.jsonl');
     fs.writeFileSync(apiKeysPath, JSON.stringify({
       keys: {
-        rlhf_active_cli: {
+        thumbgate_active_cli: {
           customerId: 'cus_cli_summary',
           active: true,
           usageCount: 3,
@@ -830,7 +830,7 @@ describe('bin/cli.js', () => {
           installId: 'inst_cli_summary',
           source: 'stripe_webhook_checkout_completed',
         },
-        rlhf_disabled_cli: {
+        thumbgate_disabled_cli: {
           customerId: 'cus_cli_disabled',
           active: false,
           usageCount: 0,
@@ -1330,12 +1330,12 @@ describe('bin/cli.js', () => {
   test('init creates .thumbgate/ directory', () => {
     const result = runCliSync(['init'], { cwd: tmpDir });
     assert.strictEqual(result.status, 0, `init failed:\n${result.stderr}`);
-    const rlhfDir = path.join(tmpDir, '.rlhf');
+    const rlhfDir = path.join(tmpDir, '.thumbgate');
     assert.ok(fs.existsSync(rlhfDir), '.thumbgate/ directory should be created');
   });
 
   test('init creates config.json with required fields', () => {
-    const configPath = path.join(tmpDir, '.rlhf', 'config.json');
+    const configPath = path.join(tmpDir, '.thumbgate', 'config.json');
     assert.ok(fs.existsSync(configPath), 'config.json should exist');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     assert.ok(config.version, 'config.version should be set');
@@ -1359,7 +1359,7 @@ describe('bin/cli.js', () => {
     });
     assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
 
-    const config = JSON.parse(fs.readFileSync(path.join(isolatedDir, '.rlhf', 'config.json'), 'utf8'));
+    const config = JSON.parse(fs.readFileSync(path.join(isolatedDir, '.thumbgate', 'config.json'), 'utf8'));
     const events = fs.readFileSync(ledgerPath, 'utf8')
       .split('\n')
       .map((line) => line.trim())
@@ -1376,7 +1376,7 @@ describe('bin/cli.js', () => {
 
   test('north-star command reports workflow progress', () => {
     const isolatedDir = makeTmpDir();
-    const feedbackDir = path.join(isolatedDir, '.rlhf');
+    const feedbackDir = path.join(isolatedDir, '.thumbgate');
     fs.mkdirSync(feedbackDir, { recursive: true });
     fs.writeFileSync(
       path.join(feedbackDir, 'workflow-runs.jsonl'),
@@ -1503,9 +1503,9 @@ describe('bin/cli.js', () => {
     assert.ok(fs.existsSync(mcpPath), '.mcp.json should be created');
     const mcp = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
     assert.ok(mcp.mcpServers, '.mcp.json should have mcpServers');
-    assert.ok(mcp.mcpServers.rlhf, 'Should have canonical rlhf server entry');
-    assert.strictEqual(mcp.mcpServers.rlhf.command, 'npx');
-    assert.deepEqual(mcp.mcpServers.rlhf.args, ['-y', `mcp-memory-gateway@${require('../package.json').version}`, 'serve']);
+    assert.ok(mcp.mcpServers.thumbgate, 'Should have canonical ThumbGate server entry');
+    assert.strictEqual(mcp.mcpServers.thumbgate.command, 'npx');
+    assert.deepEqual(mcp.mcpServers.thumbgate.args, ['-y', `thumbgate@${require('../package.json').version}`, 'serve']);
   });
 
   test('init keeps a local source launcher for unpublished external installs', () => {
@@ -1514,7 +1514,7 @@ describe('bin/cli.js', () => {
       cwd: isolatedDir,
       env: {
         ...process.env,
-        MCP_MEMORY_GATEWAY_PUBLISH_STATE: 'unpublished',
+        THUMBGATE_PUBLISH_STATE: 'unpublished',
       },
     });
 
@@ -1522,15 +1522,15 @@ describe('bin/cli.js', () => {
 
     const mcpPath = path.join(isolatedDir, '.mcp.json');
     const mcp = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
-    assert.equal(mcp.mcpServers.rlhf.command, 'node');
-    assert.deepEqual(mcp.mcpServers.rlhf.args, [MCP_SERVER_PATH]);
+    assert.equal(mcp.mcpServers.thumbgate.command, 'node');
+    assert.deepEqual(mcp.mcpServers.thumbgate.args, [MCP_SERVER_PATH]);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
 
-  test('init writes a stable ChatGPT OpenAPI spec into .rlhf', () => {
-    const specPath = path.join(tmpDir, '.rlhf', 'chatgpt-openapi.yaml');
-    assert.ok(fs.existsSync(specPath), 'chatgpt-openapi.yaml should be created in .rlhf');
+  test('init writes a stable ChatGPT OpenAPI spec into .thumbgate', () => {
+    const specPath = path.join(tmpDir, '.thumbgate', 'chatgpt-openapi.yaml');
+    assert.ok(fs.existsSync(specPath), 'chatgpt-openapi.yaml should be created in .thumbgate');
     const spec = fs.readFileSync(specPath, 'utf8');
     assert.match(spec, /openapi:/);
     assert.match(spec, /\/v1\/feedback\/capture/);
@@ -1555,7 +1555,7 @@ describe('bin/cli.js', () => {
 
     const configPath = path.join(codexHome, 'config.toml');
     const content = fs.readFileSync(configPath, 'utf8');
-    assert.match(content, /\[mcp_servers\.rlhf\]/);
+    assert.match(content, /\[mcp_servers\.thumbgate\]/);
     assert.match(content, /command = "node"/);
     assert.match(content, new RegExp(`args = \\["${HOME_MCP_SERVER_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"\\]`));
     assert.doesNotMatch(content, /\/tmp\/disposable-worktree\/adapters\/mcp\/server-stdio\.js/);
@@ -1588,7 +1588,7 @@ describe('bin/cli.js', () => {
     assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
 
     const content = fs.readFileSync(configPath, 'utf8');
-    assert.match(content, /\[mcp_servers\.rlhf\]/);
+    assert.match(content, /\[mcp_servers\.thumbgate\]/);
     assert.match(content, /command = "node"/);
     assert.match(content, new RegExp(`args = \\["${HOME_MCP_SERVER_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"\\]`));
     assert.doesNotMatch(content, /disposable-worktree/);
@@ -1634,7 +1634,7 @@ describe('bin/cli.js', () => {
       stdin.write(frameMcpMessage(payload));
     });
     assert.equal(response.id, 99);
-    assert.equal(response.result.serverInfo.name, 'mcp-memory-gateway-mcp');
+    assert.equal(response.result.serverInfo.name, 'thumbgate-mcp');
   });
 
   test('serve responds to initialize over newline-delimited JSON transport', async () => {
@@ -1642,7 +1642,7 @@ describe('bin/cli.js', () => {
       stdin.write(`${JSON.stringify(payload)}\n`);
     });
     assert.equal(response.id, 99);
-    assert.equal(response.result.serverInfo.name, 'mcp-memory-gateway-mcp');
+    assert.equal(response.result.serverInfo.name, 'thumbgate-mcp');
   });
 
   test('serve returns ndjson error envelope for malformed ndjson input', async () => {
@@ -1671,7 +1671,7 @@ describe('bin/cli.js', () => {
     });
 
     assert.equal(response.id, 99);
-    assert.equal(response.result.serverInfo.name, 'mcp-memory-gateway-mcp');
+    assert.equal(response.result.serverInfo.name, 'thumbgate-mcp');
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });

@@ -24,7 +24,7 @@ async function removeDirWithRetries(dirPath, attempts = 5, delayMs = 80) {
 }
 
 test('E2E: feedback capture -> memory -> DPO export -> prevention rules', async (t) => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-e2e-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-e2e-'));
   const origFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
@@ -199,7 +199,7 @@ test('E2E: feedback capture -> memory -> DPO export -> prevention rules', async 
 });
 
 test('E2E: API server feedback capture -> stats -> summary round-trip', async (t) => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-e2e-api-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-e2e-api-'));
   const origFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const origApiKey = process.env.THUMBGATE_API_KEY;
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;

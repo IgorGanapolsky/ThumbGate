@@ -10,7 +10,7 @@ const {
 } = require('../scripts/social-analytics/publish-instagram-thumbgate');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
-const TEST_IMAGE_PATH = path.join(REPO_ROOT, '.rlhf', 'test-publish-instagram.png');
+const TEST_IMAGE_PATH = path.join(REPO_ROOT, '.thumbgate', 'test-publish-instagram.png');
 
 let sharpAvailable = false;
 try { require('sharp'); sharpAvailable = true; } catch {}

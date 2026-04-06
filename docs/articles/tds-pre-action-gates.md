@@ -67,7 +67,7 @@ The system is built on five layers that work together:
 - **LanceDB + Apache Arrow** for local vector search with Hugging Face embeddings
 - **ContextFS** for structured context assembly and provenance tracking
 
-Everything runs locally. No cloud account required. No model weights are modified — this is context engineering plus enforcement, not traditional RLHF in the training sense.
+Everything runs locally. No cloud account required. No model weights are modified — this is context engineering plus enforcement, not model-training feedback optimization in the strict sense.
 
 ## What Actually Works vs. What Doesn't
 
@@ -76,7 +76,7 @@ Everything runs locally. No cloud account required. No model weights are modifie
 | `recall` injects past context into the next session | Thumbs up/down changing model weights |
 | Pre-action gates block known-bad tool calls before execution | Agents self-correcting without gates |
 | Auto-promotion turns repeated failures into warn/block rules | Vague feedback silently helping the system |
-| Corrective actions surface remediation steps from similar past failures | Calling this "RLHF" in the strict training sense |
+| Corrective actions surface remediation steps from similar past failures | Calling this model training in the strict sense |
 
 This honesty matters. If you expect this to modify model behavior through gradient updates, it won't. What it *does* is ensure that the context window always contains the right warnings, and that enforcement happens regardless of whether the agent is paying attention.
 
@@ -85,7 +85,7 @@ This honesty matters. If you expect this to modify model behavior through gradie
 One command installs the full system for any MCP-compatible agent:
 
 ```bash
-npx mcp-memory-gateway init
+npx thumbgate init
 ```
 
 This scaffolds the `.thumbgate/` directory, wires PreToolUse hooks for your agent (Claude Code, Codex, Gemini, Cursor, etc.), and starts the MCP server that exposes `capture_feedback`, `recall`, `search_lessons`, and gate enforcement.
@@ -98,6 +98,6 @@ Pre-action gates are that system. They don't replace your agent — they make it
 
 ---
 
-*ThumbGate (npm: `mcp-memory-gateway`) is open source under the MIT license. Try it: `npx mcp-memory-gateway init`*
+*ThumbGate (npm: `thumbgate`) is open source under the MIT license. Try it: `npx thumbgate init`*
 
-*GitHub: [github.com/IgorGanapolsky/mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway)*
+*GitHub: [github.com/IgorGanapolsky/thumbgate](https://github.com/IgorGanapolsky/thumbgate)*

@@ -6,7 +6,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const TEST_DIR = path.join(PROJECT_ROOT, '.rlhf', 'adk-test-run');
+const TEST_DIR = path.join(PROJECT_ROOT, '.thumbgate', 'adk-test-run');
 const FEEDBACK_LOG = path.join(TEST_DIR, 'feedback-log.jsonl');
 const RULES_PATH = path.join(TEST_DIR, 'prevention-rules.md');
 

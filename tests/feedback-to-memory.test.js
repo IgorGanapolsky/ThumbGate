@@ -27,7 +27,7 @@ test('valid positive feedback: ok=true, category=learning, title starts with SUC
   const result = convertFeedbackToMemory({
     signal: 'positive',
     whatWorked: 'Built schema-validated feedback system with prevention rules',
-    tags: ['architecture', 'rlhf'],
+    tags: ['architecture', 'thumbgate'],
   });
   assert.strictEqual(result.ok, true);
   assert.strictEqual(result.memory.category, 'learning');

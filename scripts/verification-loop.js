@@ -17,7 +17,7 @@ const {
 const { getEffectiveSetting } = require('./evolution-state');
 
 const MAX_RETRIES = 3;
-const DEFAULT_MODEL_PATH = path.join(__dirname, '..', '.rlhf', 'verification-model.json');
+const DEFAULT_MODEL_PATH = path.join(__dirname, '..', '.thumbgate', 'verification-model.json');
 
 /**
  * Run a single verification step against prevention rules.

@@ -15,7 +15,7 @@ RUN npm ci --omit=dev --no-audit --no-fund
 FROM node:20-alpine AS runtime
 
 # Non-root user for security
-RUN addgroup -S rlhf && adduser -S rlhf -G rlhf
+RUN addgroup -S thumbgate && adduser -S thumbgate -G thumbgate
 
 WORKDIR /app
 
@@ -31,9 +31,9 @@ COPY adapters/ ./adapters/
 COPY public/ ./public/
 
 # Data directory for runtime feedback logs
-RUN mkdir -p /data && chown rlhf:rlhf /data
+RUN mkdir -p /data && chown thumbgate:thumbgate /data
 
-USER rlhf
+USER thumbgate
 
 # Railway / Cloud Run sets PORT dynamically; default to 8787
 ENV PORT=8787

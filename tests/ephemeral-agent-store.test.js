@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-eph-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-eph-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const eph = require('../scripts/ephemeral-agent-store');

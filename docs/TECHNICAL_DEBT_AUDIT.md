@@ -30,7 +30,7 @@ Issues found: 10
 Issues fixed: 10
 Files deleted: 1
 Lines removed: 30 from stale tracked runtime artifacts
-RAG entries cleaned: 0 tracked entries changed; local RLHF memory reviewed and kept local-only
+RAG entries cleaned: 0 tracked entries changed; local ThumbGate memory reviewed and kept local-only
 ```
 
 ## Metrics
@@ -85,7 +85,7 @@ New checks added: budget status gate, Node 20-safe coverage gate
 
 ## Core-System Snapshot
 
-- AI RAG reliability: local RLHF memory remained readable; no tracked memory files were changed.
+- AI RAG reliability: local ThumbGate memory remained readable; no tracked memory files were changed.
 - Orchestration functionality: `npm run self-heal:check` finished `6/6 healthy`.
 - CI pipeline status: the audit added coverage and budget gates to CI so the same regressions are caught remotely.
 - Monitoring: the context engine log remains runtime-local and no monitored paths were broken by the cleanup.

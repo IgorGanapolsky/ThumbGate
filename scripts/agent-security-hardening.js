@@ -84,10 +84,10 @@ function getCredentialAudit({ periodHours = 24 } = {}) {
 
 // MCP profile tool allowlists (loaded from config or defaults)
 const PROFILE_ALLOWLISTS = {
-  essential: new Set(['capture_feedback', 'recall', 'search_lessons', 'search_rlhf', 'prevention_rules', 'enforcement_matrix', 'feedback_stats', 'estimate_uncertainty', 'org_dashboard']),
-  readonly: new Set(['recall', 'feedback_summary', 'search_lessons', 'verify_claim', 'gate_stats', 'search_rlhf', 'feedback_stats', 'estimate_uncertainty', 'org_dashboard']),
+  essential: new Set(['capture_feedback', 'recall', 'search_lessons', 'search_thumbgate', 'prevention_rules', 'enforcement_matrix', 'feedback_stats', 'estimate_uncertainty', 'org_dashboard']),
+  readonly: new Set(['recall', 'feedback_summary', 'search_lessons', 'verify_claim', 'gate_stats', 'search_thumbgate', 'feedback_stats', 'estimate_uncertainty', 'org_dashboard']),
   locked: new Set(['feedback_summary', 'search_lessons', 'diagnose_failure', 'list_intents', 'plan_intent', 'list_harnesses', 'verify_claim']),
-  commerce: new Set(['capture_feedback', 'recall', 'search_rlhf', 'commerce_recall', 'track_action', 'verify_claim', 'feedback_stats']),
+  commerce: new Set(['capture_feedback', 'recall', 'search_thumbgate', 'commerce_recall', 'track_action', 'verify_claim', 'feedback_stats']),
 };
 
 /**

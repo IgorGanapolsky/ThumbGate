@@ -21,7 +21,7 @@ const { createTraceId } = require('./hosted-config');
 const {
   getFeedbackPaths,
   getLegacyFeedbackDir,
-  getRlhfFeedbackDir,
+  getFallbackFeedbackDir,
   resolveFallbackArtifactPath,
 } = require('./feedback-paths');
 const { getTelemetryAnalytics, getTelemetrySourceDiagnostics } = require('./telemetry-analytics');
@@ -349,7 +349,7 @@ function buildBillingSourceDiagnostics(feedbackDir) {
 
   return {
     feedbackDir,
-    rlhfFeedbackDir: getRlhfFeedbackDir(),
+    fallbackFeedbackDir: getFallbackFeedbackDir(),
     legacyFeedbackDir: getLegacyFeedbackDir(),
     mixedRoots,
     files: {
@@ -2078,7 +2078,7 @@ function provisionApiKey(customerId, opts = {}) {
     return { key, customerId, createdAt: meta.createdAt, installId: meta.installId || null, reused: true, remainingCredits: meta.remainingCredits };
   }
 
-  const key = `rlhf_${crypto.randomBytes(16).toString('hex')}`;
+  const key = `tg_${crypto.randomBytes(16).toString('hex')}`;
   const createdAt = new Date().toISOString();
   store.keys[key] = {
     customerId,
@@ -2101,7 +2101,7 @@ function rotateApiKey(oldKey) {
 
   meta.active = false;
   meta.disabledAt = new Date().toISOString();
-  const newKey = `rlhf_${crypto.randomBytes(16).toString('hex')}`;
+  const newKey = `tg_${crypto.randomBytes(16).toString('hex')}`;
   store.keys[newKey] = {
     customerId: meta.customerId,
     active: true,

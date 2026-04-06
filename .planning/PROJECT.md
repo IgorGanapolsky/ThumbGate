@@ -39,9 +39,9 @@ Every feature must have tests, pass CI, and produce verification evidence — no
 ### Active — v3.0: Commercialization (Cloudflare Workers Architecture)
 
 - [ ] Cloudflare Workers deployment for Pro tier (cloud-synced memories, unlimited usage)
-- [ ] Free tier enforcement: 500 memories, 100 retrievals/day limits in local `npx mcp-memory-gateway serve`
+- [ ] Free tier enforcement: 500 memories, 100 retrievals/day limits in local `npx thumbgate serve`
 - [ ] Stripe billing ($29/mo Pro checkout, API key provisioning)
-- [ ] npm package for instant `npx mcp-memory-gateway serve` install
+- [ ] npm package for instant `npx thumbgate serve` install
 - [ ] Cloud sync API (memories, prevention rules, gate configs)
 - [ ] Usage dashboard (memories, retrievals, cache hits, cost savings)
 - [ ] Team sharing of prevention rules (Pro)
@@ -82,7 +82,7 @@ Every feature must have tests, pass CI, and produce verification evidence — no
 |----------|-----------|---------|
 | Cloudflare Workers over Railway/Fly.io | Edge deployment, generous free tier, global low-latency | — Active |
 | Free/Pro split at $29/mo | Free local with limits (500 mem, 100 ret/day) + cloud Pro unlimited | — Active |
-| npm package for distribution | `npx mcp-memory-gateway serve` is the universal install | — Pending |
+| npm package for distribution | `npx thumbgate serve` is the universal install | — Pending |
 | Plugin-per-platform | Each AI tool gets native install experience | — Pending |
 
 ## Current Milestone: v3.1 First Dollar

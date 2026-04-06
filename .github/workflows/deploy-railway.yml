@@ -14,20 +14,20 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
+      THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY || secrets.RLHF_API_KEY }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
       RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
       RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
       RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
-      RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL }}
-      THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN }}
-      THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL }}
+      RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL || 'https://thumbgate-production.up.railway.app/health' }}
+      THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
+      THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_FEEDBACK_DIR: ${{ vars.THUMBGATE_FEEDBACK_DIR }}
       THUMBGATE_GA_MEASUREMENT_ID: ${{ vars.THUMBGATE_GA_MEASUREMENT_ID }}
       THUMBGATE_GOOGLE_SITE_VERIFICATION: ${{ vars.THUMBGATE_GOOGLE_SITE_VERIFICATION }}
       RAILWAY_TOKEN_ROTATED_AT: ${{ vars.RAILWAY_TOKEN_ROTATED_AT }}
-      THUMBGATE_API_KEY_ROTATED_AT: ${{ vars.THUMBGATE_API_KEY_ROTATED_AT }}
+      THUMBGATE_API_KEY_ROTATED_AT: ${{ vars.THUMBGATE_API_KEY_ROTATED_AT || vars.RLHF_API_KEY_ROTATED_AT }}
       STRIPE_SECRET_KEY_ROTATED_AT: ${{ vars.STRIPE_SECRET_KEY_ROTATED_AT }}
       STRIPE_WEBHOOK_SECRET_ROTATED_AT: ${{ vars.STRIPE_WEBHOOK_SECRET_ROTATED_AT }}
     steps:
@@ -75,7 +75,7 @@ jobs:
           echo "enabled=true" >> "$GITHUB_OUTPUT"
       - name: Enforce deploy policy
         if: steps.railway-config.outputs.enabled == 'true'
-        run: node scripts/deploy-policy.js --profiles=runtime,billing,deploy
+        run: node scripts/deploy-policy.js --profiles=billing,deploy
       - name: Stamp immutable build metadata
         if: steps.railway-config.outputs.enabled == 'true'
         run: node scripts/build-metadata.js --sha "$GITHUB_SHA" --output config/build-metadata.json

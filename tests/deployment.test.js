@@ -8,7 +8,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-deploy-test-'));
+const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-deploy-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
 fs.writeFileSync(
@@ -118,7 +118,7 @@ test('web telemetry persists acquisition and attribution fields', async () => {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      referer: 'https://search.example/rlhf',
+      referer: 'https://search.example/thumbgate',
     },
     body: JSON.stringify({
       eventType: 'checkout_start',
@@ -177,7 +177,7 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
 
   assert.match(workflow, /Check Railway deployment configuration/);
   assert.match(workflow, /Enforce deploy policy/);
-  assert.match(workflow, /node scripts\/deploy-policy\.js --profiles=runtime,billing,deploy/);
+  assert.match(workflow, /node scripts\/deploy-policy\.js --profiles=billing,deploy/);
   assert.match(workflow, /steps\.railway-config\.outputs\.enabled == 'true'/);
   assert.match(workflow, /RAILWAY_PROJECT_ID/);
   assert.match(workflow, /RAILWAY_ENVIRONMENT_ID/);
@@ -348,7 +348,7 @@ test('Publish Tessl workflow verifies exports and only publishes when a Tessl to
   assert.match(workflow, /token: \$\{\{ env\.TESSL_API_TOKEN \}\}/);
   assert.match(workflow, /matrix:\s+tile:/s);
   assert.match(workflow, /agent-memory/);
-  assert.match(workflow, /rlhf-feedback/);
+  assert.match(workflow, /thumbgate-feedback/);
 });
 
 test('Dependabot auto-merge trusts the pull request author instead of the triggering actor', () => {

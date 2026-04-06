@@ -48,7 +48,7 @@ async function runProof(options = {}) {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // VEC-01: LanceDB embedded table stores feedback vectors in mcp-memory-gateway
+  // VEC-01: LanceDB embedded table stores feedback vectors in thumbgate
   // Evidence: smoke test — upsertFeedback() creates lancedb dir, table row persists.
   // ─────────────────────────────────────────────────────────────────────────
   let vec01Status = 'fail';
@@ -84,7 +84,7 @@ async function runProof(options = {}) {
       vec01Evidence =
         `lancedb dir created at ${lanceDir}. ` +
         `upsertFeedback() resolved, searchSimilar() returned ${results.length} result(s) ` +
-        `including proof-vec01. Table name: rlhf_memories.`;
+        `including proof-vec01. Table name: thumbgate_memories.`;
     } else if (dirExists) {
       vec01Status = 'fail';
       vec01Evidence = `lancedb dir exists but searchSimilar() did not return proof-vec01. Got: ${JSON.stringify(results.map((r) => r.id))}`;
@@ -207,7 +207,7 @@ async function runProof(options = {}) {
       vec04Evidence =
         `searchSimilar() returned ${results2.length} result(s). ` +
         `proof-vec01 present: ${hasVec01}. proof-vec04-b present: ${hasVec04b}. ` +
-        `API: searchSimilar(queryText, limit=10) returns vector-ranked rows from rlhf_memories table. ` +
+        `API: searchSimilar(queryText, limit=10) returns vector-ranked rows from thumbgate_memories table. ` +
         `Note: stub embed (THUMBGATE_VECTOR_STUB_EMBED=true) returns identical 384-dim unit vectors — ` +
         `ranking is insertion-order with stub, cosine similarity with real ONNX model.`;
     } else {

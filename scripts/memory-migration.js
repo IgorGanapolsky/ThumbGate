@@ -253,7 +253,7 @@ function migrateAllMemory() {
  */
 function generateComparisonData() {
   const health = checkMemoryHealth();
-  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.rlhf');
+  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR || path.join(process.cwd(), '.thumbgate');
   let lessonCount = 0;
   const lessonsPath = path.join(feedbackDir, 'lessons-index.jsonl');
   if (fs.existsSync(lessonsPath)) {
@@ -280,7 +280,7 @@ function generateComparisonData() {
       features: ['prevention rules', 'pre-action gates', 'org dashboard', 'DPO export', 'skill packs', 'hallucination detection', 'PII scanning'],
     },
     recommendation: health.criticalCount > 0
-      ? 'URGENT: memories are being silently deleted. Migrate now with: npx mcp-memory-gateway migrate'
+      ? 'URGENT: memories are being silently deleted. Migrate now with: npx thumbgate migrate'
       : health.warningCount > 0
         ? 'WARNING: approaching memory cap. Migrate soon to avoid silent deletion.'
         : 'Healthy for now, but ThumbGate offers unlimited storage + vector search + gates.',

@@ -7,6 +7,7 @@ const {
   evaluateDeployPolicy,
   parseTimestamp,
   getAgeDays,
+  resolveEnvValue,
 } = require('../scripts/deploy-policy');
 
 function isoDaysAgo(days) {
@@ -26,7 +27,7 @@ test('getAgeDays returns rounded day age', () => {
 
 test('deploy policy passes when required vars and fresh secrets are present', () => {
   const report = evaluateDeployPolicy({
-    THUMBGATE_API_KEY: 'rlhf_live_key',
+    THUMBGATE_API_KEY: 'tg_live_key',
     THUMBGATE_API_KEY_ROTATED_AT: isoDaysAgo(5),
     STRIPE_SECRET_KEY: 'sk_live_example',
     STRIPE_SECRET_KEY_ROTATED_AT: isoDaysAgo(5),
@@ -47,7 +48,7 @@ test('deploy policy passes when required vars and fresh secrets are present', ()
   assert.equal(report.errors.length, 0);
 });
 
-test('deploy policy fails when canonical billing config is missing', () => {
+test('deploy policy infers canonical hosted config when billing vars are omitted', () => {
   const report = evaluateDeployPolicy({
     RAILWAY_TOKEN: 'railway_token',
     RAILWAY_TOKEN_ROTATED_AT: isoDaysAgo(1),
@@ -58,9 +59,16 @@ test('deploy policy fails when canonical billing config is missing', () => {
     profiles: ['deploy'],
   });
 
-  assert.equal(report.ok, false);
-  assert.ok(report.errors.some((entry) => entry.name === 'THUMBGATE_PUBLIC_APP_ORIGIN'));
-  assert.ok(report.errors.some((entry) => entry.name === 'THUMBGATE_BILLING_API_BASE_URL'));
+  assert.equal(report.ok, true);
+  assert.equal(report.errors.length, 0);
+});
+
+test('deploy policy resolves canonical ThumbGate env names', () => {
+  assert.equal(resolveEnvValue('THUMBGATE_API_KEY', { THUMBGATE_API_KEY: 'live_key' }), 'live_key');
+  assert.equal(
+    resolveEnvValue('THUMBGATE_PUBLIC_APP_ORIGIN', { THUMBGATE_PUBLIC_APP_ORIGIN: 'https://thumbgate.example.com' }),
+    'https://thumbgate.example.com'
+  );
 });
 
 test('deploy policy fails stale Stripe secret timestamps', () => {

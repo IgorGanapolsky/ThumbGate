@@ -1,6 +1,6 @@
 # ThumbGate for Claude Desktop
 
-`mcp-memory-gateway` gives Claude Desktop a local-first **Reliability Gateway** and **Pre-Action Gates** for workflow hardening.
+`thumbgate` gives Claude Desktop a local-first **Reliability Gateway** and **Pre-Action Gates** for workflow hardening.
 
 The extension path is useful when a team wants Claude Desktop to keep one workflow sharper over time without adding another orchestration layer. The MCP server captures explicit feedback, recalls past failures, distills lessons from the recent conversation window when a thumbs signal is vague, promotes reusable prevention rules, and produces proof-backed rollout artifacts.
 
@@ -21,13 +21,13 @@ The extension path is useful when a team wants Claude Desktop to keep one workfl
 Use the portable npm launcher:
 
 ```bash
-claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
+claude mcp add thumbgate -- npx -y thumbgate serve
 ```
 
 Or use the project bootstrap:
 
 ```bash
-npx mcp-memory-gateway init
+npx thumbgate init
 ```
 
 ### Direct bundle download
@@ -63,12 +63,12 @@ Optional hosted path:
 ```json
 {
   "mcpServers": {
-    "rlhf": {
+    "thumbgate": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway", "serve"],
+      "args": ["-y", "thumbgate", "serve"],
       "env": {
         "THUMBGATE_BASE_URL": "https://thumbgate-production.up.railway.app",
-        "THUMBGATE_API_KEY": "rlhf_YOUR_KEY_HERE"
+        "THUMBGATE_API_KEY": "tg_YOUR_KEY_HERE"
       }
     }
   }
@@ -125,7 +125,7 @@ For complete privacy information, see: https://thumbgate-production.up.railway.a
 - GitHub Issues: https://github.com/IgorGanapolsky/ThumbGate/issues
 - Security Advisories: https://github.com/IgorGanapolsky/ThumbGate/security
 - Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-- Product Hunt: https://www.producthunt.com/products/mcp-memory-gateway
+- Product Hunt: https://www.producthunt.com/products/thumbgate
 
 ## Notes For Submission
 

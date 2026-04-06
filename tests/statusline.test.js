@@ -17,7 +17,7 @@ test('statusline script exists and is executable', () => {
 });
 
 test('statusline script reads jq input and outputs ThumbGate line', () => {
-  const tmpCache = path.join(__dirname, '..', '.rlhf', 'statusline_cache.json');
+  const tmpCache = path.join(__dirname, '..', '.thumbgate', 'statusline_cache.json');
   const cacheDir = path.dirname(tmpCache);
   fs.mkdirSync(cacheDir, { recursive: true });
   const existed = fs.existsSync(tmpCache);
@@ -46,7 +46,7 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
 });
 
 test('statusline shows "no feedback yet" when cache has zeros', () => {
-  const tmpCache = path.join(__dirname, '..', '.rlhf', 'statusline_cache.json');
+  const tmpCache = path.join(__dirname, '..', '.thumbgate', 'statusline_cache.json');
   const cacheDir = path.dirname(tmpCache);
   fs.mkdirSync(cacheDir, { recursive: true });
   const existed = fs.existsSync(tmpCache);
@@ -76,7 +76,7 @@ test('cache updater hook script exists', () => {
 });
 
 test('user prompt hook records recent conversation history for statusline distillation', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-statusline-hook-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-hook-'));
   const conversationPath = path.join(tmpDir, 'conversation-window.jsonl');
 
   execFileSync('bash', [AUTO_CAPTURE_HOOK_PATH], {
@@ -99,11 +99,11 @@ test('user prompt hook records recent conversation history for statusline distil
 });
 
 test('cache updater writes cache from feedback_stats input', () => {
-  const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'rlhf-test-'));
-  const tmpCache = path.join(tmpDir, '.rlhf', 'statusline_cache.json');
+  const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'thumbgate-test-'));
+  const tmpCache = path.join(tmpDir, '.thumbgate', 'statusline_cache.json');
 
   const event = {
-    tool_name: 'mcp__rlhf__feedback_stats',
+    tool_name: 'mcp__thumbgate__feedback_stats',
     tool_response: JSON.stringify({
       total: 100, totalPositive: 20, totalNegative: 80,
       approvalRate: 0.2, trend: 'stable',

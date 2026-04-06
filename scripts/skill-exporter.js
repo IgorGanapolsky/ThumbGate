@@ -156,7 +156,7 @@ function compileToCodexPlugin(spec) {
     mcpServers: {
       thumbgate: {
         command: 'npx',
-        args: ['-y', `mcp-memory-gateway@${PKG.version}`, 'serve'],
+        args: ['-y', `thumbgate@${PKG.version}`, 'serve'],
         tools: spec.tools || []
       }
     }

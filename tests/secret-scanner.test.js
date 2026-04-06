@@ -43,7 +43,7 @@ test('scanText detects inline API keys and redacts them', () => {
 });
 
 test('scanFile detects secrets in environment files', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-secret-scan-file-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-secret-scan-file-'));
   const filePath = path.join(tmpDir, '.env');
   fs.writeFileSync(filePath, `STRIPE_SECRET_KEY=${buildStripeKey()}\n`);
   try {
@@ -57,7 +57,7 @@ test('scanFile detects secrets in environment files', () => {
 });
 
 test('scanBashCommand detects command reads of secret-bearing files', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-secret-scan-command-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-secret-scan-command-'));
   const filePath = path.join(tmpDir, '.env.local');
   fs.writeFileSync(filePath, `OPENAI_API_KEY=${buildOpenAiKey()}\n`);
   try {
@@ -70,7 +70,7 @@ test('scanBashCommand detects command reads of secret-bearing files', () => {
 });
 
 test('scanHookInput detects risky read and edit payloads', () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-secret-scan-hook-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-secret-scan-hook-'));
   const filePath = path.join(tmpDir, '.npmrc');
   const gitHubPat = buildGitHubPat();
   fs.writeFileSync(filePath, `//registry.npmjs.org/:_authToken=${gitHubPat}\n`);

@@ -39,7 +39,7 @@ jobs:
       - name: Check whether version is already on npm
         id: npm
         run: |
-          if npm view "mcp-memory-gateway@${{ steps.package.outputs.version }}" version >/dev/null 2>&1; then
+          if npm view "thumbgate@${{ steps.package.outputs.version }}" version >/dev/null 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
           else
             echo "published=false" >> "$GITHUB_OUTPUT"

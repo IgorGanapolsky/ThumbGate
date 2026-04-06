@@ -46,7 +46,7 @@ test('README exposes lesson search as a free self-hosted MCP surface', () => {
 
   assert.match(readme, /search_lessons/i);
   assert.match(readme, /self-hosted users can invoke `search_lessons` directly through MCP/i);
-  assert.match(readme, /npx mcp-memory-gateway lessons/i);
+  assert.match(readme, /npx thumbgate lessons/i);
 });
 
 test('continuity guide frames the gateway as downstream reliability, not a new orchestrator', () => {
@@ -83,7 +83,7 @@ test('public landing copy stays vendor-neutral and honest about editor support',
   assert.match(landingPage, /OpenCode/i);
   assert.match(landingPage, /VS Code works when you run an MCP-compatible agent inside it/i);
   assert.doesNotMatch(landingPage, /auto-detects supported local agent installs/i);
-  assert.doesNotMatch(landingPage, /claude --mcp mcp-memory-gateway/i);
+  assert.doesNotMatch(landingPage, /claude --mcp thumbgate/i);
 });
 
 test('GEO demand engine prioritizes action queries and proof-backed fan-out surfaces', () => {

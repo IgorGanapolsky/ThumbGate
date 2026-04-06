@@ -25,9 +25,9 @@ const DEFAULT_CAPTION_PATH = path.join(
   'pre-action-gates-caption.txt'
 );
 const DEFAULT_OUTPUT_ROOT = path.join(REPO_ROOT, '.artifacts', 'social');
-const DEFAULT_QUEUE_PATH = path.join(REPO_ROOT, '.rlhf', 'social-post-queue.json');
-const DEFAULT_HISTORY_PATH = path.join(REPO_ROOT, '.rlhf', 'social-post-history.jsonl');
-const DEFAULT_LAUNCHD_LABEL = 'io.github.IgorGanapolsky.mcp-memory-gateway.social';
+const DEFAULT_QUEUE_PATH = path.join(REPO_ROOT, '.thumbgate', 'social-post-queue.json');
+const DEFAULT_HISTORY_PATH = path.join(REPO_ROOT, '.thumbgate', 'social-post-history.jsonl');
+const DEFAULT_LAUNCHD_LABEL = 'io.github.IgorGanapolsky.thumbgate.social';
 const DEFAULT_SCHEDULE_INTERVAL_MINUTES = 15;
 const DEFAULT_CHROME_PROFILE_ROOT = path.join(
   os.homedir(),

@@ -17,7 +17,7 @@ client = MCPClient.from_dict({
         },
         "memory": {
             "command": "npx",
-            "args": ["-y", "mcp-memory-gateway", "serve"]
+            "args": ["-y", "thumbgate", "serve"]
         }
     }
 })
@@ -54,7 +54,7 @@ import { MCPClient } from "mcp-use";
 const client = new MCPClient({
   mcpServers: {
     "your-server": { command: "your-existing-server", args: ["..."] },
-    "memory": { command: "npx", args: ["-y", "mcp-memory-gateway", "serve"] }
+    "memory": { command: "npx", args: ["-y", "thumbgate", "serve"] }
   }
 });
 ```
@@ -88,7 +88,7 @@ httpx.post(f"{API}/v1/feedback/capture", headers=headers, json={
 For agentic commerce use cases, use the `commerce` MCP profile:
 
 ```bash
-THUMBGATE_MCP_PROFILE=commerce npx mcp-memory-gateway serve
+THUMBGATE_MCP_PROFILE=commerce npx thumbgate serve
 ```
 
 This exposes `commerce_recall` with quality scores for: product_recommendation, brand_compliance, sizing, pricing, regulatory.
@@ -98,7 +98,7 @@ This exposes `commerce_recall` with quality scores for: product_recommendation, 
 For paired phone + desktop review sessions, use the `dispatch` MCP profile:
 
 ```bash
-THUMBGATE_MCP_PROFILE=dispatch npx mcp-memory-gateway serve
+THUMBGATE_MCP_PROFILE=dispatch npx thumbgate serve
 ```
 
 This keeps the surface read-only for metrics, diagnostics, recall, planning, and dashboard access. It intentionally excludes handoffs and mutation tools.
@@ -107,4 +107,4 @@ This keeps the surface read-only for metrics, diagnostics, recall, planning, and
 
 - [ThumbGate](https://github.com/IgorGanapolsky/ThumbGate)
 - [mcp-use SDK](https://github.com/mcp-use/mcp-use)
-- [npm package](https://www.npmjs.com/package/mcp-memory-gateway)
+- [npm package](https://www.npmjs.com/package/thumbgate)

@@ -96,7 +96,7 @@ test('buildHarnessJob converts run steps into command stages and appends success
 });
 
 test('runHarness executes a natural-language harness through the async runtime', () => {
-  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-harness-runtime-test-'));
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-harness-runtime-test-'));
   process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
   resetRuntimeModules();
   stubModule(VERIFICATION_PATH, {
@@ -126,7 +126,7 @@ test('runHarness executes a natural-language harness through the async runtime',
 });
 
 test('runHarness blocks execution when settings disable runtime execution', () => {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-harness-settings-'));
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-harness-settings-'));
   fs.mkdirSync(path.join(projectRoot, '.thumbgate'), { recursive: true });
   fs.writeFileSync(
     path.join(projectRoot, '.thumbgate', 'settings.json'),

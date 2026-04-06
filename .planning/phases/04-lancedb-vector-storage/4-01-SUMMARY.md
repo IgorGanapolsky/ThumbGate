@@ -26,7 +26,7 @@ decisions:
   - "Dynamic import pattern (await import()) is the only CJS-compatible approach for ESM-only @lancedb/lancedb"
   - "apache-arrow pinned to 18.1.0 — LanceDB 0.26.2 peer dep is >=15.0.0 <=18.1.0; arrow 19+ breaks"
   - "@huggingface/transformers@3.8.1 (not @xenova/transformers which is the v2 deprecated package)"
-  - "TABLE_NAME = rlhf_memories — JS-only table; never shared with Python Subway tables"
+  - "TABLE_NAME = thumbgate_memories — JS-only table; never shared with Python Subway tables"
 metrics:
   duration: "1m 2s"
   completed: "2026-03-04T20:01:59Z"
@@ -36,7 +36,7 @@ metrics:
 
 # Phase 4 Plan 01: LanceDB + Transformers Install and vector-store.js Summary
 
-**One-liner:** LanceDB 0.26.2 + HuggingFace Transformers 3.8.1 + Arrow 18.1.0 installed with dynamic import CJS wrapper providing upsertFeedback() and searchSimilar() for rlhf_memories table.
+**One-liner:** LanceDB 0.26.2 + HuggingFace Transformers 3.8.1 + Arrow 18.1.0 installed with dynamic import CJS wrapper providing upsertFeedback() and searchSimilar() for thumbgate_memories table.
 
 ## Tasks Completed
 
@@ -74,7 +74,7 @@ Key design decisions:
 - `upsertFeedback()` checks `db.tableNames()` to decide create vs add
 - `searchSimilar()` returns `[]` if table doesn't exist yet (safe default)
 - `THUMBGATE_FEEDBACK_DIR` env var support for test isolation
-- TABLE_NAME = `'rlhf_memories'` — JS-only table, never crosses into Python Subway tables
+- TABLE_NAME = `'thumbgate_memories'` — JS-only table, never crosses into Python Subway tables
 
 ## Verification Evidence
 
@@ -101,7 +101,7 @@ All four plan verification checks pass.
 
 | Req | Description | Status |
 |-----|-------------|--------|
-| VEC-01 | LanceDB embedded table stores feedback vectors | DONE — upsertFeedback() creates/appends to rlhf_memories table |
+| VEC-01 | LanceDB embedded table stores feedback vectors | DONE — upsertFeedback() creates/appends to thumbgate_memories table |
 | VEC-02 | ESM/CJS compatibility via dynamic import | DONE — getLanceDB() uses await import(), no require() calls |
 | VEC-03 | apache-arrow pinned to <=18.1.0 | DONE — apache-arrow@18.1.0 in package.json |
 

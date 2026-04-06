@@ -1,5 +1,5 @@
 name: Ready for Agent
-description: Queue a bounded, proof-ready implementation run for the MCP Memory Gateway.
+description: Queue a bounded, proof-ready implementation run for the ThumbGate.
 title: '[Agent] '
 labels:
   - ready-for-agent

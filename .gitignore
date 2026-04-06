@@ -23,8 +23,6 @@ node_modules/
 .thumbgate/reminder-state.json
 .thumbgate/reminder_*.json
 .thumbgate/
-# Legacy runtime dir (will be removed after migration)
-.rlhf/
 .artifacts/
 .npmrc
 .thumbgate/settings.local.json

@@ -6,8 +6,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cf-sandbox-feedback-'));
-const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-cf-sandbox-proof-'));
+const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-cf-sandbox-feedback-'));
+const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-cf-sandbox-proof-'));
 
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;

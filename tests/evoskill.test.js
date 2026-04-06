@@ -11,7 +11,7 @@ const { proposeSkills } = require('../scripts/skill-proposer');
 const { materializeSkills } = require('../scripts/skill-materializer');
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-evoskill-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evoskill-test-'));
 }
 
 function appendJSONL(filePath, record) {

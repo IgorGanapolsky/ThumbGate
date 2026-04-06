@@ -15,8 +15,8 @@ Rubric scoring and anti-hacking guardrails are shared via `config/rubrics/defaul
 
 ## Commercial packaging model
 
-1. Ship OSS core first in this repo (`mcp-memory-gateway`).
-2. Keep paid overlay code in the separate `mcp-memory-gateway-pro` repo/package.
+1. Ship OSS core first in this repo (`thumbgate`).
+2. Keep paid overlay code in the separate `thumbgate-pro` repo/package.
 3. Offer managed hosted API + analytics as paid SaaS.
 4. Sell enterprise controls (SSO, audit, retention policies, support SLA).
 
@@ -25,7 +25,7 @@ This avoids platform-specific rewrite cost and keeps the product under a `$10/mo
 ## Public vs Pro repo boundary
 
 1. Public repo owns shared runtime, adapters, schemas, docs, and free/local behavior.
-2. Pro repo inherits from the published `mcp-memory-gateway` package and adds paid-only overlays.
+2. Pro repo inherits from the published `thumbgate` package and adds paid-only overlays.
 3. Do not ship `pro/` package code or Pro publish workflows from this public repo.
 4. Public docs may link to the Pro offer and repo, but protected implementation stays out of this tree.
 
@@ -38,7 +38,7 @@ This avoids platform-specific rewrite cost and keeps the product under a `$10/mo
 ## Claude (MCP)
 
 - Use: `adapters/claude/.mcp.json`
-- Transport: local stdio MCP server launched via `npx -y mcp-memory-gateway@0.9.9 serve`
+- Transport: local stdio MCP server launched via `npx -y thumbgate@0.9.9 serve`
 
 ## Claude Desktop Extensions
 
@@ -51,7 +51,7 @@ This avoids platform-specific rewrite cost and keeps the product under a `$10/mo
 - Bundle build command: `npm run build:claude-mcpb`
 - Release workflow: `.github/workflows/publish-claude-plugin.yml`
 - Latest direct download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
-- Local install path: `claude mcp add thumbgate -- npx -y mcp-memory-gateway@0.9.9 serve`
+- Local install path: `claude mcp add thumbgate -- npx -y thumbgate@0.9.9 serve`
 - Promotion rule: treat directory inclusion as a discoverability lane, not customer proof
 
 Build the `.mcpb` for Claude Desktop review or direct installation with:
@@ -78,21 +78,21 @@ This lane is for Claude Code users who want Codex review, adversarial review, an
 - Repo-local Codex plugin manifest: `plugins/codex-profile/.codex-plugin/plugin.json`
 - Repo-local Codex MCP config: `plugins/codex-profile/.mcp.json`
 - Repo-local Codex marketplace: `.agents/plugins/marketplace.json`
-- Transport: local stdio MCP server launched via `npx -y mcp-memory-gateway@0.9.9 serve`
+- Transport: local stdio MCP server launched via `npx -y thumbgate@0.9.9 serve`
 
 ## Cursor Plugins
 
 - Public/team marketplace manifests: `.cursor-plugin/marketplace.json`
 - Plugin source directory: `plugins/cursor-marketplace/`
 - Plugin manifest: `plugins/cursor-marketplace/.cursor-plugin/plugin.json`
-- Transport: local stdio MCP server launched via `npx -y mcp-memory-gateway@latest serve`
+- Transport: local stdio MCP server launched via `npx -y thumbgate@latest serve`
 - Submission path: `https://cursor.com/marketplace/publish`
 - Team fallback: import the GitHub repo through `Dashboard -> Settings -> Plugins -> Team Marketplaces`
 - Cursor Directory: treat as a discovery surface, not the install/update surface
 
 Cursor update rules:
 
-1. `npm publish` can update the runtime path because the plugin launcher requests `mcp-memory-gateway@latest`.
+1. `npm publish` can update the runtime path because the plugin launcher requests `thumbgate@latest`.
 2. `npm publish` does not update marketplace metadata, screenshots, README copy, or directory descriptions.
 3. Republish or refresh the plugin bundle when marketplace-facing assets change.
 4. For repo-backed Team Marketplaces, enable Auto Refresh when the Cursor admin UI exposes it.
@@ -106,7 +106,7 @@ Promotion and release operations are tracked in [CURSOR_PLUGIN_OPERATIONS.md](CU
 
 ## Amp (Skills)
 
-- Use: `adapters/amp/skills/rlhf-feedback/SKILL.md`
+- Use: `adapters/amp/skills/thumbgate-feedback/SKILL.md`
 - Run same capture/summary/rules loop commands
 
 ## Deployment notes

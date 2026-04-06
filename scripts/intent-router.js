@@ -264,7 +264,7 @@ const ACTION_CATEGORY_MAP = {
   feedback_summary: 'debugging',
   search_lessons: 'search',
   retrieve_lessons: 'search',
-  search_rlhf: 'search',
+  search_thumbgate: 'search',
   prevention_rules: 'security',
   construct_context_pack: 'architecture',
   export_dpo_pairs: 'testing',

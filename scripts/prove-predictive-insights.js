@@ -283,8 +283,8 @@ async function run() {
           throw new Error('Expected verify:full to include prove:predictive-insights');
         }
 
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-predictive-proof-'));
-        const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-predictive-proof-cwd-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-predictive-proof-'));
+        const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-predictive-proof-cwd-'));
         try {
           const entry = recordVerifyWorkflowRun('full', cwd, feedbackDir);
           if (!entry.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'predictive-insights-report.json')))) {

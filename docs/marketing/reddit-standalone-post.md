@@ -4,7 +4,7 @@ I built a Pre-Action Gates for MCP servers (Cursor, Claude Code, etc.) that bloc
 
 The core issue with agents today is **repetition of known failures**. You thumbs-down a force-push once, and the agent does it again 10 minutes later. 
 
-**mcp-memory-gateway** solves this by:
+**thumbgate** solves this by:
 1. Capturing thumbs-up/down signals programmatically.
 2. Converting failures into "Semantic Firewall Rules" (prevention rules).
 3. Using Bayesian uncertainty estimation to block actions when the agent is "hallucinating" confidence.

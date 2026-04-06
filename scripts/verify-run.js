@@ -230,7 +230,7 @@ function recordVerifyWorkflowRun(mode = 'quick', cwd = process.cwd(), feedbackDi
 }
 
 function runVerify(mode = 'quick', baseEnv = process.env, cwd = process.cwd()) {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-verify-'));
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-verify-'));
   const env = {
     ...baseEnv,
     THUMBGATE_PROOF_DIR: path.join(tempRoot, 'proof-adapters'),

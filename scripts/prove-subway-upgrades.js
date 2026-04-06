@@ -67,7 +67,7 @@ function run() {
         const vs = require(vsPath);
         if (typeof vs.upsertFeedback !== 'function') throw new Error('upsertFeedback not exported');
         if (typeof vs.searchSimilar !== 'function') throw new Error('searchSimilar not exported');
-        if (vs.TABLE_NAME !== 'rlhf_memories') throw new Error(`TABLE_NAME must be rlhf_memories, got ${vs.TABLE_NAME}`);
+        if (vs.TABLE_NAME !== 'thumbgate_memories') throw new Error(`TABLE_NAME must be thumbgate_memories, got ${vs.TABLE_NAME}`);
 
         // Run Jest tests
         const out = execSync(

@@ -1,14 +1,14 @@
 {
   "mcpServers": {
-    "rlhf": {
+    "thumbgate": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.9.9", "serve"]
+      "args": ["-y", "thumbgate@0.9.9", "serve"]
     }
   },
   "hooks": {
     "preToolUse": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.9.9", "gate"]
+      "args": ["-y", "thumbgate@0.9.9", "gate"]
     }
   }
 }

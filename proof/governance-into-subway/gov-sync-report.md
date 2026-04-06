@@ -2,7 +2,7 @@
 
 **Generated:** 2026-03-04T19:43:00Z
 **Phase:** 03-governance-into-subway
-**rlhf baseline test count:** 91 node-runner tests (89 test:api + 2 test:proof) — no regression from Phase 1 baseline of 60
+**ThumbGate baseline test count:** 91 node-runner tests (89 test:api + 2 test:proof) — no regression from Phase 1 baseline of 60
 
 ## Requirements Coverage
 
@@ -60,7 +60,7 @@ Time:        0.553 s, estimated 1 s
 Ran all test suites matching /budget-guard|contextfs|intent-router|self-heal/i.
 ```
 
-## Test Results: rlhf Baseline (Regression Check)
+## Test Results: ThumbGate Baseline (Regression Check)
 
 ```
 ℹ pass 89
@@ -158,8 +158,8 @@ All 6 scripts use `PROJECT_ROOT = path.join(__dirname, '..', '..', '..')` resolv
 
 ## Notes
 
-- Subway scripts are gitignored via `.git/info/exclude` — commits and proofs live in rlhf repo
-- Policy bundle tool names are rlhf-origin; update to Subway-specific tools in future cleanup
+- Subway scripts are gitignored via `.git/info/exclude` — commits and proofs live in the ThumbGate repo
+- Policy bundle tool names are ThumbGate-origin; update to Subway-specific tools in future cleanup
 - Lock timeout increased to `timeoutMs: 30000`, `staleMs: 60000` for concurrent agent safety (4+ parallel callers)
 - `jest.governance.config.js` required in Subway — main `jest-expo` config excludes `scripts/` from test runs
 - `KNOWN_FIX_SCRIPTS` uses object array `{name, command}` in Subway `self-heal.js` — lookup via `command[2]` for correct npm script name matching

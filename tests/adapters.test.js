@@ -17,10 +17,10 @@ test('adapter files exist', () => {
     'adapters/claude/.mcp.json',
     'adapters/codex/config.toml',
     'adapters/opencode/opencode.json',
-    'adapters/amp/skills/rlhf-feedback/SKILL.md',
+    'adapters/amp/skills/thumbgate-feedback/SKILL.md',
     'opencode.json',
-    '.opencode/instructions/rlhf-workflow.md',
-    '.opencode/agents/rlhf-review.md',
+    '.opencode/instructions/thumbgate-workflow.md',
+    '.opencode/agents/thumbgate-review.md',
     '.cursor-plugin/marketplace.json',
     '.agents/plugins/marketplace.json',
     '.claude-plugin/plugin.json',
@@ -62,12 +62,12 @@ test('claude .mcp.json is valid JSON with mcpServers key', () => {
   assert.ok(payload.mcpServers, '.mcp.json must have mcpServers key');
   assert.equal(typeof payload.mcpServers, 'object');
   
-  const rlhf = payload.mcpServers.rlhf;
-  if (rlhf.command === 'npx') {
-    assert.deepEqual(rlhf.args, ['-y', `mcp-memory-gateway@${packageVersion}`, 'serve']);
+  const thumbgate = payload.mcpServers.thumbgate;
+  if (thumbgate.command === 'npx') {
+    assert.deepEqual(thumbgate.args, ['-y', `thumbgate@${packageVersion}`, 'serve']);
   } else {
-    assert.equal(rlhf.command, 'node');
-    assert.ok(rlhf.args.includes('serve'));
+    assert.equal(thumbgate.command, 'node');
+    assert.ok(thumbgate.args.includes('serve'));
   }
 });
 
@@ -79,7 +79,7 @@ test('codex config.toml contains mcp_servers section', () => {
   if (content.includes('command = "npx"')) {
     assert.match(
       content,
-      new RegExp(`args = \\["-y", "mcp-memory-gateway@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}", "serve"\\]`),
+      new RegExp(`args = \\["-y", "thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}", "serve"\\]`),
       'config.toml must launch the version-pinned package serve entrypoint'
     );
   } else {
@@ -91,13 +91,13 @@ test('codex config.toml contains mcp_servers section', () => {
 test('opencode adapter is valid JSON with a version-pinned local MCP server', () => {
   const filePath = path.join(root, 'adapters/opencode/opencode.json');
   const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  const rlhf = payload.mcp && payload.mcp.thumbgate;
+  const thumbgate = payload.mcp && payload.mcp.thumbgate;
 
   assert.equal(payload.$schema, 'https://opencode.ai/config.json');
-  assert.ok(rlhf, 'opencode adapter must define mcp.thumbgate');
-  assert.equal(rlhf.type, 'local');
-  assert.equal(rlhf.enabled, true);
-  assert.deepEqual(rlhf.command, ['npx', '-y', `mcp-memory-gateway@${packageVersion}`, 'serve']);
+  assert.ok(thumbgate, 'opencode adapter must define mcp.thumbgate');
+  assert.equal(thumbgate.type, 'local');
+  assert.equal(thumbgate.enabled, true);
+  assert.deepEqual(thumbgate.command, ['npx', '-y', `thumbgate@${packageVersion}`, 'serve']);
 });
 
 test('repo opencode.json enforces worktree-safe defaults', () => {
@@ -107,7 +107,7 @@ test('repo opencode.json enforces worktree-safe defaults', () => {
   const bashPermissions = permissions.bash || {};
   const editPermissions = permissions.edit || {};
 
-  assert.deepEqual(payload.instructions, ['.opencode/instructions/rlhf-workflow.md']);
+  assert.deepEqual(payload.instructions, ['.opencode/instructions/thumbgate-workflow.md']);
   assert.deepEqual(payload.mcp.thumbgate.command, ['node', 'bin/cli.js', 'serve']);
   assert.equal(bashPermissions['git push*'], 'deny');
   assert.equal(bashPermissions['git reset*'], 'deny');
@@ -117,18 +117,18 @@ test('repo opencode.json enforces worktree-safe defaults', () => {
 });
 
 test('opencode review agent remains read-only and verification-focused', () => {
-  const filePath = path.join(root, '.opencode', 'agents', 'rlhf-review.md');
+  const filePath = path.join(root, '.opencode', 'agents', 'thumbgate-review.md');
   const content = fs.readFileSync(filePath, 'utf-8');
 
-  assert.match(content, /edit:\s+deny/, 'rlhf-review must deny edits');
-  assert.match(content, /npm run test:\*/, 'rlhf-review must allow test commands');
-  assert.match(content, /npm run prove:\*/, 'rlhf-review must allow proof commands');
-  assert.match(content, /npm run self-heal:check/, 'rlhf-review must allow self-heal verification');
-  assert.match(content, /Do not edit files\./, 'rlhf-review must stay read-only');
+  assert.match(content, /edit:\s+deny/, 'thumbgate-review must deny edits');
+  assert.match(content, /npm run test:\*/, 'thumbgate-review must allow test commands');
+  assert.match(content, /npm run prove:\*/, 'thumbgate-review must allow proof commands');
+  assert.match(content, /npm run self-heal:check/, 'thumbgate-review must allow self-heal verification');
+  assert.match(content, /Do not edit files\./, 'thumbgate-review must stay read-only');
 });
 
 test('amp SKILL.md contains capture-feedback reference', () => {
-  const filePath = path.join(root, 'adapters/amp/skills/rlhf-feedback/SKILL.md');
+  const filePath = path.join(root, 'adapters/amp/skills/thumbgate-feedback/SKILL.md');
   const content = fs.readFileSync(filePath, 'utf-8');
   assert.match(content, /capture-feedback/, 'SKILL.md must reference capture-feedback');
 });
@@ -151,7 +151,7 @@ test('cursor marketplace plugin keeps metadata versioned while runtime tracks th
   assert.equal(marketplace.metadata.version, packageVersion);
   assert.equal(marketplace.plugins[0].name, pluginManifest.name);
   assert.equal(pluginManifest.version, packageVersion);
-  assert.deepEqual(pluginConfig.mcpServers.rlhf.args, ['-y', 'mcp-memory-gateway@latest', 'serve']);
+  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, ['-y', 'thumbgate@latest', 'serve']);
   assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
 });
@@ -181,23 +181,23 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.match(readme, /Data Collection/i);
   assert.match(readme, /Support/i);
   assert.match(readme, /Examples/i);
-  assert.match(readme, /claude mcp add thumbgate -- npx -y mcp-memory-gateway serve/i);
+  assert.match(readme, /claude mcp add thumbgate -- npx -y thumbgate serve/i);
   assert.match(readme, /build:claude-mcpb/i);
   assert.match(readme, new RegExp(getClaudePluginLatestDownloadUrl(root).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.ok(readme.includes(PRODUCTHUNT_URL));
-  assert.doesNotMatch(readme, /github\.com\/IgorGanapolsky\/mcp-memory-gateway/);
+  assert.doesNotMatch(readme, /github\.com\/IgorGanapolsky\/thumbgate/);
 });
 
-test('claude .mcp.json rlhf command is either npx or node', () => {
+test('claude .mcp.json ThumbGate command is either npx or node', () => {
   const filePath = path.join(root, 'adapters/claude/.mcp.json');
   const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  const rlhf = payload.mcpServers.rlhf;
+  const thumbgate = payload.mcpServers.thumbgate;
   assert.ok(
-    rlhf.command === 'npx' || rlhf.command === 'node',
-    'command should be npx or node, got ' + rlhf.command
+    thumbgate.command === 'npx' || thumbgate.command === 'node',
+    'command should be npx or node, got ' + thumbgate.command
   );
-  if (rlhf.command === 'node') {
-    assert.ok(rlhf.args.includes('serve'), 'node command should include serve');
+  if (thumbgate.command === 'node') {
+    assert.ok(thumbgate.args.includes('serve'), 'node command should include serve');
   }
 });
 
@@ -225,7 +225,7 @@ test('codex app plugin surface is present and aligned to ThumbGate metadata', ()
   assert.equal(pluginManifest.mcpServers, './.mcp.json');
   assert.ok(pluginEntry, 'codex plugin marketplace entry should exist');
   assert.equal(pluginEntry.source.path, './plugins/codex-profile');
-  assert.deepEqual(pluginConfig.mcpServers.rlhf.args, ['-y', `mcp-memory-gateway@${packageVersion}`, 'serve']);
+  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, ['-y', `thumbgate@${packageVersion}`, 'serve']);
 });
 
 test('Claude Codex bridge plugin surface is present and aligned to ThumbGate metadata', () => {
@@ -237,7 +237,7 @@ test('Claude Codex bridge plugin surface is present and aligned to ThumbGate met
   assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(pluginManifest.name, 'codex-bridge');
-  assert.deepEqual(pluginConfig.mcpServers.rlhf.args, ['-y', `mcp-memory-gateway@${packageVersion}`, 'serve']);
+  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, ['-y', `thumbgate@${packageVersion}`, 'serve']);
   assert.match(readme, /Claude Code plugin/i);
   assert.match(readme, /adversarial review/i);
   assert.match(readme, /second-pass handoff/i);

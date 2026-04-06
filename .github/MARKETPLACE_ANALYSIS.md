@@ -2,8 +2,8 @@
 
 **Date**: 2026-03-11
 **Product**: ThumbGate
-**npm**: mcp-memory-gateway
-**Repo**: IgorGanapolsky/mcp-memory-gateway
+**npm**: thumbgate
+**Repo**: IgorGanapolsky/thumbgate
 **Live URL**: https://thumbgate-production.up.railway.app
 
 ---
@@ -74,7 +74,7 @@ GitHub Marketplace supports **only two categories**:
 
 ThumbGate is:
 - A protocol server (Model Context Protocol)
-- An npm package (`mcp-memory-gateway`)
+- An npm package (`thumbgate`)
 - An agent integration tool
 - A data persistence/memory service
 
@@ -112,7 +112,7 @@ None of these are GitHub-native workflows. While we *could* create a GitHub App 
 
 ### Secondary: npm Package Registry
 
-The `mcp-memory-gateway` package is already on npm and discoverable.
+The `thumbgate` package is already on npm and discoverable.
 
 ### Tertiary: Documentation & Blog
 

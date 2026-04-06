@@ -37,13 +37,13 @@ test('cursor marketplace manifest points at a valid plugin directory', () => {
   const packageJson = readJson('package.json');
   const marketplace = readJson('.cursor-plugin/marketplace.json');
   const pluginManifest = readJson('plugins/cursor-marketplace/.cursor-plugin/plugin.json');
-  const pluginEntry = marketplace.plugins.find((plugin) => plugin.name === 'mcp-memory-gateway');
+  const pluginEntry = marketplace.plugins.find((plugin) => plugin.name === 'thumbgate');
 
-  assert.equal(marketplace.name, 'mcp-memory-gateway-marketplace');
+  assert.equal(marketplace.name, 'thumbgate-marketplace');
   assert.equal(marketplace.owner.name, 'Igor Ganapolsky');
   assert.equal(marketplace.metadata.version, packageJson.version);
   assert.match(marketplace.metadata.description, /Thumbs down|never.*again|mistake/i);
-  assert.ok(pluginEntry, 'marketplace entry for mcp-memory-gateway should exist');
+  assert.ok(pluginEntry, 'marketplace entry for thumbgate should exist');
   assert.equal(pluginEntry.name, pluginManifest.name, 'marketplace entry should match plugin manifest name');
   assert.equal(pluginEntry.source, 'plugins/cursor-marketplace');
   assert.equal(pluginEntry.description, canonicalDescription);
@@ -58,7 +58,7 @@ test('cursor plugin manifest uses marketplace-safe metadata and committed assets
   const logoPath = path.join(root, 'plugins/cursor-marketplace', pluginManifest.logo);
 
   assert.match(pluginManifest.name, /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/);
-  assert.equal(pluginManifest.name, 'mcp-memory-gateway');
+  assert.equal(pluginManifest.name, 'thumbgate');
   assert.equal(pluginManifest.displayName, 'ThumbGate');
   assert.equal(pluginManifest.description, canonicalDescription);
   assert.equal(path.isAbsolute(pluginManifest.logo), false, 'logo must be repo-relative');
@@ -67,7 +67,7 @@ test('cursor plugin manifest uses marketplace-safe metadata and committed assets
   assert.equal(fs.existsSync(logoPath), true, 'plugin logo should exist');
 });
 
-test('cursor plugin MCP config uses mcp.json (not .mcp.json) with correct rlhf server', () => {
+test('cursor plugin MCP config uses mcp.json (not .mcp.json) with the correct ThumbGate server', () => {
   const mcpPath = path.join(pluginDir, 'mcp.json');
   const dotMcpPath = path.join(pluginDir, '.mcp.json');
 
@@ -75,10 +75,10 @@ test('cursor plugin MCP config uses mcp.json (not .mcp.json) with correct rlhf s
   assert.equal(fs.existsSync(dotMcpPath), false, '.mcp.json must not exist (use mcp.json instead)');
 
   const pluginConfig = JSON.parse(fs.readFileSync(mcpPath, 'utf-8'));
-  const server = pluginConfig.mcpServers.rlhf;
+  const server = pluginConfig.mcpServers.thumbgate;
 
   assert.equal(server.command, 'npx');
-  assert.deepEqual(server.args, ['-y', 'mcp-memory-gateway@latest', 'serve']);
+  assert.deepEqual(server.args, ['-y', 'thumbgate@latest', 'serve']);
   assert.equal(JSON.stringify(server).includes('/Users/'), false, 'plugin config must not hardcode local paths');
 });
 
@@ -90,9 +90,9 @@ test('cursor plugin docs explain runtime updates versus listing updates', () => 
   assert.match(readme, /Cursor Directory/i);
   assert.match(readme, /does not refresh|does not auto-refresh/i);
   assert.match(readme, /ThumbGate/);
-  assert.match(readme, /mcp-memory-gateway/);
+  assert.match(readme, /thumbgate/);
   assert.match(readme, new RegExp(canonicalDescription.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(readme, /mcp-memory-gateway@latest/);
+  assert.match(readme, /thumbgate@latest/);
   assert.match(readme, /History-aware lesson distillation/i);
   assert.match(readme, /last ~10 messages/i);
   assert.match(readme, /failed tool call/i);
@@ -101,7 +101,7 @@ test('cursor plugin docs explain runtime updates versus listing updates', () => 
   assert.match(opsDoc, /Cursor Marketplace/i);
   assert.match(opsDoc, /Cursor Directory/i);
   assert.match(opsDoc, /Display name: `ThumbGate`/);
-  assert.match(opsDoc, /Plugin slug: `mcp-memory-gateway`/);
+  assert.match(opsDoc, /Plugin slug: `thumbgate`/);
   assert.match(opsDoc, /npm publish/i);
   assert.match(opsDoc, /VERIFICATION_EVIDENCE\.md/);
   assert.match(opsDoc, /history-aware lesson distillation/i);
@@ -240,7 +240,7 @@ test('plugin name is kebab-case', () => {
 test('no claude-specific tags in plugin.json keywords or marketplace.json tags', () => {
   const pluginManifest = readJson('plugins/cursor-marketplace/.cursor-plugin/plugin.json');
   const marketplace = readJson('.cursor-plugin/marketplace.json');
-  const pluginEntry = marketplace.plugins.find((p) => p.name === 'mcp-memory-gateway');
+  const pluginEntry = marketplace.plugins.find((p) => p.name === 'thumbgate');
 
   const claudeTerms = ['claude-desktop', 'claude-code', 'claude', 'desktop-extension', 'anthropic'];
 

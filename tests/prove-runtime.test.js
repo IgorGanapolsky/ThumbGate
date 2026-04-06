@@ -10,7 +10,7 @@ const { execSync } = require('node:child_process');
 const ROOT = path.join(__dirname, '..');
 
 test('prove-runtime: proof gate passes with 6/6 checks', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runtime-proof-test-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-runtime-proof-test-'));
   try {
     const output = execSync('node scripts/prove-runtime.js', {
       cwd: ROOT,
@@ -26,7 +26,7 @@ test('prove-runtime: proof gate passes with 6/6 checks', () => {
 });
 
 test('prove-runtime: report.json is valid JSON with all requirements', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runtime-proof-json-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-runtime-proof-json-'));
   try {
     execSync('node scripts/prove-runtime.js', {
       cwd: ROOT,
@@ -49,7 +49,7 @@ test('prove-runtime: report.json is valid JSON with all requirements', () => {
 });
 
 test('prove-runtime: report.md contains all requirement checkboxes', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runtime-proof-md-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-runtime-proof-md-'));
   try {
     execSync('node scripts/prove-runtime.js', {
       cwd: ROOT,

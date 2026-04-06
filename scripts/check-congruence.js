@@ -126,7 +126,7 @@ async function main() {
     'README.md contains unresolved merge conflict markers'
   );
   check(
-    landingHtml.includes('doesn\'t touch the model') || landingHtml.includes('different from RLHF-the-concept'),
+    landingHtml.includes('doesn\'t touch the model') || landingHtml.includes('different from model-training feedback loops'),
     'public/index.html missing honest disclaimer (FAQ or inline)'
   );
   check(

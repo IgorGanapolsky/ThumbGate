@@ -6,7 +6,7 @@
 
 ## Surface Descriptions
 
-### Cursor Directory (cursor.directory/mcp-memory-gateway)
+### Cursor Directory (cursor.directory/thumbgate)
 > Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)

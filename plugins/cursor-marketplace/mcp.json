@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "rlhf": {
+    "thumbgate": {
       "command": "npx",
       "args": [
         "-y",
-        "mcp-memory-gateway@latest",
+        "thumbgate@latest",
         "serve"
       ]
     }

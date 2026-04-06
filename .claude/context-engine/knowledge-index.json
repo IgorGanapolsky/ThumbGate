@@ -5,13 +5,18 @@
       "docs": [
         {
           "filename": "ANTHROPIC_MARKETPLACE_STRATEGY.md",
-          "title": "Anthropic Marketplace Strategy: The Reliability & Context Engineering Layer",
-          "summary": "ThumbGate is the **Enterprise Control Plane** for Claude-based agentic workflows. We solve the \"Vibe Coding\" security crisis by providing a verifiable, context-engineered runtime. 1. **Context Engineering Moat:** Move beyond raw prompts. Use our Semantic Context Packs to give Claude high-density proprietary knowledge. 2. **Zero-Trust Agentic Guardrails:** Mitigate supply-chain risks (Pentagon-grade concerns) by enforcing machine-readable prevention rules auto-generated from human feedback."
+          "title": "Anthropic Partner Strategy: Claude Workflow Hardening Revenue Motion",
+          "summary": "Status: current Updated: March 17, 2026 Use [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md) for live pricing and traction claims. Use [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) plus the machine-readable proof reports for engineering proof."
         },
         {
           "filename": "AUTONOMOUS_GITOPS.md",
-          "title": "Autonomous GitOps",
-          "summary": "This repo uses PR-gated autonomous automation. No direct merge-to-main shortcuts. - `.github/workflows/ci.yml` - Runs `npm test`, `npm run prove:adapters`, `npm run prove:automation`"
+          "title": "GSD Revenue Loop",
+          "summary": "Status: post-first-dollar Updated: 2026-03-20T15:49:15.715Z This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself."
+        },
+        {
+          "filename": "COMMERCIAL_TRUTH.md",
+          "title": "Commercial Truth",
+          "summary": "Status: current Updated: April 1, 2026 This document is the source of truth for product, pricing, traction, and proof claims in this repository."
         },
         {
           "filename": "CONTEXTFS.md",
@@ -19,14 +24,39 @@
           "summary": "This project implements a file-system-native context layer inspired by current context-engineering research. Root: - `contextfs/raw_history/`"
         },
         {
+          "filename": "GEO_DEMAND_ENGINE_MAR2026.md",
+          "title": "GEO Demand Engine",
+          "summary": "Status: current Updated: March 18, 2026 This document turns the current AI-search playbook into a repeatable demand engine for `thumbgate`, the `Workflow Hardening Sprint`, and Pro at `$19/mo or $149/yr`."
+        },
+        {
+          "filename": "GO_TO_MARKET_REVENUE_WEDGE_2026-03.md",
+          "title": "CTO Urgent Memo: High-ROI Revenue Opportunity (March 2026)",
+          "summary": "While we wait for AWS Marketplace approval, we can generate revenue **today** by shifting from \"Monthly Subscriptions\" to **\"Success-Based Memory Credits.\"** In March 2026, developers are moving away from subscriptions and toward **Outcome-Based Pricing**. We can sell pre-packaged \"Memory Units\" that guarantee an agent will never repeat a specific class of mistake. We sell a \"Mistake-Free Starter Pack\" for **$19/mo**."
+        },
+        {
           "filename": "INTENT_ROUTER.md",
           "title": "Intent Router",
           "summary": "The intent router adds an orchestration layer above individual tools. It converts free-form work goals into policy-aware plans: 1. Select a named intent."
         },
         {
+          "filename": "MARKETING_COPY_CONGRUENCE.md",
+          "title": "Marketing Copy Congruence",
+          "summary": "**Product Name:** ThumbGate **Primary Value Proposition:** Pre-Action Gates > Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks."
+        },
+        {
+          "filename": "OBSIDIAN_SETUP.md",
+          "title": "Obsidian + ThumbGate Integration Guide",
+          "summary": "Connect your Obsidian vault to ThumbGate so Claude Code's persistent ThumbGate memory is browsable, searchable, and linkable inside Obsidian. ---"
+        },
+        {
+          "filename": "OUTREACH_TARGETS.md",
+          "title": "Revenue Pipeline Outreach Targets",
+          "summary": "Status: current Updated: March 17, 2026 The goal is not generic awareness. The goal is booked pilots and named pilot agreements for the [Workflow Hardening Sprint](WORKFLOW_HARDENING_SPRINT.md)."
+        },
+        {
           "filename": "PACKAGING_AND_SALES_PLAN.md",
           "title": "Packaging and Sales Plan",
-          "summary": "- Local ThumbGate feedback capture - Schema validation - Prevention rules"
+          "summary": "> Historical research note: this file contains packaging hypotheses and outdated pricing experiments. Use `docs/COMMERCIAL_TRUTH.md` for current pricing and traction claims. Weekly active proof-backed workflow runs. This is the metric that matters most. Stars, visits, and installs matter only if they lead to teams running one monitored workflow with shared memory, guardrails, and evidence."
         },
         {
           "filename": "PAPERBANANA.md",
@@ -36,7 +66,7 @@
         {
           "filename": "PITCH.md",
           "title": "One-Line Pitch",
-          "summary": "The enterprise-grade **Reliability Gateway** that turns user feedback into verifiable context and stops AI agents from repeating mistakes. The Gateway is the operational layer between raw LLM output and production reliability. We provide **Context Packs** that move beyond simple prompts to high-density semantic environments. - **Primary Goal:** Transform \"Vibe Coding\" into \"Workflow Hardening\" through **Pre-Action Gates**."
+          "summary": "Make one Claude workflow safe enough to sell and ship team-wide. ThumbGate is the AI reliability system behind one workflow with business value. It is not another horizontal agent platform. The front-line offer is a **Workflow Hardening Sprint** that gives teams shared memory, guardrails, and proof-ready runs so one workflow can be deployed, audited, and improved over time. - **Primary Goal:** Turn \"vibe coding\" into a controlled rollout for one sharp agent."
         },
         {
           "filename": "PLATFORM_RESEARCH_2026-03-03.md",
@@ -44,9 +74,44 @@
           "summary": "This research was done on March 3, 2026 using official documentation or official product pages. 1. ChatGPT distribution should prioritize Custom GPT + GPT Actions (OpenAPI), not legacy plugin flow. 2. Claude and Codex both support MCP workflows; shipping an MCP server is the fastest integration path."
         },
         {
+          "filename": "PRICING_RESEARCH_2026-03-09.md",
+          "title": "Pricing Research (March 9, 2026)",
+          "summary": "> Historical research note: this document captures a point-in-time pricing exploration. It is not the current product truth. Use `docs/COMMERCIAL_TRUTH.md` for current pricing and proof language. On March 9, 2026, the working hypothesis was to keep Context Gateway at a `$10/mo` Stripe price for a limited period and position it explicitly as a founding price rather than the permanent list price. This monthly self-serve hypothesis has since been retired. The current public commercial truth is documented in `docs/COMMERCIAL_TRUTH.md`."
+        },
+        {
+          "filename": "PRICING_RESEARCH_2026-03-10.md",
+          "title": "CTO Crisis Report: Revenue Autopsy & Strategic Pivot (March 2026)",
+          "summary": "> Historical research note: this document describes a pricing and packaging pivot proposal. It is not the current product truth. Use `docs/COMMERCIAL_TRUTH.md` for current pricing and proof language. All subscription references below describe the March 2026 situation being analyzed, not the current offer. At the time, the go-to-market (GTM) strategy was misaligned with the March 2026 AI developer ecosystem. We had built a powerful local-first \"ThumbGate Feedback Studio,\" but we also put massive friction between the developer and the commercial surface. Here is the empirical breakdown of why our funnel is failing:"
+        },
+        {
+          "filename": "REDDIT_GTM_PLAYBOOK.md",
+          "title": "Reddit GTM Playbook",
+          "summary": "This is the operator playbook for driving the first attributed dollars from Reddit without tripping subreddit spam filters. Lead with the real wedge: - local-first feedback loop for coding agents"
+        },
+        {
+          "filename": "REVENUE_SPRINT_MAR2026.md",
+          "title": "Revenue Sprint: First Paying Customer TODAY, $1K MRR in 30 Days",
+          "summary": "> Historical research note: community-size figures, pricing experiments, and growth targets in this file are point-in-time planning assumptions from March 11, 2026. They are not current product truth. Use `docs/COMMERCIAL_TRUTH.md` for current pricing, traction, and proof language. All `$5/mo`, `$10/mo`, \"Founding Member\", and scarcity references below are retired experiments retained for historical context only. **Date:** 2026-03-11 **Status:** Historical plan archived"
+        },
+        {
+          "filename": "SOCIAL_ANALYTICS_RESEARCH_MAR2026.md",
+          "title": "Social Media & Analytics Pipeline — Research Synthesis (March 2026)",
+          "summary": "We have **zero working social analytics** and a **broken publishing pipeline**. This document synthesizes deep research across 5 domains to define the cheapest, fastest path to a fully wired marketing stack. **Current state:** - 6 paid orders (GitHub Marketplace), $0 booked revenue"
+        },
+        {
           "filename": "VERIFICATION_EVIDENCE.md",
-          "title": "Verification Evidence (March 4, 2026)",
-          "summary": "- Proof report: `proof/attribution-report.md` - Machine evidence: `proof/attribution-report.json` - Requirements: ATTR-01 (recordAction + attributeFeedback), ATTR-02 (pre-tool guard), ATTR-03 (test coverage)"
+          "title": "ThumbGate — Verification Evidence",
+          "summary": "> Every feature ships with proof. This document is the complete audit trail of verification runs, test output, and deployment evidence. | Category | Evidence | |----------|---------|"
+        },
+        {
+          "filename": "X_AUTOMATION_REPORT.md",
+          "title": "X.com Workflow Hardening Reply Plan",
+          "summary": "Status: current Updated: 2026-03-18 This is an operator planning report, not proof that posts were sent or that impressions converted."
+        },
+        {
+          "filename": "X_AUTOMATION_STRATEGY.md",
+          "title": "𝕏 Premium+ Automation Strategy (March 2026)",
+          "summary": "> Historical research note: this file captures a launch experiment and may reference outdated pricing or reach assumptions. Use `docs/COMMERCIAL_TRUTH.md` for current pricing and traction claims. Reach figures below are research snapshots, not product proof. Your account is in a high-leverage position: - **Verified Status**: Premium+ active (Since March 2026)."
         },
         {
           "filename": "gpt-store-submission.md",
@@ -56,20 +121,50 @@
       ],
       "keywords": [
         "anthropic",
-        "marketplace",
+        "partner",
         "strategy:",
-        "the",
-        "reliability",
-        "context",
-        "engineering",
-        "layer",
+        "claude",
+        "workflow",
+        "hardening",
+        "revenue",
+        "motion",
+        "marketplace",
         "strategy",
+        "gsd",
+        "loop",
         "autonomous",
         "gitops",
+        "commercial",
+        "truth",
         "contextfs",
         "(constructor/loader/evaluator)",
+        "geo",
+        "demand",
+        "engine",
+        "mar2026",
+        "cto",
+        "urgent",
+        "memo:",
+        "high-roi",
+        "opportunity",
+        "(march",
+        "2026)",
+        "market",
+        "wedge",
+        "2026",
         "intent",
         "router",
+        "marketing",
+        "copy",
+        "congruence",
+        "obsidian",
+        "thumbgate",
+        "integration",
+        "guide",
+        "setup",
+        "pipeline",
+        "outreach",
+        "targets",
         "packaging",
         "and",
         "sales",
@@ -82,39 +177,54 @@
         "research",
         "(as",
         "march",
-        "2026)",
-        "2026",
+        "pricing",
+        "crisis",
+        "report:",
+        "autopsy",
+        "strategic",
+        "pivot",
+        "reddit",
+        "gtm",
+        "playbook",
+        "sprint:",
+        "first",
+        "paying",
+        "customer",
+        "today,",
+        "$1k",
+        "mrr",
+        "days",
+        "sprint",
+        "social",
+        "media",
+        "analytics",
+        "synthesis",
         "verification",
         "evidence",
-        "(march",
+        "x.com",
+        "reply",
+        "automation",
+        "report",
+        "premium+",
         "gpt",
         "store",
         "submission:",
-        "rlhf",
-        "feedback",
-        "loop",
         "submission"
-      ]
-    },
-    "architecture": {
-      "category": "architecture",
-      "docs": [
-        {
-          "filename": "PLUGIN_DISTRIBUTION.md",
-          "title": "Plugin and Runtime Distribution",
-          "summary": "Ship one core runtime and fan out to platform adapters: 1. `src/api/server.js` (HTTP API) 2. `adapters/mcp/server-stdio.js` (MCP tools)"
-        }
-      ],
-      "keywords": [
-        "plugin",
-        "and",
-        "runtime",
-        "distribution"
       ]
     },
     "mcp-ai": {
       "category": "mcp-ai",
       "docs": [
+        {
+          "filename": "CLAUDE_DESKTOP_EXTENSION.md",
+          "title": "Claude Desktop Extension Plan",
+          "summary": "Status: current Updated: March 30, 2026 This document turns the existing Claude-specific bundle metadata into a concrete promotion and submission packet for Claude Desktop."
+        },
+        {
+          "filename": "MCP_AUTONOMOUS_SETUP.md",
+          "title": "MCP Autonomous Setup Checklist",
+          "summary": "> **Goal:** Give Claude full send-email + GitHub autonomy — zero handoffs. - [ ] Claude Desktop installed - [ ] Node.js 18+ with `npx` available"
+        },
         {
           "filename": "geo-strategy-for-ai-agents.md",
           "title": "Generative Engine Optimization (GEO) Strategy for AI Agents",
@@ -127,6 +237,14 @@
         }
       ],
       "keywords": [
+        "claude",
+        "desktop",
+        "extension",
+        "plan",
+        "mcp",
+        "autonomous",
+        "setup",
+        "checklist",
         "generative",
         "engine",
         "optimization",
@@ -135,21 +253,70 @@
         "for",
         "agents",
         "geo",
-        "claude",
-        "mcp",
         "hub",
         "submission:",
-        "rlhf",
-        "feedback",
-        "loop",
+        "thumbgate",
         "submission"
+      ]
+    },
+    "architecture": {
+      "category": "architecture",
+      "docs": [
+        {
+          "filename": "CURSOR_PLUGIN_OPERATIONS.md",
+          "title": "Cursor Plugin Operations",
+          "summary": "- Cursor Marketplace: install and metadata distribution surface - Team Marketplace: private repo-backed install surface for Cursor Teams and Enterprise - Cursor Directory: discoverability surface only"
+        },
+        {
+          "filename": "PLUGIN_DISTRIBUTION.md",
+          "title": "Plugin and Runtime Distribution",
+          "summary": "Ship one core runtime and fan out to platform adapters: 1. `src/api/server.js` (HTTP API) 2. `adapters/mcp/server-stdio.js` (MCP tools)"
+        }
+      ],
+      "keywords": [
+        "cursor",
+        "plugin",
+        "operations",
+        "and",
+        "runtime",
+        "distribution"
+      ]
+    },
+    "security": {
+      "category": "security",
+      "docs": [
+        {
+          "filename": "TECHNICAL_DEBT_AUDIT.md",
+          "title": "Technical Debt Audit",
+          "summary": "> Live audit snapshot for April 6, 2026 on `chore/thumbgate-technical-debt-audit-20260406` (original audit worktree lane: `ops/thumbgate-audit-20260406c`). This report replaces the stale March 20, 2026 audit. Verification evidence for this audit is recorded in `docs/VERIFICATION_EVIDENCE.md` plus the command outputs captured in this worktree. Repository-wide audit executed from a dedicated clean worktree. The audit combined repository inventory scans, local ThumbGate memory review, full verification-suite runs, and targeted repairs for the debt uncovered during the audit. - Local memory source verified with `npm run feedback:stats --silent`:"
+        }
+      ],
+      "keywords": [
+        "technical",
+        "debt",
+        "audit"
+      ]
+    },
+    "ci-cd": {
+      "category": "ci-cd",
+      "docs": [
+        {
+          "filename": "WORKFLOW_HARDENING_SPRINT.md",
+          "title": "Workflow Hardening Sprint",
+          "summary": "Status: current Updated: March 17, 2026 Use [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md) for live pricing and traction claims. Use [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) and the proof reports for engineering proof."
+        }
+      ],
+      "keywords": [
+        "workflow",
+        "hardening",
+        "sprint"
       ]
     }
   },
   "metadata": {
-    "builtAt": "2026-03-06T23:02:53.758Z",
-    "docCount": 13,
+    "builtAt": "2026-04-06T16:41:56.823Z",
+    "docCount": 31,
     "version": "1.0.0",
-    "checksum": "5acc2f2a71b9"
+    "checksum": "18f3107944f0"
   }
 }

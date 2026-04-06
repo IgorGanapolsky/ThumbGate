@@ -11,7 +11,7 @@ describe('Diversity Tracking (ML-04)', () => {
   let tmpDir;
 
   before(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-div-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-div-test-'));
     process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   });
 
@@ -140,7 +140,7 @@ describe('Diversity Tracking (ML-04)', () => {
 
   it('diversityScore is not NaN or Infinity on first entry (edge case)', () => {
     // Use a fresh tmpdir for this edge-case test to simulate first entry
-    const freshDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-div-fresh-'));
+    const freshDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-div-fresh-'));
     process.env.THUMBGATE_FEEDBACK_DIR = freshDir;
     delete require.cache[require.resolve('../scripts/feedback-loop')];
     const { captureFeedback } = require('../scripts/feedback-loop');

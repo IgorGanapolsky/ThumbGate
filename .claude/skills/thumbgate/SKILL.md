@@ -15,7 +15,7 @@ ThumbGate turns thumbs-up/down feedback into hard enforcement gates that block
 known-bad agent actions before they execute. Think of it as an immune system
 for your AI agent.
 
-**npm package:** `mcp-memory-gateway`
+**npm package:** `thumbgate`
 **Docs:** https://github.com/IgorGanapolsky/ThumbGate
 
 ## Quick Start
@@ -23,7 +23,7 @@ for your AI agent.
 If ThumbGate is not yet installed in this project:
 
 ```bash
-npx mcp-memory-gateway init
+npx thumbgate init
 ```
 
 This bootstraps `.thumbgate/` data directory and `.mcp.json` config. Works with

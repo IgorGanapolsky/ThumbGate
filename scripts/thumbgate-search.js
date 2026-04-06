@@ -144,7 +144,7 @@ function getRuleResults(query, limit) {
   return searchPreventionRulesSync(query, limit).map(mapRuleResult);
 }
 
-function searchRlhf({ query, source = 'all', limit = 10, signal = null } = {}) {
+function searchThumbgate({ query, source = 'all', limit = 10, signal = null } = {}) {
   const trimmedQuery = String(query || '').trim();
   if (!trimmedQuery) {
     throw new Error('query is required');
@@ -185,5 +185,5 @@ module.exports = {
   VALID_SOURCES,
   normalizeSearchSource: normalizeSource,
   normalizeSearchSignal: normalizeSignal,
-  searchRlhf,
+  searchThumbgate,
 };

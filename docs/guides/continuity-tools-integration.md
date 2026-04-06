@@ -23,7 +23,7 @@ Example event:
 Then run:
 
 ```bash
-npx mcp-memory-gateway watch --source editor-brief
+npx thumbgate watch --source editor-brief
 ```
 
 That reuses the existing capture pipeline:

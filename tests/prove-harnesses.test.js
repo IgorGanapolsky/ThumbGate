@@ -10,7 +10,7 @@ const { execSync } = require('node:child_process');
 const ROOT = path.join(__dirname, '..');
 
 test('prove-harnesses: proof gate passes with 6/6 checks', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-harness-proof-test-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-harness-proof-test-'));
   try {
     const output = execSync('node scripts/prove-harnesses.js', {
       cwd: ROOT,
@@ -26,7 +26,7 @@ test('prove-harnesses: proof gate passes with 6/6 checks', () => {
 });
 
 test('prove-harnesses: report.json is valid JSON with all requirements', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-harness-proof-json-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-harness-proof-json-'));
   try {
     execSync('node scripts/prove-harnesses.js', {
       cwd: ROOT,
@@ -49,7 +49,7 @@ test('prove-harnesses: report.json is valid JSON with all requirements', () => {
 });
 
 test('prove-harnesses: report.md contains all requirement checkboxes', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-harness-proof-md-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-harness-proof-md-'));
   try {
     execSync('node scripts/prove-harnesses.js', {
       cwd: ROOT,

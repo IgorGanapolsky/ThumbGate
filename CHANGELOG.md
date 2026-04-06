@@ -72,7 +72,7 @@
 
 - Added Inverse Sink Weighting and Anchor-Memory management to prevent runaway negative memory accumulation and stabilize agent behavior over long sessions.
 - Hardened MCP startup reliability: retry logic, process health checks, and graceful degradation on server init failures.
-- North Star Phase 1: KTO export pipeline, MCP install workflow, and FDD (Feedback-Driven Development) rebrand replacing RLHF-loop branding.
+- North Star Phase 1: KTO export pipeline, MCP install workflow, and FDD (Feedback-Driven Development) rebrand replacing prior loop branding.
 - System hygiene: documented session directives in CLAUDE.md and fixed environment-dependent billing test failures causing flaky CI.
 - A2UI model for dynamic agent-to-user interaction: agents can now emit structured UI events that surface inline prompts, confirmation dialogs, and progress updates.
 - ADK memory consolidator with Gemini integration: deduplicates and ranks cross-session memories using Gemini embeddings for relevance scoring.
@@ -88,7 +88,7 @@
 
 ## 0.4.0 - 2026-03-03
 
-- Added rubric-based RLHF scoring with configurable criteria and weighted evaluation.
+- Added rubric-based feedback scoring with configurable criteria and weighted evaluation.
 - Added anti-reward-hacking safeguards: guardrail checks and multi-judge disagreement detection.
 - Added rubric-aware memory promotion gates for positive feedback.
 - Added rubric-aware context evaluation, prevention-rule dimensions, and DPO export metadata.

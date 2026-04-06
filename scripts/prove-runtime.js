@@ -112,7 +112,7 @@ async function run() {
       id: 'RUNTIME-01',
       desc: 'stage execution persists checkpointed state and stage history',
       fn: () => {
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runtime-proof-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-runtime-proof-'));
         try {
           const { runner } = loadRuntimeHarness(feedbackDir, () => makeAcceptedVerification());
           runner.executeJob({
@@ -139,7 +139,7 @@ async function run() {
       id: 'RUNTIME-02',
       desc: 'pause requests yield a paused checkpoint and resume continues from the next stage',
       fn: () => {
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runtime-proof-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-runtime-proof-'));
         try {
           const { runner } = loadRuntimeHarness(feedbackDir, () => makeAcceptedVerification());
           const job = {
@@ -178,7 +178,7 @@ async function run() {
       id: 'RUNTIME-03',
       desc: 'managed job files auto-resume through resumeManagedJobs without manual stage reconstruction',
       fn: () => {
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runtime-proof-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-runtime-proof-'));
         try {
           const { runner } = loadRuntimeHarness(feedbackDir, () => makeAcceptedVerification());
           const jobFile = path.join(feedbackDir, 'managed-job.json');
@@ -210,7 +210,7 @@ async function run() {
       id: 'RUNTIME-04',
       desc: 'failed verification queues an auto-improvement experiment',
       fn: () => {
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runtime-proof-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-runtime-proof-'));
         try {
           const { runner, experimentTracker } = loadRuntimeHarness(feedbackDir, () => makeRejectedVerification());
           const result = runner.executeJob({
@@ -250,8 +250,8 @@ async function run() {
       id: 'RUNTIME-06',
       desc: 'verify-run full includes the runtime proof lane and artifact',
       fn: () => {
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runtime-proof-'));
-        const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runtime-proof-cwd-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-runtime-proof-'));
+        const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-runtime-proof-cwd-'));
         try {
           process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
           resetModules();

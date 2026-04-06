@@ -105,7 +105,7 @@ function computeGateStats() {
   const autoGatesPath = getAutoGatesPath();
   const statsPath = path.join(
     process.env.HOME || '/tmp',
-    '.rlhf',
+    '.thumbgate',
     'gate-stats.json'
   );
   const stats = readJsonFile(statsPath) || { blocked: 0, warned: 0, passed: 0, byGate: {} };
@@ -828,7 +828,7 @@ function printDashboard(data) {
     : '\u2192';
 
   console.log('');
-  console.log('\uD83D\uDCCA RLHF Dashboard');
+  console.log('\uD83D\uDCCA ThumbGate Dashboard');
   console.log('\u2550'.repeat(46));
   console.log(`  Approval Rate    : ${approval.approvalRate}% \u2192 ${approval.recentRate}% (7-day trend ${trendArrow})`);
   console.log(`  Total Signals    : ${approval.total} (${approval.positive} positive, ${approval.negative} negative)`);

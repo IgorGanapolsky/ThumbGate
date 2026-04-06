@@ -1009,7 +1009,7 @@ paths:
           description: Unauthorized
   /v1/search:
     get:
-      operationId: searchRlhf
+      operationId: searchThumbgate
       parameters:
         - in: query
           name: q
@@ -1038,7 +1038,7 @@ paths:
         '401':
           description: Unauthorized
     post:
-      operationId: searchRlhfPost
+      operationId: searchThumbgatePost
       requestBody:
         required: true
         content:

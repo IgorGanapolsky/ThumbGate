@@ -15,11 +15,11 @@ function getFeedbackLogPath() {
   if (process.env.THUMBGATE_FEEDBACK_DIR) {
     return path.join(process.env.THUMBGATE_FEEDBACK_DIR, 'feedback-log.jsonl');
   }
-  const localRlhf = path.join(process.cwd(), '.rlhf', 'feedback-log.jsonl');
+  const localFallback = path.join(process.cwd(), '.thumbgate', 'feedback-log.jsonl');
   const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback', 'feedback-log.jsonl');
-  if (fs.existsSync(localRlhf)) return localRlhf;
+  if (fs.existsSync(localFallback)) return localFallback;
   if (fs.existsSync(localClaude)) return localClaude;
-  return localRlhf; // default even if doesn't exist
+  return localFallback; // default even if doesn't exist
 }
 
 function getAutoGatesPath() {

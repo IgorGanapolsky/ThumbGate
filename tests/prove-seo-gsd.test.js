@@ -10,7 +10,7 @@ const { execSync } = require('node:child_process');
 const ROOT = path.join(__dirname, '..');
 
 test('prove-seo-gsd: proof gate passes with 6/6 checks', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-seo-gsd-proof-test-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-seo-gsd-proof-test-'));
   try {
     const output = execSync('node scripts/prove-seo-gsd.js', {
       cwd: ROOT,
@@ -26,7 +26,7 @@ test('prove-seo-gsd: proof gate passes with 6/6 checks', () => {
 });
 
 test('prove-seo-gsd: report.json is valid JSON with all requirements', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-seo-gsd-proof-json-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-seo-gsd-proof-json-'));
   try {
     execSync('node scripts/prove-seo-gsd.js', {
       cwd: ROOT,
@@ -49,7 +49,7 @@ test('prove-seo-gsd: report.json is valid JSON with all requirements', () => {
 });
 
 test('prove-seo-gsd: report.md contains all requirement checkboxes', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-seo-gsd-proof-md-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-seo-gsd-proof-md-'));
   try {
     execSync('node scripts/prove-seo-gsd.js', {
       cwd: ROOT,

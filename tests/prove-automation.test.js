@@ -21,7 +21,7 @@ function getCheck(name) {
 }
 
 test('automation proof harness setup', async () => {
-  tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-automation-proof-test-'));
+  tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-automation-proof-test-'));
   report = await runAutomationProof({ proofDir: tmpProofDir, port: 0 });
 });
 

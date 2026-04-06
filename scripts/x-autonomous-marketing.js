@@ -73,7 +73,7 @@ async function generateGrokReply(threadContext, model = 'grok-4.1-fast') {
   const prompt = `
     Context: ${threadContext}
     Goal: Respond as a senior engineer who cares about workflow hardening.
-    Product: mcp-memory-gateway with a Workflow Hardening Sprint.
+    Product: thumbgate with a Workflow Hardening Sprint.
     CTA: ${SPRINT_LINK}
     Constraints: technical, non-salesy, under 280 chars.
   `;

@@ -9,7 +9,7 @@ import { problemResponse, PROBLEM_TYPES } from './problem-detail';
 const ALL_TOOLS = [...FREE_TOOLS, ...PAID_TOOLS];
 
 /**
- * MCP Memory Gateway — Cloudflare Workers
+ * ThumbGate — Cloudflare Workers
  *
  * Endpoints:
  *   POST /mcp          — MCP JSON-RPC (tools/list, tools/call)
@@ -34,7 +34,7 @@ export default {
         case url.pathname === '/health' && request.method === 'GET':
           response = Response.json({
             status: 'ok',
-            service: 'mcp-memory-gateway',
+            service: 'thumbgate',
             tier: 'cloudflare-workers',
             tools: ALL_TOOLS.length,
             timestamp: new Date().toISOString(),
@@ -117,7 +117,7 @@ async function handleMcp(request: Request, env: Env): Promise<Response> {
       return Response.json(jsonRpcResult(body.id, {
         protocolVersion: '2024-11-05',
         serverInfo: {
-          name: 'mcp-memory-gateway',
+          name: 'thumbgate',
           version: '1.0.0',
         },
         capabilities: {

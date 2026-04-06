@@ -145,7 +145,7 @@ async function postToReddit(parsed, dryRun) {
       process.env.REDDIT_USERNAME,
       process.env.REDDIT_PASSWORD
     );
-    const userAgent = process.env.REDDIT_USER_AGENT || `mcp-memory-gateway/1.0 by ${process.env.REDDIT_USERNAME}`;
+    const userAgent = process.env.REDDIT_USER_AGENT || `thumbgate/1.0 by ${process.env.REDDIT_USERNAME}`;
     await reddit.submitComment(token, userAgent, { parentId: postData.name, text: comment });
   }
 

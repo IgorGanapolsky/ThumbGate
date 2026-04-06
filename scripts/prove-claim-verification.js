@@ -30,8 +30,8 @@ async function withIsolatedRuntime(fn) {
   const previousHome = process.env.HOME;
   const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const previousNoRateLimit = process.env.THUMBGATE_NO_RATE_LIMIT;
-  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-claim-home-'));
-  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-claim-feedback-'));
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-claim-home-'));
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-claim-feedback-'));
 
   process.env.HOME = homeDir;
   process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
@@ -183,7 +183,7 @@ async function run() {
       desc: 'verify:full includes the claim-verification proof lane and artifact',
       fn: async () => {
         await withIsolatedRuntime(async ({ verifyRun, feedbackDir }) => {
-          const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-claim-proof-cwd-'));
+          const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-claim-proof-cwd-'));
           try {
             const plan = verifyRun.buildVerifyPlan('full');
             const commands = plan.map((step) => [step.command, ...(step.args || [])].join(' ')).join('\n');

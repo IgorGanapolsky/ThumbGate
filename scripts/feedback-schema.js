@@ -31,7 +31,7 @@ const {
 } = require('./feedback-quality');
 
 const INFERRED_TAG_RULES = [
-  { tag: 'thumbgate', keywords: ['thumbgate', 'rlhf', 'statusline', 'dashboard', 'mcp'] },
+  { tag: 'thumbgate', keywords: ['thumbgate', 'feedback-loop', 'statusline', 'dashboard', 'mcp'] },
   { tag: 'testing', keywords: ['test', 'testing', 'jest', 'coverage', 'verify', 'verification'] },
   { tag: 'security', keywords: ['security', 'secret', 'credential', 'token', 'auth'] },
   { tag: 'performance', keywords: ['perf', 'performance', 'latency', 'slow'] },

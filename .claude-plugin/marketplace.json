@@ -1,18 +1,18 @@
 {
-  "name": "mcp-memory-gateway",
+  "name": "thumbgate",
   "version": "0.9.9",
   "plugins": [
     {
-      "name": "mcp-memory-gateway",
+      "name": "thumbgate",
       "description": "Pre-action gates that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.",
       "type": "mcp",
       "source": {
         "type": "npm",
-        "package": "mcp-memory-gateway",
+        "package": "thumbgate",
         "command": "npx",
         "args": [
           "-y",
-          "mcp-memory-gateway",
+          "thumbgate",
           "serve"
         ]
       },

@@ -15,6 +15,6 @@ fi
 
 echo "🤖 [Layer 5] Exporting memories to Obsidian vault: $VAULT_PATH/AI-Memories/$PROJECT_NAME"
 
-npx mcp-memory-gateway obsidian-export --vault-path="$VAULT_PATH" --output-dir="AI-Memories/$PROJECT_NAME"
+npx thumbgate obsidian-export --vault-path="$VAULT_PATH" --output-dir="AI-Memories/$PROJECT_NAME"
 
 echo "✅ Sync complete."

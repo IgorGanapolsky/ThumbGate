@@ -29,7 +29,7 @@ describe('experiment-tracker', () => {
   let tmpDir;
 
   before(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-exp-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-exp-test-'));
     process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
     delete require.cache[require.resolve('../scripts/experiment-tracker')];
     delete require.cache[require.resolve('../scripts/feedback-loop')];
@@ -197,7 +197,7 @@ describe('experiment-tracker', () => {
   });
 
   it('getBestExperiment returns null when no kept experiments', () => {
-    const freshTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-exp-empty-'));
+    const freshTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-exp-empty-'));
     process.env.THUMBGATE_FEEDBACK_DIR = freshTmp;
     delete require.cache[require.resolve('../scripts/experiment-tracker')];
     delete require.cache[require.resolve('../scripts/feedback-loop')];
@@ -225,7 +225,7 @@ describe('autoresearch-runner', () => {
   let tmpDir;
 
   before(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-runner-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-runner-test-'));
     process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
     delete require.cache[require.resolve('../scripts/autoresearch-runner')];
     delete require.cache[require.resolve('../scripts/experiment-tracker')];
@@ -338,7 +338,7 @@ describe('autoresearch integration', () => {
   let tmpDir;
 
   before(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-integration-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-integration-'));
     process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
     delete require.cache[require.resolve('../scripts/experiment-tracker')];
     delete require.cache[require.resolve('../scripts/autoresearch-runner')];

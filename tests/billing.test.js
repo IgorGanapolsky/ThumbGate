@@ -30,9 +30,9 @@ const savedStripePriceId = process.env.STRIPE_PRICE_ID;
 const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
 const savedTestStripeReconciledRevenueEvents = process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
 const savedTestLegacyFeedbackDir = process.env._TEST_LEGACY_FEEDBACK_DIR;
-const savedTestRlhfFeedbackDir = process.env._TEST_RLHF_FEEDBACK_DIR;
+const savedTestRlhfFeedbackDir = process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
 const savedLegacyFeedbackDir = process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
-const savedRlhfFeedbackDir = process.env.THUMBGATE_RLHF_FEEDBACK_DIR;
+const savedFallbackFeedbackDir = process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
 
 // Initial setup
 process.env._TEST_API_KEYS_PATH = testApiKeysPath;
@@ -43,9 +43,9 @@ process.env.THUMBGATE_FEEDBACK_DIR = testFeedbackDir;
 process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';
 delete process.env._TEST_LEGACY_FEEDBACK_DIR;
-delete process.env._TEST_RLHF_FEEDBACK_DIR;
+delete process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
 delete process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
-delete process.env.THUMBGATE_RLHF_FEEDBACK_DIR;
+delete process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
 
 after(() => {
   process.env.STRIPE_SECRET_KEY = savedStripeSecretKey || '';
@@ -66,12 +66,12 @@ after(() => {
   else process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = savedTestStripeReconciledRevenueEvents;
   if (savedTestLegacyFeedbackDir === undefined) delete process.env._TEST_LEGACY_FEEDBACK_DIR;
   else process.env._TEST_LEGACY_FEEDBACK_DIR = savedTestLegacyFeedbackDir;
-  if (savedTestRlhfFeedbackDir === undefined) delete process.env._TEST_RLHF_FEEDBACK_DIR;
-  else process.env._TEST_RLHF_FEEDBACK_DIR = savedTestRlhfFeedbackDir;
+  if (savedTestRlhfFeedbackDir === undefined) delete process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
+  else process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR = savedTestRlhfFeedbackDir;
   if (savedLegacyFeedbackDir === undefined) delete process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
   else process.env.THUMBGATE_LEGACY_FEEDBACK_DIR = savedLegacyFeedbackDir;
-  if (savedRlhfFeedbackDir === undefined) delete process.env.THUMBGATE_RLHF_FEEDBACK_DIR;
-  else process.env.THUMBGATE_RLHF_FEEDBACK_DIR = savedRlhfFeedbackDir;
+  if (savedFallbackFeedbackDir === undefined) delete process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
+  else process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR = savedFallbackFeedbackDir;
   fs.rmSync(billingTestRoot, { recursive: true, force: true });
 });
 
@@ -113,11 +113,11 @@ describe('billing.js — provisionApiKey', () => {
   beforeEach(() => { keyStorePath = setupTempStore(); });
   afterEach(() => { cleanupTempStore(); });
 
-  test('generates a unique key with rlhf_ prefix', () => {
+  test('generates a unique key with tg_ prefix', () => {
     const billing = requireFreshBilling('');
     assert.equal(billing._API_KEYS_PATH(), keyStorePath);
     const result = billing.provisionApiKey('cus_test_001');
-    assert.ok(result.key.startsWith('rlhf_'));
+    assert.ok(result.key.startsWith('tg_'));
     assert.equal(result.customerId, 'cus_test_001');
     assert.ok(JSON.parse(fs.readFileSync(keyStorePath, 'utf-8')).keys[result.key]);
   });
@@ -838,7 +838,7 @@ describe('billing.js — rotateApiKey', () => {
     const oldKey = p1.key;
     const rot = billing.rotateApiKey(oldKey);
     assert.equal(rot.rotated, true);
-    assert.ok(rot.key.startsWith('rlhf_'));
+    assert.ok(rot.key.startsWith('tg_'));
     assert.notEqual(rot.key, oldKey);
     assert.equal(billing.validateApiKey(oldKey).valid, false);
     assert.equal(billing.validateApiKey(rot.key).valid, true);

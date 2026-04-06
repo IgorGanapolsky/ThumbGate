@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-sec-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sec-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const sec = require('../scripts/agent-security-hardening');

@@ -20,9 +20,9 @@ Here's what I built and how.
 
 Every Claude Code session starts from zero. Same mistakes, same "oh I see, let me fix that," same patterns the agent was supposed to have learned. Obsidian is great for storing knowledge — so why not store the agent's memory there too?
 
-**What mcp-memory-gateway does**
+**What thumbgate does**
 
-[mcp-memory-gateway](https://github.com/IgorGanapolsky/mcp-memory-gateway) is an MCP server that gives Claude Code persistent memory:
+[thumbgate](https://github.com/IgorGanapolsky/thumbgate) is an MCP server that gives Claude Code persistent memory:
 
 - You give thumbs up/down feedback on what the agent does
 - It auto-promotes repeated failures into **prevention rules** — structured constraints the agent checks before executing any tool call
@@ -38,7 +38,7 @@ The [obsidian-claude-ide plugin](https://github.com/petersolopov/obsidian-claude
 
 My setup:
 
-1. Create `AI-Memories/rlhf/` folder in your vault
+1. Create `AI-Memories/thumbgate/` folder in your vault
 2. Symlink the memory files into it:
    - `Prevention Rules.md` → `.claude/memory/feedback/prevention-rules.md`
    - `Primer.md` → `primer.md` (active session context: next steps, blockers, revenue truth)
@@ -68,16 +68,16 @@ It's a personal knowledge loop, not a SaaS product pretending to be one.
 # 1. Add to Claude Code MCP config
 {
   "mcpServers": {
-    "mcp-memory-gateway": {
+    "thumbgate": {
       "command": "npx",
-      "args": ["mcp-memory-gateway", "serve"]
+      "args": ["thumbgate", "serve"]
     }
   }
 }
 
 # 2. In Obsidian: BRAT > Add Beta Plugin > petersolopov/obsidian-claude-ide
 
-# 3. Create AI-Memories/rlhf/ in your vault and symlink memory files
+# 3. Create AI-Memories/thumbgate/ in your vault and symlink memory files
 ```
 
 Open source, MIT licensed. Core is free. There is a Pro tier for a personal local dashboard and optional hosted sync for teams, but the memory system works fully offline.

@@ -1,4 +1,4 @@
-# GEMINI.md — ThumbGate (`mcp-memory-gateway`)
+# GEMINI.md — ThumbGate (`thumbgate`)
 
 ## North Star Objective
 
@@ -12,12 +12,12 @@ You (LLM) are the CTO. Igor Ganapolsky is your CEO. You never tell the CEO what 
 
 ## Gemini Integration Contract
 
-Gemini should use ThumbGate as a tool-backed skill. ThumbGate is a pre-action gate system — context engineering plus enforcement, not RLHF weight training. Core stack: SQLite+FTS5, MemAlign dual recall, Thompson Sampling, LanceDB vectors, ContextFS, Bayesian belief updates.
+Gemini should use ThumbGate as a tool-backed skill. ThumbGate is a pre-action gate system — context engineering plus enforcement, not model-training feedback optimization. Core stack: SQLite+FTS5, MemAlign dual recall, Thompson Sampling, LanceDB vectors, ContextFS, Bayesian belief updates.
 
 ## Memory Source of Truth
 
 - This repo does not use Vertex AI RAG.
-- Gemini should read and write only the local RLHF memory and context stores unless a real external system is explicitly added later.
+- Gemini should read and write only the local ThumbGate memory and context stores unless a real external system is explicitly added later.
 - Gemini must not commit ephemeral `.claude/worktrees/*` lanes or live `.thumbgate/*` runtime state.
 
 ## Tool Actions
@@ -90,7 +90,7 @@ Use feedback-derived prevention rules as constraints to reduce repeated failures
 ## Session Directive: PR Management & System Hygiene
 
 ### CTO Protocol
-1. **Research & Recall:** Read directives and local RLHF memory for lessons before tasks.
+1. **Research & Recall:** Read directives and local ThumbGate memory for lessons before tasks.
 2. **PR Inspection:** Review all open PRs using `npm run pr:manage`. No PR should remain open if mergeable.
 3. **Orphan Cleanup:** List branches without PRs. Evaluate and delete stale/regressive ones.
 4. **Main Integrity:** Ensure CI passes on `main` after all merges. Fix regressions immediately.

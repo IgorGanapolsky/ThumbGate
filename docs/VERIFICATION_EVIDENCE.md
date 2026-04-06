@@ -1,4 +1,4 @@
-# MCP Memory Gateway — Verification Evidence
+# ThumbGate — Verification Evidence
 
 > Every feature ships with proof. This document is the complete audit trail of verification runs, test output, and deployment evidence.
 
@@ -19,8 +19,8 @@
 ## Verify it yourself
 
 ```bash
-git clone https://github.com/IgorGanapolsky/mcp-memory-gateway.git
-cd mcp-memory-gateway && npm ci
+git clone https://github.com/IgorGanapolsky/thumbgate.git
+cd thumbgate && npm ci
 npm test                    # 500+ tests across 25+ suites
 npm run prove:adapters      # Adapter compatibility proof
 npm run prove:automation    # Automation proof harness
@@ -30,8 +30,8 @@ npm run test:coverage       # Coverage report
 ## Search through lessons learned
 
 ```bash
-# Free tier — any LLM invokes search_rlhf via MCP
-# Tool: search_rlhf { query: "database mock", source: "all" }
+# Free tier — any LLM invokes search_thumbgate via MCP
+# Tool: search_thumbgate { query: "database mock", source: "all" }
 
 # Paid tier — authenticated REST API
 curl -H "Authorization: Bearer YOUR_KEY" \
@@ -60,8 +60,8 @@ Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igo
 npm run feedback:stats --silent
 npm test
 npm run test:coverage
-tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
-tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+tmp=$(mktemp -d) && THUMBGATE_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && THUMBGATE_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
 npm run self-heal:check
 git diff --check
 ```
@@ -74,12 +74,12 @@ Observed result:
   - `90.26` lines
   - `76.57` branches
   - `93.73` functions
-- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `6/6 healthy` checks.
 - `git diff --check` remained clean after reverting generated drift from `primer.md` and `config/skill-packs/react-testing.json`.
 - The pre-fix failure was reproduced before the hardening work: on Node 20, `npm run test:coverage` exited with `/opt/homebrew/Cellar/node@20/20.20.1/bin/node: bad option: --test-coverage-include`.
-- No tracked RLHF memory artifacts were added or modified by this audit; the only tracked file removed was the generated runtime log `.claude/context-engine/quality-log.json`.
+- No tracked ThumbGate memory artifacts were added or modified by this audit; the only tracked file removed was the generated runtime log `.claude/context-engine/quality-log.json`.
 - Revalidated after rebasing the audit commit onto `origin/main` at `05641e599aa60ae69326567c369c7edfc38f39b5`; the rebased branch remained locally green with the same proof counts and a healthy `self-heal:check`.
 
 ## March 21, 2026: ShieldCortex-backed memory ingress hardening and runtime source label cleanup
@@ -94,7 +94,7 @@ Scope:
 - Documented the optional ingress firewall controls in `README.md` and `.env.example`.
 - Added `shieldcortex` as an optional dependency, not a required runtime dependency.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/mcp-memory-gateway/.worktrees/fix-rlhf-source-labels`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/thumbgate/.worktrees/fix-thumbgate-source-labels`:
 
 ```bash
 npm ci
@@ -180,7 +180,7 @@ Scope:
 - Hardened `scripts/social-pipeline.js` so copied-profile Chrome automation now retries temp-profile cleanup, waits longer for DevTools startup, reports TikTok preflight timeouts as an authenticated-upload-surface failure, and dismisses Instagram's discard-confirmation modal while advancing to the draft editor.
 - Confirmed the archived local WIP commit `2063a6e57a37663603245298716c24dd32de0982` remains intentionally unshipped because it deletes `scripts/behavioral-extraction.js`, adds a scratch verifier, and diverges from the hardened social-pipeline lane.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-social-archive-recovered`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/thumbgate-social-archive-recovered`:
 
 ```bash
 npm ci
@@ -273,7 +273,7 @@ Scope:
 - Updated the commercial truth copy so the Pro package promises concrete efficiency metrics: semantic cache hit rate and reused context tokens.
 - Fixed the required session handoff hook by cleaning `bin/obsidian-sync.sh` and adding a regression test so `./bin/memory.sh` exits cleanly when no Obsidian vault env is configured.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-llm-efficiency-roi`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/thumbgate-llm-efficiency-roi`:
 
 ```bash
 npm ci
@@ -310,7 +310,7 @@ Observed result:
 Behavioral proof points:
 
 - The public landing page now explicitly says the product acts as an "AI workflow control plane" and is "not another generic memory server."
-- The new category section contrasts `Memory servers`, `Agentic RAG`, and `MCP Memory Gateway`, so buyers can place the product correctly before evaluating pricing.
+- The new category section contrasts `Memory servers`, `Agentic RAG`, and `ThumbGate`, so buyers can place the product correctly before evaluating pricing.
 - The Pro offer now exposes concrete efficiency metrics in public copy: semantic cache hit rate and reused context tokens.
 - The session handoff path is cleaner than before: `./bin/memory.sh` refreshes `primer.md` without the broken shell-comment noise that previously leaked from `bin/obsidian-sync.sh`.
 - `generateDashboard()` now computes efficiency from existing context-pack provenance:
@@ -338,7 +338,7 @@ Scope:
 - Added regression coverage in `tests/deployment.test.js` to lock the workflow contract: no detached Railway deploys, stamped build metadata, and a longer SHA-verification budget.
 - Verified the root cause against production: merge commit `ebd5189d290b73c24b6b9cdc9f5181042e225171` eventually reached Railway successfully even though workflow run `23355558359` failed early while `/health` still reported the previous build SHA.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-railway-verifier-wait`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/thumbgate-railway-verifier-wait`:
 
 ```bash
 npm ci
@@ -349,7 +349,7 @@ tmp=$(mktemp -d) && THUMBGATE_PROOF_DIR="$tmp/proof" npm run prove:adapters
 tmp=$(mktemp -d) && THUMBGATE_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
 npm run self-heal:check
 git diff --check
-gh run view 23355558359 --repo IgorGanapolsky/mcp-memory-gateway --log-failed
+gh run view 23355558359 --repo IgorGanapolsky/thumbgate --log-failed
 curl -sS https://thumbgate-production.up.railway.app/health
 sleep 90 && curl -sS https://thumbgate-production.up.railway.app/health
 ```
@@ -387,7 +387,7 @@ Scope:
 - Added regression coverage in `tests/api-server.test.js` and `tests/deployment.test.js` for stamped build metadata, alternate auth headers, and the public server-card schema contract.
 - Added the missing empty-object `inputSchema` to `get_reliability_rules` in `scripts/tool-registry.js` so Smithery and other directory scanners can enumerate the tool list without schema errors.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-immutable-buildsha`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/thumbgate-immutable-buildsha`:
 
 ```bash
 npm ci
@@ -432,7 +432,7 @@ Scope:
 - Set Railway production runtime vars `THUMBGATE_PUBLIC_APP_ORIGIN` and `THUMBGATE_BILLING_API_BASE_URL` explicitly to the canonical hosted origin so the deployed app no longer relies on implicit defaults.
 - Verified the live public app, live telemetry ingress, live hosted billing summary, and the repo-standard verification suite from a dedicated clean worktree.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-analytics-revenue-audit`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/thumbgate-analytics-revenue-audit`:
 
 ```bash
 npm ci
@@ -502,7 +502,7 @@ Scope:
 - Replaced the same brittle single-shot health check in `.github/workflows/deploy-railway.yml` with the same bounded retry logic and response-body logging.
 - Hardened post-deploy verification without changing the actual production app contract.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-fix-prod-analytics`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/thumbgate-fix-prod-analytics`:
 
 ```bash
 node --test tests/deployment.test.js tests/deploy-policy.test.js
@@ -541,7 +541,7 @@ Scope:
 - Added regression coverage in `tests/intent-router.test.js` for the evidence-first ordering contract without overconstraining the relative order between the two evidence producers.
 - Re-ran the full required verification suite after GitHub CI exposed the probabilistic ordering bug.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-fix-prod-analytics`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/thumbgate-fix-prod-analytics`:
 
 ```bash
 node --test tests/intent-router.test.js
@@ -578,7 +578,7 @@ Scope:
 - Provisioned a real Railway production volume mounted at `/data`, set `THUMBGATE_FEEDBACK_DIR=/data/feedback`, and redeployed production so funnel and memory logs survive restarts.
 - Verified the live hosted `/checkout/pro` route now creates a real Stripe Checkout Session redirect and that live attribution events persist to the durable telemetry ledger.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/rlhf-fix-prod-analytics`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/thumbgate-fix-prod-analytics`:
 
 ```bash
 npm ci
@@ -688,7 +688,7 @@ Scope:
 - Updated the live Railway production environment so `/checkout/pro` now falls back to Stripe instead of Gumroad.
 - Deployed the exact worktree diff to Railway and verified the hosted billing summary now reports the reconciled Stripe revenue truth surface.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/rlhf-revenue-proof`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/thumbgate-revenue-proof`:
 
 ```bash
 node --test tests/billing.test.js tests/api-server.test.js tests/cli.test.js tests/version-metadata.test.js tests/recall-limit.test.js tests/public-landing.test.js
@@ -761,7 +761,7 @@ Scope:
 - Hardened stdio transport behavior so framed and newline-delimited MCP initialization both work, while malformed ndjson still returns the legacy ndjson error envelope expected by the CLI contract.
 - Preserved recall-limit commercial behavior while keeping real recall output and codegraph evidence intact after the adapter rewrite.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/rlhf-open-swe-plan`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/thumbgate-open-swe-plan`:
 
 ```bash
 npm ci
@@ -817,7 +817,7 @@ Scope:
 - Wired hosted deployment examples and secret sync flows for durable runtime feedback storage and optional analytics/search-console variables: `THUMBGATE_FEEDBACK_DIR`, `THUMBGATE_GA_MEASUREMENT_ID`, and `THUMBGATE_GOOGLE_SITE_VERIFICATION`.
 - Added regression coverage for workflow-run persistence, North Star CLI output, dashboard reporting, direct local telemetry persistence, and billing reconciliation when the revenue ledger is absent.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/rlhf-northstar-20260318-135757`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/thumbgate-northstar-20260318-135757`:
 
 ```bash
 npm ci
@@ -826,9 +826,9 @@ node --test tests/billing.test.js tests/dashboard.test.js
 npm run verify:full
 node bin/cli.js north-star
 node bin/cli.js dashboard
-env _TEST_FUNNEL_LEDGER_PATH='/Users/ganapolsky_i/workspace/git/igor/rlhf/.claude/memory/feedback/funnel-events.jsonl' \
-    _TEST_REVENUE_LEDGER_PATH='/tmp/rlhf-empty-revenue-events.jsonl' \
-    _TEST_API_KEYS_PATH='/tmp/rlhf-empty-api-keys.jsonl' \
+env _TEST_FUNNEL_LEDGER_PATH='/Users/ganapolsky_i/workspace/git/igor/thumbgate/.claude/memory/feedback/funnel-events.jsonl' \
+    _TEST_REVENUE_LEDGER_PATH='/tmp/thumbgate-empty-revenue-events.jsonl' \
+    _TEST_API_KEYS_PATH='/tmp/thumbgate-empty-api-keys.jsonl' \
     node -e "const { getBillingSummary } = require('./scripts/billing'); const summary = getBillingSummary(); console.log(JSON.stringify({ paidProviderEvents: summary.revenue.paidProviderEvents, paidOrders: summary.revenue.paidOrders, bookedRevenueCents: summary.revenue.bookedRevenueCents, derivedPaidOrders: summary.revenue.derivedPaidOrders, unreconciledPaidEvents: summary.revenue.unreconciledPaidEvents }, null, 2));"
 ```
 
@@ -890,14 +890,14 @@ Scope:
 - Corrected operator scripts so `pulse.js` and `money-watcher.js` key off booked revenue and paid orders instead of unreconciled paid-stage funnel events.
 - Hardened `tests/delegation-runtime.test.js` temp-dir cleanup so clean-worktree coverage runs no longer fail with transient `ENOTEMPTY` teardown errors.
 
-Commands run in the dedicated clean verification worktree at `/tmp/rlhf-verify-first-dollar-20260317` on exact branch head `ba83de2`:
+Commands run in the dedicated clean verification worktree at `/tmp/thumbgate-verify-first-dollar-20260317` on exact branch head `ba83de2`:
 
 ```bash
 npm ci
 npm test
 npm run test:coverage
-env THUMBGATE_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-adapters npm run prove:adapters
-env THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-automation npm run prove:automation
+env THUMBGATE_PROOF_DIR=/tmp/thumbgate-verify-first-dollar-ba83de2/proof-adapters npm run prove:adapters
+env THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/thumbgate-verify-first-dollar-ba83de2/proof-automation npm run prove:automation
 npm run self-heal:check
 git status --short
 ```
@@ -914,8 +914,8 @@ Observed result:
 - `npm test` passed end-to-end on exact branch head `ba83de2`.
 - `npm run test:coverage` passed with `1108` passed, `0` failed, `1` skipped.
 - All-files coverage on the verified tree: `90.18%` lines, `76.29%` branches, `93.55%` functions.
-- `env THUMBGATE_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-adapters npm run prove:adapters`: `46` passed, `0` failed.
-- `env THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/rlhf-verify-first-dollar-ba83de2/proof-automation npm run prove:automation`: `55` passed, `0` failed.
+- `env THUMBGATE_PROOF_DIR=/tmp/thumbgate-verify-first-dollar-ba83de2/proof-adapters npm run prove:adapters`: `46` passed, `0` failed.
+- `env THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/thumbgate-verify-first-dollar-ba83de2/proof-automation npm run prove:automation`: `55` passed, `0` failed.
 - `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
 - `git status --short` remained empty after the full clean-worktree suite.
 - Targeted GTM/commercial regression pack passed with `98` tests passed, `0` failed.
@@ -939,7 +939,7 @@ Scope:
   - MCP default export path behavior
   - bundle-relative path normalization
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/rlhf-databricks-followup`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/thumbgate-databricks-followup`:
 
 ```bash
 npm ci
@@ -975,13 +975,13 @@ Scope:
 - Added `scripts/export-databricks-bundle.js` to export the local ThumbGate control plane into a Databricks-ready analytics bundle instead of coupling the runtime system to an external warehouse.
 - Export now emits `feedback_events.jsonl`, `memory_records.jsonl`, `feedback_sequences.jsonl`, `feedback_attributions.jsonl`, `proof_reports.jsonl`, `manifest.json`, and a bootstrap `load_databricks.sql` template with catalog/schema placeholders.
 - Added the bundle export to every primary surface:
-  - CLI: `npx mcp-memory-gateway export-databricks`
+  - CLI: `npx thumbgate export-databricks`
   - HTTP API: `POST /v1/analytics/databricks/export`
   - MCP: `export_databricks_bundle`
 - Updated policy and adapter metadata so intent planning, OpenAPI parity, and Gemini function declarations expose the new analytics-plane export consistently.
 - Kept the smart-learning review fix on the same branch and verified it still passes after the Databricks export surface was added.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/rlhf-smart-learning-fix`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/thumbgate-smart-learning-fix`:
 
 ```bash
 npm test
@@ -1019,7 +1019,7 @@ Scope:
 - Removed false-positive fallback diagnoses so vague or unsupported negative signals no longer inflate root-cause metrics.
 - Updated `README.md` so the MCP tool inventory and profile counts match the shipped product surface.
 
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/rlhf/.claude/worktrees/agent-agentrx`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/thumbgate/.claude/worktrees/agent-agentrx`:
 
 ```bash
 npm ci
@@ -1069,7 +1069,7 @@ Commands run:
 
 ```bash
 git fetch --all --prune
-git worktree add /Users/ganapolsky_i/workspace/git/igor/rlhf-pr-hygiene-20260313 -b chore/pr-hygiene-20260313 origin/main
+git worktree add /Users/ganapolsky_i/workspace/git/igor/thumbgate-pr-hygiene-20260313 -b chore/pr-hygiene-20260313 origin/main
 npm ci
 env THUMBGATE_API_KEY=ci-secret npm test
 env THUMBGATE_API_KEY=ci-secret npm run test:coverage
@@ -1112,8 +1112,8 @@ Cleanup evidence:
   - `feat/context-hub-preflight`
   - `feat/local-provider-abstraction`
   - `worktree-agent-ade17c3c`
-  - detached verification worktree `/Users/ganapolsky_i/workspace/git/igor/rlhf-techdebt-audit`
-  - stale `main` worktree `/Users/ganapolsky_i/workspace/git/igor/rlhf-partner-aware-orchestration`
+  - detached verification worktree `/Users/ganapolsky_i/workspace/git/igor/thumbgate-techdebt-audit`
+  - stale `main` worktree `/Users/ganapolsky_i/workspace/git/igor/thumbgate-partner-aware-orchestration`
 - Repository hygiene change size: `42` tracked runtime artifacts removed from source control, `1286` tracked lines deleted.
 
 Requirements verified:
@@ -1140,7 +1140,7 @@ Baseline snapshot before changes:
 Commands run in dedicated baseline worktree at `57a7498e42578270a2dc1421c1bfd8d06f07dded`:
 
 ```bash
-git worktree add /Users/ganapolsky_i/workspace/git/igor/rlhf-audit-baseline 57a7498e42578270a2dc1421c1bfd8d06f07dded
+git worktree add /Users/ganapolsky_i/workspace/git/igor/thumbgate-audit-baseline 57a7498e42578270a2dc1421c1bfd8d06f07dded
 npm ci
 npm --prefix workers ci
 node --test tests/contextfs.test.js tests/intent-router.test.js tests/verification-loop.test.js tests/mcp-server.test.js
@@ -1467,10 +1467,10 @@ Evidence artifacts:
 Requirements verified:
 
 - Source checkouts now install canonical MCP entries that launch the local stdio server directly via `node adapters/mcp/server-stdio.js`.
-- Portable docs and adapter examples now use the version-pinned launcher `npx -y mcp-memory-gateway@0.9.9 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
+- Portable docs and adapter examples now use the version-pinned launcher `npx -y thumbgate@0.9.9 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
 - Re-running the MCP installer upgrades stale config entries instead of treating them as already configured.
 - Adapter and LanceDB proof cleanup now uses retry-capable recursive removal so ephemeral filesystem contention no longer flakes CI.
-- Transient `.rlhf` reminder/A2UI/test-run files are now ignored as local runtime state and do not pollute git hygiene during verification.
+- Transient `.thumbgate` reminder/A2UI/test-run files are now ignored as local runtime state and do not pollute git hygiene during verification.
 
 ## March 10, 2026: Value-led GTM surfaces and hermetic ADK coverage
 
@@ -1959,7 +1959,7 @@ Behavioral proof points:
 Scope:
 
 - Added a first-class lesson search surface so any MCP-compatible free or self-hosted agent can search promoted lessons and inspect the corrective action linked to each result.
-- Exposed the feature through MCP (`search_lessons`), HTTP (`GET /v1/lessons/search`), and CLI (`npx mcp-memory-gateway lessons` / `search-lessons`).
+- Exposed the feature through MCP (`search_lessons`), HTTP (`GET /v1/lessons/search`), and CLI (`npx thumbgate lessons` / `search-lessons`).
 - Linked each lesson result to its source feedback, matching prevention rules, and matching auto-promoted gates.
 - Updated public docs so the essential profile now advertises lesson search as a free/self-hosted MCP surface.
 
@@ -2074,7 +2074,7 @@ Scope:
 
 Problem verified before the fix:
 
-- The public Smithery page for `rlhf-loop/mcp-memory-gateway-v2` was live, but showed `No capabilities found` and `No deployments found`.
+- The public Smithery page for `thumbgate-loop/thumbgate-v2` was live, but showed `No capabilities found` and `No deployments found`.
 - Production already exposed unauthenticated metadata endpoints:
   - `GET https://thumbgate-production.up.railway.app/.well-known/mcp/server-card.json` -> `200`
   - `GET https://thumbgate-production.up.railway.app/mcp` -> `200`
@@ -2407,8 +2407,8 @@ Commands run:
 node --test tests/billing.test.js
 node --test tests/github-billing.test.js
 node --test tests/cli.test.js
-npx mcp-memory-gateway repair-github-marketplace
-npx mcp-memory-gateway repair-github-marketplace --write
+npx thumbgate repair-github-marketplace
+npx thumbgate repair-github-marketplace --write
 ```
 
 Observed results:
@@ -2423,7 +2423,7 @@ Behavioral proof points:
 
 - Legacy GitHub Marketplace rows no longer stay stranded as permanent `amountKnown: false` entries when a trusted plan-price mapping exists.
 - The billing summary can surface booked revenue truth immediately from reconciled legacy Marketplace rows before a write-back is applied.
-- The explicit repair command materializes that truth into the local `.rlhf` or legacy feedback ledger without fabricating prices.
+- The explicit repair command materializes that truth into the local `.thumbgate` or legacy feedback ledger without fabricating prices.
 
 ## 2026-03-17 Workflow Hardening Sprint Revenue-Motion Verification
 
@@ -2441,8 +2441,8 @@ npm ci
 node --test tests/public-landing.test.js tests/api-server.test.js tests/social-marketing-assets.test.js tests/version-metadata.test.js tests/anthropic-partner-strategy.test.js tests/workflow-hardening-sprint.test.js
 npm test
 npm run test:coverage
-THUMBGATE_PROOF_DIR=/tmp/rlhf-workflow-hardening-20260317T133407/proof/compatibility npm run prove:adapters
-THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/rlhf-workflow-hardening-20260317T133407/proof/automation npm run prove:automation
+THUMBGATE_PROOF_DIR=/tmp/thumbgate-workflow-hardening-20260317T133407/proof/compatibility npm run prove:adapters
+THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/thumbgate-workflow-hardening-20260317T133407/proof/automation npm run prove:automation
 npm run self-heal:check
 ```
 
@@ -2457,7 +2457,7 @@ Observed results:
 - `npm run prove:adapters`: pass with `46` passed, `0` failed.
 - `npm run prove:automation`: pass with `55` passed, `0` failed.
 - `npm run self-heal:check`: `Overall: HEALTHY` with `4/4` healthy checks.
-- Proof artifacts for adapter and automation verification were redirected to `/tmp/rlhf-workflow-hardening-20260317T133407/proof` so the clean worktree did not churn tracked `proof/` artifacts.
+- Proof artifacts for adapter and automation verification were redirected to `/tmp/thumbgate-workflow-hardening-20260317T133407/proof` so the clean worktree did not churn tracked `proof/` artifacts.
 
 Behavioral proof points:
 
@@ -2684,12 +2684,12 @@ Scope:
 
 - Added a repo-root Cursor marketplace manifest at `.cursor-plugin/marketplace.json`.
 - Added a dedicated Cursor plugin bundle in `plugins/cursor-marketplace/` with `.cursor-plugin/plugin.json`, `.mcp.json`, README, and committed logo asset.
-- Switched the Cursor launcher to the portable published package entrypoint `npx -y mcp-memory-gateway@0.9.9 serve` instead of any checkout-local absolute path.
+- Switched the Cursor launcher to the portable published package entrypoint `npx -y thumbgate@0.9.9 serve` instead of any checkout-local absolute path.
 - Removed the stale `.mcp.json.plugin` legacy config file so the repo has one canonical Cursor packaging path.
 - Extended `scripts/sync-version.js` so Cursor manifests and all pinned launcher docs stay version-synced on future releases.
 - Added regression coverage for the repo-level marketplace contract, manifest/version consistency, and MCP launcher safety.
 
-Commands run in the dedicated worktree at `/private/tmp/rlhf-cursor-marketplace-20260317T074440Z`:
+Commands run in the dedicated worktree at `/private/tmp/thumbgate-cursor-marketplace-20260317T074440Z`:
 
 ```bash
 npm ci
@@ -2988,8 +2988,8 @@ codex exec "Print OK only" --skip-git-repo-check
 
 Observed result:
 
-- MCP startup reports `ready: rlhf, sentry, github, context7, playwright`
-- No `rlhf` timeout and no MCP handshake error
+- MCP startup reports `ready: thumbgate, sentry, github, context7, playwright`
+- No `thumbgate` timeout and no MCP handshake error
 - Command completed with output `OK`
 
 ## 2026-03-06 Revenue Funnel + Billing Hardening Verification

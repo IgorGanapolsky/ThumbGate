@@ -1,4 +1,4 @@
-Show a central RLHF Feedback API hub with five platform adapters radiating outward.
+Show a central ThumbGate Feedback API hub with five platform adapters radiating outward.
 
 Adapter 1: ChatGPT via GPT Actions OpenAPI spec.
 Adapter 2: Claude via local MCP server and .mcp.json config.

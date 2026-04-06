@@ -33,7 +33,7 @@ function userPromptHookCommand() {
 }
 
 function sessionStartHookCommand() {
-  return 'bash scripts/rlhf_session_start.sh';
+  return 'bash scripts/thumbgate_session_start.sh';
 }
 
 const CLAUDE_HOOKS = {

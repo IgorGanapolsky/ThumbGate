@@ -21,7 +21,7 @@ GATE_ENGINE="$SCRIPT_DIR/gates-engine.js"
 if [ -f "$GATE_ENGINE" ]; then
   RESULT=$(echo "$INPUT" | node "$GATE_ENGINE" 2>/dev/null) || true
 else
-  RESULT=$(echo "$INPUT" | npx -y mcp-memory-gateway@latest gate-check 2>/dev/null) || true
+  RESULT=$(echo "$INPUT" | npx -y thumbgate@latest gate-check 2>/dev/null) || true
 fi
 
 # If no result, fail open (allow)

@@ -4,7 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const LICENSE_PATH = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.thumbgate', 'license.json');
-const VALID_PREFIXES = ['rlhf_', 'tg_pro_', 'tg_'];
+const VALID_PREFIXES = ['tg_pro_', 'tg_'];
 
 function isValidKey(key) {
   return key && VALID_PREFIXES.some((p) => key.startsWith(p));
@@ -32,7 +32,7 @@ function isProLicensed() {
 
 function activateLicense(key) {
   if (!isValidKey(key)) {
-    return { success: false, error: 'Invalid key format. Expected rlhf_... or tg_pro_...' };
+    return { success: false, error: 'Invalid key format. Expected tg_... or tg_pro_...' };
   }
   const dir = path.dirname(LICENSE_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });

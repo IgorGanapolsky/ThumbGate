@@ -5,8 +5,8 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { execFileSync } = require('node:child_process');
 
-const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-test-'));
-const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-proof-'));
+const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-test-'));
+const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-proof-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
 process.env.THUMBGATE_NO_RATE_LIMIT = '1'; // bypass free-tier rate limits during tests
@@ -18,10 +18,10 @@ const VERIFICATION_PATH = require.resolve('../scripts/verification-loop');
 const { handleRequest, TOOLS, SAFE_DATA_DIR } = require('../adapters/mcp/server-stdio');
 
 function initGitRepo() {
-  const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-repo-'));
+  const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-repo-'));
   execFileSync('git', ['init', '-b', 'main'], { cwd: repoPath, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.name', 'ThumbGate Test'], { cwd: repoPath, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.email', 'rlhf@example.com'], { cwd: repoPath, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'thumbgate@example.com'], { cwd: repoPath, stdio: 'ignore' });
   fs.writeFileSync(path.join(repoPath, 'README.md'), '# temp repo\n');
   execFileSync('git', ['add', 'README.md'], { cwd: repoPath, stdio: 'ignore' });
   execFileSync('git', ['commit', '-m', 'init'], { cwd: repoPath, stdio: 'ignore' });
@@ -520,7 +520,7 @@ test('start_handoff and complete_handoff expose sequential delegation over MCP',
 
 test('bootstrap_internal_agent creates a sandbox and reviewer plan over MCP', async () => {
   const repoPath = initGitRepo();
-  const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-bootstrap-'));
+  const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-bootstrap-'));
   const previous = process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE;
   process.env.THUMBGATE_CODEGRAPH_STUB_RESPONSE = JSON.stringify({
     source: 'stub',

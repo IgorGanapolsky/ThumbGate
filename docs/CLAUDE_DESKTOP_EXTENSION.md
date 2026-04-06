@@ -49,13 +49,13 @@ For this repo, that means:
 Use the portable install command in Claude Desktop today:
 
 ```bash
-claude mcp add thumbgate -- npx -y mcp-memory-gateway serve
+claude mcp add thumbgate -- npx -y thumbgate serve
 ```
 
 Or bootstrap from the package:
 
 ```bash
-npx mcp-memory-gateway init
+npx thumbgate init
 ```
 
 ## Submission-ready messaging

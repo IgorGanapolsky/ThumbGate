@@ -77,7 +77,7 @@
       }
     },
     {
-      "name": "search_rlhf",
+      "name": "search_thumbgate",
       "description": "Search raw ThumbGate state across feedback logs, ContextFS memory, and prevention rules.",
       "parameters": {
         "type": "object",

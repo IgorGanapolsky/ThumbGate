@@ -45,7 +45,7 @@ function writeJson(filePath, payload) {
 }
 
 function makeTempProject(structure = {}) {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-project-'));
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-project-'));
   for (const [relativePath, payload] of Object.entries(structure)) {
     const fullPath = path.join(projectRoot, relativePath);
     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
@@ -110,7 +110,7 @@ async function run() {
       id: 'SETTINGS-01',
       desc: 'managed > local > project > user > defaults precedence resolves correctly',
       fn: () => {
-        const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-home-'));
+        const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-home-'));
         const projectRoot = makeTempProject({
           'config/thumbgate-settings.managed.json': { mcp: { defaultProfile: 'locked' } },
           '.thumbgate/settings.json': { mcp: { defaultProfile: 'dispatch' } },
@@ -193,7 +193,7 @@ async function run() {
       id: 'SETTINGS-05',
       desc: 'dashboard and MCP surfaces expose settings status visibility',
       fn: () => {
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-dashboard-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-dashboard-'));
         const { generateDashboard } = require('./dashboard');
         const dashboard = generateDashboard(feedbackDir);
         const { TOOLS } = require('./tool-registry');
@@ -227,7 +227,7 @@ async function run() {
         if (!plan.some((step) => Array.isArray(step.args) && step.args.includes('prove:settings'))) {
           throw new Error('verify:full is missing prove:settings');
         }
-        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-proof-run-'));
+        const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-proof-run-'));
         try {
           const workflowRun = recordVerifyWorkflowRun('full', ROOT, feedbackDir);
           if (!workflowRun.proofArtifacts.some((artifact) => artifact.endsWith(path.join('proof', 'settings-report.json')))) {

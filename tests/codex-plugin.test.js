@@ -34,7 +34,7 @@ test('codex plugin manifest uses ThumbGate branding and local MCP config', () =>
   assert.equal(plugin.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(plugin.mcpServers, './.mcp.json');
   const pkgVersion = require('../package.json').version;
-  assert.deepEqual(mcpConfig.mcpServers.rlhf.args, ['-y', `mcp-memory-gateway@${pkgVersion}`, 'serve']);
+  assert.deepEqual(mcpConfig.mcpServers.thumbgate.args, ['-y', `thumbgate@${pkgVersion}`, 'serve']);
   assert.match(readme, /Codex app plugin surface/i);
   assert.match(readme, /Pre-Action Gates/i);
 });

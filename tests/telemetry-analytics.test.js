@@ -6,13 +6,13 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-telemetry-test-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-telemetry-test-'));
 const legacyDir = path.join(tmpDir, 'legacy-feedback');
-const rlhfDir = path.join(tmpDir, 'rlhf-feedback');
+const compatDir = path.join(tmpDir, 'thumbgate-compat');
 const savedLegacyFeedbackDir = process.env._TEST_LEGACY_FEEDBACK_DIR;
 const savedHostedLegacyFeedbackDir = process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
-const savedRlhfFeedbackDir = process.env._TEST_RLHF_FEEDBACK_DIR;
-const savedHostedRlhfFeedbackDir = process.env.THUMBGATE_RLHF_FEEDBACK_DIR;
+const savedFallbackFeedbackDir = process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
+const savedHostedCompatFeedbackDir = process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
 
 const {
   appendTelemetryEvent,
@@ -28,10 +28,10 @@ test.after(() => {
   else process.env._TEST_LEGACY_FEEDBACK_DIR = savedLegacyFeedbackDir;
   if (savedHostedLegacyFeedbackDir === undefined) delete process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
   else process.env.THUMBGATE_LEGACY_FEEDBACK_DIR = savedHostedLegacyFeedbackDir;
-  if (savedRlhfFeedbackDir === undefined) delete process.env._TEST_RLHF_FEEDBACK_DIR;
-  else process.env._TEST_RLHF_FEEDBACK_DIR = savedRlhfFeedbackDir;
-  if (savedHostedRlhfFeedbackDir === undefined) delete process.env.THUMBGATE_RLHF_FEEDBACK_DIR;
-  else process.env.THUMBGATE_RLHF_FEEDBACK_DIR = savedHostedRlhfFeedbackDir;
+  if (savedFallbackFeedbackDir === undefined) delete process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
+  else process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR = savedFallbackFeedbackDir;
+  if (savedHostedCompatFeedbackDir === undefined) delete process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
+  else process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR = savedHostedCompatFeedbackDir;
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
@@ -39,13 +39,13 @@ test.beforeEach(() => {
   // Point fallback dirs to empty temp dirs so tests don't pick up repo artifacts
   process.env._TEST_LEGACY_FEEDBACK_DIR = path.join(tmpDir, 'empty-legacy');
   delete process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
-  process.env._TEST_RLHF_FEEDBACK_DIR = path.join(tmpDir, 'empty-rlhf');
-  delete process.env.THUMBGATE_RLHF_FEEDBACK_DIR;
+  process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR = path.join(tmpDir, 'empty-compat');
+  delete process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
   fs.rmSync(path.join(tmpDir, 'telemetry-pings.jsonl'), { force: true });
   fs.rmSync(path.join(legacyDir, 'telemetry-pings.jsonl'), { force: true });
-  fs.rmSync(path.join(rlhfDir, 'telemetry-pings.jsonl'), { force: true });
+  fs.rmSync(path.join(compatDir, 'telemetry-pings.jsonl'), { force: true });
   fs.rmSync(legacyDir, { recursive: true, force: true });
-  fs.rmSync(rlhfDir, { recursive: true, force: true });
+  fs.rmSync(compatDir, { recursive: true, force: true });
 });
 
 test('sanitizeTelemetryPayload normalizes modern web payloads', () => {
@@ -174,7 +174,7 @@ test('loadTelemetryEvents upgrades legacy event/client fields', () => {
 
 test('loadTelemetryEvents falls back to explicit legacy telemetry when the active dir is empty', () => {
   process.env._TEST_LEGACY_FEEDBACK_DIR = legacyDir;
-  process.env._TEST_RLHF_FEEDBACK_DIR = path.join(tmpDir, 'missing-rlhf-feedback');
+  process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR = path.join(tmpDir, 'missing-thumbgate-feedback');
   fs.mkdirSync(legacyDir, { recursive: true });
   fs.writeFileSync(path.join(legacyDir, 'telemetry-pings.jsonl'), `${JSON.stringify({
     receivedAt: new Date().toISOString(),
@@ -196,17 +196,17 @@ test('loadTelemetryEvents falls back to explicit legacy telemetry when the activ
   assert.equal(diagnostics.warnings[0].code, 'telemetry_legacy_fallback');
 });
 
-test('loadTelemetryEvents falls back to explicit rlhf telemetry when the active dir is empty', () => {
-  process.env._TEST_RLHF_FEEDBACK_DIR = rlhfDir;
-  fs.mkdirSync(rlhfDir, { recursive: true });
-  fs.writeFileSync(path.join(rlhfDir, 'telemetry-pings.jsonl'), `${JSON.stringify({
+test('loadTelemetryEvents falls back to explicit compatibility telemetry when the active dir is empty', () => {
+  process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR = compatDir;
+  fs.mkdirSync(compatDir, { recursive: true });
+  fs.writeFileSync(path.join(compatDir, 'telemetry-pings.jsonl'), `${JSON.stringify({
     receivedAt: new Date().toISOString(),
     eventType: 'landing_page_view',
     clientType: 'web',
-    visitorId: 'rlhf_only_visitor',
-    sessionId: 'rlhf_only_session',
+    visitorId: 'thumbgate_only_visitor',
+    sessionId: 'thumbgate_only_session',
     source: 'website',
-    utmCampaign: 'rlhf_only_launch',
+    utmCampaign: 'thumbgate_only_launch',
     page: '/',
   })}\n`);
 
@@ -214,14 +214,14 @@ test('loadTelemetryEvents falls back to explicit rlhf telemetry when the active 
   const diagnostics = getTelemetrySourceDiagnostics(tmpDir);
 
   assert.equal(events.length, 1);
-  assert.equal(events[0].utmCampaign, 'rlhf_only_launch');
+  assert.equal(events[0].utmCampaign, 'thumbgate_only_launch');
   assert.equal(diagnostics.activeMode, 'legacy_fallback');
   assert.equal(diagnostics.warnings[0].code, 'telemetry_legacy_fallback');
 });
 
 test('loadTelemetryEvents prefers primary telemetry when both primary and fallback files exist', () => {
-  process.env._TEST_RLHF_FEEDBACK_DIR = rlhfDir;
-  fs.mkdirSync(rlhfDir, { recursive: true });
+  process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR = compatDir;
+  fs.mkdirSync(compatDir, { recursive: true });
   fs.writeFileSync(path.join(tmpDir, 'telemetry-pings.jsonl'), `${JSON.stringify({
     receivedAt: new Date().toISOString(),
     eventType: 'landing_page_view',
@@ -232,7 +232,7 @@ test('loadTelemetryEvents prefers primary telemetry when both primary and fallba
     utmCampaign: 'primary_launch',
     page: '/',
   })}\n`);
-  fs.writeFileSync(path.join(rlhfDir, 'telemetry-pings.jsonl'), `${JSON.stringify({
+  fs.writeFileSync(path.join(compatDir, 'telemetry-pings.jsonl'), `${JSON.stringify({
     receivedAt: new Date().toISOString(),
     eventType: 'landing_page_view',
     clientType: 'web',

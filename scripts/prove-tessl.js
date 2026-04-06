@@ -24,7 +24,7 @@ function resolveProofPaths() {
 
 async function run() {
   const { proofDir, reportJson, reportMd } = resolveProofPaths();
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-tessl-proof-'));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-tessl-proof-'));
   const results = { passed: 0, failed: 0, requirements: {} };
 
   const checks = [
@@ -41,7 +41,7 @@ async function run() {
         if (tileNames.length !== 2) {
           throw new Error('Expected exactly two first-party Tessl tiles');
         }
-        if (!tileNames.includes('agent-memory') || !tileNames.includes('rlhf-feedback')) {
+        if (!tileNames.includes('agent-memory') || !tileNames.includes('thumbgate-feedback')) {
           throw new Error('High-ROI ThumbGate tiles missing from config');
         }
       },

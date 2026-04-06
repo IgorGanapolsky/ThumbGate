@@ -2,7 +2,7 @@
 tracker:
   kind: linear
   api_key: $LINEAR_API_KEY
-  project_slug: 'mcp-memory-gateway'
+  project_slug: 'thumbgate'
   active_states:
     - 'Ready for Agent'
     - 'In Progress'
@@ -19,7 +19,7 @@ workspace:
   root: $SYMPHONY_WORKSPACE_ROOT
 hooks:
   after_create: |
-    git clone --depth 1 https://github.com/IgorGanapolsky/mcp-memory-gateway.git .
+    git clone --depth 1 https://github.com/IgorGanapolsky/thumbgate.git .
     npm ci
   before_run: |
     git fetch origin --prune
@@ -42,7 +42,7 @@ codex:
 
 # ThumbGate Agent Workflow
 
-You are implementing work inside the `mcp-memory-gateway` repository. Deliver the ticket outcome with no dead code, no vague completion claims, and proof that the result works.
+You are implementing work inside the `thumbgate` repository. Deliver the ticket outcome with no dead code, no vague completion claims, and proof that the result works.
 
 ## Scope
 

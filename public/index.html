@@ -24,7 +24,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <meta property="og:title" content="ThumbGate — Human-in-the-Loop Enforcement for AI Agents">
 <meta property="og:description" content="Pre-action gates for AI coding agents. Skill disclosure cuts tokens. Hallucination and PII checks harden outputs. 👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility, plus generated review views.">
 <meta property="og:type" content="website">
-<meta name="keywords" content="ThumbGate, mcp-memory-gateway, AI agent guardrails, pre-action gates, MCP server, Claude Code, Claude Code security, Claude Code guardrails, Claw-code, Cursor, Codex, Gemini, Amp, OpenCode, vibe coding safety, SpecLock alternative, Mem0 alternative, AI coding agent memory, PreToolUse hooks, prevention rules, feedback enforcement">
+<meta name="keywords" content="ThumbGate, thumbgate, AI agent guardrails, pre-action gates, MCP server, Claude Code, Claude Code security, Claude Code guardrails, Claw-code, Cursor, Codex, Gemini, Amp, OpenCode, vibe coding safety, SpecLock alternative, Mem0 alternative, AI coding agent memory, PreToolUse hooks, prevention rules, feedback enforcement">
 
 <!-- Privacy-friendly analytics by Plausible -->
 <script defer data-domain="thumbgate-production.up.railway.app" data-api="/api/event" src="/js/analytics.js"></script>
@@ -43,14 +43,14 @@ __GA_BOOTSTRAP__
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
-  "alternateName": "mcp-memory-gateway",
+  "alternateName": "thumbgate",
   "description": "👍 Thumbs up reinforces good behavior. 👎 Thumbs down blocks repeated mistakes. Free is local. History-aware lessons distill vague feedback. Team adds shared lessons and org visibility, plus generated review views.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "license": "https://opensource.org/licenses/MIT",
   "url": "https://github.com/IgorGanapolsky/ThumbGate",
-  "downloadUrl": "https://www.npmjs.com/package/mcp-memory-gateway",
-  "installUrl": "https://www.npmjs.com/package/mcp-memory-gateway",
+  "downloadUrl": "https://www.npmjs.com/package/thumbgate",
+  "installUrl": "https://www.npmjs.com/package/thumbgate",
   "dateModified": "2026-04-03",
   "creator": {
     "@type": "Person",
@@ -113,7 +113,7 @@ __GA_BOOTSTRAP__
       "@type": "HowToStep",
       "position": 1,
       "name": "Install ThumbGate",
-      "text": "Run: npx mcp-memory-gateway init --agent claude-code. This adds the MCP server to your agent. No API key needed — everything runs locally."
+      "text": "Run: npx thumbgate init --agent claude-code. This adds the MCP server to your agent. No API key needed — everything runs locally."
     },
     {
       "@type": "HowToStep",
@@ -135,7 +135,7 @@ __GA_BOOTSTRAP__
     }
   ],
   "totalTime": "PT5M",
-  "tool": { "@type": "SoftwareApplication", "name": "mcp-memory-gateway", "url": "https://www.npmjs.com/package/mcp-memory-gateway" }
+  "tool": { "@type": "SoftwareApplication", "name": "thumbgate", "url": "https://www.npmjs.com/package/thumbgate" }
 }
 </script>
 
@@ -154,10 +154,10 @@ __GA_BOOTSTRAP__
     },
     {
       "@type": "Question",
-      "name": "How is ThumbGate different from RLHF-the-concept?",
+      "name": "How is ThumbGate different from model-training feedback loops?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "ThumbGate updates model weights. ThumbGate doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. The gate blocks are hard enforcement, not soft suggestions."
+        "text": "Model-training feedback loops update weights. ThumbGate does not touch the model. It injects past feedback into context so your agent is shaped by your corrections in real time. Think of it as a behavioral immune system, not a training pipeline. The gate blocks are hard enforcement, not soft suggestions."
       }
     },
     {
@@ -428,15 +428,15 @@ __GA_BOOTSTRAP__
     <p><strong>Every mistake makes your agent stronger.</strong> ThumbGate turns thumbs-up/down feedback into hard gates that block bad actions before they execute. Think of it as an immune system for your AI agent — it learns from your corrections, distills vague signals from conversation context, and enforces lessons automatically. More errors = stronger gates. The safety net for vibe coding that gets more valuable the more chaos it encounters.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
-      <span class="cmd">npx mcp-memory-gateway init</span>
+      <span class="cmd">npx thumbgate init</span>
       <span class="copy-hint">click to copy</span>
     </div>
     <div class="proof-bar">
-      <a href="https://www.npmjs.com/package/mcp-memory-gateway" target="_blank" rel="noopener">1,000+ npm downloads →</a>
+      <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener">1,000+ npm downloads →</a>
       <span class="dot"></span>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">1,500+ tests passing →</a>
       <span class="dot"></span>
-      <a href="https://www.producthunt.com/products/mcp-memory-gateway" target="_blank" rel="noopener">Product Hunt →</a>
+      <a href="https://www.producthunt.com/products/thumbgate" target="_blank" rel="noopener">Product Hunt →</a>
       <span class="dot"></span>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/LICENSE" target="_blank" rel="noopener">MIT licensed</a>
       <span class="dot"></span>
@@ -457,7 +457,7 @@ __GA_BOOTSTRAP__
       </a>
       <a class="compat-card" href="/guides/claude-desktop">
         <h3>🧩 Claude Desktop plugin</h3>
-        <p>One command install. No build step, no cloud account. Grab the <code>.mcpb</code> bundle or run <code>npx mcp-memory-gateway init --claude-desktop</code>.</p>
+        <p>One command install. No build step, no cloud account. Grab the <code>.mcpb</code> bundle or run <code>npx thumbgate init --claude-desktop</code>.</p>
         <div class="card-arrow">Get the Claude plugin →</div>
       </a>
       <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins" target="_blank" rel="noopener">
@@ -704,14 +704,14 @@ __GA_BOOTSTRAP__
       </div>
       <div class="code-body">
         <div><span class="comment"># Install in 30 seconds</span></div>
-        <div><span class="fn">npx</span> mcp-memory-gateway init</div>
+        <div><span class="fn">npx</span> thumbgate init</div>
         <div>&nbsp;</div>
         <div><span class="comment"># Your agent tries to delete production db...</span></div>
         <div><span class="keyword">⛔ Gate blocked:</span> <span class="string">"Never run DROP on production tables"</span></div>
         <div><span class="comment"># Rule auto-generated from your previous 👎</span></div>
         <div>&nbsp;</div>
         <div><span class="comment"># Works with your existing setup</span></div>
-        <div><span class="fn">npx</span> mcp-memory-gateway init <span class="comment"># bootstraps .rlhf and .mcp.json</span></div>
+        <div><span class="fn">npx</span> thumbgate init <span class="comment"># bootstraps .thumbgate and .mcp.json</span></div>
         <div><span class="comment"># Use repo guides for Claude plugin, Codex app plugin, Cursor plugin, and OpenCode profiles</span></div>
       </div>
     </div>
@@ -737,7 +737,7 @@ __GA_BOOTSTRAP__
           <li>Local SQLite lesson DB</li>
           <li><a href="/guide" style="color:var(--cyan);text-decoration:underline;">Setup guide for all agents →</a></li>
         </ul>
-        <a href="https://www.npmjs.com/package/mcp-memory-gateway" target="_blank" rel="noopener" class="btn-free">Install Free</a>
+        <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free">Install Free</a>
       </div>
       <div class="price-card pro" data-price-dollars="__PRO_PRICE_DOLLARS__">
         <div class="tier">Pro</div>
@@ -833,7 +833,7 @@ __GA_BOOTSTRAP__
         <div class="faq-a">Yes. ThumbGate Pro includes a Model Hardening Advisor and LoRA JSONL export. Pro users can export their episodic memory as DPO (Direct Preference Optimization) pairs to fine-tune local models (like Llama 3 or Mistral) so they natively avoid repeating known mistakes.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from RLHF-the-concept?</div>
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from model-training feedback loops?</div>
         <div class="faq-a">ThumbGate's intelligence is context, not weights. It doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. The gate blocks are hard enforcement, not soft suggestions.</div>
       </div>
       <div class="faq-item">
@@ -894,7 +894,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="footer-links">
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://www.npmjs.com/package/mcp-memory-gateway" target="_blank" rel="noopener">npm</a>
+      <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener">npm</a>
       <a href="https://x.com/IgorGanapolsky" target="_blank" rel="noopener">X / Twitter</a>
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
@@ -905,7 +905,7 @@ __GA_BOOTSTRAP__
 
 <script>
 function copyInstall(el) {
-  navigator.clipboard.writeText('npx mcp-memory-gateway init').then(function() {
+  navigator.clipboard.writeText('npx thumbgate init').then(function() {
     var hint = el.querySelector('.copy-hint');
     hint.textContent = 'copied!';
     hint.classList.add('copied');

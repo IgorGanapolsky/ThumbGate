@@ -22,7 +22,7 @@ Pure local file transformation — no external APIs required.
   "name": "pr-reviewer",
   "description": "Reviews pull requests with ThumbGate memory and gates",
   "model_class": "mini",
-  "instructions": "Policy: Balanced autonomous execution bundle with human checkpoints on high-risk actions.\nDefault MCP Profile: default\n\n## Approval Gates\nRequired risk levels for approval: high, critical\n\n## Available Intents\n- capture_feedback_loop [low]: Capture user outcome and update memory artifacts. (capture_feedback, feedback_summary)\n- improve_response_quality [medium]: Summarize recent failures and regenerate prevention rules. (feedback_summary, prevention_rules, construct_context_pack)\n- publish_dpo_training_data [high]: Export DPO preference pairs for model improvement pipelines. (export_dpo_pairs)\n- publish_databricks_analytics_bundle [high]: Export RLHF analytics and proof artifacts as a Databricks-ready bundle. (export_databricks_bundle)\n- incident_postmortem [medium]: Construct evidence pack and record evaluation for incident review. (construct_context_pack, context_provenance, evaluate_context_pack)\n\n## Escalation Rules\n- escalate-on-security-finding\n- escalate-on-breaking-change",
+  "instructions": "Policy: Balanced autonomous execution bundle with human checkpoints on high-risk actions.\nDefault MCP Profile: default\n\n## Approval Gates\nRequired risk levels for approval: high, critical\n\n## Available Intents\n- capture_feedback_loop [low]: Capture user outcome and update memory artifacts. (capture_feedback, feedback_summary)\n- improve_response_quality [medium]: Summarize recent failures and regenerate prevention rules. (feedback_summary, prevention_rules, construct_context_pack)\n- publish_dpo_training_data [high]: Export DPO preference pairs for model improvement pipelines. (export_dpo_pairs)\n- publish_databricks_analytics_bundle [high]: Export ThumbGate analytics and proof artifacts as a Databricks-ready bundle. (export_databricks_bundle)\n- incident_postmortem [medium]: Construct evidence pack and record evaluation for incident review. (construct_context_pack, context_provenance, evaluate_context_pack)\n\n## Escalation Rules\n- escalate-on-security-finding\n- escalate-on-breaking-change",
   "scripts": {
     "gate_check": "recall --scope pr-review,code-quality --enforce",
     "recall_injection": "recall --query \"{{context}}\" --scope pr-review,code-quality"
@@ -63,9 +63,9 @@ Pure local file transformation — no external APIs required.
 ```json
 {
   "mcpServers": {
-    "rlhf": {
+    "thumbgate": {
       "command": "npx",
-      "args": ["-y", "mcp-memory-gateway@0.8.5", "serve"],
+      "args": ["-y", "thumbgate@0.8.5", "serve"],
       "tools": ["recall", "capture_feedback", "search_lessons", "enforcement_matrix"]
     }
   }

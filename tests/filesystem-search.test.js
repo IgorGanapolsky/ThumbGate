@@ -169,7 +169,7 @@ describe('filesystem-search', () => {
       assert.equal(typeof mod.setPipelineLoaderForTests, 'function');
       assert.equal(typeof mod.setLanceLoaderForTests, 'function');
       assert.equal(typeof mod.truncateForEmbedding, 'function');
-      assert.equal(mod.TABLE_NAME, 'rlhf_memories');
+      assert.equal(mod.TABLE_NAME, 'thumbgate_memories');
       assert.equal(mod.TABLE_PREVENTION_RULES, 'prevention_rules');
       assert.equal(mod.TABLE_CONTEXT_PACKS, 'context_packs');
     });

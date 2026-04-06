@@ -101,7 +101,7 @@ Output: package.json with pinned deps, scripts/vector-store.js with upsertFeedba
     3. `getLanceDB()` does `_lancedb = await import('@lancedb/lancedb')` — NEVER `require()`.
     4. `getEmbeddingPipeline()` does `await import('@huggingface/transformers')` then `pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { quantized: true })`.
     5. `embed(text)` calls the pipeline with `{ pooling: 'mean', normalize: true }` and returns `Array.from(output.data)` — MUST convert Float32Array to plain number[] or LanceDB throws TypeError on Arrow serialization.
-    6. `upsertFeedback(feedbackEvent)` builds `lanceDir` from `process.env.THUMBGATE_FEEDBACK_DIR` (appending `/lancedb`) OR falls back to `path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback', 'lancedb')`. Calls `db.tableNames()` to check if table exists, uses `db.openTable()` + `table.add([record])` if yes, `db.createTable(TABLE_NAME, [record])` if no. Table name: `'rlhf_memories'`.
+    6. `upsertFeedback(feedbackEvent)` builds `lanceDir` from `process.env.THUMBGATE_FEEDBACK_DIR` (appending `/lancedb`) OR falls back to `path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback', 'lancedb')`. Calls `db.tableNames()` to check if table exists, uses `db.openTable()` + `table.add([record])` if yes, `db.createTable(TABLE_NAME, [record])` if no. Table name: `'thumbgate_memories'`.
     7. Record schema: `{ id, text, vector, signal, tags, timestamp, context }` where:
        - `text` = joined string of feedbackEvent.context, feedbackEvent.tags, feedbackEvent.whatWentWrong, feedbackEvent.whatWorked (filtered, joined with '. ')
        - `tags` = `(feedbackEvent.tags || []).join(',')` (stored as string)
@@ -115,7 +115,7 @@ Output: package.json with pinned deps, scripts/vector-store.js with upsertFeedba
   </action>
   <verify>
     node -e "const vs = require('./scripts/vector-store'); console.log(typeof vs.upsertFeedback, typeof vs.searchSimilar, vs.TABLE_NAME)"
-    Expected: function function rlhf_memories
+    Expected: function function thumbgate_memories
     Also verify no require('@lancedb/lancedb') exists:
     grep -n "require.*lancedb" /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/vector-store.js
     Expected: no output (only dynamic import() should be present)
@@ -123,7 +123,7 @@ Output: package.json with pinned deps, scripts/vector-store.js with upsertFeedba
   <done>
     - require('./scripts/vector-store') loads without error.
     - upsertFeedback and searchSimilar are functions.
-    - TABLE_NAME === 'rlhf_memories'.
+    - TABLE_NAME === 'thumbgate_memories'.
     - No require('@lancedb/lancedb') in file (only dynamic import).
   </done>
 </task>

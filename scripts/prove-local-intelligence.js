@@ -39,7 +39,7 @@ async function main() {
   const proofDir = DEFAULT_PROOF_DIR;
   ensureDir(proofDir);
 
-  const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-local-intel-'));
+  const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-local-intel-'));
   const report = {
     generatedAt: new Date().toISOString(),
     checks: [],

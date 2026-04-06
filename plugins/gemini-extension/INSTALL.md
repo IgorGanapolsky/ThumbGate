@@ -6,7 +6,7 @@ Import the ThumbGate function declarations into your Gemini agent in under 60 se
 
 ```bash
 # Copy declarations to your project
-cp adapters/gemini/function-declarations.json .gemini/rlhf-tools.json
+cp adapters/gemini/function-declarations.json .gemini/thumbgate-tools.json
 ```
 
 ## Import in Your Agent Code

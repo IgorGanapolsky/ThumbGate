@@ -26,7 +26,7 @@ The cross-language compatibility concern (Python writes Lance files, Node.js rea
 
 The embedding stack is `@huggingface/transformers@3.8.1` with `onnxruntime-node` for local ONNX inference of `all-MiniLM-L6-v2` (384 dimensions, ~50ms per inference, no API calls). This exactly mirrors the Python `sentence-transformers` model used in Subway. The first `pipeline()` call downloads the model (~22MB) to the HuggingFace cache; subsequent calls load from cache. `apache-arrow@18.1.0` is a required peer dep — the current latest arrow (21.x) is out of range per LanceDB's peer dep constraint.
 
-**Primary recommendation:** Create `scripts/vector-store.js` as a thin async module wrapping LanceDB via dynamic import. Call it from `captureFeedback()` as a non-blocking side-effect (same pattern used for sequence tracking and diversity tracking in Phase 2). The table name is `rlhf_memories`, stored at `.claude/memory/feedback/lancedb/`. Tests use `node --test` with tmp directories.
+**Primary recommendation:** Create `scripts/vector-store.js` as a thin async module wrapping LanceDB via dynamic import. Call it from `captureFeedback()` as a non-blocking side-effect (same pattern used for sequence tracking and diversity tracking in Phase 2). The table name is `thumbgate_memories`, stored at `.claude/memory/feedback/lancedb/`. Tests use `node --test` with tmp directories.
 
 ---
 
@@ -77,7 +77,7 @@ tests/
 
 .claude/memory/feedback/
 └── lancedb/                 # Lance tables written here (gitignored)
-    └── rlhf_memories.lance  # Table: id, text, vector, signal, tags, timestamp
+    └── thumbgate_memories.lance  # Table: id, text, vector, signal, tags, timestamp
 ```
 
 ### Pattern 1: Dynamic Import in CommonJS Module
@@ -98,7 +98,7 @@ const DEFAULT_LANCE_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback
 // Module-level cache to avoid re-importing on every call
 let _lancedb = null;
 let _pipeline = null;
-const TABLE_NAME = 'rlhf_memories';
+const TABLE_NAME = 'thumbgate_memories';
 
 async function getLanceDB() {
   if (!_lancedb) {
@@ -234,9 +234,9 @@ function getVectorStoreModule() {
 | Vector similarity search | Manual L2/cosine loop over JSONL | LanceDB `table.search(vector).limit(N)` | Native ANN indexing; handles table growth; returns sorted results |
 | BM25 text search | Custom inverted index | LanceDB `table.search(query, {queryType: 'fts'})` | LanceDB 0.26.x has native FTS via Tantivy; no custom BM25 needed |
 | Cross-process embedding cache | Redis / file-based cache | In-process module-level variable | Single Node.js process; module cache is sufficient and free |
-| Schema migration between Python/Node writes | Custom migration script | Write JS tables independently; don't share tables with Python | Python uses `db.create_table(name, data_list)` with pandas; JS uses typed records — schemas may diverge; keep rlhf_memories as JS-only |
+| Schema migration between Python/Node writes | Custom migration script | Write JS tables independently; don't share tables with Python | Python uses `db.create_table(name, data_list)` with pandas; JS uses typed records — schemas may diverge; keep thumbgate_memories as JS-only |
 
-**Key insight:** The existing Subway Python tables (`rlhf_feedback.lance`, `lessons_learned.lance`) are Python-managed. Do not read or write them from Node.js. Create a new `rlhf_memories.lance` table that is JS-only. The cross-language concern is eliminated by not sharing tables.
+**Key insight:** The existing Subway Python tables (`rlhf_feedback.lance`, `lessons_learned.lance`) are Python-managed. Do not read or write them from Node.js. Create a new `thumbgate_memories.lance` table that is JS-only. The cross-language concern is eliminated by not sharing tables.
 
 ---
 
@@ -284,7 +284,7 @@ function getVectorStoreModule() {
 
 **Why it happens:** Python lancedb infers schema from pandas DataFrame; JS lancedb expects typed Arrow schema. The `vector` field type (FixedSizeList vs List) diverges. This is LanceDB GitHub issue #669 and #2134.
 
-**How to avoid:** Create a JS-only table `rlhf_memories` — do not attempt to read/write the Python-managed `rlhf_feedback.lance` from Node.js. The cross-language concern is eliminated by table isolation.
+**How to avoid:** Create a JS-only table `thumbgate_memories` — do not attempt to read/write the Python-managed `rlhf_feedback.lance` from Node.js. The cross-language concern is eliminated by table isolation.
 
 **Warning signs:** `Error: Schema mismatch on field 'vector'`; `FixedSizeList` type error when calling `table.search()`.
 
@@ -398,7 +398,7 @@ const report = {
   phase: '04-lancedb-vector-storage',
   generated: new Date().toISOString(),
   requirements: {
-    'VEC-01': { status: 'pass', evidence: 'rlhf_memories table created with N records' },
+    'VEC-01': { status: 'pass', evidence: 'thumbgate_memories table created with N records' },
     'VEC-02': { status: 'pass', evidence: 'dynamic import() pattern in vector-store.js line N' },
     'VEC-03': { status: 'pass', evidence: 'apache-arrow@18.1.0 in package.json' },
     'VEC-04': { status: 'pass', evidence: 'searchSimilar() returns ranked results in test' },
@@ -440,7 +440,7 @@ const report = {
 3. **Table schema evolution (adding new fields)**
    - What we know: LanceDB 0.26.x supports `table.add(records)` where records must match existing schema
    - What's unclear: Behavior when adding records with extra fields after schema is set
-   - Recommendation: Define a fixed schema for `rlhf_memories` records up front. If schema evolution is needed, drop and recreate the table (acceptable — the table is a derived index; JSONL is the source of truth).
+   - Recommendation: Define a fixed schema for `thumbgate_memories` records up front. If schema evolution is needed, drop and recreate the table (acceptable — the table is a derived index; JSONL is the source of truth).
 
 ---
 

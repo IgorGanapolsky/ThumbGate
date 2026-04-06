@@ -18,4 +18,4 @@ Then explain:
 - whether `codex` is installed
 - whether `codex exec review` is available
 - where the persistent bridge artifact directory lives
-- whether ThumbGate's bundled `rlhf` MCP server config is present
+- whether ThumbGate's bundled `thumbgate` MCP server config is present

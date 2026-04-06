@@ -30,11 +30,11 @@ The core loop in ThumbGate turns subjective human frustration into verifiable co
 ## Run the Revenue-at-Risk Analyzer
 Every time an agent repeats a mistake, it costs you developer time. We built a Revenue-at-Risk analyzer directly into the CLI. 
 
-Run `npx mcp-memory-gateway stats` in any project, and it will calculate the estimated operational loss caused by repeated agent failures based on your local logs.
+Run `npx thumbgate stats` in any project, and it will calculate the estimated operational loss caused by repeated agent failures based on your local logs.
 
 **Stop Vibe Coding. Start Context Engineering.**
 
 Try it now:
 ```bash
-npx mcp-memory-gateway install
+npx thumbgate install
 ```

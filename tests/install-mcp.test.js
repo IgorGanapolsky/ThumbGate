@@ -28,21 +28,21 @@ const {
 } = require('../scripts/install-mcp');
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-install-mcp-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-install-mcp-test-'));
 }
 
-const savedPublishState = process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE;
+const savedPublishState = process.env.THUMBGATE_PUBLISH_STATE;
 
 function withPublishState(value, run) {
-  const previous = process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE;
-  process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE = value;
+  const previous = process.env.THUMBGATE_PUBLISH_STATE;
+  process.env.THUMBGATE_PUBLISH_STATE = value;
   try {
     return run();
   } finally {
     if (previous === undefined) {
-      delete process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE;
+      delete process.env.THUMBGATE_PUBLISH_STATE;
     } else {
-      process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE = previous;
+      process.env.THUMBGATE_PUBLISH_STATE = previous;
     }
   }
 }
@@ -52,22 +52,22 @@ describe('install-mcp', () => {
 
   before(() => {
     tmpDir = makeTmpDir();
-    process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE = 'published';
+    process.env.THUMBGATE_PUBLISH_STATE = 'published';
   });
 
   after(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
     if (savedPublishState === undefined) {
-      delete process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE;
+      delete process.env.THUMBGATE_PUBLISH_STATE;
     } else {
-      process.env.MCP_MEMORY_GATEWAY_PUBLISH_STATE = savedPublishState;
+      process.env.THUMBGATE_PUBLISH_STATE = savedPublishState;
     }
   });
 
   test('buildMcpConfig generates correct MCP config JSON', () => {
     const config = buildMcpConfig();
     assert.deepStrictEqual(config, {
-      rlhf: MCP_SERVER_CONFIG,
+      thumbgate: MCP_SERVER_CONFIG,
     });
   });
 
@@ -89,7 +89,7 @@ describe('install-mcp', () => {
     const projectConfig = resolveMcpServerConfig({ project: true, cwd: isolatedDir });
 
     assert.equal(projectConfig.command, 'npx');
-    assert.deepStrictEqual(projectConfig.args, ['-y', `mcp-memory-gateway@${require('../package.json').version}`, 'serve']);
+    assert.deepStrictEqual(projectConfig.args, ['-y', `thumbgate@${require('../package.json').version}`, 'serve']);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
@@ -184,7 +184,7 @@ describe('install-mcp', () => {
       mcpServers: {
         [MCP_SERVER_KEY]: {
           command: 'npx',
-          args: ['-y', 'mcp-memory-gateway', 'serve'],
+          args: ['-y', 'thumbgate', 'serve'],
         },
       },
     }, null, 2) + '\n');
@@ -219,7 +219,7 @@ describe('install-mcp', () => {
         settings.mcpServers[MCP_SERVER_KEY],
         {
           command: 'npx',
-          args: ['-y', `mcp-memory-gateway@${require('../package.json').version}`, 'serve'],
+          args: ['-y', `thumbgate@${require('../package.json').version}`, 'serve'],
         }
       );
     } finally {

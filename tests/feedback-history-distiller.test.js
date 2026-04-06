@@ -19,7 +19,7 @@ const {
 } = require('../scripts/feedback-history-distiller');
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-history-distiller-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-history-distiller-'));
 }
 
 test('normalizeChatHistory accepts strings and structured entries', () => {
@@ -210,12 +210,12 @@ test('getConversationPaths honors feedback-dir environment overrides and cwd fal
   assert.equal(getConversationPaths().feedbackDir, path.join(tmpDir, 'feedback'));
 
   delete process.env.RAILWAY_VOLUME_MOUNT_PATH;
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-history-cwd-'));
-  fs.mkdirSync(path.join(cwd, '.rlhf'), { recursive: true });
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-history-cwd-'));
+  fs.mkdirSync(path.join(cwd, '.thumbgate'), { recursive: true });
   const prevCwd = process.cwd();
   process.chdir(cwd);
-  assert.equal(fs.realpathSync(getConversationPaths().feedbackDir), fs.realpathSync(path.join(cwd, '.rlhf')));
-  fs.rmSync(path.join(cwd, '.rlhf'), { recursive: true, force: true });
+  assert.equal(fs.realpathSync(getConversationPaths().feedbackDir), fs.realpathSync(path.join(cwd, '.thumbgate')));
+  fs.rmSync(path.join(cwd, '.thumbgate'), { recursive: true, force: true });
   fs.mkdirSync(path.join(cwd, '.claude', 'memory', 'feedback'), { recursive: true });
   assert.equal(
     fs.realpathSync(getConversationPaths().feedbackDir),
@@ -236,7 +236,7 @@ test('getConversationPaths falls back to HOME project path when no local dirs ex
   const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const savedRailwayDir = process.env.RAILWAY_VOLUME_MOUNT_PATH;
   const prevCwd = process.cwd();
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-history-home-fallback-'));
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-history-home-fallback-'));
 
   delete process.env.THUMBGATE_FEEDBACK_DIR;
   delete process.env.RAILWAY_VOLUME_MOUNT_PATH;

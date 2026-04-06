@@ -37,7 +37,7 @@ function parseLeadingJson(text) {
 }
 
 function initGitRepo() {
-  const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-proof-repo-'));
+  const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-proof-repo-'));
   execFileSync('git', ['init', '-b', 'main'], { cwd: repoPath, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.name', 'ThumbGate Proof'], { cwd: repoPath, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.email', 'proof@example.com'], { cwd: repoPath, stdio: 'ignore' });
@@ -189,7 +189,7 @@ async function runProof(options = {}) {
     ensureDir(proofDir);
   }
 
-  const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-proof-'));
+  const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-proof-'));
   const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const previousApiKey = process.env.THUMBGATE_API_KEY;
   const previousMcpProfile = process.env.THUMBGATE_MCP_PROFILE;
@@ -298,7 +298,7 @@ async function runProof(options = {}) {
     {
       currentCheck = 'api.internal_agent.bootstrap';
       const repoPath = initGitRepo();
-      const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-proof-bootstrap-'));
+      const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-proof-bootstrap-'));
       let sandboxPath = null;
 
       try {
@@ -469,7 +469,7 @@ async function runProof(options = {}) {
 
     {
       currentCheck = 'mcp.cli.serve.bad_home.initialize';
-      const isolatedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-proof-cli-serve-'));
+      const isolatedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-proof-cli-serve-'));
       const badHomePath = path.join(isolatedDir, 'invalid-home');
       fs.writeFileSync(badHomePath, 'not-a-directory\n');
 
@@ -640,7 +640,7 @@ async function runProof(options = {}) {
     {
       currentCheck = 'mcp.tools.call.bootstrap_internal_agent';
       const repoPath = initGitRepo();
-      const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-proof-mcp-bootstrap-'));
+      const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-proof-mcp-bootstrap-'));
       let sandboxPath = null;
 
       try {
@@ -778,7 +778,7 @@ async function runProof(options = {}) {
         'plugins/codex-profile/.codex-plugin/plugin.json',
         'plugins/codex-profile/.mcp.json',
         '.agents/plugins/marketplace.json',
-        'adapters/amp/skills/rlhf-feedback/SKILL.md',
+        'adapters/amp/skills/thumbgate-feedback/SKILL.md',
       ];
       mustExist.forEach((file) => {
         check(fs.existsSync(path.join(ROOT, file)), `missing adapter file: ${file}`);

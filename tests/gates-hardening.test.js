@@ -16,7 +16,7 @@ const {
 } = require('../scripts/gates-engine');
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-gates-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gates-test-'));
 }
 
 test('local_only constraint blocks git writes', (t) => {

@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-wap-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-wap-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const wp = require('../scripts/weekly-auto-post');
@@ -59,6 +59,6 @@ test('listWeeklyPosts returns generated files', () => {
 });
 
 // === POSTS_DIR ===
-test('POSTS_DIR is under .rlhf', () => {
-  assert.ok(wp.POSTS_DIR.includes('.rlhf'));
+test('POSTS_DIR is under .thumbgate', () => {
+  assert.ok(wp.POSTS_DIR.includes('.thumbgate'));
 });

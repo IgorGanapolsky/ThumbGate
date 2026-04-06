@@ -10,7 +10,7 @@ const { execSync } = require('node:child_process');
 const ROOT = path.join(__dirname, '..');
 
 test('prove-settings: proof gate passes with 6/6 checks', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-proof-test-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-proof-test-'));
   try {
     const output = execSync('node scripts/prove-settings.js', {
       cwd: ROOT,
@@ -26,7 +26,7 @@ test('prove-settings: proof gate passes with 6/6 checks', () => {
 });
 
 test('prove-settings: report.json is valid JSON with all requirements', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-proof-json-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-proof-json-'));
   try {
     execSync('node scripts/prove-settings.js', {
       cwd: ROOT,
@@ -49,7 +49,7 @@ test('prove-settings: report.json is valid JSON with all requirements', () => {
 });
 
 test('prove-settings: report.md contains all requirement checkboxes', () => {
-  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-settings-proof-md-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-settings-proof-md-'));
   try {
     execSync('node scripts/prove-settings.js', {
       cwd: ROOT,
