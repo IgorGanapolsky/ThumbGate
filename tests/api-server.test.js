@@ -89,6 +89,18 @@ test('health endpoint returns ok', async () => {
   assert.equal(body.buildSha, 'test-build-sha');
 });
 
+test('startServer accepts an explicit bind host', async () => {
+  const explicit = await startServer({ port: 0, host: '0.0.0.0' });
+  try {
+    const res = await fetch(`http://127.0.0.1:${explicit.port}/health`, { headers: authHeader });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.status, 'ok');
+  } finally {
+    await new Promise((resolve) => explicit.server.close(resolve));
+  }
+});
+
 test('protected endpoints accept x-api-key as an alternate auth header', async () => {
   const res = await fetch(apiUrl('/v1/feedback/summary'), {
     headers: { 'x-api-key': 'test-api-key' },

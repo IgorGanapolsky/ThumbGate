@@ -343,12 +343,16 @@ function syncVersion(opts) {
   // 13. public/index.html — static landing proof pill + footer version
   const publicIndexPath = 'public/index.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, publicIndexPath))) {
-    const publicContent = fs.readFileSync(path.join(PROJECT_ROOT, publicIndexPath), 'utf-8');
-    const heroVersionMatch = publicContent.match(/New in v(\d+\.\d+\.\d+):/);
+    const publicIndexFile = path.join(PROJECT_ROOT, publicIndexPath);
+    const publicContent = fs.readFileSync(publicIndexFile, 'utf-8');
+    const heroVersionMatch = publicContent.match(/New in v(\d+\.\d+\.\d+):?/);
     if (heroVersionMatch && heroVersionMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'hero-release-note', current: heroVersionMatch[1] });
       if (!checkOnly) {
-        replaceInFile(publicIndexPath, `New in v${heroVersionMatch[1]}:`, `New in v${version}:`);
+        fs.writeFileSync(
+          publicIndexFile,
+          publicContent.replace(/New in v\d+\.\d+\.\d+:?/, `New in v${version}`)
+        );
       }
     }
 

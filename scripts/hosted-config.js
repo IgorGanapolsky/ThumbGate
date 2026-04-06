@@ -12,6 +12,12 @@ const DEFAULT_CHECKOUT_FALLBACK_URL = PRO_MONTHLY_PAYMENT_LINK;
 const DEFAULT_PRO_PRICE_DOLLARS = PRO_MONTHLY_PRICE_DOLLARS;
 const DEFAULT_PRO_PRICE_LABEL = PRO_PRICE_LABEL;
 const GA_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/i;
+const PUBLIC_APP_ORIGIN_KEYS = ['THUMBGATE_PUBLIC_APP_ORIGIN', 'RLHF_PUBLIC_APP_ORIGIN'];
+const BILLING_API_BASE_URL_KEYS = [
+  'THUMBGATE_BILLING_API_BASE_URL',
+  'RLHF_BILLING_API_BASE_URL',
+  'THUMBGATE_CANONICAL_API_BASE_URL',
+];
 
 function normalizeOrigin(value) {
   if (!value || typeof value !== 'string') {
@@ -76,6 +82,16 @@ function normalizeTrackingId(value, pattern) {
   return trimmed;
 }
 
+function resolveNormalizedOrigin(env, keys, fallback = '') {
+  for (const key of keys) {
+    const normalized = normalizeOrigin(env[key]);
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return normalizeOrigin(fallback);
+}
+
 function joinPublicUrl(baseOrigin, pathname) {
   const normalized = normalizeOrigin(baseOrigin);
   if (!normalized) {
@@ -112,16 +128,14 @@ function buildHostedCancelUrl(appOrigin, traceId) {
   return `${joinPublicUrl(appOrigin, '/cancel')}${traceQuery}`;
 }
 
-function resolveHostedBillingConfig({ requestOrigin } = {}) {
+function resolveHostedBillingConfig({ requestOrigin } = {}, env = process.env) {
   const inferredOrigin = normalizeOrigin(requestOrigin) || DEFAULT_PUBLIC_APP_ORIGIN;
-  const appOrigin = normalizeOrigin(process.env.THUMBGATE_PUBLIC_APP_ORIGIN) || inferredOrigin;
-  const billingApiBaseUrl = normalizeOrigin(
-    process.env.THUMBGATE_BILLING_API_BASE_URL || process.env.THUMBGATE_CANONICAL_API_BASE_URL || appOrigin
-  ) || appOrigin;
-  const proPriceDollars = normalizePriceDollars(process.env.THUMBGATE_PRO_PRICE_DOLLARS) || DEFAULT_PRO_PRICE_DOLLARS;
-  const proPriceLabel = process.env.THUMBGATE_PRO_PRICE_LABEL || DEFAULT_PRO_PRICE_LABEL;
-  const gaMeasurementId = normalizeTrackingId(process.env.THUMBGATE_GA_MEASUREMENT_ID, GA_MEASUREMENT_ID_PATTERN);
-  const googleSiteVerification = normalizeTrackingId(process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION);
+  const appOrigin = resolveNormalizedOrigin(env, PUBLIC_APP_ORIGIN_KEYS, inferredOrigin) || inferredOrigin;
+  const billingApiBaseUrl = resolveNormalizedOrigin(env, BILLING_API_BASE_URL_KEYS, appOrigin) || appOrigin;
+  const proPriceDollars = normalizePriceDollars(env.THUMBGATE_PRO_PRICE_DOLLARS) || DEFAULT_PRO_PRICE_DOLLARS;
+  const proPriceLabel = env.THUMBGATE_PRO_PRICE_LABEL || DEFAULT_PRO_PRICE_LABEL;
+  const gaMeasurementId = normalizeTrackingId(env.THUMBGATE_GA_MEASUREMENT_ID, GA_MEASUREMENT_ID_PATTERN);
+  const googleSiteVerification = normalizeTrackingId(env.THUMBGATE_GOOGLE_SITE_VERIFICATION);
 
   return {
     appOrigin,
@@ -129,7 +143,7 @@ function resolveHostedBillingConfig({ requestOrigin } = {}) {
     checkoutEndpoint: joinPublicUrl(billingApiBaseUrl, '/v1/billing/checkout'),
     sessionEndpoint: joinPublicUrl(billingApiBaseUrl, '/v1/billing/session'),
     checkoutFallbackUrl: normalizeAbsoluteUrl(
-      process.env.THUMBGATE_CHECKOUT_FALLBACK_URL || DEFAULT_CHECKOUT_FALLBACK_URL
+      env.THUMBGATE_CHECKOUT_FALLBACK_URL || DEFAULT_CHECKOUT_FALLBACK_URL
     ) || DEFAULT_CHECKOUT_FALLBACK_URL,
     proPriceDollars,
     proPriceLabel,

@@ -71,6 +71,22 @@ test('deploy policy resolves canonical ThumbGate env names', () => {
   );
 });
 
+test('deploy policy accepts legacy RLHF env aliases during the rename window', () => {
+  assert.equal(resolveEnvValue('THUMBGATE_API_KEY', { RLHF_API_KEY: 'legacy_live_key' }), 'legacy_live_key');
+  assert.equal(
+    resolveEnvValue('THUMBGATE_PUBLIC_APP_ORIGIN', {
+      RLHF_PUBLIC_APP_ORIGIN: 'https://rlhf-feedback-loop-production.up.railway.app',
+    }),
+    'https://rlhf-feedback-loop-production.up.railway.app'
+  );
+  assert.equal(
+    resolveEnvValue('THUMBGATE_BILLING_API_BASE_URL', {
+      RLHF_BILLING_API_BASE_URL: 'https://rlhf-feedback-loop-production.up.railway.app',
+    }),
+    'https://rlhf-feedback-loop-production.up.railway.app'
+  );
+});
+
 test('deploy policy fails stale Stripe secret timestamps', () => {
   const report = evaluateDeployPolicy({
     STRIPE_SECRET_KEY: 'sk_live_example',

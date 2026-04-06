@@ -4173,17 +4173,19 @@ async function addContext(){
   });
 }
 
-function startServer({ port } = {}) {
+function startServer({ port, host } = {}) {
   const listenPort = Number(port ?? process.env.PORT ?? 8787);
+  const listenHost = String(host ?? process.env.HOST ?? '0.0.0.0').trim() || '0.0.0.0';
   const server = createApiServer();
   return new Promise((resolve) => {
-    server.listen(listenPort, () => {
+    server.listen(listenPort, listenHost, () => {
       const address = server.address();
       const actualPort = (address && typeof address === 'object' && address.port)
         ? address.port
         : listenPort;
       resolve({
         server,
+        host: listenHost,
         port: actualPort,
       });
     });
@@ -4200,7 +4202,7 @@ module.exports = {
 };
 
 if (require.main === module) {
-  startServer().then(({ port }) => {
-    console.log(`ThumbGate API listening on http://localhost:${port}`);
+  startServer().then(({ host, port }) => {
+    console.log(`ThumbGate API listening on http://${host}:${port}`);
   });
 }
