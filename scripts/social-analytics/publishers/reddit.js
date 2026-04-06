@@ -258,31 +258,25 @@ async function submitComment(token, userAgent, { parentId, text }) {
 
 /**
  * Build the standard follow-up comment for a Reddit post.
- * This comment contains the trial CTA and source code link.
+ * This is disclosure-only and should not behave like a CTA.
  *
  * @param {string} subreddit - The subreddit name (used for UTM tracking)
  * @param {string} [utmContent] - Optional UTM content tag (defaults to subreddit name)
  * @returns {string} The follow-up comment text
  */
 function buildFollowUpComment(subreddit, utmContent) {
-  const content = utmContent || `${subreddit}_post`;
-  const trialUrl = `https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content=${encodeURIComponent(content)}&community=${encodeURIComponent(subreddit)}`;
   return [
-    'The problem: AI coding agents repeat the same mistakes every session. You correct a force-push, it does it again tomorrow. Prompt rules get ignored after context compaction.',
+    'Disclosure: I built ThumbGate.',
     '',
-    'ThumbGate fixes this with enforcement, not memory. You give a thumbs-down, it auto-generates a prevention rule, and a gate physically blocks the agent from repeating that action. Thumbs-up reinforces good behavior.',
+    'The point of the post is the workflow: explicit thumbs-up/down feedback that survives the next session and can block a previously rejected move.',
     '',
-    `Try free for 7 days (no credit card, 2-minute setup): ${trialUrl}`,
-    '',
-    'Source code (MIT licensed): https://github.com/IgorGanapolsky/ThumbGate',
-    '',
-    'Disclosure: I built this.',
+    'If anyone wants the repo or setup details, ask and I will share them in-thread.',
   ].join('\n');
 }
 
 /**
  * Publish to Reddit — submits a link post if url is provided, otherwise a text post.
- * Optionally posts a follow-up comment with the trial CTA.
+ * Optionally posts a disclosure-only follow-up comment.
  *
  * Reads credentials from environment variables if token is not supplied.
  *
@@ -322,7 +316,7 @@ async function publishToReddit({ subreddit, title, text, url, token, followUpCom
   if (!text) throw new Error('text is required when url is not provided');
   const postData = await submitTextPost(accessToken, userAgent, { subreddit, title, text });
 
-  // Post follow-up comment with trial CTA if requested
+  // Post disclosure-only follow-up comment if requested
   if (followUpComment && postData.name) {
     const commentText = typeof followUpComment === 'string'
       ? followUpComment
@@ -334,7 +328,7 @@ async function publishToReddit({ subreddit, title, text, url, token, followUpCom
     } else {
       try {
         await submitComment(accessToken, userAgent, { parentId: postData.name, text: commentText });
-        console.log('[reddit:publisher] Follow-up comment with trial CTA posted');
+        console.log('[reddit:publisher] Follow-up disclosure comment posted');
       } catch (err) {
         console.error('[reddit:publisher] Follow-up comment failed:', err.message);
       }

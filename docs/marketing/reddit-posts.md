@@ -94,20 +94,15 @@ Source code: https://github.com/IgorGanapolsky/ThumbGate
 
 ---
 
-## Standard Follow-Up Comment Template
+## Reddit Follow-Up Rule
 
-Use this as the first comment on every Reddit post. Adapt the `{subreddit}` and `{utm_content}` values per post.
+Do not post a canned first comment on every Reddit thread.
+
+Use replies only when another person asks a direct question or offers a real workflow point worth engaging. In that case:
 
 ```text
-The problem: AI coding agents repeat the same mistakes every session. You correct a force-push, it does it again tomorrow. CLAUDE.md rules get ignored after context compaction.
-
-ThumbGate fixes this with enforcement, not memory. You give a thumbs-down, it auto-generates a prevention rule, and a gate physically blocks the agent from repeating that action. Thumbs-up reinforces good behavior. Over time it builds an immune system from your feedback.
-
-Works with Claude Code, Cursor, Codex, Gemini, and Amp. Fully local, MIT licensed.
-
-Try free for 7 days (no credit card, 2-minute setup): https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content={utm_content}&community={subreddit}#workflow-sprint-intake
-
-Source code: https://github.com/IgorGanapolsky/ThumbGate
-
-Disclosure: I built this.
+1. Acknowledge the exact point they made.
+2. Add one concrete observation from your own use.
+3. If disclosure matters, say you built ThumbGate.
+4. Do not paste a link unless they explicitly ask for it.
 ```

@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const {
   buildOwnedConversationQuery,
   collectXSearchCandidates,
+  generateReply,
   isRevenueRelevantXTweet,
 } = require('../scripts/social-reply-monitor');
 
@@ -72,4 +73,33 @@ test('collectXSearchCandidates falls back to keyword search when owned tweet rep
     'conversation_id:launch_1 -from:IgorGanapolsky',
     'thumbgate OR ThumbGate OR "pre-action gates"',
   ]);
+});
+
+test('generateReply acknowledges reddit process advice without pitching the product', async () => {
+  const reply = await generateReply(
+    'I have found that having skills that define specific processes works better. Another important thing is to review all your context docs for inconsistencies.',
+    {
+      platform: 'reddit',
+      author: 'leogodin217',
+      isQuestion: false,
+    }
+  );
+
+  assert.match(reply, /matches what i have seen/i);
+  assert.match(reply, /conflicting context docs/i);
+  assert.doesNotMatch(reply, /https?:\/\//i);
+  assert.doesNotMatch(reply, /npx thumbgate init/i);
+});
+
+test('generateReply returns null for hostile meta reddit comments', async () => {
+  const reply = await generateReply(
+    'This sounds like bot spam and not what I asked for.',
+    {
+      platform: 'reddit',
+      author: 'someone_else',
+      isQuestion: false,
+    }
+  );
+
+  assert.equal(reply, null);
 });

@@ -19,6 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const { loadLocalEnv } = require('./social-analytics/load-env');
+const { gateContextualReply, commentExplicitlyRequestsProduct } = require('./social-quality-gate');
 
 const STATE_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-monitor-state.json');
 const REDDIT_API_BASE = 'https://oauth.reddit.com';
@@ -179,7 +180,8 @@ async function generateReply(comment, context) {
 
   // NEVER reply with generic fluff — build reply from what they ACTUALLY said
   const isQuestion = context.isQuestion || /\?/.test(comment);
-  const REPO = 'https://github.com/IgorGanapolsky/ThumbGate';
+  const isReddit = context.platform === 'reddit';
+  const wantsProductDetails = commentExplicitlyRequestsProduct(comment);
 
   // Extract the specific topic they're asking about
   const mentionsSetup = /install|setup|config|init|npx|how.+start/i.test(lc);
@@ -190,29 +192,58 @@ async function generateReply(comment, context) {
   const mentionsScaling = /scale|team|multi.?repo|collaborate|share/i.test(lc);
   const mentionsSkeptical = /why not|already exist|what.+different|vs |compared to/i.test(lc);
   const mentionsThanks = /thanks|thank you|cool|nice|interesting|awesome/i.test(lc);
+  const mentionsSkillsProcess = /skill|template|process|workflow|review|sprint|implement|phase/i.test(lc);
+  const mentionsConflictingDocs = /context doc|context docs|conflicting|inconsisten|claude\.md|cursorrules|instruction/i.test(lc);
 
   // Build response that addresses THEIR specific point
-  if (mentionsSetup && isQuestion) {
+  if (mentionsSkillsProcess || mentionsConflictingDocs) {
+    const reply = [
+      'That matches what I have seen too.',
+      'Smaller review/implement phases hold up much better than one giant instruction blob,',
+      'and conflicting context docs are where things usually start drifting.'
+    ].join(' ');
+    const gate = gateContextualReply(comment, reply, context);
+    return gate.allowed ? reply : null;
+  }
+  if (mentionsSetup && isQuestion && !isReddit) {
     return `\`npx thumbgate init\` auto-detects your agent and wires the hooks. Takes about 30 seconds. What agent are you using?`;
   }
   if (mentionsSkeptical) {
-    return `Fair question. The difference from rules files or memory tools: this physically blocks the action before execution, not after. The agent can't ignore a gate the way it can ignore a system prompt. Whether that tradeoff is worth it depends on how often your agent repeats mistakes.`;
+    const reply = 'Fair question. The difference from rules files or memory tools is enforcement: the bad action gets stopped before execution instead of being remembered and then ignored. Whether that tradeoff is worth it depends on how often your agent repeats the same mistake.';
+    const gate = gateContextualReply(comment, reply, context);
+    return gate.allowed ? reply : null;
   }
   if (mentionsHow && mentionsGates) {
-    return `PreToolUse hooks intercept the tool call before it runs. Each call is checked against prevention rules promoted from past failures. If it matches, the action is blocked — the agent has to try a different approach. The rules adapt over time via Thompson Sampling so false positives decrease.`;
+    const reply = isReddit
+      ? 'The short version is: the tool call gets checked before it runs. If it matches a previously rejected pattern, it is blocked and the agent has to try a different path.'
+      : 'PreToolUse hooks intercept the tool call before it runs. Each call is checked against prevention rules promoted from past failures. If it matches, the action is blocked and the agent has to try a different approach. The rules adapt over time so false positives decrease.';
+    const gate = gateContextualReply(comment, reply, context);
+    return gate.allowed ? reply : null;
   }
   if (mentionsScaling) {
-    return `For teams, the Pro tier syncs prevention rules across machines so everyone benefits from lessons learned on any repo. But the free local version covers solo dev workflows completely.`;
+    if (isReddit && !wantsProductDetails) {
+      return null;
+    }
+    const reply = 'For teams, the useful part is shared lessons instead of each developer relearning the same failure pattern alone. Solo workflows usually benefit first from the local version.';
+    const gate = gateContextualReply(comment, reply, context);
+    return gate.allowed ? reply : null;
   }
   if (mentionsMemory && isQuestion) {
-    return `The key difference from memory tools: memory helps agents remember, but they can still ignore what they remember. Gates enforce — if there's a rule against force-pushing, the agent physically can't do it. It's enforcement, not suggestion.`;
+    const reply = 'The useful distinction is memory versus enforcement. Memory helps the agent remember, but it can still ignore that memory. Enforcement is what stops the already-rejected move from happening again.';
+    const gate = gateContextualReply(comment, reply, context);
+    return gate.allowed ? reply : null;
   }
-  if (mentionsCursor && isQuestion) {
-    return `Works with Cursor via MCP. The hooks are agent-agnostic — same prevention rules apply whether you're using Cursor, Claude Code, or Codex. What specific failure patterns are you hitting?`;
+  if (mentionsCursor && isQuestion && !isReddit) {
+    return 'Works with Cursor via MCP. The same prevention rules can apply across Cursor, Claude Code, and Codex. What specific failure patterns are you hitting?';
   }
   if (mentionsThanks && !isQuestion) {
     // Don't reply to simple "thanks" — it looks desperate
     return null;
+  }
+  if (isReddit && wantsProductDetails) {
+    const reply = 'Happy to share the repo or setup details if that would help. The main thing that worked for me was keeping accepted and rejected patterns outside the session so the next run starts with the same constraints.';
+    const gate = gateContextualReply(comment, reply, context);
+    return gate.allowed ? reply : null;
   }
   if (isQuestion) {
     // They asked something specific we didn't match — better to draft for human review

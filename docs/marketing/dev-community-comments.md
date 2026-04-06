@@ -2,12 +2,12 @@
 
 ## Comment 1 — "I Lost 3 Hours of Claude Code Work to Compaction" by gonewx
 
-Compaction is brutal because the context window is the only memory the agent has. I ran into this enough that I built thumbgate — it captures feedback and context into persistent JSONL logs outside the context window, then serves bounded "context packs" back to the agent via MCP. When compaction fires, the agent can reconstruct what it was doing from the feedback history instead of starting blind. Might be worth a look: https://github.com/IgorGanapolsky/ThumbGate — Disclosure: I built this.
+Compaction is brutal because the context window is the only memory the agent has. I ran into the same thing. What finally helped was moving the important accepted and rejected decisions outside the session window so the next run starts from the same constraints instead of rediscovering them from scratch.
 
 ## Comment 2 — "Your AI Has Infinite Knowledge and Zero Habits" by elliotJL
 
-The "zero habits" framing is spot-on. I built thumbgate partly to solve this exact problem. It captures up/down feedback on agent actions and, when failure patterns recur, generates prevention_rules — essentially learned habits that persist across sessions and gate future actions. The agent develops behavioral memory instead of repeating the same mistakes. Repo if you're curious: https://github.com/IgorGanapolsky/ThumbGate — Disclosure: I built this.
+The "zero habits" framing is spot-on. The thing that changed this for me was treating repeated failures as durable constraints instead of more prompt text. Once the rejected behavior survives the next session, the agent starts looking less stateless.
 
 ## Comment 3 — "How I Stopped Claude Code From Losing Context After Every Compaction" by chudi_nnorukam
 
-Your dev-docs approach is smart — externalizing context so the agent can recover. thumbgate does something similar but automated: it captures structured feedback and context into persistent logs, generates prevention rules from repeated failures, and serves bounded context packs back via MCP tools. No manual doc maintenance needed — the feedback loop builds the recovery state as you work. https://github.com/IgorGanapolsky/ThumbGate — Disclosure: I built this.
+Your dev-docs approach is smart. Externalizing context is the part that matters. What helped on my side was keeping the accepted and rejected workflow decisions durable too, so compaction does not wipe out the operating rules right when the agent needs them.

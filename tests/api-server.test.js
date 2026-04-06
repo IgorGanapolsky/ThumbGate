@@ -119,7 +119,7 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /ThumbGate/);
   assert.match(body, /Stop AI Coding Agents From Repeating Mistakes/i);
   assert.match(body, /Human-in-the-Loop Enforcement/i);
-  assert.match(body, /safety net for vibe coding/i);
+  assert.match(body, /immune system/i);
   assert.match(body, /npx thumbgate init/);
   assert.match(body, /Pre-Action Gates/i);
   assert.match(body, /Thompson Sampling/i);
