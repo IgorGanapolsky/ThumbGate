@@ -42,12 +42,12 @@ describe('hosted-config', () => {
     assert.notStrictEqual(id1, id2);
   });
 
-  it('resolveHostedBillingConfig accepts legacy Railway env aliases during the rename window', () => {
+  it('resolveHostedBillingConfig uses ThumbGate env names only', () => {
     const config = resolveHostedBillingConfig({}, {
-      RLHF_PUBLIC_APP_ORIGIN: 'https://rlhf-feedback-loop-production.up.railway.app',
-      RLHF_BILLING_API_BASE_URL: 'https://rlhf-feedback-loop-production.up.railway.app',
+      THUMBGATE_PUBLIC_APP_ORIGIN: 'https://thumbgate-production.up.railway.app',
+      THUMBGATE_BILLING_API_BASE_URL: 'https://thumbgate-production.up.railway.app',
     });
-    assert.strictEqual(config.appOrigin, 'https://rlhf-feedback-loop-production.up.railway.app');
-    assert.strictEqual(config.billingApiBaseUrl, 'https://rlhf-feedback-loop-production.up.railway.app');
+    assert.strictEqual(config.appOrigin, 'https://thumbgate-production.up.railway.app');
+    assert.strictEqual(config.billingApiBaseUrl, 'https://thumbgate-production.up.railway.app');
   });
 });

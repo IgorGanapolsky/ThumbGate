@@ -39,24 +39,10 @@ const PROFILE_DEFS = {
   },
 };
 
-const ENV_ALIASES = {
-  THUMBGATE_API_KEY: ['THUMBGATE_API_KEY', 'RLHF_API_KEY'],
-  THUMBGATE_API_KEY_ROTATED_AT: ['THUMBGATE_API_KEY_ROTATED_AT', 'RLHF_API_KEY_ROTATED_AT'],
-  THUMBGATE_PUBLIC_APP_ORIGIN: ['THUMBGATE_PUBLIC_APP_ORIGIN', 'RLHF_PUBLIC_APP_ORIGIN'],
-  THUMBGATE_BILLING_API_BASE_URL: [
-    'THUMBGATE_BILLING_API_BASE_URL',
-    'RLHF_BILLING_API_BASE_URL',
-    'THUMBGATE_CANONICAL_API_BASE_URL',
-  ],
-};
-
 function resolveEnvValue(name, env = process.env) {
-  const aliases = ENV_ALIASES[name] || [name];
-  for (const alias of aliases) {
-    const value = String(env[alias] || '').trim();
-    if (value) {
-      return value;
-    }
+  const value = String(env[name] || '').trim();
+  if (value) {
+    return value;
   }
 
   if (name === 'THUMBGATE_PUBLIC_APP_ORIGIN') {
