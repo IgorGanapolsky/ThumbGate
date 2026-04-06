@@ -182,9 +182,9 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_PROJECT_ID/);
   assert.match(workflow, /RAILWAY_ENVIRONMENT_ID/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_URL/);
-  assert.match(workflow, /secrets\.THUMBGATE_API_KEY \|\| secrets\.RLHF_API_KEY/);
-  assert.match(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| vars\.RLHF_PUBLIC_APP_ORIGIN/);
-  assert.match(workflow, /vars\.THUMBGATE_BILLING_API_BASE_URL \|\| vars\.RLHF_BILLING_API_BASE_URL/);
+  assert.match(workflow, /secrets\.THUMBGATE_API_KEY/);
+  assert.match(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
+  assert.match(workflow, /vars\.THUMBGATE_BILLING_API_BASE_URL \|\| vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
   assert.match(workflow, /THUMBGATE_PUBLIC_APP_ORIGIN/);
   assert.match(workflow, /THUMBGATE_BILLING_API_BASE_URL/);
   assert.match(workflow, /railway up/);
@@ -193,6 +193,8 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /--project "\$RAILWAY_PROJECT_ID"/);
   assert.match(workflow, /--environment "\$RAILWAY_ENVIRONMENT_ID"/);
   assert.match(workflow, /MAX_ATTEMPTS=30/);
+  assert.doesNotMatch(workflow, /secrets\.THUMBGATE_API_KEY\s*\|\|/);
+  assert.doesNotMatch(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN\s*\|\|\s*vars\./);
   assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
 });
 
