@@ -174,6 +174,26 @@ test('public landing page hero routes visitors into free, pro, and team lanes', 
   assert.match(landingPage, /class="hero-persona"/);
   assert.match(landingPage, /engineering teams using Claude Code/i);
   assert.match(landingPage, /ThumbGate proves value on the next change/i);
+  assert.match(landingPage, /👍 reinforces what worked/);
+  assert.match(landingPage, /👎 blocks dangerous and dumb mistakes before they run/);
+  // Persona targeting
+  assert.match(landingPage, /Thumbs-down blocks the bad pattern/i);
+  assert.match(landingPage, /Thumbs-up reinforces the fix that worked/i);
+  // Plain-language value prop
+  assert.match(landingPage, /future sessions/i);
+});
+
+test('public landing page hero routes visitors into free, pro, and team lanes', () => {
+  const landingPage = readLandingPage();
+  const heroMatch = landingPage.match(/<section class="hero">[\s\S]*?<\/section>/);
+
+  assert.ok(heroMatch, 'Hero section must exist');
+  assert.match(heroMatch[0], /Install Free/);
+  assert.match(heroMatch[0], /Start 7-Day Pro Trial/);
+  assert.match(heroMatch[0], /no cloud account/i);
+  assert.match(heroMatch[0], /Start the Team rollout/i);
+  assert.match(heroMatch[0], /data-cta-id="hero_install_free"/);
+  assert.match(heroMatch[0], /cta_id=hero_pro_trial/);
 });
 
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
@@ -216,6 +236,28 @@ test('public landing page avoids unverified traction and pricing claims', () => 
   assert.doesNotMatch(landingPage, /bootstraps \.rlhf/i);
   assert.match(landingPage, /\$19\/mo or \$149\/yr/i);
   assert.match(landingPage, /review-ready evidence/i);
+  assert.match(landingPage, /blocked 20\+ actions/i);
+  assert.match(landingPage, /avoided rollback/i);
+});
+
+test('public landing page concrete-value section stays focused on common daily loops, not niche disasters', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /The daily agent loops ThumbGate is built to stop/i);
+  assert.match(landingPage, /The same fix every session/i);
+  assert.match(landingPage, /Re-explaining what good looks like/i);
+  assert.match(landingPage, /Rejected work coming back/i);
+  assert.doesNotMatch(landingPage, /Bad migrations before prod/i);
+  assert.doesNotMatch(landingPage, /Ship-without-tests loops/i);
+});
+
+test('public landing page avoids unverified traction and pricing claims', () => {
+  const landingPage = readLandingPage();
+
+  assert.doesNotMatch(landingPage, /57% of PRs/i);
+  assert.doesNotMatch(landingPage, /\$0\.10 per blocked mistake/i);
+  assert.doesNotMatch(landingPage, /bootstraps \.rlhf/i);
+  assert.match(landingPage, /\$19\/mo or \$149\/yr/i);
 });
 
 test('public landing page includes an explicit Team rollout lane with shared workflow intake', () => {
