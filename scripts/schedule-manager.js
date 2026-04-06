@@ -194,6 +194,7 @@ function createSchedule(params) {
     const plistPath = path.join(os.homedir(), 'Library', 'LaunchAgents', `${PLIST_PREFIX}.${id}.plist`);
     const logDir = path.join(os.homedir(), '.rlhf', 'logs');
     if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+    fs.mkdirSync(path.dirname(plistPath), { recursive: true });
 
     fs.writeFileSync(plistPath, plistContent, 'utf8');
     try {
