@@ -48,8 +48,14 @@ jobs:
       - name: Check version sync
         run: node scripts/sync-version.js --check
 
+      - name: Run budget status gate
+        run: npm run budget:status
+
       - name: Run tests
         run: npm test
+
+      - name: Run coverage
+        run: npm run test:coverage
 
       - name: Check congruence (branding, tech stack, version across all surfaces)
         run: npm run test:congruence

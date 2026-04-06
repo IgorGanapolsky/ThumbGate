@@ -42,6 +42,46 @@ curl -H "Authorization: Bearer YOUR_KEY" \
 
 # Verification log
 
+## April 6, 2026: technical debt audit hardening for Node 20 coverage, deterministic Pro-gate tests, and CI gate completeness
+
+Scope:
+
+- Hardened `scripts/test-coverage.js` to feature-detect `--test-coverage-include` / `--test-coverage-exclude` before using them.
+- Added regression coverage in `tests/test-coverage.test.js` for runtimes with and without those Node coverage flags.
+- Refactored `scripts/pro-features.js` so Pro-gated tests can inject license predicates and output sinks instead of depending on operator-local saved license state.
+- Hardened `scripts/multi-hop-recall.js`, `scripts/synthetic-dpo.js`, `tests/license.test.js`, `tests/multi-hop-recall.test.js`, and `tests/synthetic-dpo.test.js` so the unlicensed path stays deterministic in CI.
+- Added `npm run budget:status` and `npm run test:coverage` to `.github/workflows/ci.yml`, with `tests/deployment.test.js` enforcing that workflow contract.
+- Removed the tracked runtime artifact `.claude/context-engine/quality-log.json` and kept it ignored via `.gitignore`.
+- Updated `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, and `docs/TECHNICAL_DEBT_AUDIT.md` with the new prevention rules and audit evidence.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/audit-worktrees/thumbgate-audit-20260406c`:
+
+```bash
+npm run feedback:stats --silent
+npm test
+npm run test:coverage
+tmp=$(mktemp -d) && RLHF_PROOF_DIR="$tmp/proof" npm run prove:adapters
+tmp=$(mktemp -d) && RLHF_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed result:
+
+- `npm run feedback:stats --silent` exited `0` with `total=51`, `positive=3`, `negative=48`, `trend=stable`.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with all-files coverage at:
+  - `90.26` lines
+  - `76.57` branches
+  - `93.73` functions
+- `RLHF_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `RLHF_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `6/6 healthy` checks.
+- `git diff --check` remained clean after reverting generated drift from `primer.md` and `config/skill-packs/react-testing.json`.
+- The pre-fix failure was reproduced before the hardening work: on Node 20, `npm run test:coverage` exited with `/opt/homebrew/Cellar/node@20/20.20.1/bin/node: bad option: --test-coverage-include`.
+- No tracked RLHF memory artifacts were added or modified by this audit; the only tracked file removed was the generated runtime log `.claude/context-engine/quality-log.json`.
+- Revalidated after rebasing the audit commit onto `origin/main` at `05641e599aa60ae69326567c369c7edfc38f39b5`; the rebased branch remained locally green with the same proof counts and a healthy `self-heal:check`.
+
 ## March 21, 2026: ShieldCortex-backed memory ingress hardening and runtime source label cleanup
 
 Scope:
