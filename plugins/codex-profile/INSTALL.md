@@ -31,7 +31,7 @@ The following block is appended to `~/.codex/config.toml`:
 ```toml
 [mcp_servers.rlhf]
 command = "npx"
-args = ["-y", "mcp-memory-gateway@0.9.8", "serve"]
+args = ["-y", "mcp-memory-gateway@0.9.9", "serve"]
 ```
 
 The repo-local Codex app plugin ships the same runtime path through `plugins/codex-profile/.mcp.json`, so the manual config and plugin metadata stay aligned.
