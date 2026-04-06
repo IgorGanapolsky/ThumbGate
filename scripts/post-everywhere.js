@@ -205,6 +205,16 @@ async function postEverywhere(filePath, { platforms, dryRun } = {}) {
   const parsed = parsePostFile(filePath);
   console.log(`[post-everywhere] Parsed: platform=${parsed.platform}, subreddit=${parsed.subreddit}, title="${parsed.title}"`);
 
+  const qualityGate = require('./social-quality-gate');
+  const postText = [parsed.title, parsed.body, parsed.comment].filter(Boolean).join('\n');
+  const gateResult = qualityGate.gatePost(postText);
+  if (!gateResult.allowed) {
+    const reasons = gateResult.findings.map(f => f.reason).join(', ');
+    console.error(`[post-everywhere] BLOCKED by quality gate: ${reasons}`);
+    return { blocked: true, reasons: gateResult.findings };
+  }
+  console.log('[post-everywhere] Quality gate: PASSED');
+
   // Determine which platforms to post to
   const targetPlatforms = platforms || (parsed.platform ? [parsed.platform] : Object.keys(DISPATCHERS));
 

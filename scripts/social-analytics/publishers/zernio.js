@@ -56,6 +56,14 @@ async function publishPost(content, platforms) {
     throw new Error('publishPost: platforms must be a non-empty array');
   }
 
+  const qualityGate = require('../../social-quality-gate');
+  const gateResult = qualityGate.gatePost(content);
+  if (!gateResult.allowed) {
+    const reasons = gateResult.findings.map(f => f.reason).join(', ');
+    console.error(`[zernio:publisher] BLOCKED by quality gate: ${reasons}`);
+    return { blocked: true, reasons: gateResult.findings };
+  }
+
   console.log(`[zernio:publisher] Publishing to ${platforms.length} platform(s): ${platforms.map((p) => p.platform).join(', ')}`);
 
   const json = await zernioFetch('POST', '/posts', {
