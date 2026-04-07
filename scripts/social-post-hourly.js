@@ -30,7 +30,8 @@ const { publishPost, getConnectedAccounts } = require('./social-analytics/publis
 // Platforms that support text-only posts.
 // Reddit EXCLUDED — engagement only via reply-monitor, not auto-posting.
 // Instagram EXCLUDED — requires media.
-const TEXT_PLATFORMS = new Set(['linkedin', 'twitter', 'tiktok']);
+// TikTok EXCLUDED — requires video.
+const TEXT_PLATFORMS = new Set(['linkedin', 'twitter']);
 
 // 7 angles, one per day of the week (Monday=0 through Sunday=6)
 // Ratio: 2 educational, 2 product, 2 hot-take/community, 1 tip
