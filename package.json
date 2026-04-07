@@ -233,10 +233,8 @@
     "test:schedule-thumbgate-campaign": "node --test tests/schedule-thumbgate-campaign.test.js",
     "test:social-reply-monitor": "node --test tests/social-reply-monitor.test.js",
     "test:sync-launch-assets": "node --test tests/sync-launch-assets.test.js",
-    "test:reddit-publisher": "node --test tests/reddit-publisher.test.js"
-    "test:social-reply-monitor": "node --test tests/social-reply-monitor.test.js"
-    "test:engagement-audit": "node --test tests/engagement-audit.test.js",
-    "test:sync-launch-assets": "node --test tests/sync-launch-assets.test.js"
+    "test:reddit-publisher": "node --test tests/reddit-publisher.test.js",
+    "test:engagement-audit": "node --test tests/engagement-audit.test.js"
   },
   "keywords": [
     "mcp",
