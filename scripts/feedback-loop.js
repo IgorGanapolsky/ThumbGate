@@ -622,10 +622,26 @@ function enrichFeedbackContext(feedbackEvent, params) {
       feedbackEvent.whatToChange || '',
       ...(Array.isArray(feedbackEvent.tags) ? feedbackEvent.tags : []),
     ].join(' ').toLowerCase();
+    const includesPhrase = (phrase) => combinedText.includes(phrase);
+    const includesOrderedTerms = (firstTerm, secondTerm) => {
+      const firstIndex = combinedText.indexOf(firstTerm);
+      if (firstIndex === -1) return false;
+      return combinedText.indexOf(secondTerm, firstIndex + firstTerm.length) !== -1;
+    };
     const enforcement = {
-      scopeViolation: /scope creep|out of scope|outside .*scope|wrong files|unrelated files/.test(combinedText),
-      approvalFailure: /without approval|missing approval|approval required|permission required/.test(combinedText),
-      protectedFileViolation: protectedFiles.length > 0 || /protected file|policy file|hook file/.test(combinedText),
+      scopeViolation: includesPhrase('scope creep')
+        || includesPhrase('out of scope')
+        || includesOrderedTerms('outside', 'scope')
+        || includesPhrase('wrong files')
+        || includesPhrase('unrelated files'),
+      approvalFailure: includesPhrase('without approval')
+        || includesPhrase('missing approval')
+        || includesPhrase('approval required')
+        || includesPhrase('permission required'),
+      protectedFileViolation: protectedFiles.length > 0
+        || includesPhrase('protected file')
+        || includesPhrase('policy file')
+        || includesPhrase('hook file'),
       protectedFiles,
     };
 

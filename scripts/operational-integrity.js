@@ -113,8 +113,18 @@ function gitRefExists(repoPath, ref) {
   }
 }
 
+function isSafeBranchName(branchName) {
+  const normalized = String(branchName || '').trim();
+  if (!normalized) return false;
+  if (normalized.startsWith('-')) return false;
+  if (!/^[A-Za-z0-9._/-]+$/.test(normalized)) return false;
+  if (normalized.includes('..') || normalized.includes('//') || normalized.includes('@{')) return false;
+  if (normalized.endsWith('.') || normalized.endsWith('/')) return false;
+  return true;
+}
+
 function fetchBaseBranch(repoPath, baseBranch) {
-  if (!repoPath || !baseBranch) return false;
+  if (!repoPath || !isSafeBranchName(baseBranch)) return false;
   const result = spawnSync('git', ['fetch', '--no-tags', '--depth=64', 'origin', baseBranch], {
     cwd: repoPath,
     encoding: 'utf8',
@@ -123,6 +133,7 @@ function fetchBaseBranch(repoPath, baseBranch) {
 }
 
 function resolveBaseRef(repoPath, baseBranch = DEFAULT_BASE_BRANCH, { fetchIfMissing = false } = {}) {
+  if (!isSafeBranchName(baseBranch)) return null;
   const remoteRef = `refs/remotes/origin/${baseBranch}`;
   if (gitRefExists(repoPath, remoteRef)) {
     return `origin/${baseBranch}`;
@@ -455,6 +466,7 @@ module.exports = {
   findOpenPrForBranch,
   findReleaseSensitiveFiles,
   getCurrentBranch,
+  isSafeBranchName,
   listChangedFilesAgainstBase,
   normalizeGlob,
   normalizePosix,

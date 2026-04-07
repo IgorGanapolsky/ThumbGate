@@ -8,6 +8,8 @@ const {
   compareSemver,
   evaluateOperationalIntegrity,
   findReleaseSensitiveFiles,
+  isSafeBranchName,
+  resolveBaseRef,
 } = require('../scripts/operational-integrity');
 
 test('compareSemver orders semantic versions correctly', () => {
@@ -106,4 +108,17 @@ test('classifyCommand recognizes PR and publish commands', () => {
   assert.equal(prCreate.isPublish, false);
   assert.equal(publish.isPublish, true);
   assert.equal(publish.isReleaseCreate, false);
+});
+
+test('isSafeBranchName rejects branch-shaped injection payloads', () => {
+  assert.equal(isSafeBranchName('main'), true);
+  assert.equal(isSafeBranchName('release/0.9.10'), true);
+  assert.equal(isSafeBranchName('--upload-pack=evil'), false);
+  assert.equal(isSafeBranchName('main..evil'), false);
+  assert.equal(isSafeBranchName('main@{1}'), false);
+});
+
+test('resolveBaseRef short-circuits invalid branch names before git operations', () => {
+  const baseRef = resolveBaseRef(__dirname, '--upload-pack=evil', { fetchIfMissing: true });
+  assert.equal(baseRef, null);
 });
