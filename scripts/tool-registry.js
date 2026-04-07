@@ -513,6 +513,89 @@ const TOOLS = [
     },
   }),
   destructiveTool({
+    name: 'set_task_scope',
+    description: 'Declare or clear the current task scope so ThumbGate can compare affected files and diffs against the approved path set.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string', description: 'Optional stable task identifier (ticket, issue, or work item id)' },
+        summary: { type: 'string', description: 'Short summary of the task being worked' },
+        allowedPaths: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Glob patterns that define the allowed file scope for this task',
+        },
+        protectedPaths: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional protected-file globs that require explicit approval before editing or publishing',
+        },
+        repoPath: { type: 'string', description: 'Optional repo root used when evaluating git diff scope' },
+        localOnly: { type: 'boolean', description: 'When true, also marks the task as local-only' },
+        clear: { type: 'boolean', description: 'Clear the current task scope instead of setting one' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'get_scope_state',
+    description: 'Return the active task scope and any unexpired protected-file approvals.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  }),
+  destructiveTool({
+    name: 'set_branch_governance',
+    description: 'Declare or clear branch and release governance so PR, merge, release, and publish actions can be evaluated against explicit workflow state.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        branchName: { type: 'string', description: 'Optional branch name the governance applies to' },
+        baseBranch: { type: 'string', description: 'Protected base branch for merge and release operations (defaults to main)' },
+        prRequired: { type: 'boolean', description: 'Whether this lane must go through a pull request (defaults to true)' },
+        prNumber: { type: 'string', description: 'Optional pull request number once a PR exists' },
+        prUrl: { type: 'string', description: 'Optional pull request URL once a PR exists' },
+        queueRequired: { type: 'boolean', description: 'Whether the target branch requires a merge queue' },
+        localOnly: { type: 'boolean', description: 'When true, PR, merge, release, and publish actions are blocked for this lane' },
+        releaseVersion: { type: 'string', description: 'Expected package version for release or publish actions' },
+        releaseEvidence: { type: 'string', description: 'Optional evidence or release plan note for the governed version' },
+        releaseSensitiveGlobs: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional custom globs that define release-sensitive files for this branch lane',
+        },
+        clear: { type: 'boolean', description: 'Clear the current branch governance state instead of setting it' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'get_branch_governance',
+    description: 'Return the active branch and release governance state.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  }),
+  destructiveTool({
+    name: 'approve_protected_action',
+    description: 'Grant a time-limited approval for edits or publish actions that touch protected files.',
+    inputSchema: {
+      type: 'object',
+      required: ['pathGlobs', 'reason'],
+      properties: {
+        pathGlobs: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Protected-file globs covered by this approval',
+        },
+        reason: { type: 'string', description: 'Why this protected-file action is approved' },
+        evidence: { type: 'string', description: 'Optional supporting evidence or approval note' },
+        taskId: { type: 'string', description: 'Optional task id this approval is tied to' },
+        ttlMs: { type: 'number', description: 'Optional approval lifetime in milliseconds (defaults to 1 hour, max 24 hours)' },
+      },
+    },
+  }),
+  destructiveTool({
     name: 'track_action',
     description: 'Record a verification action in the current session (for example figma_verified or tests_passed). Session actions expire after one hour.',
     inputSchema: {
@@ -532,6 +615,20 @@ const TOOLS = [
       required: ['claim'],
       properties: {
         claim: { type: 'string', description: 'The claim text to verify' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'check_operational_integrity',
+    description: 'Evaluate whether the current repo state is safe for PR, merge, release, and publish operations.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        repoPath: { type: 'string', description: 'Optional repository path to inspect' },
+        baseBranch: { type: 'string', description: 'Protected base branch to compare against (defaults to main)' },
+        command: { type: 'string', description: 'Optional git, PR, or publish command to evaluate against the current governance state' },
+        requirePrForReleaseSensitive: { type: 'boolean', description: 'When true, release-sensitive changes on non-base branches require an open PR' },
+        requireVersionNotBehindBase: { type: 'boolean', description: 'When true, release-sensitive changes cannot lag behind the base branch package version' },
       },
     },
   }),

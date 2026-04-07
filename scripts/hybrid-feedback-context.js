@@ -236,6 +236,21 @@ function buildHybridState(opts) {
         entry.context || '',
         entry.whatWentWrong || entry.what_went_wrong || '',
         entry.whatToChange || entry.what_to_change || '',
+        entry.failureType || '',
+        ...(Array.isArray(entry.tags) ? entry.tags : []),
+        ...(entry.richContext && Array.isArray(entry.richContext.filePaths) ? entry.richContext.filePaths : []),
+        ...(entry.structuredRule && entry.structuredRule.metadata && Array.isArray(entry.structuredRule.metadata.filesInvolved)
+          ? entry.structuredRule.metadata.filesInvolved
+          : []),
+        entry.structuredRule && entry.structuredRule.action ? entry.structuredRule.action.description || '' : '',
+        entry.structuredRule && entry.structuredRule.trigger ? entry.structuredRule.trigger.condition || '' : '',
+        entry.richContext && entry.richContext.enforcement
+          ? [
+            entry.richContext.enforcement.scopeViolation ? 'scope violation' : '',
+            entry.richContext.enforcement.approvalFailure ? 'approval failure' : '',
+            entry.richContext.enforcement.protectedFileViolation ? 'protected file violation' : '',
+          ].join(' ')
+          : '',
       ].join(' ');
       const norm = normalizePatternText(rawText);
       if (!norm) continue;
@@ -260,6 +275,20 @@ function buildHybridState(opts) {
     const rawText = [
       entry.context || '',
       entry.whatWentWrong || entry.what_went_wrong || '',
+      ...(Array.isArray(entry.tags) ? entry.tags : []),
+      ...(entry.richContext && Array.isArray(entry.richContext.filePaths) ? entry.richContext.filePaths : []),
+      ...(entry.structuredRule && entry.structuredRule.metadata && Array.isArray(entry.structuredRule.metadata.filesInvolved)
+        ? entry.structuredRule.metadata.filesInvolved
+        : []),
+      entry.structuredRule && entry.structuredRule.action ? entry.structuredRule.action.description || '' : '',
+      entry.structuredRule && entry.structuredRule.trigger ? entry.structuredRule.trigger.condition || '' : '',
+      entry.richContext && entry.richContext.enforcement
+        ? [
+          entry.richContext.enforcement.scopeViolation ? 'scope violation' : '',
+          entry.richContext.enforcement.approvalFailure ? 'approval failure' : '',
+          entry.richContext.enforcement.protectedFileViolation ? 'protected file violation' : '',
+        ].join(' ')
+        : '',
     ].join(' ');
     const norm = normalizePatternText(rawText);
     if (!norm) continue;

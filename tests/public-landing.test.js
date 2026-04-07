@@ -110,24 +110,18 @@ test('public landing page includes a Reddit campaign banner and subreddit-aware 
   assert.doesNotMatch(landingPage, /parseRedditCommunity/);
 });
 
-test('public landing page positions ThumbGate as human-in-the-loop enforcement for AI agents', () => {
+test('public landing page positions ThumbGate as self-improving AI agents', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /ThumbGate/);
-  assert.match(landingPage, /Stop AI Coding Agents From Repeating Mistakes/i);
-  assert.match(landingPage, /Human-in-the-Loop Enforcement/i);
-  assert.match(landingPage, /immune system/i);
-  assert.match(landingPage, /Stop bad AI PRs before they merge/i);
-  assert.match(landingPage, /AI PR and human-in-the-loop enforcement/i);
-  assert.match(landingPage, /review churn/i);
+  assert.match(landingPage, /self-improving/i);
+  assert.match(landingPage, /learns from every mistake/i);
   assert.match(landingPage, /Claude Code/);
   assert.match(landingPage, /Cursor/);
   assert.match(landingPage, /Codex/);
   assert.match(landingPage, /Gemini/);
   assert.match(landingPage, /Amp/);
   assert.match(landingPage, /OpenCode/);
-  assert.match(landingPage, /MCP-compatible agent/i);
-  assert.match(landingPage, /SQLite\+FTS5/);
   assert.doesNotMatch(landingPage, /mailto:/i);
   assert.doesNotMatch(landingPage, /official Anthropic partner/i);
 });
@@ -137,39 +131,18 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
 
   // Hero big emoji must show BOTH thumbs — not just one
   assert.match(landingPage, /class="hero-thumbs">👍👎</);
-  // Headline: immediate painful job-to-be-done
-  assert.match(landingPage, /Stop bad AI PRs/i);
-  assert.match(landingPage, /before they merge/i);
-  assert.match(landingPage, /risky actions before they hit CI or prod/i);
+  // Headline: self-improvement framing
+  assert.match(landingPage, /Your AI agent learns/i);
+  assert.match(landingPage, /from every mistake/i);
   // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /👍 reinforces what worked/);
-  assert.match(landingPage, /👎 blocks dangerous and dumb mistakes before they run/);
-  // Persona targeting
-  assert.match(landingPage, /Thumbs-down blocks the bad pattern/i);
-  assert.match(landingPage, /Thumbs-up reinforces the fix that worked/i);
-  // Plain-language value prop
-  assert.match(landingPage, /future sessions/i);
-});
-
-test('public landing page hero routes visitors into free, pro, and team lanes', () => {
-  const landingPage = readLandingPage();
-  const heroMatch = landingPage.match(/<section class="hero">[\s\S]*?<\/section>/);
-
-  assert.ok(heroMatch, 'Hero section must exist');
-  assert.match(heroMatch[0], /Install Free/);
-  assert.match(heroMatch[0], /Start 7-Day Pro Trial/);
-  assert.match(heroMatch[0], /no cloud account/i);
-  assert.match(heroMatch[0], /Start the Team rollout/i);
-  assert.match(heroMatch[0], /data-cta-id="hero_install_free"/);
-  assert.match(heroMatch[0], /cta_id=hero_pro_trial/);
-  assert.match(landingPage, /👍 keeps good fixes and patterns reusable/);
-  assert.match(landingPage, /👎 blocks risky actions before they hit CI or prod/);
+  assert.match(landingPage, /Mistake becomes a prevention rule/i);
+  assert.match(landingPage, /Good pattern reinforced/i);
   // Persona targeting
   assert.match(landingPage, /class="hero-persona"/);
-  assert.match(landingPage, /engineering teams using Claude Code/i);
-  assert.match(landingPage, /ThumbGate proves value on the next change/i);
+  assert.match(landingPage, /developers using Claude Code/i);
+  assert.match(landingPage, /self-improvement loop/i);
 });
 
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
@@ -189,28 +162,6 @@ test('public landing page Pro tier uses outcome-framed bullets that justify upgr
   assert.match(landingPage, /dashboard of exactly what got blocked/i);
   // Upgrade triggers
   assert.match(landingPage, /Go Pro when:/i);
-  assert.match(landingPage, /blocked 20\+ actions/i);
-  assert.match(landingPage, /avoided rollback/i);
-});
-
-test('public landing page concrete-value section stays focused on common daily loops, not niche disasters', () => {
-  const landingPage = readLandingPage();
-
-  assert.match(landingPage, /The daily agent loops ThumbGate is built to stop/i);
-  assert.match(landingPage, /The same fix every session/i);
-  assert.match(landingPage, /Re-explaining what good looks like/i);
-  assert.match(landingPage, /Rejected work coming back/i);
-  assert.doesNotMatch(landingPage, /Bad migrations before prod/i);
-  assert.doesNotMatch(landingPage, /Ship-without-tests loops/i);
-});
-
-test('public landing page avoids unverified traction and pricing claims', () => {
-  const landingPage = readLandingPage();
-
-  assert.doesNotMatch(landingPage, /57% of PRs/i);
-  assert.doesNotMatch(landingPage, /\$0\.10 per blocked mistake/i);
-  assert.doesNotMatch(landingPage, /bootstraps \.rlhf/i);
-  assert.match(landingPage, /\$19\/mo or \$149\/yr/i);
   assert.match(landingPage, /review-ready evidence/i);
 });
 

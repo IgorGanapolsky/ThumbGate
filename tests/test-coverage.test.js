@@ -8,9 +8,9 @@ const {
   buildCoverageArgs,
   COVERAGE_EXCLUDE_GLOBS,
   COVERAGE_INCLUDE_GLOBS,
+  detectCoverageFilterSupport,
   findCoverageTestFiles,
   runCoverage,
-  supportsCoveragePatternFlags,
 } = require('../scripts/test-coverage');
 
 test('findCoverageTestFiles returns sorted nested test files', () => {
@@ -27,7 +27,7 @@ test('findCoverageTestFiles returns sorted nested test files', () => {
 });
 
 test('buildCoverageArgs prepends Node coverage flags', () => {
-  assert.deepEqual(buildCoverageArgs(['tests/a.test.js']), [
+  assert.deepEqual(buildCoverageArgs(['tests/a.test.js'], { supportsFilters: true }), [
     '--test',
     '--test-concurrency=1',
     '--experimental-test-coverage',
@@ -37,8 +37,8 @@ test('buildCoverageArgs prepends Node coverage flags', () => {
   ]);
 });
 
-test('buildCoverageArgs omits pattern flags when the runtime does not support them', () => {
-  assert.deepEqual(buildCoverageArgs(['tests/a.test.js'], { supportsPatternFlags: false }), [
+test('buildCoverageArgs omits unsupported filter flags', () => {
+  assert.deepEqual(buildCoverageArgs(['tests/a.test.js'], { supportsFilters: false }), [
     '--test',
     '--test-concurrency=1',
     '--experimental-test-coverage',
@@ -46,30 +46,26 @@ test('buildCoverageArgs omits pattern flags when the runtime does not support th
   ]);
 });
 
-test('supportsCoveragePatternFlags detects runtimes with the include and exclude flags', () => {
-  const result = supportsCoveragePatternFlags({
+test('detectCoverageFilterSupport checks the runtime help output', () => {
+  const supported = detectCoverageFilterSupport({
     spawn: () => ({
-      stdout: '  --test-coverage-include\n  --test-coverage-exclude\n',
+      stdout: '--test-coverage-include\n--test-coverage-exclude\n',
       stderr: '',
     }),
   });
-
-  assert.equal(result, true);
-});
-
-test('supportsCoveragePatternFlags returns false when the runtime lacks coverage pattern flags', () => {
-  const result = supportsCoveragePatternFlags({
+  const unsupported = detectCoverageFilterSupport({
     spawn: () => ({
       stdout: '--experimental-test-coverage\n',
       stderr: '',
     }),
   });
 
-  assert.equal(result, false);
+  assert.equal(supported, true);
+  assert.equal(unsupported, false);
 });
 
 test('runCoverage returns error when no test files are provided', () => {
-  const result = runCoverage({ files: [], supportsPatternFlags: false });
+  const result = runCoverage({ files: [], supportsFilters: false });
 
   assert.equal(result.exitCode, 1);
   assert.equal(result.error, 'No test files found for coverage run.');
@@ -80,7 +76,7 @@ test('runCoverage delegates to Node with test coverage flags', () => {
   const result = runCoverage({
     files: ['tests/a.test.js', 'tests/b.test.js'],
     cwd: '/tmp/coverage',
-    supportsPatternFlags: true,
+    supportsFilters: true,
     spawn: (cmd, args, options) => {
       captured = { cmd, args, options };
       return { status: 0, error: null };
@@ -100,4 +96,25 @@ test('runCoverage delegates to Node with test coverage flags', () => {
   ]);
   assert.equal(captured.options.cwd, '/tmp/coverage');
   assert.equal(captured.options.stdio, 'inherit');
+});
+
+test('runCoverage falls back when coverage filter flags are unsupported', () => {
+  let captured;
+  const result = runCoverage({
+    files: ['tests/a.test.js'],
+    cwd: '/tmp/coverage',
+    supportsFilters: false,
+    spawn: (cmd, args, options) => {
+      captured = { cmd, args, options };
+      return { status: 0, error: null };
+    },
+  });
+
+  assert.equal(result.exitCode, 0);
+  assert.deepEqual(captured.args, [
+    '--test',
+    '--test-concurrency=1',
+    '--experimental-test-coverage',
+    'tests/a.test.js',
+  ]);
 });

@@ -16,7 +16,6 @@ function withTimeout(promise, ms = STRIPE_TIMEOUT_MS) {
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const Stripe = require('stripe');
 const { createTraceId } = require('./hosted-config');
 const {
   getFeedbackPaths,
@@ -92,11 +91,27 @@ function resolveLegacyBillingPath(fileName) {
 }
 
 let _stripeClient = null;
+let _stripeCtor = null;
+
+function getStripeConstructor() {
+  if (_stripeCtor) return _stripeCtor;
+  try {
+    _stripeCtor = require('stripe');
+    return _stripeCtor;
+  } catch (error) {
+    if (error && error.code === 'MODULE_NOT_FOUND') {
+      throw new Error('stripe package is not installed. Live billing features are unavailable.');
+    }
+    throw error;
+  }
+}
+
 function getStripeClient() {
   if (!_stripeClient) {
     if (!CONFIG.STRIPE_SECRET_KEY) {
       throw new Error('STRIPE_SECRET_KEY is missing. Stripe client cannot be initialized.');
     }
+    const Stripe = getStripeConstructor();
     _stripeClient = new Stripe(CONFIG.STRIPE_SECRET_KEY);
   }
   return _stripeClient;

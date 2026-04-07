@@ -183,6 +183,8 @@ function routePrivacy(params = {}) {
     'capture_feedback',
     'export_dpo_pairs',
     'export_databricks_bundle',
+    'set_task_scope',
+    'approve_protected_action',
     'track_action',
     'verify_claim',
     'register_claim_gate',

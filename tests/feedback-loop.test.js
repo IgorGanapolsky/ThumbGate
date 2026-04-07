@@ -81,6 +81,25 @@ test('enrichFeedbackContext: returns object with richContext', () => {
   assert.strictEqual(typeof enriched.richContext.outcomeCategory, 'string');
 });
 
+test('enrichFeedbackContext: marks scope, approval, and protected-file enforcement without regex backtracking', () => {
+  const event = {
+    signal: 'negative',
+    tags: ['policy'],
+    context: 'The agent edited hook files outside the assigned scope without approval.',
+    whatWentWrong: 'It touched unrelated files and a protected file.',
+    whatToChange: 'Stay within scope and ask before changing hook file policy.',
+  };
+  const params = {
+    filePaths: ['.husky/pre-push', 'src/index.js'],
+  };
+
+  const enriched = enrichFeedbackContext(event, params);
+  assert.equal(enriched.richContext.enforcement.scopeViolation, true);
+  assert.equal(enriched.richContext.enforcement.approvalFailure, true);
+  assert.equal(enriched.richContext.enforcement.protectedFileViolation, true);
+  assert.deepEqual(enriched.richContext.enforcement.protectedFiles, ['.husky/pre-push']);
+});
+
 // -- captureFeedback --
 
 test('captureFeedback: valid negative feedback returns accepted=true', (t) => {

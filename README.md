@@ -13,25 +13,28 @@
 
 **Repo boundary:** this repository is the public base runtime (`thumbgate`). The paid overlay now lives in the separate [`thumbgate-pro`](https://github.com/IgorGanapolsky/thumbgate-pro) repo/package and inherits from this base instead of shipping from a `pro/` subtree here.
 
-**Thumbs down a mistake. It never happens again.**
+**Make your AI coding agent self-improving. Every mistake makes it permanently smarter.**
 
-The safety net for vibe coding. Give your AI agent a thumbs-down and it auto-generates a prevention rule. Give a thumbs-up and it reinforces good behavior. Pre-action gates physically block the agent before it repeats a known mistake — a reliability layer for one sharp agent, without another planner or swarm.
+The self-improvement loop for AI coding agents. Your agent makes a mistake → you give a thumbs-down → ThumbGate auto-generates a prevention rule → a gate physically blocks that mistake from ever happening again. Your agent compounds intelligence with every correction — no model retraining, no prompt hacking, just enforcement that gets better every session.
 
-> **Honest disclaimer:** ThumbGate is context-engineered behavioral steering — it injects feedback into context to condition the model's behavior. It does not update model weights. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions before they execute.
+> **How it works:** ThumbGate is context-engineered behavioral steering — it injects feedback into context to condition the model's behavior. It does not update model weights. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions before they execute. Think of it as a behavioral immune system for your AI agent.
 
 Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
 
 **[Live Demo Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Setup Guide](https://thumbgate-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Landing Page](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Verification Evidence](docs/VERIFICATION_EVIDENCE.md)**
 
-Most memory tools only help an agent remember. ThumbGate also enforces.
+Most memory tools only help an agent remember. ThumbGate makes it **self-improving**.
 
-**The problem without it:**
+**Without ThumbGate:**
 
-> BEFORE: Agent force-pushes to main. You correct it. Next session, it force-pushes again.
+> Session 1: Agent force-pushes to main. You correct it.
+> Session 2: Agent force-pushes to main again. It learned nothing.
 
-**With ThumbGate (`thumbgate`):**
+**With ThumbGate:**
 
-> AFTER: Gate blocks the force-push before it executes. Agent can't repeat the mistake.
+> Session 1: Agent force-pushes to main. You thumbs-down it.
+> Session 2: Gate blocks the force-push before execution. Agent tries a safe push instead.
+> Session 3+: Agent never attempts it again. It permanently improved.
 
 - `recall` injects the right context at session start.
 - `search_lessons` shows promoted lessons plus the corrective action, lifecycle state, linked rules, linked gates, and the next harness fix the system should make.

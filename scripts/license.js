@@ -3,42 +3,58 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const LICENSE_PATH = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.thumbgate', 'license.json');
-const VALID_PREFIXES = ['tg_pro_', 'tg_'];
+const VALID_PREFIXES = ['rlhf_', 'tg_pro_', 'tg_'];
+
+function getLicensePath(homeDir = process.env.HOME || process.env.USERPROFILE || '.') {
+  return path.join(homeDir, '.thumbgate', 'license.json');
+}
+
+const LICENSE_PATH = getLicensePath();
 
 function isValidKey(key) {
   return key && VALID_PREFIXES.some((p) => key.startsWith(p));
 }
 
-function verifyLicense() {
-  const envKey = process.env.THUMBGATE_API_KEY || process.env.THUMBGATE_PRO_KEY;
+function verifyLicense(options = {}) {
+  const envKey = process.env.THUMBGATE_API_KEY || process.env.RLHF_API_KEY || process.env.THUMBGATE_PRO_KEY;
   if (isValidKey(envKey)) {
     return { valid: true, source: 'env', key: envKey };
   }
+
+  const licensePath = getLicensePath(options.homeDir);
   try {
-    if (fs.existsSync(LICENSE_PATH)) {
-      const data = JSON.parse(fs.readFileSync(LICENSE_PATH, 'utf8'));
+    if (fs.existsSync(licensePath)) {
+      const data = JSON.parse(fs.readFileSync(licensePath, 'utf8'));
       if (isValidKey(data.key)) {
-        return { valid: true, source: 'file', key: data.key, activatedAt: data.activatedAt };
+        return {
+          valid: true,
+          source: 'file',
+          key: data.key,
+          activatedAt: data.activatedAt,
+          path: licensePath,
+        };
       }
     }
   } catch (_) {}
+
   return { valid: false, source: null };
 }
 
-function isProLicensed() {
-  return verifyLicense().valid;
+function isProLicensed(options) {
+  return verifyLicense(options).valid;
 }
 
-function activateLicense(key) {
+function activateLicense(key, options = {}) {
   if (!isValidKey(key)) {
-    return { success: false, error: 'Invalid key format. Expected tg_... or tg_pro_...' };
+    return { success: false, error: 'Invalid key format. Expected rlhf_..., tg_..., or tg_pro_...' };
   }
-  const dir = path.dirname(LICENSE_PATH);
+
+  const licensePath = getLicensePath(options.homeDir);
+  const dir = path.dirname(licensePath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const data = { key, activatedAt: new Date().toISOString(), version: require('../package.json').version };
-  fs.writeFileSync(LICENSE_PATH, JSON.stringify(data, null, 2));
-  return { success: true, path: LICENSE_PATH };
+  fs.writeFileSync(licensePath, JSON.stringify(data, null, 2));
+  return { success: true, path: licensePath };
 }
 
 function generateLicenseKey(email) {
@@ -47,4 +63,13 @@ function generateLicenseKey(email) {
   return `tg_pro_${hash}`;
 }
 
-module.exports = { verifyLicense, isProLicensed, activateLicense, generateLicenseKey, isValidKey, VALID_PREFIXES, LICENSE_PATH };
+module.exports = {
+  verifyLicense,
+  isProLicensed,
+  activateLicense,
+  generateLicenseKey,
+  isValidKey,
+  VALID_PREFIXES,
+  LICENSE_PATH,
+  getLicensePath,
+};

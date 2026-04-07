@@ -615,6 +615,35 @@ function enrichFeedbackContext(feedbackEvent, params) {
         ? params.filePaths.split(',').map((f) => f.trim()).filter(Boolean)
         : [];
     const errorType = params.errorType || null;
+    const protectedFiles = filePaths.filter((filePath) => /(^|\/)(agents\.md|claude(\.local)?\.md|gemini\.md|readme\.md|\.gitignore|skill\.md)$|^\.husky\/|^config\/gates\//i.test(filePath));
+    const combinedText = [
+      feedbackEvent.context || '',
+      feedbackEvent.whatWentWrong || '',
+      feedbackEvent.whatToChange || '',
+      ...(Array.isArray(feedbackEvent.tags) ? feedbackEvent.tags : []),
+    ].join(' ').toLowerCase();
+    const includesPhrase = (phrase) => combinedText.includes(phrase);
+    const includesOrderedTerms = (firstTerm, secondTerm) => {
+      const firstIndex = combinedText.indexOf(firstTerm);
+      if (firstIndex === -1) return false;
+      return combinedText.indexOf(secondTerm, firstIndex + firstTerm.length) !== -1;
+    };
+    const enforcement = {
+      scopeViolation: includesPhrase('scope creep')
+        || includesPhrase('out of scope')
+        || includesOrderedTerms('outside', 'scope')
+        || includesPhrase('wrong files')
+        || includesPhrase('unrelated files'),
+      approvalFailure: includesPhrase('without approval')
+        || includesPhrase('missing approval')
+        || includesPhrase('approval required')
+        || includesPhrase('permission required'),
+      protectedFileViolation: protectedFiles.length > 0
+        || includesPhrase('protected file')
+        || includesPhrase('policy file')
+        || includesPhrase('hook file'),
+      protectedFiles,
+    };
 
     return {
       ...feedbackEvent,
@@ -623,6 +652,7 @@ function enrichFeedbackContext(feedbackEvent, params) {
         filePaths,
         errorType,
         outcomeCategory,
+        enforcement,
       },
     };
   } catch (_err) {
@@ -812,6 +842,9 @@ function inferLessonFromConversation(conversationWindow, signal) {
   const tags = [];
   if (filePaths.length > 0) tags.push('has-file-context');
   if (errorPatterns.length > 0) tags.push('has-error-context');
+  if (filePaths.some((filePath) => /(^|\/)(agents\.md|claude(\.local)?\.md|gemini\.md|readme\.md|\.gitignore|skill\.md)$|^\.husky\/|^config\/gates\//i.test(filePath))) {
+    tags.push('protected-file-context');
+  }
 
   return {
     lesson,

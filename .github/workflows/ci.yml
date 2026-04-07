@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -50,7 +51,10 @@ jobs:
 
       - name: Run budget status gate
         run: npm run budget:status
-
+      - name: Check operational integrity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: npm run ops:integrity:ci
       - name: Run tests
         run: npm test
 

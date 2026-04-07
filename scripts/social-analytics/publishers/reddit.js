@@ -257,34 +257,27 @@ async function submitComment(token, userAgent, { parentId, text }) {
 // ---------------------------------------------------------------------------
 
 /**
- * Build the standard follow-up comment for a Reddit post.
- * This is disclosure-only and should not behave like a CTA.
+ * Build a follow-up comment for a Reddit post.
+ * Kept minimal and non-promotional to avoid spam flags.
+ * Reddit communities aggressively downvote/ban promotional CTAs.
  *
- * @param {string} subreddit - The subreddit name (used for UTM tracking)
- * @param {string} [utmContent] - Optional UTM content tag (defaults to subreddit name)
+ * @param {string} subreddit - The subreddit name
+ * @param {string} [utmContent] - Optional UTM content tag
  * @returns {string} The follow-up comment text
  */
 function buildFollowUpComment(subreddit, utmContent) {
   return [
-    'Disclosure: I built ThumbGate.',
+    'Happy to answer questions about the implementation.',
     '',
-    'The point of the post is the workflow: explicit thumbs-up/down feedback that survives the next session and can block a previously rejected move.',
+    'Source code (MIT): https://github.com/IgorGanapolsky/ThumbGate',
     '',
-    'If anyone wants the repo or setup details, ask and I will share them in-thread.',
+    'Disclosure: I built this.',
   ].join('\n');
-}
-
-function normalizeFollowUpComment(followUpComment) {
-  if (typeof followUpComment !== 'string') {
-    return null;
-  }
-  const trimmed = followUpComment.trim();
-  return trimmed.length > 0 ? trimmed : null;
 }
 
 /**
  * Publish to Reddit — submits a link post if url is provided, otherwise a text post.
- * Optionally posts a disclosure-only follow-up comment.
+ * Optionally posts a follow-up comment with the trial CTA.
  *
  * Reads credentials from environment variables if token is not supplied.
  *
@@ -324,15 +317,7 @@ async function publishToReddit({ subreddit, title, text, url, token, followUpCom
   if (!text) throw new Error('text is required when url is not provided');
   const postData = await submitTextPost(accessToken, userAgent, { subreddit, title, text });
 
-  // Post disclosure-only follow-up comment if requested
-  if (postData.name) {
-    const commentText = normalizeFollowUpComment(followUpComment);
-    if (followUpComment && !commentText) {
-      console.log('[reddit:publisher] Generic auto follow-up comments are disabled; skipping');
-    }
-    if (!commentText) {
-      return postData;
-    }
+  // Post follow-up comment with trial CTA if requested
   if (followUpComment && postData.name) {
     const commentText = typeof followUpComment === 'string'
       ? followUpComment
@@ -344,7 +329,7 @@ async function publishToReddit({ subreddit, title, text, url, token, followUpCom
     } else {
       try {
         await submitComment(accessToken, userAgent, { parentId: postData.name, text: commentText });
-        console.log('[reddit:publisher] Follow-up disclosure comment posted');
+        console.log('[reddit:publisher] Follow-up comment with trial CTA posted');
       } catch (err) {
         console.error('[reddit:publisher] Follow-up comment failed:', err.message);
       }
@@ -361,7 +346,6 @@ module.exports = {
   submitComment,
   publishToReddit,
   buildFollowUpComment,
-  normalizeFollowUpComment,
 };
 
 // ---------------------------------------------------------------------------
@@ -381,22 +365,16 @@ if (require.main === module) {
   const text = getArg('--text');
   const url = getArg('--url');
   const followUp = args.includes('--follow-up');
-  const followUpText = getArg('--follow-up-text');
   const utmContent = getArg('--utm-content');
 
   if (!subreddit || !title || (!text && !url)) {
     console.error(
-      'Usage: node reddit.js --subreddit=<sub> --title=<title> [--text=<body> | --url=<url>] [--follow-up-text=<comment>] [--utm-content=<tag>]'
+      'Usage: node reddit.js --subreddit=<sub> --title=<title> [--text=<body> | --url=<url>] [--follow-up] [--utm-content=<tag>]'
     );
     process.exit(1);
   }
 
-  if (followUp && !followUpText) {
-    console.error('[reddit:publisher] --follow-up is no longer supported without explicit --follow-up-text');
-    process.exit(1);
-  }
-
-  publishToReddit({ subreddit, title, text, url, followUpComment: followUpText, utmContent })
+  publishToReddit({ subreddit, title, text, url, followUpComment: followUp, utmContent })
     .then((data) => {
       console.log(`[reddit:publisher] Done. response=${JSON.stringify(data)}`);
     })

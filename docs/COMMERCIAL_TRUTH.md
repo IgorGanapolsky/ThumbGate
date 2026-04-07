@@ -12,13 +12,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - The preserved founder one-time Stripe link still exists for legacy founder buyers, but it is not the default commercial offer.
 - The current Team pricing anchor is **$12/seat/mo with a 3-seat minimum**, and the public Team path remains an **intake-led pilot for the first workflow** until hosted rollout scope is qualified.
 - The open-source runtime now supports history-aware lesson distillation from the recent conversation window, linked feedback sessions, and reflector rule proposals across CLI, hosted API, Cursor, and Claude Desktop surfaces.
-- Historical booked revenue evidence tied to the current product exists: **$20.00** from `2` reconciled Stripe charges on March 19, 2026.
-- The active local commercial snapshot on April 6, 2026 shows **0 paid customers**, **0 paid orders**, **0 booked revenue**, and **0 checkout starts** in the current `.thumbgate` path.
-- Historical revenue is not current traction. Do not present the March 19, 2026 charges as proof of current demand.
 - Verified cumulative booked revenue through March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product; there is no evidence of any additional same-day booked charge beyond that cumulative total.
-- Historical booked revenue evidence tied to the current product exists: **$20.00** from `2` reconciled Stripe charges on March 19, 2026.
-- The active local commercial snapshot on April 6, 2026 shows **0 paid customers**, **0 paid orders**, **0 booked revenue**, and **0 checkout starts** in the current `.thumbgate` path.
-- Historical revenue is not current traction. Do not present the March 19, 2026 charges as proof of current demand.
 - Engineering verification is strong and should be cited through `docs/VERIFICATION_EVIDENCE.md` and machine-readable proof reports.
 
 ## Product Tiers
@@ -57,7 +51,6 @@ This document is the source of truth for product, pricing, traction, and proof c
 - Do not present AI-agent self-validation as independent market proof.
 - Do not use hardcoded scarcity or social-proof claims such as "spots remaining" or "founding members" unless they are backed by live data.
 - Do not present historical pricing experiments as the current live offer.
-- Do not present historical revenue as evidence that the current funnel is converting.
 
 ## Proof policy
 

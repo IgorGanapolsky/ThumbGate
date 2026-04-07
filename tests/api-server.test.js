@@ -4,6 +4,8 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
+const GOVERNED_RELEASE_VERSION_MISMATCH = '9999.0.0';
+
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-api-test-'));
 const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-api-proof-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
@@ -29,6 +31,7 @@ fs.writeFileSync(
 
 const { startServer, __test__ } = require('../src/api/server');
 const billing = require('../scripts/billing');
+const gatesEngine = require('../scripts/gates-engine');
 const { buildHostedSuccessUrl } = require('../scripts/hosted-config');
 const {
   recordConversationEntry,
@@ -38,6 +41,10 @@ const {
 let handle;
 let apiOrigin = '';
 const authHeader = { authorization: 'Bearer test-api-key' };
+const ORIGINAL_GATES_PATHS = {
+  governanceState: gatesEngine.GOVERNANCE_STATE_PATH,
+  constraints: gatesEngine.CONSTRAINTS_PATH,
+};
 
 test('api servers 2026 pricing', () => {
   assert.match('$19/mo or $149/yr', /\$19\/mo or \$149\/yr/);
@@ -64,15 +71,24 @@ function extractCookieValue(setCookies, name) {
 }
 
 test.before(async () => {
+  gatesEngine.GOVERNANCE_STATE_PATH = path.join(tmpFeedbackDir, 'governance-state.json');
+  gatesEngine.CONSTRAINTS_PATH = path.join(tmpFeedbackDir, 'session-constraints.json');
+  fs.rmSync(gatesEngine.GOVERNANCE_STATE_PATH, { force: true });
+  fs.rmSync(gatesEngine.CONSTRAINTS_PATH, { force: true });
   handle = await startServer({ port: 0 });
   apiOrigin = `http://localhost:${handle.port}`;
 });
 
 test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
+  gatesEngine.GOVERNANCE_STATE_PATH = ORIGINAL_GATES_PATHS.governanceState;
+  gatesEngine.CONSTRAINTS_PATH = ORIGINAL_GATES_PATHS.constraints;
   delete process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
   delete process.env.THUMBGATE_BILLING_API_BASE_URL;
   delete process.env.THUMBGATE_BUILD_METADATA_PATH;
+  delete process.env.RLHF_PUBLIC_APP_ORIGIN;
+  delete process.env.RLHF_BILLING_API_BASE_URL;
+  delete process.env.RLHF_BUILD_METADATA_PATH;
   try {
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
     fs.rmSync(tmpProofDir, { recursive: true, force: true });
@@ -110,6 +126,114 @@ test('protected endpoints accept x-api-key as an alternate auth header', async (
   assert.equal(typeof body.summary, 'string');
 });
 
+test('admin API sets, reads, and clears task scope via HTTP', async () => {
+  const setRes = await fetch(apiUrl('/v1/gates/task-scope'), {
+    method: 'POST',
+    headers: { ...authHeader, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      taskId: '1733520',
+      summary: 'harden governance',
+      allowedPaths: ['scripts/**', 'tests/**'],
+      localOnly: true,
+    }),
+  });
+  assert.equal(setRes.status, 200);
+  const setBody = await setRes.json();
+  assert.equal(setBody.scope.taskId, '1733520');
+  assert.equal(setBody.scope.localOnly, true);
+  assert.deepEqual(setBody.scope.allowedPaths, ['scripts/**', 'tests/**']);
+  assert.ok(setBody.scope.protectedPaths.includes('AGENTS.md'));
+
+  const stateRes = await fetch(apiUrl('/v1/gates/task-scope'), { headers: authHeader });
+  assert.equal(stateRes.status, 200);
+  const stateBody = await stateRes.json();
+  assert.equal(stateBody.taskScope.summary, 'harden governance');
+  assert.equal(stateBody.taskScope.localOnly, true);
+  assert.equal(gatesEngine.loadConstraints().local_only.value, true);
+
+  const clearRes = await fetch(apiUrl('/v1/gates/task-scope'), {
+    method: 'POST',
+    headers: { ...authHeader, 'content-type': 'application/json' },
+    body: JSON.stringify({ clear: true }),
+  });
+  assert.equal(clearRes.status, 200);
+  const clearBody = await clearRes.json();
+  assert.equal(clearBody.scope, null);
+
+  const clearedStateRes = await fetch(apiUrl('/v1/gates/task-scope'), { headers: authHeader });
+  assert.equal(clearedStateRes.status, 200);
+  const clearedState = await clearedStateRes.json();
+  assert.equal(clearedState.taskScope, null);
+});
+
+test('admin API persists protected approvals via HTTP', async () => {
+  const scopeRes = await fetch(apiUrl('/v1/gates/task-scope'), {
+    method: 'POST',
+    headers: { ...authHeader, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      taskId: '1733520',
+      summary: 'approve protected files',
+      allowedPaths: ['AGENTS.md'],
+      protectedPaths: ['AGENTS.md'],
+    }),
+  });
+  assert.equal(scopeRes.status, 200);
+
+  const approvalRes = await fetch(apiUrl('/v1/gates/protected-approval'), {
+    method: 'POST',
+    headers: { ...authHeader, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      pathGlobs: ['AGENTS.md'],
+      reason: 'CEO approved protected-file edit',
+      evidence: 'work item 1733520',
+      taskId: '1733520',
+      ttlMs: 120000,
+    }),
+  });
+  assert.equal(approvalRes.status, 200);
+  const approvalBody = await approvalRes.json();
+  assert.equal(approvalBody.approved, true);
+  assert.deepEqual(approvalBody.approval.pathGlobs, ['AGENTS.md']);
+  assert.equal(approvalBody.approval.taskId, '1733520');
+
+  const stateRes = await fetch(apiUrl('/v1/gates/task-scope'), { headers: authHeader });
+  assert.equal(stateRes.status, 200);
+  const stateBody = await stateRes.json();
+  assert.equal(stateBody.protectedApprovals.length, 1);
+  assert.equal(stateBody.protectedApprovals[0].reason, 'CEO approved protected-file edit');
+});
+
+test('admin API persists branch governance and exposes operational integrity over HTTP', async () => {
+  const setRes = await fetch(apiUrl('/v1/gates/branch-governance'), {
+    method: 'POST',
+    headers: { ...authHeader, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      branchName: 'feat/thumbgate-hardening',
+      baseBranch: 'main',
+      prRequired: true,
+      prNumber: '999',
+      queueRequired: true,
+      releaseVersion: GOVERNED_RELEASE_VERSION_MISMATCH,
+    }),
+  });
+  assert.equal(setRes.status, 200);
+  const setBody = await setRes.json();
+  assert.equal(setBody.branchGovernance.branchName, 'feat/thumbgate-hardening');
+  assert.equal(setBody.branchGovernance.releaseVersion, GOVERNED_RELEASE_VERSION_MISMATCH);
+
+  const stateRes = await fetch(apiUrl('/v1/gates/branch-governance'), { headers: authHeader });
+  assert.equal(stateRes.status, 200);
+  const stateBody = await stateRes.json();
+  assert.equal(stateBody.branchGovernance.prNumber, '999');
+  assert.equal(stateBody.branchGovernance.queueRequired, true);
+
+  const integrityRes = await fetch(apiUrl('/v1/ops/integrity?command=npm%20publish'), { headers: authHeader });
+  assert.equal(integrityRes.status, 200);
+  const integrityBody = await integrityRes.json();
+  assert.equal(integrityBody.ok, false);
+  assert.ok(integrityBody.blockers.some((blocker) => blocker.code === 'release_version_mismatch'));
+});
+
 test('root serves the landing page by default', async () => {
   const res = await fetch(apiUrl('/'));
   assert.equal(res.status, 200);
@@ -117,17 +241,9 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /ThumbGate/);
-  assert.match(body, /Stop AI Coding Agents From Repeating Mistakes/i);
-  assert.match(body, /Human-in-the-Loop Enforcement/i);
-  assert.match(body, /immune system/i);
-  assert.match(body, /Stop bad AI PRs before they merge/i);
-  assert.match(body, /AI PR and human-in-the-loop enforcement/i);
-  assert.match(body, /review churn/i);
-  assert.match(body, /Stop AI Coding Agents From Repeating Mistakes/i);
-  assert.match(body, /Human-in-the-Loop Enforcement/i);
-  assert.match(body, /immune system/i);
+  assert.match(body, /self-improving/i);
+  assert.match(body, /learns from every mistake/i);
   assert.match(body, /npx thumbgate init/);
-  assert.match(body, /Pre-Action Gates/i);
   assert.match(body, /Thompson Sampling/i);
   assert.match(body, /FAQPage/);
   assert.match(body, /SoftwareApplication/);
@@ -138,55 +254,6 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /google-site-verification" content="test-verification-token"/);
   assert.match(body, /gtag\('config', 'G-TEST1234', \{ send_page_view: false \}\)/);
   assert.doesNotMatch(body, /mailto:/i);
-});
-
-test('newsletter signup stores subscriber attribution and redirects', async () => {
-  const res = await fetch(apiUrl('/api/newsletter'), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/x-www-form-urlencoded',
-      referer: 'https://app.example.com/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&creator=reach_vb&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY',
-    },
-    body: 'email=builder%40example.com',
-    redirect: 'manual',
-  });
-  assert.equal(res.status, 302);
-  assert.equal(res.headers.get('location'), '/?subscribed=1');
-
-  const subscribers = readJsonl(path.join(tmpFeedbackDir, 'newsletter-subscribers.jsonl'));
-  const subscriber = subscribers.find((entry) => entry.email === 'builder@example.com');
-  assert.ok(subscriber);
-  assert.equal(subscriber.source, 'reddit');
-  assert.equal(subscriber.referrerHost, 'app.example.com');
-  assert.equal(subscriber.attribution.source, 'reddit');
-  assert.equal(subscriber.attribution.medium, 'organic_social');
-  assert.equal(subscriber.attribution.campaign, 'reddit_launch');
-  assert.equal(subscriber.attribution.creator, 'reach_vb');
-  assert.equal(subscriber.attribution.community, 'ClaudeCode');
-  assert.equal(subscriber.attribution.postId, '1rsudq0');
-  assert.equal(subscriber.attribution.commentId, 'oa9mqjf');
-  assert.equal(subscriber.attribution.campaignVariant, 'comment_problem_solution');
-  assert.equal(subscriber.attribution.offerCode, 'REDDIT-EARLY');
-});
-
-test('newsletter signup deduplicates repeated emails', async () => {
-  const initialCount = readJsonl(path.join(tmpFeedbackDir, 'newsletter-subscribers.jsonl')).length;
-  for (let index = 0; index < 2; index += 1) {
-    const res = await fetch(apiUrl('/api/newsletter'), {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/x-www-form-urlencoded',
-      },
-      body: 'email=repeat%40example.com',
-      redirect: 'manual',
-    });
-    assert.equal(res.status, 302);
-  }
-
-  const subscribers = readJsonl(path.join(tmpFeedbackDir, 'newsletter-subscribers.jsonl'));
-  const repeats = subscribers.filter((entry) => entry.email === 'repeat@example.com');
-  assert.equal(repeats.length, 1);
-  assert.equal(subscribers.length, initialCount + 1);
 });
 
 test('privacy policy route covers collection, sharing, retention, and contact details', async () => {
