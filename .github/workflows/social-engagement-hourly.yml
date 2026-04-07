@@ -1,0 +1,167 @@
+name: Social Engagement (Hourly)
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Every hour
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to run'
+        required: true
+        type: choice
+        options:
+          - all
+          - post
+          - reply
+          - poll
+      dry_run:
+        description: 'Dry run (no actual posts/replies)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: social-engagement
+  cancel-in-progress: true
+
+jobs:
+  post-via-zernio:
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event.inputs.action == 'all' ||
+      github.event.inputs.action == 'post'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+      ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
+      ZERNIO_LINKEDIN_ACCOUNT_ID: ${{ secrets.ZERNIO_LINKEDIN_ACCOUNT_ID }}
+      ZERNIO_PROFILE_ID: ${{ secrets.ZERNIO_PROFILE_ID }}
+      ZERNIO_REDDIT_ACCOUNT_ID: ${{ secrets.ZERNIO_REDDIT_ACCOUNT_ID }}
+      ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
+      ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
+      PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Budget guard (max 24 posts/day)
+        id: budget
+        run: |
+          COUNTER_FILE=".social-post-count"
+          CURRENT_DAY=$(date +%Y-%m-%d)
+          if [ -f "$COUNTER_FILE" ]; then
+            STORED_DAY=$(head -1 "$COUNTER_FILE")
+            COUNT=$(tail -1 "$COUNTER_FILE")
+            if [ "$STORED_DAY" != "$CURRENT_DAY" ]; then
+              COUNT=0
+            fi
+          else
+            COUNT=0
+          fi
+          MAX_POSTS=24
+          echo "Post count today: $COUNT / $MAX_POSTS"
+          if [ "$COUNT" -ge "$MAX_POSTS" ]; then
+            echo "::warning::Budget guard: daily post limit ($MAX_POSTS) reached."
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "day=$CURRENT_DAY" >> "$GITHUB_OUTPUT"
+
+      - name: Generate and post via Zernio
+        if: steps.budget.outputs.allowed == 'true'
+        run: |
+          DRY_RUN=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_RUN="--dry-run"
+          fi
+          node scripts/social-post-hourly.js $DRY_RUN
+
+      - name: Update post counter
+        if: steps.budget.outputs.allowed == 'true' && github.event.inputs.dry_run != 'true'
+        run: |
+          COUNT=$(( ${{ steps.budget.outputs.count }} + 1 ))
+          echo "${{ steps.budget.outputs.day }}" > .social-post-count
+          echo "$COUNT" >> .social-post-count
+
+  reply-to-comments:
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event.inputs.action == 'all' ||
+      github.event.inputs.action == 'reply'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+      ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
+      ZERNIO_LINKEDIN_ACCOUNT_ID: ${{ secrets.ZERNIO_LINKEDIN_ACCOUNT_ID }}
+      ZERNIO_PROFILE_ID: ${{ secrets.ZERNIO_PROFILE_ID }}
+      ZERNIO_REDDIT_ACCOUNT_ID: ${{ secrets.ZERNIO_REDDIT_ACCOUNT_ID }}
+      ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
+      ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
+      REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+      REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+      REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+      X_API_KEY: ${{ secrets.X_API_KEY }}
+      X_API_SECRET: ${{ secrets.X_API_SECRET }}
+      X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+      X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+      TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+      TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+      TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+      TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+      TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Monitor and reply to comments
+        run: |
+          DRY_RUN=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_RUN="--dry-run"
+          fi
+          node scripts/social-reply-monitor.js $DRY_RUN
+
+  poll-analytics:
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event.inputs.action == 'all' ||
+      github.event.inputs.action == 'poll'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+      ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
+      ZERNIO_LINKEDIN_ACCOUNT_ID: ${{ secrets.ZERNIO_LINKEDIN_ACCOUNT_ID }}
+      ZERNIO_PROFILE_ID: ${{ secrets.ZERNIO_PROFILE_ID }}
+      ZERNIO_REDDIT_ACCOUNT_ID: ${{ secrets.ZERNIO_REDDIT_ACCOUNT_ID }}
+      ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
+      ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+      - name: Poll all platform analytics
+        run: node scripts/social-analytics/poll-all.js
