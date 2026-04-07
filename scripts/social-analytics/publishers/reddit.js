@@ -257,24 +257,19 @@ async function submitComment(token, userAgent, { parentId, text }) {
 // ---------------------------------------------------------------------------
 
 /**
- * Build the standard follow-up comment for a Reddit post.
- * This comment contains the trial CTA and source code link.
+ * Build a follow-up comment for a Reddit post.
+ * Kept minimal and non-promotional to avoid spam flags.
+ * Reddit communities aggressively downvote/ban promotional CTAs.
  *
- * @param {string} subreddit - The subreddit name (used for UTM tracking)
- * @param {string} [utmContent] - Optional UTM content tag (defaults to subreddit name)
+ * @param {string} subreddit - The subreddit name
+ * @param {string} [utmContent] - Optional UTM content tag
  * @returns {string} The follow-up comment text
  */
 function buildFollowUpComment(subreddit, utmContent) {
-  const content = utmContent || `${subreddit}_post`;
-  const trialUrl = `https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content=${encodeURIComponent(content)}&community=${encodeURIComponent(subreddit)}`;
   return [
-    'The problem: AI coding agents repeat the same mistakes every session. You correct a force-push, it does it again tomorrow. Prompt rules get ignored after context compaction.',
+    'Happy to answer questions about the implementation.',
     '',
-    'ThumbGate fixes this with enforcement, not memory. You give a thumbs-down, it auto-generates a prevention rule, and a gate physically blocks the agent from repeating that action. Thumbs-up reinforces good behavior.',
-    '',
-    `Try free for 7 days (no credit card, 2-minute setup): ${trialUrl}`,
-    '',
-    'Source code (MIT licensed): https://github.com/IgorGanapolsky/ThumbGate',
+    'Source code (MIT): https://github.com/IgorGanapolsky/ThumbGate',
     '',
     'Disclosure: I built this.',
   ].join('\n');

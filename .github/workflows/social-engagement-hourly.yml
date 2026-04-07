@@ -1,8 +1,19 @@
-name: Social Engagement (Hourly)
+name: Social Engagement (Smart Schedule)
+
+# Strategy based on research of Linear, Vercel, Supabase, PostHog, Cursor, Raycast, Cal.com:
+# - 1 quality post/day (not 24 spam posts)
+# - Reply monitoring 4x/day (engagement in first hour is critical for algorithms)
+# - Analytics poll 2x/day
+# - Content rotates: horror stories, hot takes, tips, product demos
+# - No Dev.to auto-posting (counterproductive at high volume)
+# - Reddit: reply-only, no auto-posting (ban risk)
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Every hour
+    # Post once daily at 2pm UTC (10am EST — peak dev engagement)
+    - cron: '0 14 * * *'
+    # Reply monitor: 4x/day (9am, 1pm, 5pm, 9pm UTC)
+    - cron: '0 9,13,17,21 * * *'
   workflow_dispatch:
     inputs:
       action:
@@ -29,8 +40,9 @@ concurrency:
 
 jobs:
   post-via-zernio:
+    # Only post at 2pm UTC, not on reply-monitor runs
     if: >-
-      github.event_name == 'schedule' ||
+      github.event.schedule == '0 14 * * *' ||
       github.event.inputs.action == 'all' ||
       github.event.inputs.action == 'post'
     runs-on: ubuntu-latest
@@ -53,33 +65,7 @@ jobs:
       - name: Install dependencies
         run: npm ci --onnxruntime-node-install-cuda=skip
 
-      - name: Budget guard (max 24 posts/day)
-        id: budget
-        run: |
-          COUNTER_FILE=".social-post-count"
-          CURRENT_DAY=$(date +%Y-%m-%d)
-          if [ -f "$COUNTER_FILE" ]; then
-            STORED_DAY=$(head -1 "$COUNTER_FILE")
-            COUNT=$(tail -1 "$COUNTER_FILE")
-            if [ "$STORED_DAY" != "$CURRENT_DAY" ]; then
-              COUNT=0
-            fi
-          else
-            COUNT=0
-          fi
-          MAX_POSTS=24
-          echo "Post count today: $COUNT / $MAX_POSTS"
-          if [ "$COUNT" -ge "$MAX_POSTS" ]; then
-            echo "::warning::Budget guard: daily post limit ($MAX_POSTS) reached."
-            echo "allowed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "allowed=true" >> "$GITHUB_OUTPUT"
-          fi
-          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
-          echo "day=$CURRENT_DAY" >> "$GITHUB_OUTPUT"
-
       - name: Generate and post via Zernio
-        if: steps.budget.outputs.allowed == 'true'
         run: |
           DRY_RUN=""
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
@@ -87,16 +73,10 @@ jobs:
           fi
           node scripts/social-post-hourly.js $DRY_RUN
 
-      - name: Update post counter
-        if: steps.budget.outputs.allowed == 'true' && github.event.inputs.dry_run != 'true'
-        run: |
-          COUNT=$(( ${{ steps.budget.outputs.count }} + 1 ))
-          echo "${{ steps.budget.outputs.day }}" > .social-post-count
-          echo "$COUNT" >> .social-post-count
-
   reply-to-comments:
+    # Runs 4x/day on reply-monitor schedule, or on manual trigger
     if: >-
-      github.event_name == 'schedule' ||
+      github.event.schedule == '0 9,13,17,21 * * *' ||
       github.event.inputs.action == 'all' ||
       github.event.inputs.action == 'reply'
     runs-on: ubuntu-latest
@@ -140,8 +120,9 @@ jobs:
           node scripts/social-reply-monitor.js $DRY_RUN
 
   poll-analytics:
+    # Runs 2x/day: at 9am and 9pm UTC
     if: >-
-      github.event_name == 'schedule' ||
+      github.event.schedule == '0 9,13,17,21 * * *' ||
       github.event.inputs.action == 'all' ||
       github.event.inputs.action == 'poll'
     runs-on: ubuntu-latest
