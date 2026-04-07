@@ -11,6 +11,39 @@
       "severity": "critical"
     },
     {
+      "id": "task-scope-required",
+      "layer": "Decisions",
+      "toolNames": ["Edit", "Write", "MultiEdit", "Bash"],
+      "pattern": ".*",
+      "requireTaskScope": true,
+      "action": "block",
+      "message": "High-risk edits and git write operations require an explicit task scope.",
+      "severity": "critical"
+    },
+    {
+      "id": "protected-file-approval-required",
+      "layer": "Decisions",
+      "toolNames": ["Edit", "Write", "MultiEdit", "Bash"],
+      "pattern": ".*",
+      "requireProtectedApproval": true,
+      "protectedGlobs": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "CLAUDE.local.md",
+        "GEMINI.md",
+        "README.md",
+        ".gitignore",
+        ".husky/**",
+        ".claude/**",
+        "skills/**",
+        "SKILL.md",
+        "config/gates/**"
+      ],
+      "action": "block",
+      "message": "Protected files require explicit approval before editing or publishing.",
+      "severity": "critical"
+    },
+    {
       "id": "gh-pr-create-restricted",
       "layer": "Identity",
       "pattern": "gh\\s+pr\\s+create",

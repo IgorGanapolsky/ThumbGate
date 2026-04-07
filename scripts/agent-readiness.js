@@ -20,6 +20,8 @@ const WRITE_CAPABLE_TOOLS = new Set([
   'evaluate_context_pack',
   'generate_skill',
   'satisfy_gate',
+  'set_task_scope',
+  'approve_protected_action',
   'track_action',
   'register_claim_gate',
 ]);

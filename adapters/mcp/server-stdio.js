@@ -43,6 +43,9 @@ const {
   evaluateSecretGuard,
   satisfyCondition,
   loadStats: loadGateStats,
+  setTaskScope,
+  getScopeState,
+  approveProtectedAction,
   trackAction,
   verifyClaimEvidence,
   registerClaimGate,
@@ -103,7 +106,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'mcp-memory-gateway-mcp', version: '0.9.9' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '0.9.9' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -519,6 +522,31 @@ async function callToolInner(name, args) {
       }
       return toTextResult(result);
     }
+    case 'set_task_scope':
+      return toTextResult({
+        scope: setTaskScope({
+          taskId: args.taskId,
+          summary: args.summary,
+          allowedPaths: args.allowedPaths,
+          protectedPaths: args.protectedPaths,
+          repoPath: args.repoPath,
+          localOnly: args.localOnly === true,
+          clear: args.clear === true,
+        }),
+      });
+    case 'get_scope_state':
+      return toTextResult(getScopeState());
+    case 'approve_protected_action':
+      return toTextResult({
+        approved: true,
+        approval: approveProtectedAction({
+          pathGlobs: args.pathGlobs,
+          reason: args.reason,
+          evidence: args.evidence,
+          taskId: args.taskId,
+          ttlMs: args.ttlMs,
+        }),
+      });
     case 'track_action': {
       const entry = trackAction(args.actionId, args.metadata || {});
       return toTextResult({

@@ -97,6 +97,7 @@ const KNOWN_GATED_TOOLS = new Set([
   'Bash', 'Edit', 'Write', 'Read', 'Glob', 'Grep',
   'capture_feedback', 'recall', 'search_lessons', 'prevention_rules',
   'feedback_stats', 'construct_context_pack', 'evaluate_context_pack',
+  'set_task_scope', 'get_scope_state', 'approve_protected_action',
 ]);
 
 const SHADOW_LOG_FILE = 'shadow-actions.jsonl';

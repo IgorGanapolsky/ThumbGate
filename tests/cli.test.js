@@ -1634,7 +1634,7 @@ describe('bin/cli.js', () => {
       stdin.write(frameMcpMessage(payload));
     });
     assert.equal(response.id, 99);
-    assert.equal(response.result.serverInfo.name, 'mcp-memory-gateway-mcp');
+    assert.equal(response.result.serverInfo.name, 'thumbgate-mcp');
   });
 
   test('serve responds to initialize over newline-delimited JSON transport', async () => {
@@ -1642,7 +1642,7 @@ describe('bin/cli.js', () => {
       stdin.write(`${JSON.stringify(payload)}\n`);
     });
     assert.equal(response.id, 99);
-    assert.equal(response.result.serverInfo.name, 'mcp-memory-gateway-mcp');
+    assert.equal(response.result.serverInfo.name, 'thumbgate-mcp');
   });
 
   test('serve returns ndjson error envelope for malformed ndjson input', async () => {
@@ -1671,7 +1671,7 @@ describe('bin/cli.js', () => {
     });
 
     assert.equal(response.id, 99);
-    assert.equal(response.result.serverInfo.name, 'mcp-memory-gateway-mcp');
+    assert.equal(response.result.serverInfo.name, 'thumbgate-mcp');
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });

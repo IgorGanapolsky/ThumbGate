@@ -13,6 +13,7 @@ const gatesEngine = require('../scripts/gates-engine');
 const ORIGINAL_PATHS = {
   sessionActions: gatesEngine.SESSION_ACTIONS_PATH,
   customClaimGates: gatesEngine.CUSTOM_CLAIM_GATES_PATH,
+  governanceState: gatesEngine.GOVERNANCE_STATE_PATH,
 };
 
 let runtimeSandboxDir = null;
@@ -25,13 +26,16 @@ beforeEach(() => {
   runtimeSandboxDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-mcp-gates-runtime-'));
   gatesEngine.SESSION_ACTIONS_PATH = path.join(runtimeSandboxDir, 'session-actions.json');
   gatesEngine.CUSTOM_CLAIM_GATES_PATH = path.join(runtimeSandboxDir, 'claim-verification.json');
+  gatesEngine.GOVERNANCE_STATE_PATH = path.join(runtimeSandboxDir, 'governance-state.json');
   fs.rmSync(gatesEngine.SESSION_ACTIONS_PATH, { force: true });
   fs.rmSync(gatesEngine.CUSTOM_CLAIM_GATES_PATH, { force: true });
+  fs.rmSync(gatesEngine.GOVERNANCE_STATE_PATH, { force: true });
 });
 
 afterEach(() => {
   gatesEngine.SESSION_ACTIONS_PATH = ORIGINAL_PATHS.sessionActions;
   gatesEngine.CUSTOM_CLAIM_GATES_PATH = ORIGINAL_PATHS.customClaimGates;
+  gatesEngine.GOVERNANCE_STATE_PATH = ORIGINAL_PATHS.governanceState;
   if (runtimeSandboxDir) {
     fs.rmSync(runtimeSandboxDir, { recursive: true, force: true });
     runtimeSandboxDir = null;
@@ -90,6 +94,64 @@ test('track_action, verify_claim, and register_claim_gate are registered', () =>
   assert.ok(names.includes('track_action'));
   assert.ok(names.includes('verify_claim'));
   assert.ok(names.includes('register_claim_gate'));
+  assert.ok(names.includes('set_task_scope'));
+  assert.ok(names.includes('get_scope_state'));
+  assert.ok(names.includes('approve_protected_action'));
+});
+
+test('set_task_scope and get_scope_state round-trip over MCP', async () => {
+  const setResult = await handleRequest({
+    jsonrpc: '2.0',
+    id: 109,
+    method: 'tools/call',
+    params: {
+      name: 'set_task_scope',
+      arguments: {
+        taskId: '1733520',
+        summary: 'harden ThumbGate',
+        allowedPaths: ['scripts/**', 'tests/**'],
+        protectedPaths: ['AGENTS.md'],
+        localOnly: true,
+      },
+    },
+  });
+  const setPayload = JSON.parse(setResult.content[0].text);
+  assert.equal(setPayload.scope.taskId, '1733520');
+  assert.deepEqual(setPayload.scope.allowedPaths, ['scripts/**', 'tests/**']);
+
+  const getResult = await handleRequest({
+    jsonrpc: '2.0',
+    id: 110,
+    method: 'tools/call',
+    params: {
+      name: 'get_scope_state',
+      arguments: {},
+    },
+  });
+  const getPayload = JSON.parse(getResult.content[0].text);
+  assert.equal(getPayload.taskScope.taskId, '1733520');
+  assert.equal(getPayload.taskScope.localOnly, true);
+});
+
+test('approve_protected_action stores runtime approval over MCP', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 111,
+    method: 'tools/call',
+    params: {
+      name: 'approve_protected_action',
+      arguments: {
+        pathGlobs: ['AGENTS.md'],
+        reason: 'user explicitly approved policy change',
+        evidence: 'ticket 1733520',
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.approved, true);
+  assert.deepEqual(payload.approval.pathGlobs, ['AGENTS.md']);
+  assert.equal(fs.existsSync(gatesEngine.GOVERNANCE_STATE_PATH), true);
 });
 
 test('track_action records evidence for verify_claim over MCP', async () => {
@@ -258,10 +320,13 @@ test('dashboard handles empty state', async () => {
 // tools/list includes new tools
 // ---------------------------------------------------------------------------
 
-test('tools/list includes gate_stats, dashboard, and diagnose_failure', async () => {
+test('tools/list includes gate and scope-control tools', async () => {
   const result = await handleRequest({ jsonrpc: '2.0', id: 105, method: 'tools/list' });
   const names = result.tools.map((t) => t.name);
   assert.ok(names.includes('satisfy_gate'), 'satisfy_gate in tools/list');
+  assert.ok(names.includes('set_task_scope'), 'set_task_scope in tools/list');
+  assert.ok(names.includes('get_scope_state'), 'get_scope_state in tools/list');
+  assert.ok(names.includes('approve_protected_action'), 'approve_protected_action in tools/list');
   assert.ok(names.includes('track_action'), 'track_action in tools/list');
   assert.ok(names.includes('verify_claim'), 'verify_claim in tools/list');
   assert.ok(names.includes('register_claim_gate'), 'register_claim_gate in tools/list');
