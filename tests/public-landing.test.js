@@ -110,21 +110,18 @@ test('public landing page includes a Reddit campaign banner and subreddit-aware 
   assert.doesNotMatch(landingPage, /parseRedditCommunity/);
 });
 
-test('public landing page positions ThumbGate as human-in-the-loop enforcement for AI agents', () => {
+test('public landing page positions ThumbGate as self-improving AI agents', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /ThumbGate/);
-  assert.match(landingPage, /Stop bad AI PRs before they merge/i);
-  assert.match(landingPage, /AI PR and human-in-the-loop enforcement/i);
-  assert.match(landingPage, /review churn/i);
+  assert.match(landingPage, /self-improving/i);
+  assert.match(landingPage, /learns from every mistake/i);
   assert.match(landingPage, /Claude Code/);
   assert.match(landingPage, /Cursor/);
   assert.match(landingPage, /Codex/);
   assert.match(landingPage, /Gemini/);
   assert.match(landingPage, /Amp/);
   assert.match(landingPage, /OpenCode/);
-  assert.match(landingPage, /MCP-compatible agent/i);
-  assert.match(landingPage, /SQLite\+FTS5/);
   assert.doesNotMatch(landingPage, /mailto:/i);
   assert.doesNotMatch(landingPage, /official Anthropic partner/i);
 });
@@ -134,19 +131,18 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
 
   // Hero big emoji must show BOTH thumbs — not just one
   assert.match(landingPage, /class="hero-thumbs">👍👎</);
-  // Headline: immediate painful job-to-be-done
-  assert.match(landingPage, /Stop bad AI PRs/i);
-  assert.match(landingPage, /before they merge/i);
-  assert.match(landingPage, /risky actions before they hit CI or prod/i);
+  // Headline: self-improvement framing
+  assert.match(landingPage, /Your AI agent learns/i);
+  assert.match(landingPage, /from every mistake/i);
   // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /👍 keeps good fixes and patterns reusable/);
-  assert.match(landingPage, /👎 blocks risky actions before they hit CI or prod/);
+  assert.match(landingPage, /Mistake becomes a prevention rule/i);
+  assert.match(landingPage, /Good pattern reinforced/i);
   // Persona targeting
   assert.match(landingPage, /class="hero-persona"/);
-  assert.match(landingPage, /engineering teams using Claude Code/i);
-  assert.match(landingPage, /ThumbGate proves value on the next change/i);
+  assert.match(landingPage, /developers using Claude Code/i);
+  assert.match(landingPage, /self-improvement loop/i);
 });
 
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {

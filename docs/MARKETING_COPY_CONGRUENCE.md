@@ -10,14 +10,14 @@
 > Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> Stop bad AI PRs, risky deploys, and repeated agent mistakes before they merge or run. 👍 Thumbs up keeps good fixes reusable. 👎 Thumbs down blocks repeated mistakes. Free is local. Human-in-the-loop teams get history-aware lessons. Team adds shared lessons and org visibility.
+> Make your AI coding agent self-improving. Every mistake it makes becomes a prevention rule. Every correction you give makes it permanently smarter. ThumbGate turns feedback into enforcement — your agent gets better with every session, not just every model update. 👍 Thumbs up keeps good fixes reusable. 👎 Thumbs down blocks repeated mistakes. Human-in-the-loop teams get history-aware lessons. Team adds shared lessons and org visibility.
 
 ### NPM package.json
 > Pre-action gates that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
 
 ### GitHub Repo About
 **Canonical source:** `config/github-about.json`
-> Stop bad AI PRs, risky deploys, and repeated agent mistakes before they merge or run. 👍 Thumbs up keeps good fixes reusable. 👎 Thumbs down blocks repeated mistakes. Free is local. Human-in-the-loop teams get history-aware lessons. Team adds shared lessons and org visibility.
+> Make your AI coding agent self-improving. Every mistake it makes becomes a prevention rule. Every correction you give makes it permanently smarter. ThumbGate turns feedback into enforcement — your agent gets better with every session, not just every model update. 👍 Thumbs up keeps good fixes reusable. 👎 Thumbs down blocks repeated mistakes. Human-in-the-loop teams get history-aware lessons. Team adds shared lessons and org visibility.
 
 **Canonical topics:** `thumbgate`, `pre-action-gates`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`
 
