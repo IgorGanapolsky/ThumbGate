@@ -2,11 +2,11 @@
 
 ## What This Is
 
-Production-grade RLHF operations for AI coding agents — a plugin that any developer using Claude Code, Codex, Gemini Code, or Amp CLI can install and start capturing feedback, learning from mistakes, and improving agent behavior immediately. Ships as OSS core with a hosted Context Gateway tier for teams.
+Production-grade ThumbGate operations for AI coding agents — a plugin that any developer using Claude Code, Codex, Gemini Code, or Amp CLI can install and start capturing feedback, learning from mistakes, and improving agent behavior immediately. Ships as OSS core with a hosted Context Gateway tier for teams.
 
 ## North Star
 
-**$100/day after-tax** — sustainable, recurring revenue from the RLHF platform.
+**$100/day after-tax** — sustainable, recurring revenue from the ThumbGate platform.
 
 That's ~$3,000/month gross (~$3,650/month pre-tax assuming ~18% effective rate).
 Path: 104 customers x $29/mo Pro, or mixed (80 x $29 Pro + organic free-to-pro conversion).

@@ -57,7 +57,7 @@ Output: Modified scripts/feedback-loop.js with getVectorStoreModule() helper and
   <name>Task 1: Add getVectorStoreModule() helper and upsertFeedback side-effect to feedback-loop.js</name>
   <files>scripts/feedback-loop.js</files>
   <action>
-    Read /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/feedback-loop.js in full before making any edits.
+    Read /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/feedback-loop.js in full before making any edits.
 
     STEP 1: Add `getVectorStoreModule()` helper function.
 
@@ -92,7 +92,7 @@ Output: Modified scripts/feedback-loop.js with getVectorStoreModule() helper and
     Do NOT change any other logic. Do NOT add awaits — the entire point is non-blocking async fire-and-forget.
   </action>
   <verify>
-    1. grep -n "getVectorStoreModule\|upsertFeedback" /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/feedback-loop.js
+    1. grep -n "getVectorStoreModule\|upsertFeedback" /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/feedback-loop.js
        Expected: Shows getVectorStoreModule function definition and the upsertFeedback().catch() call inside captureFeedback.
 
     2. node scripts/feedback-loop.js --test
@@ -111,7 +111,7 @@ Output: Modified scripts/feedback-loop.js with getVectorStoreModule() helper and
 </tasks>
 
 <verification>
-Run from /Users/ganapolsky_i/workspace/git/igor/rlhf:
+Run from /Users/ganapolsky_i/workspace/git/igor/ThumbGate:
 1. `grep -c "getVectorStoreModule" scripts/feedback-loop.js` → 2 (definition + usage)
 2. `grep -A3 "upsertFeedback" scripts/feedback-loop.js` → shows the .catch pattern
 3. `npm test` → exits 0, test count same as Phase 3 baseline (89+ tests)

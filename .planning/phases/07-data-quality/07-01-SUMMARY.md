@@ -2,7 +2,7 @@
 phase: 07-data-quality
 plan: "01"
 subsystem: data-quality
-tags: [validation, schema, anomaly, self-correction, rlhf]
+tags: [validation, schema, anomaly, self-correction, ThumbGate]
 dependency_graph:
   requires: []
   provides: [scripts/validate-feedback.js, validateEntry, validateSchema, validateSemantics, detectAnomalies]
@@ -14,7 +14,7 @@ key_files:
   created: [scripts/validate-feedback.js]
   modified: []
 decisions:
-  - "REQUIRED_FIELDS uses ['timestamp','signal','id'] not Subway's ['timestamp','feedback','source'] — rlhf uses normalized signal"
+  - "REQUIRED_FIELDS uses ['timestamp','signal','id'] not Subway's ['timestamp','feedback','source'] — ThumbGate uses normalized signal"
   - "THUMBGATE_FEEDBACK_DIR env var for path resolution, resolved at call time not module init"
   - "require.main === module guard ensures library and CLI modes coexist"
 metrics:
@@ -26,11 +26,11 @@ metrics:
 
 # Phase 7 Plan 01: validate-feedback.js Port Summary
 
-Ported Subway's validate-feedback.js to rlhf/scripts/ as a CommonJS module implementing a 4-level feedback data quality pipeline.
+Ported Subway's validate-feedback.js to ThumbGate/scripts/ as a CommonJS module implementing a 4-level feedback data quality pipeline.
 
 ## What Was Built
 
-`scripts/validate-feedback.js` — 4-level validation pipeline for rlhf feedback entries:
+`scripts/validate-feedback.js` — 4-level validation pipeline for ThumbGate feedback entries:
 
 1. **Schema validation** — checks required fields (timestamp, signal, id), reward range [-1, 1], ISO 8601 timestamp
 2. **Semantic validation** — catches positive-signal/negative-reward inconsistency, short context, placeholder text

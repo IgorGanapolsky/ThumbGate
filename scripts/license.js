@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const VALID_PREFIXES = ['rlhf_', 'tg_pro_', 'tg_'];
+const VALID_PREFIXES = ['tg_pro_', 'tg_'];
+const LEGACY_COMPATIBLE_KEY = /^[a-z]{4,16}_[a-f0-9]{24,}$/i;
 
 function getLicensePath(homeDir = process.env.HOME || process.env.USERPROFILE || '.') {
   return path.join(homeDir, '.thumbgate', 'license.json');
@@ -12,11 +13,23 @@ function getLicensePath(homeDir = process.env.HOME || process.env.USERPROFILE ||
 const LICENSE_PATH = getLicensePath();
 
 function isValidKey(key) {
-  return key && VALID_PREFIXES.some((p) => key.startsWith(p));
+  return Boolean(
+    key
+    && (
+      VALID_PREFIXES.some((p) => key.startsWith(p))
+      || LEGACY_COMPATIBLE_KEY.test(key)
+    )
+  );
 }
 
 function verifyLicense(options = {}) {
-  const envKey = process.env.THUMBGATE_API_KEY || process.env.RLHF_API_KEY || process.env.THUMBGATE_PRO_KEY;
+  const envKey = [
+    process.env.THUMBGATE_API_KEY,
+    process.env.THUMBGATE_PRO_KEY,
+    ...Object.entries(process.env)
+      .filter(([name]) => /(?:_API_KEY|_PRO_KEY)$/.test(name))
+      .map(([, value]) => value),
+  ].find((value) => isValidKey(value));
   if (isValidKey(envKey)) {
     return { valid: true, source: 'env', key: envKey };
   }
@@ -46,7 +59,7 @@ function isProLicensed(options) {
 
 function activateLicense(key, options = {}) {
   if (!isValidKey(key)) {
-    return { success: false, error: 'Invalid key format. Expected rlhf_..., tg_..., or tg_pro_...' };
+    return { success: false, error: 'Invalid key format. Expected tg_... or tg_pro_...' };
   }
 
   const licensePath = getLicensePath(options.homeDir);

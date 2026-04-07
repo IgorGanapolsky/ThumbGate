@@ -13,10 +13,10 @@ requirements:
 
 must_haves:
   truths:
-    - "Running node scripts/contract-audit.js produces a non-empty markdown report listing shared, rlhf-only, and subway-only exports for all 3 shared scripts"
+    - "Running node scripts/contract-audit.js produces a non-empty markdown report listing shared, ThumbGate-only, and subway-only exports for all 3 shared scripts"
     - "The report correctly identifies feedback-loop.js as INCOMPATIBLE (captureFeedback vs recordFeedback divergence)"
     - "The report correctly identifies feedback-schema.js as COMPATIBLE at the export level (7 shared exports)"
-    - "The report correctly identifies export-dpo-pairs.js as PARTIALLY COMPATIBLE (5 shared, 3 rlhf-only, 1 subway-only)"
+    - "The report correctly identifies export-dpo-pairs.js as PARTIALLY COMPATIBLE (5 shared, 3 ThumbGate-only, 1 subway-only)"
     - "proof/contract-audit-report.md exists and contains the alias map as evidence for CNTR-01"
   artifacts:
     - path: "scripts/contract-audit.js"
@@ -67,24 +67,24 @@ The script must:
 1. Define THUMBGATE_ROOT = path.join(__dirname, '..') and SUBWAY_ROOT = '/Users/ganapolsky_i/workspace/git/Subway_RN_Demo'
 2. Define SHARED_SCRIPTS = ['scripts/feedback-schema.js', 'scripts/feedback-loop.js', 'scripts/export-dpo-pairs.js']
 3. For each script, require() it from both repos and compute:
-   - rlhfKeys: Object.keys(rlhfMod).sort()
+   - thumbgateKeys: Object.keys(thumbgateMod).sort()
    - subwayKeys: Object.keys(subwayMod).sort()
    - shared: keys present in both
-   - rlhfOnly: keys in rlhf but not subway
-   - subwayOnly: keys in subway but not rlhf
-   - compatible: boolean — true only if rlhfOnly.length === 0 AND subwayOnly.length === 0
+   - thumbgateOnly: keys in ThumbGate but not subway
+   - subwayOnly: keys in subway but not ThumbGate
+   - compatible: boolean — true only if thumbgateOnly.length === 0 AND subwayOnly.length === 0
 4. Build a result array from all 3 scripts
 5. console.log a JSON summary
 6. Write proof/contract-audit-report.md with:
    - Header: "# Contract Audit Report\n\nGenerated: {new Date().toISOString()}"
-   - For each script: a section with compatibility verdict, shared exports table, rlhf-only list, subway-only list
-   - Footer: "## Alias Map\n\n| Function | RLHF Export | Subway Export | Status |\n|---|---|---|---|\n" plus one row for each notable divergence (captureFeedback/recordFeedback, feedbackSummary signature difference, selfScore rlhf-absent, validateMemoryStructure subway-only)
+   - For each script: a section with compatibility verdict, shared exports table, ThumbGate-only list, subway-only list
+   - Footer: "## Alias Map\n\n| Function | ThumbGate Export | Subway Export | Status |\n|---|---|---|---|\n" plus one row for each notable divergence (captureFeedback/recordFeedback, feedbackSummary signature difference, selfScore ThumbGate-absent, validateMemoryStructure subway-only)
    - Final line: "All 3 scripts audited. Baseline CI: 54 node-runner tests + 23 script-runner tests = 77 total passing."
 
 Known expected results (from research — do NOT change these):
 - feedback-schema.js: compatible=true (7 shared exports: validateFeedbackMemory, resolveFeedbackAction, prepareForStorage, GENERIC_TAGS, MIN_CONTENT_LENGTH, VALID_TITLE_PREFIXES, VALID_CATEGORIES)
-- feedback-loop.js: compatible=false (shared: analyzeFeedback, feedbackSummary; rlhf-only: captureFeedback, buildPreventionRules, writePreventionRules, readJSONL, getFeedbackPaths, MEMORY_LOG_PATH, SUMMARY_PATH, PREVENTION_RULES_PATH; subway-only: recordFeedback, selfScore, SELF_SCORE_LOG_PATH)
-- export-dpo-pairs.js: compatible=false (shared: extractDomainKeys, domainOverlap, inferPrompt, buildDpoPairs, toJSONL; rlhf-only: readJSONL, exportDpoFromMemories, DEFAULT_LOCAL_MEMORY_LOG; subway-only: validateMemoryStructure)
+- feedback-loop.js: compatible=false (shared: analyzeFeedback, feedbackSummary; ThumbGate-only: captureFeedback, buildPreventionRules, writePreventionRules, readJSONL, getFeedbackPaths, MEMORY_LOG_PATH, SUMMARY_PATH, PREVENTION_RULES_PATH; subway-only: recordFeedback, selfScore, SELF_SCORE_LOG_PATH)
+- export-dpo-pairs.js: compatible=false (shared: extractDomainKeys, domainOverlap, inferPrompt, buildDpoPairs, toJSONL; ThumbGate-only: readJSONL, exportDpoFromMemories, DEFAULT_LOCAL_MEMORY_LOG; subway-only: validateMemoryStructure)
 
 If require() fails for Subway (path not found), emit an error to stderr and exit 1. Do NOT silently skip.
 
@@ -108,9 +108,9 @@ node scripts/contract-audit.js exits 0, prints JSON with 3 script results, proof
 After Task 1 completes, validate the generated proof/contract-audit-report.md against the known divergence map from research (1-RESEARCH.md).
 
 Run node scripts/contract-audit.js and capture stdout as JSON. Assert:
-1. feedback-schema.js result: compatible === true, shared.length === 7, rlhfOnly.length === 0, subwayOnly.length === 0
-2. feedback-loop.js result: compatible === false, shared includes 'analyzeFeedback' and 'feedbackSummary', rlhfOnly includes 'captureFeedback', subwayOnly includes 'recordFeedback' and 'selfScore'
-3. export-dpo-pairs.js result: compatible === false, shared includes 'buildDpoPairs' and 'toJSONL', rlhfOnly includes 'exportDpoFromMemories', subwayOnly includes 'validateMemoryStructure'
+1. feedback-schema.js result: compatible === true, shared.length === 7, thumbgateOnly.length === 0, subwayOnly.length === 0
+2. feedback-loop.js result: compatible === false, shared includes 'analyzeFeedback' and 'feedbackSummary', thumbgateOnly includes 'captureFeedback', subwayOnly includes 'recordFeedback' and 'selfScore'
+3. export-dpo-pairs.js result: compatible === false, shared includes 'buildDpoPairs' and 'toJSONL', thumbgateOnly includes 'exportDpoFromMemories', subwayOnly includes 'validateMemoryStructure'
 
 If any assertion fails: update proof/contract-audit-report.md with the ACTUAL output (do not fabricate — real runtime values are authoritative). Then re-check the research notes and note any discrepancy in the report's "Discrepancies" section.
 
@@ -140,7 +140,7 @@ Audit JSON output matches known divergence map OR discrepancies are documented i
 <success_criteria>
 - scripts/contract-audit.js loads both repos via require() and produces a runtime export diff
 - proof/contract-audit-report.md contains the alias map with verdicts for all 3 shared scripts
-- All 77 existing rlhf tests continue to pass
+- All 77 existing ThumbGate tests continue to pass
 - CNTR-01 is satisfied: the report is the machine-generated evidence of export compatibility state
 </success_criteria>
 

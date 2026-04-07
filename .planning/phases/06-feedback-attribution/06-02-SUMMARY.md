@@ -15,7 +15,7 @@ key_files:
     - scripts/hybrid-feedback-context.js
   modified: []
 decisions:
-  - "PATHS.guardArtifact resolves to .claude/memory/feedback/pretool-guards.json — ROOT = path.join(__dirname, '..') (rlhf scripts/ 1 level from repo root)"
+  - "PATHS.guardArtifact resolves to .claude/memory/feedback/pretool-guards.json — ROOT = path.join(__dirname, '..') (ThumbGate scripts/ 1 level from repo root)"
   - "hasTwoKeywordHits + count >= 2 filter enforces ATTR-03 no-false-positive invariant — evaluatePretool with no prior negative data always returns mode: allow"
   - "compileGuardArtifact prefers attributed patterns (sources includes attributedFeedback) over raw negatives — attributed guards sorted first"
   - "writeGuardArtifact uses atomic tmp rename: ${outPath}.tmp.${process.pid}.${Date.now()} — safe for concurrent GSD agent writes"

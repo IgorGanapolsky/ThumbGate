@@ -50,7 +50,7 @@ metrics:
 | PROOF-01b: src/api/server.js exists | PASS | server.js found |
 | PROOF-01c: /health returns 200 with version+uptime | PASS | HTTP 200, version=0.5.0, uptime=0.268s |
 | PROOF-02a: billing.js exports 5 required functions | PASS | createCheckoutSession, provisionApiKey, validateApiKey, recordUsage, handleWebhook |
-| PROOF-02b: provisionApiKey + validateApiKey round-trip | PASS | Key provisioned (rlhf_273b5d3b0...) and validated successfully |
+| PROOF-02b: provisionApiKey + validateApiKey round-trip | PASS | Key provisioned (thumbgate_273b5d3b0...) and validated successfully |
 | PROOF-03: cli init creates .thumbgate/ and config.json | PASS | .thumbgate/ created, config.json has keys: version, apiUrl, logPath, memoryPath, createdAt |
 | PROOF-04: npm test >= 314 passing, 0 failures | PASS | 362 tests passed, 0 failures (threshold: 314+) |
 

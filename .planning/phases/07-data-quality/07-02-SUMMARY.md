@@ -2,7 +2,7 @@
 phase: 07-data-quality
 plan: "02"
 subsystem: data-quality
-tags: [enrichment, inferOutcome, richContext, domain, rlhf]
+tags: [enrichment, inferOutcome, richContext, domain, ThumbGate]
 dependency_graph:
   requires: [scripts/feedback-loop.js]
   provides: [inferOutcome, enrichFeedbackContext, richContext]

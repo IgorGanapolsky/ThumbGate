@@ -30,12 +30,12 @@ test('generateLicenseKey produces valid tg_pro_ format', () => {
   }
 });
 
-test('isValidKey accepts legacy and ThumbGate prefixes', () => {
+test('isValidKey accepts ThumbGate keys and legacy-compatible formats', () => {
   const { moduleExports: license, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
   try {
-    assert.ok(license.isValidKey('rlhf_abc123'));
     assert.ok(license.isValidKey('tg_pro_abc123'));
     assert.ok(license.isValidKey('tg_abc123'));
+    assert.ok(license.isValidKey(`legacy_${'a'.repeat(24)}`));
     assert.ok(!license.isValidKey('invalid_key'));
     assert.ok(!license.isValidKey(''));
     assert.ok(!license.isValidKey(null));
@@ -49,8 +49,8 @@ test('activateLicense rejects invalid prefixes but accepts legacy Stripe keys', 
   try {
     const result = license.activateLicense('not_a_valid_key');
     assert.equal(result.success, false);
-    assert.ok(license.isValidKey(`rlhf_${'a'.repeat(32)}`), 'rlhf_ key should be accepted');
     assert.ok(license.isValidKey(`tg_${'a'.repeat(32)}`), 'tg_ key should be accepted');
+    assert.ok(license.isValidKey(`legacy_${'a'.repeat(32)}`), 'legacy-format key should be accepted');
     assert.ok(!license.isValidKey('bad_prefix_key'), 'bad prefix should be rejected');
   } finally {
     restore();

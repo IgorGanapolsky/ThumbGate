@@ -68,7 +68,7 @@ Output: scripts/prove-lancedb.js, proof/lancedb-report.md, npm run prove:lancedb
   <name>Task 1: Create scripts/prove-lancedb.js proof script</name>
   <files>scripts/prove-lancedb.js, package.json</files>
   <action>
-    Read /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/prove-adapters.js first to understand the proof report pattern, then create /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/prove-lancedb.js.
+    Read /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/prove-adapters.js first to understand the proof report pattern, then create /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/prove-lancedb.js.
 
     The script must:
     1. Run a smoke test using real LanceDB (not stub embed): insert a test feedback entry, search for it, verify result returned.
@@ -123,11 +123,11 @@ Output: scripts/prove-lancedb.js, proof/lancedb-report.md, npm run prove:lancedb
   <action>
     STEP 1: Run the full test suite to confirm no regressions:
     ```bash
-    cd /Users/ganapolsky_i/workspace/git/igor/rlhf && npm test
+    cd /Users/ganapolsky_i/workspace/git/igor/ThumbGate && npm test
     ```
     All tests must pass. If any test is broken by Phase 4 additions, fix the breakage before proceeding.
 
-    STEP 2: Update /Users/ganapolsky_i/workspace/git/igor/rlhf/.planning/REQUIREMENTS.md — mark VEC-01 through VEC-05 as complete:
+    STEP 2: Update /Users/ganapolsky_i/workspace/git/igor/ThumbGate/.planning/REQUIREMENTS.md — mark VEC-01 through VEC-05 as complete:
     Change:
     ```
     - [ ] **VEC-01**: ...
@@ -165,7 +165,7 @@ Output: scripts/prove-lancedb.js, proof/lancedb-report.md, npm run prove:lancedb
 </tasks>
 
 <verification>
-Run from /Users/ganapolsky_i/workspace/git/igor/rlhf:
+Run from /Users/ganapolsky_i/workspace/git/igor/ThumbGate:
 1. `npm run prove:lancedb` → exits 0, writes proof/lancedb-report.md
 2. `npm test` → exits 0, all tests pass
 3. `ls proof/lancedb-report.md proof/lancedb-report.json` → both exist

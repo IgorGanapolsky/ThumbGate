@@ -16,7 +16,7 @@ tech-stack:
   added: []
   patterns:
     - "Runtime export diffing via require() + Object.keys() — authoritative over AST approaches"
-    - "Verdict classification: COMPATIBLE / PARTIALLY COMPATIBLE / INCOMPATIBLE based on rlhf-only and subway-only overlap"
+    - "Verdict classification: COMPATIBLE / PARTIALLY COMPATIBLE / INCOMPATIBLE based on ThumbGate-only and subway-only overlap"
     - "Guard CLI with require.main === module to prevent side effects on require()"
 
 key-files:
@@ -32,7 +32,7 @@ key-decisions:
   - "captureFeedback vs recordFeedback divergence in feedback-loop.js requires alias map, not rename — Phase 1 maps, Phase 2/3 ports"
 
 patterns-established:
-  - "Pattern: auditScript(relPath) — single function auditing one script across both repos, returns { script, rlhfKeys, subwayKeys, shared, rlhfOnly, subwayOnly, compatible }"
+  - "Pattern: auditScript(relPath) — single function auditing one script across both repos, returns { script, thumbgateKeys, subwayKeys, shared, thumbgateOnly, subwayOnly, compatible }"
   - "Pattern: verdict() — COMPATIBLE/PARTIALLY COMPATIBLE/INCOMPATIBLE classification based on presence of primary function name divergence"
 
 requirements-completed: [CNTR-01]
@@ -43,7 +43,7 @@ completed: 2026-03-04
 
 # Phase 1 Plan 01: Contract Audit Summary
 
-**Node.js runtime export shape auditor (require + Object.keys) across 3 shared scripts between rlhf and Subway repos, producing machine-verifiable CNTR-01 evidence with alias map**
+**Node.js runtime export shape auditor (require + Object.keys) across 3 shared scripts between ThumbGate and Subway repos, producing machine-verifiable CNTR-01 evidence with alias map**
 
 ## Performance
 
@@ -55,10 +55,10 @@ completed: 2026-03-04
 
 ## Accomplishments
 
-- `scripts/contract-audit.js` loads all 3 shared scripts from both repos via `require()` at runtime, computes shared/rlhf-only/subway-only export diffs, prints JSON to stdout, and writes `proof/contract-audit-report.md`
+- `scripts/contract-audit.js` loads all 3 shared scripts from both repos via `require()` at runtime, computes shared/ThumbGate-only/subway-only export diffs, prints JSON to stdout, and writes `proof/contract-audit-report.md`
 - `proof/contract-audit-report.md` contains compatibility verdicts, shared export tables, and alias map for all 3 scripts — machine-generated CNTR-01 evidence
 - Audit JSON output validated against known divergence map from 1-RESEARCH.md; discrepancies documented (parseTimestamp export delta, baseline test count update)
-- All 83 existing rlhf tests continue to pass after contract-audit.js was added (60 node-runner + 23 script-runner)
+- All 83 existing ThumbGate tests continue to pass after contract-audit.js was added (60 node-runner + 23 script-runner)
 
 ## Task Commits
 
