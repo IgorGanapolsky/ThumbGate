@@ -90,7 +90,15 @@ const {
   loadStats: loadGateStats,
   setConstraint,
   loadConstraints,
+  setTaskScope,
+  setBranchGovernance,
+  getScopeState,
+  getBranchGovernanceState,
+  approveProtectedAction,
 } = require('../../scripts/gates-engine');
+const {
+  evaluateOperationalIntegrity,
+} = require('../../scripts/operational-integrity');
 const {
   generateDashboard,
 } = require('../../scripts/dashboard');
@@ -3487,6 +3495,80 @@ async function addContext(){
 
       if (req.method === 'GET' && pathname === '/v1/gates/constraints') {
         sendJson(res, 200, loadConstraints());
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/gates/task-scope') {
+        const body = await parseJsonBody(req);
+        const scope = setTaskScope({
+          taskId: body.taskId,
+          summary: body.summary,
+          allowedPaths: body.allowedPaths,
+          protectedPaths: body.protectedPaths,
+          repoPath: body.repoPath,
+          localOnly: body.localOnly === true,
+          clear: body.clear === true,
+        });
+        sendJson(res, 200, { scope });
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/gates/task-scope') {
+        sendJson(res, 200, getScopeState());
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/gates/branch-governance') {
+        const body = await parseJsonBody(req);
+        const branchGovernance = setBranchGovernance({
+          branchName: body.branchName,
+          baseBranch: body.baseBranch,
+          prRequired: body.prRequired,
+          prNumber: body.prNumber,
+          prUrl: body.prUrl,
+          queueRequired: body.queueRequired,
+          localOnly: body.localOnly === true,
+          releaseVersion: body.releaseVersion,
+          releaseEvidence: body.releaseEvidence,
+          releaseSensitiveGlobs: body.releaseSensitiveGlobs,
+          clear: body.clear === true,
+        });
+        sendJson(res, 200, { branchGovernance });
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/gates/branch-governance') {
+        sendJson(res, 200, { branchGovernance: getBranchGovernanceState() });
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/gates/protected-approval') {
+        const body = await parseJsonBody(req);
+        const approval = approveProtectedAction({
+          pathGlobs: body.pathGlobs,
+          reason: body.reason,
+          evidence: body.evidence,
+          taskId: body.taskId,
+          ttlMs: body.ttlMs,
+        });
+        sendJson(res, 200, { approved: true, approval });
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/ops/integrity') {
+        const command = parsed.searchParams.get('command') || undefined;
+        const baseBranch = parsed.searchParams.get('baseBranch') || undefined;
+        const requirePrForReleaseSensitive = parsed.searchParams.get('requirePrForReleaseSensitive') === 'true';
+        const requireVersionNotBehindBase = parsed.searchParams.get('requireVersionNotBehindBase') === 'true';
+        const report = evaluateOperationalIntegrity({
+          repoPath: process.cwd(),
+          baseBranch,
+          command,
+          requirePrForReleaseSensitive,
+          requireVersionNotBehindBase,
+          branchGovernance: getBranchGovernanceState(),
+        });
+        sendJson(res, 200, report);
         return;
       }
 

@@ -16,6 +16,7 @@ const COVERAGE_INCLUDE_GLOBS = [
 const COVERAGE_EXCLUDE_GLOBS = [
   'tests/**/*.js',
 ];
+let cachedCoverageFilterSupport;
 
 function findCoverageTestFiles({
   dir = TESTS_DIR,
@@ -39,29 +40,35 @@ function findCoverageTestFiles({
   return files.sort();
 }
 
-function supportsCoveragePatternFlags({
-  spawn = spawnSync,
-} = {}) {
+function detectCoverageFilterSupport({ spawn = spawnSync } = {}) {
+  if (spawn === spawnSync && cachedCoverageFilterSupport !== undefined) {
+    return cachedCoverageFilterSupport;
+  }
+
   const result = spawn(process.execPath, ['--help'], {
     encoding: 'utf8',
   });
+  const helpText = `${result.stdout || ''}\n${result.stderr || ''}`;
+  const supported = helpText.includes('--test-coverage-include') && helpText.includes('--test-coverage-exclude');
 
-  if (result.error) {
-    return false;
+  if (spawn === spawnSync) {
+    cachedCoverageFilterSupport = supported;
   }
 
-  const help = `${result.stdout || ''}\n${result.stderr || ''}`;
-  return help.includes('--test-coverage-include') && help.includes('--test-coverage-exclude');
+  return supported;
 }
 
-function buildCoverageArgs(files, { supportsPatternFlags = true } = {}) {
+function buildCoverageArgs(files, { spawn = spawnSync, supportsFilters } = {}) {
   const args = [
     '--test',
     '--test-concurrency=1',
     '--experimental-test-coverage',
   ];
 
-  if (supportsPatternFlags) {
+  const useFilterFlags = supportsFilters === undefined
+    ? detectCoverageFilterSupport({ spawn })
+    : supportsFilters;
+  if (useFilterFlags) {
     args.push(
       ...COVERAGE_INCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-include', pattern]),
       ...COVERAGE_EXCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-exclude', pattern]),
@@ -76,17 +83,17 @@ function runCoverage({
   files = findCoverageTestFiles(),
   cwd = PROJECT_ROOT,
   spawn = spawnSync,
-  supportsPatternFlags = supportsCoveragePatternFlags({ spawn }),
+  supportsFilters,
 } = {}) {
   if (files.length === 0) {
     return {
       exitCode: 1,
       error: 'No test files found for coverage run.',
-      args: buildCoverageArgs(files, { supportsPatternFlags }),
+      args: buildCoverageArgs(files, { spawn, supportsFilters }),
     };
   }
 
-  const args = buildCoverageArgs(files, { supportsPatternFlags });
+  const args = buildCoverageArgs(files, { spawn, supportsFilters });
   const result = spawn(process.execPath, args, {
     cwd,
     env: process.env,
@@ -113,8 +120,8 @@ module.exports = {
   COVERAGE_INCLUDE_GLOBS,
   PROJECT_ROOT,
   TESTS_DIR,
+  detectCoverageFilterSupport,
   findCoverageTestFiles,
   buildCoverageArgs,
   runCoverage,
-  supportsCoveragePatternFlags,
 };

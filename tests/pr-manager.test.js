@@ -9,6 +9,7 @@ const {
   loadManagedPrs,
   managePrs,
   resolveBlockers,
+  performMerge,
 } = require('../scripts/pr-manager');
 
 function createRunner(results) {
@@ -242,7 +243,8 @@ test('PR Manager - managePrs merges ready open PRs discovered from the repo list
   assert.equal(result.prs.length, 1);
   assert.equal(result.prs[0].number, 282);
   assert.equal(result.prs[0].outcome.status, 'ready');
-  assert.equal(result.prs[0].outcome.merged, true);
+  assert.equal(result.prs[0].outcome.mergeRequested, true);
+  assert.match(result.prs[0].outcome.mergeMode, /merged|queued_or_auto/);
 });
 
 test('PR Manager - managePrs leaves pending-check PRs unmerged', async () => {
@@ -273,4 +275,17 @@ test('PR Manager - managePrs leaves pending-check PRs unmerged', async () => {
   assert.equal(result.prs[0].number, 283);
   assert.equal(result.prs[0].outcome.status, 'blocked');
   assert.equal(result.prs[0].outcome.reason, 'ci_pending');
+});
+
+test('PR Manager - performMerge never uses admin bypass', () => {
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    return { status: 0, stdout: 'queued', stderr: '' };
+  };
+
+  const result = performMerge(321, runner);
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls[0], ['pr', 'merge', '321', '--squash', '--delete-branch', '--auto']);
+  assert.ok(!calls[0].includes('--admin'));
 });

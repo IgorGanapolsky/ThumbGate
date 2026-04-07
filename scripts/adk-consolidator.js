@@ -12,7 +12,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { GoogleGenAI } = require('@google/genai');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const { getFeedbackPaths, readJSONL } = require('./feedback-loop');
@@ -91,7 +90,20 @@ async function consolidateMemory() {
     return;
   }
 
-  const ai = useFakeConsolidation ? null : new GoogleGenAI({ apiKey });
+  let ai = null;
+  if (!useFakeConsolidation) {
+    let GoogleGenAI;
+    try {
+      ({ GoogleGenAI } = require('@google/genai'));
+    } catch (error) {
+      if (error && error.code === 'MODULE_NOT_FOUND') {
+        console.warn('[ADK Consolidator] @google/genai is not installed. Skipping active consolidation.');
+        return;
+      }
+      throw error;
+    }
+    ai = new GoogleGenAI({ apiKey });
+  }
   const paths = getFeedbackPaths();
   const state = loadState();
 

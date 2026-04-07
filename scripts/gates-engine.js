@@ -4,9 +4,13 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 const { isProTier, FREE_TIER_MAX_GATES } = require('./rate-limiter');
+const {
+  DEFAULT_BASE_BRANCH,
+  evaluateOperationalIntegrity,
+} = require('./operational-integrity');
 
 /**
  * Computes the SHA-256 hash of an executable binary to prevent path-based bypasses.
@@ -50,8 +54,25 @@ const CONSTRAINTS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'se
 const STATS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'gate-stats.json');
 const SESSION_ACTIONS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'session-actions.json');
 const CUSTOM_CLAIM_GATES_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'claim-verification.json');
+const GOVERNANCE_STATE_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'governance-state.json');
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
 const SESSION_ACTION_TTL_MS = 60 * 60 * 1000; // 1 hour
+const PROTECTED_APPROVAL_TTL_MS = 60 * 60 * 1000; // 1 hour
+const DEFAULT_PROTECTED_FILE_GLOBS = [
+  'AGENTS.md',
+  'CLAUDE.md',
+  'CLAUDE.local.md',
+  'GEMINI.md',
+  'README.md',
+  '.gitignore',
+  '.husky/**',
+  '.claude/**',
+  'skills/**',
+  'SKILL.md',
+  'config/gates/**',
+];
+const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
+const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+pr\s+(?:create|merge)|npm\s+publish|yarn\s+publish|pnpm\s+publish|rm\s+-rf)\b/i;
 
 // ---------------------------------------------------------------------------
 // Config loading
@@ -122,6 +143,213 @@ function saveState(state) { saveJSON(module.exports.STATE_PATH, state); }
 
 function loadConstraints() { return loadJSON(module.exports.CONSTRAINTS_PATH); }
 function saveConstraints(constraints) { saveJSON(module.exports.CONSTRAINTS_PATH, constraints); }
+
+function normalizePosix(filePath) {
+  return String(filePath || '')
+    .replace(/\\/g, '/')
+    .replace(/^\.\//, '')
+    .replace(/^\/+/, '')
+    .trim();
+}
+
+function normalizeGlob(glob) {
+  return normalizePosix(glob).replace(/\/+$/, '');
+}
+
+function sanitizeGlobList(globs) {
+  if (!Array.isArray(globs)) return [];
+  return [...new Set(globs.map((glob) => normalizeGlob(glob)).filter(Boolean))];
+}
+
+function globToRegExp(glob) {
+  const normalized = normalizeGlob(glob);
+  let pattern = '^';
+  for (let i = 0; i < normalized.length; i++) {
+    const char = normalized[i];
+    const next = normalized[i + 1];
+    if (char === '*') {
+      if (next === '*') {
+        pattern += '.*';
+        i += 1;
+      } else {
+        pattern += '[^/]*';
+      }
+      continue;
+    }
+    if ('\\^$+?.()|{}[]'.includes(char)) {
+      pattern += `\\${char}`;
+      continue;
+    }
+    pattern += char;
+  }
+  pattern += '$';
+  return new RegExp(pattern);
+}
+
+function matchesGlob(filePath, glob) {
+  if (!glob) return false;
+  try {
+    return globToRegExp(glob).test(normalizePosix(filePath));
+  } catch {
+    return false;
+  }
+}
+
+function matchesAnyGlob(filePath, globs) {
+  return sanitizeGlobList(globs).some((glob) => matchesGlob(filePath, glob));
+}
+
+function clampTtlMs(value, fallbackMs) {
+  const fallback = Number.isFinite(fallbackMs) ? fallbackMs : PROTECTED_APPROVAL_TTL_MS;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return fallback;
+  return Math.min(Math.max(numeric, 60 * 1000), 24 * 60 * 60 * 1000);
+}
+
+function loadGovernanceState() {
+  const raw = loadJSON(module.exports.GOVERNANCE_STATE_PATH);
+  const state = {
+    taskScope: raw && raw.taskScope && typeof raw.taskScope === 'object' ? raw.taskScope : null,
+    protectedApprovals: Array.isArray(raw && raw.protectedApprovals) ? raw.protectedApprovals : [],
+    branchGovernance: raw && raw.branchGovernance && typeof raw.branchGovernance === 'object'
+      ? raw.branchGovernance
+      : null,
+  };
+  const now = Date.now();
+  const activeApprovals = state.protectedApprovals.filter((entry) => {
+    if (!entry || typeof entry !== 'object') return false;
+    if (!entry.timestamp || !entry.expiresAt) return false;
+    return now < entry.expiresAt;
+  });
+  if (activeApprovals.length !== state.protectedApprovals.length) {
+    state.protectedApprovals = activeApprovals;
+    saveGovernanceState(state);
+  }
+  return state;
+}
+
+function saveGovernanceState(state) {
+  const next = {
+    taskScope: state && state.taskScope ? state.taskScope : null,
+    protectedApprovals: Array.isArray(state && state.protectedApprovals) ? state.protectedApprovals : [],
+    branchGovernance: state && state.branchGovernance ? state.branchGovernance : null,
+  };
+  saveJSON(module.exports.GOVERNANCE_STATE_PATH, next);
+}
+
+function setTaskScope(scopeInput = {}) {
+  if (scopeInput && scopeInput.clear === true) {
+    const currentState = loadGovernanceState();
+    const cleared = {
+      taskScope: null,
+      protectedApprovals: currentState.protectedApprovals,
+      branchGovernance: currentState.branchGovernance,
+    };
+    saveGovernanceState(cleared);
+    return null;
+  }
+
+  const allowedPaths = sanitizeGlobList(scopeInput.allowedPaths);
+  if (allowedPaths.length === 0) {
+    throw new Error('allowedPaths must be a non-empty array');
+  }
+
+  const protectedPaths = sanitizeGlobList(
+    Array.isArray(scopeInput.protectedPaths) && scopeInput.protectedPaths.length > 0
+      ? scopeInput.protectedPaths
+      : DEFAULT_PROTECTED_FILE_GLOBS
+  );
+  const taskScope = {
+    taskId: String(scopeInput.taskId || '').trim() || null,
+    summary: String(scopeInput.summary || '').trim() || null,
+    allowedPaths,
+    protectedPaths,
+    localOnly: scopeInput.localOnly === true,
+    repoPath: String(scopeInput.repoPath || '').trim() || null,
+    createdAt: new Date().toISOString(),
+    timestamp: Date.now(),
+  };
+  const state = loadGovernanceState();
+  state.taskScope = taskScope;
+  saveGovernanceState(state);
+  if (taskScope.localOnly) {
+    setConstraint('local_only', true);
+  }
+  return taskScope;
+}
+
+function approveProtectedAction(input = {}) {
+  const pathGlobs = sanitizeGlobList(input.pathGlobs);
+  if (pathGlobs.length === 0) {
+    throw new Error('pathGlobs must be a non-empty array');
+  }
+  const reason = String(input.reason || '').trim();
+  if (!reason) {
+    throw new Error('reason is required');
+  }
+
+  const ttlMs = clampTtlMs(input.ttlMs, PROTECTED_APPROVAL_TTL_MS);
+  const now = Date.now();
+  const entry = {
+    id: `approval_${now}_${Math.random().toString(36).slice(2, 8)}`,
+    pathGlobs,
+    reason,
+    evidence: String(input.evidence || '').trim() || null,
+    taskId: String(input.taskId || '').trim() || null,
+    timestamp: now,
+    expiresAt: now + ttlMs,
+  };
+
+  const state = loadGovernanceState();
+  state.protectedApprovals.push(entry);
+  saveGovernanceState(state);
+  return entry;
+}
+
+function setBranchGovernance(input = {}) {
+  if (input && input.clear === true) {
+    const state = loadGovernanceState();
+    state.branchGovernance = null;
+    saveGovernanceState(state);
+    return null;
+  }
+
+  const branchName = String(input.branchName || '').trim() || null;
+  const baseBranch = String(input.baseBranch || '').trim() || DEFAULT_BASE_BRANCH;
+  const releaseSensitiveGlobs = sanitizeGlobList(
+    Array.isArray(input.releaseSensitiveGlobs) ? input.releaseSensitiveGlobs : []
+  );
+  const governance = {
+    branchName,
+    baseBranch,
+    prRequired: input.prRequired !== false,
+    prNumber: String(input.prNumber || '').trim() || null,
+    prUrl: String(input.prUrl || '').trim() || null,
+    queueRequired: input.queueRequired === true,
+    localOnly: input.localOnly === true,
+    releaseVersion: String(input.releaseVersion || '').trim() || null,
+    releaseEvidence: String(input.releaseEvidence || '').trim() || null,
+    releaseSensitiveGlobs,
+    timestamp: Date.now(),
+    createdAt: new Date().toISOString(),
+  };
+
+  const state = loadGovernanceState();
+  state.branchGovernance = governance;
+  saveGovernanceState(state);
+  if (governance.localOnly) {
+    setConstraint('local_only', true);
+  }
+  return governance;
+}
+
+function getScopeState() {
+  return loadGovernanceState();
+}
+
+function getBranchGovernanceState() {
+  return loadGovernanceState().branchGovernance;
+}
 
 function setConstraint(key, value) {
   const constraints = loadConstraints();
@@ -198,6 +426,264 @@ function recordStat(gateId, action, gate) {
 // Reasoning chain builder
 // ---------------------------------------------------------------------------
 
+function getHybridFeedbackModule() {
+  try {
+    return require('./hybrid-feedback-context');
+  } catch {
+    return null;
+  }
+}
+
+function safeExecFileLines(binary, args, cwd) {
+  try {
+    const output = execFileSync(binary, args, {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (!output) return [];
+    return output.split('\n').map((line) => line.trim()).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function resolveRepoRoot(toolInput = {}) {
+  const candidates = [
+    toolInput.repoPath,
+    toolInput.cwd,
+    process.cwd(),
+  ]
+    .filter(Boolean)
+    .map((value) => path.resolve(String(value)));
+
+  for (const cwd of candidates) {
+    try {
+      const root = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+        cwd,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+      if (root) return root;
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+function toRepoRelativePath(filePath, repoRoot) {
+  const value = String(filePath || '').trim();
+  if (!value) return '';
+  if (repoRoot && path.isAbsolute(value)) {
+    const relative = path.relative(repoRoot, value);
+    if (!relative.startsWith('..') && !path.isAbsolute(relative)) {
+      return normalizePosix(relative);
+    }
+  }
+  return normalizePosix(value);
+}
+
+function collectInlineAffectedFiles(toolInput = {}, repoRoot) {
+  const collected = [];
+  const arrayFields = [
+    toolInput.changed_files,
+    toolInput.changedFiles,
+    toolInput.files,
+    toolInput.file_paths,
+    toolInput.filePaths,
+    toolInput.paths,
+  ];
+
+  for (const field of arrayFields) {
+    if (!Array.isArray(field)) continue;
+    for (const entry of field) {
+      const normalized = toRepoRelativePath(entry, repoRoot);
+      if (normalized) collected.push(normalized);
+    }
+  }
+
+  const scalarFields = [
+    toolInput.file_path,
+    toolInput.filePath,
+    toolInput.path,
+  ];
+  for (const field of scalarFields) {
+    const normalized = toRepoRelativePath(field, repoRoot);
+    if (normalized) collected.push(normalized);
+  }
+
+  return [...new Set(collected)];
+}
+
+function getUpstreamRef(repoRoot) {
+  const upstream = safeExecFileLines('git', ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'], repoRoot)[0];
+  if (upstream) return upstream;
+  const remoteHead = safeExecFileLines('git', ['symbolic-ref', 'refs/remotes/origin/HEAD'], repoRoot)[0];
+  if (remoteHead) return remoteHead.replace(/^refs\/remotes\//, '');
+  return null;
+}
+
+function getBranchDiffFiles(repoRoot) {
+  const upstream = getUpstreamRef(repoRoot);
+  if (upstream) {
+    return safeExecFileLines('git', ['diff', '--name-only', `${upstream}...HEAD`], repoRoot);
+  }
+  const headParent = safeExecFileLines('git', ['rev-parse', '--verify', 'HEAD~1'], repoRoot)[0];
+  if (headParent) {
+    return safeExecFileLines('git', ['diff', '--name-only', 'HEAD~1..HEAD'], repoRoot);
+  }
+  return safeExecFileLines('git', ['diff', '--name-only'], repoRoot);
+}
+
+function extractAffectedFiles(toolName, toolInput = {}) {
+  const repoRoot = resolveRepoRoot(toolInput);
+  const files = new Set(collectInlineAffectedFiles(toolInput, repoRoot));
+  const command = String(toolInput.command || '');
+
+  if (toolName === 'Bash' && repoRoot && command) {
+    if (/\bgit\s+commit\b/i.test(command)) {
+      for (const filePath of safeExecFileLines('git', ['diff', '--cached', '--name-only'], repoRoot)) {
+        files.add(normalizePosix(filePath));
+      }
+    }
+
+    if (/\bgit\s+add\b/i.test(command)) {
+      for (const filePath of safeExecFileLines('git', ['diff', '--name-only'], repoRoot)) {
+        files.add(normalizePosix(filePath));
+      }
+      for (const filePath of safeExecFileLines('git', ['ls-files', '--others', '--exclude-standard'], repoRoot)) {
+        files.add(normalizePosix(filePath));
+      }
+    }
+
+    if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command)) {
+      for (const filePath of getBranchDiffFiles(repoRoot)) {
+        files.add(normalizePosix(filePath));
+      }
+    }
+  }
+
+  return {
+    repoRoot,
+    files: [...files].filter(Boolean),
+  };
+}
+
+function isHighRiskAction(toolName, toolInput = {}, affectedFiles = []) {
+  if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) return true;
+  if (toolName !== 'Bash') return false;
+  const command = String(toolInput.command || '');
+  return HIGH_RISK_BASH_PATTERN.test(command);
+}
+
+function isScopeEnforcedAction(toolName, toolInput = {}, affectedFiles = []) {
+  if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) return true;
+  if (toolName !== 'Bash') return false;
+  const command = String(toolInput.command || '');
+  if (!HIGH_RISK_BASH_PATTERN.test(command)) return false;
+  return affectedFiles.length > 0;
+}
+
+function formatFileList(files, limit = 5) {
+  const items = Array.isArray(files) ? files.filter(Boolean) : [];
+  if (items.length === 0) return 'none';
+  if (items.length <= limit) return items.join(', ');
+  return `${items.slice(0, limit).join(', ')} (+${items.length - limit} more)`;
+}
+
+function buildTaskScopeViolation(taskScope, affectedFiles) {
+  if (!Array.isArray(affectedFiles) || affectedFiles.length === 0) return null;
+  if (!taskScope || !Array.isArray(taskScope.allowedPaths) || taskScope.allowedPaths.length === 0) {
+    return {
+      reasonCode: 'missing_task_scope',
+      outsideFiles: affectedFiles.slice(),
+      allowedPaths: [],
+      summary: null,
+    };
+  }
+  const outsideFiles = affectedFiles.filter((filePath) => !matchesAnyGlob(filePath, taskScope.allowedPaths));
+  if (outsideFiles.length === 0) return null;
+  return {
+    reasonCode: 'outside_declared_scope',
+    outsideFiles,
+    allowedPaths: taskScope.allowedPaths.slice(),
+    summary: taskScope.summary || null,
+  };
+}
+
+function buildProtectedApprovalViolation(protectedGlobs, approvals, affectedFiles) {
+  const normalizedProtected = sanitizeGlobList(protectedGlobs);
+  if (normalizedProtected.length === 0 || !Array.isArray(affectedFiles) || affectedFiles.length === 0) {
+    return null;
+  }
+  const protectedFiles = affectedFiles.filter((filePath) => matchesAnyGlob(filePath, normalizedProtected));
+  if (protectedFiles.length === 0) return null;
+
+  const activeApprovals = Array.isArray(approvals) ? approvals : [];
+  const missingApprovalFiles = protectedFiles.filter((filePath) => {
+    return !activeApprovals.some((entry) => matchesAnyGlob(filePath, entry.pathGlobs || []));
+  });
+  if (missingApprovalFiles.length === 0) return null;
+
+  return {
+    protectedFiles,
+    missingApprovalFiles,
+    protectedGlobs: normalizedProtected,
+  };
+}
+
+function buildBranchGovernanceViolation(governanceState, toolInput = {}, affectedFiles = [], repoRoot = null, requireReleaseReadiness = false) {
+  const command = String(toolInput.command || '').trim();
+  if (!command) return null;
+
+  const integrity = evaluateOperationalIntegrity({
+    repoPath: repoRoot || (governanceState && governanceState.taskScope && governanceState.taskScope.repoPath) || process.cwd(),
+    branchGovernance: governanceState ? governanceState.branchGovernance : null,
+    changedFiles: affectedFiles,
+    command,
+    requireVersionNotBehindBase: requireReleaseReadiness,
+  });
+
+  if (!integrity || integrity.blockers.length === 0) {
+    return null;
+  }
+
+  return {
+    blockers: integrity.blockers,
+    currentBranch: integrity.currentBranch,
+    baseBranch: integrity.baseBranch,
+    releaseSensitiveFiles: integrity.releaseSensitiveFiles,
+    packageVersion: integrity.packageVersion,
+    baseVersion: integrity.baseVersion,
+  };
+}
+
+function buildGateMessage(gate, matchDetails) {
+  if (matchDetails && matchDetails.taskScopeViolation) {
+    const violation = matchDetails.taskScopeViolation;
+    if (violation.reasonCode === 'missing_task_scope') {
+      return `No task scope is declared for this high-risk action. Affected files: ${formatFileList(violation.outsideFiles)}.`;
+    }
+    return `Action touches files outside the declared task scope: ${formatFileList(violation.outsideFiles)}. Allowed paths: ${formatFileList(violation.allowedPaths)}.`;
+  }
+
+  if (matchDetails && matchDetails.protectedApprovalViolation) {
+    const violation = matchDetails.protectedApprovalViolation;
+    return `Protected files require explicit approval before editing or publishing. Missing approval for: ${formatFileList(violation.missingApprovalFiles)}.`;
+  }
+
+  if (matchDetails && matchDetails.branchGovernanceViolation) {
+    const [firstBlocker] = matchDetails.branchGovernanceViolation.blockers || [];
+    if (firstBlocker && firstBlocker.message) {
+      return firstBlocker.message;
+    }
+  }
+
+  return gate.message;
+}
+
 /**
  * Build a human-readable reasoning chain explaining WHY a gate decision was made.
  * Returns an array of evidence steps — each a short sentence a developer can scan.
@@ -210,10 +696,14 @@ function recordStat(gateId, action, gate) {
  */
 function buildReasoning(gate, toolName, toolInput, extras = {}) {
   const steps = [];
-  const text = toolInput.command || toolInput.file_path || toolInput.path || '';
+  const text = extras.matchText || toolInput.command || toolInput.file_path || toolInput.path || '';
 
   // 1. What matched
-  steps.push(`Pattern /${gate.pattern}/ matched "${text.length > 80 ? text.slice(0, 80) + '…' : text}"`);
+  if (gate.pattern) {
+    steps.push(`Pattern /${gate.pattern}/ matched "${text.length > 80 ? text.slice(0, 80) + '…' : text}"`);
+  } else {
+    steps.push(`Structural gate ${gate.id} matched requested action on "${text.length > 80 ? text.slice(0, 80) + '…' : text}"`);
+  }
 
   // 2. Gate identity
   steps.push(`Gate ${gate.id} [${gate.action}] — layer: ${gate.layer || 'Execution'}, severity: ${gate.severity || 'medium'}`);
@@ -230,6 +720,39 @@ function buildReasoning(gate, toolName, toolInput, extras = {}) {
   if (gate.when && gate.when.constraints) {
     const keys = Object.entries(gate.when.constraints).map(([k, v]) => `${k}=${v}`).join(', ');
     steps.push(`Active because constraint ${keys} is set`);
+  }
+
+  if (extras.affectedFiles && extras.affectedFiles.length > 0) {
+    steps.push(`Affected files: ${formatFileList(extras.affectedFiles)}`);
+  }
+
+  if (extras.taskScopeViolation) {
+    if (extras.taskScopeViolation.reasonCode === 'missing_task_scope') {
+      steps.push('No active task scope is declared for this high-risk action');
+    } else {
+      steps.push(`Outside declared task scope: ${formatFileList(extras.taskScopeViolation.outsideFiles)}`);
+      steps.push(`Declared scope: ${formatFileList(extras.taskScopeViolation.allowedPaths)}`);
+    }
+  }
+
+  if (extras.protectedApprovalViolation) {
+    steps.push(`Protected files without approval: ${formatFileList(extras.protectedApprovalViolation.missingApprovalFiles)}`);
+  }
+
+  if (extras.branchGovernanceViolation) {
+    if (extras.branchGovernanceViolation.currentBranch || extras.branchGovernanceViolation.baseBranch) {
+      steps.push(`Branch governance context: ${extras.branchGovernanceViolation.currentBranch || 'unknown'} -> ${extras.branchGovernanceViolation.baseBranch || 'unknown'}`);
+    }
+    if (extras.branchGovernanceViolation.releaseSensitiveFiles && extras.branchGovernanceViolation.releaseSensitiveFiles.length > 0) {
+      steps.push(`Release-sensitive files: ${formatFileList(extras.branchGovernanceViolation.releaseSensitiveFiles)}`);
+    }
+    for (const blocker of extras.branchGovernanceViolation.blockers || []) {
+      steps.push(`Branch governance blocker: ${blocker.code} — ${blocker.message}`);
+    }
+  }
+
+  if (extras.memoryGuard && extras.memoryGuard.reason) {
+    steps.push(`Memory guard matched (${extras.memoryGuard.source}): ${extras.memoryGuard.reason}`);
   }
 
   // 5. Unless condition status
@@ -269,26 +792,176 @@ function checkWhenClause(when, constraints) {
   return true;
 }
 
-function matchesGate(gate, _toolName, toolInput) {
-  // Build the text to match against: for Bash it's the command, for Edit it's the file path
-  const text = toolInput.command || toolInput.file_path || toolInput.path || '';
-  
-  // 1. Check Regex Pattern
-  try {
-    const regex = new RegExp(gate.pattern);
-    if (!regex.test(text)) return false;
-  } catch {
-    return false;
+function matchGate(gate, toolName, toolInput = {}) {
+  const matchText = toolInput.command || toolInput.file_path || toolInput.path || '';
+  const affected = extractAffectedFiles(toolName, toolInput);
+  const affectedFiles = affected.files;
+  const repoRoot = affected.repoRoot;
+  const governanceState = loadGovernanceState();
+
+  if (Array.isArray(gate.toolNames) && gate.toolNames.length > 0 && !gate.toolNames.includes(toolName)) {
+    return { matched: false, matchText, affectedFiles };
   }
 
-  // 2. Check Executable Hash (New: Layer 5 Anti-Bypass)
-  // If a hash is specified, we must verify the content of the binary
+  if (gate.pattern) {
+    try {
+      const regex = new RegExp(gate.pattern);
+      if (!regex.test(matchText)) return { matched: false, matchText, affectedFiles };
+    } catch {
+      return { matched: false, matchText, affectedFiles };
+    }
+  }
+
   if (gate.executable_hash && toolInput.command) {
     const actualHash = computeExecutableHash(toolInput.command);
-    if (actualHash !== gate.executable_hash) return false;
+    if (actualHash !== gate.executable_hash) return { matched: false, matchText, affectedFiles };
   }
 
-  return true;
+  if (Array.isArray(gate.fileGlobs) && gate.fileGlobs.length > 0) {
+    const scopedFiles = affectedFiles.filter((filePath) => matchesAnyGlob(filePath, gate.fileGlobs));
+    if (scopedFiles.length === 0) return { matched: false, matchText, affectedFiles };
+  }
+
+  let taskScopeViolation = null;
+  if (gate.requireTaskScope) {
+    if (!isScopeEnforcedAction(toolName, toolInput, affectedFiles)) {
+      return { matched: false, matchText, affectedFiles };
+    }
+    taskScopeViolation = buildTaskScopeViolation(governanceState.taskScope, affectedFiles);
+    if (!taskScopeViolation) return { matched: false, matchText, affectedFiles };
+  }
+
+  let protectedApprovalViolation = null;
+  if (gate.requireProtectedApproval) {
+    const protectedGlobs = sanitizeGlobList(
+      Array.isArray(gate.protectedGlobs) && gate.protectedGlobs.length > 0
+        ? gate.protectedGlobs
+        : (governanceState.taskScope && governanceState.taskScope.protectedPaths) || DEFAULT_PROTECTED_FILE_GLOBS
+    );
+    protectedApprovalViolation = buildProtectedApprovalViolation(
+      protectedGlobs,
+      governanceState.protectedApprovals,
+      affectedFiles,
+    );
+    if (!protectedApprovalViolation) return { matched: false, matchText, affectedFiles };
+  }
+
+  let branchGovernanceViolation = null;
+  if (gate.requireBranchGovernance || gate.requireReleaseReadiness) {
+    branchGovernanceViolation = buildBranchGovernanceViolation(
+      governanceState,
+      toolInput,
+      affectedFiles,
+      repoRoot,
+      gate.requireReleaseReadiness === true,
+    );
+    if (!branchGovernanceViolation) return { matched: false, matchText, affectedFiles };
+  }
+
+  return {
+    matched: true,
+    matchText,
+    affectedFiles,
+    taskScopeViolation,
+    protectedApprovalViolation,
+    branchGovernanceViolation,
+  };
+}
+
+function matchesGate(gate, toolName, toolInput) {
+  return matchGate(gate, toolName, toolInput).matched;
+}
+
+function evaluateMemoryGuard(toolName, toolInput = {}) {
+  const affected = extractAffectedFiles(toolName, toolInput);
+  const affectedFiles = affected.files;
+  if (!isHighRiskAction(toolName, toolInput, affectedFiles)) {
+    return null;
+  }
+  const governanceState = loadGovernanceState();
+
+  if (isScopeEnforcedAction(toolName, toolInput, affectedFiles)) {
+    const scopeViolation = buildTaskScopeViolation(governanceState.taskScope, affectedFiles);
+    if (!scopeViolation) {
+      return null;
+    }
+  }
+
+  const command = String(toolInput.command || '');
+  if (toolName === 'Bash' && /\bgh\s+pr\s+create\b/i.test(command) && isConditionSatisfied('pr_create_allowed')) {
+    const branchGovernanceViolation = buildBranchGovernanceViolation(
+      governanceState,
+      toolInput,
+      affectedFiles,
+      affected.repoRoot,
+      /\b(?:npm|yarn|pnpm)\s+publish\b|\bgh\s+release\s+create\b|\bgit\s+tag\b/i.test(command),
+    );
+    if (!branchGovernanceViolation) {
+      return null;
+    }
+  }
+
+  if (toolName === 'Bash' && /\b(?:gh\s+pr\s+(?:create|merge)|gh\s+release\s+create|git\s+tag\b|(?:npm|yarn|pnpm)\s+publish\b)\b/i.test(command)) {
+    const branchGovernanceViolation = buildBranchGovernanceViolation(
+      governanceState,
+      toolInput,
+      affectedFiles,
+      affected.repoRoot,
+      /\b(?:npm|yarn|pnpm)\s+publish\b|\bgh\s+release\s+create\b|\bgit\s+tag\b/i.test(command),
+    );
+    if (!branchGovernanceViolation) {
+      return null;
+    }
+  }
+
+  const protectedGlobs = sanitizeGlobList(
+    (governanceState.taskScope && governanceState.taskScope.protectedPaths) || DEFAULT_PROTECTED_FILE_GLOBS
+  );
+  if (affectedFiles.length > 0 && protectedGlobs.length > 0) {
+    const protectedApprovalViolation = buildProtectedApprovalViolation(
+      protectedGlobs,
+      governanceState.protectedApprovals,
+      affectedFiles,
+    );
+    if (!protectedApprovalViolation && affectedFiles.some((filePath) => matchesAnyGlob(filePath, protectedGlobs))) {
+      return null;
+    }
+  }
+
+  const hybrid = getHybridFeedbackModule();
+  if (!hybrid || typeof hybrid.evaluatePretool !== 'function') {
+    return null;
+  }
+
+  const serializedInput = JSON.stringify({
+    toolName,
+    command: toolInput.command || null,
+    filePath: toolInput.file_path || toolInput.path || null,
+    affectedFiles,
+  });
+  const guard = hybrid.evaluatePretool(toolName, serializedInput);
+  if (!guard || guard.mode === 'allow') {
+    return null;
+  }
+
+  const message = `Recurring negative memory matched a high-risk action. Denied by default until scope/approval is made explicit. ${guard.reason}`;
+  return {
+    decision: 'deny',
+    gate: 'memory-high-risk-default-deny',
+    message,
+    severity: 'critical',
+    reasoning: buildReasoning({
+      id: 'memory-high-risk-default-deny',
+      action: 'block',
+      layer: 'Memory',
+      severity: 'critical',
+      message,
+    }, toolName, toolInput, {
+      matchText: toolInput.command || toolInput.file_path || toolInput.path || '',
+      affectedFiles,
+      memoryGuard: guard,
+    }),
+  };
 }
 
 async function checkMetricCondition(metricCondition) {
@@ -320,7 +993,8 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   const skipMetrics = METRIC_SKIP_TOOLS.includes(toolName);
 
   for (const gate of config.gates) {
-    if (!matchesGate(gate, toolName, toolInput)) continue;
+    const matchDetails = matchGate(gate, toolName, toolInput);
+    if (!matchDetails.matched) continue;
 
     // EvoSkill Hardening: check contextual 'when' clause
     if (gate.when && !checkWhenClause(gate.when, constraints)) {
@@ -352,23 +1026,43 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
       continue;
     }
 
-    const reasoning = buildReasoning(gate, toolName, toolInput, { metricFailed });
+    const message = buildGateMessage(gate, matchDetails);
+    const reasoning = buildReasoning(gate, toolName, toolInput, {
+      metricFailed,
+      ...matchDetails,
+    });
 
     if (gate.action === 'block') {
       recordStat(gate.id, 'block', gate);
-      const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
+      const result = { decision: 'deny', gate: gate.id, message, severity: gate.severity, reasoning };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
     }
 
     if (gate.action === 'warn') {
       recordStat(gate.id, 'warn', gate);
-      const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
+      const result = { decision: 'warn', gate: gate.id, message, severity: gate.severity, reasoning };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
     }
+  }
+
+  const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
+  if (memoryGuard) {
+    recordStat(memoryGuard.gate, 'block');
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: memoryGuard.gate,
+      message: memoryGuard.message,
+      severity: memoryGuard.severity,
+      source: 'gates-engine',
+    });
+    auditToFeedback(auditRecord);
+    return memoryGuard;
   }
 
   // Audit trail: record allow (no gate matched)
@@ -388,7 +1082,8 @@ function evaluateGates(toolName, toolInput, configPath) {
   const constraints = loadConstraints();
 
   for (const gate of config.gates) {
-    if (!matchesGate(gate, toolName, toolInput)) continue;
+    const matchDetails = matchGate(gate, toolName, toolInput);
+    if (!matchDetails.matched) continue;
 
     // EvoSkill Hardening: check contextual 'when' clause
     if (gate.when && !checkWhenClause(gate.when, constraints)) {
@@ -400,23 +1095,40 @@ function evaluateGates(toolName, toolInput, configPath) {
       continue;
     }
 
-    const reasoning = buildReasoning(gate, toolName, toolInput);
+    const message = buildGateMessage(gate, matchDetails);
+    const reasoning = buildReasoning(gate, toolName, toolInput, matchDetails);
 
     if (gate.action === 'block') {
       recordStat(gate.id, 'block', gate);
-      const result = { decision: 'deny', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
+      const result = { decision: 'deny', gate: gate.id, message, severity: gate.severity, reasoning };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
     }
 
     if (gate.action === 'warn') {
       recordStat(gate.id, 'warn', gate);
-      const result = { decision: 'warn', gate: gate.id, message: gate.message, severity: gate.severity, reasoning };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: gate.message, severity: gate.severity, source: 'gates-engine' });
+      const result = { decision: 'warn', gate: gate.id, message, severity: gate.severity, reasoning };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
     }
+  }
+
+  const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
+  if (memoryGuard) {
+    recordStat(memoryGuard.gate, 'block');
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: memoryGuard.gate,
+      message: memoryGuard.message,
+      severity: memoryGuard.severity,
+      source: 'gates-engine',
+    });
+    auditToFeedback(auditRecord);
+    return memoryGuard;
   }
 
   // Audit trail: record allow
@@ -760,6 +1472,13 @@ module.exports = {
   loadConstraints,
   saveConstraints,
   setConstraint,
+  loadGovernanceState,
+  saveGovernanceState,
+  setTaskScope,
+  setBranchGovernance,
+  approveProtectedAction,
+  getScopeState,
+  getBranchGovernanceState,
   isConditionSatisfied,
   satisfyCondition,
   loadStats,
@@ -789,8 +1508,11 @@ module.exports = {
   STATS_PATH,
   SESSION_ACTIONS_PATH,
   CUSTOM_CLAIM_GATES_PATH,
+  GOVERNANCE_STATE_PATH,
   TTL_MS,
   SESSION_ACTION_TTL_MS,
+  PROTECTED_APPROVAL_TTL_MS,
+  DEFAULT_PROTECTED_FILE_GLOBS,
 };
 
 // ---------------------------------------------------------------------------

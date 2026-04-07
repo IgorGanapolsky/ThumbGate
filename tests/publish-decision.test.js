@@ -90,3 +90,17 @@ test('decidePublishPlan rejects mismatched unpublished tags', () => {
     });
   }, /already exists at other-commit/);
 });
+
+test('decidePublishPlan refuses to publish from a non-default branch', () => {
+  assert.throws(() => {
+    decidePublishPlan({
+      version: '0.8.5',
+      currentSha: 'abc123',
+      currentBranch: 'feat/release-test',
+      defaultBranch: 'main',
+      published: false,
+      tagExists: false,
+      tagSha: '',
+    });
+  }, /must run from main/);
+});

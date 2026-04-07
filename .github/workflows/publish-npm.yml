@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: publish-npm-${{ github.workflow }}-${{ github.ref }}
@@ -26,7 +27,8 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: '20.x'
+          # npm provenance on GitHub Actions is most reliable on current LTS.
+          node-version: '24.x'
           registry-url: 'https://registry.npmjs.org'
       - run: npm ci --onnxruntime-node-install-cuda=skip
       - run: node scripts/sync-version.js --check
@@ -64,6 +66,8 @@ jobs:
         env:
           VERSION: ${{ steps.package.outputs.version }}
           CURRENT_SHA: ${{ github.sha }}
+          CURRENT_BRANCH: ${{ github.ref_name }}
+          DEFAULT_BRANCH: main
           NPM_PUBLISHED: ${{ steps.npm.outputs.published }}
           TAG_EXISTS: ${{ steps.tag.outputs.exists }}
           TAG_SHA: ${{ steps.tag.outputs.sha }}
@@ -82,7 +86,7 @@ jobs:
           git push origin "v${VERSION}"
       - name: Publish npm package
         if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.publish_npm == 'true') || (github.event_name == 'release' && steps.npm.outputs.published == 'false')
-        run: npm publish
+        run: npm publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Ensure GitHub Release exists

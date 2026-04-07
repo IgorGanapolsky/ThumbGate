@@ -9,6 +9,8 @@ function decidePublishPlan(options) {
   const currentSha = String(options.currentSha || '').trim();
   const tagSha = String(options.tagSha || '').trim();
   const version = String(options.version || '').trim();
+  const currentBranch = String(options.currentBranch || '').trim();
+  const defaultBranch = String(options.defaultBranch || '').trim();
   const published = normalizeBoolean(options.published);
   const tagExists = normalizeBoolean(options.tagExists);
   const tagMatchesCurrentCommit = tagExists && tagSha === currentSha;
@@ -19,6 +21,12 @@ function decidePublishPlan(options) {
 
   if (!currentSha) {
     throw new Error('CURRENT_SHA is required.');
+  }
+
+  if (currentBranch && defaultBranch && currentBranch !== defaultBranch) {
+    throw new Error(
+      `Refusing to publish from ${currentBranch}. Publish workflow must run from ${defaultBranch}.`
+    );
   }
 
   if (published && !tagExists) {
@@ -106,6 +114,8 @@ function runCli(env = process.env) {
   const plan = decidePublishPlan({
     version: env.VERSION,
     currentSha: env.CURRENT_SHA || env.GITHUB_SHA,
+    currentBranch: env.CURRENT_BRANCH || env.GITHUB_REF_NAME,
+    defaultBranch: env.DEFAULT_BRANCH,
     published: env.NPM_PUBLISHED,
     tagExists: env.TAG_EXISTS,
     tagSha: env.TAG_SHA,

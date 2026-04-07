@@ -43,10 +43,18 @@ const {
   evaluateSecretGuard,
   satisfyCondition,
   loadStats: loadGateStats,
+  setTaskScope,
+  setBranchGovernance,
+  getScopeState,
+  getBranchGovernanceState,
+  approveProtectedAction,
   trackAction,
   verifyClaimEvidence,
   registerClaimGate,
 } = require('../../scripts/gates-engine');
+const {
+  evaluateOperationalIntegrity,
+} = require('../../scripts/operational-integrity');
 const { diagnoseFailure } = require('../../scripts/failure-diagnostics');
 const {
   analyzeCodeGraphImpact,
@@ -519,6 +527,49 @@ async function callToolInner(name, args) {
       }
       return toTextResult(result);
     }
+    case 'set_task_scope':
+      return toTextResult({
+        scope: setTaskScope({
+          taskId: args.taskId,
+          summary: args.summary,
+          allowedPaths: args.allowedPaths,
+          protectedPaths: args.protectedPaths,
+          repoPath: args.repoPath,
+          localOnly: args.localOnly === true,
+          clear: args.clear === true,
+        }),
+      });
+    case 'get_scope_state':
+      return toTextResult(getScopeState());
+    case 'set_branch_governance':
+      return toTextResult({
+        branchGovernance: setBranchGovernance({
+          branchName: args.branchName,
+          baseBranch: args.baseBranch,
+          prRequired: args.prRequired,
+          prNumber: args.prNumber,
+          prUrl: args.prUrl,
+          queueRequired: args.queueRequired,
+          localOnly: args.localOnly === true,
+          releaseVersion: args.releaseVersion,
+          releaseEvidence: args.releaseEvidence,
+          releaseSensitiveGlobs: args.releaseSensitiveGlobs,
+          clear: args.clear === true,
+        }),
+      });
+    case 'get_branch_governance':
+      return toTextResult(getBranchGovernanceState());
+    case 'approve_protected_action':
+      return toTextResult({
+        approved: true,
+        approval: approveProtectedAction({
+          pathGlobs: args.pathGlobs,
+          reason: args.reason,
+          evidence: args.evidence,
+          taskId: args.taskId,
+          ttlMs: args.ttlMs,
+        }),
+      });
     case 'track_action': {
       const entry = trackAction(args.actionId, args.metadata || {});
       return toTextResult({
@@ -529,6 +580,15 @@ async function callToolInner(name, args) {
     }
     case 'verify_claim':
       return toTextResult(verifyClaimEvidence(args.claim));
+    case 'check_operational_integrity':
+      return toTextResult(evaluateOperationalIntegrity({
+        repoPath: args.repoPath,
+        baseBranch: args.baseBranch,
+        command: args.command,
+        requirePrForReleaseSensitive: args.requirePrForReleaseSensitive === true,
+        requireVersionNotBehindBase: args.requireVersionNotBehindBase === true,
+        branchGovernance: getBranchGovernanceState(),
+      }));
     case 'register_claim_gate':
       return toTextResult(registerClaimGate(args.claimPattern, args.requiredActions, args.message));
     case 'gate_stats':
