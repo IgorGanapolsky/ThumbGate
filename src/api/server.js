@@ -223,6 +223,29 @@ function findRecordById(id, feedbackDir) {
   return { feedbackEvent, memoryRecord };
 }
 
+function mergeFollowUpDetail(existingDetail, followUpText) {
+  const existing = normalizeNullableText(existingDetail);
+  const next = normalizeNullableText(followUpText);
+  if (!next) return existing;
+  if (!existing) return next;
+  if (existing.includes(next)) return existing;
+  return `${existing}\n\nFollow-up: ${next}`;
+}
+
+function updateLessonRecord(feedbackDir, lessonId, updater) {
+  const record = findRecordById(lessonId, feedbackDir);
+  if (!record) return null;
+  const existing = { ...(record.feedbackEvent || {}), ...(record.memoryRecord || {}) };
+  const updated = updater({ ...existing });
+  if (!updated) return null;
+  const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
+  const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
+  const updatedMemory = updateRecordInJsonl(memoryLogPath, lessonId, updated);
+  const updatedFeedback = updateRecordInJsonl(feedbackLogPath, lessonId, updated);
+  if (!updatedMemory && !updatedFeedback) return null;
+  return updated;
+}
+
 function getPublicMcpTools() {
   return MCP_TOOLS.map((tool) => ({
     name: tool.name,
@@ -945,6 +968,13 @@ function loadLessonsPageHtml(req, expectedApiKey) {
 
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+function normalizeLessonSignal(signal) {
+  const value = String(signal || '').toLowerCase();
+  if (value === 'up' || value === 'positive' || value === 'thumbs_up') return 'up';
+  if (value === 'down' || value === 'negative' || value === 'thumbs_down') return 'down';
+  return 'down';
+}
+
 function renderLessonDetailHtml(record, lessonId) {
   if (!record) {
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lesson Not Found</title>
@@ -960,7 +990,7 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   const fb = record.feedbackEvent || {};
   const mem = record.memoryRecord || {};
   const merged = { ...fb, ...mem };
-  const signal = merged.signal || 'down';
+  const signal = normalizeLessonSignal(merged.signal);
   const emoji = signal === 'up' ? '👍' : '👎';
   const signalColor = signal === 'up' ? '#4ade80' : '#f87171';
   const title = merged.title || merged.context || 'Untitled Lesson';
@@ -2333,7 +2363,7 @@ async function addContext(){
   const ctx=document.getElementById('contextInput').value.trim();
   if(!ctx)return;
   try{
-    await fetch('/feedback/quick/context',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({signal:'${signal}',context:ctx,relatedFeedbackId:'${feedbackId}'})});
+    await fetch('/feedback/quick/context',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({signal:'${signal}',context:ctx,relatedFeedbackId:'${feedbackId}',feedbackSessionId:'${result.feedbackSession?.sessionId || ''}'})});
     document.getElementById('toast').style.display='block';
     document.getElementById('contextForm').style.display='none';
     setTimeout(()=>document.getElementById('toast').style.display='none',3000);
@@ -2351,6 +2381,7 @@ async function addContext(){
       const signal = body.signal;
       const context = typeof body.context === 'string' ? body.context.trim() : '';
       const relatedFeedbackId = typeof body.relatedFeedbackId === 'string' ? body.relatedFeedbackId.trim() : '';
+      const feedbackSessionId = typeof body.feedbackSessionId === 'string' ? body.feedbackSessionId.trim() : '';
       if (signal !== 'up' && signal !== 'down') {
         sendJson(res, 400, { error: 'signal must be up or down' });
         return;
@@ -2359,18 +2390,45 @@ async function addContext(){
         sendJson(res, 400, { error: 'context is required' });
         return;
       }
-      const result = captureFeedback({
-        signal,
-        context,
-        relatedFeedbackId,
-        chatHistory: readRecentConversationWindow({
-          feedbackDir: getSafeDataDir(),
-          limit: 10,
-        }),
-        tags: ['statusline', 'quick-capture', 'follow-up-context'],
+      if (!relatedFeedbackId) {
+        sendJson(res, 400, { error: 'relatedFeedbackId is required' });
+        return;
+      }
+      const feedbackDir = getSafeDataDir();
+      const detailField = signal === 'down' ? 'whatWentWrong' : 'whatWorked';
+      const updated = updateLessonRecord(feedbackDir, relatedFeedbackId, (existing) => {
+        const nextTags = Array.from(new Set([
+          ...((Array.isArray(existing.tags) ? existing.tags : []).filter(Boolean)),
+          'statusline',
+          'quick-capture',
+          'follow-up-context',
+        ]));
+        return {
+          ...existing,
+          tags: nextTags,
+          [detailField]: mergeFollowUpDetail(existing[detailField], context),
+        };
       });
-      const code = result.accepted ? 200 : 422;
-      sendJson(res, code, result);
+      if (!updated) {
+        sendJson(res, 404, { error: 'Related lesson not found' });
+        return;
+      }
+      let feedbackSession = null;
+      if (feedbackSessionId) {
+        try {
+          const { appendToSession } = require('../../scripts/feedback-session');
+          feedbackSession = appendToSession(feedbackSessionId, context, 'user');
+        } catch (_err) {
+          feedbackSession = { status: 'error' };
+        }
+      }
+      sendJson(res, 200, {
+        ok: true,
+        relatedFeedbackId,
+        detailField,
+        updated,
+        feedbackSession,
+      });
       return;
     }
 
@@ -2390,28 +2448,27 @@ async function addContext(){
       const lessonId = decodeURIComponent(lessonUpdateMatch[1]);
       const feedbackDir = getSafeDataDir();
       const body = await parseJsonBody(req);
-      const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
       const record = findRecordById(lessonId, feedbackDir);
       if (!record) {
         sendJson(res, 404, { error: 'Record not found' });
         return;
       }
-      const existing = record.memoryRecord || record.feedbackEvent || {};
-      const updated = { ...existing };
-      if (body.title !== undefined) updated.title = body.title;
-      if (body.content !== undefined) updated.context = body.content;
-      if (body.tags !== undefined) {
-        updated.tags = typeof body.tags === 'string'
-          ? body.tags.split(',').map((t) => t.trim()).filter(Boolean)
-          : body.tags;
-      }
-      if (body.whatWentWrong !== undefined) updated.whatWentWrong = body.whatWentWrong;
-      if (body.whatWorked !== undefined) updated.whatWorked = body.whatWorked;
-      const success = updateRecordInJsonl(memoryLogPath, lessonId, updated);
-      if (!success) {
-        // Try feedback log
-        const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
-        updateRecordInJsonl(feedbackLogPath, lessonId, updated);
+      const updated = updateLessonRecord(feedbackDir, lessonId, (existing) => {
+        const next = { ...existing };
+        if (body.title !== undefined) next.title = body.title;
+        if (body.content !== undefined) next.context = body.content;
+        if (body.tags !== undefined) {
+          next.tags = typeof body.tags === 'string'
+            ? body.tags.split(',').map((t) => t.trim()).filter(Boolean)
+            : body.tags;
+        }
+        if (body.whatWentWrong !== undefined) next.whatWentWrong = body.whatWentWrong;
+        if (body.whatWorked !== undefined) next.whatWorked = body.whatWorked;
+        return next;
+      });
+      if (!updated) {
+        sendJson(res, 404, { error: 'Record not found' });
+        return;
       }
       sendJson(res, 200, { ok: true, updated });
       return;

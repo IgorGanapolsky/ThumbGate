@@ -378,29 +378,35 @@ test('E2E: vague thumbs-down distills a lesson and preserves linked follow-up co
   });
   assert.equal(followUpRes.status, 200);
   const followUpBody = await followUpRes.json();
-  assert.equal(followUpBody.accepted, true);
-  assert.equal(followUpBody.feedbackEvent.relatedFeedbackId, captureBody.feedbackEvent.id);
-  assert.match(followUpBody.feedbackEvent.tags.join(','), /follow-up-context/);
+  assert.equal(followUpBody.ok, true);
+  assert.equal(followUpBody.relatedFeedbackId, captureBody.feedbackEvent.id);
+  assert.equal(followUpBody.detailField, 'whatWentWrong');
+  assert.match(followUpBody.updated.whatWentWrong, /Also ignored the design-system rule/);
+  assert.match(followUpBody.updated.tags.join(','), /follow-up-context/);
 
   const statsRes = await fetch(apiUrl(port, '/v1/feedback/stats'), {
     headers: adminHeaders,
   });
   assert.equal(statsRes.status, 200);
   const statsBody = await statsRes.json();
-  assert.equal(statsBody.total, 2);
-  assert.equal(statsBody.totalNegative, 2);
+  assert.equal(statsBody.total, 1);
+  assert.equal(statsBody.totalNegative, 1);
 
   const summaryRes = await fetch(apiUrl(port, '/v1/feedback/summary'), {
     headers: adminHeaders,
   });
   assert.equal(summaryRes.status, 200);
   const summaryBody = await summaryRes.json();
-  assert.match(summaryBody.summary, /Negative:\s+2/);
+  assert.match(summaryBody.summary, /Negative:\s+1/);
 
   const feedbackLog = readJsonl(path.join(tmpDir, 'feedback-log.jsonl'));
-  assert.equal(feedbackLog.length, 2);
+  assert.equal(feedbackLog.length, 1);
   assert.ok(feedbackLog[0].distillation);
-  assert.equal(feedbackLog[1].relatedFeedbackId, captureBody.feedbackEvent.id);
+
+  const lessonPageRes = await fetch(apiUrl(port, `/lessons/${encodeURIComponent(captureBody.feedbackEvent.id)}`));
+  assert.equal(lessonPageRes.status, 200);
+  const lessonPageHtml = await lessonPageRes.text();
+  assert.match(lessonPageHtml, /Also ignored the design-system rule in the same pass\./);
 });
 
 test('E2E: learn hub and article pages serve live over HTTP', async (t) => {
