@@ -287,6 +287,22 @@ test('E2E: governance task scope and protected approvals persist over the HTTP s
   assert.equal(approvalBody.approved, true);
   assert.deepEqual(approvalBody.approval.pathGlobs, ['AGENTS.md']);
 
+  const branchRes = await fetch(apiUrl(port, '/v1/gates/branch-governance'), {
+    method: 'POST',
+    headers: adminHeaders,
+    body: JSON.stringify({
+      branchName: 'feat/thumbgate-hardening',
+      baseBranch: 'main',
+      prRequired: true,
+      prNumber: '999',
+      queueRequired: true,
+      releaseVersion: '0.9.11',
+    }),
+  });
+  assert.equal(branchRes.status, 200);
+  const branchBody = await branchRes.json();
+  assert.equal(branchBody.branchGovernance.prNumber, '999');
+
   const stateRes = await fetch(apiUrl(port, '/v1/gates/task-scope'), {
     headers: { Authorization: 'Bearer e2e-admin-key' },
   });
@@ -294,7 +310,16 @@ test('E2E: governance task scope and protected approvals persist over the HTTP s
   const stateBody = await stateRes.json();
   assert.equal(stateBody.taskScope.summary, 'prove hard enforcement');
   assert.equal(stateBody.protectedApprovals.length, 1);
+  assert.equal(stateBody.branchGovernance.branchName, 'feat/thumbgate-hardening');
   assert.equal(gatesEngine.loadConstraints().local_only.value, true);
+
+  const integrityRes = await fetch(apiUrl(port, '/v1/ops/integrity?command=npm%20publish'), {
+    headers: { Authorization: 'Bearer e2e-admin-key' },
+  });
+  assert.equal(integrityRes.status, 200);
+  const integrityBody = await integrityRes.json();
+  assert.equal(integrityBody.ok, false);
+  assert.ok(integrityBody.blockers.some((blocker) => blocker.code === 'publish_requires_base_branch'));
 
   const clearRes = await fetch(apiUrl(port, '/v1/gates/task-scope'), {
     method: 'POST',
@@ -310,6 +335,7 @@ test('E2E: governance task scope and protected approvals persist over the HTTP s
   const clearedState = await clearedStateRes.json();
   assert.equal(clearedState.taskScope, null);
   assert.equal(clearedState.protectedApprovals.length, 1);
+  assert.equal(clearedState.branchGovernance.prNumber, '999');
 });
 
 test('E2E: vague thumbs-down distills a lesson and preserves linked follow-up context', async (t) => {

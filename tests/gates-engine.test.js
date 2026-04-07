@@ -4,6 +4,7 @@ process.env.THUMBGATE_PRO_MODE = '1';
 
 const { test, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
+const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -34,8 +35,10 @@ const {
   loadGovernanceState,
   saveGovernanceState,
   setTaskScope,
+  setBranchGovernance,
   approveProtectedAction,
   getScopeState,
+  getBranchGovernanceState,
   trackAction,
   hasAction,
   listSessionActions,
@@ -85,6 +88,20 @@ function cleanupStateFiles() {
 
 function makeTempPath(name) {
   return path.join(sandboxDir, name);
+}
+
+function createPushTestRepo(changedFile = 'src/app.js') {
+  const repoDir = fs.mkdtempSync(path.join(sandboxDir, 'repo-'));
+  execFileSync('git', ['init'], { cwd: repoDir, stdio: ['ignore', 'pipe', 'pipe'] });
+  execFileSync('git', ['config', 'user.name', 'ThumbGate Tests'], { cwd: repoDir, stdio: ['ignore', 'pipe', 'pipe'] });
+  execFileSync('git', ['config', 'user.email', 'thumbgate-tests@example.com'], { cwd: repoDir, stdio: ['ignore', 'pipe', 'pipe'] });
+  const filePath = path.join(repoDir, changedFile);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, 'module.exports = 1;\n');
+  execFileSync('git', ['add', '.'], { cwd: repoDir, stdio: ['ignore', 'pipe', 'pipe'] });
+  execFileSync('git', ['commit', '-m', 'initial'], { cwd: repoDir, stdio: ['ignore', 'pipe', 'pipe'] });
+  fs.writeFileSync(filePath, 'module.exports = 2;\n');
+  return repoDir;
 }
 
 function withTempFeedbackDir(fn) {
@@ -281,7 +298,9 @@ test('matchesGate handles missing tool_input fields', () => {
 
 test('evaluateGates returns deny for git push', () => {
   cleanupStateFiles();
-  const result = evaluateGates('Bash', { command: 'git push origin feature/x' });
+  const repoPath = createPushTestRepo();
+  setTaskScope({ summary: 'push feature branch', allowedPaths: ['**'] });
+  const result = evaluateGates('Bash', { command: 'git push origin feature/x', repoPath });
   assert.ok(result);
   assert.equal(result.decision, 'deny');
   assert.equal(result.gate, 'push-without-thread-check');
@@ -290,18 +309,22 @@ test('evaluateGates returns deny for git push', () => {
 
 test('evaluateGates returns deny for force push', () => {
   cleanupStateFiles();
-  const result = evaluateGates('Bash', { command: 'git push --force origin main' });
+  const repoPath = createPushTestRepo();
+  setTaskScope({ summary: 'force push check', allowedPaths: ['**'] });
+  satisfyCondition('pr_threads_checked', '0 unresolved threads');
+  const result = evaluateGates('Bash', { command: 'git push --force origin main', repoPath });
   assert.ok(result);
   assert.equal(result.decision, 'deny');
-  // Should match the first matching gate (push-without-thread-check or force-push)
-  assert.ok(['push-without-thread-check', 'force-push'].includes(result.gate));
+  assert.equal(result.gate, 'force-push');
 });
 
 test('evaluateGates returns deny for protected branch push', () => {
   cleanupStateFiles();
+  const repoPath = createPushTestRepo();
+  setTaskScope({ summary: 'protected branch push check', allowedPaths: ['**'] });
   // Satisfy the thread check so push-without-thread-check doesn't fire first
   satisfyCondition('pr_threads_checked', 'test');
-  const result = evaluateGates('Bash', { command: 'git push origin develop' });
+  const result = evaluateGates('Bash', { command: 'git push origin develop', repoPath });
   assert.ok(result);
   assert.equal(result.decision, 'deny');
   assert.equal(result.gate, 'protected-branch-push');
@@ -440,6 +463,42 @@ test('setTaskScope clear removes task scope but preserves approvals', () => {
   assert.equal(state.protectedApprovals.length, 1);
 });
 
+test('setBranchGovernance persists branch governance state', () => {
+  cleanupStateFiles();
+  const governance = setBranchGovernance({
+    branchName: 'feat/thumbgate-hardening',
+    baseBranch: 'main',
+    prRequired: true,
+    prNumber: '999',
+    queueRequired: true,
+    releaseVersion: '0.9.11',
+  });
+  const state = getScopeState();
+  assert.equal(governance.branchName, 'feat/thumbgate-hardening');
+  assert.equal(state.branchGovernance.prNumber, '999');
+  assert.equal(getBranchGovernanceState().releaseVersion, '0.9.11');
+});
+
+test('setBranchGovernance clear removes branch governance but preserves scope', () => {
+  cleanupStateFiles();
+  setTaskScope({
+    taskId: '1733520',
+    summary: 'policy update',
+    allowedPaths: ['AGENTS.md'],
+  });
+  setBranchGovernance({
+    branchName: 'feat/thumbgate-hardening',
+    baseBranch: 'main',
+    prRequired: true,
+    releaseVersion: '0.9.11',
+  });
+  const cleared = setBranchGovernance({ clear: true });
+  const state = getScopeState();
+  assert.equal(cleared, null);
+  assert.equal(state.branchGovernance, null);
+  assert.equal(state.taskScope.taskId, '1733520');
+});
+
 test('setTaskScope rejects empty allowedPaths', () => {
   cleanupStateFiles();
   assert.throws(
@@ -460,6 +519,7 @@ test('approveProtectedAction expires approvals after ttl', () => {
       timestamp: Date.now() - PROTECTED_APPROVAL_TTL_MS - 1000,
       expiresAt: Date.now() - 1000,
     }],
+    branchGovernance: null,
   };
   saveGovernanceState(expired);
   assert.equal(loadGovernanceState().protectedApprovals.length, 0);
@@ -1126,6 +1186,7 @@ test('evaluateGatesAsync denies high-risk actions when recurring negative memory
 test('evaluateGatesAsync allows scoped high-risk actions even when recurring negative memory exists', async () => {
   const tmpConfig = makeTempPath('memory-scope-bypass-gates.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+  const repoPath = createPushTestRepo('src/index.js');
 
   const feedbackLog = makeTempPath('memory-scope-feedback.jsonl');
   const attributedFeedback = makeTempPath('memory-scope-attributed.jsonl');
@@ -1146,12 +1207,13 @@ test('evaluateGatesAsync allows scoped high-risk actions even when recurring neg
 
   try {
     setTaskScope({
-      allowedPaths: ['AGENTS.md'],
-      summary: 'Allow AGENTS.md for the current task.',
+      allowedPaths: ['src/**'],
+      summary: 'Allow src files for the current task.',
     });
     const result = await evaluateGatesAsync('Bash', {
       command: 'git push origin feature/x',
-      changed_files: ['AGENTS.md'],
+      repoPath,
+      changed_files: ['src/index.js'],
     }, tmpConfig);
     assert.equal(result, null);
   } finally {
@@ -1191,6 +1253,12 @@ test('evaluateGates allows gh pr create after explicit approval even when bash m
       allowedPaths: ['README.md'],
       summary: 'Allow README.md for PR prep.',
     });
+    setBranchGovernance({
+      branchName: 'feat/thumbgate-hardening',
+      baseBranch: 'main',
+      prRequired: true,
+      releaseVersion: '0.9.11',
+    });
     satisfyCondition('pr_create_allowed', 'User explicitly approved PR creation');
     const result = evaluateGates('Bash', {
       command: 'gh pr create --title "test"',
@@ -1206,6 +1274,39 @@ test('evaluateGates allows gh pr create after explicit approval even when bash m
     fs.rmSync(feedbackLog, { force: true });
     fs.rmSync(attributedFeedback, { force: true });
   }
+});
+
+test('evaluateGates blocks gh pr create without branch governance', () => {
+  cleanupStateFiles();
+  const repoPath = createPushTestRepo('scripts/ops.js');
+  setTaskScope({
+    allowedPaths: ['scripts/**'],
+    summary: 'Allow script updates for the current task.',
+  });
+  satisfyCondition('pr_create_allowed', 'user explicitly approved PR creation');
+  const result = evaluateGates('Bash', {
+    command: 'gh pr create --title "test"',
+    repoPath,
+    changed_files: ['scripts/ops.js'],
+  });
+  assert.ok(result);
+  assert.equal(result.gate, 'branch-governance-required');
+  assert.match(result.message, /require explicit branch governance/i);
+});
+
+test('evaluateGates blocks publish when branch governance release version is missing', () => {
+  cleanupStateFiles();
+  setBranchGovernance({
+    branchName: 'main',
+    baseBranch: 'main',
+    prRequired: true,
+  });
+  const result = evaluateGates('Bash', {
+    command: 'npm publish',
+  });
+  assert.ok(result);
+  assert.equal(result.gate, 'branch-governance-required');
+  assert.match(result.message, /releaseVersion/i);
 });
 
 // ---------------------------------------------------------------------------

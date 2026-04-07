@@ -4,10 +4,10 @@
     {
       "id": "local-only-git-writes",
       "layer": "Identity",
-      "pattern": "^(git\\s+(add|commit|push)|gh\\s+pr\\s+)",
+      "pattern": "^(git\\s+(add|commit|push|tag)|gh\\s+pr\\s+|gh\\s+release\\s+create|npm\\s+publish|yarn\\s+publish|pnpm\\s+publish)",
       "action": "block",
       "when": { "constraints": { "local_only": true } },
-      "message": "User requested local-only work. Git writes and PR operations are blocked.",
+      "message": "User requested local-only work. Git writes, PR operations, and release actions are blocked.",
       "severity": "critical"
     },
     {
@@ -60,6 +60,34 @@
       "unless": "pr_merge_allowed",
       "message": "PR merging requires explicit 'pr_merge_allowed' satisfaction with evidence of user permission.",
       "severity": "high"
+    },
+    {
+      "id": "branch-governance-required",
+      "layer": "Decisions",
+      "toolNames": ["Bash"],
+      "pattern": "^(gh\\s+pr\\s+(create|merge)|gh\\s+release\\s+create|git\\s+tag\\b|npm\\s+publish|yarn\\s+publish|pnpm\\s+publish)",
+      "requireBranchGovernance": true,
+      "action": "block",
+      "message": "PR, release, and publish actions require explicit branch governance.",
+      "severity": "critical"
+    },
+    {
+      "id": "release-readiness-required",
+      "layer": "Execution",
+      "toolNames": ["Bash"],
+      "pattern": "^(gh\\s+release\\s+create|git\\s+tag\\b|npm\\s+publish|yarn\\s+publish|pnpm\\s+publish)",
+      "requireReleaseReadiness": true,
+      "action": "block",
+      "message": "Release and publish actions require a releasable mainline commit and a matching version plan.",
+      "severity": "critical"
+    },
+    {
+      "id": "admin-merge-bypass-blocked",
+      "layer": "Execution",
+      "pattern": "gh\\s+pr\\s+merge.*--admin",
+      "action": "block",
+      "message": "Admin merge bypass is blocked. Use the merge queue or normal protected-branch flow.",
+      "severity": "critical"
     },
     {
       "id": "loop-abuse-prevention",

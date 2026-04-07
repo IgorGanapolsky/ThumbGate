@@ -11,6 +11,8 @@ const { handleRequest, TOOLS } = require('../adapters/mcp/server-stdio');
 const gatesEngine = require('../scripts/gates-engine');
 
 const ORIGINAL_PATHS = {
+  state: gatesEngine.STATE_PATH,
+  constraints: gatesEngine.CONSTRAINTS_PATH,
   sessionActions: gatesEngine.SESSION_ACTIONS_PATH,
   customClaimGates: gatesEngine.CUSTOM_CLAIM_GATES_PATH,
   governanceState: gatesEngine.GOVERNANCE_STATE_PATH,
@@ -24,15 +26,21 @@ test.after(() => {
 
 beforeEach(() => {
   runtimeSandboxDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-gates-runtime-'));
+  gatesEngine.STATE_PATH = path.join(runtimeSandboxDir, 'gate-state.json');
+  gatesEngine.CONSTRAINTS_PATH = path.join(runtimeSandboxDir, 'constraints.json');
   gatesEngine.SESSION_ACTIONS_PATH = path.join(runtimeSandboxDir, 'session-actions.json');
   gatesEngine.CUSTOM_CLAIM_GATES_PATH = path.join(runtimeSandboxDir, 'claim-verification.json');
   gatesEngine.GOVERNANCE_STATE_PATH = path.join(runtimeSandboxDir, 'governance-state.json');
+  fs.rmSync(gatesEngine.STATE_PATH, { force: true });
+  fs.rmSync(gatesEngine.CONSTRAINTS_PATH, { force: true });
   fs.rmSync(gatesEngine.SESSION_ACTIONS_PATH, { force: true });
   fs.rmSync(gatesEngine.CUSTOM_CLAIM_GATES_PATH, { force: true });
   fs.rmSync(gatesEngine.GOVERNANCE_STATE_PATH, { force: true });
 });
 
 afterEach(() => {
+  gatesEngine.STATE_PATH = ORIGINAL_PATHS.state;
+  gatesEngine.CONSTRAINTS_PATH = ORIGINAL_PATHS.constraints;
   gatesEngine.SESSION_ACTIONS_PATH = ORIGINAL_PATHS.sessionActions;
   gatesEngine.CUSTOM_CLAIM_GATES_PATH = ORIGINAL_PATHS.customClaimGates;
   gatesEngine.GOVERNANCE_STATE_PATH = ORIGINAL_PATHS.governanceState;
@@ -96,7 +104,10 @@ test('track_action, verify_claim, and register_claim_gate are registered', () =>
   assert.ok(names.includes('register_claim_gate'));
   assert.ok(names.includes('set_task_scope'));
   assert.ok(names.includes('get_scope_state'));
+  assert.ok(names.includes('set_branch_governance'));
+  assert.ok(names.includes('get_branch_governance'));
   assert.ok(names.includes('approve_protected_action'));
+  assert.ok(names.includes('check_operational_integrity'));
 });
 
 test('set_task_scope and get_scope_state round-trip over MCP', async () => {
@@ -152,6 +163,76 @@ test('approve_protected_action stores runtime approval over MCP', async () => {
   assert.equal(payload.approved, true);
   assert.deepEqual(payload.approval.pathGlobs, ['AGENTS.md']);
   assert.equal(fs.existsSync(gatesEngine.GOVERNANCE_STATE_PATH), true);
+});
+
+test('set_branch_governance and get_branch_governance round-trip over MCP', async () => {
+  const setResult = await handleRequest({
+    jsonrpc: '2.0',
+    id: 112,
+    method: 'tools/call',
+    params: {
+      name: 'set_branch_governance',
+      arguments: {
+        branchName: 'feat/thumbgate-hardening',
+        baseBranch: 'main',
+        prRequired: true,
+        prNumber: '999',
+        queueRequired: true,
+        releaseVersion: '0.9.11',
+      },
+    },
+  });
+
+  const setPayload = JSON.parse(setResult.content[0].text);
+  assert.equal(setPayload.branchGovernance.branchName, 'feat/thumbgate-hardening');
+  assert.equal(setPayload.branchGovernance.releaseVersion, '0.9.11');
+
+  const getResult = await handleRequest({
+    jsonrpc: '2.0',
+    id: 113,
+    method: 'tools/call',
+    params: {
+      name: 'get_branch_governance',
+      arguments: {},
+    },
+  });
+
+  const getPayload = JSON.parse(getResult.content[0].text);
+  assert.equal(getPayload.branchName, 'feat/thumbgate-hardening');
+  assert.equal(getPayload.prNumber, '999');
+});
+
+test('check_operational_integrity evaluates governed publish commands over MCP', async () => {
+  await handleRequest({
+    jsonrpc: '2.0',
+    id: 114,
+    method: 'tools/call',
+    params: {
+      name: 'set_branch_governance',
+      arguments: {
+        branchName: 'feat/thumbgate-hardening',
+        baseBranch: 'main',
+        prRequired: true,
+        releaseVersion: '0.9.11',
+      },
+    },
+  });
+
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 115,
+    method: 'tools/call',
+    params: {
+      name: 'check_operational_integrity',
+      arguments: {
+        command: 'npm publish',
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.ok, false);
+  assert.ok(payload.blockers.some((blocker) => blocker.code === 'publish_requires_base_branch'));
 });
 
 test('track_action records evidence for verify_claim over MCP', async () => {

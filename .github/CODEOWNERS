@@ -1,0 +1,15 @@
+* @IgorGanapolsky
+
+# Release-critical and governance surfaces stay explicitly owned.
+/.github/workflows/* @IgorGanapolsky
+/package.json @IgorGanapolsky
+/package-lock.json @IgorGanapolsky
+/server.json @IgorGanapolsky
+/adapters/mcp/server-stdio.js @IgorGanapolsky
+/src/api/server.js @IgorGanapolsky
+/scripts/gates-engine.js @IgorGanapolsky
+/scripts/tool-registry.js @IgorGanapolsky
+/scripts/pr-manager.js @IgorGanapolsky
+/scripts/publish-decision.js @IgorGanapolsky
+/config/gates/** @IgorGanapolsky
+/config/mcp-allowlists.json @IgorGanapolsky

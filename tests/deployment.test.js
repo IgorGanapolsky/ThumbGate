@@ -241,13 +241,35 @@ test('Deploy to Railway workflow always promotes the latest main commit, even fo
 test('Publish to NPM workflow uses the tested publish-decision guardrail', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'publish-npm.yml'), 'utf8');
 
+  assert.match(workflow, /name:\s*Publish to NPM/);
   assert.match(workflow, /concurrency:/);
   assert.match(workflow, /group:\s*publish-npm-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*true/);
+  assert.match(workflow, /permissions:\s+contents:\s+write\s+id-token:\s+write/s);
+  assert.match(workflow, /node-version:\s*'24\.x'/);
   assert.match(workflow, /name: Plan publish action/);
   assert.match(workflow, /run: node scripts\/publish-decision\.js/);
+  assert.match(workflow, /CURRENT_BRANCH:\s*\$\{\{\s*github\.ref_name\s*\}\}/);
+  assert.match(workflow, /DEFAULT_BRANCH:\s*main/);
   assert.match(workflow, /steps\.plan\.outputs\.skip_publish == 'true'/);
   assert.match(workflow, /steps\.plan\.outputs\.publish_npm == 'true'/);
+  assert.match(workflow, /npm publish --provenance/);
+});
+
+test('CODEOWNERS explicitly covers release-critical governance surfaces', () => {
+  const codeowners = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'CODEOWNERS'), 'utf8');
+
+  assert.match(codeowners, /^\/\.github\/workflows\/\* @IgorGanapolsky$/m);
+  assert.match(codeowners, /^\/package\.json @IgorGanapolsky$/m);
+  assert.match(codeowners, /^\/server\.json @IgorGanapolsky$/m);
+  assert.match(codeowners, /^\/adapters\/mcp\/server-stdio\.js @IgorGanapolsky$/m);
+  assert.match(codeowners, /^\/src\/api\/server\.js @IgorGanapolsky$/m);
+  assert.match(codeowners, /^\/scripts\/gates-engine\.js @IgorGanapolsky$/m);
+  assert.match(codeowners, /^\/scripts\/tool-registry\.js @IgorGanapolsky$/m);
+  assert.match(codeowners, /^\/scripts\/pr-manager\.js @IgorGanapolsky$/m);
+  assert.match(codeowners, /^\/scripts\/publish-decision\.js @IgorGanapolsky$/m);
+  assert.match(codeowners, /^\/config\/gates\/\*\* @IgorGanapolsky$/m);
+  assert.match(codeowners, /^\/config\/mcp-allowlists\.json @IgorGanapolsky$/m);
 });
 
 test('CI workflow runs Tessl proof and uploads Tessl evidence artifacts', () => {
@@ -285,10 +307,12 @@ test('CI workflow treats GitHub About sync as best-effort but still verifies the
 test('CI workflow supports merge queue and cancels stale non-main runs', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 
+  assert.match(workflow, /permissions:\s+contents:\s+read\s+pull-requests:\s+read/s);
   assert.match(workflow, /merge_group:/);
   assert.match(workflow, /types:\s*\[checks_requested\]/);
   assert.match(workflow, /group:\s*ci-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
+  assert.match(workflow, /name: Check operational integrity[\s\S]*?GH_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}[\s\S]*?npm run ops:integrity:ci/);
 });
 
 test('CI workflow gives the full suite enough runtime budget', () => {

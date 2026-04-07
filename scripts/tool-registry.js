@@ -545,6 +545,38 @@ const TOOLS = [
     },
   }),
   destructiveTool({
+    name: 'set_branch_governance',
+    description: 'Declare or clear branch and release governance so PR, merge, release, and publish actions can be evaluated against explicit workflow state.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        branchName: { type: 'string', description: 'Optional branch name the governance applies to' },
+        baseBranch: { type: 'string', description: 'Protected base branch for merge and release operations (defaults to main)' },
+        prRequired: { type: 'boolean', description: 'Whether this lane must go through a pull request (defaults to true)' },
+        prNumber: { type: 'string', description: 'Optional pull request number once a PR exists' },
+        prUrl: { type: 'string', description: 'Optional pull request URL once a PR exists' },
+        queueRequired: { type: 'boolean', description: 'Whether the target branch requires a merge queue' },
+        localOnly: { type: 'boolean', description: 'When true, PR, merge, release, and publish actions are blocked for this lane' },
+        releaseVersion: { type: 'string', description: 'Expected package version for release or publish actions' },
+        releaseEvidence: { type: 'string', description: 'Optional evidence or release plan note for the governed version' },
+        releaseSensitiveGlobs: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional custom globs that define release-sensitive files for this branch lane',
+        },
+        clear: { type: 'boolean', description: 'Clear the current branch governance state instead of setting it' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'get_branch_governance',
+    description: 'Return the active branch and release governance state.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  }),
+  destructiveTool({
     name: 'approve_protected_action',
     description: 'Grant a time-limited approval for edits or publish actions that touch protected files.',
     inputSchema: {
@@ -583,6 +615,20 @@ const TOOLS = [
       required: ['claim'],
       properties: {
         claim: { type: 'string', description: 'The claim text to verify' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'check_operational_integrity',
+    description: 'Evaluate whether the current repo state is safe for PR, merge, release, and publish operations.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        repoPath: { type: 'string', description: 'Optional repository path to inspect' },
+        baseBranch: { type: 'string', description: 'Protected base branch to compare against (defaults to main)' },
+        command: { type: 'string', description: 'Optional git, PR, or publish command to evaluate against the current governance state' },
+        requirePrForReleaseSensitive: { type: 'boolean', description: 'When true, release-sensitive changes on non-base branches require an open PR' },
+        requireVersionNotBehindBase: { type: 'boolean', description: 'When true, release-sensitive changes cannot lag behind the base branch package version' },
       },
     },
   }),

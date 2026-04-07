@@ -201,6 +201,37 @@ test('admin API persists protected approvals via HTTP', async () => {
   assert.equal(stateBody.protectedApprovals[0].reason, 'CEO approved protected-file edit');
 });
 
+test('admin API persists branch governance and exposes operational integrity over HTTP', async () => {
+  const setRes = await fetch(apiUrl('/v1/gates/branch-governance'), {
+    method: 'POST',
+    headers: { ...authHeader, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      branchName: 'feat/thumbgate-hardening',
+      baseBranch: 'main',
+      prRequired: true,
+      prNumber: '999',
+      queueRequired: true,
+      releaseVersion: '0.9.11',
+    }),
+  });
+  assert.equal(setRes.status, 200);
+  const setBody = await setRes.json();
+  assert.equal(setBody.branchGovernance.branchName, 'feat/thumbgate-hardening');
+  assert.equal(setBody.branchGovernance.releaseVersion, '0.9.11');
+
+  const stateRes = await fetch(apiUrl('/v1/gates/branch-governance'), { headers: authHeader });
+  assert.equal(stateRes.status, 200);
+  const stateBody = await stateRes.json();
+  assert.equal(stateBody.branchGovernance.prNumber, '999');
+  assert.equal(stateBody.branchGovernance.queueRequired, true);
+
+  const integrityRes = await fetch(apiUrl('/v1/ops/integrity?command=npm%20publish'), { headers: authHeader });
+  assert.equal(integrityRes.status, 200);
+  const integrityBody = await integrityRes.json();
+  assert.equal(integrityBody.ok, false);
+  assert.ok(integrityBody.blockers.some((blocker) => blocker.code === 'publish_requires_base_branch'));
+});
+
 test('root serves the landing page by default', async () => {
   const res = await fetch(apiUrl('/'));
   assert.equal(res.status, 200);

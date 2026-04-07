@@ -134,6 +134,12 @@ test('gh pr create requires explicit permission', (t) => {
   t.after(() => harness.cleanup());
 
   declareTaskScope(harness.gates, harness.repoDir);
+  harness.gates.setBranchGovernance({
+    branchName: 'feat/thumbgate-hardening',
+    baseBranch: 'main',
+    prRequired: true,
+    releaseVersion: '0.9.11',
+  });
   harness.gates.setConstraint('local_only', false);
 
   let result = harness.gates.evaluateGates('Bash', {

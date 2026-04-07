@@ -165,11 +165,9 @@ async function resolveBlockers(pr, runner = runGh) {
   }
 
   // 5. Ready to Merge
-  if (pr.mergeStateStatus === 'CLEAN' || pr.mergeStateStatus === 'BLOCKED' /* admin bypass potential */) {
-    if (pr.mergeable === 'MERGEABLE') {
-      console.log('[PR Manager] SUCCESS: PR is ready for autonomous merge.');
-      return { status: 'ready' };
-    }
+  if (pr.mergeStateStatus === 'CLEAN' && pr.mergeable === 'MERGEABLE') {
+    console.log('[PR Manager] SUCCESS: PR is ready for protected autonomous merge.');
+    return { status: 'ready' };
   }
 
   return { status: 'pending', reason: 'unknown_state' };
@@ -179,14 +177,17 @@ async function resolveBlockers(pr, runner = runGh) {
  * Perform autonomous merge
  */
 function performMerge(prNumber, runner = runGh) {
-  console.log(`[PR Manager] Initiating squash merge for PR #${prNumber}...`);
-  const result = runner(['pr', 'merge', prNumber.toString(), '--squash', '--delete-branch', '--admin']);
+  const args = ['pr', 'merge', prNumber.toString(), '--squash', '--delete-branch', '--auto'];
+  console.log(`[PR Manager] Initiating protected squash merge for PR #${prNumber}...`);
+  const result = runner(args);
   if (result.status === 0) {
-    console.log(`[PR Manager] Merged PR #${prNumber} successfully.`);
-    return true;
+    const output = `${result.stdout || ''}\n${result.stderr || ''}`;
+    const mode = /merge queue|queued|auto-merge/i.test(output) ? 'queued_or_auto' : 'merged';
+    console.log(`[PR Manager] Merge accepted for PR #${prNumber} (${mode}).`);
+    return { ok: true, mode, args };
   } else {
     console.error(`[PR Manager] Merge failed: ${formatGhError(result)}`);
-    return false;
+    return { ok: false, mode: 'failed', args, error: formatGhError(result) };
   }
 }
 
@@ -202,7 +203,9 @@ async function managePrs(prNumber = '', runner = runGh) {
   for (const pr of prs) {
     const outcome = await resolveBlockers(pr, runner);
     if (outcome.status === 'ready') {
-      outcome.merged = performMerge(pr.number, runner);
+      const mergeResult = performMerge(pr.number, runner);
+      outcome.mergeRequested = mergeResult.ok;
+      outcome.mergeMode = mergeResult.mode;
     }
 
     results.push({
