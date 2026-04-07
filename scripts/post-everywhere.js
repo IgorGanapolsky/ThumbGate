@@ -216,8 +216,11 @@ async function postEverywhere(filePath, { platforms, dryRun } = {}) {
   }
   console.log('[post-everywhere] Quality gate: PASSED');
 
-  // Determine which platforms to post to
-  const targetPlatforms = platforms || (parsed.platform ? [parsed.platform] : Object.keys(DISPATCHERS));
+  // Determine which platforms to post to.
+  // Default excludes devto — high-volume Dev.to posting is counterproductive (0 engagement on 427 posts).
+  // Use --platforms=devto explicitly for monthly cross-posts only.
+  const DEFAULT_PLATFORMS = ['reddit', 'x', 'linkedin'];
+  const targetPlatforms = platforms || (parsed.platform ? [parsed.platform] : DEFAULT_PLATFORMS);
 
   // Preserve original body/comment so each platform gets a fresh UTM tag
   const originalBody = parsed.body;
