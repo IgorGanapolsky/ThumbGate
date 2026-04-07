@@ -765,6 +765,33 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
   if (!isHighRiskAction(toolName, toolInput, affectedFiles)) {
     return null;
   }
+  const governanceState = loadGovernanceState();
+
+  if (isScopeEnforcedAction(toolName, toolInput, affectedFiles)) {
+    const scopeViolation = buildTaskScopeViolation(governanceState.taskScope, affectedFiles);
+    if (!scopeViolation) {
+      return null;
+    }
+  }
+
+  const command = String(toolInput.command || '');
+  if (toolName === 'Bash' && /\bgh\s+pr\s+create\b/i.test(command) && isConditionSatisfied('pr_create_allowed')) {
+    return null;
+  }
+
+  const protectedGlobs = sanitizeGlobList(
+    (governanceState.taskScope && governanceState.taskScope.protectedPaths) || DEFAULT_PROTECTED_FILE_GLOBS
+  );
+  if (affectedFiles.length > 0 && protectedGlobs.length > 0) {
+    const protectedApprovalViolation = buildProtectedApprovalViolation(
+      protectedGlobs,
+      governanceState.protectedApprovals,
+      affectedFiles,
+    );
+    if (!protectedApprovalViolation && affectedFiles.some((filePath) => matchesAnyGlob(filePath, protectedGlobs))) {
+      return null;
+    }
+  }
 
   const hybrid = getHybridFeedbackModule();
   if (!hybrid || typeof hybrid.evaluatePretool !== 'function') {

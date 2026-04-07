@@ -1,16 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 
-const { describe, test } = require('node:test');
+const { describe, test, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
+const { loadWithIsolatedLicenseEnv } = require('./helpers/license-env');
 
-const {
-  multiHopRecall,
-  extractExpansionTerms,
-  scoreRelevance,
-  deduplicateById,
-  STOPWORDS,
-} = require('../scripts/multi-hop-recall');
+const LICENSE_MODULE_ID = require.resolve('../scripts/license');
+const PRO_FEATURES_MODULE_ID = require.resolve('../scripts/pro-features');
+const MULTI_HOP_RECALL_MODULE_ID = require.resolve('../scripts/multi-hop-recall');
 
 // ── Test fixtures ──────────────────────────────────────────────────
 
@@ -65,10 +62,6 @@ const LESSONS = [
   },
 ];
 
-/**
- * Mock search function that simulates FTS5 search against LESSONS.
- * Matches if any word in the query appears in the lesson text.
- */
 function mockSearch(query, options = {}) {
   const limit = options.limit || 10;
   const queryWords = query.toLowerCase().split(/\s+|OR/).map((w) => w.trim()).filter(Boolean);
@@ -82,18 +75,33 @@ function mockSearch(query, options = {}) {
     .slice(0, limit);
 }
 
-// ── Unit tests ─────────────────────────────────────────────────────
-
 describe('multi-hop-recall', () => {
+  let subject;
+  let restoreSubject;
+
+  beforeEach(() => {
+    const isolated = loadWithIsolatedLicenseEnv(
+      MULTI_HOP_RECALL_MODULE_ID,
+      [LICENSE_MODULE_ID, PRO_FEATURES_MODULE_ID],
+    );
+    subject = isolated.moduleExports;
+    restoreSubject = isolated.restore;
+  });
+
+  afterEach(() => {
+    restoreSubject();
+  });
+
   test('extractExpansionTerms pulls tags, domains, rootCauses, and key phrases', () => {
-    const terms = extractExpansionTerms([LESSONS[0]]);
+    const terms = subject.extractExpansionTerms([LESSONS[0]]);
 
     assert.ok(terms.includes('git'), 'includes tag "git"');
     assert.ok(terms.includes('force-push'), 'includes tag "force-push"');
     assert.ok(terms.includes('unsafe_operation'), 'includes rootCause');
-    // "Never force-push to protected branches" → words after regex: never, forcepush, protected, branches
-    assert.ok(terms.includes('never') || terms.includes('protected') || terms.includes('branches'),
-      'includes key phrase from whatToChange');
+    assert.ok(
+      terms.includes('never') || terms.includes('protected') || terms.includes('branches'),
+      'includes key phrase from whatToChange',
+    );
     assert.ok(!terms.includes('ci'), 'does not include short (2-char) tags');
   });
 
@@ -104,7 +112,7 @@ describe('multi-hop-recall', () => {
       domain: 'general',
       whatToChange: 'This should have been done with more testing',
     }];
-    const terms = extractExpansionTerms(lessons);
+    const terms = subject.extractExpansionTerms(lessons);
     assert.ok(!terms.includes('this'), 'filters "this"');
     assert.ok(!terms.includes('should'), 'filters "should"');
     assert.ok(!terms.includes('have'), 'filters "have"');
@@ -113,24 +121,24 @@ describe('multi-hop-recall', () => {
 
   test('extractExpansionTerms handles string tags (JSON)', () => {
     const lessons = [{ id: 'X2', tags: '["alpha","beta"]', domain: 'general' }];
-    const terms = extractExpansionTerms(lessons);
+    const terms = subject.extractExpansionTerms(lessons);
     assert.ok(terms.includes('alpha'));
     assert.ok(terms.includes('beta'));
   });
 
   test('scoreRelevance scores tag matches higher than content matches', () => {
     const terms = ['git', 'force-push', 'ci'];
-    const tagLesson = { ...LESSONS[0] }; // has git, ci, force-push tags
-    const contentLesson = { ...LESSONS[3] }; // database domain, no git tags
+    const tagLesson = { ...LESSONS[0] };
+    const contentLesson = { ...LESSONS[3] };
 
-    const tagScore = scoreRelevance(tagLesson, terms);
-    const contentScore = scoreRelevance(contentLesson, terms);
+    const tagScore = subject.scoreRelevance(tagLesson, terms);
+    const contentScore = subject.scoreRelevance(contentLesson, terms);
     assert.ok(tagScore > contentScore, `tag score (${tagScore}) > content score (${contentScore})`);
   });
 
   test('scoreRelevance returns 0 for unrelated lessons', () => {
     const terms = ['kubernetes', 'docker', 'deployment'];
-    const score = scoreRelevance(LESSONS[0], terms);
+    const score = subject.scoreRelevance(LESSONS[0], terms);
     assert.equal(score, 0, 'unrelated lesson scores 0');
   });
 
@@ -141,23 +149,21 @@ describe('multi-hop-recall', () => {
       { id: 'A', value: 3 },
       { id: 'C', value: 4 },
     ];
-    const result = deduplicateById(input);
+    const result = subject.deduplicateById(input);
     assert.equal(result.length, 3);
     assert.equal(result[0].value, 1, 'keeps first A (value=1)');
   });
 
   test('STOPWORDS set contains common English stopwords', () => {
-    assert.ok(STOPWORDS.has('this'));
-    assert.ok(STOPWORDS.has('should'));
-    assert.ok(STOPWORDS.has('would'));
-    assert.ok(!STOPWORDS.has('database'));
-    assert.ok(!STOPWORDS.has('migration'));
+    assert.ok(subject.STOPWORDS.has('this'));
+    assert.ok(subject.STOPWORDS.has('should'));
+    assert.ok(subject.STOPWORDS.has('would'));
+    assert.ok(!subject.STOPWORDS.has('database'));
+    assert.ok(!subject.STOPWORDS.has('migration'));
   });
 
-  // ── Integration tests ──────────────────────────────────────────
-
   test('single-hop recall returns direct search results', () => {
-    const result = multiHopRecall(mockSearch, 'force-push', {
+    const result = subject.multiHopRecall(mockSearch, 'force-push', {
       maxHops: 1,
       skipProCheck: true,
     });
@@ -169,9 +175,7 @@ describe('multi-hop-recall', () => {
   });
 
   test('multi-hop recall chains related lessons via expansion terms', () => {
-    // Search for "force-push" should find L1 (git, force-push) in hop 1,
-    // then expand to find L3 (git, hooks, prevention) in hop 2
-    const result = multiHopRecall(mockSearch, 'force-push', {
+    const result = subject.multiHopRecall(mockSearch, 'force-push', {
       maxHops: 2,
       skipProCheck: true,
     });
@@ -179,11 +183,11 @@ describe('multi-hop-recall', () => {
     assert.ok(result.results.length > 1, `found ${result.results.length} results across hops`);
     assert.equal(result.totalHops, 2, 'performed 2 hops');
     assert.ok(result.expansionTerms.length > 0, 'extracted expansion terms');
-    assert.ok(result.hops[1].type === 'expansion', 'hop 2 is expansion type');
+    assert.equal(result.hops[1].type, 'expansion');
   });
 
   test('multi-hop recall deduplicates across hops', () => {
-    const result = multiHopRecall(mockSearch, 'git', {
+    const result = subject.multiHopRecall(mockSearch, 'git', {
       maxHops: 2,
       skipProCheck: true,
     });
@@ -194,7 +198,7 @@ describe('multi-hop-recall', () => {
   });
 
   test('multi-hop recall respects totalLimit', () => {
-    const result = multiHopRecall(mockSearch, 'git', {
+    const result = subject.multiHopRecall(mockSearch, 'git', {
       maxHops: 2,
       totalLimit: 2,
       skipProCheck: true,
@@ -204,31 +208,29 @@ describe('multi-hop-recall', () => {
   });
 
   test('multi-hop recall respects signal filter', () => {
-    const result = multiHopRecall(mockSearch, 'git', {
+    const result = subject.multiHopRecall(mockSearch, 'git', {
       maxHops: 2,
       signal: 'negative',
       skipProCheck: true,
     });
 
-    for (const r of result.results) {
-      assert.equal(r.signal, 'negative', `all results are negative signal`);
+    for (const record of result.results) {
+      assert.equal(record.signal, 'negative', 'all results are negative signal');
     }
   });
 
   test('multi-hop recall tags results with hop number', () => {
-    const result = multiHopRecall(mockSearch, 'force-push', {
+    const result = subject.multiHopRecall(mockSearch, 'force-push', {
       maxHops: 2,
       skipProCheck: true,
     });
 
     const hop1 = result.results.filter((r) => r._hop === 1);
-    const hop2 = result.results.filter((r) => r._hop === 2);
     assert.ok(hop1.length > 0, 'has hop 1 results');
-    // hop 2 may or may not have results depending on expansion
   });
 
   test('multi-hop recall returns proRequired when not licensed', () => {
-    const result = multiHopRecall(mockSearch, 'test', {
+    const result = subject.multiHopRecall(mockSearch, 'test', {
       maxHops: 2,
       skipProCheck: false,
       requireProFn: () => false,
@@ -239,7 +241,7 @@ describe('multi-hop-recall', () => {
   });
 
   test('multi-hop recall clamps hops to [1, 3]', () => {
-    const result = multiHopRecall(mockSearch, 'git', {
+    const result = subject.multiHopRecall(mockSearch, 'git', {
       maxHops: 10,
       skipProCheck: true,
     });
@@ -248,7 +250,7 @@ describe('multi-hop-recall', () => {
 
   test('multi-hop recall handles empty search results gracefully', () => {
     const emptySearch = () => [];
-    const result = multiHopRecall(emptySearch, 'nonexistent', {
+    const result = subject.multiHopRecall(emptySearch, 'nonexistent', {
       maxHops: 2,
       skipProCheck: true,
     });
@@ -258,9 +260,8 @@ describe('multi-hop-recall', () => {
   });
 
   test('multi-hop recall handles no expansion terms gracefully', () => {
-    // Search function returns results with no tags/domain/rootCause
     const bareSearch = () => [{ id: 'bare1', signal: 'negative', tags: [], domain: 'general' }];
-    const result = multiHopRecall(bareSearch, 'bare', {
+    const result = subject.multiHopRecall(bareSearch, 'bare', {
       maxHops: 2,
       skipProCheck: true,
     });

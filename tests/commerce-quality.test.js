@@ -208,11 +208,14 @@ test('commerce MCP profile has the right tools', () => {
     path.join(__dirname, '..', 'config', 'mcp-allowlists.json'), 'utf8'
   ));
   const expected = [
+    'approve_protected_action',
     'capture_feedback',
     'recall',
     'retrieve_lessons',
     'search_thumbgate',
     'commerce_recall',
+    'set_task_scope',
+    'get_scope_state',
     'track_action',
     'verify_claim',
     'prevention_rules',

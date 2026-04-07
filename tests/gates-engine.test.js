@@ -1123,6 +1123,91 @@ test('evaluateGatesAsync denies high-risk actions when recurring negative memory
   }
 });
 
+test('evaluateGatesAsync allows scoped high-risk actions even when recurring negative memory exists', async () => {
+  const tmpConfig = makeTempPath('memory-scope-bypass-gates.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+
+  const feedbackLog = makeTempPath('memory-scope-feedback.jsonl');
+  const attributedFeedback = makeTempPath('memory-scope-attributed.jsonl');
+  const entries = Array.from({ length: 3 }, (_, index) => ({
+    id: `mem-scope-${index}`,
+    toolName: 'Bash',
+    signal: 'negative',
+    context: 'git push AGENTS.md protected file regression',
+    timestamp: new Date().toISOString(),
+  }));
+  fs.writeFileSync(feedbackLog, '');
+  fs.writeFileSync(attributedFeedback, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
+
+  const originalFeedbackLog = process.env.RLHF_FEEDBACK_LOG;
+  const originalAttributedFeedback = process.env.RLHF_ATTRIBUTED_FEEDBACK;
+  process.env.RLHF_FEEDBACK_LOG = feedbackLog;
+  process.env.RLHF_ATTRIBUTED_FEEDBACK = attributedFeedback;
+
+  try {
+    setTaskScope({
+      allowedPaths: ['AGENTS.md'],
+      summary: 'Allow AGENTS.md for the current task.',
+    });
+    const result = await evaluateGatesAsync('Bash', {
+      command: 'git push origin feature/x',
+      changed_files: ['AGENTS.md'],
+    }, tmpConfig);
+    assert.equal(result, null);
+  } finally {
+    if (originalFeedbackLog === undefined) delete process.env.RLHF_FEEDBACK_LOG;
+    else process.env.RLHF_FEEDBACK_LOG = originalFeedbackLog;
+    if (originalAttributedFeedback === undefined) delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
+    else process.env.RLHF_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
+    fs.rmSync(tmpConfig, { force: true });
+    fs.rmSync(feedbackLog, { force: true });
+    fs.rmSync(attributedFeedback, { force: true });
+  }
+});
+
+test('evaluateGates allows gh pr create after explicit approval even when bash memory is negative', () => {
+  const tmpConfig = makeTempPath('memory-pr-approval-gates.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+
+  const feedbackLog = makeTempPath('memory-pr-feedback.jsonl');
+  const attributedFeedback = makeTempPath('memory-pr-attributed.jsonl');
+  const entries = Array.from({ length: 3 }, (_, index) => ({
+    id: `mem-pr-${index}`,
+    toolName: 'Bash',
+    signal: 'negative',
+    context: 'gh pr create without user permission',
+    timestamp: new Date().toISOString(),
+  }));
+  fs.writeFileSync(feedbackLog, '');
+  fs.writeFileSync(attributedFeedback, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
+
+  const originalFeedbackLog = process.env.RLHF_FEEDBACK_LOG;
+  const originalAttributedFeedback = process.env.RLHF_ATTRIBUTED_FEEDBACK;
+  process.env.RLHF_FEEDBACK_LOG = feedbackLog;
+  process.env.RLHF_ATTRIBUTED_FEEDBACK = attributedFeedback;
+
+  try {
+    setTaskScope({
+      allowedPaths: ['README.md'],
+      summary: 'Allow README.md for PR prep.',
+    });
+    satisfyCondition('pr_create_allowed', 'User explicitly approved PR creation');
+    const result = evaluateGates('Bash', {
+      command: 'gh pr create --title "test"',
+      changed_files: ['README.md'],
+    }, tmpConfig);
+    assert.equal(result, null);
+  } finally {
+    if (originalFeedbackLog === undefined) delete process.env.RLHF_FEEDBACK_LOG;
+    else process.env.RLHF_FEEDBACK_LOG = originalFeedbackLog;
+    if (originalAttributedFeedback === undefined) delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
+    else process.env.RLHF_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
+    fs.rmSync(tmpConfig, { force: true });
+    fs.rmSync(feedbackLog, { force: true });
+    fs.rmSync(attributedFeedback, { force: true });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // evaluateGatesAsync when clause
 // ---------------------------------------------------------------------------

@@ -1,18 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 
-const { describe, test } = require('node:test');
+const { describe, test, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
+const { loadWithIsolatedLicenseEnv } = require('./helpers/license-env');
 
-const {
-  augmentDpoExport,
-  extractPrinciple,
-  generateScenarioVariations,
-  buildContrastivePairs,
-  truncate,
-} = require('../scripts/synthetic-dpo');
-
-// ── Test fixtures ──────────────────────────────────────────────────
+const LICENSE_MODULE_ID = require.resolve('../scripts/license');
+const PRO_FEATURES_MODULE_ID = require.resolve('../scripts/pro-features');
+const SYNTHETIC_DPO_MODULE_ID = require.resolve('../scripts/synthetic-dpo');
 
 const MOCK_DPO_EXPORT = {
   pairs: [
@@ -62,18 +57,32 @@ const MOCK_DPO_EXPORT = {
   learnings: [],
 };
 
-// ── Unit tests ─────────────────────────────────────────────────────
-
 describe('synthetic-dpo', () => {
+  let subject;
+  let restoreSubject;
+
+  beforeEach(() => {
+    const isolated = loadWithIsolatedLicenseEnv(
+      SYNTHETIC_DPO_MODULE_ID,
+      [LICENSE_MODULE_ID, PRO_FEATURES_MODULE_ID],
+    );
+    subject = isolated.moduleExports;
+    restoreSubject = isolated.restore;
+  });
+
+  afterEach(() => {
+    restoreSubject();
+  });
+
   test('truncate shortens strings and adds ellipsis', () => {
-    assert.equal(truncate('short', 10), 'short');
-    assert.equal(truncate('a long string that exceeds', 10), 'a long ...');
-    assert.equal(truncate('exactly10!', 10), 'exactly10!');
+    assert.equal(subject.truncate('short', 10), 'short');
+    assert.equal(subject.truncate('a long string that exceeds', 10), 'a long ...');
+    assert.equal(subject.truncate('exactly10!', 10), 'exactly10!');
   });
 
   test('extractPrinciple generates domain-specific principle', () => {
     const pair = MOCK_DPO_EXPORT.pairs[0];
-    const principle = extractPrinciple(pair);
+    const principle = subject.extractPrinciple(pair);
 
     assert.ok(principle.domain.includes('verification'), 'domain includes matched key');
     assert.ok(principle.anti_pattern.length > 0, 'has anti-pattern');
@@ -89,23 +98,22 @@ describe('synthetic-dpo', () => {
       rejected: 'A'.repeat(200),
       chosen: 'B'.repeat(200),
     };
-    const principle = extractPrinciple(longPair);
+    const principle = subject.extractPrinciple(longPair);
     assert.ok(principle.anti_pattern.length <= 123, 'anti-pattern truncated');
     assert.ok(principle.correct_pattern.length <= 123, 'correct-pattern truncated');
   });
 
   test('generateScenarioVariations creates 2 variations with matched keys', () => {
     const pair = MOCK_DPO_EXPORT.pairs[0];
-    const variations = generateScenarioVariations(pair);
+    const variations = subject.generateScenarioVariations(pair);
 
     assert.equal(variations.length, 2, 'generates 2 variations with matched keys');
 
-    // Both keep same chosen/rejected
-    for (const v of variations) {
-      assert.equal(v.chosen, pair.chosen, 'preserves chosen');
-      assert.equal(v.rejected, pair.rejected, 'preserves rejected');
-      assert.equal(v.metadata.synthetic, true, 'marked as synthetic');
-      assert.equal(v.metadata.syntheticType, 'scenario_variation');
+    for (const variation of variations) {
+      assert.equal(variation.chosen, pair.chosen, 'preserves chosen');
+      assert.equal(variation.rejected, pair.rejected, 'preserves rejected');
+      assert.equal(variation.metadata.synthetic, true, 'marked as synthetic');
+      assert.equal(variation.metadata.syntheticType, 'scenario_variation');
     }
 
     assert.equal(variations[0].metadata.syntheticVariant, 'avoidance_framing');
@@ -117,17 +125,16 @@ describe('synthetic-dpo', () => {
       ...MOCK_DPO_EXPORT.pairs[0],
       metadata: { ...MOCK_DPO_EXPORT.pairs[0].metadata, matchedKeys: [] },
     };
-    const variations = generateScenarioVariations(pair);
+    const variations = subject.generateScenarioVariations(pair);
     assert.equal(variations.length, 1, 'only avoidance framing without matched keys');
   });
 
   test('buildContrastivePairs matches unpaired errors and learnings', () => {
-    const pairs = buildContrastivePairs(
+    const pairs = subject.buildContrastivePairs(
       MOCK_DPO_EXPORT.unpairedErrors,
       MOCK_DPO_EXPORT.unpairedLearnings,
     );
 
-    // E2 (git, force-push) should match L2 (git, protection) on "git"
     assert.equal(pairs.length, 1, 'builds 1 contrastive pair');
     assert.equal(pairs[0].metadata.errorId, 'E2');
     assert.equal(pairs[0].metadata.learningId, 'L2');
@@ -139,14 +146,12 @@ describe('synthetic-dpo', () => {
   test('buildContrastivePairs returns empty for no overlap', () => {
     const errors = [{ id: 'X1', title: 'ERROR: alpha', content: 'nothing', tags: ['xyz'] }];
     const learnings = [{ id: 'Y1', title: 'SUCCESS: beta', content: 'nothing', tags: ['abc'] }];
-    const pairs = buildContrastivePairs(errors, learnings);
+    const pairs = subject.buildContrastivePairs(errors, learnings);
     assert.equal(pairs.length, 0, 'no pairs when no overlap');
   });
 
-  // ── Integration tests ──────────────────────────────────────────
-
   test('augmentDpoExport increases total pair count', () => {
-    const result = augmentDpoExport(MOCK_DPO_EXPORT, { skipProCheck: true });
+    const result = subject.augmentDpoExport(MOCK_DPO_EXPORT, { skipProCheck: true });
 
     assert.equal(result.originalPairs, 1, 'preserves original count');
     assert.ok(result.syntheticPairs > 0, `generated ${result.syntheticPairs} synthetic pairs`);
@@ -155,7 +160,7 @@ describe('synthetic-dpo', () => {
   });
 
   test('augmentDpoExport extracts principles', () => {
-    const result = augmentDpoExport(MOCK_DPO_EXPORT, { skipProCheck: true });
+    const result = subject.augmentDpoExport(MOCK_DPO_EXPORT, { skipProCheck: true });
 
     assert.equal(result.principles.length, 1, '1 principle per original pair');
     assert.ok(result.principles[0].domain.includes('verification'));
@@ -163,7 +168,7 @@ describe('synthetic-dpo', () => {
   });
 
   test('augmentDpoExport respects feature flags', () => {
-    const noVariations = augmentDpoExport(MOCK_DPO_EXPORT, {
+    const noVariations = subject.augmentDpoExport(MOCK_DPO_EXPORT, {
       scenarioVariations: false,
       contrastivePairing: false,
       principleExtraction: false,
@@ -176,10 +181,7 @@ describe('synthetic-dpo', () => {
   });
 
   test('augmentDpoExport returns proRequired when not licensed', () => {
-    const result = augmentDpoExport(MOCK_DPO_EXPORT, {
-      skipProCheck: false,
-      requireProFn: () => false,
-    });
+    const result = subject.augmentDpoExport(MOCK_DPO_EXPORT, { skipProCheck: false });
 
     assert.equal(result.proRequired, true, 'proRequired flag set');
     assert.equal(result.syntheticPairs, 0, 'no synthetic pairs without Pro');
@@ -188,7 +190,7 @@ describe('synthetic-dpo', () => {
 
   test('augmentDpoExport handles empty DPO export', () => {
     const empty = { pairs: [], unpairedErrors: [], unpairedLearnings: [] };
-    const result = augmentDpoExport(empty, { skipProCheck: true });
+    const result = subject.augmentDpoExport(empty, { skipProCheck: true });
 
     assert.equal(result.originalPairs, 0);
     assert.equal(result.syntheticPairs, 0);
@@ -197,31 +199,28 @@ describe('synthetic-dpo', () => {
   });
 
   test('augmentDpoExport synthetic pairs have correct metadata structure', () => {
-    const result = augmentDpoExport(MOCK_DPO_EXPORT, { skipProCheck: true });
+    const result = subject.augmentDpoExport(MOCK_DPO_EXPORT, { skipProCheck: true });
 
-    const synthetics = result.pairs.filter((p) => p.metadata?.synthetic);
+    const synthetics = result.pairs.filter((pair) => pair.metadata?.synthetic);
     assert.ok(synthetics.length > 0, 'has synthetic pairs');
 
-    for (const s of synthetics) {
-      assert.equal(s.metadata.synthetic, true, 'synthetic flag');
-      assert.ok(['scenario_variation', 'contrastive_pair'].includes(s.metadata.syntheticType), 'valid type');
-      assert.ok(s.prompt, 'has prompt');
-      assert.ok(s.chosen, 'has chosen');
-      assert.ok(s.rejected, 'has rejected');
+    for (const synthetic of synthetics) {
+      assert.equal(synthetic.metadata.synthetic, true, 'synthetic flag');
+      assert.ok(['scenario_variation', 'contrastive_pair'].includes(synthetic.metadata.syntheticType), 'valid type');
+      assert.ok(synthetic.prompt, 'has prompt');
+      assert.ok(synthetic.chosen, 'has chosen');
+      assert.ok(synthetic.rejected, 'has rejected');
     }
   });
 
   test('augmentDpoExport scenario + contrastive counts are correct', () => {
-    const result = augmentDpoExport(MOCK_DPO_EXPORT, { skipProCheck: true });
+    const result = subject.augmentDpoExport(MOCK_DPO_EXPORT, { skipProCheck: true });
 
-    const scenarios = result.pairs.filter((p) => p.metadata?.syntheticType === 'scenario_variation');
-    const contrastive = result.pairs.filter((p) => p.metadata?.syntheticType === 'contrastive_pair');
+    const scenarios = result.pairs.filter((pair) => pair.metadata?.syntheticType === 'scenario_variation');
+    const contrastive = result.pairs.filter((pair) => pair.metadata?.syntheticType === 'contrastive_pair');
 
-    // 1 original pair with 2 matched keys → 2 scenario variations
     assert.equal(scenarios.length, 2, '2 scenario variations from 1 pair with matched keys');
-    // E2 (git) matches L2 (git) → 1 contrastive pair
     assert.equal(contrastive.length, 1, '1 contrastive pair from unpaired');
-    // Total synthetic = 2 + 1 = 3
     assert.equal(result.syntheticPairs, 3, 'total synthetic = 3');
   });
 });
