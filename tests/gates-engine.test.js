@@ -425,6 +425,29 @@ test('setTaskScope persists scope state', () => {
   assert.equal(loadConstraints().local_only.value, true);
 });
 
+test('setTaskScope clear removes task scope but preserves approvals', () => {
+  cleanupStateFiles();
+  setTaskScope({
+    taskId: '1733520',
+    summary: 'policy update',
+    allowedPaths: ['AGENTS.md'],
+  });
+  approveProtectedAction({ pathGlobs: ['AGENTS.md'], reason: 'temporary approval' });
+  const cleared = setTaskScope({ clear: true });
+  const state = getScopeState();
+  assert.equal(cleared, null);
+  assert.equal(state.taskScope, null);
+  assert.equal(state.protectedApprovals.length, 1);
+});
+
+test('setTaskScope rejects empty allowedPaths', () => {
+  cleanupStateFiles();
+  assert.throws(
+    () => setTaskScope({ summary: 'invalid scope', allowedPaths: [] }),
+    /allowedPaths must be a non-empty array/,
+  );
+});
+
 test('approveProtectedAction expires approvals after ttl', () => {
   cleanupStateFiles();
   approveProtectedAction({ pathGlobs: ['AGENTS.md'], reason: 'temporary approval', ttlMs: 60 * 1000 });
@@ -440,6 +463,25 @@ test('approveProtectedAction expires approvals after ttl', () => {
   };
   saveGovernanceState(expired);
   assert.equal(loadGovernanceState().protectedApprovals.length, 0);
+});
+
+test('approveProtectedAction validates inputs and clamps invalid ttl values', () => {
+  cleanupStateFiles();
+  assert.throws(
+    () => approveProtectedAction({ pathGlobs: [], reason: 'no files' }),
+    /pathGlobs must be a non-empty array/,
+  );
+  assert.throws(
+    () => approveProtectedAction({ pathGlobs: ['AGENTS.md'], reason: '' }),
+    /reason is required/,
+  );
+
+  const approval = approveProtectedAction({
+    pathGlobs: ['AGENTS.md'],
+    reason: 'clamped ttl',
+    ttlMs: 5,
+  });
+  assert.ok(approval.expiresAt - approval.timestamp >= 60 * 1000);
 });
 
 // ---------------------------------------------------------------------------

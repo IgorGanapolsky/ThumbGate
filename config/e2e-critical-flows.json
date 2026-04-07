@@ -22,6 +22,10 @@
       "title": "E2E: rotated billing key disables the old key and keeps dashboard access alive"
     },
     {
+      "id": "governance_scope_and_approval_http",
+      "title": "E2E: governance task scope and protected approvals persist over the HTTP surface"
+    },
+    {
       "id": "history_aware_feedback_distillation",
       "title": "E2E: vague thumbs-down distills a lesson and preserves linked follow-up context"
     },

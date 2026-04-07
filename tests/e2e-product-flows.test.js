@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const gatesEngine = require('../scripts/gates-engine');
 
 function readJsonl(filePath) {
   if (!fs.existsSync(filePath)) return [];
@@ -43,6 +44,10 @@ async function startIsolatedServer(t, prefix) {
     checkoutSessionsPath: process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH,
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   };
+  const savedPaths = {
+    governanceState: gatesEngine.GOVERNANCE_STATE_PATH,
+    constraints: gatesEngine.CONSTRAINTS_PATH,
+  };
 
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   process.env.THUMBGATE_API_KEY = 'e2e-admin-key';
@@ -51,6 +56,10 @@ async function startIsolatedServer(t, prefix) {
   process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpDir, 'revenue-events.jsonl');
   process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = path.join(tmpDir, 'local-checkout-sessions.json');
   delete process.env.STRIPE_SECRET_KEY;
+  gatesEngine.GOVERNANCE_STATE_PATH = path.join(tmpDir, 'governance-state.json');
+  gatesEngine.CONSTRAINTS_PATH = path.join(tmpDir, 'session-constraints.json');
+  fs.rmSync(gatesEngine.GOVERNANCE_STATE_PATH, { force: true });
+  fs.rmSync(gatesEngine.CONSTRAINTS_PATH, { force: true });
 
   const { startServer } = require('../src/api/server');
   const { server, port } = await startServer({ port: 0 });
@@ -72,6 +81,8 @@ async function startIsolatedServer(t, prefix) {
     else delete process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
     if (savedEnv.stripeSecretKey) process.env.STRIPE_SECRET_KEY = savedEnv.stripeSecretKey;
     else delete process.env.STRIPE_SECRET_KEY;
+    gatesEngine.GOVERNANCE_STATE_PATH = savedPaths.governanceState;
+    gatesEngine.CONSTRAINTS_PATH = savedPaths.constraints;
   });
 
   return {
@@ -239,6 +250,66 @@ test('E2E: rotated billing key disables the old key and keeps dashboard access a
   assert.equal(newKeyRes.status, 200);
   const dashboardBody = await newKeyRes.json();
   assert.ok(dashboardBody.analytics);
+});
+
+test('E2E: governance task scope and protected approvals persist over the HTTP surface', async (t) => {
+  const { port, adminHeaders } = await startIsolatedServer(t, 'rlhf-e2e-governance-');
+
+  const scopeRes = await fetch(apiUrl(port, '/v1/gates/task-scope'), {
+    method: 'POST',
+    headers: adminHeaders,
+    body: JSON.stringify({
+      taskId: '1733520',
+      summary: 'prove hard enforcement',
+      allowedPaths: ['scripts/**', 'tests/**'],
+      protectedPaths: ['AGENTS.md'],
+      localOnly: true,
+    }),
+  });
+  assert.equal(scopeRes.status, 200);
+  const scopeBody = await scopeRes.json();
+  assert.equal(scopeBody.scope.taskId, '1733520');
+  assert.equal(scopeBody.scope.localOnly, true);
+
+  const approvalRes = await fetch(apiUrl(port, '/v1/gates/protected-approval'), {
+    method: 'POST',
+    headers: adminHeaders,
+    body: JSON.stringify({
+      pathGlobs: ['AGENTS.md'],
+      reason: 'CEO approved protected-file edit',
+      evidence: 'hard enforcement proof',
+      taskId: '1733520',
+      ttlMs: 120000,
+    }),
+  });
+  assert.equal(approvalRes.status, 200);
+  const approvalBody = await approvalRes.json();
+  assert.equal(approvalBody.approved, true);
+  assert.deepEqual(approvalBody.approval.pathGlobs, ['AGENTS.md']);
+
+  const stateRes = await fetch(apiUrl(port, '/v1/gates/task-scope'), {
+    headers: { Authorization: 'Bearer e2e-admin-key' },
+  });
+  assert.equal(stateRes.status, 200);
+  const stateBody = await stateRes.json();
+  assert.equal(stateBody.taskScope.summary, 'prove hard enforcement');
+  assert.equal(stateBody.protectedApprovals.length, 1);
+  assert.equal(gatesEngine.loadConstraints().local_only.value, true);
+
+  const clearRes = await fetch(apiUrl(port, '/v1/gates/task-scope'), {
+    method: 'POST',
+    headers: adminHeaders,
+    body: JSON.stringify({ clear: true }),
+  });
+  assert.equal(clearRes.status, 200);
+
+  const clearedStateRes = await fetch(apiUrl(port, '/v1/gates/task-scope'), {
+    headers: { Authorization: 'Bearer e2e-admin-key' },
+  });
+  assert.equal(clearedStateRes.status, 200);
+  const clearedState = await clearedStateRes.json();
+  assert.equal(clearedState.taskScope, null);
+  assert.equal(clearedState.protectedApprovals.length, 1);
 });
 
 test('E2E: vague thumbs-down distills a lesson and preserves linked follow-up context', async (t) => {

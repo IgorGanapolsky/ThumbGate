@@ -29,6 +29,7 @@ fs.writeFileSync(
 
 const { startServer, __test__ } = require('../src/api/server');
 const billing = require('../scripts/billing');
+const gatesEngine = require('../scripts/gates-engine');
 const { buildHostedSuccessUrl } = require('../scripts/hosted-config');
 const {
   recordConversationEntry,
@@ -38,6 +39,10 @@ const {
 let handle;
 let apiOrigin = '';
 const authHeader = { authorization: 'Bearer test-api-key' };
+const ORIGINAL_GATES_PATHS = {
+  governanceState: gatesEngine.GOVERNANCE_STATE_PATH,
+  constraints: gatesEngine.CONSTRAINTS_PATH,
+};
 
 test('api servers 2026 pricing', () => {
   assert.match('$19/mo or $149/yr', /\$19\/mo or \$149\/yr/);
@@ -64,15 +69,24 @@ function extractCookieValue(setCookies, name) {
 }
 
 test.before(async () => {
+  gatesEngine.GOVERNANCE_STATE_PATH = path.join(tmpFeedbackDir, 'governance-state.json');
+  gatesEngine.CONSTRAINTS_PATH = path.join(tmpFeedbackDir, 'session-constraints.json');
+  fs.rmSync(gatesEngine.GOVERNANCE_STATE_PATH, { force: true });
+  fs.rmSync(gatesEngine.CONSTRAINTS_PATH, { force: true });
   handle = await startServer({ port: 0 });
   apiOrigin = `http://localhost:${handle.port}`;
 });
 
 test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
+  gatesEngine.GOVERNANCE_STATE_PATH = ORIGINAL_GATES_PATHS.governanceState;
+  gatesEngine.CONSTRAINTS_PATH = ORIGINAL_GATES_PATHS.constraints;
   delete process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
   delete process.env.THUMBGATE_BILLING_API_BASE_URL;
   delete process.env.THUMBGATE_BUILD_METADATA_PATH;
+  delete process.env.RLHF_PUBLIC_APP_ORIGIN;
+  delete process.env.RLHF_BILLING_API_BASE_URL;
+  delete process.env.RLHF_BUILD_METADATA_PATH;
   try {
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
     fs.rmSync(tmpProofDir, { recursive: true, force: true });
@@ -108,6 +122,83 @@ test('protected endpoints accept x-api-key as an alternate auth header', async (
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(typeof body.summary, 'string');
+});
+
+test('admin API sets, reads, and clears task scope via HTTP', async () => {
+  const setRes = await fetch(apiUrl('/v1/gates/task-scope'), {
+    method: 'POST',
+    headers: { ...authHeader, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      taskId: '1733520',
+      summary: 'harden governance',
+      allowedPaths: ['scripts/**', 'tests/**'],
+      localOnly: true,
+    }),
+  });
+  assert.equal(setRes.status, 200);
+  const setBody = await setRes.json();
+  assert.equal(setBody.scope.taskId, '1733520');
+  assert.equal(setBody.scope.localOnly, true);
+  assert.deepEqual(setBody.scope.allowedPaths, ['scripts/**', 'tests/**']);
+  assert.ok(setBody.scope.protectedPaths.includes('AGENTS.md'));
+
+  const stateRes = await fetch(apiUrl('/v1/gates/task-scope'), { headers: authHeader });
+  assert.equal(stateRes.status, 200);
+  const stateBody = await stateRes.json();
+  assert.equal(stateBody.taskScope.summary, 'harden governance');
+  assert.equal(stateBody.taskScope.localOnly, true);
+  assert.equal(gatesEngine.loadConstraints().local_only.value, true);
+
+  const clearRes = await fetch(apiUrl('/v1/gates/task-scope'), {
+    method: 'POST',
+    headers: { ...authHeader, 'content-type': 'application/json' },
+    body: JSON.stringify({ clear: true }),
+  });
+  assert.equal(clearRes.status, 200);
+  const clearBody = await clearRes.json();
+  assert.equal(clearBody.scope, null);
+
+  const clearedStateRes = await fetch(apiUrl('/v1/gates/task-scope'), { headers: authHeader });
+  assert.equal(clearedStateRes.status, 200);
+  const clearedState = await clearedStateRes.json();
+  assert.equal(clearedState.taskScope, null);
+});
+
+test('admin API persists protected approvals via HTTP', async () => {
+  const scopeRes = await fetch(apiUrl('/v1/gates/task-scope'), {
+    method: 'POST',
+    headers: { ...authHeader, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      taskId: '1733520',
+      summary: 'approve protected files',
+      allowedPaths: ['AGENTS.md'],
+      protectedPaths: ['AGENTS.md'],
+    }),
+  });
+  assert.equal(scopeRes.status, 200);
+
+  const approvalRes = await fetch(apiUrl('/v1/gates/protected-approval'), {
+    method: 'POST',
+    headers: { ...authHeader, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      pathGlobs: ['AGENTS.md'],
+      reason: 'CEO approved protected-file edit',
+      evidence: 'work item 1733520',
+      taskId: '1733520',
+      ttlMs: 120000,
+    }),
+  });
+  assert.equal(approvalRes.status, 200);
+  const approvalBody = await approvalRes.json();
+  assert.equal(approvalBody.approved, true);
+  assert.deepEqual(approvalBody.approval.pathGlobs, ['AGENTS.md']);
+  assert.equal(approvalBody.approval.taskId, '1733520');
+
+  const stateRes = await fetch(apiUrl('/v1/gates/task-scope'), { headers: authHeader });
+  assert.equal(stateRes.status, 200);
+  const stateBody = await stateRes.json();
+  assert.equal(stateBody.protectedApprovals.length, 1);
+  assert.equal(stateBody.protectedApprovals[0].reason, 'CEO approved protected-file edit');
 });
 
 test('root serves the landing page by default', async () => {
