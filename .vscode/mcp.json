@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "rlhf-tools": {
+    "thumbgate-tools": {
       "command": "node",
       "args": ["./adapters/mcp/server-stdio.js"],
       "env": {

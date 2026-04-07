@@ -13,8 +13,8 @@
 | GOV-02 | Intent router with policy bundles provides risk-stratified action planning in Subway | intent-router.js requires mcp-policy.js; full dependency set confirmed; policy bundles + allowlists + subagent-profiles all port as JSON config files |
 | GOV-03 | ContextFS with semantic cache (Jaccard, threshold=0.7, TTL=86400s) operates in Subway | contextfs.js is zero-dependency; Jaccard and TTL confirmed in source; env vars THUMBGATE_SEMANTIC_CACHE_THRESHOLD and THUMBGATE_SEMANTIC_CACHE_TTL_SECONDS configurable |
 | GOV-04 | Self-healing monitor detects CI failures and runs fix scripts in Subway | self-heal.js + self-healing-check.js confirmed; KNOWN_FIX_SCRIPTS must be redefined for Subway's package.json; lint:fix (not lint:check) and format are available; Subway ESLint confirmed NO auto-import-sort |
-| GOV-05 | All governance features have unit tests proving correct behavior | rlhf has 298 lines across 5 test files (node:test runner); Subway uses Jest (jest-expo preset); port tests to Jest/describe syntax; use scripts/__tests__/ directory pattern confirmed in Subway |
-| GOV-06 | Proof report generated in proof/ directory for governance features | proof/ pattern confirmed: automation/report.md + automation/report.json; generate at end of phase in rlhf repo (commits happen in rlhf only) |
+| GOV-05 | All governance features have unit tests proving correct behavior | ThumbGate has 298 lines across 5 test files (node:test runner); Subway uses Jest (jest-expo preset); port tests to Jest/describe syntax; use scripts/__tests__/ directory pattern confirmed in Subway |
+| GOV-06 | Proof report generated in proof/ directory for governance features | proof/ pattern confirmed: automation/report.md + automation/report.json; generate at end of phase in ThumbGate repo (commits happen in ThumbGate only) |
 </phase_requirements>
 
 ---
@@ -23,9 +23,9 @@
 
 Phase 3 ports four governance scripts from thumbgate into Subway_RN_Demo: budget-guard.js, intent-router.js (+ mcp-policy.js + config files), contextfs.js, and self-heal.js / self-healing-check.js. Every script is zero-dependency CommonJS. No npm packages are installed. All five scripts use only Node.js built-ins (`fs`, `path`, `child_process`). The port is path-variable surgery plus config adaptation — not a rewrite.
 
-The most complex part of this phase is not the code; it is the test infrastructure gap. rlhf's tests use `node:test` runner. Subway's `scripts/__tests__/` directory uses Jest (confirmed by `autonomy-cli.test.js`, `feedback-loop.test.js`). The ported tests must be rewritten from `node:test` syntax into Jest syntax. This is mechanical but must not be skipped — GOV-05 requires tests proving behavior.
+The most complex part of this phase is not the code; it is the test infrastructure gap. ThumbGate's tests use `node:test` runner. Subway's `scripts/__tests__/` directory uses Jest (confirmed by `autonomy-cli.test.js`, `feedback-loop.test.js`). The ported tests must be rewritten from `node:test` syntax into Jest syntax. This is mechanical but must not be skipped — GOV-05 requires tests proving behavior.
 
-The second concrete risk is the self-healing check configuration. `self-healing-check.js` hardcodes rlhf-specific npm scripts as its `DEFAULT_CHECKS` (`budget:status`, `tests`, `prove:adapters`, `prove:automation`). These do not exist in Subway's `package.json`. Subway's self-heal check must define Subway-appropriate checks (e.g., `test:ci`, `lint:check`, `format:check`). The Subway lint config (ESLint) does NOT include auto-import-sort — the prior concern from STATE.md is resolved: `import/order` is present but set to `'warn'`, not auto-fix-on-save, so `lint:fix` is safe to include in the fix plan.
+The second concrete risk is the self-healing check configuration. `self-healing-check.js` hardcodes ThumbGate-specific npm scripts as its `DEFAULT_CHECKS` (`budget:status`, `tests`, `prove:adapters`, `prove:automation`). These do not exist in Subway's `package.json`. Subway's self-heal check must define Subway-appropriate checks (e.g., `test:ci`, `lint:check`, `format:check`). The Subway lint config (ESLint) does NOT include auto-import-sort — the prior concern from STATE.md is resolved: `import/order` is present but set to `'warn'`, not auto-fix-on-save, so `lint:fix` is safe to include in the fix plan.
 
 **Primary recommendation:** Port scripts in dependency order — budget-guard first (no deps), then contextfs (no deps), then mcp-policy + intent-router (depend on each other and on config files), then self-heal + self-healing-check last (self-heal deps Subway's package.json scripts which must be confirmed before building the check list). Write Jest tests alongside each script before moving to the next.
 
@@ -37,21 +37,21 @@ The second concrete risk is the self-healing check configuration. `self-healing-
 
 | Script | Source File | Purpose | Dependency Chain |
 |--------|-------------|---------|-----------------|
-| budget-guard.js | rlhf/scripts/budget-guard.js | Atomic file-lock ledger enforcing $10/month cap | `fs`, `path` only — zero external deps |
-| contextfs.js | rlhf/scripts/contextfs.js | Namespaced file-system context store with Jaccard semantic cache | `fs`, `path` only — zero external deps |
-| mcp-policy.js | rlhf/scripts/mcp-policy.js | MCP profile-to-tool allowlist lookup | `fs`, `path` + reads `config/mcp-allowlists.json` + `config/subagent-profiles.json` |
-| intent-router.js | rlhf/scripts/intent-router.js | Risk-stratified intent planning with approval checkpoints | requires `./mcp-policy` + reads `config/policy-bundles/*.json` |
-| self-heal.js | rlhf/scripts/self-heal.js | Runs npm fix scripts after detecting CI failure | `fs`, `path`, `child_process` only; reads Subway `package.json` scripts |
-| self-healing-check.js | rlhf/scripts/self-healing-check.js | Runs health checks and reports pass/fail | `child_process` only; hardcodes check commands — must be adapted for Subway |
+| budget-guard.js | ThumbGate/scripts/budget-guard.js | Atomic file-lock ledger enforcing $10/month cap | `fs`, `path` only — zero external deps |
+| contextfs.js | ThumbGate/scripts/contextfs.js | Namespaced file-system context store with Jaccard semantic cache | `fs`, `path` only — zero external deps |
+| mcp-policy.js | ThumbGate/scripts/mcp-policy.js | MCP profile-to-tool allowlist lookup | `fs`, `path` + reads `config/mcp-allowlists.json` + `config/subagent-profiles.json` |
+| intent-router.js | ThumbGate/scripts/intent-router.js | Risk-stratified intent planning with approval checkpoints | requires `./mcp-policy` + reads `config/policy-bundles/*.json` |
+| self-heal.js | ThumbGate/scripts/self-heal.js | Runs npm fix scripts after detecting CI failure | `fs`, `path`, `child_process` only; reads Subway `package.json` scripts |
+| self-healing-check.js | ThumbGate/scripts/self-healing-check.js | Runs health checks and reports pass/fail | `child_process` only; hardcodes check commands — must be adapted for Subway |
 
 ### Config Files to Port
 
 | File | Source | Destination in Subway | Purpose |
 |------|--------|----------------------|---------|
-| config/mcp-allowlists.json | rlhf/config/mcp-allowlists.json | .claude/config/mcp-allowlists.json | Profile → tool allowlist |
-| config/subagent-profiles.json | rlhf/config/subagent-profiles.json | .claude/config/subagent-profiles.json | Subagent profile → MCP profile mapping |
-| config/policy-bundles/default-v1.json | rlhf/config/policy-bundles/ | .claude/config/policy-bundles/default-v1.json | Balanced intent bundle |
-| config/policy-bundles/constrained-v1.json | rlhf/config/policy-bundles/ | .claude/config/policy-bundles/constrained-v1.json | Conservative intent bundle |
+| config/mcp-allowlists.json | ThumbGate/config/mcp-allowlists.json | .claude/config/mcp-allowlists.json | Profile → tool allowlist |
+| config/subagent-profiles.json | ThumbGate/config/subagent-profiles.json | .claude/config/subagent-profiles.json | Subagent profile → MCP profile mapping |
+| config/policy-bundles/default-v1.json | ThumbGate/config/policy-bundles/ | .claude/config/policy-bundles/default-v1.json | Balanced intent bundle |
+| config/policy-bundles/constrained-v1.json | ThumbGate/config/policy-bundles/ | .claude/config/policy-bundles/constrained-v1.json | Conservative intent bundle |
 
 ### Alternatives Considered
 
@@ -59,7 +59,7 @@ The second concrete risk is the self-healing check configuration. `self-healing-
 |------------|-----------|----------|
 | File-lock (budget-guard) | SQLite WAL mode | SQLite requires npm; file-lock is zero-dep and adequate for single-machine use |
 | Jaccard similarity (contextfs) | Vector similarity | Vector requires LanceDB (Phase 4); Jaccard is pure JS and sufficient for token-based cache |
-| node:test (rlhf tests) | Jest | Subway already uses Jest; porting to Jest is mandatory for consistency — no choice |
+| node:test (ThumbGate tests) | Jest | Subway already uses Jest; porting to Jest is mandatory for consistency — no choice |
 
 **Installation:** None. Zero new npm packages. This is the explicit constraint.
 
@@ -74,18 +74,18 @@ Subway_RN_Demo/
 ├── .claude/
 │   ├── scripts/
 │   │   └── feedback/
-│   │       ├── budget-guard.js          # ported from rlhf/scripts/
-│   │       ├── contextfs.js             # ported from rlhf/scripts/
-│   │       ├── mcp-policy.js            # ported from rlhf/scripts/
-│   │       ├── intent-router.js         # ported from rlhf/scripts/
-│   │       ├── self-heal.js             # ported from rlhf/scripts/
-│   │       └── self-healing-check.js    # ported from rlhf/scripts/ (adapted)
+│   │       ├── budget-guard.js          # ported from ThumbGate/scripts/
+│   │       ├── contextfs.js             # ported from ThumbGate/scripts/
+│   │       ├── mcp-policy.js            # ported from ThumbGate/scripts/
+│   │       ├── intent-router.js         # ported from ThumbGate/scripts/
+│   │       ├── self-heal.js             # ported from ThumbGate/scripts/
+│   │       └── self-healing-check.js    # ported from ThumbGate/scripts/ (adapted)
 │   ├── config/
-│   │   ├── mcp-allowlists.json          # ported from rlhf/config/
-│   │   ├── subagent-profiles.json       # ported from rlhf/config/
+│   │   ├── mcp-allowlists.json          # ported from ThumbGate/config/
+│   │   ├── subagent-profiles.json       # ported from ThumbGate/config/
 │   │   └── policy-bundles/
-│   │       ├── default-v1.json          # ported from rlhf/config/policy-bundles/
-│   │       └── constrained-v1.json      # ported from rlhf/config/policy-bundles/
+│   │       ├── default-v1.json          # ported from ThumbGate/config/policy-bundles/
+│   │       └── constrained-v1.json      # ported from ThumbGate/config/policy-bundles/
 │   └── memory/
 │       └── feedback/
 │           ├── budget-ledger.json       # created at runtime by budget-guard
@@ -104,18 +104,18 @@ Subway_RN_Demo/
 │       ├── intent-router.test.js        # new: Jest tests for GOV-02
 │       ├── self-heal.test.js            # new: Jest tests for GOV-04
 │       └── self-healing-check.test.js   # new: Jest tests for GOV-04
-└── proof/                               # NOTE: proof reports committed in rlhf repo, not Subway
+└── proof/                               # NOTE: proof reports committed in ThumbGate repo, not Subway
 ```
 
 ### Pattern 1: Path Variable Surgery
 
-**What:** Every rlhf script uses `PROJECT_ROOT = path.join(__dirname, '..')` to locate `config/` and `.claude/memory/feedback/`. In Subway the scripts live at `.claude/scripts/feedback/`, so `PROJECT_ROOT` must resolve two levels up to reach the repo root.
+**What:** Every ThumbGate script uses `PROJECT_ROOT = path.join(__dirname, '..')` to locate `config/` and `.claude/memory/feedback/`. In Subway the scripts live at `.claude/scripts/feedback/`, so `PROJECT_ROOT` must resolve two levels up to reach the repo root.
 
 **When to use:** Every ported script.
 
 **Example:**
 ```javascript
-// rlhf original (scripts/ is one level below PROJECT_ROOT)
+// ThumbGate original (scripts/ is one level below PROJECT_ROOT)
 const PROJECT_ROOT = path.join(__dirname, '..');
 const FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR
   || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
@@ -130,9 +130,9 @@ const FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR
 
 ### Pattern 2: Self-Healing Check Adaptation
 
-**What:** `self-healing-check.js` exports a `DEFAULT_CHECKS` array with rlhf-specific npm scripts. These are not valid in Subway.
+**What:** `self-healing-check.js` exports a `DEFAULT_CHECKS` array with ThumbGate-specific npm scripts. These are not valid in Subway.
 
-**rlhf DEFAULT_CHECKS (must NOT copy verbatim):**
+**ThumbGate DEFAULT_CHECKS (must NOT copy verbatim):**
 ```javascript
 const DEFAULT_CHECKS = [
   { name: 'budget_status', command: ['npm', 'run', 'budget:status'], timeoutMs: 60_000 },
@@ -156,16 +156,16 @@ const DEFAULT_CHECKS = [
 
 ### Pattern 3: Test Runner Translation (node:test → Jest)
 
-**What:** rlhf tests use `node:test` API. Subway tests use Jest (`jest-expo` preset). The Jest API is `describe/test/beforeEach/afterEach/expect`. The `node:test` API is `test/after`.
+**What:** ThumbGate tests use `node:test` API. Subway tests use Jest (`jest-expo` preset). The Jest API is `describe/test/beforeEach/afterEach/expect`. The `node:test` API is `test/after`.
 
 **Example translation:**
 
 ```javascript
-// rlhf node:test pattern
+// ThumbGate node:test pattern
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-test-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ThumbGate-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 test('adds spend', () => {
@@ -198,7 +198,7 @@ test('adds spend', () => {
 });
 ```
 
-**Critical:** Jest caches `require()` between tests. Set env vars BEFORE requiring the module, or use `jest.resetModules()` in `beforeEach`. The rlhf `node:test` tests set env vars at module level because each test file is a fresh process — Jest does not work this way.
+**Critical:** Jest caches `require()` between tests. Set env vars BEFORE requiring the module, or use `jest.resetModules()` in `beforeEach`. The ThumbGate `node:test` tests set env vars at module level because each test file is a fresh process — Jest does not work this way.
 
 ### Pattern 4: Budget Guard Lock under Parallel Agents
 
@@ -208,7 +208,7 @@ test('adds spend', () => {
 
 ### Anti-Patterns to Avoid
 
-- **Copying DEFAULT_CHECKS verbatim from self-healing-check.js:** The rlhf-specific npm scripts (`budget:status`, `prove:adapters`, `prove:automation`) do not exist in Subway. The check will fail immediately on the first run.
+- **Copying DEFAULT_CHECKS verbatim from self-healing-check.js:** The ThumbGate-specific npm scripts (`budget:status`, `prove:adapters`, `prove:automation`) do not exist in Subway. The check will fail immediately on the first run.
 - **Setting env vars at module scope in Jest tests:** Jest re-uses the same process; module-level env vars persist across tests in unexpected ways. Use `beforeEach`/`afterEach` with `jest.resetModules()`.
 - **Using `require()` for budget-guard at test-file top level:** The module reads `THUMBGATE_FEEDBACK_DIR` at require time via the closure in `loadLedger()`. Require AFTER setting the env var, or refactor to accept path as argument (simpler: require in beforeEach after setting env).
 - **Putting config files at repo root:** Policy bundles and mcp-allowlists belong in `.claude/config/`, not at repo root. `mcp-policy.js` looks for them relative to `PROJECT_ROOT/config/` — with the correct `PROJECT_ROOT` depth, this resolves to `.claude/config/` automatically.
@@ -224,7 +224,7 @@ test('adds spend', () => {
 | Intent approval gates | Custom role check | intent-router.js planIntent() (already built) | Handles profile-specific risk overrides, checkpoint enforcement, and bundle validation |
 | Fix-script executor | Custom shell runner | self-heal.js runSelfHeal() (already built) | Tracks pre/post git diff, handles plan construction from package.json introspection |
 
-**Key insight:** All four governance components are already production-quality in rlhf. The work is a path-surgery port, not a feature build. Any attempt to re-architect these from scratch will reintroduce bugs that rlhf already fixed (e.g., stale lock detection, Jaccard edge cases with empty token sets).
+**Key insight:** All four governance components are already production-quality in ThumbGate. The work is a path-surgery port, not a feature build. Any attempt to re-architect these from scratch will reintroduce bugs that ThumbGate already fixed (e.g., stale lock detection, Jaccard edge cases with empty token sets).
 
 ---
 
@@ -233,7 +233,7 @@ test('adds spend', () => {
 ### Pitfall 1: Wrong PROJECT_ROOT depth
 
 **What goes wrong:** Scripts resolve config and ledger paths incorrectly, failing with ENOENT on first run.
-**Why it happens:** rlhf scripts are at `scripts/` (one level below root). Subway scripts will be at `.claude/scripts/feedback/` (three levels below root).
+**Why it happens:** ThumbGate scripts are at `scripts/` (one level below root). Subway scripts will be at `.claude/scripts/feedback/` (three levels below root).
 **How to avoid:** Change every script's first line to `const PROJECT_ROOT = path.join(__dirname, '..', '..', '..');` and verify that `path.join(PROJECT_ROOT, 'config', 'policy-bundles', 'default-v1.json')` resolves to the actual file path before running any tests.
 **Warning signs:** `Error: ENOENT: no such file or directory, open '.../config/policy-bundles/default-v1.json'` on first test run.
 
@@ -241,13 +241,13 @@ test('adds spend', () => {
 
 **What goes wrong:** Tests use different `THUMBGATE_FEEDBACK_DIR` values but the cached require() returns the module from the first test's env.
 **Why it happens:** Jest caches modules between tests. `budget-guard.js` closes over `LEDGER_PATH` at module load time.
-**How to avoid:** In each test that needs an isolated tmpDir: (1) set env var, (2) call `jest.resetModules()`, (3) require module inside the test or `beforeEach`. Alternatively, patch `THUMBGATE_FEEDBACK_DIR` before any require in the file, as the rlhf tests do — but scope it correctly with `beforeEach`/`afterEach` in Jest.
+**How to avoid:** In each test that needs an isolated tmpDir: (1) set env var, (2) call `jest.resetModules()`, (3) require module inside the test or `beforeEach`. Alternatively, patch `THUMBGATE_FEEDBACK_DIR` before any require in the file, as the ThumbGate tests do — but scope it correctly with `beforeEach`/`afterEach` in Jest.
 **Warning signs:** Two tests sharing the same ledger file when they should have separate tmp dirs.
 
 ### Pitfall 3: Self-healing-check DEFAULT_CHECKS with invalid npm scripts
 
 **What goes wrong:** `self-healing-check.js` runs `npm run budget:status` which does not exist in Subway, exits non-zero, and reports the whole system as unhealthy from day one.
-**Why it happens:** DEFAULT_CHECKS hardcodes rlhf-specific npm script names.
+**Why it happens:** DEFAULT_CHECKS hardcodes ThumbGate-specific npm script names.
 **How to avoid:** Redefine DEFAULT_CHECKS in the Subway copy. Use `npm run lint:check`, `npm run format:check`, `npm run test:ci`, and the budget-guard script invoked directly (not via an npm script).
 **Warning signs:** First `self-heal:check` run reports `unhealthy` immediately before any governance failures actually exist.
 
@@ -260,10 +260,10 @@ test('adds spend', () => {
 
 ### Pitfall 5: Proof report committed in wrong repo
 
-**What goes wrong:** Proof report is committed to Subway_RN_Demo, which is gitignored via `.git/info/exclude` for `.claude/scripts/feedback/`. The commit disappears and is not visible in the rlhf repo.
-**Why it happens:** The constraint is that Subway files are gitignored; all commits and proof reports go into the rlhf repo.
-**How to avoid:** Write proof report to `rlhf/proof/governance-into-subway/` and commit it there. The proof reports scripts that run in Subway but are evidenced via the rlhf commit trail.
-**Warning signs:** `git status` in rlhf shows no new files in proof/ after claiming GOV-06 complete.
+**What goes wrong:** Proof report is committed to Subway_RN_Demo, which is gitignored via `.git/info/exclude` for `.claude/scripts/feedback/`. The commit disappears and is not visible in the ThumbGate repo.
+**Why it happens:** The constraint is that Subway files are gitignored; all commits and proof reports go into the ThumbGate repo.
+**How to avoid:** Write proof report to `ThumbGate/proof/governance-into-subway/` and commit it there. The proof reports scripts that run in Subway but are evidenced via the ThumbGate commit trail.
+**Warning signs:** `git status` in ThumbGate shows no new files in proof/ after claiming GOV-06 complete.
 
 ---
 
@@ -274,7 +274,7 @@ Verified patterns from direct source inspection:
 ### Budget Guard: addSpend (zero-dep atomic ledger)
 
 ```javascript
-// Source: /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/budget-guard.js
+// Source: /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/budget-guard.js
 // Subway copy: .claude/scripts/feedback/budget-guard.js
 // Path surgery: change PROJECT_ROOT to path.join(__dirname, '..', '..', '..')
 
@@ -297,7 +297,7 @@ function addSpend({ amountUsd, source, note }) {
 ### ContextFS: constructContextPack with Jaccard cache
 
 ```javascript
-// Source: /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/contextfs.js
+// Source: /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/contextfs.js
 // Jaccard threshold=0.7, TTL=86400s are ENV-configurable defaults:
 // THUMBGATE_SEMANTIC_CACHE_THRESHOLD=0.7
 // THUMBGATE_SEMANTIC_CACHE_TTL_SECONDS=86400
@@ -315,7 +315,7 @@ const pack = constructContextPack({
 ### Intent Router: planIntent with approval gate
 
 ```javascript
-// Source: /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/intent-router.js
+// Source: /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/intent-router.js
 // Requires: mcp-policy.js + config/mcp-allowlists.json + config/policy-bundles/*.json
 
 const plan = planIntent({
@@ -331,7 +331,7 @@ const plan = planIntent({
 ### Self-Heal: Subway-adapted DEFAULT_CHECKS
 
 ```javascript
-// Source: adapted from /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/self-healing-check.js
+// Source: adapted from /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/self-healing-check.js
 // Subway version: .claude/scripts/feedback/self-healing-check.js
 
 const SUBWAY_ROOT = path.join(__dirname, '..', '..', '..');
@@ -351,7 +351,7 @@ const DEFAULT_CHECKS = [
 ### Jest Test Pattern for Budget Guard
 
 ```javascript
-// Source: translated from /Users/ganapolsky_i/workspace/git/igor/rlhf/tests/budget-guard.test.js
+// Source: translated from /Users/ganapolsky_i/workspace/git/igor/ThumbGate/tests/budget-guard.test.js
 // Target: Subway_RN_Demo/scripts/__tests__/budget-guard.test.js
 
 const fs = require('fs');
@@ -395,9 +395,9 @@ test('blocks overspend', () => {
 
 | Old Approach | Current Approach | Status | Impact |
 |--------------|------------------|--------|--------|
-| No budget enforcement | File-lock atomic ledger with monthly cap | Live in rlhf since Phase 1 | Prevents API cost blowouts; must land before any RLAIF work in Subway |
-| Ad hoc context assembly | ContextFS with Jaccard semantic cache | Live in rlhf since Phase 1 | Bounded, reproducible context with provenance — prevents context bloat |
-| No self-healing | Health check runner + fix plan executor | Live in rlhf | Automated CI recovery; Subway-adapted checks needed |
+| No budget enforcement | File-lock atomic ledger with monthly cap | Live in ThumbGate since Phase 1 | Prevents API cost blowouts; must land before any RLAIF work in Subway |
+| Ad hoc context assembly | ContextFS with Jaccard semantic cache | Live in ThumbGate since Phase 1 | Bounded, reproducible context with provenance — prevents context bloat |
+| No self-healing | Health check runner + fix plan executor | Live in ThumbGate | Automated CI recovery; Subway-adapted checks needed |
 
 **Confirmed NOT deprecated:**
 - `node:fs` file-lock pattern: Valid on Node.js 25.6.1 — `fs.openSync(path, 'wx')` throws EEXIST on contention, which is the correct mechanism.
@@ -413,14 +413,14 @@ test('blocks overspend', () => {
    - Recommendation: Add `test:governance` as a scoped Jest run (`jest scripts/__tests__/ --testPathPattern=governance`) so the planner can run it in isolation. Full `npm test` in Subway takes minutes and runs RN component tests that are irrelevant to governance.
 
 2. **Lock contention under GSD parallel agents in Subway**
-   - What we know: Recommended fix is `timeoutMs=30000, staleMs=60000` (from SUMMARY.md Pitfall 5). Default rlhf values are 5000/15000.
+   - What we know: Recommended fix is `timeoutMs=30000, staleMs=60000` (from SUMMARY.md Pitfall 5). Default ThumbGate values are 5000/15000.
    - What's unclear: Whether Subway's agent execution pattern actually spawns 4+ concurrent API callers in practice, or whether 5000ms would have been fine.
    - Recommendation: Apply 30000/60000 values in the Subway copy. Add a concurrency stress test (5 parallel `addSpend()` calls via Promise.all) to the Jest suite to confirm the timeout holds.
 
 3. **Subway-specific policy bundle content**
-   - What we know: rlhf's `default-v1.json` references MCP tools specific to the rlhf server (`capture_feedback`, `feedback_summary`, `export_dpo_pairs`, etc.). Subway's MCP server has a different tool surface.
-   - What's unclear: Whether to copy the rlhf bundles verbatim (the tool names become aspirational/docs) or create Subway-specific bundles.
-   - Recommendation: Copy rlhf bundles verbatim for GOV-02 compliance. The intent-router validates bundle structure (bundleId, intents, risk, actions) but does NOT validate that tool names exist in any MCP server — tool name strings are opaque to the router. Add a comment noting the tool names are rlhf-origin and should be updated in a future cleanup pass.
+   - What we know: ThumbGate's `default-v1.json` references MCP tools specific to the ThumbGate server (`capture_feedback`, `feedback_summary`, `export_dpo_pairs`, etc.). Subway's MCP server has a different tool surface.
+   - What's unclear: Whether to copy the ThumbGate bundles verbatim (the tool names become aspirational/docs) or create Subway-specific bundles.
+   - Recommendation: Copy ThumbGate bundles verbatim for GOV-02 compliance. The intent-router validates bundle structure (bundleId, intents, risk, actions) but does NOT validate that tool names exist in any MCP server — tool name strings are opaque to the router. Add a comment noting the tool names are ThumbGate-origin and should be updated in a future cleanup pass.
 
 ---
 
@@ -428,27 +428,27 @@ test('blocks overspend', () => {
 
 ### Primary (HIGH confidence)
 
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/budget-guard.js` — full source read; lock mechanism, ledger schema, env vars confirmed
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/intent-router.js` — full source read; mcp-policy dependency, bundle schema confirmed
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/contextfs.js` — full source read; Jaccard threshold=0.7, TTL=86400 env config confirmed
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/self-heal.js` — full source read; KNOWN_FIX_SCRIPTS list confirmed
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/self-healing-check.js` — full source read; DEFAULT_CHECKS confirmed rlhf-specific
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/mcp-policy.js` — partial read (60 lines); profile/allowlist loading confirmed
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/config/mcp-allowlists.json` — full read; 3 profiles (default, readonly, locked) confirmed
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/config/subagent-profiles.json` — full read; 3 subagent profiles confirmed
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/config/policy-bundles/default-v1.json` — full read; 4 intents confirmed
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/config/policy-bundles/constrained-v1.json` — full read; 3 intents, locked profile defaults confirmed
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/budget-guard.test.js` — full read (40 lines)
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/self-healing-check.test.js` — full read (58 lines)
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/intent-router.test.js` — full read (62 lines)
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/self-heal.test.js` — full read (36 lines)
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/budget-guard.js` — full source read; lock mechanism, ledger schema, env vars confirmed
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/intent-router.js` — full source read; mcp-policy dependency, bundle schema confirmed
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/contextfs.js` — full source read; Jaccard threshold=0.7, TTL=86400 env config confirmed
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/self-heal.js` — full source read; KNOWN_FIX_SCRIPTS list confirmed
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/self-healing-check.js` — full source read; DEFAULT_CHECKS confirmed ThumbGate-specific
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/mcp-policy.js` — partial read (60 lines); profile/allowlist loading confirmed
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/config/mcp-allowlists.json` — full read; 3 profiles (default, readonly, locked) confirmed
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/config/subagent-profiles.json` — full read; 3 subagent profiles confirmed
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/config/policy-bundles/default-v1.json` — full read; 4 intents confirmed
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/config/policy-bundles/constrained-v1.json` — full read; 3 intents, locked profile defaults confirmed
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/tests/budget-guard.test.js` — full read (40 lines)
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/tests/self-healing-check.test.js` — full read (58 lines)
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/tests/intent-router.test.js` — full read (62 lines)
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/tests/self-heal.test.js` — full read (36 lines)
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.eslintrc.js` — full read; NO auto-import-sort; `import/order` is `'warn'` not `'error'`; `lint:fix` is safe
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/package.json` — scripts confirmed: `lint`, `lint:check`, `format`, `format:check`, `test:ci`, `test:fast`; NO `budget:status`, `prove:adapters`, `prove:automation`
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/autonomy-cli.test.js` — Jest pattern confirmed for Subway scripts tests
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/feedback-loop.test.js` — Jest `beforeEach`/`afterEach`/`expect` pattern confirmed
-- `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.git/info/exclude` — `.claude/scripts/feedback/` confirmed gitignored; commits go to rlhf repo only
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/proof/baseline-test-count.md` — 60 node-runner tests baseline confirmed; Phase 3 must not regress
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/proof/automation/report.md` — proof report format confirmed
+- `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.git/info/exclude` — `.claude/scripts/feedback/` confirmed gitignored; commits go to ThumbGate repo only
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/proof/baseline-test-count.md` — 60 node-runner tests baseline confirmed; Phase 3 must not regress
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/proof/automation/report.md` — proof report format confirmed
 
 ### Secondary (MEDIUM confidence)
 
@@ -461,18 +461,18 @@ test('blocks overspend', () => {
 **Confidence breakdown:**
 - Standard stack: HIGH — all scripts read directly; zero-dep status confirmed; no external libraries
 - Architecture: HIGH — path depths calculated from actual directory structure; test runner confirmed from Subway test files
-- Pitfalls: HIGH — DEFAULT_CHECKS mismatch confirmed by reading both rlhf and Subway package.json; Jest module cache issue confirmed from test file patterns; gitignore scope confirmed from .git/info/exclude
+- Pitfalls: HIGH — DEFAULT_CHECKS mismatch confirmed by reading both ThumbGate and Subway package.json; Jest module cache issue confirmed from test file patterns; gitignore scope confirmed from .git/info/exclude
 - Open questions: MEDIUM — policy bundle tool name mismatch is a known gap; test scoping is a planning decision, not a blocker
 
 **Research date:** 2026-03-04
 **Valid until:** 2026-04-04 (governance scripts are stable; no fast-moving dependencies)
 
 **Key numbers the planner needs:**
-- rlhf baseline test count: 60 node-runner tests (must not regress)
-- Governance test lines in rlhf: 298 lines across 5 test files (reference for coverage target)
+- ThumbGate baseline test count: 60 node-runner tests (must not regress)
+- Governance test lines in ThumbGate: 298 lines across 5 test files (reference for coverage target)
 - Subway scripts live at: `.claude/scripts/feedback/` (3 levels below PROJECT_ROOT)
 - Config files land at: `.claude/config/` (resolved automatically if PROJECT_ROOT is correct)
-- Lock timeout for Subway: `timeoutMs: 30000, staleMs: 60000` (increased from rlhf defaults)
+- Lock timeout for Subway: `timeoutMs: 30000, staleMs: 60000` (increased from ThumbGate defaults)
 - Jaccard threshold: `0.7` (env: `THUMBGATE_SEMANTIC_CACHE_THRESHOLD`)
 - Cache TTL: `86400` seconds (env: `THUMBGATE_SEMANTIC_CACHE_TTL_SECONDS`)
 - Monthly budget cap: `$10` USD (env: `THUMBGATE_MONTHLY_BUDGET_USD`)

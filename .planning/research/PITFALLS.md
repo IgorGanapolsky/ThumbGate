@@ -1,6 +1,6 @@
 # Pitfalls Research
 
-**Domain:** RLHF Bidirectional Feature Sync (Node.js repos with shared-but-diverged patterns)
+**Domain:** ThumbGate Bidirectional Feature Sync (Node.js repos with shared-but-diverged patterns)
 **Researched:** 2026-03-04
 **Confidence:** HIGH (based on direct code inspection of both repos + verified external sources)
 
@@ -11,7 +11,7 @@
 ### Pitfall 1: API Name Collision — Same Concept, Different Function Names
 
 **What goes wrong:**
-The two repos use different names for the same conceptual operation. Subway's `feedback-loop.js` exports `recordFeedback()`, but thumbgate exports `captureFeedback()`. Subway has `selfScore()` (RLAIF); rlhf has no equivalent yet. When syncing, tests importing from one module by name will silently pass in their own repo and immediately break in the other. The failure mode is not a crash at import time — it's a `TypeError: undefined is not a function` at call time, inside a test that looks correct.
+The two repos use different names for the same conceptual operation. Subway's `feedback-loop.js` exports `recordFeedback()`, but thumbgate exports `captureFeedback()`. Subway has `selfScore()` (RLAIF); ThumbGate has no equivalent yet. When syncing, tests importing from one module by name will silently pass in their own repo and immediately break in the other. The failure mode is not a crash at import time — it's a `TypeError: undefined is not a function` at call time, inside a test that looks correct.
 
 **Why it happens:**
 Both repos were developed independently after the initial extraction. Subway added `recordFeedback` + `selfScore` as new primitives. thumbgate added `captureFeedback` as a renamed, extended version that also accepts rubric payloads. Neither was intended to break the other, but the names diverged silently.
@@ -29,21 +29,21 @@ Phase 1 (Setup / Contract Mapping) — establish a function-name audit before an
 
 ---
 
-### Pitfall 2: Schema Divergence on `resolveFeedbackAction` — Rubric Field Added in rlhf, Missing in Subway
+### Pitfall 2: Schema Divergence on `resolveFeedbackAction` — Rubric Field Added in ThumbGate, Missing in Subway
 
 **What goes wrong:**
-The `resolveFeedbackAction()` function in both repos accepts a `params` object, but their signatures diverged: rlhf's version accepts `rubricEvaluation` as a top-level param and uses it to gate positive feedback via `promotionEligible`. Subway's version has no `rubricEvaluation` param. If you sync the feedback-loop from rlhf → Subway without also syncing the rubric engine and schema changes, the positive feedback path silently skips the rubric gate — meaning Subway will accept feedback that rlhf would block.
+The `resolveFeedbackAction()` function in both repos accepts a `params` object, but their signatures diverged: ThumbGate's version accepts `rubricEvaluation` as a top-level param and uses it to gate positive feedback via `promotionEligible`. Subway's version has no `rubricEvaluation` param. If you sync the feedback-loop from ThumbGate → Subway without also syncing the rubric engine and schema changes, the positive feedback path silently skips the rubric gate — meaning Subway will accept feedback that ThumbGate would block.
 
 **Why it happens:**
-Rubric-based scoring was added to thumbgate as a governance feature after the original extraction. The addition was backward-compatible within rlhf (rubricEvaluation is optional), but no corresponding update was made to Subway's copy.
+Rubric-based scoring was added to thumbgate as a governance feature after the original extraction. The addition was backward-compatible within ThumbGate (rubricEvaluation is optional), but no corresponding update was made to Subway's copy.
 
 **How to avoid:**
 Treat `resolveFeedbackAction` as an atomic unit: never sync it without also syncing the rubric-engine dependency and updating the tests to assert rubric gate behavior. Run `diff scripts/feedback-schema.js` across both repos before any sync and resolve all signature differences explicitly.
 
 **Warning signs:**
 - Subway tests pass for positive feedback without rubric scores
-- rlhf tests block positive feedback when `testsPassed: false`; Subway tests do not
-- `rubricEvaluation` param present in rlhf schema but absent in Subway's function signature
+- ThumbGate tests block positive feedback when `testsPassed: false`; Subway tests do not
+- `rubricEvaluation` param present in ThumbGate schema but absent in Subway's function signature
 
 **Phase to address:**
 Phase 1 (Contract Mapping) and Phase 2 (Sync feedback-schema). The rubric engine must arrive before or alongside any feedback-loop sync.
@@ -56,7 +56,7 @@ Phase 1 (Contract Mapping) and Phase 2 (Sync feedback-schema). The rubric engine
 Subway's Thompson Sampling model lives in Python (`train_from_feedback.py`). The model state persists to `feedback_model.json` using Python's `datetime.now().isoformat()` for timestamps (no trailing `Z`, format varies: sometimes `"2026-02-11T14:01:27.883297"`, sometimes `"2026-02-24T15:51:18Z"`). A Node.js consumer of the same JSON will fail `Date.parse()` on the non-Z variant in strict environments, or silently produce `NaN`. The decay calculation in `time_decay_weight()` depends on this parsing being correct — wrong parse = wrong weight = corrupted posterior updates.
 
 **Why it happens:**
-Python's `datetime.fromisoformat()` handles the mixed formats because it is permissive. JavaScript's `new Date()` is also permissive but strips microseconds differently. The real risk is when rlhf's Node.js side reads the model JSON and does arithmetic on timestamps.
+Python's `datetime.fromisoformat()` handles the mixed formats because it is permissive. JavaScript's `new Date()` is also permissive but strips microseconds differently. The real risk is when ThumbGate's Node.js side reads the model JSON and does arithmetic on timestamps.
 
 **How to avoid:**
 Normalize all timestamps to RFC 3339 (`YYYY-MM-DDTHH:mm:ssZ`) at the boundary — either in the Python writer or in a Node.js reader shim. Never do `new Date(timestamp)` directly on this field; use a `parseTimestamp()` helper that strips microseconds, adds `Z` if absent, and validates before arithmetic.
@@ -140,7 +140,7 @@ Phase 5 (Port self-healing monitor to Subway). The test for self-heal must verif
 ### Pitfall 7: Subway's `selfScore` Is Heuristic-Only — Porting It as "RLAIF" Overstates Its Capabilities
 
 **What goes wrong:**
-Subway's `selfScore()` function scores based on boolean flags: `evidenceProvided`, `testsRun`, `filesModified.length > 5`. The docstring explicitly says "This is NOT real RLHF — it's a heuristic scorer." If this function is ported to thumbgate and labeled as RLAIF self-scoring in API docs or test descriptions, downstream consumers (or future developers) will treat it as a model-backed scorer and build logic that depends on score precision. The score has only 4 effective values (1.0, 0.9, 0.8, 0.7... via 0.2 and 0.1 deductions), not a continuous distribution.
+Subway's `selfScore()` function scores based on boolean flags: `evidenceProvided`, `testsRun`, `filesModified.length > 5`. The docstring explicitly says "This is NOT real ThumbGate — it's a heuristic scorer." If this function is ported to thumbgate and labeled as RLAIF self-scoring in API docs or test descriptions, downstream consumers (or future developers) will treat it as a model-backed scorer and build logic that depends on score precision. The score has only 4 effective values (1.0, 0.9, 0.8, 0.7... via 0.2 and 0.1 deductions), not a continuous distribution.
 
 **Why it happens:**
 The "RLAIF" label in comments creates a false impression of ML-backed scoring. When the feature is re-documented during the port, the nuance is easily lost.
@@ -225,7 +225,7 @@ Things that appear complete but are missing critical pieces.
 - [ ] **RLAIF self-scoring:** Often missing tests for the discrete score values — verify tests assert exact scores (`0.8`, `1.0`) not ranges, to make the heuristic nature visible
 - [ ] **ContextFS semantic cache:** Often missing expiry validation — verify that entries older than `THUMBGATE_SEMANTIC_CACHE_TTL_SECONDS` are actually evicted on read, not just skipped
 - [ ] **Diversity tracking:** Often treated as a display feature — verify diversity scores feed back into the Thompson update path (alpha/beta) rather than just being logged
-- [ ] **Test count verification:** PROJECT.md says rlhf has 54 tests — verify count does not decrease after each sync phase; add test count assertion to CI
+- [ ] **Test count verification:** PROJECT.md says ThumbGate has 54 tests — verify count does not decrease after each sync phase; add test count assertion to CI
 
 ---
 
@@ -256,14 +256,14 @@ How roadmap phases should address these pitfalls.
 | LanceDB platform/version mismatch | Phase 3: LanceDB port | Smoke test: Python creates table, Node.js reads it with correct row count |
 | Budget guard lock contention | Phase 4: Budget guard port | Concurrency test: 5 parallel `addSpend()` calls all record correctly |
 | Self-heal over-triggers | Phase 5: Self-heal port | Test: `buildFixPlan()` in Subway returns only scripts matching Subway's `package.json` |
-| RLAIF label overstates capability | Phase 3: RLAIF port | Function is named `selfAudit` or `constitutionalCheck`, not `selfScore` or `rlaifScore`, in rlhf |
+| RLAIF label overstates capability | Phase 3: RLAIF port | Function is named `selfAudit` or `constitutionalCheck`, not `selfScore` or `rlaifScore`, in ThumbGate |
 | Unbounded JSONL growth | Any phase touching feedback storage | Add JSONL line count assertion to CI: fail if feedback-log.jsonl exceeds reasonable test size |
 
 ---
 
 ## Sources
 
-- Direct code inspection: `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/` and `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/` — HIGH confidence
+- Direct code inspection: `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/` and `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/` — HIGH confidence
 - Direct inspection: `feedback_model.json` timestamp format variability — HIGH confidence (observed in file)
 - [LanceDB GitHub Issue #669: Append with different schema](https://github.com/lancedb/lancedb/issues/669) — MEDIUM confidence (confirmed bug in LanceDB Node.js)
 - [LanceDB GitHub Issue #2134: FixedSizeList schema causes errors in v0.16](https://github.com/lancedb/lancedb/issues/2134) — MEDIUM confidence
@@ -273,5 +273,5 @@ How roadmap phases should address these pitfalls.
 - Thompson Sampling beta distribution numerical stability — MEDIUM confidence (Stanford TS Tutorial + community sources)
 
 ---
-*Pitfalls research for: RLHF Bidirectional Feature Sync*
+*Pitfalls research for: ThumbGate Bidirectional Feature Sync*
 *Researched: 2026-03-04*

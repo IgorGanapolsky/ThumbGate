@@ -10,7 +10,7 @@
 | ID | Description | Research Support |
 |----|-------------|-----------------|
 | CNTR-01 | Export mapping audit confirms all shared function names are compatible between repos | Direct code inspection of both repos' `module.exports` in 5 shared scripts confirms exact divergence points |
-| CNTR-02 | Schema divergence resolved — rubricEvaluation parameter handled consistently | Confirmed: rlhf `feedback-schema.js` accepts `rubricEvaluation` in `resolveFeedbackAction`; Subway's does not — specific line diff documented below |
+| CNTR-02 | Schema divergence resolved — rubricEvaluation parameter handled consistently | Confirmed: ThumbGate `feedback-schema.js` accepts `rubricEvaluation` in `resolveFeedbackAction`; Subway's does not — specific line diff documented below |
 | CNTR-03 | Timestamp format normalized (ISO 8601 with Z suffix) across both repos | Both repos use `new Date().toISOString()` (always produces Z-suffix). Python side strips Z with `.replace("Z", "")`. `parseTimestamp()` helper must be created — does not exist yet in either repo |
 </phase_requirements>
 
@@ -20,11 +20,11 @@
 
 Phase 1 is a pure audit-and-normalize phase. No new features are built. The goal is to verify that both repos speak the same contract so that Phases 2 and 3 can port code without breaking caller assumptions.
 
-Direct code inspection of both repos reveals that the shared scripts (`feedback-schema.js`, `feedback-loop.js`, `export-dpo-pairs.js`) have diverged at three specific points. The exports differ significantly between `feedback-loop.js` files (rlhf exports `captureFeedback` / `buildPreventionRules` / `writePreventionRules` / `readJSONL` / `getFeedbackPaths`; Subway exports `recordFeedback` / `selfScore` / constants). The `resolveFeedbackAction` function in rlhf's `feedback-schema.js` accepts a `rubricEvaluation` parameter and gates positive promotion through it — Subway's version does not. For timestamps, both repos already use `new Date().toISOString()` (which always produces ISO 8601 with Z suffix), but the Python `train_from_feedback.py` strips the Z with `.replace("Z", "")` before parsing. A `parseTimestamp()` helper function does not exist in either repo and must be created as part of CNTR-03.
+Direct code inspection of both repos reveals that the shared scripts (`feedback-schema.js`, `feedback-loop.js`, `export-dpo-pairs.js`) have diverged at three specific points. The exports differ significantly between `feedback-loop.js` files (ThumbGate exports `captureFeedback` / `buildPreventionRules` / `writePreventionRules` / `readJSONL` / `getFeedbackPaths`; Subway exports `recordFeedback` / `selfScore` / constants). The `resolveFeedbackAction` function in ThumbGate's `feedback-schema.js` accepts a `rubricEvaluation` parameter and gates positive promotion through it — Subway's version does not. For timestamps, both repos already use `new Date().toISOString()` (which always produces ISO 8601 with Z suffix), but the Python `train_from_feedback.py` strips the Z with `.replace("Z", "")` before parsing. A `parseTimestamp()` helper function does not exist in either repo and must be created as part of CNTR-03.
 
 The baseline test count for thumbgate is: 54 node-runner tests (52 from `test:api` + 2 from `test:proof`) and 23 script-runner tests (7 schema + 10 loop + 6 dpo) = 77 total assertions. The ROADMAP's "54" refers specifically to the `node --test` runner count. All 77 currently pass and CI is green.
 
-**Primary recommendation:** Write a `scripts/contract-audit.js` script that programmatically extracts exports from both repos' shared scripts and emits a compatibility report. Then add `rubricEvaluation` support to Subway's `feedback-schema.js` to match rlhf. Then add a shared `parseTimestamp()` helper to `feedback-schema.js` in both repos. Write tests for all three deliverables.
+**Primary recommendation:** Write a `scripts/contract-audit.js` script that programmatically extracts exports from both repos' shared scripts and emits a compatibility report. Then add `rubricEvaluation` support to Subway's `feedback-schema.js` to match ThumbGate. Then add a shared `parseTimestamp()` helper to `feedback-schema.js` in both repos. Write tests for all three deliverables.
 
 ---
 
@@ -79,28 +79,28 @@ proof/
 const THUMBGATE_ROOT = path.join(__dirname, '..');
 const SUBWAY_ROOT = '/path/to/Subway_RN_Demo';
 
-const rlhfSchema = require(path.join(THUMBGATE_ROOT, 'scripts/feedback-schema'));
+const thumbgateSchema = require(path.join(THUMBGATE_ROOT, 'scripts/feedback-schema'));
 const subwaySchema = require(path.join(SUBWAY_ROOT, 'scripts/feedback-schema'));
 
-const rlhfKeys = Object.keys(rlhfSchema);
+const thumbgateKeys = Object.keys(thumbgateSchema);
 const subwayKeys = Object.keys(subwaySchema);
 
 // Shared: keys in both
-// Only-in-rlhf: keys missing from Subway
-// Only-in-subway: keys missing from rlhf
+// Only-in-ThumbGate: keys missing from Subway
+// Only-in-subway: keys missing from ThumbGate
 ```
 
 The audit must cover all 3 shared scripts: `feedback-schema.js`, `feedback-loop.js`, `export-dpo-pairs.js`.
 
 ### Pattern 2: Additive Schema Extension (rubricEvaluation)
 
-**What:** Add `rubricEvaluation` as an optional parameter to Subway's `resolveFeedbackAction`. If absent, behavior is unchanged (backward-compatible). If present, enforce the same gate logic as rlhf.
+**What:** Add `rubricEvaluation` as an optional parameter to Subway's `resolveFeedbackAction`. If absent, behavior is unchanged (backward-compatible). If present, enforce the same gate logic as ThumbGate.
 
-**When to use:** Whenever rlhf has a parameter Subway lacks. Always extend additively — never break existing callers.
+**When to use:** Whenever ThumbGate has a parameter Subway lacks. Always extend additively — never break existing callers.
 
-**Example (what rlhf has, Subway needs):**
+**Example (what ThumbGate has, Subway needs):**
 ```javascript
-// rlhf/scripts/feedback-schema.js lines 84-109 (verified by direct read)
+// ThumbGate/scripts/feedback-schema.js lines 84-109 (verified by direct read)
 function resolveFeedbackAction(params) {
   const {
     signal, context, whatWentWrong, whatToChange, whatWorked, tags,
@@ -165,10 +165,10 @@ assert(!isNaN(parseTimestamp('2026-03-04T12:00:00.000Z').getTime()), 'no NaN');
 
 ### Anti-Patterns to Avoid
 
-- **Re-merging entire files:** Do not copy the entire rlhf `feedback-schema.js` into Subway. Apply only the missing `rubricEvaluation` logic surgically. The two files have different test harnesses (rlhf has 7 inline tests, Subway has 32 inline tests).
+- **Re-merging entire files:** Do not copy the entire ThumbGate `feedback-schema.js` into Subway. Apply only the missing `rubricEvaluation` logic surgically. The two files have different test harnesses (ThumbGate has 7 inline tests, Subway has 32 inline tests).
 - **Assuming `toISOString()` variance:** Both repos already call `new Date().toISOString()`. Do not change timestamp production — only add the `parseTimestamp()` consumer helper.
 - **Function rename over alias:** The `feedback-loop.js` exports differ fundamentally (`captureFeedback` vs `recordFeedback`). Do NOT rename — document the alias map. Phase 1 maps names, does not unify the implementations.
-- **Running Subway's Jest tests as part of rlhf CI:** These are separate repos. Baseline for Phase 1 is rlhf's own test suite.
+- **Running Subway's Jest tests as part of ThumbGate CI:** These are separate repos. Baseline for Phase 1 is ThumbGate's own test suite.
 
 ---
 
@@ -188,19 +188,19 @@ assert(!isNaN(parseTimestamp('2026-03-04T12:00:00.000Z').getTime()), 'no NaN');
 
 ### Pitfall 1: Assuming feedback-schema.js Files Are Identical
 
-**What goes wrong:** The two `feedback-schema.js` files look nearly identical at first glance. They share the same exports list, same constants, same `validateFeedbackMemory`. The only divergence is `resolveFeedbackAction`'s handling of `rubricEvaluation` (lines 84-186 in rlhf vs lines 127-189 in Subway).
+**What goes wrong:** The two `feedback-schema.js` files look nearly identical at first glance. They share the same exports list, same constants, same `validateFeedbackMemory`. The only divergence is `resolveFeedbackAction`'s handling of `rubricEvaluation` (lines 84-186 in ThumbGate vs lines 127-189 in Subway).
 
-**Why it happens:** Both files share common ancestry but rlhf's was extended with rubric evaluation after Subway's copy was made.
+**Why it happens:** Both files share common ancestry but ThumbGate's was extended with rubric evaluation after Subway's copy was made.
 
 **How to avoid:** Do a line-by-line diff of `resolveFeedbackAction` specifically, not just the exports list. The export keys match — the behavior differs.
 
-**Warning signs:** Subway's `resolveFeedbackAction` destructures only `{ signal, context, whatWentWrong, whatToChange, whatWorked, tags }`. rlhf's destructures `rubricEvaluation` additionally. If you call Subway's with `rubricEvaluation` set, it silently ignores it.
+**Warning signs:** Subway's `resolveFeedbackAction` destructures only `{ signal, context, whatWentWrong, whatToChange, whatWorked, tags }`. ThumbGate's destructures `rubricEvaluation` additionally. If you call Subway's with `rubricEvaluation` set, it silently ignores it.
 
 ### Pitfall 2: feedback-loop.js Has Fundamentally Different Interfaces
 
-**What goes wrong:** rlhf's `feedback-loop.js` exports `captureFeedback`, `analyzeFeedback`, `buildPreventionRules`, `writePreventionRules`, `feedbackSummary`, `readJSONL`, `getFeedbackPaths`. Subway's exports `recordFeedback`, `analyzeFeedback`, `selfScore`, `feedbackSummary`, `FEEDBACK_LOG_PATH`, `SELF_SCORE_LOG_PATH`.
+**What goes wrong:** ThumbGate's `feedback-loop.js` exports `captureFeedback`, `analyzeFeedback`, `buildPreventionRules`, `writePreventionRules`, `feedbackSummary`, `readJSONL`, `getFeedbackPaths`. Subway's exports `recordFeedback`, `analyzeFeedback`, `selfScore`, `feedbackSummary`, `FEEDBACK_LOG_PATH`, `SELF_SCORE_LOG_PATH`.
 
-**Why it happens:** These were developed independently with different caller interfaces. The shared names are `analyzeFeedback` and `feedbackSummary`, but they have different signatures (`feedbackSummary(recentN)` in rlhf vs `feedbackSummary(recentN, logPath)` in Subway).
+**Why it happens:** These were developed independently with different caller interfaces. The shared names are `analyzeFeedback` and `feedbackSummary`, but they have different signatures (`feedbackSummary(recentN)` in ThumbGate vs `feedbackSummary(recentN, logPath)` in Subway).
 
 **How to avoid:** The Phase 1 contract audit must document this as an ALIAS MAP, not a collision. The planner must NOT attempt to unify these in Phase 1.
 
@@ -247,17 +247,17 @@ const SHARED_SCRIPTS = [
 ];
 
 function auditScript(relPath) {
-  const rlhfMod = require(path.join(THUMBGATE_ROOT, relPath));
+  const thumbgateMod = require(path.join(THUMBGATE_ROOT, relPath));
   const subwayMod = require(path.join(SUBWAY_ROOT, relPath));
-  const rlhfKeys = Object.keys(rlhfMod).sort();
+  const thumbgateKeys = Object.keys(thumbgateMod).sort();
   const subwayKeys = Object.keys(subwayMod).sort();
   return {
     script: relPath,
-    rlhfOnly: rlhfKeys.filter(k => !subwayKeys.includes(k)),
-    subwayOnly: subwayKeys.filter(k => !rlhfKeys.includes(k)),
-    shared: rlhfKeys.filter(k => subwayKeys.includes(k)),
-    compatible: rlhfKeys.filter(k => !subwayKeys.includes(k)).length === 0
-                && subwayKeys.filter(k => !rlhfKeys.includes(k)).length === 0,
+    thumbgateOnly: thumbgateKeys.filter(k => !subwayKeys.includes(k)),
+    subwayOnly: subwayKeys.filter(k => !thumbgateKeys.includes(k)),
+    shared: thumbgateKeys.filter(k => subwayKeys.includes(k)),
+    compatible: thumbgateKeys.filter(k => !subwayKeys.includes(k)).length === 0
+                && subwayKeys.filter(k => !thumbgateKeys.includes(k)).length === 0,
   };
 }
 
@@ -269,42 +269,42 @@ const report = SHARED_SCRIPTS.map(auditScript);
 
 **feedback-schema.js** — exports IDENTICAL in both repos:
 ```
-RLHF:   validateFeedbackMemory, resolveFeedbackAction, prepareForStorage, GENERIC_TAGS, MIN_CONTENT_LENGTH, VALID_TITLE_PREFIXES, VALID_CATEGORIES
+ThumbGate:   validateFeedbackMemory, resolveFeedbackAction, prepareForStorage, GENERIC_TAGS, MIN_CONTENT_LENGTH, VALID_TITLE_PREFIXES, VALID_CATEGORIES
 Subway: validateFeedbackMemory, resolveFeedbackAction, prepareForStorage, GENERIC_TAGS, MIN_CONTENT_LENGTH, VALID_TITLE_PREFIXES, VALID_CATEGORIES
 STATUS: COMPATIBLE (exports match; behavior diverges inside resolveFeedbackAction)
 ```
 
 **feedback-loop.js** — exports DIVERGE:
 ```
-RLHF:   captureFeedback, analyzeFeedback, buildPreventionRules, writePreventionRules, feedbackSummary, readJSONL, getFeedbackPaths, FEEDBACK_LOG_PATH (getter), MEMORY_LOG_PATH (getter), SUMMARY_PATH (getter), PREVENTION_RULES_PATH (getter)
+ThumbGate:   captureFeedback, analyzeFeedback, buildPreventionRules, writePreventionRules, feedbackSummary, readJSONL, getFeedbackPaths, FEEDBACK_LOG_PATH (getter), MEMORY_LOG_PATH (getter), SUMMARY_PATH (getter), PREVENTION_RULES_PATH (getter)
 Subway: recordFeedback, analyzeFeedback, selfScore, feedbackSummary, FEEDBACK_LOG_PATH (string), SELF_SCORE_LOG_PATH (string)
 SHARED: analyzeFeedback, feedbackSummary
-RLHF-only: captureFeedback, buildPreventionRules, writePreventionRules, readJSONL, getFeedbackPaths, MEMORY_LOG_PATH, SUMMARY_PATH, PREVENTION_RULES_PATH
+ThumbGate-only: captureFeedback, buildPreventionRules, writePreventionRules, readJSONL, getFeedbackPaths, MEMORY_LOG_PATH, SUMMARY_PATH, PREVENTION_RULES_PATH
 Subway-only: recordFeedback, selfScore, SELF_SCORE_LOG_PATH
 STATUS: INCOMPATIBLE — alias map required, no rename in Phase 1
 ```
 
 **export-dpo-pairs.js** — exports DIVERGE:
 ```
-RLHF:   readJSONL, extractDomainKeys, domainOverlap, inferPrompt, buildDpoPairs, toJSONL, exportDpoFromMemories, DEFAULT_LOCAL_MEMORY_LOG
+ThumbGate:   readJSONL, extractDomainKeys, domainOverlap, inferPrompt, buildDpoPairs, toJSONL, exportDpoFromMemories, DEFAULT_LOCAL_MEMORY_LOG
 Subway: extractDomainKeys, domainOverlap, buildDpoPairs, validateMemoryStructure, inferPrompt, toJSONL
 SHARED: extractDomainKeys, domainOverlap, inferPrompt, buildDpoPairs, toJSONL
-RLHF-only: readJSONL, exportDpoFromMemories, DEFAULT_LOCAL_MEMORY_LOG
+ThumbGate-only: readJSONL, exportDpoFromMemories, DEFAULT_LOCAL_MEMORY_LOG
 Subway-only: validateMemoryStructure
 STATUS: PARTIALLY COMPATIBLE — shared core is compatible; extras are additive
 ```
 
 ### rubricEvaluation Divergence (CNTR-02)
 ```javascript
-// rlhf/scripts/feedback-schema.js line 84-109 (verified)
-// RLHF resolveFeedbackAction destructures rubricEvaluation:
+// ThumbGate/scripts/feedback-schema.js line 84-109 (verified)
+// ThumbGate resolveFeedbackAction destructures rubricEvaluation:
 const {
   signal, context, whatWentWrong, whatToChange, whatWorked, tags,
-  rubricEvaluation,  // <-- PRESENT IN RLHF, ABSENT IN SUBWAY
+  rubricEvaluation,  // <-- PRESENT IN ThumbGate, ABSENT IN SUBWAY
 } = params;
 
-// rlhf builds rubricSummary from it (lines 100-109)
-// rlhf gates positive promotion through rubricEvaluation.promotionEligible (lines 153-157)
+// ThumbGate builds rubricSummary from it (lines 100-109)
+// ThumbGate gates positive promotion through rubricEvaluation.promotionEligible (lines 153-157)
 
 // Subway/scripts/feedback-schema.js line 127-128 (verified)
 // Subway resolveFeedbackAction destructures WITHOUT rubricEvaluation:
@@ -312,7 +312,7 @@ const { signal, context, whatWentWrong, whatToChange, whatWorked, tags } = param
 // rubricEvaluation is silently ignored if passed
 ```
 
-**Resolution for CNTR-02:** Add `rubricEvaluation` destructuring and gate logic to Subway's `resolveFeedbackAction`, matching rlhf exactly. Add test cases for rubric gate in Subway's inline test suite.
+**Resolution for CNTR-02:** Add `rubricEvaluation` destructuring and gate logic to Subway's `resolveFeedbackAction`, matching ThumbGate exactly. Add test cases for rubric gate in Subway's inline test suite.
 
 ### Timestamp Audit (CNTR-03)
 ```javascript
@@ -351,18 +351,18 @@ function parseTimestamp(ts) {
 
 ## Open Questions
 
-1. **Should `validateMemoryStructure` (Subway's `export-dpo-pairs.js`) be backported to rlhf?**
-   - What we know: Subway has it, rlhf does not. It validates memory objects before DPO pair building.
-   - What's unclear: Whether Phase 2 (ML into rlhf) will need it or bring its own validation.
+1. **Should `validateMemoryStructure` (Subway's `export-dpo-pairs.js`) be backported to ThumbGate?**
+   - What we know: Subway has it, ThumbGate does not. It validates memory objects before DPO pair building.
+   - What's unclear: Whether Phase 2 (ML into ThumbGate) will need it or bring its own validation.
    - Recommendation: Document as "Subway-only" in the alias map. Do not port in Phase 1. Flag for Phase 2 planner.
 
 2. **Should `selfScore` (Subway's `feedback-loop.js`) be in scope for Phase 1?**
-   - What we know: It's a Subway-only export, not in rlhf. Phase 1 is audit-only.
+   - What we know: It's a Subway-only export, not in ThumbGate. Phase 1 is audit-only.
    - What's unclear: Phase 2 vs Phase 5 will use it (RLAIF self-scoring is DPO-01).
    - Recommendation: Alias-map it as "Subway-only, no action in Phase 1." Phase 5 planner handles it.
 
 3. **Exact Subway test count for baseline?**
-   - What we know: Subway uses Jest (`jest.config.js`). The ROADMAP only specifies rlhf's count (54 node tests).
+   - What we know: Subway uses Jest (`jest.config.js`). The ROADMAP only specifies ThumbGate's count (54 node tests).
    - What's unclear: Whether Subway's Jest tests cover `feedback-schema.js` and `feedback-loop.js` at all — there is a `scripts/__tests__/feedback-loop.test.js` present.
    - Recommendation: Run `npx jest scripts/__tests__/feedback-loop.test.js` in Subway as part of the audit to capture a baseline. Not required for CNTR-01/02/03 success criteria but good hygiene before Phase 3 ports to Subway.
 
@@ -371,11 +371,11 @@ function parseTimestamp(ts) {
 ## Sources
 
 ### Primary (HIGH confidence)
-- Direct `Read` of `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/feedback-schema.js` — full file, verified exports and `rubricEvaluation` handling
+- Direct `Read` of `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/feedback-schema.js` — full file, verified exports and `rubricEvaluation` handling
 - Direct `Read` of `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/feedback-schema.js` — full file, confirmed `rubricEvaluation` absent
-- Direct `Read` of `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/feedback-loop.js` — full file, confirmed exports
+- Direct `Read` of `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/feedback-loop.js` — full file, confirmed exports
 - Direct `Read` of `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/feedback-loop.js` — full file, confirmed `recordFeedback` vs `captureFeedback`
-- `Bash: npm test` in rlhf repo — confirmed 54 node-runner + 23 script-runner = 77 total, all passing
+- `Bash: npm test` in ThumbGate repo — confirmed 54 node-runner + 23 script-runner = 77 total, all passing
 - `Bash: grep "module.exports"` across both repos — confirmed export divergence in `export-dpo-pairs.js`
 - Direct `Read` of `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/train_from_feedback.py` — lines 132-144 confirm Python Z-stripping pattern
 
@@ -394,7 +394,7 @@ function parseTimestamp(ts) {
 - Export divergence map: HIGH — verified by direct `Object.keys()` inspection of actual module.exports in both repos
 - rubricEvaluation gap: HIGH — verified by reading both `resolveFeedbackAction` implementations line by line
 - Timestamp handling: HIGH — verified by reading all timestamp writes (`new Date().toISOString()`) and Python reads (`.replace("Z", "")`)
-- Baseline test count: HIGH — verified by running `npm test` live in rlhf repo
+- Baseline test count: HIGH — verified by running `npm test` live in ThumbGate repo
 
 **Research date:** 2026-03-04
 **Valid until:** 2026-04-04 (30 days; scripts change slowly, but any merge to either repo could shift counts)

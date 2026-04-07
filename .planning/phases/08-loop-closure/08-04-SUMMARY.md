@@ -2,7 +2,7 @@
 phase: 08-loop-closure
 plan: "04"
 subsystem: loop-closure
-tags: [feedback-to-memory, mcp-memory, schema-validation, rlhf]
+tags: [feedback-to-memory, mcp-memory, schema-validation, ThumbGate]
 dependency_graph:
   requires: [scripts/feedback-schema.js]
   provides: [scripts/feedback-to-memory.js, convertFeedbackToMemory]

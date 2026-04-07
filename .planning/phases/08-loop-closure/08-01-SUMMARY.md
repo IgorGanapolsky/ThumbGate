@@ -2,7 +2,7 @@
 phase: 08-loop-closure
 plan: "01"
 subsystem: loop-closure
-tags: [feedback-to-rules, distillation, prevention-rules, rlhf]
+tags: [feedback-to-rules, distillation, prevention-rules, ThumbGate]
 dependency_graph:
   requires: []
   provides: [scripts/feedback-to-rules.js, parseFeedbackFile, classifySignal, analyze, toRules]
@@ -28,7 +28,7 @@ metrics:
 
 # Phase 8 Plan 01: feedback-to-rules.js Port Summary
 
-Ported Subway's feedback-to-rules.js to rlhf/scripts/ as a CommonJS module for feedback pattern distillation into CLAUDE.md-compatible behavior rules.
+Ported Subway's feedback-to-rules.js to ThumbGate/scripts/ as a CommonJS module for feedback pattern distillation into CLAUDE.md-compatible behavior rules.
 
 ## What Was Built
 

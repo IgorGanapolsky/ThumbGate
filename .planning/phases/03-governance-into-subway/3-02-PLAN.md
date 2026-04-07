@@ -86,13 +86,13 @@ Output:
 @.planning/phases/03-governance-into-subway/3-RESEARCH.md
 
 Source files to read before porting:
-@/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/mcp-policy.js
-@/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/intent-router.js
-@/Users/ganapolsky_i/workspace/git/igor/rlhf/config/mcp-allowlists.json
-@/Users/ganapolsky_i/workspace/git/igor/rlhf/config/subagent-profiles.json
-@/Users/ganapolsky_i/workspace/git/igor/rlhf/config/policy-bundles/default-v1.json
-@/Users/ganapolsky_i/workspace/git/igor/rlhf/config/policy-bundles/constrained-v1.json
-@/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/intent-router.test.js
+@/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/mcp-policy.js
+@/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/intent-router.js
+@/Users/ganapolsky_i/workspace/git/igor/ThumbGate/config/mcp-allowlists.json
+@/Users/ganapolsky_i/workspace/git/igor/ThumbGate/config/subagent-profiles.json
+@/Users/ganapolsky_i/workspace/git/igor/ThumbGate/config/policy-bundles/default-v1.json
+@/Users/ganapolsky_i/workspace/git/igor/ThumbGate/config/policy-bundles/constrained-v1.json
+@/Users/ganapolsky_i/workspace/git/igor/ThumbGate/tests/intent-router.test.js
 </context>
 
 <tasks>
@@ -113,21 +113,21 @@ Source files to read before porting:
 
     STEP 2 — Copy config files verbatim:
     Read each source config file and write it to the Subway destination WITHOUT modification:
-    - /Users/ganapolsky_i/workspace/git/igor/rlhf/config/mcp-allowlists.json
+    - /Users/ganapolsky_i/workspace/git/igor/ThumbGate/config/mcp-allowlists.json
       → /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/config/mcp-allowlists.json
-    - /Users/ganapolsky_i/workspace/git/igor/rlhf/config/subagent-profiles.json
+    - /Users/ganapolsky_i/workspace/git/igor/ThumbGate/config/subagent-profiles.json
       → /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/config/subagent-profiles.json
-    - /Users/ganapolsky_i/workspace/git/igor/rlhf/config/policy-bundles/default-v1.json
+    - /Users/ganapolsky_i/workspace/git/igor/ThumbGate/config/policy-bundles/default-v1.json
       → /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/config/policy-bundles/default-v1.json
-    - /Users/ganapolsky_i/workspace/git/igor/rlhf/config/policy-bundles/constrained-v1.json
+    - /Users/ganapolsky_i/workspace/git/igor/ThumbGate/config/policy-bundles/constrained-v1.json
       → /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/config/policy-bundles/constrained-v1.json
 
     Add a comment at the top of each policy-bundles JSON file (or inline if JSON doesn't support comments — use
     a top-level "_comment" key):
-      "_comment": "Tool names are rlhf-origin; update to Subway-specific tools in a future cleanup pass"
+      "_comment": "Tool names are ThumbGate-origin; update to Subway-specific tools in a future cleanup pass"
 
     STEP 3 — Port mcp-policy.js with PATH SURGERY:
-    Read /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/mcp-policy.js
+    Read /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/mcp-policy.js
 
     Create /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/mcp-policy.js
     with this change:
@@ -197,7 +197,7 @@ Source files to read before porting:
   <action>
     PART A — Port intent-router.js:
 
-    Read /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/intent-router.js
+    Read /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/intent-router.js
 
     Create /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/intent-router.js
     with these changes:
@@ -214,7 +214,7 @@ Source files to read before porting:
 
        Fix by changing DEFAULT_BUNDLE_DIR to:
          const DEFAULT_BUNDLE_DIR = path.join(PROJECT_ROOT, '.claude', 'config', 'policy-bundles');
-       Reason: In rlhf, config/ is at repo root. In Subway, config is under .claude/. The PROJECT_ROOT
+       Reason: In ThumbGate, config/ is at repo root. In Subway, config is under .claude/. The PROJECT_ROOT
        path is the same (repo root), but the config subpath differs.
 
     3. The require('./mcp-policy') line stays as-is — relative path works since both files are
@@ -231,7 +231,7 @@ Source files to read before porting:
 
     PART B — Write Jest test suite for intent-router (GOV-05):
 
-    Read /Users/ganapolsky_i/workspace/git/igor/rlhf/tests/intent-router.test.js for coverage ideas.
+    Read /Users/ganapolsky_i/workspace/git/igor/ThumbGate/tests/intent-router.test.js for coverage ideas.
 
     Create /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/intent-router.test.js
 
@@ -331,8 +331,8 @@ Full dependency chain check — intent-router resolves mcp-policy which resolves
   "
   Expected: planIntent: function (no ENOENT errors)
 
-rlhf regression check:
-  cd /Users/ganapolsky_i/workspace/git/igor/rlhf && npm test 2>&1 | grep -E "tests|pass|fail" | tail -5
+ThumbGate regression check:
+  cd /Users/ganapolsky_i/workspace/git/igor/ThumbGate && npm test 2>&1 | grep -E "tests|pass|fail" | tail -5
   Expected: 60 node-runner tests, 0 failures
 </verification>
 
@@ -343,9 +343,9 @@ rlhf regression check:
 4. All 4 config files exist and parse as valid JSON
 5. intent-router.test.js has minimum 4 Jest tests, all pass
 6. planIntent({bundleId:'default-v1', approved:true}) succeeds without throwing
-7. rlhf npm test still exits 0 with 60 node-runner tests (no regression)
+7. ThumbGate npm test still exits 0 with 60 node-runner tests (no regression)
 </success_criteria>
 
 <output>
-After completion, create /Users/ganapolsky_i/workspace/git/igor/rlhf/.planning/phases/03-governance-into-subway/3-02-SUMMARY.md
+After completion, create /Users/ganapolsky_i/workspace/git/igor/ThumbGate/.planning/phases/03-governance-into-subway/3-02-SUMMARY.md
 </output>

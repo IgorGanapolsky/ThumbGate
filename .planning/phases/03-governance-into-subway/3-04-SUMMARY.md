@@ -29,16 +29,16 @@ tech-stack:
 
 key-files:
   created:
-    - /Users/ganapolsky_i/workspace/git/igor/rlhf/proof/governance-into-subway/gov-sync-report.md
+    - /Users/ganapolsky_i/workspace/git/igor/ThumbGate/proof/governance-into-subway/gov-sync-report.md
   modified:
-    - /Users/ganapolsky_i/workspace/git/igor/rlhf/.planning/REQUIREMENTS.md
-    - /Users/ganapolsky_i/workspace/git/igor/rlhf/.planning/ROADMAP.md
-    - /Users/ganapolsky_i/workspace/git/igor/rlhf/.planning/STATE.md
+    - /Users/ganapolsky_i/workspace/git/igor/ThumbGate/.planning/REQUIREMENTS.md
+    - /Users/ganapolsky_i/workspace/git/igor/ThumbGate/.planning/ROADMAP.md
+    - /Users/ganapolsky_i/workspace/git/igor/ThumbGate/.planning/STATE.md
 
 key-decisions:
   - "Proof report uses actual captured CLI output — no invented numbers, no placeholders"
   - "GOV-02 was listed as Pending in REQUIREMENTS.md despite 3-02 completing it; corrected in this plan"
-  - "rlhf baseline count is 91 (89 test:api + 2 test:proof) — Phase 2 ML additions increased it from 60 baseline"
+  - "ThumbGate baseline count is 91 (89 test:api + 2 test:proof) — Phase 2 ML additions increased it from 60 baseline"
 
 requirements-completed: [GOV-06]
 
@@ -48,7 +48,7 @@ completed: 2026-03-04
 
 # Phase 3 Plan 04: Governance into Subway Proof Report Summary
 
-**Phase 3 proof report generated with actual smoke test output for all 6 GOV requirements; GOV-01..GOV-06 all marked complete; Phase 3 certified done with 43 Subway governance tests passing and 91 rlhf baseline tests green.**
+**Phase 3 proof report generated with actual smoke test output for all 6 GOV requirements; GOV-01..GOV-06 all marked complete; Phase 3 certified done with 43 Subway governance tests passing and 91 ThumbGate baseline tests green.**
 
 ## Performance
 
@@ -66,7 +66,7 @@ completed: 2026-03-04
   - contextfs: `constructContextPack` confirmed as function
   - self-healing-check: `DEFAULT_CHECKS` = `[budget_status, lint_check, format_check, test_ci]`
 - Ran `npm run test:governance` in Subway: 5 suites, 43 tests, 0 failures
-- Ran `npm test` in rlhf: 91 node-runner tests (89 + 2 proof), 0 failures — no regression
+- Ran `npm test` in ThumbGate: 91 node-runner tests (89 + 2 proof), 0 failures — no regression
 - Created `proof/governance-into-subway/gov-sync-report.md` with all evidence
 - Marked GOV-02 and GOV-06 as `[x]` complete in REQUIREMENTS.md (01, 03, 04, 05 already marked in prior plans)
 - Updated ROADMAP.md Phase 3 row: `4/4 | Complete | 2026-03-04`
@@ -89,7 +89,7 @@ completed: 2026-03-04
 
 2. **GOV-02 correction**: REQUIREMENTS.md had GOV-02 as `[ ]` Pending despite Plan 3-02 completing it. This plan corrected it to `[x]`.
 
-3. **rlhf baseline is 91, not 60**: Phase 2 added 29 ML tests; the current baseline is 91 (89 test:api + 2 test:proof). The Phase 3 requirement was "no regression from Phase 1" (60 minimum) — confirmed, 91 >> 60.
+3. **ThumbGate baseline is 91, not 60**: Phase 2 added 29 ML tests; the current baseline is 91 (89 test:api + 2 test:proof). The Phase 3 requirement was "no regression from Phase 1" (60 minimum) — confirmed, 91 >> 60.
 
 ## Deviations from Plan
 
@@ -119,7 +119,7 @@ All Phase 3 deliverables confirmed:
 
 ## Self-Check: PASSED
 
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/proof/governance-into-subway/gov-sync-report.md` — FOUND
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/proof/governance-into-subway/gov-sync-report.md` — FOUND
 - grep "PASS|GOV-0[1-6]" report count: 15 lines (>= 6 required)
 - grep "[x].*GOV-0" REQUIREMENTS.md count: 6
 - grep "Governance into Subway.*Complete" ROADMAP.md: match found (4/4 | Complete | 2026-03-04)

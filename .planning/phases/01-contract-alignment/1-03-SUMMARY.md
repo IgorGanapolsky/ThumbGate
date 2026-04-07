@@ -5,7 +5,7 @@ subsystem: feedback-schema
 tags: [parseTimestamp, CNTR-03, baseline, test-coverage]
 dependency_graph:
   requires: []
-  provides: [parseTimestamp-rlhf, baseline-test-count]
+  provides: [parseTimestamp-ThumbGate, baseline-test-count]
   affects: [phase-2-gate, phase-3-gate]
 tech_stack:
   added: []
@@ -28,9 +28,9 @@ metrics:
   files_modified: 4
 ---
 
-# Phase 1 Plan 03: parseTimestamp rlhf-side + Baseline Test Count Summary
+# Phase 1 Plan 03: parseTimestamp ThumbGate-side + Baseline Test Count Summary
 
-**One-liner:** parseTimestamp() ISO 8601 helper added to rlhf's feedback-schema.js with 6-case node:test suite; 60 node-runner + 23 script-runner baseline recorded as Phase 2 start gate.
+**One-liner:** parseTimestamp() ISO 8601 helper added to ThumbGate's feedback-schema.js with 6-case node:test suite; 60 node-runner + 23 script-runner baseline recorded as Phase 2 start gate.
 
 ## What Was Built
 
@@ -50,7 +50,7 @@ grep "parseTimestamp" scripts/feedback-schema.js | wc -l => 3
 
 ## CNTR-03 Completion
 
-- rlhf side: parseTimestamp() added and exported from `scripts/feedback-schema.js` (this plan)
+- ThumbGate side: parseTimestamp() added and exported from `scripts/feedback-schema.js` (this plan)
 - Subway side: completed in Plan 02
 - CNTR-03 is fully satisfied in both repos
 

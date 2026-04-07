@@ -20,7 +20,7 @@ must_haves:
     - "parseTimestamp(null) and parseTimestamp('garbage') return null — never NaN"
   artifacts:
     - path: "/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/feedback-schema.js"
-      provides: "rubricEvaluation gate logic + parseTimestamp() helper — matching rlhf implementation"
+      provides: "rubricEvaluation gate logic + parseTimestamp() helper — matching ThumbGate implementation"
       contains: "rubricEvaluation"
     - path: "/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/feedback-schema.js"
       provides: "parseTimestamp export"
@@ -37,7 +37,7 @@ must_haves:
 ---
 
 <objective>
-Add rubricEvaluation gate logic and parseTimestamp() helper to Subway's feedback-schema.js, bringing it to parity with rlhf's implementation.
+Add rubricEvaluation gate logic and parseTimestamp() helper to Subway's feedback-schema.js, bringing it to parity with ThumbGate's implementation.
 
 Purpose: CNTR-02 requires rubricEvaluation to be handled identically in both repos. CNTR-03 requires parseTimestamp() in both repos. Both changes target the same file (Subway's feedback-schema.js) so they are batched into one plan to avoid a file conflict with Plan 03.
 Output: Modified /Subway_RN_Demo/scripts/feedback-schema.js with rubricEvaluation support and parseTimestamp() export.
@@ -71,7 +71,7 @@ Make these SURGICAL changes only — do not touch anything else in the file:
 1. Extend the destructure to add rubricEvaluation:
    const { signal, context, whatWentWrong, whatToChange, whatWorked, tags, rubricEvaluation } = params;
 
-2. After the destructure, build rubricSummary (matches rlhf lines 100-109 exactly):
+2. After the destructure, build rubricSummary (matches ThumbGate lines 100-109 exactly):
    const rubricSummary = rubricEvaluation ? {
      rubricId: rubricEvaluation.rubricId,
      weightedScore: rubricEvaluation.weightedScore,
@@ -89,7 +89,7 @@ Make these SURGICAL changes only — do not touch anything else in the file:
 
 4. If the positive branch already builds a result object, add rubricSummary to it:
    { ..., rubricSummary: rubricSummary || undefined }
-   Only include rubricSummary in the result if it is non-null (matches rlhf behavior).
+   Only include rubricSummary in the result if it is non-null (matches ThumbGate behavior).
 
 CRITICAL: Do NOT rename any existing exports. Do NOT modify validateFeedbackMemory, prepareForStorage, or any other function. Subway has 32 inline tests in this file — do not break them. The existing test harness runs with node scripts/feedback-schema.js and must still exit 0.
 
@@ -103,7 +103,7 @@ grep -c "rubricEvaluation" /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scri
 Expected: >= 3 (destructure line, rubricSummary build, gate check).
   </verify>
   <done>
-Subway's resolveFeedbackAction destructures rubricEvaluation, builds rubricSummary, and enforces the promotionEligible gate — matching rlhf behavior. Existing Subway inline tests still pass.
+Subway's resolveFeedbackAction destructures rubricEvaluation, builds rubricSummary, and enforces the promotionEligible gate — matching ThumbGate behavior. Existing Subway inline tests still pass.
   </done>
 </task>
 
@@ -165,7 +165,7 @@ parseTimestamp is exported from Subway's feedback-schema.js. It returns Date for
 </verification>
 
 <success_criteria>
-- Subway's resolveFeedbackAction handles rubricEvaluation identically to rlhf's implementation (CNTR-02)
+- Subway's resolveFeedbackAction handles rubricEvaluation identically to ThumbGate's implementation (CNTR-02)
 - parseTimestamp() is exported from Subway's feedback-schema.js and handles all ISO 8601 variants returning Date or null (CNTR-03 Subway half)
 - All existing Subway feedback-schema.js inline tests continue to pass
 - No new npm dependencies introduced

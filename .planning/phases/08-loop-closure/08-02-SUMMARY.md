@@ -2,7 +2,7 @@
 phase: 08-loop-closure
 plan: "02"
 subsystem: loop-closure
-tags: [plan-gate, prd-validation, structural-gate, rlhf]
+tags: [plan-gate, prd-validation, structural-gate, ThumbGate]
 dependency_graph:
   requires: []
   provides: [scripts/plan-gate.js, validatePlan, formatReport, countTableRows, countContracts, countValidationScenarios, getStatus]
@@ -14,7 +14,7 @@ key_files:
   created: [scripts/plan-gate.js]
   modified: []
 decisions:
-  - "plan-gate.js lives in rlhf/scripts/ (not scripts/__tests__) — it's a CLI tool, not a test runner"
+  - "plan-gate.js lives in ThumbGate/scripts/ (not scripts/__tests__) — it's a CLI tool, not a test runner"
   - "validatePlan gates on: >=3 clarifying questions, >=1 interface/type contract, >=2 validation checklist items, Status != COMPLETE"
   - "countTableRows subtracts header + separator rows from markdown table line count"
   - "getStatus returns null (not empty string) when Status section missing — consistent with null-safe callers"
@@ -27,7 +27,7 @@ metrics:
 
 # Phase 8 Plan 02: plan-gate.js Port Summary
 
-Ported Subway's plan-gate.js to rlhf/scripts/ as a structural PRD validation gate.
+Ported Subway's plan-gate.js to ThumbGate/scripts/ as a structural PRD validation gate.
 
 ## What Was Built
 

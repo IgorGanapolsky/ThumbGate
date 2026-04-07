@@ -2,7 +2,7 @@
 phase: 08-loop-closure
 plan: "03"
 subsystem: loop-closure
-tags: [feedback-inbox, cursor-based-reading, reflexion, rlhf]
+tags: [feedback-inbox, cursor-based-reading, reflexion, ThumbGate]
 dependency_graph:
   requires: []
   provides: [scripts/feedback-inbox-read.js, getNewEntries, readInbox, loadCursor, saveCursor]
@@ -28,7 +28,7 @@ metrics:
 
 # Phase 8 Plan 03: feedback-inbox-read.js Port Summary
 
-Ported Subway's feedback-inbox-read.js to rlhf/scripts/ as a cursor-based inbox reader for reflexion-preflight integration.
+Ported Subway's feedback-inbox-read.js to ThumbGate/scripts/ as a cursor-based inbox reader for reflexion-preflight integration.
 
 ## What Was Built
 

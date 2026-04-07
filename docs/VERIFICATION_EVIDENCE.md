@@ -126,11 +126,11 @@ const { evaluateMemoryIngress } = require('./scripts/memory-firewall');
 })();
 PY
 node --test tests/feedback-loop.test.js tests/intelligence.test.js
-npm test >/tmp/mcp_npm_test_fix_rlhf_source_labels.log 2>&1
-npm run test:coverage >/tmp/mcp_test_coverage_fix_rlhf_source_labels.log 2>&1
-THUMBGATE_PROOF_DIR=/tmp/mcp_proof_adapters_fix_rlhf npm run prove:adapters >/tmp/mcp_prove_adapters_fix_rlhf.log 2>&1
-THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_rlhf npm run prove:automation >/tmp/mcp_prove_automation_fix_rlhf.log 2>&1
-npm run self-heal:check >/tmp/mcp_self_heal_check_fix_rlhf.log 2>&1
+npm test >/tmp/mcp_npm_test_fix_thumbgate_source_labels.log 2>&1
+npm run test:coverage >/tmp/mcp_test_coverage_fix_thumbgate_source_labels.log 2>&1
+THUMBGATE_PROOF_DIR=/tmp/mcp_proof_adapters_fix_thumbgate npm run prove:adapters >/tmp/mcp_prove_adapters_fix_thumbgate.log 2>&1
+THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_thumbgate npm run prove:automation >/tmp/mcp_prove_automation_fix_thumbgate.log 2>&1
+npm run self-heal:check >/tmp/mcp_self_heal_check_fix_thumbgate.log 2>&1
 git diff --check
 ```
 
@@ -146,7 +146,7 @@ Observed result:
   - `reason: "Blocked: credential leak detected (anthropic api_key)"`
   - `threatIndicators: ["credential_leak"]`
 - `node --test tests/feedback-loop.test.js tests/intelligence.test.js` exited `0`: `74` passed, `0` failed.
-- `npm test` exited `0` on the patched worktree (`/tmp/mcp_npm_test_fix_rlhf_source_labels.log`).
+- `npm test` exited `0` on the patched worktree (`/tmp/mcp_npm_test_fix_thumbgate_source_labels.log`).
 - The full-suite rerun included the new ThumbGate/security checks:
   - `evaluateMemoryIngress: ShieldCortex blocks secret-bearing payload when explicitly enabled`
   - `captureFeedback: blocks secret-bearing feedback before any raw memory write`
@@ -154,8 +154,8 @@ Observed result:
   - `89.71` lines
   - `75.40` branches
   - `93.21` functions
-- `THUMBGATE_PROOF_DIR=/tmp/mcp_proof_adapters_fix_rlhf npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_rlhf npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `THUMBGATE_PROOF_DIR=/tmp/mcp_proof_adapters_fix_thumbgate npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_thumbgate npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4 healthy` checks.
 - `git diff --check` exited `0`.
 

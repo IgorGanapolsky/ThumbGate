@@ -19,7 +19,7 @@
 
 ## Summary
 
-Phase 5 is an implementation phase, not a design phase. All three components (RLAIF self-audit, DPO batch optimization, meta-policy rule extraction) have working reference implementations in `Subway_RN_Demo/.claude/scripts/feedback/` and in `rlhf/scripts/export-dpo-pairs.js`. The task is to wire them together correctly in `rlhf`, add the budget-guard integration DPO-01 requires, and prove correctness with tests.
+Phase 5 is an implementation phase, not a design phase. All three components (RLAIF self-audit, DPO batch optimization, meta-policy rule extraction) have working reference implementations in `Subway_RN_Demo/.claude/scripts/feedback/` and in `ThumbGate/scripts/export-dpo-pairs.js`. The task is to wire them together correctly in `ThumbGate`, add the budget-guard integration DPO-01 requires, and prove correctness with tests.
 
 The key design decision in SUMMARY.md is already locked: the function must be named `selfAudit()`, not `selfScore()`, to clarify the heuristic nature. RLAIF here means heuristic constitutional checking against CLAUDE.md rules — it is NOT a reward model inference call against the Anthropic API (that would be budget-prohibitive and out of scope per REQUIREMENTS.md). The self-audit computes a scalar score by evaluating feedback events against a rule set derived from CLAUDE.md, using existing rubric criteria as the scoring backbone.
 
@@ -89,7 +89,7 @@ proof/
 
 **When to use:** Called after `captureFeedback()` as a non-blocking side-effect (same pattern as `appendSequence()` and `updateDiversityTracking()`). Also callable standalone via CLI for batch scoring of historical `feedback-log.jsonl`.
 
-**CLAUDE.md constraints to check (confirmed by reading `rlhf/CLAUDE.md`):**
+**CLAUDE.md constraints to check (confirmed by reading `ThumbGate/CLAUDE.md`):**
 1. `has_context` — feedback has non-empty `context` field (min 20 chars)
 2. `has_actionable_detail` — positive feedback has `whatWorked`; negative has `whatWentWrong` AND `whatToChange`
 3. `schema_valid` — feedback has valid `signal` (positive/negative) and at least one tag
@@ -205,7 +205,7 @@ function dpoLogRatio(chosenWeight, rejectedWeight, beta = DPO_BETA) {
 
 ### Pitfall 1: Naming `selfScore` instead of `selfAudit`
 
-**What goes wrong:** SUMMARY.md explicitly requires renaming from `selfScore()` (Subway name) to `selfAudit()` in rlhf. Using `selfScore` in rlhf would misrepresent the function as a scored prediction rather than a heuristic constitutional audit.
+**What goes wrong:** SUMMARY.md explicitly requires renaming from `selfScore()` (Subway name) to `selfAudit()` in ThumbGate. Using `selfScore` in ThumbGate would misrepresent the function as a scored prediction rather than a heuristic constitutional audit.
 **Why it happens:** Direct copy from Subway without reading the rename requirement.
 **How to avoid:** Export name must be `selfAudit`. The SUMMARY.md note is explicit: "renamed from `selfScore()` to clarify heuristic nature."
 **Warning signs:** If grep finds `module.exports.selfScore` in the new file, rename it.
@@ -311,7 +311,7 @@ function applyDpoAdjustments(modelPath, pairs) {
 ### node:test pattern for new test files (confirmed from vector-store.test.js)
 
 ```javascript
-// Source: /Users/ganapolsky_i/workspace/git/igor/rlhf/tests/vector-store.test.js
+// Source: /Users/ganapolsky_i/workspace/git/igor/ThumbGate/tests/vector-store.test.js
 
 'use strict';
 
@@ -351,7 +351,7 @@ describe('rlaif-self-audit — selfAudit()', () => {
 ### prove-rlaif.js structure (mirrors prove-lancedb.js)
 
 ```javascript
-// Source: /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/prove-lancedb.js pattern
+// Source: /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/prove-lancedb.js pattern
 
 async function runProof() {
   const report = {
@@ -387,7 +387,7 @@ async function runProof() {
 | Manual prevention rules from feedback | Automated meta-policy extraction with trend + recency weighting | Phase 5 | Rules have confidence scores and trend direction, not just occurrence counts |
 | Simple positive/negative counting for Thompson posteriors | DPO-style batch preference optimization on top of Thompson | Feb 2026 (Subway) | More aggressive posterior updates when preference signal is strong |
 | No scoring gate on feedback quality | Heuristic self-audit against CLAUDE.md constraints | Phase 5 | Feedback events get quality scores that can feed back into the DPO pair selection |
-| `selfScore()` name (Subway) | `selfAudit()` name (rlhf) | Phase 5 design | Correctly signals heuristic nature; avoids implying ML model scoring |
+| `selfScore()` name (Subway) | `selfAudit()` name (ThumbGate) | Phase 5 design | Correctly signals heuristic nature; avoids implying ML model scoring |
 
 **Deprecated/outdated:**
 - Direct `scripts/feedback-rules.js` generation: superseded by `buildPreventionRules()` in `feedback-loop.js` AND new `extractMetaPolicyRules()` in `meta-policy.js`. Both co-exist but serve different granularities.
@@ -454,7 +454,7 @@ The aggregate `test` script needs updating to include `test:rlaif`.
 
 2. **Should `dpo-optimizer.js` automatically call `thompson-sampling.js saveModel()` or output a delta file for the user to apply?**
    - What we know: Subway's `train_dpo()` calls `save_model()` directly (mutating approach)
-   - What's unclear: Whether the "apply immediately" approach is right for rlhf where posteriors are loaded at read time
+   - What's unclear: Whether the "apply immediately" approach is right for ThumbGate where posteriors are loaded at read time
    - Recommendation: Follow Subway's pattern — apply immediately and save. The DPO model file (`dpo-model.json`) serves as the audit trail of what was adjusted and when.
 
 3. **What is the minimum number of feedback entries before meta-policy rules are meaningful?**
@@ -468,18 +468,18 @@ The aggregate `test` script needs updating to include `test:rlaif`.
 
 ### Primary (HIGH confidence)
 
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/export-dpo-pairs.js` — full `buildDpoPairs()` implementation, confirmed working with 5 tests in `test:dpo`
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/thompson-sampling.js` — `loadModel()`, `saveModel()`, `timeDecayWeight()`, `samplePosteriors()` — all confirmed present
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/feedback-loop.js` — `captureFeedback()` non-blocking side-effect pattern (lines 368-387), `inferDomain()` (lines 135-149)
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/prove-lancedb.js` — proof script template to mirror exactly
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/vector-store.test.js` — canonical test pattern: `describe/it`, `freshModule(tmpDir)`, `require.cache` invalidation
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/export-dpo-pairs.js` — full `buildDpoPairs()` implementation, confirmed working with 5 tests in `test:dpo`
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/thompson-sampling.js` — `loadModel()`, `saveModel()`, `timeDecayWeight()`, `samplePosteriors()` — all confirmed present
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/feedback-loop.js` — `captureFeedback()` non-blocking side-effect pattern (lines 368-387), `inferDomain()` (lines 135-149)
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/prove-lancedb.js` — proof script template to mirror exactly
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/tests/vector-store.test.js` — canonical test pattern: `describe/it`, `freshModule(tmpDir)`, `require.cache` invalidation
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/train_from_feedback.py` lines 400-474, 520-668 — `extract_meta_policy_rules()` and `train_dpo()` reference implementations
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/package.json` — confirmed `test:api` lists files explicitly (not glob); `test` aggregate script; current test count = 93
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/package.json` — confirmed `test:api` lists files explicitly (not glob); `test` aggregate script; current test count = 93
 
 ### Secondary (MEDIUM confidence)
 
 - arXiv:2305.18290 Rafailov et al. — DPO foundational paper; confirms `beta * log_ratio` formulation
-- arXiv:2309.00267 — RLAIF vs RLHF; confirms heuristic scoring is valid at comparable performance
+- arXiv:2309.00267 — RLAIF vs ThumbGate; confirms heuristic scoring is valid at comparable performance
 - arXiv:2509.03990 — Meta-Policy Reflexion; confirms recency + intensity weighting for rule extraction
 
 ### Tertiary (LOW confidence)

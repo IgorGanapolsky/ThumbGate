@@ -255,7 +255,7 @@ test('E2E: rotated billing key disables the old key and keeps dashboard access a
 });
 
 test('E2E: governance task scope and protected approvals persist over the HTTP surface', async (t) => {
-  const { port, adminHeaders } = await startIsolatedServer(t, 'rlhf-e2e-governance-');
+  const { port, adminHeaders } = await startIsolatedServer(t, 'ThumbGate-e2e-governance-');
 
   const scopeRes = await fetch(apiUrl(port, '/v1/gates/task-scope'), {
     method: 'POST',

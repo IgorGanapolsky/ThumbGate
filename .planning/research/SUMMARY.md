@@ -1,13 +1,13 @@
 # Project Research Summary
 
-**Project:** RLHF Bidirectional Feature Sync
+**Project:** ThumbGate Bidirectional Feature Sync
 **Domain:** ML-enhanced feedback systems / Agentic governance
 **Researched:** 2026-03-04
 **Confidence:** HIGH
 
 ## Executive Summary
 
-This is a surgical bidirectional sync between two live, production-grade systems — `thumbgate` (a Node.js RLHF product library, v0.5.0, zero npm dependencies) and `Subway_RN_Demo` (a React Native app with a Python ML feedback stack). Neither repo is greenfield; the sync cherry-picks specific features in two directions: ML capabilities (Thompson Sampling, LanceDB vector storage, LSTM sequence tracking, diversity tracking, RLAIF self-scoring) flow from Subway into thumbgate, while governance capabilities (budget guard, intent router, ContextFS, self-healing monitor, MCP policy) flow from thumbgate into Subway. A full merge is explicitly out of scope and architecturally wrong — the library/prototype boundary must be preserved.
+This is a surgical bidirectional sync between two live, production-grade systems — `thumbgate` (a Node.js ThumbGate product library, v0.5.0, zero npm dependencies) and `Subway_RN_Demo` (a React Native app with a Python ML feedback stack). Neither repo is greenfield; the sync cherry-picks specific features in two directions: ML capabilities (Thompson Sampling, LanceDB vector storage, LSTM sequence tracking, diversity tracking, RLAIF self-scoring) flow from Subway into thumbgate, while governance capabilities (budget guard, intent router, ContextFS, self-healing monitor, MCP policy) flow from thumbgate into Subway. A full merge is explicitly out of scope and architecturally wrong — the library/prototype boundary must be preserved.
 
 The recommended implementation approach is file-system-boundary isolation: Node.js writes JSONL, Python reads JSONL and writes JSON model files, Node.js reads the JSON output. No HTTP, no sockets, no subprocess coupling in the hot path. All new npm dependencies for thumbgate are pinned and confirmed (`@lancedb/lancedb@0.26.2`, `apache-arrow@18.1.0`, `@huggingface/transformers@3.8.1`); Subway requires zero new npm packages for the governance port. The Python stack is already complete (lancedb 0.27.1, sentence-transformers 3.0.1, scipy in the venv). The Bayesian core (Thompson Sampling) requires no external library — pure JS Beta approximation with `Math.random()` is sufficient and mirrors Subway's stdlib `random.betavariate`.
 
@@ -40,7 +40,7 @@ This is a sync milestone, not a feature launch. "Must have" is defined by what b
 
 **Must have — Phase 2 (governance into Subway):**
 - Budget guard — standalone; prevents API cost blowouts; highest urgency; zero npm deps
-- Intent router + policy bundles — structured governance for agentic actions; copy from rlhf with path adjustments
+- Intent router + policy bundles — structured governance for agentic actions; copy from ThumbGate with path adjustments
 - ContextFS with semantic cache — replaces ad hoc context construction; namespaced file-system store with TTL
 - Self-healing monitor — wraps Subway's existing npm scripts; needs Subway lint:fix audit before enabling
 
@@ -56,7 +56,7 @@ This is a sync milestone, not a feature launch. "Must have" is defined by what b
 
 ### Architecture Approach
 
-The system separates governance (thumbgate) and ML capability (Subway) across a file-system boundary: Node.js writes to JSONL logs, Python training scripts read from those logs and write JSON model state, Node.js reads the JSON state for inference. No inter-process communication occurs in the feedback hot path. All data is local and embedded — no external services except the Claude API for RLAIF (budget-guarded). The two repos share an identical schema layer (`feedback-schema.js`, `rubric-engine.js`) but diverge at capability: rlhf holds the governance layer, Subway holds the ML layer. Post-sync, both hold both layers.
+The system separates governance (thumbgate) and ML capability (Subway) across a file-system boundary: Node.js writes to JSONL logs, Python training scripts read from those logs and write JSON model state, Node.js reads the JSON state for inference. No inter-process communication occurs in the feedback hot path. All data is local and embedded — no external services except the Claude API for RLAIF (budget-guarded). The two repos share an identical schema layer (`feedback-schema.js`, `rubric-engine.js`) but diverge at capability: ThumbGate holds the governance layer, Subway holds the ML layer. Post-sync, both hold both layers.
 
 **Major components:**
 1. `feedback-loop.js` + `feedback-schema.js` — shared core capture and boundary validation; identical in both repos
@@ -84,18 +84,18 @@ Research reveals a clear dependency graph that dictates phase order. The file-sy
 ### Phase 1: Contract Mapping and Schema Alignment
 
 **Rationale:** Every feature port depends on knowing exactly what each repo exports and where schemas diverge. Skipping this creates the silent API name collision pitfall (Pitfall 1) and rubric schema divergence (Pitfall 2). Zero new features are written in this phase — it is exclusively an audit and alignment phase.
-**Delivers:** Export diff document; `feedback-schema.js` diff resolution; rubric engine compatibility confirmed; function alias map; test count baseline (54 tests in rlhf, count preserved throughout)
+**Delivers:** Export diff document; `feedback-schema.js` diff resolution; rubric engine compatibility confirmed; function alias map; test count baseline (54 tests in ThumbGate, count preserved throughout)
 **Addresses:** Table stakes — schema validation, JSONL storage parity
 **Avoids:** API name collision, rubric gate bypass, unbounded test regression
 
 ### Phase 2: ML Features into thumbgate (Thompson Sampling + Sequence + Diversity)
 
 **Rationale:** Thompson Sampling is the prerequisite for RLAIF/DPO and the highest-value ML upgrade. Sequence tracking and diversity tracking are lightweight additions that share the same capture-path extension. Grouping them minimizes the number of times the capture hot path is modified.
-**Delivers:** `train_from_feedback.py` in rlhf; `feedback_model.json` posteriors; `feedback-sequences.jsonl`; `diversity-tracking.json`; `parseTimestamp()` normalizer
+**Delivers:** `train_from_feedback.py` in ThumbGate; `feedback_model.json` posteriors; `feedback-sequences.jsonl`; `diversity-tracking.json`; `parseTimestamp()` normalizer
 **Uses:** No new npm packages in this phase; Python venv already complete
 **Implements:** Beta-Bernoulli Thompson Sampling pattern; LSTM sequence feature capture pattern; exponential time-decay with 7-day half-life
 **Avoids:** Thompson timestamp NaN (Pitfall 3); Thompson without time-decay (Architecture Anti-Pattern 4)
-**Research flag:** Standard pattern — Thompson Sampling in RLHF is well-documented; port is mechanical from Subway source
+**Research flag:** Standard pattern — Thompson Sampling in ThumbGate is well-documented; port is mechanical from Subway source
 
 ### Phase 3: Governance Features into Subway (Budget Guard + Intent Router + ContextFS + Self-Healing)
 
@@ -121,7 +121,7 @@ Research reveals a clear dependency graph that dictates phase order. The file-sy
 **Delivers:** `selfAudit()` function (renamed from `selfScore()` to clarify heuristic nature); DPO preference pair construction; batch posterior updates; `self-score-log.jsonl`
 **Uses:** `@anthropic-ai/sdk@0.78.0` (already present); budget guard wrapping every RLAIF call
 **Implements:** Constitutional check / heuristic scoring pattern; DPO preference pair pattern (Rafailov et al. 2023)
-**Avoids:** RLAIF label overstates capability (Pitfall 7); function must be named `selfAudit` not `selfScore` in rlhf
+**Avoids:** RLAIF label overstates capability (Pitfall 7); function must be named `selfAudit` not `selfScore` in ThumbGate
 **Research flag:** Standard pattern — DPO math is well-documented in literature and Subway source; heuristic rename is mechanical
 
 ### Phase Ordering Rationale
@@ -166,8 +166,8 @@ Phases with standard patterns (can skip research-phase):
 ## Sources
 
 ### Primary (HIGH confidence)
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/` — direct code inspection; all governance scripts confirmed
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/package.json` — zero npm deps, CommonJS, Node.js 25.6.1 confirmed
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/` — direct code inspection; all governance scripts confirmed
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/package.json` — zero npm deps, CommonJS, Node.js 25.6.1 confirmed
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/train_from_feedback.py` — Thompson Sampling, DPO, meta-policy rules
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/capture-feedback.js` — LSTM sequence tracking, diversity tracking, LanceDB
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/memory/feedback/lance-index-state.json` — LanceDB active, all-MiniLM-L6-v2, live
@@ -177,17 +177,17 @@ Phases with standard patterns (can skip research-phase):
 - Stanford TS Tutorial — Beta-Bernoulli update rule matches Subway implementation exactly
 
 ### Secondary (MEDIUM confidence)
-- arXiv:2505.23927 — Thompson Sampling in Online RLHF; O(sqrt(T)) regret bound
+- arXiv:2505.23927 — Thompson Sampling in Online ThumbGate; O(sqrt(T)) regret bound
 - arXiv:2305.18290 — Rafailov et al. DPO: Direct Preference Optimization (foundational)
 - arXiv:2509.03990 — Meta-Policy Reflexion (referenced in Subway code comments)
-- arXiv:2309.00267 — RLAIF vs RLHF; comparable performance at lower cost
+- arXiv:2309.00267 — RLAIF vs ThumbGate; comparable performance at lower cost
 - LanceDB GitHub Issue #669 — Append with different schema (confirmed bug)
 - LanceDB GitHub Issue #2134 — FixedSizeList schema errors in v0.16
 - LanceDB official site — 2026 updates: native SQL via DuckDB, FTS via Tantivy
 - HuggingFace blog — @huggingface/transformers v4 is preview-only (do not use)
 
 ### Tertiary (LOW confidence)
-- HybridFlow RLHF Framework (arXiv:2409.19256) — academic reference only; not directly applicable to this system
+- HybridFlow ThumbGate Framework (arXiv:2409.19256) — academic reference only; not directly applicable to this system
 - AAAI 2025 seq2seq reward modeling — validates sequence tracking investment as future training data
 
 ---

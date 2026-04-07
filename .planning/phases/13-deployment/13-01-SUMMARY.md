@@ -22,7 +22,7 @@ key_files:
 decisions:
   - "Health endpoint unauthenticated: /health bypasses API key check — required for Railway/load-balancer probes"
   - "Multi-stage Dockerfile: builder stage does npm ci --omit=dev, runtime copies only node_modules + source — smaller image"
-  - "Non-root user: rlhf:rlhf user in container — security best practice"
+  - "Non-root user: ThumbGate:ThumbGate user in container — security best practice"
   - "DEPLOY-02 deferred: actual Railway deployment requires account credentials — all assets are ready"
 metrics:
   duration: "~15 min"
@@ -59,7 +59,7 @@ GET /health → 200 OK
 Multi-stage build:
 - **builder** stage: `node:20-alpine`, copies `package*.json`, runs `npm ci --omit=dev`
 - **runtime** stage: copies node_modules from builder, copies `scripts/`, `src/`, `config/`, `adapters/`
-- Non-root `rlhf:rlhf` user
+- Non-root `ThumbGate:ThumbGate` user
 - `/data` directory for runtime feedback logs
 - `HEALTHCHECK` instruction points to `GET /health`
 - `CMD ["node", "src/api/server.js"]`
@@ -109,7 +109,7 @@ Build result: **SUCCESS** — image built with no errors.
 ### Container Smoke Test
 
 ```bash
-docker run -d --name rlhf-test -p 18787:8787 \
+docker run -d --name ThumbGate-test -p 18787:8787 \
   -e THUMBGATE_ALLOW_INSECURE=true -e PORT=8787 \
   thumbgate:latest
 

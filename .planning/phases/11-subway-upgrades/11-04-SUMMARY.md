@@ -2,9 +2,9 @@
 phase: 11-subway-upgrades
 plan: "04"
 subsystem: subway-upgrades
-tags: [self-healing, gh-actions, workflows, subway, rlhf]
+tags: [self-healing, gh-actions, workflows, subway, ThumbGate]
 dependency_graph:
-  requires: [rlhf/.github/workflows/self-healing-monitor.yml, rlhf/.github/workflows/self-healing-auto-fix.yml]
+  requires: [ThumbGate/.github/workflows/self-healing-monitor.yml, ThumbGate/.github/workflows/self-healing-auto-fix.yml]
   provides: [Subway/.github/workflows/self-healing-monitor.yml, Subway/.github/workflows/self-healing-auto-fix.yml]
   affects: [Subway CI health monitoring]
 tech_stack:
@@ -14,7 +14,7 @@ key_files:
   created: [Subway/.github/workflows/self-healing-monitor.yml, Subway/.github/workflows/self-healing-auto-fix.yml, scripts/prove-subway-upgrades.js, proof/subway-upgrades/subway-upgrades-report.json]
   modified: [Subway/package.json]
 decisions:
-  - "Subway self-healing workflows reference same scripts as rlhf: self-healing-check.js + self-heal.js"
+  - "Subway self-healing workflows reference same scripts as ThumbGate: self-healing-check.js + self-heal.js"
   - "test:governance in Subway package.json uses NODE_OPTIONS=--experimental-vm-modules for LanceDB dynamic import support"
   - "prove-subway-upgrades.js uses NODE_OPTIONS env var when invoking Subway Jest to bypass --experimental-vm-modules requirement"
   - "SUBW-05 proof check captures Jest output from both stdout and stderr (err.stdout + err.stderr pattern)"
@@ -27,7 +27,7 @@ metrics:
 
 # Phase 11 Plan 04: Self-Healing Workflows + Proof Gate Summary
 
-Ported rlhf self-healing GH Action workflows to Subway, added test:governance script, and created the full Phase 11 proof gate.
+Ported ThumbGate self-healing GH Action workflows to Subway, added test:governance script, and created the full Phase 11 proof gate.
 
 ## What Was Built
 

@@ -67,7 +67,7 @@ Output: package.json with pinned deps, scripts/vector-store.js with upsertFeedba
   <name>Task 1: Install pinned dependencies</name>
   <files>package.json</files>
   <action>
-    Run the following installs in order from the rlhf project root (/Users/ganapolsky_i/workspace/git/igor/rlhf):
+    Run the following installs in order from the ThumbGate project root (/Users/ganapolsky_i/workspace/git/igor/ThumbGate):
 
     ```bash
     npm install @lancedb/lancedb@0.26.2
@@ -93,7 +93,7 @@ Output: package.json with pinned deps, scripts/vector-store.js with upsertFeedba
   <name>Task 2: Create scripts/vector-store.js with dynamic import pattern</name>
   <files>scripts/vector-store.js</files>
   <action>
-    Create /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/vector-store.js using the exact implementation from 4-RESEARCH.md Pattern 1 + Pattern 3.
+    Create /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/vector-store.js using the exact implementation from 4-RESEARCH.md Pattern 1 + Pattern 3.
 
     Key requirements:
     1. File starts with `'use strict';` — project is CJS.
@@ -117,7 +117,7 @@ Output: package.json with pinned deps, scripts/vector-store.js with upsertFeedba
     node -e "const vs = require('./scripts/vector-store'); console.log(typeof vs.upsertFeedback, typeof vs.searchSimilar, vs.TABLE_NAME)"
     Expected: function function thumbgate_memories
     Also verify no require('@lancedb/lancedb') exists:
-    grep -n "require.*lancedb" /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/vector-store.js
+    grep -n "require.*lancedb" /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/vector-store.js
     Expected: no output (only dynamic import() should be present)
   </verify>
   <done>
@@ -131,7 +131,7 @@ Output: package.json with pinned deps, scripts/vector-store.js with upsertFeedba
 </tasks>
 
 <verification>
-Run from /Users/ganapolsky_i/workspace/git/igor/rlhf:
+Run from /Users/ganapolsky_i/workspace/git/igor/ThumbGate:
 1. `node -e "const vs = require('./scripts/vector-store'); console.log(Object.keys(vs))"` → prints [ 'upsertFeedback', 'searchSimilar', 'TABLE_NAME' ]
 2. `grep "await import" scripts/vector-store.js` → shows two dynamic imports (lancedb + transformers)
 3. `grep "require.*lancedb" scripts/vector-store.js` → no output
