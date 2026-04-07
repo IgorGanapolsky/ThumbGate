@@ -125,7 +125,8 @@ function isSafeBranchName(branchName) {
 
 function fetchBaseBranch(repoPath, baseBranch) {
   if (!repoPath || !isSafeBranchName(baseBranch)) return false;
-  const result = spawnSync('git', ['fetch', '--no-tags', '--depth=64', 'origin', baseBranch], {
+  // Fetch the remote tracking refs without passing user-controlled branch names to git.
+  const result = spawnSync('git', ['fetch', '--no-tags', '--depth=64', 'origin'], {
     cwd: repoPath,
     encoding: 'utf8',
   });
