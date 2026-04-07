@@ -40,7 +40,7 @@ key-files:
     - /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/package.json
 
 key-decisions:
-  - "KNOWN_FIX_SCRIPTS uses object array {name, command} instead of rlhf string array — required because Subway npm script names (lint:fix, format) don't have a predictable transform from logical names"
+  - "KNOWN_FIX_SCRIPTS uses object array {name, command} instead of ThumbGate string array — required because Subway npm script names (lint:fix, format) don't have a predictable transform from logical names"
   - "buildFixPlan derives npm script name from command[2] (the 3rd element of ['npm', 'run', '<script>']) for correct package.json lookup"
   - "test:governance uses jest.governance.config.js (testEnvironment:node) not default jest-expo config — scripts/__tests__/ is in testPathIgnorePatterns of main config"
   - "runSelfHeal tests use tmpdir cwd pattern instead of jest.mock('child_process') to avoid SIGKILL from jest.resetModules + re-require interaction"
@@ -70,16 +70,16 @@ completed: 2026-03-04
 
 ## Accomplishments
 
-- Ported self-heal.js with Subway KNOWN_FIX_SCRIPTS (lint_fix -> `npm run lint:fix`, format_fix -> `npm run format`) — no rlhf-specific scripts
+- Ported self-heal.js with Subway KNOWN_FIX_SCRIPTS (lint_fix -> `npm run lint:fix`, format_fix -> `npm run format`) — no ThumbGate-specific scripts
 - Ported self-healing-check.js with Subway DEFAULT_CHECKS: budget_status uses `node budget-guard.js --status` (not `npm run budget:status`), plus lint_check, format_check, test_ci
 - Wrote self-heal.test.js (9 tests) and self-healing-check.test.js (8 tests) with injectable runner pattern
 - Added jest.governance.config.js (testEnvironment:node) so governance tests bypass jest-expo
 - Added test:governance npm script to Subway package.json; all 5 governance suites now run together (43 tests, 0 failures)
-- rlhf baseline unchanged: 89 node-runner + 2 proof = 91 tests passing
+- ThumbGate baseline unchanged: 89 node-runner + 2 proof = 91 tests passing
 
 ## Task Commits
 
-All work is in Subway filesystem (gitignored from Subway's own git). Committed to rlhf repo as proof/planning artifacts only.
+All work is in Subway filesystem (gitignored from Subway's own git). Committed to ThumbGate repo as proof/planning artifacts only.
 
 1. **Task 1: Port self-heal.js and self-healing-check.js** — Subway scripts written with path surgery and adapted DEFAULT_CHECKS
 2. **Task 2: Write Jest tests and add test:governance** — 5 governance suites, 43 tests all passing
@@ -89,15 +89,15 @@ All work is in Subway filesystem (gitignored from Subway's own git). Committed t
 ## Files Created/Modified
 
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/self-heal.js` — Fix-script executor with KNOWN_FIX_SCRIPTS for lint:fix and format
-- `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/self-healing-check.js` — Health check runner with Subway DEFAULT_CHECKS (no rlhf scripts)
+- `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/self-healing-check.js` — Health check runner with Subway DEFAULT_CHECKS (no ThumbGate scripts)
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/self-heal.test.js` — 9 Jest tests (KNOWN_FIX_SCRIPTS validation, buildFixPlan, runFixPlan, runSelfHeal shape)
-- `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/self-healing-check.test.js` — 8 Jest tests (DEFAULT_CHECKS structure, no-rlhf validation, collectHealthReport, reportToText)
+- `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/self-healing-check.test.js` — 8 Jest tests (DEFAULT_CHECKS structure, no-ThumbGate validation, collectHealthReport, reportToText)
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/jest.governance.config.js` — Governance-only Jest config with testEnvironment:node
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/package.json` — Added test:governance script
 
 ## Decisions Made
 
-1. **KNOWN_FIX_SCRIPTS as object array**: rlhf uses a plain string array (`['lint:fix', 'format']`), but Subway needs to map logical names (lint_fix, format_fix) to actual npm commands. Changed to `{name, command}` objects so `buildFixPlan` can look up by `command[2]` (the npm script name).
+1. **KNOWN_FIX_SCRIPTS as object array**: ThumbGate uses a plain string array (`['lint:fix', 'format']`), but Subway needs to map logical names (lint_fix, format_fix) to actual npm commands. Changed to `{name, command}` objects so `buildFixPlan` can look up by `command[2]` (the npm script name).
 
 2. **buildFixPlan lookup via command[2]**: The `_` to `:` transform approach failed for `format` (no colon). Using `entry.command[2]` — the actual npm script name in the command array — is more reliable and explicit.
 

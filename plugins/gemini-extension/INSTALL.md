@@ -15,14 +15,14 @@ cp adapters/gemini/function-declarations.json .gemini/thumbgate-tools.json
 const fs = require('fs');
 
 // Load ThumbGate tool declarations
-const rlhfTools = JSON.parse(
+const thumbgateTools = JSON.parse(
   fs.readFileSync('adapters/gemini/function-declarations.json', 'utf8')
 );
 
 // Pass to Gemini SDK
 const model = genAI.getGenerativeModel({
   model: 'gemini-pro',
-  tools: [{ functionDeclarations: rlhfTools.tools }],
+  tools: [{ functionDeclarations: thumbgateTools.tools }],
 });
 ```
 
@@ -43,7 +43,7 @@ Set the base URL in your Gemini function handler:
 const THUMBGATE_API_URL = process.env.THUMBGATE_API_URL || 'http://localhost:3000';
 const THUMBGATE_API_KEY = process.env.THUMBGATE_API_KEY;
 
-async function callRlhfTool(name, params) {
+async function callThumbGateTool(name, params) {
   const endpoints = {
     capture_memory_feedback:    { method: 'POST', path: '/v1/feedback/capture' },
     get_reliability_rules:      { method: 'POST', path: '/v1/feedback/rules' },

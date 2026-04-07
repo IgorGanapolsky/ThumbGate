@@ -20,7 +20,7 @@ must_haves:
     - "A second lookup with Jaccard-similar query (>=0.7 similarity) returns cache hit without re-computation"
     - "budget-guard.test.js runs via Jest (jest-expo) and all tests pass"
     - "contextfs.test.js runs via Jest (jest-expo) and all tests pass"
-    - "rlhf baseline test count of 60 node-runner tests is not regressed (Subway tests run in Subway only)"
+    - "ThumbGate baseline test count of 60 node-runner tests is not regressed (Subway tests run in Subway only)"
   artifacts:
     - path: "/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/budget-guard.js"
       provides: "Atomic file-lock ledger enforcing $10/month cap"
@@ -73,9 +73,9 @@ Output:
 @.planning/phases/03-governance-into-subway/3-RESEARCH.md
 
 Source files to read before porting:
-@/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/budget-guard.js
-@/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/contextfs.js
-@/Users/ganapolsky_i/workspace/git/igor/rlhf/tests/budget-guard.test.js
+@/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/budget-guard.js
+@/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/contextfs.js
+@/Users/ganapolsky_i/workspace/git/igor/ThumbGate/tests/budget-guard.test.js
 
 Subway test pattern reference (confirm Jest syntax in use):
 @/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/feedback-loop.test.js
@@ -89,9 +89,9 @@ Subway test pattern reference (confirm Jest syntax in use):
     /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/budget-guard.js
   </files>
   <action>
-    Read the full source of /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/budget-guard.js.
+    Read the full source of /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/budget-guard.js.
 
-    Create /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/budget-guard.js by applying these changes to the rlhf source:
+    Create /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/budget-guard.js by applying these changes to the ThumbGate source:
 
     1. PATH SURGERY (critical — do not skip):
        Change the PROJECT_ROOT line from:
@@ -99,7 +99,7 @@ Subway test pattern reference (confirm Jest syntax in use):
        To:
          const PROJECT_ROOT = path.join(__dirname, '..', '..', '..');
        Reason: scripts live at .claude/scripts/feedback/ which is 3 levels below Subway repo root,
-       not 1 level as in rlhf. Without this change, FEEDBACK_DIR will point to
+       not 1 level as in ThumbGate. Without this change, FEEDBACK_DIR will point to
        .claude/scripts/memory/feedback instead of .claude/memory/feedback.
 
     2. LOCK TIMEOUT ADJUSTMENT:
@@ -158,7 +158,7 @@ Subway test pattern reference (confirm Jest syntax in use):
   <action>
     PART A — Port contextfs.js:
 
-    Read the full source of /Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/contextfs.js.
+    Read the full source of /Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/contextfs.js.
 
     Create /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/contextfs.js by applying:
 
@@ -180,8 +180,8 @@ Subway test pattern reference (confirm Jest syntax in use):
 
     Create /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/budget-guard.test.js
 
-    Use Jest syntax (not node:test). Reference the rlhf source test at:
-    /Users/ganapolsky_i/workspace/git/igor/rlhf/tests/budget-guard.test.js for coverage ideas.
+    Use Jest syntax (not node:test). Reference the ThumbGate source test at:
+    /Users/ganapolsky_i/workspace/git/igor/ThumbGate/tests/budget-guard.test.js for coverage ideas.
 
     CRITICAL patterns (from research — must follow exactly):
     - Set env vars BEFORE jest.resetModules() and require()
@@ -212,7 +212,7 @@ Subway test pattern reference (confirm Jest syntax in use):
     });
     ```
 
-    Required test cases (minimum — match the rlhf test coverage):
+    Required test cases (minimum — match the ThumbGate test coverage):
     1. "adds spend and reports correct status" — addSpend({amountUsd:0.25, source:'test', note:'unit'}); expect getBudgetStatus().remainingUsd to be 0.75
     2. "blocks overspend" — addSpend($0.9), then addSpend($0.9) should throw /Budget exceeded/
     3. "initializes ledger on first call" — getBudgetStatus() without prior addSpend() should succeed and return remainingUsd=1
@@ -248,8 +248,8 @@ Subway test pattern reference (confirm Jest syntax in use):
     cd /Users/ganapolsky_i/workspace/git/Subway_RN_Demo && npx jest scripts/__tests__/budget-guard.test.js scripts/__tests__/contextfs.test.js --no-coverage 2>&1 | tail -20
     Expected: Tests: N passed, 0 failed (no failures)
 
-    # Confirm rlhf baseline not regressed (run from rlhf directory)
-    cd /Users/ganapolsky_i/workspace/git/igor/rlhf && npm test 2>&1 | tail -5
+    # Confirm ThumbGate baseline not regressed (run from ThumbGate directory)
+    cd /Users/ganapolsky_i/workspace/git/igor/ThumbGate && npm test 2>&1 | tail -5
     Expected: exits 0, 60 node-runner tests passing
   </verify>
   <done>
@@ -257,7 +257,7 @@ Subway test pattern reference (confirm Jest syntax in use):
     - budget-guard.test.js: minimum 4 Jest tests all passing (including concurrency stress)
     - contextfs.test.js: minimum 3 Jest tests all passing (store, Jaccard cache, TTL)
     - npx jest on both test files exits 0 with no failures
-    - rlhf npm test still exits 0 with 60 node-runner tests
+    - ThumbGate npm test still exits 0 with 60 node-runner tests
   </done>
 </task>
 
@@ -284,8 +284,8 @@ ContextFS smoke test:
   "
   Expected: "function"
 
-rlhf regression check:
-  cd /Users/ganapolsky_i/workspace/git/igor/rlhf && npm test 2>&1 | grep -E "pass|fail|tests"
+ThumbGate regression check:
+  cd /Users/ganapolsky_i/workspace/git/igor/ThumbGate && npm test 2>&1 | grep -E "pass|fail|tests"
   Expected: 60 passing, 0 failing
 </verification>
 
@@ -296,9 +296,9 @@ rlhf regression check:
 4. All Jest tests in contextfs.test.js pass (minimum 3 cases including Jaccard cache and TTL)
 5. PROJECT_ROOT in both scripts resolves path.join(__dirname, '..', '..', '..') — 3 levels
 6. Lock timeout in budget-guard.js is timeoutMs:30000, staleMs:60000
-7. rlhf npm test exits 0 with 60 node-runner tests (no regression)
+7. ThumbGate npm test exits 0 with 60 node-runner tests (no regression)
 </success_criteria>
 
 <output>
-After completion, create /Users/ganapolsky_i/workspace/git/igor/rlhf/.planning/phases/03-governance-into-subway/3-01-SUMMARY.md
+After completion, create /Users/ganapolsky_i/workspace/git/igor/ThumbGate/.planning/phases/03-governance-into-subway/3-01-SUMMARY.md
 </output>

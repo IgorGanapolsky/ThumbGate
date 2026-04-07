@@ -15,14 +15,14 @@ function createHarness() {
   const savedEnv = {
     HOME: process.env.HOME,
     USERPROFILE: process.env.USERPROFILE,
-    RLHF_FEEDBACK_DIR: process.env.RLHF_FEEDBACK_DIR,
-    RLHF_API_KEY: process.env.RLHF_API_KEY,
+    THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
+    THUMBGATE_API_KEY: process.env.THUMBGATE_API_KEY,
     THUMBGATE_PRO_KEY: process.env.THUMBGATE_PRO_KEY,
-    RLHF_FEEDBACK_LOG: process.env.RLHF_FEEDBACK_LOG,
-    RLHF_FEEDBACK_INBOX: process.env.RLHF_FEEDBACK_INBOX,
-    RLHF_PENDING_SYNC: process.env.RLHF_PENDING_SYNC,
-    RLHF_ATTRIBUTED_FEEDBACK: process.env.RLHF_ATTRIBUTED_FEEDBACK,
-    RLHF_GUARDS_PATH: process.env.RLHF_GUARDS_PATH,
+    THUMBGATE_FEEDBACK_LOG: process.env.THUMBGATE_FEEDBACK_LOG,
+    THUMBGATE_FEEDBACK_INBOX: process.env.THUMBGATE_FEEDBACK_INBOX,
+    THUMBGATE_PENDING_SYNC: process.env.THUMBGATE_PENDING_SYNC,
+    THUMBGATE_ATTRIBUTED_FEEDBACK: process.env.THUMBGATE_ATTRIBUTED_FEEDBACK,
+    THUMBGATE_GUARDS_PATH: process.env.THUMBGATE_GUARDS_PATH,
   };
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gates-home-'));
   const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gates-repo-'));
@@ -31,13 +31,13 @@ function createHarness() {
 
   process.env.HOME = homeDir;
   process.env.USERPROFILE = homeDir;
-  process.env.RLHF_FEEDBACK_DIR = path.join(homeDir, '.rlhf');
-  process.env.RLHF_FEEDBACK_LOG = path.join(homeDir, '.rlhf', 'feedback-log.jsonl');
-  process.env.RLHF_FEEDBACK_INBOX = path.join(homeDir, '.rlhf', 'inbox.jsonl');
-  process.env.RLHF_PENDING_SYNC = path.join(homeDir, '.rlhf', 'pending-sync.jsonl');
-  process.env.RLHF_ATTRIBUTED_FEEDBACK = path.join(homeDir, '.rlhf', 'attributed-feedback.jsonl');
-  process.env.RLHF_GUARDS_PATH = path.join(homeDir, '.rlhf', 'pretool-guards.json');
-  delete process.env.RLHF_API_KEY;
+  process.env.THUMBGATE_FEEDBACK_DIR = path.join(homeDir, '.thumbgate/runtime');
+  process.env.THUMBGATE_FEEDBACK_LOG = path.join(homeDir, '.thumbgate/runtime', 'feedback-log.jsonl');
+  process.env.THUMBGATE_FEEDBACK_INBOX = path.join(homeDir, '.thumbgate/runtime', 'inbox.jsonl');
+  process.env.THUMBGATE_PENDING_SYNC = path.join(homeDir, '.thumbgate/runtime', 'pending-sync.jsonl');
+  process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = path.join(homeDir, '.thumbgate/runtime', 'attributed-feedback.jsonl');
+  process.env.THUMBGATE_GUARDS_PATH = path.join(homeDir, '.thumbgate/runtime', 'pretool-guards.json');
+  delete process.env.THUMBGATE_API_KEY;
   delete process.env.THUMBGATE_PRO_KEY;
 
   for (const moduleId of moduleIds) {
@@ -66,22 +66,22 @@ function createHarness() {
       else delete process.env.HOME;
       if (savedEnv.USERPROFILE !== undefined) process.env.USERPROFILE = savedEnv.USERPROFILE;
       else delete process.env.USERPROFILE;
-      if (savedEnv.RLHF_FEEDBACK_DIR !== undefined) process.env.RLHF_FEEDBACK_DIR = savedEnv.RLHF_FEEDBACK_DIR;
-      else delete process.env.RLHF_FEEDBACK_DIR;
-      if (savedEnv.RLHF_API_KEY !== undefined) process.env.RLHF_API_KEY = savedEnv.RLHF_API_KEY;
-      else delete process.env.RLHF_API_KEY;
+      if (savedEnv.THUMBGATE_FEEDBACK_DIR !== undefined) process.env.THUMBGATE_FEEDBACK_DIR = savedEnv.THUMBGATE_FEEDBACK_DIR;
+      else delete process.env.THUMBGATE_FEEDBACK_DIR;
+      if (savedEnv.THUMBGATE_API_KEY !== undefined) process.env.THUMBGATE_API_KEY = savedEnv.THUMBGATE_API_KEY;
+      else delete process.env.THUMBGATE_API_KEY;
       if (savedEnv.THUMBGATE_PRO_KEY !== undefined) process.env.THUMBGATE_PRO_KEY = savedEnv.THUMBGATE_PRO_KEY;
       else delete process.env.THUMBGATE_PRO_KEY;
-      if (savedEnv.RLHF_FEEDBACK_LOG !== undefined) process.env.RLHF_FEEDBACK_LOG = savedEnv.RLHF_FEEDBACK_LOG;
-      else delete process.env.RLHF_FEEDBACK_LOG;
-      if (savedEnv.RLHF_FEEDBACK_INBOX !== undefined) process.env.RLHF_FEEDBACK_INBOX = savedEnv.RLHF_FEEDBACK_INBOX;
-      else delete process.env.RLHF_FEEDBACK_INBOX;
-      if (savedEnv.RLHF_PENDING_SYNC !== undefined) process.env.RLHF_PENDING_SYNC = savedEnv.RLHF_PENDING_SYNC;
-      else delete process.env.RLHF_PENDING_SYNC;
-      if (savedEnv.RLHF_ATTRIBUTED_FEEDBACK !== undefined) process.env.RLHF_ATTRIBUTED_FEEDBACK = savedEnv.RLHF_ATTRIBUTED_FEEDBACK;
-      else delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
-      if (savedEnv.RLHF_GUARDS_PATH !== undefined) process.env.RLHF_GUARDS_PATH = savedEnv.RLHF_GUARDS_PATH;
-      else delete process.env.RLHF_GUARDS_PATH;
+      if (savedEnv.THUMBGATE_FEEDBACK_LOG !== undefined) process.env.THUMBGATE_FEEDBACK_LOG = savedEnv.THUMBGATE_FEEDBACK_LOG;
+      else delete process.env.THUMBGATE_FEEDBACK_LOG;
+      if (savedEnv.THUMBGATE_FEEDBACK_INBOX !== undefined) process.env.THUMBGATE_FEEDBACK_INBOX = savedEnv.THUMBGATE_FEEDBACK_INBOX;
+      else delete process.env.THUMBGATE_FEEDBACK_INBOX;
+      if (savedEnv.THUMBGATE_PENDING_SYNC !== undefined) process.env.THUMBGATE_PENDING_SYNC = savedEnv.THUMBGATE_PENDING_SYNC;
+      else delete process.env.THUMBGATE_PENDING_SYNC;
+      if (savedEnv.THUMBGATE_ATTRIBUTED_FEEDBACK !== undefined) process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = savedEnv.THUMBGATE_ATTRIBUTED_FEEDBACK;
+      else delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+      if (savedEnv.THUMBGATE_GUARDS_PATH !== undefined) process.env.THUMBGATE_GUARDS_PATH = savedEnv.THUMBGATE_GUARDS_PATH;
+      else delete process.env.THUMBGATE_GUARDS_PATH;
       fs.rmSync(homeDir, { recursive: true, force: true });
       fs.rmSync(repoDir, { recursive: true, force: true });
     },

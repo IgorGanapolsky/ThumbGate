@@ -8,7 +8,6 @@ const path = require('node:path');
 
 const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-consolidator-'));
 const thumbgateDir = path.join(projectDir, '.thumbgate');
-const rlhfDir = path.join(projectDir, '.thumbgate');
 const legacyDir = path.join(projectDir, '.claude', 'memory', 'feedback');
 
 const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
@@ -21,7 +20,6 @@ const savedTestCheckoutPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
 
 test.before(() => {
   fs.mkdirSync(thumbgateDir, { recursive: true });
-  fs.mkdirSync(rlhfDir, { recursive: true });
   fs.mkdirSync(legacyDir, { recursive: true });
 
   fs.writeFileSync(path.join(legacyDir, 'api-keys.json'), `${JSON.stringify({
@@ -36,7 +34,7 @@ test.before(() => {
     },
   }, null, 2)}\n`);
 
-  fs.writeFileSync(path.join(rlhfDir, 'funnel-events.jsonl'), `${JSON.stringify({
+  fs.writeFileSync(path.join(thumbgateDir, 'funnel-events.jsonl'), `${JSON.stringify({
     timestamp: '2026-04-01T10:00:00.000Z',
     stage: 'acquisition',
     event: 'checkout_session_created',
@@ -49,7 +47,7 @@ test.before(() => {
     },
   })}\n`);
 
-  fs.writeFileSync(path.join(rlhfDir, 'telemetry-pings.jsonl'), `${JSON.stringify({
+  fs.writeFileSync(path.join(thumbgateDir, 'telemetry-pings.jsonl'), `${JSON.stringify({
     receivedAt: '2026-04-01T10:01:00.000Z',
     eventType: 'landing_page_view',
     clientType: 'web',
@@ -101,7 +99,7 @@ test('billing summary is clean after consolidation even when legacy roots still 
   consolidateFeedbackRoot({ cwd: projectDir, write: true });
 
   process.env.THUMBGATE_FEEDBACK_DIR = thumbgateDir;
-  process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR = rlhfDir;
+  process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR = thumbgateDir;
   process.env.THUMBGATE_LEGACY_FEEDBACK_DIR = legacyDir;
   delete process.env._TEST_API_KEYS_PATH;
   delete process.env._TEST_FUNNEL_LEDGER_PATH;

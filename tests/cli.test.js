@@ -1333,8 +1333,8 @@ describe('bin/cli.js', () => {
   test('init creates .thumbgate/ directory', () => {
     const result = runCliSync(['init'], { cwd: tmpDir });
     assert.strictEqual(result.status, 0, `init failed:\n${result.stderr}`);
-    const rlhfDir = path.join(tmpDir, '.thumbgate');
-    assert.ok(fs.existsSync(rlhfDir), '.thumbgate/ directory should be created');
+    const thumbgateDir = path.join(tmpDir, '.thumbgate');
+    assert.ok(fs.existsSync(thumbgateDir), '.thumbgate/ directory should be created');
   });
 
   test('init creates config.json with required fields', () => {

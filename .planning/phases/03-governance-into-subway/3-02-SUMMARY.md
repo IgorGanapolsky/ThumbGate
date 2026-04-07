@@ -20,7 +20,7 @@ affects: [3-03-PLAN, 3-04-PLAN, GOV-02, GOV-05]
 
 tech-stack:
   added: [jest.scripts.config.js (node testEnvironment for scripts)]
-  patterns: [PATH SURGERY pattern for porting rlhf scripts to Subway .claude/ subdirectory, policy-bundle-based intent risk stratification]
+  patterns: [PATH SURGERY pattern for porting ThumbGate scripts to Subway .claude/ subdirectory, policy-bundle-based intent risk stratification]
 
 key-files:
   created:
@@ -37,12 +37,12 @@ key-files:
 
 key-decisions:
   - "PATH SURGERY for Subway: PROJECT_ROOT = path.join(__dirname, '..', '..', '..') — 3 levels up from .claude/scripts/feedback/ reaches Subway_RN_Demo/"
-  - "DEFAULT_BUNDLE_DIR in intent-router.js uses path.join(PROJECT_ROOT, '.claude', 'config', 'policy-bundles') — unlike rlhf where config is at repo root, Subway keeps config under .claude/"
+  - "DEFAULT_BUNDLE_DIR in intent-router.js uses path.join(PROJECT_ROOT, '.claude', 'config', 'policy-bundles') — unlike ThumbGate where config is at repo root, Subway keeps config under .claude/"
   - "jest.scripts.config.js created as a Rule 3 (blocking) auto-fix — main jest.config.js excludes scripts/ dir via testPathIgnorePatterns, so governance tests need a separate config"
-  - "policy-bundles JSON files carry _comment key noting tool names are rlhf-origin pending Subway-specific cleanup in a future pass"
+  - "policy-bundles JSON files carry _comment key noting tool names are ThumbGate-origin pending Subway-specific cleanup in a future pass"
 
 patterns-established:
-  - "PATH SURGERY pattern: when porting rlhf scripts to Subway .claude/scripts/feedback/, always change PROJECT_ROOT to 3-level join; always adjust config subpaths from config/ to .claude/config/"
+  - "PATH SURGERY pattern: when porting ThumbGate scripts to Subway .claude/scripts/feedback/, always change PROJECT_ROOT to 3-level join; always adjust config subpaths from config/ to .claude/config/"
   - "jest.scripts.config.js pattern: infrastructure tests that belong in scripts/__tests__/ must use this config to bypass testPathIgnorePatterns"
 
 requirements-completed: [GOV-02, GOV-05]
@@ -65,11 +65,11 @@ completed: 2026-03-04
 
 ## Accomplishments
 
-- Ported mcp-policy.js and intent-router.js from rlhf/scripts/ to Subway .claude/scripts/feedback/ with correct 3-level PROJECT_ROOT path surgery
+- Ported mcp-policy.js and intent-router.js from ThumbGate/scripts/ to Subway .claude/scripts/feedback/ with correct 3-level PROJECT_ROOT path surgery
 - Deployed 4 config files (mcp-allowlists.json, subagent-profiles.json, default-v1.json, constrained-v1.json) to Subway .claude/config/
 - Wrote 10-test Jest suite for GOV-05: planIntent checkpoint_required, planIntent ready, error cases, getMcpAllowlist, listIntents — all pass 0 failures
 - Auto-fixed blocking jest.config.js testPathIgnorePatterns issue by creating jest.scripts.config.js
-- rlhf regression check: 60 node-runner tests (58 test:api + 2 test:proof), 0 failures — baseline preserved
+- ThumbGate regression check: 60 node-runner tests (58 test:api + 2 test:proof), 0 failures — baseline preserved
 
 ## Task Commits
 
@@ -85,13 +85,13 @@ completed: 2026-03-04
 - `.claude/config/policy-bundles/constrained-v1.json` — conservative bundle (3 intents); _comment key added
 - `scripts/__tests__/intent-router.test.js` — 10 Jest test cases (GOV-05)
 - `jest.scripts.config.js` — node testEnvironment config for scripts/__tests__/ (auto-fix deviation)
-- `proof/governance/3-02-intent-router-subway.md` — rlhf-repo proof artifact
+- `proof/governance/3-02-intent-router-subway.md` — ThumbGate-repo proof artifact
 
 ## Decisions Made
 
 - PROJECT_ROOT uses `path.join(__dirname, '..', '..', '...')` in both scripts — 3 levels up from `.claude/scripts/feedback/` to Subway_RN_Demo/
-- DEFAULT_BUNDLE_DIR in intent-router.js changed from `config/policy-bundles` (rlhf pattern) to `.claude/config/policy-bundles` (Subway pattern)
-- Policy bundle JSON files have `_comment` top-level key noting rlhf-origin tool names for future cleanup
+- DEFAULT_BUNDLE_DIR in intent-router.js changed from `config/policy-bundles` (ThumbGate pattern) to `.claude/config/policy-bundles` (Subway pattern)
+- Policy bundle JSON files have `_comment` top-level key noting ThumbGate-origin tool names for future cleanup
 
 ## Deviations from Plan
 

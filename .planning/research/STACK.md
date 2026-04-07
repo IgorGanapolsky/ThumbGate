@@ -1,6 +1,6 @@
 # Stack Research
 
-**Domain:** RLHF Bidirectional Feature Sync — Node.js ML features + React Native governance features
+**Domain:** ThumbGate Bidirectional Feature Sync — Node.js ML features + React Native governance features
 **Researched:** 2026-03-04
 **Confidence:** HIGH (verified from live repos, npm registry, and installed packages)
 
@@ -174,11 +174,11 @@ The governance scripts (budget-guard, intent-router, contextfs, self-healing, mc
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/memory/feedback/lance-index-state.json` — confirms LanceDB is active, using all-MiniLM-L6-v2 — HIGH confidence
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/train_from_feedback.py` — confirms Thompson Sampling uses pure stdlib `random.betavariate`, no external library — HIGH confidence
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/capture-feedback.js` — confirms LSTM sequence features are pure JS data structures — HIGH confidence
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/package.json` + `package-lock.json` — confirms zero npm dependencies, CommonJS module type — HIGH confidence
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/package.json` + `package-lock.json` — confirms zero npm dependencies, CommonJS module type — HIGH confidence
 - GitHub releases: https://github.com/lancedb/lancedb/releases — 0.27.0-beta.3 latest beta, 0.26.2 latest stable — MEDIUM confidence
 - HuggingFace blog: https://huggingface.co/blog/transformersjs-v4 — v4 is preview only — MEDIUM confidence
 
 ---
 
-*Stack research for: RLHF Bidirectional Feature Sync*
+*Stack research for: ThumbGate Bidirectional Feature Sync*
 *Researched: 2026-03-04*

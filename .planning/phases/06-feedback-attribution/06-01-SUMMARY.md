@@ -36,7 +36,7 @@ Port `feedback-attribution.js` from Subway and wire `recordAction`/`attributeFee
 
 | Task | Name | Commit | Files |
 |------|------|--------|-------|
-| 1 | Port feedback-attribution.js to scripts/ with rlhf path corrections | c38b463 | scripts/feedback-attribution.js (313 lines, new) |
+| 1 | Port feedback-attribution.js to scripts/ with ThumbGate path corrections | c38b463 | scripts/feedback-attribution.js (313 lines, new) |
 | 2 | Wire recordAction + attributeFeedback into captureFeedback() | 30c7482 | scripts/feedback-loop.js (+15 lines) |
 
 ## What Was Built
@@ -47,7 +47,7 @@ Complete causal attribution engine ported from Subway with one critical path cor
 
 ```javascript
 // Subway: ROOT = path.join(__dirname, '..', '..') — from .claude/scripts/feedback/ 2 levels up
-// rlhf:   ROOT = path.join(__dirname, '..')       — from scripts/ 1 level up to repo root
+// ThumbGate:   ROOT = path.join(__dirname, '..')       — from scripts/ 1 level up to repo root
 const ROOT = path.join(__dirname, '..');
 const PATHS = {
   actionLog:        path.join(ROOT, '.claude', 'memory', 'feedback', 'action-log.jsonl'),

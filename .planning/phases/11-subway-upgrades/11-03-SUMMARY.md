@@ -2,9 +2,9 @@
 phase: 11-subway-upgrades
 plan: "03"
 subsystem: subway-upgrades
-tags: [thompson-sampling, beta-bernoulli, subway, rlhf]
+tags: [thompson-sampling, beta-bernoulli, subway, ThumbGate]
 dependency_graph:
-  requires: [rlhf/scripts/thompson-sampling.js]
+  requires: [ThumbGate/scripts/thompson-sampling.js]
   provides: [Subway/.claude/scripts/feedback/thompson-sampling.js]
   affects: [Subway DPO optimizer, Subway ML pipeline]
 tech_stack:
@@ -15,8 +15,8 @@ key_files:
   modified: []
 decisions:
   - "parseTimestamp inlined in Subway thompson-sampling.js — Subway has no shared feedback-schema.js"
-  - "All other logic identical to rlhf: Marsaglia-Tsang gamma, Box-Muller Gaussian, HALF_LIFE_DAYS=7"
-  - "DEFAULT_CATEGORIES unchanged — same 9-category taxonomy as rlhf"
+  - "All other logic identical to ThumbGate: Marsaglia-Tsang gamma, Box-Muller Gaussian, HALF_LIFE_DAYS=7"
+  - "DEFAULT_CATEGORIES unchanged — same 9-category taxonomy as ThumbGate"
 metrics:
   duration: 3min
   completed: 2026-03-04
@@ -26,12 +26,12 @@ metrics:
 
 # Phase 11 Plan 03: Thompson Sampling Port to Subway Summary
 
-Ported rlhf's thompson-sampling.js to Subway with inline parseTimestamp (Subway has no shared feedback-schema.js).
+Ported ThumbGate's thompson-sampling.js to Subway with inline parseTimestamp (Subway has no shared feedback-schema.js).
 
 ## What Was Built
 
 `Subway/.claude/scripts/feedback/thompson-sampling.js` — Thompson Sampling port:
-- Identical API to rlhf: `timeDecayWeight()`, `loadModel()`, `saveModel()`, `createInitialModel()`, `updateModel()`, `getReliability()`, `samplePosteriors()`
+- Identical API to ThumbGate: `timeDecayWeight()`, `loadModel()`, `saveModel()`, `createInitialModel()`, `updateModel()`, `getReliability()`, `samplePosteriors()`
 - Inline parseTimestamp: Subway has no shared feedback-schema.js dependency
 - Same Marsaglia-Tsang gamma sampling algorithm (zero external deps)
 

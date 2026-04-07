@@ -22,7 +22,7 @@
 
 Phase 4 adds LanceDB embedded vector storage to `thumbgate`, enabling semantic similarity search over historical feedback. The project is CommonJS (`"type": "commonjs"`) but `@lancedb/lancedb@0.26.2` is ESM-only — every call site must use `await import('@lancedb/lancedb')` dynamic import. This is the single most critical integration constraint: failing to use dynamic import will produce `require() of ES Module` errors at runtime.
 
-The cross-language compatibility concern (Python writes Lance files, Node.js reads them) is now **confirmed safe for this project**. The Subway venv uses Python lancedb **0.26.1** (not 0.27.1 as the system pip shows — the system pip is a different install). The Node.js SDK is `@lancedb/lancedb@0.26.2`. Both 0.26.x versions share the same Lance file format version (the manifest binary confirms format version compatible with both). The `rlhf_feedback.lance` table in Subway was written by Python 0.26.1 and has one manifest version — the format is stable within the 0.26.x line.
+The cross-language compatibility concern (Python writes Lance files, Node.js reads them) is now **confirmed safe for this project**. The Subway venv uses Python lancedb **0.26.1** (not 0.27.1 as the system pip shows — the system pip is a different install). The Node.js SDK is `@lancedb/lancedb@0.26.2`. Both 0.26.x versions share the same Lance file format version (the manifest binary confirms format version compatible with both). The `thumbgate_feedback.lance` table in Subway was written by Python 0.26.1 and has one manifest version — the format is stable within the 0.26.x line.
 
 The embedding stack is `@huggingface/transformers@3.8.1` with `onnxruntime-node` for local ONNX inference of `all-MiniLM-L6-v2` (384 dimensions, ~50ms per inference, no API calls). This exactly mirrors the Python `sentence-transformers` model used in Subway. The first `pipeline()` call downloads the model (~22MB) to the HuggingFace cache; subsequent calls load from cache. `apache-arrow@18.1.0` is a required peer dep — the current latest arrow (21.x) is out of range per LanceDB's peer dep constraint.
 
@@ -55,7 +55,7 @@ The embedding stack is `@huggingface/transformers@3.8.1` with `onnxruntime-node`
 
 **Installation:**
 ```bash
-cd /Users/ganapolsky_i/workspace/git/igor/rlhf
+cd /Users/ganapolsky_i/workspace/git/igor/ThumbGate
 npm install @lancedb/lancedb@0.26.2
 npm install apache-arrow@18.1.0
 npm install @huggingface/transformers@3.8.1
@@ -218,7 +218,7 @@ function getVectorStoreModule() {
 ### Anti-Patterns to Avoid
 
 - **`require('@lancedb/lancedb')`:** Throws `ERR_REQUIRE_ESM` at runtime. LanceDB's package.json has `"type": "module"`. There is no CJS shim.
-- **Shared LanceDB directory between repos:** rlhf and Subway must use separate `lancedb/` paths. Never point both at the same directory.
+- **Shared LanceDB directory between repos:** ThumbGate and Subway must use separate `lancedb/` paths. Never point both at the same directory.
 - **Blocking synchronous wrapper around async LanceDB:** Do not use `deasync` or `child_process.spawnSync` to make LanceDB synchronous. Use the non-blocking async side-effect pattern.
 - **Calling `pipeline()` on every upsert:** The ONNX model takes ~200-400ms to load. Cache the pipeline at module level.
 - **Using `@lancedb/lancedb@0.27.0-beta.*`:** napi-rs v3 upgrade; native binary loading changes; API instability. Use 0.26.2.
@@ -236,7 +236,7 @@ function getVectorStoreModule() {
 | Cross-process embedding cache | Redis / file-based cache | In-process module-level variable | Single Node.js process; module cache is sufficient and free |
 | Schema migration between Python/Node writes | Custom migration script | Write JS tables independently; don't share tables with Python | Python uses `db.create_table(name, data_list)` with pandas; JS uses typed records — schemas may diverge; keep thumbgate_memories as JS-only |
 
-**Key insight:** The existing Subway Python tables (`rlhf_feedback.lance`, `lessons_learned.lance`) are Python-managed. Do not read or write them from Node.js. Create a new `thumbgate_memories.lance` table that is JS-only. The cross-language concern is eliminated by not sharing tables.
+**Key insight:** The existing Subway Python tables (`thumbgate_feedback.lance`, `lessons_learned.lance`) are Python-managed. Do not read or write them from Node.js. Create a new `thumbgate_memories.lance` table that is JS-only. The cross-language concern is eliminated by not sharing tables.
 
 ---
 
@@ -280,11 +280,11 @@ function getVectorStoreModule() {
 
 ### Pitfall 4: Cross-language schema mismatch (Python wrote table, Node reads it)
 
-**What goes wrong:** Python `db.create_table('rlhf_feedback', list_of_dicts)` creates a table with pandas-inferred schema. JS `db.openTable('rlhf_feedback').search(vector)` may fail with `FixedSizeList` or field type errors.
+**What goes wrong:** Python `db.create_table('thumbgate_feedback', list_of_dicts)` creates a table with pandas-inferred schema. JS `db.openTable('thumbgate_feedback').search(vector)` may fail with `FixedSizeList` or field type errors.
 
 **Why it happens:** Python lancedb infers schema from pandas DataFrame; JS lancedb expects typed Arrow schema. The `vector` field type (FixedSizeList vs List) diverges. This is LanceDB GitHub issue #669 and #2134.
 
-**How to avoid:** Create a JS-only table `thumbgate_memories` — do not attempt to read/write the Python-managed `rlhf_feedback.lance` from Node.js. The cross-language concern is eliminated by table isolation.
+**How to avoid:** Create a JS-only table `thumbgate_memories` — do not attempt to read/write the Python-managed `thumbgate_feedback.lance` from Node.js. The cross-language concern is eliminated by table isolation.
 
 **Warning signs:** `Error: Schema mismatch on field 'vector'`; `FixedSizeList` type error when calling `table.search()`.
 
@@ -296,7 +296,7 @@ function getVectorStoreModule() {
 
 **Why it happens:** Two separate lancedb installs: system Python (0.27.1 at `/opt/homebrew/lib/python3.14/`) and Subway venv (0.26.1 at `.../venv/lib/python3.12/`). The venv Python runs the scripts (confirmed via `health-check.py` shebang: `self.venv_python`).
 
-**How to avoid:** The existing `rlhf_feedback.lance` tables were written by venv 0.26.1. Node.js SDK 0.26.2 is in the same 0.26.x format family. This is confirmed safe. Do not upgrade the venv Python lancedb to 0.27.x without verifying format compatibility.
+**How to avoid:** The existing `thumbgate_feedback.lance` tables were written by venv 0.26.1. Node.js SDK 0.26.2 is in the same 0.26.x format family. This is confirmed safe. Do not upgrade the venv Python lancedb to 0.27.x without verifying format compatibility.
 
 **Warning signs:** Reading Subway lance files from Node.js — manifest byte `$\x02\x00\x00` indicates format version 2 (lance format), compatible with 0.26.x JS SDK.
 
@@ -366,7 +366,7 @@ const fs = require('fs');
 const path = require('path');
 
 test('vector store upserts and retrieves feedback', async (t) => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-vec-test-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ThumbGate-vec-test-'));
   const origDir = process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
@@ -447,10 +447,10 @@ const report = {
 ## Sources
 
 ### Primary (HIGH confidence)
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/feedback-loop.js` — ML side-effect pattern confirmed at lines 360-371; non-blocking try/catch pattern verified
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/package.json` — `"type": "commonjs"` confirmed; zero npm deps confirmed; test runner is `node --test`
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/feedback-loop.js` — ML side-effect pattern confirmed at lines 360-371; non-blocking try/catch pattern verified
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/package.json` — `"type": "commonjs"` confirmed; zero npm deps confirmed; test runner is `node --test`
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/semantic-memory-v2.py` — Python LanceDB reference: `connect()`, `create_table()`, `search()`, BM25 hybrid, FTS index pattern verified
-- `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/memory/feedback/lancedb/` — Live Lance tables confirmed (`rlhf_feedback.lance`, `lessons_learned.lance`); manifest format version 2 (`$\x02\x00\x00`)
+- `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/memory/feedback/lancedb/` — Live Lance tables confirmed (`thumbgate_feedback.lance`, `lessons_learned.lance`); manifest format version 2 (`$\x02\x00\x00`)
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/memory/feedback/lance-index-state.json` — model confirmed `all-MiniLM-L6-v2`, `lru_cache`, `bm25_hybrid`, `native_fts` features
 - `npm info @lancedb/lancedb@0.26.2` (live registry query) — `peerDeps: {"apache-arrow":">=15.0.0 <=18.1.0"}`, `engines: {"node":">= 18"}` — HIGH confidence
 - `npm info @huggingface/transformers@3.8.1` (live registry query) — `deps: onnxruntime-node, onnxruntime-web, @huggingface/jinja, sharp` — HIGH confidence
