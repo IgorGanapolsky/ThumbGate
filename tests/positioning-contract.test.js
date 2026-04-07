@@ -13,20 +13,20 @@ function readJson(relativePath) {
   return JSON.parse(readText(relativePath));
 }
 
-test('package metadata leads with Pre-Action Gates instead of generic memory-layer phrasing', () => {
+test('package metadata leads with self-improving framing instead of generic memory-layer phrasing', () => {
   const packageJson = readJson('package.json');
 
-  assert.match(packageJson.description, /Pre-action gates/i);
-  assert.match(packageJson.description, /prevention rules/i);
+  assert.match(packageJson.description, /self-improving/i);
+  assert.match(packageJson.description, /prevention rule/i);
   assert.doesNotMatch(packageJson.description, /Universal Context & Memory Layer/i);
 });
 
-test('README explains the product as one-agent reliability instead of more orchestration', () => {
+test('README explains the product as self-improving agent enforcement', () => {
   const readme = readText('README.md');
 
-  assert.match(readme, /pre-action gates/i);
-  assert.match(readme, /without another planner or swarm/i);
-  assert.match(readme, /reliability/i);
+  assert.match(readme, /self-improv/i);
+  assert.match(readme, /enforcement/i);
+  assert.match(readme, /permanently/i);
 });
 
 test('README exposes the actual shipped tech stack', () => {
