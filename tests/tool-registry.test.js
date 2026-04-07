@@ -76,6 +76,22 @@ test('settings_status tool exists as a read-only visibility surface', () => {
   assert.match(settingsTool.description, /per-field origin metadata/i);
 });
 
+test('scope control tools expose the task-scope and protected-approval workflow', () => {
+  const setScopeTool = TOOLS.find((tool) => tool.name === 'set_task_scope');
+  const getScopeTool = TOOLS.find((tool) => tool.name === 'get_scope_state');
+  const approveTool = TOOLS.find((tool) => tool.name === 'approve_protected_action');
+
+  assert.ok(setScopeTool, 'set_task_scope tool must exist');
+  assert.ok(getScopeTool, 'get_scope_state tool must exist');
+  assert.ok(approveTool, 'approve_protected_action tool must exist');
+
+  assert.equal(setScopeTool.annotations.destructiveHint, true);
+  assert.equal(getScopeTool.annotations.readOnlyHint, true);
+  assert.equal(approveTool.annotations.destructiveHint, true);
+  assert.ok(setScopeTool.inputSchema.properties.allowedPaths, 'set_task_scope should expose allowedPaths');
+  assert.ok(approveTool.inputSchema.required.includes('pathGlobs'), 'approve_protected_action should require pathGlobs');
+});
+
 test('tool names are unique', () => {
   const names = TOOLS.map(t => t.name);
   const unique = new Set(names);

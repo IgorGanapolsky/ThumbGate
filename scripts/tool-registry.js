@@ -513,6 +513,57 @@ const TOOLS = [
     },
   }),
   destructiveTool({
+    name: 'set_task_scope',
+    description: 'Declare or clear the current task scope so ThumbGate can compare affected files and diffs against the approved path set.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string', description: 'Optional stable task identifier (ticket, issue, or work item id)' },
+        summary: { type: 'string', description: 'Short summary of the task being worked' },
+        allowedPaths: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Glob patterns that define the allowed file scope for this task',
+        },
+        protectedPaths: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional protected-file globs that require explicit approval before editing or publishing',
+        },
+        repoPath: { type: 'string', description: 'Optional repo root used when evaluating git diff scope' },
+        localOnly: { type: 'boolean', description: 'When true, also marks the task as local-only' },
+        clear: { type: 'boolean', description: 'Clear the current task scope instead of setting one' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'get_scope_state',
+    description: 'Return the active task scope and any unexpired protected-file approvals.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  }),
+  destructiveTool({
+    name: 'approve_protected_action',
+    description: 'Grant a time-limited approval for edits or publish actions that touch protected files.',
+    inputSchema: {
+      type: 'object',
+      required: ['pathGlobs', 'reason'],
+      properties: {
+        pathGlobs: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Protected-file globs covered by this approval',
+        },
+        reason: { type: 'string', description: 'Why this protected-file action is approved' },
+        evidence: { type: 'string', description: 'Optional supporting evidence or approval note' },
+        taskId: { type: 'string', description: 'Optional task id this approval is tied to' },
+        ttlMs: { type: 'number', description: 'Optional approval lifetime in milliseconds (defaults to 1 hour, max 24 hours)' },
+      },
+    },
+  }),
+  destructiveTool({
     name: 'track_action',
     description: 'Record a verification action in the current session (for example figma_verified or tests_passed). Session actions expire after one hour.',
     inputSchema: {

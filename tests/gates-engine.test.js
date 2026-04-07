@@ -31,6 +31,11 @@ const {
   setConstraint,
   loadConstraints,
   saveConstraints,
+  loadGovernanceState,
+  saveGovernanceState,
+  setTaskScope,
+  approveProtectedAction,
+  getScopeState,
   trackAction,
   hasAction,
   listSessionActions,
@@ -40,6 +45,7 @@ const {
   verifyClaimEvidence,
   TTL_MS,
   SESSION_ACTION_TTL_MS,
+  PROTECTED_APPROVAL_TTL_MS,
 } = gatesEngine;
 const { getAutoGatesPath } = require('../scripts/auto-promote-gates');
 
@@ -53,7 +59,13 @@ const ORIGINAL_PATHS = {
   CONSTRAINTS_PATH: gatesEngine.CONSTRAINTS_PATH,
   SESSION_ACTIONS_PATH: gatesEngine.SESSION_ACTIONS_PATH,
   CUSTOM_CLAIM_GATES_PATH: gatesEngine.CUSTOM_CLAIM_GATES_PATH,
+  GOVERNANCE_STATE_PATH: gatesEngine.GOVERNANCE_STATE_PATH,
   DEFAULT_CLAIM_GATES_PATH: gatesEngine.DEFAULT_CLAIM_GATES_PATH,
+};
+const ORIGINAL_ENV = {
+  RLHF_FEEDBACK_LOG: process.env.RLHF_FEEDBACK_LOG,
+  RLHF_ATTRIBUTED_FEEDBACK: process.env.RLHF_ATTRIBUTED_FEEDBACK,
+  RLHF_GUARDS_PATH: process.env.RLHF_GUARDS_PATH,
 };
 
 let sandboxDir = null;
@@ -68,6 +80,7 @@ function cleanupStateFiles() {
   fs.rmSync(gatesEngine.CONSTRAINTS_PATH, { force: true });
   fs.rmSync(gatesEngine.SESSION_ACTIONS_PATH, { force: true });
   fs.rmSync(gatesEngine.CUSTOM_CLAIM_GATES_PATH, { force: true });
+  fs.rmSync(gatesEngine.GOVERNANCE_STATE_PATH, { force: true });
 }
 
 function makeTempPath(name) {
@@ -112,7 +125,13 @@ beforeEach(() => {
   gatesEngine.CONSTRAINTS_PATH = sandboxPath('session-constraints.json');
   gatesEngine.SESSION_ACTIONS_PATH = sandboxPath('session-actions.json');
   gatesEngine.CUSTOM_CLAIM_GATES_PATH = sandboxPath('claim-verification.json');
+  gatesEngine.GOVERNANCE_STATE_PATH = sandboxPath('governance-state.json');
   gatesEngine.DEFAULT_CLAIM_GATES_PATH = ORIGINAL_PATHS.DEFAULT_CLAIM_GATES_PATH;
+  process.env.RLHF_FEEDBACK_LOG = sandboxPath('feedback-log.jsonl');
+  process.env.RLHF_ATTRIBUTED_FEEDBACK = sandboxPath('attributed-feedback.jsonl');
+  process.env.RLHF_GUARDS_PATH = sandboxPath('pretool-guards.json');
+  fs.writeFileSync(process.env.RLHF_FEEDBACK_LOG, '');
+  fs.writeFileSync(process.env.RLHF_ATTRIBUTED_FEEDBACK, '');
   cleanupStateFiles();
 });
 
@@ -123,7 +142,14 @@ afterEach(() => {
   gatesEngine.CONSTRAINTS_PATH = ORIGINAL_PATHS.CONSTRAINTS_PATH;
   gatesEngine.SESSION_ACTIONS_PATH = ORIGINAL_PATHS.SESSION_ACTIONS_PATH;
   gatesEngine.CUSTOM_CLAIM_GATES_PATH = ORIGINAL_PATHS.CUSTOM_CLAIM_GATES_PATH;
+  gatesEngine.GOVERNANCE_STATE_PATH = ORIGINAL_PATHS.GOVERNANCE_STATE_PATH;
   gatesEngine.DEFAULT_CLAIM_GATES_PATH = ORIGINAL_PATHS.DEFAULT_CLAIM_GATES_PATH;
+  if (ORIGINAL_ENV.RLHF_FEEDBACK_LOG === undefined) delete process.env.RLHF_FEEDBACK_LOG;
+  else process.env.RLHF_FEEDBACK_LOG = ORIGINAL_ENV.RLHF_FEEDBACK_LOG;
+  if (ORIGINAL_ENV.RLHF_ATTRIBUTED_FEEDBACK === undefined) delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
+  else process.env.RLHF_ATTRIBUTED_FEEDBACK = ORIGINAL_ENV.RLHF_ATTRIBUTED_FEEDBACK;
+  if (ORIGINAL_ENV.RLHF_GUARDS_PATH === undefined) delete process.env.RLHF_GUARDS_PATH;
+  else process.env.RLHF_GUARDS_PATH = ORIGINAL_ENV.RLHF_GUARDS_PATH;
   if (sandboxDir) {
     fs.rmSync(sandboxDir, { recursive: true, force: true });
     sandboxDir = null;
@@ -288,6 +314,7 @@ test('evaluateGates returns deny for protected branch push', () => {
 
 test('evaluateGates returns warn for .env edit', () => {
   cleanupStateFiles();
+  setTaskScope({ summary: 'env tweak', allowedPaths: ['project/**', '**/.env', '**/.env.local'] });
   const result = evaluateGates('Edit', { file_path: '/project/.env' });
   assert.ok(result);
   assert.equal(result.decision, 'warn');
@@ -306,6 +333,43 @@ test('evaluateGates returns null when no gate matches', () => {
 
 test('evaluateGates returns null for Read tool', () => {
   const result = evaluateGates('Read', { file_path: '/project/src/app.js' });
+  assert.equal(result, null);
+});
+
+test('evaluateGates blocks out-of-scope edit when no task scope is declared', () => {
+  cleanupStateFiles();
+  const result = evaluateGates('Edit', { file_path: '/project/src/app.js' });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'task-scope-required');
+  assert.match(result.message, /No task scope is declared/i);
+});
+
+test('evaluateGates blocks out-of-scope edit when file is outside declared scope', () => {
+  cleanupStateFiles();
+  setTaskScope({ summary: 'touch tests only', allowedPaths: ['project/tests/**'] });
+  const result = evaluateGates('Edit', { file_path: '/project/src/app.js' });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'task-scope-required');
+  assert.match(result.message, /outside the declared task scope/i);
+});
+
+test('evaluateGates blocks protected file edits until approval exists', () => {
+  cleanupStateFiles();
+  setTaskScope({ summary: 'policy update', allowedPaths: ['AGENTS.md'] });
+  const result = evaluateGates('Edit', { file_path: '/AGENTS.md' });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'protected-file-approval-required');
+  assert.match(result.message, /Protected files require explicit approval/i);
+});
+
+test('approveProtectedAction unlocks approved protected files', () => {
+  cleanupStateFiles();
+  setTaskScope({ summary: 'policy update', allowedPaths: ['AGENTS.md'] });
+  approveProtectedAction({ pathGlobs: ['AGENTS.md'], reason: 'user approved policy update' });
+  const result = evaluateGates('Edit', { file_path: '/AGENTS.md' });
   assert.equal(result, null);
 });
 
@@ -344,6 +408,38 @@ test('isConditionSatisfied returns true within TTL', () => {
   satisfyCondition('test_condition', 'evidence');
   assert.ok(isConditionSatisfied('test_condition'));
   cleanupStateFiles();
+});
+
+test('setTaskScope persists scope state', () => {
+  cleanupStateFiles();
+  const scope = setTaskScope({
+    taskId: '1733520',
+    summary: 'harden gates',
+    allowedPaths: ['scripts/**', 'tests/**'],
+    protectedPaths: ['AGENTS.md'],
+    localOnly: true,
+  });
+  const state = getScopeState();
+  assert.equal(scope.taskId, '1733520');
+  assert.deepEqual(state.taskScope.allowedPaths, ['scripts/**', 'tests/**']);
+  assert.equal(loadConstraints().local_only.value, true);
+});
+
+test('approveProtectedAction expires approvals after ttl', () => {
+  cleanupStateFiles();
+  approveProtectedAction({ pathGlobs: ['AGENTS.md'], reason: 'temporary approval', ttlMs: 60 * 1000 });
+  const state = loadGovernanceState();
+  assert.equal(state.protectedApprovals.length, 1);
+  const expired = {
+    taskScope: null,
+    protectedApprovals: [{
+      ...state.protectedApprovals[0],
+      timestamp: Date.now() - PROTECTED_APPROVAL_TTL_MS - 1000,
+      expiresAt: Date.now() - 1000,
+    }],
+  };
+  saveGovernanceState(expired);
+  assert.equal(loadGovernanceState().protectedApprovals.length, 0);
 });
 
 // ---------------------------------------------------------------------------
@@ -427,6 +523,7 @@ test('run passes through non-matching commands', () => {
 
 test('run warns on .env edit', () => {
   cleanupStateFiles();
+  setTaskScope({ summary: 'env tweak', allowedPaths: ['project/**', '**/.env', '**/.env.local'] });
   const output = JSON.parse(run({
     tool_name: 'Edit',
     tool_input: { file_path: '/project/.env.local' },
@@ -568,6 +665,7 @@ test('evaluateGates includes reasoning array in deny result', () => {
 
 test('evaluateGates includes reasoning array in warn result', () => {
   cleanupStateFiles();
+  setTaskScope({ summary: 'env tweak', allowedPaths: ['project/**', '**/.env'] });
   const result = evaluateGates('Edit', { file_path: '/project/.env' });
   assert.ok(result);
   assert.equal(result.decision, 'warn');
@@ -943,6 +1041,44 @@ test('evaluateGatesAsync returns null when config fails to load', async () => {
 test('evaluateGatesAsync returns null when no gate matches', async () => {
   const result = await evaluateGatesAsync('Bash', { command: 'ls -la' });
   assert.equal(result, null);
+});
+
+test('evaluateGatesAsync denies high-risk actions when recurring negative memory matches', async () => {
+  const tmpConfig = makeTempPath('memory-only-gates.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+
+  const feedbackLog = makeTempPath('memory-feedback.jsonl');
+  const attributedFeedback = makeTempPath('memory-attributed.jsonl');
+  const entries = [
+    { id: 'mem-1', signal: 'negative', context: 'git push AGENTS.md protected file regression', timestamp: new Date().toISOString() },
+    { id: 'mem-2', signal: 'negative', context: 'git push AGENTS.md protected file regression', timestamp: new Date().toISOString() },
+  ];
+  fs.writeFileSync(feedbackLog, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
+  fs.writeFileSync(attributedFeedback, '');
+
+  const originalFeedbackLog = process.env.RLHF_FEEDBACK_LOG;
+  const originalAttributedFeedback = process.env.RLHF_ATTRIBUTED_FEEDBACK;
+  process.env.RLHF_FEEDBACK_LOG = feedbackLog;
+  process.env.RLHF_ATTRIBUTED_FEEDBACK = attributedFeedback;
+
+  try {
+    const result = await evaluateGatesAsync('Bash', {
+      command: 'git push origin feature/x',
+      changed_files: ['AGENTS.md'],
+    }, tmpConfig);
+    assert.ok(result);
+    assert.equal(result.decision, 'deny');
+    assert.equal(result.gate, 'memory-high-risk-default-deny');
+    assert.match(result.message, /Recurring negative memory matched/i);
+  } finally {
+    if (originalFeedbackLog === undefined) delete process.env.RLHF_FEEDBACK_LOG;
+    else process.env.RLHF_FEEDBACK_LOG = originalFeedbackLog;
+    if (originalAttributedFeedback === undefined) delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
+    else process.env.RLHF_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
+    fs.rmSync(tmpConfig, { force: true });
+    fs.rmSync(feedbackLog, { force: true });
+    fs.rmSync(attributedFeedback, { force: true });
+  }
 });
 
 // ---------------------------------------------------------------------------

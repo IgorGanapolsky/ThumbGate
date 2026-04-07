@@ -90,6 +90,9 @@ const {
   loadStats: loadGateStats,
   setConstraint,
   loadConstraints,
+  setTaskScope,
+  getScopeState,
+  approveProtectedAction,
 } = require('../../scripts/gates-engine');
 const {
   generateDashboard,
@@ -3487,6 +3490,39 @@ async function addContext(){
 
       if (req.method === 'GET' && pathname === '/v1/gates/constraints') {
         sendJson(res, 200, loadConstraints());
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/gates/task-scope') {
+        const body = await parseJsonBody(req);
+        const scope = setTaskScope({
+          taskId: body.taskId,
+          summary: body.summary,
+          allowedPaths: body.allowedPaths,
+          protectedPaths: body.protectedPaths,
+          repoPath: body.repoPath,
+          localOnly: body.localOnly === true,
+          clear: body.clear === true,
+        });
+        sendJson(res, 200, { scope });
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/gates/task-scope') {
+        sendJson(res, 200, getScopeState());
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/gates/protected-approval') {
+        const body = await parseJsonBody(req);
+        const approval = approveProtectedAction({
+          pathGlobs: body.pathGlobs,
+          reason: body.reason,
+          evidence: body.evidence,
+          taskId: body.taskId,
+          ttlMs: body.ttlMs,
+        });
+        sendJson(res, 200, { approved: true, approval });
         return;
       }
 

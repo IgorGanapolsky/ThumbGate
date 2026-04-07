@@ -615,6 +615,19 @@ function enrichFeedbackContext(feedbackEvent, params) {
         ? params.filePaths.split(',').map((f) => f.trim()).filter(Boolean)
         : [];
     const errorType = params.errorType || null;
+    const protectedFiles = filePaths.filter((filePath) => /(^|\/)(agents\.md|claude(\.local)?\.md|gemini\.md|readme\.md|\.gitignore|skill\.md)$|^\.husky\/|^config\/gates\//i.test(filePath));
+    const combinedText = [
+      feedbackEvent.context || '',
+      feedbackEvent.whatWentWrong || '',
+      feedbackEvent.whatToChange || '',
+      ...(Array.isArray(feedbackEvent.tags) ? feedbackEvent.tags : []),
+    ].join(' ').toLowerCase();
+    const enforcement = {
+      scopeViolation: /scope creep|out of scope|outside .*scope|wrong files|unrelated files/.test(combinedText),
+      approvalFailure: /without approval|missing approval|approval required|permission required/.test(combinedText),
+      protectedFileViolation: protectedFiles.length > 0 || /protected file|policy file|hook file/.test(combinedText),
+      protectedFiles,
+    };
 
     return {
       ...feedbackEvent,
@@ -623,6 +636,7 @@ function enrichFeedbackContext(feedbackEvent, params) {
         filePaths,
         errorType,
         outcomeCategory,
+        enforcement,
       },
     };
   } catch (_err) {
@@ -812,6 +826,9 @@ function inferLessonFromConversation(conversationWindow, signal) {
   const tags = [];
   if (filePaths.length > 0) tags.push('has-file-context');
   if (errorPatterns.length > 0) tags.push('has-error-context');
+  if (filePaths.some((filePath) => /(^|\/)(agents\.md|claude(\.local)?\.md|gemini\.md|readme\.md|\.gitignore|skill\.md)$|^\.husky\/|^config\/gates\//i.test(filePath))) {
+    tags.push('protected-file-context');
+  }
 
   return {
     lesson,
