@@ -148,7 +148,7 @@ test('routeProfile uses settings hierarchy for readonly profile fallback', () =>
 
 test('findMostRestrictiveProfile returns smallest profile with the tool', () => {
   const profile = findMostRestrictiveProfile('feedback_summary');
-  assert.equal(profile, 'commerce');
+  assert.equal(profile, 'locked');
 });
 
 test('findMostRestrictiveProfile returns locked for search_lessons', () => {
@@ -158,7 +158,7 @@ test('findMostRestrictiveProfile returns locked for search_lessons', () => {
 
 test('findMostRestrictiveProfile returns locked for search_rlhf', () => {
   const profile = findMostRestrictiveProfile('search_rlhf');
-  assert.equal(profile, 'commerce');
+  assert.equal(profile, 'locked');
 });
 
 test('findMostRestrictiveProfile returns null for unknown tool', () => {

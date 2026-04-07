@@ -8,6 +8,7 @@ const {
   buildCoverageArgs,
   COVERAGE_EXCLUDE_GLOBS,
   COVERAGE_INCLUDE_GLOBS,
+  detectCoverageFilterSupport,
   findCoverageTestFiles,
   runCoverage,
 } = require('../scripts/test-coverage');
@@ -26,7 +27,7 @@ test('findCoverageTestFiles returns sorted nested test files', () => {
 });
 
 test('buildCoverageArgs prepends Node coverage flags', () => {
-  assert.deepEqual(buildCoverageArgs(['tests/a.test.js']), [
+  assert.deepEqual(buildCoverageArgs(['tests/a.test.js'], { supportsFilters: true }), [
     '--test',
     '--test-concurrency=1',
     '--experimental-test-coverage',
@@ -34,6 +35,33 @@ test('buildCoverageArgs prepends Node coverage flags', () => {
     ...COVERAGE_EXCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-exclude', pattern]),
     'tests/a.test.js',
   ]);
+});
+
+test('buildCoverageArgs omits unsupported filter flags', () => {
+  assert.deepEqual(buildCoverageArgs(['tests/a.test.js'], { supportsFilters: false }), [
+    '--test',
+    '--test-concurrency=1',
+    '--experimental-test-coverage',
+    'tests/a.test.js',
+  ]);
+});
+
+test('detectCoverageFilterSupport checks the runtime help output', () => {
+  const supported = detectCoverageFilterSupport({
+    spawn: () => ({
+      stdout: '--test-coverage-include\n--test-coverage-exclude\n',
+      stderr: '',
+    }),
+  });
+  const unsupported = detectCoverageFilterSupport({
+    spawn: () => ({
+      stdout: '--experimental-test-coverage\n',
+      stderr: '',
+    }),
+  });
+
+  assert.equal(supported, true);
+  assert.equal(unsupported, false);
 });
 
 test('runCoverage returns error when no test files are provided', () => {
@@ -48,6 +76,7 @@ test('runCoverage delegates to Node with test coverage flags', () => {
   const result = runCoverage({
     files: ['tests/a.test.js', 'tests/b.test.js'],
     cwd: '/tmp/coverage',
+    supportsFilters: true,
     spawn: (cmd, args, options) => {
       captured = { cmd, args, options };
       return { status: 0, error: null };
@@ -67,4 +96,25 @@ test('runCoverage delegates to Node with test coverage flags', () => {
   ]);
   assert.equal(captured.options.cwd, '/tmp/coverage');
   assert.equal(captured.options.stdio, 'inherit');
+});
+
+test('runCoverage falls back when coverage filter flags are unsupported', () => {
+  let captured;
+  const result = runCoverage({
+    files: ['tests/a.test.js'],
+    cwd: '/tmp/coverage',
+    supportsFilters: false,
+    spawn: (cmd, args, options) => {
+      captured = { cmd, args, options };
+      return { status: 0, error: null };
+    },
+  });
+
+  assert.equal(result.exitCode, 0);
+  assert.deepEqual(captured.args, [
+    '--test',
+    '--test-concurrency=1',
+    '--experimental-test-coverage',
+    'tests/a.test.js',
+  ]);
 });

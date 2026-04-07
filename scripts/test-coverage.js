@@ -16,6 +16,7 @@ const COVERAGE_INCLUDE_GLOBS = [
 const COVERAGE_EXCLUDE_GLOBS = [
   'tests/**/*.js',
 ];
+let cachedCoverageFilterSupport;
 
 function findCoverageTestFiles({
   dir = TESTS_DIR,
@@ -39,31 +40,60 @@ function findCoverageTestFiles({
   return files.sort();
 }
 
-function buildCoverageArgs(files) {
-  return [
+function detectCoverageFilterSupport({ spawn = spawnSync } = {}) {
+  if (spawn === spawnSync && cachedCoverageFilterSupport !== undefined) {
+    return cachedCoverageFilterSupport;
+  }
+
+  const result = spawn(process.execPath, ['--help'], {
+    encoding: 'utf8',
+  });
+  const helpText = `${result.stdout || ''}\n${result.stderr || ''}`;
+  const supported = helpText.includes('--test-coverage-include') && helpText.includes('--test-coverage-exclude');
+
+  if (spawn === spawnSync) {
+    cachedCoverageFilterSupport = supported;
+  }
+
+  return supported;
+}
+
+function buildCoverageArgs(files, { spawn = spawnSync, supportsFilters } = {}) {
+  const args = [
     '--test',
     '--test-concurrency=1',
     '--experimental-test-coverage',
-    ...COVERAGE_INCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-include', pattern]),
-    ...COVERAGE_EXCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-exclude', pattern]),
-    ...files,
   ];
+
+  const useFilterFlags = supportsFilters === undefined
+    ? detectCoverageFilterSupport({ spawn })
+    : supportsFilters;
+  if (useFilterFlags) {
+    args.push(
+      ...COVERAGE_INCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-include', pattern]),
+      ...COVERAGE_EXCLUDE_GLOBS.flatMap((pattern) => ['--test-coverage-exclude', pattern]),
+    );
+  }
+
+  args.push(...files);
+  return args;
 }
 
 function runCoverage({
   files = findCoverageTestFiles(),
   cwd = PROJECT_ROOT,
   spawn = spawnSync,
+  supportsFilters,
 } = {}) {
   if (files.length === 0) {
     return {
       exitCode: 1,
       error: 'No test files found for coverage run.',
-      args: buildCoverageArgs(files),
+      args: buildCoverageArgs(files, { spawn, supportsFilters }),
     };
   }
 
-  const args = buildCoverageArgs(files);
+  const args = buildCoverageArgs(files, { spawn, supportsFilters });
   const result = spawn(process.execPath, args, {
     cwd,
     env: process.env,
@@ -90,6 +120,7 @@ module.exports = {
   COVERAGE_INCLUDE_GLOBS,
   PROJECT_ROOT,
   TESTS_DIR,
+  detectCoverageFilterSupport,
   findCoverageTestFiles,
   buildCoverageArgs,
   runCoverage,
