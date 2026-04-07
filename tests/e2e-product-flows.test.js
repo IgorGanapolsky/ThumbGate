@@ -5,6 +5,8 @@ const path = require('node:path');
 const os = require('node:os');
 const gatesEngine = require('../scripts/gates-engine');
 
+const GOVERNED_RELEASE_VERSION_MISMATCH = '9999.0.0';
+
 function readJsonl(filePath) {
   if (!fs.existsSync(filePath)) return [];
   return fs.readFileSync(filePath, 'utf8')
@@ -296,7 +298,7 @@ test('E2E: governance task scope and protected approvals persist over the HTTP s
       prRequired: true,
       prNumber: '999',
       queueRequired: true,
-      releaseVersion: '0.9.11',
+      releaseVersion: GOVERNED_RELEASE_VERSION_MISMATCH,
     }),
   });
   assert.equal(branchRes.status, 200);
@@ -319,7 +321,7 @@ test('E2E: governance task scope and protected approvals persist over the HTTP s
   assert.equal(integrityRes.status, 200);
   const integrityBody = await integrityRes.json();
   assert.equal(integrityBody.ok, false);
-  assert.ok(integrityBody.blockers.some((blocker) => blocker.code === 'publish_requires_base_branch'));
+  assert.ok(integrityBody.blockers.some((blocker) => blocker.code === 'release_version_mismatch'));
 
   const clearRes = await fetch(apiUrl(port, '/v1/gates/task-scope'), {
     method: 'POST',

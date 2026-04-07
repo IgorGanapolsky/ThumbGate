@@ -4,6 +4,8 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
+const GOVERNED_RELEASE_VERSION_MISMATCH = '9999.0.0';
+
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-api-test-'));
 const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-api-proof-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
@@ -211,13 +213,13 @@ test('admin API persists branch governance and exposes operational integrity ove
       prRequired: true,
       prNumber: '999',
       queueRequired: true,
-      releaseVersion: '0.9.11',
+      releaseVersion: GOVERNED_RELEASE_VERSION_MISMATCH,
     }),
   });
   assert.equal(setRes.status, 200);
   const setBody = await setRes.json();
   assert.equal(setBody.branchGovernance.branchName, 'feat/thumbgate-hardening');
-  assert.equal(setBody.branchGovernance.releaseVersion, '0.9.11');
+  assert.equal(setBody.branchGovernance.releaseVersion, GOVERNED_RELEASE_VERSION_MISMATCH);
 
   const stateRes = await fetch(apiUrl('/v1/gates/branch-governance'), { headers: authHeader });
   assert.equal(stateRes.status, 200);
@@ -229,7 +231,7 @@ test('admin API persists branch governance and exposes operational integrity ove
   assert.equal(integrityRes.status, 200);
   const integrityBody = await integrityRes.json();
   assert.equal(integrityBody.ok, false);
-  assert.ok(integrityBody.blockers.some((blocker) => blocker.code === 'publish_requires_base_branch'));
+  assert.ok(integrityBody.blockers.some((blocker) => blocker.code === 'release_version_mismatch'));
 });
 
 test('root serves the landing page by default', async () => {

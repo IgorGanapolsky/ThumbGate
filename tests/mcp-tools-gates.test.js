@@ -4,6 +4,8 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
+const GOVERNED_RELEASE_VERSION_MISMATCH = '9999.0.0';
+
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-gates-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 
@@ -178,14 +180,14 @@ test('set_branch_governance and get_branch_governance round-trip over MCP', asyn
         prRequired: true,
         prNumber: '999',
         queueRequired: true,
-        releaseVersion: '0.9.11',
+        releaseVersion: GOVERNED_RELEASE_VERSION_MISMATCH,
       },
     },
   });
 
   const setPayload = JSON.parse(setResult.content[0].text);
   assert.equal(setPayload.branchGovernance.branchName, 'feat/thumbgate-hardening');
-  assert.equal(setPayload.branchGovernance.releaseVersion, '0.9.11');
+  assert.equal(setPayload.branchGovernance.releaseVersion, GOVERNED_RELEASE_VERSION_MISMATCH);
 
   const getResult = await handleRequest({
     jsonrpc: '2.0',
@@ -213,7 +215,7 @@ test('check_operational_integrity evaluates governed publish commands over MCP',
         branchName: 'feat/thumbgate-hardening',
         baseBranch: 'main',
         prRequired: true,
-        releaseVersion: '0.9.11',
+        releaseVersion: GOVERNED_RELEASE_VERSION_MISMATCH,
       },
     },
   });
@@ -232,7 +234,7 @@ test('check_operational_integrity evaluates governed publish commands over MCP',
 
   const payload = JSON.parse(result.content[0].text);
   assert.equal(payload.ok, false);
-  assert.ok(payload.blockers.some((blocker) => blocker.code === 'publish_requires_base_branch'));
+  assert.ok(payload.blockers.some((blocker) => blocker.code === 'release_version_mismatch'));
 });
 
 test('track_action records evidence for verify_claim over MCP', async () => {
