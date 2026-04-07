@@ -6,6 +6,7 @@
  *   npx thumbgate init          # scaffold .thumbgate/ config + .mcp.json
  *   npx thumbgate init --wire-hooks          # wire hooks only (auto-detect agent)
  *   npx thumbgate init --agent claude-code   # scaffold + wire hooks for specific agent
+ *   npx thumbgate gate-check    # PreToolUse hook: pipe tool JSON via stdin, get verdict
  *   npx thumbgate capture       # capture feedback
  *   npx thumbgate export-dpo    # export DPO training pairs
  *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
@@ -1217,6 +1218,7 @@ function help() {
   console.log('  funnel                  Show marketing & revenue conversion funnel analytics');
   console.log('  pulse                   Show real-time GTM velocity and Mission Control summary');
   console.log('  dispatch                Dispatch-safe brief — metrics, gates, and read-only prompt templates');
+  console.log('  gate-check              PreToolUse hook: reads tool JSON from stdin, outputs gate verdict');
   console.log('  gate-stats              Show gate statistics — active gates, blocks, warns, time saved');
   console.log('  analytics               Unified ThumbGate analytics snapshot (npm, GitHub, landing page)');
   console.log('  start-api             Start the ThumbGate HTTPS API server');
@@ -1421,6 +1423,27 @@ switch (COMMAND) {
   case 'dispatch-brief':
     dispatchBrief();
     break;
+  case 'gate-check': {
+    // PreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict
+    // Used by: generate-pretool-hook.sh → npx thumbgate gate-check
+    const { run: gateRun, runAsync: gateRunAsync } = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+    let stdinData = '';
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk) => { stdinData += chunk; });
+    process.stdin.on('end', async () => {
+      try {
+        const input = JSON.parse(stdinData);
+        const output = await gateRunAsync(input);
+        process.stdout.write(output + '\n');
+        process.exit(0);
+      } catch (err) {
+        process.stderr.write(`gate-check error: ${err.message}\n`);
+        process.stdout.write(JSON.stringify({}) + '\n');
+        process.exit(0);
+      }
+    });
+    break;
+  }
   case 'gate-stats':
     gateStats();
     break;
