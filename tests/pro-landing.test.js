@@ -73,3 +73,13 @@ test('pro landing page captures buyer email and reuses it for checkout', () => {
   assert.match(proPage, /pro_checkout_email_start/);
   assert.doesNotMatch(proPage, /props:\s*\{\s*email:/);
 });
+
+test('pro landing page keeps team pilot attribution ahead of the intake anchor', () => {
+  const proPage = readProPage();
+
+  assert.match(
+    proPage,
+    /href="\/\?utm_source=website&utm_medium=pro_page&utm_campaign=team_rollout#workflow-sprint-intake"/
+  );
+  assert.doesNotMatch(proPage, /href="\/#workflow-sprint-intake\?utm_source=website/);
+});
