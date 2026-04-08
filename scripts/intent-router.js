@@ -13,6 +13,7 @@ const {
   evaluateDelegation,
   normalizeDelegationMode,
 } = require('./delegation-runtime');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_BUNDLE_DIR = path.join(PROJECT_ROOT, 'config', 'policy-bundles');
@@ -274,8 +275,7 @@ const ACTION_CATEGORY_MAP = {
 };
 
 function getDefaultModelPath() {
-  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR
-    || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+  const feedbackDir = resolveFeedbackDir();
   return path.join(feedbackDir, 'feedback_model.json');
 }
 

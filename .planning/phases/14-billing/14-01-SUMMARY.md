@@ -47,7 +47,7 @@ Full Stripe billing integration module using the Stripe REST API directly via `f
 
 Functions:
 - `createCheckoutSession({ successUrl, cancelUrl, customerEmail })` — Creates Stripe Checkout session for $49/mo Context Gateway (STRIPE_PRICE_ID). In local mode (no STRIPE_SECRET_KEY) returns `{ sessionId: 'local_<uuid>', url: null, localMode: true }`.
-- `provisionApiKey(customerId)` — Generates `rlhf_<32 hex chars>` key, stores in `.claude/memory/feedback/api-keys.json`. Reuses existing active key if customer already has one.
+- `provisionApiKey(customerId)` — Generates `thumbgate_<32 hex chars>` key, stores in `.claude/memory/feedback/api-keys.json`. Reuses existing active key if customer already has one.
 - `validateApiKey(key)` — Returns `{ valid, customerId, usageCount }`. Returns `{ valid: false, reason: 'key_disabled' }` for deactivated keys.
 - `recordUsage(key)` — Increments `usageCount` in the store. Returns `{ recorded, usageCount }`.
 - `disableCustomerKeys(customerId)` — Sets `active: false` for all keys belonging to a customer.

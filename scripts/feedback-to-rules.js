@@ -3,8 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 const { getAutoGatesPath } = require('./auto-promote-gates');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
-const DEFAULT_LOG = path.join(__dirname, '..', '.claude', 'memory', 'feedback', 'feedback-log.jsonl');
+const DEFAULT_LOG = path.join(resolveFeedbackDir(), 'feedback-log.jsonl');
 const NEG = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
 const POS = new Set(['positive', 'positive_strong', 'up', 'thumbs_up']);
 

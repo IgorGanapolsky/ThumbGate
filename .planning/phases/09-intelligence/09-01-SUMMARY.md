@@ -21,8 +21,8 @@ key_files:
   modified:
     - package.json
 decisions:
-  - context-engine PROJECT_ROOT = path.join(__dirname, '..') — 1 level from scripts/ to repo root (mirrors all other rlhf scripts)
-  - skill-quality-tracker normalizes both 'up'/'down' (Subway) and 'positive'/'negative' (rlhf) feedback signals
+  - context-engine PROJECT_ROOT = path.join(__dirname, '..') — 1 level from scripts/ to repo root (mirrors all other ThumbGate scripts)
+  - skill-quality-tracker normalizes both 'up'/'down' (Subway) and 'positive'/'negative' (ThumbGate) feedback signals
   - CORRELATION_WINDOW_MS = 60_000 — 60 second window for timestamp proximity correlation
   - routeQuery falls back to buildKnowledgeIndex() on-the-fly if index file is missing (resilient)
   - prove-intelligence uses 'guide for pipeline' query (matches extracted 'guide' keyword from short filenames)

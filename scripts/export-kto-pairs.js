@@ -12,11 +12,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
-const PROJECT_ROOT = path.join(__dirname, '..');
-const FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
-const DEFAULT_FEEDBACK_LOG = path.join(FEEDBACK_DIR, 'feedback-log.jsonl');
-const DEFAULT_MEMORY_LOG = path.join(FEEDBACK_DIR, 'memory-log.jsonl');
+const DEFAULT_FEEDBACK_LOG = path.join(resolveFeedbackDir(), 'feedback-log.jsonl');
+const DEFAULT_MEMORY_LOG = path.join(resolveFeedbackDir(), 'memory-log.jsonl');
 
 function readJSONL(filePath) {
   if (!fs.existsSync(filePath)) return [];

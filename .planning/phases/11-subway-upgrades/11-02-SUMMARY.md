@@ -2,9 +2,9 @@
 phase: 11-subway-upgrades
 plan: "02"
 subsystem: subway-upgrades
-tags: [dpo-optimizer, preference-learning, subway, rlhf]
+tags: [dpo-optimizer, preference-learning, subway, ThumbGate]
 dependency_graph:
-  requires: [rlhf/scripts/dpo-optimizer.js]
+  requires: [ThumbGate/scripts/dpo-optimizer.js]
   provides: [Subway/.claude/scripts/feedback/dpo-optimizer.js]
   affects: [Subway ML training pipeline]
 tech_stack:
@@ -16,7 +16,7 @@ key_files:
 decisions:
   - "dpo-optimizer.js uses sibling requires (./export-dpo-pairs, ./thompson-sampling) — same directory in Subway"
   - "Default modelPath uses PROJECT_ROOT (3 levels) for feedback_model.json location"
-  - "DPO_BETA=0.1 unchanged — same temperature as rlhf version"
+  - "DPO_BETA=0.1 unchanged — same temperature as ThumbGate version"
   - "Jest test run uses no special env flags for dpo-optimizer (no dynamic import needed)"
 metrics:
   duration: 3min
@@ -27,7 +27,7 @@ metrics:
 
 # Phase 11 Plan 02: DPO Optimizer Port to Subway Summary
 
-Ported rlhf's dpo-optimizer.js to Subway's .claude/scripts/feedback/ with sibling path adjustments.
+Ported ThumbGate's dpo-optimizer.js to Subway's .claude/scripts/feedback/ with sibling path adjustments.
 
 ## What Was Built
 

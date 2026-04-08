@@ -7,8 +7,13 @@ PROMPT="$CLAUDE_USER_PROMPT"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CAPTURE="$SCRIPT_DIR/../.claude/scripts/feedback/capture-feedback.js"
 PROMPT_GUARD="$SCRIPT_DIR/prompt-guard.js"
-FEEDBACK_LOG="$SCRIPT_DIR/../.claude/memory/feedback/feedback-log.jsonl"
-MEMORY_LOG="$SCRIPT_DIR/../.claude/memory/feedback/memory-log.jsonl"
+ACTIVE_CWD="${CLAUDE_PROJECT_DIR:-${PWD:-$(pwd)}}"
+FEEDBACK_DIR="$(node -e "const path = require('path'); const { resolveFeedbackDir } = require(path.join(process.argv[1], 'feedback-paths.js')); process.stdout.write(resolveFeedbackDir({ cwd: process.argv[2] || process.cwd(), feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR || undefined }));" "$SCRIPT_DIR" "$ACTIVE_CWD" 2>/dev/null)"
+if [ -z "$FEEDBACK_DIR" ]; then
+  FEEDBACK_DIR="${THUMBGATE_FEEDBACK_DIR:-$ACTIVE_CWD/.rlhf}"
+fi
+FEEDBACK_LOG="$FEEDBACK_DIR/feedback-log.jsonl"
+MEMORY_LOG="$FEEDBACK_DIR/memory-log.jsonl"
 
 # Record the latest user prompt so statusline thumbs can distill lessons
 # from recent conversation even when the click itself has no body payload.
@@ -49,7 +54,7 @@ capture_and_report() {
   echo "Storage Proof:"
   echo "  Feedback log : $FEEDBACK_LOG ($(wc -l < "$FEEDBACK_LOG" 2>/dev/null || echo 0) entries)"
   echo "  Memory log   : $MEMORY_LOG ($(wc -l < "$MEMORY_LOG" 2>/dev/null || echo 0) entries)"
-  echo "  LanceDB      : $SCRIPT_DIR/../.claude/memory/feedback/lancedb/"
+  echo "  LanceDB      : $FEEDBACK_DIR/lancedb/"
   echo ""
 
   # Show last entry written

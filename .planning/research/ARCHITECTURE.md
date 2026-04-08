@@ -1,6 +1,6 @@
 # Architecture Research
 
-**Domain:** Bidirectional RLHF Feature Sync (Node.js + Python ML scripts)
+**Domain:** Bidirectional ThumbGate Feature Sync (Node.js + Python ML scripts)
 **Researched:** 2026-03-04
 **Confidence:** HIGH (based on direct code inspection of both repos)
 
@@ -12,7 +12,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                     SHARED RLHF CORE (BOTH REPOS)                    │
+│                     SHARED ThumbGate CORE (BOTH REPOS)                    │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐   │
 │  │feedback-loop │  │feedback-     │  │rubric-engine.js          │   │
 │  │.js           │  │schema.js     │  │(weighted criteria +      │   │
@@ -63,18 +63,18 @@
 | `feedback-schema.js` | Typed schema validation; discriminated union of action types; reject invalid data at boundary | Both repos (identical) |
 | `rubric-engine.js` | Load weighted criteria JSON, score responses, flag guardrail failures, emit promotion-eligible flag | Both repos |
 | `export-dpo-pairs.js` | Read memory-log.jsonl, pair errors+learnings into DPO triples, write dpo-pairs.jsonl | thumbgate |
-| `train_from_feedback.py` | Beta-Bernoulli Thompson Sampling; per-category alpha/beta posteriors; exponential time decay; DPO batch optimization | Subway (to receive in rlhf) |
-| `semantic-memory-v2.py` / `agentic-memory.py` | LanceDB vector + FTS hybrid search; A-Mem Zettelkasten linking; BM25 fusion | Subway (to receive in rlhf) |
-| `capture-feedback.js` (Subway variant) | LSTM/Transformer sequence tracking; diversity tracking; action-outcome patterns; streak analytics | Subway (to receive in rlhf) |
-| `budget-guard.js` | File-lock ledger; monthly spending cap enforcement; per-operation cost recording | rlhf (to receive in Subway) |
-| `intent-router.js` | Load policy bundle JSON; classify action intents; resolve approval requirements per MCP profile | rlhf (to receive in Subway) |
-| `contextfs.js` | Namespaced file-system context store; provenance tracking; bounded context pack construction | rlhf (to receive in Subway) |
-| `self-heal.js` / `self-healing-check.js` | Run fix-plan scripts (lint:fix, format, feedback:rules); diff before/after; report changed files | rlhf (to receive in Subway) |
-| `mcp-policy.js` / `subagent-profiles.js` | MCP tool allowlists per profile; subagent profile → MCP profile mapping; validate consistency | rlhf (to receive in Subway) |
+| `train_from_feedback.py` | Beta-Bernoulli Thompson Sampling; per-category alpha/beta posteriors; exponential time decay; DPO batch optimization | Subway (to receive in ThumbGate) |
+| `semantic-memory-v2.py` / `agentic-memory.py` | LanceDB vector + FTS hybrid search; A-Mem Zettelkasten linking; BM25 fusion | Subway (to receive in ThumbGate) |
+| `capture-feedback.js` (Subway variant) | LSTM/Transformer sequence tracking; diversity tracking; action-outcome patterns; streak analytics | Subway (to receive in ThumbGate) |
+| `budget-guard.js` | File-lock ledger; monthly spending cap enforcement; per-operation cost recording | ThumbGate (to receive in Subway) |
+| `intent-router.js` | Load policy bundle JSON; classify action intents; resolve approval requirements per MCP profile | ThumbGate (to receive in Subway) |
+| `contextfs.js` | Namespaced file-system context store; provenance tracking; bounded context pack construction | ThumbGate (to receive in Subway) |
+| `self-heal.js` / `self-healing-check.js` | Run fix-plan scripts (lint:fix, format, feedback:rules); diff before/after; report changed files | ThumbGate (to receive in Subway) |
+| `mcp-policy.js` / `subagent-profiles.js` | MCP tool allowlists per profile; subagent profile → MCP profile mapping; validate consistency | ThumbGate (to receive in Subway) |
 | `autonomy-decision-engine.js` | Dual risk×autonomy scoring; interrupt history learning; catalog-based action scoring | Subway (existing) |
 | `context-engine.js` | Knowledge bundle pre-computation; category routing; quality-log; prompt registry | Subway (existing) |
-| `src/api/server.js` | 10 REST endpoints; routes to all scripts; no framework dependency | rlhf only |
-| `adapters/{platform}/` | Platform shims for Claude, AMP, ChatGPT, Codex, Gemini, MCP STDIO | rlhf only |
+| `src/api/server.js` | 10 REST endpoints; routes to all scripts; no framework dependency | ThumbGate only |
+| `adapters/{platform}/` | Platform shims for Claude, AMP, ChatGPT, Codex, Gemini, MCP STDIO | ThumbGate only |
 
 ---
 
@@ -128,24 +128,24 @@ scripts/
 ├── feedback-to-memory.js     # Existing memory writer
 ├── autonomy-decision-engine.js # Existing (unchanged)
 ├── context-engine.js         # Existing (unchanged)
-└── budget-guard.js           # [NEW from rlhf]
+└── budget-guard.js           # [NEW from ThumbGate]
 
 .claude/scripts/
-├── intent-router.js          # [NEW from rlhf]
-├── mcp-policy.js             # [NEW from rlhf]
-├── subagent-profiles.js      # [NEW from rlhf]
-├── self-heal.js              # [NEW from rlhf]
-├── self-healing-check.js     # [NEW from rlhf]
-└── contextfs.js              # [NEW from rlhf]
+├── intent-router.js          # [NEW from ThumbGate]
+├── mcp-policy.js             # [NEW from ThumbGate]
+├── subagent-profiles.js      # [NEW from ThumbGate]
+├── self-heal.js              # [NEW from ThumbGate]
+├── self-healing-check.js     # [NEW from ThumbGate]
+└── contextfs.js              # [NEW from ThumbGate]
 
 config/
-└── policy-bundles/default-v1.json  # [NEW from rlhf]
+└── policy-bundles/default-v1.json  # [NEW from ThumbGate]
 ```
 
 ### Structure Rationale
 
 - **scripts/ vs .claude/scripts/:** Subway keeps repo-visible scripts in `scripts/`; agent-only scripts live in `.claude/scripts/`. The governance components (budget-guard, intent-router, contextfs) belong in `.claude/scripts/` in Subway because they are agent-facing, not app-facing.
-- **lancedb/ under .claude/memory/feedback/:** Matches the LanceDB path convention already in Subway (`~/.shieldcortex/lancedb/` for teams-rag, `memory/feedback/lancedb/` for RLHF). Keeps vector index co-located with JSONL logs.
+- **lancedb/ under .claude/memory/feedback/:** Matches the LanceDB path convention already in Subway (`~/.shieldcortex/lancedb/` for teams-rag, `memory/feedback/lancedb/` for ThumbGate). Keeps vector index co-located with JSONL logs.
 - **train_from_feedback.py as a script, not a service:** Both repos treat ML training as a CLI script invoked by npm scripts, not a long-running process. This matches the $10/month budget constraint — no persistent compute.
 
 ---
@@ -238,7 +238,7 @@ combined = reciprocal_rank_fusion(lancedb_results, fts_results)
 
 **When to use:** Wrap every operation that consumes external API budget (embedding generation, Claude API calls for RLAIF).
 
-**Trade-offs:** Synchronous spin-wait with 20ms sleep. Acceptable at RLHF feedback rates (not high-throughput). Fails loudly if lock cannot be acquired in 5s.
+**Trade-offs:** Synchronous spin-wait with 20ms sleep. Acceptable at ThumbGate feedback rates (not high-throughput). Fails loudly if lock cannot be acquired in 5s.
 
 ---
 
@@ -258,7 +258,7 @@ captureFeedback(params)
         |         |
         |    [accepted]
         |         v
-        +--> budget-guard.js: check monthly cap [rlhf] / [new in Subway]
+        +--> budget-guard.js: check monthly cap [ThumbGate] / [new in Subway]
         |
         v
 appendJSONL(feedback-log.jsonl)
@@ -269,9 +269,9 @@ appendJSONL(feedback-log.jsonl)
         +--> context-engine.js: logQualityResult [Subway]
         |         (precision/recall tracking for context bundles)
         |
-        +--> buildSequenceFeatures() --> feedback-sequences.jsonl [Subway ML → rlhf]
+        +--> buildSequenceFeatures() --> feedback-sequences.jsonl [Subway ML → ThumbGate]
         |
-        +--> updateDiversityTracking() --> diversity-tracking.json [Subway ML → rlhf]
+        +--> updateDiversityTracking() --> diversity-tracking.json [Subway ML → ThumbGate]
         |
         v
 appendJSONL(memory-log.jsonl) [validated memory record]
@@ -321,7 +321,7 @@ Reciprocal Rank Fusion → top-k results
 context pack → injected into CLAUDE.md or session prompt
 ```
 
-### Self-Healing Flow (rlhf → Subway)
+### Self-Healing Flow (ThumbGate → Subway)
 
 ```
 Trigger: CI failure / scheduled check / manual
@@ -346,7 +346,7 @@ self-healing-check.js: collectHealthReport()
 healReport: { fixed, changedFiles, results }
 ```
 
-### Intent Router + Policy Bundle Flow (rlhf → Subway)
+### Intent Router + Policy Bundle Flow (ThumbGate → Subway)
 
 ```
 agent action request
@@ -365,7 +365,7 @@ intent plan: { actions[], requiresApproval, mcpProfile, toolsAllowed }
         +--> [requiresApproval=false] → execute actions
 ```
 
-### ContextFS Flow (rlhf → Subway)
+### ContextFS Flow (ThumbGate → Subway)
 
 ```
 agent context retrieval request
@@ -426,50 +426,50 @@ Phase 1 — Shared Core Alignment (no new features, verify parity)
   Confirm rubric-engine.js is compatible
   Dependency: none
 
-Phase 2 — rlhf receives Thompson Sampling (Subway ML → rlhf)
+Phase 2 — ThumbGate receives Thompson Sampling (Subway ML → ThumbGate)
   Port train_from_feedback.py
   Wire: feedback-log.jsonl → Python trainer → feedback_model.json
   Dependency: Phase 1 (feedback-log.jsonl format must be stable)
 
-Phase 3 — rlhf receives LanceDB (Subway ML → rlhf)
+Phase 3 — ThumbGate receives LanceDB (Subway ML → ThumbGate)
   Port semantic-memory-v2.py and/or agentic-memory.py
   Install @lancedb/lancedb npm package
   Wire: memory-log.jsonl → LanceDB indexer → hybrid search
   Dependency: Phase 1 (memory-log.jsonl format must be stable)
 
-Phase 4 — rlhf receives LSTM Sequence Tracking (Subway ML → rlhf)
-  Port capture-feedback.js sequence features into rlhf capture path
+Phase 4 — ThumbGate receives LSTM Sequence Tracking (Subway ML → ThumbGate)
+  Port capture-feedback.js sequence features into ThumbGate capture path
   Wire: every captureFeedback() → buildSequenceFeatures() → sequences.jsonl
   Dependency: Phase 1 (capture path must be finalized)
 
-Phase 5 — rlhf receives Diversity Tracking (Subway ML → rlhf)
+Phase 5 — ThumbGate receives Diversity Tracking (Subway ML → ThumbGate)
   Port updateDiversityTracking() + DOMAIN_CATEGORIES
   Wire: every capture → diversity-tracking.json update
   Dependency: Phase 4 (same capture path extension)
 
-Phase 6 — rlhf receives RLAIF Self-Scoring (Subway ML → rlhf)
+Phase 6 — ThumbGate receives RLAIF Self-Scoring (Subway ML → ThumbGate)
   Port RLAIF heuristic scoring from Subway feedback-loop.js
   Wire: capture → rlaif score → self-score-log.jsonl
-  Dependency: Phase 1, budget-guard already present in rlhf
+  Dependency: Phase 1, budget-guard already present in ThumbGate
 
-Phase 7 — Subway receives Budget Guard (rlhf → Subway)
+Phase 7 — Subway receives Budget Guard (ThumbGate → Subway)
   Port budget-guard.js to Subway
   Wire: any API-calling script checks budget before calling
   Dependency: none (self-contained)
 
-Phase 8 — Subway receives Intent Router + Policy Bundles (rlhf → Subway)
+Phase 8 — Subway receives Intent Router + Policy Bundles (ThumbGate → Subway)
   Port intent-router.js + mcp-policy.js + subagent-profiles.js
   Port config/policy-bundles/default-v1.json
   Wire: autonomy-decision-engine → intent classification before approval
   Dependency: Phase 7 (budget awareness before policy enforcement)
 
-Phase 9 — Subway receives ContextFS (rlhf → Subway)
+Phase 9 — Subway receives ContextFS (ThumbGate → Subway)
   Port contextfs.js
   Wire: session context retrieval → contextfs namespaces
   Replace or augment context-engine.js knowledge bundles
   Dependency: Phase 8 (subagent profiles drive context.maxItems limits)
 
-Phase 10 — Subway receives Self-Healing Monitor (rlhf → Subway)
+Phase 10 — Subway receives Self-Healing Monitor (ThumbGate → Subway)
   Port self-heal.js + self-healing-check.js
   Add npm scripts: self-heal:check, self-heal:run
   Wire: CI failure hook → self-healing-check → self-heal
@@ -495,8 +495,8 @@ Phase 10 — Subway receives Self-Healing Monitor (rlhf → Subway)
 ### Anti-Pattern 3: Shared LanceDB Path Without Table Namespacing
 
 **What people do:** Point thumbgate's new LanceDB integration at the same path as Subway's `~/.shieldcortex/lancedb/`.
-**Why it's wrong:** Cross-repo table writes cause schema conflicts. Subway uses tables: `teams_messages`, `memories`, `links`, `boxes`. rlhf needs its own namespace.
-**Do this instead:** Use a per-repo LanceDB path: `memory/feedback/lancedb/` in each repo's local directory structure. Tables: `thumbgate_memories`, `rlhf_errors`, `rlhf_learnings`.
+**Why it's wrong:** Cross-repo table writes cause schema conflicts. Subway uses tables: `teams_messages`, `memories`, `links`, `boxes`. ThumbGate needs its own namespace.
+**Do this instead:** Use a per-repo LanceDB path: `memory/feedback/lancedb/` in each repo's local directory structure. Tables: `thumbgate_memories`, `thumbgate_errors`, `thumbgate_learnings`.
 
 ### Anti-Pattern 4: Thompson Sampling Without Time Decay
 
@@ -506,15 +506,15 @@ Phase 10 — Subway receives Self-Healing Monitor (rlhf → Subway)
 
 ### Anti-Pattern 5: Skipping Schema Validation on Ported Scripts
 
-**What people do:** Port capture-feedback.js LSTM sequence additions directly into rlhf's capture path without running through feedback-schema.js validation.
-**Why it's wrong:** The LSTM sequence file (feedback-sequences.jsonl) contains raw entries that may not match rlhf's typed schema. Sequence entries are training data, not storage entries — they bypass the validation gate.
+**What people do:** Port capture-feedback.js LSTM sequence additions directly into ThumbGate's capture path without running through feedback-schema.js validation.
+**Why it's wrong:** The LSTM sequence file (feedback-sequences.jsonl) contains raw entries that may not match ThumbGate's typed schema. Sequence entries are training data, not storage entries — they bypass the validation gate.
 **Do this instead:** Keep two separate write paths: (1) validated feedback → memory-log.jsonl (schema-gated), (2) raw sequence features → feedback-sequences.jsonl (not schema-gated, ML training corpus only).
 
 ---
 
 ## Scalability Considerations
 
-This system is a local-first agentic RLHF system with a $10/month budget constraint. Scalability concerns are about developer session frequency, not user traffic.
+This system is a local-first agentic ThumbGate system with a $10/month budget constraint. Scalability concerns are about developer session frequency, not user traffic.
 
 | Scale | Architecture Adjustments |
 |-------|--------------------------|
@@ -531,14 +531,14 @@ This system is a local-first agentic RLHF system with a $10/month budget constra
 
 ## Sources
 
-- Direct code inspection: `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/` (HIGH confidence — primary source)
+- Direct code inspection: `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/` (HIGH confidence — primary source)
 - Direct code inspection: `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/` (HIGH confidence — primary source)
 - [LanceDB official documentation](https://lancedb.github.io/lancedb/) — LanceDB Node.js SDK, FTS support (MEDIUM confidence — verified via WebSearch)
 - [LanceDB GitHub](https://github.com/lancedb/lancedb) — `@lancedb/lancedb` npm package (MEDIUM confidence)
 - [Thompson Sampling Tutorial — Stanford](https://web.stanford.edu/~bvr/pubs/TS_Tutorial.pdf) — Beta-Bernoulli update rule (HIGH confidence — matches Subway implementation exactly)
-- [HybridFlow RLHF Framework](https://arxiv.org/abs/2409.19256) — Decoupled actor/reward/critic architecture (LOW confidence for this specific system — academic reference only)
-- PROJECT.md: `/Users/ganapolsky_i/workspace/git/igor/rlhf/.planning/PROJECT.md` (HIGH confidence — authoritative project spec)
+- [HybridFlow ThumbGate Framework](https://arxiv.org/abs/2409.19256) — Decoupled actor/reward/critic architecture (LOW confidence for this specific system — academic reference only)
+- PROJECT.md: `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/.planning/PROJECT.md` (HIGH confidence — authoritative project spec)
 
 ---
-*Architecture research for: Bidirectional RLHF Feature Sync*
+*Architecture research for: Bidirectional ThumbGate Feature Sync*
 *Researched: 2026-03-04*

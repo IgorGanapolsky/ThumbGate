@@ -12,9 +12,9 @@ echo "🤖 [Memory Stack] Refreshing context..."
 
 # 1. Behavioral Extraction (Layer 4)
 node scripts/behavioral-extraction.js > /dev/null
-TRAITS_FILE=".thumbgate/behavioral-traits.json"
-if [ ! -f "$TRAITS_FILE" ]; then
-  TRAITS_FILE=".claude/memory/feedback/behavioral-traits.json"
+TRAITS_FILE="$(node -e "const path = require('path'); const { resolveFeedbackDir } = require('./scripts/feedback-paths'); process.stdout.write(path.join(resolveFeedbackDir(), 'behavioral-traits.json'));" 2>/dev/null)"
+if [ -z "$TRAITS_FILE" ]; then
+  TRAITS_FILE=".thumbgate/behavioral-traits.json"
 fi
 
 # 2. Capture git context (Layer 3)

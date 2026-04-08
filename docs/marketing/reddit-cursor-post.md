@@ -28,16 +28,8 @@ Curious how others are handling cross-session reliability. Are `.cursorrules` an
 
 ---
 
-**Comment (post immediately after the main post):**
+**Follow-up comment policy:**
 
-The problem: AI coding agents repeat the same mistakes every session. You correct a force-push, it does it again tomorrow. Cursor rules get ignored when context is tight.
+Do not add a generic promo comment after posting.
 
-ThumbGate fixes this with enforcement, not memory. You give a thumbs-down, it auto-generates a prevention rule, and a gate physically blocks the agent from repeating that action. Thumbs-up reinforces good behavior.
-
-Works with Cursor, Claude Code, Codex, Gemini, and Amp. Fully local, MIT licensed.
-
-Try free for 7 days (no credit card, 2-minute setup): https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content=cursor_post&community=cursor
-
-Source code: https://github.com/IgorGanapolsky/ThumbGate
-
-Disclosure: I built this.
+Only reply when another person asks a direct question or shares a concrete workflow issue. Answer that point first. If disclosure matters, keep it brief and leave the link out unless they ask for it.

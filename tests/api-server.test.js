@@ -86,9 +86,9 @@ test.after(async () => {
   delete process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
   delete process.env.THUMBGATE_BILLING_API_BASE_URL;
   delete process.env.THUMBGATE_BUILD_METADATA_PATH;
-  delete process.env.RLHF_PUBLIC_APP_ORIGIN;
-  delete process.env.RLHF_BILLING_API_BASE_URL;
-  delete process.env.RLHF_BUILD_METADATA_PATH;
+  delete process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
+  delete process.env.THUMBGATE_BILLING_API_BASE_URL;
+  delete process.env.THUMBGATE_BUILD_METADATA_PATH;
   try {
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
     fs.rmSync(tmpProofDir, { recursive: true, force: true });

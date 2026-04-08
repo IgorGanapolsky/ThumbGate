@@ -2,7 +2,7 @@
 phase: 02-ml-into-thumbgate
 plan: 01
 subsystem: ml
-tags: [thompson-sampling, beta-bernoulli, time-decay, marsaglia-tsang, gamma-sampling, rlhf, js]
+tags: [thompson-sampling, beta-bernoulli, time-decay, marsaglia-tsang, gamma-sampling, ThumbGate, js]
 
 # Dependency graph
 requires:

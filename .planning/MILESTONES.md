@@ -28,7 +28,7 @@
 
 ### What Shipped
 - Phase 1: Contract alignment (export audit, rubricEvaluation gate, parseTimestamp)
-- Phase 2: ML into rlhf (Thompson Sampling, time-decay, LSTM sequences, diversity tracking)
+- Phase 2: ML into ThumbGate (Thompson Sampling, time-decay, LSTM sequences, diversity tracking)
 - Phase 3: Governance into Subway (budget guard, intent router, ContextFS, self-healing)
 - Phase 4: LanceDB vector storage (embedded vectors, ESM/CJS, semantic search)
 - Phase 5: RLAIF + DPO (self-audit, DPO optimizer, meta-policy extraction)

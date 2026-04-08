@@ -28,13 +28,13 @@ key-files:
     - /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/contextfs.js
     - /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/budget-guard.test.js
     - /Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/contextfs.test.js
-    - /Users/ganapolsky_i/workspace/git/igor/rlhf/proof/governance/3-01-budget-guard-contextfs-subway.md
+    - /Users/ganapolsky_i/workspace/git/igor/ThumbGate/proof/governance/3-01-budget-guard-contextfs-subway.md
   modified: []
 
 key-decisions:
   - "PATH SURGERY: PROJECT_ROOT = path.join(__dirname, '..', '..', '..') — 3 levels up from .claude/scripts/feedback/ to Subway_RN_Demo/ root"
   - "Lock timeout adjusted from 5000/15000 to 30000/60000 in budget-guard.js — handles 4+ concurrent GSD agent API calls"
-  - "Contextfs Jaccard threshold=0.7 and TTL=86400s preserved verbatim from rlhf source"
+  - "Contextfs Jaccard threshold=0.7 and TTL=86400s preserved verbatim from ThumbGate source"
   - "Tests use jest.scripts.config.js (created in Plan 3-02) because main jest.config.js excludes scripts/ via testPathIgnorePatterns"
   - "THUMBGATE_CONTEXTFS_DIR env var used in contextfs tests to isolate storage to tmpDir directly"
 
@@ -58,7 +58,7 @@ completed: 2026-03-04
 - **Started:** 2026-03-04T00:00:00Z
 - **Completed:** 2026-03-04T00:15:00Z
 - **Tasks:** 2
-- **Files modified:** 5 (4 Subway + 1 rlhf proof)
+- **Files modified:** 5 (4 Subway + 1 ThumbGate proof)
 
 ## Accomplishments
 
@@ -67,7 +67,7 @@ completed: 2026-03-04
 - 8 Jest tests for budget-guard.test.js: adds spend, blocks overspend, initializes ledger, concurrency stress, plus 4 budget-parsing edge cases
 - 9 Jest tests for contextfs.test.js: store+retrieve, Jaccard cache hit (>=0.7), TTL expiry via Date.now monkeypatch, namespace normalization, invalid namespace rejection, Jaccard similarity math
 - All 17 tests pass with 0 failures using `jest.scripts.config.js`
-- rlhf baseline: 89 test:api + 2 proof = 91 total, 0 failures — no regression
+- ThumbGate baseline: 89 test:api + 2 proof = 91 total, 0 failures — no regression
 
 ## Task Commits
 
@@ -81,12 +81,12 @@ Note: The actual script files were created in Plan 3-02 (which executed first). 
 - `.claude/scripts/feedback/contextfs.js` — Subway copy; PROJECT_ROOT 3-level join; Jaccard threshold=0.7
 - `scripts/__tests__/budget-guard.test.js` — 8 Jest test cases (GOV-01, GOV-05)
 - `scripts/__tests__/contextfs.test.js` — 9 Jest test cases (GOV-03, GOV-05)
-- `proof/governance/3-01-budget-guard-contextfs-subway.md` — rlhf-repo proof artifact
+- `proof/governance/3-01-budget-guard-contextfs-subway.md` — ThumbGate-repo proof artifact
 
 ## Decisions Made
 
 - PROJECT_ROOT uses `path.join(__dirname, '..', '..', '...')` — 3 levels up from `.claude/scripts/feedback/` to Subway_RN_Demo/
-- Lock timeout: timeoutMs=30000, staleMs=60000 (vs rlhf default 5000/15000) for concurrent GSD agent load
+- Lock timeout: timeoutMs=30000, staleMs=60000 (vs ThumbGate default 5000/15000) for concurrent GSD agent load
 - TTL test uses `Date.now = () => fakeNow` monkeypatch rather than jest.useFakeTimers — simpler and avoids timer interference with other tests
 - Tests run via `jest.scripts.config.js` (created in Plan 3-02 as a Rule 3 auto-fix)
 
@@ -100,7 +100,7 @@ The scripts (budget-guard.js, contextfs.js) and test files (budget-guard.test.js
 - PROJECT_ROOT depth: 3 levels (confirmed)
 - timeoutMs: 30000 (confirmed)
 - Jest tests: 17 total, 0 failures (exceeds minimum of 7)
-- rlhf baseline: not regressed
+- ThumbGate baseline: not regressed
 
 ## Issues Encountered
 
@@ -123,9 +123,9 @@ None.
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/contextfs.js` — FOUND
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/budget-guard.test.js` — FOUND
 - `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/__tests__/contextfs.test.js` — FOUND
-- `/Users/ganapolsky_i/workspace/git/igor/rlhf/proof/governance/3-01-budget-guard-contextfs-subway.md` — FOUND
+- `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/proof/governance/3-01-budget-guard-contextfs-subway.md` — FOUND
 - Jest: 17 passed, 0 failed
-- rlhf baseline: 91 tests, 0 failures
+- ThumbGate baseline: 91 tests, 0 failures
 
 ---
 *Phase: 03-governance-into-subway*

@@ -95,6 +95,7 @@ Scope:
 - Added `shieldcortex` as an optional dependency, not a required runtime dependency.
 
 Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/thumbgate/.worktrees/fix-thumbgate-source-labels`:
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/thumbgate/.worktrees/fix-rlhf-source-labels`:
 
 ```bash
 npm ci
@@ -126,11 +127,11 @@ const { evaluateMemoryIngress } = require('./scripts/memory-firewall');
 })();
 PY
 node --test tests/feedback-loop.test.js tests/intelligence.test.js
-npm test >/tmp/mcp_npm_test_fix_rlhf_source_labels.log 2>&1
-npm run test:coverage >/tmp/mcp_test_coverage_fix_rlhf_source_labels.log 2>&1
-THUMBGATE_PROOF_DIR=/tmp/mcp_proof_adapters_fix_rlhf npm run prove:adapters >/tmp/mcp_prove_adapters_fix_rlhf.log 2>&1
-THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_rlhf npm run prove:automation >/tmp/mcp_prove_automation_fix_rlhf.log 2>&1
-npm run self-heal:check >/tmp/mcp_self_heal_check_fix_rlhf.log 2>&1
+npm test >/tmp/mcp_npm_test_fix_thumbgate_source_labels.log 2>&1
+npm run test:coverage >/tmp/mcp_test_coverage_fix_thumbgate_source_labels.log 2>&1
+THUMBGATE_PROOF_DIR=/tmp/mcp_proof_adapters_fix_thumbgate npm run prove:adapters >/tmp/mcp_prove_adapters_fix_thumbgate.log 2>&1
+THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_thumbgate npm run prove:automation >/tmp/mcp_prove_automation_fix_thumbgate.log 2>&1
+npm run self-heal:check >/tmp/mcp_self_heal_check_fix_thumbgate.log 2>&1
 git diff --check
 ```
 
@@ -146,7 +147,7 @@ Observed result:
   - `reason: "Blocked: credential leak detected (anthropic api_key)"`
   - `threatIndicators: ["credential_leak"]`
 - `node --test tests/feedback-loop.test.js tests/intelligence.test.js` exited `0`: `74` passed, `0` failed.
-- `npm test` exited `0` on the patched worktree (`/tmp/mcp_npm_test_fix_rlhf_source_labels.log`).
+- `npm test` exited `0` on the patched worktree (`/tmp/mcp_npm_test_fix_thumbgate_source_labels.log`).
 - The full-suite rerun included the new ThumbGate/security checks:
   - `evaluateMemoryIngress: ShieldCortex blocks secret-bearing payload when explicitly enabled`
   - `captureFeedback: blocks secret-bearing feedback before any raw memory write`
@@ -154,8 +155,8 @@ Observed result:
   - `89.71` lines
   - `75.40` branches
   - `93.21` functions
-- `THUMBGATE_PROOF_DIR=/tmp/mcp_proof_adapters_fix_rlhf npm run prove:adapters` exited `0`: `48` passed, `0` failed.
-- `THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_rlhf npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `THUMBGATE_PROOF_DIR=/tmp/mcp_proof_adapters_fix_thumbgate npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=/tmp/mcp_proof_automation_fix_thumbgate npm run prove:automation` exited `0`: `55` passed, `0` failed.
 - `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `4/4 healthy` checks.
 - `git diff --check` exited `0`.
 
@@ -1468,6 +1469,7 @@ Requirements verified:
 
 - Source checkouts now install canonical MCP entries that launch the local stdio server directly via `node adapters/mcp/server-stdio.js`.
 - Portable docs and adapter examples now use the version-pinned launcher `npx -y thumbgate@0.9.10 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
+- Portable docs and adapter examples now use the version-pinned launcher `npx -y thumbgate@0.9.10 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
 - Re-running the MCP installer upgrades stale config entries instead of treating them as already configured.
 - Adapter and LanceDB proof cleanup now uses retry-capable recursive removal so ephemeral filesystem contention no longer flakes CI.
 - Transient `.thumbgate` reminder/A2UI/test-run files are now ignored as local runtime state and do not pollute git hygiene during verification.
@@ -2075,6 +2077,7 @@ Scope:
 Problem verified before the fix:
 
 - The public Smithery page for `thumbgate-loop/thumbgate-v2` was live, but showed `No capabilities found` and `No deployments found`.
+- The public Smithery page for `rlhf-loop/thumbgate-v2` was live, but showed `No capabilities found` and `No deployments found`.
 - Production already exposed unauthenticated metadata endpoints:
   - `GET https://thumbgate-production.up.railway.app/.well-known/mcp/server-card.json` -> `200`
   - `GET https://thumbgate-production.up.railway.app/mcp` -> `200`
@@ -2684,6 +2687,7 @@ Scope:
 
 - Added a repo-root Cursor marketplace manifest at `.cursor-plugin/marketplace.json`.
 - Added a dedicated Cursor plugin bundle in `plugins/cursor-marketplace/` with `.cursor-plugin/plugin.json`, `.mcp.json`, README, and committed logo asset.
+- Switched the Cursor launcher to the portable published package entrypoint `npx -y thumbgate@0.9.10 serve` instead of any checkout-local absolute path.
 - Switched the Cursor launcher to the portable published package entrypoint `npx -y thumbgate@0.9.10 serve` instead of any checkout-local absolute path.
 - Removed the stale `.mcp.json.plugin` legacy config file so the repo has one canonical Cursor packaging path.
 - Extended `scripts/sync-version.js` so Cursor manifests and all pinned launcher docs stay version-synced on future releases.

@@ -26,14 +26,8 @@ Has anyone used bandit approaches (UCB1, EXP3, contextual bandits) for rule enfo
 
 ---
 
-**Comment (post immediately after the main post):**
+**Follow-up comment policy:**
 
-Implementation is open source. The feedback pipeline, Thompson Sampling, and gate engine are all included.
+Do not post a canned implementation comment.
 
-Try free for 7 days (no credit card, 2-minute setup): https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content=locallama_post&community=LocalLLaMA
-
-Source code (MIT licensed): https://github.com/IgorGanapolsky/ThumbGate
-
-Works with local models, Claude Code, Cursor, Codex, Gemini, Amp. Fully local -- your feedback and rules stay on your machine.
-
-Disclosure: I built this.
+If someone asks about the bandit logic, cold start, or enforcement details, answer that technical point directly. Share the repo only if they ask for it.

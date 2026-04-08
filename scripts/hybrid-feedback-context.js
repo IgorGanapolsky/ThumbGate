@@ -16,20 +16,19 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 // ---------------------------------------------------------------------------
 // Paths
 // ---------------------------------------------------------------------------
 
-const ROOT = path.join(__dirname, '..');
-
+const FEEDBACK_DIR = resolveFeedbackDir();
 const PATHS = {
-  feedbackLog: path.join(ROOT, '.claude', 'memory', 'feedback', 'feedback-log.jsonl'),
-  inbox: path.join(ROOT, '.claude', 'memory', 'feedback', 'inbox.jsonl'),
-  pendingSync: path.join(ROOT, '.claude', 'memory', 'feedback', 'pending_cortex_sync.jsonl'),
-  attributedFeedback: path.join(ROOT, '.claude', 'memory', 'feedback', 'attributed-feedback.jsonl'),
-  guardArtifact: path.join(ROOT, '.claude', 'memory', 'feedback', 'pretool-guards.json'),
+  feedbackLog: path.join(FEEDBACK_DIR, 'feedback-log.jsonl'),
+  inbox: path.join(FEEDBACK_DIR, 'inbox.jsonl'),
+  pendingSync: path.join(FEEDBACK_DIR, 'pending_cortex_sync.jsonl'),
+  attributedFeedback: path.join(FEEDBACK_DIR, 'attributed-feedback.jsonl'),
+  guardArtifact: path.join(FEEDBACK_DIR, 'pretool-guards.json'),
 };
 
 // ---------------------------------------------------------------------------

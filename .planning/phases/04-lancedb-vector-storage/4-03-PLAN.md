@@ -108,7 +108,7 @@ Output: tests/vector-store.test.js with RED→GREEN cycle complete.
 </feature>
 
 <verification>
-Run from /Users/ganapolsky_i/workspace/git/igor/rlhf:
+Run from /Users/ganapolsky_i/workspace/git/igor/ThumbGate:
 1. `node --test tests/vector-store.test.js` → all tests pass, output shows test names
 2. `npm test` → exits 0, no regressions vs Phase 3 baseline
 3. `grep -c "test(" tests/vector-store.test.js` → at least 4 test cases

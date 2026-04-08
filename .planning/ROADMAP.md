@@ -25,7 +25,7 @@
 Plans:
 - [x] 1-01-PLAN.md — Runtime export audit script + proof/contract-audit-report.md (CNTR-01)
 - [x] 1-02-PLAN.md — rubricEvaluation gate + parseTimestamp() in Subway's feedback-schema.js (CNTR-02, CNTR-03 Subway)
-- [x] 1-03-PLAN.md — parseTimestamp() in rlhf's feedback-schema.js + test suite + baseline count record (CNTR-03 rlhf)
+- [x] 1-03-PLAN.md — parseTimestamp() in ThumbGate's feedback-schema.js + test suite + baseline count record (CNTR-03 ThumbGate)
 
 ### Phase 2: ML into thumbgate
 **Goal**: thumbgate gains Thompson Sampling posteriors, exponential time-decay, LSTM/Transformer sequence tracking, and diversity tracking — all tested and verified against Subway's implementation
@@ -131,7 +131,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [x] 07-01-PLAN.md — Port validate-feedback.js to scripts/ with RLHF schema adaptations (QUAL-01)
+- [x] 07-01-PLAN.md — Port validate-feedback.js to scripts/ with ThumbGate schema adaptations (QUAL-01)
 - [x] 07-02-PLAN.md — Add inferOutcome() + richContext enrichment to captureFeedback() (QUAL-02, QUAL-03)
 - [x] 07-03-PLAN.md — Test suite + prove-data-quality.js + npm scripts wiring (QUAL-04)
 
@@ -249,18 +249,18 @@ Plans:
 **Plans**: TBD
 
 ### Phase 15: Plugin Distribution
-**Goal**: Any developer on any of the 5 supported platforms can install the RLHF plugin with a single command and be capturing feedback within 5 minutes
+**Goal**: Any developer on any of the 5 supported platforms can install the ThumbGate plugin with a single command and be capturing feedback within 5 minutes
 **Depends on**: Phase 13
 **Requirements**: PLUG-01, PLUG-02, PLUG-03, PLUG-04, PLUG-05, PLUG-06
 **Success Criteria** (what must be TRUE):
   1. Running `npx thumbgate init` on a clean machine with no prior setup creates a working local config and captures a test feedback entry
   2. Following the Claude Code plugin README installs the skill and the `capture-feedback` command is available in Claude Code without any manual file editing
   3. Following the Codex config.toml README installs the MCP plugin and Codex can invoke the feedback capture tool
-  4. Each of the 5 platform READMEs contains a complete setup walkthrough that a developer can follow in under 5 minutes with zero prior knowledge of RLHF
+  4. Each of the 5 platform READMEs contains a complete setup walkthrough that a developer can follow in under 5 minutes with zero prior knowledge of ThumbGate
 **Plans**: TBD
 
 ### Phase 16: Discovery
-**Goal**: Developers searching for RLHF tooling or browsing AI plugin stores can find the product, understand the value in under 60 seconds, and reach a working install or purchase flow
+**Goal**: Developers searching for ThumbGate tooling or browsing AI plugin stores can find the product, understand the value in under 60 seconds, and reach a working install or purchase flow
 **Depends on**: Phase 14, Phase 15
 **Requirements**: DISC-01, DISC-02, DISC-03, DISC-04
 **Success Criteria** (what must be TRUE):

@@ -2,7 +2,7 @@
 phase: 07-data-quality
 plan: "03"
 subsystem: data-quality
-tags: [tests, proof, node-test, data-quality, rlhf]
+tags: [tests, proof, node-test, data-quality, ThumbGate]
 dependency_graph:
   requires: [scripts/validate-feedback.js, scripts/feedback-loop.js]
   provides: [tests/validate-feedback.test.js, proof/data-quality-report.json, proof/data-quality-report.md]

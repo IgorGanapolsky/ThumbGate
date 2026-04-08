@@ -66,9 +66,9 @@ const ORIGINAL_PATHS = {
   DEFAULT_CLAIM_GATES_PATH: gatesEngine.DEFAULT_CLAIM_GATES_PATH,
 };
 const ORIGINAL_ENV = {
-  RLHF_FEEDBACK_LOG: process.env.RLHF_FEEDBACK_LOG,
-  RLHF_ATTRIBUTED_FEEDBACK: process.env.RLHF_ATTRIBUTED_FEEDBACK,
-  RLHF_GUARDS_PATH: process.env.RLHF_GUARDS_PATH,
+  THUMBGATE_FEEDBACK_LOG: process.env.THUMBGATE_FEEDBACK_LOG,
+  THUMBGATE_ATTRIBUTED_FEEDBACK: process.env.THUMBGATE_ATTRIBUTED_FEEDBACK,
+  THUMBGATE_GUARDS_PATH: process.env.THUMBGATE_GUARDS_PATH,
 };
 
 let sandboxDir = null;
@@ -144,11 +144,11 @@ beforeEach(() => {
   gatesEngine.CUSTOM_CLAIM_GATES_PATH = sandboxPath('claim-verification.json');
   gatesEngine.GOVERNANCE_STATE_PATH = sandboxPath('governance-state.json');
   gatesEngine.DEFAULT_CLAIM_GATES_PATH = ORIGINAL_PATHS.DEFAULT_CLAIM_GATES_PATH;
-  process.env.RLHF_FEEDBACK_LOG = sandboxPath('feedback-log.jsonl');
-  process.env.RLHF_ATTRIBUTED_FEEDBACK = sandboxPath('attributed-feedback.jsonl');
-  process.env.RLHF_GUARDS_PATH = sandboxPath('pretool-guards.json');
-  fs.writeFileSync(process.env.RLHF_FEEDBACK_LOG, '');
-  fs.writeFileSync(process.env.RLHF_ATTRIBUTED_FEEDBACK, '');
+  process.env.THUMBGATE_FEEDBACK_LOG = sandboxPath('feedback-log.jsonl');
+  process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = sandboxPath('attributed-feedback.jsonl');
+  process.env.THUMBGATE_GUARDS_PATH = sandboxPath('pretool-guards.json');
+  fs.writeFileSync(process.env.THUMBGATE_FEEDBACK_LOG, '');
+  fs.writeFileSync(process.env.THUMBGATE_ATTRIBUTED_FEEDBACK, '');
   cleanupStateFiles();
 });
 
@@ -161,12 +161,12 @@ afterEach(() => {
   gatesEngine.CUSTOM_CLAIM_GATES_PATH = ORIGINAL_PATHS.CUSTOM_CLAIM_GATES_PATH;
   gatesEngine.GOVERNANCE_STATE_PATH = ORIGINAL_PATHS.GOVERNANCE_STATE_PATH;
   gatesEngine.DEFAULT_CLAIM_GATES_PATH = ORIGINAL_PATHS.DEFAULT_CLAIM_GATES_PATH;
-  if (ORIGINAL_ENV.RLHF_FEEDBACK_LOG === undefined) delete process.env.RLHF_FEEDBACK_LOG;
-  else process.env.RLHF_FEEDBACK_LOG = ORIGINAL_ENV.RLHF_FEEDBACK_LOG;
-  if (ORIGINAL_ENV.RLHF_ATTRIBUTED_FEEDBACK === undefined) delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
-  else process.env.RLHF_ATTRIBUTED_FEEDBACK = ORIGINAL_ENV.RLHF_ATTRIBUTED_FEEDBACK;
-  if (ORIGINAL_ENV.RLHF_GUARDS_PATH === undefined) delete process.env.RLHF_GUARDS_PATH;
-  else process.env.RLHF_GUARDS_PATH = ORIGINAL_ENV.RLHF_GUARDS_PATH;
+  if (ORIGINAL_ENV.THUMBGATE_FEEDBACK_LOG === undefined) delete process.env.THUMBGATE_FEEDBACK_LOG;
+  else process.env.THUMBGATE_FEEDBACK_LOG = ORIGINAL_ENV.THUMBGATE_FEEDBACK_LOG;
+  if (ORIGINAL_ENV.THUMBGATE_ATTRIBUTED_FEEDBACK === undefined) delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+  else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = ORIGINAL_ENV.THUMBGATE_ATTRIBUTED_FEEDBACK;
+  if (ORIGINAL_ENV.THUMBGATE_GUARDS_PATH === undefined) delete process.env.THUMBGATE_GUARDS_PATH;
+  else process.env.THUMBGATE_GUARDS_PATH = ORIGINAL_ENV.THUMBGATE_GUARDS_PATH;
   if (sandboxDir) {
     fs.rmSync(sandboxDir, { recursive: true, force: true });
     sandboxDir = null;
@@ -1158,10 +1158,10 @@ test('evaluateGatesAsync denies high-risk actions when recurring negative memory
   fs.writeFileSync(feedbackLog, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
   fs.writeFileSync(attributedFeedback, '');
 
-  const originalFeedbackLog = process.env.RLHF_FEEDBACK_LOG;
-  const originalAttributedFeedback = process.env.RLHF_ATTRIBUTED_FEEDBACK;
-  process.env.RLHF_FEEDBACK_LOG = feedbackLog;
-  process.env.RLHF_ATTRIBUTED_FEEDBACK = attributedFeedback;
+  const originalFeedbackLog = process.env.THUMBGATE_FEEDBACK_LOG;
+  const originalAttributedFeedback = process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+  process.env.THUMBGATE_FEEDBACK_LOG = feedbackLog;
+  process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = attributedFeedback;
 
   try {
     const result = await evaluateGatesAsync('Bash', {
@@ -1173,10 +1173,10 @@ test('evaluateGatesAsync denies high-risk actions when recurring negative memory
     assert.equal(result.gate, 'memory-high-risk-default-deny');
     assert.match(result.message, /Recurring negative memory matched/i);
   } finally {
-    if (originalFeedbackLog === undefined) delete process.env.RLHF_FEEDBACK_LOG;
-    else process.env.RLHF_FEEDBACK_LOG = originalFeedbackLog;
-    if (originalAttributedFeedback === undefined) delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
-    else process.env.RLHF_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
+    if (originalFeedbackLog === undefined) delete process.env.THUMBGATE_FEEDBACK_LOG;
+    else process.env.THUMBGATE_FEEDBACK_LOG = originalFeedbackLog;
+    if (originalAttributedFeedback === undefined) delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+    else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
     fs.rmSync(tmpConfig, { force: true });
     fs.rmSync(feedbackLog, { force: true });
     fs.rmSync(attributedFeedback, { force: true });
@@ -1200,10 +1200,10 @@ test('evaluateGatesAsync allows scoped high-risk actions even when recurring neg
   fs.writeFileSync(feedbackLog, '');
   fs.writeFileSync(attributedFeedback, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
 
-  const originalFeedbackLog = process.env.RLHF_FEEDBACK_LOG;
-  const originalAttributedFeedback = process.env.RLHF_ATTRIBUTED_FEEDBACK;
-  process.env.RLHF_FEEDBACK_LOG = feedbackLog;
-  process.env.RLHF_ATTRIBUTED_FEEDBACK = attributedFeedback;
+  const originalFeedbackLog = process.env.THUMBGATE_FEEDBACK_LOG;
+  const originalAttributedFeedback = process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+  process.env.THUMBGATE_FEEDBACK_LOG = feedbackLog;
+  process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = attributedFeedback;
 
   try {
     setTaskScope({
@@ -1217,10 +1217,10 @@ test('evaluateGatesAsync allows scoped high-risk actions even when recurring neg
     }, tmpConfig);
     assert.equal(result, null);
   } finally {
-    if (originalFeedbackLog === undefined) delete process.env.RLHF_FEEDBACK_LOG;
-    else process.env.RLHF_FEEDBACK_LOG = originalFeedbackLog;
-    if (originalAttributedFeedback === undefined) delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
-    else process.env.RLHF_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
+    if (originalFeedbackLog === undefined) delete process.env.THUMBGATE_FEEDBACK_LOG;
+    else process.env.THUMBGATE_FEEDBACK_LOG = originalFeedbackLog;
+    if (originalAttributedFeedback === undefined) delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+    else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
     fs.rmSync(tmpConfig, { force: true });
     fs.rmSync(feedbackLog, { force: true });
     fs.rmSync(attributedFeedback, { force: true });
@@ -1243,10 +1243,10 @@ test('evaluateGates allows gh pr create after explicit approval even when bash m
   fs.writeFileSync(feedbackLog, '');
   fs.writeFileSync(attributedFeedback, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
 
-  const originalFeedbackLog = process.env.RLHF_FEEDBACK_LOG;
-  const originalAttributedFeedback = process.env.RLHF_ATTRIBUTED_FEEDBACK;
-  process.env.RLHF_FEEDBACK_LOG = feedbackLog;
-  process.env.RLHF_ATTRIBUTED_FEEDBACK = attributedFeedback;
+  const originalFeedbackLog = process.env.THUMBGATE_FEEDBACK_LOG;
+  const originalAttributedFeedback = process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+  process.env.THUMBGATE_FEEDBACK_LOG = feedbackLog;
+  process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = attributedFeedback;
 
   try {
     setTaskScope({
@@ -1266,10 +1266,10 @@ test('evaluateGates allows gh pr create after explicit approval even when bash m
     }, tmpConfig);
     assert.equal(result, null);
   } finally {
-    if (originalFeedbackLog === undefined) delete process.env.RLHF_FEEDBACK_LOG;
-    else process.env.RLHF_FEEDBACK_LOG = originalFeedbackLog;
-    if (originalAttributedFeedback === undefined) delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
-    else process.env.RLHF_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
+    if (originalFeedbackLog === undefined) delete process.env.THUMBGATE_FEEDBACK_LOG;
+    else process.env.THUMBGATE_FEEDBACK_LOG = originalFeedbackLog;
+    if (originalAttributedFeedback === undefined) delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+    else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
     fs.rmSync(tmpConfig, { force: true });
     fs.rmSync(feedbackLog, { force: true });
     fs.rmSync(attributedFeedback, { force: true });

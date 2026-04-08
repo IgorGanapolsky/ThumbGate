@@ -44,7 +44,7 @@ pipeline = PaperBananaPipeline(settings=settings)
 
 result = asyncio.run(pipeline.generate(
     GenerationInput(
-        source_context=open("docs/diagrams/rlhf-architecture.txt").read(),
+        source_context=open("docs/diagrams/ThumbGate-architecture.txt").read(),
         communicative_intent="System architecture showing the ThumbGate feedback capture, validation, memory promotion, and training export pipeline.",
         diagram_type=DiagramType.METHODOLOGY,
     )

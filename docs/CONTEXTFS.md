@@ -14,7 +14,7 @@ Root:
 - `contextfs/provenance/`
 - `contextfs/session/`
 
-By default this lives under `.claude/memory/feedback/contextfs`.
+By default this lives under `.thumbgate/contextfs`.
 Override with `THUMBGATE_CONTEXTFS_DIR`.
 
 ## Components

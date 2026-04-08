@@ -59,7 +59,7 @@ metrics:
 - `npx thumbgate init` creates `.thumbgate/` with `config.json` and standalone `capture-feedback.js`
 - Standalone script has no dependencies — runs on any machine with Node.js 18+
 - Captures feedback signals to `.thumbgate/feedback-log.jsonl` in JSONL format
-- Updates `.gitignore` automatically with RLHF data paths
+- Updates `.gitignore` automatically with ThumbGate data paths
 - Idempotent — running init twice is safe
 
 ### package.json publish fields
@@ -72,7 +72,7 @@ metrics:
 
 - **Claude Code**: `cp plugins/claude-skill/SKILL.md .claude/skills/thumbgate-feedback.md`
 - **Codex**: `cat adapters/codex/config.toml >> ~/.codex/config.toml`
-- **Gemini**: `cp adapters/gemini/function-declarations.json .gemini/rlhf-tools.json`
+- **Gemini**: `cp adapters/gemini/function-declarations.json .gemini/thumbgate-tools.json`
 - **Amp**: `cp plugins/amp-skill/SKILL.md .amp/skills/thumbgate-feedback.md`
 - **ChatGPT**: GPT Builder Actions → Import `adapters/chatgpt/openapi.yaml`
 

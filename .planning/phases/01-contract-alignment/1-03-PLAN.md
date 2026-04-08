@@ -14,7 +14,7 @@ requirements:
 
 must_haves:
   truths:
-    - "parseTimestamp() is exported from rlhf's scripts/feedback-schema.js"
+    - "parseTimestamp() is exported from ThumbGate's scripts/feedback-schema.js"
     - "parseTimestamp('2026-03-04T12:00:00.000Z') returns a Date — not NaN, not null"
     - "parseTimestamp('2026-03-04T12:00:00') (no Z) returns a Date — handles Python's Z-stripping pattern"
     - "parseTimestamp('2026-03-04T12:00:00+05:00') (offset) returns a Date"
@@ -23,7 +23,7 @@ must_haves:
     - "npm test exits 0 after all changes — no regressions"
   artifacts:
     - path: "scripts/feedback-schema.js"
-      provides: "parseTimestamp() helper added to rlhf's feedback-schema.js"
+      provides: "parseTimestamp() helper added to ThumbGate's feedback-schema.js"
       contains: "parseTimestamp"
     - path: "tests/feedback-schema.test.js"
       provides: "node --test suite covering parseTimestamp() with all 6 test cases from research"
@@ -43,9 +43,9 @@ must_haves:
 ---
 
 <objective>
-Add parseTimestamp() to rlhf's feedback-schema.js, write a node --test test file covering all timestamp variants and edge cases, and record the authoritative baseline test count before Phase 2 begins.
+Add parseTimestamp() to ThumbGate's feedback-schema.js, write a node --test test file covering all timestamp variants and edge cases, and record the authoritative baseline test count before Phase 2 begins.
 
-Purpose: CNTR-03 requires parseTimestamp() in both repos (Subway's half is done in Plan 02). This plan completes the rlhf side and produces proof/baseline-test-count.md as the official pre-Phase-2 CI gate evidence. The test file also increases the node-runner count from 54, proving the test infrastructure accepts new tests.
+Purpose: CNTR-03 requires parseTimestamp() in both repos (Subway's half is done in Plan 02). This plan completes the ThumbGate side and produces proof/baseline-test-count.md as the official pre-Phase-2 CI gate evidence. The test file also increases the node-runner count from 54, proving the test infrastructure accepts new tests.
 Output: Modified scripts/feedback-schema.js, new tests/feedback-schema.test.js, new proof/baseline-test-count.md.
 </objective>
 
@@ -64,7 +64,7 @@ Output: Modified scripts/feedback-schema.js, new tests/feedback-schema.test.js, 
 <tasks>
 
 <task type="auto">
-  <name>Task 1: Add parseTimestamp() to rlhf's feedback-schema.js</name>
+  <name>Task 1: Add parseTimestamp() to ThumbGate's feedback-schema.js</name>
   <files>scripts/feedback-schema.js</files>
   <action>
 Read scripts/feedback-schema.js in full before editing.
@@ -91,13 +91,13 @@ function parseTimestamp(ts) {
 }
 ```
 
-Add parseTimestamp to the module.exports object. The existing rlhf exports are:
+Add parseTimestamp to the module.exports object. The existing ThumbGate exports are:
   validateFeedbackMemory, resolveFeedbackAction, prepareForStorage, GENERIC_TAGS,
   MIN_CONTENT_LENGTH, VALID_TITLE_PREFIXES, VALID_CATEGORIES
 
 After edit, exports must include parseTimestamp as well. Do NOT remove any existing export.
 
-Run the rlhf inline tests to confirm nothing broke:
+Run the ThumbGate inline tests to confirm nothing broke:
   node scripts/feedback-schema.js
 Expected: exits 0 (7 inline schema tests pass).
   </action>
@@ -112,7 +112,7 @@ grep "parseTimestamp" scripts/feedback-schema.js | wc -l
 Expected: >= 3 (definition, JSDoc, export).
   </verify>
   <done>
-parseTimestamp() is defined and exported from rlhf's scripts/feedback-schema.js. Existing 7 inline schema tests still pass.
+parseTimestamp() is defined and exported from ThumbGate's scripts/feedback-schema.js. Existing 7 inline schema tests still pass.
   </done>
 </task>
 
@@ -213,7 +213,7 @@ cat proof/baseline-test-count.md | grep "node-runner"
 Expected: contains actual numeric count, not a placeholder.
   </verify>
   <done>
-tests/feedback-schema.test.js has 6 passing tests for parseTimestamp(). npm test exits 0 with >= 60 node-runner tests. proof/baseline-test-count.md records the actual count with no placeholders. CNTR-03 complete for rlhf side.
+tests/feedback-schema.test.js has 6 passing tests for parseTimestamp(). npm test exits 0 with >= 60 node-runner tests. proof/baseline-test-count.md records the actual count with no placeholders. CNTR-03 complete for ThumbGate side.
   </done>
 </task>
 
@@ -228,7 +228,7 @@ tests/feedback-schema.test.js has 6 passing tests for parseTimestamp(). npm test
 </verification>
 
 <success_criteria>
-- parseTimestamp() in rlhf's feedback-schema.js handles Z-suffix, no-suffix, offset, null, and garbage inputs correctly (CNTR-03 rlhf side)
+- parseTimestamp() in ThumbGate's feedback-schema.js handles Z-suffix, no-suffix, offset, null, and garbage inputs correctly (CNTR-03 ThumbGate side)
 - 6-test node --test suite validates all parseTimestamp behavior
 - npm test exits 0 with no regressions from Phase 1 changes
 - proof/baseline-test-count.md records actual test count as the official pre-Phase-2 gate
@@ -236,8 +236,8 @@ tests/feedback-schema.test.js has 6 passing tests for parseTimestamp(). npm test
 
 <output>
 After completion, create .planning/phases/01-contract-alignment/1-03-SUMMARY.md with:
-- Confirmation parseTimestamp() added to rlhf's feedback-schema.js
+- Confirmation parseTimestamp() added to ThumbGate's feedback-schema.js
 - Actual npm test node-runner count (number from test output)
-- CNTR-03 complete: parseTimestamp in both repos (rlhf + Subway via Plan 02)
+- CNTR-03 complete: parseTimestamp in both repos (ThumbGate + Subway via Plan 02)
 - Baseline record location: proof/baseline-test-count.md
 </output>

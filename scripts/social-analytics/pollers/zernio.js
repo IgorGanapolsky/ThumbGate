@@ -11,10 +11,13 @@
  */
 
 const { normalizeZernioMetric } = require('../normalizer');
+const { loadLocalEnv } = require('../load-env');
 const { upsertMetric, initDb } = require('../store');
 const { getConnectedAccounts } = require('../publishers/zernio');
 
 const ZERNIO_BASE = 'https://zernio.com/api/v1';
+
+loadLocalEnv();
 
 function requireApiKey() {
   const key = process.env.ZERNIO_API_KEY;

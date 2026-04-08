@@ -1,6 +1,6 @@
 # Feature Research
 
-**Domain:** RLHF Bidirectional Feature Sync (ML-enhanced feedback systems)
+**Domain:** ThumbGate Bidirectional Feature Sync (ML-enhanced feedback systems)
 **Researched:** 2026-03-04
 **Confidence:** HIGH (direct code inspection of both repos; confirmed feature presence/absence)
 
@@ -33,11 +33,11 @@ This is not a greenfield project. Both repos are live systems. The sync is surgi
 
 ### Table Stakes (Users Expect These)
 
-These are features that any RLHF sync system must have to be considered complete. Missing these makes the system feel broken or untrustworthy.
+These are features that any ThumbGate sync system must have to be considered complete. Missing these makes the system feel broken or untrustworthy.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Feedback signal capture (thumbs up/down) | Core RLHF primitive — no feedback = no learning | LOW | Already in both repos via `feedback-loop.js` and `feedback-schema.js` |
+| Feedback signal capture (thumbs up/down) | Core ThumbGate primitive — no feedback = no learning | LOW | Already in both repos via `feedback-loop.js` and `feedback-schema.js` |
 | Schema validation on input | Invalid data corrupts model over time | LOW | Already in both repos via `feedback-schema.js` |
 | JSONL persistent storage | Audit trail, reproducibility, ML training input | LOW | Already in both repos |
 | Prevention rules from recurring failures | The output of learning must surface as actionable rules | MEDIUM | Already in both repos via `writePreventionRules()` |
@@ -54,7 +54,7 @@ These are the features that make this system significantly more capable than a b
 |---------|-------------------|------------|-------|
 | Thompson Sampling posteriors (Beta-Bernoulli) | Turns raw feedback into per-category reliability estimates with Bayesian uncertainty quantification; enables exploration vs exploitation decisions | HIGH | Fully implemented in Subway via `train_from_feedback.py`; uses Beta(alpha, beta) per category; O(sqrt(T)) regret bound per arXiv:2505.23927 |
 | Exponential time-decay on feedback | Recent mistakes matter more than old ones; half-life=7 days prevents stale data from polluting posteriors | MEDIUM | Implemented in Subway with configurable `HALF_LIFE_DAYS`; toggle between step-decay and exponential |
-| LanceDB vector storage | Enables semantic similarity search over historical feedback; native FTS via DuckDB/Tantivy integration as of 2026 | HIGH | Subway has live `rlhf_feedback.lance` table; LanceDB 0.26.1 installed in venv |
+| LanceDB vector storage | Enables semantic similarity search over historical feedback; native FTS via DuckDB/Tantivy integration as of 2026 | HIGH | Subway has live `thumbgate_feedback.lance` table; LanceDB 0.26.1 installed in venv |
 | Hybrid semantic search (BM25 + vector fusion) | Lexical + semantic retrieval beats either alone; handles cases where exact keywords appear in different wording | HIGH | Subway's `semantic-memory-v2.py` implements this pattern; LanceDB native FTS added Feb 2026 |
 | LSTM/Transformer sequence tracking | Captures temporal patterns across N feedback interactions (window=10); enables sequence-level rather than point-level learning | HIGH | Subway's `capture-feedback.js` writes `feedback-sequences.jsonl`; identified as critical gap in thumbgate |
 | Diversity tracking (domain coverage) | Prevents representation collapse — ensures feedback covers all domain categories, not just easy ones | MEDIUM | Subway has live `diversity-tracking.json` with `diversityScore` metric; 10 domain categories tracked |
@@ -77,7 +77,7 @@ These are the features that make this system significantly more capable than a b
 | External database (PostgreSQL, Redis) for feedback | "Scale to production" | $10/month budget constraint makes external infra risky; LanceDB and file-based JSONL work offline and cost $0 | LanceDB embedded + JSONL; upgrade path exists when budget allows |
 | PaperBanana PNG architecture diagrams | Visual documentation is valuable | Blocked on Gemini API quota; explicitly out of scope per PROJECT.md | Mermaid diagrams sufficient; already flagged as out of scope |
 | Automatic feedback capture without user signal | "Always on" learning is better | Silent capture violates the explicit feedback contract; captures noise, not signal | Require explicit thumbs up/down; enrich with context automatically |
-| Reward model fine-tuning with API calls | "True RLHF" | At $10/month, API calls for reward model training are budget-prohibitive | Use local Thompson Sampling + DPO pair construction instead; RLAIF avoids paid inference |
+| Reward model fine-tuning with API calls | "True ThumbGate" | At $10/month, API calls for reward model training are budget-prohibitive | Use local Thompson Sampling + DPO pair construction instead; RLAIF avoids paid inference |
 | Cross-repo shared database | One source of truth for both repos | Creates tight coupling between a library and a prototype; CI failures in one break the other | Sync features via code, not shared state |
 
 ---
@@ -201,39 +201,39 @@ Defer until Phase 1-3 are stable and verified:
 
 ## Ecosystem Benchmarks
 
-### Thompson Sampling in RLHF (2026 Research)
+### Thompson Sampling in ThumbGate (2026 Research)
 
-Research published May 2025 (arXiv:2505.23927) provides O(sqrt(T)) regret bounds for model-free posterior sampling in online RLHF, confirming Thompson Sampling is theoretically sound for this use case. The Beta-Bernoulli implementation in Subway aligns with established practice for Bernoulli reward signals.
+Research published May 2025 (arXiv:2505.23927) provides O(sqrt(T)) regret bounds for model-free posterior sampling in online ThumbGate, confirming Thompson Sampling is theoretically sound for this use case. The Beta-Bernoulli implementation in Subway aligns with established practice for Bernoulli reward signals.
 
 ### LanceDB State (2026)
 
 LanceDB kicked off 2026 with Lance-native SQL retrieval via DuckDB, Uber-scale multi-bucket storage, and 1.5M IOPS benchmarks. Subway uses version 0.26.1 with native FTS index. The embedded model is the right choice for this budget — no external service required.
 
-### RLAIF vs RLHF (Current)
+### RLAIF vs ThumbGate (Current)
 
-RLAIF (AI feedback replacing human judges) is validated at scale — RLAIF vs RLHF paper showed comparable performance at lower cost. The DPO batch optimization in Subway (Rafailov et al. 2023) avoids an explicit reward model entirely, using preference pairs from existing positive/negative feedback. This is the correct approach for a $10/month budget.
+RLAIF (AI feedback replacing human judges) is validated at scale — RLAIF vs ThumbGate paper showed comparable performance at lower cost. The DPO batch optimization in Subway (Rafailov et al. 2023) avoids an explicit reward model entirely, using preference pairs from existing positive/negative feedback. This is the correct approach for a $10/month budget.
 
 ### Sequence-to-Sequence Reward Modeling
 
-AAAI 2025 research on seq2seq reward modeling shows language feedback (sequence) outperforms scalar feedback for RLHF without additional annotations — achieving 76.9% win rate on NLP tasks. This validates the LSTM/sequence tracking investment as future training data.
+AAAI 2025 research on seq2seq reward modeling shows language feedback (sequence) outperforms scalar feedback for ThumbGate without additional annotations — achieving 76.9% win rate on NLP tasks. This validates the LSTM/sequence tracking investment as future training data.
 
 ---
 
 ## Sources
 
-- Direct code inspection: `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/` (budget-guard.js, contextfs.js, intent-router.js, self-heal.js, self-healing-check.js, rubric-engine.js, mcp-policy.js) — HIGH confidence
+- Direct code inspection: `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/` (budget-guard.js, contextfs.js, intent-router.js, self-heal.js, self-healing-check.js, rubric-engine.js, mcp-policy.js) — HIGH confidence
 - Direct code inspection: `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/train_from_feedback.py` (Thompson Sampling, DPO, meta-policy rules) — HIGH confidence
 - Direct code inspection: `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/capture-feedback.js` (sequence tracking, diversity tracking, LanceDB) — HIGH confidence
 - Direct data inspection: `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/memory/feedback/diversity-tracking.json` (live diversity score 76.2%) — HIGH confidence
 - PROJECT.md constraints: out-of-scope items confirmed by document — HIGH confidence
-- arXiv:2505.23927 — Thompson Sampling in Online RLHF with General Function Approximation (2025) — MEDIUM confidence
+- arXiv:2505.23927 — Thompson Sampling in Online ThumbGate with General Function Approximation (2025) — MEDIUM confidence
 - arXiv:2305.18290 — Rafailov et al. DPO: Direct Preference Optimization — HIGH confidence (foundational paper)
 - arXiv:2509.03990 — Meta-Policy Reflexion (referenced directly in Subway code comments) — MEDIUM confidence
 - LanceDB official site: https://lancedb.com — 2026 updates confirmed — MEDIUM confidence
-- RLAIF vs RLHF: arXiv:2309.00267 — MEDIUM confidence
+- RLAIF vs ThumbGate: arXiv:2309.00267 — MEDIUM confidence
 - Sequence-to-Sequence Reward Modeling: AAAI 2025 — https://ojs.aaai.org/index.php/AAAI/article/view/34992 — MEDIUM confidence
 
 ---
 
-*Feature research for: RLHF Bidirectional Feature Sync*
+*Feature research for: ThumbGate Bidirectional Feature Sync*
 *Researched: 2026-03-04*

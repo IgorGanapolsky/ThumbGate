@@ -2237,7 +2237,55 @@ function createApiServer() {
           const newsletterPath = path.join(getFeedbackPaths().FEEDBACK_DIR, 'newsletter-subscribers.jsonl');
           const dir = path.dirname(newsletterPath);
           if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-          fs.appendFileSync(newsletterPath, JSON.stringify({ email, subscribedAt: new Date().toISOString(), source: 'landing-page' }) + '\n');
+          const existingEntries = fs.existsSync(newsletterPath)
+            ? fs.readFileSync(newsletterPath, 'utf8').split('\n').map((line) => line.trim()).filter(Boolean)
+            : [];
+          const duplicate = existingEntries.some((line) => {
+            try {
+              const entry = JSON.parse(line);
+              return String(entry.email || '').trim().toLowerCase() === email;
+            } catch {
+              return false;
+            }
+          });
+          const referrer = String(req.headers.referer || req.headers.referrer || '').trim();
+          let attribution = {};
+          let referrerHost = null;
+          let landingPath = '/';
+          if (referrer) {
+            try {
+              const referrerUrl = new URL(referrer);
+              referrerHost = referrerUrl.host || null;
+              landingPath = referrerUrl.pathname || '/';
+              attribution = {
+                source: referrerUrl.searchParams.get('utm_source') || null,
+                medium: referrerUrl.searchParams.get('utm_medium') || null,
+                campaign: referrerUrl.searchParams.get('utm_campaign') || null,
+                content: referrerUrl.searchParams.get('utm_content') || null,
+                term: referrerUrl.searchParams.get('utm_term') || null,
+                creator: referrerUrl.searchParams.get('creator') || null,
+                community: referrerUrl.searchParams.get('community') || referrerUrl.searchParams.get('subreddit') || null,
+                postId: referrerUrl.searchParams.get('post_id') || referrerUrl.searchParams.get('postId') || null,
+                commentId: referrerUrl.searchParams.get('comment_id') || referrerUrl.searchParams.get('commentId') || null,
+                campaignVariant: referrerUrl.searchParams.get('campaign_variant') || referrerUrl.searchParams.get('variant') || null,
+                offerCode: referrerUrl.searchParams.get('offer_code') || referrerUrl.searchParams.get('offer') || null,
+                landingPath,
+              };
+            } catch {
+              // Ignore invalid referrer values.
+            }
+          }
+          if (!duplicate) {
+            fs.appendFileSync(newsletterPath, JSON.stringify({
+              email,
+              subscribedAt: new Date().toISOString(),
+              source: attribution.source || 'landing-page',
+              referrer: referrer || null,
+              referrerHost,
+              landingPath,
+              attribution,
+            }) + '\n');
+          }
           res.writeHead(302, { Location: '/?subscribed=1' });
           res.end();
         } catch {

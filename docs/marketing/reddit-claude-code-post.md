@@ -31,16 +31,8 @@ Has this been a pain point for others? How are you handling cross-session reliab
 
 ---
 
-**Comment (post immediately after the main post):**
+**Follow-up comment policy:**
 
-The problem: AI coding agents repeat the same mistakes every session. You correct a force-push, it does it again tomorrow. CLAUDE.md rules get ignored after context compaction.
+Do not drop a promo comment under the post.
 
-ThumbGate fixes this with enforcement, not memory. You give a thumbs-down, it auto-generates a prevention rule, and a gate physically blocks the agent from repeating that action. Thumbs-up reinforces good behavior.
-
-Works with Claude Code, Cursor, Codex, Gemini, and Amp. Fully local, MIT licensed.
-
-Try free for 7 days (no credit card, 2-minute setup): https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content=claudecode_post&community=ClaudeCode
-
-Source code: https://github.com/IgorGanapolsky/ThumbGate
-
-Disclosure: I built this.
+If someone asks what the tool is, reply directly to that person with a short disclosure and answer their specific question. No install CTA, no pricing, and no stack dump unless they explicitly ask.

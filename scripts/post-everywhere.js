@@ -136,17 +136,9 @@ async function postToReddit(parsed, dryRun) {
   const reddit = getPublisher('reddit');
   const postData = await reddit.publishToReddit({ subreddit, title, text: body });
 
-  // Post the follow-up comment if we have one and got a post ID
+  // Reddit follow-up comments are manual-review only.
   if (comment && postData.name) {
-    console.log('[post-everywhere] Posting follow-up comment...');
-    const token = await reddit.getRedditToken(
-      process.env.REDDIT_CLIENT_ID,
-      process.env.REDDIT_CLIENT_SECRET,
-      process.env.REDDIT_USERNAME,
-      process.env.REDDIT_PASSWORD
-    );
-    const userAgent = process.env.REDDIT_USER_AGENT || `thumbgate/1.0 by ${process.env.REDDIT_USERNAME}`;
-    await reddit.submitComment(token, userAgent, { parentId: postData.name, text: comment });
+    console.log('[post-everywhere] Reddit follow-up comment skipped; manual review required');
   }
 
   return postData;

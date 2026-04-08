@@ -18,6 +18,10 @@ const path = require('path');
 
 const PKG_ROOT = path.join(__dirname, '..');
 
+function quoteShellPath(filePath) {
+  return `"${String(filePath).replace(/"/g, '\\"')}"`;
+}
+
 function getHome() {
   return process.env.HOME || process.env.USERPROFILE || '';
 }
@@ -25,15 +29,16 @@ function getHome() {
 // --- Hook definitions ---
 
 function preToolHookCommand() {
-  return 'bash scripts/generate-pretool-hook.sh';
+  return `bash ${quoteShellPath(path.join(PKG_ROOT, 'scripts', 'generate-pretool-hook.sh'))}`;
 }
 
 function userPromptHookCommand() {
-  return 'bash scripts/hook-auto-capture.sh';
+  return `bash ${quoteShellPath(path.join(PKG_ROOT, 'scripts', 'hook-auto-capture.sh'))}`;
 }
 
 function sessionStartHookCommand() {
   return 'bash scripts/thumbgate_session_start.sh';
+  return `bash ${quoteShellPath(path.join(PKG_ROOT, 'scripts', 'rlhf_session_start.sh'))}`;
 }
 
 const CLAUDE_HOOKS = {

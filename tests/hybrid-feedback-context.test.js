@@ -195,18 +195,18 @@ describe('evaluatePretool — with seeded negative patterns', () => {
 
   it('uses structured scope metadata when free-text context is sparse', () => {
     const structuredTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hfc-structured-test-'));
-    const prevFeedbackLog = process.env.RLHF_FEEDBACK_LOG;
-    const prevAttributedFeedback = process.env.RLHF_ATTRIBUTED_FEEDBACK;
-    const prevGuardsPath = process.env.RLHF_GUARDS_PATH;
+    const prevFeedbackLog = process.env.THUMBGATE_FEEDBACK_LOG;
+    const prevAttributedFeedback = process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+    const prevGuardsPath = process.env.THUMBGATE_GUARDS_PATH;
     try {
-      process.env.RLHF_FEEDBACK_LOG = path.join(structuredTmpDir, 'feedback-log.jsonl');
-      process.env.RLHF_ATTRIBUTED_FEEDBACK = path.join(structuredTmpDir, 'attributed-feedback.jsonl');
-      process.env.RLHF_GUARDS_PATH = path.join(structuredTmpDir, 'pretool-guards.json');
+      process.env.THUMBGATE_FEEDBACK_LOG = path.join(structuredTmpDir, 'feedback-log.jsonl');
+      process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = path.join(structuredTmpDir, 'attributed-feedback.jsonl');
+      process.env.THUMBGATE_GUARDS_PATH = path.join(structuredTmpDir, 'pretool-guards.json');
       delete require.cache[require.resolve('../scripts/hybrid-feedback-context')];
       const { buildHybridState: bhs, evaluatePretoolFromState: eps } = require('../scripts/hybrid-feedback-context');
 
       const ts = new Date().toISOString();
-      writeJsonl(process.env.RLHF_FEEDBACK_LOG, [
+      writeJsonl(process.env.THUMBGATE_FEEDBACK_LOG, [
         {
           id: 'structured-1',
           timestamp: ts,
@@ -242,20 +242,20 @@ describe('evaluatePretool — with seeded negative patterns', () => {
       ]);
 
       const state = bhs({
-        feedbackLogPath: process.env.RLHF_FEEDBACK_LOG,
-        attributedFeedbackPath: process.env.RLHF_ATTRIBUTED_FEEDBACK,
+        feedbackLogPath: process.env.THUMBGATE_FEEDBACK_LOG,
+        attributedFeedbackPath: process.env.THUMBGATE_ATTRIBUTED_FEEDBACK,
       });
       assert.ok(state.recurringNegativePatterns.length > 0, 'expected structured metadata to create a recurring pattern');
 
       const result = eps(state, 'Edit', '{"filePath":"AGENTS.md","reason":"protected file scope creep"}');
       assert.equal(result.mode, 'warn');
     } finally {
-      if (prevFeedbackLog === undefined) delete process.env.RLHF_FEEDBACK_LOG;
-      else process.env.RLHF_FEEDBACK_LOG = prevFeedbackLog;
-      if (prevAttributedFeedback === undefined) delete process.env.RLHF_ATTRIBUTED_FEEDBACK;
-      else process.env.RLHF_ATTRIBUTED_FEEDBACK = prevAttributedFeedback;
-      if (prevGuardsPath === undefined) delete process.env.RLHF_GUARDS_PATH;
-      else process.env.RLHF_GUARDS_PATH = prevGuardsPath;
+      if (prevFeedbackLog === undefined) delete process.env.THUMBGATE_FEEDBACK_LOG;
+      else process.env.THUMBGATE_FEEDBACK_LOG = prevFeedbackLog;
+      if (prevAttributedFeedback === undefined) delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+      else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = prevAttributedFeedback;
+      if (prevGuardsPath === undefined) delete process.env.THUMBGATE_GUARDS_PATH;
+      else process.env.THUMBGATE_GUARDS_PATH = prevGuardsPath;
       fs.rmSync(structuredTmpDir, { recursive: true, force: true });
     }
   });

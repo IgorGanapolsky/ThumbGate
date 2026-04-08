@@ -10,7 +10,7 @@ gaps:
     reason: "Report correctly shows COMPATIBLE verdict with 8 shared exports (parseTimestamp added before audit ran — documented as discrepancy). Minor: plan said 7, actual is 8. Not a functional gap."
     artifacts: []
     missing: []
-  - truth: "proof/contract-audit-report.md CNTR-02 alias map row is accurate — Subway's resolveFeedbackAction handles rubricEvaluation identically to rlhf"
+  - truth: "proof/contract-audit-report.md CNTR-02 alias map row is accurate — Subway's resolveFeedbackAction handles rubricEvaluation identically to ThumbGate"
     status: failed
     reason: "contract-audit.js line 148 still contains the stale pre-CNTR-02 description. When the audit is regenerated it will print 'resolveFeedbackAction silently ignores rubricEvaluation — Behavior diverges — CNTR-02 fix required' even though CNTR-02 is complete. The on-disk proof/contract-audit-report.md reflects this stale text. The 1-02-SUMMARY claimed the proof report was updated to COMPATIBLE, but the generator source was not updated — only the static file was patched, and a later regeneration overwrote it with stale content."
     artifacts:
@@ -42,10 +42,10 @@ human_verification:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Running `node scripts/contract-audit.js` produces a non-empty markdown report listing shared, rlhf-only, and subway-only exports for all 3 shared scripts | VERIFIED | Script exits 0, produces 3-script JSON; proof/contract-audit-report.md contains verdicts for all 3 scripts |
-| 2 | The report correctly identifies feedback-loop.js as INCOMPATIBLE (captureFeedback vs recordFeedback divergence) | VERIFIED | Line 26: "Verdict: INCOMPATIBLE"; line 42: captureFeedback in RLHF-Only; line 50: recordFeedback in Subway-Only; line 83: alias map row documents divergence |
+| 1 | Running `node scripts/contract-audit.js` produces a non-empty markdown report listing shared, ThumbGate-only, and subway-only exports for all 3 shared scripts | VERIFIED | Script exits 0, produces 3-script JSON; proof/contract-audit-report.md contains verdicts for all 3 scripts |
+| 2 | The report correctly identifies feedback-loop.js as INCOMPATIBLE (captureFeedback vs recordFeedback divergence) | VERIFIED | Line 26: "Verdict: INCOMPATIBLE"; line 42: captureFeedback in ThumbGate-Only; line 50: recordFeedback in Subway-Only; line 83: alias map row documents divergence |
 | 3 | The report correctly identifies feedback-schema.js as COMPATIBLE at the export level (7 shared exports) | PARTIAL | Report correctly shows COMPATIBLE verdict; actual shared count is 8 (parseTimestamp was added before audit ran). Discrepancy is documented in the report itself. Verdict is correct; count differs from plan prediction. |
-| 4 | The report correctly identifies export-dpo-pairs.js as PARTIALLY COMPATIBLE (5 shared, 3 rlhf-only, 1 subway-only) | VERIFIED | Line 55: "Verdict: PARTIALLY COMPATIBLE"; shared: 5; rlhfOnly: 3 (DEFAULT_LOCAL_MEMORY_LOG, exportDpoFromMemories, readJSONL); subwayOnly: 1 (validateMemoryStructure) |
+| 4 | The report correctly identifies export-dpo-pairs.js as PARTIALLY COMPATIBLE (5 shared, 3 ThumbGate-only, 1 subway-only) | VERIFIED | Line 55: "Verdict: PARTIALLY COMPATIBLE"; shared: 5; thumbgateOnly: 3 (DEFAULT_LOCAL_MEMORY_LOG, exportDpoFromMemories, readJSONL); subwayOnly: 1 (validateMemoryStructure) |
 | 5 | proof/contract-audit-report.md exists and contains the alias map as evidence for CNTR-01 | PARTIAL | File exists, alias map exists with 5 rows. However, the rubric evaluation row (line 87) is stale — still says "CNTR-02 fix required" and "Subway silently ignores rubricEvaluation" even after CNTR-02 completion. |
 
 #### Plan 1-02 Truths (CNTR-02, CNTR-03 Subway)
@@ -58,11 +58,11 @@ human_verification:
 | 9 | parseTimestamp() exported from Subway's feedback-schema.js returns a Date for Z-suffix, no-suffix, and offset inputs | VERIFIED | Live: `node -e "const s = require('...')..."` → `function true true true` |
 | 10 | parseTimestamp(null) and parseTimestamp('garbage') return null — never NaN | VERIFIED | Live test outputs: `parseTimestamp(null) === null` = true, `parseTimestamp('garbage') === null` = true |
 
-#### Plan 1-03 Truths (CNTR-03 rlhf)
+#### Plan 1-03 Truths (CNTR-03 ThumbGate)
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 11 | parseTimestamp() is exported from rlhf's scripts/feedback-schema.js | VERIFIED | Line 291: `parseTimestamp,` in module.exports; grep count = 3 (definition line 208, JSDoc line 197, export line 291) |
+| 11 | parseTimestamp() is exported from ThumbGate's scripts/feedback-schema.js | VERIFIED | Line 291: `parseTimestamp,` in module.exports; grep count = 3 (definition line 208, JSDoc line 197, export line 291) |
 | 12 | parseTimestamp('2026-03-04T12:00:00.000Z') returns a Date — not NaN, not null | VERIFIED | Live: `parseTimestamp('2026-03-04T12:00:00.000Z') instanceof Date` = true |
 | 13 | parseTimestamp('2026-03-04T12:00:00') (no Z) returns a Date — handles Python's Z-stripping pattern | VERIFIED | Live: `parseTimestamp('2026-03-04T12:00:00') instanceof Date` = true |
 | 14 | parseTimestamp('2026-03-04T12:00:00+05:00') (offset) returns a Date | VERIFIED | Live: `parseTimestamp('2026-03-04T12:00:00+05:00') instanceof Date` = true |
@@ -79,7 +79,7 @@ human_verification:
 | `scripts/contract-audit.js` | Runtime export compatibility auditor for 3 shared scripts | VERIFIED | 199 lines (min_lines=60 met); exports `{ auditScript }`; CLI-guarded with `require.main === module`; uses `SUBWAY_ROOT` + `require()` + `fs.writeFileSync` |
 | `proof/contract-audit-report.md` | CNTR-01 evidence: alias map with compatibility verdict per script | STUB (stale content) | File exists and contains verdicts; alias map row for "Rubric evaluation" is stale (says "CNTR-02 fix required" — incorrect post-CNTR-02) |
 | `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/feedback-schema.js` | rubricEvaluation gate logic + parseTimestamp() | VERIFIED | rubricEvaluation: 10 occurrences; parseTimestamp: exported and functional; gate behavior confirmed live |
-| `scripts/feedback-schema.js` | parseTimestamp() added to rlhf's feedback-schema | VERIFIED | Function at line 208, export at line 291, JSDoc at line 197 |
+| `scripts/feedback-schema.js` | parseTimestamp() added to ThumbGate's feedback-schema | VERIFIED | Function at line 208, export at line 291, JSDoc at line 197 |
 | `tests/feedback-schema.test.js` | 6-case node:test suite for parseTimestamp | VERIFIED | 38 lines (min_lines=30 met); 6 tests pass (confirmed: `node --test tests/feedback-schema.test.js` → 6 pass, 0 fail) |
 | `proof/baseline-test-count.md` | Authoritative baseline test count | VERIFIED | Real numeric counts: 60 node-runner (58 test:api + 2 test:proof) + 23 script-runner = 83 total; contains "node-runner" keyword |
 
@@ -108,7 +108,7 @@ human_verification:
 
 | # | Success Criterion | Status | Evidence |
 |---|-------------------|--------|----------|
-| SC1 | Running `grep -n "module.exports"` across both repos produces an explicit alias map with zero unresolved name collisions | VERIFIED | `proof/contract-audit-report.md` alias map covers all divergences; runtime audit confirms 0 unresolved collisions in feedback-schema.js (8 shared, 0 rlhf-only, 0 subway-only) |
+| SC1 | Running `grep -n "module.exports"` across both repos produces an explicit alias map with zero unresolved name collisions | VERIFIED | `proof/contract-audit-report.md` alias map covers all divergences; runtime audit confirms 0 unresolved collisions in feedback-schema.js (8 shared, 0 ThumbGate-only, 0 subway-only) |
 | SC2 | `rubricEvaluation` parameter is handled identically in both `feedback-schema.js` files with a documented diff resolution | VERIFIED in code, STALE in proof | Code: identical gate logic confirmed live in both repos. Documentation: `proof/contract-audit-report.md` alias map row is stale (says CNTR-02 still required). |
 | SC3 | All timestamp fields in both repos produce valid `Date` objects when parsed through `parseTimestamp()` — no `NaN` values | VERIFIED | Live tests: Z-suffix, no-suffix, offset all return Date; null/garbage return null (never NaN) |
 | SC4 | A baseline test count is recorded for both repos and CI passes green before any ports begin | VERIFIED | `proof/baseline-test-count.md` records 60 node-runner + 23 script-runner = 83 total; npm test exits 0 with 60 passing |

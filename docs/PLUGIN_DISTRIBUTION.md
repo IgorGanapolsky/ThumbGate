@@ -39,6 +39,7 @@ This avoids platform-specific rewrite cost and keeps the product under a `$10/mo
 
 - Use: `adapters/claude/.mcp.json`
 - Transport: local stdio MCP server launched via `npx -y thumbgate@0.9.10 serve`
+- Transport: local stdio MCP server launched via `npx -y thumbgate@0.9.10 serve`
 
 ## Claude Desktop Extensions
 
@@ -51,6 +52,7 @@ This avoids platform-specific rewrite cost and keeps the product under a `$10/mo
 - Bundle build command: `npm run build:claude-mcpb`
 - Release workflow: `.github/workflows/publish-claude-plugin.yml`
 - Latest direct download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
+- Local install path: `claude mcp add thumbgate -- npx -y thumbgate@0.9.10 serve`
 - Local install path: `claude mcp add thumbgate -- npx -y thumbgate@0.9.10 serve`
 - Promotion rule: treat directory inclusion as a discoverability lane, not customer proof
 
@@ -78,6 +80,7 @@ This lane is for Claude Code users who want Codex review, adversarial review, an
 - Repo-local Codex plugin manifest: `plugins/codex-profile/.codex-plugin/plugin.json`
 - Repo-local Codex MCP config: `plugins/codex-profile/.mcp.json`
 - Repo-local Codex marketplace: `.agents/plugins/marketplace.json`
+- Transport: local stdio MCP server launched via `npx -y thumbgate@0.9.10 serve`
 - Transport: local stdio MCP server launched via `npx -y thumbgate@0.9.10 serve`
 
 ## Cursor Plugins

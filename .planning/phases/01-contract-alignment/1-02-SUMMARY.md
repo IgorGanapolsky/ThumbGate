@@ -29,7 +29,7 @@ metrics:
 
 # Phase 1 Plan 02: Subway Contract Alignment (rubricEvaluation + parseTimestamp) Summary
 
-**One-liner:** Added rubricEvaluation promotionEligible gate and parseTimestamp() helper to Subway's feedback-schema.js, bringing Subway to full contract parity with the rlhf implementation.
+**One-liner:** Added rubricEvaluation promotionEligible gate and parseTimestamp() helper to Subway's feedback-schema.js, bringing Subway to full contract parity with the ThumbGate implementation.
 
 ## What Was Done
 
@@ -42,7 +42,7 @@ Subway's `resolveFeedbackAction` was missing `rubricEvaluation` handling. The fo
    const { signal, context, whatWentWrong, whatToChange, whatWorked, tags, rubricEvaluation } = params;
    ```
 
-2. Added `rubricSummary` build block (matching rlhf lines 100-109 exactly):
+2. Added `rubricSummary` build block (matching ThumbGate lines 100-109 exactly):
    ```javascript
    const rubricSummary = rubricEvaluation ? {
      rubricId: rubricEvaluation.rubricId,
@@ -106,7 +106,7 @@ All four plan verifications passed:
 |------|--------|---------|
 | Task 1 | `c080014` | fix(01-02): update contract audit report — CNTR-02 complete |
 
-Note: Subway's `feedback-schema.js` is listed in `.git/info/exclude` as a local-only file — it is intentionally not committed to the Subway repo. The file exists on disk and is verified working. The rlhf-side commit records the CNTR-02 audit trail in `proof/contract-audit-report.md`.
+Note: Subway's `feedback-schema.js` is listed in `.git/info/exclude` as a local-only file — it is intentionally not committed to the Subway repo. The file exists on disk and is verified working. The ThumbGate-side commit records the CNTR-02 audit trail in `proof/contract-audit-report.md`.
 
 ## Inline Test Count
 
@@ -128,7 +128,7 @@ This is NOT a bug — it reflects correct prior work. The Subway file was modifi
 
 - **Found during:** Task 1 commit attempt
 - **Issue:** `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/scripts/feedback-schema.js` is listed in Subway's `.git/info/exclude` — intentionally local-only, cannot be committed to Subway's git repo.
-- **Impact:** The file exists and works locally; the rlhf repo records the audit evidence in `proof/contract-audit-report.md`.
+- **Impact:** The file exists and works locally; the ThumbGate repo records the audit evidence in `proof/contract-audit-report.md`.
 - **Resolution:** Documented in decisions section. No architectural change needed.
 
 ## Self-Check

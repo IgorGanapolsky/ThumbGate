@@ -6,6 +6,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const CACHE_DIR = process.env.THUMBGATE_FEEDBACK_DIR || process.cwd();
 const CACHE_PATH = path.join(CACHE_DIR, '.thumbgate', 'statusline_cache.json');

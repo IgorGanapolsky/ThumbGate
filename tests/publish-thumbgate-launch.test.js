@@ -1,0 +1,150 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+
+const {
+  DEFAULT_LAUNCH_PLATFORMS,
+  LAUNCH_CAMPAIGN,
+  buildPlatformPost,
+  parseArgs,
+  publishLaunchCampaign,
+} = require('../scripts/social-analytics/publish-thumbgate-launch');
+
+test('buildPlatformPost creates tracked launch copy for X', () => {
+  const post = buildPlatformPost('twitter');
+  assert.match(post, /ThumbGate/);
+  assert.match(post, /utm_source=x/);
+  assert.match(post, /utm_campaign=first_customer_push/);
+  assert.match(post, /utm_content=launch_post_twitter/);
+});
+
+test('parseArgs supports dry run, schedule, timezone, and platform filters', () => {
+  const parsed = parseArgs([
+    '--dry-run',
+    '--platforms=twitter,linkedin',
+    '--schedule=2026-04-06T16:00:00-04:00',
+    '--timezone=America/New_York',
+  ]);
+
+  assert.equal(parsed.dryRun, true);
+  assert.deepEqual(parsed.platforms, ['twitter', 'linkedin']);
+  assert.equal(parsed.schedule, '2026-04-06T16:00:00-04:00');
+  assert.equal(parsed.timezone, 'America/New_York');
+});
+
+test('publishLaunchCampaign previews default platforms in dry run mode', async () => {
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'twitter', accountId: 'acc_t1' },
+      { platform: 'linkedin', accountId: 'acc_l1' },
+      { platform: 'instagram', accountId: 'acc_i1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      const groups = new Map();
+      for (const account of accounts) {
+        const existing = groups.get(account.platform) || [];
+        existing.push(account);
+        groups.set(account.platform, existing);
+      }
+      return groups;
+    },
+  };
+
+  const result = await publishLaunchCampaign({ dryRun: true }, fakePublisher);
+
+  assert.equal(result.dryRun, true);
+  assert.deepEqual(result.platforms, DEFAULT_LAUNCH_PLATFORMS);
+  assert.equal(result.previews.length, 3);
+  assert.equal(result.published.length, 0);
+  assert.equal(result.errors.length, 0);
+  assert.match(result.previews[0].content, /ThumbGate/);
+});
+
+test('publishLaunchCampaign publishes requested platforms with per-platform UTM settings', async () => {
+  const calls = [];
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'twitter', accountId: 'acc_t1' },
+      { platform: 'linkedin', accountId: 'acc_l1' },
+      { platform: 'instagram', accountId: 'acc_i1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      const groups = new Map();
+      for (const account of accounts) {
+        const existing = groups.get(account.platform) || [];
+        existing.push(account);
+        groups.set(account.platform, existing);
+      }
+      return groups;
+    },
+    publishPost: async (content, platforms, options) => {
+      calls.push({ content, platforms, options });
+      return { id: `${platforms[0].platform}_post_1` };
+    },
+  };
+
+  const result = await publishLaunchCampaign({ platforms: ['twitter', 'linkedin'] }, fakePublisher);
+
+  assert.equal(result.published.length, 2);
+  assert.equal(result.scheduled.length, 0);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].options.utm.source, 'x');
+  assert.equal(calls[0].options.utm.medium, 'organic_social');
+  assert.equal(calls[0].options.utm.campaign, LAUNCH_CAMPAIGN);
+  assert.equal(calls[1].options.utm.source, 'linkedin');
+  assert.match(calls[0].content, /utm_content=launch_post_twitter/);
+});
+
+test('publishLaunchCampaign schedules instead of publishing when schedule is provided', async () => {
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'twitter', accountId: 'acc_t1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['twitter', accounts]]);
+    },
+    schedulePost: async (content, platforms, scheduledFor, timezone, options) => ({
+      content,
+      platforms,
+      scheduledFor,
+      timezone,
+      utm: options.utm,
+    }),
+  };
+
+  const result = await publishLaunchCampaign({
+    platforms: ['twitter'],
+    schedule: '2026-04-06T16:00:00-04:00',
+    timezone: 'America/New_York',
+  }, fakePublisher);
+
+  assert.equal(result.published.length, 0);
+  assert.equal(result.scheduled.length, 1);
+  assert.equal(result.scheduled[0].result.scheduledFor, '2026-04-06T16:00:00-04:00');
+  assert.equal(result.scheduled[0].result.timezone, 'America/New_York');
+  assert.equal(result.scheduled[0].result.utm.source, 'x');
+});
+
+test('publishLaunchCampaign routes Instagram through the media-backed workflow', async () => {
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'instagram', accountId: 'acc_i1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['instagram', accounts]]);
+    },
+    publishInstagramThumbGate: async ({ caption }) => ({
+      success: true,
+      postId: 'ig_post_1',
+      caption,
+    }),
+  };
+
+  const result = await publishLaunchCampaign({ platforms: ['instagram'] }, fakePublisher);
+
+  assert.equal(result.published.length, 1);
+  assert.equal(result.published[0].platform, 'instagram');
+  assert.equal(result.published[0].result.success, true);
+  assert.match(result.published[0].result.caption, /utm_content=launch_post_instagram/);
+});

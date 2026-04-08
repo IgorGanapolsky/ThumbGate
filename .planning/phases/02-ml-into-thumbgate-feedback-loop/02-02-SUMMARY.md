@@ -29,7 +29,7 @@ key_files:
 decisions:
   - "ML side-effects (sequence + diversity) are inline in feedback-loop.js, not a separate module — mirrors Subway capture-feedback.js architecture to avoid circular deps"
   - "Python trainer path uses PROJECT_ROOT = Path(__file__).parent.parent (2 levels), not Subway's 3-level chain"
-  - "rlhf feedbackEvent.signal ('positive'/'negative') used instead of Subway's entry.reward (1/-1) in rewardSequence"
+  - "ThumbGate feedbackEvent.signal ('positive'/'negative') used instead of Subway's entry.reward (1/-1) in rewardSequence"
   - "Both ML side-effects wrapped in separate try/catch — failure of one does not block the other or the primary return"
 metrics:
   duration: 20min
@@ -54,11 +54,11 @@ metrics:
 
 ### Task 1: scripts/train_from_feedback.py
 
-Python CLI batch Thompson Sampling trainer ported from Subway with rlhf-specific path adjustments.
+Python CLI batch Thompson Sampling trainer ported from Subway with ThumbGate-specific path adjustments.
 
 Key changes from Subway source:
 - `PROJECT_ROOT = Path(__file__).parent.parent` (2 levels up from `scripts/`) — Subway used 3 levels
-- `is_positive()` checks both `signal` field (`'positive'`/`'up'`) and `reward` field for compatibility with rlhf schema
+- `is_positive()` checks both `signal` field (`'positive'`/`'up'`) and `reward` field for compatibility with ThumbGate schema
 - All Thompson math, DPO batch optimization, meta-policy rules, and time-decay logic preserved unchanged
 
 CLI modes: `--train`, `--incremental`, `--reliability`, `--sample`, `--snapshot`, `--dpo-train`, `--extract-rules`, `--show-rules`

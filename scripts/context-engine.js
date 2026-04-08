@@ -10,6 +10,7 @@
  * MCP tool calls and context window consumption.
  *
  * Ported from Subway_RN_Demo/scripts/context-engine.js for ThumbGate.
+ * Ported from Subway_RN_Demo/scripts/context-engine.js for thumbgate.
  * PATH: PROJECT_ROOT = path.join(__dirname, '..') — 1 level up from scripts/
  */
 

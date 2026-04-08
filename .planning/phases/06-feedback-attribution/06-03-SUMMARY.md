@@ -1,7 +1,7 @@
 ---
 phase: "06"
 plan: "03"
-subsystem: rlhf
+subsystem: ThumbGate
 tags: [tdd, testing, feedback-attribution, hybrid-feedback-context, node-test, tmpdir-isolation]
 dependency_graph:
   requires: [06-01, 06-02]

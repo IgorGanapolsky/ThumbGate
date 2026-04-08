@@ -27,7 +27,7 @@ The critical architectural decision for this phase is WHERE the ML features live
 
 The zero-npm-dependency constraint for this phase is confirmed met: Thompson Sampling uses `Math.random()` (JS equivalent of Python's `random.betavariate()`), time-decay uses `Math.pow()`, sequence tracking uses pure object manipulation, and diversity scoring uses `Math.sqrt()`. The Python training script (`train_from_feedback.py`) is a standalone CLI tool that reads JSONL and writes JSON — it does not add npm dependencies and does not run in the hot path.
 
-**Primary recommendation:** Add `scripts/train_from_feedback.py` (copied from Subway with path vars adjusted to rlhf paths), then add `scripts/thompson-sampling.js` (pure JS incrementer for hot-path use), then modify `captureFeedback()` in `feedback-loop.js` to call sequence and diversity side-effects. All new npm scripts in `package.json`. Tests for every new function. Proof report last.
+**Primary recommendation:** Add `scripts/train_from_feedback.py` (copied from Subway with path vars adjusted to ThumbGate paths), then add `scripts/thompson-sampling.js` (pure JS incrementer for hot-path use), then modify `captureFeedback()` in `feedback-loop.js` to call sequence and diversity side-effects. All new npm scripts in `package.json`. Tests for every new function. Proof report last.
 
 ---
 
@@ -369,20 +369,20 @@ function updateDiversityTracking(feedbackEvent, paths) {
 
 ### Pattern 4: Python Trainer Path Configuration
 
-**What:** `train_from_feedback.py` uses `Path(__file__).parent` to locate itself and constructs paths relative to `PROJECT_ROOT = SCRIPT_DIR.parent.parent.parent`. In Subway, the script lives at `.claude/scripts/feedback/train_from_feedback.py`, so 3 parents up is the project root. In rlhf, the script will live at `scripts/train_from_feedback.py`, so `PROJECT_ROOT = SCRIPT_DIR.parent` (one level up).
+**What:** `train_from_feedback.py` uses `Path(__file__).parent` to locate itself and constructs paths relative to `PROJECT_ROOT = SCRIPT_DIR.parent.parent.parent`. In Subway, the script lives at `.claude/scripts/feedback/train_from_feedback.py`, so 3 parents up is the project root. In ThumbGate, the script will live at `scripts/train_from_feedback.py`, so `PROJECT_ROOT = SCRIPT_DIR.parent` (one level up).
 
-**When to use:** Whenever adjusting Subway Python script paths for rlhf repo.
+**When to use:** Whenever adjusting Subway Python script paths for ThumbGate repo.
 
 **Path mapping:**
 ```
 Subway: PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
          → /Subway_RN_Demo/.claude/scripts/feedback/../../../.. = /Subway_RN_Demo
 
-rlhf:   PROJECT_ROOT = Path(__file__).parent.parent
-         → /rlhf/scripts/../ = /rlhf
+ThumbGate:   PROJECT_ROOT = Path(__file__).parent.parent
+         → /ThumbGate/scripts/../ = /ThumbGate
 
 Subway FEEDBACK_LOG: PROJECT_ROOT / ".claude" / "memory" / "feedback" / "feedback-log.jsonl"
-rlhf   FEEDBACK_LOG: PROJECT_ROOT / ".claude" / "memory" / "feedback" / "feedback-log.jsonl"
+ThumbGate   FEEDBACK_LOG: PROJECT_ROOT / ".claude" / "memory" / "feedback" / "feedback-log.jsonl"
        (identical relative path — both repos use .claude/memory/feedback/)
 ```
 
@@ -392,10 +392,10 @@ Wait — correction from direct code inspection of Subway:
 SCRIPT_DIR = Path(__file__).parent                          # .claude/scripts/feedback/
 PROJECT_ROOT = SCRIPT_DIR.parent.parent.parent              # 3 levels up = /Subway_RN_Demo/
 ```
-For rlhf where script lives at `scripts/train_from_feedback.py`:
+For ThumbGate where script lives at `scripts/train_from_feedback.py`:
 ```python
 SCRIPT_DIR = Path(__file__).parent                          # scripts/
-PROJECT_ROOT = SCRIPT_DIR.parent                            # 1 level up = /rlhf/
+PROJECT_ROOT = SCRIPT_DIR.parent                            # 1 level up = /ThumbGate/
 ```
 
 ### Anti-Patterns to Avoid
@@ -405,7 +405,7 @@ PROJECT_ROOT = SCRIPT_DIR.parent                            # 1 level up = /rlhf
 - **Thompson without time-decay:** Never update alpha/beta with raw weight=1.0. Always apply `timeDecayWeight(timestamp)` first. Old feedback at weight=0.01 (floor) still contributes but minimally, which is correct behavior.
 - **Recreating Thompson model from scratch on every feedback:** The JS hot-path `updateModel()` must load existing model, update it, save it — not call `createInitialModel()`. Only on first run (file absent) does `createInitialModel()` execute.
 - **Non-atomic diversity JSON write:** Use `fs.writeFileSync()` (atomic at OS level for small JSON), not streaming. Never use `fs.appendFileSync()` for JSON files — they are overwritten on each update.
-- **Hardcoding Subway's SCRIPT_DIR chain:** The 3-parent chain `SCRIPT_DIR.parent.parent.parent` is Subway-specific. rlhf needs `SCRIPT_DIR.parent` only. This is the single most error-prone copy-paste trap in this phase.
+- **Hardcoding Subway's SCRIPT_DIR chain:** The 3-parent chain `SCRIPT_DIR.parent.parent.parent` is Subway-specific. ThumbGate needs `SCRIPT_DIR.parent` only. This is the single most error-prone copy-paste trap in this phase.
 
 ---
 
@@ -429,9 +429,9 @@ PROJECT_ROOT = SCRIPT_DIR.parent                            # 1 level up = /rlhf
 
 **What goes wrong:** Copy `SCRIPT_DIR.parent.parent.parent` from Subway verbatim. Python resolves to wrong directory. All paths silently point to system temp or wrong folder. No error — reads empty JSONL, creates empty model.
 
-**Why it happens:** Subway's script is 3 directories deep from project root (`.claude/scripts/feedback/`). rlhf's script is 1 directory deep (`scripts/`).
+**Why it happens:** Subway's script is 3 directories deep from project root (`.claude/scripts/feedback/`). ThumbGate's script is 1 directory deep (`scripts/`).
 
-**How to avoid:** First line of Python script in rlhf must be `PROJECT_ROOT = Path(__file__).parent.parent` (two levels up: `scripts/` → `rlhf/`). Verify with a print during development: `print(PROJECT_ROOT)` must show the rlhf repo root.
+**How to avoid:** First line of Python script in ThumbGate must be `PROJECT_ROOT = Path(__file__).parent.parent` (two levels up: `scripts/` → `ThumbGate/`). Verify with a print during development: `print(PROJECT_ROOT)` must show the ThumbGate repo root.
 
 **Warning signs:** `feedback_model.json` appears in unexpected location or is not created where expected.
 
@@ -447,11 +447,11 @@ PROJECT_ROOT = SCRIPT_DIR.parent                            # 1 level up = /rlhf
 
 ### Pitfall 3: Sequence Tracking Uses Wrong Signal Field
 
-**What goes wrong:** rlhf's `feedbackEvent.signal` is `'positive'` / `'negative'`. Subway's `entry.reward` is `1` / `-1`. The reward sequence calculation `sequence.map(f => f.reward)` fails if applied to rlhf events.
+**What goes wrong:** ThumbGate's `feedbackEvent.signal` is `'positive'` / `'negative'`. Subway's `entry.reward` is `1` / `-1`. The reward sequence calculation `sequence.map(f => f.reward)` fails if applied to ThumbGate events.
 
-**Why it happens:** Subway's feedback schema uses `reward: 1` or `reward: -1`. rlhf's schema uses `signal: 'positive'` or `signal: 'negative'`.
+**Why it happens:** Subway's feedback schema uses `reward: 1` or `reward: -1`. ThumbGate's schema uses `signal: 'positive'` or `signal: 'negative'`.
 
-**How to avoid:** rlhf's sequence feature builder must use `f.signal === 'positive' ? 1 : -1`. Do NOT copy `f.reward` from Subway — that field does not exist in rlhf events.
+**How to avoid:** ThumbGate's sequence feature builder must use `f.signal === 'positive' ? 1 : -1`. Do NOT copy `f.reward` from Subway — that field does not exist in ThumbGate events.
 
 **Warning signs:** `rewardSequence` contains only `undefined` or `NaN`.
 
@@ -459,7 +459,7 @@ PROJECT_ROOT = SCRIPT_DIR.parent                            # 1 level up = /rlhf
 
 **What goes wrong:** `diversityScore = max(0, 100 - sqrt(variance) * 10)` uses `domainCount = Object.keys(diversity.domains).length` for variance denominator. If only 1 domain seen, variance/1 gives wrong scaling.
 
-**Why it happens:** Subway has enough diversity data (9 domains) that this edge case doesn't surface. rlhf starts with 0 domains and grows.
+**Why it happens:** Subway has enough diversity data (9 domains) that this edge case doesn't surface. ThumbGate starts with 0 domains and grows.
 
 **How to avoid:** Use `Math.max(domainCount, 1)` in the denominator. Already shown in Pattern 3 code above.
 
@@ -477,7 +477,7 @@ PROJECT_ROOT = SCRIPT_DIR.parent                            # 1 level up = /rlhf
 
 ### Pitfall 6: Python Script Timestamp Handling Regression
 
-**What goes wrong:** Python's `train_from_feedback.py` line 139 does `timestamp_str.replace("Z", "").split("+")[0]` before `datetime.fromisoformat()`. In Python 3.11+, `datetime.fromisoformat()` accepts the trailing `Z` directly. But rlhf's feedback-log.jsonl timestamps (written by JS `new Date().toISOString()`) always have the Z suffix — verified safe.
+**What goes wrong:** Python's `train_from_feedback.py` line 139 does `timestamp_str.replace("Z", "").split("+")[0]` before `datetime.fromisoformat()`. In Python 3.11+, `datetime.fromisoformat()` accepts the trailing `Z` directly. But ThumbGate's feedback-log.jsonl timestamps (written by JS `new Date().toISOString()`) always have the Z suffix — verified safe.
 
 **Why it happens:** Confusion about which Python version is required.
 
@@ -602,7 +602,7 @@ const score = Math.max(0, 100 - Math.sqrt(variance) * 10);
 
 **Deprecated/outdated:**
 - Step decay (`DECAY_WEIGHTS` dict): kept in Python trainer as fallback toggle (`USE_EXPONENTIAL_DECAY = True`); do not use in JS port — implement exponential only.
-- Per-session feedback summary JSON (Subway's `feedback-summary.json`): rlhf already has `feedback-summary.json` with different schema. Do not merge — diversity tracking goes to `diversity-tracking.json` only.
+- Per-session feedback summary JSON (Subway's `feedback-summary.json`): ThumbGate already has `feedback-summary.json` with different schema. Do not merge — diversity tracking goes to `diversity-tracking.json` only.
 
 ---
 
@@ -613,14 +613,14 @@ const score = Math.max(0, 100 - Math.sqrt(variance) * 10);
    - What's unclear: Whether the JS `captureFeedback()` hot path should directly call `thompson-sampling.js` incrementalUpdate, or only the npm script `ml:incremental` should do so.
    - Recommendation: Keep the same separation as Subway — `captureFeedback()` writes to `feedback-log.jsonl` and handles sequence/diversity. Thompson model updates run via `npm run ml:incremental` (calls Python trainer) or a post-hook. This avoids coupling Python-dependent model state into the Node.js hot path. The JS `thompson-sampling.js` module provides the math for use by the API layer (ML-01 requirement says "compute per-category reliability" — this is satisfied by the Python trainer writing `feedback_model.json` which JS reads).
 
-2. **Should `feedback_model.json` be read by the rlhf Node.js API?**
+2. **Should `feedback_model.json` be read by the ThumbGate Node.js API?**
    - What we know: The model file exists at `.claude/memory/feedback/feedback_model.json` in Subway and contains alpha/beta per category. ML-01 says posteriors must "compute per-category reliability estimates" — this implies they must be readable.
-   - What's unclear: Whether any rlhf API endpoint should expose `getReliability()` or `samplePosteriors()`.
+   - What's unclear: Whether any ThumbGate API endpoint should expose `getReliability()` or `samplePosteriors()`.
    - Recommendation: Add a `thompson-sampling.js` module that exports `getReliability(modelPath)` and `samplePosteriors(modelPath)`. This satisfies ML-01 from the JS side. No new API endpoint needed for Phase 2 — the proof report reads the model and outputs reliability.
 
-3. **Category taxonomy: rlhf tags vs Subway DOMAIN_CATEGORIES**
-   - What we know: Subway's diversity tracking uses 10 fixed `DOMAIN_CATEGORIES`. rlhf's feedback entries use free-form tags. Thompson categories in Subway's Python use 8 keyword-mapped categories plus `uncategorized`.
-   - What's unclear: Whether rlhf should adopt Subway's exact category list or infer from existing tags.
+3. **Category taxonomy: ThumbGate tags vs Subway DOMAIN_CATEGORIES**
+   - What we know: Subway's diversity tracking uses 10 fixed `DOMAIN_CATEGORIES`. ThumbGate's feedback entries use free-form tags. Thompson categories in Subway's Python use 8 keyword-mapped categories plus `uncategorized`.
+   - What's unclear: Whether ThumbGate should adopt Subway's exact category list or infer from existing tags.
    - Recommendation: Use Subway's `DOMAIN_CATEGORIES` list verbatim for diversity tracking (10 items). Use Subway's `DEFAULT_CATEGORIES` dict for Thompson classification (8 + uncategorized). Both are small fixed lists — copy verbatim, no dynamic configuration in Phase 2.
 
 ---
@@ -632,8 +632,8 @@ const score = Math.max(0, 100 - Math.sqrt(variance) * 10);
 - Direct `Read` of `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/scripts/feedback/capture-feedback.js` — 974 lines, full sequence tracking + diversity tracking implementation verified
 - Direct `Read` of `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/memory/feedback/feedback_model.json` — live alpha/beta values for 9 categories confirmed; confirms model schema
 - Direct `Read` of `/Users/ganapolsky_i/workspace/git/Subway_RN_Demo/.claude/memory/feedback/diversity-tracking.json` — live 76.2% diversity score confirmed; confirms formula produces expected output
-- Direct `Read` of `/Users/ganapolsky_i/workspace/git/igor/rlhf/scripts/feedback-loop.js` — confirmed `captureFeedback()` signature, `readJSONL()`, `appendJSONL()`, `getFeedbackPaths()`, `THUMBGATE_FEEDBACK_DIR` pattern
-- `Bash: npm test` in rlhf — confirmed 60 node-runner tests passing (58 test:api + 2 test:proof), 23 script-runner tests; all green
+- Direct `Read` of `/Users/ganapolsky_i/workspace/git/igor/ThumbGate/scripts/feedback-loop.js` — confirmed `captureFeedback()` signature, `readJSONL()`, `appendJSONL()`, `getFeedbackPaths()`, `THUMBGATE_FEEDBACK_DIR` pattern
+- `Bash: npm test` in ThumbGate — confirmed 60 node-runner tests passing (58 test:api + 2 test:proof), 23 script-runner tests; all green
 - `Bash: python3 --version` — confirmed Python 3.14.3 available at `/opt/homebrew/bin/python3`
 - `Bash: node --version` — confirmed Node.js 25.6.1
 - Direct `Read` of `.planning/research/SUMMARY.md` — confirmed no npm packages needed for Phase 2, Python venv already complete
@@ -645,7 +645,7 @@ const score = Math.max(0, 100 - Math.sqrt(variance) * 10);
 - Subway `feedback_model.json` live data (diversityScore 76.2, 9 categories) — independently confirms formula accuracy
 
 ### Tertiary (LOW confidence)
-- arXiv:2505.23927 (Thompson Sampling in Online RLHF) — O(sqrt(T)) regret bound cited in SUMMARY.md; not directly needed for port implementation
+- arXiv:2505.23927 (Thompson Sampling in Online ThumbGate) — O(sqrt(T)) regret bound cited in SUMMARY.md; not directly needed for port implementation
 - Marsaglia-Tsang gamma sampling (2000) — algorithm for JS Beta sampling; standard textbook result
 
 ---

@@ -39,7 +39,7 @@ must_haves:
 <objective>
 Create an Obsidian integration guide for ThumbGate and a Reddit marketing post for r/ObsidianMD, with automated verification that every claim is factual.
 
-Purpose: Enable Obsidian users to browse RLHF memory via the petersolopov/obsidian-claude-ide plugin, and draft a marketing post to drive awareness on r/ObsidianMD.
+Purpose: Enable Obsidian users to browse ThumbGate memory via the petersolopov/obsidian-claude-ide plugin, and draft a marketing post to drive awareness on r/ObsidianMD.
 Output: Setup doc, Reddit post draft, and a verification script proving both are factually correct.
 </objective>
 
@@ -76,12 +76,12 @@ Create `docs/OBSIDIAN_SETUP.md` with these sections:
      }
    }
    ```
-4. **Vault structure for RLHF browsing** — Recommend creating an `AI-Memories/thumbgate/` folder in the vault with these files:
+4. **Vault structure for ThumbGate browsing** — Recommend creating an `AI-Memories/thumbgate/` folder in the vault with these files:
    - `Memory Log.md` — symlink or periodic export from `.claude/memory/feedback/memory-log.jsonl`
    - `Primer.md` — symlink or copy of `primer.md` for session context
    - `Prevention Rules.md` — symlink or copy of `.claude/memory/feedback/prevention-rules.md`
    - `Feedback Stats.md` — output of `npm run feedback:stats` pasted periodically
-5. **Usage workflow** — Open Obsidian, use `/ide` to invoke Claude Code, Claude reads vault notes as context + writes back memory updates. The RLHF loop becomes visible in Obsidian's graph view.
+5. **Usage workflow** — Open Obsidian, use `/ide` to invoke Claude Code, Claude reads vault notes as context + writes back memory updates. The ThumbGate loop becomes visible in Obsidian's graph view.
 6. **What you get** — Bullet list: persistent memory across sessions, visual graph of feedback connections, prevention rules visible as notes, feedback stats at a glance.
 
 CRITICAL: Only reference features that actually exist in this repo. The feedback commands are: `npm run feedback:stats`, `npm run feedback:summary`, `npm run feedback:rules`, `npm run feedback:export:dpo`. The memory stores are `.claude/memory/feedback/feedback-log.jsonl`, `.claude/memory/feedback/memory-log.jsonl`, `.claude/memory/feedback/prevention-rules.md`. Do NOT invent features.

@@ -76,8 +76,14 @@ describe('Publish Instagram ThumbGate', { skip: !sharpAvailable ? 'sharp not ins
       return;
     }
 
+    await publishInstagramThumbGate({
+      imageOnly: true,
+      imagePath: TEST_IMAGE_PATH,
+    });
+
     const result = await publishInstagramThumbGate({
       postOnly: true,
+      imagePath: TEST_IMAGE_PATH,
     });
 
     assert.ok(result.success === true, 'Should return success flag');

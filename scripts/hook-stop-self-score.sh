@@ -18,9 +18,9 @@ node -e '
   const path = require("path");
 
   // Resolve modules relative to ThumbGate package root
-  const rlhfRoot = process.env.THUMBGATE_ROOT;
-  const { selfAuditAndLog } = require(path.join(rlhfRoot, "scripts", "rlaif-self-audit"));
-  const { getFeedbackPaths } = require(path.join(rlhfRoot, "scripts", "feedback-loop"));
+  const thumbgateRoot = process.env.THUMBGATE_ROOT;
+  const { selfAuditAndLog } = require(path.join(thumbgateRoot, "scripts", "rlaif-self-audit"));
+  const { getFeedbackPaths } = require(path.join(thumbgateRoot, "scripts", "feedback-loop"));
 
   const stopReason = process.env.CLAUDE_STOP_REASON || "unknown";
 
