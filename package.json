@@ -32,6 +32,9 @@
   "scripts": {
     "postinstall": "node bin/postinstall.js || true",
     "start": "node src/api/server.js",
+    "changeset": "changeset",
+    "changeset:version": "changeset version && node scripts/sync-version.js",
+    "changeset:status": "changeset status",
     "build:claude-mcpb": "node scripts/build-claude-mcpb.js",
     "verify:quick": "node scripts/verify-run.js quick",
     "verify:full": "node scripts/verify-run.js full",
@@ -298,5 +301,8 @@
       "path-to-regexp": "0.1.13"
     }
   },
-  "mcpName": "io.github.IgorGanapolsky/thumbgate"
+  "mcpName": "io.github.IgorGanapolsky/thumbgate",
+  "devDependencies": {
+    "@changesets/cli": "^2.30.0"
+  }
 }
