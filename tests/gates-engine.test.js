@@ -95,6 +95,7 @@ function createPushTestRepo(changedFile = 'src/app.js') {
   execFileSync('git', ['init'], { cwd: repoDir, stdio: ['ignore', 'pipe', 'pipe'] });
   execFileSync('git', ['config', 'user.name', 'ThumbGate Tests'], { cwd: repoDir, stdio: ['ignore', 'pipe', 'pipe'] });
   execFileSync('git', ['config', 'user.email', 'thumbgate-tests@example.com'], { cwd: repoDir, stdio: ['ignore', 'pipe', 'pipe'] });
+  execFileSync('git', ['config', 'commit.gpgsign', 'false'], { cwd: repoDir, stdio: ['ignore', 'pipe', 'pipe'] });
   const filePath = path.join(repoDir, changedFile);
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, 'module.exports = 1;\n');

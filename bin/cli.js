@@ -115,6 +115,7 @@ function telemetryPing(installId) {
     const req = mod.request(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }, timeout: 3000 }, () => {});
     req.on('error', () => {});
     req.on('timeout', () => { req.destroy(); });
+    req.on('socket', (s) => s.unref()); // fire-and-forget: never block process exit
     req.end(payload);
   } catch (_) { /* telemetry is best-effort */ }
 }
@@ -892,7 +893,7 @@ function pro() {
 
   if (args.info) {
     printProInfo();
-    return;
+    process.exit(0);
   }
 
   const resolvedKey = resolveProKey();
@@ -901,6 +902,7 @@ function pro() {
   }
 
   printProInfo();
+  process.exit(0);
 }
 
 function summary() {
