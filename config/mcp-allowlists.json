@@ -22,6 +22,7 @@
       "bootstrap_internal_agent",
       "prevention_rules",
       "export_dpo_pairs",
+      "export_hf_dataset",
       "export_databricks_bundle",
       "construct_context_pack",
       "evaluate_context_pack",

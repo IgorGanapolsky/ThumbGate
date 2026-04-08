@@ -400,6 +400,17 @@ const TOOLS = [
     },
   }),
   destructiveTool({
+    name: 'export_hf_dataset',
+    description: 'Export ThumbGate agent traces and DPO preference pairs as a HuggingFace-compatible dataset. Produces traces.jsonl, preferences.jsonl, and dataset_info.json with PII-redacted paths. Ready for huggingface-cli upload.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        outputDir: { type: 'string', description: 'Output directory (default: feedback-dir/hf-dataset)' },
+        includeProvenance: { type: 'boolean', description: 'Include provenance events in traces (default: true)' },
+      },
+    },
+  }),
+  destructiveTool({
     name: 'export_databricks_bundle',
     description: 'Export ThumbGate logs and proof artifacts as a Databricks-ready analytics bundle',
     inputSchema: {

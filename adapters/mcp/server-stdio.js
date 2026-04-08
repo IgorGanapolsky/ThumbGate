@@ -97,6 +97,7 @@ const {
   assembleUnifiedContext,
   formatUnifiedContext,
 } = require('../../scripts/context-manager');
+const { exportHfDataset } = require('../../scripts/export-hf-dataset');
 
 const PRO_CHECKOUT_URL = 'https://thumbgate-production.up.railway.app/checkout/pro';
 
@@ -493,6 +494,14 @@ async function callToolInner(name, args) {
     case 'export_dpo_pairs':
       enforceLimit('export_dpo');
       return buildExportDpoResponse(args);
+    case 'export_hf_dataset': {
+      enforceLimit('export_dpo');
+      const outputDir = args.outputDir ? resolveSafePath(args.outputDir) : undefined;
+      return toTextResult(exportHfDataset({
+        outputDir,
+        includeProvenance: args.includeProvenance !== false,
+      }));
+    }
     case 'export_databricks_bundle': {
       enforceLimit('export_databricks');
       const outputPath = args.outputPath ? resolveSafePath(args.outputPath) : undefined;
