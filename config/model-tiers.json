@@ -22,6 +22,17 @@
         "tokenCap": 500000,
         "requireReason": true
       }
+    },
+    "localFrontier": {
+      "label": "GLM 5.1",
+      "taskTypes": [],
+      "maxContextTokens": 1000000,
+      "costMultiplier": 0.0,
+      "budgetDefaults": {
+        "tokenCap": 2000000,
+        "requireReason": false
+      },
+      "notes": "Self-hosted open-source tier. Activate via THUMBGATE_LOCAL_MODEL_FAMILY=glm-*. Zero marginal cost; no token budget enforcement needed."
     }
   },
   "escalationRules": {
