@@ -3,6 +3,7 @@
   "profiles": {
     "default": [
       "recall",
+      "unified_context",
       "capture_feedback",
       "open_feedback_session",
       "append_feedback_context",
@@ -36,6 +37,7 @@
       "track_action",
       "verify_claim",
       "check_operational_integrity",
+      "workflow_sentinel",
       "register_claim_gate",
       "gate_stats",
       "dashboard",
@@ -56,6 +58,7 @@
       "append_feedback_context",
       "finalize_feedback_session",
       "recall",
+      "unified_context",
       "search_lessons",
       "retrieve_lessons",
       "search_thumbgate",
@@ -69,6 +72,7 @@
       "track_action",
       "verify_claim",
       "check_operational_integrity",
+      "workflow_sentinel",
       "feedback_stats",
       "feedback_summary",
       "estimate_uncertainty",
@@ -88,12 +92,14 @@
       "track_action",
       "verify_claim",
       "check_operational_integrity",
+      "workflow_sentinel",
       "prevention_rules",
       "feedback_stats",
       "feedback_summary"
     ],
     "readonly": [
       "recall",
+      "unified_context",
       "feedback_summary",
       "search_lessons",
       "retrieve_lessons",
@@ -110,6 +116,7 @@
       "get_branch_governance",
       "verify_claim",
       "check_operational_integrity",
+      "workflow_sentinel",
       "gate_stats",
       "dashboard",
       "settings_status",
@@ -120,6 +127,7 @@
     ],
     "dispatch": [
       "recall",
+      "unified_context",
       "feedback_summary",
       "search_lessons",
       "retrieve_lessons",
@@ -135,6 +143,7 @@
       "get_branch_governance",
       "verify_claim",
       "check_operational_integrity",
+      "workflow_sentinel",
       "gate_stats",
       "dashboard",
       "settings_status",
@@ -156,6 +165,7 @@
       "get_branch_governance",
       "verify_claim",
       "check_operational_integrity",
+      "workflow_sentinel",
       "settings_status"
     ]
   }

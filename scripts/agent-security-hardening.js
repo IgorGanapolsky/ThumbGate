@@ -84,10 +84,10 @@ function getCredentialAudit({ periodHours = 24 } = {}) {
 
 // MCP profile tool allowlists (loaded from config or defaults)
 const PROFILE_ALLOWLISTS = {
-  essential: new Set(['capture_feedback', 'recall', 'search_lessons', 'search_thumbgate', 'prevention_rules', 'enforcement_matrix', 'feedback_stats', 'estimate_uncertainty', 'org_dashboard', 'set_task_scope', 'get_scope_state', 'set_branch_governance', 'get_branch_governance', 'approve_protected_action', 'check_operational_integrity']),
-  readonly: new Set(['recall', 'feedback_summary', 'search_lessons', 'verify_claim', 'gate_stats', 'search_thumbgate', 'feedback_stats', 'estimate_uncertainty', 'org_dashboard', 'get_scope_state', 'get_branch_governance', 'check_operational_integrity']),
-  locked: new Set(['feedback_summary', 'search_lessons', 'diagnose_failure', 'list_intents', 'plan_intent', 'list_harnesses', 'verify_claim', 'get_scope_state', 'get_branch_governance', 'check_operational_integrity']),
-  commerce: new Set(['capture_feedback', 'recall', 'search_thumbgate', 'commerce_recall', 'track_action', 'verify_claim', 'feedback_stats', 'set_task_scope', 'get_scope_state', 'set_branch_governance', 'get_branch_governance', 'approve_protected_action', 'check_operational_integrity']),
+  essential: new Set(['capture_feedback', 'recall', 'search_lessons', 'search_thumbgate', 'prevention_rules', 'enforcement_matrix', 'feedback_stats', 'estimate_uncertainty', 'org_dashboard', 'set_task_scope', 'get_scope_state', 'set_branch_governance', 'get_branch_governance', 'approve_protected_action', 'check_operational_integrity', 'workflow_sentinel']),
+  readonly: new Set(['recall', 'feedback_summary', 'search_lessons', 'verify_claim', 'gate_stats', 'search_thumbgate', 'feedback_stats', 'estimate_uncertainty', 'org_dashboard', 'get_scope_state', 'get_branch_governance', 'check_operational_integrity', 'workflow_sentinel']),
+  locked: new Set(['feedback_summary', 'search_lessons', 'diagnose_failure', 'list_intents', 'plan_intent', 'list_harnesses', 'verify_claim', 'get_scope_state', 'get_branch_governance', 'check_operational_integrity', 'workflow_sentinel']),
+  commerce: new Set(['capture_feedback', 'recall', 'search_thumbgate', 'commerce_recall', 'track_action', 'verify_claim', 'feedback_stats', 'set_task_scope', 'get_scope_state', 'set_branch_governance', 'get_branch_governance', 'approve_protected_action', 'check_operational_integrity', 'workflow_sentinel']),
 };
 
 /**

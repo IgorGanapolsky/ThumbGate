@@ -36,6 +36,8 @@ test('profile allowlists differentiate permissions', () => {
   assert.ok(isToolAllowed('set_branch_governance', 'default'));
   assert.ok(isToolAllowed('get_branch_governance', 'readonly'));
   assert.ok(isToolAllowed('check_operational_integrity', 'locked'));
+  assert.ok(isToolAllowed('workflow_sentinel', 'readonly'));
+  assert.ok(isToolAllowed('workflow_sentinel', 'locked'));
   assert.equal(isToolAllowed('approve_protected_action', 'readonly'), false);
   assert.ok(isToolAllowed('report_product_issue', 'default'));
   assert.ok(isToolAllowed('report_product_issue', 'essential'));
