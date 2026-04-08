@@ -217,6 +217,12 @@ function getRequestedProjectSelection(req, parsed) {
   return projectFromQuery || projectFromHeaders || null;
 }
 
+function getEffectiveRequestedProjectSelection(req, parsed) {
+  return isProjectSelectionAllowed(req, parsed)
+    ? getRequestedProjectSelection(req, parsed)
+    : null;
+}
+
 function isProjectSelectionAllowed(req, parsed) {
   const explicitProject = getRequestedProjectSelection(req, parsed);
   if (!explicitProject) return true;
@@ -224,9 +230,7 @@ function isProjectSelectionAllowed(req, parsed) {
 }
 
 function resolveRequestProjectDir(req, parsed) {
-  const explicitProject = isProjectSelectionAllowed(req, parsed)
-    ? getRequestedProjectSelection(req, parsed)
-    : null;
+  const explicitProject = getEffectiveRequestedProjectSelection(req, parsed);
   return resolveProjectDir({
     projectDir: explicitProject,
     env: process.env,
@@ -234,9 +238,7 @@ function resolveRequestProjectDir(req, parsed) {
 }
 
 function shouldPreferProjectScopedFeedback(req, parsed) {
-  const explicitProject = isProjectSelectionAllowed(req, parsed)
-    ? getRequestedProjectSelection(req, parsed)
-    : null;
+  const explicitProject = getEffectiveRequestedProjectSelection(req, parsed);
   if (explicitProject) return true;
   if (process.env.THUMBGATE_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR) return true;
   if (process.env.THUMBGATE_FEEDBACK_DIR) return false;
@@ -244,8 +246,10 @@ function shouldPreferProjectScopedFeedback(req, parsed) {
 }
 
 function getRequestFeedbackPaths(req, parsed) {
+  const explicitProject = getEffectiveRequestedProjectSelection(req, parsed);
   return getFeedbackPaths({
     projectDir: resolveRequestProjectDir(req, parsed),
+    explicitProjectDir: explicitProject,
     skipExplicitFeedbackDir: shouldPreferProjectScopedFeedback(req, parsed),
   });
 }

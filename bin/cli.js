@@ -65,6 +65,17 @@ function appendLocalTelemetry(payload) {
 
 function syncActiveProjectContext(options = {}) {
   try {
+    // Tests and explicitly scoped CLI calls may pin a feedback root directly.
+    // In that case, do not inject a project selection that would cause later
+    // reads/writes to escape the requested directory.
+    if (
+      !options.force &&
+      process.env.THUMBGATE_FEEDBACK_DIR &&
+      !process.env.THUMBGATE_PROJECT_DIR &&
+      !process.env.CLAUDE_PROJECT_DIR
+    ) {
+      return null;
+    }
     const {
       resolveProjectDir,
       writeActiveProjectState,

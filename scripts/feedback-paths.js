@@ -144,23 +144,30 @@ function getProjectName(cwd = process.cwd()) {
   return path.basename(cwd || PROJECT_ROOT) || 'default';
 }
 
-function hasExplicitProjectScope(options = {}) {
+function hasDirectProjectScope(options = {}) {
   const env = options.env || process.env;
   return Boolean(
-    env.THUMBGATE_PROJECT_DIR
+    options.explicitProjectDir
+    || env.THUMBGATE_PROJECT_DIR
     || env.CLAUDE_PROJECT_DIR
-    || readActiveProjectState(options)
   );
+}
+
+function hasExplicitProjectScope(options = {}) {
+  return Boolean(hasDirectProjectScope(options) || readActiveProjectState(options));
 }
 
 function getExplicitFeedbackDir(options = {}) {
   const env = options.env || process.env;
   if (options.feedbackDir) return options.feedbackDir;
   if (options.skipExplicitFeedbackDir) return null;
-  if (env.THUMBGATE_FEEDBACK_DIR && !hasExplicitProjectScope(options)) {
+  // A caller-provided feedback root should stay authoritative over stored
+  // active-project state so isolated CLI/test commands do not drift into a
+  // different project. Only direct project overrides suppress it.
+  if (env.THUMBGATE_FEEDBACK_DIR && !hasDirectProjectScope(options)) {
     return env.THUMBGATE_FEEDBACK_DIR;
   }
-  if (hasExplicitProjectScope(options)) {
+  if (hasDirectProjectScope(options)) {
     return null;
   }
   if (env.RAILWAY_VOLUME_MOUNT_PATH) {
@@ -252,6 +259,7 @@ module.exports = {
   getFallbackFeedbackDir,
   getRuntimeDir,
   getThumbgateFeedbackDir,
+  hasDirectProjectScope,
   hasExplicitProjectScope,
   readActiveProjectState,
   listFallbackFeedbackDirs,
