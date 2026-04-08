@@ -146,6 +146,8 @@ function buildCampaignEntries() {
           buildLandingUrl('linkedin', 'campaign_proof_pack'),
         ].join(' '),
         instagram: `${THUMBGATE_CAPTION}\n\nProof-backed workflow hardening.\n\n${buildLandingUrl('instagram', 'campaign_proof_pack')}`,
+        tiktok: `Your AI agent has amnesia. Give it memory that survives restarts.\n\nThumbGate: proof-backed workflow hardening for coding agents.\n\n#AIAgents #DeveloperTools #ClaudeCode #ThumbGate`,
+        youtube: `Your AI agent has amnesia. Give it memory that survives restarts.\n\nThumbGate turns thumbs-down feedback into prevention rules that block mistakes permanently.\n\n${buildLandingUrl('youtube', 'campaign_proof_pack')}`,
       },
     },
     {
@@ -166,6 +168,8 @@ function buildCampaignEntries() {
           'ThumbGate keeps the feedback loop local, durable, and enforceable.',
           buildLandingUrl('instagram', 'campaign_free_local'),
         ].join('\n\n'),
+        tiktok: `Free and local-first. ThumbGate blocks repeated AI coding mistakes without a cloud account.\n\nnpx thumbgate init\n\n#FreeDeveloperTools #AIAgents #OpenSource`,
+        youtube: `ThumbGate runs local-first. No cloud account needed. Feedback capture, prevention rules, and blocking — all on your machine.\n\n${buildLandingUrl('youtube', 'campaign_free_local')}`,
       },
     },
     {
@@ -187,6 +191,8 @@ function buildCampaignEntries() {
           'Next session, the same mistake gets blocked.',
           buildLandingUrl('instagram', 'campaign_checkout_path'),
         ].join('\n\n'),
+        tiktok: `Stop your AI agent from repeating the same mistake. One thumbs-down = permanent block.\n\nFree to start. Pro when you need the dashboard.\n\n#ThumbGate #AIAgents #DeveloperTools`,
+        youtube: `Repeated agent mistakes are a systems problem. ThumbGate blocks known-bad patterns before the next tool call executes.\n\nFree local path. Pro adds dashboard and exports.\n\n${buildLandingUrl('youtube', 'campaign_checkout_path')}`,
       },
     },
   ];

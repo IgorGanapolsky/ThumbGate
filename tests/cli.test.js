@@ -1600,7 +1600,13 @@ describe('bin/cli.js', () => {
 
   test('init creates .mcp.json with server entry', () => {
     const isolatedDir = makeTmpDir();
-    const result = runCliSync(['init'], { cwd: isolatedDir });
+    const result = runCliSync(['init'], {
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        THUMBGATE_PUBLISH_STATE: 'unpublished',
+      },
+    });
     assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
 
     const mcpPath = path.join(isolatedDir, '.mcp.json');
@@ -1654,6 +1660,7 @@ describe('bin/cli.js', () => {
         ...process.env,
         HOME: isolatedHome,
         USERPROFILE: isolatedHome,
+        THUMBGATE_PUBLISH_STATE: 'unpublished',
       },
     });
 
@@ -1688,6 +1695,7 @@ describe('bin/cli.js', () => {
         ...process.env,
         HOME: isolatedHome,
         USERPROFILE: isolatedHome,
+        THUMBGATE_PUBLISH_STATE: 'unpublished',
       },
     });
 

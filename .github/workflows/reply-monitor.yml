@@ -1,0 +1,88 @@
+name: Social Reply Monitor
+
+# Monitors Reddit, X.com, and LinkedIn for replies to ThumbGate posts and
+# generates contextual responses. Runs every 6 hours to stay within API rate
+# limits while keeping reply latency acceptable.
+#
+# Reddit replies are NEVER auto-posted — they are saved to
+# .thumbgate/reply-drafts.jsonl for human review (per script policy).
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # Every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Limit to a single platform (leave blank for all)'
+        required: false
+        type: choice
+        options:
+          - ''
+          - reddit
+          - x
+          - linkedin
+      dry_run:
+        description: 'Dry run — detect replies but do not post responses'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reply-monitor
+  cancel-in-progress: true   # a newer run supersedes a stale one
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      # X (Twitter) — OAuth 1.0a for posting replies
+      X_API_KEY: ${{ secrets.X_API_KEY }}
+      X_API_SECRET: ${{ secrets.X_API_SECRET }}
+      X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+      X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+      # X Bearer token — used to fetch owned tweets for reply detection
+      X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+      X_USER_ID: ${{ secrets.X_USER_ID }}
+      # Reddit — for inbox monitoring (replies are draft-only, never auto-posted)
+      REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+      REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+      REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Monitor and reply
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.platform }}" ]; then
+            ARGS="$ARGS --platform=${{ github.event.inputs.platform }}"
+          fi
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          node scripts/social-reply-monitor.js $ARGS
+
+      - name: Upload reply drafts artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reply-drafts-${{ github.run_id }}
+          path: .thumbgate/reply-drafts.jsonl
+          if-no-files-found: ignore
+          retention-days: 7

@@ -183,6 +183,32 @@ async function postToDevTo(parsed, dryRun) {
   return devto.publishArticle({ title, body_markdown: body, tags: parsed.tags });
 }
 
+async function postToTikTok(parsed, dryRun) {
+  const text = parsed.body || '';
+  if (!text) throw new Error('TikTok post requires body');
+
+  if (dryRun) {
+    console.log(`[dry-run] TikTok: "${text.slice(0, 100)}..." (${text.length} chars)`);
+    return { dryRun: true };
+  }
+
+  const tiktok = getPublisher('tiktok');
+  return tiktok.publishPost({ text });
+}
+
+async function postToYouTube(parsed, dryRun) {
+  const { title, body } = parsed;
+  if (!title || !body) throw new Error('YouTube post requires title and body');
+
+  if (dryRun) {
+    console.log(`[dry-run] YouTube: "${title}" (${body.length} chars)`);
+    return { dryRun: true };
+  }
+
+  const youtube = getPublisher('youtube');
+  return youtube.publishPost({ title, description: body });
+}
+
 // ---------------------------------------------------------------------------
 // Main orchestrator
 // ---------------------------------------------------------------------------
@@ -192,6 +218,8 @@ const DISPATCHERS = {
   x: postToX,
   linkedin: postToLinkedIn,
   devto: postToDevTo,
+  tiktok: postToTikTok,
+  youtube: postToYouTube,
 };
 
 async function postEverywhere(filePath, { platforms, dryRun } = {}) {
@@ -211,7 +239,7 @@ async function postEverywhere(filePath, { platforms, dryRun } = {}) {
   // Determine which platforms to post to.
   // Default excludes devto — high-volume Dev.to posting is counterproductive (0 engagement on 427 posts).
   // Use --platforms=devto explicitly for monthly cross-posts only.
-  const DEFAULT_PLATFORMS = ['reddit', 'x', 'linkedin'];
+  const DEFAULT_PLATFORMS = ['reddit', 'x', 'linkedin', 'tiktok', 'youtube'];
   const targetPlatforms = platforms || (parsed.platform ? [parsed.platform] : DEFAULT_PLATFORMS);
 
   // Preserve original body/comment so each platform gets a fresh UTM tag

@@ -10,14 +10,67 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { tagUrlsInText } = require('../utm');
 const { loadLocalEnv } = require('../load-env');
 
 const ZERNIO_UTM = { source: 'zernio', medium: 'social', campaign: 'organic' };
 
 const ZERNIO_BASE = 'https://zernio.com/api/v1';
+const DEFAULT_DEDUP_LOG_PATH = path.join(__dirname, '..', '..', '..', '.thumbgate', 'zernio-dedup-log.json');
 
 loadLocalEnv();
+
+/**
+ * Content-hash dedup: prevents the same content from being posted to the same
+ * platform twice within a 24-hour window.
+ */
+function getDedupLogPath() {
+  return process.env.THUMBGATE_DEDUP_LOG_PATH || DEFAULT_DEDUP_LOG_PATH;
+}
+
+function buildDedupKey(content, platform) {
+  const hash = crypto.createHash('sha256').update(content.trim()).digest('hex').slice(0, 16);
+  return `${platform}::${hash}`;
+}
+
+function loadDedupLog() {
+  const logPath = getDedupLogPath();
+  try {
+    if (fs.existsSync(logPath)) {
+      return JSON.parse(fs.readFileSync(logPath, 'utf8'));
+    }
+  } catch { /* ignore corrupt log */ }
+  return {};
+}
+
+function saveDedupLog(log) {
+  const logPath = getDedupLogPath();
+  const dir = path.dirname(logPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(logPath, JSON.stringify(log, null, 2));
+}
+
+function isDuplicate(content, platform) {
+  const log = loadDedupLog();
+  const key = buildDedupKey(content, platform);
+  const entry = log[key];
+  if (!entry) return false;
+  const ageMs = Date.now() - new Date(entry.postedAt).getTime();
+  return ageMs < 24 * 60 * 60 * 1000; // 24-hour dedup window
+}
+
+function recordPost(content, platform) {
+  const log = loadDedupLog();
+  const key = buildDedupKey(content, platform);
+  log[key] = { platform, postedAt: new Date().toISOString() };
+  // Prune entries older than 7 days
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  for (const [k, v] of Object.entries(log)) {
+    if (new Date(v.postedAt).getTime() < cutoff) delete log[k];
+  }
+  saveDedupLog(log);
+}
 
 function requireApiKey() {
   const key = process.env.ZERNIO_API_KEY;
@@ -224,17 +277,35 @@ async function publishPost(content, platforms, options = {}) {
     return { blocked: true, reasons: gateResult.findings };
   }
 
-  console.log(`[zernio:publisher] Publishing to ${normalizedPlatforms.length} platform(s): ${normalizedPlatforms.map((p) => p.platform).join(', ')}`);
+  // Dedup: filter out platforms where identical content was posted in last 24h
+  const dedupedPlatforms = normalizedPlatforms.filter((p) => {
+    if (isDuplicate(content, p.platform)) {
+      console.log(`[zernio:publisher] SKIPPED ${p.platform} — duplicate content within 24h`);
+      return false;
+    }
+    return true;
+  });
+
+  if (dedupedPlatforms.length === 0) {
+    console.log('[zernio:publisher] All platforms skipped (duplicate content)');
+    return { blocked: true, reasons: [{ reason: 'duplicate_content_all_platforms' }] };
+  }
+
+  console.log(`[zernio:publisher] Publishing to ${dedupedPlatforms.length} platform(s): ${dedupedPlatforms.map((p) => p.platform).join(', ')}`);
 
   const json = await zernioFetch('POST', '/posts', {
     content,
     firstComment: options.firstComment,
     mediaItems: options.mediaItems,
     publishNow: true,
-    platforms: normalizedPlatforms,
+    platforms: dedupedPlatforms,
   });
 
   const data = normalizePostResult(json);
+  // Record each platform to prevent future dupes
+  for (const p of dedupedPlatforms) {
+    recordPost(content, p.platform);
+  }
   console.log(`[zernio:publisher] Post published. id=${data.id ?? 'unknown'}`);
   return data;
 }
@@ -262,19 +333,36 @@ async function schedulePost(content, platforms, scheduledFor, timezone, options 
 
   content = tagUrlsInText(content, options.utm || ZERNIO_UTM);
 
-  console.log(`[zernio:publisher] Scheduling post for ${scheduledFor} (${timezone}) to ${normalizedPlatforms.length} platform(s)`);
+  // Dedup: filter out platforms where identical content was scheduled in last 24h
+  const dedupedPlatforms = normalizedPlatforms.filter((p) => {
+    if (isDuplicate(content, p.platform)) {
+      console.log(`[zernio:publisher] SKIPPED ${p.platform} schedule — duplicate content within 24h`);
+      return false;
+    }
+    return true;
+  });
+
+  if (dedupedPlatforms.length === 0) {
+    console.log('[zernio:publisher] All platforms skipped (duplicate content)');
+    return { blocked: true, reasons: [{ reason: 'duplicate_content_all_platforms' }] };
+  }
+
+  console.log(`[zernio:publisher] Scheduling post for ${scheduledFor} (${timezone}) to ${dedupedPlatforms.length} platform(s)`);
 
   const json = await zernioFetch('POST', '/posts', {
     content,
     firstComment: options.firstComment,
     mediaItems: options.mediaItems,
     publishNow: false,
-    platforms: normalizedPlatforms,
+    platforms: dedupedPlatforms,
     scheduledFor,
     timezone,
   });
 
   const data = normalizePostResult(json);
+  for (const p of dedupedPlatforms) {
+    recordPost(content, p.platform);
+  }
   console.log(`[zernio:publisher] Post scheduled. id=${data.id ?? 'unknown'}`);
   return data;
 }
@@ -343,9 +431,12 @@ async function publishToAllPlatforms(content, options = {}) {
 }
 
 module.exports = {
+  buildDedupKey,
   deletePost,
+  isDuplicate,
   listPosts,
   publishPost,
+  recordPost,
   schedulePost,
   publishToAllPlatforms,
   getConnectedAccounts,

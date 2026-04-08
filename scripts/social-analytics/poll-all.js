@@ -9,6 +9,9 @@ const { initDb } = require('./store');
 
 const POLLERS = [
   { name: 'github', module: './pollers/github', envRequired: ['GITHUB_TOKEN'] },
+  // Direct Instagram Graph API poller. Requires INSTAGRAM_ACCESS_TOKEN + INSTAGRAM_USER_ID.
+  // When those are absent, Instagram engagement data is still captured via the Zernio poller
+  // below (getConnectedAccounts returns Instagram accounts when Zernio is connected to IG).
   { name: 'instagram', module: './pollers/instagram', envRequired: ['INSTAGRAM_ACCESS_TOKEN', 'INSTAGRAM_USER_ID'] },
   { name: 'tiktok', module: './pollers/tiktok', envRequired: ['TIKTOK_ACCESS_TOKEN'] },
   { name: 'linkedin', module: './pollers/linkedin', envRequired: ['LINKEDIN_ACCESS_TOKEN', 'LINKEDIN_PERSON_URN'] },
@@ -16,7 +19,10 @@ const POLLERS = [
   { name: 'reddit', module: './pollers/reddit', envRequired: ['REDDIT_CLIENT_ID', 'REDDIT_CLIENT_SECRET', 'REDDIT_USERNAME', 'REDDIT_PASSWORD'] },
   { name: 'threads', module: './pollers/threads', envRequired: ['THREADS_ACCESS_TOKEN', 'THREADS_USER_ID'] },
   { name: 'youtube', module: './pollers/youtube', envRequired: ['YOUTUBE_API_KEY', 'YOUTUBE_CHANNEL_ID'] },
-  { name: 'plausible', module: './pollers/plausible', envRequired: ['PLAUSIBLE_API_KEY', 'PLAUSIBLE_SITE_ID'] },
+  // PLAUSIBLE_SITE_ID defaults to thumbgate-production.up.railway.app if not set.
+  { name: 'plausible', module: './pollers/plausible', envRequired: ['PLAUSIBLE_API_KEY'] },
+  // Zernio covers all connected social accounts (including Instagram) via its unified API.
+  // Instagram posts published via Zernio will have their engagement metrics captured here.
   { name: 'zernio', module: './pollers/zernio', envRequired: ['ZERNIO_API_KEY'] },
 ];
 
@@ -37,10 +43,19 @@ async function pollAll(options = {}) {
 
     try {
       const mod = require(poller.module);
-      const fn = mod[`poll${poller.name.charAt(0).toUpperCase()}${poller.name.slice(1)}`]
-        || mod.pollGitHub || mod.pollInstagram || mod.pollTikTok
-        || mod.pollLinkedIn || mod.pollX || mod.pollReddit
-        || mod.pollThreads || mod.pollPlausible || mod.pollZernio;
+      // Resolve the poll function by trying the simple title-case name first, then
+      // known capitalization variants (pollGitHub, pollTikTok, pollLinkedIn, pollYouTube),
+      // and finally any exported function whose name starts with "poll" as a last resort.
+      const baseName = poller.name.charAt(0).toUpperCase() + poller.name.slice(1);
+      const KNOWN_VARIANTS = {
+        github:   'pollGitHub',
+        tiktok:   'pollTikTok',
+        linkedin: 'pollLinkedIn',
+        youtube:  'pollYouTube',
+      };
+      const fn = mod[`poll${baseName}`]
+        || (KNOWN_VARIANTS[poller.name] && mod[KNOWN_VARIANTS[poller.name]])
+        || Object.values(mod).find((v) => typeof v === 'function' && v.name && v.name.startsWith('poll'));
 
       if (!fn) {
         console.log(`⚠  ${poller.name}: no poll function found in module`);
