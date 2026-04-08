@@ -13,7 +13,6 @@ Or from the npm package:
 ```bash
 npx thumbgate init
 cp node_modules/thumbgate/plugins/amp-skill/SKILL.md .amp/skills/thumbgate-feedback.md
-cp node_modules/thumbgate/plugins/amp-skill/SKILL.md .amp/skills/rlhf-feedback.md
 ```
 
 ## What This Does
@@ -27,17 +26,17 @@ After copying, restart Amp. The skill will appear in the active skills list.
 Then test:
 
 ```bash
-node .thumbgate/capture-feedback.js --feedback=up --context="amp skill install verified" --tags="install"
+npx thumbgate capture --feedback=up --context="amp skill install verified" --tags="install"
 ```
 
 ## Available Commands (via skill)
 
 ```bash
 # Positive feedback
-node .thumbgate/capture-feedback.js --feedback=up --context="..." --tags="..."
+npx thumbgate capture --feedback=up --context="..." --tags="..."
 
 # Negative feedback
-node .thumbgate/capture-feedback.js --feedback=down --context="..." --what-went-wrong="..." --what-to-change="..." --tags="..."
+npx thumbgate capture --feedback=down --context="..." --what-went-wrong="..." --what-to-change="..." --tags="..."
 ```
 
 ## Requirements

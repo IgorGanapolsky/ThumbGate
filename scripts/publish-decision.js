@@ -5,6 +5,14 @@ function normalizeBoolean(value) {
   return String(value).trim().toLowerCase() === 'true';
 }
 
+function isPrereleaseVersion(version) {
+  return /^\d+\.\d+\.\d+-[0-9A-Za-z.-]+$/.test(String(version || '').trim());
+}
+
+function getNpmTag(version) {
+  return isPrereleaseVersion(version) ? 'next' : 'latest';
+}
+
 function decidePublishPlan(options) {
   const currentSha = String(options.currentSha || '').trim();
   const tagSha = String(options.tagSha || '').trim();
@@ -14,6 +22,7 @@ function decidePublishPlan(options) {
   const published = normalizeBoolean(options.published);
   const tagExists = normalizeBoolean(options.tagExists);
   const tagMatchesCurrentCommit = tagExists && tagSha === currentSha;
+  const npmTag = getNpmTag(version);
 
   if (!version) {
     throw new Error('VERSION is required.');
@@ -51,6 +60,7 @@ function decidePublishPlan(options) {
       reason: `Version ${version} is new. Create tag v${version}, publish to npm, and create a GitHub Release.`,
       createTag: true,
       publishNpm: true,
+      npmTag,
       ensureRelease: true,
       skipPublish: false,
       tagMatchesCurrentCommit: false,
@@ -63,6 +73,7 @@ function decidePublishPlan(options) {
       reason: `Tag v${version} already points at ${currentSha}. Resume npm publish without recreating the tag.`,
       createTag: false,
       publishNpm: true,
+      npmTag,
       ensureRelease: true,
       skipPublish: false,
       tagMatchesCurrentCommit: true,
@@ -75,6 +86,7 @@ function decidePublishPlan(options) {
       reason: `Version ${version} is already published from the current commit ${currentSha}.`,
       createTag: false,
       publishNpm: false,
+      npmTag,
       ensureRelease: true,
       skipPublish: true,
       tagMatchesCurrentCommit: true,
@@ -86,6 +98,7 @@ function decidePublishPlan(options) {
     reason: `Version ${version} is already published from commit ${tagSha}. Skip npm publish for this merge because package version did not change.`,
     createTag: false,
     publishNpm: false,
+    npmTag,
     ensureRelease: false,
     skipPublish: true,
     tagMatchesCurrentCommit: false,
@@ -102,6 +115,7 @@ function writeGithubOutputs(plan, outputPath) {
     `reason=${plan.reason}`,
     `create_tag=${String(plan.createTag)}`,
     `publish_npm=${String(plan.publishNpm)}`,
+    `npm_tag=${plan.npmTag}`,
     `ensure_release=${String(plan.ensureRelease)}`,
     `skip_publish=${String(plan.skipPublish)}`,
     `tag_matches_current_commit=${String(plan.tagMatchesCurrentCommit)}`,
@@ -137,6 +151,8 @@ if (require.main === module) {
 
 module.exports = {
   decidePublishPlan,
+  getNpmTag,
+  isPrereleaseVersion,
   normalizeBoolean,
   runCli,
   writeGithubOutputs,

@@ -78,8 +78,6 @@ This file is local-only and git-ignored. To expose it in Obsidian, create a syml
 
 ```bash
 # From your vault's AI-Memories/thumbgate/ directory
-ln -s /path/to/thumbgate/.claude/memory/feedback/memory-log.jsonl "Memory Log.md"
-# From your vault's AI-Memories/rlhf/ directory
 ln -s /path/to/thumbgate/.thumbgate/memory-log.jsonl "Memory Log.md"
 ```
 
@@ -106,7 +104,6 @@ Auto-generated prevention rules from repeated AI mistakes. Sourced from:
 This file is local-only and git-ignored. Symlink it to your vault:
 
 ```bash
-ln -s /path/to/thumbgate/.claude/memory/feedback/prevention-rules.md "Prevention Rules.md"
 ln -s /path/to/thumbgate/.thumbgate/prevention-rules.md "Prevention Rules.md"
 ```
 

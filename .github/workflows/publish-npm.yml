@@ -86,7 +86,7 @@ jobs:
           git push origin "v${VERSION}"
       - name: Publish npm package
         if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.publish_npm == 'true') || (github.event_name == 'release' && steps.npm.outputs.published == 'false')
-        run: npm publish --provenance
+        run: npm publish --tag "${{ steps.plan.outputs.npm_tag || 'latest' }}" --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Ensure GitHub Release exists

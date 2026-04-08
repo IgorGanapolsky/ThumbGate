@@ -10,7 +10,7 @@ PROMPT_GUARD="$SCRIPT_DIR/prompt-guard.js"
 ACTIVE_CWD="${CLAUDE_PROJECT_DIR:-${PWD:-$(pwd)}}"
 FEEDBACK_DIR="$(node -e "const path = require('path'); const { resolveFeedbackDir } = require(path.join(process.argv[1], 'feedback-paths.js')); process.stdout.write(resolveFeedbackDir({ cwd: process.argv[2] || process.cwd(), feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR || undefined }));" "$SCRIPT_DIR" "$ACTIVE_CWD" 2>/dev/null)"
 if [ -z "$FEEDBACK_DIR" ]; then
-  FEEDBACK_DIR="${THUMBGATE_FEEDBACK_DIR:-$ACTIVE_CWD/.rlhf}"
+  FEEDBACK_DIR="${THUMBGATE_FEEDBACK_DIR:-$ACTIVE_CWD/.thumbgate}"
 fi
 FEEDBACK_LOG="$FEEDBACK_DIR/feedback-log.jsonl"
 MEMORY_LOG="$FEEDBACK_DIR/memory-log.jsonl"

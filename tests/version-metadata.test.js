@@ -8,7 +8,9 @@ const {
   resolveHostedBillingConfig,
 } = require('../scripts/hosted-config');
 const {
+  CLAUDE_PLUGIN_NEXT_ASSET_NAME,
   PRODUCTHUNT_URL,
+  getClaudePluginChannelAssetName,
   getClaudePluginLatestDownloadUrl,
 } = require('../scripts/distribution-surfaces');
 
@@ -93,6 +95,11 @@ test('public docs render the current package version', () => {
   assert.doesNotMatch(landingPage, /billingIncrement/);
   assert.doesNotMatch(landingPage, /P1M/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
+});
+
+test('distribution surfaces reserve a separate prerelease Claude asset alias', () => {
+  assert.equal(getClaudePluginChannelAssetName('1.0.0'), 'thumbgate-claude-desktop.mcpb');
+  assert.equal(getClaudePluginChannelAssetName('1.1.0-beta.1'), CLAUDE_PLUGIN_NEXT_ASSET_NAME);
 });
 
 test('landing page keeps GTM and schema assets wired', () => {

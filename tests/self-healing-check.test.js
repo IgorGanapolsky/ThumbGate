@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const {
   DEFAULT_CHECKS,
+  DEFAULT_TESTS_TIMEOUT_MS,
   collectHealthReport,
   runCommand,
   reportToText,
@@ -14,6 +15,8 @@ const {
 test('DEFAULT_CHECKS delegates verification through npm test', () => {
   const testsCheck = DEFAULT_CHECKS.find((check) => check.name === 'tests');
   assert.deepEqual(testsCheck.command, ['npm', 'test']);
+  assert.equal(testsCheck.timeoutMs, DEFAULT_TESTS_TIMEOUT_MS);
+  assert.ok(testsCheck.timeoutMs >= 60 * 60_000);
 });
 
 test('DEFAULT_CHECKS isolates proof artifacts for prove checks', () => {

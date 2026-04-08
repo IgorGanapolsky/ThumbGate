@@ -44,17 +44,19 @@ jobs:
         run: |
           version=$(node -p "require('./package.json').version")
           versioned_asset=$(node -e "const { getClaudePluginVersionedAssetName } = require('./scripts/distribution-surfaces'); process.stdout.write(getClaudePluginVersionedAssetName())")
-          latest_asset=$(node -e "const { CLAUDE_PLUGIN_LATEST_ASSET_NAME } = require('./scripts/distribution-surfaces'); process.stdout.write(CLAUDE_PLUGIN_LATEST_ASSET_NAME)")
+          channel_asset=$(node -e "const { getClaudePluginChannelAssetName } = require('./scripts/distribution-surfaces'); process.stdout.write(getClaudePluginChannelAssetName())")
+          is_prerelease=$(node -e "const { isPrereleaseVersion } = require('./scripts/distribution-surfaces'); process.stdout.write(String(isPrereleaseVersion()))")
           {
             echo "version=$version"
             echo "versioned_asset=$versioned_asset"
-            echo "latest_asset=$latest_asset"
+            echo "channel_asset=$channel_asset"
+            echo "is_prerelease=$is_prerelease"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Create stable latest asset alias
+      - name: Create channel asset alias
         run: |
           cp ".artifacts/claude-desktop/${{ steps.assets.outputs.versioned_asset }}" \
-            ".artifacts/claude-desktop/${{ steps.assets.outputs.latest_asset }}"
+            ".artifacts/claude-desktop/${{ steps.assets.outputs.channel_asset }}"
 
       - name: Upload Claude plugin artifact
         uses: actions/upload-artifact@v7
@@ -62,15 +64,20 @@ jobs:
           name: claude-plugin-mcpb
           path: |
             .artifacts/claude-desktop/${{ steps.assets.outputs.versioned_asset }}
-            .artifacts/claude-desktop/${{ steps.assets.outputs.latest_asset }}
+            .artifacts/claude-desktop/${{ steps.assets.outputs.channel_asset }}
 
       - name: Ensure GitHub Release exists
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.assets.outputs.version }}
+          IS_PRERELEASE: ${{ steps.assets.outputs.is_prerelease }}
         run: |
           if ! gh release view "v${VERSION}" >/dev/null 2>&1; then
-            gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
+            if [ "$IS_PRERELEASE" = "true" ]; then
+              gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes --prerelease
+            else
+              gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
+            fi
           fi
 
       - name: Upload Claude plugin assets to GitHub Release
@@ -80,5 +87,5 @@ jobs:
         run: |
           gh release upload "v${VERSION}" \
             ".artifacts/claude-desktop/${{ steps.assets.outputs.versioned_asset }}" \
-            ".artifacts/claude-desktop/${{ steps.assets.outputs.latest_asset }}" \
+            ".artifacts/claude-desktop/${{ steps.assets.outputs.channel_asset }}" \
             --clobber
