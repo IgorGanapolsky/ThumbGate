@@ -1,0 +1,151 @@
+name: Daily Revenue Loop
+
+on:
+  schedule:
+    - cron: '0 13 * * *'  # 9am ET (1pm UTC)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (report only, no commit)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+
+jobs:
+  revenue-loop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Check npm downloads
+        id: npm
+        run: |
+          DAILY=$(curl -s "https://api.npmjs.org/downloads/point/last-day/thumbgate")
+          WEEKLY=$(curl -s "https://api.npmjs.org/downloads/point/last-week/thumbgate")
+          MONTHLY=$(curl -s "https://api.npmjs.org/downloads/point/last-month/thumbgate")
+          echo "daily=$DAILY" >> "$GITHUB_OUTPUT"
+          echo "weekly=$WEEKLY" >> "$GITHUB_OUTPUT"
+          echo "monthly=$MONTHLY" >> "$GITHUB_OUTPUT"
+          echo "NPM Downloads:"
+          echo "  Daily: $DAILY"
+          echo "  Weekly: $WEEKLY"
+          echo "  Monthly: $MONTHLY"
+
+      - name: Check production health
+        id: health
+        run: |
+          HEALTH=$(curl -s https://thumbgate-production.up.railway.app/health || echo '{"status":"unreachable"}')
+          echo "health=$HEALTH" >> "$GITHUB_OUTPUT"
+          echo "Production: $HEALTH"
+
+      - name: Check GitHub metrics
+        id: github
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          STARS=$(gh api repos/IgorGanapolsky/ThumbGate --jq '.stargazers_count')
+          FORKS=$(gh api repos/IgorGanapolsky/ThumbGate --jq '.forks_count')
+          ISSUES=$(gh api repos/IgorGanapolsky/ThumbGate --jq '.open_issues_count')
+          echo "stars=$STARS" >> "$GITHUB_OUTPUT"
+          echo "forks=$FORKS" >> "$GITHUB_OUTPUT"
+          echo "issues=$ISSUES" >> "$GITHUB_OUTPUT"
+          echo "GitHub: stars=$STARS forks=$FORKS issues=$ISSUES"
+
+      - name: Check recent workflow runs
+        id: workflows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Recent workflow runs:"
+          gh run list --repo IgorGanapolsky/ThumbGate --limit 10 --json name,status,conclusion,createdAt \
+            --jq '.[] | "\(.name): \(.conclusion // .status) (\(.createdAt))"'
+
+      - name: Poll social analytics
+        if: github.event.inputs.dry_run != 'true'
+        env:
+          ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+        run: |
+          if [ -z "$ZERNIO_API_KEY" ]; then
+            echo "Skipping: ZERNIO_API_KEY not set"
+            exit 0
+          fi
+          node scripts/social-analytics/poll-all.js 2>&1 || echo "Poll failed (non-fatal)"
+
+      - name: Check social reply monitor
+        if: github.event.inputs.dry_run != 'true'
+        env:
+          ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+        run: |
+          if [ -z "$X_BEARER_TOKEN" ]; then
+            echo "Skipping reply monitor: X_BEARER_TOKEN not set"
+            exit 0
+          fi
+          timeout 60 node scripts/social-reply-monitor.js --once 2>&1 || echo "Reply monitor done"
+
+      - name: Generate daily report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          mkdir -p .thumbgate/daily-reports
+
+          DAILY_DL=$(echo '${{ steps.npm.outputs.daily }}' | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8');try{console.log(JSON.parse(d).downloads)}catch{console.log('?')}")
+          WEEKLY_DL=$(echo '${{ steps.npm.outputs.weekly }}' | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8');try{console.log(JSON.parse(d).downloads)}catch{console.log('?')}")
+          MONTHLY_DL=$(echo '${{ steps.npm.outputs.monthly }}' | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8');try{console.log(JSON.parse(d).downloads)}catch{console.log('?')}")
+          VERSION=$(echo '${{ steps.health.outputs.health }}' | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8');try{console.log(JSON.parse(d).version)}catch{console.log('?')}")
+          STATUS=$(echo '${{ steps.health.outputs.health }}' | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8');try{console.log(JSON.parse(d).status)}catch{console.log('?')}")
+
+          cat > ".thumbgate/daily-reports/${DATE}.md" << REPORT
+          # ThumbGate Daily Report — ${DATE}
+
+          ## npm Downloads
+          | Period | Downloads |
+          |--------|-----------|
+          | Today | ${DAILY_DL} |
+          | This week | ${WEEKLY_DL} |
+          | This month | ${MONTHLY_DL} |
+
+          ## GitHub
+          - Stars: ${{ steps.github.outputs.stars }}
+          - Forks: ${{ steps.github.outputs.forks }}
+          - Open issues: ${{ steps.github.outputs.issues }}
+
+          ## Production
+          - Status: ${STATUS}
+          - Version: ${VERSION}
+
+          ## Workflow Status
+          $(gh run list --repo IgorGanapolsky/ThumbGate --limit 5 --json name,conclusion,createdAt \
+            --jq '.[] | "- \(.name): \(.conclusion // "running") (\(.createdAt | split("T")[0]))"')
+
+          ---
+          *Generated by daily-revenue-loop workflow*
+          REPORT
+
+          echo "Report written to .thumbgate/daily-reports/${DATE}.md"
+          cat ".thumbgate/daily-reports/${DATE}.md"
+
+      - name: Commit daily report
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          DATE=$(date -u +%Y-%m-%d)
+          git add ".thumbgate/daily-reports/${DATE}.md" || true
+          git add scripts/social-analytics/db/ || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: daily revenue loop report ${DATE} [skip ci]"
+            git push
+          fi
