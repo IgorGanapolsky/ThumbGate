@@ -364,12 +364,14 @@ function buildEstimateUncertaintyResponse(args = {}) {
 
 async function callTool(name, args = {}) {
   assertToolAllowed(name, getActiveMcpProfile());
-  const firewallResult = (await evaluateGatesAsync(name, args)) || evaluateSecretGuard({ tool_name: name, tool_input: args });
-  if (firewallResult && firewallResult.decision === 'deny') {
-    const err = new Error(`Action blocked by Semantic Firewall: ${firewallResult.message}`);
-    err.errorCategory = 'permission';
-    err.isRetryable = false;
-    throw err;
+  if (name !== 'workflow_sentinel') {
+    const firewallResult = (await evaluateGatesAsync(name, args)) || evaluateSecretGuard({ tool_name: name, tool_input: args });
+    if (firewallResult && firewallResult.decision === 'deny') {
+      const err = new Error(`Action blocked by Semantic Firewall: ${firewallResult.message}`);
+      err.errorCategory = 'permission';
+      err.isRetryable = false;
+      throw err;
+    }
   }
   const startMs = Date.now();
   const result = await callToolInner(name, args);
@@ -628,6 +630,7 @@ async function callToolInner(name, args) {
         affectedFiles: Array.isArray(args.changedFiles) ? args.changedFiles : undefined,
         requirePrForReleaseSensitive: args.requirePrForReleaseSensitive === true,
         requireVersionNotBehindBase: args.requireVersionNotBehindBase === true,
+        governanceState: getScopeState(),
       }));
     case 'register_claim_gate':
       return toTextResult(registerClaimGate(args.claimPattern, args.requiredActions, args.message));
