@@ -13,6 +13,9 @@ jobs:
   changeset-check:
     name: Verify changeset
     runs-on: ubuntu-latest
+    env:
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      PR_ACTOR: ${{ github.actor }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,12 +30,11 @@ jobs:
       - name: Check for changeset
         run: |
           # Skip check for release/chore commits and dependabot
-          PR_TITLE="${{ github.event.pull_request.title }}"
           if [[ "$PR_TITLE" == chore* ]] || [[ "$PR_TITLE" == docs* ]] || [[ "$PR_TITLE" == ci* ]]; then
             echo "Skipping changeset check for chore/docs/ci PR"
             exit 0
           fi
-          if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
+          if [[ "$PR_ACTOR" == "dependabot[bot]" ]]; then
             echo "Skipping changeset check for Dependabot"
             exit 0
           fi
