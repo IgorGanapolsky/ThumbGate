@@ -25,6 +25,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Fetch main for changeset diff
+        run: git fetch origin main:main
+
       - run: npm ci
 
       - name: Check for changeset
