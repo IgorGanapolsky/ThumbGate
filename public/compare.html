@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Best Pre-Action Gate Tools for AI Coding Agents (2026 Comparison)</title>
+<!-- Privacy-friendly analytics by Plausible -->
+<script defer data-domain="rlhf-feedback-loop-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Compare pre-action gate tools that prevent AI coding agents from making costly mistakes. ThumbGate vs manual review vs post-hoc fixes.">
+<meta name="keywords" content="AI agent safety, pre-action gates, AI coding agent comparison, ThumbGate vs manual review, AI agent guardrails, PreToolUse hooks, Claude Code safety, Codex safety, Gemini safety, Cursor rules alternative">
+<meta property="og:title" content="Best Pre-Action Gate Tools for AI Coding Agents (2026 Comparison)">
+<meta property="og:description" content="Compare pre-action gate tools that prevent AI coding agents from making costly mistakes. ThumbGate vs manual review vs post-hoc fixes.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/compare">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/compare">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Best Pre-Action Gate Tools for AI Coding Agents (2026 Comparison)",
+  "description": "Compare pre-action gate tools that prevent AI coding agents from making costly mistakes. ThumbGate vs manual review vs post-hoc fixes vs Cursor rules vs linters.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-04-08",
+  "dateModified": "2026-04-08",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/compare"
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is a pre-action gate for AI coding agents?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A pre-action gate is an enforcement layer that intercepts AI agent tool calls before they execute. Unlike prompt rules that agents can ignore, pre-action gates physically block dangerous actions such as force-pushing to main, deleting production files, or committing code with failing tests. ThumbGate implements pre-action gates via PreToolUse hooks that fire before every tool call."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate work with Claude Code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent. Run npx thumbgate init --agent claude-code to auto-configure PreToolUse hooks in your .claude/settings.json."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate has a free tier that includes local enforcement with 5 daily feedback captures, 10 lesson searches, unlimited recall, blocking, and history-aware lesson distillation. Pro ($19/mo or $149/yr) adds a personal local dashboard and DPO export. Team rollout ($12/seat/mo) adds a shared lesson database and org dashboard."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is ThumbGate different from .cursorrules or CLAUDE.md rules?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Cursor rules and CLAUDE.md are prompt-level instructions that the AI agent can read, forget, or override. ThumbGate enforces rules at the tool-call level via PreToolUse hooks. When a tool call matches a known failure pattern, it is physically blocked before execution. Additionally, ThumbGate auto-generates prevention rules from feedback, so you never have to write rules manually."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can ThumbGate learn from mistakes automatically?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. When your AI agent makes a mistake, you give a thumbs-down with context. After repeated failures with the same pattern, ThumbGate auto-generates a prevention rule and wires it as a pre-action gate. Gates adapt their sensitivity over time using Thompson Sampling, a Bayesian multi-armed bandit algorithm."
+      }
+    }
+  ]
+}
+</script>
+
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0b;
+    --bg-card: #161618;
+    --border: #222225;
+    --text: #e8e8ec;
+    --muted: #8b8b94;
+    --cyan: #22d3ee;
+    --green: #34d399;
+    --red: #f87171;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .container { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; gap: 1.5rem; align-items: center; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+  nav a:hover { color: var(--cyan); }
+  nav .brand { color: var(--text); font-weight: 700; font-size: 1.1rem; }
+  h1 { font-size: 2.2rem; line-height: 1.2; margin: 2rem 0 1rem; }
+  h2 { font-size: 1.5rem; margin: 2.5rem 0 1rem; color: var(--cyan); }
+  h3 { font-size: 1.15rem; margin: 1.5rem 0 0.5rem; }
+  p, li { color: var(--text); margin-bottom: 0.75rem; }
+  ul { padding-left: 1.5rem; }
+  li { margin-bottom: 0.5rem; }
+  code { background: #1a1a1e; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.9em; color: var(--cyan); }
+  pre { background: #111113; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 1rem 0; }
+  pre code { background: none; padding: 0; color: var(--text); }
+  .highlight { color: var(--cyan); }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; }
+  .comparison-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
+  .comparison-table th, .comparison-table td { padding: 0.75rem; border: 1px solid var(--border); text-align: left; }
+  .comparison-table th { background: #111113; color: var(--cyan); }
+  .comparison-table td:first-child { font-weight: 600; }
+  .yes { color: var(--green); }
+  .no { color: var(--red); }
+  .partial { color: #fbbf24; }
+  .cta { display: inline-block; background: var(--cyan); color: #000; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 1rem 0; }
+  .cta:hover { opacity: 0.9; }
+  .breadcrumb { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .breadcrumb a { color: var(--muted); }
+  .step-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+  .step-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+  .step-card .step-number { color: var(--cyan); font-weight: 700; font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .step-card h3 { margin-top: 0; }
+  footer { border-top: 1px solid var(--border); padding: 2rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
+  footer a { color: var(--muted); text-decoration: underline; }
+  @media (max-width: 600px) { h1 { font-size: 1.6rem; } .container { padding: 1rem; } .comparison-table { font-size: 0.8rem; } .comparison-table th, .comparison-table td { padding: 0.5rem; } }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Guide</a>
+  <a href="/compare">Compare</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a>
+</nav>
+
+<div class="container">
+<p class="breadcrumb"><a href="/">Home</a> / Compare</p>
+
+<h1>Best Pre-Action Gate Tools for AI Coding Agents (2026 Comparison)</h1>
+<p style="color:var(--muted);">Your AI coding agent force-pushed to main again. Which tool actually prevents that? We compared the five most common approaches to AI agent safety.</p>
+
+<h2>Comparison Table</h2>
+<div style="overflow-x:auto;">
+<table class="comparison-table">
+  <tr>
+    <th>Feature</th>
+    <th>ThumbGate</th>
+    <th>Manual Code Review</th>
+    <th>Post-hoc Git Revert</th>
+    <th>Cursor Rules / .cursorrules</th>
+    <th>ESLint / Linters</th>
+  </tr>
+  <tr>
+    <td>Blocks bad actions before execution</td>
+    <td class="yes">Yes -- PreToolUse hooks</td>
+    <td class="partial">Partially -- after PR only</td>
+    <td class="no">No -- damage already done</td>
+    <td class="partial">Partially -- suggestions only</td>
+    <td class="partial">Partially -- static checks only</td>
+  </tr>
+  <tr>
+    <td>Learns from past mistakes</td>
+    <td class="yes">Yes -- auto-generates rules from feedback</td>
+    <td class="no">No -- relies on reviewer memory</td>
+    <td class="no">No</td>
+    <td class="no">No -- rules are hand-written</td>
+    <td class="no">No -- rules are hand-written</td>
+  </tr>
+  <tr>
+    <td>Works with Claude / Codex / Gemini / Forge</td>
+    <td class="yes">Yes -- all MCP-compatible agents</td>
+    <td class="yes">Yes -- agent-agnostic</td>
+    <td class="yes">Yes -- agent-agnostic</td>
+    <td class="partial">Cursor only</td>
+    <td class="partial">Partial -- code-level only</td>
+  </tr>
+  <tr>
+    <td>Zero config setup</td>
+    <td class="yes">Yes -- <code>npx thumbgate init</code></td>
+    <td class="no">No -- requires process + people</td>
+    <td class="no">No -- manual intervention each time</td>
+    <td class="partial">Partial -- requires writing rules</td>
+    <td class="partial">Partial -- requires config + plugins</td>
+  </tr>
+  <tr>
+    <td>Captures feedback for improvement</td>
+    <td class="yes">Yes -- thumbs up/down with context</td>
+    <td class="partial">Partial -- PR comments only</td>
+    <td class="no">No</td>
+    <td class="no">No</td>
+    <td class="no">No</td>
+  </tr>
+  <tr>
+    <td>Generates prevention rules automatically</td>
+    <td class="yes">Yes -- from repeated failure patterns</td>
+    <td class="no">No</td>
+    <td class="no">No</td>
+    <td class="no">No</td>
+    <td class="no">No</td>
+  </tr>
+  <tr>
+    <td>Real-time pre-action gates</td>
+    <td class="yes">Yes -- fires before every tool call</td>
+    <td class="no">No -- asynchronous review</td>
+    <td class="no">No -- reactive only</td>
+    <td class="no">No -- prompt-time only</td>
+    <td class="no">No -- build-time only</td>
+  </tr>
+  <tr>
+    <td>Cost</td>
+    <td>Free tier + Pro $19/mo</td>
+    <td>Engineer time per review</td>
+    <td>Time lost + recovery cost</td>
+    <td>Free</td>
+    <td>Free (open source)</td>
+  </tr>
+</table>
+</div>
+
+<h2>Why ThumbGate Wins</h2>
+<ul>
+  <li><strong>Enforcement, not suggestions.</strong> Prompt rules in CLAUDE.md or .cursorrules are instructions the agent can ignore. ThumbGate intercepts tool calls at the PreToolUse hook level and physically blocks dangerous actions before they execute.</li>
+  <li><strong>Learns and adapts automatically.</strong> Every thumbs-down becomes a data point. After repeated failures with the same pattern, ThumbGate auto-generates a prevention rule. Gates adapt their sensitivity over time using Thompson Sampling -- aggressive gates that over-block get tuned down, effective gates get reinforced.</li>
+  <li><strong>Works across all major AI coding agents.</strong> One install command covers Claude Code, Cursor, Codex, Gemini CLI, Amp, and OpenCode. No per-agent configuration needed.</li>
+  <li><strong>Prevention is cheaper than recovery.</strong> Manual code review catches mistakes after the PR. Git revert catches them after the push. ThumbGate catches them before the tool call executes -- saving the time, context switches, and cleanup cost of undoing damage.</li>
+</ul>
+
+<h2>How It Works</h2>
+<div class="step-grid">
+  <div class="step-card">
+    <div class="step-number">1</div>
+    <h3>Install</h3>
+    <p>Run <code>npx thumbgate init</code>. ThumbGate auto-detects your AI coding agent and configures PreToolUse hooks. No manual setup needed.</p>
+  </div>
+  <div class="step-card">
+    <div class="step-number">2</div>
+    <h3>Gate</h3>
+    <p>Every tool call your agent makes passes through a pre-action gate. Known-bad patterns are blocked before execution. Good actions pass through instantly.</p>
+  </div>
+  <div class="step-card">
+    <div class="step-number">3</div>
+    <h3>Learn</h3>
+    <p>When your agent makes a mistake, give it a thumbs-down. ThumbGate captures the feedback and auto-generates prevention rules from repeated failures.</p>
+  </div>
+</div>
+
+<h2>Get Started</h2>
+<div class="card">
+  <p>Install ThumbGate in one command:</p>
+  <pre><code>npx thumbgate init</code></pre>
+  <p>Then start giving feedback. ThumbGate handles the rest.</p>
+  <p>
+    <a href="https://www.npmjs.com/package/thumbgate" class="cta">View on npm</a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" style="color:var(--cyan); margin-left:1.5rem; text-decoration:underline;">View on GitHub</a>
+  </p>
+</div>
+
+<h2>Frequently Asked Questions</h2>
+
+<div class="card">
+  <h3>What is a pre-action gate?</h3>
+  <p>A pre-action gate is an enforcement layer that intercepts AI agent tool calls before they execute. Unlike prompt rules that agents can ignore, pre-action gates physically block dangerous actions such as force-pushing to main, deleting production files, or committing code with failing tests.</p>
+</div>
+
+<div class="card">
+  <h3>Does ThumbGate work with Claude Code?</h3>
+  <p>Yes. ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent. Run <code>npx thumbgate init --agent claude-code</code> to auto-configure PreToolUse hooks.</p>
+</div>
+
+<div class="card">
+  <h3>Is ThumbGate free?</h3>
+  <p>ThumbGate has a free tier that includes local enforcement with 5 daily feedback captures, 10 lesson searches, unlimited recall, and pre-action gate blocking. Pro ($19/mo or $149/yr) adds a personal local dashboard and DPO export. Team rollout ($12/seat/mo) adds a shared lesson database and org dashboard.</p>
+</div>
+
+<div class="card">
+  <h3>How is ThumbGate different from .cursorrules or CLAUDE.md rules?</h3>
+  <p>Cursor rules and CLAUDE.md are prompt-level instructions that the AI agent can read, forget, or override. ThumbGate enforces rules at the tool-call level via PreToolUse hooks. When a tool call matches a known failure pattern, it is physically blocked before execution. Additionally, ThumbGate auto-generates prevention rules from feedback -- no manual rule writing.</p>
+</div>
+
+<div class="card">
+  <h3>Can ThumbGate learn from mistakes automatically?</h3>
+  <p>Yes. When your AI agent makes a mistake, give a thumbs-down with context. After repeated failures with the same pattern, ThumbGate auto-generates a prevention rule and wires it as a pre-action gate. Gates adapt over time using Thompson Sampling, a Bayesian multi-armed bandit algorithm.</p>
+</div>
+
+</div>
+
+<footer>
+  <p>ThumbGate -- Pre-action gates for AI coding agents</p>
+  <p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> | <a href="https://www.npmjs.com/package/thumbgate">npm</a> | <a href="/guide">Guide</a> | <a href="/dashboard">Dashboard</a></p>
+</footer>
+</body>
+</html>

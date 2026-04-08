@@ -169,6 +169,7 @@ const PRO_PAGE_PATH = path.resolve(__dirname, '../../public/pro.html');
 const DASHBOARD_PAGE_PATH = path.resolve(__dirname, '../../public/dashboard.html');
 const LESSONS_PAGE_PATH = path.resolve(__dirname, '../../public/lessons.html');
 const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
+const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
@@ -2791,6 +2792,16 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/compare') {
+      try {
+        const html = fs.readFileSync(COMPARE_PAGE_PATH, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'Compare page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/blog') {
       try {
         const blogPath = path.resolve(__dirname, '../../public/blog.html');
@@ -2848,7 +2859,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/compare', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
