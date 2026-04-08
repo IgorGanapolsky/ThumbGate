@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const path = require('path');
+const path = require('node:path');
 
 const { classifyCommand } = require('./operational-integrity');
 
@@ -36,7 +36,7 @@ function normalizeRiskBand(value) {
 }
 
 function quoteShellArg(value) {
-  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+  return `'${String(value).replaceAll('\'', String.raw`'\''`)}'`;
 }
 
 function buildNetworkPolicy(input = {}) {
@@ -65,6 +65,16 @@ function buildLaunchers(workspacePath) {
       ]
       : [],
   };
+}
+
+function buildSummary(shouldSandbox, recommendation) {
+  if (!shouldSandbox) {
+    return 'Current action can stay on the normal local execution path.';
+  }
+  if (recommendation === 'required') {
+    return 'Route this action into Docker Sandboxes before retrying so the run happens inside a disposable microVM instead of on the host.';
+  }
+  return 'Prefer Docker Sandboxes for this action to reduce host blast radius while keeping local autonomy.';
 }
 
 function buildWhy({
@@ -147,11 +157,7 @@ function buildDockerSandboxPlan(input = {}) {
     egressAllowlist: input.egressAllowlist,
   });
   const launchers = buildLaunchers(workspacePath);
-  const summary = shouldSandbox
-    ? recommendation === 'required'
-      ? 'Route this action into Docker Sandboxes before retrying so the run happens inside a disposable microVM instead of on the host.'
-      : 'Prefer Docker Sandboxes for this action to reduce host blast radius while keeping local autonomy.'
-    : 'Current action can stay on the normal local execution path.';
+  const summary = buildSummary(shouldSandbox, recommendation);
 
   return {
     plannerVersion: 'docker-sandbox-plan-v1',
@@ -188,6 +194,7 @@ module.exports = {
   buildDockerSandboxPlan,
   buildLaunchers,
   buildNetworkPolicy,
+  buildSummary,
   normalizeRiskBand,
 };
 

@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
 
 const {
   buildDockerSandboxPlan,
@@ -12,7 +13,7 @@ test('buildDockerSandboxPlan requires Docker Sandboxes for destructive local com
     toolName: 'Bash',
     actionType: 'shell.exec',
     command: 'rm -rf generated-cache',
-    repoPath: '/tmp/thumbgate-repo',
+    repoPath: path.join(process.cwd(), 'fixtures', 'thumbgate-repo'),
     riskBand: 'very_high',
     affectedFiles: ['scripts/tool-registry.js', 'src/api/server.js'],
   });

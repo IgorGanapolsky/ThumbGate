@@ -226,7 +226,7 @@ function attachExecutionSurface(result, action) {
     command: action.type === 'shell.exec' ? action.target : '',
     repoPath: action.args.repoPath || action.args.cwd || '',
     affectedFiles: action.type.startsWith('file.') && action.target ? [action.target] : [],
-    riskBand: action.riskLevel === 'high' ? 'high' : action.riskLevel === 'medium' ? 'medium' : 'low',
+    riskBand: toSandboxRiskBand(action.riskLevel),
     requiresNetwork: ['upload', 'download', 'message.send'].includes(action.type),
   });
 
@@ -238,6 +238,12 @@ function attachExecutionSurface(result, action) {
     ...result,
     executionSurface,
   };
+}
+
+function toSandboxRiskBand(riskLevel) {
+  if (riskLevel === 'high') return 'high';
+  if (riskLevel === 'medium') return 'medium';
+  return 'low';
 }
 
 function createAuditEntry(action, decision) {
@@ -270,4 +276,5 @@ module.exports = {
   matchesDangerousPattern,
   matchesSecretPattern,
   attachExecutionSurface,
+  toSandboxRiskBand,
 };

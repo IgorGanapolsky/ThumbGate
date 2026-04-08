@@ -9,6 +9,7 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 const CHANGESET_DIR = path.join(PROJECT_ROOT, '.changeset');
 const DEFAULT_PACKAGE_NAME = 'thumbgate';
 const MIN_SUMMARY_LENGTH = 20;
+const RELEASE_TYPES = new Set(['major', 'minor', 'patch']);
 const RELEASE_RELEVANT_FILES = new Set([
   'README.md',
   'package.json',
@@ -48,7 +49,7 @@ function isChangesetMarkdownFile(relPath) {
 }
 
 function isReleaseRelevantFile(relPath) {
-  const normalized = String(relPath || '').trim().replace(/\\/g, '/');
+  const normalized = String(relPath || '').trim().replaceAll('\\', '/');
   if (!normalized || isChangesetMarkdownFile(normalized)) {
     return false;
   }
@@ -64,10 +65,58 @@ function isReleaseRelevantFile(relPath) {
   return RELEASE_RELEVANT_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 }
 
+function splitChangesetDocument(content) {
+  const normalized = String(content || '').replaceAll('\r\n', '\n');
+  const lines = normalized.split('\n');
+  if (lines[0]?.trim() !== '---') {
+    return null;
+  }
+
+  const closingIndex = lines.findIndex((line, index) => index > 0 && line.trim() === '---');
+  if (closingIndex === -1) {
+    return null;
+  }
+
+  return {
+    frontmatterLines: lines.slice(1, closingIndex),
+    summary: lines.slice(closingIndex + 1).join('\n').trim(),
+  };
+}
+
+function stripWrappingQuotes(value) {
+  const text = String(value || '').trim();
+  if (text.length >= 2 && ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith('\'') && text.endsWith('\'')))) {
+    return text.slice(1, -1).trim();
+  }
+  return text;
+}
+
+function parseReleaseLine(line) {
+  const normalized = String(line || '').trim();
+  if (!normalized) {
+    return null;
+  }
+
+  const separatorIndex = normalized.indexOf(':');
+  if (separatorIndex <= 0 || separatorIndex === normalized.length - 1) {
+    return null;
+  }
+
+  const packageName = stripWrappingQuotes(normalized.slice(0, separatorIndex));
+  const releaseType = normalized.slice(separatorIndex + 1).trim();
+  if (!packageName || !RELEASE_TYPES.has(releaseType)) {
+    return null;
+  }
+
+  return {
+    packageName,
+    releaseType,
+  };
+}
+
 function parseChangesetMarkdown(content) {
-  const source = String(content || '');
-  const match = source.match(/^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/);
-  if (!match) {
+  const document = splitChangesetDocument(content);
+  if (!document) {
     return {
       releases: {},
       summary: '',
@@ -75,19 +124,18 @@ function parseChangesetMarkdown(content) {
     };
   }
 
-  const frontmatter = match[1];
-  const summary = match[2].trim();
+  const summary = document.summary;
   const releases = {};
   const errors = [];
-  const lines = frontmatter.split('\n').map((line) => line.trim()).filter(Boolean);
+  const lines = document.frontmatterLines.map((line) => line.trim()).filter(Boolean);
 
   for (const line of lines) {
-    const entryMatch = line.match(/^["']?([^"']+)["']?\s*:\s*(major|minor|patch)\s*$/);
-    if (!entryMatch) {
+    const entry = parseReleaseLine(line);
+    if (!entry) {
       errors.push(`invalid frontmatter line: ${line}`);
       continue;
     }
-    releases[entryMatch[1]] = entryMatch[2];
+    releases[entry.packageName] = entry.releaseType;
   }
 
   if (!summary) {
@@ -213,10 +261,10 @@ function resolveBaseRef({
     try {
       runGitCommand(['rev-parse', '--verify', candidate], { cwd, runner });
       return candidate;
-    } catch (error) {}
+    } catch {}
   }
 
-  return candidates[candidates.length - 1];
+  return candidates.at(-1);
 }
 
 function getChangedFiles({

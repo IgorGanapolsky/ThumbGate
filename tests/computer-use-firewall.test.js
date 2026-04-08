@@ -151,7 +151,7 @@ test('attachExecutionSurface leaves low-risk writes on the host path', () => {
     decision: 'allow',
     preset: 'dev-sandbox',
     riskLevel: 'medium',
-  }, normalizeAction({ type: 'file.write', path: '/tmp/test.js' }));
+  }, normalizeAction({ type: 'file.write', path: path.join(process.cwd(), 'fixtures', 'test.js') }));
 
   assert.equal(result.executionSurface, undefined);
 });

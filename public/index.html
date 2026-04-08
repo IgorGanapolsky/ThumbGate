@@ -806,7 +806,7 @@ __GA_BOOTSTRAP__
         <div class="faq-a">ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any other MCP-compatible agent. Cursor ships with a plugin bundle in this repo. Codex ships with a repo-local app plugin profile. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</div>
+        <button class="faq-q" type="button" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</button>
         <div class="faq-a">ThumbGate is the control plane, not just a prompt layer. Workflow Sentinel predicts blast radius before execution, and risky local autonomy can be routed into Docker Sandboxes instead of running directly on the host. Team workflows also have a signed hosted sandbox lane for isolated dispatch when local repo access is not required.</div>
       </div>
       <div class="faq-item">
