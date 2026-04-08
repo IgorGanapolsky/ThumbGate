@@ -58,6 +58,18 @@ Use a patch bump for backward-compatible fixes:
 ## Enforcement
 
 - `package.json` is the single source of truth.
+- release-relevant PRs must include a `.changeset/*.md` entry for `thumbgate`.
+- `npm run changeset:check` is enforced in CI for pull requests and merge-group runs.
+- `npm run changeset:version` consumes pending changesets into `package.json`, `CHANGELOG.md`, and the synced adapter manifests.
 - `node scripts/sync-version.js --check` must pass before merge.
 - publish flows derive the npm dist-tag from the version string.
 - prerelease bundles must not overwrite stable download aliases.
+
+## Changeset Workflow
+
+1. Add a changeset file with `npm run changeset` whenever a PR touches release-relevant runtime or public surfaces.
+2. Use `patch`, `minor`, or `major` based on the public contract above.
+3. Keep the summary customer-readable: what changed, why it matters, and whether upgrades require attention.
+4. Before cutting a release, run `npm run changeset:version` so the version bump and changelog are generated before the normal publish pipeline runs.
+
+The point is not just SemVer compliance. It is release traceability: investors, customers, and internal reviewers can see what changed, why the version moved, and which PR introduced the contract shift.

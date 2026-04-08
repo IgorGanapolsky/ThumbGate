@@ -35,6 +35,7 @@
     "changeset": "changeset",
     "changeset:version": "changeset version && node scripts/sync-version.js",
     "changeset:status": "changeset status",
+    "changeset:check": "node scripts/changeset-check.js",
     "build:claude-mcpb": "node scripts/build-claude-mcpb.js",
     "verify:quick": "node scripts/verify-run.js quick",
     "verify:full": "node scripts/verify-run.js full",
@@ -304,6 +305,7 @@
   },
   "mcpName": "io.github.IgorGanapolsky/thumbgate",
   "devDependencies": {
+    "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.30.0"
   }
 }

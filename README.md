@@ -179,6 +179,7 @@ It does not update model weights. It's context engineering plus execution contro
 ## Docs
 
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md) — pricing, claims, what we don't say
+- [Changeset Strategy](docs/CHANGESET_STRATEGY.md) — how release notes, version bumps, and customer-facing change records are enforced
 - [SemVer Policy](docs/SEMVER_POLICY.md) — stable vs prerelease channel rules
 - [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) — proof artifacts
 - [WORKFLOW.md](WORKFLOW.md) — agent-run contract (scope, hard stops, proof commands)
