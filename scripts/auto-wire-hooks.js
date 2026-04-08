@@ -53,6 +53,7 @@ function detectAgent(flagAgent) {
     if (['claude-code', 'claude'].includes(normalized)) return 'claude-code';
     if (['codex'].includes(normalized)) return 'codex';
     if (['gemini'].includes(normalized)) return 'gemini';
+    if (['forge', 'forgecode', 'forge-code'].includes(normalized)) return 'forge';
     return null;
   }
 
@@ -61,6 +62,7 @@ function detectAgent(flagAgent) {
   if (fs.existsSync(path.join(home, '.claude'))) return 'claude-code';
   if (fs.existsSync(path.join(home, '.codex'))) return 'codex';
   if (fs.existsSync(path.join(home, '.gemini'))) return 'gemini';
+  if (fs.existsSync(path.join(process.cwd(), 'forge.yaml'))) return 'forge';
   return null;
 }
 
@@ -310,13 +312,64 @@ function wireGeminiHooks(options) {
   return { changed: true, settingsPath, added };
 }
 
+// --- ForgeCode wiring ---
+
+function forgeConfigPath() {
+  return path.join(process.cwd(), 'forge.yaml');
+}
+
+function wireForgeHooks(options) {
+  const dryRun = options.dryRun || false;
+
+  const preToolCmd = preToolHookCommand();
+  const userPromptCmd = userPromptHookCommand();
+
+  // ForgeCode uses YAML config (forge.yaml). We write a JSON-based hooks
+  // sidecar file (.thumbgate/forge-hooks.json) and append skill entries to
+  // forge.yaml if they are not already present.
+  const hooksPath = options.settingsPath || path.join(path.dirname(forgeConfigPath()), '.thumbgate', 'forge-hooks.json');
+  let existing = loadJsonFile(hooksPath) || {};
+  existing.hooks = existing.hooks || {};
+
+  const added = [];
+
+  if (!hookAlreadyPresent(existing.hooks.PreToolUse, preToolCmd)) {
+    existing.hooks.PreToolUse = existing.hooks.PreToolUse || [];
+    existing.hooks.PreToolUse.push({
+      matcher: 'Bash',
+      hooks: [{ type: 'command', command: preToolCmd }],
+    });
+    added.push({ lifecycle: 'PreToolUse', command: preToolCmd });
+  }
+
+  if (!hookAlreadyPresent(existing.hooks.UserPromptSubmit, userPromptCmd)) {
+    existing.hooks.UserPromptSubmit = existing.hooks.UserPromptSubmit || [];
+    existing.hooks.UserPromptSubmit.push({
+      hooks: [{ type: 'command', command: userPromptCmd }],
+    });
+    added.push({ lifecycle: 'UserPromptSubmit', command: userPromptCmd });
+  }
+
+  if (added.length === 0) {
+    return { changed: false, settingsPath: hooksPath, added: [] };
+  }
+
+  if (!dryRun) {
+    const dir = path.dirname(hooksPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(hooksPath, JSON.stringify(existing, null, 2) + '\n');
+  }
+
+  return { changed: true, settingsPath: hooksPath, added };
+}
+
 // --- Dispatcher ---
 
 function wireHooks(options) {
   const agent = detectAgent(options.agent);
   if (!agent) {
     return {
-      error: 'Could not detect AI agent. Use --agent=claude-code|codex|gemini',
+      error: 'Could not detect AI agent. Use --agent=claude-code|codex|gemini|forge',
       agent: null,
       changed: false,
     };
@@ -332,6 +385,9 @@ function wireHooks(options) {
       break;
     case 'gemini':
       result = wireGeminiHooks(options);
+      break;
+    case 'forge':
+      result = wireForgeHooks(options);
       break;
     default:
       return { error: `Unsupported agent: ${agent}`, agent, changed: false };
@@ -364,6 +420,7 @@ module.exports = {
   wireClaudeHooks,
   wireCodexHooks,
   wireGeminiHooks,
+  wireForgeHooks,
   hookAlreadyPresent,
   loadJsonFile,
   parseFlags,
@@ -372,6 +429,7 @@ module.exports = {
   codexConfigPath,
   geminiSettingsPath,
   syncClaudeStatusLine,
+  forgeConfigPath,
   CLAUDE_HOOKS,
   preToolHookCommand,
   userPromptHookCommand,

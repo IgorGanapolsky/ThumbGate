@@ -442,6 +442,19 @@ function setupCursor() {
   return mergeMcpJson(path.join(CWD, '.cursor', 'mcp.json'), 'Cursor', 'project');
 }
 
+function setupForge() {
+  const destPath = path.join(CWD, 'forge.yaml');
+  if (fs.existsSync(destPath)) {
+    // Don't overwrite existing forge.yaml — user may have custom config
+    return false;
+  }
+  const srcPath = path.join(PKG_ROOT, 'adapters', 'forge', 'forge.yaml');
+  if (!fs.existsSync(srcPath)) return false;
+  fs.copyFileSync(srcPath, destPath);
+  console.log('  ForgeCode: installed forge.yaml with ThumbGate skills');
+  return true;
+}
+
 function init() {
   const args = parseArgs(process.argv.slice(3));
 
@@ -513,6 +526,7 @@ function init() {
     { name: 'Gemini', detect: [() => whichExists('gemini'), () => fs.existsSync(path.join(HOME, '.gemini'))], setup: setupGemini },
     { name: 'Amp', detect: [() => whichExists('amp'), () => fs.existsSync(path.join(HOME, '.amp'))], setup: setupAmp },
     { name: 'Cursor', detect: [() => fs.existsSync(path.join(HOME, '.cursor', 'mcp.json')), () => fs.existsSync(path.join(CWD, '.cursor'))], setup: setupCursor },
+    { name: 'ForgeCode', detect: [() => whichExists('forge'), () => fs.existsSync(path.join(CWD, 'forge.yaml'))], setup: setupForge },
   ];
 
   for (const p of platforms) {
@@ -1189,7 +1203,8 @@ function install() {
     setupCodex(),
     setupGemini(),
     setupCursor(),
-    setupAmp()
+    setupAmp(),
+    setupForge()
   ];
   const success = results.some(r => r === true);
   if (success) {
@@ -1320,11 +1335,11 @@ function help() {
   console.log('');
   console.log('Commands:');
   console.log('  init                  Scaffold .thumbgate/ config + MCP server in current project');
-  console.log('    --agent=NAME        Wire PreToolUse hooks for agent (claude-code|codex|gemini)');
+  console.log('    --agent=NAME        Wire PreToolUse hooks for agent (claude-code|codex|gemini|forge)');
   console.log('    --wire-hooks        Wire hooks only (auto-detect agent, skip scaffolding)');
   console.log('    --dry-run           Preview hook changes without writing');
   console.log('  install-mcp           Install ThumbGate MCP server into Claude Code settings (--project for local)');
-  console.log('  serve                 Start MCP server (stdio) — for claude/codex/gemini mcp add');
+  console.log('  serve                 Start MCP server (stdio) — for claude/codex/gemini/forge mcp add');
   console.log('  gate-check            Internal: evaluate a PreToolUse payload from stdin');
   console.log('  cache-update          Internal: refresh the Claude statusline cache from stdin');
   console.log('  statusline-render     Internal: render the ThumbGate Claude status line');

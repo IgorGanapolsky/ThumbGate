@@ -1,0 +1,28 @@
+# ForgeCode ThumbGate integration
+# Copy into your project's forge.yaml or merge with existing config.
+#
+# ForgeCode (https://github.com/antinomyhq/forgecode) supports custom skills
+# that ThumbGate uses to gate tool calls before execution.
+
+version: "1"
+
+skills:
+  thumbgate-gate-check:
+    description: "ThumbGate PreToolUse gate — blocks known-bad tool calls"
+    command: "npx --yes --package thumbgate@0.9.13 thumbgate gate-check"
+    trigger: pre_tool_use
+
+  thumbgate-feedback:
+    description: "ThumbGate feedback capture — logs user prompt context"
+    command: "npx --yes --package thumbgate@0.9.13 thumbgate hook-auto-capture"
+    trigger: user_prompt
+
+mcp:
+  thumbgate:
+    command: "npx"
+    args:
+      - "--yes"
+      - "--package"
+      - "thumbgate@0.9.13"
+      - "thumbgate"
+      - "serve"
