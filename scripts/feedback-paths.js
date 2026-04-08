@@ -119,15 +119,21 @@ function writeActiveProjectState(projectDir, options = {}) {
 function resolveProjectDir(options = {}) {
   const env = options.env || process.env;
   const stored = options.includeStored === false ? null : readActiveProjectState(options);
+  const cwdCandidates = uniquePaths([
+    options.cwd,
+    env.PWD,
+    process.cwd(),
+  ]);
+  const isTransientExecution = cwdCandidates.length > 0
+    && cwdCandidates.every((candidate) => isTransientProjectDir(candidate, options));
   const candidates = uniquePaths([
     options.projectDir,
     env.THUMBGATE_PROJECT_DIR,
     env.CLAUDE_PROJECT_DIR,
+    isTransientExecution && stored && stored.projectDir,
     env.INIT_CWD,
-    options.cwd,
-    env.PWD,
-    stored && stored.projectDir,
-    process.cwd(),
+    ...cwdCandidates,
+    !isTransientExecution && stored && stored.projectDir,
   ]);
 
   for (const candidate of candidates) {
