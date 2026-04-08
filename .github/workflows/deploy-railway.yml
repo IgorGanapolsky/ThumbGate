@@ -112,6 +112,8 @@ jobs:
             SERVICE_ARGS+=(--service "$RAILWAY_SERVICE")
           fi
           retry_railway "set THUMBGATE_API_KEY" railway variables set THUMBGATE_API_KEY="$THUMBGATE_API_KEY" "${SERVICE_ARGS[@]}"
+          retry_railway "set THUMBGATE_BUILD_SHA" railway variables set THUMBGATE_BUILD_SHA="$GITHUB_SHA" "${SERVICE_ARGS[@]}"
+          retry_railway "set THUMBGATE_BUILD_GENERATED_AT" railway variables set THUMBGATE_BUILD_GENERATED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "${SERVICE_ARGS[@]}"
           retry_railway "set THUMBGATE_PUBLIC_APP_ORIGIN" railway variables set THUMBGATE_PUBLIC_APP_ORIGIN="$THUMBGATE_PUBLIC_APP_ORIGIN" "${SERVICE_ARGS[@]}"
           retry_railway "set THUMBGATE_BILLING_API_BASE_URL" railway variables set THUMBGATE_BILLING_API_BASE_URL="$THUMBGATE_BILLING_API_BASE_URL" "${SERVICE_ARGS[@]}"
           retry_railway "set STRIPE_SECRET_KEY" railway variables set STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" "${SERVICE_ARGS[@]}"
