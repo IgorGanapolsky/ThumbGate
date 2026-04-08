@@ -44,7 +44,7 @@ test('learn hub has OG meta tags', () => {
 test('learn hub has Plausible analytics', () => {
   const html = readFile(learnHubPath);
   assert.match(html, /data-domain="thumbgate-production\.up\.railway\.app"/);
-  assert.match(html, /src="\/js\/analytics\.js"/);
+  assert.match(html, /plausible\.io\/js\/script\.js/);
 });
 
 test('learn hub links to core articles and high-intent buyer guides', () => {
