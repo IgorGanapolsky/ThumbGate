@@ -4,8 +4,9 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
+const serial = { concurrency: false };
 
-test('sync-version --check reports no drift on main', () => {
+test('sync-version --check reports no drift on main', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });
   assert.ok(result.version, 'version should be defined');
@@ -14,20 +15,20 @@ test('sync-version --check reports no drift on main', () => {
   assert.equal(result.allInSync, true);
 });
 
-test('sync-version covers mcpize.yaml', () => {
+test('sync-version covers mcpize.yaml', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });
   assert.ok(result.targets.includes('mcpize.yaml'), 'mcpize.yaml should be a sync target');
 });
 
-test('sync-version covers package-lock.json', () => {
+test('sync-version covers package-lock.json', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });
   const hasPackageLock = result.targets.some(t => t.includes('package-lock.json'));
   assert.ok(hasPackageLock, 'package-lock.json should be a sync target');
 });
 
-test('sync-version covers the Claude adapter launcher manifest', () => {
+test('sync-version covers the Claude adapter launcher manifest', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });
   assert.ok(
@@ -36,7 +37,7 @@ test('sync-version covers the Claude adapter launcher manifest', () => {
   );
 });
 
-test('sync-version covers the MCP stdio server metadata file', () => {
+test('sync-version covers the MCP stdio server metadata file', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });
   assert.ok(
@@ -45,13 +46,13 @@ test('sync-version covers the MCP stdio server metadata file', () => {
   );
 });
 
-test('sync-version no longer tracks an embedded pro package manifest', () => {
+test('sync-version no longer tracks an embedded pro package manifest', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });
   assert.equal(result.targets.includes('pro/package.json'), false);
 });
 
-test('sync-version covers codex plugin manifests', () => {
+test('sync-version covers codex plugin manifests', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });
   assert.ok(
@@ -72,7 +73,7 @@ test('sync-version covers codex plugin manifests', () => {
   );
 });
 
-test('sync-version detects landing page hero badge drift without relying on trailing punctuation', () => {
+test('sync-version detects landing page hero badge drift without relying on trailing punctuation', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const landingPath = path.join(ROOT, 'public', 'index.html');
   const original = fs.readFileSync(landingPath, 'utf8');
@@ -89,7 +90,7 @@ test('sync-version detects landing page hero badge drift without relying on trai
   }
 });
 
-test('sync-version detects public landing footer drift', () => {
+test('sync-version detects public landing footer drift', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const publicIndexPath = path.join(ROOT, 'public', 'index.html');
   const original = fs.readFileSync(publicIndexPath, 'utf8');
