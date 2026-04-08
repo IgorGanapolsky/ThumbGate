@@ -1305,6 +1305,24 @@ test('project-scoped endpoints honor explicit project selection for stats, lesso
   }
 });
 
+test('project-scoped overrides are rejected for non-loopback requests', async () => {
+  const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-project-remote-reject-'));
+  try {
+    const projectQuery = `project=${encodeURIComponent(projectDir)}`;
+    const res = await fetch(apiUrl(`/v1/feedback/stats?${projectQuery}`), {
+      headers: {
+        ...authHeader,
+        'x-forwarded-host': 'thumbgate.example.com',
+      },
+    });
+    assert.equal(res.status, 403);
+    const body = await res.json();
+    assert.match(body.error, /only available on localhost/i);
+  } finally {
+    fs.rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
 test('lesson search endpoint returns promoted lessons with linked corrective actions', async () => {
   const feedbackLogPath = path.join(tmpFeedbackDir, 'feedback-log.jsonl');
   const memoryLogPath = path.join(tmpFeedbackDir, 'memory-log.jsonl');

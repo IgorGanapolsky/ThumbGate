@@ -207,23 +207,36 @@ function computeConversionStats(events) {
 }
 // ---------------------------------------------------------------------------
 
-function resolveRequestProjectDir(req, parsed) {
+function getRequestedProjectSelection(req, parsed) {
   const projectFromQuery = parsed && parsed.searchParams
     ? parsed.searchParams.get('project')
     : null;
   const projectFromHeaders = req && req.headers
     ? req.headers['x-thumbgate-project-dir'] || req.headers['x-thumbgate-project']
     : null;
+  return projectFromQuery || projectFromHeaders || null;
+}
 
+function isProjectSelectionAllowed(req, parsed) {
+  const explicitProject = getRequestedProjectSelection(req, parsed);
+  if (!explicitProject) return true;
+  return isLoopbackHost(getRequestHostHeader(req));
+}
+
+function resolveRequestProjectDir(req, parsed) {
+  const explicitProject = isProjectSelectionAllowed(req, parsed)
+    ? getRequestedProjectSelection(req, parsed)
+    : null;
   return resolveProjectDir({
-    projectDir: projectFromQuery || projectFromHeaders,
+    projectDir: explicitProject,
     env: process.env,
   });
 }
 
 function shouldPreferProjectScopedFeedback(req, parsed) {
-  const explicitProject = (parsed && parsed.searchParams ? parsed.searchParams.get('project') : null)
-    || (req && req.headers ? req.headers['x-thumbgate-project-dir'] || req.headers['x-thumbgate-project'] : null);
+  const explicitProject = isProjectSelectionAllowed(req, parsed)
+    ? getRequestedProjectSelection(req, parsed)
+    : null;
   if (explicitProject) return true;
   if (process.env.THUMBGATE_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR) return true;
   if (process.env.THUMBGATE_FEEDBACK_DIR) return false;
@@ -889,6 +902,14 @@ function getPublicOrigin(req) {
   const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() || 'http';
   const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim() || 'localhost';
   return `${proto}://${host}`;
+}
+
+function getRequestHostHeader(req) {
+  const forwardedHost = req.headers['x-forwarded-host'];
+  if (Array.isArray(forwardedHost)) {
+    return forwardedHost[0] || req.headers.host || '';
+  }
+  return forwardedHost || req.headers.host || '';
 }
 
 function isLoopbackHost(hostValue) {
@@ -2155,6 +2176,10 @@ function createApiServer() {
     const isGetLikeRequest = req.method === 'GET' || isHeadRequest;
     const publicOrigin = getPublicOrigin(req);
     const hostedConfig = resolveHostedBillingConfig({ requestOrigin: publicOrigin });
+    if (!isProjectSelectionAllowed(req, parsed)) {
+      sendJson(res, 403, { error: 'project selection is only available on localhost requests' });
+      return;
+    }
     const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
     const requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
     const requestSafeDataDir = getSafeDataDir(req, parsed);
