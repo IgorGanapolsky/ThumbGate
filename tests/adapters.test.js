@@ -20,6 +20,7 @@ test('adapter files exist', () => {
     'adapters/codex/config.toml',
     'adapters/opencode/opencode.json',
     'adapters/amp/skills/thumbgate-feedback/SKILL.md',
+    'adapters/forge/forge.yaml',
     'opencode.json',
     '.opencode/instructions/thumbgate-workflow.md',
     '.opencode/agents/thumbgate-review.md',
@@ -133,6 +134,17 @@ test('amp SKILL.md contains capture-feedback reference', () => {
   const filePath = path.join(root, 'adapters/amp/skills/thumbgate-feedback/SKILL.md');
   const content = fs.readFileSync(filePath, 'utf-8');
   assert.match(content, /capture-feedback/, 'SKILL.md must reference capture-feedback');
+});
+
+test('forge adapter forge.yaml contains thumbgate skills and MCP config', () => {
+  const filePath = path.join(root, 'adapters/forge/forge.yaml');
+  const content = fs.readFileSync(filePath, 'utf-8');
+  assert.match(content, /thumbgate-gate-check/, 'forge.yaml must define thumbgate-gate-check skill');
+  assert.match(content, /thumbgate-feedback/, 'forge.yaml must define thumbgate-feedback skill');
+  assert.match(content, /pre_tool_use/, 'forge.yaml must reference pre_tool_use trigger');
+  assert.match(content, /gate-check/, 'forge.yaml must reference gate-check command');
+  assert.match(content, /thumbgate/, 'forge.yaml must define thumbgate MCP server');
+  assert.match(content, /serve/, 'forge.yaml must include serve command');
 });
 
 test('chatgpt openapi.yaml contains /v1/feedback/capture path', () => {
