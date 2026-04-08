@@ -1,9 +1,9 @@
 # Codex MCP profile (copy into ~/.codex/config.toml or merge section)
 [mcp_servers.thumbgate]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.1.0", "thumbgate", "serve"]
+args = ["--yes", "--package", "thumbgate@1.2.0", "thumbgate", "serve"]
 
 # Hard PreToolUse hook for Codex
 [hooks.pre_tool_use]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.1.0", "thumbgate", "gate-check"]
+args = ["--yes", "--package", "thumbgate@1.2.0", "thumbgate", "gate-check"]
