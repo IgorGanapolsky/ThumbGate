@@ -26,6 +26,7 @@ const {
   wireClaudeHooks,
   wireCodexHooks,
   wireGeminiHooks,
+  wireForgeHooks,
   hookAlreadyPresent,
   loadJsonFile,
   parseFlags,
@@ -57,6 +58,18 @@ describe('auto-wire-hooks', () => {
 
     test('returns gemini when flag is "gemini"', () => {
       assert.equal(detectAgent('gemini'), 'gemini');
+    });
+
+    test('returns forge when flag is "forge"', () => {
+      assert.equal(detectAgent('forge'), 'forge');
+    });
+
+    test('returns forge when flag is "forgecode"', () => {
+      assert.equal(detectAgent('forgecode'), 'forge');
+    });
+
+    test('returns forge when flag is "forge-code"', () => {
+      assert.equal(detectAgent('forge-code'), 'forge');
     });
 
     test('returns null for unknown agent', () => {
@@ -345,6 +358,58 @@ describe('auto-wire-hooks', () => {
     });
   });
 
+  // --- wireForgeHooks ---
+
+  describe('wireForgeHooks', () => {
+    test('creates hooks file and wires PreToolUse and UserPromptSubmit', () => {
+      const tmpDir = makeTmpDir();
+      const settingsPath = path.join(tmpDir, '.thumbgate', 'forge-hooks.json');
+
+      try {
+        const result = wireForgeHooks({ settingsPath });
+        assert.equal(result.changed, true);
+        assert.equal(result.added.length, 2);
+        assert.equal(result.added[0].lifecycle, 'PreToolUse');
+        assert.equal(result.added[1].lifecycle, 'UserPromptSubmit');
+
+        const config = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        assert.ok(config.hooks.PreToolUse);
+        assert.ok(config.hooks.UserPromptSubmit);
+        assert.equal(config.hooks.PreToolUse[0].hooks[0].command, preToolHookCommand());
+        assert.equal(config.hooks.UserPromptSubmit[0].hooks[0].command, userPromptHookCommand());
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test('idempotent for forge', () => {
+      const tmpDir = makeTmpDir();
+      const settingsPath = path.join(tmpDir, '.thumbgate', 'forge-hooks.json');
+
+      try {
+        wireForgeHooks({ settingsPath });
+        const result2 = wireForgeHooks({ settingsPath });
+        assert.equal(result2.changed, false);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test('dry-run does not write file', () => {
+      const tmpDir = makeTmpDir();
+      const settingsPath = path.join(tmpDir, '.thumbgate', 'forge-hooks.json');
+
+      try {
+        const result = wireForgeHooks({ settingsPath, dryRun: true });
+        assert.equal(result.changed, true);
+        assert.equal(result.added.length, 2);
+        assert.equal(fs.existsSync(settingsPath), false);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+  });
+
   // --- wireHooks dispatcher ---
 
   describe('wireHooks', () => {
@@ -399,6 +464,23 @@ describe('auto-wire-hooks', () => {
         assert.equal(result.changed, true);
       } finally {
         process.env.HOME = origHome;
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test('dispatches to forge and returns agent name', () => {
+      const tmpDir = makeTmpDir();
+      const origHome = process.env.HOME;
+      const origCwd = process.cwd();
+      process.env.HOME = tmpDir;
+      process.chdir(tmpDir);
+      try {
+        const result = wireHooks({ agent: 'forge' });
+        assert.equal(result.agent, 'forge');
+        assert.equal(result.changed, true);
+      } finally {
+        process.env.HOME = origHome;
+        process.chdir(origCwd);
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
     });
