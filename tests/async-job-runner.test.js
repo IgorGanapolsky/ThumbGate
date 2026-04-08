@@ -235,6 +235,39 @@ test('executeJob pauses after a checkpoint and resumeJob continues from the next
   }
 });
 
+test('queueJob persists an idle state and verification-free jobs can resume without feedback writes', () => {
+  const feedbackDir = createFeedbackDir();
+  const harness = loadRuntimeHarness({ feedbackDir });
+
+  try {
+    const job = {
+      id: 'ops-job',
+      tags: ['ops'],
+      verificationMode: 'none',
+      recordFeedback: false,
+      stages: [
+        { name: 'export', context: 'export ready' },
+      ],
+    };
+
+    const queued = harness.runner.queueJob(job);
+    const resumed = harness.runner.resumeJob('ops-job', job);
+    const state = harness.runner.readJobState('ops-job');
+
+    assert.equal(queued.status, 'queued');
+    assert.equal(queued.verificationMode, 'none');
+    assert.equal(queued.recordFeedback, false);
+    assert.equal(resumed.status, 'completed');
+    assert.equal(resumed.phases.verification, null);
+    assert.equal(resumed.phases.feedback, null);
+    assert.equal(state.status, 'completed');
+    assert.equal(state.verification, null);
+  } finally {
+    harness.cleanup();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
 test('resumeManagedJobs auto-resumes paused managed jobs from their job files', () => {
   const feedbackDir = createFeedbackDir();
   const harness = loadRuntimeHarness({ feedbackDir });
