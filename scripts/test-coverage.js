@@ -15,6 +15,7 @@ const COVERAGE_INCLUDE_GLOBS = [
 ];
 const COVERAGE_EXCLUDE_GLOBS = [
   'tests/**/*.js',
+  'scripts/social-reply-monitor.js',
 ];
 let cachedCoverageFilterSupport;
 
