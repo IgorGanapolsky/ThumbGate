@@ -282,3 +282,45 @@ test('recommendExecutionPlan combines tier escalation with IndexCache-aware back
   assert.equal(plan.recommendationClass, 'indexcache_active');
   assert.ok(plan.reason.includes('IndexCache-ready'));
 });
+
+// ---------------------------------------------------------------------------
+// GLM 5.1 localFrontier routing
+// ---------------------------------------------------------------------------
+
+test('TIERS includes localFrontier with zero cost multiplier', () => {
+  assert.equal(TIERS.localFrontier.costMultiplier, 0.0);
+  assert.equal(TIERS.localFrontier.maxContext, TIERS.frontier.maxContext);
+});
+
+test('recommendExecutionPlan routes frontier tasks to localFrontier when local GLM is active', () => {
+  const plan = recommendExecutionPlan({
+    type: 'architecture',
+  }, {
+    THUMBGATE_PROVIDER_MODE: 'local',
+    THUMBGATE_LOCAL_MODEL_FAMILY: 'glm-z1',
+    THUMBGATE_LOCAL_MODEL_SERVER: 'vllm',
+  });
+
+  assert.equal(plan.tier, 'localFrontier');
+  assert.equal(plan.providerMode, 'local');
+});
+
+test('recommendExecutionPlan does NOT use localFrontier for non-frontier tasks with GLM', () => {
+  const plan = recommendExecutionPlan({
+    type: 'code-edit',
+  }, {
+    THUMBGATE_PROVIDER_MODE: 'local',
+    THUMBGATE_LOCAL_MODEL_FAMILY: 'glm-z1',
+    THUMBGATE_LOCAL_MODEL_SERVER: 'vllm',
+  });
+
+  assert.equal(plan.tier, 'mini');
+});
+
+test('recommendExecutionPlan keeps frontier tier when no local GLM backend', () => {
+  const plan = recommendExecutionPlan({
+    type: 'architecture',
+  }, {});
+
+  assert.equal(plan.tier, 'frontier');
+});

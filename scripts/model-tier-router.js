@@ -30,6 +30,8 @@ const TIERS = {
   nano: { label: 'nano', costMultiplier: 0.1, maxContext: 32000 },
   mini: { label: 'mini', costMultiplier: 0.4, maxContext: 200000 },
   frontier: { label: 'frontier', costMultiplier: 1.0, maxContext: 1000000 },
+  // Self-hosted open-source frontier (e.g. GLM 5.1). Zero marginal cost.
+  localFrontier: { label: 'local-frontier', costMultiplier: 0.0, maxContext: 1000000 },
 };
 
 // ---------------------------------------------------------------------------
@@ -268,8 +270,15 @@ function recommendExecutionPlan(task = {}, env = process.env) {
   const classification = classifyTask(task);
   const inference = recommendInferenceBackend(task, env);
 
+  // When a local GLM backend is active, frontier tasks run at zero cost.
+  const isLocalGlm = inference.backend.providerMode === 'local'
+    && inference.backend.modelFamily.startsWith('glm');
+  const effectiveTier = isLocalGlm && classification.tier === 'frontier'
+    ? 'localFrontier'
+    : classification.tier;
+
   return {
-    tier: classification.tier,
+    tier: effectiveTier,
     escalated: classification.escalated,
     tierReason: classification.reason,
     backendId: inference.backend.id,
