@@ -1,7 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const {
   PRODUCTHUNT_URL,
   getClaudePluginLatestDownloadUrl,
@@ -133,6 +135,65 @@ test('amp SKILL.md contains capture-feedback reference', () => {
   const filePath = path.join(root, 'adapters/amp/skills/thumbgate-feedback/SKILL.md');
   const content = fs.readFileSync(filePath, 'utf-8');
   assert.match(content, /capture-feedback/, 'SKILL.md must reference capture-feedback');
+});
+
+test('shipped plugin surfaces stay ThumbGate-branded and project-safe', () => {
+  const ampSkill = fs.readFileSync(path.join(root, 'plugins/amp-skill/SKILL.md'), 'utf-8');
+  const ampInstall = fs.readFileSync(path.join(root, 'plugins/amp-skill/INSTALL.md'), 'utf-8');
+  const claudeInstall = fs.readFileSync(path.join(root, 'plugins/claude-skill/INSTALL.md'), 'utf-8');
+  const hookAutoCapture = fs.readFileSync(path.join(root, 'scripts/hook-auto-capture.sh'), 'utf-8');
+  const bootstrap = fs.readFileSync(path.join(root, 'scripts/ensure-repo-bootstrap.js'), 'utf-8');
+  const obsidianExport = fs.readFileSync(path.join(root, 'scripts/obsidian-export.js'), 'utf-8');
+  const trainer = fs.readFileSync(path.join(root, 'scripts/train_from_feedback.py'), 'utf-8');
+
+  assert.match(ampSkill, /^name: thumbgate-feedback$/m, 'Amp skill should expose the ThumbGate skill name');
+  assert.doesNotMatch(ampSkill, /^name: rlhf-feedback$/m, 'Amp skill should not expose the legacy RLHF skill name');
+  assert.doesNotMatch(ampInstall, /rlhf-feedback\.md/, 'Amp install doc should not copy legacy skill filenames');
+  assert.doesNotMatch(claudeInstall, /rlhf-feedback\.md/, 'Claude install doc should not copy legacy skill filenames');
+  assert.doesNotMatch(ampInstall, /\.thumbgate\/capture-feedback\.js/, 'Amp install doc should use the published CLI capture entrypoint');
+  assert.doesNotMatch(claudeInstall, /\.thumbgate\/capture-feedback\.js/, 'Claude install doc should use the published CLI capture entrypoint');
+  assert.doesNotMatch(hookAutoCapture, /\.rlhf/, 'Hook fallback should stay on .thumbgate');
+  assert.match(bootstrap, /mcpServers\[MCP_SERVER_KEY\]/, 'Bootstrap should wire the canonical thumbgate MCP key');
+  assert.doesNotMatch(bootstrap, /mcpServers\.rlhf/, 'Bootstrap should not emit legacy MCP server keys');
+  assert.doesNotMatch(bootstrap, /createdRlhfDir|ensureRlhfDir/, 'Bootstrap should create .thumbgate, not .rlhf');
+  assert.doesNotMatch(obsidianExport, /\.rlhf/, 'Obsidian export should not read the legacy .rlhf folder');
+  assert.doesNotMatch(trainer, /local_rlhf/, 'Feedback trainer should not resolve .rlhf project roots');
+});
+
+test('ensure-repo-bootstrap writes canonical ThumbGate runtime surfaces', () => {
+  const tmpRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bootstrap-'));
+  const claudeDir = path.join(tmpRepo, '.claude');
+  const gitInfoDir = path.join(tmpRepo, '.git', 'info');
+  fs.mkdirSync(claudeDir, { recursive: true });
+  fs.mkdirSync(gitInfoDir, { recursive: true });
+  fs.writeFileSync(path.join(claudeDir, 'settings.json'), JSON.stringify({
+    mcpServers: {
+      rlhf: { command: 'node', args: ['/tmp/old-rlhf.js'] },
+      rlhf_feedback_loop: { command: 'npx', args: ['-y', 'mcp-memory-gateway', 'serve'] },
+    },
+  }, null, 2));
+
+  try {
+    const raw = execFileSync('node', [path.join(root, 'scripts', 'ensure-repo-bootstrap.js'), tmpRepo], {
+      encoding: 'utf8',
+    });
+    const result = JSON.parse(raw);
+    const mcpConfig = JSON.parse(fs.readFileSync(path.join(tmpRepo, '.mcp.json'), 'utf8'));
+    const claudeSettings = JSON.parse(fs.readFileSync(path.join(claudeDir, 'settings.json'), 'utf8'));
+    const infoExclude = fs.readFileSync(path.join(gitInfoDir, 'exclude'), 'utf8');
+
+    assert.equal(result.createdThumbgateDir, true);
+    assert.equal(fs.existsSync(path.join(tmpRepo, '.thumbgate')), true);
+    assert.equal(mcpConfig.mcpServers.thumbgate.command, 'npx');
+    assert.deepEqual(mcpConfig.mcpServers.thumbgate.args, ['-y', 'thumbgate@latest', 'serve']);
+    assert.equal(Object.prototype.hasOwnProperty.call(mcpConfig.mcpServers, 'rlhf'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(claudeSettings.mcpServers, 'thumbgate'), true);
+    assert.equal(Object.prototype.hasOwnProperty.call(claudeSettings.mcpServers, 'rlhf'), false);
+    assert.equal(infoExclude.includes('.thumbgate/'), true);
+    assert.equal(infoExclude.includes('.rlhf/'), false);
+  } finally {
+    fs.rmSync(tmpRepo, { recursive: true, force: true });
+  }
 });
 
 test('chatgpt openapi.yaml contains /v1/feedback/capture path', () => {

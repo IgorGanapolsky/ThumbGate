@@ -13,7 +13,6 @@ Or from the published npm package:
 ```bash
 npx thumbgate init
 cp node_modules/thumbgate/plugins/claude-skill/SKILL.md .claude/skills/thumbgate-feedback.md
-cp node_modules/thumbgate/plugins/claude-skill/SKILL.md .claude/skills/rlhf-feedback.md
 ```
 
 ## What This Does
@@ -34,7 +33,7 @@ After copying, restart Claude Code and run:
 Then test it:
 
 ```bash
-node .thumbgate/capture-feedback.js --feedback=up --context="skill install verified" --tags="install"
+npx thumbgate capture --feedback=up --context="skill install verified" --tags="install"
 ```
 
 ## What You Get
