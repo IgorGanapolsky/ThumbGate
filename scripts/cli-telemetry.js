@@ -5,7 +5,9 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const TELEMETRY_ENDPOINT = 'https://thumbgate-production.up.railway.app/v1/telemetry/ping';
+const _DEFAULT_TELEMETRY_HOST = 'https://thumbgate-production.up.railway.app';
+// Respect THUMBGATE_API_URL so test environments can point to a local stub
+const TELEMETRY_ENDPOINT = `${process.env.THUMBGATE_API_URL || _DEFAULT_TELEMETRY_HOST}/v1/telemetry/ping`;
 const INSTALL_ID_PATH = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.thumbgate', 'install-id');
 
 /**
@@ -80,6 +82,7 @@ function trackEvent(eventType, metadata = {}) {
     });
     req.on('error', () => {}); // silently ignore
     req.on('timeout', () => req.destroy());
+    req.on('socket', (s) => s.unref()); // fire-and-forget: never block process exit
     req.end(payload);
   } catch (_) {} // never crash the CLI
 }

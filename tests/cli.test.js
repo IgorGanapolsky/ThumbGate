@@ -269,12 +269,16 @@ function parseMcpMessage(buffer) {
 }
 
 function runCliSync(args, options = {}) {
+  const { env: optEnv, timeoutMs, ...restOptions } = options;
   return spawnSync(process.execPath, [CLI, ...args], {
     encoding: 'utf8',
-    timeout: options.timeoutMs ?? 20000,
+    timeout: timeoutMs ?? 20000,
     killSignal: 'SIGKILL',
     maxBuffer: options.maxBuffer ?? 10 * 1024 * 1024,
-    ...options,
+    ...restOptions,
+    // Default to a local stub so trackEvent DNS lookup never blocks test exit.
+    // Tests that need a real or custom URL override it via options.env.
+    env: { THUMBGATE_API_URL: 'http://127.0.0.1:1', ...process.env, ...optEnv },
   });
 }
 
@@ -285,6 +289,8 @@ function unlicensedProEnv(homeDir, overrides = {}) {
     USERPROFILE: homeDir,
     THUMBGATE_API_KEY: '',
     THUMBGATE_PRO_MODE: '',
+    // Use local stub so trackEvent doesn't block on DNS in sandboxed test environments
+    THUMBGATE_API_URL: 'http://127.0.0.1:1',
     ...overrides,
   };
 }
@@ -717,6 +723,7 @@ describe('bin/cli.js', () => {
         ...process.env,
         THUMBGATE_FEEDBACK_DIR: feedbackDir,
         THUMBGATE_NO_NUDGE: '1',
+        THUMBGATE_API_URL: 'http://127.0.0.1:1',
       },
     });
 
