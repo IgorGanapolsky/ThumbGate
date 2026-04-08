@@ -145,6 +145,17 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
   assert.match(landingPage, /self-improvement loop/i);
 });
 
+test('public landing page exposes a dedicated Pro path above the fold', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /See Pro for individual operators/i);
+  assert.match(landingPage, /Paid path:/i);
+  assert.match(landingPage, /personal local dashboard/i);
+  assert.match(landingPage, /DPO export/i);
+  assert.match(landingPage, /review-ready evidence/i);
+  assert.match(landingPage, /href="\/pro\?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page"/);
+});
+
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
   const landingPage = readLandingPage();
 
@@ -231,9 +242,11 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
 
   // trackClick wires up CTA events by selector and event name
   assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
+  assert.match(landingPage, /trackClick\('.btn-pro-page', 'pro_page_click'/);
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
-  assert.match(landingPage, /trackClick\('.nav-cta', 'checkout_start'/);
+  assert.match(landingPage, /trackClick\('.btn-demo-link', 'demo_click'/);
+  assert.match(landingPage, /trackClick\('.nav-cta', 'pro_page_click'/);
   assert.match(landingPage, /plausible\('faq_open'/);
   assert.match(landingPage, /plausible\('scroll_depth'/);
   assert.match(landingPage, /trackClick\('.proof-bar a', 'proof_bar_click'\)/);
