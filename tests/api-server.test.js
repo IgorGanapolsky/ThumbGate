@@ -8,6 +8,14 @@ const GOVERNED_RELEASE_VERSION_MISMATCH = '9999.0.0';
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-api-test-'));
 const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-api-proof-'));
+const savedProjectEnv = {
+  THUMBGATE_PROJECT_DIR: process.env.THUMBGATE_PROJECT_DIR,
+  CLAUDE_PROJECT_DIR: process.env.CLAUDE_PROJECT_DIR,
+  INIT_CWD: process.env.INIT_CWD,
+};
+delete process.env.THUMBGATE_PROJECT_DIR;
+delete process.env.CLAUDE_PROJECT_DIR;
+delete process.env.INIT_CWD;
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
 process.env.THUMBGATE_API_KEY = 'test-api-key';
@@ -86,9 +94,12 @@ test.after(async () => {
   delete process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
   delete process.env.THUMBGATE_BILLING_API_BASE_URL;
   delete process.env.THUMBGATE_BUILD_METADATA_PATH;
-  delete process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
-  delete process.env.THUMBGATE_BILLING_API_BASE_URL;
-  delete process.env.THUMBGATE_BUILD_METADATA_PATH;
+  if (savedProjectEnv.THUMBGATE_PROJECT_DIR === undefined) delete process.env.THUMBGATE_PROJECT_DIR;
+  else process.env.THUMBGATE_PROJECT_DIR = savedProjectEnv.THUMBGATE_PROJECT_DIR;
+  if (savedProjectEnv.CLAUDE_PROJECT_DIR === undefined) delete process.env.CLAUDE_PROJECT_DIR;
+  else process.env.CLAUDE_PROJECT_DIR = savedProjectEnv.CLAUDE_PROJECT_DIR;
+  if (savedProjectEnv.INIT_CWD === undefined) delete process.env.INIT_CWD;
+  else process.env.INIT_CWD = savedProjectEnv.INIT_CWD;
   try {
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
     fs.rmSync(tmpProofDir, { recursive: true, force: true });
@@ -1207,6 +1218,124 @@ test('summary endpoint returns markdown text payload', async () => {
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.match(body.summary, /Feedback Summary/);
+});
+
+test('default feedback stats stay on THUMBGATE_FEEDBACK_DIR even when INIT_CWD is set', async () => {
+  const savedInitCwd = process.env.INIT_CWD;
+  const feedbackLogPath = path.join(tmpFeedbackDir, 'feedback-log.jsonl');
+  const baselineEntries = fs.existsSync(feedbackLogPath) ? readJsonl(feedbackLogPath) : [];
+  const baselineTotal = baselineEntries.length;
+  const baselinePositive = baselineEntries.filter((entry) => entry.signal === 'positive').length;
+  const baselineNegative = baselineEntries.filter((entry) => entry.signal === 'negative').length;
+  process.env.INIT_CWD = path.join(os.tmpdir(), 'thumbgate-init-cwd-project');
+  try {
+    fs.appendFileSync(feedbackLogPath, `${JSON.stringify({
+      id: 'fb_initcwd_scope_guard',
+      signal: 'positive',
+      context: 'Explicit feedback dir should remain authoritative',
+      timestamp: '2026-04-08T10:00:00.000Z',
+    })}\n`);
+
+    const updatedRes = await fetch(apiUrl('/v1/feedback/stats'), { headers: authHeader });
+    assert.equal(updatedRes.status, 200);
+    const updatedBody = await updatedRes.json();
+    assert.equal(updatedBody.total, baselineTotal + 1);
+    assert.equal(updatedBody.totalPositive, baselinePositive + 1);
+    assert.equal(updatedBody.totalNegative, baselineNegative);
+  } finally {
+    if (baselineEntries.length > 0) {
+      fs.writeFileSync(feedbackLogPath, `${baselineEntries.map((entry) => JSON.stringify(entry)).join('\n')}\n`);
+    } else {
+      fs.rmSync(feedbackLogPath, { force: true });
+    }
+    if (savedInitCwd === undefined) delete process.env.INIT_CWD;
+    else process.env.INIT_CWD = savedInitCwd;
+  }
+});
+
+test('project-scoped endpoints honor explicit project selection for stats, lessons, and dashboard', async () => {
+  const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-project-scope-api-'));
+  const feedbackDir = path.join(projectDir, '.thumbgate');
+  fs.mkdirSync(feedbackDir, { recursive: true });
+
+  try {
+    fs.writeFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), [
+      JSON.stringify({
+        id: 'fb_project_positive',
+        signal: 'positive',
+        context: 'Verified project alpha release flow',
+        tags: ['verification', 'alpha'],
+        timestamp: '2026-04-08T09:00:00.000Z',
+      }),
+      JSON.stringify({
+        id: 'fb_project_negative',
+        signal: 'negative',
+        context: 'Skipped rollback checklist for project alpha',
+        tags: ['release', 'alpha'],
+        timestamp: '2026-04-08T09:05:00.000Z',
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(path.join(feedbackDir, 'memory-log.jsonl'), `${JSON.stringify({
+      id: 'mem_project_alpha',
+      title: 'MISTAKE: Skipped rollback checklist for project alpha',
+      content: 'What went wrong: Skipped rollback checklist\nHow to avoid: Attach rollback checklist before shipping',
+      category: 'error',
+      importance: 'high',
+      tags: ['feedback', 'negative', 'release', 'alpha'],
+      sourceFeedbackId: 'fb_project_negative',
+      timestamp: '2026-04-08T09:05:01.000Z',
+    })}\n`);
+
+    const projectQuery = `project=${encodeURIComponent(projectDir)}`;
+
+    const statsRes = await fetch(apiUrl(`/v1/feedback/stats?${projectQuery}`), { headers: authHeader });
+    assert.equal(statsRes.status, 200);
+    const statsBody = await statsRes.json();
+    assert.equal(statsBody.total, 2);
+    assert.equal(statsBody.totalPositive, 1);
+    assert.equal(statsBody.totalNegative, 1);
+
+    const lessonsRes = await fetch(apiUrl(`/v1/lessons/search?q=rollback&limit=5&${projectQuery}`), { headers: authHeader });
+    assert.equal(lessonsRes.status, 200);
+    const lessonsBody = await lessonsRes.json();
+    assert.equal(lessonsBody.feedbackDir, feedbackDir);
+    assert.equal(lessonsBody.returned, 1);
+    assert.equal(lessonsBody.results[0].id, 'mem_project_alpha');
+
+    const dashboardRes = await fetch(apiUrl(`/v1/dashboard?${projectQuery}`), { headers: authHeader });
+    assert.equal(dashboardRes.status, 200);
+    const dashboardBody = await dashboardRes.json();
+    assert.equal(dashboardBody.approval.total, 2);
+    assert.equal(dashboardBody.approval.positive, 1);
+    assert.equal(dashboardBody.approval.negative, 1);
+
+    const healthzRes = await fetch(apiUrl(`/healthz?${projectQuery}`), { headers: authHeader });
+    assert.equal(healthzRes.status, 200);
+    const healthzBody = await healthzRes.json();
+    assert.equal(healthzBody.feedbackLogPath, path.join(feedbackDir, 'feedback-log.jsonl'));
+    assert.equal(healthzBody.memoryLogPath, path.join(feedbackDir, 'memory-log.jsonl'));
+  } finally {
+    fs.rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('project-scoped overrides are rejected for non-loopback requests', async () => {
+  const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-project-remote-reject-'));
+  try {
+    const projectQuery = `project=${encodeURIComponent(projectDir)}`;
+    const res = await fetch(apiUrl(`/v1/feedback/stats?${projectQuery}`), {
+      headers: {
+        ...authHeader,
+        'x-forwarded-host': 'thumbgate.example.com',
+      },
+    });
+    assert.equal(res.status, 403);
+    const body = await res.json();
+    assert.match(body.error, /only available on localhost/i);
+  } finally {
+    fs.rmSync(projectDir, { recursive: true, force: true });
+  }
 });
 
 test('lesson search endpoint returns promoted lessons with linked corrective actions', async () => {

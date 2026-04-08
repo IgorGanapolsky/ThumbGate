@@ -29,6 +29,19 @@ const CONSOLIDATED_ARTIFACTS = [
   'workflow-sprint-leads.jsonl',
 ];
 
+function getScopedProjectOptions(options = {}) {
+  if (options.feedbackDir) return options;
+
+  const projectDir = options.projectDir || options.cwd;
+  if (!projectDir) return options;
+
+  return {
+    ...options,
+    projectDir,
+    explicitProjectDir: true,
+  };
+}
+
 function ensureParentDir(filePath) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
 }
@@ -194,11 +207,11 @@ function consolidateArtifact(fileName, options = {}) {
 }
 
 function consolidateFeedbackRoot(options = {}) {
-  const feedbackDir = options.feedbackDir
-    || process.env.THUMBGATE_FEEDBACK_DIR
-    || getThumbgateFeedbackDir(options);
+  const scopedOptions = getScopedProjectOptions(options);
+  const feedbackDir = scopedOptions.feedbackDir
+    || getThumbgateFeedbackDir(scopedOptions);
   const artifacts = CONSOLIDATED_ARTIFACTS.map((fileName) => consolidateArtifact(fileName, {
-    ...options,
+    ...scopedOptions,
     feedbackDir,
   }));
   const sourceRoots = Array.from(new Set(
@@ -229,6 +242,7 @@ module.exports = {
   consolidateArtifact,
   consolidateFeedbackRoot,
   dedupeJsonlRows,
+  getScopedProjectOptions,
   mergeCheckoutSessionsPayloads,
   mergeKeyStorePayloads,
 };

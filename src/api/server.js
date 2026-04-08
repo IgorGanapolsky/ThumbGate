@@ -14,6 +14,10 @@ const {
   appendDiagnosticRecord,
 } = require('../../scripts/feedback-loop');
 const {
+  readActiveProjectState,
+  resolveProjectDir,
+} = require('../../scripts/feedback-paths');
+const {
   readRecentConversationWindow,
 } = require('../../scripts/feedback-history-distiller');
 const {
@@ -203,8 +207,55 @@ function computeConversionStats(events) {
 }
 // ---------------------------------------------------------------------------
 
-function getSafeDataDir() {
-  const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
+function getRequestedProjectSelection(req, parsed) {
+  const projectFromQuery = parsed && parsed.searchParams
+    ? parsed.searchParams.get('project')
+    : null;
+  const projectFromHeaders = req && req.headers
+    ? req.headers['x-thumbgate-project-dir'] || req.headers['x-thumbgate-project']
+    : null;
+  return projectFromQuery || projectFromHeaders || null;
+}
+
+function getEffectiveRequestedProjectSelection(req, parsed) {
+  return isProjectSelectionAllowed(req, parsed)
+    ? getRequestedProjectSelection(req, parsed)
+    : null;
+}
+
+function isProjectSelectionAllowed(req, parsed) {
+  const explicitProject = getRequestedProjectSelection(req, parsed);
+  if (!explicitProject) return true;
+  return isLoopbackHost(getRequestHostHeader(req));
+}
+
+function resolveRequestProjectDir(req, parsed) {
+  const explicitProject = getEffectiveRequestedProjectSelection(req, parsed);
+  return resolveProjectDir({
+    projectDir: explicitProject,
+    env: process.env,
+  });
+}
+
+function shouldPreferProjectScopedFeedback(req, parsed) {
+  const explicitProject = getEffectiveRequestedProjectSelection(req, parsed);
+  if (explicitProject) return true;
+  if (process.env.THUMBGATE_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR) return true;
+  if (process.env.THUMBGATE_FEEDBACK_DIR) return false;
+  return Boolean(readActiveProjectState({ env: process.env }));
+}
+
+function getRequestFeedbackPaths(req, parsed) {
+  const explicitProject = getEffectiveRequestedProjectSelection(req, parsed);
+  return getFeedbackPaths({
+    projectDir: resolveRequestProjectDir(req, parsed),
+    explicitProjectDir: explicitProject,
+    skipExplicitFeedbackDir: shouldPreferProjectScopedFeedback(req, parsed),
+  });
+}
+
+function getSafeDataDir(req, parsed) {
+  const { FEEDBACK_LOG_PATH } = getRequestFeedbackPaths(req, parsed);
   return path.resolve(path.dirname(FEEDBACK_LOG_PATH));
 }
 
@@ -855,6 +906,14 @@ function getPublicOrigin(req) {
   const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() || 'http';
   const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim() || 'localhost';
   return `${proto}://${host}`;
+}
+
+function getRequestHostHeader(req) {
+  const forwardedHost = req.headers['x-forwarded-host'];
+  if (Array.isArray(forwardedHost)) {
+    return forwardedHost[0] || req.headers.host || '';
+  }
+  return forwardedHost || req.headers.host || '';
 }
 
 function isLoopbackHost(hostValue) {
@@ -2094,10 +2153,10 @@ function extractTags(input) {
   return [];
 }
 
-function resolveSafePath(inputPath, { mustExist = false } = {}) {
+function resolveSafePath(inputPath, { mustExist = false, safeDataDir } = {}) {
   const allowExternal = process.env.THUMBGATE_ALLOW_EXTERNAL_PATHS === 'true';
   const resolved = path.resolve(String(inputPath || ''));
-  const SAFE_DATA_DIR = getSafeDataDir();
+  const SAFE_DATA_DIR = safeDataDir || getSafeDataDir();
   const inSafeRoot = resolved === SAFE_DATA_DIR || resolved.startsWith(`${SAFE_DATA_DIR}${path.sep}`);
 
   if (!allowExternal && !inSafeRoot) {
@@ -2121,6 +2180,13 @@ function createApiServer() {
     const isGetLikeRequest = req.method === 'GET' || isHeadRequest;
     const publicOrigin = getPublicOrigin(req);
     const hostedConfig = resolveHostedBillingConfig({ requestOrigin: publicOrigin });
+    if (!isProjectSelectionAllowed(req, parsed)) {
+      sendJson(res, 403, { error: 'project selection is only available on localhost requests' });
+      return;
+    }
+    const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
+    const requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
+    const requestSafeDataDir = getSafeDataDir(req, parsed);
 
     // Public MCP endpoint — responds to Smithery registry scanning and MCP initialize
     // The initialize handshake is unauthenticated; subsequent tool calls require Bearer auth
@@ -2394,7 +2460,7 @@ function createApiServer() {
       const signal = parsed.searchParams.get('signal');
       if (signal === 'up' || signal === 'down') {
         const chatHistory = readRecentConversationWindow({
-          feedbackDir: getSafeDataDir(),
+          feedbackDir: requestSafeDataDir,
           limit: 10,
         });
         const result = captureFeedback({
@@ -2484,7 +2550,7 @@ async function addContext(){
         sendJson(res, 400, { error: 'relatedFeedbackId is required' });
         return;
       }
-      const feedbackDir = getSafeDataDir();
+      const feedbackDir = requestSafeDataDir;
       const detailField = signal === 'down' ? 'whatWentWrong' : 'whatWorked';
       const updated = updateLessonRecord(feedbackDir, relatedFeedbackId, (existing) => {
         const nextTags = Array.from(new Set([
@@ -2536,7 +2602,7 @@ async function addContext(){
     const lessonUpdateMatch = pathname.match(/^\/lessons\/([^/]+)\/update$/);
     if (req.method === 'POST' && lessonUpdateMatch) {
       const lessonId = decodeURIComponent(lessonUpdateMatch[1]);
-      const feedbackDir = getSafeDataDir();
+      const feedbackDir = requestSafeDataDir;
       const body = await parseJsonBody(req);
       const record = findRecordById(lessonId, feedbackDir);
       if (!record) {
@@ -2568,7 +2634,7 @@ async function addContext(){
     const lessonDeleteMatch = pathname.match(/^\/lessons\/([^/]+)\/delete$/);
     if (req.method === 'POST' && lessonDeleteMatch) {
       const lessonId = decodeURIComponent(lessonDeleteMatch[1]);
-      const feedbackDir = getSafeDataDir();
+      const feedbackDir = requestSafeDataDir;
       const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
       const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
       const deletedMemory = deleteRecordFromJsonl(memoryLogPath, lessonId);
@@ -2585,7 +2651,7 @@ async function addContext(){
     const lessonDetailMatch = pathname.match(/^\/lessons\/([^/]+)$/);
     if (isGetLikeRequest && lessonDetailMatch && lessonDetailMatch[1] !== '') {
       const lessonId = decodeURIComponent(lessonDetailMatch[1]);
-      const feedbackDir = getSafeDataDir();
+      const feedbackDir = requestSafeDataDir;
       const record = findRecordById(lessonId, feedbackDir);
       if (!record) {
         sendHtml(res, 404, renderLessonDetailHtml(null, lessonId));
@@ -2959,7 +3025,7 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/healthz') {
-      const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH } = getFeedbackPaths();
+      const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH } = requestFeedbackPaths;
       sendJson(res, 200, {
         status: 'ok',
         feedbackLogPath: FEEDBACK_LOG_PATH,
@@ -3497,7 +3563,7 @@ async function addContext(){
 
     try {
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
-        sendJson(res, 200, analyzeFeedback());
+        sendJson(res, 200, analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH));
         return;
       }
 
@@ -3740,7 +3806,9 @@ async function addContext(){
 
       if (req.method === 'GET' && pathname === '/v1/feedback/summary') {
         const recent = Number(parsed.searchParams.get('recent') || 20);
-        const summary = feedbackSummary(Number.isFinite(recent) ? recent : 20);
+        const summary = feedbackSummary(Number.isFinite(recent) ? recent : 20, {
+          feedbackDir: requestFeedbackDir,
+        });
         sendJson(res, 200, { summary });
         return;
       }
@@ -3757,6 +3825,7 @@ async function addContext(){
           limit: Number.isFinite(limit) ? limit : 10,
           category,
           tags,
+          feedbackDir: requestFeedbackDir,
         });
         sendJson(res, 200, results);
         return;
@@ -3846,7 +3915,9 @@ async function addContext(){
       if (req.method === 'POST' && pathname === '/v1/feedback/rules') {
         const body = await parseJsonBody(req);
         const minOccurrences = Number(body.minOccurrences || 2);
-        const outputPath = body.outputPath ? resolveSafePath(body.outputPath) : undefined;
+        const outputPath = body.outputPath
+          ? resolveSafePath(body.outputPath, { safeDataDir: requestSafeDataDir })
+          : undefined;
         const result = writePreventionRules(outputPath, Number.isFinite(minOccurrences) ? minOccurrences : 2);
         sendJson(res, 200, {
           path: result.path,
@@ -3875,20 +3946,28 @@ async function addContext(){
         let memories = [];
 
         if (body.inputPath) {
-          const safeInputPath = resolveSafePath(body.inputPath, { mustExist: true });
+          const safeInputPath = resolveSafePath(body.inputPath, {
+            mustExist: true,
+            safeDataDir: requestSafeDataDir,
+          });
           const raw = fs.readFileSync(safeInputPath, 'utf-8');
           const parsedMemories = JSON.parse(raw);
           memories = Array.isArray(parsedMemories) ? parsedMemories : parsedMemories.memories || [];
         } else {
           const localPath = body.memoryLogPath
-            ? resolveSafePath(body.memoryLogPath, { mustExist: true })
-            : DEFAULT_LOCAL_MEMORY_LOG;
+            ? resolveSafePath(body.memoryLogPath, {
+              mustExist: true,
+              safeDataDir: requestSafeDataDir,
+            })
+            : requestFeedbackPaths.MEMORY_LOG_PATH;
           memories = readJSONL(localPath);
         }
 
         const result = exportDpoFromMemories(memories);
         if (body.outputPath) {
-          const safeOutputPath = resolveSafePath(body.outputPath);
+          const safeOutputPath = resolveSafePath(body.outputPath, {
+            safeDataDir: requestSafeDataDir,
+          });
           fs.mkdirSync(path.dirname(safeOutputPath), { recursive: true });
           fs.writeFileSync(safeOutputPath, result.jsonl);
         }
@@ -3899,14 +3978,18 @@ async function addContext(){
           learnings: result.learnings.length,
           unpairedErrors: result.unpairedErrors.length,
           unpairedLearnings: result.unpairedLearnings.length,
-          outputPath: body.outputPath ? resolveSafePath(body.outputPath) : null,
+          outputPath: body.outputPath
+            ? resolveSafePath(body.outputPath, { safeDataDir: requestSafeDataDir })
+            : null,
         });
         return;
       }
 
       if (req.method === 'POST' && pathname === '/v1/analytics/databricks/export') {
         const body = await parseJsonBody(req);
-        const outputPath = body.outputPath ? resolveSafePath(body.outputPath) : undefined;
+        const outputPath = body.outputPath
+          ? resolveSafePath(body.outputPath, { safeDataDir: requestSafeDataDir })
+          : undefined;
         const result = exportDatabricksBundle(undefined, outputPath);
         sendJson(res, 200, result);
         return;
@@ -3971,7 +4054,7 @@ async function addContext(){
       // ----------------------------------------------------------------
 
       if (req.method === 'GET' && pathname === '/v1/quality/scores') {
-        const modelPath = path.join(getSafeDataDir(), 'feedback_model.json');
+        const modelPath = path.join(requestSafeDataDir, 'feedback_model.json');
         const model = loadModel(modelPath);
         const reliability = getReliability(model);
         const category = parsed.searchParams.get('category');
@@ -3991,7 +4074,7 @@ async function addContext(){
       }
 
       if (req.method === 'GET' && pathname === '/v1/quality/rules') {
-        const rulesPath = path.join(getSafeDataDir(), 'prevention-rules.md');
+        const rulesPath = path.join(requestSafeDataDir, 'prevention-rules.md');
         let markdown = '';
         if (fs.existsSync(rulesPath)) {
           markdown = fs.readFileSync(rulesPath, 'utf8').trim();
@@ -4008,7 +4091,7 @@ async function addContext(){
       }
 
       if (req.method === 'GET' && pathname === '/v1/quality/posteriors') {
-        const modelPath = path.join(getSafeDataDir(), 'feedback_model.json');
+        const modelPath = path.join(requestSafeDataDir, 'feedback_model.json');
         const model = loadModel(modelPath);
         const posteriors = samplePosteriors(model);
         sendJson(res, 200, { posteriors });
@@ -4247,9 +4330,8 @@ async function addContext(){
           return;
         }
 
-        const { FEEDBACK_DIR } = getFeedbackPaths();
         const billingSummary = await getBillingSummaryLive(summaryOptions);
-        const data = generateDashboard(FEEDBACK_DIR, {
+        const data = generateDashboard(requestFeedbackDir, {
           analyticsWindow: summaryOptions,
           billingSummary,
           billingSource: 'live',
@@ -4275,9 +4357,8 @@ async function addContext(){
         }
 
         try {
-          const { FEEDBACK_DIR } = getFeedbackPaths();
           const billingSummary = await getBillingSummaryLive(summaryOptions);
-          const data = generateDashboard(FEEDBACK_DIR, {
+          const data = generateDashboard(requestFeedbackDir, {
             analyticsWindow: summaryOptions,
             billingSummary,
             billingSource: 'live',

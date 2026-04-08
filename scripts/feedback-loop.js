@@ -146,8 +146,8 @@ function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, le
   } catch { /* statusline update is best-effort */ }
 }
 
-function getFeedbackPaths() {
-  return resolveFeedbackPaths();
+function getFeedbackPaths(options = {}) {
+  return resolveFeedbackPaths(options);
 }
 
 function getContextFsModule() {
@@ -1673,8 +1673,8 @@ function writePreventionRules(filePath, minOccurrences = 2) {
   return { path: outPath, markdown };
 }
 
-function feedbackSummary(recentN = 20) {
-  const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
+function feedbackSummary(recentN = 20, options = {}) {
+  const { FEEDBACK_LOG_PATH } = getFeedbackPaths(options);
   const entries = readJSONL(FEEDBACK_LOG_PATH);
   if (entries.length === 0) {
     return '## Feedback Summary\nNo feedback recorded yet.';
@@ -1794,6 +1794,10 @@ function runTests() {
   const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'thumbgate-loop-test-'));
   const localFeedbackLog = path.join(tmpDir, 'feedback-log.jsonl');
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  const savedInitCwd = process.env.INIT_CWD;
+  process.env.INIT_CWD = savedInitCwd || process.cwd();
+
+  assert(getFeedbackPaths().FEEDBACK_DIR === tmpDir, 'explicit feedback dir wins over npm INIT_CWD');
 
   appendJSONL(localFeedbackLog, { signal: 'positive', tags: ['testing'], skill: 'verify' });
   appendJSONL(localFeedbackLog, { signal: 'negative', tags: ['testing'], skill: 'verify' });
@@ -1845,6 +1849,8 @@ function runTests() {
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
   delete process.env.THUMBGATE_FEEDBACK_DIR;
+  if (savedInitCwd === undefined) delete process.env.INIT_CWD;
+  else process.env.INIT_CWD = savedInitCwd;
   console.log(`\nResults: ${passed} passed, ${failed} failed\n`);
   process.exit(failed > 0 ? 1 : 0);
 }
