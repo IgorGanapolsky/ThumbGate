@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/hook-auto-capture.sh"
+            "command": "node bin/cli.js hook-auto-capture"
           }
         ]
       }
@@ -38,6 +38,31 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node bin/cli.js cache-update"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node bin/cli.js session-start"
+          }
+        ]
+      }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node bin/cli.js statusline-render"
   }
 }

@@ -22,14 +22,24 @@ const { resolveFeedbackDir } = require('./feedback-paths');
 // Paths
 // ---------------------------------------------------------------------------
 
-const FEEDBACK_DIR = resolveFeedbackDir();
-const PATHS = {
-  feedbackLog: path.join(FEEDBACK_DIR, 'feedback-log.jsonl'),
-  inbox: path.join(FEEDBACK_DIR, 'inbox.jsonl'),
-  pendingSync: path.join(FEEDBACK_DIR, 'pending_cortex_sync.jsonl'),
-  attributedFeedback: path.join(FEEDBACK_DIR, 'attributed-feedback.jsonl'),
-  guardArtifact: path.join(FEEDBACK_DIR, 'pretool-guards.json'),
-};
+function getHybridPaths(options = {}) {
+  const feedbackDir = resolveFeedbackDir({
+    cwd: options.cwd,
+    env: options.env,
+    feedbackDir: options.feedbackDir,
+    home: options.home,
+  });
+  return {
+    feedbackDir,
+    feedbackLog: path.join(feedbackDir, 'feedback-log.jsonl'),
+    inbox: path.join(feedbackDir, 'inbox.jsonl'),
+    pendingSync: path.join(feedbackDir, 'pending_cortex_sync.jsonl'),
+    attributedFeedback: path.join(feedbackDir, 'attributed-feedback.jsonl'),
+    guardArtifact: path.join(feedbackDir, 'pretool-guards.json'),
+  };
+}
+
+const PATHS = getHybridPaths();
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -192,10 +202,11 @@ function hashText(text) {
  */
 function buildHybridState(opts) {
   const o = opts || {};
-  const feedbackLogPath = o.feedbackLogPath || process.env.THUMBGATE_FEEDBACK_LOG || PATHS.feedbackLog;
-  const inboxPath = o.inboxPath || process.env.THUMBGATE_FEEDBACK_INBOX || PATHS.inbox;
-  const pendingSyncPath = o.pendingSyncPath || process.env.THUMBGATE_PENDING_SYNC || PATHS.pendingSync;
-  const attributedFeedbackPath = o.attributedFeedbackPath || process.env.THUMBGATE_ATTRIBUTED_FEEDBACK || PATHS.attributedFeedback;
+  const paths = getHybridPaths(o);
+  const feedbackLogPath = o.feedbackLogPath || process.env.THUMBGATE_FEEDBACK_LOG || paths.feedbackLog;
+  const inboxPath = o.inboxPath || process.env.THUMBGATE_FEEDBACK_INBOX || paths.inbox;
+  const pendingSyncPath = o.pendingSyncPath || process.env.THUMBGATE_PENDING_SYNC || paths.pendingSync;
+  const attributedFeedbackPath = o.attributedFeedbackPath || process.env.THUMBGATE_ATTRIBUTED_FEEDBACK || paths.attributedFeedback;
 
   const feedbackEntries = readJsonl(feedbackLogPath);
   const inboxEntries = readJsonl(inboxPath);
@@ -615,7 +626,7 @@ function evaluatePretool(toolName, toolInput, opts) {
   const o = opts || {};
 
   // Fast path: compiled artifact
-  const artifactPath = o.guardArtifactPath || process.env.THUMBGATE_GUARDS_PATH || PATHS.guardArtifact;
+  const artifactPath = o.guardArtifactPath || process.env.THUMBGATE_GUARDS_PATH || getHybridPaths(o).guardArtifact;
   const artifact = readGuardArtifact(artifactPath);
   if (artifact) {
     const result = evaluateCompiledGuards(artifact, toolName, toolInput);
@@ -696,6 +707,7 @@ module.exports = {
   hashText,
   hasTwoKeywordHits,
   readJsonl,
+  getHybridPaths,
   PATHS,
 };
 

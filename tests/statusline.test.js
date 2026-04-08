@@ -5,10 +5,37 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execFileSync } = require('child_process');
+const { cacheUpdateHookCommand, statuslineCommand } = require('../scripts/hook-runtime');
+const { activateLicense } = require('../scripts/license');
 
 const STATUSLINE_PATH = path.join(__dirname, '..', 'scripts', 'statusline.sh');
 const CACHE_UPDATER_PATH = path.join(__dirname, '..', 'scripts', 'hook-thumbgate-cache-updater.js');
 const AUTO_CAPTURE_HOOK_PATH = path.join(__dirname, '..', 'scripts', 'hook-auto-capture.sh');
+const PKG_VERSION = require('../package.json').version;
+
+function runStatusline(cachePayload, extraEnv = {}) {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-render-'));
+  const cachePath = path.join(tmpDir, 'statusline_cache.json');
+  const homeDir = path.join(tmpDir, 'home');
+  fs.mkdirSync(homeDir, { recursive: true });
+  fs.writeFileSync(cachePath, JSON.stringify(cachePayload));
+
+  try {
+    return execFileSync('bash', [STATUSLINE_PATH], {
+      encoding: 'utf8',
+      input: JSON.stringify({ context_window: { used_percentage: 25 } }),
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        THUMBGATE_FEEDBACK_DIR: tmpDir,
+        ...extraEnv,
+      },
+      timeout: 5000,
+    });
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+}
 
 test('statusline script exists and is executable', () => {
   assert.ok(fs.existsSync(STATUSLINE_PATH), 'scripts/statusline.sh must exist');
@@ -17,57 +44,48 @@ test('statusline script exists and is executable', () => {
 });
 
 test('statusline script reads jq input and outputs ThumbGate line', () => {
-  const tmpCache = path.join(__dirname, '..', '.thumbgate', 'statusline_cache.json');
-  const cacheDir = path.dirname(tmpCache);
-  fs.mkdirSync(cacheDir, { recursive: true });
-  const existed = fs.existsSync(tmpCache);
-  const oldData = existed ? fs.readFileSync(tmpCache, 'utf8') : null;
-
-  fs.writeFileSync(tmpCache, JSON.stringify({
+  const out = runStatusline({
     thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
-  }));
-
-  try {
-    const sessionJson = JSON.stringify({ context_window: { used_percentage: 25 } });
-    const out = execFileSync('bash', [STATUSLINE_PATH], {
-      encoding: 'utf8',
-      input: sessionJson,
-      env: { ...process.env, THUMBGATE_FEEDBACK_DIR: path.join(__dirname, '..') },
-      timeout: 5000
-    });
-    assert.ok(out.includes('10'), 'should show thumbs up count');
-    assert.ok(out.includes('5'), 'should show thumbs down count');
-    assert.ok(out.includes('3'), 'should show lessons count');
-    assert.ok(out.includes('lessons'), 'should include word lessons');
-  } finally {
-    if (oldData !== null) fs.writeFileSync(tmpCache, oldData);
-    else fs.unlinkSync(tmpCache);
-  }
+  });
+  assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
+  assert.ok(out.includes('Free'), 'should show license tier');
+  assert.ok(out.includes('10'), 'should show thumbs up count');
+  assert.ok(out.includes('5'), 'should show thumbs down count');
+  assert.ok(!out.includes('lessons'), 'should not show lesson count text');
 });
 
 test('statusline shows "no feedback yet" when cache has zeros', () => {
-  const tmpCache = path.join(__dirname, '..', '.thumbgate', 'statusline_cache.json');
-  const cacheDir = path.dirname(tmpCache);
-  fs.mkdirSync(cacheDir, { recursive: true });
-  const existed = fs.existsSync(tmpCache);
-  const oldData = existed ? fs.readFileSync(tmpCache, 'utf8') : null;
-
-  fs.writeFileSync(tmpCache, JSON.stringify({
+  const out = runStatusline({
     thumbs_up: '0', thumbs_down: '0', lessons: '0', trend: '?'
+  });
+  assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
+  assert.ok(out.includes('no feedback yet'), 'should show no-data message');
+});
+
+test('statusline shows Pro when a valid ThumbGate license is present', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-license-'));
+  const homeDir = path.join(tmpDir, 'home');
+  fs.mkdirSync(homeDir, { recursive: true });
+  activateLicense('tg_pro_1234567890abcdef12345678', { homeDir });
+  const cachePath = path.join(tmpDir, 'statusline_cache.json');
+  fs.writeFileSync(cachePath, JSON.stringify({
+    thumbs_up: '2', thumbs_down: '1', lessons: '0', trend: 'stable'
   }));
 
   try {
-    const sessionJson = JSON.stringify({ context_window: { used_percentage: 10 } });
     const out = execFileSync('bash', [STATUSLINE_PATH], {
       encoding: 'utf8',
-      input: sessionJson,
-      env: { ...process.env, THUMBGATE_FEEDBACK_DIR: path.join(__dirname, '..') },
-      timeout: 5000
+      input: JSON.stringify({ context_window: { used_percentage: 5 } }),
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        THUMBGATE_FEEDBACK_DIR: tmpDir,
+      },
+      timeout: 5000,
     });
-    assert.ok(out.includes('no feedback yet'), 'should show no-data message');
+    assert.ok(out.includes('Pro'), 'should show Pro tier when a license is active');
   } finally {
-    if (oldData !== null) fs.writeFileSync(tmpCache, oldData);
-    else fs.unlinkSync(tmpCache);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
 
@@ -100,7 +118,7 @@ test('user prompt hook records recent conversation history for statusline distil
 
 test('cache updater writes cache from feedback_stats input', () => {
   const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'thumbgate-test-'));
-  const tmpCache = path.join(tmpDir, '.thumbgate', 'statusline_cache.json');
+  const tmpCache = path.join(tmpDir, 'statusline_cache.json');
 
   const event = {
     tool_name: 'mcp__thumbgate__feedback_stats',
@@ -128,9 +146,21 @@ test('cache updater writes cache from feedback_stats input', () => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-test('setupClaude wires statusLine and cache hook into settings', () => {
+test('setupClaude uses portable ThumbGate commands for status line and cache updates', () => {
   const cliSource = fs.readFileSync(path.join(__dirname, '..', 'bin', 'cli.js'), 'utf8');
   assert.ok(cliSource.includes('statusLine'), 'cli.js must wire statusLine');
-  assert.ok(cliSource.includes('hook-thumbgate-cache-updater'), 'cli.js must wire cache updater hook');
-  assert.ok(cliSource.includes('statusline.sh'), 'cli.js must reference statusline.sh');
+  assert.ok(cliSource.includes('cacheUpdateHookCommand'), 'cli.js must wire the portable cache updater command');
+  assert.ok(cliSource.includes('statuslineCommand'), 'cli.js must wire the portable statusline command');
+  const cacheCommand = cacheUpdateHookCommand();
+  const statusCommand = statuslineCommand();
+  assert.ok(
+    (cacheCommand.includes('--package') && cacheCommand.includes('thumbgate@') && cacheCommand.includes('thumbgate') && cacheCommand.includes('cache-update'))
+      || cacheCommand.includes('bin/cli.js" cache-update'),
+    `unexpected cache update command: ${cacheCommand}`
+  );
+  assert.ok(
+    (statusCommand.includes('--package') && statusCommand.includes('thumbgate@') && statusCommand.includes('thumbgate') && statusCommand.includes('statusline-render'))
+      || statusCommand.includes('bin/cli.js" statusline-render'),
+    `unexpected statusline command: ${statusCommand}`
+  );
 });

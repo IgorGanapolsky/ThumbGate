@@ -1,9 +1,9 @@
 # Codex MCP profile (copy into ~/.codex/config.toml or merge section)
 [mcp_servers.thumbgate]
-command = "node"
-args = ["bin/cli.js", "serve"]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@0.9.11", "thumbgate", "serve"]
 
 # Hard PreToolUse hook for Codex
 [hooks.pre_tool_use]
-command = "node"
-args = ["bin/cli.js", "gate"]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@0.9.11", "thumbgate", "gate-check"]

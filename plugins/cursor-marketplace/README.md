@@ -53,14 +53,13 @@ How it works:
 
 | Hook | Trigger | Description |
 |------|---------|-------------|
-| `beforeShellExecution` | `git push`, `rm -rf`, `npm publish`, `deploy` | Runs `scripts/gate-check.sh` to perform a pre-action health check via `thumbgate doctor`. |
+| `beforeShellExecution` | `git push`, `rm -rf`, `npm publish`, `deploy` | Runs `scripts/gate-check.sh` to evaluate the command through ThumbGate `gate-check` before execution. |
 
 ### MCP Server
 
 | Server | Command |
 |--------|---------|
-| `thumbgate` | `npx -y thumbgate@latest serve` |
-| `rlhf` | `npx -y thumbgate@latest serve` |
+| `thumbgate` | `npx --yes --package thumbgate@latest thumbgate serve` |
 
 ## Install
 
@@ -93,7 +92,7 @@ Or copy the plugin MCP config into `.cursor/mcp.json`:
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["-y", "thumbgate@latest", "serve"]
+      "args": ["--yes", "--package", "thumbgate@latest", "thumbgate", "serve"]
     }
   }
 }
