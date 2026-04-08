@@ -176,6 +176,7 @@
     "prove:harnesses": "node scripts/prove-harnesses.js",
     "prove:local-intelligence": "node scripts/prove-local-intelligence.js",
     "prove:runtime": "node scripts/prove-runtime.js",
+    "prove:packaged-runtime": "node scripts/prove-packaged-runtime.js",
     "prove:settings": "node scripts/prove-settings.js",
     "prove:seo-gsd": "node scripts/prove-seo-gsd.js",
     "prove:tessl": "node scripts/prove-tessl.js",
