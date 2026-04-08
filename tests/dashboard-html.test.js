@@ -71,6 +71,17 @@ test('dashboard includes team metrics and gate-template tabs powered by dashboar
   assert.match(dashboard, /highest-ROI guardrails/i);
 });
 
+test('dashboard defaults to the Total Feedback card highlight on first render', () => {
+  const dashboard = readDashboard();
+
+  assert.match(dashboard, /\.stat-card\.selected\s*\{/);
+  assert.match(dashboard, /data-card-action="all"/);
+  assert.match(dashboard, /function setSelectedCard\(action\)/);
+  assert.match(dashboard, /card\.classList\.toggle\('selected', card\.dataset\.cardAction === action\)/);
+  assert.match(dashboard, /renderStats\(data\);\s+setSelectedCard\('all'\);\s+await loadDashboardData\(\);/);
+  assert.match(dashboard, /document\.getElementById\('statGates'\)\.textContent = '21';\s+setSelectedCard\('all'\);/);
+});
+
 test('dashboard has noindex and meta description for SEO safety', () => {
   const dashboard = readDashboard();
   assert.match(dashboard, /noindex/, 'dashboard must have noindex to prevent Google indexing a Pro-only page');

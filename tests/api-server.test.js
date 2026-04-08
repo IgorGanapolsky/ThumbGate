@@ -911,6 +911,7 @@ test('quick feedback capture via GET /feedback/quick?signal=up returns HTML conf
   assert.ok(html.includes('signal=down'), 'undo link should point to opposite signal');
   assert.ok(html.includes('Add follow-up context'), 'should offer follow-up context input');
   assert.ok(html.includes('/feedback/quick/context'), 'should post follow-up notes to the public quick-feedback endpoint');
+  assert.match(html, /feedbackSessionId:'fbs_/i, 'quick-feedback page should carry the open feedback session id forward');
 });
 
 test('quick feedback capture via GET /feedback/quick?signal=down returns HTML confirmation', async () => {
@@ -946,21 +947,42 @@ test('quick feedback capture without signal returns 400', async () => {
   assert.ok(html.includes('signal=up'), 'should hint at correct usage');
 });
 
-test('quick feedback follow-up context endpoint stores a linked follow-up note without auth', async () => {
+test('quick feedback follow-up context endpoint enriches the original lesson without creating a duplicate record', async () => {
+  const captureRes = await fetch(apiUrl('/feedback/quick?signal=up'), { headers: authHeader });
+  assert.equal(captureRes.status, 200);
+  const captureHtml = await captureRes.text();
+  const relatedFeedbackId = captureHtml.match(/\/lessons\/([^"']+)/)?.[1];
+  const feedbackSessionId = captureHtml.match(/feedbackSessionId:'([^']+)'/)?.[1];
+  assert.ok(relatedFeedbackId, 'quick feedback page should include the created lesson id');
+  assert.ok(feedbackSessionId, 'quick feedback page should include the open feedback session id');
+
   const res = await fetch(apiUrl('/feedback/quick/context'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      signal: 'down',
-      context: 'This broke after the deploy window closed',
-      relatedFeedbackId: 'fb_origin_456',
+      signal: 'up',
+      context: 'Thorough PR review',
+      relatedFeedbackId,
+      feedbackSessionId,
     }),
   });
   assert.equal(res.status, 200);
   const body = await res.json();
-  assert.equal(body.accepted, true);
-  assert.equal(body.feedbackEvent.relatedFeedbackId, 'fb_origin_456');
-  assert.match(body.feedbackEvent.tags.join(','), /follow-up-context/);
+  assert.equal(body.ok, true);
+  assert.equal(body.relatedFeedbackId, relatedFeedbackId);
+  assert.equal(body.detailField, 'whatWorked');
+  assert.match(body.updated.whatWorked, /Thorough PR review/);
+  assert.match(body.updated.tags.join(','), /follow-up-context/);
+  assert.equal(body.feedbackSession.status, 'appended');
+
+  const lessonRes = await fetch(apiUrl(`/lessons/${encodeURIComponent(relatedFeedbackId)}`), { headers: authHeader });
+  assert.equal(lessonRes.status, 200);
+  const lessonHtml = await lessonRes.text();
+  assert.match(lessonHtml, /Thorough PR review/);
+
+  const { feedbackLogPath } = getConversationPaths(tmpFeedbackDir);
+  const logEntries = readJsonl(feedbackLogPath);
+  assert.equal(logEntries.filter((entry) => entry.id === relatedFeedbackId).length, 1);
 });
 
 test('intent catalog endpoint returns configured intents', async () => {

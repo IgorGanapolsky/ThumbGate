@@ -45,8 +45,9 @@
 
   /* STATS */
   .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
-  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: border-color 0.15s, transform 0.1s; }
+  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: border-color 0.15s, background 0.15s, transform 0.1s; }
   .stat-card:hover { border-color: rgba(34,211,238,0.4); transform: translateY(-2px); }
+  .stat-card.selected { border-color: rgba(34,211,238,0.6); background: rgba(34,211,238,0.05); }
   .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
   .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
   .stat-value.green { color: var(--green); }
@@ -211,10 +212,10 @@
 
   <!-- STATS -->
   <div class="stats-grid" id="statsGrid">
-    <div class="stat-card" onclick="selectCard(this,'all')" style="cursor:pointer;" title="Show all feedback"><div class="stat-label">Total Feedback</div><div class="stat-value cyan" id="statTotal">—</div></div>
-    <div class="stat-card" onclick="selectCard(this,'up')" style="cursor:pointer;" title="Show positive feedback"><div class="stat-label">👍 Positive</div><div class="stat-value green" id="statPositive">—</div></div>
-    <div class="stat-card" onclick="selectCard(this,'down')" style="cursor:pointer;" title="Show negative feedback"><div class="stat-label">👎 Negative</div><div class="stat-value red" id="statNegative">—</div></div>
-    <div class="stat-card" onclick="selectCard(this,'gates')" style="cursor:pointer;" title="View active gates"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></div>
+    <div class="stat-card" data-card-action="all" onclick="selectCard(this,'all')" style="cursor:pointer;" title="Show all feedback"><div class="stat-label">Total Feedback</div><div class="stat-value cyan" id="statTotal">—</div></div>
+    <div class="stat-card" data-card-action="up" onclick="selectCard(this,'up')" style="cursor:pointer;" title="Show positive feedback"><div class="stat-label">👍 Positive</div><div class="stat-value green" id="statPositive">—</div></div>
+    <div class="stat-card" data-card-action="down" onclick="selectCard(this,'down')" style="cursor:pointer;" title="Show negative feedback"><div class="stat-label">👎 Negative</div><div class="stat-value red" id="statNegative">—</div></div>
+    <div class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates')" style="cursor:pointer;" title="View active gates"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></div>
   </div>
 
   <!-- TABS -->
@@ -385,6 +386,7 @@ async function connect(options) {
       document.getElementById('authHelp').textContent = 'Local Pro is active on this machine. Your personal dashboard is using the saved license key automatically.';
     }
     renderStats(data);
+    setSelectedCard('all');
     await loadDashboardData();
   } catch (e) {
     status.className = 'auth-status err';
@@ -405,6 +407,12 @@ function renderStats(data) {
   document.getElementById('statTotal').textContent = total;
   document.getElementById('statPositive').textContent = pos;
   document.getElementById('statNegative').textContent = neg;
+}
+
+function setSelectedCard(action) {
+  document.querySelectorAll('.stat-card').forEach(function(card) {
+    card.classList.toggle('selected', card.dataset.cardAction === action);
+  });
 }
 
 async function search() {
@@ -506,9 +514,7 @@ function highlightText(text) {
 
 function selectCard(el, action) {
   currentHighlightTerms = [];
-  // Highlight clicked card, clear all others
-  document.querySelectorAll('.stat-card').forEach(function(c) { c.style.borderColor = ''; });
-  el.style.borderColor = 'var(--cyan)';
+  setSelectedCard(action);
 
   if (action === 'gates') {
     switchTab('gates');
@@ -920,6 +926,7 @@ function loadDemo() {
   document.getElementById('statPositive').textContent = '37';
   document.getElementById('statNegative').textContent = '260';
   document.getElementById('statGates').textContent = '21';
+  setSelectedCard('all');
   // Sample memories — realistic scenarios from real agent-driven development
   var demoResults = [
     { signal: 'down', title: 'Claimed fix worked without running tests', context: 'Agent announced "fixed and pushed" but never ran the test suite. CI failed on 3 tests. Gate now requires test evidence before any completion claim.', tags: ['anti-lying', 'verification-gap', 'ci', 'trust-breach'], timestamp: '2025-06-22T10:20:00Z' },
