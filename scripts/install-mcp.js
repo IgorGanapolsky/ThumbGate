@@ -30,8 +30,6 @@ function resolveMcpServerConfig(flags = {}) {
   });
 }
 
-const MCP_SERVER_CONFIG = resolveMcpServerConfig();
-
 function parseFlags(argv) {
   const flags = {};
   for (const arg of argv) {
@@ -155,7 +153,6 @@ function installMcp(flags) {
 module.exports = {
   MCP_SERVER_KEY,
   LEGACY_MCP_SERVER_KEYS,
-  MCP_SERVER_CONFIG,
   resolveMcpServerConfig,
   resolveSettingsPath,
   loadSettings,

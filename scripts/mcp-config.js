@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { publishedCliArgs, runPublishedCliHelp } = require('./published-cli');
+const { publishedCliShellCommand } = require('./published-cli');
 const DEFAULT_PKG_ROOT = path.join(__dirname, '..');
 const cliAvailabilityCache = new Map();
 
@@ -101,8 +101,8 @@ function resolveLocalServerPath(pkgRoot, scope = 'project') {
 
 function portableMcpEntry(pkgVersion) {
   return {
-    command: 'npx',
-    args: publishedCliArgs(pkgVersion, ['serve']),
+    command: 'sh',
+    args: ['-lc', publishedCliShellCommand(pkgVersion, ['serve'])],
   };
 }
 
@@ -163,31 +163,24 @@ function publishedCliOverride() {
 }
 
 function publishedCliAvailable(pkgVersion) {
-  if (!isVersionPublished(pkgVersion)) {
-    return false;
-  }
   const override = publishedCliOverride();
   if (override !== null) {
     return override;
   }
-  if (cliAvailabilityCache.has(pkgVersion)) {
-    return cliAvailabilityCache.get(pkgVersion);
+  if (!isVersionPublished(pkgVersion)) {
+    return false;
   }
-
-  let available = false;
-  try {
-    runPublishedCliHelp(pkgVersion, { timeout: 8000 });
-    available = true;
-  } catch (_) {
-    available = false;
+  if (!cliAvailabilityCache.has(pkgVersion)) {
+    cliAvailabilityCache.set(pkgVersion, true);
   }
-
-  cliAvailabilityCache.set(pkgVersion, available);
-  return available;
+  return cliAvailabilityCache.get(pkgVersion);
 }
 
 function resolveMcpEntry({ pkgRoot, pkgVersion, scope = 'project', targetDir = pkgRoot }) {
   if (!isSourceCheckout(pkgRoot)) {
+    return portableMcpEntry(pkgVersion);
+  }
+  if (scope === 'home' && publishedCliAvailable(pkgVersion)) {
     return portableMcpEntry(pkgVersion);
   }
   if (scope === 'project' && !isSameCheckoutFamily(pkgRoot, targetDir) && publishedCliAvailable(pkgVersion)) {

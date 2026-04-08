@@ -199,6 +199,19 @@ function syncVersion(opts) {
   }
 
   // 8. Codex plugin manifest + MCP config
+  const codexAdapterConfigPath = 'adapters/codex/config.toml';
+  if (fs.existsSync(path.join(PROJECT_ROOT, codexAdapterConfigPath))) {
+    const content = fs.readFileSync(path.join(PROJECT_ROOT, codexAdapterConfigPath), 'utf8');
+    const updated = content.replace(/thumbgate@(\d+\.\d+\.\d+)/g, `thumbgate@${version}`);
+    if (updated !== content) {
+      drifted.push({ file: codexAdapterConfigPath, field: 'package-version-string', current: content.match(/thumbgate@\d+\.\d+\.\d+/g)?.join(', ') || null });
+      if (!checkOnly) {
+        fs.writeFileSync(path.join(PROJECT_ROOT, codexAdapterConfigPath), updated);
+      }
+    }
+    targets.push(codexAdapterConfigPath);
+  }
+
   const codexPluginManifestPath = 'plugins/codex-profile/.codex-plugin/plugin.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, codexPluginManifestPath))) {
     const codexPlugin = readJson(codexPluginManifestPath);

@@ -20,16 +20,12 @@ const path = require('path');
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { PRO_MONTHLY_PAYMENT_LINK } = require('../scripts/commercial-offer');
-const { resolveMcpEntry } = require('../scripts/mcp-config');
+const { resolveLocalServerPath } = require('../scripts/mcp-config');
 
 const CLI = path.resolve(__dirname, '../bin/cli.js');
 const PKG_ROOT = path.resolve(__dirname, '..');
 const MCP_SERVER_PATH = path.resolve(__dirname, '../adapters/mcp/server-stdio.js');
-const HOME_MCP_SERVER_PATH = resolveMcpEntry({
-  pkgRoot: PKG_ROOT,
-  pkgVersion: require('../package.json').version,
-  scope: 'home',
-}).args[0];
+const HOME_MCP_SERVER_PATH = resolveLocalServerPath(PKG_ROOT, 'home');
 const savedFunnelPath = process.env._TEST_FUNNEL_LEDGER_PATH;
 const savedHome = process.env.HOME;
 const savedUserProfile = process.env.USERPROFILE;
@@ -39,6 +35,39 @@ const savedPublishState = process.env.THUMBGATE_PUBLISH_STATE;
 
 function makeTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-cli-test-'));
+}
+
+function assertPortableMcpEntry(entry) {
+  assert.equal(entry.command, 'sh');
+  assert.deepEqual(entry.args.slice(0, 1), ['-lc']);
+  assert.match(entry.args[1], /thumbgate@\d+\.\d+\.\d+/);
+  assert.match(entry.args[1], /thumbgate/);
+  assert.match(entry.args[1], /serve/);
+  assert.match(entry.args[1], /\.thumbgate\/runtime/);
+}
+
+function assertPortableTomlMcpBlock(content) {
+  assert.match(content, /\[mcp_servers\.thumbgate\]/);
+  assert.match(content, /command = "sh"/);
+  assert.match(content, /thumbgate@\d+\.\d+\.\d+/);
+  assert.match(content, /thumbgate/);
+  assert.match(content, /serve/);
+  assert.match(content, /\.thumbgate\/runtime/);
+}
+
+function assertLocalMcpEntry(entry, expectedPath = MCP_SERVER_PATH) {
+  assert.equal(entry.command, 'node');
+  assert.deepEqual(entry.args, [expectedPath]);
+}
+
+function assertLocalTomlMcpBlock(content, expectedPath = MCP_SERVER_PATH) {
+  assert.match(content, /\[mcp_servers\.thumbgate\]/);
+  assert.match(content, /command = "node"/);
+  assert.match(content, new RegExp(escapeRegExp(expectedPath)));
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function writeSequenceLog(feedbackDir, rows) {
@@ -1614,8 +1643,7 @@ describe('bin/cli.js', () => {
     const mcp = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
     assert.ok(mcp.mcpServers, '.mcp.json should have mcpServers');
     assert.ok(mcp.mcpServers.thumbgate, 'Should have canonical ThumbGate server entry');
-    assert.strictEqual(mcp.mcpServers.thumbgate.command, 'node');
-    assert.deepEqual(mcp.mcpServers.thumbgate.args, [MCP_SERVER_PATH]);
+    assertLocalMcpEntry(mcp.mcpServers.thumbgate);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
@@ -1648,7 +1676,7 @@ describe('bin/cli.js', () => {
     assert.match(spec, /\/v1\/feedback\/capture/);
   });
 
-  test('init writes stable codex MCP launcher when running from source checkout', () => {
+  test('init writes a stable local codex MCP launcher when running from source checkout', () => {
     const isolatedDir = makeTmpDir();
     const isolatedHome = makeTmpDir();
     const codexHome = path.join(isolatedHome, '.codex');
@@ -1668,16 +1696,14 @@ describe('bin/cli.js', () => {
 
     const configPath = path.join(codexHome, 'config.toml');
     const content = fs.readFileSync(configPath, 'utf8');
-    assert.match(content, /\[mcp_servers\.thumbgate\]/);
-    assert.match(content, /command = "node"/);
-    assert.match(content, new RegExp(`args = \\["${HOME_MCP_SERVER_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"\\]`));
+    assertLocalTomlMcpBlock(content, HOME_MCP_SERVER_PATH);
     assert.doesNotMatch(content, /\/tmp\/disposable-worktree\/adapters\/mcp\/server-stdio\.js/);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     fs.rmSync(isolatedHome, { recursive: true, force: true });
   });
 
-  test('init rewrites an existing codex MCP launcher to the stable home path', () => {
+  test('init rewrites an existing codex MCP launcher to the stable local home path', () => {
     const isolatedDir = makeTmpDir();
     const isolatedHome = makeTmpDir();
     const codexHome = path.join(isolatedHome, '.codex');
@@ -1702,9 +1728,7 @@ describe('bin/cli.js', () => {
     assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
 
     const content = fs.readFileSync(configPath, 'utf8');
-    assert.match(content, /\[mcp_servers\.thumbgate\]/);
-    assert.match(content, /command = "node"/);
-    assert.match(content, new RegExp(`args = \\["${HOME_MCP_SERVER_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"\\]`));
+    assertLocalTomlMcpBlock(content, HOME_MCP_SERVER_PATH);
     assert.doesNotMatch(content, /disposable-worktree/);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
