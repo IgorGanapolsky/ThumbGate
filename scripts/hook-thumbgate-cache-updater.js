@@ -11,8 +11,7 @@ const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 
 function getCachePath() {
-  const cacheDir = process.env.THUMBGATE_FEEDBACK_DIR || process.cwd();
-  return path.join(cacheDir, '.thumbgate', 'statusline_cache.json');
+  return path.join(resolveFeedbackDir(), 'statusline_cache.json');
 }
 
 function readExistingCache(cachePath = getCachePath()) {

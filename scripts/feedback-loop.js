@@ -105,8 +105,7 @@ const pendingBackgroundSideEffects = new Set();
  */
 function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, lesson, turnCount }) {
   try {
-    const cacheDir = process.env.THUMBGATE_FEEDBACK_DIR || HOME || '.';
-    const cachePath = path.join(cacheDir, '.thumbgate', 'statusline_cache.json');
+    const cachePath = path.join(getFeedbackPaths().FEEDBACK_DIR, 'statusline_cache.json');
     let cache = {};
     try {
       cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'));

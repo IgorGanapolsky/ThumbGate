@@ -33,6 +33,7 @@ function makeTmpDir() {
 }
 
 const savedPublishState = process.env.THUMBGATE_PUBLISH_STATE;
+const savedCliState = process.env.THUMBGATE_PUBLISHED_CLI_STATE;
 
 function withPublishState(value, run) {
   const previous = process.env.THUMBGATE_PUBLISH_STATE;
@@ -48,12 +49,27 @@ function withPublishState(value, run) {
   }
 }
 
+function withCliState(value, run) {
+  const previous = process.env.THUMBGATE_PUBLISHED_CLI_STATE;
+  process.env.THUMBGATE_PUBLISHED_CLI_STATE = value;
+  try {
+    return run();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.THUMBGATE_PUBLISHED_CLI_STATE;
+    } else {
+      process.env.THUMBGATE_PUBLISHED_CLI_STATE = previous;
+    }
+  }
+}
+
 describe('install-mcp', () => {
   let tmpDir;
 
   before(() => {
     tmpDir = makeTmpDir();
     process.env.THUMBGATE_PUBLISH_STATE = 'published';
+    process.env.THUMBGATE_PUBLISHED_CLI_STATE = 'available';
   });
 
   after(() => {
@@ -62,6 +78,11 @@ describe('install-mcp', () => {
       delete process.env.THUMBGATE_PUBLISH_STATE;
     } else {
       process.env.THUMBGATE_PUBLISH_STATE = savedPublishState;
+    }
+    if (savedCliState === undefined) {
+      delete process.env.THUMBGATE_PUBLISHED_CLI_STATE;
+    } else {
+      process.env.THUMBGATE_PUBLISHED_CLI_STATE = savedCliState;
     }
   });
 
@@ -90,7 +111,7 @@ describe('install-mcp', () => {
     const projectConfig = resolveMcpServerConfig({ project: true, cwd: isolatedDir });
 
     assert.equal(projectConfig.command, 'npx');
-    assert.deepStrictEqual(projectConfig.args, ['-y', `thumbgate@${require('../package.json').version}`, 'serve']);
+    assert.deepStrictEqual(projectConfig.args, ['--yes', '--package', `thumbgate@${require('../package.json').version}`, 'thumbgate', 'serve']);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
@@ -99,6 +120,18 @@ describe('install-mcp', () => {
     const isolatedDir = makeTmpDir();
 
     const projectConfig = withPublishState('unpublished', () => resolveMcpServerConfig({ project: true, cwd: isolatedDir }));
+
+    assert.equal(projectConfig.command, 'node');
+    assert.equal(projectConfig.args.length, 1);
+    assert.match(projectConfig.args[0], /adapters[\\/]mcp[\\/]server-stdio\.js$/);
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  });
+
+  test('resolveMcpServerConfig keeps a local launcher when the published CLI is unavailable', () => {
+    const isolatedDir = makeTmpDir();
+
+    const projectConfig = withCliState('unavailable', () => resolveMcpServerConfig({ project: true, cwd: isolatedDir }));
 
     assert.equal(projectConfig.command, 'node');
     assert.equal(projectConfig.args.length, 1);
@@ -255,7 +288,7 @@ describe('install-mcp', () => {
         settings.mcpServers[MCP_SERVER_KEY],
         {
           command: 'npx',
-          args: ['-y', `thumbgate@${require('../package.json').version}`, 'serve'],
+          args: ['--yes', '--package', `thumbgate@${require('../package.json').version}`, 'thumbgate', 'serve'],
         }
       );
     } finally {

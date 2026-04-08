@@ -4,6 +4,7 @@ const assert = require('node:assert');
 const path = require('path');
 const {
   parseWorktreePaths,
+  publishedCliAvailable,
   portableMcpEntry,
   localMcpEntry,
   resolveLocalServerPath,
@@ -26,8 +27,7 @@ describe('mcp-config', () => {
   it('portableMcpEntry returns npx command with version', () => {
     const entry = portableMcpEntry('1.2.3');
     assert.strictEqual(entry.command, 'npx');
-    assert.ok(entry.args.includes('-y'));
-    assert.ok(entry.args.some(a => a.includes('1.2.3')));
+    assert.deepStrictEqual(entry.args, ['--yes', '--package', 'thumbgate@1.2.3', 'thumbgate', 'serve']);
   });
 
   it('localMcpEntry returns node command pointing to server-stdio.js', () => {
@@ -46,5 +46,14 @@ describe('mcp-config', () => {
     const stableRoot = resolveStableSourceRoot();
     assert.ok(typeof stableRoot === 'string' && stableRoot.length > 0);
     assert.ok(path.isAbsolute(stableRoot));
+  });
+
+  it('publishedCliAvailable respects the explicit availability override', () => {
+    process.env.THUMBGATE_PUBLISHED_CLI_STATE = 'available';
+    try {
+      assert.equal(publishedCliAvailable('0.9.10'), true);
+    } finally {
+      delete process.env.THUMBGATE_PUBLISHED_CLI_STATE;
+    }
   });
 });

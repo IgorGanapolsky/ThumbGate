@@ -26,7 +26,7 @@ test('Claude Codex bridge plugin ships a repo-local Claude Code plugin surface',
   assert.equal(plugin.version, packageVersion);
   assert.equal(plugin.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(plugin.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
-  assert.deepEqual(mcpConfig.mcpServers.thumbgate.args, ['-y', `thumbgate@${packageVersion}`, 'serve']);
+  assert.deepEqual(mcpConfig.mcpServers.thumbgate.args, ['--yes', '--package', `thumbgate@${packageVersion}`, 'thumbgate', 'serve']);
   assert.match(readme, /Codex review/i);
   assert.match(readme, /adversarial review/i);
   assert.match(readme, /second-pass handoff/i);

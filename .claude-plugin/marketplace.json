@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "0.9.10",
+  "version": "0.9.11",
   "plugins": [
     {
       "name": "thumbgate",
@@ -11,7 +11,9 @@
         "package": "thumbgate",
         "command": "npx",
         "args": [
-          "-y",
+          "--yes",
+          "--package",
+          "thumbgate",
           "thumbgate",
           "serve"
         ]

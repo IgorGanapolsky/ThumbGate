@@ -59,8 +59,7 @@ How it works:
 
 | Server | Command |
 |--------|---------|
-| `thumbgate` | `npx -y thumbgate@latest serve` |
-| `rlhf` | `npx -y thumbgate@latest serve` |
+| `thumbgate` | `npx --yes --package thumbgate@latest thumbgate serve` |
 
 ## Install
 
@@ -93,7 +92,7 @@ Or copy the plugin MCP config into `.cursor/mcp.json`:
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["-y", "thumbgate@latest", "serve"]
+      "args": ["--yes", "--package", "thumbgate@latest", "thumbgate", "serve"]
     }
   }
 }

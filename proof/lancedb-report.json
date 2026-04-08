@@ -1,10 +1,10 @@
 {
   "phase": "04-lancedb-vector-storage",
-  "generated": "2026-03-10T16:58:21.895Z",
+  "generated": "2026-04-08T14:30:32.290Z",
   "requirements": {
     "VEC-01": {
       "status": "pass",
-      "evidence": "lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-9wvWex/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: thumbgate_memories."
+      "evidence": "lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-paXerQ/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: thumbgate_memories."
     },
     "VEC-02": {
       "status": "pass",
@@ -12,7 +12,7 @@
     },
     "VEC-03": {
       "status": "pass",
-      "evidence": "package.json: apache-arrow=\"^18.1.0\" (base: 18.1.0), @lancedb/lancedb=\"^0.26.2\". LanceDB 0.26.2 peer dep is apache-arrow >=15.0.0 <=18.1.0. Arrow 19+ breaks binary compat. Pin confirmed safe: 18.1.0 <= 18.1.0 ceiling."
+      "evidence": "package.json: apache-arrow=\"^18.1.0\" (base: 18.1.0), @lancedb/lancedb=\"^0.27.2\". LanceDB 0.26.2 peer dep is apache-arrow >=15.0.0 <=18.1.0. Arrow 19+ breaks binary compat. Pin confirmed safe: 18.1.0 <= 18.1.0 ceiling."
     },
     "VEC-04": {
       "status": "pass",

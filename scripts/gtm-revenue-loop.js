@@ -4,12 +4,19 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { GoogleGenAI } = require('@google/genai');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { getOperationalBillingSummary } = require('./operational-summary');
 
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
+
+function getGoogleGenAI() {
+  try {
+    return require('@google/genai').GoogleGenAI;
+  } catch {
+    return null;
+  }
+}
 
 function parseArgs(argv = []) {
   const options = {
@@ -300,6 +307,18 @@ Use the recommended motion only.
 async function generateOutreachMessages(targets, motionCatalog = buildMotionCatalog()) {
   const apiKey = normalizeText(process.env.GEMINI_API_KEY);
   if (!apiKey) {
+    return targets.map((target) => {
+      const selectedMotion = selectOutreachMotion(target, motionCatalog);
+      return {
+        ...target,
+        selectedMotion,
+        message: buildFallbackMessage(target, selectedMotion, motionCatalog),
+      };
+    });
+  }
+
+  const GoogleGenAI = getGoogleGenAI();
+  if (!GoogleGenAI) {
     return targets.map((target) => {
       const selectedMotion = selectOutreachMotion(target, motionCatalog);
       return {

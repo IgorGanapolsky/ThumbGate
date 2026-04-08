@@ -159,11 +159,12 @@ describe('auto-wire-hooks', () => {
     test('creates settings file and wires the full Claude hook bundle', () => {
       const tmpDir = makeTmpDir();
       const settingsPath = path.join(tmpDir, '.claude', 'settings.local.json');
+      const sharedSettingsPath = path.join(tmpDir, '.claude', 'settings.json');
 
       try {
-        const result = wireClaudeHooks({ settingsPath });
+        const result = wireClaudeHooks({ settingsPath, sharedSettingsPath });
         assert.equal(result.changed, true);
-        assert.equal(result.added.length, 4);
+        assert.equal(result.added.length, 5);
 
         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
         assert.ok(settings.hooks.PreToolUse, 'PreToolUse should exist');
@@ -186,6 +187,8 @@ describe('auto-wire-hooks', () => {
         const sessionEntry = settings.hooks.SessionStart[0];
         assert.equal(sessionEntry.hooks[0].command, sessionStartHookCommand());
         assert.equal(settings.statusLine.command, require('../scripts/hook-runtime').statuslineCommand());
+        const sharedSettings = JSON.parse(fs.readFileSync(sharedSettingsPath, 'utf8'));
+        assert.equal(sharedSettings.statusLine.command, require('../scripts/hook-runtime').statuslineCommand());
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
@@ -195,6 +198,7 @@ describe('auto-wire-hooks', () => {
       const tmpDir = makeTmpDir();
       const settingsDir = path.join(tmpDir, '.claude');
       const settingsPath = path.join(settingsDir, 'settings.local.json');
+      const sharedSettingsPath = path.join(settingsDir, 'settings.json');
 
       fs.mkdirSync(settingsDir, { recursive: true });
       const existing = {
@@ -208,7 +212,7 @@ describe('auto-wire-hooks', () => {
       fs.writeFileSync(settingsPath, JSON.stringify(existing, null, 2) + '\n');
 
       try {
-        const result = wireClaudeHooks({ settingsPath });
+        const result = wireClaudeHooks({ settingsPath, sharedSettingsPath });
         assert.equal(result.changed, true);
 
         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
@@ -224,13 +228,14 @@ describe('auto-wire-hooks', () => {
     test('idempotent — running twice does not duplicate', () => {
       const tmpDir = makeTmpDir();
       const settingsPath = path.join(tmpDir, '.claude', 'settings.local.json');
+      const sharedSettingsPath = path.join(tmpDir, '.claude', 'settings.json');
 
       try {
-        const result1 = wireClaudeHooks({ settingsPath });
+        const result1 = wireClaudeHooks({ settingsPath, sharedSettingsPath });
         assert.equal(result1.changed, true);
-        assert.equal(result1.added.length, 4);
+        assert.equal(result1.added.length, 5);
 
-        const result2 = wireClaudeHooks({ settingsPath });
+        const result2 = wireClaudeHooks({ settingsPath, sharedSettingsPath });
         assert.equal(result2.changed, false);
         assert.equal(result2.added.length, 0);
 
@@ -249,12 +254,14 @@ describe('auto-wire-hooks', () => {
     test('dry-run does not write file', () => {
       const tmpDir = makeTmpDir();
       const settingsPath = path.join(tmpDir, '.claude', 'settings.local.json');
+      const sharedSettingsPath = path.join(tmpDir, '.claude', 'settings.json');
 
       try {
-        const result = wireClaudeHooks({ settingsPath, dryRun: true });
+        const result = wireClaudeHooks({ settingsPath, sharedSettingsPath, dryRun: true });
         assert.equal(result.changed, true);
-        assert.equal(result.added.length, 4);
+        assert.equal(result.added.length, 5);
         assert.equal(fs.existsSync(settingsPath), false);
+        assert.equal(fs.existsSync(sharedSettingsPath), false);
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
@@ -264,12 +271,13 @@ describe('auto-wire-hooks', () => {
       const tmpDir = makeTmpDir();
       const settingsDir = path.join(tmpDir, '.claude');
       const settingsPath = path.join(settingsDir, 'settings.local.json');
+      const sharedSettingsPath = path.join(settingsDir, 'settings.json');
 
       fs.mkdirSync(settingsDir, { recursive: true });
       fs.writeFileSync(settingsPath, '{ invalid json !!!');
 
       try {
-        const result = wireClaudeHooks({ settingsPath });
+        const result = wireClaudeHooks({ settingsPath, sharedSettingsPath });
         assert.equal(result.changed, true);
         // Should recover and write valid JSON
         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));

@@ -74,7 +74,7 @@ test('public docs render the current package version', () => {
   assert.match(claudePluginReadme, /Privacy Policy/i);
   assert.match(claudePluginReadme, /Data Collection/i);
   assert.match(claudePluginReadme, /Support/i);
-  assert.match(claudePluginReadme, /claude mcp add thumbgate -- npx -y thumbgate serve/i);
+  assert.match(claudePluginReadme, /claude mcp add thumbgate -- npx --yes --package thumbgate thumbgate serve/i);
   assert.match(claudePluginReadme, /npm run build:claude-mcpb/i);
   assert.match(claudePluginReadme, new RegExp(getClaudePluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(claudeCodexBridgeReadme, /claude --plugin-dir/i);

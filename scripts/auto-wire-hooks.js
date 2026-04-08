@@ -70,6 +70,10 @@ function claudeSettingsPath() {
   return path.join(getHome(), '.claude', 'settings.local.json');
 }
 
+function claudeSharedSettingsPath() {
+  return path.join(getHome(), '.claude', 'settings.json');
+}
+
 function loadJsonFile(filePath) {
   if (!fs.existsSync(filePath)) return null;
   try {
@@ -110,9 +114,26 @@ function pruneLegacyHookEntries(hookArray, expectedCommand, legacyPattern) {
   return { hooks, removed };
 }
 
+function syncClaudeStatusLine(settingsPath, desiredStatusLine, dryRun) {
+  const settings = loadJsonFile(settingsPath) || {};
+  if (settings.statusLine && settings.statusLine.command === desiredStatusLine) {
+    return false;
+  }
+
+  settings.statusLine = { type: 'command', command: desiredStatusLine };
+  if (!dryRun) {
+    const dir = path.dirname(settingsPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+  }
+  return true;
+}
+
 function wireClaudeHooks(options) {
   const settingsPath = options.settingsPath || claudeSettingsPath();
+  const sharedSettingsPath = options.sharedSettingsPath || claudeSharedSettingsPath();
   const dryRun = options.dryRun || false;
+  const desiredStatusLine = statuslineCommand();
 
   let settings = loadJsonFile(settingsPath) || {};
   settings.hooks = settings.hooks || {};
@@ -147,7 +168,6 @@ function wireClaudeHooks(options) {
   }
 
   if (added.length === 0) {
-    const desiredStatusLine = statuslineCommand();
     if (!settings.statusLine || settings.statusLine.command !== desiredStatusLine) {
       if (!dryRun) {
         const dir = path.dirname(settingsPath);
@@ -157,17 +177,30 @@ function wireClaudeHooks(options) {
       if (!dryRun) {
         fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
       }
-      return { changed: true, settingsPath, added: [{ lifecycle: 'statusLine', command: desiredStatusLine }] };
+      const addedEntries = [{ lifecycle: 'statusLine', command: desiredStatusLine }];
+      if (syncClaudeStatusLine(sharedSettingsPath, desiredStatusLine, dryRun)) {
+        addedEntries.push({ lifecycle: 'statusLine', command: `${desiredStatusLine} (synced ~/.claude/settings.json)` });
+      }
+      return { changed: true, settingsPath, added: addedEntries };
     }
-    return { changed: false, settingsPath, added: [] };
+    const sharedStatusChanged = syncClaudeStatusLine(sharedSettingsPath, desiredStatusLine, dryRun);
+    return {
+      changed: sharedStatusChanged,
+      settingsPath,
+      added: sharedStatusChanged ? [{ lifecycle: 'statusLine', command: `${desiredStatusLine} (synced ~/.claude/settings.json)` }] : [],
+    };
   }
 
-  settings.statusLine = { type: 'command', command: statuslineCommand() };
+  settings.statusLine = { type: 'command', command: desiredStatusLine };
 
   if (!dryRun) {
     const dir = path.dirname(settingsPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+  }
+
+  if (syncClaudeStatusLine(sharedSettingsPath, desiredStatusLine, dryRun)) {
+    added.push({ lifecycle: 'statusLine', command: `${desiredStatusLine} (synced ~/.claude/settings.json)` });
   }
 
   return { changed: true, settingsPath, added };
@@ -335,8 +368,10 @@ module.exports = {
   loadJsonFile,
   parseFlags,
   claudeSettingsPath,
+  claudeSharedSettingsPath,
   codexConfigPath,
   geminiSettingsPath,
+  syncClaudeStatusLine,
   CLAUDE_HOOKS,
   preToolHookCommand,
   userPromptHookCommand,

@@ -2,12 +2,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
 const {
   isSourceCheckout,
-  isVersionPublished,
-  resolveStableSourceRoot,
+  publishedCliAvailable,
 } = require('./mcp-config');
+const { runPublishedCliHelp, publishedCliArgs } = require('./published-cli');
 
 const PKG_ROOT = path.join(__dirname, '..');
 const featureSupportCache = new Map();
@@ -22,7 +21,7 @@ function shellQuote(value) {
 }
 
 function publishedHookCommandsAvailable(version) {
-  if (!isVersionPublished(version)) {
+  if (!publishedCliAvailable(version)) {
     return false;
   }
   if (featureSupportCache.has(version)) {
@@ -31,11 +30,7 @@ function publishedHookCommandsAvailable(version) {
 
   let available = false;
   try {
-    const helpText = execFileSync('npx', ['-y', `thumbgate@${version}`, 'help'], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 8000,
-    });
+    const helpText = runPublishedCliHelp(version, { timeout: 8000 });
     available = ['gate-check', 'cache-update', 'statusline-render', 'hook-auto-capture', 'session-start']
       .every((command) => helpText.includes(command));
   } catch {
@@ -48,9 +43,11 @@ function publishedHookCommandsAvailable(version) {
 
 function resolveCliBaseCommand() {
   const version = packageVersion();
-  if (isSourceCheckout(PKG_ROOT) && !publishedHookCommandsAvailable(version)) {
-    const sourceRoot = resolveStableSourceRoot(PKG_ROOT) || PKG_ROOT;
-    return `node ${shellQuote(path.join(sourceRoot, 'bin', 'cli.js'))}`;
+  if (publishedHookCommandsAvailable(version)) {
+    return `npx ${publishedCliArgs(version).map(shellQuote).join(' ')}`;
+  }
+  if (isSourceCheckout(PKG_ROOT)) {
+    return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))}`;
   }
   return `npx -y thumbgate@${version}`;
 }

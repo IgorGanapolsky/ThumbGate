@@ -9,6 +9,8 @@ const {
 
 const root = path.join(__dirname, '..');
 const packageVersion = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8')).version;
+const explicitServeArgs = ['--yes', '--package', `thumbgate@${packageVersion}`, 'thumbgate', 'serve'];
+const explicitLatestServeArgs = ['--yes', '--package', 'thumbgate@latest', 'thumbgate', 'serve'];
 
 test('adapter files exist', () => {
   const files = [
@@ -64,7 +66,7 @@ test('claude .mcp.json is valid JSON with mcpServers key', () => {
   
   const thumbgate = payload.mcpServers.thumbgate;
   if (thumbgate.command === 'npx') {
-    assert.deepEqual(thumbgate.args, ['-y', `thumbgate@${packageVersion}`, 'serve']);
+    assert.deepEqual(thumbgate.args, explicitServeArgs);
   } else {
     assert.equal(thumbgate.command, 'node');
     assert.ok(thumbgate.args.includes('serve'));
@@ -79,7 +81,7 @@ test('codex config.toml contains mcp_servers section', () => {
   if (content.includes('command = "npx"')) {
     assert.match(
       content,
-      new RegExp(`args = \\["-y", "thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}", "serve"\\]`),
+      new RegExp(`args = \\["--yes", "--package", "thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}", "thumbgate", "serve"\\]`),
       'config.toml must launch the version-pinned package serve entrypoint'
     );
   } else {
@@ -97,7 +99,7 @@ test('opencode adapter is valid JSON with a version-pinned local MCP server', ()
   assert.ok(thumbgate, 'opencode adapter must define mcp.thumbgate');
   assert.equal(thumbgate.type, 'local');
   assert.equal(thumbgate.enabled, true);
-  assert.deepEqual(thumbgate.command, ['npx', '-y', `thumbgate@${packageVersion}`, 'serve']);
+  assert.deepEqual(thumbgate.command, ['npx', ...explicitServeArgs]);
 });
 
 test('repo opencode.json enforces worktree-safe defaults', () => {
@@ -151,7 +153,7 @@ test('cursor marketplace plugin keeps metadata versioned while runtime tracks th
   assert.equal(marketplace.metadata.version, packageVersion);
   assert.equal(marketplace.plugins[0].name, pluginManifest.name);
   assert.equal(pluginManifest.version, packageVersion);
-  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, ['-y', 'thumbgate@latest', 'serve']);
+  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, explicitLatestServeArgs);
   assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
 });
@@ -181,7 +183,7 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.match(readme, /Data Collection/i);
   assert.match(readme, /Support/i);
   assert.match(readme, /Examples/i);
-  assert.match(readme, /claude mcp add thumbgate -- npx -y thumbgate serve/i);
+  assert.match(readme, /claude mcp add thumbgate -- npx --yes --package thumbgate thumbgate serve/i);
   assert.match(readme, /build:claude-mcpb/i);
   assert.match(readme, new RegExp(getClaudePluginLatestDownloadUrl(root).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.ok(readme.includes(PRODUCTHUNT_URL));
@@ -225,7 +227,7 @@ test('codex app plugin surface is present and aligned to ThumbGate metadata', ()
   assert.equal(pluginManifest.mcpServers, './.mcp.json');
   assert.ok(pluginEntry, 'codex plugin marketplace entry should exist');
   assert.equal(pluginEntry.source.path, './plugins/codex-profile');
-  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, ['-y', `thumbgate@${packageVersion}`, 'serve']);
+  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, explicitServeArgs);
 });
 
 test('Claude Codex bridge plugin surface is present and aligned to ThumbGate metadata', () => {
@@ -237,7 +239,7 @@ test('Claude Codex bridge plugin surface is present and aligned to ThumbGate met
   assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(pluginManifest.name, 'codex-bridge');
-  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, ['-y', `thumbgate@${packageVersion}`, 'serve']);
+  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, explicitServeArgs);
   assert.match(readme, /Claude Code plugin/i);
   assert.match(readme, /adversarial review/i);
   assert.match(readme, /second-pass handoff/i);

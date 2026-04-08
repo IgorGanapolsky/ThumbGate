@@ -95,7 +95,6 @@ Scope:
 - Added `shieldcortex` as an optional dependency, not a required runtime dependency.
 
 Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/thumbgate/.worktrees/fix-thumbgate-source-labels`:
-Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/thumbgate/.worktrees/fix-rlhf-source-labels`:
 
 ```bash
 npm ci
@@ -1468,8 +1467,7 @@ Evidence artifacts:
 Requirements verified:
 
 - Source checkouts now install canonical MCP entries that launch the local stdio server directly via `node adapters/mcp/server-stdio.js`.
-- Portable docs and adapter examples now use the version-pinned launcher `npx -y thumbgate@0.9.10 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
-- Portable docs and adapter examples now use the version-pinned launcher `npx -y thumbgate@0.9.10 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
+- Portable docs and adapter examples now use the version-pinned launcher `npx -y thumbgate@0.9.11 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
 - Re-running the MCP installer upgrades stale config entries instead of treating them as already configured.
 - Adapter and LanceDB proof cleanup now uses retry-capable recursive removal so ephemeral filesystem contention no longer flakes CI.
 - Transient `.thumbgate` reminder/A2UI/test-run files are now ignored as local runtime state and do not pollute git hygiene during verification.
@@ -2077,7 +2075,6 @@ Scope:
 Problem verified before the fix:
 
 - The public Smithery page for `thumbgate-loop/thumbgate-v2` was live, but showed `No capabilities found` and `No deployments found`.
-- The public Smithery page for `rlhf-loop/thumbgate-v2` was live, but showed `No capabilities found` and `No deployments found`.
 - Production already exposed unauthenticated metadata endpoints:
   - `GET https://thumbgate-production.up.railway.app/.well-known/mcp/server-card.json` -> `200`
   - `GET https://thumbgate-production.up.railway.app/mcp` -> `200`
@@ -2687,8 +2684,7 @@ Scope:
 
 - Added a repo-root Cursor marketplace manifest at `.cursor-plugin/marketplace.json`.
 - Added a dedicated Cursor plugin bundle in `plugins/cursor-marketplace/` with `.cursor-plugin/plugin.json`, `.mcp.json`, README, and committed logo asset.
-- Switched the Cursor launcher to the portable published package entrypoint `npx -y thumbgate@0.9.10 serve` instead of any checkout-local absolute path.
-- Switched the Cursor launcher to the portable published package entrypoint `npx -y thumbgate@0.9.10 serve` instead of any checkout-local absolute path.
+- Switched the Cursor launcher to the portable published package entrypoint `npx -y thumbgate@0.9.11 serve` instead of any checkout-local absolute path.
 - Removed the stale `.mcp.json.plugin` legacy config file so the repo has one canonical Cursor packaging path.
 - Extended `scripts/sync-version.js` so Cursor manifests and all pinned launcher docs stay version-synced on future releases.
 - Added regression coverage for the repo-level marketplace contract, manifest/version consistency, and MCP launcher safety.
