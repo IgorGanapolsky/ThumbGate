@@ -43,14 +43,139 @@ function dirExists(dirPath) {
   }
 }
 
+function getHomeDir(options = {}) {
+  const env = options.env || process.env;
+  return options.home || env.HOME || env.USERPROFILE || HOME;
+}
+
+function normalizeDir(dirPath) {
+  if (!dirPath) return null;
+  try {
+    return path.resolve(String(dirPath));
+  } catch {
+    return null;
+  }
+}
+
+function isWithinDir(candidate, parent) {
+  const normalizedCandidate = normalizeDir(candidate);
+  const normalizedParent = normalizeDir(parent);
+  if (!normalizedCandidate || !normalizedParent) return false;
+  const relative = path.relative(normalizedParent, normalizedCandidate);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function getRuntimeDir(options = {}) {
+  return path.join(getHomeDir(options), '.thumbgate', 'runtime');
+}
+
+function getActiveProjectStatePath(options = {}) {
+  return path.join(getRuntimeDir(options), 'active-project.json');
+}
+
+function isTransientProjectDir(dirPath, options = {}) {
+  const normalizedDir = normalizeDir(dirPath);
+  if (!normalizedDir) return true;
+  if (!dirExists(normalizedDir)) return true;
+
+  const runtimeDir = getRuntimeDir(options);
+  if (isWithinDir(normalizedDir, runtimeDir)) return true;
+
+  return normalizedDir.includes(`${path.sep}.npm${path.sep}_npx${path.sep}`)
+    || /thumbgate-published-cli-/i.test(normalizedDir);
+}
+
+function readActiveProjectState(options = {}) {
+  const statePath = getActiveProjectStatePath(options);
+  try {
+    const parsed = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    if (!parsed || !parsed.projectDir) return null;
+    if (isTransientProjectDir(parsed.projectDir, options)) return null;
+    return {
+      ...parsed,
+      projectDir: normalizeDir(parsed.projectDir),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeActiveProjectState(projectDir, options = {}) {
+  const normalizedDir = normalizeDir(projectDir);
+  if (isTransientProjectDir(normalizedDir, options)) return null;
+
+  const payload = {
+    projectDir: normalizedDir,
+    projectName: path.basename(normalizedDir) || 'default',
+    updatedAt: new Date().toISOString(),
+  };
+
+  const statePath = getActiveProjectStatePath(options);
+  fs.mkdirSync(path.dirname(statePath), { recursive: true });
+  fs.writeFileSync(statePath, JSON.stringify(payload, null, 2));
+  return payload;
+}
+
+function resolveProjectDir(options = {}) {
+  const env = options.env || process.env;
+  const stored = options.includeStored === false ? null : readActiveProjectState(options);
+  const cwdCandidates = uniquePaths([
+    options.cwd,
+    env.PWD,
+    process.cwd(),
+  ]);
+  const isTransientExecution = cwdCandidates.length > 0
+    && cwdCandidates.every((candidate) => isTransientProjectDir(candidate, options));
+  const candidates = uniquePaths([
+    options.projectDir,
+    env.THUMBGATE_PROJECT_DIR,
+    env.CLAUDE_PROJECT_DIR,
+    isTransientExecution && stored && stored.projectDir,
+    env.INIT_CWD,
+    ...cwdCandidates,
+    !isTransientExecution && stored && stored.projectDir,
+  ]);
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    if (!isTransientProjectDir(candidate, options)) {
+      return normalizeDir(candidate);
+    }
+  }
+
+  return normalizeDir(options.cwd || env.PWD || PROJECT_ROOT) || PROJECT_ROOT;
+}
+
 function getProjectName(cwd = process.cwd()) {
   return path.basename(cwd || PROJECT_ROOT) || 'default';
+}
+
+function hasDirectProjectScope(options = {}) {
+  const env = options.env || process.env;
+  return Boolean(
+    options.explicitProjectDir
+    || env.THUMBGATE_PROJECT_DIR
+    || env.CLAUDE_PROJECT_DIR
+  );
+}
+
+function hasExplicitProjectScope(options = {}) {
+  return Boolean(hasDirectProjectScope(options) || readActiveProjectState(options));
 }
 
 function getExplicitFeedbackDir(options = {}) {
   const env = options.env || process.env;
   if (options.feedbackDir) return options.feedbackDir;
-  if (env.THUMBGATE_FEEDBACK_DIR) return env.THUMBGATE_FEEDBACK_DIR;
+  if (options.skipExplicitFeedbackDir) return null;
+  // A caller-provided feedback root should stay authoritative over stored
+  // active-project state so isolated CLI/test commands do not drift into a
+  // different project. Only direct project overrides suppress it.
+  if (env.THUMBGATE_FEEDBACK_DIR && !hasDirectProjectScope(options)) {
+    return env.THUMBGATE_FEEDBACK_DIR;
+  }
+  if (hasDirectProjectScope(options)) {
+    return null;
+  }
   if (env.RAILWAY_VOLUME_MOUNT_PATH) {
     return path.join(env.RAILWAY_VOLUME_MOUNT_PATH, 'feedback');
   }
@@ -58,30 +183,29 @@ function getExplicitFeedbackDir(options = {}) {
 }
 
 function getThumbgateFeedbackDir(options = {}) {
-  const cwd = options.cwd || process.cwd();
-  return path.join(cwd, '.thumbgate');
+  const projectDir = resolveProjectDir(options);
+  return path.join(projectDir, '.thumbgate');
 }
 
 function getFallbackFeedbackDir(options = {}) {
   const env = options.env || process.env;
   if (env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR) return env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
   if (env.THUMBGATE_FALLBACK_FEEDBACK_DIR) return env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
-  const cwd = options.cwd || process.cwd();
-  return path.join(cwd, '.thumbgate-compat');
+  const projectDir = resolveProjectDir(options);
+  return path.join(projectDir, '.thumbgate-compat');
 }
 
 function getLegacyFeedbackDir(options = {}) {
   const env = options.env || process.env;
   if (env._TEST_LEGACY_FEEDBACK_DIR) return env._TEST_LEGACY_FEEDBACK_DIR;
   if (env.THUMBGATE_LEGACY_FEEDBACK_DIR) return env.THUMBGATE_LEGACY_FEEDBACK_DIR;
-  const cwd = options.cwd || process.cwd();
-  return path.join(cwd, '.claude', 'memory', 'feedback');
+  const projectDir = resolveProjectDir(options);
+  return path.join(projectDir, '.claude', 'memory', 'feedback');
 }
 
 function getGlobalFeedbackDir(options = {}) {
-  const cwd = options.cwd || process.cwd();
-  const home = options.home || HOME;
-  return path.join(home, '.thumbgate', 'projects', getProjectName(cwd));
+  const projectDir = resolveProjectDir(options);
+  return path.join(getHomeDir(options), '.thumbgate', 'projects', getProjectName(projectDir));
 }
 
 function resolveFeedbackDir(options = {}) {
@@ -133,13 +257,21 @@ module.exports = {
   PROJECT_ROOT,
   HOME,
   buildFeedbackPathsFromDir,
+  getActiveProjectStatePath,
   getFeedbackPaths,
   getGlobalFeedbackDir,
+  getHomeDir,
   getLegacyFeedbackDir,
   getFallbackFeedbackDir,
+  getRuntimeDir,
   getThumbgateFeedbackDir,
+  hasDirectProjectScope,
+  hasExplicitProjectScope,
+  readActiveProjectState,
   listFallbackFeedbackDirs,
   listFeedbackArtifactPaths,
+  resolveProjectDir,
   resolveFallbackArtifactPath,
   resolveFeedbackDir,
+  writeActiveProjectState,
 };
