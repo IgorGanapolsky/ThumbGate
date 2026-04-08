@@ -12,7 +12,6 @@
 - Plugin slug: `thumbgate`
 - npm package: `thumbgate`
 - MCP server label inside the plugin config: `thumbgate`
-- MCP server label inside the plugin config: `rlhf`
 
 ## Update behavior
 

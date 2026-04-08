@@ -12,7 +12,7 @@ const {
 const { generateInstagramCard } = require('../scripts/social-analytics/generate-instagram-card');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
-const TEST_IMAGE_PATH = path.join(REPO_ROOT, '.rlhf', 'test-instagram-thumbgate-post.png');
+const TEST_IMAGE_PATH = path.join(REPO_ROOT, '.thumbgate', 'test-instagram-thumbgate-post.png');
 
 let sharpAvailable = false;
 try { require('sharp'); sharpAvailable = true; } catch {}
