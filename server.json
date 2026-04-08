@@ -8,13 +8,13 @@
     "source": "github",
     "url": "https://github.com/IgorGanapolsky/ThumbGate"
   },
-  "version": "0.9.13",
+  "version": "0.9.14",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "thumbgate",
-      "version": "0.9.13",
+      "version": "0.9.14",
       "transport": {
         "type": "stdio"
       }
