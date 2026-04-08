@@ -79,7 +79,13 @@ function readJsonlTail(filePath, limit = DEFAULT_HISTORY_LIMIT) {
 }
 
 function resolveFeedbackDir(feedbackDir) {
-  return resolveSharedFeedbackDir({ feedbackDir });
+  if (feedbackDir) {
+    return resolveSharedFeedbackDir({ feedbackDir });
+  }
+  const env = { ...process.env };
+  delete env.INIT_CWD;
+  delete env.PWD;
+  return resolveSharedFeedbackDir({ env });
 }
 
 function getConversationPaths(feedbackDir) {
