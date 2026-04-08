@@ -147,6 +147,16 @@ test('newsletter endpoint returns JSON for fetch-style lead capture and deduplic
   assert.equal(readJsonl(newsletterPath).length, 1);
 });
 
+test('buyer intent script serves shared checkout helper JavaScript', async () => {
+  const res = await fetch(apiUrl('/js/buyer-intent.js'));
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /application\/javascript/);
+  const script = await res.text();
+  assert.match(script, /ThumbGateBuyerIntent/);
+  assert.match(script, /customer_email/);
+  assert.match(script, /dataset\.baseHref/);
+});
+
 test('startServer accepts an explicit bind host', async () => {
   const explicit = await startServer({ port: 0, host: '0.0.0.0' });
   try {

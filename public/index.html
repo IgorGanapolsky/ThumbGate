@@ -815,143 +815,23 @@ __GA_BOOTSTRAP__
   </div>
 </footer>
 
+<script src="/js/buyer-intent.js"></script>
 <script>
-var BUYER_EMAIL_STORAGE_KEY = 'thumbgateBuyerEmail';
-
-function isValidBuyerEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
-}
-
-function getStoredBuyerEmail() {
-  try {
-    return String(window.localStorage.getItem(BUYER_EMAIL_STORAGE_KEY) || '').trim().toLowerCase();
-  } catch (_err) {
-    return '';
-  }
-}
-
-function storeBuyerEmail(email) {
-  try {
-    window.localStorage.setItem(BUYER_EMAIL_STORAGE_KEY, String(email || '').trim().toLowerCase());
-  } catch (_err) {
-    // Ignore storage failures.
-  }
-}
-
-function withCustomerEmail(urlValue, email) {
-  var url = new URL(urlValue, window.location.origin);
-  if (email && isValidBuyerEmail(email)) {
-    url.searchParams.set('customer_email', email);
-  } else {
-    url.searchParams.delete('customer_email');
-  }
-  return url.origin === window.location.origin
-    ? (url.pathname + url.search + url.hash)
-    : url.toString();
-}
-
-function applyBuyerEmailToCheckoutLinks(email) {
-  document.querySelectorAll('a[href*="/checkout/pro"]').forEach(function(el) {
-    var baseHref = el.getAttribute('data-base-href') || el.getAttribute('href');
-    if (!el.getAttribute('data-base-href')) {
-      el.setAttribute('data-base-href', baseHref);
-    }
-    el.setAttribute('href', withCustomerEmail(baseHref, email));
-  });
-}
-
-function hydrateBuyerEmailInputs(email) {
-  document.querySelectorAll('[data-buyer-email]').forEach(function(input) {
-    if (!input.value) {
-      input.value = email;
-    }
-  });
-}
-
-function setNewsletterStatus(form, message, ok) {
-  var statusEl = form && form.parentElement
-    ? form.parentElement.querySelector('[data-newsletter-status]')
-    : null;
-  if (!statusEl) return;
-  statusEl.textContent = message;
-  statusEl.style.color = ok ? 'var(--cyan)' : '#f87171';
-}
-
-async function submitNewsletterSignup(email, form) {
-  var action = (form && form.getAttribute('action')) || '/api/newsletter';
-  var response = await fetch(action, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Accept': 'application/json',
-      'X-Requested-With': 'fetch',
-    },
-    body: new URLSearchParams({ email: email }).toString(),
-    credentials: 'same-origin',
-  });
-  if (!response.ok) {
-    var errorMessage = 'Unable to save your email right now.';
-    try {
-      var errorBody = await response.json();
-      if (errorBody && errorBody.error) {
-        errorMessage = errorBody.error;
-      }
-    } catch (_err) {
-      // Keep the fallback error message.
-    }
-    throw new Error(errorMessage);
-  }
-  try {
-    return await response.json();
-  } catch (_err) {
-    return { accepted: true, duplicate: false };
-  }
-}
-
 function initializeBuyerIntentForms() {
-  var storedEmail = getStoredBuyerEmail();
-  if (storedEmail) {
-    hydrateBuyerEmailInputs(storedEmail);
-    applyBuyerEmailToCheckoutLinks(storedEmail);
-  }
-
-  document.querySelectorAll('[data-newsletter-form]').forEach(function(form) {
-    form.addEventListener('submit', async function(event) {
-      event.preventDefault();
-      var input = form.querySelector('input[name="email"]');
-      var email = String(input && input.value || '').trim().toLowerCase();
-      if (!isValidBuyerEmail(email)) {
-        setNewsletterStatus(form, 'Enter a valid work email.', false);
-        if (input) input.focus();
-        return;
-      }
-
-      storeBuyerEmail(email);
-      hydrateBuyerEmailInputs(email);
-      applyBuyerEmailToCheckoutLinks(email);
-
-      try {
-        var result = await submitNewsletterSignup(email, form);
-        setNewsletterStatus(
-          form,
-          result && result.duplicate
-            ? 'You are already on the list. Checkout on this device is now prefilled.'
-            : 'Saved. We will keep checkout prefilled on this device.',
-          true,
-        );
-        if (typeof plausible === 'function') {
-          plausible('newsletter_signup', {
-            props: {
-              page: form.getAttribute('data-page') || 'homepage',
-              intent: form.getAttribute('data-intent') || 'buyer_follow_up',
-            },
-          });
-        }
-      } catch (err) {
-        setNewsletterStatus(form, err && err.message ? err.message : 'Unable to save your email right now.', false);
-      }
-    });
+  globalThis.ThumbGateBuyerIntent.initializeBuyerIntent({
+    page: 'homepage',
+    duplicateMessage: 'You are already on the list. Checkout on this device is now prefilled.',
+    successMessage: 'Saved. We will keep checkout prefilled on this device.',
   });
+}
+
+function resolvePricingClickTier(el) {
+  if (el.classList.contains('btn-pro')) return 'pro';
+  if (el.classList.contains('btn-pro-page')) return 'pro_page';
+  if (el.classList.contains('btn-team')) return 'team';
+  if (el.classList.contains('btn-free')) return 'free';
+  if (el.classList.contains('btn-demo-link')) return 'demo';
+  return 'nav';
 }
 
 function copyInstall(el) {
@@ -1000,12 +880,7 @@ function copyInstall(el) {
     el.addEventListener('click', function() {
       var section = el.closest('section');
       var sectionId = section ? (section.id || section.className.split(' ')[0] || 'unknown') : 'unknown';
-      var tier = el.classList.contains('btn-pro') ? 'pro'
-               : el.classList.contains('btn-pro-page') ? 'pro_page'
-               : el.classList.contains('btn-team') ? 'team'
-               : el.classList.contains('btn-free') ? 'free'
-               : el.classList.contains('btn-demo-link') ? 'demo'
-               : 'nav';
+      var tier = resolvePricingClickTier(el);
       var label = (el.textContent || '').trim().substring(0, 40);
       if (typeof plausible === 'function') {
         plausible('pricing_cta_click', { props: { tier: tier, section: sectionId, label: label } });
@@ -1049,28 +924,30 @@ function copyInstall(el) {
 initializeBuyerIntentForms();
 
 async function handleProTrial() {
+  var buyerIntent = globalThis.ThumbGateBuyerIntent;
   var email = document.getElementById('pro-email');
-  if (!email || !isValidBuyerEmail(email.value)) {
+  var normalizedEmail = buyerIntent.normalizeBuyerEmail(email && email.value);
+  if (!email || !buyerIntent.isValidBuyerEmail(normalizedEmail)) {
     email.style.border = '2px solid #f87171';
     email.placeholder = 'Please enter a valid email';
     email.focus();
     return;
   }
-  var normalizedEmail = String(email.value || '').trim().toLowerCase();
   email.style.border = '1px solid #333';
-  storeBuyerEmail(normalizedEmail);
-  hydrateBuyerEmailInputs(normalizedEmail);
-  applyBuyerEmailToCheckoutLinks(normalizedEmail);
-  var checkoutUrl = document.getElementById('pro-checkout-link').getAttribute('href');
+  buyerIntent.storeBuyerEmail(normalizedEmail);
+  buyerIntent.hydrateBuyerEmailInputs(normalizedEmail);
+  buyerIntent.applyBuyerEmailToCheckoutLinks(normalizedEmail);
+  var checkoutLink = document.getElementById('pro-checkout-link');
+  var checkoutUrl = checkoutLink ? checkoutLink.href : '/checkout/pro';
   if (typeof plausible === 'function') {
     plausible('trial_email_captured', { props: { page: 'homepage', intent: 'checkout' } });
   }
   try {
-    await submitNewsletterSignup(normalizedEmail);
+    await buyerIntent.submitNewsletterSignup(normalizedEmail);
   } catch (_err) {
     // Continue to checkout even if lead capture fails.
   }
-  window.location.href = checkoutUrl;
+  globalThis.location.assign(checkoutUrl);
 }
 </script>
 </body>

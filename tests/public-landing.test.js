@@ -5,9 +5,14 @@ const path = require('node:path');
 const { PRODUCTHUNT_URL } = require('../scripts/distribution-surfaces');
 
 const landingPagePath = path.join(__dirname, '..', 'public', 'index.html');
+const buyerIntentScriptPath = path.join(__dirname, '..', 'public', 'js', 'buyer-intent.js');
 
 function readLandingPage() {
   return fs.readFileSync(landingPagePath, 'utf8');
+}
+
+function readBuyerIntentScript() {
+  return fs.readFileSync(buyerIntentScriptPath, 'utf8');
 }
 
 test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
@@ -390,11 +395,15 @@ test('lessons severity filtering scopes active state to rules filter buttons', (
 
 test('public landing page includes 7-day free trial and email capture gate', () => {
   const landingPage = readLandingPage();
+  const buyerIntentScript = readBuyerIntentScript();
   assert.match(landingPage, /7-DAY FREE TRIAL/);
   assert.match(landingPage, /pro-email/);
   assert.match(landingPage, /handleProTrial/);
-  assert.match(landingPage, /customer_email/);
-  assert.match(landingPage, /submitNewsletterSignup/);
+  assert.match(landingPage, /\/js\/buyer-intent\.js/);
+  assert.match(buyerIntentScript, /customer_email/);
+  assert.match(buyerIntentScript, /submitNewsletterSignup/);
+  assert.match(buyerIntentScript, /dataset\.baseHref/);
+  assert.doesNotMatch(buyerIntentScript, /setAttribute\('href'/);
   assert.doesNotMatch(landingPage, /props:\s*\{\s*email:/);
 });
 

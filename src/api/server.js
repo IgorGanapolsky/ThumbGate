@@ -155,6 +155,7 @@ const LESSONS_PAGE_PATH = path.resolve(__dirname, '../../public/lessons.html');
 const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
+const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
 const VISITOR_COOKIE_NAME = 'thumbgate_visitor_id';
 const SESSION_COOKIE_NAME = 'thumbgate_session_id';
 const ACQUISITION_COOKIE_NAME = 'thumbgate_acquisition_id';
@@ -2202,6 +2203,24 @@ function createApiServer() {
         });
       });
       proxyReq.on('error', () => sendJson(res, 502, { error: 'Analytics proxy failed' }));
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/js/buyer-intent.js') {
+      try {
+        const script = fs.readFileSync(BUYER_INTENT_SCRIPT_PATH, 'utf-8');
+        res.writeHead(200, {
+          'Content-Type': 'application/javascript; charset=utf-8',
+          'Cache-Control': 'public, max-age=86400',
+        });
+        if (!isHeadRequest) {
+          res.end(script);
+        } else {
+          res.end();
+        }
+      } catch {
+        sendJson(res, 404, { error: 'Buyer intent script not found' });
+      }
       return;
     }
 

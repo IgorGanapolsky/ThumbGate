@@ -4,9 +4,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const proPagePath = path.join(__dirname, '..', 'public', 'pro.html');
+const buyerIntentScriptPath = path.join(__dirname, '..', 'public', 'js', 'buyer-intent.js');
 
 function readProPage() {
   return fs.readFileSync(proPagePath, 'utf8');
+}
+
+function readBuyerIntentScript() {
+  return fs.readFileSync(buyerIntentScriptPath, 'utf8');
 }
 
 test('pro landing page positions ThumbGate Pro as the paid operator lane', () => {
@@ -64,12 +69,15 @@ test('pro landing page tracks paid CTAs without unsupported claims', () => {
 
 test('pro landing page captures buyer email and reuses it for checkout', () => {
   const proPage = readProPage();
+  const buyerIntentScript = readBuyerIntentScript();
 
   assert.match(proPage, /Save your work email before you decide/i);
   assert.match(proPage, /action="\/api\/newsletter"/);
   assert.match(proPage, /data-newsletter-form/);
   assert.match(proPage, /data-buyer-email/);
-  assert.match(proPage, /customer_email/);
+  assert.match(proPage, /\/js\/buyer-intent\.js/);
+  assert.match(buyerIntentScript, /customer_email/);
+  assert.match(buyerIntentScript, /initializeEmailCheckoutButtons/);
   assert.match(proPage, /pro_checkout_email_start/);
   assert.doesNotMatch(proPage, /props:\s*\{\s*email:/);
 });
