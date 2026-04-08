@@ -457,12 +457,17 @@ function parseCliArgs(argv = process.argv.slice(2)) {
   return options;
 }
 
+function resolveCiBranchName(env = process.env) {
+  const branchName = String(env.GITHUB_HEAD_REF || env.GITHUB_REF_NAME || '').trim();
+  return branchName || undefined;
+}
+
 function runCli(env = process.env, argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   const result = evaluateOperationalIntegrity({
     repoPath: args.repoPath,
     baseBranch: args.baseBranch || env.DEFAULT_BRANCH || DEFAULT_BASE_BRANCH,
-    currentBranch: env.GITHUB_REF_NAME || undefined,
+    currentBranch: resolveCiBranchName(env),
     requirePrForReleaseSensitive: args.requirePrForReleaseSensitive,
     requireVersionNotBehindBase: args.requireVersionNotBehindBase,
     fetchBase: args.fetchBase,
@@ -517,6 +522,7 @@ module.exports = {
   parseSemver,
   readPackageVersion,
   resolveBaseRef,
+  resolveCiBranchName,
   resolveRepoRoot,
   runCli,
   sanitizeGlobList,
