@@ -120,6 +120,7 @@ Promotion and release operations are tracked in [CURSOR_PLUGIN_OPERATIONS.md](CU
 
 1. `npm test` output is green.
 2. `npm run prove:adapters` produces [proof/compatibility/report.md](../proof/compatibility/report.md) and [proof/compatibility/report.json](../proof/compatibility/report.json).
-3. README links to evidence + platform adapter files.
-4. GitHub About text calls out cross-agent ThumbGate loop + DPO export.
-5. Verification narrative is published in [docs/VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).
+3. Release-relevant PRs carry a `.changeset/*.md` record and the release operator can run `npm run changeset:version` before publish.
+4. README links to evidence + platform adapter files.
+5. GitHub About text calls out cross-agent ThumbGate loop + DPO export.
+6. Verification narrative is published in [docs/VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).

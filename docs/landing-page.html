@@ -6,7 +6,7 @@
   <title>ThumbGate | Claude Desktop extension and AI agent reliability</title>
   <meta
     name='description'
-    content='Keep one sharp AI agent. Add recall, reliability rules, verification, and a Claude Desktop extension path without adding orchestration or handoff overhead.'
+    content='Keep one sharp AI agent. Add recall, reliability rules, workflow governance, and isolated execution guidance for risky runs without adding orchestration or handoff overhead.'
   />
   <script type='application/ld+json'>
   {
@@ -16,7 +16,7 @@
     "url": "__APP_ORIGIN__",
     "operatingSystem": "Node.js, Cross-platform",
     "applicationCategory": "DeveloperApplication",
-    "description": "Local-first AI reliability system for coding agents using Model Context Protocol (MCP). Captures feedback, promotes reusable memories, generates reliability rules, and blocks dangerous tool calls with Pre-Action Gates.",
+    "description": "Local-first AI reliability system for coding agents using Model Context Protocol (MCP). Captures feedback, promotes reusable memories, generates reliability rules, blocks dangerous tool calls with Pre-Action Gates, and routes high-risk autonomy toward isolated execution.",
     "keywords": "ThumbGate, AI reliability system, DPO, KTO, AI agent reliability, context engineering, prevention rules, Pre-Action Gates",
     "offers": {
       "@type": "Offer",
@@ -30,6 +30,9 @@
     ],
     "featureList": [
       "Pre-Action Gates",
+      "Workflow Sentinel blast-radius scoring",
+      "Docker Sandboxes routing guidance for high-risk local runs",
+      "Signed hosted sandbox dispatch",
       "Thumbs-up/down feedback capture",
       "MCP reusable memories and prompts",
       "Auto-prevention rules from failures",
@@ -64,7 +67,15 @@
         "name": "Is ThumbGate compatible with local AI agent setups?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes, it's designed as local-first, running via npm without cloud dependencies. It integrates with MCP servers for resources like reusable memories and prompts, mimicking gateway flows for caching and routing."
+          "text": "Yes, it's designed as local-first, running via npm without cloud dependencies. It integrates with MCP servers for reusable memories, prompts, workflow governance, and isolated execution guidance for risky local runs."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does ThumbGate reduce host blast radius for high-risk runs?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ThumbGate combines pre-action gates with execution guidance. Workflow Sentinel predicts risky local actions before they execute, and those runs can be routed into Docker Sandboxes instead of running directly on the host. Team workflows also have a signed hosted sandbox lane for isolated automation dispatch."
         }
       },
       {
@@ -618,8 +629,8 @@
         <div class='panel hero-copy'>
           <span class='eyebrow'>Pre-Action Gate for coding agents</span>
           <h1>Your AI agent keeps making the same mistakes. ThumbGate blocks them.</h1>
-          <p>ThumbGate captures thumbs-up/down signals from every agent run, converts repeated failures into prevention rules, and gates dangerous actions before they cause damage — locally, offline, with no cloud dependency.</p>
-          <p>Stop losing time to avoidable agent errors. ThumbGate enforces the lessons your agent should have already learned.</p>
+          <p>ThumbGate captures thumbs-up/down signals from every agent run, converts repeated failures into prevention rules, and gates dangerous actions before they cause damage — locally, offline, with no cloud dependency for the core path.</p>
+          <p>Stop losing time to avoidable agent errors. ThumbGate enforces the lessons your agent should have already learned, then adds workflow governance and isolated execution guidance when the run gets risky enough that the host should stay out of scope.</p>
           <div class='hero-proof'>
             <span class='proof-pill'>North Star: one workflow live and auditable</span>
             <span class='proof-pill'>Self-serve offer: Pro at $19/mo or $149/yr</span>
@@ -638,10 +649,11 @@
 
         <div class='panel hero-card'>
           <h2>Why teams evaluate it, not just install it</h2>
-          <p>Most teams can use the OSS package. The Pro Pack speeds up local production setup with a personal browser dashboard, and hosted pilots make sense when one workflow needs to survive handoffs, approvals, and multiple operators instead of living in scattered local files.</p>
+          <p>Most teams can use the OSS package. The Pro Pack speeds up local production setup with a personal browser dashboard, and hosted pilots make sense when one workflow needs to survive handoffs, approvals, isolated execution boundaries, and multiple operators instead of living in scattered local files.</p>
           <ul>
             <li>Give every licensed operator a personal local dashboard without extra setup friction.</li>
             <li>Run the same workflow with shared memory, prevention rules, and optional hosted keys when the team actually needs them.</li>
+            <li>Route the riskiest local autonomy into Docker Sandboxes or the hosted sandbox lane before it touches shared workflow state.</li>
             <li>Link rollout decisions to verification evidence instead of gut feel.</li>
           </ul>
           <div class='mini-grid'>
@@ -744,8 +756,8 @@
       <div class='section-inner'>
         <div class='section-head'>
           <span class='eyebrow'>What changes</span>
-          <h2>Sell the workflow outcome. Use Context Gateway as the control layer behind it.</h2>
-          <p>Context Gateway is not the hero product by itself. The hero is the workflow outcome. Context Gateway is the hosted reliability layer that makes the workflow safe to roll out across a team.</p>
+          <h2>Sell the workflow outcome. Use ThumbGate as the control layer behind it.</h2>
+          <p>The hero is still the workflow outcome. ThumbGate is the control plane that makes the workflow safe to roll out across a team with policy, proof, and isolated execution for the riskiest steps.</p>
         </div>
         <div class='grid-3'>
           <div class='card'>
@@ -755,6 +767,10 @@
           <div class='card'>
             <h3>Hosted guardrails</h3>
             <p>Provisioned API keys, usage metering, and centralized prevention rules let you run the same workflow across repos and operators without duct tape.</p>
+          </div>
+          <div class='card'>
+            <h3>Isolated execution</h3>
+            <p>Workflow Sentinel can route the riskiest local autonomy toward Docker Sandboxes, while hosted team automations use a signed sandbox dispatch lane instead of running directly on the host.</p>
           </div>
           <div class='card'>
             <h3>Proof-ready runs</h3>
@@ -835,14 +851,19 @@
                 <td>Hosted API keys, shared memory, and prevention rules replace single-laptop tribal knowledge.</td>
                 <td>Verification evidence, auditable runs, and machine-readable reports.</td>
               </tr>
-              <tr>
-                <td><strong>Can we trust the rollout?</strong></td>
-                <td>Context Gateway adds hosted guardrails and explicit feedback handling so drift is visible instead of hidden.</td>
-                <td>Proof-ready runs plus versioned verification artifacts.</td>
-              </tr>
-              <tr>
-                <td><strong>Why not stay on the OSS package?</strong></td>
-                <td>OSS is great for a single builder. Context Gateway is for a team that needs one workflow to run consistently.</td>
+	              <tr>
+	                <td><strong>Can we trust the rollout?</strong></td>
+	                <td>Context Gateway adds hosted guardrails and explicit feedback handling so drift is visible instead of hidden.</td>
+	                <td>Proof-ready runs plus versioned verification artifacts.</td>
+	              </tr>
+	              <tr>
+	                <td><strong>How do we limit host blast radius?</strong></td>
+	                <td>Workflow Sentinel predicts risky local actions and can route them into Docker Sandboxes or the hosted sandbox lane before shared systems are exposed.</td>
+	                <td>Sentinel reports, sandbox routing plans, and versioned proof artifacts.</td>
+	              </tr>
+	              <tr>
+	                <td><strong>Why not stay on the OSS package?</strong></td>
+	                <td>OSS is great for a single builder. Context Gateway is for a team that needs one workflow to run consistently.</td>
                 <td>Hosted onboarding, shared state, and team-safe workflow execution.</td>
               </tr>
             </tbody>

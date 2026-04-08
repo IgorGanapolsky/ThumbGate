@@ -10,6 +10,8 @@ const {
   findReleaseSensitiveFiles,
   isSafeBranchName,
   resolveBaseRef,
+  resolveCiBranchName,
+  runCli,
 } = require('../scripts/operational-integrity');
 
 test('compareSemver orders semantic versions correctly', () => {
@@ -124,4 +126,35 @@ test('isSafeBranchName rejects branch-shaped injection payloads', () => {
 test('resolveBaseRef short-circuits invalid branch names before git operations', () => {
   const baseRef = resolveBaseRef(__dirname, '--upload-pack=evil', { fetchIfMissing: true });
   assert.equal(baseRef, null);
+});
+
+test('resolveCiBranchName prefers PR head refs over synthetic merge refs', () => {
+  assert.equal(resolveCiBranchName({
+    GITHUB_HEAD_REF: 'feat/docker-sandbox-story',
+    GITHUB_REF_NAME: '634/merge',
+  }), 'feat/docker-sandbox-story');
+  assert.equal(resolveCiBranchName({ GITHUB_REF_NAME: 'main' }), 'main');
+  assert.equal(resolveCiBranchName({}), undefined);
+});
+
+test('runCli reports the PR head branch during pull_request CI integrity checks', () => {
+  const output = [];
+  const originalLog = console.log;
+  console.log = (value) => {
+    output.push(value);
+  };
+
+  try {
+    const exitCode = runCli({
+      GITHUB_HEAD_REF: 'feat/docker-sandbox-story',
+      GITHUB_REF_NAME: '634/merge',
+      DEFAULT_BRANCH: 'main',
+    }, ['--json', '--repo-path', __dirname]);
+    assert.equal(exitCode, 0);
+  } finally {
+    console.log = originalLog;
+  }
+
+  const report = JSON.parse(output[0]);
+  assert.equal(report.currentBranch, 'feat/docker-sandbox-story');
 });

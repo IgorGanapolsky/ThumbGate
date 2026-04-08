@@ -14,6 +14,7 @@ const {
   normalizePosix,
   resolveRepoRoot,
 } = require('./operational-integrity');
+const { buildDockerSandboxPlan } = require('./docker-sandbox-planner');
 const { evaluatePretool } = require('./hybrid-feedback-context');
 
 const GOVERNANCE_STATE_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'governance-state.json');
@@ -523,12 +524,58 @@ function buildEvidence({
   return evidence;
 }
 
+function addIntegrityRemediations(push, integrity) {
+  if (!integrity || !Array.isArray(integrity.blockers)) {
+    return;
+  }
+
+  const blockerCodes = new Set(integrity.blockers.map((blocker) => blocker.code));
+  const remediationSpecs = [
+    {
+      codes: ['missing_branch_governance'],
+      id: 'set_branch_governance',
+      title: 'Declare branch governance',
+      action: 'Call set_branch_governance with branchName, baseBranch, and PR/release expectations.',
+      why: 'Release, merge, and PR workflows need explicit branch state.',
+    },
+    {
+      codes: ['merge_requires_pr_context'],
+      id: 'attach_pr_context',
+      title: 'Attach PR context',
+      action: 'Update branch governance with prNumber or prUrl before merging.',
+      why: 'Merge actions should be tied to one explicit review surface.',
+    },
+    {
+      codes: ['missing_release_version', 'release_version_mismatch'],
+      id: 'align_release_version',
+      title: 'Align release version',
+      action: 'Set branch governance releaseVersion and verify it matches package.json before publish.',
+      why: 'Release metadata should match the artifact being published.',
+    },
+    {
+      codes: ['publish_requires_base_branch', 'publish_requires_mainline_head'],
+      id: 'switch_to_mainline',
+      title: 'Run publish from mainline',
+      action: `Move the action onto ${integrity.baseBranch || DEFAULT_BASE_BRANCH} after the merge commit exists.`,
+      why: 'Publish and tag flows should execute from the protected mainline branch.',
+    },
+  ];
+
+  for (const remediation of remediationSpecs) {
+    if (!remediation.codes.some((code) => blockerCodes.has(code))) {
+      continue;
+    }
+    push(remediation.id, remediation.title, remediation.action, remediation.why);
+  }
+}
+
 function buildRemediations({
   integrity,
   taskScopeViolation,
   protectedSurface,
   blastRadius,
   memoryGuard,
+  executionSurface,
 }) {
   const remediations = [];
   const seen = new Set();
@@ -555,41 +602,7 @@ function buildRemediations({
       'Protected policy files need an explicit time-bounded approval.'
     );
   }
-  if (integrity && Array.isArray(integrity.blockers)) {
-    const blockerCodes = new Set(integrity.blockers.map((blocker) => blocker.code));
-    if (blockerCodes.has('missing_branch_governance')) {
-      push(
-        'set_branch_governance',
-        'Declare branch governance',
-        'Call set_branch_governance with branchName, baseBranch, and PR/release expectations.',
-        'Release, merge, and PR workflows need explicit branch state.'
-      );
-    }
-    if (blockerCodes.has('merge_requires_pr_context')) {
-      push(
-        'attach_pr_context',
-        'Attach PR context',
-        'Update branch governance with prNumber or prUrl before merging.',
-        'Merge actions should be tied to one explicit review surface.'
-      );
-    }
-    if (blockerCodes.has('missing_release_version') || blockerCodes.has('release_version_mismatch')) {
-      push(
-        'align_release_version',
-        'Align release version',
-        'Set branch governance releaseVersion and verify it matches package.json before publish.',
-        'Release metadata should match the artifact being published.'
-      );
-    }
-    if (blockerCodes.has('publish_requires_base_branch') || blockerCodes.has('publish_requires_mainline_head')) {
-      push(
-        'switch_to_mainline',
-        'Run publish from mainline',
-        `Move the action onto ${integrity.baseBranch || DEFAULT_BASE_BRANCH} after the merge commit exists.`,
-        'Publish and tag flows should execute from the protected mainline branch.'
-      );
-    }
-  }
+  addIntegrityRemediations(push, integrity);
   if (memoryGuard && memoryGuard.mode && memoryGuard.mode !== 'allow') {
     push(
       'retrieve_lessons',
@@ -606,6 +619,14 @@ function buildRemediations({
       'Smaller blast radii are easier to verify and recover.'
     );
   }
+  if (executionSurface?.shouldSandbox) {
+    push(
+      'route_to_docker_sandbox',
+      'Route through Docker Sandboxes',
+      `Launch the repo in Docker Sandboxes before retrying. Standalone: ${executionSurface.launchers.standalone}. Docker Desktop: ${executionSurface.launchers.dockerDesktop}.`,
+      'Isolated execution limits host damage when a high-risk local action goes wrong.'
+    );
+  }
 
   return remediations;
 }
@@ -615,6 +636,9 @@ function buildReasoning(report) {
     `Workflow sentinel risk ${report.band} (${report.riskScore}) for ${report.toolName}.`,
     `Blast radius: ${report.blastRadius.summary}.`,
   ];
+  if (report.executionSurface?.shouldSandbox) {
+    lines.push(`Execution surface: ${report.executionSurface.summary}`);
+  }
   for (const driver of report.drivers.slice(0, 4)) {
     lines.push(`Driver ${driver.key} (+${driver.weight}): ${driver.reason}`);
   }
@@ -622,6 +646,16 @@ function buildReasoning(report) {
     lines.push(`Remediation: ${remediation.title} — ${remediation.action}`);
   }
   return lines;
+}
+
+function getSentinelActionType(toolName) {
+  if (toolName === 'Bash') {
+    return 'shell.exec';
+  }
+  if (EDIT_LIKE_TOOLS.has(toolName)) {
+    return 'file.write';
+  }
+  return '';
 }
 
 function chooseDecision({ riskScore, integrity, memoryGuard, blastRadius, command }) {
@@ -713,6 +747,18 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     taskScopeViolation,
     protectedSurface: protectedSurfaceForRisk,
   });
+  const executionSurface = buildDockerSandboxPlan({
+    toolName,
+    actionType: getSentinelActionType(toolName),
+    command: toolInput.command,
+    repoPath,
+    affectedFiles,
+    riskBand: risk.band,
+    riskScore: risk.score,
+    requiresNetwork: Boolean(
+      /\b(?:curl|wget|gh\s+pr|git\s+push|npm\s+publish|yarn\s+publish|pnpm\s+publish)\b/i.test(toolInput.command || '')
+    ),
+  });
   const decision = chooseDecision({
     riskScore: risk.score,
     integrity,
@@ -736,6 +782,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     protectedSurface: protectedSurfaceForRisk,
     blastRadius,
     memoryGuard,
+    executionSurface,
   });
   const summary = decision === 'allow'
     ? 'No predictive workflow blockers detected.'
@@ -753,6 +800,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     blastRadius,
     evidence,
     remediations,
+    executionSurface,
     memoryGuard,
     taskScopeViolation,
     operationalIntegrity: {
