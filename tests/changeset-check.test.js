@@ -11,6 +11,7 @@ const {
   collectChangesets,
   evaluateChangesetRequirement,
   isReleaseRelevantFile,
+  isVersionedReleaseChangeSet,
   parseChangesetMarkdown,
 } = require('../scripts/changeset-check');
 
@@ -117,4 +118,32 @@ test('evaluateChangesetRequirement allows release-relevant changes with a valid 
   assert.equal(result.ok, true);
   assert.equal(result.required, true);
   assert.equal(result.validChangesets.length, 1);
+});
+
+test('isVersionedReleaseChangeSet detects a release PR that already consumed its changesets', () => {
+  assert.equal(isVersionedReleaseChangeSet([
+    '.changeset/fix-clickable-statusline-affordances.md',
+    'CHANGELOG.md',
+    'package.json',
+  ]), true);
+  assert.equal(isVersionedReleaseChangeSet([
+    'CHANGELOG.md',
+    'package.json',
+  ]), false);
+});
+
+test('evaluateChangesetRequirement allows release-relevant changes when a release PR already consumed changesets', () => {
+  const result = evaluateChangesetRequirement({
+    changedFiles: [
+      '.changeset/fix-clickable-statusline-affordances.md',
+      'CHANGELOG.md',
+      'package.json',
+      'scripts/statusline-links.js',
+    ],
+    changesets: [],
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.required, true);
+  assert.match(result.reason, /already consumed pending changesets/i);
 });

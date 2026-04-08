@@ -65,6 +65,13 @@ function isReleaseRelevantFile(relPath) {
   return RELEASE_RELEVANT_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 }
 
+function isVersionedReleaseChangeSet(changedFiles = []) {
+  const normalizedFiles = changedFiles.map((file) => String(file || '').trim().replaceAll('\\', '/'));
+  return normalizedFiles.includes('package.json')
+    && normalizedFiles.includes('CHANGELOG.md')
+    && normalizedFiles.some(isChangesetMarkdownFile);
+}
+
 function splitChangesetDocument(content) {
   const normalized = String(content || '').replaceAll('\r\n', '\n');
   const lines = normalized.split('\n');
@@ -192,6 +199,7 @@ function evaluateChangesetRequirement({
   const required = relevantFiles.length > 0;
   const validChangesets = changesets.filter((entry) => entry.validForPackage);
   const invalidChangesets = changesets.filter((entry) => !entry.validForPackage);
+  const versionedRelease = isVersionedReleaseChangeSet(changedFiles);
 
   if (!required) {
     return {
@@ -212,6 +220,17 @@ function evaluateChangesetRequirement({
       validChangesets,
       invalidChangesets,
       reason: `Found ${validChangesets.length} valid changeset file(s) for release-relevant changes.`,
+    };
+  }
+
+  if (versionedRelease) {
+    return {
+      ok: true,
+      required: true,
+      relevantFiles,
+      validChangesets,
+      invalidChangesets,
+      reason: 'Release PR already consumed pending changesets into versioned artifacts.',
     };
   }
 
@@ -277,7 +296,7 @@ function getChangedFiles({
   }
 
   const mergeBase = runGitCommand(['merge-base', 'HEAD', baseRef], { cwd, runner });
-  const output = runGitCommand(['diff', '--name-only', '--diff-filter=ACMRTUXB', `${mergeBase}...HEAD`], { cwd, runner });
+  const output = runGitCommand(['diff', '--name-only', '--diff-filter=ACDMRTUXB', `${mergeBase}...HEAD`], { cwd, runner });
   return output ? output.split('\n').map((line) => line.trim()).filter(Boolean) : [];
 }
 
@@ -344,6 +363,7 @@ module.exports = {
   getChangedFiles,
   isChangesetMarkdownFile,
   isReleaseRelevantFile,
+  isVersionedReleaseChangeSet,
   parseArgs,
   parseChangesetMarkdown,
   resolveBaseRef,
