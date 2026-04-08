@@ -1,8 +1,9 @@
 'use strict';
 
-const { describe, it } = require('node:test');
+const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const {
   postThumbGateToInstagram,
@@ -17,6 +18,16 @@ let sharpAvailable = false;
 try { require('sharp'); sharpAvailable = true; } catch {}
 
 describe('Instagram ThumbGate Post', () => {
+  let tmpDedupPath;
+  beforeEach(() => {
+    tmpDedupPath = path.join(os.tmpdir(), `dedup-ig-test-${Date.now()}.json`);
+    process.env.THUMBGATE_DEDUP_LOG_PATH = tmpDedupPath;
+  });
+  afterEach(() => {
+    try { fs.unlinkSync(tmpDedupPath); } catch {}
+    delete process.env.THUMBGATE_DEDUP_LOG_PATH;
+  });
+
   it('should have a valid caption with required hashtags and messaging', () => {
     assert.match(THUMBGATE_CAPTION, /Your AI.*agent.*forgets/i);
     assert.match(THUMBGATE_CAPTION, /ThumbGate/);
