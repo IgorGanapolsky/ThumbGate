@@ -104,9 +104,11 @@ test('statusline-lesson.js outputs valid JSON', () => {
 test('statusline.sh uses CLI commands not browser URLs for feedback', () => {
   const sh = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'statusline.sh'), 'utf-8');
   assert.ok(!sh.includes('feedback/quick?signal='), 'should NOT have browser URL for feedback');
-  assert.ok(sh.includes('statusline-lesson.js'), 'should reference lesson helper');
+  assert.ok(sh.includes('statusline-meta.js'), 'should reference statusline metadata helper');
   assert.ok(sh.includes('statusline-tower.js'), 'should reference tower helper');
-  assert.ok(sh.includes('LESSON_TEXT'), 'should show lesson in output');
+  assert.ok(!sh.includes('LESSON_TEXT'), 'should not show lesson snippets in output');
+  assert.ok(sh.includes('TG_VERSION'), 'should show package version');
+  assert.ok(sh.includes('TG_TIER'), 'should show license tier');
 });
 
 test('statusline.sh shows Control Tower alerts', () => {

@@ -5,14 +5,22 @@ const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 
-// ThumbGate repo: scripts/ is 1 level below repo root (not 2 like Subway .claude/scripts/feedback/)
-const ROOT = path.join(__dirname, '..');
-const FEEDBACK_DIR = resolveFeedbackDir();
-const PATHS = {
-  actionLog: path.join(FEEDBACK_DIR, 'action-log.jsonl'),
-  attributions: path.join(FEEDBACK_DIR, 'feedback-attributions.jsonl'),
-  attributedFeedback: path.join(FEEDBACK_DIR, 'attributed-feedback.jsonl'),
-};
+function getAttributionPaths(options = {}) {
+  const feedbackDir = resolveFeedbackDir({
+    cwd: options.cwd,
+    env: options.env,
+    feedbackDir: options.feedbackDir,
+    home: options.home,
+  });
+  return {
+    feedbackDir,
+    actionLog: path.join(feedbackDir, 'action-log.jsonl'),
+    attributions: path.join(feedbackDir, 'feedback-attributions.jsonl'),
+    attributedFeedback: path.join(feedbackDir, 'attributed-feedback.jsonl'),
+  };
+}
+
+const PATHS = getAttributionPaths();
 
 const STOPWORDS = new Set([
   'about', 'after', 'again', 'allow', 'already', 'always', 'because', 'before', 'being', 'between',
@@ -157,7 +165,7 @@ function scoreCandidate(action, feedbackNormalized, feedbackTokens, nowMs) {
 }
 
 function recordAction(toolName, toolInput, opts = {}) {
-  const actionLogPath = opts.actionLogPath || process.env.THUMBGATE_ACTION_LOG || PATHS.actionLog;
+  const actionLogPath = opts.actionLogPath || process.env.THUMBGATE_ACTION_LOG || getAttributionPaths(opts).actionLog;
   const tool = String(toolName || 'unknown');
   const inputSummary = summarizeToolInput(tool, toolInput);
   const normalized = normalize(inputSummary);
@@ -177,9 +185,10 @@ function recordAction(toolName, toolInput, opts = {}) {
 
 function attributeFeedback(signal, feedbackContext, opts = {}) {
   const sig = String(signal || '').toLowerCase().trim();
-  const actionLogPath = opts.actionLogPath || process.env.THUMBGATE_ACTION_LOG || PATHS.actionLog;
-  const attributionsPath = opts.attributionsPath || process.env.THUMBGATE_FEEDBACK_ATTRIBUTIONS || PATHS.attributions;
-  const attributedFeedbackPath = opts.attributedFeedbackPath || process.env.THUMBGATE_ATTRIBUTED_FEEDBACK || PATHS.attributedFeedback;
+  const paths = getAttributionPaths(opts);
+  const actionLogPath = opts.actionLogPath || process.env.THUMBGATE_ACTION_LOG || paths.actionLog;
+  const attributionsPath = opts.attributionsPath || process.env.THUMBGATE_FEEDBACK_ATTRIBUTIONS || paths.attributions;
+  const attributedFeedbackPath = opts.attributedFeedbackPath || process.env.THUMBGATE_ATTRIBUTED_FEEDBACK || paths.attributedFeedback;
 
   if (sig !== 'negative' && sig !== 'positive') {
     return { ok: true, skipped: true, reason: 'signal_not_supported' };
@@ -300,6 +309,7 @@ if (require.main === module) {
 
 module.exports = {
   PATHS,
+  getAttributionPaths,
   readJsonl,
   appendJsonl,
   normalize,

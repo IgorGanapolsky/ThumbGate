@@ -19,6 +19,14 @@ const path = require('path');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 
+function explicitPinnedServeArgs(version) {
+  return ['--yes', '--package', `thumbgate@${version}`, 'thumbgate', 'serve'];
+}
+
+function explicitLatestServeArgs() {
+  return ['--yes', '--package', 'thumbgate@latest', 'thumbgate', 'serve'];
+}
+
 function readJson(relPath) {
   return JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, relPath), 'utf-8'));
 }
@@ -191,6 +199,19 @@ function syncVersion(opts) {
   }
 
   // 8. Codex plugin manifest + MCP config
+  const codexAdapterConfigPath = 'adapters/codex/config.toml';
+  if (fs.existsSync(path.join(PROJECT_ROOT, codexAdapterConfigPath))) {
+    const content = fs.readFileSync(path.join(PROJECT_ROOT, codexAdapterConfigPath), 'utf8');
+    const updated = content.replace(/thumbgate@(\d+\.\d+\.\d+)/g, `thumbgate@${version}`);
+    if (updated !== content) {
+      drifted.push({ file: codexAdapterConfigPath, field: 'package-version-string', current: content.match(/thumbgate@\d+\.\d+\.\d+/g)?.join(', ') || null });
+      if (!checkOnly) {
+        fs.writeFileSync(path.join(PROJECT_ROOT, codexAdapterConfigPath), updated);
+      }
+    }
+    targets.push(codexAdapterConfigPath);
+  }
+
   const codexPluginManifestPath = 'plugins/codex-profile/.codex-plugin/plugin.json';
   if (fs.existsSync(path.join(PROJECT_ROOT, codexPluginManifestPath))) {
     const codexPlugin = readJson(codexPluginManifestPath);
@@ -211,7 +232,7 @@ function syncVersion(opts) {
   if (fs.existsSync(path.join(PROJECT_ROOT, codexPluginConfigPath))) {
     const codexPluginConfig = readJson(codexPluginConfigPath);
     const server = codexPluginConfig.mcpServers && codexPluginConfig.mcpServers.thumbgate;
-    const expectedArgs = ['-y', `thumbgate@${version}`, 'serve'];
+    const expectedArgs = explicitPinnedServeArgs(version);
     const currentArgs = server && Array.isArray(server.args) ? server.args : [];
     if (server && server.command === 'npx' && JSON.stringify(currentArgs) !== JSON.stringify(expectedArgs)) {
       drifted.push({ file: codexPluginConfigPath, field: 'mcpServers.thumbgate.args', current: JSON.stringify(currentArgs) });
@@ -243,7 +264,7 @@ function syncVersion(opts) {
   if (fs.existsSync(path.join(PROJECT_ROOT, claudeCodexBridgeConfigPath))) {
     const bridgeConfig = readJson(claudeCodexBridgeConfigPath);
     const server = bridgeConfig.mcpServers && bridgeConfig.mcpServers.thumbgate;
-    const expectedArgs = ['-y', `thumbgate@${version}`, 'serve'];
+    const expectedArgs = explicitPinnedServeArgs(version);
     const currentArgs = server && Array.isArray(server.args) ? server.args : [];
     if (server && server.command === 'npx' && JSON.stringify(currentArgs) !== JSON.stringify(expectedArgs)) {
       drifted.push({ file: claudeCodexBridgeConfigPath, field: 'mcpServers.thumbgate.args', current: JSON.stringify(currentArgs) });
@@ -260,7 +281,7 @@ function syncVersion(opts) {
   if (fs.existsSync(path.join(PROJECT_ROOT, cursorPluginConfigPath))) {
     const cursorPluginConfig = readJson(cursorPluginConfigPath);
     const server = cursorPluginConfig.mcpServers && cursorPluginConfig.mcpServers.thumbgate;
-    const expectedArgs = ['-y', 'thumbgate@latest', 'serve'];
+    const expectedArgs = explicitLatestServeArgs();
     const currentArgs = server && Array.isArray(server.args) ? server.args : [];
     if (server && server.command === 'npx' && JSON.stringify(currentArgs) !== JSON.stringify(expectedArgs)) {
       drifted.push({ file: cursorPluginConfigPath, field: 'mcpServers.thumbgate.args', current: JSON.stringify(currentArgs) });

@@ -1,0 +1,33 @@
+{
+  "phase": "12-tessl-distribution",
+  "generatedAt": "2026-04-08T14:37:32.417Z",
+  "passed": 6,
+  "failed": 0,
+  "total": 6,
+  "requirements": {
+    "TESSL-01": {
+      "status": "pass",
+      "desc": "tile config tracks only high-ROI first-party skills"
+    },
+    "TESSL-02": {
+      "status": "pass",
+      "desc": "export writes tile.json, index.md, and copied skills for every configured tile"
+    },
+    "TESSL-03": {
+      "status": "pass",
+      "desc": "workspace override produces publishable workspace/tile names without mutating source config"
+    },
+    "TESSL-04": {
+      "status": "pass",
+      "desc": "generated docs include install guidance plus proof pack links"
+    },
+    "TESSL-05": {
+      "status": "pass",
+      "desc": "skill verification command succeeds against the canonical skills"
+    },
+    "TESSL-06": {
+      "status": "pass",
+      "desc": "publish workflow validates and exports before secret-gated Tessl publish"
+    }
+  }
+}

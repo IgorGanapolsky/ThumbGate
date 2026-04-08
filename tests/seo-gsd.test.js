@@ -36,7 +36,7 @@ test('buildThumbGateSeoPlan returns GSD stages and prioritizes comparison pages 
   assert.equal(plan.framework, 'GSD');
   assert.equal(plan.capture.totalKeywords, HIGH_ROI_QUERY_SEEDS.length);
   assert.ok(plan.capture.keywordRows.every((row) => typeof row.opportunityScore === 'number'));
-  assert.equal(plan.execute.pages.length, 5);
+  assert.equal(plan.execute.pages.length, 9);
   assert.equal(plan.execute.briefs[0].path, '/compare/speclock');
   assert.equal(plan.execute.briefs[1].path, '/compare/mem0');
   assert.equal(plan.review.recommendedOrder[0], '/compare/speclock');
@@ -52,9 +52,11 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /## Review/);
   assert.match(markdown, /ThumbGate vs SpecLock/);
   assert.match(markdown, /ThumbGate vs Mem0/);
+  assert.match(markdown, /How to Stop AI Coding Agents From Repeating Mistakes \| ThumbGate/);
+  assert.match(markdown, /Cursor Agent Guardrails \| Stop Repeated Mistakes with ThumbGate/);
 });
 
-test('renderSeoPageHtml includes structured data, thumbs messaging, and proof links', () => {
+test('renderSeoPageHtml includes structured data, thumbs messaging, proof links, and the Pro CTA', () => {
   const page = findSeoPageByPath('/compare/speclock');
   const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
 
@@ -66,17 +68,19 @@ test('renderSeoPageHtml includes structured data, thumbs messaging, and proof li
   assert.match(html, /👎 Thumbs down blocks repeated mistakes/);
   assert.match(html, /Verification evidence/);
   assert.match(html, /Automation proof/);
+  assert.match(html, /See ThumbGate Pro/);
+  assert.match(html, /\/pro\?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=compare_speclock/);
   assert.match(html, /ThumbGate vs SpecLock/);
 });
 
 test('page lookup and sitemap entries stay aligned', () => {
-  const page = findSeoPageByPath('/guides/claude-code-feedback');
-  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/claude-code-feedback');
+  const page = findSeoPageByPath('/guides/cursor-agent-guardrails');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/cursor-agent-guardrails');
 
   assert.ok(page);
   assert.equal(page.pageType, 'integration');
   assert.deepEqual(sitemapEntry, {
-    path: '/guides/claude-code-feedback',
+    path: '/guides/cursor-agent-guardrails',
     changefreq: 'monthly',
     priority: '0.8',
   });
@@ -98,7 +102,9 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     const execute = fs.readFileSync(files.execute, 'utf8');
 
     assert.equal(capture.totalKeywords, HIGH_ROI_QUERY_SEEDS.length);
-    assert.equal(pages.length, 5);
+    assert.equal(pages.length, 9);
+    assert.ok(pages.some((page) => page.path === '/guides/codex-cli-guardrails'));
+    assert.ok(pages.some((page) => page.path === '/guides/gemini-cli-feedback-memory'));
     assert.match(execute, /# ThumbGate SEO\/GEO GSD Plan/);
     assert.match(execute, /Recommended publish order/);
   } finally {

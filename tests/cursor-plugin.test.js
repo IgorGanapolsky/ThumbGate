@@ -78,7 +78,7 @@ test('cursor plugin MCP config uses mcp.json (not .mcp.json) with the correct Th
   const server = pluginConfig.mcpServers.thumbgate;
 
   assert.equal(server.command, 'npx');
-  assert.deepEqual(server.args, ['-y', 'thumbgate@latest', 'serve']);
+  assert.deepEqual(server.args, ['--yes', '--package', 'thumbgate@latest', 'thumbgate', 'serve']);
   assert.equal(JSON.stringify(server).includes('/Users/'), false, 'plugin config must not hardcode local paths');
 });
 

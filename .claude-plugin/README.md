@@ -21,7 +21,7 @@ The extension path is useful when a team wants Claude Desktop to keep one workfl
 Use the portable npm launcher:
 
 ```bash
-claude mcp add thumbgate -- npx -y thumbgate serve
+claude mcp add thumbgate -- npx --yes --package thumbgate thumbgate serve
 ```
 
 Or use the project bootstrap:
@@ -65,7 +65,7 @@ Optional hosted path:
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["-y", "thumbgate", "serve"],
+      "args": ["--yes", "--package", "thumbgate", "thumbgate", "serve"],
       "env": {
         "THUMBGATE_BASE_URL": "https://thumbgate-production.up.railway.app",
         "THUMBGATE_API_KEY": "tg_YOUR_KEY_HERE"

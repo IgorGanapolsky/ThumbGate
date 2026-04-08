@@ -29,8 +29,7 @@ That profile launches:
 ```toml
 [mcp_servers.thumbgate]
 command = "npx"
-args = ["-y", "thumbgate@0.9.10", "serve"]
-args = ["-y", "thumbgate@0.9.10", "serve"]
+args = ["--yes", "--package", "thumbgate@0.9.13", "thumbgate", "serve"]
 ```
 
 ## Why this exists

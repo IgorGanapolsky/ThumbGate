@@ -1,31 +1,21 @@
 #!/usr/bin/env bash
 # Pre-action gate check — runs before risky shell commands.
 # Called by hooks/hooks.json beforeShellExecution hook.
-# Pipes the command as a tool-call JSON to thumbgate gate-check
-# and blocks if the gate engine returns a deny verdict.
+# Delegates to the published ThumbGate gate-check entrypoint.
 
 set -euo pipefail
 
-COMMAND="${1:-}"
+INPUT=$(cat)
+RESULT=$(echo "$INPUT" | npx --yes --package thumbgate@latest thumbgate gate-check 2>/dev/null) || true
 
-# Build a tool-call JSON payload matching the PreToolUse hook interface
-INPUT=$(printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' \
-  "$(echo "$COMMAND" | sed 's/"/\\"/g')")
-
-RESULT=$(echo "$INPUT" | npx -y thumbgate@latest gate-check 2>/dev/null) || true
-
-# If no result or empty, allow
-if [ -z "$RESULT" ] || [ "$RESULT" = "{}" ]; then
+if [ -z "$RESULT" ]; then
   exit 0
 fi
 
-# Output result for the agent
 echo "$RESULT"
 
-# Block if denied
-if echo "$RESULT" | grep -q '"permissionDecision"'; then
-  echo "[gate-check] Action blocked by ThumbGate gate engine." >&2
-  exit 1
+if echo "$RESULT" | grep -q '"permissionDecision":\s*"deny"'; then
+  exit 2
 fi
 
 exit 0
