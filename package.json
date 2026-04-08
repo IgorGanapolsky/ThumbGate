@@ -129,7 +129,7 @@
     "test:quality": "node --test tests/validate-feedback.test.js",
     "test:intelligence": "node --test tests/intelligence.test.js",
     "test:training-export": "node --test tests/training-export.test.js tests/databricks-export.test.js",
-    "test:deployment": "node --test tests/deployment.test.js tests/deploy-policy.test.js tests/publish-decision.test.js",
+    "test:deployment": "node --test tests/deployment.test.js tests/deploy-policy.test.js tests/publish-decision.test.js tests/changeset-check.test.js",
     "test:operational-integrity": "node --test tests/operational-integrity.test.js",
     "test:workflow": "node --test tests/workflow-contract.test.js tests/social-marketing-assets.test.js tests/social-pipeline.test.js tests/positioning-contract.test.js tests/workflow-runs.test.js tests/workflow-sprint-intake.test.js tests/gtm-revenue-loop.test.js tests/enterprise-story.test.js",
     "test:billing": "node --test tests/billing.test.js",
