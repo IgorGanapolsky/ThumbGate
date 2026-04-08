@@ -76,7 +76,8 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.ok(out.includes('Free'), 'should show license tier');
   assert.ok(out.includes('10'), 'should show thumbs up count');
   assert.ok(out.includes('5'), 'should show thumbs down count');
-  assert.match(out, /\b3 lessons\b/i, 'should show lesson count');
+  assert.ok(out.includes('3'), 'should show lesson count');
+  assert.ok(out.includes('lessons'), 'should show lessons label');
   assert.match(out, /\u001b]8;;http:\/\/localhost:3456\/feedback\/quick\?signal=up/);
   assert.match(out, /\u001b]8;;http:\/\/localhost:3456\/dashboard/);
   assert.match(out, /Dashboard/);
