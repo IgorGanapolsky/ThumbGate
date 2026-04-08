@@ -1156,6 +1156,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
   .actions-bar { flex-direction: column; }
 }
 </style>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
 <nav><div class="container">
@@ -1486,6 +1487,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
       font-size: 14px;
     }
   </style>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
   <main>
@@ -1765,6 +1767,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       margin-top: 12px;
     }
   </style>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
   <main>
@@ -1937,6 +1940,7 @@ function renderWorkflowSprintIntakeResultPage(runtimeConfig, { title, detail, le
       border: 1px solid var(--line);
     }
   </style>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
   <main>
