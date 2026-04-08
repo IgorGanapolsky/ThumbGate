@@ -6,6 +6,7 @@
 # Resolve script directory safely (CodeQL: no uncontrolled paths)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 case "$SCRIPT_DIR" in *[!a-zA-Z0-9/_.-]*) echo "ThumbGate: invalid script path"; exit 1;; esac
+LOCAL_API_ORIGIN="${THUMBGATE_LOCAL_API_ORIGIN:-http://localhost:3456}"
 
 # ── Parse Claude Code session JSON from stdin ─────────────────────
 eval "$(cat | jq -r '
@@ -63,7 +64,7 @@ fi
 # Background refresh from REST API when cache is stale (>120s)
 if [ $(( _NOW - ${CACHE_TS:-0} )) -gt 120 ]; then
   (
-    _R=$(curl -s --max-time 3 "http://localhost:3456/v1/feedback/stats" -H "Authorization: Bearer ${THUMBGATE_API_KEY:-tg_creator_dev_enterprise}" 2>/dev/null)
+    _R=$(curl -s --max-time 3 "${LOCAL_API_ORIGIN}/v1/feedback/stats" -H "Authorization: Bearer ${THUMBGATE_API_KEY:-tg_creator_dev_enterprise}" 2>/dev/null)
     [ -z "$_R" ] && exit 0
     echo "$_R" | python3 -c "
 import json,sys,time,os
@@ -76,6 +77,23 @@ except:pass
 " 2>/dev/null
   ) &>/dev/null &
   disown 2>/dev/null
+fi
+
+# ── Clickable statusline affordances ─────────────────────────────
+LINK_STATE="offline"
+UP_URL=""; DOWN_URL=""; DASHBOARD_URL=""; LESSONS_URL=""
+DASHBOARD_LABEL="Dashboard"; LESSONS_LABEL="Lessons"
+_LINKS_JSON=$(node "${SCRIPT_DIR}/statusline-links.js" 2>/dev/null)
+if [ -n "$_LINKS_JSON" ]; then
+  eval "$(echo "$_LINKS_JSON" | jq -r '
+    @sh "LINK_STATE=\(.state // "offline")",
+    @sh "UP_URL=\(.upUrl // "")",
+    @sh "DOWN_URL=\(.downUrl // "")",
+    @sh "DASHBOARD_URL=\(.dashboardUrl // "")",
+    @sh "LESSONS_URL=\(.lessonsUrl // "")",
+    @sh "DASHBOARD_LABEL=\(.dashboardLabel // "Dashboard")",
+    @sh "LESSONS_LABEL=\(.lessonsLabel // "Lessons")"
+  ' 2>/dev/null)"
 fi
 
 # ── ThumbGate package metadata ────────────────────────────────────────
@@ -107,17 +125,34 @@ case "${TREND}" in
   improving) ARROW="↗" ;; degrading) ARROW="↘" ;; stable) ARROW="→" ;; *) ARROW="?" ;;
 esac
 
+osc8_link() {
+  local url="$1"
+  local label="$2"
+  if [ -n "$url" ]; then
+    printf '\033]8;;%s\a%s\033]8;;\a' "$url" "$label"
+  else
+    printf '%s' "$label"
+  fi
+}
+
+UP_ICON="$(osc8_link "$UP_URL" "👍")"
+DOWN_ICON="$(osc8_link "$DOWN_URL" "👎")"
+DASHBOARD_LINK="$(osc8_link "$DASHBOARD_URL" "$DASHBOARD_LABEL")"
+LESSONS_LINK="$(osc8_link "$LESSONS_URL" "$LESSONS_LABEL")"
+
 # ── Output (single line) ─────────────────────────────────────────
 LINE="ThumbGate v${TG_VERSION} · ${TG_TIER}"
 if [ "$UP" = "0" ] && [ "$DOWN" = "0" ]; then
-  echo -e "${D}${LINE} · no feedback yet${RST}"
+  LINE="${D}${LINE} · no feedback yet${RST} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
+  printf '%b\n' "$LINE"
 else
-  LINE="${LINE} · ${G}${BD}${UP}${RST}👍 ${R}${BD}${DOWN}${RST}👎 ${ARROW}"
+  LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_ICON} ${R}${BD}${DOWN}${RST}${DOWN_ICON} ${ARROW}"
 
   # Control Tower alerts (if any)
   [ "${SLO_V:-0}" -gt 0 ] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"
   [ "${AT_RISK:-0}" -gt 0 ] && LINE="${LINE} ${R}${AT_RISK}⚠${RST}"
   [ "${ANOMALIES:-0}" -gt 0 ] && LINE="${LINE} ${R}${ANOMALIES}☠${RST}"
+  LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
 
-  echo -e "$LINE"
+  printf '%b\n' "$LINE"
 fi
