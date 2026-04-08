@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+__GOOGLE_SITE_VERIFICATION_META__
+<title>ThumbGate Pro | Personal local dashboard and proof for AI agent reliability</title>
+<meta name="description" content="ThumbGate Pro is the paid lane for individual operators who want a personal local dashboard, DPO export, review-ready evidence, and founder support for risky AI coding workflows.">
+<meta property="og:title" content="ThumbGate Pro | Personal local dashboard and proof for AI agent reliability">
+<meta property="og:description" content="Move from free local gates to a paid operator workflow with a personal local dashboard, DPO export, and review-ready evidence for repeated AI coding failures.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="__APP_ORIGIN__/pro">
+<link rel="canonical" href="__APP_ORIGIN__/pro">
+<meta name="keywords" content="ThumbGate Pro, AI agent reliability, pre-action gates, DPO export, local dashboard, review-ready evidence, Claude Code reliability, Codex reliability, Cursor reliability">
+
+<script defer data-domain="thumbgate-production.up.railway.app" data-api="/api/event" src="/js/analytics.js"></script>
+__GA_BOOTSTRAP__
+
+<script>
+  const gaMeasurementId = '__GA_MEASUREMENT_ID__';
+  const serverVisitorId = '__SERVER_VISITOR_ID__';
+  const serverSessionId = '__SERVER_SESSION_ID__';
+  const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
+  const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ThumbGate Pro",
+  "alternateName": "thumbgate pro",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Cross-platform, Node.js >=18.18.0",
+  "description": "Paid ThumbGate lane for individual operators who want a personal local dashboard, DPO export, review-ready evidence, and founder support for risky AI coding workflows.",
+  "url": "__APP_ORIGIN__/pro",
+  "downloadUrl": "https://www.npmjs.com/package/thumbgate",
+  "creator": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "featureList": [
+    "Personal local dashboard",
+    "Visual gate debugger",
+    "DPO export from real thumbs-down corrections",
+    "Auto-connect running agents after activation",
+    "Founder support on risky workflows",
+    "Model Hardening Advisor"
+  ],
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "ThumbGate Pro Monthly",
+      "price": "__PRO_PRICE_DOLLARS__",
+      "priceCurrency": "USD",
+      "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro&billing_cycle=monthly&landing_path=%2Fpro",
+      "description": "Monthly Pro for individual operators who want a personal local dashboard and proof-ready exports."
+    },
+    {
+      "@type": "Offer",
+      "name": "ThumbGate Pro Annual",
+      "price": "149",
+      "priceCurrency": "USD",
+      "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro&billing_cycle=annual&landing_path=%2Fpro",
+      "description": "Annual Pro for operators who want the dashboard, DPO export, and founder support at a lower effective monthly price."
+    }
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How is Pro different from the free install?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Free keeps the local recall, gates, and MCP workflow. Pro adds a personal local dashboard, DPO export, auto-connect for running agents, and founder support for risky workflows."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Pro require a cloud account?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate Pro is still local-first for the individual operator lane. Team is the hosted rollout lane when you need shared lessons, org visibility, and rollout review views."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens after checkout?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "You activate Pro, connect your personal local dashboard, and your running agents can appear automatically so you can inspect blocked actions, lessons, and exports without adding a cloud dashboard dependency."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When should I choose Team instead of Pro?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Choose Team when one correction needs to protect multiple developers or agents, when you need a shared hosted lesson database, org dashboard visibility, or a workflow hardening pilot across shared repositories."
+      }
+    }
+  ]
+}
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0b;
+    --bg-raised: #111113;
+    --bg-card: #161618;
+    --border: #232327;
+    --text: #ececf1;
+    --text-muted: #9a9aa6;
+    --cyan: #22d3ee;
+    --cyan-dim: rgba(34, 211, 238, 0.12);
+    --cyan-glow: rgba(34, 211, 238, 0.22);
+    --green: #4ade80;
+    --green-dim: rgba(74, 222, 128, 0.12);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251, 191, 36, 0.12);
+    --red: #f87171;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font);
+    background:
+      radial-gradient(circle at top, rgba(34, 211, 238, 0.16) 0%, rgba(34, 211, 238, 0) 28%),
+      linear-gradient(180deg, #0a0a0b 0%, #0d1016 48%, #0a0a0b 100%);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; }
+  .container { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(12px);
+    background: rgba(10, 10, 11, 0.86);
+    border-bottom: 1px solid rgba(35, 35, 39, 0.92);
+  }
+
+  nav .container {
+    min-height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .nav-logo {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+
+  .nav-logo span { color: var(--cyan); }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  .nav-cta,
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost {
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 700;
+    transition: transform 0.15s, opacity 0.15s, border-color 0.15s;
+  }
+
+  .nav-cta,
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--cyan);
+    color: #041016;
+    padding: 11px 18px;
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.28), 0 12px 32px rgba(34, 211, 238, 0.18);
+  }
+
+  .btn-secondary,
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 18px;
+    border: 1px solid var(--border);
+    color: var(--text);
+    background: rgba(17, 17, 19, 0.75);
+  }
+
+  .nav-cta:hover,
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  .btn-ghost:hover {
+    transform: translateY(-1px);
+    opacity: 0.94;
+  }
+
+  .hero {
+    padding: 90px 0 72px;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+    gap: 28px;
+    align-items: stretch;
+  }
+
+  .panel {
+    background: linear-gradient(180deg, rgba(17, 17, 19, 0.94) 0%, rgba(22, 22, 24, 0.94) 100%);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+  }
+
+  .hero-copy {
+    padding: 40px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(34, 211, 238, 0.2);
+    background: var(--cyan-dim);
+    color: var(--cyan);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 18px 0 14px;
+    font-size: clamp(34px, 6vw, 58px);
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+  }
+
+  .hero-copy p {
+    margin: 0 0 18px;
+    color: var(--text-muted);
+    font-size: 17px;
+    max-width: 700px;
+  }
+
+  .hero-proof {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 20px 0 24px;
+  }
+
+  .proof-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 26px 0 14px;
+  }
+
+  .hero-note {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+
+  .hero-note strong { color: var(--text); }
+
+  .hero-aside {
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .aside-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 20px;
+  }
+
+  .aside-kicker {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--cyan);
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .aside-card h2,
+  .aside-card h3 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    letter-spacing: -0.03em;
+  }
+
+  .aside-card p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .price-stack {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .price-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .price-line strong {
+    font-size: 20px;
+    letter-spacing: -0.03em;
+  }
+
+  .price-line span {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .buyer-form {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .buyer-form input[type="email"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(10, 10, 11, 0.72);
+    color: var(--text);
+    font: inherit;
+  }
+
+  .buyer-form-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .buyer-form-note,
+  .buyer-form-status {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .proof-strip {
+    padding: 0 0 72px;
+  }
+
+  .proof-links {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .proof-links a {
+    display: block;
+    padding: 18px;
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+    text-decoration: none;
+  }
+
+  .proof-links a:hover { border-color: rgba(34, 211, 238, 0.28); }
+
+  .proof-links strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 15px;
+    letter-spacing: -0.02em;
+  }
+
+  .proof-links span {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .section {
+    padding: 0 0 80px;
+  }
+
+  .section-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--cyan);
+    font-weight: 700;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  .section-title {
+    margin: 0 auto 16px;
+    max-width: 760px;
+    text-align: center;
+    font-size: clamp(28px, 4vw, 40px);
+    letter-spacing: -0.04em;
+    line-height: 1.08;
+  }
+
+  .section-intro {
+    max-width: 720px;
+    margin: 0 auto 34px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 16px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .feature-card,
+  .split-card,
+  .team-card {
+    background: linear-gradient(180deg, rgba(17, 17, 19, 0.98) 0%, rgba(22, 22, 24, 0.96) 100%);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+  }
+
+  .feature-card h3,
+  .split-card h3,
+  .team-card h3 {
+    margin: 0 0 10px;
+    font-size: 19px;
+    letter-spacing: -0.03em;
+  }
+
+  .feature-card p,
+  .split-card p,
+  .team-card p,
+  .comparison-note,
+  .pricing-note {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .feature-card ul,
+  .split-card ul,
+  .pricing-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 0;
+    display: grid;
+    gap: 10px;
+  }
+
+  .feature-card li,
+  .split-card li,
+  .pricing-card li {
+    position: relative;
+    padding-left: 18px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .feature-card li::before,
+  .split-card li::before,
+  .pricing-card li::before {
+    content: '';
+    position: absolute;
+    top: 9px;
+    left: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.12);
+  }
+
+  .split-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 30px;
+  }
+
+  .split-card.free { border-color: rgba(74, 222, 128, 0.28); }
+  .split-card.pro { border-color: rgba(34, 211, 238, 0.28); box-shadow: 0 0 40px rgba(34, 211, 238, 0.08); }
+
+  .split-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .split-card.free .split-kicker {
+    color: var(--green);
+    background: var(--green-dim);
+  }
+
+  .split-card.pro .split-kicker {
+    color: var(--cyan);
+    background: var(--cyan-dim);
+  }
+
+  .pricing-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .pricing-card {
+    background: linear-gradient(180deg, rgba(17, 17, 19, 0.98) 0%, rgba(22, 22, 24, 0.96) 100%);
+    border: 1px solid rgba(34, 211, 238, 0.34);
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 0 48px rgba(34, 211, 238, 0.08);
+  }
+
+  .pricing-card h3 {
+    margin: 0 0 10px;
+    font-size: 24px;
+    letter-spacing: -0.03em;
+  }
+
+  .pricing-card .price {
+    margin: 8px 0 6px;
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+  }
+
+  .pricing-card .price span {
+    color: var(--text-muted);
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .pricing-card .annual {
+    color: var(--cyan);
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+
+  .pricing-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 22px 0 10px;
+  }
+
+  .pricing-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 10px;
+  }
+
+  .pricing-sidebar {
+    display: grid;
+    gap: 18px;
+  }
+
+  .team-card {
+    border-color: rgba(74, 222, 128, 0.28);
+  }
+
+  .faq-list {
+    max-width: 760px;
+    margin: 0 auto;
+    border-top: 1px solid var(--border);
+  }
+
+  .faq-item { border-bottom: 1px solid var(--border); }
+
+  .faq-q {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    padding: 22px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .faq-q::after {
+    content: '+';
+    color: var(--text-muted);
+    font-size: 20px;
+    transition: transform 0.2s ease;
+  }
+
+  .faq-item.open .faq-q::after { transform: rotate(45deg); }
+
+  .faq-a {
+    display: none;
+    padding: 0 0 22px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .faq-item.open .faq-a { display: block; }
+
+  .final-cta {
+    padding: 0 0 88px;
+  }
+
+  .final-shell {
+    padding: 34px;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(17, 17, 19, 0.98) 0%, rgba(22, 22, 24, 0.96) 100%);
+    text-align: center;
+  }
+
+  .final-shell h2 {
+    margin: 0 0 12px;
+    font-size: clamp(28px, 4vw, 40px);
+    letter-spacing: -0.04em;
+  }
+
+  .final-shell p {
+    margin: 0 auto 22px;
+    max-width: 680px;
+    color: var(--text-muted);
+    font-size: 16px;
+  }
+
+  .footer {
+    padding: 26px 0 40px;
+    border-top: 1px solid var(--border);
+  }
+
+  .footer .container {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+
+  .footer-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+  }
+
+  .footer-links a:hover { color: var(--text); }
+
+  .footer-copy {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  @media (max-width: 920px) {
+    .hero-grid,
+    .pricing-shell,
+    .proof-links,
+    .grid-3,
+    .split-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .hero { padding-top: 72px; }
+    .hero-copy,
+    .hero-aside,
+    .pricing-card,
+    .final-shell,
+    .feature-card,
+    .split-card,
+    .team-card {
+      padding: 22px;
+    }
+
+    .nav-links a:not(.nav-cta) { display: none; }
+    .hero-actions,
+    .pricing-actions {
+      flex-direction: column;
+    }
+
+    .buyer-form-actions {
+      grid-template-columns: 1fr;
+    }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-ghost,
+    .nav-cta {
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo"><span>👍👎</span> ThumbGate Pro</a>
+    <div class="nav-links">
+      <a href="#why-pay">Why Pro</a>
+      <a href="#proof">Proof</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="/dashboard">Demo</a>
+      <a class="nav-cta btn-pro-checkout" href="/checkout/pro?utm_source=website&utm_medium=pro_page_nav&utm_campaign=pro_pack&cta_id=pro_page_nav&cta_placement=nav&plan_id=pro&landing_path=%2Fpro">Start 7-Day Free Trial</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="panel hero-copy">
+      <div class="eyebrow">Paid lane for individual operators</div>
+      <h1>Stop paying review time for the same AI mistake twice.</h1>
+      <p>ThumbGate Pro is for the operator who already likes the free local install, but now needs a personal local dashboard, DPO export, review-ready evidence, and founder support on the workflows that keep hurting: deploys, migrations, force-pushes, and CI.</p>
+      <p>Free remains the honest default if all you need is local recall, Pre-Action Gates, and MCP wiring. Pro is the paid lane when you need faster debugging, exportable proof, and a tighter Reliability Gateway around one operator's real workflow.</p>
+      <div class="hero-proof">
+        <div class="proof-pill">Personal local dashboard</div>
+        <div class="proof-pill">DPO export from real corrections</div>
+        <div class="proof-pill">Review-ready evidence</div>
+        <div class="proof-pill">Founder support on risky flows</div>
+      </div>
+      <div class="hero-actions">
+        <a class="btn-primary btn-pro-checkout" href="/checkout/pro?utm_source=website&utm_medium=pro_page_hero&utm_campaign=pro_pack&cta_id=pro_page_primary&cta_placement=hero&plan_id=pro&landing_path=%2Fpro">Start 7-Day Free Trial</a>
+        <a class="btn-secondary btn-demo" href="/dashboard?utm_source=website&utm_medium=pro_page&utm_campaign=pro_pack">Open dashboard demo</a>
+        <a class="btn-ghost btn-free-path" href="/guide?utm_source=website&utm_medium=pro_page&utm_campaign=free_install">Stay on Free and install locally</a>
+      </div>
+      <p class="hero-note"><strong>Honest split:</strong> if local recall and gates are enough, stay on Free. Go Pro when you want your own dashboard, DPO training data export, and proof you can show on the next risky workflow review.</p>
+    </div>
+
+    <div class="panel hero-aside">
+      <div class="aside-card">
+        <div class="aside-kicker">What you are buying</div>
+        <h2>A faster operator loop</h2>
+        <p>See every blocked action, the gate that fired, the lesson behind it, and the export path that turns real thumbs-downs into reusable DPO pairs.</p>
+        <div class="price-stack">
+          <div class="price-line">
+            <div>
+              <strong>$19/mo</strong>
+              <span>Monthly Pro</span>
+            </div>
+            <a class="btn-primary btn-pro-checkout" href="/checkout/pro?utm_source=website&utm_medium=pro_page_monthly&utm_campaign=pro_pack&cta_id=pro_page_monthly&cta_placement=sidebar&plan_id=pro&landing_path=%2Fpro">Choose monthly</a>
+          </div>
+          <div class="price-line">
+            <div>
+              <strong>$149/yr</strong>
+              <span>Save 35% annually</span>
+            </div>
+            <a class="btn-secondary btn-pro-checkout" href="/checkout/pro?utm_source=website&utm_medium=pro_page_annual&utm_campaign=pro_pack&cta_id=pro_page_annual&cta_placement=sidebar&plan_id=pro&billing_cycle=annual&landing_path=%2Fpro">Choose annual</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="aside-card">
+        <div class="aside-kicker">Proof-backed, not vibes</div>
+        <h3>Specific paid outcomes</h3>
+        <p>Visual gate debugger, DPO export, auto-connect after activation, Model Hardening Advisor, and founder support for the risky flow you need to harden first.</p>
+      </div>
+
+      <div class="aside-card">
+        <div class="aside-kicker">Keep the buyer path warm</div>
+        <h3>Save your work email before you decide</h3>
+        <p>We will keep the Pro checkout prefilled on this device and send the demo path plus product updates, so you can come back without retyping or losing the thread.</p>
+        <form class="buyer-form" action="/api/newsletter" method="POST" data-newsletter-form data-page="pro" data-intent="buyer_follow_up">
+          <input type="email" name="email" data-buyer-email placeholder="you@company.com" required>
+          <div class="buyer-form-actions">
+            <button type="submit" class="btn-secondary">Email me the demo</button>
+            <button type="button" class="btn-primary btn-email-checkout">Start trial with this email</button>
+          </div>
+          <p class="buyer-form-note">No sales deck. Just the Pro demo path, launch updates, and a prefilled checkout when you are ready.</p>
+          <p class="buyer-form-status" data-newsletter-status aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="proof-strip section" id="proof">
+  <div class="container">
+    <div class="proof-links">
+      <a href="__VERIFICATION_URL__" target="_blank" rel="noopener">
+        <strong>Verification evidence</strong>
+        <span>Read the human proof pack and the buyer-facing evidence trail.</span>
+      </a>
+      <a href="__COMPATIBILITY_REPORT_URL__" target="_blank" rel="noopener">
+        <strong>Compatibility report</strong>
+        <span>Machine-readable proof for Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.</span>
+      </a>
+      <a href="__AUTOMATION_REPORT_URL__" target="_blank" rel="noopener">
+        <strong>Automation report</strong>
+        <span>Proof that the automation and enforcement path stays verifiable.</span>
+      </a>
+      <a href="/dashboard?utm_source=website&utm_medium=pro_page_proof&utm_campaign=pro_pack">
+        <strong>Live dashboard demo</strong>
+        <span>Inspect lessons, gates, and blocked actions before you buy.</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="why-pay">
+  <div class="container">
+    <div class="section-label">Why operators pay</div>
+    <h2 class="section-title">Pro is not "more memory." It is a tighter operating loop around one operator's real failures.</h2>
+    <p class="section-intro">The paid story is simple: free helps you install and block repeated mistakes locally. Pro helps you debug those blocks faster, export the learning, and show proof when a workflow owner asks what changed.</p>
+    <div class="grid-3">
+      <div class="feature-card">
+        <h3>Debug the exact block in minutes</h3>
+        <p>The visual gate debugger shows every blocked action and the gate that fired, so you stop guessing whether the Reliability Gateway is actually working.</p>
+        <ul>
+          <li>See the gate, evidence, and lesson behind each deny.</li>
+          <li>Trust the system faster on deploys, migrations, and CI.</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <h3>Turn corrections into DPO export</h3>
+        <p>Pro turns real thumbs-down corrections into ready-to-use preference pairs for model hardening, instead of leaving the learning trapped in one operator's head.</p>
+        <ul>
+          <li>DPO export built from actual accepted vs rejected behavior.</li>
+          <li>Model Hardening Advisor helps decide when fine-tuning is worth it.</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <h3>Ship proof, not just confidence</h3>
+        <p>When the next risky workflow review happens, you have evidence links, reports, and a founder-supported path to harden the exact failure domain that keeps returning.</p>
+        <ul>
+          <li>Review-ready evidence for one operator's high-risk workflows.</li>
+          <li>Founder support on force-pushes, deploys, migrations, and CI.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-label">Honest packaging</div>
+    <h2 class="section-title">Stay on Free when recall and gates are enough. Go Pro when you need proof and operator speed.</h2>
+    <div class="split-grid">
+      <div class="split-card free">
+        <div class="split-kicker">Stay on Free</div>
+        <h3>The local install is still the right first step</h3>
+        <p>If you only need local recall, Pre-Action Gates, MCP setup, and a way to stop repeated mistakes on one machine, keep the free install and move fast.</p>
+        <ul>
+          <li>Local-first recall, lessons, and enforcement.</li>
+          <li>No cloud account required.</li>
+          <li>Best when you do not yet need a personal dashboard or export path.</li>
+        </ul>
+      </div>
+      <div class="split-card pro">
+        <div class="split-kicker">Go Pro</div>
+        <h3>Buy Pro when the workflow owner asks for proof</h3>
+        <p>Pro is for the individual operator who now needs a personal local dashboard, DPO export, auto-connect, and a buyer-ready reason to pay instead of re-explaining the same failure pattern.</p>
+        <ul>
+          <li>Review-ready evidence and a dashboard of exactly what got blocked.</li>
+          <li>DPO export from real corrections, not synthetic examples.</li>
+          <li>Founder support for the first risky workflow you need to harden.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="pricing">
+  <div class="container pricing-shell">
+    <div class="pricing-card">
+      <div class="section-label" style="text-align:left;margin-bottom:8px;">Pricing</div>
+      <h3>ThumbGate Pro for one operator</h3>
+      <div class="price">$19<span>/mo</span></div>
+      <div class="annual">or $149/yr when you already know this workflow needs to stay hardened</div>
+      <p class="pricing-note">Pro keeps the local-first posture and adds the paid operator surface: personal local dashboard, DPO export, auto-connect after activation, Model Hardening Advisor, and founder support.</p>
+      <ul>
+        <li>Visual gate debugger to inspect every blocked action and the gate that fired.</li>
+        <li>DPO training data export from real thumbs-down corrections.</li>
+        <li>Auto-connect running agents to your personal local dashboard after activation.</li>
+        <li>Founder support on risky workflows: migrations, deploys, force-pushes, and CI.</li>
+      </ul>
+      <div class="pricing-actions">
+        <a class="btn-primary btn-pro-checkout" href="/checkout/pro?utm_source=website&utm_medium=pro_page_pricing&utm_campaign=pro_pack&cta_id=pro_page_pricing_monthly&cta_placement=pricing&plan_id=pro&landing_path=%2Fpro">Start 7-Day Free Trial</a>
+        <a class="btn-secondary btn-pro-checkout" href="/checkout/pro?utm_source=website&utm_medium=pro_page_pricing&utm_campaign=pro_pack&cta_id=pro_page_pricing_annual&cta_placement=pricing&plan_id=pro&billing_cycle=annual&landing_path=%2Fpro">Choose annual</a>
+      </div>
+      <div class="pricing-meta">If the personal local dashboard and export path do not matter yet, stay on Free. This page exists so paid buyers do not have to infer the value from the general homepage.</div>
+    </div>
+
+    <div class="pricing-sidebar">
+      <div class="team-card">
+        <div class="section-label" style="text-align:left;margin-bottom:8px;">When Team is better</div>
+        <h3>Multiple agents, shared repos, one correction that should protect everyone</h3>
+        <p>Choose Team when you need a shared hosted lesson DB, org dashboard visibility, hosted review views, and a workflow hardening pilot instead of one operator's personal local dashboard.</p>
+        <div class="hero-actions" style="margin-top:18px;">
+          <a class="btn-secondary" href="/?utm_source=website&utm_medium=pro_page&utm_campaign=team_rollout#workflow-sprint-intake">Start team pilot intake</a>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="section-label" style="text-align:left;margin-bottom:8px;">Free path</div>
+        <h3>Prefer the local install first?</h3>
+        <p class="comparison-note">Install with <code style="font-family:var(--mono);color:var(--cyan);">npx thumbgate init</code>, keep the free local gates, and come back to Pro once the workflow owner asks for your own dashboard, exports, or review-ready proof.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="faq">
+  <div class="container">
+    <div class="section-label">FAQ</div>
+    <h2 class="section-title">Questions paid buyers ask before checkout</h2>
+    <div class="faq-list">
+      <div class="faq-item open">
+        <button class="faq-q" type="button" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)" aria-expanded="true">How is Pro different from the free install?</button>
+        <div class="faq-a">Free keeps the local recall, Pre-Action Gates, and MCP setup. Pro adds the personal local dashboard, DPO export, auto-connect after activation, and founder support when one risky workflow keeps repeating the same failure mode.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" type="button" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)" aria-expanded="false">Does Pro require a cloud account?</button>
+        <div class="faq-a">No. Pro is still local-first for the individual operator lane. Team is the hosted rollout lane for shared lessons, org visibility, and hosted review views.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" type="button" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)" aria-expanded="false">What happens after checkout?</button>
+        <div class="faq-a">You activate Pro, connect the personal local dashboard, and your running agents can appear automatically so you can inspect blocked actions, active lessons, and exportable DPO pairs without adding a separate cloud dashboard dependency.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" type="button" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)" aria-expanded="false">When should I choose Team instead of Pro?</button>
+        <div class="faq-a">Choose Team when one thumbs-down should protect multiple people or agents across shared repositories, or when you need shared hosted lessons, org dashboard visibility, and a workflow hardening pilot with rollout review views.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta">
+  <div class="container">
+    <div class="final-shell">
+      <h2>Make the paid path obvious before you ask for the card.</h2>
+      <p>ThumbGate Pro exists for the operator who wants the local dashboard, DPO export, and proof-ready story. The free install stays honest. The paid lane now has its own page.</p>
+      <div class="hero-actions" style="justify-content:center;">
+        <a class="btn-primary btn-pro-checkout" href="/checkout/pro?utm_source=website&utm_medium=pro_page_final&utm_campaign=pro_pack&cta_id=pro_page_final&cta_placement=final&plan_id=pro&landing_path=%2Fpro">Start 7-Day Free Trial</a>
+        <a class="btn-secondary btn-demo" href="/dashboard?utm_source=website&utm_medium=pro_page_final&utm_campaign=pro_pack">Open dashboard demo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/guide">Setup Guide</a>
+      <a href="/dashboard">Dashboard Demo</a>
+      <a href="__VERIFICATION_URL__" target="_blank" rel="noopener">Verification Evidence</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <div class="footer-copy">ThumbGate Pro for individual operators. Team stays intake-first.</div>
+  </div>
+</footer>
+
+<script src="/js/buyer-intent.js"></script>
+<script>
+function initializeBuyerIntent() {
+  globalThis.ThumbGateBuyerIntent.initializeBuyerIntent({
+    page: 'pro',
+    duplicateMessage: 'Already saved. All Pro checkout buttons on this device are now prefilled.',
+    successMessage: 'Saved. We will keep checkout prefilled on this device.',
+  });
+  globalThis.ThumbGateBuyerIntent.initializeEmailCheckoutButtons({
+    eventName: 'pro_checkout_email_start',
+    eventProps: { page: 'pro', intent: 'checkout' },
+  });
+}
+
+function trackClick(selector, eventName, props) {
+  document.querySelectorAll(selector).forEach(function(el) {
+    el.addEventListener('click', function() {
+      if (typeof plausible === 'function') plausible(eventName, { props: props || {} });
+    });
+  });
+}
+
+function toggleFaq(el) {
+  var item = el.parentElement;
+  var open = item.classList.toggle('open');
+  el.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function handleFaqKeydown(event) {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  event.preventDefault();
+  toggleFaq(event.currentTarget);
+}
+
+trackClick('.btn-pro-checkout', 'pro_checkout_start', { tier: 'pro', page: 'pro' });
+trackClick('.btn-demo', 'pro_demo_click', { page: 'pro' });
+trackClick('.btn-free-path', 'pro_free_path_click', { page: 'pro' });
+trackClick('.proof-links a', 'pro_proof_click', { page: 'pro' });
+initializeBuyerIntent();
+
+document.querySelectorAll('.faq-q').forEach(function(el) {
+  el.addEventListener('click', function() {
+    if (typeof plausible === 'function') {
+      plausible('pro_faq_open', { props: { question: (el.textContent || '').trim().substring(0, 80) } });
+    }
+  });
+});
+</script>
+</body>
+</html>

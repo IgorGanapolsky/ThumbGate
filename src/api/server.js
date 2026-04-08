@@ -149,11 +149,13 @@ const {
 } = require('../../scripts/seo-gsd');
 
 const LANDING_PAGE_PATH = path.resolve(__dirname, '../../public/index.html');
+const PRO_PAGE_PATH = path.resolve(__dirname, '../../public/pro.html');
 const DASHBOARD_PAGE_PATH = path.resolve(__dirname, '../../public/dashboard.html');
 const LESSONS_PAGE_PATH = path.resolve(__dirname, '../../public/lessons.html');
 const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
+const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
 const VISITOR_COOKIE_NAME = 'thumbgate_visitor_id';
 const SESSION_COOKIE_NAME = 'thumbgate_session_id';
 const ACQUISITION_COOKIE_NAME = 'thumbgate_acquisition_id';
@@ -893,8 +895,8 @@ function escapeHtmlAttribute(value) {
     .replaceAll('>', '&gt;');
 }
 
-function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
-  const template = fs.readFileSync(LANDING_PAGE_PATH, 'utf-8');
+function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContext = {}) {
+  const template = fs.readFileSync(templatePath, 'utf-8');
   const googleSiteVerificationMeta = runtimeConfig.googleSiteVerification
     ? `  <meta name="google-site-verification" content="${escapeHtmlAttribute(runtimeConfig.googleSiteVerification)}" />`
     : '';
@@ -929,6 +931,14 @@ function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
   });
+}
+
+function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(LANDING_PAGE_PATH, runtimeConfig, pageContext);
+}
+
+function loadProPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(PRO_PAGE_PATH, runtimeConfig, pageContext);
 }
 
 function loadDashboardPageHtml(req, expectedApiKey) {
@@ -1266,6 +1276,7 @@ function renderRobotsTxt(runtimeConfig) {
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
+    { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
   return [
@@ -2195,6 +2206,24 @@ function createApiServer() {
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/js/buyer-intent.js') {
+      try {
+        const script = fs.readFileSync(BUYER_INTENT_SCRIPT_PATH, 'utf-8');
+        res.writeHead(200, {
+          'Content-Type': 'application/javascript; charset=utf-8',
+          'Cache-Control': 'public, max-age=86400',
+        });
+        if (!isHeadRequest) {
+          res.end(script);
+        } else {
+          res.end();
+        }
+      } catch {
+        sendJson(res, 404, { error: 'Buyer intent script not found' });
+      }
+      return;
+    }
+
 
     // User feedback → GitHub Issues
     if (req.method === 'POST' && pathname === '/api/feedback/submit') {
@@ -2227,6 +2256,9 @@ function createApiServer() {
       req.on('data', (chunk) => chunks.push(chunk));
       req.on('end', () => {
         try {
+          const accepts = String(req.headers.accept || '').toLowerCase();
+          const requestedWith = String(req.headers['x-requested-with'] || '').toLowerCase();
+          const wantsJson = accepts.includes('application/json') || requestedWith === 'fetch';
           const body = Buffer.concat(chunks).toString();
           const params = new URLSearchParams(body);
           const email = (params.get('email') || '').trim().toLowerCase();
@@ -2285,6 +2317,16 @@ function createApiServer() {
               landingPath,
               attribution,
             }) + '\n');
+          }
+          if (wantsJson) {
+            sendJson(res, 200, {
+              accepted: true,
+              duplicate,
+              email,
+              landingPath,
+              source: attribution.source || 'landing-page',
+            });
+            return;
           }
           res.writeHead(302, { Location: '/?subscribed=1' });
           res.end();
@@ -2585,6 +2627,25 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/pro') {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadProPageHtml,
+          extraTelemetry: {
+            pageType: 'pro_landing',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Pro page unavailable');
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/guide') {
       try {
         const html = fs.readFileSync(GUIDE_PAGE_PATH, 'utf-8');
@@ -2652,7 +2713,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/learn', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/settings/status', '/v1/dpo/export', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/settings/status', '/v1/dpo/export', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });

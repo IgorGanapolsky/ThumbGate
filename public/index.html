@@ -82,7 +82,7 @@ __GA_BOOTSTRAP__
       "price": "19",
       "priceCurrency": "USD",
       "description": "Personal local dashboard, DPO export, advanced data exports, and founder-license support for individual operators",
-      "url": "https://buy.stripe.com/fZu9AT3Ug6zcdWh0XN3sI08"
+      "url": "https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&landing_path=%2F"
     },
     {
       "@type": "Offer",
@@ -90,7 +90,7 @@ __GA_BOOTSTRAP__
       "price": "149",
       "priceCurrency": "USD",
       "description": "Annual Pro for individual operators who want the personal local dashboard and proof-ready exports",
-      "url": "https://buy.stripe.com/9B66oHeyUaPsaK521R3sI09"
+      "url": "https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&billing_cycle=annual&landing_path=%2F"
     },
     {
       "@type": "Offer",
@@ -250,6 +250,11 @@ __GA_BOOTSTRAP__
   .signal-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
   .signal-pill.signal-up { border-color: rgba(74, 222, 128, 0.28); color: #b8f7c8; background: rgba(74, 222, 128, 0.08); }
   .signal-pill.signal-down { border-color: rgba(248, 113, 113, 0.28); color: #ffc0c0; background: rgba(248, 113, 113, 0.08); }
+  .hero-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 16px; max-width: 760px; }
+  .btn-pro-page { display: inline-flex; align-items: center; justify-content: center; padding: 11px 18px; background: var(--cyan); color: var(--bg); border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 700; box-shadow: 0 0 0 1px rgba(34,211,238,0.28), 0 12px 32px rgba(34,211,238,0.18); transition: opacity 0.15s, transform 0.15s; }
+  .btn-pro-page:hover { opacity: 0.9; transform: translateY(-1px); }
+  .hero-paid-note { font-size: 14px; color: var(--text-muted); max-width: 720px; margin: 0 auto 24px; }
+  .hero-paid-note strong { color: var(--text); }
   .hero-install { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 14px 24px; display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 15px; margin-bottom: 40px; cursor: pointer; transition: border-color 0.2s; position: relative; max-width: 100%; overflow-x: auto; }
   .hero-install:hover { border-color: var(--cyan); }
   .hero-install .prompt { color: var(--text-muted); user-select: none; }
@@ -343,8 +348,10 @@ __GA_BOOTSTRAP__
   .price-card li { font-size: 14px; color: var(--text-muted); padding: 6px 0; display: flex; align-items: flex-start; gap: 8px; }
   .price-card li::before { content: "✓"; color: var(--cyan); font-weight: 700; flex-shrink: 0; }
   .price-card.pro li::before { color: var(--cyan); }
-  .btn-free { display: block; text-align: center; padding: 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; transition: border-color 0.15s; }
-  .btn-free:hover { border-color: var(--text-muted); }
+  .btn-free,
+  .btn-demo-link { display: block; text-align: center; padding: 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; transition: border-color 0.15s; }
+  .btn-free:hover,
+  .btn-demo-link:hover { border-color: var(--text-muted); }
   .btn-pro { display: block; text-align: center; padding: 10px; background: var(--cyan); color: var(--bg); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: opacity 0.15s; }
   .btn-pro:hover { opacity: 0.85; }
   .btn-team { display: block; text-align: center; padding: 10px; background: rgba(74,222,128,0.14); color: var(--green); border: 1px solid rgba(74,222,128,0.4); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: border-color 0.15s, transform 0.15s; }
@@ -387,6 +394,8 @@ __GA_BOOTSTRAP__
     .pricing-grid { grid-template-columns: 1fr; }
     .team-form { grid-template-columns: 1fr; }
     .hero { padding: 72px 0 56px; }
+    .hero-actions { flex-direction: column; }
+    .hero-actions a { width: 100%; }
     .nav-links a:not(.nav-cta) { display: none; }
     .proof-bar { gap: 16px; }
     .proof-bar .dot { display: none; }
@@ -409,7 +418,7 @@ __GA_BOOTSTRAP__
       <a href="/guide">Setup Guide</a>
       <a href="/learn">Learn</a>
       <a href="/dashboard">Dashboard Demo</a>
-      <a href="#pricing" class="nav-cta">View Plans</a>
+      <a href="/pro?utm_source=website&utm_medium=homepage_nav&utm_campaign=pro_page" class="nav-cta">See Pro</a>
     </div>
   </div>
 </nav>
@@ -426,6 +435,11 @@ __GA_BOOTSTRAP__
     </div>
     <p class="hero-persona">For developers using Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode who want their AI agent to actually get better over time — not repeat the same mistakes every session.</p>
     <p><strong>The self-improvement loop:</strong> Your agent makes a mistake → you give a thumbs-down → ThumbGate auto-generates a prevention rule → a gate physically blocks that mistake from ever happening again. Your agent gets permanently smarter with every correction. No model retraining. No prompt hacking. Just enforcement that compounds.</p>
+    <div class="hero-actions">
+      <a href="/pro?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page" class="btn-pro-page">See Pro for individual operators</a>
+      <a href="/dashboard?utm_source=website&utm_medium=homepage_hero&utm_campaign=demo" class="btn-demo-link">Open dashboard demo</a>
+    </div>
+    <p class="hero-paid-note"><strong>Paid path:</strong> Free stays the local install lane. Pro is the buyer-ready page for your personal local dashboard, DPO export, and review-ready evidence.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx thumbgate init</span>
@@ -664,10 +678,10 @@ __GA_BOOTSTRAP__
           <li>Personal local dashboard — every Pro user gets a localhost dashboard without extra cloud setup</li>
           <li>Founder-license support — we help you wire the riskiest flows first: migrations, force-pushes, deploys, and CI</li>
         </ul>
-        <a href="https://buy.stripe.com/fZu9AT3Ug6zcdWh0XN3sI08" class="btn-pro" style="display:none" id="pro-checkout-link">Start Free Trial — then $19/mo</a>
+        <a href="/checkout/pro?utm_source=website&utm_medium=homepage_pricing&utm_campaign=pro_pack&cta_id=homepage_pricing_trial&cta_placement=pricing&plan_id=pro&landing_path=%2F" class="btn-pro" style="display:none" id="pro-checkout-link">Start Free Trial — then $19/mo</a>
         <div class="trial-badge" style="background:var(--cyan);color:#000;display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:12px;">7-DAY FREE TRIAL</div>
         <div class="email-gate" style="margin-bottom:12px;">
-          <input type="email" id="pro-email" placeholder="Your email to start trial" style="width:100%;padding:10px 14px;border:1px solid #333;border-radius:6px;background:#1a1a2e;color:#fff;font-size:14px;">
+          <input type="email" id="pro-email" data-buyer-email placeholder="Your email to start trial" style="width:100%;padding:10px 14px;border:1px solid #333;border-radius:6px;background:#1a1a2e;color:#fff;font-size:14px;">
         </div>
         <button class="btn-pro" id="pro-trial-btn" onclick="handleProTrial()" style="width:100%;cursor:pointer;border:none;">Start 7-Day Free Trial</button>
         <p style="font-size:11px;color:#666;margin-top:8px;">Founder pricing — <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" style="color:var(--cyan);text-decoration:underline;">preserved $49 one-time founder link</a> for early buyers who still want that path.</p>
@@ -764,13 +778,14 @@ __GA_BOOTSTRAP__
 <!-- NEWSLETTER SIGNUP -->
 <section class="compatibility" id="newsletter" style="padding: 48px 0;">
   <div class="container" style="text-align: center;">
-    <div class="section-label">Stay in the loop</div>
-    <h2 class="section-title" style="margin-bottom: 16px;">Get notified when we ship</h2>
-    <p style="color: var(--text-dim); margin-bottom: 24px; max-width: 480px; margin-left: auto; margin-right: auto;">Release notes, new gate patterns, and agent governance insights. No spam. Unsubscribe anytime.</p>
-    <form action="https://thumbgate-production.up.railway.app/api/newsletter" method="POST" style="display: flex; gap: 8px; max-width: 420px; margin: 0 auto; flex-wrap: wrap; justify-content: center;">
-      <input type="email" name="email" placeholder="you@company.com" required style="flex: 1; min-width: 200px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 15px;">
-      <button type="submit" style="padding: 12px 24px; background: var(--cyan); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer;" onclick="if(typeof plausible==='function')plausible('newsletter_signup')">Subscribe</button>
+    <div class="section-label">Buyer Follow-Up</div>
+    <h2 class="section-title" style="margin-bottom: 16px;">Not ready to buy today? Keep the demo and checkout link one click away.</h2>
+    <p style="color: var(--text-dim); margin-bottom: 24px; max-width: 560px; margin-left: auto; margin-right: auto;">Save your work email for launch updates, new gate patterns, and the paid demo path. We also keep it on this device so the Pro checkout can open prefilled instead of making you type it again.</p>
+    <form action="/api/newsletter" method="POST" data-newsletter-form data-page="homepage" data-intent="buyer_follow_up" style="display: flex; gap: 8px; max-width: 480px; margin: 0 auto; flex-wrap: wrap; justify-content: center;">
+      <input type="email" name="email" data-buyer-email placeholder="you@company.com" required style="flex: 1; min-width: 220px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); color: var(--text); font-size: 15px;">
+      <button type="submit" style="padding: 12px 24px; background: var(--cyan); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer;">Get updates + keep checkout ready</button>
     </form>
+    <p data-newsletter-status style="min-height:20px;font-size:12px;color:var(--text-dim);margin-top:10px;" aria-live="polite"></p>
   </div>
 </section>
 
@@ -780,8 +795,8 @@ __GA_BOOTSTRAP__
     <h2>Put ThumbGate on your next AI-generated change.</h2>
     <p>Try the dashboard demo first or install in 30 seconds. Prove the value on a real PR, deploy, or migration.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <a href="/dashboard" class="btn-free" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);">Try Dashboard Demo</a>
-      <a href="https://buy.stripe.com/fZu9AT3Ug6zcdWh0XN3sI08" class="btn-pro">Try Pro free for 7 days → $19/mo</a>
+      <a href="/dashboard" class="btn-demo-link" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);">Try Dashboard Demo</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=homepage_final&utm_campaign=pro_pack&cta_id=homepage_final_trial&cta_placement=final&plan_id=pro&landing_path=%2F" class="btn-pro">Try Pro free for 7 days → $19/mo</a>
     </div>
   </div>
 </section>
@@ -800,7 +815,25 @@ __GA_BOOTSTRAP__
   </div>
 </footer>
 
+<script src="/js/buyer-intent.js"></script>
 <script>
+function initializeBuyerIntentForms() {
+  globalThis.ThumbGateBuyerIntent.initializeBuyerIntent({
+    page: 'homepage',
+    duplicateMessage: 'You are already on the list. Checkout on this device is now prefilled.',
+    successMessage: 'Saved. We will keep checkout prefilled on this device.',
+  });
+}
+
+function resolvePricingClickTier(el) {
+  if (el.classList.contains('btn-pro')) return 'pro';
+  if (el.classList.contains('btn-pro-page')) return 'pro_page';
+  if (el.classList.contains('btn-team')) return 'team';
+  if (el.classList.contains('btn-free')) return 'free';
+  if (el.classList.contains('btn-demo-link')) return 'demo';
+  return 'nav';
+}
+
 function copyInstall(el) {
   navigator.clipboard.writeText('npx thumbgate init').then(function() {
     var hint = el.querySelector('.copy-hint');
@@ -835,20 +868,19 @@ function copyInstall(el) {
 
   /* CTA clicks */
   trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 19, billing: 'monthly' });
+  trackClick('.btn-pro-page', 'pro_page_click', { tier: 'pro', source: 'hero' });
   trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
   trackClick('.btn-free', 'install_click', { tier: 'free' });
-  trackClick('.nav-cta', 'checkout_start', { tier: 'pro', source: 'nav' });
+  trackClick('.btn-demo-link', 'demo_click', { source: 'homepage' });
+  trackClick('.nav-cta', 'pro_page_click', { tier: 'pro', source: 'nav' });
 
   /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Team button click
      with section context so we can distinguish pricing section vs final CTA section clicks */
-  document.querySelectorAll('.btn-pro, .btn-team, .btn-free, .nav-cta').forEach(function(el) {
+  document.querySelectorAll('.btn-pro, .btn-pro-page, .btn-team, .btn-free, .btn-demo-link, .nav-cta').forEach(function(el) {
     el.addEventListener('click', function() {
       var section = el.closest('section');
       var sectionId = section ? (section.id || section.className.split(' ')[0] || 'unknown') : 'unknown';
-      var tier = el.classList.contains('btn-pro') ? 'pro'
-               : el.classList.contains('btn-team') ? 'team'
-               : el.classList.contains('btn-free') ? 'free'
-               : 'nav';
+      var tier = resolvePricingClickTier(el);
       var label = (el.textContent || '').trim().substring(0, 40);
       if (typeof plausible === 'function') {
         plausible('pricing_cta_click', { props: { tier: tier, section: sectionId, label: label } });
@@ -889,22 +921,33 @@ function copyInstall(el) {
 })();
 </script>
 <script>
-function handleProTrial() {
+initializeBuyerIntentForms();
+
+async function handleProTrial() {
+  var buyerIntent = globalThis.ThumbGateBuyerIntent;
   var email = document.getElementById('pro-email');
-  if (!email || !email.value || !email.value.includes('@')) {
+  var normalizedEmail = buyerIntent.normalizeBuyerEmail(email && email.value);
+  if (!email || !buyerIntent.isValidBuyerEmail(normalizedEmail)) {
     email.style.border = '2px solid #f87171';
     email.placeholder = 'Please enter a valid email';
     email.focus();
     return;
   }
   email.style.border = '1px solid #333';
-  var checkoutUrl = document.getElementById('pro-checkout-link').href;
-  var sep = checkoutUrl.includes('?') ? '&' : '?';
-  var finalUrl = checkoutUrl + sep + 'prefilled_email=' + encodeURIComponent(email.value);
+  buyerIntent.storeBuyerEmail(normalizedEmail);
+  buyerIntent.hydrateBuyerEmailInputs(normalizedEmail);
+  buyerIntent.applyBuyerEmailToCheckoutLinks(normalizedEmail);
+  var checkoutLink = document.getElementById('pro-checkout-link');
+  var checkoutUrl = checkoutLink ? checkoutLink.href : '/checkout/pro';
   if (typeof plausible === 'function') {
-    plausible('trial_email_captured', { props: { email: email.value } });
+    plausible('trial_email_captured', { props: { page: 'homepage', intent: 'checkout' } });
   }
-  window.location.href = finalUrl;
+  try {
+    await buyerIntent.submitNewsletterSignup(normalizedEmail);
+  } catch (_err) {
+    // Continue to checkout even if lead capture fails.
+  }
+  globalThis.location.assign(checkoutUrl);
 }
 </script>
 </body>
