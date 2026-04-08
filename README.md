@@ -1,6 +1,6 @@
 # ThumbGate
 
-Make your AI coding agent self-improving. One thumbs-down creates a gate that permanently blocks the mistake.
+Make your AI coding agent self-improving. ThumbGate turns thumbs-up and thumbs-down into a control plane for autonomous development: pre-action gates, workflow governance, and isolated execution guidance for high-risk runs.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -26,6 +26,15 @@ Free for individual developers. Pro adds team dashboards, DPO export, and unlimi
 ```bash
 npx thumbgate init
 ```
+
+## Enterprise Story
+
+ThumbGate is the control plane for AI coding agents:
+
+- Feedback becomes enforcement, so repeated failures stop at the gate instead of reappearing in review.
+- Workflow Sentinel scores blast radius before execution, so risky PR, release, and publish flows are visible early.
+- High-risk local actions can be routed into Docker Sandboxes, while hosted team automations use a signed isolated sandbox lane.
+- Team rollout stays tied to [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) instead of trust-me operator claims.
 
 ## Before / After
 
@@ -134,7 +143,7 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 │ Unlimited    │ Unlimited feedback │ Shared hosted lesson DB      │
 │ feedback     │ captures + search  │ Org dashboard                │
 │ captures     │ DPO export         │ Gate template library         │
-│ 5 daily      │ Personal dashboard │ Workflow hardening sprint     │
+│ 5 daily      │ Personal dashboard │ Isolated execution guidance   │
 │ lesson       │                    │                              │
 │ searches     │                    │                              │
 └──────────────┴────────────────────┴──────────────────────────────┘
@@ -142,7 +151,7 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 
 Free includes unlimited feedback captures, 5 daily lesson searches, unlimited recall, and gating. History-aware distillation turns vague feedback into concrete lessons. Feedback sessions (`open_feedback_session` → `append_feedback_context` → `finalize_feedback_session`) link follow-up context to one record.
 
-It does not update model weights. It's context engineering — enforcement that gets smarter every session.
+It does not update model weights. It's context engineering plus execution control: enforcement that gets smarter every session, with Docker Sandboxes guidance for the riskiest local actions and a hosted isolated lane for team workflows.
 
 **[Get Pro](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Start Team Rollout](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)** | **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)**
 
@@ -157,12 +166,13 @@ It does not update model weights. It's context engineering — enforcement that 
 │  JSONL logs       │  Thompson Sampling│  Gates config    │
 │  ContextFS        │                   │  Hook wiring     │
 ├───────────────────┼───────────────────┼──────────────────┤
-│  INTERFACES       │  BILLING          │  HOSTING         │
+│  INTERFACES       │  BILLING          │  EXECUTION       │
 │                   │                   │                  │
 │  MCP stdio        │  Stripe           │  Railway         │
 │  HTTP API         │                   │  Cloudflare      │
 │  CLI              │                   │    Workers       │
-│  Node.js >=18     │                   │                  │
+│  Node.js >=18     │                   │  Docker          │
+│                   │                   │    Sandboxes     │
 └───────────────────┴───────────────────┴──────────────────┘
 ```
 

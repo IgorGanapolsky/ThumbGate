@@ -14,6 +14,7 @@ const {
   createAuditEntry,
   evaluateBatch,
   loadConfig,
+  attachExecutionSurface,
 } = require('../scripts/computer-use-firewall');
 
 // ---------------------------------------------------------------------------
@@ -96,6 +97,8 @@ test('evaluateAction requires approval for shell.exec in dev-sandbox preset', ()
   const action = normalizeAction({ type: 'shell.exec', command: 'npm test' });
   const result = evaluateAction(action, 'dev-sandbox');
   assert.equal(result.decision, 'require-approval');
+  assert.equal(result.executionSurface.shouldSandbox, true);
+  assert.equal(result.executionSurface.recommendation, 'recommended');
 });
 
 // ---------------------------------------------------------------------------
@@ -107,6 +110,8 @@ test('evaluateAction denies shell.exec matching dangerous pattern (rm -rf /)', (
   const result = evaluateAction(action, 'dev-sandbox');
   assert.equal(result.decision, 'deny');
   assert.ok(result.reason.includes('Dangerous shell pattern'));
+  assert.equal(result.executionSurface.shouldSandbox, true);
+  assert.equal(result.executionSurface.recommendation, 'required');
 });
 
 // ---------------------------------------------------------------------------
@@ -139,6 +144,16 @@ test('createAuditEntry includes all required fields', () => {
   assert.equal(entry.decision, 'allow');
   assert.equal(entry.reason, 'Allowed by preset');
   assert.equal(entry.preset, 'dev-sandbox');
+});
+
+test('attachExecutionSurface leaves low-risk writes on the host path', () => {
+  const result = attachExecutionSurface({
+    decision: 'allow',
+    preset: 'dev-sandbox',
+    riskLevel: 'medium',
+  }, normalizeAction({ type: 'file.write', path: '/tmp/test.js' }));
+
+  assert.equal(result.executionSurface, undefined);
 });
 
 // ---------------------------------------------------------------------------

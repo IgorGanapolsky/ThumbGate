@@ -100,7 +100,10 @@ test('workflow sentinel denies recurring destructive pattern with high blast rad
 
   assert.equal(report.decision, 'deny');
   assert.equal(report.memoryGuard.mode, 'block');
+  assert.equal(report.executionSurface.shouldSandbox, true);
+  assert.equal(report.executionSurface.recommendation, 'required');
   assert.ok(report.remediations.some((entry) => entry.id === 'retrieve_lessons'));
+  assert.ok(report.remediations.some((entry) => entry.id === 'route_to_docker_sandbox'));
   assert.match(report.evidence.join('\n'), /Memory guard predicted block/);
 });
 
@@ -216,4 +219,5 @@ test('workflow_sentinel MCP tool returns structured report text', async () => {
   assert.equal(result.content[0].type, 'text');
   assert.match(result.content[0].text, /workflow-sentinel-v1/);
   assert.match(result.content[0].text, /blastRadius/);
+  assert.match(result.content[0].text, /executionSurface/);
 });

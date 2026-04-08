@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { buildDockerSandboxPlan } = require('./docker-sandbox-planner');
 
 /**
  * Computer-Use Action Firewall — normalizes OpenAI Responses API
@@ -129,13 +130,13 @@ function evaluateAction(action, preset = 'dev-sandbox', customRules = []) {
   const normalized = action.type ? action : normalizeAction(action);
   const presetConfig = PRESETS[preset];
   if (!presetConfig) {
-    return {
+    return attachExecutionSurface({
       decision: 'deny',
       reason: `Unknown preset: ${preset}`,
       preset,
       riskLevel: normalized.riskLevel,
       auditEntry: createAuditEntry(normalized, { decision: 'deny', reason: `Unknown preset: ${preset}`, preset }),
-    };
+    }, normalized);
   }
 
   // Custom rules override preset defaults
@@ -143,78 +144,99 @@ function evaluateAction(action, preset = 'dev-sandbox', customRules = []) {
     if (rule.action === normalized.type) {
       const decision = rule.decision || 'deny';
       const reason = rule.reason || `Custom rule override for ${normalized.type}`;
-      return {
+      return attachExecutionSurface({
         decision,
         reason,
         preset,
         riskLevel: normalized.riskLevel,
         auditEntry: createAuditEntry(normalized, { decision, reason, preset }),
-      };
+      }, normalized);
     }
   }
 
   // Check dangerous shell patterns (always deny)
   const dangerousMatch = matchesDangerousPattern(normalized);
   if (dangerousMatch) {
-    return {
+    return attachExecutionSurface({
       decision: 'deny',
       reason: `Dangerous shell pattern detected: ${dangerousMatch}`,
       preset,
       riskLevel: 'critical',
       auditEntry: createAuditEntry(normalized, { decision: 'deny', reason: `Dangerous shell pattern: ${dangerousMatch}`, preset }),
-    };
+    }, normalized);
   }
 
   // Check secret patterns (always deny)
   const secretMatch = matchesSecretPattern(normalized);
   if (secretMatch) {
-    return {
+    return attachExecutionSurface({
       decision: 'deny',
       reason: `Secret pattern detected in content: ${secretMatch}`,
       preset,
       riskLevel: 'critical',
       auditEntry: createAuditEntry(normalized, { decision: 'deny', reason: `Secret pattern: ${secretMatch}`, preset }),
-    };
+    }, normalized);
   }
 
   // Evaluate against preset
   if (presetConfig.deny.includes(normalized.type)) {
-    return {
+    return attachExecutionSurface({
       decision: 'deny',
       reason: `Action ${normalized.type} denied by ${preset} preset`,
       preset,
       riskLevel: normalized.riskLevel,
       auditEntry: createAuditEntry(normalized, { decision: 'deny', reason: `Denied by preset`, preset }),
-    };
+    }, normalized);
   }
 
   if (presetConfig.requireApproval.includes(normalized.type)) {
-    return {
+    return attachExecutionSurface({
       decision: 'require-approval',
       reason: `Action ${normalized.type} requires approval in ${preset} preset`,
       preset,
       riskLevel: normalized.riskLevel,
       auditEntry: createAuditEntry(normalized, { decision: 'require-approval', reason: `Requires approval`, preset }),
-    };
+    }, normalized);
   }
 
   if (presetConfig.allow.includes(normalized.type)) {
-    return {
+    return attachExecutionSurface({
       decision: 'allow',
       reason: `Action ${normalized.type} allowed by ${preset} preset`,
       preset,
       riskLevel: normalized.riskLevel,
       auditEntry: createAuditEntry(normalized, { decision: 'allow', reason: `Allowed by preset`, preset }),
-    };
+    }, normalized);
   }
 
   // Default: unknown actions require approval
-  return {
+  return attachExecutionSurface({
     decision: 'require-approval',
     reason: `Action ${normalized.type} not in preset; defaulting to require-approval`,
     preset,
     riskLevel: normalized.riskLevel,
     auditEntry: createAuditEntry(normalized, { decision: 'require-approval', reason: `Not in preset`, preset }),
+  }, normalized);
+}
+
+function attachExecutionSurface(result, action) {
+  const executionSurface = buildDockerSandboxPlan({
+    toolName: action.type === 'shell.exec' ? 'Bash' : 'Write',
+    actionType: action.type,
+    command: action.type === 'shell.exec' ? action.target : '',
+    repoPath: action.args.repoPath || action.args.cwd || '',
+    affectedFiles: action.type.startsWith('file.') && action.target ? [action.target] : [],
+    riskBand: action.riskLevel === 'high' ? 'high' : action.riskLevel === 'medium' ? 'medium' : 'low',
+    requiresNetwork: ['upload', 'download', 'message.send'].includes(action.type),
+  });
+
+  if (!executionSurface.shouldSandbox) {
+    return result;
+  }
+
+  return {
+    ...result,
+    executionSurface,
   };
 }
 
@@ -247,4 +269,5 @@ module.exports = {
   loadConfig,
   matchesDangerousPattern,
   matchesSecretPattern,
+  attachExecutionSurface,
 };

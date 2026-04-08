@@ -20,9 +20,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
 <title>ThumbGate — Self-improving AI coding agents that learn from every mistake</title>
-<meta name="description" content="Pre-action gates for AI coding agents. 👎 Thumbs down → prevention rule → mistake permanently blocked. 👍 Thumbs up → pattern reinforced. History-aware lessons from your corrections. Team adds shared lessons and org visibility.">
+<meta name="description" content="Pre-action gates and workflow governance for AI coding agents. 👎 Thumbs down → prevention rule → mistake permanently blocked. 👍 Thumbs up → pattern reinforced. History-aware lessons from your corrections. Risky local runs can route into Docker Sandboxes. Team adds shared lessons and org visibility, plus isolated execution guidance.">
 <meta property="og:title" content="ThumbGate — Self-improving AI coding agents that learn from every mistake">
-<meta property="og:description" content="Pre-action gates for AI coding agents. 👎 Thumbs down → prevention rule → mistake permanently blocked. 👍 Thumbs up → pattern reinforced. History-aware lessons from your corrections. Team adds shared lessons and org visibility.">
+<meta property="og:description" content="Pre-action gates and workflow governance for AI coding agents. 👎 Thumbs down → prevention rule → mistake permanently blocked. 👍 Thumbs up → pattern reinforced. History-aware lessons from your corrections. Risky local runs can route into Docker Sandboxes. Team adds shared lessons and org visibility, plus isolated execution guidance.">
 <meta property="og:type" content="website">
 <meta name="keywords" content="ThumbGate, thumbgate, self-improving AI agents, AI agent self-improvement, AI agent learning, AI agent memory, pre-action gates, human-in-the-loop, MCP server, Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, vibe coding safety, SpecLock alternative, Mem0 alternative, AI coding agent feedback loop, PreToolUse hooks, prevention rules, feedback enforcement, context engineering">
 
@@ -44,7 +44,7 @@ __GA_BOOTSTRAP__
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
   "alternateName": "thumbgate",
-  "description": "Make your AI coding agent self-improving. Every mistake becomes a prevention rule. Every correction makes it permanently smarter. Turns feedback into enforcement — your agent gets better with every session.",
+  "description": "Make your AI coding agent self-improving. Every mistake becomes a prevention rule. Every correction makes it permanently smarter. ThumbGate adds workflow governance and isolated execution guidance so high-risk runs do not have to happen directly on the host.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "license": "https://opensource.org/licenses/MIT",
@@ -59,6 +59,9 @@ __GA_BOOTSTRAP__
   },
   "featureList": [
     "Pre-Action Gates — block known-bad tool calls before execution",
+    "Workflow Sentinel — score blast radius before PR, merge, release, and publish actions fire",
+    "Docker Sandboxes routing — move high-risk local runs into isolated microVM-backed execution",
+    "Hosted sandbox dispatch — signed isolated lane for team automations",
     "Domain Skill Packs — Stripe, Railway, database migration best practices",
     "Progressive Disclosure — 82% token savings with 3-tier L1/L2/L3 loading",
     "Hallucination Detection — decomposes claims into verifiable sub-claims",
@@ -97,7 +100,7 @@ __GA_BOOTSTRAP__
     {
       "@type": "Offer",
       "name": "Team",
-      "description": "Shared enforcement memory, review visibility, org dashboard, and pilot rollout support for teams shipping AI-generated changes",
+      "description": "Shared enforcement memory, review visibility, org dashboard, Docker Sandboxes guidance for risky local autonomy, and pilot rollout support for teams shipping AI-generated changes",
       "url": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
     }
   ]
@@ -176,6 +179,14 @@ __GA_BOOTSTRAP__
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does ThumbGate reduce host blast radius for high-risk local runs?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate combines pre-action gates with execution guidance. Workflow Sentinel predicts risky local actions before they execute, and high-risk runs can be routed into Docker Sandboxes instead of running directly on the host. Team workflows also have a signed hosted sandbox lane for isolated automation dispatch."
       }
     },
     {
@@ -430,19 +441,19 @@ __GA_BOOTSTRAP__
 <section class="hero">
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
-    <div class="hero-badge">● Self-improving AI agents — every mistake makes it smarter</div>
+    <div class="hero-badge">● Self-improving AI agents with workflow governance and isolated execution</div>
     <h1>Your AI agent learns<br>from every mistake.</h1>
     <div class="hero-signals">
       <div class="signal-pill signal-down">👎 Mistake becomes a prevention rule — permanently blocked</div>
       <div class="signal-pill signal-up">👍 Good pattern reinforced — reused across sessions</div>
     </div>
-    <p class="hero-persona">For developers using Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode who want their AI agent to actually get better over time — not repeat the same mistakes every session.</p>
-    <p><strong>The self-improvement loop:</strong> Your agent makes a mistake → you give a thumbs-down → ThumbGate auto-generates a prevention rule → a gate physically blocks that mistake from ever happening again. Your agent gets permanently smarter with every correction. No model retraining. No prompt hacking. Just enforcement that compounds.</p>
+    <p class="hero-persona">For developers using Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode who want their AI agent to actually get better over time — and for teams that need the riskiest runs governed before they touch shared repos or the host machine.</p>
+    <p><strong>The self-improvement loop:</strong> Your agent makes a mistake → you give a thumbs-down → ThumbGate auto-generates a prevention rule → a gate physically blocks that mistake from ever happening again. Your agent gets permanently smarter with every correction. No model retraining. No prompt hacking. Just enforcement that compounds, plus isolated execution guidance when autonomy gets risky.</p>
     <div class="hero-actions">
       <a href="/pro?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page" class="btn-pro-page">See Pro for individual operators</a>
       <a href="/dashboard?utm_source=website&utm_medium=homepage_hero&utm_campaign=demo" class="btn-demo-link">Open dashboard demo</a>
     </div>
-    <p class="hero-paid-note"><strong>Paid path:</strong> Free stays the local install lane. Pro is the buyer-ready page for your personal local dashboard, DPO export, and review-ready evidence.</p>
+    <p class="hero-paid-note"><strong>Paid path:</strong> Free stays the local install lane. Pro is the buyer-ready page for your personal local dashboard, DPO export, and review-ready evidence. Team adds shared workflow governance, org proof, and isolated execution guidance for high-risk runs.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx thumbgate init</span>
@@ -508,6 +519,10 @@ __GA_BOOTSTRAP__
       <div class="agent-card">
         <h3>📊 Org Dashboard (Pro)</h3>
         <p>See which agents are creating review churn, which gates are saving time, and where rollout risk is still concentrated.</p>
+      </div>
+      <div class="agent-card">
+        <h3>🧱 Isolated Execution Lanes</h3>
+        <p>High-risk local autonomy can route into Docker Sandboxes, while hosted team automations use a signed sandbox dispatch lane instead of running loose on a shared host.</p>
       </div>
       <div class="agent-card">
         <h3>🧪 Thompson Sampling</h3>
@@ -626,6 +641,10 @@ __GA_BOOTSTRAP__
         <h3>Log everything, learn automatically</h3>
         <p>Repeated failures auto-promote to gates. Org dashboard shows all agents.</p>
       </div>
+      <div class="agent-card">
+        <h3>Keep risky runs off the host</h3>
+        <p>When Workflow Sentinel predicts a risky local action, ThumbGate can recommend Docker Sandboxes before the agent touches the host filesystem or broader credentials.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -729,6 +748,8 @@ __GA_BOOTSTRAP__
           <li>Org dashboard — active agents, gate hit rates, risk agents, and proof-backed team metrics in one place</li>
           <li>Hosted review views — constrained cards, lists, and callouts for rollout, incident, and audit visibility</li>
           <li>Gate template library — pre-built guardrails for force-pushes, skipped tests, destructive SQL, and evidence-before-done</li>
+          <li>Docker Sandboxes guidance — route risky local autonomy into an isolated microVM-backed lane instead of running it directly on a shared host</li>
+          <li>Signed hosted sandbox dispatch — isolated execution path for team automations that do not need repo-bound local access</li>
           <li>Workflow proof sprint — pilot one painful workflow first, then expand once the before/after evidence is real</li>
           <li>Rollout attribution stays tied to the team funnel instead of disappearing into generic referral traffic</li>
         </ul>
@@ -783,6 +804,10 @@ __GA_BOOTSTRAP__
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What AI agents and editors does this work with?</div>
         <div class="faq-a">ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any other MCP-compatible agent. Cursor ships with a plugin bundle in this repo. Codex ships with a repo-local app plugin profile. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</div>
+        <div class="faq-a">ThumbGate is the control plane, not just a prompt layer. Workflow Sentinel predicts blast radius before execution, and risky local autonomy can be routed into Docker Sandboxes instead of running directly on the host. Team workflows also have a signed hosted sandbox lane for isolated dispatch when local repo access is not required.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>

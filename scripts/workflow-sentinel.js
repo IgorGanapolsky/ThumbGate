@@ -14,6 +14,7 @@ const {
   normalizePosix,
   resolveRepoRoot,
 } = require('./operational-integrity');
+const { buildDockerSandboxPlan } = require('./docker-sandbox-planner');
 const { evaluatePretool } = require('./hybrid-feedback-context');
 
 const GOVERNANCE_STATE_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'governance-state.json');
@@ -529,6 +530,7 @@ function buildRemediations({
   protectedSurface,
   blastRadius,
   memoryGuard,
+  executionSurface,
 }) {
   const remediations = [];
   const seen = new Set();
@@ -606,6 +608,14 @@ function buildRemediations({
       'Smaller blast radii are easier to verify and recover.'
     );
   }
+  if (executionSurface && executionSurface.shouldSandbox) {
+    push(
+      'route_to_docker_sandbox',
+      'Route through Docker Sandboxes',
+      `Launch the repo in Docker Sandboxes before retrying. Standalone: ${executionSurface.launchers.standalone}. Docker Desktop: ${executionSurface.launchers.dockerDesktop}.`,
+      'Isolated execution limits host damage when a high-risk local action goes wrong.'
+    );
+  }
 
   return remediations;
 }
@@ -615,6 +625,9 @@ function buildReasoning(report) {
     `Workflow sentinel risk ${report.band} (${report.riskScore}) for ${report.toolName}.`,
     `Blast radius: ${report.blastRadius.summary}.`,
   ];
+  if (report.executionSurface && report.executionSurface.shouldSandbox) {
+    lines.push(`Execution surface: ${report.executionSurface.summary}`);
+  }
   for (const driver of report.drivers.slice(0, 4)) {
     lines.push(`Driver ${driver.key} (+${driver.weight}): ${driver.reason}`);
   }
@@ -713,6 +726,22 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     taskScopeViolation,
     protectedSurface: protectedSurfaceForRisk,
   });
+  const executionSurface = buildDockerSandboxPlan({
+    toolName,
+    actionType: toolName === 'Bash'
+      ? 'shell.exec'
+      : EDIT_LIKE_TOOLS.has(toolName)
+        ? 'file.write'
+        : '',
+    command: toolInput.command,
+    repoPath,
+    affectedFiles,
+    riskBand: risk.band,
+    riskScore: risk.score,
+    requiresNetwork: Boolean(
+      /\b(?:curl|wget|gh\s+pr|git\s+push|npm\s+publish|yarn\s+publish|pnpm\s+publish)\b/i.test(toolInput.command || '')
+    ),
+  });
   const decision = chooseDecision({
     riskScore: risk.score,
     integrity,
@@ -736,6 +765,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     protectedSurface: protectedSurfaceForRisk,
     blastRadius,
     memoryGuard,
+    executionSurface,
   });
   const summary = decision === 'allow'
     ? 'No predictive workflow blockers detected.'
@@ -753,6 +783,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     blastRadius,
     evidence,
     remediations,
+    executionSurface,
     memoryGuard,
     taskScopeViolation,
     operationalIntegrity: {
