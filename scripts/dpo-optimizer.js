@@ -13,8 +13,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { getEffectiveSetting } = require('./evolution-state');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const DPO_BETA = 0.1;
 
@@ -154,11 +154,8 @@ function applyDpoAdjustments(modelPath, pairs) {
  */
 function run(opts) {
   const options = opts || {};
-  const feedbackDir = options.feedbackDir ||
-    process.env.THUMBGATE_FEEDBACK_DIR ||
-    path.join(os.homedir(), '.claude', 'memory', 'feedback');
-  const modelPath = options.modelPath ||
-    path.join(process.cwd(), '.claude', 'memory', 'feedback', 'feedback_model.json');
+  const feedbackDir = options.feedbackDir || resolveFeedbackDir();
+  const modelPath = options.modelPath || path.join(feedbackDir, 'feedback_model.json');
 
   const pairs = buildPreferencePairs(feedbackDir);
 

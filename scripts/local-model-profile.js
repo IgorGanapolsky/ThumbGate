@@ -4,9 +4,10 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { resolveFeedbackDir: resolveSharedFeedbackDir } = require('./feedback-paths');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const DEFAULT_FEEDBACK_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+const DEFAULT_FEEDBACK_DIR = resolveSharedFeedbackDir();
 const DEFAULT_EMBED_MODEL = 'Xenova/all-MiniLM-L6-v2';
 
 // ---------------------------------------------------------------------------
@@ -232,7 +233,7 @@ function recommendInferenceBackend(task = {}, env = process.env) {
 }
 
 function resolveFeedbackDir(explicitDir) {
-  return explicitDir || process.env.THUMBGATE_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
+  return resolveSharedFeedbackDir({ feedbackDir: explicitDir });
 }
 
 function detectHardware(env = process.env) {

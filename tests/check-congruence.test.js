@@ -48,11 +48,29 @@ test('README commercial copy stays aligned with current Pro and Team packaging',
   assert.match(readme, /org dashboard/i);
   assert.match(readme, /history-aware/i);
   assert.match(readme, /feedback session|open_feedback_session|append_feedback_context|finalize_feedback_session/i);
-  assert.match(readme, /5 daily feedback captures/i);
-  assert.match(readme, /10 daily lesson searches/i);
-  assert.doesNotMatch(readme, /unlimited captures/i);
+  assert.match(readme, /unlimited feedback captures/i);
+  assert.match(readme, /5 daily lesson searches/i);
   assert.doesNotMatch(readme, /shared team DB/i);
   assert.doesNotMatch(readme, /\/mo\$19/i);
+});
+
+test('launch content commercial copy stays aligned with the current free and Pro packaging', () => {
+  const launchContent = execSync('sed -n \'1,260p\' docs/marketing/launch-content.md', { cwd: ROOT, encoding: 'utf-8' });
+
+  assert.match(launchContent, /Pro \(\$19\/mo or \$149\/yr\)/);
+  assert.match(launchContent, /No cloud account required/i);
+  assert.doesNotMatch(launchContent, /Fully free and unlimited/i);
+  assert.doesNotMatch(launchContent, /No limits\./i);
+  assert.doesNotMatch(launchContent, /Cloud sync \(optional\)/i);
+});
+
+test('launch content uses tracked landing links for community distribution', () => {
+  const launchContent = execSync('sed -n \'1,260p\' docs/marketing/launch-content.md', { cwd: ROOT, encoding: 'utf-8' });
+
+  assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=reddit/i);
+  assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=hackernews/i);
+  assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=x/i);
+  assert.doesNotMatch(launchContent, /buy\.stripe\.com/i);
 });
 
 test('GitHub About comparison normalizes topic order and flags real drift', () => {

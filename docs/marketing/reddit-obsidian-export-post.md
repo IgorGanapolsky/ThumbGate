@@ -33,12 +33,8 @@ Anyone else pulling AI agent data into their vault? Curious what formats and str
 
 ---
 
-**Comment (post immediately after the main post):**
+**Follow-up comment policy:**
 
-The tool is open source. The `obsidian-export` command handles the full conversion to vault-ready markdown.
+Do not append a generic product comment.
 
-Try free for 7 days (no credit card, 2-minute setup): https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content=obsidian_export_post&community=ObsidianMD
-
-Source code (MIT licensed): https://github.com/IgorGanapolsky/ThumbGate
-
-Disclosure: I built this.
+If somebody asks for the export command or repo, answer that directly. Otherwise keep the thread about Obsidian structure and export format.

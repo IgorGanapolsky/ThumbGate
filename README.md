@@ -1,377 +1,175 @@
 # ThumbGate
 
-> **npm package:** `thumbgate` — install with `npx thumbgate init`
+Make your AI coding agent self-improving. One thumbs-down creates a gate that permanently blocks the mistake.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
-[![Self-Healing](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/self-healing-monitor.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/self-healing-monitor.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D18.18.0-brightgreen)](package.json)
-[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/IgorGanapolsky)
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/igorganapolsky)
-[![Pro Pack](https://img.shields.io/badge/Pro%20Pack-%2419%2Fmo%20or%20%24149%2Fyr-635bff?logo=stripe&logoColor=white)](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate) — Free stays local-first with 5 daily feedback captures, 10 daily lesson searches, unlimited recall, and gating. Vague thumbs feedback can be distilled from the last ~10 messages and failed tool call. Pro adds a personal local dashboard, **Model Hardening Advisor**, and **LoRA/PEFT export**. Team rollout starts at the shared hosted lesson DB, org dashboard, and generated hosted review views.
+[![Try Free](https://img.shields.io/badge/Pro-Try%20Free%20→-635bff?style=for-the-badge&logo=stripe&logoColor=white)](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=badge_cta)
 
-**Repo boundary:** this repository is the public base runtime (`thumbgate`). The paid overlay now lives in the separate [`thumbgate-pro`](https://github.com/IgorGanapolsky/thumbgate-pro) repo/package and inherits from this base instead of shipping from a `pro/` subtree here.
+**[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pricing](https://thumbgate-production.up.railway.app/#pricing?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Setup Guide](https://thumbgate-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=top_cta)**
 
-**Make your AI coding agent self-improving. Every mistake makes it permanently smarter.**
+### Get Started
 
-The self-improvement loop for AI coding agents. Your agent makes a mistake → you give a thumbs-down → ThumbGate auto-generates a prevention rule → a gate physically blocks that mistake from ever happening again. Your agent compounds intelligence with every correction — no model retraining, no prompt hacking, just enforcement that gets better every session.
+**ThumbGate Pro (Recommended)** — zero config, team analytics, shared lesson DB:
 
-> **How it works:** ThumbGate is context-engineered behavioral steering — it injects feedback into context to condition the model's behavior. It does not update model weights. Feedback becomes searchable memory, prevention rules, and gates that block known-bad actions before they execute. Think of it as a behavioral immune system for your AI agent.
+[![Sign up for ThumbGate Pro](https://img.shields.io/badge/>>%20Start%20Free%20→%20ThumbGate%20Pro-635bff?style=for-the-badge)](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=get_started)
 
-Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
+Free for individual developers. Pro adds team dashboards, DPO export, and unlimited lesson search. [See pricing →](https://thumbgate-production.up.railway.app/#pricing?utm_source=github&utm_medium=readme&utm_campaign=pricing_link)
 
-**[Live Demo Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Setup Guide](https://thumbgate-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Landing Page](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Verification Evidence](docs/VERIFICATION_EVIDENCE.md)**
-
-Most memory tools only help an agent remember. ThumbGate makes it **self-improving**.
-
-**Without ThumbGate:**
-
-> Session 1: Agent force-pushes to main. You correct it.
-> Session 2: Agent force-pushes to main again. It learned nothing.
-
-**With ThumbGate:**
-
-> Session 1: Agent force-pushes to main. You thumbs-down it.
-> Session 2: Gate blocks the force-push before execution. Agent tries a safe push instead.
-> Session 3+: Agent never attempts it again. It permanently improved.
-
-- `recall` injects the right context at session start.
-- `search_lessons` shows promoted lessons plus the corrective action, lifecycle state, linked rules, linked gates, and the next harness fix the system should make.
-- `retrieve_lessons` surfaces per-action lessons for the tool or workflow you are about to run.
-- `search_thumbgate` searches feedback state across feedback logs, ContextFS memory, and prevention rules (context engineering, not weight training).
-- History-aware distillation turns a vague `👍` or `👎` into a concrete lesson proposal from the last ~10 messages plus the failed tool call.
-- Feedback sessions let Cursor, Claude Desktop, Codex, and the hosted API keep appending context to the same feedback record before promotion.
-- Pre-action gates physically block tool calls that match known failure patterns.
-- Session handoff and primer keep continuity across sessions without adding an extra orchestrator.
-
-Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx thumbgate lessons`.
-
-## See it in action
-
-```
-$ npx thumbgate serve
-[gate] ⛔ Blocked: git push --force (rule: no-force-push, confidence: 0.94)
-[gate] ✅ Passed: git push origin feature-branch
-```
-
-## Quick Start
+**Open Source (Self-Hosted):**
 
 ```bash
-# One command install — auto-detects your agent
 npx thumbgate init
-
-# Or add the MCP server directly
-claude mcp add thumbgate -- npx -y thumbgate serve
-codex mcp add thumbgate -- npx -y thumbgate serve
-amp mcp add thumbgate -- npx -y thumbgate serve
-gemini mcp add thumbgate "npx -y thumbgate serve"
-
-# Wire PreToolUse enforcement hooks
-npx thumbgate init --agent claude-code
-npx thumbgate init --agent codex
-npx thumbgate init --agent gemini
-
-# Health check and inspect lessons
-npx thumbgate doctor
-npx thumbgate lessons
-npx thumbgate dashboard
 ```
 
-## Claude Code Skill
+## Before / After
 
-If you use Claude Code, ThumbGate is available as a built-in skill:
-
-```bash
-# Type in any Claude Code session:
-/thumbgate
 ```
+WITHOUT THUMBGATE                    WITH THUMBGATE
 
-The skill auto-triggers on keywords like "gate", "feedback", "block mistake", "prevention rule", and "thumbs down". It provides inline access to all ThumbGate commands — capture feedback, view gates, search lessons, and check system health.
+Session 1:                           Session 1:
+  Agent force-pushes to main.          Agent force-pushes to main.
+  You correct it.                      You 👎 it.
 
-**Free skill** includes: install, capture feedback, view active gates, search lessons, health checks.
-**Pro skill** adds: multi-hop recall, DPO export, gate debugger, and gate wiring support.
-**Team rollout** adds: shared hosted lesson DB, org dashboard visibility, and generated hosted review views for multi-agent workflows.
+Session 2:                           Session 2:
+  Agent force-pushes again.            ⛔ Gate blocks force-push.
+  It learned nothing.                  Agent uses safe push instead.
 
-Source: [`.claude/skills/thumbgate/SKILL.md`](.claude/skills/thumbgate/SKILL.md)
+Session 3:                           Session 3+:
+  Same mistake. Again.                 Permanently fixed.
+```
 
 ## How It Works
 
 ```
-1. You give feedback    →  👎 "Force-pushed and lost commits"
-2. ThumbGate distills   →  Uses recent conversation + failed action when the signal is vague
-3. ThumbGate validates  →  Rejects vague signals, promotes actionable ones
-4. Rules auto-generate  →  "Block git push --force to protected branches"
-5. Gates enforce        →  PreToolUse hook fires → BLOCKED before execution
-6. Agent improves       →  Same mistake never happens again
+  YOU                    THUMBGATE                   YOUR AGENT
+   │                        │                            │
+   │  👎 "broke prod"       │                            │
+   ├───────────────────────►│                            │
+   │                        │  distill + validate        │
+   │                        │  ┌─────────────────┐       │
+   │                        │  │ lesson + rule    │       │
+   │                        │  │ created          │       │
+   │                        │  └─────────────────┘       │
+   │                        │                            │
+   │                        │  PreToolUse hook fires     │
+   │                        │◄───────────────────────────┤ tries same mistake
+   │                        │  ⛔ BLOCKED                │
+   │                        ├───────────────────────────►│ forced to try safe path
+   │                        │                            │
+   │  👍 "good fix"         │                            │
+   ├───────────────────────►│                            │
+   │                        │  reinforced ✅             │
+   │                        │                            │
 ```
 
-Pipeline: **Capture → Distill recent history → Validate → Remember → Propose rule → Gate → Export**
-
-Feedback session flow:
+## The Loop
 
 ```
-👎 Thumbs down → Session opens → User types follow-up context → Session finalizes → Lesson inferred from full conversation
+┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
+│ Capture  │────►│ Distill  │────►│ Remember │────►│   Rule   │────►│   Gate   │
+│ 👍 / 👎  │     │ history- │     │ SQLite + │     │ auto-gen │     │ PreTool  │
+│          │     │ aware    │     │ FTS5 DB  │     │ from     │     │ Use hook │
+│          │     │          │     │          │     │ failures │     │ enforces │
+└──────────┘     └──────────┘     └──────────┘     └──────────┘     └──────────┘
 ```
 
-## What's New in v0.9.9
-
-- **ADK-Style Progressive Disclosure** — 3-tier skill loading (L1 metadata → L2 rules → L3 resources) that cuts token usage by 82%. Skill factory auto-generates new skill packs from recurring failure patterns. `measureSkillTokens()` shows exact token cost per tier.
-- **Agent Security Hardening** — credential attestation tracks what creds each agent uses per tool call. Privilege escalation detection checks tool calls against MCP profile allowlists. Dependency attestation gate blocks known-compromised packages (event-stream, ua-parser-js).
-- **Ephemeral Agent Store** — per-agent isolated namespaces for background agents with <10s lifetimes. Auto-merge into main store with PII governance check. Data compaction removes old non-promoted entries.
-- **Prompt-Level DLP** — scans tool call inputs for PII/secrets BEFORE execution. Shadow tool detection flags actions bypassing MCP. Governance score (0-100 + letter grade A-F) per agent session.
-- **Memory Migration** — imports Claude Code MEMORY.md files into ThumbGate's SQLite lesson DB. Health check warns on the 200-line cap Mem0 exposed. Comparison data for marketing.
-
-### Previous (v0.9.6)
-
-- **Background Agent Governance** — run tracking, pre-run governance gates, CI auto-feedback capture. Blocks agents with >50% failure rate. Warns on protected branches and large blast radius. Auto-captures CI pass/fail as structured feedback — no human in the loop. Governance report shows per-agent pass rates and gate blocks.
-- **Hallucination Detector** — decomposes agent claims ("deployed", "tests pass", "PR merged") into verifiable sub-claims, checks each against evidence. Confidence-weighted gates: low confidence blocks, medium warns, high allows. Retrieval-grounded verification flags contradictions with prevention rules.
-- **PII Scanner + Data Governance** — detects emails, phone numbers, SSNs, credit cards in feedback content. DPO export gate blocks pairs containing PII. User-controlled preferences for what data can be exported, shared, or retained. Compliance-ready audit summary.
-- **CLI Inline Feedback** — `node scripts/cli-feedback.js down "broke tests"` captures feedback and echoes lesson + stats to terminal. No browser needed.
-- **Statusline Lessons** — Claude Code statusbar shows most recent lesson with clickable dashboard/lessons links. Auto-created on every feedback capture.
-
-### Previous (v0.9.5)
-
-- **Conversation Context Capture** — Captures the last 5-10 conversation turns alongside every thumbs up/down, so lessons include the full story, not just a one-liner summary.
-- **History-aware lesson distillation** — Vague thumbs feedback can reuse the recent conversation window plus the failed tool call to propose `whatWentWrong`, `whatToChange`, and a concrete lesson instead of discarding the signal.
-- **Feedback Sessions** — Follow-up messages after thumbs up/down ("you lied about X", "you forgot Y") are captured for 60 seconds and folded into the lesson.
-- **Self-Healing Reflector** — On negative feedback, automatically runs a post-mortem: analyzes what went wrong, checks for recurrence, and proposes a specific rule back to the user.
-- **Structured IF/THEN Rules** — Every lesson is extracted as a structured rule with trigger, action, confidence, and scope — not flat text.
-- **Per-Action Lesson Retrieval** — `retrieve_lessons` MCP tool returns top-K relevant lessons for each tool call using keyword matching, file path overlap, and recency decay.
-
-### Previous (v0.9.0)
-
-- **Domain skill packs** — installable best-practice rule sets for Stripe, Railway, database migrations. Auto-match by task context.
-- **Before/after eval harness** — 6 built-in eval cases, 100% pass rate with ThumbGate vs 0% without.
-- **MetaClaw slow loop** — idle-time DPO export scheduler via LaunchAgent cron.
-- **Metered outcome billing** — $0.10/blocked action (Pro), $0.08/seat (Team), floor pricing.
-- **AI Control Tower** — per-tool KPIs (P50/P90/P95 latency, success rate), SLO threshold alerts, access anomaly detection.
-- **Daily digest + weekly stats** — ambient Slack/Teams/Discord push. Social-ready weekly stats for build-in-public.
-- **Statusline upgrade** — Claude Code statusbar shows SLO violations, at-risk tools, anomalies inline.
-- **Gemini MCP adapter** — 14 tool declarations for native Gemini agent interop.
-
-### Previous (v0.8.5)
-
-- **Gate reasoning chains** — every block/warn explains WHY: pattern match, gate identity, source, bypass hints, historical fire count
-- **Multi-hop retrieval** — iterative retrieve → prune → refine loop for complex queries, inspired by Context-1 agentic retrieval
-- **Active context pruning** — re-scores accumulated items after each retrieval hop, drops weak chunks to keep context quality high
-- **Thompson Sampling calibration** — minimum sample threshold (5) prevents low-sample overconfidence; confidence tiers (none/low/medium/high)
-- **Org dashboard** — `org_dashboard` MCP tool aggregates gate decisions across all agent sessions (Team rollout: full visibility, Free preview: 3 agents)
-- **Distractor-aware DPO** — training data export includes near-miss same-domain distractors for harder negatives
-- **Funnel invariant CI** — 13 tests prevent checkout path regression; Pro parity enforced across free/Pro npm packages
-- **Dual-signal feedback** — optional `failureType` ("decision" vs "execution") on `capture_feedback` creates separate Thompson Sampling sub-arms per failure dimension, inspired by Gen-Searcher's dual reward system
-
-![Context Engineering Architecture](https://raw.githubusercontent.com/IgorGanapolsky/ThumbGate/main/docs/diagrams/thumbgate-architecture-pb.png)
-
-## Pre-Action Gates
-
-Gates are the enforcement layer. They do not ask the agent to cooperate — they physically block the action.
-
-```text
-Agent tries git push --force
-  → PreToolUse hook fires
-  → gates-engine checks rules
-  → BLOCKED: no force pushes to protected branches
-```
-
-Built-in gates:
-
-- `push-without-thread-check` — block push if PR threads unresolved
-- `force-push` — block `git push --force` to protected branches
-- `protected-branch-push` — block direct pushes to main/master
-- `package-lock-reset` — block destructive lock file changes
-- `env-file-edit` — block edits to `.env` files with secrets
-
-Define custom gates in [`config/gates/custom.json`](config/gates/custom.json).
-
-## What Actually Works
-
-| Actually works                                                                                                   | Does not work                                                 |
-| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `recall` injects past context into the next session                                                              | Thumbs up/down changing model weights                         |
-| `session_handoff` and `session_primer` preserve continuity                                                       | Agents magically remembering what happened last session       |
-| `search_lessons` exposes corrective actions, lifecycle state, linked rules, linked gates, and next harness fixes | Feedback stats automatically improving behavior by themselves |
-| Natural-language harness specs keep workflow control legible and portable across runtimes                        | Re-implementing the same agent-control logic in every adapter |
-| Pre-action gates block known-bad tool calls before execution                                                     | Agents self-correcting without context injection or gates     |
-| Auto-promotion turns repeated failures into warn/block rules                                                     | Calling this model training in the strict sense                              |
-| Rejection ledger shows why vague feedback was rejected                                                           | Vague signals silently helping the system                     |
-
-## Core MCP Tools
-
-### Essential profile
-
-| Tool                   | Purpose                                                                                                     |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `capture_feedback`     | Accept up/down signal + context, validate, promote to memory                                                |
-| `open_feedback_session`| Start a linked feedback session when the correction needs multiple follow-up messages                       |
-| `append_feedback_context` | Add more transcript or operator notes to the open feedback session                                      |
-| `finalize_feedback_session` | Close the linked session and promote the combined evidence into one feedback record                  |
-| `recall`               | Recall relevant past failures and rules for the current task                                                |
-| `search_lessons`       | Search promoted lessons with corrective action, lifecycle state, rules, gates                               |
-| `retrieve_lessons`     | Retrieve the highest-signal lessons for a specific tool, action, or workflow context                        |
-| `reflect_on_feedback`  | Propose a reusable rule or lesson from the recent conversation window                                       |
-| `search_thumbgate`          | Search feedback state across feedback logs, ContextFS, and rules (context engineering, not weight training) |
-| `prevention_rules`     | Generate prevention rules from repeated mistakes                                                            |
-| `enforcement_matrix`   | Inspect promotion rate, active gates, and rejection ledger                                                  |
-| `feedback_stats`       | Approval rate and failure-domain summary                                                                    |
-| `estimate_uncertainty` | Bayesian uncertainty estimate for risky tags                                                                |
-| `org_dashboard`        | **Team** — Shared lessons plus org-wide multi-agent visibility, adherence rates, and risk alerts           |
-| `open_feedback_session` | Start a feedback session after thumbs up/down to capture follow-up context                               |
-| `append_feedback_context` | Add follow-up messages to an open feedback session within the 60-second window                          |
-| `finalize_feedback_session` | Close the session and fold all follow-up context into the lesson                                      |
-| `retrieve_lessons`     | Return top-K relevant lessons for a tool call using keyword matching, file path overlap, and recency decay |
-| `reflect_on_feedback`  | Run a self-healing post-mortem on negative feedback — analyzes what went wrong and proposes a rule         |
-
-Natural-language harnesses now live in [`harnesses/`](harnesses) and can be executed through the async runtime:
+## Quick Start (Self-Hosted)
 
 ```bash
-node scripts/async-job-runner.js --list-harnesses
-node scripts/async-job-runner.js --run-harness=repo-full-verification --harness-inputs='{"verificationCommand":"npm run verify:full"}'
+npx thumbgate init                                    # auto-detect agent + wire hooks
+npx thumbgate doctor                                  # health check
+npx thumbgate lessons                                 # inspect learned lessons
+npx thumbgate dashboard                               # local dashboard
 ```
 
-Long-context local backends can now expose sparse-attention routing hints through the profile router:
+Or wire MCP directly: `claude mcp add thumbgate -- npx -y thumbgate serve`
 
-```bash
-THUMBGATE_PROVIDER_MODE=local \
-THUMBGATE_LOCAL_MODEL_FAMILY=deepseek-r1 \
-THUMBGATE_LOCAL_MODEL_SERVER=sglang \
-THUMBGATE_INDEXCACHE_ENABLED=true \
-npm run profile:route
+Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
+
+> **Want team analytics and shared lessons?** [Start with ThumbGate Pro →](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=quickstart_cta) Free for individual devs. No credit card required.
+
+## Built-in Gates
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   ENFORCEMENT LAYER                      │
+│                                                          │
+│  ⛔ force-push          → blocks git push --force        │
+│  ⛔ protected-branch    → blocks direct push to main     │
+│  ⛔ unresolved-threads  → blocks push with open reviews  │
+│  ⛔ package-lock-reset  → blocks destructive lock edits  │
+│  ⛔ env-file-edit       → blocks .env secret exposure    │
+│                                                          │
+│  + custom gates in config/gates/custom.json              │
+└─────────────────────────────────────────────────────────┘
 ```
 
-ThumbGate treats IndexCache-style acceleration as a backend capability, not a blanket claim. Long-context retrieval-heavy workloads will recommend sparse-attention local backends when they are actually available.
+## Feedback Sessions
 
-Lean install for recall + gates + lesson search only:
-
-```bash
-THUMBGATE_MCP_PROFILE=essential claude mcp add thumbgate -- npx -y thumbgate serve
+```
+👎 thumbs down
+  └─► open_feedback_session
+        └─► "you lied about deployment" (append_feedback_context)
+        └─► "tests were actually failing" (append_feedback_context)
+        └─► finalize_feedback_session
+              └─► lesson inferred from full conversation
 ```
 
-Free and self-hosted users can invoke `search_lessons` directly through MCP to inspect corrective action per lesson. For broader retrieval across feedback logs, ContextFS memory, and prevention rules, use `search_thumbgate` (searches feedback state, not model weights) through MCP or the authenticated `GET /v1/search` API.
+History-aware distillation turns vague signals into concrete lessons using the last ~10 messages and the failed tool call.
 
-### Dispatch profile
+Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx thumbgate lessons`.
 
-Phone-safe read-only surface for remote ops:
+## Pricing
 
-```bash
-THUMBGATE_MCP_PROFILE=dispatch claude mcp add thumbgate -- npx -y thumbgate serve
-npx thumbgate dispatch
+```
+┌──────────────┬──────────────────────┬──────────────────────────────┐
+│    FREE      │ PRO $19/mo or $149/yr│   TEAM $12/seat/mo (min 3)   │
+├──────────────┼──────────────────────┼──────────────────────────────┤
+│ Unlimited    │ Unlimited feedback │ Shared hosted lesson DB      │
+│ feedback     │ captures + search  │ Org dashboard                │
+│ captures     │ DPO export         │ Gate template library         │
+│ 5 daily      │ Personal dashboard │ Workflow hardening sprint     │
+│ lesson       │                    │                              │
+│ searches     │                    │                              │
+└──────────────┴────────────────────┴──────────────────────────────┘
 ```
 
-Guide: [docs/guides/dispatch-ops.md](docs/guides/dispatch-ops.md)
+Free includes unlimited feedback captures, 5 daily lesson searches, unlimited recall, and gating. History-aware distillation turns vague feedback into concrete lessons. Feedback sessions (`open_feedback_session` → `append_feedback_context` → `finalize_feedback_session`) link follow-up context to one record.
 
-## ThumbGate vs Alternatives
+It does not update model weights. It's context engineering — enforcement that gets smarter every session.
 
-| Feature                          | ThumbGate                                         | SpecLock                                       | Mem0               | .cursorrules     |
-| -------------------------------- | ------------------------------------------------- | ---------------------------------------------- | ------------------ | ---------------- |
-| Blocks mistakes before execution | **Yes** — PreToolUse gates                        | Yes — Patch Firewall                           | No                 | No               |
-| Learns from your feedback        | **Yes** — thumbs up/down                          | No — manual spec writing                       | Yes — auto-capture | No               |
-| Works across sessions            | **Yes** — SQLite + JSONL                          | Yes — encrypted store                          | Yes — cloud        | No — per-project |
-| Auto-generates rules             | **Yes** — from repeated failures                  | No — manual or Gemini compile                  | No                 | No               |
-| Agent support                    | Claude Code, Codex, Gemini, Amp, Cursor, OpenCode | Claude Code, Cursor, Windsurf, Cline, Bolt.new | Claude, Cursor     | Cursor only      |
-| Install                          | `npx thumbgate init`                     | `npx speclock setup`                           | Cloud signup       | Edit file        |
-| Cost                             | **Free** ($19/mo or $149/yr Pro; Team rollout starts at $12/seat/mo) | Free                                           | Free tier + paid   | Free             |
-| npm weekly downloads             | **724**                                           | 98                                             | N/A                | N/A              |
-
-**When to use ThumbGate:** You want your agent to learn from mistakes automatically and enforce what it learned. One thumbs-down creates a gate.
-
-**When to use SpecLock:** You have a written spec/PRD and want to lock specific sections from AI modification. Manual constraint authoring.
-
-**When to use Mem0:** You want cloud-hosted memory shared across apps. No enforcement.
+**[Get Pro](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Start Team Rollout](https://thumbgate-production.up.railway.app/#workflow-sprint-intake?utm_source=github&utm_medium=readme&utm_campaign=team_rollout)** | **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)**
 
 ## Tech Stack
 
-### Core runtime
+```
+┌─────────────────────────────────────────────────────────┐
+│  STORAGE          │  INTELLIGENCE     │  ENFORCEMENT     │
+│                   │                   │                  │
+│  SQLite + FTS5    │  MemAlign dual    │  PreToolUse      │
+│  LanceDB vectors  │    recall         │    hook engine   │
+│  JSONL logs       │  Thompson Sampling│  Gates config    │
+│  ContextFS        │                   │  Hook wiring     │
+├───────────────────┼───────────────────┼──────────────────┤
+│  INTERFACES       │  BILLING          │  HOSTING         │
+│                   │                   │                  │
+│  MCP stdio        │  Stripe           │  Railway         │
+│  HTTP API         │                   │  Cloudflare      │
+│  CLI              │                   │    Workers       │
+│  Node.js >=18     │                   │                  │
+└───────────────────┴───────────────────┴──────────────────┘
+```
 
-- **Node.js** `>=18.18.0`
-- **Module system:** CommonJS CLI/server runtime
-- **Primary entry points:** CLI, MCP stdio server, authenticated HTTP API, OpenAPI adapters
+## Docs
 
-### Interfaces
+- [Commercial Truth](docs/COMMERCIAL_TRUTH.md) — pricing, claims, what we don't say
+- [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) — proof artifacts
+- [WORKFLOW.md](WORKFLOW.md) — agent-run contract (scope, hard stops, proof commands)
+- [ready-for-agent issue template](.github/ISSUE_TEMPLATE/ready-for-agent.yml) — intake for agent tasks
 
-- **MCP stdio:** [adapters/mcp/server-stdio.js](adapters/mcp/server-stdio.js)
-- **HTTP API:** [src/api/server.js](src/api/server.js)
-- **OpenAPI surfaces:** [openapi/openapi.yaml](openapi/openapi.yaml), [adapters/chatgpt/openapi.yaml](adapters/chatgpt/openapi.yaml)
-- **CLI:** `npx thumbgate ...`
-
-### Storage and retrieval
-
-- **Local memory:** JSONL logs in `.claude/memory/feedback` or `.thumbgate/*`
-- **Lesson DB (v0.8.0):** SQLite + FTS5 full-text search via `better-sqlite3` — dual-written alongside JSONL. Indexed by signal, domain, tags, importance. Replaces linear Jaccard token-overlap with sub-millisecond ranked search.
-- **Corrective actions (v0.8.0):** On negative feedback, `capture_feedback` returns `correctiveActions[]` — top 3 remediation steps inferred from similar past failures by tag/domain overlap.
-- **Context assembly:** ContextFS packs and provenance logs
-- **Default retrieval path:** SQLite FTS5 (primary) with JSONL Jaccard fallback
-- **Semantic/vector lane:** LanceDB + Apache Arrow + local embeddings via Hugging Face Transformers
-
-### Intelligence layer
-
-- **MemAlign-inspired dual recall:** Principle-based memory (distilled rules) + episodic context (raw feedback with timestamps). Recall surfaces both lanes ranked by relevance.
-- **Thompson Sampling:** Bayesian multi-armed bandit over feedback tags — adapts gate sensitivity per failure domain based on observed positive/negative signal ratios.
-- **Corrective action inference:** On negative feedback, the lesson DB infers top-3 remediation steps from similar past failures by tag/domain overlap.
-- **Bayesian belief update:** Each memory carries a posterior belief that updates on new evidence — high-entropy contradictions auto-prune.
-
-### Enforcement and automation
-
-- **PreToolUse enforcement:** [scripts/gates-engine.js](scripts/gates-engine.js)
-- **Hook wiring:** `init --agent claude-code|codex|gemini`
-- **Browser automation / ops:** `playwright-core`
-- **Social analytics store:** `better-sqlite3`
-
-### Billing and hosting
-
-- **Billing:** Stripe
-- **Hosted API / landing page:** Railway
-- **Worker lane:** Cloudflare Workers in [`workers/`](workers)
-
-## Agent Integration Guides
-
-- [Claude Desktop extension](docs/CLAUDE_DESKTOP_EXTENSION.md)
-- [Cursor plugin operations](docs/CURSOR_PLUGIN_OPERATIONS.md)
-- [Continuity tools integration](docs/guides/continuity-tools-integration.md)
-- [OpenCode integration](docs/guides/opencode-integration.md)
-
-## Operator Contract
-
-For autonomous agent runs against this or any repo using this workflow:
-
-- [WORKFLOW.md](WORKFLOW.md) — scope, proof-of-work, hard stops, done criteria
-- [.github/ISSUE_TEMPLATE/ready-for-agent.yml](.github/ISSUE_TEMPLATE/ready-for-agent.yml) — bounded intake template
-- [.github/pull_request_template.md](.github/pull_request_template.md) — proof-first PR handoff
-
-## Pro Pack
-
-**[$19/mo or $149/yr](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** — personal local dashboard, DPO export, advanced data exports, and founder-license support for individual operators.
-
-**[Start Team Rollout](https://thumbgate-production.up.railway.app/#workflow-sprint-intake?utm_source=github&utm_medium=readme&utm_campaign=team_rollout)** — shared hosted lesson DB, org dashboard, generated hosted review views, curated gate templates, and workflow-hardening rollout support for teams.
-
-### Free vs Pro
-
-| Feature                           | Free   | Pro ($19/mo or $149/yr) | Team rollout ($12/seat/mo, min 3) |
-| --------------------------------- | ------ | ----------------------- | --------------------------------- |
-| Feedback capture (thumbs up/down) | 5/day  | Unlimited               | Shared across team workflow       |
-| Lesson search                     | 10/day | Unlimited               | Shared hosted lesson DB           |
-| Recall                            | Unlimited | Unlimited            | Shared hosted recall              |
-| Prevention rules                  | Yes    | Yes                     | Team-wide rollout                 |
-| PreToolUse gates                  | Yes    | Yes                     | Team-wide rollout                 |
-| Thompson Sampling                 | Basic  | Advanced                | Advanced                          |
-| DPO training export               | No     | Yes                     | Yes                               |
-| Databricks export                 | No     | Yes                     | Yes                               |
-| Personal local dashboard          | No     | Yes                     | Yes                               |
-| Org dashboard + active agents     | No     | No                      | Yes                               |
-| Gate template library             | No     | No                      | Yes                               |
-| Workflow hardening sprint         | No     | No                      | Yes                               |
-| Priority support                  | No     | Yes                     | Yes                               |
-
-Free keeps the core safety policy, up to 10 auto-promoted gates, 5 daily feedback captures, 10 daily lesson searches, and unlimited recall on your machine.
-
-**[Get Pro — $19/mo or $149/yr](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate_cta)** — recurring self-serve for individual operators.
-
-**[Founder one-time offer — $49](https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05)** — preserved legacy founder checkout path.
-
-- [Commercial Truth](docs/COMMERCIAL_TRUTH.md)
-- [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
-- [Pitch](docs/PITCH.md)
-- [Anthropic Marketplace Strategy](docs/ANTHROPIC_MARKETPLACE_STRATEGY.md)
+Pro overlay: [`thumbgate-pro`](https://github.com/IgorGanapolsky/thumbgate-pro) — separate repo/package inheriting from this base.
 
 ## License
 

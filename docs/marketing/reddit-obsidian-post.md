@@ -26,9 +26,9 @@ Every Claude Code session starts from zero. Same mistakes, same "oh I see, let m
 
 - You give thumbs up/down feedback on what the agent does
 - It auto-promotes repeated failures into **prevention rules** — structured constraints the agent checks before executing any tool call
-- Prevention rules are stored as a plain `.md` file: `.claude/memory/feedback/prevention-rules.md`
+- Prevention rules are stored as a plain `.md` file: `.thumbgate/prevention-rules.md`
 - Thompson Sampling gates adapt which rules fire based on success/failure rates
-- Memory is captured in `.claude/memory/feedback/memory-log.jsonl` — a local, git-ignored file
+- Memory is captured in `.thumbgate/memory-log.jsonl` — a local, git-ignored file
 
 None of this is cloud sync or real-time updates. It's local files that persist between sessions and get smarter as you use it.
 
@@ -40,7 +40,7 @@ My setup:
 
 1. Create `AI-Memories/thumbgate/` folder in your vault
 2. Symlink the memory files into it:
-   - `Prevention Rules.md` → `.claude/memory/feedback/prevention-rules.md`
+   - `Prevention Rules.md` → `.thumbgate/prevention-rules.md`
    - `Primer.md` → `primer.md` (active session context: next steps, blockers, revenue truth)
 3. Periodically paste `npm run feedback:stats` output into a `Feedback Stats.md` note
 4. Open any memory note, run `/ide` — Claude Code reads your vault note as context and can write back updates
@@ -80,10 +80,6 @@ It's a personal knowledge loop, not a SaaS product pretending to be one.
 # 3. Create AI-Memories/thumbgate/ in your vault and symlink memory files
 ```
 
-Open source, MIT licensed. Core is free. There is a Pro tier for a personal local dashboard and optional hosted sync for teams, but the memory system works fully offline.
+Open source, MIT licensed. The core memory system works fully offline.
 
-Try free for 7 days (no credit card): https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content=obsidian_post&community=ObsidianMD
-
-Source code: https://github.com/IgorGanapolsky/ThumbGate
-
-Happy to answer questions about the prevention rules system or the Obsidian setup -- this is genuinely how I use it daily.
+Happy to answer questions about the prevention rules system or the Obsidian setup. If someone asks for the repo or setup commands, share them in the reply instead of front-loading the thread with a CTA.

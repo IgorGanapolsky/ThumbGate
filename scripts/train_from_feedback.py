@@ -15,7 +15,7 @@ Usage:
     python train_from_feedback.py --dpo-train          # DPO batch optimization (Feb 2026)
     python train_from_feedback.py --config config.json # Use custom categories
 
-This script only reads and writes local feedback artifacts under .claude/memory/feedback.
+This script only reads and writes local feedback artifacts under the active ThumbGate feedback directory.
 Those runtime outputs are git-ignored even though this utility is intentionally versioned.
 """
 
@@ -23,15 +23,37 @@ import json
 import math
 import random
 import argparse
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 
 # Configuration
 PROJECT_ROOT = Path(__file__).parent.parent
-FEEDBACK_LOG = PROJECT_ROOT / ".claude" / "memory" / "feedback" / "feedback-log.jsonl"
-MODEL_FILE = PROJECT_ROOT / ".claude" / "memory" / "feedback" / "feedback_model.json"
-SNAPSHOTS_DIR = PROJECT_ROOT / ".claude" / "memory" / "feedback" / "model_snapshots"
+
+def resolve_feedback_dir() -> Path:
+    env_dir = os.environ.get("THUMBGATE_FEEDBACK_DIR")
+    if env_dir:
+        return Path(env_dir)
+
+    local_thumbgate = PROJECT_ROOT / ".thumbgate"
+    if local_thumbgate.exists():
+        return local_thumbgate
+
+    local_rlhf = PROJECT_ROOT / ".rlhf"
+    if local_rlhf.exists():
+        return local_rlhf
+
+    local_legacy = PROJECT_ROOT / ".claude" / "memory" / "feedback"
+    if local_legacy.exists():
+        return local_legacy
+
+    return Path.home() / ".thumbgate" / "projects" / PROJECT_ROOT.name
+
+FEEDBACK_DIR = resolve_feedback_dir()
+FEEDBACK_LOG = FEEDBACK_DIR / "feedback-log.jsonl"
+MODEL_FILE = FEEDBACK_DIR / "feedback_model.json"
+SNAPSHOTS_DIR = FEEDBACK_DIR / "model_snapshots"
 
 # Default categories (overridden by --config)
 DEFAULT_CATEGORIES = {
@@ -132,10 +154,11 @@ def create_initial_model(categories: Dict) -> Dict:
 
 def save_model(model: Dict):
     """Save model to disk."""
-    # Resolve and verify path stays within project root (CodeQL S2083)
+    # Resolve and verify path stays within trusted local ThumbGate roots (CodeQL S2083)
     resolved = MODEL_FILE.resolve()
-    if not str(resolved).startswith(str(PROJECT_ROOT.resolve())):
-        raise ValueError(f"Model path escapes project root: {resolved}")
+    allowed_roots = [PROJECT_ROOT.resolve(), FEEDBACK_DIR.resolve()]
+    if not any(str(resolved).startswith(str(root)) for root in allowed_roots):
+        raise ValueError(f"Model path escapes allowed ThumbGate roots: {resolved}")
     resolved.parent.mkdir(parents=True, exist_ok=True)
     model["updated"] = datetime.now().isoformat()
     resolved.write_text(json.dumps(model, indent=2))
@@ -344,7 +367,7 @@ def save_snapshot(model: Dict) -> Path:
 # Based on: Meta-Policy Reflexion (arXiv:2509.03990)
 # ============================================
 
-META_POLICY_FILE = PROJECT_ROOT / ".claude" / "memory" / "feedback" / "meta_policy_rules.json"
+META_POLICY_FILE = FEEDBACK_DIR / "meta_policy_rules.json"
 
 
 def extract_meta_policy_rules(min_occurrences: int = 3) -> List[Dict[str, Any]]:
@@ -508,7 +531,7 @@ def load_meta_policy_rules() -> List[Dict[str, Any]]:
 # Reference: Rafailov et al. 2023 (arXiv:2305.18290)
 # ============================================
 
-DPO_MODEL_FILE = PROJECT_ROOT / ".claude" / "memory" / "feedback" / "dpo_model.json"
+DPO_MODEL_FILE = FEEDBACK_DIR / "dpo_model.json"
 DPO_BETA = 0.1  # Temperature parameter (lower = more aggressive preference following)
 
 

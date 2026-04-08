@@ -2,10 +2,19 @@
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const {
   postThumbGateToInstagram,
   THUMBGATE_CAPTION,
 } = require('../scripts/social-analytics/instagram-thumbgate-post');
+const { generateInstagramCard } = require('../scripts/social-analytics/generate-instagram-card');
+
+const REPO_ROOT = path.resolve(__dirname, '..');
+const TEST_IMAGE_PATH = path.join(REPO_ROOT, '.rlhf', 'test-instagram-thumbgate-post.png');
+
+let sharpAvailable = false;
+try { require('sharp'); sharpAvailable = true; } catch {}
 
 describe('Instagram ThumbGate Post', () => {
   it('should have a valid caption with required hashtags and messaging', () => {
@@ -19,16 +28,18 @@ describe('Instagram ThumbGate Post', () => {
     assert.match(THUMBGATE_CAPTION, /npx thumbgate init/);
   });
 
-  it('should post to Instagram when ZERNIO_API_KEY is set', async (t) => {
+  it('should post to Instagram when ZERNIO_API_KEY is set', { skip: !sharpAvailable ? 'sharp not installed' : false }, async (t) => {
     // Skip if no API key configured
     if (!process.env.ZERNIO_API_KEY) {
       t.skip('ZERNIO_API_KEY not set');
       return;
     }
 
-    const result = await postThumbGateToInstagram();
+    await generateInstagramCard(TEST_IMAGE_PATH);
+    const result = await postThumbGateToInstagram({ imagePath: TEST_IMAGE_PATH });
     assert.ok(result, 'Post should return a result object');
     assert.ok(result.id || result.data?.id, 'Post should have an ID');
     console.log(`✅ Instagram post created with ID: ${result.id || result.data?.id}`);
+    fs.rmSync(TEST_IMAGE_PATH, { force: true });
   });
 });

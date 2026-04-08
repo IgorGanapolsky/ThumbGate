@@ -15,15 +15,13 @@
 const fs = require('fs');
 const readline = require('readline');
 const path = require('path');
-
-const FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR
-  || path.join(__dirname, '..', '.claude', 'memory', 'feedback');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const METRICS_PATH = process.env.METRICS_PATH
-  || path.join(FEEDBACK_DIR, 'tool-metrics.jsonl');
+  || path.join(resolveFeedbackDir(), 'tool-metrics.jsonl');
 
 const FEEDBACK_PATH = process.env.FEEDBACK_PATH
-  || path.join(FEEDBACK_DIR, 'feedback-log.jsonl');
+  || path.join(resolveFeedbackDir(), 'feedback-log.jsonl');
 
 // Correlation window: feedback within 60 seconds of a tool call is considered correlated
 const CORRELATION_WINDOW_MS = 60_000;

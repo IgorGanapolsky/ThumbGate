@@ -39,6 +39,24 @@ test('channel docs carry the current workflow-hardening messaging', () => {
   assert.match(reddit, /A system changes behavior\./);
 });
 
+test('reddit and community comment templates do not instruct canned CTA replies', () => {
+  const redditKit = read('docs/marketing/reddit-posts.md');
+  const programming = read('docs/marketing/reddit-programming-post.md');
+  const localLlama = read('docs/marketing/reddit-locallama-post.md');
+  const claudeCode = read('docs/marketing/reddit-claude-code-post.md');
+  const cursor = read('docs/marketing/reddit-cursor-post.md');
+  const devCommunity = read('docs/marketing/dev-community-comments.md');
+
+  assert.match(redditKit, /Do not post a canned first comment/i);
+  assert.match(programming, /Do not add a generic product comment/i);
+  assert.match(localLlama, /Do not post a canned implementation comment/i);
+  assert.match(claudeCode, /Do not drop a promo comment/i);
+  assert.match(cursor, /Do not add a generic promo comment/i);
+  assert.doesNotMatch(devCommunity, /https:\/\/github\.com\/IgorGanapolsky\/ThumbGate/i);
+  assert.doesNotMatch(devCommunity, /Disclosure: I built this/i);
+  assert.doesNotMatch(devCommunity, /Try free for 7 days/i);
+});
+
 test('cursor plugin launch kit leads with repeated-mistake prevention and proof', () => {
   const cursorLaunch = read('docs/marketing/cursor-plugin-launch.md');
   const socialKit = read('docs/marketing/social-posts.md');

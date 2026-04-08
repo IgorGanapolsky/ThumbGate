@@ -16,11 +16,13 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
-const PROJECT_ROOT = path.join(__dirname, '..');
-const FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR
-  || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
 const SEQUENCE_WINDOW = 10;
+
+function getFeedbackDir() {
+  return resolveFeedbackDir();
+}
 
 // ---------------------------------------------------------------------------
 // Utility helpers
@@ -173,7 +175,7 @@ function buildPreferencePairs(feedbackEntries) {
  * @returns {{ outputPath: string, pairCount: number, sequenceCount: number }}
  */
 function exportPyTorchJSON(feedbackDir, outputPath) {
-  const fbDir = feedbackDir || FEEDBACK_DIR;
+  const fbDir = feedbackDir || getFeedbackDir();
   const feedbackPath = path.join(fbDir, 'feedback-log.jsonl');
   const sequencePath = path.join(fbDir, 'feedback-sequences.jsonl');
   const exportDir = path.join(fbDir, 'training-data');
@@ -246,7 +248,7 @@ function escapeCsvField(value) {
  * @returns {{ outputPath: string, rowCount: number }}
  */
 function exportCSV(feedbackDir, outputPath) {
-  const fbDir = feedbackDir || FEEDBACK_DIR;
+  const fbDir = feedbackDir || getFeedbackDir();
   const feedbackPath = path.join(fbDir, 'feedback-log.jsonl');
   const exportDir = path.join(fbDir, 'training-data');
 
@@ -288,7 +290,7 @@ function exportCSV(feedbackDir, outputPath) {
  * @returns {{ outputPath: string, report: object }}
  */
 function exportActionAnalysis(feedbackDir, outputPath) {
-  const fbDir = feedbackDir || FEEDBACK_DIR;
+  const fbDir = feedbackDir || getFeedbackDir();
   const feedbackPath = path.join(fbDir, 'feedback-log.jsonl');
   const sequencePath = path.join(fbDir, 'feedback-sequences.jsonl');
   const exportDir = path.join(fbDir, 'training-data');

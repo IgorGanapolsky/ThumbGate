@@ -71,7 +71,7 @@ live view into Claude Code's memory system.
 Tracks episodic feedback events. Sourced from the local ThumbGate store:
 
 ```
-.claude/memory/feedback/memory-log.jsonl
+.thumbgate/memory-log.jsonl
 ```
 
 This file is local-only and git-ignored. To expose it in Obsidian, create a symlink:
@@ -79,6 +79,8 @@ This file is local-only and git-ignored. To expose it in Obsidian, create a syml
 ```bash
 # From your vault's AI-Memories/thumbgate/ directory
 ln -s /path/to/thumbgate/.claude/memory/feedback/memory-log.jsonl "Memory Log.md"
+# From your vault's AI-Memories/rlhf/ directory
+ln -s /path/to/thumbgate/.thumbgate/memory-log.jsonl "Memory Log.md"
 ```
 
 Or export a human-readable snapshot periodically from within the repo.
@@ -98,13 +100,14 @@ ln -s /path/to/thumbgate/primer.md Primer.md
 Auto-generated prevention rules from repeated AI mistakes. Sourced from:
 
 ```
-.claude/memory/feedback/prevention-rules.md
+.thumbgate/prevention-rules.md
 ```
 
 This file is local-only and git-ignored. Symlink it to your vault:
 
 ```bash
 ln -s /path/to/thumbgate/.claude/memory/feedback/prevention-rules.md "Prevention Rules.md"
+ln -s /path/to/thumbgate/.thumbgate/prevention-rules.md "Prevention Rules.md"
 ```
 
 ### Feedback Stats.md
@@ -172,10 +175,10 @@ These files are git-ignored and exist only on your local machine:
 
 | File | Purpose |
 |------|---------|
-| `.claude/memory/feedback/feedback-log.jsonl` | Raw feedback events |
-| `.claude/memory/feedback/memory-log.jsonl` | Promoted memory entries |
-| `.claude/memory/feedback/prevention-rules.md` | Auto-generated prevention rules |
-| `.claude/memory/feedback/feedback-summary.json` | Aggregated feedback statistics |
+| `.thumbgate/feedback-log.jsonl` | Raw feedback events |
+| `.thumbgate/memory-log.jsonl` | Promoted memory entries |
+| `.thumbgate/prevention-rules.md` | Auto-generated prevention rules |
+| `.thumbgate/feedback-summary.json` | Aggregated feedback statistics |
 
 ---
 

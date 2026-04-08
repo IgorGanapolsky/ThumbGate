@@ -17,10 +17,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { parseTimestamp } = require('./feedback-schema');
 const { timeDecayWeight } = require('./thompson-sampling');
 const { inferDomain } = require('./feedback-loop');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const MIN_OCCURRENCES = 2;
 const RECENT_DAYS = 7;
@@ -30,13 +30,11 @@ const RECENT_MS = RECENT_DAYS * 24 * 3600 * 1000;
  * Extract meta-policy rules from memory-log.jsonl feedback trends.
  *
  * @param {object} opts
- * @param {string} [opts.feedbackDir] - Override feedback directory (default: THUMBGATE_FEEDBACK_DIR or ~/.claude/memory/feedback)
+ * @param {string} [opts.feedbackDir] - Override feedback directory (default: active ThumbGate feedback dir)
  * @returns {Array<{category: string, confidence: number, trend: string, occurrence_count: number, last_seen: string}>}
  */
 function extractMetaPolicyRules(opts = {}) {
-  const feedbackDir = opts.feedbackDir
-    || process.env.THUMBGATE_FEEDBACK_DIR
-    || path.join(os.homedir(), '.claude', 'memory', 'feedback');
+  const feedbackDir = opts.feedbackDir || resolveFeedbackDir();
 
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
 
@@ -160,9 +158,7 @@ function extractMetaPolicyRules(opts = {}) {
  * @returns {{ rules: Array, outputPath: string }}
  */
 function run(opts = {}) {
-  const feedbackDir = opts.feedbackDir
-    || process.env.THUMBGATE_FEEDBACK_DIR
-    || path.join(os.homedir(), '.claude', 'memory', 'feedback');
+  const feedbackDir = opts.feedbackDir || resolveFeedbackDir();
 
   const rules = extractMetaPolicyRules({ ...opts, feedbackDir });
 

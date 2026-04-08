@@ -19,9 +19,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const DEFAULT_FEEDBACK_DIR = path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+const DEFAULT_FEEDBACK_DIR = resolveFeedbackDir();
 const DEFAULT_CONTEXTFS_DIR = path.join(DEFAULT_FEEDBACK_DIR, 'contextfs');
 
 // ---------------------------------------------------------------------------
@@ -29,7 +30,7 @@ const DEFAULT_CONTEXTFS_DIR = path.join(DEFAULT_FEEDBACK_DIR, 'contextfs');
 // ---------------------------------------------------------------------------
 
 function getFeedbackDir() {
-  return process.env.THUMBGATE_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
+  return resolveFeedbackDir();
 }
 
 function getContextFsDir() {

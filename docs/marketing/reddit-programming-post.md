@@ -40,14 +40,8 @@ Curious if others have explored enforcement-based feedback (not just context/mem
 
 ---
 
-**Comment (post immediately after the main post):**
+**Follow-up comment policy:**
 
-Implementation is open source and free to try.
+Do not add a generic product comment after posting.
 
-Try free for 7 days (no credit card, 2-minute setup): https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_followup_comment&utm_content=programming_post&community=programming
-
-Source code (MIT licensed): https://github.com/IgorGanapolsky/ThumbGate
-
-Works with Claude Code, Cursor, Codex, Gemini, Amp. Fully local -- your feedback stays on your machine.
-
-Disclosure: I built this.
+If someone asks about the implementation, answer the exact technical question they asked. Keep disclosure brief, keep links out unless requested, and avoid turning the thread into a product pitch.

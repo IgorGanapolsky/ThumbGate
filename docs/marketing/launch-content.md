@@ -39,6 +39,7 @@ npx thumbgate init --agent claude-code
 
 MIT licensed. Pro is $19/mo or $149/yr for individual operators, while Team rollout stays intake-first for buyers who want hosted analytics and shared lessons.
 
+Landing: https://thumbgate-production.up.railway.app/?utm_source=hackernews&utm_medium=community_post&utm_campaign=first_customer_push&utm_content=show_hn&community=ShowHN&campaign_variant=technical_launch
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
 Happy to answer questions about the gate engine or how prevention rules are generated.
@@ -79,6 +80,7 @@ Works with Claude Code, Codex, Gemini, Amp, and Cursor. MIT licensed, fully open
 
 There's an optional Pro tier ($19/mo or $149/yr) for the personal local dashboard, exports, and advanced gate workflows, but everything described above works locally for free.
 
+Landing: https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=claudeai_post&community=ClaudeAI&campaign_variant=founder_story&offer_code=REDDIT-EARLY
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
 ---
@@ -107,6 +109,7 @@ npx thumbgate init
 
 The core is open source and MIT licensed. There's a Pro tier at $19/mo or $149/yr if you want the personal local dashboard and exports.
 
+Landing: https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=vibecoding_post&community=vibecoding&campaign_variant=results_story&offer_code=REDDIT-EARLY
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
 ---
@@ -155,13 +158,14 @@ One command:
 npx thumbgate init
 ```
 
-Fully free and unlimited. MIT licensed.
+Local-first free path. MIT licensed.
 
 **Tweet 6:**
-Pro ($19/mo or $149/yr) adds a searchable dashboard to query and export your 👍/👎 entries.
+Pro ($19/mo or $149/yr) adds a searchable personal local dashboard to query and export your 👍/👎 entries.
 
-But captures, recalls, gates, and blocking all work for free. No limits.
+But captures, recalls, gates, and blocking all work on the free local path. No cloud account required.
 
+Landing: https://thumbgate-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=launch_thread_cta&creator=IgorGanapolsky&campaign_variant=founder_story
 GitHub: github.com/IgorGanapolsky/ThumbGate
 
 #MCP #AIcoding #vibecoding
@@ -172,7 +176,7 @@ GitHub: github.com/IgorGanapolsky/ThumbGate
 
 **Tagline:** 👎 Thumbs down a mistake. It never happens again.
 
-**Description:** Give your AI coding agent a 👎 when it screws up. ThumbGate turns that thumbs-down into a prevention rule that physically blocks the agent from repeating the mistake. 👍 Thumbs up reinforces what works. Over time, your feedback builds an immune system — good patterns stick, bad patterns are blocked at execution. Works with Claude Code, Codex, Gemini, Amp, Cursor. Free and unlimited. One command install.
+**Description:** Give your AI coding agent a 👎 when it screws up. ThumbGate turns that thumbs-down into a prevention rule that physically blocks the agent from repeating the mistake. 👍 Thumbs up reinforces what works. Over time, your feedback builds an immune system — good patterns stick, bad patterns are blocked at execution. Works with Claude Code, Codex, Gemini, Amp, Cursor. Free local path, no cloud account required. One command install.
 
 ---
 

@@ -3,13 +3,15 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 // ThumbGate repo: scripts/ is 1 level below repo root (not 2 like Subway .claude/scripts/feedback/)
 const ROOT = path.join(__dirname, '..');
+const FEEDBACK_DIR = resolveFeedbackDir();
 const PATHS = {
-  actionLog: path.join(ROOT, '.claude', 'memory', 'feedback', 'action-log.jsonl'),
-  attributions: path.join(ROOT, '.claude', 'memory', 'feedback', 'feedback-attributions.jsonl'),
-  attributedFeedback: path.join(ROOT, '.claude', 'memory', 'feedback', 'attributed-feedback.jsonl'),
+  actionLog: path.join(FEEDBACK_DIR, 'action-log.jsonl'),
+  attributions: path.join(FEEDBACK_DIR, 'feedback-attributions.jsonl'),
+  attributedFeedback: path.join(FEEDBACK_DIR, 'attributed-feedback.jsonl'),
 };
 
 const STOPWORDS = new Set([

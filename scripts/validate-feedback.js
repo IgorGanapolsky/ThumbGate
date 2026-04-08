@@ -26,15 +26,16 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 // =============================================================================
 // PATH RESOLUTION
 // =============================================================================
 
-const DEFAULT_FEEDBACK_DIR = path.join(__dirname, '..', '.claude', 'memory', 'feedback');
+const DEFAULT_FEEDBACK_DIR = resolveFeedbackDir();
 
 function getFeedbackDir() {
-  return process.env.THUMBGATE_FEEDBACK_DIR || DEFAULT_FEEDBACK_DIR;
+  return resolveFeedbackDir();
 }
 
 function getFeedbackPaths() {

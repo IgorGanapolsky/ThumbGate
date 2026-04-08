@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
-const PROJECT_ROOT = path.join(__dirname, '..');
-const FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR || path.join(PROJECT_ROOT, '.claude', 'memory', 'feedback');
+const FEEDBACK_DIR = resolveFeedbackDir();
 const LEDGER_PATH = path.join(FEEDBACK_DIR, 'budget-ledger.json');
 const LOCK_PATH = `${LEDGER_PATH}.lock`;
 

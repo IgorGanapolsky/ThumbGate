@@ -8,13 +8,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
-const HOME = process.env.HOME || process.env.USERPROFILE || '';
-const envDir = process.env.THUMBGATE_FEEDBACK_DIR;
-const localFallback = path.join(process.cwd(), '.thumbgate');
-const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback');
-const baseDir = envDir || (fs.existsSync(localFallback) ? localFallback : localClaude);
-
+const baseDir = resolveFeedbackDir();
 const FEEDBACK_LOG_PATH = path.join(baseDir, 'feedback-log.jsonl');
 const TRAITS_PATH = path.join(baseDir, 'behavioral-traits.json');
 
