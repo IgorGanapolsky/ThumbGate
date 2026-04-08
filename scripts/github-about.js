@@ -12,6 +12,8 @@ const ROOT = path.join(__dirname, '..');
 const CONFIG_RELATIVE_PATH = path.join('config', 'github-about.json');
 const LEGACY_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/thumbgate';
 const GITHUB_API_BASE_URL = 'https://api.github.com';
+const DEFAULT_VERIFY_ATTEMPTS = 5;
+const DEFAULT_VERIFY_DELAY_MS = 2000;
 
 function readText(root, relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
@@ -296,6 +298,57 @@ async function fetchLiveGitHubAbout(options = {}) {
   };
 }
 
+function normalizePositiveInteger(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function sleep(delayMs) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, delayMs);
+  });
+}
+
+async function verifyLiveGitHubAbout(options = {}) {
+  const root = options.root || ROOT;
+  const expected = options.expected || loadGitHubAboutConfig(root);
+  const repo = normalizeText(options.repo) || expected.repo;
+  const label = options.label || `Live GitHub About (${repo})`;
+  const attempts = normalizePositiveInteger(options.attempts, DEFAULT_VERIFY_ATTEMPTS);
+  const delayMs = normalizePositiveInteger(options.delayMs, DEFAULT_VERIFY_DELAY_MS);
+  const fetcher = typeof options.fetcher === 'function' ? options.fetcher : fetchLiveGitHubAbout;
+  const sleeper = typeof options.sleep === 'function' ? options.sleep : sleep;
+  let actual = null;
+  let errors = [];
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    actual = await fetcher({
+      root,
+      repo,
+      token: options.token,
+    });
+    errors = compareGitHubAbout(expected, actual, label);
+    if (errors.length === 0) {
+      return {
+        ok: true,
+        actual,
+        attemptsUsed: attempt,
+        errors: [],
+      };
+    }
+    if (attempt < attempts) {
+      await sleeper(delayMs * attempt);
+    }
+  }
+
+  return {
+    ok: false,
+    actual,
+    attemptsUsed: attempts,
+    errors,
+  };
+}
+
 async function updateLiveGitHubAbout(options = {}) {
   const about = loadGitHubAboutConfig(options.root || ROOT);
   const repo = normalizeText(options.repo) || about.repo;
@@ -334,6 +387,8 @@ async function updateLiveGitHubAbout(options = {}) {
 }
 
 module.exports = {
+  DEFAULT_VERIFY_ATTEMPTS,
+  DEFAULT_VERIFY_DELAY_MS,
   LEGACY_REPOSITORY_URL,
   buildCanonicalRepoUrls,
   collectLocalGitHubAboutErrors,
@@ -347,4 +402,5 @@ module.exports = {
   normalizeTopics,
   normalizeUrl,
   updateLiveGitHubAbout,
+  verifyLiveGitHubAbout,
 };
