@@ -556,6 +556,17 @@ test('SEO comparison pages serve HTML, reuse journey cookies, and record page-sp
   assert.equal(seoEvent.seoQuery, 'thumbgate vs speclock');
 });
 
+test('SEO guide pages serve HTML with buyer-ready CTA copy for high-intent platform queries', async () => {
+  const res = await fetch(apiUrl('/guides/codex-cli-guardrails'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+
+  const body = await res.text();
+  assert.match(body, /Codex CLI Guardrails That Actually Enforce/);
+  assert.match(body, /See ThumbGate Pro/);
+  assert.match(body, /\/pro\?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_codex-cli-guardrails/);
+});
+
 test('robots and sitemap endpoints publish crawl metadata for the canonical app origin', async () => {
   const robotsRes = await fetch(apiUrl('/robots.txt'));
   assert.equal(robotsRes.status, 200);
@@ -574,6 +585,10 @@ test('robots and sitemap endpoints publish crawl metadata for the canonical app 
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/compare\/mem0<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/pre-action-gates<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/claude-code-feedback<\/loc>/);
+  assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/stop-repeated-ai-agent-mistakes<\/loc>/);
+  assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/cursor-agent-guardrails<\/loc>/);
+  assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/codex-cli-guardrails<\/loc>/);
+  assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/gemini-cli-feedback-memory<\/loc>/);
   assert.match(sitemapBody, /<changefreq>weekly<\/changefreq>/);
   assert.match(sitemapBody, /<priority>0\.9<\/priority>/);
   assert.match(sitemapBody, /<priority>0\.8<\/priority>/);

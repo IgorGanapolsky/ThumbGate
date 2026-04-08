@@ -7,7 +7,9 @@ Make your AI coding agent self-improving. One thumbs-down creates a gate that pe
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Try Free](https://img.shields.io/badge/Pro-Try%20Free%20→-635bff?style=for-the-badge&logo=stripe&logoColor=white)](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=badge_cta)
 
-**[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pricing](https://thumbgate-production.up.railway.app/#pricing?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Setup Guide](https://thumbgate-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=top_cta)**
+**[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pricing](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#pricing)** · **[Setup Guide](https://thumbgate-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=top_cta)**
+
+**Popular buyer questions:** **[How to stop repeated AI agent mistakes](https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
 
 ### Get Started
 
@@ -15,7 +17,7 @@ Make your AI coding agent self-improving. One thumbs-down creates a gate that pe
 
 [![Sign up for ThumbGate Pro](https://img.shields.io/badge/>>%20Start%20Free%20→%20ThumbGate%20Pro-635bff?style=for-the-badge)](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=get_started)
 
-Free for individual developers. Pro adds team dashboards, DPO export, and unlimited lesson search. [See pricing →](https://thumbgate-production.up.railway.app/#pricing?utm_source=github&utm_medium=readme&utm_campaign=pricing_link)
+Free for individual developers. Pro adds team dashboards, DPO export, and unlimited lesson search. [See pricing →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=pricing_link#pricing)
 
 **Paid path for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the buyer-ready page for the personal local dashboard, DPO export, and review-ready evidence. It makes the paid upgrade legible before checkout while the self-hosted path below stays optimized for open source evaluation.
 
@@ -142,7 +144,7 @@ Free includes unlimited feedback captures, 5 daily lesson searches, unlimited re
 
 It does not update model weights. It's context engineering — enforcement that gets smarter every session.
 
-**[Get Pro](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Start Team Rollout](https://thumbgate-production.up.railway.app/#workflow-sprint-intake?utm_source=github&utm_medium=readme&utm_campaign=team_rollout)** | **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)**
+**[Get Pro](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Start Team Rollout](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)** | **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)**
 
 ## Tech Stack
 

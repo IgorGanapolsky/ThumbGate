@@ -25,6 +25,7 @@
 const fs = require('fs');
 const path = require('path');
 const { tagUrlsInText } = require('./social-analytics/utm');
+const { isDuplicate, recordPost } = require('./social-analytics/publishers/zernio');
 
 // ---------------------------------------------------------------------------
 // Publisher imports (lazy — only loaded when needed)
@@ -259,9 +260,18 @@ async function postEverywhere(filePath, { platforms, dryRun } = {}) {
       continue;
     }
 
+    // Dedup guard: skip platforms where identical content was posted in last 24h
+    const dedupContent = [parsed.title, parsed.body].filter(Boolean).join('\n');
+    if (!dryRun && isDuplicate(dedupContent, platform)) {
+      console.log(`[post-everywhere] ${platform}: SKIPPED — duplicate content within 24h`);
+      results[platform] = { skipped: true, reason: 'duplicate_content_24h' };
+      continue;
+    }
+
     try {
       console.log(`\n[post-everywhere] Posting to ${platform}...`);
       results[platform] = await dispatcher(parsed, dryRun);
+      if (!dryRun) recordPost(dedupContent, platform);
       console.log(`[post-everywhere] ${platform}: OK`);
     } catch (err) {
       console.error(`[post-everywhere] ${platform}: FAILED — ${err.message}`);

@@ -21,6 +21,8 @@ jobs:
       RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
       RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
       RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL || 'https://thumbgate-production.up.railway.app/health' }}
+      RAILWAY_HEALTHCHECK_MAX_ATTEMPTS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS || '120' }}
+      RAILWAY_HEALTHCHECK_SLEEP_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_SLEEP_SECONDS || '10' }}
       THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_FEEDBACK_DIR: ${{ vars.THUMBGATE_FEEDBACK_DIR }}
@@ -160,8 +162,9 @@ jobs:
       - name: Verify deployment health
         if: steps.railway-config.outputs.enabled == 'true'
         run: |
-          MAX_ATTEMPTS=30
-          SLEEP_SECONDS=10
+          # Railway promotion can lag well past five minutes after a detached upload succeeds.
+          MAX_ATTEMPTS="${RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-120}"
+          SLEEP_SECONDS="${RAILWAY_HEALTHCHECK_SLEEP_SECONDS:-10}"
           STATUS=""
           RESPONSE_FILE="$(mktemp)"
           LIVE_SHA=""
