@@ -68,10 +68,28 @@ const HIGH_ROI_QUERY_SEEDS = [
     notes: 'Problem-led copy that maps to landing-page positioning.',
   },
   {
+    query: 'cursor prevent repeated mistakes',
+    businessValue: 87,
+    source: 'seed',
+    notes: 'High-intent Cursor workflow page for developers already feeling repeat-failure pain.',
+  },
+  {
     query: 'claude code prevent repeated mistakes',
     businessValue: 86,
     source: 'seed',
     notes: 'High-intent pain query for Claude Code buyers.',
+  },
+  {
+    query: 'codex cli guardrails',
+    businessValue: 84,
+    source: 'seed',
+    notes: 'Guardrail-focused page for Codex CLI buyers who want prevention, not just memory.',
+  },
+  {
+    query: 'gemini cli feedback memory',
+    businessValue: 82,
+    source: 'seed',
+    notes: 'Integration page for Gemini CLI users who need memory plus enforcement.',
   },
 ];
 
@@ -226,6 +244,55 @@ const PAGE_BLUEPRINTS = [
     relatedPaths: ['/compare/speclock', '/guides/claude-code-feedback'],
   },
   {
+    query: 'stop ai coding agents from repeating mistakes',
+    path: '/guides/stop-repeated-ai-agent-mistakes',
+    pageType: 'guide',
+    pillar: 'pre-action-gates',
+    title: 'How to Stop AI Coding Agents From Repeating Mistakes | ThumbGate',
+    heroTitle: 'How to Stop AI Coding Agents From Repeating Mistakes',
+    heroSummary: 'If your agent keeps repeating the same bad move, the fix is not more memory alone. The fix is a feedback loop that turns repeated failures into pre-action gates before the next tool call executes.',
+    takeaways: [
+      'Repeated mistakes are a workflow problem, not just a context-window problem.',
+      'ThumbGate turns thumbs-down feedback into prevention rules and runtime gates.',
+      'This page is meant to move problem-aware buyers into the Pro path or a concrete install.',
+    ],
+    sections: [
+      {
+        heading: 'Why repeated mistakes keep happening',
+        paragraphs: [
+          'AI coding agents are fast, but they forget operational pain surprisingly easily. One bad deployment, force-push, or skipped verification step often turns into another because the system remembered the transcript but never enforced the lesson.',
+          'That is why teams feel stuck in a correction loop. They keep teaching the same rule, but the next session still allows the same risky action.',
+        ],
+      },
+      {
+        heading: 'What changes when feedback becomes enforcement',
+        bullets: [
+          'Thumbs down captures the exact failure you do not want repeated.',
+          'Repeated failures promote into linked prevention rules.',
+          'Pre-action gates intercept the risky tool call before execution.',
+          'Thumbs up reinforces the safe path so the agent learns what good looks like too.',
+        ],
+      },
+      {
+        heading: 'What a buyer should do next',
+        paragraphs: [
+          'If the pain is already real, do not start with a long architecture project. Start by wiring ThumbGate into the workflow where the agent has already burned time or trust, then watch the next repeat attempt get blocked before damage lands.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Is memory alone enough to stop repeated mistakes?',
+        answer: 'Usually no. Memory helps retrieval, but ThumbGate adds pre-action gates so the same risky move can be blocked before the next command executes.',
+      },
+      {
+        question: 'Does ThumbGate only punish bad behavior?',
+        answer: 'No. Thumbs up reinforces good behavior, so the loop captures safe patterns as well as failures.',
+      },
+    ],
+    relatedPaths: ['/guides/pre-action-gates', '/guides/claude-code-feedback'],
+  },
+  {
     query: 'claude code feedback memory',
     path: '/guides/claude-code-feedback',
     pageType: 'integration',
@@ -272,6 +339,150 @@ const PAGE_BLUEPRINTS = [
       },
     ],
     relatedPaths: ['/guides/pre-action-gates', '/compare/mem0'],
+  },
+  {
+    query: 'cursor prevent repeated mistakes',
+    path: '/guides/cursor-agent-guardrails',
+    pageType: 'integration',
+    pillar: 'agent-workflows',
+    title: 'Cursor Agent Guardrails | Stop Repeated Mistakes with ThumbGate',
+    heroTitle: 'Cursor Guardrails That Block Repeated Mistakes',
+    heroSummary: 'Cursor moves fast, which makes repeated mistakes expensive. ThumbGate gives Cursor users a feedback loop that turns thumbs-down corrections into pre-action gates before the next risky step fires.',
+    takeaways: [
+      'Cursor users want speed without trusting the agent blindly.',
+      'ThumbGate adds enforcement without forcing a platform switch.',
+      'The page should answer the buyer question in one line: how do I stop Cursor from doing the same bad thing again?',
+    ],
+    sections: [
+      {
+        heading: 'The Cursor workflow problem',
+        paragraphs: [
+          'Cursor can move from idea to edits quickly, but the failure mode is familiar: the same wrong refactor, risky shell command, or skipped check comes back in the next session because nothing hardened the workflow.',
+        ],
+      },
+      {
+        heading: 'How ThumbGate fits into Cursor',
+        bullets: [
+          'Capture thumbs-up/down feedback on agent behavior.',
+          'Promote repeated failures into prevention rules.',
+          'Block known-bad commands with pre-action gates before execution.',
+          'Keep the memory and gates local-first so the operator retains control.',
+        ],
+      },
+      {
+        heading: 'What makes this different from a rule file',
+        paragraphs: [
+          'Static rules help on day one. ThumbGate helps on day two and day twenty because it keeps learning from live corrections instead of relying on a fixed checklist that drifts out of date.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Do I need to leave Cursor to use ThumbGate?',
+        answer: 'No. ThumbGate is designed to sit alongside existing coding-agent workflows so you can add enforcement without switching tools.',
+      },
+      {
+        question: 'What kind of mistakes can Cursor guardrails stop?',
+        answer: 'Repeated failures like risky git actions, destructive scripts, skipped verification, or any other known-bad pattern you have already corrected once.',
+      },
+    ],
+    relatedPaths: ['/guides/stop-repeated-ai-agent-mistakes', '/guides/pre-action-gates'],
+  },
+  {
+    query: 'codex cli guardrails',
+    path: '/guides/codex-cli-guardrails',
+    pageType: 'integration',
+    pillar: 'agent-workflows',
+    title: 'Codex CLI Guardrails | Prevent Repeated Mistakes with ThumbGate',
+    heroTitle: 'Codex CLI Guardrails That Actually Enforce',
+    heroSummary: 'Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway so repeated mistakes become searchable lessons, linked rules, and pre-action enforcement.',
+    takeaways: [
+      'Codex CLI buyers are usually looking for safe autonomy, not just more prompts.',
+      'ThumbGate sits in the critical gap between feedback and execution.',
+      'This page should rank for people who want guardrails without giving up CLI speed.',
+    ],
+    sections: [
+      {
+        heading: 'What Codex CLI users usually need',
+        paragraphs: [
+          'The problem is rarely a single bad command. It is the cost of the same failure pattern showing up across branches, sessions, or rushed workflows. Once that pattern is obvious, the buyer wants a durable control point.',
+        ],
+      },
+      {
+        heading: 'What ThumbGate adds',
+        bullets: [
+          'Feedback capture with explicit thumbs-up/down signals.',
+          'Searchable lessons and linked prevention rules.',
+          'Pre-action gates that block repeated bad commands before they run.',
+          'Verification evidence that gives teams something concrete to audit.',
+        ],
+      },
+      {
+        heading: 'Why this matters for revenue',
+        paragraphs: [
+          'Guardrails are easier to buy when the outcome is obvious: less rework, fewer repeated failures, and a visible chain from operator feedback to enforced behavior.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Is ThumbGate only for Codex CLI?',
+        answer: 'No. Codex CLI is one supported workflow, but the same feedback and enforcement loop also works across Claude Code, Cursor, Gemini, Amp, and OpenCode.',
+      },
+      {
+        question: 'How are Codex CLI guardrails different from prompt instructions?',
+        answer: 'Prompt instructions are advisory. ThumbGate pre-action gates intercept the tool call itself and block the known-bad pattern before execution.',
+      },
+    ],
+    relatedPaths: ['/guides/pre-action-gates', '/compare/mem0'],
+  },
+  {
+    query: 'gemini cli feedback memory',
+    path: '/guides/gemini-cli-feedback-memory',
+    pageType: 'integration',
+    pillar: 'agent-workflows',
+    title: 'Gemini CLI Feedback Memory | Memory Plus Enforcement with ThumbGate',
+    heroTitle: 'Gemini CLI Feedback Memory That Leads to Enforcement',
+    heroSummary: 'Gemini CLI users often start by asking for better memory. ThumbGate answers the bigger need: memory that can become prevention rules and pre-action gates when the same mistake shows up twice.',
+    takeaways: [
+      'Gemini CLI searchers often begin with memory but buy because of enforcement.',
+      'ThumbGate keeps the local-first memory story while adding runtime blocking.',
+      'The ideal conversion path here is memory query to product proof to Pro page.',
+    ],
+    sections: [
+      {
+        heading: 'Why memory is only step one',
+        paragraphs: [
+          'Persistent memory helps Gemini CLI recall past context, but it still leaves a blind spot. Remembering that a workflow went badly is different from preventing the next risky action when the same pattern appears again.',
+        ],
+      },
+      {
+        heading: 'What ThumbGate adds on top',
+        bullets: [
+          'Local-first lessons you can search across sessions.',
+          'Structured thumbs-up/down feedback for reinforcement and correction.',
+          'Prevention rules linked to past failures.',
+          'Pre-action gates that stop repeated mistakes before execution.',
+        ],
+      },
+      {
+        heading: 'Who this is really for',
+        paragraphs: [
+          'This page is for operators who already know memory matters, but now need a reliability layer that protects live workflows instead of just preserving notes about them.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Does ThumbGate replace Gemini CLI memory?',
+        answer: 'No. ThumbGate extends the memory story with searchable lessons, rules, and gates so memory becomes operationally useful instead of purely historical.',
+      },
+      {
+        question: 'Can this stay local-first?',
+        answer: 'Yes. ThumbGate is built for local-first workflows, which lowers risk for developers who do not want sensitive history pushed into a hosted memory layer.',
+      },
+    ],
+    relatedPaths: ['/compare/mem0', '/guides/stop-repeated-ai-agent-mistakes'],
   },
   {
     query: 'claude desktop extension plugin thumbgate',
@@ -444,7 +655,7 @@ function classifyIntent(query) {
     return 'commercial';
   }
   if (/\b(what is|how to|guide|best practices|why)\b/.test(normalized)) return 'informational';
-  if (/\b(guardrails|pre-action gates|feedback|prevent repeated mistakes|memory)\b/.test(normalized)) {
+  if (/\b(guardrails|pre-action gates|feedback|prevent repeated mistakes|repeating mistakes|memory)\b/.test(normalized)) {
     return 'commercial';
   }
   return 'informational';
@@ -454,7 +665,7 @@ function inferPillar(query) {
   const normalized = normalizeText(query).toLowerCase();
   if (/\b(speclock|mem0|alternative|vs|compare|comparison)\b/.test(normalized)) return 'comparison';
   if (/\b(thumbs up|thumbs down|feedback|reinforce|mistake)\b/.test(normalized)) return 'feedback-loop';
-  if (/\b(pre-action gates|guardrails|block|prevent repeated mistakes)\b/.test(normalized)) return 'pre-action-gates';
+  if (/\b(pre-action gates|guardrails|block|prevent repeated mistakes|repeating mistakes)\b/.test(normalized)) return 'pre-action-gates';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin)\b/.test(normalized)) return 'agent-workflows';
   return 'ai-agent-reliability';
 }
@@ -463,6 +674,8 @@ function inferPersona(query) {
   const normalized = normalizeText(query).toLowerCase();
   if (normalized.includes('claude code')) return 'claude-code-builder';
   if (normalized.includes('cursor')) return 'cursor-builder';
+  if (normalized.includes('codex')) return 'codex-builder';
+  if (normalized.includes('gemini')) return 'gemini-builder';
   if (/\b(vs|alternative|compare)\b/.test(normalized)) return 'tool-evaluator';
   if (/\b(guardrails|pre-action gates)\b/.test(normalized)) return 'engineering-lead';
   return 'ai-engineer';
@@ -628,8 +841,8 @@ function createPageSpec(blueprint, row) {
     faq: blueprint.faq,
     relatedPages,
     cta: {
-      label: 'Review verification evidence',
-      href: PRODUCT.verificationUrl,
+      label: 'See ThumbGate Pro',
+      href: `/pro?utm_source=website&utm_medium=seo_page&utm_campaign=${blueprint.path.split('/').filter(Boolean).join('_')}`,
     },
     proofLinks: [
       { label: 'Verification evidence', href: PRODUCT.verificationUrl },

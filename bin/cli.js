@@ -20,9 +20,16 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const { resolveMcpEntry } = require(path.join(__dirname, '..', 'scripts', 'mcp-config'));
 const { trackEvent } = require(path.join(__dirname, '..', 'scripts', 'cli-telemetry'));
+const {
+  cacheUpdateHookCommand,
+  preToolHookCommand,
+  sessionStartHookCommand,
+  statuslineCommand,
+  userPromptHookCommand,
+} = require(path.join(__dirname, '..', 'scripts', 'hook-runtime'));
 const {
   PRO_MONTHLY_PAYMENT_LINK,
   PRO_PRICE_LABEL,
@@ -104,12 +111,31 @@ function limitNudge(action) {
 
 function parseArgs(argv) {
   const args = {};
-  argv.forEach((arg) => {
+  argv.forEach((arg, index) => {
     if (!arg.startsWith('--')) return;
     const [key, ...rest] = arg.slice(2).split('=');
-    args[key] = rest.length ? rest.join('=') : true;
+    if (rest.length) {
+      args[key] = rest.join('=');
+      return;
+    }
+
+    const next = argv[index + 1];
+    if (next && !next.startsWith('--')) {
+      args[key] = next;
+      return;
+    }
+
+    args[key] = true;
   });
   return args;
+}
+
+function readStdinText() {
+  try {
+    return fs.readFileSync(0, 'utf8');
+  } catch {
+    return '';
+  }
 }
 
 function pkgVersion() {
@@ -121,7 +147,7 @@ function pkgVersion() {
 
 const HOME = process.env.HOME || process.env.USERPROFILE || '';
 const MCP_SERVER_NAME = 'thumbgate';
-const MCP_SERVER_NAMES = ['thumbgate'];
+const MCP_SERVER_NAMES = ['thumbgate', 'mcp-memory-gateway', 'rlhf'];
 
 function mcpEntriesMatch(entry, expectedEntry) {
   return Boolean(
@@ -285,9 +311,16 @@ function setupClaude() {
   }
 
   // Upsert PostToolUse hook for ThumbGate statusline cache updates
-  const cacheHookCommand = 'node node_modules/thumbgate/scripts/hook-thumbgate-cache-updater.js';
+  const cacheHookCommand = cacheUpdateHookCommand();
+  const originalPostToolUseCount = (settings.hooks.PostToolUse || []).length;
+  settings.hooks.PostToolUse = (settings.hooks.PostToolUse || []).filter(
+    (entry) => !(entry.hooks || []).some((h) => h.command && h.command !== cacheHookCommand && /(hook-thumbgate-cache-updater|cache-update\b)/.test(h.command))
+  );
+  if (settings.hooks.PostToolUse.length !== originalPostToolUseCount) {
+    hooksChanged = true;
+  }
   const cacheAlreadyPresent = (settings.hooks.PostToolUse || [])
-    .some(entry => (entry.hooks || []).some(h => h.command && h.command.includes('hook-thumbgate-cache-updater')));
+    .some(entry => (entry.hooks || []).some(h => h.command === cacheHookCommand || (h.command && h.command.includes('cache-update'))));
 
   if (!cacheAlreadyPresent) {
     settings.hooks.PostToolUse = settings.hooks.PostToolUse || [];
@@ -300,8 +333,8 @@ function setupClaude() {
   }
 
   // Upsert statusLine for ThumbGate feedback display
-  const statuslineScript = path.join('node_modules', 'thumbgate', 'scripts', 'statusline.sh');
-  if (!settings.statusLine) {
+  const statuslineScript = statuslineCommand();
+  if (!settings.statusLine || settings.statusLine.command !== statuslineScript) {
     settings.statusLine = { type: 'command', command: statuslineScript };
     hooksChanged = true;
     console.log('  Claude Code: installed ThumbGate status line');
@@ -1151,6 +1184,75 @@ function install() {
   }
 }
 
+async function gateCheck() {
+  const payload = readStdinText();
+  const input = payload ? JSON.parse(payload) : {};
+  const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+  const output = await gatesEngine.runAsync(input);
+  process.stdout.write(output + '\n');
+}
+
+function cacheUpdate() {
+  const payload = readStdinText();
+  const { updateCacheFromEvent } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
+  updateCacheFromEvent(payload ? JSON.parse(payload) : {});
+}
+
+function statuslineRender() {
+  const payload = readStdinText();
+  const output = execFileSync('bash', [path.join(PKG_ROOT, 'scripts', 'statusline.sh')], {
+    encoding: 'utf8',
+    input: payload,
+    env: process.env,
+  });
+  process.stdout.write(output);
+}
+
+function hookAutoCapture() {
+  const prompt = process.env.CLAUDE_USER_PROMPT || process.env.THUMBGATE_USER_PROMPT || readStdinText().trim();
+  const { evaluatePromptGuard } = require(path.join(PKG_ROOT, 'scripts', 'prompt-guard'));
+  const { processInlineFeedback, formatCliOutput } = require(path.join(PKG_ROOT, 'scripts', 'cli-feedback'));
+  const { recordConversationEntry, readRecentConversationWindow } = require(path.join(PKG_ROOT, 'scripts', 'feedback-history-distiller'));
+
+  recordConversationEntry({
+    author: 'user',
+    text: prompt,
+    source: 'claude_user_prompt',
+  });
+
+  const guardResult = evaluatePromptGuard(prompt);
+  if (guardResult) {
+    process.stdout.write(`${JSON.stringify(guardResult)}\n`);
+    return;
+  }
+
+  const lower = prompt.toLowerCase();
+  const isUp = /(thumbs?\s*up|that worked|looks good|nice work|perfect|good job)/i.test(lower);
+  const isDown = /(thumbs?\s*down|that failed|that was wrong|fix this)/i.test(lower);
+  if (!isUp && !isDown) {
+    return;
+  }
+
+  const signal = isDown ? 'down' : 'up';
+  const conversationWindow = readRecentConversationWindow({ limit: 8 });
+  const result = processInlineFeedback({
+    signal,
+    context: prompt,
+    chatHistory: signal === 'down'
+      ? conversationWindow.map((entry) => ({ role: entry.author === 'assistant' ? 'assistant' : 'user', content: entry.text || '' }))
+      : undefined,
+    whatWentWrong: signal === 'down' ? prompt : undefined,
+    whatWorked: signal === 'up' ? prompt : undefined,
+  });
+  process.stdout.write(formatCliOutput(result) + '\n');
+}
+
+function sessionStart() {
+  const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  const { refreshStatuslineCache } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
+  refreshStatuslineCache(analyzeFeedback());
+}
+
 function installMcp() {
   const { installMcp: doInstall, parseFlags } = require(path.join(PKG_ROOT, 'scripts', 'install-mcp'));
   const flags = parseFlags(process.argv.slice(3));
@@ -1203,6 +1305,11 @@ function help() {
   console.log('    --dry-run           Preview hook changes without writing');
   console.log('  install-mcp           Install ThumbGate MCP server into Claude Code settings (--project for local)');
   console.log('  serve                 Start MCP server (stdio) — for claude/codex/gemini/forge mcp add');
+  console.log('  gate-check            Internal: evaluate a PreToolUse payload from stdin');
+  console.log('  cache-update          Internal: refresh the Claude statusline cache from stdin');
+  console.log('  statusline-render     Internal: render the ThumbGate Claude status line');
+  console.log('  hook-auto-capture     Internal: process Claude UserPromptSubmit feedback');
+  console.log('  session-start         Internal: refresh local ThumbGate session cache');
   console.log('  capture [flags]       Capture feedback (--feedback=up|down --context="..." --tags="...")');
   console.log('  stats                 Show feedback analytics + Revenue-at-Risk');
   console.log('  cfo                   Show hosted billing summary when configured, else local fallback JSON');
@@ -1272,6 +1379,24 @@ switch (COMMAND) {
   case 'serve':
   case 'mcp':
     serve();
+    break;
+  case 'gate-check':
+    gateCheck().catch((err) => {
+      console.error(err && err.message ? err.message : err);
+      process.exit(1);
+    });
+    break;
+  case 'cache-update':
+    cacheUpdate();
+    break;
+  case 'statusline-render':
+    statuslineRender();
+    break;
+  case 'hook-auto-capture':
+    hookAutoCapture();
+    break;
+  case 'session-start':
+    sessionStart();
     break;
   case 'capture':
   case 'feedback':

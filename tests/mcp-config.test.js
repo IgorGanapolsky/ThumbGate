@@ -4,9 +4,11 @@ const assert = require('node:assert');
 const path = require('path');
 const {
   parseWorktreePaths,
+  publishedCliAvailable,
   portableMcpEntry,
   localMcpEntry,
   resolveLocalServerPath,
+  resolveStableSourceRoot,
   isSourceCheckout,
 } = require('../scripts/mcp-config');
 
@@ -22,11 +24,14 @@ describe('mcp-config', () => {
     assert.deepStrictEqual(parseWorktreePaths(null), []);
   });
 
-  it('portableMcpEntry returns npx command with version', () => {
+  it('portableMcpEntry returns a shell wrapper that pins the published package version', () => {
     const entry = portableMcpEntry('1.2.3');
-    assert.strictEqual(entry.command, 'npx');
-    assert.ok(entry.args.includes('-y'));
-    assert.ok(entry.args.some(a => a.includes('1.2.3')));
+    assert.strictEqual(entry.command, 'sh');
+    assert.deepStrictEqual(entry.args.slice(0, 1), ['-lc']);
+    assert.match(entry.args[1], /thumbgate@1\.2\.3/);
+    assert.match(entry.args[1], /thumbgate/);
+    assert.match(entry.args[1], /serve/);
+    assert.match(entry.args[1], /\.thumbgate\/runtime/);
   });
 
   it('localMcpEntry returns node command pointing to server-stdio.js', () => {
@@ -39,5 +44,20 @@ describe('mcp-config', () => {
   it('isSourceCheckout returns true for repo with .git', () => {
     const pkgRoot = path.resolve(__dirname, '..');
     assert.strictEqual(isSourceCheckout(pkgRoot), true);
+  });
+
+  it('resolveStableSourceRoot falls back safely when pkgRoot is omitted', () => {
+    const stableRoot = resolveStableSourceRoot();
+    assert.ok(typeof stableRoot === 'string' && stableRoot.length > 0);
+    assert.ok(path.isAbsolute(stableRoot));
+  });
+
+  it('publishedCliAvailable respects the explicit availability override', () => {
+    process.env.THUMBGATE_PUBLISHED_CLI_STATE = 'available';
+    try {
+      assert.equal(publishedCliAvailable('0.9.10'), true);
+    } finally {
+      delete process.env.THUMBGATE_PUBLISHED_CLI_STATE;
+    }
   });
 });

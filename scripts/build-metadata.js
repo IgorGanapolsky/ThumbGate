@@ -3,6 +3,8 @@ const path = require('path');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_BUILD_METADATA_PATH = path.join(PROJECT_ROOT, 'config', 'build-metadata.json');
+const BUILD_SHA_ENV_KEY = 'THUMBGATE_BUILD_SHA';
+const BUILD_GENERATED_AT_ENV_KEY = 'THUMBGATE_BUILD_GENERATED_AT';
 
 function normalizeNullableText(value) {
   if (typeof value !== 'string') {
@@ -18,6 +20,16 @@ function resolveBuildMetadata({ env = process.env, filePath } = {}) {
     normalizeNullableText(filePath) ||
     normalizeNullableText(env.THUMBGATE_BUILD_METADATA_PATH) ||
     DEFAULT_BUILD_METADATA_PATH;
+  const envBuildSha = normalizeNullableText(env[BUILD_SHA_ENV_KEY]);
+  const envGeneratedAt = normalizeNullableText(env[BUILD_GENERATED_AT_ENV_KEY]);
+
+  if (envBuildSha || envGeneratedAt) {
+    return {
+      path: resolvedPath,
+      buildSha: envBuildSha,
+      generatedAt: envGeneratedAt,
+    };
+  }
 
   try {
     const parsed = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
@@ -91,6 +103,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  BUILD_GENERATED_AT_ENV_KEY,
+  BUILD_SHA_ENV_KEY,
   DEFAULT_BUILD_METADATA_PATH,
   resolveBuildMetadata,
   writeBuildMetadataFile,

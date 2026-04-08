@@ -270,11 +270,16 @@ test('public landing page internally links to comparison and guide pages without
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /id="compare-guides"/);
-  assert.match(landingPage, /How ThumbGate compares/i);
+  assert.match(landingPage, /Popular Buyer Questions/i);
+  assert.match(landingPage, /How buyers discover ThumbGate/i);
   assert.match(landingPage, /href="\/compare\/speclock"/);
   assert.match(landingPage, /href="\/compare\/mem0"/);
   assert.match(landingPage, /href="\/guides\/pre-action-gates"/);
   assert.match(landingPage, /href="\/guides\/claude-code-feedback"/);
+  assert.match(landingPage, /href="\/guides\/stop-repeated-ai-agent-mistakes"/);
+  assert.match(landingPage, /href="\/guides\/cursor-agent-guardrails"/);
+  assert.match(landingPage, /href="\/guides\/codex-cli-guardrails"/);
+  assert.match(landingPage, /href="\/guides\/gemini-cli-feedback-memory"/);
   // No internal marketing jargon visible to customers
   assert.doesNotMatch(landingPage, /GSD Pages/);
   assert.doesNotMatch(landingPage, /Bottom of funnel/i);

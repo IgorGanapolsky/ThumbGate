@@ -359,9 +359,20 @@ test('evaluateGates returns null for Read tool', () => {
   assert.equal(result, null);
 });
 
-test('evaluateGates blocks out-of-scope edit when no task scope is declared', () => {
+test('evaluateGates allows non-protected edits when no task scope is declared', () => {
   cleanupStateFiles();
   const result = evaluateGates('Edit', { file_path: '/project/src/app.js' });
+  assert.equal(result, null);
+});
+
+test('evaluateGates blocks high-risk git writes when no task scope is declared', () => {
+  cleanupStateFiles();
+  const repoPath = createPushTestRepo('src/app.js');
+  const result = evaluateGates('Bash', {
+    command: 'git push origin feature/x',
+    repoPath,
+    changed_files: ['src/app.js'],
+  });
   assert.ok(result);
   assert.equal(result.decision, 'deny');
   assert.equal(result.gate, 'task-scope-required');
@@ -374,7 +385,7 @@ test('evaluateGates blocks out-of-scope edit when file is outside declared scope
   const result = evaluateGates('Edit', { file_path: '/project/src/app.js' });
   assert.ok(result);
   assert.equal(result.decision, 'deny');
-  assert.equal(result.gate, 'task-scope-required');
+  assert.equal(result.gate, 'task-scope-edit-boundary');
   assert.match(result.message, /outside the declared task scope/i);
 });
 

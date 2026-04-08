@@ -1,7 +1,6 @@
 #!/bin/bash
 # ThumbGate Status Line for Claude Code
-# Shows ThumbGate feedback stats + most recent lesson at a glance.
-# Thumbs icons trigger CLI feedback capture inline (no browser).
+# Shows ThumbGate feedback stats + package version/tier at a glance.
 # Installed by: npx thumbgate init --agent claude-code
 
 # Resolve script directory safely (CodeQL: no uncontrolled paths)
@@ -17,14 +16,19 @@ CTX_PCT="${CTX_PCT:-0}"
 
 # ── ThumbGate stats from cache ────────────────────────────────────────
 THUMBGATE_CACHE=""
-for base in "${THUMBGATE_FEEDBACK_DIR:-.}" "." "${HOME}"; do
-  for rel in ".thumbgate/statusline_cache.json" "statusline_cache.json"; do
-    if [ -f "${base}/${rel}" ]; then
-      THUMBGATE_CACHE="${base}/${rel}"
-      break 2
+_CACHE_CANDIDATES_JSON=$(node "${SCRIPT_DIR}/statusline-cache-path.js" 2>/dev/null)
+if [ -n "$_CACHE_CANDIDATES_JSON" ]; then
+  while IFS= read -r candidate; do
+    [ -z "$candidate" ] && continue
+    if [ -f "$candidate" ]; then
+      THUMBGATE_CACHE="$candidate"
+      break
     fi
-  done
-done
+  done < <(echo "$_CACHE_CANDIDATES_JSON" | jq -r '.candidates[]?' 2>/dev/null)
+fi
+if [ -z "$THUMBGATE_CACHE" ]; then
+  THUMBGATE_CACHE="$(echo "$_CACHE_CANDIDATES_JSON" | jq -r '.candidates[0] // empty' 2>/dev/null)"
+fi
 if [ -z "$THUMBGATE_CACHE" ]; then
   THUMBGATE_CACHE="${THUMBGATE_FEEDBACK_DIR:-.}/statusline_cache.json"
 fi
@@ -40,8 +44,23 @@ if [ -f "$THUMBGATE_CACHE" ]; then
   ' "$THUMBGATE_CACHE" 2>/dev/null)"
 fi
 
-# Background refresh from REST API when cache is stale (>120s)
 _NOW=$(date +%s)
+if [ "$UP" = "0" ] && [ "$DOWN" = "0" ] || [ $(( _NOW - ${CACHE_TS:-0} )) -gt 120 ]; then
+  _LOCAL_STATS_JSON=$(node "${SCRIPT_DIR}/statusline-local-stats.js" 2>/dev/null)
+  if [ -n "$_LOCAL_STATS_JSON" ]; then
+    mkdir -p "$(dirname "$THUMBGATE_CACHE")"
+    printf '%s' "$_LOCAL_STATS_JSON" > "$THUMBGATE_CACHE"
+    eval "$(echo "$_LOCAL_STATS_JSON" | jq -r '
+      @sh "UP=\(.thumbs_up // "0")",
+      @sh "DOWN=\(.thumbs_down // "0")",
+      @sh "LESSONS=\(.lessons // "0")",
+      @sh "TREND=\(.trend // "?")",
+      @sh "CACHE_TS=\(.updated_at // "0")"
+    ' 2>/dev/null)"
+  fi
+fi
+
+# Background refresh from REST API when cache is stale (>120s)
 if [ $(( _NOW - ${CACHE_TS:-0} )) -gt 120 ]; then
   (
     _R=$(curl -s --max-time 3 "http://localhost:3456/v1/feedback/stats" -H "Authorization: Bearer ${THUMBGATE_API_KEY:-tg_creator_dev_enterprise}" 2>/dev/null)
@@ -59,13 +78,13 @@ except:pass
   disown 2>/dev/null
 fi
 
-# ── Most recent lesson from lesson-inference ──────────────────────
-LESSON_TEXT=""; LESSON_ID=""
-_LESSON_JSON=$(node "${SCRIPT_DIR}/statusline-lesson.js" 2>/dev/null)
-if [ -n "$_LESSON_JSON" ]; then
-  eval "$(echo "$_LESSON_JSON" | jq -r '
-    @sh "LESSON_TEXT=\(.text // "")",
-    @sh "LESSON_ID=\(.lessonId // "")"
+# ── ThumbGate package metadata ────────────────────────────────────────
+TG_VERSION="unknown"; TG_TIER="Free"
+_META_JSON=$(node "${SCRIPT_DIR}/statusline-meta.js" 2>/dev/null)
+if [ -n "$_META_JSON" ]; then
+  eval "$(echo "$_META_JSON" | jq -r '
+    @sh "TG_VERSION=\(.version // "unknown")",
+    @sh "TG_TIER=\(.tier // "Free")"
   ' 2>/dev/null)"
 fi
 
@@ -88,29 +107,17 @@ case "${TREND}" in
   improving) ARROW="↗" ;; degrading) ARROW="↘" ;; stable) ARROW="→" ;; *) ARROW="?" ;;
 esac
 
-# ── OSC 8 clickable links ────────────────────────────────────────
-# Links use CLI commands instead of browser URLs.
-# Clicking 👍 runs: node bin/cli.js feedback --signal=up
-# Clicking 👎 runs: node bin/cli.js feedback --signal=down
-osc_link() { printf '\033]8;;%s\a%s\033]8;;\a' "$1" "$2"; }
-CLI="node ${SCRIPT_DIR}/../bin/cli.js"
-
 # ── Output (single line) ─────────────────────────────────────────
+LINE="ThumbGate v${TG_VERSION} · ${TG_TIER}"
 if [ "$UP" = "0" ] && [ "$DOWN" = "0" ]; then
-  echo -e "${D}ThumbGate: no feedback yet — type 'thumbs up' or 'thumbs down'${RST}"
+  echo -e "${D}${LINE} · no feedback yet${RST}"
 else
-  # Feedback counts
-  LINE="ThumbGate: ${G}${BD}${UP}${RST}👍 ${R}${BD}${DOWN}${RST}👎 · ${M}${BD}${LESSONS}${RST} lessons ${ARROW}"
+  LINE="${LINE} · ${G}${BD}${UP}${RST}👍 ${R}${BD}${DOWN}${RST}👎 ${ARROW}"
 
   # Control Tower alerts (if any)
   [ "${SLO_V:-0}" -gt 0 ] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"
   [ "${AT_RISK:-0}" -gt 0 ] && LINE="${LINE} ${R}${AT_RISK}⚠${RST}"
   [ "${ANOMALIES:-0}" -gt 0 ] && LINE="${LINE} ${R}${ANOMALIES}☠${RST}"
-
-  # Most recent lesson
-  if [ -n "$LESSON_TEXT" ]; then
-    LINE="${LINE} · ${C}${LESSON_TEXT}${RST}"
-  fi
 
   echo -e "$LINE"
 fi

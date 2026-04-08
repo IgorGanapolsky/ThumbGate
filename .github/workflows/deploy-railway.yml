@@ -21,6 +21,8 @@ jobs:
       RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
       RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
       RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL || 'https://thumbgate-production.up.railway.app/health' }}
+      RAILWAY_HEALTHCHECK_MAX_ATTEMPTS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS || '120' }}
+      RAILWAY_HEALTHCHECK_SLEEP_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_SLEEP_SECONDS || '10' }}
       THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_FEEDBACK_DIR: ${{ vars.THUMBGATE_FEEDBACK_DIR }}
@@ -112,6 +114,8 @@ jobs:
             SERVICE_ARGS+=(--service "$RAILWAY_SERVICE")
           fi
           retry_railway "set THUMBGATE_API_KEY" railway variables set THUMBGATE_API_KEY="$THUMBGATE_API_KEY" "${SERVICE_ARGS[@]}"
+          retry_railway "set THUMBGATE_BUILD_SHA" railway variables set THUMBGATE_BUILD_SHA="$GITHUB_SHA" "${SERVICE_ARGS[@]}"
+          retry_railway "set THUMBGATE_BUILD_GENERATED_AT" railway variables set THUMBGATE_BUILD_GENERATED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "${SERVICE_ARGS[@]}"
           retry_railway "set THUMBGATE_PUBLIC_APP_ORIGIN" railway variables set THUMBGATE_PUBLIC_APP_ORIGIN="$THUMBGATE_PUBLIC_APP_ORIGIN" "${SERVICE_ARGS[@]}"
           retry_railway "set THUMBGATE_BILLING_API_BASE_URL" railway variables set THUMBGATE_BILLING_API_BASE_URL="$THUMBGATE_BILLING_API_BASE_URL" "${SERVICE_ARGS[@]}"
           retry_railway "set STRIPE_SECRET_KEY" railway variables set STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" "${SERVICE_ARGS[@]}"
@@ -158,8 +162,9 @@ jobs:
       - name: Verify deployment health
         if: steps.railway-config.outputs.enabled == 'true'
         run: |
-          MAX_ATTEMPTS=30
-          SLEEP_SECONDS=10
+          # Railway promotion can lag well past five minutes after a detached upload succeeds.
+          MAX_ATTEMPTS="${RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-120}"
+          SLEEP_SECONDS="${RAILWAY_HEALTHCHECK_SLEEP_SECONDS:-10}"
           STATUS=""
           RESPONSE_FILE="$(mktemp)"
           LIVE_SHA=""

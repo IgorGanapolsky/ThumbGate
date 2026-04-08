@@ -3815,11 +3815,21 @@ async function addContext(){
           return;
         }
         const body = await parseJsonBody(req);
+        // Auto-include conversation window when caller doesn't provide one
+        let chatHistory = Array.isArray(body.chatHistory) ? body.chatHistory : body.messages;
+        if (!chatHistory || chatHistory.length === 0) {
+          try {
+            chatHistory = readRecentConversationWindow({
+              feedbackDir: getSafeDataDir(),
+              limit: 10,
+            });
+          } catch (_) { /* best-effort — conversation window is optional */ }
+        }
         const result = captureFeedback({
           signal: body.signal,
           context: body.context || '',
           relatedFeedbackId: body.relatedFeedbackId,
-          chatHistory: Array.isArray(body.chatHistory) ? body.chatHistory : body.messages,
+          chatHistory,
           whatWentWrong: body.whatWentWrong,
           whatToChange: body.whatToChange,
           whatWorked: body.whatWorked,

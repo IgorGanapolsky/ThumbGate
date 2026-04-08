@@ -39,6 +39,18 @@ test('README routes paid buyers to the dedicated Pro page', () => {
   assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/pro\?utm_source=github&utm_medium=readme&utm_campaign=pro_page/);
 });
 
+test('README exposes prompt-shaped buyer questions with tracked guide links', () => {
+  const readme = readText('README.md');
+
+  assert.match(readme, /Popular buyer questions/i);
+  assert.match(readme, /guides\/stop-repeated-ai-agent-mistakes\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
+  assert.match(readme, /guides\/cursor-agent-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
+  assert.match(readme, /guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
+  assert.match(readme, /guides\/gemini-cli-feedback-memory\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
+  assert.match(readme, /\/\?utm_source=github&utm_medium=readme&utm_campaign=top_cta#pricing/);
+  assert.match(readme, /\/\?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake/);
+});
+
 test('README exposes the actual shipped tech stack', () => {
   const readme = readText('README.md');
 

@@ -47,16 +47,20 @@ test('learn hub has Plausible analytics', () => {
   assert.match(html, /src="\/js\/analytics\.js"/);
 });
 
-test('learn hub links to all five articles', () => {
+test('learn hub links to core articles and high-intent buyer guides', () => {
   const html = readFile(learnHubPath);
   assert.match(html, /\/learn\/stop-ai-agent-force-push/);
   assert.match(html, /\/learn\/vibe-coding-safety-net/);
   assert.match(html, /\/learn\/mcp-pre-action-gates-explained/);
   assert.match(html, /\/learn\/agent-harness-pattern/);
   assert.match(html, /\/learn\/ai-agent-persistent-memory/);
+  assert.match(html, /\/guides\/stop-repeated-ai-agent-mistakes/);
+  assert.match(html, /\/guides\/cursor-agent-guardrails/);
+  assert.match(html, /\/guides\/codex-cli-guardrails/);
+  assert.match(html, /\/guides\/gemini-cli-feedback-memory/);
 });
 
-test('learn hub has article cards with titles, descriptions, and tags', () => {
+test('learn hub has article cards with titles, descriptions, tags, and a buyer-question section', () => {
   const html = readFile(learnHubPath);
   assert.match(html, /class="article-card"/);
   assert.match(html, /class="article-tag"/);
@@ -65,6 +69,10 @@ test('learn hub has article cards with titles, descriptions, and tags', () => {
   assert.match(html, /MCP Pre-Action Gates Explained/);
   assert.match(html, /Agent Harness Pattern/);
   assert.match(html, /Persistent Memory Across Sessions/);
+  assert.match(html, /Popular buyer questions/);
+  assert.match(html, /Cursor Guardrails That Block Repeated Mistakes/);
+  assert.match(html, /Codex CLI Guardrails That Actually Enforce/);
+  assert.match(html, /Gemini CLI Feedback Memory That Leads to Enforcement/);
 });
 
 test('learn hub has CTA with npx install command', () => {
@@ -458,7 +466,7 @@ test('no learn page references version numbers (evergreen content)', () => {
 
 test('no learn page has broken internal links', () => {
   const allFiles = [learnHubPath, ...fs.readdirSync(learnDir).filter(f => f.endsWith('.html')).map(f => path.join(learnDir, f))];
-  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-gates-explained', '/learn/agent-harness-pattern', '/learn/ai-agent-persistent-memory', '/learn/learn.css'];
+  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-gates-explained', '/learn/agent-harness-pattern', '/learn/ai-agent-persistent-memory', '/learn/learn.css', '/guides/stop-repeated-ai-agent-mistakes', '/guides/cursor-agent-guardrails', '/guides/codex-cli-guardrails', '/guides/gemini-cli-feedback-memory'];
   for (const file of allFiles) {
     const html = readFile(file);
     const links = html.match(/href="(\/[^"#]*?)"/g) || [];

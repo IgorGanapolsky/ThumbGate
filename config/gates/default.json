@@ -13,11 +13,22 @@
     {
       "id": "task-scope-required",
       "layer": "Decisions",
-      "toolNames": ["Edit", "Write", "MultiEdit", "Bash"],
-      "pattern": ".*",
+      "toolNames": ["Bash"],
+      "pattern": "^(git\\s+(add|commit|push)|gh\\s+pr\\s+(create|merge)|gh\\s+release\\s+create|git\\s+tag\\b|npm\\s+publish|yarn\\s+publish|pnpm\\s+publish)",
       "requireTaskScope": true,
       "action": "block",
-      "message": "High-risk edits and git write operations require an explicit task scope.",
+      "message": "Git write, PR, release, and publish operations require an explicit task scope.",
+      "severity": "critical"
+    },
+    {
+      "id": "task-scope-edit-boundary",
+      "layer": "Decisions",
+      "toolNames": ["Edit", "Write", "MultiEdit"],
+      "pattern": ".*",
+      "requireTaskScope": true,
+      "scopeMode": "declared-only",
+      "action": "block",
+      "message": "Edits outside the declared task scope are blocked once a task scope is active.",
       "severity": "critical"
     },
     {
