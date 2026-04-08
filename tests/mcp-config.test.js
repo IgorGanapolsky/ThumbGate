@@ -7,6 +7,7 @@ const {
   portableMcpEntry,
   localMcpEntry,
   resolveLocalServerPath,
+  resolveStableSourceRoot,
   isSourceCheckout,
 } = require('../scripts/mcp-config');
 
@@ -39,5 +40,11 @@ describe('mcp-config', () => {
   it('isSourceCheckout returns true for repo with .git', () => {
     const pkgRoot = path.resolve(__dirname, '..');
     assert.strictEqual(isSourceCheckout(pkgRoot), true);
+  });
+
+  it('resolveStableSourceRoot falls back safely when pkgRoot is omitted', () => {
+    const stableRoot = resolveStableSourceRoot();
+    assert.ok(typeof stableRoot === 'string' && stableRoot.length > 0);
+    assert.ok(path.isAbsolute(stableRoot));
   });
 });

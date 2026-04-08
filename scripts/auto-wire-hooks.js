@@ -15,39 +15,30 @@
 
 const fs = require('fs');
 const path = require('path');
-
-const PKG_ROOT = path.join(__dirname, '..');
-
-function quoteShellPath(filePath) {
-  return `"${String(filePath).replace(/"/g, '\\"')}"`;
-}
+const {
+  cacheUpdateHookCommand,
+  preToolHookCommand,
+  sessionStartHookCommand,
+  statuslineCommand,
+  userPromptHookCommand,
+} = require('./hook-runtime');
 
 function getHome() {
   return process.env.HOME || process.env.USERPROFILE || '';
 }
 
 // --- Hook definitions ---
-
-function preToolHookCommand() {
-  return `bash ${quoteShellPath(path.join(PKG_ROOT, 'scripts', 'generate-pretool-hook.sh'))}`;
-}
-
-function userPromptHookCommand() {
-  return `bash ${quoteShellPath(path.join(PKG_ROOT, 'scripts', 'hook-auto-capture.sh'))}`;
-}
-
-function sessionStartHookCommand() {
-  return 'bash scripts/thumbgate_session_start.sh';
-  return `bash ${quoteShellPath(path.join(PKG_ROOT, 'scripts', 'rlhf_session_start.sh'))}`;
-}
-
 const CLAUDE_HOOKS = {
   PreToolUse: {
-    matcher: 'Bash',
+    matcher: 'Bash|Edit|Write|MultiEdit',
     hooks: [{ type: 'command', command: preToolHookCommand() }],
   },
   UserPromptSubmit: {
     hooks: [{ type: 'command', command: userPromptHookCommand() }],
+  },
+  PostToolUse: {
+    matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
+    hooks: [{ type: 'command', command: cacheUpdateHookCommand() }],
   },
   SessionStart: {
     hooks: [{ type: 'command', command: sessionStartHookCommand() }],
@@ -97,6 +88,28 @@ function hookAlreadyPresent(hookArray, command) {
   );
 }
 
+function pruneLegacyHookEntries(hookArray, expectedCommand, legacyPattern) {
+  if (!Array.isArray(hookArray)) {
+    return { hooks: [], removed: false };
+  }
+
+  let removed = false;
+  const hooks = hookArray.filter((entry) => {
+    const entryHooks = Array.isArray(entry && entry.hooks) ? entry.hooks : [];
+    const shouldRemove = entryHooks.some((hook) => {
+      const command = hook && typeof hook.command === 'string' ? hook.command : '';
+      return command !== expectedCommand && legacyPattern.test(command);
+    });
+    if (shouldRemove) {
+      removed = true;
+      return false;
+    }
+    return true;
+  });
+
+  return { hooks, removed };
+}
+
 function wireClaudeHooks(options) {
   const settingsPath = options.settingsPath || claudeSettingsPath();
   const dryRun = options.dryRun || false;
@@ -105,9 +118,20 @@ function wireClaudeHooks(options) {
   settings.hooks = settings.hooks || {};
 
   const added = [];
+  const legacyPatterns = {
+    PreToolUse: /(generate-pretool-hook\.sh|\bgate-check\b)/,
+    UserPromptSubmit: /(hook-auto-capture\.sh|hook-auto-capture\b)/,
+    PostToolUse: /(hook-thumbgate-cache-updater|cache-update\b)/,
+    SessionStart: /(thumbgate_session_start\.sh|session-start\b)/,
+  };
 
   for (const [lifecycle, hookDef] of Object.entries(CLAUDE_HOOKS)) {
     const hookCommand = hookDef.hooks[0].command;
+    const pruned = pruneLegacyHookEntries(settings.hooks[lifecycle], hookCommand, legacyPatterns[lifecycle]);
+    settings.hooks[lifecycle] = pruned.hooks;
+    if (pruned.removed) {
+      added.push({ lifecycle, command: `${hookCommand} (replaced legacy ThumbGate hook)` });
+    }
 
     if (hookAlreadyPresent(settings.hooks[lifecycle], hookCommand)) {
       continue;
@@ -123,8 +147,22 @@ function wireClaudeHooks(options) {
   }
 
   if (added.length === 0) {
+    const desiredStatusLine = statuslineCommand();
+    if (!settings.statusLine || settings.statusLine.command !== desiredStatusLine) {
+      if (!dryRun) {
+        const dir = path.dirname(settingsPath);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      }
+      settings.statusLine = { type: 'command', command: desiredStatusLine };
+      if (!dryRun) {
+        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+      }
+      return { changed: true, settingsPath, added: [{ lifecycle: 'statusLine', command: desiredStatusLine }] };
+    }
     return { changed: false, settingsPath, added: [] };
   }
+
+  settings.statusLine = { type: 'command', command: statuslineCommand() };
 
   if (!dryRun) {
     const dir = path.dirname(settingsPath);
@@ -151,6 +189,11 @@ function wireCodexHooks(options) {
   const added = [];
   const preToolCmd = preToolHookCommand();
   const userPromptCmd = userPromptHookCommand();
+
+  const preToolPruned = pruneLegacyHookEntries(config.hooks.PreToolUse, preToolCmd, /(generate-pretool-hook\.sh|\bgate-check\b)/);
+  config.hooks.PreToolUse = preToolPruned.hooks;
+  const userPromptPruned = pruneLegacyHookEntries(config.hooks.UserPromptSubmit, userPromptCmd, /(hook-auto-capture\.sh|hook-auto-capture\b)/);
+  config.hooks.UserPromptSubmit = userPromptPruned.hooks;
 
   if (!hookAlreadyPresent(config.hooks.PreToolUse, preToolCmd)) {
     config.hooks.PreToolUse = config.hooks.PreToolUse || [];
@@ -198,6 +241,11 @@ function wireGeminiHooks(options) {
   const added = [];
   const preToolCmd = preToolHookCommand();
   const userPromptCmd = userPromptHookCommand();
+
+  const preToolPruned = pruneLegacyHookEntries(settings.hooks.PreToolUse, preToolCmd, /(generate-pretool-hook\.sh|\bgate-check\b)/);
+  settings.hooks.PreToolUse = preToolPruned.hooks;
+  const userPromptPruned = pruneLegacyHookEntries(settings.hooks.UserPromptSubmit, userPromptCmd, /(hook-auto-capture\.sh|hook-auto-capture\b)/);
+  settings.hooks.UserPromptSubmit = userPromptPruned.hooks;
 
   if (!hookAlreadyPresent(settings.hooks.PreToolUse, preToolCmd)) {
     settings.hooks.PreToolUse = settings.hooks.PreToolUse || [];

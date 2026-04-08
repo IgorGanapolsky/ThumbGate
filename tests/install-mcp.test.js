@@ -19,6 +19,7 @@ const assert = require('node:assert/strict');
 
 const {
   MCP_SERVER_KEY,
+  LEGACY_MCP_SERVER_KEYS,
   MCP_SERVER_CONFIG,
   resolveMcpServerConfig,
   isAlreadyInstalled,
@@ -196,6 +197,41 @@ describe('install-mcp', () => {
       assert.equal(result.installed, true);
       const updated = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       assert.deepStrictEqual(updated.mcpServers[MCP_SERVER_KEY], MCP_SERVER_CONFIG);
+    } finally {
+      process.env.HOME = origHome;
+      fs.rmSync(isolatedDir, { recursive: true, force: true });
+    }
+  });
+
+  test('migrates legacy MCP server keys to thumbgate', () => {
+    const isolatedDir = makeTmpDir();
+    const settingsDir = path.join(isolatedDir, '.claude');
+    const settingsPath = path.join(settingsDir, 'settings.json');
+
+    fs.mkdirSync(settingsDir, { recursive: true });
+    fs.writeFileSync(settingsPath, JSON.stringify({
+      mcpServers: {
+        'mcp-memory-gateway': {
+          command: 'npx',
+          args: ['-y', 'mcp-memory-gateway', 'serve'],
+        },
+        rlhf: {
+          command: 'node',
+          args: ['/tmp/old/server-stdio.js'],
+        },
+      },
+    }, null, 2) + '\n');
+
+    const origHome = process.env.HOME;
+    process.env.HOME = isolatedDir;
+    try {
+      const result = installMcp({});
+      assert.equal(result.installed, true);
+      const updated = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      assert.deepStrictEqual(updated.mcpServers[MCP_SERVER_KEY], MCP_SERVER_CONFIG);
+      for (const legacyKey of LEGACY_MCP_SERVER_KEYS) {
+        assert.equal(Object.prototype.hasOwnProperty.call(updated.mcpServers, legacyKey), false);
+      }
     } finally {
       process.env.HOME = origHome;
       fs.rmSync(isolatedDir, { recursive: true, force: true });

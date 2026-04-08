@@ -17,6 +17,7 @@ const path = require('path');
 const { resolveMcpEntry } = require('./mcp-config');
 
 const MCP_SERVER_KEY = 'thumbgate';
+const LEGACY_MCP_SERVER_KEYS = ['mcp-memory-gateway', 'rlhf'];
 const PKG_ROOT = path.join(__dirname, '..');
 const PKG_VERSION = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8')).version;
 
@@ -80,9 +81,15 @@ function serverConfigMatches(entry, flags = {}) {
 }
 
 function isAlreadyInstalled(settings, flags = {}) {
+  const hasLegacyAliases = Boolean(
+    settings &&
+    settings.mcpServers &&
+    LEGACY_MCP_SERVER_KEYS.some((key) => Object.prototype.hasOwnProperty.call(settings.mcpServers, key))
+  );
   return !!(
     settings &&
     settings.mcpServers &&
+    !hasLegacyAliases &&
     serverConfigMatches(settings.mcpServers[MCP_SERVER_KEY], flags)
   );
 }
@@ -120,6 +127,11 @@ function installMcp(flags) {
   }
 
   settings.mcpServers[MCP_SERVER_KEY] = serverConfig;
+  for (const legacyKey of LEGACY_MCP_SERVER_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(settings.mcpServers, legacyKey)) {
+      delete settings.mcpServers[legacyKey];
+    }
+  }
 
   // Ensure parent directory exists
   const dir = path.dirname(settingsPath);
@@ -142,6 +154,7 @@ function installMcp(flags) {
 // Exported for testing
 module.exports = {
   MCP_SERVER_KEY,
+  LEGACY_MCP_SERVER_KEYS,
   MCP_SERVER_CONFIG,
   resolveMcpServerConfig,
   resolveSettingsPath,

@@ -156,31 +156,36 @@ describe('auto-wire-hooks', () => {
   // --- wireClaudeHooks ---
 
   describe('wireClaudeHooks', () => {
-    test('creates settings file and wires both hooks', () => {
+    test('creates settings file and wires the full Claude hook bundle', () => {
       const tmpDir = makeTmpDir();
       const settingsPath = path.join(tmpDir, '.claude', 'settings.local.json');
 
       try {
         const result = wireClaudeHooks({ settingsPath });
         assert.equal(result.changed, true);
-        assert.equal(result.added.length, 3);
+        assert.equal(result.added.length, 4);
 
         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
         assert.ok(settings.hooks.PreToolUse, 'PreToolUse should exist');
         assert.ok(settings.hooks.UserPromptSubmit, 'UserPromptSubmit should exist');
+        assert.ok(settings.hooks.PostToolUse, 'PostToolUse should exist');
         assert.ok(settings.hooks.SessionStart, 'SessionStart should exist');
+        assert.ok(settings.statusLine, 'statusLine should exist');
 
         // Check PreToolUse has matcher
         const preToolEntry = settings.hooks.PreToolUse[0];
-        assert.equal(preToolEntry.matcher, 'Bash');
+        assert.equal(preToolEntry.matcher, 'Bash|Edit|Write|MultiEdit');
         assert.equal(preToolEntry.hooks[0].command, preToolHookCommand());
 
-        // Check SessionStart
         const promptEntry = settings.hooks.UserPromptSubmit[0];
         assert.equal(promptEntry.hooks[0].command, userPromptHookCommand());
 
+        const postToolEntry = settings.hooks.PostToolUse[0];
+        assert.equal(postToolEntry.hooks[0].command, require('../scripts/hook-runtime').cacheUpdateHookCommand());
+
         const sessionEntry = settings.hooks.SessionStart[0];
         assert.equal(sessionEntry.hooks[0].command, sessionStartHookCommand());
+        assert.equal(settings.statusLine.command, require('../scripts/hook-runtime').statuslineCommand());
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
@@ -223,7 +228,7 @@ describe('auto-wire-hooks', () => {
       try {
         const result1 = wireClaudeHooks({ settingsPath });
         assert.equal(result1.changed, true);
-        assert.equal(result1.added.length, 3);
+        assert.equal(result1.added.length, 4);
 
         const result2 = wireClaudeHooks({ settingsPath });
         assert.equal(result2.changed, false);
@@ -233,7 +238,9 @@ describe('auto-wire-hooks', () => {
         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
         assert.equal(settings.hooks.PreToolUse.length, 1);
         assert.equal(settings.hooks.UserPromptSubmit.length, 1);
+        assert.equal(settings.hooks.PostToolUse.length, 1);
         assert.equal(settings.hooks.SessionStart.length, 1);
+        assert.ok(settings.statusLine);
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
@@ -246,7 +253,7 @@ describe('auto-wire-hooks', () => {
       try {
         const result = wireClaudeHooks({ settingsPath, dryRun: true });
         assert.equal(result.changed, true);
-        assert.equal(result.added.length, 3);
+        assert.equal(result.added.length, 4);
         assert.equal(fs.existsSync(settingsPath), false);
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });

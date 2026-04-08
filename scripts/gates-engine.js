@@ -586,6 +586,15 @@ function isScopeEnforcedAction(toolName, toolInput = {}, affectedFiles = []) {
   return affectedFiles.length > 0;
 }
 
+function shouldEnforceTaskScope(gate, governanceState, toolName, toolInput = {}, affectedFiles = []) {
+  if (gate.scopeMode === 'declared-only') {
+    return Boolean(governanceState && governanceState.taskScope) &&
+      EDIT_LIKE_TOOLS.has(toolName) &&
+      affectedFiles.length > 0;
+  }
+  return isScopeEnforcedAction(toolName, toolInput, affectedFiles);
+}
+
 function formatFileList(files, limit = 5) {
   const items = Array.isArray(files) ? files.filter(Boolean) : [];
   if (items.length === 0) return 'none';
@@ -824,7 +833,7 @@ function matchGate(gate, toolName, toolInput = {}) {
 
   let taskScopeViolation = null;
   if (gate.requireTaskScope) {
-    if (!isScopeEnforcedAction(toolName, toolInput, affectedFiles)) {
+    if (!shouldEnforceTaskScope(gate, governanceState, toolName, toolInput, affectedFiles)) {
       return { matched: false, matchText, affectedFiles };
     }
     taskScopeViolation = buildTaskScopeViolation(governanceState.taskScope, affectedFiles);

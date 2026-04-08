@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const DEFAULT_PKG_ROOT = path.join(__dirname, '..');
 
 function isSourceCheckout(pkgRoot) {
   return fs.existsSync(path.join(pkgRoot, '.git'));
@@ -17,16 +18,39 @@ function parseWorktreePaths(raw) {
 }
 
 function resolveStableSourceRoot(pkgRoot) {
-  if (!isSourceCheckout(pkgRoot)) {
+  const effectivePkgRoot =
+    typeof pkgRoot === 'string' && pkgRoot.trim() ? pkgRoot : DEFAULT_PKG_ROOT;
+
+  if (!isSourceCheckout(effectivePkgRoot)) {
     return null;
   }
 
+  let preferredBasenames = [];
   try {
-    const output = execFileSync('git', ['-C', pkgRoot, 'worktree', 'list', '--porcelain'], {
+    const pkg = JSON.parse(fs.readFileSync(path.join(effectivePkgRoot, 'package.json'), 'utf8'));
+    const packageName = String(pkg && pkg.name || '').trim().toLowerCase();
+    if (packageName) {
+      preferredBasenames.push(packageName);
+      preferredBasenames.push(packageName.replace(/[^a-z0-9]+/g, ''));
+    }
+  } catch (_) {
+    preferredBasenames = [];
+  }
+
+  try {
+    const output = execFileSync('git', ['-C', effectivePkgRoot, 'worktree', 'list', '--porcelain'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     });
     const worktreePaths = parseWorktreePaths(output);
+
+    for (const worktreePath of worktreePaths) {
+      const baseName = path.basename(worktreePath).toLowerCase();
+      const normalizedBaseName = baseName.replace(/[^a-z0-9]+/g, '');
+      if (preferredBasenames.includes(baseName) || preferredBasenames.includes(normalizedBaseName)) {
+        return worktreePath;
+      }
+    }
 
     for (const worktreePath of worktreePaths) {
       const gitPath = path.join(worktreePath, '.git');
@@ -38,10 +62,10 @@ function resolveStableSourceRoot(pkgRoot) {
       }
     }
   } catch (_) {
-    return pkgRoot;
+    return effectivePkgRoot;
   }
 
-  return pkgRoot;
+  return effectivePkgRoot;
 }
 
 function resolveGitCommonDir(dirPath) {

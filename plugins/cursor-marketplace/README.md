@@ -53,7 +53,7 @@ How it works:
 
 | Hook | Trigger | Description |
 |------|---------|-------------|
-| `beforeShellExecution` | `git push`, `rm -rf`, `npm publish`, `deploy` | Runs `scripts/gate-check.sh` to perform a pre-action health check via `thumbgate doctor`. |
+| `beforeShellExecution` | `git push`, `rm -rf`, `npm publish`, `deploy` | Runs `scripts/gate-check.sh` to evaluate the command through ThumbGate `gate-check` before execution. |
 
 ### MCP Server
 

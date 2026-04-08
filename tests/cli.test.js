@@ -20,10 +20,11 @@ const path = require('path');
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { PRO_MONTHLY_PAYMENT_LINK } = require('../scripts/commercial-offer');
-const { resolveMcpEntry } = require('../scripts/mcp-config');
+const { resolveMcpEntry, resolveStableSourceRoot } = require('../scripts/mcp-config');
 
 const CLI = path.resolve(__dirname, '../bin/cli.js');
 const PKG_ROOT = path.resolve(__dirname, '..');
+const STABLE_PKG_ROOT = resolveStableSourceRoot(PKG_ROOT) || PKG_ROOT;
 const MCP_SERVER_PATH = path.resolve(__dirname, '../adapters/mcp/server-stdio.js');
 const HOME_MCP_SERVER_PATH = resolveMcpEntry({
   pkgRoot: PKG_ROOT,
@@ -515,6 +516,59 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('doctor'), 'Help should mention doctor');
     assert.ok(result.stdout.includes('dispatch'), 'Help should mention dispatch');
     assert.ok(result.stdout.includes('analytics'), 'Help should mention analytics');
+    assert.ok(result.stdout.includes('gate-check'), 'Help should mention gate-check');
+    assert.ok(result.stdout.includes('statusline-render'), 'Help should mention statusline-render');
+  });
+
+  test('gate-check allows ordinary edits when no task scope is declared', () => {
+    const result = runCliSync(['gate-check'], {
+      input: JSON.stringify({
+        tool_name: 'Edit',
+        tool_input: { file_path: '/project/src/app.js' },
+      }),
+    });
+    assert.equal(result.status, 0, `gate-check failed:\n${result.stderr}`);
+    assert.deepEqual(JSON.parse(result.stdout), {});
+  });
+
+  test('gate-check blocks high-risk git writes without task scope', () => {
+    const result = runCliSync(['gate-check'], {
+      input: JSON.stringify({
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'git push origin feature/x',
+          changed_files: ['src/app.js'],
+        },
+      }),
+    });
+    assert.equal(result.status, 0, `gate-check failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(payload.hookSpecificOutput.permissionDecisionReason, /task-scope-required/);
+  });
+
+  test('hook-auto-capture records the user prompt and refreshes statusline counts', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync(['hook-auto-capture'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        CLAUDE_USER_PROMPT: 'thumbs up Thorough PR review',
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.equal(result.status, 0, `hook-auto-capture failed:\n${result.stderr}`);
+    const conversationPath = path.join(feedbackDir, 'conversation-window.jsonl');
+    const cachePath = path.join(feedbackDir, '.thumbgate', 'statusline_cache.json');
+    assert.ok(fs.existsSync(conversationPath), 'conversation history should be recorded');
+    assert.ok(fs.existsSync(cachePath), 'statusline cache should be refreshed');
+
+    const cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    assert.equal(cache.thumbs_up, '1');
+    assert.equal(cache.total_feedback, '1');
+
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
   test('pro command prints truthful local-first Pro offer info when unlicensed', () => {
@@ -1335,6 +1389,37 @@ describe('bin/cli.js', () => {
     assert.strictEqual(result.status, 0, `init failed:\n${result.stderr}`);
     const thumbgateDir = path.join(tmpDir, '.thumbgate');
     assert.ok(fs.existsSync(thumbgateDir), '.thumbgate/ directory should be created');
+  });
+
+  test('init --wire-hooks accepts split --agent value and writes Claude hooks', () => {
+    const isolatedDir = makeTmpDir();
+    const isolatedHome = makeTmpDir();
+
+    const result = runCliSync(['init', '--wire-hooks', '--agent', 'claude-code'], {
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        HOME: isolatedHome,
+        USERPROFILE: isolatedHome,
+        THUMBGATE_PUBLISH_STATE: 'unpublished',
+      },
+    });
+
+    assert.equal(result.status, 0, `hook wiring failed:\n${result.stderr}`);
+    const settingsPath = path.join(isolatedHome, '.claude', 'settings.local.json');
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    assert.match(result.stdout, /Added hooks for claude-code:/);
+    assert.equal(
+      settings.hooks.PreToolUse[0].hooks[0].command,
+      `node ${JSON.stringify(path.join(STABLE_PKG_ROOT, 'bin', 'cli.js'))} gate-check`
+    );
+    assert.equal(
+      settings.statusLine.command,
+      `node ${JSON.stringify(path.join(STABLE_PKG_ROOT, 'bin', 'cli.js'))} statusline-render`
+    );
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+    fs.rmSync(isolatedHome, { recursive: true, force: true });
   });
 
   test('init creates config.json with required fields', () => {

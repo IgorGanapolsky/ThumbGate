@@ -138,6 +138,12 @@ function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, le
     cache.updated_at = String(Math.floor(Date.now() / 1000));
     fs.mkdirSync(path.dirname(cachePath), { recursive: true });
     fs.writeFileSync(cachePath, JSON.stringify(cache));
+    try {
+      const { refreshStatuslineCache } = require('./hook-thumbgate-cache-updater');
+      refreshStatuslineCache(analyzeFeedback(), cachePath);
+    } catch {
+      /* keep lesson refresh best-effort */
+    }
   } catch { /* statusline update is best-effort */ }
 }
 

@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execFileSync } = require('child_process');
+const { cacheUpdateHookCommand, statuslineCommand } = require('../scripts/hook-runtime');
 
 const STATUSLINE_PATH = path.join(__dirname, '..', 'scripts', 'statusline.sh');
 const CACHE_UPDATER_PATH = path.join(__dirname, '..', 'scripts', 'hook-thumbgate-cache-updater.js');
@@ -128,9 +129,11 @@ test('cache updater writes cache from feedback_stats input', () => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-test('setupClaude wires statusLine and cache hook into settings', () => {
+test('setupClaude uses portable ThumbGate commands for status line and cache updates', () => {
   const cliSource = fs.readFileSync(path.join(__dirname, '..', 'bin', 'cli.js'), 'utf8');
   assert.ok(cliSource.includes('statusLine'), 'cli.js must wire statusLine');
-  assert.ok(cliSource.includes('hook-thumbgate-cache-updater'), 'cli.js must wire cache updater hook');
-  assert.ok(cliSource.includes('statusline.sh'), 'cli.js must reference statusline.sh');
+  assert.ok(cliSource.includes('cacheUpdateHookCommand'), 'cli.js must wire the portable cache updater command');
+  assert.ok(cliSource.includes('statuslineCommand'), 'cli.js must wire the portable statusline command');
+  assert.match(cacheUpdateHookCommand(), /(thumbgate@.+ cache-update|bin\/cli\.js" cache-update)/);
+  assert.match(statuslineCommand(), /(thumbgate@.+ statusline-render|bin\/cli\.js" statusline-render)/);
 });
