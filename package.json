@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "ThumbGate — Make your AI coding agent self-improving. Every mistake becomes a prevention rule that physically blocks the agent from repeating it. Feedback-driven enforcement via PreToolUse hooks, Thompson Sampling for adaptive gates, SQLite+FTS5 lesson DB, and LanceDB vector search. Your agent gets smarter with every session.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": {

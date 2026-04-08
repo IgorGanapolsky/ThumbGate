@@ -11,9 +11,8 @@ const fs = require('fs');
 const path = require('path');
 const {
   collectLocalGitHubAboutErrors,
-  compareGitHubAbout,
-  fetchLiveGitHubAbout,
   loadGitHubAboutConfig,
+  verifyLiveGitHubAbout,
 } = require('./github-about');
 const {
   PRODUCTHUNT_URL,
@@ -295,8 +294,12 @@ async function main() {
 
   if (checkLiveGitHubAbout) {
     try {
-      const liveAbout = await fetchLiveGitHubAbout({ root: ROOT, repo: githubAbout.repo });
-      errors.push(...compareGitHubAbout(githubAbout, liveAbout, `Live GitHub About (${githubAbout.repo})`));
+      const liveCheck = await verifyLiveGitHubAbout({
+        expected: githubAbout,
+        repo: githubAbout.repo,
+        root: ROOT,
+      });
+      errors.push(...liveCheck.errors);
     } catch (error) {
       errors.push(`Unable to verify live GitHub About: ${error.message}`);
     }
