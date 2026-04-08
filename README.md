@@ -166,6 +166,8 @@ It does not update model weights. It's context engineering — enforcement that 
 
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md) — pricing, claims, what we don't say
 - [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) — proof artifacts
+- [WORKFLOW.md](WORKFLOW.md) — agent-run contract (scope, hard stops, proof commands)
+- [ready-for-agent issue template](.github/ISSUE_TEMPLATE/ready-for-agent.yml) — intake for agent tasks
 
 Pro overlay: [`thumbgate-pro`](https://github.com/IgorGanapolsky/thumbgate-pro) — separate repo/package inheriting from this base.
 
