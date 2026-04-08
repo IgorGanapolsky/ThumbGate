@@ -5,6 +5,19 @@ Make your AI coding agent self-improving. One thumbs-down creates a gate that pe
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Try Free](https://img.shields.io/badge/Pro-Try%20Free%20→-635bff?style=for-the-badge&logo=stripe&logoColor=white)](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=badge_cta)
+
+**[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pricing](https://thumbgate-production.up.railway.app/#pricing?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Setup Guide](https://thumbgate-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=top_cta)**
+
+### Get Started
+
+**ThumbGate Pro (Recommended)** — zero config, team analytics, shared lesson DB:
+
+[![Sign up for ThumbGate Pro](https://img.shields.io/badge/>>%20Start%20Free%20→%20ThumbGate%20Pro-635bff?style=for-the-badge)](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=get_started)
+
+Free for individual developers. Pro adds team dashboards, DPO export, and unlimited lesson search. [See pricing →](https://thumbgate-production.up.railway.app/#pricing?utm_source=github&utm_medium=readme&utm_campaign=pricing_link)
+
+**Open Source (Self-Hosted):**
 
 ```bash
 npx thumbgate init
@@ -62,25 +75,20 @@ Session 3:                           Session 3+:
 └──────────┘     └──────────┘     └──────────┘     └──────────┘     └──────────┘
 ```
 
-## Quick Start
+## Quick Start (Self-Hosted)
 
 ```bash
-# Auto-detect your agent and wire hooks
-npx thumbgate init
-
-# Or add MCP server directly
-claude mcp add thumbgate -- npx -y thumbgate serve
-codex  mcp add thumbgate -- npx -y thumbgate serve
-amp    mcp add thumbgate -- npx -y thumbgate serve
-gemini mcp add thumbgate "npx -y thumbgate serve"
-
-# Check health
-npx thumbgate doctor
-npx thumbgate lessons
-npx thumbgate dashboard
+npx thumbgate init                                    # auto-detect agent + wire hooks
+npx thumbgate doctor                                  # health check
+npx thumbgate lessons                                 # inspect learned lessons
+npx thumbgate dashboard                               # local dashboard
 ```
 
+Or wire MCP directly: `claude mcp add thumbgate -- npx -y thumbgate serve`
+
 Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
+
+> **Want team analytics and shared lessons?** [Start with ThumbGate Pro →](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=quickstart_cta) Free for individual devs. No credit card required.
 
 ## Built-in Gates
 
