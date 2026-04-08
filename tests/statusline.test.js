@@ -7,6 +7,7 @@ const os = require('os');
 const { execFileSync } = require('child_process');
 const { cacheUpdateHookCommand, statuslineCommand } = require('../scripts/hook-runtime');
 const { activateLicense } = require('../scripts/license');
+const { writeActiveProjectState } = require('../scripts/feedback-paths');
 
 const STATUSLINE_PATH = path.join(__dirname, '..', 'scripts', 'statusline.sh');
 const CACHE_UPDATER_PATH = path.join(__dirname, '..', 'scripts', 'hook-thumbgate-cache-updater.js');
@@ -103,6 +104,48 @@ test('statusline rebuilds counters from local feedback logs when cache is empty'
     const cache = JSON.parse(fs.readFileSync(path.join(tmpDir, 'statusline_cache.json'), 'utf8'));
     assert.equal(cache.thumbs_up, '1');
     assert.equal(cache.thumbs_down, '2');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('statusline follows the persisted active project when Claude is running from a transient cwd', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-project-'));
+  const homeDir = path.join(tmpDir, 'home');
+  const projectDir = path.join(tmpDir, 'project-alpha');
+  const transientDir = path.join(tmpDir, '.npm', '_npx', 'thumbgate-published-cli-12345');
+  const feedbackDir = path.join(projectDir, '.thumbgate');
+  const cachePath = path.join(feedbackDir, 'statusline_cache.json');
+  fs.mkdirSync(homeDir, { recursive: true });
+  fs.mkdirSync(feedbackDir, { recursive: true });
+  fs.mkdirSync(transientDir, { recursive: true });
+  fs.writeFileSync(cachePath, JSON.stringify({
+    thumbs_up: '7',
+    thumbs_down: '3',
+    lessons: '2',
+    trend: 'stable',
+    updated_at: String(Math.floor(Date.now() / 1000)),
+  }));
+  writeActiveProjectState(projectDir, {
+    home: homeDir,
+    env: { ...process.env, HOME: homeDir },
+  });
+
+  try {
+    const out = execFileSync('bash', [STATUSLINE_PATH], {
+      cwd: transientDir,
+      encoding: 'utf8',
+      input: JSON.stringify({ context_window: { used_percentage: 12 } }),
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        PWD: transientDir,
+      },
+      timeout: 5000,
+    });
+    assert.ok(out.includes('7'), 'should show the active project thumbs up count');
+    assert.ok(out.includes('3'), 'should show the active project thumbs down count');
+    assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }

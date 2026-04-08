@@ -146,8 +146,8 @@ function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, le
   } catch { /* statusline update is best-effort */ }
 }
 
-function getFeedbackPaths() {
-  return resolveFeedbackPaths();
+function getFeedbackPaths(options = {}) {
+  return resolveFeedbackPaths(options);
 }
 
 function getContextFsModule() {
@@ -1673,8 +1673,8 @@ function writePreventionRules(filePath, minOccurrences = 2) {
   return { path: outPath, markdown };
 }
 
-function feedbackSummary(recentN = 20) {
-  const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
+function feedbackSummary(recentN = 20, options = {}) {
+  const { FEEDBACK_LOG_PATH } = getFeedbackPaths(options);
   const entries = readJSONL(FEEDBACK_LOG_PATH);
   if (entries.length === 0) {
     return '## Feedback Summary\nNo feedback recorded yet.';

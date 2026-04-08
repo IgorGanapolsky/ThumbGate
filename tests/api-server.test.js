@@ -1194,6 +1194,73 @@ test('summary endpoint returns markdown text payload', async () => {
   assert.match(body.summary, /Feedback Summary/);
 });
 
+test('project-scoped endpoints honor explicit project selection for stats, lessons, and dashboard', async () => {
+  const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-project-scope-api-'));
+  const feedbackDir = path.join(projectDir, '.thumbgate');
+  fs.mkdirSync(feedbackDir, { recursive: true });
+
+  try {
+    fs.writeFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), [
+      JSON.stringify({
+        id: 'fb_project_positive',
+        signal: 'positive',
+        context: 'Verified project alpha release flow',
+        tags: ['verification', 'alpha'],
+        timestamp: '2026-04-08T09:00:00.000Z',
+      }),
+      JSON.stringify({
+        id: 'fb_project_negative',
+        signal: 'negative',
+        context: 'Skipped rollback checklist for project alpha',
+        tags: ['release', 'alpha'],
+        timestamp: '2026-04-08T09:05:00.000Z',
+      }),
+      '',
+    ].join('\n'));
+    fs.writeFileSync(path.join(feedbackDir, 'memory-log.jsonl'), `${JSON.stringify({
+      id: 'mem_project_alpha',
+      title: 'MISTAKE: Skipped rollback checklist for project alpha',
+      content: 'What went wrong: Skipped rollback checklist\nHow to avoid: Attach rollback checklist before shipping',
+      category: 'error',
+      importance: 'high',
+      tags: ['feedback', 'negative', 'release', 'alpha'],
+      sourceFeedbackId: 'fb_project_negative',
+      timestamp: '2026-04-08T09:05:01.000Z',
+    })}\n`);
+
+    const projectQuery = `project=${encodeURIComponent(projectDir)}`;
+
+    const statsRes = await fetch(apiUrl(`/v1/feedback/stats?${projectQuery}`), { headers: authHeader });
+    assert.equal(statsRes.status, 200);
+    const statsBody = await statsRes.json();
+    assert.equal(statsBody.total, 2);
+    assert.equal(statsBody.totalPositive, 1);
+    assert.equal(statsBody.totalNegative, 1);
+
+    const lessonsRes = await fetch(apiUrl(`/v1/lessons/search?q=rollback&limit=5&${projectQuery}`), { headers: authHeader });
+    assert.equal(lessonsRes.status, 200);
+    const lessonsBody = await lessonsRes.json();
+    assert.equal(lessonsBody.feedbackDir, feedbackDir);
+    assert.equal(lessonsBody.returned, 1);
+    assert.equal(lessonsBody.results[0].id, 'mem_project_alpha');
+
+    const dashboardRes = await fetch(apiUrl(`/v1/dashboard?${projectQuery}`), { headers: authHeader });
+    assert.equal(dashboardRes.status, 200);
+    const dashboardBody = await dashboardRes.json();
+    assert.equal(dashboardBody.approval.total, 2);
+    assert.equal(dashboardBody.approval.positive, 1);
+    assert.equal(dashboardBody.approval.negative, 1);
+
+    const healthzRes = await fetch(apiUrl(`/healthz?${projectQuery}`), { headers: authHeader });
+    assert.equal(healthzRes.status, 200);
+    const healthzBody = await healthzRes.json();
+    assert.equal(healthzBody.feedbackLogPath, path.join(feedbackDir, 'feedback-log.jsonl'));
+    assert.equal(healthzBody.memoryLogPath, path.join(feedbackDir, 'memory-log.jsonl'));
+  } finally {
+    fs.rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
 test('lesson search endpoint returns promoted lessons with linked corrective actions', async () => {
   const feedbackLogPath = path.join(tmpFeedbackDir, 'feedback-log.jsonl');
   const memoryLogPath = path.join(tmpFeedbackDir, 'memory-log.jsonl');
