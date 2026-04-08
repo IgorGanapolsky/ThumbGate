@@ -10,6 +10,23 @@ Make your AI coding agent self-improving. One thumbs-down creates a gate that pe
 npx thumbgate init
 ```
 
+## Before / After
+
+```
+WITHOUT THUMBGATE                    WITH THUMBGATE
+
+Session 1:                           Session 1:
+  Agent force-pushes to main.          Agent force-pushes to main.
+  You correct it.                      You 👎 it.
+
+Session 2:                           Session 2:
+  Agent force-pushes again.            ⛔ Gate blocks force-push.
+  It learned nothing.                  Agent uses safe push instead.
+
+Session 3:                           Session 3+:
+  Same mistake. Again.                 Permanently fixed.
+```
+
 ## How It Works
 
 ```
@@ -43,23 +60,6 @@ npx thumbgate init
 │          │     │ aware    │     │ FTS5 DB  │     │ from     │     │ Use hook │
 │          │     │          │     │          │     │ failures │     │ enforces │
 └──────────┘     └──────────┘     └──────────┘     └──────────┘     └──────────┘
-```
-
-## Before / After
-
-```
-WITHOUT THUMBGATE                    WITH THUMBGATE
-
-Session 1:                           Session 1:
-  Agent force-pushes to main.          Agent force-pushes to main.
-  You correct it.                      You 👎 it.
-
-Session 2:                           Session 2:
-  Agent force-pushes again.            ⛔ Gate blocks force-push.
-  It learned nothing.                  Agent uses safe push instead.
-
-Session 3:                           Session 3+:
-  Same mistake. Again.                 Permanently fixed.
 ```
 
 ## Quick Start
@@ -153,6 +153,13 @@ It does not update model weights. It's context engineering — enforcement that 
 │  Node.js >=18     │                   │                  │
 └───────────────────┴───────────────────┴──────────────────┘
 ```
+
+## Docs
+
+- [Commercial Truth](docs/COMMERCIAL_TRUTH.md) — pricing, claims, what we don't say
+- [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) — proof artifacts
+
+Pro overlay: [`thumbgate-pro`](https://github.com/IgorGanapolsky/thumbgate-pro) — separate repo/package inheriting from this base.
 
 ## License
 
