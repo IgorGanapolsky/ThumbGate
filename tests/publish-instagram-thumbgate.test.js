@@ -3,6 +3,7 @@
 const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const {
   publishInstagramThumbGate,
@@ -16,6 +17,15 @@ let sharpAvailable = false;
 try { require('sharp'); sharpAvailable = true; } catch {}
 
 describe('Publish Instagram ThumbGate', { skip: !sharpAvailable ? 'sharp not installed' : false }, () => {
+  let tmpDedupPath;
+  beforeEach(() => {
+    tmpDedupPath = path.join(os.tmpdir(), `dedup-pub-ig-test-${Date.now()}.json`);
+    process.env.THUMBGATE_DEDUP_LOG_PATH = tmpDedupPath;
+  });
+  afterEach(() => {
+    try { fs.unlinkSync(tmpDedupPath); } catch {}
+    delete process.env.THUMBGATE_DEDUP_LOG_PATH;
+  });
   afterEach(() => {
     // Clean up test images
     [TEST_IMAGE_PATH, IMAGE_PATH].forEach((p) => {

@@ -186,6 +186,8 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_PROJECT_ID/);
   assert.match(workflow, /RAILWAY_ENVIRONMENT_ID/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_URL/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_SLEEP_SECONDS/);
   assert.match(workflow, /secrets\.THUMBGATE_API_KEY/);
   assert.match(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
   assert.match(workflow, /vars\.THUMBGATE_BILLING_API_BASE_URL \|\| vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
@@ -196,7 +198,7 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /--detach/);
   assert.match(workflow, /--project "\$RAILWAY_PROJECT_ID"/);
   assert.match(workflow, /--environment "\$RAILWAY_ENVIRONMENT_ID"/);
-  assert.match(workflow, /MAX_ATTEMPTS=30/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS\s*\|\|\s*'120'\s*\}\}/);
   assert.doesNotMatch(workflow, /secrets\.THUMBGATE_API_KEY\s*\|\|/);
   assert.doesNotMatch(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN\s*\|\|\s*vars\./);
   assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
@@ -209,7 +211,10 @@ test('Deploy to Railway workflow waits long enough to verify the promoted build 
   assert.match(workflow, /node scripts\/build-metadata\.js --sha "\$GITHUB_SHA" --output config\/build-metadata\.json/);
   assert.match(workflow, /railway up --ci --detach --project "\$RAILWAY_PROJECT_ID" --environment "\$RAILWAY_ENVIRONMENT_ID"/);
   assert.match(workflow, /--detach/);
-  assert.match(workflow, /MAX_ATTEMPTS=30/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS\s*\|\|\s*'120'\s*\}\}/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_SLEEP_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_SLEEP_SECONDS\s*\|\|\s*'10'\s*\}\}/);
+  assert.match(workflow, /MAX_ATTEMPTS="\$\{RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-120\}"/);
+  assert.match(workflow, /SLEEP_SECONDS="\$\{RAILWAY_HEALTHCHECK_SLEEP_SECONDS:-10\}"/);
   assert.match(workflow, /Observed build SHA/);
   assert.match(workflow, /Expected build SHA/);
 });
