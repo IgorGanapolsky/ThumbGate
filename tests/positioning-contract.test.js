@@ -29,6 +29,16 @@ test('README explains the product as self-improving agent enforcement', () => {
   assert.match(readme, /permanently/i);
 });
 
+test('README routes paid buyers to the dedicated Pro page', () => {
+  const readme = readText('README.md');
+
+  assert.match(readme, /Paid path for individual operators/i);
+  assert.match(readme, /personal local dashboard/i);
+  assert.match(readme, /DPO export/i);
+  assert.match(readme, /review-ready evidence/i);
+  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/pro\?utm_source=github&utm_medium=readme&utm_campaign=pro_page/);
+});
+
 test('README exposes the actual shipped tech stack', () => {
   const readme = readText('README.md');
 

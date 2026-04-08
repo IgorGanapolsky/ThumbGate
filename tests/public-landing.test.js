@@ -5,9 +5,14 @@ const path = require('node:path');
 const { PRODUCTHUNT_URL } = require('../scripts/distribution-surfaces');
 
 const landingPagePath = path.join(__dirname, '..', 'public', 'index.html');
+const buyerIntentScriptPath = path.join(__dirname, '..', 'public', 'js', 'buyer-intent.js');
 
 function readLandingPage() {
   return fs.readFileSync(landingPagePath, 'utf8');
+}
+
+function readBuyerIntentScript() {
+  return fs.readFileSync(buyerIntentScriptPath, 'utf8');
 }
 
 test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
@@ -24,10 +29,10 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
   assert.match(landingPage, /Thompson Sampling/i);
 });
 
-test('public landing page uses Stripe checkout links for Pro tier', () => {
+test('public landing page routes Pro buyers through the hosted checkout surface', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /buy\.stripe\.com/);
+  assert.match(landingPage, /\/checkout\/pro\?/);
   assert.match(landingPage, /Free Trial/);
   assert.doesNotMatch(landingPage, /gumroad\.com/);
 });
@@ -145,6 +150,17 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
   assert.match(landingPage, /self-improvement loop/i);
 });
 
+test('public landing page exposes a dedicated Pro path above the fold', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /See Pro for individual operators/i);
+  assert.match(landingPage, /Paid path:/i);
+  assert.match(landingPage, /personal local dashboard/i);
+  assert.match(landingPage, /DPO export/i);
+  assert.match(landingPage, /review-ready evidence/i);
+  assert.match(landingPage, /href="\/pro\?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page"/);
+});
+
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
   const landingPage = readLandingPage();
 
@@ -231,9 +247,11 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
 
   // trackClick wires up CTA events by selector and event name
   assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
+  assert.match(landingPage, /trackClick\('.btn-pro-page', 'pro_page_click'/);
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
-  assert.match(landingPage, /trackClick\('.nav-cta', 'checkout_start'/);
+  assert.match(landingPage, /trackClick\('.btn-demo-link', 'demo_click'/);
+  assert.match(landingPage, /trackClick\('.nav-cta', 'pro_page_click'/);
   assert.match(landingPage, /plausible\('faq_open'/);
   assert.match(landingPage, /plausible\('scroll_depth'/);
   assert.match(landingPage, /trackClick\('.proof-bar a', 'proof_bar_click'\)/);
@@ -293,6 +311,9 @@ test('landing page has newsletter signup', () => {
   const html = readLandingPage();
   assert.ok(html.includes('newsletter'), 'must include newsletter section');
   assert.ok(html.includes('type="email"'), 'must include email input');
+  assert.match(html, /action="\/api\/newsletter"/);
+  assert.match(html, /data-newsletter-form/);
+  assert.match(html, /Get updates \+ keep checkout ready/i);
 });
 
 test('landing page has social links in footer', () => {
@@ -374,10 +395,16 @@ test('lessons severity filtering scopes active state to rules filter buttons', (
 
 test('public landing page includes 7-day free trial and email capture gate', () => {
   const landingPage = readLandingPage();
+  const buyerIntentScript = readBuyerIntentScript();
   assert.match(landingPage, /7-DAY FREE TRIAL/);
   assert.match(landingPage, /pro-email/);
   assert.match(landingPage, /handleProTrial/);
-  assert.match(landingPage, /prefilled_email/);
+  assert.match(landingPage, /\/js\/buyer-intent\.js/);
+  assert.match(buyerIntentScript, /customer_email/);
+  assert.match(buyerIntentScript, /submitNewsletterSignup/);
+  assert.match(buyerIntentScript, /dataset\.baseHref/);
+  assert.doesNotMatch(buyerIntentScript, /setAttribute\('href'/);
+  assert.doesNotMatch(landingPage, /props:\s*\{\s*email:/);
 });
 
 test('public landing page includes dashboard preview in Pro card', () => {
