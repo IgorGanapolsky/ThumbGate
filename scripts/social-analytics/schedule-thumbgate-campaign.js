@@ -116,7 +116,7 @@ async function scheduleCampaign(options = {}, api = {}) {
     : defaultCampaignSchedule();
   const platforms = options.platforms && options.platforms.length > 0
     ? options.platforms
-    : ['twitter', 'linkedin', 'instagram'];
+    : ['twitter', 'linkedin', 'instagram', 'tiktok', 'youtube'];
   const statePath = options.statePath || DEFAULT_STATE_PATH;
   const state = readScheduleState(statePath);
   const scheduledState = state.scheduled && typeof state.scheduled === 'object' ? state.scheduled : {};

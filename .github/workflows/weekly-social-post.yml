@@ -1,0 +1,102 @@
+name: Weekly Social Post
+
+# Runs the build-in-public weekly stats post every Monday at 14:00 UTC (9am ET).
+# Uses Zernio as the primary publisher (X, LinkedIn, Instagram, TikTok, YouTube)
+# with native X API as fallback.
+
+on:
+  schedule:
+    - cron: '0 14 * * 1'   # Every Monday at 14:00 UTC (9am ET — prime posting time)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run — generate post file but do not publish'
+        required: false
+        type: boolean
+        default: false
+      period_days:
+        description: 'Number of days to include in stats window'
+        required: false
+        default: '7'
+
+permissions:
+  contents: write   # needed to commit state file changes back to repo
+
+concurrency:
+  group: weekly-social-post
+  cancel-in-progress: false   # never cancel an in-flight post
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # Zernio — primary publisher
+      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+      ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
+      ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
+      ZERNIO_LINKEDIN_ACCOUNT_ID: ${{ secrets.ZERNIO_LINKEDIN_ACCOUNT_ID }}
+      ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
+      ZERNIO_PROFILE_ID: ${{ secrets.ZERNIO_PROFILE_ID }}
+      # X (Twitter) — fallback publisher
+      X_API_KEY: ${{ secrets.X_API_KEY }}
+      X_API_SECRET: ${{ secrets.X_API_SECRET }}
+      X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+      X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Run weekly auto-post
+        run: |
+          DRY_RUN_FLAG=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+          PERIOD_DAYS="${{ github.event.inputs.period_days }}"
+          PERIOD_DAYS="${PERIOD_DAYS:-7}"
+          node -e "
+            const { runWeeklyPost } = require('./scripts/weekly-auto-post');
+            runWeeklyPost({
+              periodDays: parseInt('$PERIOD_DAYS'),
+              dryRun: '$DRY_RUN_FLAG' === '--dry-run',
+            })
+            .then(r => {
+              console.log(JSON.stringify(r, null, 2));
+              if (r.zernioResult && r.zernioResult.error && !r.postResult) {
+                console.error('All publishers failed.');
+                process.exit(1);
+              }
+            })
+            .catch(e => { console.error(e.message); process.exit(1); });
+          "
+
+      - name: Commit state file changes
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage any state files written by the weekly post script.
+          # These live under .thumbgate/ which is git-tracked state (not ignored).
+          git add .thumbgate/ || true
+
+          if git diff --cached --quiet; then
+            echo "No state file changes to commit."
+          else
+            git commit -m "chore: update weekly-post state [skip ci]"
+            git push
+          fi

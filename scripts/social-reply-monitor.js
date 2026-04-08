@@ -209,11 +209,21 @@ async function generateReply(comment, context) {
     return `\`npx thumbgate init\` auto-detects your agent and wires the hooks. Takes about 30 seconds. What agent are you using?`;
   }
   if (mentionsSkeptical) {
-    const reply = 'Fair question. The difference from rules files or memory tools is enforcement: the bad action gets stopped before execution instead of being remembered and then ignored. Whether that tradeoff is worth it depends on how often your agent repeats the same mistake.';
-    const gate = gateContextualReply(comment, reply, context);
-    return gate.allowed ? reply : null;
+    // Build a reply that mirrors the commenter's frame (memory, context docs, or general rules)
+    // so gateContextualReply's topic-overlap check passes.
+    let replyBase;
+    if (mentionsMemory) {
+      replyBase = 'The distinction from memory tools is enforcement: memory helps the agent remember a past mistake, but it can still repeat it. The gate stops the already-rejected move before it runs. Whether that extra step is worth the setup depends on how often your agent ignores its own memory.';
+    } else {
+      replyBase = 'The difference from cursorrules or instruction files is enforcement: the bad action gets stopped before execution instead of being added to context docs and then ignored anyway. Whether that tradeoff is worth it depends on how often your agent repeats the same mistake.';
+    }
+    const gate = gateContextualReply(comment, replyBase, context);
+    return gate.allowed ? replyBase : null;
   }
-  if (mentionsHow && mentionsGates) {
+  if (mentionsGates && (mentionsHow || (!isReddit && !mentionsThanks))) {
+    // On X, engage on gate-topic statements too (not just "how does" questions).
+    // On Reddit, keep the old conservative behavior (questions only via mentionsHow).
+    if (isReddit && !mentionsHow) return null;
     const reply = isReddit
       ? 'The short version is: the tool call gets checked before it runs. If it matches a previously rejected pattern, it is blocked and the agent has to try a different path.'
       : 'PreToolUse hooks intercept the tool call before it runs. Each call is checked against prevention rules promoted from past failures. If it matches, the action is blocked and the agent has to try a different approach. The rules adapt over time so false positives decrease.';
@@ -228,7 +238,9 @@ async function generateReply(comment, context) {
     const gate = gateContextualReply(comment, reply, context);
     return gate.allowed ? reply : null;
   }
-  if (mentionsMemory && isQuestion) {
+  if (mentionsMemory) {
+    // Engage on memory/context topics whether it's a question or a statement — both are worth a reply on X
+    if (isReddit && !isQuestion) return null; // Reddit: only reply to direct questions
     const reply = 'The useful distinction is memory versus enforcement. Memory helps the agent remember, but it can still ignore that memory. Enforcement is what stops the already-rejected move from happening again.';
     const gate = gateContextualReply(comment, reply, context);
     return gate.allowed ? reply : null;
@@ -246,8 +258,8 @@ async function generateReply(comment, context) {
     return gate.allowed ? reply : null;
   }
   if (isQuestion) {
-    // They asked something specific we didn't match — better to draft for human review
-    return null;
+    // They asked something specific we didn't match — signal to caller to save a draft for human review
+    return '__DRAFT__';
   }
   // Not a question, not hostile, not thanks — probably a statement. Don't reply.
   return null;
@@ -327,7 +339,7 @@ async function checkRedditReplies(state, dryRun) {
       isQuestion,
     });
 
-    if (!generatedReply) {
+    if (!generatedReply || generatedReply === '__DRAFT__') {
       console.warn(`[reply-monitor] Could not generate reply for ${commentId}`);
       continue;
     }
@@ -436,6 +448,25 @@ async function checkXReplies(state, dryRun) {
     if (!generatedReply) {
       // Mark as seen so we don't re-process, but don't reply
       state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x', skipped: 'no_reply_generated' };
+      continue;
+    }
+
+    // Unmatched question — save a draft for human review rather than silently skipping
+    if (generatedReply === '__DRAFT__') {
+      const draft = {
+        platform: 'x',
+        tweetId,
+        author: tweet.author_id,
+        theirTweet: tweet.text.slice(0, 500),
+        suggestedReply: null,
+        draftedAt: new Date().toISOString(),
+        status: 'needs_human_reply',
+        reason: 'unmatched_question',
+      };
+      saveDraft(draft);
+      state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x', drafted: true, skipped: 'needs_human_reply' };
+      results.push({ tweetId, reply: null, posted: false, drafted: true });
+      console.log(`[reply-monitor] 📝 DRAFTED (needs human reply) for tweet ${tweetId} — saved to .thumbgate/reply-drafts.jsonl`);
       continue;
     }
 
