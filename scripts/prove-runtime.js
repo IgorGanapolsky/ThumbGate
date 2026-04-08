@@ -5,6 +5,7 @@ const os = require('os');
 const path = require('path');
 
 const { buildManagedScheduleCommand } = require('./schedule-manager');
+const { runPackagedRuntimeSmoke } = require('./prove-packaged-runtime');
 
 const ROOT = path.join(__dirname, '..');
 const RUNNER_PATH = require.resolve('./async-job-runner');
@@ -272,6 +273,18 @@ async function run() {
           delete process.env.THUMBGATE_FEEDBACK_DIR;
           fs.rmSync(feedbackDir, { recursive: true, force: true });
           fs.rmSync(cwd, { recursive: true, force: true });
+        }
+      },
+    },
+    {
+      id: 'RUNTIME-07',
+      desc: 'packaged thumbgate runtime boots local API and serves dashboard affordances',
+      fn: async () => {
+        const result = await runPackagedRuntimeSmoke({
+          expectedVersion: require(path.join(ROOT, 'package.json')).version,
+        });
+        if (!result.health || result.health.version !== require(path.join(ROOT, 'package.json')).version) {
+          throw new Error('Packaged runtime health version did not match package.json');
         }
       },
     },
