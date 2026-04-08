@@ -63,6 +63,37 @@ function appendLocalTelemetry(payload) {
   } catch (_) { /* telemetry is best-effort */ }
 }
 
+function syncActiveProjectContext(options = {}) {
+  try {
+    // Tests and explicitly scoped CLI calls may pin a feedback root directly.
+    // In that case, do not inject a project selection that would cause later
+    // reads/writes to escape the requested directory.
+    if (
+      !options.force &&
+      process.env.THUMBGATE_FEEDBACK_DIR &&
+      !process.env.THUMBGATE_PROJECT_DIR &&
+      !process.env.CLAUDE_PROJECT_DIR
+    ) {
+      return null;
+    }
+    const {
+      resolveProjectDir,
+      writeActiveProjectState,
+    } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
+    const projectDir = resolveProjectDir({
+      cwd: CWD,
+      env: process.env,
+      includeStored: options.includeStored !== false,
+    });
+    if (!projectDir) return null;
+    process.env.THUMBGATE_PROJECT_DIR = projectDir;
+    writeActiveProjectState(projectDir, { env: process.env });
+    return projectDir;
+  } catch (_) {
+    return null;
+  }
+}
+
 function telemetryPing(installId) {
   if (process.env.THUMBGATE_NO_TELEMETRY === '1') return;
   const payloadObject = {
@@ -1178,12 +1209,14 @@ async function gateCheck() {
 }
 
 function cacheUpdate() {
+  syncActiveProjectContext();
   const payload = readStdinText();
   const { updateCacheFromEvent } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
   updateCacheFromEvent(payload ? JSON.parse(payload) : {});
 }
 
 function statuslineRender() {
+  syncActiveProjectContext();
   const payload = readStdinText();
   const output = execFileSync('bash', [path.join(PKG_ROOT, 'scripts', 'statusline.sh')], {
     encoding: 'utf8',
@@ -1194,6 +1227,7 @@ function statuslineRender() {
 }
 
 function hookAutoCapture() {
+  syncActiveProjectContext();
   const prompt = process.env.CLAUDE_USER_PROMPT || process.env.THUMBGATE_USER_PROMPT || readStdinText().trim();
   const { evaluatePromptGuard } = require(path.join(PKG_ROOT, 'scripts', 'prompt-guard'));
   const { processInlineFeedback, formatCliOutput } = require(path.join(PKG_ROOT, 'scripts', 'cli-feedback'));
@@ -1233,6 +1267,7 @@ function hookAutoCapture() {
 }
 
 function sessionStart() {
+  syncActiveProjectContext();
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { refreshStatuslineCache } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
   refreshStatuslineCache(analyzeFeedback());

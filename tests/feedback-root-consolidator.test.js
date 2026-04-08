@@ -94,6 +94,15 @@ test('consolidateFeedbackRoot migrates business-critical artifacts into .thumbga
   assert.deepEqual(checkoutSessions, { sessions: {} });
 });
 
+test('consolidateFeedbackRoot prefers an explicit project cwd over ambient feedback env', () => {
+  const { consolidateFeedbackRoot } = require('../scripts/feedback-root-consolidator');
+  process.env.THUMBGATE_FEEDBACK_DIR = path.join(process.cwd(), '.thumbgate');
+
+  const summary = consolidateFeedbackRoot({ cwd: projectDir, write: true });
+
+  assert.equal(summary.feedbackDir, thumbgateDir);
+});
+
 test('billing summary is clean after consolidation even when legacy roots still exist', () => {
   const { consolidateFeedbackRoot } = require('../scripts/feedback-root-consolidator');
   consolidateFeedbackRoot({ cwd: projectDir, write: true });
