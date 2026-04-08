@@ -61,3 +61,15 @@ test('pro landing page tracks paid CTAs without unsupported claims', () => {
   assert.doesNotMatch(proPage, /official Anthropic partner/i);
   assert.doesNotMatch(proPage, /no credit card/i);
 });
+
+test('pro landing page captures buyer email and reuses it for checkout', () => {
+  const proPage = readProPage();
+
+  assert.match(proPage, /Save your work email before you decide/i);
+  assert.match(proPage, /action="\/api\/newsletter"/);
+  assert.match(proPage, /data-newsletter-form/);
+  assert.match(proPage, /data-buyer-email/);
+  assert.match(proPage, /customer_email/);
+  assert.match(proPage, /pro_checkout_email_start/);
+  assert.doesNotMatch(proPage, /props:\s*\{\s*email:/);
+});

@@ -379,6 +379,35 @@ __GA_BOOTSTRAP__
     font-size: 13px;
   }
 
+  .buyer-form {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .buyer-form input[type="email"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(10, 10, 11, 0.72);
+    color: var(--text);
+    font: inherit;
+  }
+
+  .buyer-form-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .buyer-form-note,
+  .buyer-form-status {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
   .proof-strip {
     padding: 0 0 72px;
   }
@@ -732,6 +761,10 @@ __GA_BOOTSTRAP__
       flex-direction: column;
     }
 
+    .buyer-form-actions {
+      grid-template-columns: 1fr;
+    }
+
     .btn-primary,
     .btn-secondary,
     .btn-ghost,
@@ -804,6 +837,21 @@ __GA_BOOTSTRAP__
         <div class="aside-kicker">Proof-backed, not vibes</div>
         <h3>Specific paid outcomes</h3>
         <p>Visual gate debugger, DPO export, auto-connect after activation, Model Hardening Advisor, and founder support for the risky flow you need to harden first.</p>
+      </div>
+
+      <div class="aside-card">
+        <div class="aside-kicker">Keep the buyer path warm</div>
+        <h3>Save your work email before you decide</h3>
+        <p>We will keep the Pro checkout prefilled on this device and send the demo path plus product updates, so you can come back without retyping or losing the thread.</p>
+        <form class="buyer-form" action="/api/newsletter" method="POST" data-newsletter-form data-page="pro" data-intent="buyer_follow_up">
+          <input type="email" name="email" data-buyer-email placeholder="you@company.com" required>
+          <div class="buyer-form-actions">
+            <button type="submit" class="btn-secondary">Email me the demo</button>
+            <button type="button" class="btn-primary btn-email-checkout">Start trial with this email</button>
+          </div>
+          <p class="buyer-form-note">No sales deck. Just the Pro demo path, launch updates, and a prefilled checkout when you are ready.</p>
+          <p class="buyer-form-status" data-newsletter-status aria-live="polite"></p>
+        </form>
       </div>
     </div>
   </div>
@@ -986,6 +1034,174 @@ __GA_BOOTSTRAP__
 </footer>
 
 <script>
+var BUYER_EMAIL_STORAGE_KEY = 'thumbgateBuyerEmail';
+
+function isValidBuyerEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+}
+
+function getStoredBuyerEmail() {
+  try {
+    return String(window.localStorage.getItem(BUYER_EMAIL_STORAGE_KEY) || '').trim().toLowerCase();
+  } catch (_err) {
+    return '';
+  }
+}
+
+function storeBuyerEmail(email) {
+  try {
+    window.localStorage.setItem(BUYER_EMAIL_STORAGE_KEY, String(email || '').trim().toLowerCase());
+  } catch (_err) {
+    // Ignore storage failures.
+  }
+}
+
+function withCustomerEmail(urlValue, email) {
+  var url = new URL(urlValue, window.location.origin);
+  if (email && isValidBuyerEmail(email)) {
+    url.searchParams.set('customer_email', email);
+  } else {
+    url.searchParams.delete('customer_email');
+  }
+  return url.origin === window.location.origin
+    ? (url.pathname + url.search + url.hash)
+    : url.toString();
+}
+
+function applyBuyerEmailToCheckoutLinks(email) {
+  document.querySelectorAll('a[href*="/checkout/pro"]').forEach(function(el) {
+    var baseHref = el.getAttribute('data-base-href') || el.getAttribute('href');
+    if (!el.getAttribute('data-base-href')) {
+      el.setAttribute('data-base-href', baseHref);
+    }
+    el.setAttribute('href', withCustomerEmail(baseHref, email));
+  });
+}
+
+function hydrateBuyerEmailInputs(email) {
+  document.querySelectorAll('[data-buyer-email]').forEach(function(input) {
+    if (!input.value) {
+      input.value = email;
+    }
+  });
+}
+
+function setNewsletterStatus(form, message, ok) {
+  var statusEl = form ? form.querySelector('[data-newsletter-status]') : null;
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.style.color = ok ? 'var(--cyan)' : 'var(--red)';
+}
+
+async function submitNewsletterSignup(email, form) {
+  var action = (form && form.getAttribute('action')) || '/api/newsletter';
+  var response = await fetch(action, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
+      'X-Requested-With': 'fetch',
+    },
+    body: new URLSearchParams({ email: email }).toString(),
+    credentials: 'same-origin',
+  });
+  if (!response.ok) {
+    var errorMessage = 'Unable to save your email right now.';
+    try {
+      var errorBody = await response.json();
+      if (errorBody && errorBody.error) {
+        errorMessage = errorBody.error;
+      }
+    } catch (_err) {
+      // Keep the fallback error message.
+    }
+    throw new Error(errorMessage);
+  }
+  try {
+    return await response.json();
+  } catch (_err) {
+    return { accepted: true, duplicate: false };
+  }
+}
+
+function initializeBuyerIntent() {
+  var storedEmail = getStoredBuyerEmail();
+  if (storedEmail) {
+    hydrateBuyerEmailInputs(storedEmail);
+    applyBuyerEmailToCheckoutLinks(storedEmail);
+  }
+
+  document.querySelectorAll('[data-newsletter-form]').forEach(function(form) {
+    form.addEventListener('submit', async function(event) {
+      event.preventDefault();
+      var input = form.querySelector('input[name="email"]');
+      var email = String(input && input.value || '').trim().toLowerCase();
+      if (!isValidBuyerEmail(email)) {
+        setNewsletterStatus(form, 'Enter a valid work email.', false);
+        if (input) input.focus();
+        return;
+      }
+
+      storeBuyerEmail(email);
+      hydrateBuyerEmailInputs(email);
+      applyBuyerEmailToCheckoutLinks(email);
+
+      try {
+        var result = await submitNewsletterSignup(email, form);
+        setNewsletterStatus(
+          form,
+          result && result.duplicate
+            ? 'Already saved. All Pro checkout buttons on this device are now prefilled.'
+            : 'Saved. We will keep checkout prefilled on this device.',
+          true,
+        );
+        if (typeof plausible === 'function') {
+          plausible('newsletter_signup', {
+            props: {
+              page: form.getAttribute('data-page') || 'pro',
+              intent: form.getAttribute('data-intent') || 'buyer_follow_up',
+            },
+          });
+        }
+      } catch (err) {
+        setNewsletterStatus(form, err && err.message ? err.message : 'Unable to save your email right now.', false);
+      }
+    });
+  });
+
+  document.querySelectorAll('.btn-email-checkout').forEach(function(button) {
+    button.addEventListener('click', async function() {
+      var form = button.closest('form');
+      var input = form ? form.querySelector('input[name="email"]') : null;
+      var email = String(input && input.value || getStoredBuyerEmail()).trim().toLowerCase();
+      if (!isValidBuyerEmail(email)) {
+        setNewsletterStatus(form, 'Enter a valid work email before checkout.', false);
+        if (input) input.focus();
+        return;
+      }
+
+      storeBuyerEmail(email);
+      hydrateBuyerEmailInputs(email);
+      applyBuyerEmailToCheckoutLinks(email);
+
+      if (typeof plausible === 'function') {
+        plausible('pro_checkout_email_start', { props: { page: 'pro', intent: 'checkout' } });
+      }
+
+      try {
+        await submitNewsletterSignup(email, form);
+      } catch (_err) {
+        // Continue to checkout even if signup persistence fails.
+      }
+
+      var firstCheckoutLink = document.querySelector('.btn-pro-checkout');
+      if (firstCheckoutLink) {
+        window.location.href = firstCheckoutLink.getAttribute('href');
+      }
+    });
+  });
+}
+
 function trackClick(selector, eventName, props) {
   document.querySelectorAll(selector).forEach(function(el) {
     el.addEventListener('click', function() {
@@ -1010,6 +1226,7 @@ trackClick('.btn-pro-checkout', 'pro_checkout_start', { tier: 'pro', page: 'pro'
 trackClick('.btn-demo', 'pro_demo_click', { page: 'pro' });
 trackClick('.btn-free-path', 'pro_free_path_click', { page: 'pro' });
 trackClick('.proof-links a', 'pro_proof_click', { page: 'pro' });
+initializeBuyerIntent();
 
 document.querySelectorAll('.faq-q').forEach(function(el) {
   el.addEventListener('click', function() {

@@ -105,6 +105,48 @@ test('health endpoint returns ok', async () => {
   assert.equal(body.buildSha, 'test-build-sha');
 });
 
+test('newsletter endpoint returns JSON for fetch-style lead capture and deduplicates subscribers', async () => {
+  const newsletterPath = path.join(tmpFeedbackDir, 'newsletter-subscribers.jsonl');
+  fs.rmSync(newsletterPath, { force: true });
+
+  const firstRes = await fetch(apiUrl('/api/newsletter'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      accept: 'application/json',
+      'x-requested-with': 'fetch',
+      referer: `${apiOrigin}/pro?utm_source=website&utm_medium=pro_page&utm_campaign=pro_pack`,
+    },
+    body: new URLSearchParams({ email: 'buyer@example.com' }),
+  });
+  assert.equal(firstRes.status, 200);
+  const firstBody = await firstRes.json();
+  assert.equal(firstBody.accepted, true);
+  assert.equal(firstBody.duplicate, false);
+  assert.equal(firstBody.email, 'buyer@example.com');
+  assert.equal(firstBody.landingPath, '/pro');
+
+  const entriesAfterFirst = readJsonl(newsletterPath);
+  assert.equal(entriesAfterFirst.length, 1);
+  assert.equal(entriesAfterFirst[0].email, 'buyer@example.com');
+  assert.equal(entriesAfterFirst[0].source, 'website');
+
+  const duplicateRes = await fetch(apiUrl('/api/newsletter'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      accept: 'application/json',
+      'x-requested-with': 'fetch',
+    },
+    body: new URLSearchParams({ email: 'buyer@example.com' }),
+  });
+  assert.equal(duplicateRes.status, 200);
+  const duplicateBody = await duplicateRes.json();
+  assert.equal(duplicateBody.accepted, true);
+  assert.equal(duplicateBody.duplicate, true);
+  assert.equal(readJsonl(newsletterPath).length, 1);
+});
+
 test('startServer accepts an explicit bind host', async () => {
   const explicit = await startServer({ port: 0, host: '0.0.0.0' });
   try {

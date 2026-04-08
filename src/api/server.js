@@ -2237,6 +2237,9 @@ function createApiServer() {
       req.on('data', (chunk) => chunks.push(chunk));
       req.on('end', () => {
         try {
+          const accepts = String(req.headers.accept || '').toLowerCase();
+          const requestedWith = String(req.headers['x-requested-with'] || '').toLowerCase();
+          const wantsJson = accepts.includes('application/json') || requestedWith === 'fetch';
           const body = Buffer.concat(chunks).toString();
           const params = new URLSearchParams(body);
           const email = (params.get('email') || '').trim().toLowerCase();
@@ -2295,6 +2298,16 @@ function createApiServer() {
               landingPath,
               attribution,
             }) + '\n');
+          }
+          if (wantsJson) {
+            sendJson(res, 200, {
+              accepted: true,
+              duplicate,
+              email,
+              landingPath,
+              source: attribution.source || 'landing-page',
+            });
+            return;
           }
           res.writeHead(302, { Location: '/?subscribed=1' });
           res.end();

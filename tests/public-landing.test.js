@@ -24,10 +24,10 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
   assert.match(landingPage, /Thompson Sampling/i);
 });
 
-test('public landing page uses Stripe checkout links for Pro tier', () => {
+test('public landing page routes Pro buyers through the hosted checkout surface', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /buy\.stripe\.com/);
+  assert.match(landingPage, /\/checkout\/pro\?/);
   assert.match(landingPage, /Free Trial/);
   assert.doesNotMatch(landingPage, /gumroad\.com/);
 });
@@ -306,6 +306,9 @@ test('landing page has newsletter signup', () => {
   const html = readLandingPage();
   assert.ok(html.includes('newsletter'), 'must include newsletter section');
   assert.ok(html.includes('type="email"'), 'must include email input');
+  assert.match(html, /action="\/api\/newsletter"/);
+  assert.match(html, /data-newsletter-form/);
+  assert.match(html, /Get updates \+ keep checkout ready/i);
 });
 
 test('landing page has social links in footer', () => {
@@ -390,7 +393,9 @@ test('public landing page includes 7-day free trial and email capture gate', () 
   assert.match(landingPage, /7-DAY FREE TRIAL/);
   assert.match(landingPage, /pro-email/);
   assert.match(landingPage, /handleProTrial/);
-  assert.match(landingPage, /prefilled_email/);
+  assert.match(landingPage, /customer_email/);
+  assert.match(landingPage, /submitNewsletterSignup/);
+  assert.doesNotMatch(landingPage, /props:\s*\{\s*email:/);
 });
 
 test('public landing page includes dashboard preview in Pro card', () => {
