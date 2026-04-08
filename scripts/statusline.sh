@@ -117,6 +117,16 @@ if [ -n "$_TOWER_JSON" ]; then
   ' 2>/dev/null)"
 fi
 
+# ── Latest lesson ──────────────────────────────────────────────────
+LESSON_TEXT=""; LESSON_ID=""
+_LESSON_JSON=$(node "${SCRIPT_DIR}/statusline-lesson.js" 2>/dev/null)
+if [ -n "$_LESSON_JSON" ]; then
+  eval "$(echo "$_LESSON_JSON" | jq -r '
+    @sh "LESSON_TEXT=\(.text // "")",
+    @sh "LESSON_ID=\(.lessonId // "")"
+  ' 2>/dev/null)"
+fi
+
 # ── Colors ────────────────────────────────────────────────────────
 G='\033[32m'; R='\033[31m'; M='\033[35m'; C='\033[36m'; D='\033[90m'; BD='\033[1m'; RST='\033[0m'
 
@@ -147,6 +157,12 @@ if [ "$UP" = "0" ] && [ "$DOWN" = "0" ]; then
   printf '%b\n' "$LINE"
 else
   LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_ICON} ${R}${BD}${DOWN}${RST}${DOWN_ICON} ${ARROW}"
+
+  # Lessons count
+  [ "${LESSONS:-0}" -gt 0 ] && LINE="${LINE} · ${M}${BD}${LESSONS}${RST} lessons"
+
+  # Latest lesson snippet
+  [ -n "${LESSON_TEXT}" ] && LINE="${LINE} · ${D}${LESSON_TEXT}${RST}"
 
   # Control Tower alerts (if any)
   [ "${SLO_V:-0}" -gt 0 ] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"
