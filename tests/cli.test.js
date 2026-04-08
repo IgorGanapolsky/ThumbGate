@@ -515,6 +515,71 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('doctor'), 'Help should mention doctor');
     assert.ok(result.stdout.includes('dispatch'), 'Help should mention dispatch');
     assert.ok(result.stdout.includes('analytics'), 'Help should mention analytics');
+    assert.ok(result.stdout.includes('gate-check'), 'Help should mention gate-check');
+    assert.ok(result.stdout.includes('statusline-render'), 'Help should mention statusline-render');
+  });
+
+  test('gate-check allows ordinary edits when no task scope is declared', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync(['gate-check'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+      },
+      input: JSON.stringify({
+        tool_name: 'Edit',
+        tool_input: { file_path: '/project/src/app.js' },
+      }),
+    });
+    assert.equal(result.status, 0, `gate-check failed:\n${result.stderr}`);
+    assert.deepEqual(JSON.parse(result.stdout), {});
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
+  test('gate-check blocks high-risk git writes without task scope', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync(['gate-check'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+      },
+      input: JSON.stringify({
+        tool_name: 'Bash',
+        tool_input: {
+          command: 'git push origin feature/x',
+          changed_files: ['src/app.js'],
+        },
+      }),
+    });
+    assert.equal(result.status, 0, `gate-check failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(payload.hookSpecificOutput.permissionDecisionReason, /task-scope-required/);
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
+  test('hook-auto-capture records the user prompt and refreshes statusline counts', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync(['hook-auto-capture'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        CLAUDE_USER_PROMPT: 'thumbs up Thorough PR review',
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.equal(result.status, 0, `hook-auto-capture failed:\n${result.stderr}`);
+    const conversationPath = path.join(feedbackDir, 'conversation-window.jsonl');
+    const cachePath = path.join(feedbackDir, 'statusline_cache.json');
+    assert.ok(fs.existsSync(conversationPath), 'conversation history should be recorded');
+    assert.ok(fs.existsSync(cachePath), 'statusline cache should be refreshed');
+
+    const cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    assert.equal(cache.thumbs_up, '1');
+    assert.equal(cache.total_feedback, '1');
+
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
   test('pro command prints truthful local-first Pro offer info when unlicensed', () => {
@@ -1337,6 +1402,37 @@ describe('bin/cli.js', () => {
     assert.ok(fs.existsSync(thumbgateDir), '.thumbgate/ directory should be created');
   });
 
+  test('init --wire-hooks accepts split --agent value and writes Claude hooks', () => {
+    const isolatedDir = makeTmpDir();
+    const isolatedHome = makeTmpDir();
+
+    const result = runCliSync(['init', '--wire-hooks', '--agent', 'claude-code'], {
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        HOME: isolatedHome,
+        USERPROFILE: isolatedHome,
+        THUMBGATE_PUBLISH_STATE: 'unpublished',
+      },
+    });
+
+    assert.equal(result.status, 0, `hook wiring failed:\n${result.stderr}`);
+    const settingsPath = path.join(isolatedHome, '.claude', 'settings.local.json');
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    assert.match(result.stdout, /Added hooks for claude-code:/);
+    assert.equal(
+      settings.hooks.PreToolUse[0].hooks[0].command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} gate-check`
+    );
+    assert.equal(
+      settings.statusLine.command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} statusline-render`
+    );
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+    fs.rmSync(isolatedHome, { recursive: true, force: true });
+  });
+
   test('init creates config.json with required fields', () => {
     const configPath = path.join(tmpDir, '.thumbgate', 'config.json');
     assert.ok(fs.existsSync(configPath), 'config.json should exist');
@@ -1503,13 +1599,19 @@ describe('bin/cli.js', () => {
   });
 
   test('init creates .mcp.json with server entry', () => {
-    const mcpPath = path.join(tmpDir, '.mcp.json');
+    const isolatedDir = makeTmpDir();
+    const result = runCliSync(['init'], { cwd: isolatedDir });
+    assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
+
+    const mcpPath = path.join(isolatedDir, '.mcp.json');
     assert.ok(fs.existsSync(mcpPath), '.mcp.json should be created');
     const mcp = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
     assert.ok(mcp.mcpServers, '.mcp.json should have mcpServers');
     assert.ok(mcp.mcpServers.thumbgate, 'Should have canonical ThumbGate server entry');
-    assert.strictEqual(mcp.mcpServers.thumbgate.command, 'npx');
-    assert.deepEqual(mcp.mcpServers.thumbgate.args, ['-y', `thumbgate@${require('../package.json').version}`, 'serve']);
+    assert.strictEqual(mcp.mcpServers.thumbgate.command, 'node');
+    assert.deepEqual(mcp.mcpServers.thumbgate.args, [MCP_SERVER_PATH]);
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
 
   test('init keeps a local source launcher for unpublished external installs', () => {

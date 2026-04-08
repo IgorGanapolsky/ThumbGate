@@ -3,6 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { publishedCliArgs, runPublishedCliHelp } = require('./published-cli');
+const DEFAULT_PKG_ROOT = path.join(__dirname, '..');
+const cliAvailabilityCache = new Map();
 
 function isSourceCheckout(pkgRoot) {
   return fs.existsSync(path.join(pkgRoot, '.git'));
@@ -17,16 +20,39 @@ function parseWorktreePaths(raw) {
 }
 
 function resolveStableSourceRoot(pkgRoot) {
-  if (!isSourceCheckout(pkgRoot)) {
+  const effectivePkgRoot =
+    typeof pkgRoot === 'string' && pkgRoot.trim() ? pkgRoot : DEFAULT_PKG_ROOT;
+
+  if (!isSourceCheckout(effectivePkgRoot)) {
     return null;
   }
 
+  let preferredBasenames = [];
   try {
-    const output = execFileSync('git', ['-C', pkgRoot, 'worktree', 'list', '--porcelain'], {
+    const pkg = JSON.parse(fs.readFileSync(path.join(effectivePkgRoot, 'package.json'), 'utf8'));
+    const packageName = String(pkg && pkg.name || '').trim().toLowerCase();
+    if (packageName) {
+      preferredBasenames.push(packageName);
+      preferredBasenames.push(packageName.replace(/[^a-z0-9]+/g, ''));
+    }
+  } catch (_) {
+    preferredBasenames = [];
+  }
+
+  try {
+    const output = execFileSync('git', ['-C', effectivePkgRoot, 'worktree', 'list', '--porcelain'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     });
     const worktreePaths = parseWorktreePaths(output);
+
+    for (const worktreePath of worktreePaths) {
+      const baseName = path.basename(worktreePath).toLowerCase();
+      const normalizedBaseName = baseName.replace(/[^a-z0-9]+/g, '');
+      if (preferredBasenames.includes(baseName) || preferredBasenames.includes(normalizedBaseName)) {
+        return worktreePath;
+      }
+    }
 
     for (const worktreePath of worktreePaths) {
       const gitPath = path.join(worktreePath, '.git');
@@ -38,10 +64,10 @@ function resolveStableSourceRoot(pkgRoot) {
       }
     }
   } catch (_) {
-    return pkgRoot;
+    return effectivePkgRoot;
   }
 
-  return pkgRoot;
+  return effectivePkgRoot;
 }
 
 function resolveGitCommonDir(dirPath) {
@@ -76,7 +102,7 @@ function resolveLocalServerPath(pkgRoot, scope = 'project') {
 function portableMcpEntry(pkgVersion) {
   return {
     command: 'npx',
-    args: ['-y', `thumbgate@${pkgVersion}`, 'serve'],
+    args: publishedCliArgs(pkgVersion, ['serve']),
   };
 }
 
@@ -125,17 +151,53 @@ function isVersionPublished(pkgVersion) {
   return published;
 }
 
+function publishedCliOverride() {
+  const override = String(process.env.THUMBGATE_PUBLISHED_CLI_STATE || '').trim().toLowerCase();
+  if (override === 'available') {
+    return true;
+  }
+  if (override === 'unavailable') {
+    return false;
+  }
+  return null;
+}
+
+function publishedCliAvailable(pkgVersion) {
+  if (!isVersionPublished(pkgVersion)) {
+    return false;
+  }
+  const override = publishedCliOverride();
+  if (override !== null) {
+    return override;
+  }
+  if (cliAvailabilityCache.has(pkgVersion)) {
+    return cliAvailabilityCache.get(pkgVersion);
+  }
+
+  let available = false;
+  try {
+    runPublishedCliHelp(pkgVersion, { timeout: 8000 });
+    available = true;
+  } catch (_) {
+    available = false;
+  }
+
+  cliAvailabilityCache.set(pkgVersion, available);
+  return available;
+}
+
 function resolveMcpEntry({ pkgRoot, pkgVersion, scope = 'project', targetDir = pkgRoot }) {
   if (!isSourceCheckout(pkgRoot)) {
     return portableMcpEntry(pkgVersion);
   }
-  if (scope === 'project' && !isSameCheckoutFamily(pkgRoot, targetDir) && isVersionPublished(pkgVersion)) {
+  if (scope === 'project' && !isSameCheckoutFamily(pkgRoot, targetDir) && publishedCliAvailable(pkgVersion)) {
     return portableMcpEntry(pkgVersion);
   }
   return localMcpEntry(pkgRoot, scope);
 }
 
 module.exports = {
+  publishedCliAvailable,
   isVersionPublished,
   isSourceCheckout,
   isSameCheckoutFamily,

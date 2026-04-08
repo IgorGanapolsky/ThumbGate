@@ -3,8 +3,10 @@
     "thumbgate": {
       "command": "npx",
       "args": [
-        "-y",
-        "thumbgate@0.9.10",
+        "--yes",
+        "--package",
+        "thumbgate@0.9.11",
+        "thumbgate",
         "serve"
       ]
     }

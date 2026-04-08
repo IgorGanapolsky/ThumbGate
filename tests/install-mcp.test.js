@@ -19,6 +19,7 @@ const assert = require('node:assert/strict');
 
 const {
   MCP_SERVER_KEY,
+  LEGACY_MCP_SERVER_KEYS,
   MCP_SERVER_CONFIG,
   resolveMcpServerConfig,
   isAlreadyInstalled,
@@ -32,6 +33,7 @@ function makeTmpDir() {
 }
 
 const savedPublishState = process.env.THUMBGATE_PUBLISH_STATE;
+const savedCliState = process.env.THUMBGATE_PUBLISHED_CLI_STATE;
 
 function withPublishState(value, run) {
   const previous = process.env.THUMBGATE_PUBLISH_STATE;
@@ -47,12 +49,27 @@ function withPublishState(value, run) {
   }
 }
 
+function withCliState(value, run) {
+  const previous = process.env.THUMBGATE_PUBLISHED_CLI_STATE;
+  process.env.THUMBGATE_PUBLISHED_CLI_STATE = value;
+  try {
+    return run();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.THUMBGATE_PUBLISHED_CLI_STATE;
+    } else {
+      process.env.THUMBGATE_PUBLISHED_CLI_STATE = previous;
+    }
+  }
+}
+
 describe('install-mcp', () => {
   let tmpDir;
 
   before(() => {
     tmpDir = makeTmpDir();
     process.env.THUMBGATE_PUBLISH_STATE = 'published';
+    process.env.THUMBGATE_PUBLISHED_CLI_STATE = 'available';
   });
 
   after(() => {
@@ -61,6 +78,11 @@ describe('install-mcp', () => {
       delete process.env.THUMBGATE_PUBLISH_STATE;
     } else {
       process.env.THUMBGATE_PUBLISH_STATE = savedPublishState;
+    }
+    if (savedCliState === undefined) {
+      delete process.env.THUMBGATE_PUBLISHED_CLI_STATE;
+    } else {
+      process.env.THUMBGATE_PUBLISHED_CLI_STATE = savedCliState;
     }
   });
 
@@ -89,7 +111,7 @@ describe('install-mcp', () => {
     const projectConfig = resolveMcpServerConfig({ project: true, cwd: isolatedDir });
 
     assert.equal(projectConfig.command, 'npx');
-    assert.deepStrictEqual(projectConfig.args, ['-y', `thumbgate@${require('../package.json').version}`, 'serve']);
+    assert.deepStrictEqual(projectConfig.args, ['--yes', '--package', `thumbgate@${require('../package.json').version}`, 'thumbgate', 'serve']);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
@@ -98,6 +120,18 @@ describe('install-mcp', () => {
     const isolatedDir = makeTmpDir();
 
     const projectConfig = withPublishState('unpublished', () => resolveMcpServerConfig({ project: true, cwd: isolatedDir }));
+
+    assert.equal(projectConfig.command, 'node');
+    assert.equal(projectConfig.args.length, 1);
+    assert.match(projectConfig.args[0], /adapters[\\/]mcp[\\/]server-stdio\.js$/);
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  });
+
+  test('resolveMcpServerConfig keeps a local launcher when the published CLI is unavailable', () => {
+    const isolatedDir = makeTmpDir();
+
+    const projectConfig = withCliState('unavailable', () => resolveMcpServerConfig({ project: true, cwd: isolatedDir }));
 
     assert.equal(projectConfig.command, 'node');
     assert.equal(projectConfig.args.length, 1);
@@ -202,6 +236,41 @@ describe('install-mcp', () => {
     }
   });
 
+  test('migrates legacy MCP server keys to thumbgate', () => {
+    const isolatedDir = makeTmpDir();
+    const settingsDir = path.join(isolatedDir, '.claude');
+    const settingsPath = path.join(settingsDir, 'settings.json');
+
+    fs.mkdirSync(settingsDir, { recursive: true });
+    fs.writeFileSync(settingsPath, JSON.stringify({
+      mcpServers: {
+        'mcp-memory-gateway': {
+          command: 'npx',
+          args: ['-y', 'mcp-memory-gateway', 'serve'],
+        },
+        rlhf: {
+          command: 'node',
+          args: ['/tmp/old/server-stdio.js'],
+        },
+      },
+    }, null, 2) + '\n');
+
+    const origHome = process.env.HOME;
+    process.env.HOME = isolatedDir;
+    try {
+      const result = installMcp({});
+      assert.equal(result.installed, true);
+      const updated = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      assert.deepStrictEqual(updated.mcpServers[MCP_SERVER_KEY], MCP_SERVER_CONFIG);
+      for (const legacyKey of LEGACY_MCP_SERVER_KEYS) {
+        assert.equal(Object.prototype.hasOwnProperty.call(updated.mcpServers, legacyKey), false);
+      }
+    } finally {
+      process.env.HOME = origHome;
+      fs.rmSync(isolatedDir, { recursive: true, force: true });
+    }
+  });
+
   test('respects --project flag — writes to cwd/.claude/settings.json', () => {
     const isolatedDir = makeTmpDir();
     const origCwd = process.cwd();
@@ -219,7 +288,7 @@ describe('install-mcp', () => {
         settings.mcpServers[MCP_SERVER_KEY],
         {
           command: 'npx',
-          args: ['-y', `thumbgate@${require('../package.json').version}`, 'serve'],
+          args: ['--yes', '--package', `thumbgate@${require('../package.json').version}`, 'thumbgate', 'serve'],
         }
       );
     } finally {
