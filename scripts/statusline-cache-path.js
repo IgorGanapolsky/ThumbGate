@@ -2,21 +2,24 @@
 'use strict';
 
 const path = require('path');
-const { resolveFeedbackDir } = require('./feedback-paths');
+const {
+  listFeedbackArtifactPaths,
+  resolveFeedbackDir,
+  resolveProjectDir,
+} = require('./feedback-paths');
 
 function unique(values = []) {
   return [...new Set(values.filter(Boolean).map((value) => path.resolve(value)))];
 }
 
 function getStatuslineCacheCandidates(options = {}) {
-  const cwd = options.cwd || process.cwd();
-  const home = options.home || process.env.HOME || process.env.USERPROFILE || '';
-  const feedbackDir = resolveFeedbackDir({ cwd, env: options.env || process.env });
+  const env = options.env || process.env;
+  const projectDir = resolveProjectDir({ cwd: options.cwd, env });
+  const feedbackDir = resolveFeedbackDir({ projectDir, env });
 
   return unique([
+    ...listFeedbackArtifactPaths('statusline_cache.json', { projectDir, env }),
     path.join(feedbackDir, 'statusline_cache.json'),
-    path.join(cwd, '.thumbgate', 'statusline_cache.json'),
-    home ? path.join(home, '.thumbgate', 'statusline_cache.json') : null,
   ]);
 }
 
