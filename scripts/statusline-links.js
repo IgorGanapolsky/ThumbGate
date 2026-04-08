@@ -25,6 +25,10 @@ function parseOrigin(origin) {
   };
 }
 
+function isLoopbackHost(host) {
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+}
+
 function runtimeStatePath(options = {}) {
   return path.join(getRuntimeDir(options), 'statusline-api.json');
 }
@@ -176,14 +180,16 @@ async function getStatuslineLinks(options = {}) {
   }
 
   const homeDir = options.homeDir || getHomeDir({ env });
-  const origin = parseOrigin(options.origin || env.THUMBGATE_LOCAL_API_ORIGIN || DEFAULT_ORIGIN).origin;
+  const parsedOrigin = parseOrigin(options.origin || env.THUMBGATE_LOCAL_API_ORIGIN || DEFAULT_ORIGIN);
+  const origin = parsedOrigin.origin;
+  const allowLocalBootstrap = isLoopbackHost(parsedOrigin.host);
   const probe = options.probeLocalServer || probeLocalServer;
   const resolveKey = options.resolveKey || resolveProKey;
   const startServer = options.launchLocalServer || launchLocalServer;
   const key = resolveKey({ env, homeDir });
-  const canBootstrap = Boolean(key && key.key);
+  const canBootstrap = allowLocalBootstrap && Boolean(key && key.key);
 
-  const ready = await probe(origin, options);
+  const ready = allowLocalBootstrap ? await probe(origin, options) : false;
   if (ready) {
     return buildLinkState({ ready: true, booting: false, origin, canBootstrap });
   }
@@ -223,6 +229,7 @@ module.exports = {
   isPidAlive,
   launchLocalServer,
   parseOrigin,
+  isLoopbackHost,
   probeLocalServer,
   readRuntimeState,
   runtimeStatePath,

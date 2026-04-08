@@ -22,6 +22,19 @@ const SAFE_SYSTEM_PATH = Array.from(new Set([
   '/sbin',
 ])).join(path.delimiter);
 
+function linkFixture(overrides = {}) {
+  return {
+    state: 'ready',
+    dashboardLabel: 'Dashboard',
+    lessonsLabel: 'Lessons',
+    dashboardUrl: 'http://localhost:3456/dashboard',
+    lessonsUrl: 'http://localhost:3456/lessons',
+    upUrl: 'http://localhost:3456/feedback/quick?signal=up',
+    downUrl: 'http://localhost:3456/feedback/quick?signal=down',
+    ...overrides,
+  };
+}
+
 function runStatusline(cachePayload, extraEnv = {}) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-render-'));
   const cachePath = path.join(tmpDir, 'statusline_cache.json');
@@ -62,15 +75,7 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   const out = runStatusline({
     thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
   }, {
-    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify({
-      state: 'ready',
-      dashboardLabel: 'Dashboard',
-      lessonsLabel: 'Lessons',
-      dashboardUrl: 'http://localhost:3456/dashboard',
-      lessonsUrl: 'http://localhost:3456/lessons',
-      upUrl: 'http://localhost:3456/feedback/quick?signal=up',
-      downUrl: 'http://localhost:3456/feedback/quick?signal=down',
-    }),
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture()),
   });
   assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
   assert.ok(out.includes('Free'), 'should show license tier');
@@ -87,7 +92,7 @@ test('statusline shows "no feedback yet" when cache has zeros', () => {
   const out = runStatusline({
     thumbs_up: '0', thumbs_down: '0', lessons: '0', trend: '?'
   }, {
-    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify({
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture({
       state: 'offline',
       dashboardLabel: 'Dash: thumbgate pro',
       lessonsLabel: 'Learn: thumbgate lessons',
@@ -95,7 +100,7 @@ test('statusline shows "no feedback yet" when cache has zeros', () => {
       lessonsUrl: '',
       upUrl: '',
       downUrl: '',
-    }),
+    })),
   });
   assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
   assert.ok(out.includes('no feedback yet'), 'should show no-data message');
@@ -216,7 +221,7 @@ test('statusline shows booting labels while the local dashboard is coming online
   const out = runStatusline({
     thumbs_up: '4', thumbs_down: '1', lessons: '2', trend: 'stable'
   }, {
-    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify({
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture({
       state: 'booting',
       dashboardLabel: 'Dashboard…',
       lessonsLabel: 'Lessons…',
@@ -224,7 +229,7 @@ test('statusline shows booting labels while the local dashboard is coming online
       lessonsUrl: '',
       upUrl: '',
       downUrl: '',
-    }),
+    })),
   });
   assert.match(out, /Dashboard…/);
   assert.match(out, /Lessons…/);
