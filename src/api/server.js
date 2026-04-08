@@ -225,7 +225,7 @@ function shouldPreferProjectScopedFeedback(req, parsed) {
   const explicitProject = (parsed && parsed.searchParams ? parsed.searchParams.get('project') : null)
     || (req && req.headers ? req.headers['x-thumbgate-project-dir'] || req.headers['x-thumbgate-project'] : null);
   if (explicitProject) return true;
-  if (process.env.THUMBGATE_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || process.env.INIT_CWD) return true;
+  if (process.env.THUMBGATE_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR) return true;
   if (process.env.THUMBGATE_FEEDBACK_DIR) return false;
   return Boolean(readActiveProjectState({ env: process.env }));
 }

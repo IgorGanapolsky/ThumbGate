@@ -1794,6 +1794,10 @@ function runTests() {
   const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'thumbgate-loop-test-'));
   const localFeedbackLog = path.join(tmpDir, 'feedback-log.jsonl');
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  const savedInitCwd = process.env.INIT_CWD;
+  process.env.INIT_CWD = savedInitCwd || process.cwd();
+
+  assert(getFeedbackPaths().FEEDBACK_DIR === tmpDir, 'explicit feedback dir wins over npm INIT_CWD');
 
   appendJSONL(localFeedbackLog, { signal: 'positive', tags: ['testing'], skill: 'verify' });
   appendJSONL(localFeedbackLog, { signal: 'negative', tags: ['testing'], skill: 'verify' });
@@ -1845,6 +1849,8 @@ function runTests() {
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
   delete process.env.THUMBGATE_FEEDBACK_DIR;
+  if (savedInitCwd === undefined) delete process.env.INIT_CWD;
+  else process.env.INIT_CWD = savedInitCwd;
   console.log(`\nResults: ${passed} passed, ${failed} failed\n`);
   process.exit(failed > 0 ? 1 : 0);
 }

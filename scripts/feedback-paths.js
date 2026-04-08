@@ -144,14 +144,23 @@ function getProjectName(cwd = process.cwd()) {
   return path.basename(cwd || PROJECT_ROOT) || 'default';
 }
 
+function hasExplicitProjectScope(options = {}) {
+  const env = options.env || process.env;
+  return Boolean(
+    env.THUMBGATE_PROJECT_DIR
+    || env.CLAUDE_PROJECT_DIR
+    || readActiveProjectState(options)
+  );
+}
+
 function getExplicitFeedbackDir(options = {}) {
   const env = options.env || process.env;
   if (options.feedbackDir) return options.feedbackDir;
   if (options.skipExplicitFeedbackDir) return null;
-  if (!env.THUMBGATE_PROJECT_DIR && !env.CLAUDE_PROJECT_DIR && !env.INIT_CWD && env.THUMBGATE_FEEDBACK_DIR) {
+  if (env.THUMBGATE_FEEDBACK_DIR && !hasExplicitProjectScope(options)) {
     return env.THUMBGATE_FEEDBACK_DIR;
   }
-  if (env.THUMBGATE_PROJECT_DIR || env.CLAUDE_PROJECT_DIR || env.INIT_CWD || readActiveProjectState(options)) {
+  if (hasExplicitProjectScope(options)) {
     return null;
   }
   if (env.RAILWAY_VOLUME_MOUNT_PATH) {
@@ -243,6 +252,7 @@ module.exports = {
   getFallbackFeedbackDir,
   getRuntimeDir,
   getThumbgateFeedbackDir,
+  hasExplicitProjectScope,
   readActiveProjectState,
   listFallbackFeedbackDirs,
   listFeedbackArtifactPaths,

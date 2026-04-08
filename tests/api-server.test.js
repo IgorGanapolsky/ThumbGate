@@ -8,6 +8,14 @@ const GOVERNED_RELEASE_VERSION_MISMATCH = '9999.0.0';
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-api-test-'));
 const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-api-proof-'));
+const savedProjectEnv = {
+  THUMBGATE_PROJECT_DIR: process.env.THUMBGATE_PROJECT_DIR,
+  CLAUDE_PROJECT_DIR: process.env.CLAUDE_PROJECT_DIR,
+  INIT_CWD: process.env.INIT_CWD,
+};
+delete process.env.THUMBGATE_PROJECT_DIR;
+delete process.env.CLAUDE_PROJECT_DIR;
+delete process.env.INIT_CWD;
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
 process.env.THUMBGATE_API_KEY = 'test-api-key';
@@ -86,9 +94,12 @@ test.after(async () => {
   delete process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
   delete process.env.THUMBGATE_BILLING_API_BASE_URL;
   delete process.env.THUMBGATE_BUILD_METADATA_PATH;
-  delete process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
-  delete process.env.THUMBGATE_BILLING_API_BASE_URL;
-  delete process.env.THUMBGATE_BUILD_METADATA_PATH;
+  if (savedProjectEnv.THUMBGATE_PROJECT_DIR === undefined) delete process.env.THUMBGATE_PROJECT_DIR;
+  else process.env.THUMBGATE_PROJECT_DIR = savedProjectEnv.THUMBGATE_PROJECT_DIR;
+  if (savedProjectEnv.CLAUDE_PROJECT_DIR === undefined) delete process.env.CLAUDE_PROJECT_DIR;
+  else process.env.CLAUDE_PROJECT_DIR = savedProjectEnv.CLAUDE_PROJECT_DIR;
+  if (savedProjectEnv.INIT_CWD === undefined) delete process.env.INIT_CWD;
+  else process.env.INIT_CWD = savedProjectEnv.INIT_CWD;
   try {
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
     fs.rmSync(tmpProofDir, { recursive: true, force: true });
@@ -1192,6 +1203,39 @@ test('summary endpoint returns markdown text payload', async () => {
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.match(body.summary, /Feedback Summary/);
+});
+
+test('default feedback stats stay on THUMBGATE_FEEDBACK_DIR even when INIT_CWD is set', async () => {
+  const savedInitCwd = process.env.INIT_CWD;
+  const feedbackLogPath = path.join(tmpFeedbackDir, 'feedback-log.jsonl');
+  const baselineEntries = fs.existsSync(feedbackLogPath) ? readJsonl(feedbackLogPath) : [];
+  const baselineTotal = baselineEntries.length;
+  const baselinePositive = baselineEntries.filter((entry) => entry.signal === 'positive').length;
+  const baselineNegative = baselineEntries.filter((entry) => entry.signal === 'negative').length;
+  process.env.INIT_CWD = path.join(os.tmpdir(), 'thumbgate-init-cwd-project');
+  try {
+    fs.appendFileSync(feedbackLogPath, `${JSON.stringify({
+      id: 'fb_initcwd_scope_guard',
+      signal: 'positive',
+      context: 'Explicit feedback dir should remain authoritative',
+      timestamp: '2026-04-08T10:00:00.000Z',
+    })}\n`);
+
+    const updatedRes = await fetch(apiUrl('/v1/feedback/stats'), { headers: authHeader });
+    assert.equal(updatedRes.status, 200);
+    const updatedBody = await updatedRes.json();
+    assert.equal(updatedBody.total, baselineTotal + 1);
+    assert.equal(updatedBody.totalPositive, baselinePositive + 1);
+    assert.equal(updatedBody.totalNegative, baselineNegative);
+  } finally {
+    if (baselineEntries.length > 0) {
+      fs.writeFileSync(feedbackLogPath, `${baselineEntries.map((entry) => JSON.stringify(entry)).join('\n')}\n`);
+    } else {
+      fs.rmSync(feedbackLogPath, { force: true });
+    }
+    if (savedInitCwd === undefined) delete process.env.INIT_CWD;
+    else process.env.INIT_CWD = savedInitCwd;
+  }
 });
 
 test('project-scoped endpoints honor explicit project selection for stats, lessons, and dashboard', async () => {
