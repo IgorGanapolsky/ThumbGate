@@ -61,20 +61,46 @@ test('statusline script exists and is executable', () => {
 test('statusline script reads jq input and outputs ThumbGate line', () => {
   const out = runStatusline({
     thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
+  }, {
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify({
+      state: 'ready',
+      dashboardLabel: 'Dashboard',
+      lessonsLabel: 'Lessons',
+      dashboardUrl: 'http://localhost:3456/dashboard',
+      lessonsUrl: 'http://localhost:3456/lessons',
+      upUrl: 'http://localhost:3456/feedback/quick?signal=up',
+      downUrl: 'http://localhost:3456/feedback/quick?signal=down',
+    }),
   });
   assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
   assert.ok(out.includes('Free'), 'should show license tier');
   assert.ok(out.includes('10'), 'should show thumbs up count');
   assert.ok(out.includes('5'), 'should show thumbs down count');
-  assert.ok(!out.includes('lessons'), 'should not show lesson count text');
+  assert.doesNotMatch(out, /\b\d+\s+lessons?\b/i, 'should not show a lesson count label');
+  assert.match(out, /\u001b]8;;http:\/\/localhost:3456\/feedback\/quick\?signal=up/);
+  assert.match(out, /\u001b]8;;http:\/\/localhost:3456\/dashboard/);
+  assert.match(out, /Dashboard/);
+  assert.match(out, /Lessons/);
 });
 
 test('statusline shows "no feedback yet" when cache has zeros', () => {
   const out = runStatusline({
     thumbs_up: '0', thumbs_down: '0', lessons: '0', trend: '?'
+  }, {
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify({
+      state: 'offline',
+      dashboardLabel: 'Dash: thumbgate pro',
+      lessonsLabel: 'Learn: thumbgate lessons',
+      dashboardUrl: '',
+      lessonsUrl: '',
+      upUrl: '',
+      downUrl: '',
+    }),
   });
   assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
   assert.ok(out.includes('no feedback yet'), 'should show no-data message');
+  assert.match(out, /Dash: thumbgate pro/);
+  assert.match(out, /Learn: thumbgate lessons/);
 });
 
 test('statusline rebuilds counters from local feedback logs when cache is empty', () => {
@@ -186,6 +212,25 @@ test('statusline shows Pro when a valid ThumbGate license is present', () => {
   }
 });
 
+test('statusline shows booting labels while the local dashboard is coming online', () => {
+  const out = runStatusline({
+    thumbs_up: '4', thumbs_down: '1', lessons: '2', trend: 'stable'
+  }, {
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify({
+      state: 'booting',
+      dashboardLabel: 'Dashboard…',
+      lessonsLabel: 'Lessons…',
+      dashboardUrl: '',
+      lessonsUrl: '',
+      upUrl: '',
+      downUrl: '',
+    }),
+  });
+  assert.match(out, /Dashboard…/);
+  assert.match(out, /Lessons…/);
+  assert.doesNotMatch(out, /\u001b]8;;http:\/\/localhost:3456\/dashboard/);
+});
+
 test('cache updater hook script exists', () => {
   assert.ok(fs.existsSync(CACHE_UPDATER_PATH), 'scripts/hook-thumbgate-cache-updater.js must exist');
   assert.ok(fs.existsSync(LOCAL_STATS_PATH), 'scripts/statusline-local-stats.js must exist');
@@ -261,4 +306,11 @@ test('setupClaude uses portable ThumbGate commands for status line and cache upd
       || statusCommand.includes('bin/cli.js" statusline-render'),
     `unexpected statusline command: ${statusCommand}`
   );
+});
+
+test('statusline shell uses link helper and OSC 8 hyperlinks', () => {
+  const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
+  assert.match(shellSource, /statusline-links\.js/);
+  assert.match(shellSource, /osc8_link/);
+  assert.match(shellSource, /LOCAL_API_ORIGIN/);
 });
