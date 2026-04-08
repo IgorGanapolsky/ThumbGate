@@ -66,7 +66,9 @@ __GA_BOOTSTRAP__
     "Background Agent Governance — per-agent pass rates, CI auto-feedback",
     "Memory Migration — imports Claude Code MEMORY.md into unlimited SQLite DB",
     "Prompt-Level DLP — scans tool call inputs before execution",
-    "Per-Step Scoring — every gate decision becomes a DPO/KTO training signal"
+    "Per-Step Scoring — every gate decision becomes a DPO/KTO training signal",
+    "HuggingFace Export — share PII-redacted agent traces as open training datasets",
+    "Unified Context — one-call context assembly with session, lessons, guards, and code-graph"
   ],
   "offers": [
     {
@@ -578,7 +580,7 @@ __GA_BOOTSTRAP__
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
   <div class="container">
-    <div class="section-label">New in v1.0.0</div>
+    <div class="section-label">New in v1.1.0</div>
     <h2 class="section-title">Three steps to stop repeated AI failures</h2>
     <div class="steps">
       <div class="step">
@@ -670,6 +672,7 @@ __GA_BOOTSTRAP__
           <li>All MCP integrations (Claude Code, Cursor, Codex, etc.)</li>
           <li>PreToolUse hook blocking</li>
           <li>Local SQLite lesson DB</li>
+          <li>Unified context assembly — one call gets session, lessons, guards, and code-graph</li>
           <li><a href="/guide" style="color:var(--cyan);text-decoration:underline;">Setup guide for all agents →</a></li>
         </ul>
         <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free">Install Free</a>
@@ -698,6 +701,7 @@ __GA_BOOTSTRAP__
           <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">Visual gate debugger →</a> see every blocked action and the gate that fired so you can trust the system in minutes</li>
           <li>Auto-connect — activate once with your license key, then your running agents appear automatically on your local dashboard</li>
           <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">DPO training data export →</a> turn real thumbs-downs into ready-to-use preference pairs for fine-tuning (LoRA / JSONL)</li>
+          <li><strong>HuggingFace dataset export</strong> — share PII-redacted agent traces as open training datasets (<code>npm run export:hf</code>)</li>
           <li><strong>Model Hardening Advisor</strong> — get recommendations on when and how to fine-tune your model to natively avoid recurring failures</li>
           <li>Personal local dashboard — every Pro user gets a localhost dashboard without extra cloud setup</li>
           <li>Founder-license support — we help you wire the riskiest flows first: migrations, force-pushes, deploys, and CI</li>
@@ -835,7 +839,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.0.0</span>
+    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.1.0</span>
   </div>
 </footer>
 
