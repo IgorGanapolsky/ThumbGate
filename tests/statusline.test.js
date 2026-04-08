@@ -128,6 +128,64 @@ test('cache updater writes cache from feedback_stats input', () => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
+test('cache updater writes cache from thumbgate-prefixed feedback_stats', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-test-tg-'));
+  const tmpCache = path.join(tmpDir, '.rlhf', 'statusline_cache.json');
+
+  const event = {
+    tool_name: 'mcp__thumbgate__feedback_stats',
+    tool_response: JSON.stringify({
+      total: 200, totalPositive: 43, totalNegative: 146,
+      approvalRate: 0.229, trend: 'improving',
+      rubric: { samples: 22 }
+    })
+  };
+
+  execFileSync(process.execPath, [CACHE_UPDATER_PATH], {
+    encoding: 'utf8',
+    input: JSON.stringify(event),
+    env: { ...process.env, RLHF_FEEDBACK_DIR: tmpDir },
+    timeout: 5000
+  });
+
+  assert.ok(fs.existsSync(tmpCache), 'cache file should be created for thumbgate prefix');
+  const cache = JSON.parse(fs.readFileSync(tmpCache, 'utf8'));
+  assert.strictEqual(cache.thumbs_up, '43');
+  assert.strictEqual(cache.thumbs_down, '146');
+  assert.strictEqual(cache.lessons, '22');
+  assert.strictEqual(cache.trend, 'improving');
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('cache updater writes cache from thumbgate dashboard', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rlhf-test-dash-'));
+  const tmpCache = path.join(tmpDir, '.rlhf', 'statusline_cache.json');
+
+  const event = {
+    tool_name: 'mcp__thumbgate__dashboard',
+    tool_response: JSON.stringify({
+      approval: { total: 100, totalPositive: 10, totalNegative: 90, approvalRate: 0.1, trendDirection: 'degrading' },
+      rubric: { samples: 5 }
+    })
+  };
+
+  execFileSync(process.execPath, [CACHE_UPDATER_PATH], {
+    encoding: 'utf8',
+    input: JSON.stringify(event),
+    env: { ...process.env, RLHF_FEEDBACK_DIR: tmpDir },
+    timeout: 5000
+  });
+
+  assert.ok(fs.existsSync(tmpCache), 'cache file should be created for thumbgate dashboard');
+  const cache = JSON.parse(fs.readFileSync(tmpCache, 'utf8'));
+  assert.strictEqual(cache.thumbs_up, '10');
+  assert.strictEqual(cache.thumbs_down, '90');
+  assert.strictEqual(cache.trend, 'degrading');
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
 test('setupClaude wires statusLine and cache hook into settings', () => {
   const cliSource = fs.readFileSync(path.join(__dirname, '..', 'bin', 'cli.js'), 'utf8');
   assert.ok(cliSource.includes('statusLine'), 'cli.js must wire statusLine');

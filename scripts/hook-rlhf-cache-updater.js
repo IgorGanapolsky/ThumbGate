@@ -17,21 +17,24 @@ process.stdin.on('end', () => {
   try {
     const event = JSON.parse(input);
     const tool = event.tool_name || '';
-    if (tool !== 'mcp__rlhf__feedback_stats' && tool !== 'mcp__rlhf__dashboard') return;
+    // Support both legacy (mcp__rlhf__) and current (mcp__thumbgate__) tool names
+    const isStats = tool === 'mcp__rlhf__feedback_stats' || tool === 'mcp__thumbgate__feedback_stats';
+    const isDash = tool === 'mcp__rlhf__dashboard' || tool === 'mcp__thumbgate__dashboard';
+    if (!isStats && !isDash) return;
 
     const raw = event.tool_response;
     if (!raw) return;
     const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
     const cache = {};
-    if (tool === 'mcp__rlhf__feedback_stats') {
+    if (isStats) {
       cache.thumbs_up = String(data.totalPositive || 0);
       cache.thumbs_down = String(data.totalNegative || 0);
       cache.lessons = String((data.rubric || {}).samples || 0);
       cache.approval_rate = String(Math.round((data.approvalRate || 0) * 1000) / 10);
       cache.trend = data.trend || '?';
       cache.total_feedback = String(data.total || 0);
-    } else if (tool === 'mcp__rlhf__dashboard') {
+    } else if (isDash) {
       const approval = data.approval || {};
       cache.thumbs_up = String(approval.totalPositive || 0);
       cache.thumbs_down = String(approval.totalNegative || 0);

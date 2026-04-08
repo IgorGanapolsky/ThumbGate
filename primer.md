@@ -27,24 +27,29 @@ _No strong behavioral patterns identified yet._
 
 ## Live Git Context
 
-### Branch: fix/conversion-gaps
+### Branch: feat/thumbgate-hard-enforcement
 
 ### Last 5 Commits:
 ```
-3f7d9f4 feat: lesson rotation — staleness scoring, auto-archive, Pro review
-de3e597 fix: keep feedback captures unlimited for free users
-2e220a6 feat: hard-gate dashboard and lessons behind Pro upgrade wall
-ba08ea2 feat: tighten free-to-Pro funnel — lower limits, add usage counter
-7d4c124 fix: license key prefix mismatch + conversion gaps (#563)
+3cf0ef4e test: prove hard enforcement coverage
+5f4ec47c Enforce task scope and protected file approvals
+f3f33bc5 chore(deps): Bump actions/checkout from 4 to 6 (#584)
+a2ac1196 chore(release): bump version to 0.9.9 and sync all manifests (#586)
+5bd8f125 fix: wire social-quality-gate into all publishers — block bot slop before posting (#585)
 ```
 
 ### Modified Files:
 ```
  M config/skill-packs/react-testing.json
  M primer.md
- M public/index.html
- M scripts/billing.js
- M tests/public-landing.test.js
-?? scripts/_apply-checkout-fixes.js
-?? scripts/_fix-test-assertions.js
+ M scripts/gates-engine.js
+ M scripts/license.js
+ M tests/commerce-quality.test.js
+ M tests/gates-engine.test.js
+ M tests/gates-hardening.test.js
+ M tests/license.test.js
+ M tests/multi-hop-recall.test.js
+ M tests/rate-limiter.test.js
+ M tests/synthetic-dpo.test.js
+?? tests/helpers/
 ```
