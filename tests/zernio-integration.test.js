@@ -111,11 +111,15 @@ describe('zernio publisher', () => {
 
   let originalFetch;
   let originalApiKey;
+  let originalDedupPath;
 
   beforeEach(() => {
     originalFetch = global.fetch;
     originalApiKey = process.env.ZERNIO_API_KEY;
+    originalDedupPath = process.env.THUMBGATE_DEDUP_LOG_PATH;
     process.env.ZERNIO_API_KEY = 'test_key_abc123';
+    // Use a temp dedup log so tests don't interfere with each other
+    process.env.THUMBGATE_DEDUP_LOG_PATH = path.join(os.tmpdir(), `zernio-dedup-test-${Date.now()}.json`);
   });
 
   afterEach(() => {
@@ -124,6 +128,13 @@ describe('zernio publisher', () => {
       delete process.env.ZERNIO_API_KEY;
     } else {
       process.env.ZERNIO_API_KEY = originalApiKey;
+    }
+    // Clean up temp dedup log
+    try { fs.unlinkSync(process.env.THUMBGATE_DEDUP_LOG_PATH); } catch { /* ignore */ }
+    if (originalDedupPath === undefined) {
+      delete process.env.THUMBGATE_DEDUP_LOG_PATH;
+    } else {
+      process.env.THUMBGATE_DEDUP_LOG_PATH = originalDedupPath;
     }
   });
 

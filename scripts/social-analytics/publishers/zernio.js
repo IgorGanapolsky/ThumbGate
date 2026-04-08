@@ -17,7 +17,7 @@ const { loadLocalEnv } = require('../load-env');
 const ZERNIO_UTM = { source: 'zernio', medium: 'social', campaign: 'organic' };
 
 const ZERNIO_BASE = 'https://zernio.com/api/v1';
-const DEDUP_LOG_PATH = path.join(__dirname, '..', '..', '..', '.thumbgate', 'zernio-dedup-log.json');
+const DEFAULT_DEDUP_LOG_PATH = path.join(__dirname, '..', '..', '..', '.thumbgate', 'zernio-dedup-log.json');
 
 loadLocalEnv();
 
@@ -25,24 +25,30 @@ loadLocalEnv();
  * Content-hash dedup: prevents the same content from being posted to the same
  * platform twice within a 24-hour window.
  */
+function getDedupLogPath() {
+  return process.env.THUMBGATE_DEDUP_LOG_PATH || DEFAULT_DEDUP_LOG_PATH;
+}
+
 function buildDedupKey(content, platform) {
   const hash = crypto.createHash('sha256').update(content.trim()).digest('hex').slice(0, 16);
   return `${platform}::${hash}`;
 }
 
 function loadDedupLog() {
+  const logPath = getDedupLogPath();
   try {
-    if (fs.existsSync(DEDUP_LOG_PATH)) {
-      return JSON.parse(fs.readFileSync(DEDUP_LOG_PATH, 'utf8'));
+    if (fs.existsSync(logPath)) {
+      return JSON.parse(fs.readFileSync(logPath, 'utf8'));
     }
   } catch { /* ignore corrupt log */ }
   return {};
 }
 
 function saveDedupLog(log) {
-  const dir = path.dirname(DEDUP_LOG_PATH);
+  const logPath = getDedupLogPath();
+  const dir = path.dirname(logPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DEDUP_LOG_PATH, JSON.stringify(log, null, 2));
+  fs.writeFileSync(logPath, JSON.stringify(log, null, 2));
 }
 
 function isDuplicate(content, platform) {
