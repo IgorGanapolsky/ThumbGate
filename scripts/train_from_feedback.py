@@ -40,10 +40,6 @@ def resolve_feedback_dir() -> Path:
     if local_thumbgate.exists():
         return local_thumbgate
 
-    local_rlhf = PROJECT_ROOT / ".rlhf"
-    if local_rlhf.exists():
-        return local_rlhf
-
     local_legacy = PROJECT_ROOT / ".claude" / "memory" / "feedback"
     if local_legacy.exists():
         return local_legacy
