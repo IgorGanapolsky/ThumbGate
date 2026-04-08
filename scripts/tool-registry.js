@@ -490,6 +490,21 @@ const TOOLS = [
       },
     },
   }),
+  readOnlyTool({
+    name: 'unified_context',
+    description: 'Assemble a complete, role-aware context object in one call. Combines session state, user profile, relevant lessons, prevention guards, context pack, and code-graph impact — with tiered graceful degradation (full → warm → cold). Replaces multiple recall/retrieve/session_primer calls with a single orchestrated request.',
+    inputSchema: {
+      type: 'object',
+      required: ['query'],
+      properties: {
+        query: { type: 'string', description: 'Describe the current task to find relevant context' },
+        toolName: { type: 'string', description: 'Current tool being invoked (improves lesson matching)' },
+        toolInput: { type: 'object', description: 'Current tool input (for guard evaluation)' },
+        agentType: { type: 'string', enum: ['claude', 'cursor', 'forgecode', 'codex'], description: 'Agent type — shapes context budget and feature inclusion' },
+        repoPath: { type: 'string', description: 'Repository path for code-graph impact analysis' },
+      },
+    },
+  }),
   destructiveTool({
     name: 'satisfy_gate',
     description: 'Satisfy a gate condition with optional structured reasoning. Evidence is stored with a 5-minute TTL. When structuredReasoning is provided, the premise/evidence/conclusion chain is stored in the audit trail.',
@@ -627,6 +642,28 @@ const TOOLS = [
         repoPath: { type: 'string', description: 'Optional repository path to inspect' },
         baseBranch: { type: 'string', description: 'Protected base branch to compare against (defaults to main)' },
         command: { type: 'string', description: 'Optional git, PR, or publish command to evaluate against the current governance state' },
+        requirePrForReleaseSensitive: { type: 'boolean', description: 'When true, release-sensitive changes on non-base branches require an open PR' },
+        requireVersionNotBehindBase: { type: 'boolean', description: 'When true, release-sensitive changes cannot lag behind the base branch package version' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'workflow_sentinel',
+    description: 'Predict pre-action workflow risk, blast radius, and remediations before a tool call executes.',
+    inputSchema: {
+      type: 'object',
+      required: ['toolName'],
+      properties: {
+        toolName: { type: 'string', description: 'Tool being assessed, such as Bash, Edit, or Write' },
+        command: { type: 'string', description: 'Optional shell command when toolName is Bash' },
+        filePath: { type: 'string', description: 'Optional primary file path for edit-like tools' },
+        changedFiles: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional affected-file list used to estimate blast radius',
+        },
+        repoPath: { type: 'string', description: 'Optional repository path used for git-aware integrity checks' },
+        baseBranch: { type: 'string', description: 'Optional protected base branch override (defaults to main)' },
         requirePrForReleaseSensitive: { type: 'boolean', description: 'When true, release-sensitive changes on non-base branches require an open PR' },
         requireVersionNotBehindBase: { type: 'boolean', description: 'When true, release-sensitive changes cannot lag behind the base branch package version' },
       },

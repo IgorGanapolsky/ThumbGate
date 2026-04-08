@@ -224,6 +224,7 @@ test('commerce MCP profile has the right tools', () => {
     'prevention_rules',
     'feedback_stats',
     'feedback_summary',
+    'workflow_sentinel',
   ];
   assert.deepEqual(allowlists.profiles.commerce.sort(), expected.sort());
 });
