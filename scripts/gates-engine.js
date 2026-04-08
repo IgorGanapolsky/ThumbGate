@@ -11,6 +11,9 @@ const {
   DEFAULT_BASE_BRANCH,
   evaluateOperationalIntegrity,
 } = require('./operational-integrity');
+const {
+  evaluateWorkflowSentinel,
+} = require('./workflow-sentinel');
 
 /**
  * Computes the SHA-256 hash of an executable binary to prevent path-based bypasses.
@@ -764,6 +767,16 @@ function buildReasoning(gate, toolName, toolInput, extras = {}) {
     steps.push(`Memory guard matched (${extras.memoryGuard.source}): ${extras.memoryGuard.reason}`);
   }
 
+  if (extras.workflowSentinel) {
+    steps.push(`Workflow sentinel risk: ${extras.workflowSentinel.band} (${extras.workflowSentinel.riskScore})`);
+    if (extras.workflowSentinel.blastRadius && extras.workflowSentinel.blastRadius.summary) {
+      steps.push(`Workflow sentinel blast radius: ${extras.workflowSentinel.blastRadius.summary}`);
+    }
+    for (const remediation of (extras.workflowSentinel.remediations || []).slice(0, 3)) {
+      steps.push(`Workflow sentinel remediation: ${remediation.title} — ${remediation.action}`);
+    }
+  }
+
   // 5. Unless condition status
   if (gate.unless) {
     steps.push(`Bypassable via satisfy_gate("${gate.unless}") — not currently satisfied`);
@@ -973,6 +986,39 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
   };
 }
 
+function buildSentinelGateResult(report) {
+  return {
+    decision: report.decision,
+    gate: 'workflow-sentinel',
+    message: `${report.summary} ${report.blastRadius.summary}`,
+    severity: report.decision === 'deny' ? 'critical' : 'high',
+    reasoning: Array.isArray(report.reasoning) ? report.reasoning.slice() : [],
+    sentinel: report,
+  };
+}
+
+function enrichResultWithSentinel(result, report) {
+  if (!result || !report || report.decision === 'allow') {
+    return result;
+  }
+
+  const next = {
+    ...result,
+    reasoning: Array.isArray(result.reasoning) ? result.reasoning.slice() : [],
+    sentinel: report,
+  };
+
+  if (report.blastRadius && report.blastRadius.summary) {
+    next.message = `${result.message} Workflow sentinel: ${report.blastRadius.summary}`;
+  }
+
+  next.reasoning = next.reasoning.concat(
+    Array.isArray(report.reasoning) ? report.reasoning : []
+  );
+
+  return next;
+}
+
 async function checkMetricCondition(metricCondition) {
   if (!metricCondition) return true;
   const { getBusinessMetrics } = require('./semantic-layer');
@@ -1058,20 +1104,40 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     }
   }
 
+  const sentinelReport = evaluateWorkflowSentinel(toolName, toolInput, {
+    governanceState: loadGovernanceState(),
+  });
   const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
   if (memoryGuard) {
-    recordStat(memoryGuard.gate, 'block');
+    const enrichedMemoryGuard = enrichResultWithSentinel(memoryGuard, sentinelReport);
+    recordStat(enrichedMemoryGuard.gate, 'block');
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
       decision: 'deny',
-      gateId: memoryGuard.gate,
-      message: memoryGuard.message,
-      severity: memoryGuard.severity,
+      gateId: enrichedMemoryGuard.gate,
+      message: enrichedMemoryGuard.message,
+      severity: enrichedMemoryGuard.severity,
       source: 'gates-engine',
     });
     auditToFeedback(auditRecord);
-    return memoryGuard;
+    return enrichedMemoryGuard;
+  }
+
+  if (sentinelReport && sentinelReport.decision !== 'allow') {
+    const sentinelResult = buildSentinelGateResult(sentinelReport);
+    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn');
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: sentinelResult.decision,
+      gateId: sentinelResult.gate,
+      message: sentinelResult.message,
+      severity: sentinelResult.severity,
+      source: 'workflow-sentinel',
+    });
+    auditToFeedback(auditRecord);
+    return sentinelResult;
   }
 
   // Audit trail: record allow (no gate matched)
@@ -1124,20 +1190,40 @@ function evaluateGates(toolName, toolInput, configPath) {
     }
   }
 
+  const sentinelReport = evaluateWorkflowSentinel(toolName, toolInput, {
+    governanceState: loadGovernanceState(),
+  });
   const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
   if (memoryGuard) {
-    recordStat(memoryGuard.gate, 'block');
+    const enrichedMemoryGuard = enrichResultWithSentinel(memoryGuard, sentinelReport);
+    recordStat(enrichedMemoryGuard.gate, 'block');
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
       decision: 'deny',
-      gateId: memoryGuard.gate,
-      message: memoryGuard.message,
-      severity: memoryGuard.severity,
+      gateId: enrichedMemoryGuard.gate,
+      message: enrichedMemoryGuard.message,
+      severity: enrichedMemoryGuard.severity,
       source: 'gates-engine',
     });
     auditToFeedback(auditRecord);
-    return memoryGuard;
+    return enrichedMemoryGuard;
+  }
+
+  if (sentinelReport && sentinelReport.decision !== 'allow') {
+    const sentinelResult = buildSentinelGateResult(sentinelReport);
+    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn');
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: sentinelResult.decision,
+      gateId: sentinelResult.gate,
+      message: sentinelResult.message,
+      severity: sentinelResult.severity,
+      source: 'workflow-sentinel',
+    });
+    auditToFeedback(auditRecord);
+    return sentinelResult;
   }
 
   // Audit trail: record allow

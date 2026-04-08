@@ -55,6 +55,9 @@ const {
 const {
   evaluateOperationalIntegrity,
 } = require('../../scripts/operational-integrity');
+const {
+  evaluateWorkflowSentinel,
+} = require('../../scripts/workflow-sentinel');
 const { diagnoseFailure } = require('../../scripts/failure-diagnostics');
 const {
   analyzeCodeGraphImpact,
@@ -90,6 +93,10 @@ const {
 const { TOOLS } = require('../../scripts/tool-registry');
 const { reflect: reflectOnFeedback } = require('../../scripts/reflector-agent');
 const { submitProductIssue } = require('../../scripts/product-feedback');
+const {
+  assembleUnifiedContext,
+  formatUnifiedContext,
+} = require('../../scripts/context-manager');
 
 const PRO_CHECKOUT_URL = 'https://thumbgate-production.up.railway.app/checkout/pro';
 
@@ -508,6 +515,16 @@ async function callToolInner(name, args) {
       });
     case 'recall':
       return buildRecallResponse(args);
+    case 'unified_context': {
+      const ctx = assembleUnifiedContext({
+        query: args.query || '',
+        toolName: args.toolName,
+        toolInput: args.toolInput,
+        agentType: args.agentType,
+        repoPath: args.repoPath,
+      });
+      return toTextResult(formatUnifiedContext(ctx));
+    }
     case 'satisfy_gate': {
       if (!args.gate) {
         throw new Error('gate is required');
@@ -588,6 +605,20 @@ async function callToolInner(name, args) {
         requirePrForReleaseSensitive: args.requirePrForReleaseSensitive === true,
         requireVersionNotBehindBase: args.requireVersionNotBehindBase === true,
         branchGovernance: getBranchGovernanceState(),
+      }));
+    case 'workflow_sentinel':
+      return toTextResult(evaluateWorkflowSentinel(args.toolName, {
+        command: args.command,
+        path: args.filePath,
+        changedFiles: Array.isArray(args.changedFiles) ? args.changedFiles : [],
+        repoPath: args.repoPath,
+        baseBranch: args.baseBranch,
+      }, {
+        repoPath: args.repoPath,
+        baseBranch: args.baseBranch,
+        affectedFiles: Array.isArray(args.changedFiles) ? args.changedFiles : undefined,
+        requirePrForReleaseSensitive: args.requirePrForReleaseSensitive === true,
+        requireVersionNotBehindBase: args.requireVersionNotBehindBase === true,
       }));
     case 'register_claim_gate':
       return toTextResult(registerClaimGate(args.claimPattern, args.requiredActions, args.message));

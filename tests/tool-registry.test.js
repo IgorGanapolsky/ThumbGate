@@ -83,6 +83,7 @@ test('scope control tools expose the task-scope and protected-approval workflow'
   const getBranchTool = TOOLS.find((tool) => tool.name === 'get_branch_governance');
   const approveTool = TOOLS.find((tool) => tool.name === 'approve_protected_action');
   const integrityTool = TOOLS.find((tool) => tool.name === 'check_operational_integrity');
+  const sentinelTool = TOOLS.find((tool) => tool.name === 'workflow_sentinel');
 
   assert.ok(setScopeTool, 'set_task_scope tool must exist');
   assert.ok(getScopeTool, 'get_scope_state tool must exist');
@@ -90,6 +91,7 @@ test('scope control tools expose the task-scope and protected-approval workflow'
   assert.ok(getBranchTool, 'get_branch_governance tool must exist');
   assert.ok(approveTool, 'approve_protected_action tool must exist');
   assert.ok(integrityTool, 'check_operational_integrity tool must exist');
+  assert.ok(sentinelTool, 'workflow_sentinel tool must exist');
 
   assert.equal(setScopeTool.annotations.destructiveHint, true);
   assert.equal(getScopeTool.annotations.readOnlyHint, true);
@@ -97,10 +99,13 @@ test('scope control tools expose the task-scope and protected-approval workflow'
   assert.equal(getBranchTool.annotations.readOnlyHint, true);
   assert.equal(approveTool.annotations.destructiveHint, true);
   assert.equal(integrityTool.annotations.readOnlyHint, true);
+  assert.equal(sentinelTool.annotations.readOnlyHint, true);
   assert.ok(setScopeTool.inputSchema.properties.allowedPaths, 'set_task_scope should expose allowedPaths');
   assert.ok(setBranchTool.inputSchema.properties.releaseVersion, 'set_branch_governance should expose releaseVersion');
   assert.ok(approveTool.inputSchema.required.includes('pathGlobs'), 'approve_protected_action should require pathGlobs');
   assert.ok(integrityTool.inputSchema.properties.requirePrForReleaseSensitive, 'check_operational_integrity should expose release-sensitive enforcement');
+  assert.ok(sentinelTool.inputSchema.required.includes('toolName'), 'workflow_sentinel should require toolName');
+  assert.ok(sentinelTool.inputSchema.properties.changedFiles, 'workflow_sentinel should expose changedFiles');
 });
 
 test('tool names are unique', () => {
