@@ -16,6 +16,9 @@ test('compareSemver orders semantic versions correctly', () => {
   assert.equal(compareSemver('0.9.10', '0.9.9'), 1);
   assert.equal(compareSemver('0.9.9', '0.9.10'), -1);
   assert.equal(compareSemver('1.0.0', '1.0.0'), 0);
+  assert.equal(compareSemver('1.0.0-beta.2', '1.0.0-beta.1'), 1);
+  assert.equal(compareSemver('1.0.0', '1.0.0-rc.1'), 1);
+  assert.equal(compareSemver('1.0.0-beta.1', '1.0.0'), -1);
 });
 
 test('findReleaseSensitiveFiles filters release surfaces by glob', () => {

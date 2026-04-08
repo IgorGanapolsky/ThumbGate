@@ -2,7 +2,12 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const dotenv = require('dotenv');
+let dotenv = null;
+try {
+  dotenv = require('dotenv');
+} catch (_) {
+  dotenv = null;
+}
 
 const DEFAULT_ENV_PATH = path.resolve(__dirname, '..', '..', '.env');
 
@@ -20,7 +25,8 @@ function loadLocalEnv(options = {}) {
     };
   }
 
-  const parsed = dotenv.parse(fs.readFileSync(resolvedPath, 'utf8'));
+  const source = fs.readFileSync(resolvedPath, 'utf8');
+  const parsed = dotenv ? dotenv.parse(source) : parseEnvFallback(source);
   const loadedKeys = [];
   const override = options.override === true;
 
@@ -39,8 +45,33 @@ function loadLocalEnv(options = {}) {
   };
 }
 
+function parseEnvFallback(source) {
+  const parsed = {};
+  for (const rawLine of String(source).split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) {
+      continue;
+    }
+    const separatorIndex = line.indexOf('=');
+    if (separatorIndex <= 0) {
+      continue;
+    }
+    const key = line.slice(0, separatorIndex).trim();
+    let value = line.slice(separatorIndex + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    parsed[key] = value;
+  }
+  return parsed;
+}
+
 module.exports = {
   DEFAULT_ENV_PATH,
   loadLocalEnv,
+  parseEnvFallback,
   resolveEnvPath,
 };

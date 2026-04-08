@@ -272,7 +272,7 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /DEFAULT_BRANCH:\s*main/);
   assert.match(workflow, /steps\.plan\.outputs\.skip_publish == 'true'/);
   assert.match(workflow, /steps\.plan\.outputs\.publish_npm == 'true'/);
-  assert.match(workflow, /npm publish --provenance/);
+  assert.match(workflow, /npm publish --tag "\$\{\{\s*steps\.plan\.outputs\.npm_tag \|\| 'latest'\s*\}\}" --provenance/);
 });
 
 test('CODEOWNERS explicitly covers release-critical governance surfaces', () => {
@@ -410,7 +410,7 @@ test('Dependabot auto-merge trusts the pull request author instead of the trigge
   assert.doesNotMatch(workflow, /if:\s*github\.actor == 'dependabot\[bot\]'/);
 });
 
-test('Publish Claude Plugin workflow builds the MCPB and uploads stable release assets', () => {
+test('Publish Claude Plugin workflow builds the MCPB and uploads channel-safe release assets', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'publish-claude-plugin.yml'), 'utf8');
 
   assert.match(workflow, /name: Publish Claude Plugin/);
@@ -422,14 +422,16 @@ test('Publish Claude Plugin workflow builds the MCPB and uploads stable release 
   assert.match(workflow, /scripts\/distribution-surfaces/);
   assert.match(workflow, /version=\$\(node -p "require\('\.\/package\.json'\)\.version"\)/);
   assert.match(workflow, /versioned_asset=\$\(node -e "const \{ getClaudePluginVersionedAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getClaudePluginVersionedAssetName\(\)\)"\)/);
-  assert.match(workflow, /latest_asset=\$\(node -e "const \{ CLAUDE_PLUGIN_LATEST_ASSET_NAME \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(CLAUDE_PLUGIN_LATEST_ASSET_NAME\)"\)/);
+  assert.match(workflow, /channel_asset=\$\(node -e "const \{ getClaudePluginChannelAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getClaudePluginChannelAssetName\(\)\)"\)/);
+  assert.match(workflow, /is_prerelease=\$\(node -e "const \{ isPrereleaseVersion \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(String\(isPrereleaseVersion\(\)\)\)"\)/);
   assert.doesNotMatch(workflow, /require\\+"/);
   assert.match(workflow, /claude-plugin-mcpb/);
   assert.match(workflow, /gh release create/);
   assert.match(workflow, /gh release upload/);
   assert.match(workflow, /--clobber/);
-  assert.match(workflow, /CLAUDE_PLUGIN_LATEST_ASSET_NAME/);
-  assert.match(workflow, /steps\.assets\.outputs\.latest_asset/);
+  assert.match(workflow, /Create channel asset alias/);
+  assert.match(workflow, /steps\.assets\.outputs\.channel_asset/);
+  assert.match(workflow, /--prerelease/);
 });
 
 test('Sentry release workflow serializes main release stamping', () => {

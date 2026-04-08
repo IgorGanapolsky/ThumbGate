@@ -88,3 +88,23 @@ test('sync-version detects landing page hero badge drift without relying on trai
     fs.writeFileSync(landingPath, original);
   }
 });
+
+test('sync-version detects public landing footer drift', () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const publicIndexPath = path.join(ROOT, 'public', 'index.html');
+  const original = fs.readFileSync(publicIndexPath, 'utf8');
+
+  try {
+    fs.writeFileSync(
+      publicIndexPath,
+      original.replace(/MIT License · v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'MIT License · v0.0.1')
+    );
+    const result = syncVersion({ checkOnly: true });
+    assert.ok(
+      result.drifted.some((entry) => entry.file === 'public/index.html' && entry.field === 'footer-version'),
+      `expected footer drift, found: ${JSON.stringify(result.drifted)}`
+    );
+  } finally {
+    fs.writeFileSync(publicIndexPath, original);
+  }
+});

@@ -18,6 +18,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
+const VERSION_PATTERN = '\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?';
 
 function explicitPinnedServeArgs(version) {
   return ['--yes', '--package', `thumbgate@${version}`, 'thumbgate', 'serve'];
@@ -308,7 +309,7 @@ function syncVersion(opts) {
     'plugins/codex-profile/INSTALL.md',
     'plugins/opencode-profile/INSTALL.md',
   ];
-  const pinnedPackagePattern = /thumbgate@\d+\.\d+\.\d+/g;
+  const pinnedPackagePattern = new RegExp(`thumbgate@${VERSION_PATTERN}`, 'g');
   for (const relPath of pinnedPackageTargets) {
     const filePath = path.join(PROJECT_ROOT, relPath);
     if (!fs.existsSync(filePath)) continue;
@@ -329,7 +330,7 @@ function syncVersion(opts) {
   if (fs.existsSync(path.join(PROJECT_ROOT, landingPath))) {
     const landingContent = fs.readFileSync(path.join(PROJECT_ROOT, landingPath), 'utf-8');
     // Match any version pattern in the hero badge
-    const badgeMatch = landingContent.match(/v(\d+\.\d+\.\d+) — Hosted API/);
+    const badgeMatch = landingContent.match(new RegExp(`v(${VERSION_PATTERN}) — Hosted API`));
     if (badgeMatch && badgeMatch[1] !== version) {
       drifted.push({ file: landingPath, field: 'hero-badge', current: badgeMatch[1] });
       if (!checkOnly) {
@@ -337,7 +338,7 @@ function syncVersion(opts) {
       }
     }
     // JSON snippet version
-    const jsonMatch = landingContent.match(/"version"<\/span><span class="out">: <\/span><span class="val">"(\d+\.\d+\.\d+)"/);
+    const jsonMatch = landingContent.match(new RegExp(`"version"<\\/span><span class="out">: <\\/span><span class="val">"(${VERSION_PATTERN})"`));
     if (jsonMatch && jsonMatch[1] !== version) {
       drifted.push({ file: landingPath, field: 'json-snippet', current: jsonMatch[1] });
       if (!checkOnly) {
@@ -351,7 +352,7 @@ function syncVersion(opts) {
   const mcpSubmPath = 'docs/mcp-hub-submission.md';
   if (fs.existsSync(path.join(PROJECT_ROOT, mcpSubmPath))) {
     const mcpContent = fs.readFileSync(path.join(PROJECT_ROOT, mcpSubmPath), 'utf-8');
-    const versionMatch = mcpContent.match(/## Version\s+(\d+\.\d+\.\d+)/);
+    const versionMatch = mcpContent.match(new RegExp(`## Version\\s+(${VERSION_PATTERN})`));
     if (versionMatch && versionMatch[1] !== version) {
       drifted.push({ file: mcpSubmPath, field: 'version-heading', current: versionMatch[1] });
       if (!checkOnly) {
@@ -366,18 +367,18 @@ function syncVersion(opts) {
   if (fs.existsSync(path.join(PROJECT_ROOT, publicIndexPath))) {
     const publicIndexFile = path.join(PROJECT_ROOT, publicIndexPath);
     const publicContent = fs.readFileSync(publicIndexFile, 'utf-8');
-    const heroVersionMatch = publicContent.match(/New in v(\d+\.\d+\.\d+):?/);
+    const heroVersionMatch = publicContent.match(new RegExp(`New in v(${VERSION_PATTERN}):?`));
     if (heroVersionMatch && heroVersionMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'hero-release-note', current: heroVersionMatch[1] });
       if (!checkOnly) {
         fs.writeFileSync(
           publicIndexFile,
-          publicContent.replace(/New in v\d+\.\d+\.\d+:?/, `New in v${version}`)
+          publicContent.replace(new RegExp(`New in v${VERSION_PATTERN}:?`), `New in v${version}`)
         );
       }
     }
 
-    const proofMatch = publicContent.match(/Versioned proof: v(\d+\.\d+\.\d+)/);
+    const proofMatch = publicContent.match(new RegExp(`Versioned proof: v(${VERSION_PATTERN})`));
     if (proofMatch && proofMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'proof-pill', current: proofMatch[1] });
       if (!checkOnly) {
@@ -385,11 +386,17 @@ function syncVersion(opts) {
       }
     }
 
-    const footerMatch = publicContent.match(/Context Gateway • v(\d+\.\d+\.\d+)/);
+    const footerMatch = publicContent.match(new RegExp(`(?:Context Gateway|MIT License) [•·] v(${VERSION_PATTERN})`));
     if (footerMatch && footerMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'footer-version', current: footerMatch[1] });
       if (!checkOnly) {
-        replaceInFile(publicIndexPath, `Context Gateway • v${footerMatch[1]}`, `Context Gateway • v${version}`);
+        fs.writeFileSync(
+          publicIndexFile,
+          publicContent.replace(
+            new RegExp(`((?:Context Gateway|MIT License) [•·] )v${VERSION_PATTERN}`),
+            `$1v${version}`
+          )
+        );
       }
     }
     targets.push(publicIndexPath);
@@ -400,13 +407,13 @@ function syncVersion(opts) {
   const serverStdioFile = path.join(PROJECT_ROOT, serverStdioPath);
   if (fs.existsSync(serverStdioFile)) {
     const serverStdioContent = fs.readFileSync(serverStdioFile, 'utf-8');
-    const serverInfoMatch = serverStdioContent.match(/version:\s*'(\d+\.\d+\.\d+)'/);
+    const serverInfoMatch = serverStdioContent.match(new RegExp(`version:\\s*'(${VERSION_PATTERN})'`));
     if (serverInfoMatch && serverInfoMatch[1] !== version) {
       drifted.push({ file: serverStdioPath, field: 'server-info-version', current: serverInfoMatch[1] });
       if (!checkOnly) {
         fs.writeFileSync(
           serverStdioFile,
-          serverStdioContent.replace(/version:\s*'\d+\.\d+\.\d+'/, `version: '${version}'`)
+          serverStdioContent.replace(new RegExp(`version:\\s*'${VERSION_PATTERN}'`), `version: '${version}'`)
         );
       }
     }

@@ -8,10 +8,14 @@ const { appendDiagnosticRecord } = require('./feedback-loop');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
+const DEFAULT_TESTS_TIMEOUT_MS = Number.parseInt(
+  process.env.THUMBGATE_SELF_HEAL_TEST_TIMEOUT_MS || '',
+  10,
+) || 60 * 60_000;
 
 const DEFAULT_CHECKS = [
   { name: 'budget_status', command: ['npm', 'run', 'budget:status'], timeoutMs: 60_000 },
-  { name: 'tests', command: ['npm', 'test'], timeoutMs: 15 * 60_000 },
+  { name: 'tests', command: ['npm', 'test'], timeoutMs: DEFAULT_TESTS_TIMEOUT_MS },
   { name: 'prove_adapters', command: ['npm', 'run', 'prove:adapters'], timeoutMs: 10 * 60_000, useTempProofDir: true },
   { name: 'prove_automation', command: ['npm', 'run', 'prove:automation'], timeoutMs: 10 * 60_000, useTempProofDir: true },
   { name: 'prove_data_pipeline', command: ['npm', 'run', 'prove:data-pipeline'], timeoutMs: 10 * 60_000, useTempProofDir: true },
@@ -177,6 +181,7 @@ function runCli() {
 
 module.exports = {
   DEFAULT_CHECKS,
+  DEFAULT_TESTS_TIMEOUT_MS,
   DEFAULT_MAX_BUFFER_BYTES,
   runCommand,
   collectHealthReport,

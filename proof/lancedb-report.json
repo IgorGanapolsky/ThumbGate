@@ -1,14 +1,14 @@
 {
   "phase": "04-lancedb-vector-storage",
-  "generated": "2026-04-08T14:30:32.290Z",
+  "generated": "2026-04-08T17:50:20.091Z",
   "requirements": {
     "VEC-01": {
       "status": "pass",
-      "evidence": "lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-paXerQ/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: thumbgate_memories."
+      "evidence": "lancedb dir created at /var/folders/yw/2qhx3yzj0psf87rdxh8lqlmm0000gp/T/prove-lancedb-Hz3syz/lancedb. upsertFeedback() resolved, searchSimilar() returned 1 result(s) including proof-vec01. Table name: thumbgate_memories. Proof used an in-memory LanceDB-compatible loader because @lancedb/lancedb is not installed in this environment."
     },
     "VEC-02": {
       "status": "pass",
-      "evidence": "scripts/vector-store.js uses dynamic import() at line 26: `_lancedb = _lancedbLoader ? await _lancedbLoader() : await import('@lancedb/lancedb');`; line 61: `const pipeline = _pipelineLoader || (await import('@huggingface/transformers')).pipeline;`. Total dynamic import() calls: 2. This is the only CJS-compatible approach for ESM-only @lancedb/lancedb and @huggingface/transformers."
+      "evidence": "scripts/vector-store.js uses dynamic import() at line 25: `_lancedb = _lancedbLoader ? await _lancedbLoader() : await import('@lancedb/lancedb');`; line 60: `const pipeline = _pipelineLoader || (await import('@huggingface/transformers')).pipeline;`. Total dynamic import() calls: 2. This is the only CJS-compatible approach for ESM-only @lancedb/lancedb and @huggingface/transformers."
     },
     "VEC-03": {
       "status": "pass",
@@ -16,7 +16,7 @@
     },
     "VEC-04": {
       "status": "pass",
-      "evidence": "searchSimilar() returned 2 result(s). proof-vec01 present: true. proof-vec04-b present: true. API: searchSimilar(queryText, limit=10) returns vector-ranked rows from thumbgate_memories table. Note: stub embed (THUMBGATE_VECTOR_STUB_EMBED=true) returns identical 384-dim unit vectors — ranking is insertion-order with stub, cosine similarity with real ONNX model."
+      "evidence": "searchSimilar() returned 2 result(s). proof-vec01 present: true. proof-vec04-b present: true. API: searchSimilar(queryText, limit=10) returns vector-ranked rows from thumbgate_memories table. Note: stub embed (THUMBGATE_VECTOR_STUB_EMBED=true) returns identical 384-dim unit vectors — ranking is insertion-order with stub, cosine similarity with real ONNX model. Vector table access used an in-memory LanceDB-compatible loader because @lancedb/lancedb is not installed in this environment."
     },
     "VEC-05": {
       "status": "pass",

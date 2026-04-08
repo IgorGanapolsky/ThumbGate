@@ -174,20 +174,63 @@ function readPackageVersion(repoPath, ref = 'HEAD') {
 }
 
 function parseSemver(version) {
-  const match = String(version || '').trim().match(/^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/);
+  const match = String(version || '').trim().match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$/);
   if (!match) return null;
-  return match.slice(1).map((part) => Number(part));
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3]),
+    prerelease: match[4] ? match[4].split('.').filter(Boolean) : [],
+  };
+}
+
+function isNumericIdentifier(value) {
+  return /^\d+$/.test(String(value || ''));
+}
+
+function comparePrerelease(left = [], right = []) {
+  const maxLength = Math.max(left.length, right.length);
+  for (let index = 0; index < maxLength; index += 1) {
+    const leftIdentifier = left[index];
+    const rightIdentifier = right[index];
+
+    if (leftIdentifier === undefined) return -1;
+    if (rightIdentifier === undefined) return 1;
+    if (leftIdentifier === rightIdentifier) continue;
+
+    const leftIsNumeric = isNumericIdentifier(leftIdentifier);
+    const rightIsNumeric = isNumericIdentifier(rightIdentifier);
+
+    if (leftIsNumeric && rightIsNumeric) {
+      const leftValue = Number(leftIdentifier);
+      const rightValue = Number(rightIdentifier);
+      if (leftValue > rightValue) return 1;
+      if (leftValue < rightValue) return -1;
+      continue;
+    }
+
+    if (leftIsNumeric !== rightIsNumeric) {
+      return leftIsNumeric ? -1 : 1;
+    }
+
+    const lexical = String(leftIdentifier).localeCompare(String(rightIdentifier));
+    if (lexical !== 0) return lexical > 0 ? 1 : -1;
+  }
+
+  return 0;
 }
 
 function compareSemver(left, right) {
   const a = parseSemver(left);
   const b = parseSemver(right);
   if (!a || !b) return null;
-  for (let i = 0; i < 3; i += 1) {
-    if (a[i] > b[i]) return 1;
-    if (a[i] < b[i]) return -1;
-  }
-  return 0;
+  if (a.major !== b.major) return a.major > b.major ? 1 : -1;
+  if (a.minor !== b.minor) return a.minor > b.minor ? 1 : -1;
+  if (a.patch !== b.patch) return a.patch > b.patch ? 1 : -1;
+  if (a.prerelease.length === 0 && b.prerelease.length === 0) return 0;
+  if (a.prerelease.length === 0) return 1;
+  if (b.prerelease.length === 0) return -1;
+  return comparePrerelease(a.prerelease, b.prerelease);
 }
 
 function listChangedFilesAgainstBase(repoPath, baseBranch = DEFAULT_BASE_BRANCH, { fetchIfMissing = false } = {}) {

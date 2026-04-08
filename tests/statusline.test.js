@@ -158,6 +158,7 @@ test('statusline follows the persisted active project when Claude is running fro
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
 test('statusline shows Pro when a valid ThumbGate license is present', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-license-'));
   const homeDir = path.join(tmpDir, 'home');
