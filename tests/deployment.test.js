@@ -15,6 +15,8 @@ fs.writeFileSync(
   process.env.THUMBGATE_BUILD_METADATA_PATH,
   JSON.stringify({ buildSha: 'deploy-test-build-sha', generatedAt: '2026-03-20T00:00:00.000Z' }, null, 2)
 );
+process.env.THUMBGATE_BUILD_SHA = 'deploy-test-env-build-sha';
+process.env.THUMBGATE_BUILD_GENERATED_AT = '2026-03-21T00:00:00.000Z';
 // Use insecure mode so auth doesn't interfere with /health unauthenticated check
 process.env.THUMBGATE_ALLOW_INSECURE = 'true';
 
@@ -38,6 +40,8 @@ test.after(async () => {
   await new Promise((resolve) => handle.server.close(resolve));
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
   delete process.env.THUMBGATE_BUILD_METADATA_PATH;
+  delete process.env.THUMBGATE_BUILD_SHA;
+  delete process.env.THUMBGATE_BUILD_GENERATED_AT;
 });
 
 test('GET /health returns 200 without authentication', async () => {
@@ -64,7 +68,7 @@ test('GET /health returns package version', async () => {
 test('GET /health returns stamped build metadata', async () => {
   const res = await fetch(deployUrl('/health'));
   const body = await res.json();
-  assert.equal(body.buildSha, 'deploy-test-build-sha');
+  assert.equal(body.buildSha, 'deploy-test-env-build-sha');
 });
 
 test('GET /health returns numeric uptime', async () => {
@@ -216,6 +220,8 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
   assert.match(workflow, /retry_railway\(\) \{/);
   assert.match(workflow, /max_attempts=4/);
   assert.match(workflow, /set THUMBGATE_API_KEY/);
+  assert.match(workflow, /set THUMBGATE_BUILD_SHA/);
+  assert.match(workflow, /set THUMBGATE_BUILD_GENERATED_AT/);
   assert.match(workflow, /set THUMBGATE_PUBLIC_APP_ORIGIN/);
   assert.match(workflow, /set THUMBGATE_BILLING_API_BASE_URL/);
   assert.match(workflow, /set STRIPE_SECRET_KEY/);
@@ -236,6 +242,14 @@ test('Deploy to Railway workflow always promotes the latest main commit, even fo
   assert.match(workflow, /SHOULD_DEPLOY=true/);
   assert.doesNotMatch(workflow, /grep -Eqv '\^\(\\\.github\/\|tests\/\)'/);
   assert.doesNotMatch(workflow, /Railway deploy skipped: only workflow\/test files changed on this commit\./);
+});
+
+test('Deploy to Railway workflow stamps runtime deployment env metadata before health verification', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+
+  assert.match(workflow, /THUMBGATE_BUILD_SHA="\$GITHUB_SHA"/);
+  assert.match(workflow, /THUMBGATE_BUILD_GENERATED_AT="\$\(date -u \+'\%Y-\%m-\%dT\%H:\%M:\%SZ'\)"/);
+  assert.match(workflow, /LIVE_SHA=\$\(node -e "const fs = require\('fs'\); const data = JSON\.parse/);
 });
 
 test('Publish to NPM workflow uses the tested publish-decision guardrail', () => {
