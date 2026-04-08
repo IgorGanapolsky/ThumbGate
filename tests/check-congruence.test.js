@@ -7,6 +7,7 @@ const {
   compareGitHubAbout,
   loadGitHubAboutConfig,
   normalizeTopics,
+  verifyLiveGitHubAbout,
 } = require('../scripts/github-about');
 
 const ROOT = path.join(__dirname, '..');
@@ -94,4 +95,68 @@ test('GitHub About comparison normalizes topic order and flags real drift', () =
   assert.match(errors.join('\n'), /description mismatch/);
   assert.match(errors.join('\n'), /homepage mismatch/);
   assert.match(errors.join('\n'), /topics mismatch/);
+});
+
+test('verifyLiveGitHubAbout retries until eventual consistency resolves', async () => {
+  const about = loadGitHubAboutConfig(ROOT);
+  const fetchCalls = [];
+  const sleepCalls = [];
+  let attempt = 0;
+
+  const result = await verifyLiveGitHubAbout({
+    expected: about,
+    attempts: 4,
+    delayMs: 25,
+    fetcher: async () => {
+      fetchCalls.push(attempt);
+      attempt += 1;
+      if (attempt < 3) {
+        return {
+          description: `${about.description} drift`,
+          homepageUrl: about.homepageUrl,
+          topics: about.topics,
+        };
+      }
+      return {
+        description: about.description,
+        homepageUrl: about.homepageUrl,
+        topics: about.topics,
+      };
+    },
+    sleep: async (delayMs) => {
+      sleepCalls.push(delayMs);
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.attemptsUsed, 3);
+  assert.deepEqual(result.errors, []);
+  assert.equal(fetchCalls.length, 3);
+  assert.deepEqual(sleepCalls, [25, 50]);
+});
+
+test('verifyLiveGitHubAbout returns final drift after exhausting retries', async () => {
+  const about = loadGitHubAboutConfig(ROOT);
+  const sleepCalls = [];
+
+  const result = await verifyLiveGitHubAbout({
+    expected: about,
+    attempts: 3,
+    delayMs: 10,
+    fetcher: async () => ({
+      description: `${about.description} drift`,
+      homepageUrl: 'https://example.com',
+      topics: ['thumbgate'],
+    }),
+    sleep: async (delayMs) => {
+      sleepCalls.push(delayMs);
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.attemptsUsed, 3);
+  assert.match(result.errors.join('\n'), /description mismatch/);
+  assert.match(result.errors.join('\n'), /homepage mismatch/);
+  assert.match(result.errors.join('\n'), /topics mismatch/);
+  assert.deepEqual(sleepCalls, [10, 20]);
 });
