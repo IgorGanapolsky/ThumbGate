@@ -8,6 +8,7 @@ const path = require('path');
 
 const {
   getStatuslineLinks,
+  isLoopbackHost,
   readRuntimeState,
   runtimeStatePath,
   shouldReuseBootingState,
@@ -106,9 +107,33 @@ test('getStatuslineLinks falls back to command hints when no local Pro bootstrap
   assert.match(result.lessonsLabel, /thumbgate lessons/);
 });
 
+test('getStatuslineLinks never bootstraps or links to non-local origins', async () => {
+  const launches = [];
+  const result = await getStatuslineLinks({
+    origin: 'https://thumbgate.example.com',
+    probeLocalServer: async () => {
+      throw new Error('should not probe non-local origins');
+    },
+    resolveKey: () => ({ key: 'tg_pro_remote' }),
+    launchLocalServer: () => launches.push('unexpected'),
+  });
+
+  assert.equal(result.state, 'unavailable');
+  assert.equal(result.dashboardUrl, '');
+  assert.equal(result.lessonsUrl, '');
+  assert.deepEqual(launches, []);
+});
+
 test('shouldReuseBootingState only keeps fresh, live state files', () => {
   assert.equal(shouldReuseBootingState(null), false);
   assert.equal(shouldReuseBootingState({ pid: 999999, startedAt: new Date().toISOString() }), false);
   assert.equal(shouldReuseBootingState({ pid: process.pid, startedAt: new Date(Date.now() - 1000).toISOString() }), true);
   assert.equal(shouldReuseBootingState({ pid: process.pid, startedAt: new Date(Date.now() - 60000).toISOString() }), false);
+});
+
+test('isLoopbackHost only allows localhost addresses', () => {
+  assert.equal(isLoopbackHost('localhost'), true);
+  assert.equal(isLoopbackHost('127.0.0.1'), true);
+  assert.equal(isLoopbackHost('::1'), true);
+  assert.equal(isLoopbackHost('thumbgate.example.com'), false);
 });
