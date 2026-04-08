@@ -6,7 +6,7 @@ const {
   isSourceCheckout,
   publishedCliAvailable,
 } = require('./mcp-config');
-const { runPublishedCliHelp, publishedCliArgs } = require('./published-cli');
+const { publishedCliShellCommand } = require('./published-cli');
 
 const PKG_ROOT = path.join(__dirname, '..');
 const featureSupportCache = new Map();
@@ -28,15 +28,7 @@ function publishedHookCommandsAvailable(version) {
     return featureSupportCache.get(version);
   }
 
-  let available = false;
-  try {
-    const helpText = runPublishedCliHelp(version, { timeout: 8000 });
-    available = ['gate-check', 'cache-update', 'statusline-render', 'hook-auto-capture', 'session-start']
-      .every((command) => helpText.includes(command));
-  } catch {
-    available = false;
-  }
-
+  const available = true;
   featureSupportCache.set(version, available);
   return available;
 }
@@ -44,12 +36,12 @@ function publishedHookCommandsAvailable(version) {
 function resolveCliBaseCommand() {
   const version = packageVersion();
   if (publishedHookCommandsAvailable(version)) {
-    return `npx ${publishedCliArgs(version).map(shellQuote).join(' ')}`;
+    return publishedCliShellCommand(version);
   }
   if (isSourceCheckout(PKG_ROOT)) {
     return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))}`;
   }
-  return `npx -y thumbgate@${version}`;
+  return publishedCliShellCommand(version);
 }
 
 function buildPortableHookCommand(subcommand) {

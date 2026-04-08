@@ -44,8 +44,23 @@ if [ -f "$THUMBGATE_CACHE" ]; then
   ' "$THUMBGATE_CACHE" 2>/dev/null)"
 fi
 
-# Background refresh from REST API when cache is stale (>120s)
 _NOW=$(date +%s)
+if [ "$UP" = "0" ] && [ "$DOWN" = "0" ] || [ $(( _NOW - ${CACHE_TS:-0} )) -gt 120 ]; then
+  _LOCAL_STATS_JSON=$(node "${SCRIPT_DIR}/statusline-local-stats.js" 2>/dev/null)
+  if [ -n "$_LOCAL_STATS_JSON" ]; then
+    mkdir -p "$(dirname "$THUMBGATE_CACHE")"
+    printf '%s' "$_LOCAL_STATS_JSON" > "$THUMBGATE_CACHE"
+    eval "$(echo "$_LOCAL_STATS_JSON" | jq -r '
+      @sh "UP=\(.thumbs_up // "0")",
+      @sh "DOWN=\(.thumbs_down // "0")",
+      @sh "LESSONS=\(.lessons // "0")",
+      @sh "TREND=\(.trend // "?")",
+      @sh "CACHE_TS=\(.updated_at // "0")"
+    ' 2>/dev/null)"
+  fi
+fi
+
+# Background refresh from REST API when cache is stale (>120s)
 if [ $(( _NOW - ${CACHE_TS:-0} )) -gt 120 ]; then
   (
     _R=$(curl -s --max-time 3 "http://localhost:3456/v1/feedback/stats" -H "Authorization: Bearer ${THUMBGATE_API_KEY:-tg_creator_dev_enterprise}" 2>/dev/null)

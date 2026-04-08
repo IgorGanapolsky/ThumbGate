@@ -11,6 +11,7 @@ const { activateLicense } = require('../scripts/license');
 const STATUSLINE_PATH = path.join(__dirname, '..', 'scripts', 'statusline.sh');
 const CACHE_UPDATER_PATH = path.join(__dirname, '..', 'scripts', 'hook-thumbgate-cache-updater.js');
 const AUTO_CAPTURE_HOOK_PATH = path.join(__dirname, '..', 'scripts', 'hook-auto-capture.sh');
+const LOCAL_STATS_PATH = path.join(__dirname, '..', 'scripts', 'statusline-local-stats.js');
 const PKG_VERSION = require('../package.json').version;
 
 function runStatusline(cachePayload, extraEnv = {}) {
@@ -18,7 +19,13 @@ function runStatusline(cachePayload, extraEnv = {}) {
   const cachePath = path.join(tmpDir, 'statusline_cache.json');
   const homeDir = path.join(tmpDir, 'home');
   fs.mkdirSync(homeDir, { recursive: true });
-  fs.writeFileSync(cachePath, JSON.stringify(cachePayload));
+  fs.writeFileSync(
+    cachePath,
+    JSON.stringify({
+      updated_at: String(Math.floor(Date.now() / 1000)),
+      ...cachePayload,
+    })
+  );
 
   try {
     return execFileSync('bash', [STATUSLINE_PATH], {
@@ -62,6 +69,45 @@ test('statusline shows "no feedback yet" when cache has zeros', () => {
   assert.ok(out.includes('no feedback yet'), 'should show no-data message');
 });
 
+test('statusline rebuilds counters from local feedback logs when cache is empty', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-local-'));
+  const homeDir = path.join(tmpDir, 'home');
+  fs.mkdirSync(homeDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(tmpDir, 'feedback-log.jsonl'),
+    [
+      JSON.stringify({ signal: 'positive', timestamp: '2026-04-08T10:00:00.000Z', context: 'verified fix' }),
+      JSON.stringify({ signal: 'negative', timestamp: '2026-04-08T10:01:00.000Z', context: 'unverified claim' }),
+      JSON.stringify({ signal: 'negative', timestamp: '2026-04-08T10:02:00.000Z', context: 'scope creep' }),
+    ].join('\n') + '\n'
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'statusline_cache.json'),
+    JSON.stringify({ thumbs_up: '0', thumbs_down: '0', lessons: '0', trend: '?', updated_at: '0' })
+  );
+
+  try {
+    const out = execFileSync('bash', [STATUSLINE_PATH], {
+      encoding: 'utf8',
+      input: JSON.stringify({ context_window: { used_percentage: 5 } }),
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        THUMBGATE_FEEDBACK_DIR: tmpDir,
+      },
+      timeout: 5000,
+    });
+    assert.ok(out.includes('1'), 'should show reconstructed positive count');
+    assert.ok(out.includes('2'), 'should show reconstructed negative count');
+
+    const cache = JSON.parse(fs.readFileSync(path.join(tmpDir, 'statusline_cache.json'), 'utf8'));
+    assert.equal(cache.thumbs_up, '1');
+    assert.equal(cache.thumbs_down, '2');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test('statusline shows Pro when a valid ThumbGate license is present', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-license-'));
   const homeDir = path.join(tmpDir, 'home');
@@ -91,6 +137,7 @@ test('statusline shows Pro when a valid ThumbGate license is present', () => {
 
 test('cache updater hook script exists', () => {
   assert.ok(fs.existsSync(CACHE_UPDATER_PATH), 'scripts/hook-thumbgate-cache-updater.js must exist');
+  assert.ok(fs.existsSync(LOCAL_STATS_PATH), 'scripts/statusline-local-stats.js must exist');
 });
 
 test('user prompt hook records recent conversation history for statusline distillation', () => {

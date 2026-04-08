@@ -20,7 +20,6 @@ const assert = require('node:assert/strict');
 const {
   MCP_SERVER_KEY,
   LEGACY_MCP_SERVER_KEYS,
-  MCP_SERVER_CONFIG,
   resolveMcpServerConfig,
   isAlreadyInstalled,
   buildMcpConfig,
@@ -30,6 +29,15 @@ const {
 
 function makeTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-install-mcp-test-'));
+}
+
+function assertPortableMcpConfig(entry) {
+  assert.equal(entry.command, 'sh');
+  assert.deepEqual(entry.args.slice(0, 1), ['-lc']);
+  assert.match(entry.args[1], /thumbgate@\d+\.\d+\.\d+/);
+  assert.match(entry.args[1], /\.thumbgate\/runtime/);
+  assert.match(entry.args[1], /thumbgate/);
+  assert.match(entry.args[1], /serve/);
 }
 
 const savedPublishState = process.env.THUMBGATE_PUBLISH_STATE;
@@ -89,14 +97,13 @@ describe('install-mcp', () => {
   test('buildMcpConfig generates correct MCP config JSON', () => {
     const config = buildMcpConfig();
     assert.deepStrictEqual(config, {
-      thumbgate: MCP_SERVER_CONFIG,
+      thumbgate: resolveMcpServerConfig(),
     });
   });
 
-  test('MCP_SERVER_CONFIG prefers a stable local direct server path in source checkouts', () => {
-    assert.equal(MCP_SERVER_CONFIG.command, 'node');
-    assert.equal(MCP_SERVER_CONFIG.args.length, 1);
-    assert.match(MCP_SERVER_CONFIG.args[0], /adapters[\\/]mcp[\\/]server-stdio\.js$/);
+  test('resolveMcpServerConfig uses a portable launcher for home installs when the published CLI is available', () => {
+    const homeConfig = resolveMcpServerConfig();
+    assertPortableMcpConfig(homeConfig);
   });
 
   test('resolveMcpServerConfig keeps project installs scoped to the current checkout path', () => {
@@ -110,8 +117,11 @@ describe('install-mcp', () => {
     const isolatedDir = makeTmpDir();
     const projectConfig = resolveMcpServerConfig({ project: true, cwd: isolatedDir });
 
-    assert.equal(projectConfig.command, 'npx');
-    assert.deepStrictEqual(projectConfig.args, ['--yes', '--package', `thumbgate@${require('../package.json').version}`, 'thumbgate', 'serve']);
+    assert.equal(projectConfig.command, 'sh');
+    assert.deepEqual(projectConfig.args.slice(0, 1), ['-lc']);
+    assert.match(projectConfig.args[1], new RegExp(`thumbgate@${require('../package.json').version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.match(projectConfig.args[1], /\.thumbgate\/runtime/);
+    assert.match(projectConfig.args[1], /serve/);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
@@ -119,7 +129,7 @@ describe('install-mcp', () => {
   test('resolveMcpServerConfig keeps a local launcher for unpublished external project installs', () => {
     const isolatedDir = makeTmpDir();
 
-    const projectConfig = withPublishState('unpublished', () => resolveMcpServerConfig({ project: true, cwd: isolatedDir }));
+    const projectConfig = withPublishState('unpublished', () => withCliState('unavailable', () => resolveMcpServerConfig({ project: true, cwd: isolatedDir })));
 
     assert.equal(projectConfig.command, 'node');
     assert.equal(projectConfig.args.length, 1);
@@ -155,7 +165,7 @@ describe('install-mcp', () => {
   test('isAlreadyInstalled returns true when server exists', () => {
     const settings = {
       mcpServers: {
-        [MCP_SERVER_KEY]: MCP_SERVER_CONFIG,
+        [MCP_SERVER_KEY]: resolveMcpServerConfig(),
       },
     };
     assert.equal(isAlreadyInstalled(settings), true);
@@ -176,7 +186,7 @@ describe('install-mcp', () => {
 
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       assert.ok(settings.mcpServers, 'mcpServers key should exist');
-      assert.deepStrictEqual(settings.mcpServers[MCP_SERVER_KEY], MCP_SERVER_CONFIG);
+      assertPortableMcpConfig(settings.mcpServers[MCP_SERVER_KEY]);
     } finally {
       process.env.HOME = origHome;
       fs.rmSync(isolatedDir, { recursive: true, force: true });
@@ -229,7 +239,7 @@ describe('install-mcp', () => {
       const result = installMcp({});
       assert.equal(result.installed, true);
       const updated = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      assert.deepStrictEqual(updated.mcpServers[MCP_SERVER_KEY], MCP_SERVER_CONFIG);
+      assertPortableMcpConfig(updated.mcpServers[MCP_SERVER_KEY]);
     } finally {
       process.env.HOME = origHome;
       fs.rmSync(isolatedDir, { recursive: true, force: true });
@@ -261,7 +271,7 @@ describe('install-mcp', () => {
       const result = installMcp({});
       assert.equal(result.installed, true);
       const updated = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      assert.deepStrictEqual(updated.mcpServers[MCP_SERVER_KEY], MCP_SERVER_CONFIG);
+      assertPortableMcpConfig(updated.mcpServers[MCP_SERVER_KEY]);
       for (const legacyKey of LEGACY_MCP_SERVER_KEYS) {
         assert.equal(Object.prototype.hasOwnProperty.call(updated.mcpServers, legacyKey), false);
       }
@@ -285,12 +295,10 @@ describe('install-mcp', () => {
 
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       assert.deepStrictEqual(
-        settings.mcpServers[MCP_SERVER_KEY],
-        {
-          command: 'npx',
-          args: ['--yes', '--package', `thumbgate@${require('../package.json').version}`, 'thumbgate', 'serve'],
-        }
+        settings.mcpServers[MCP_SERVER_KEY].command,
+        'sh'
       );
+      assertPortableMcpConfig(settings.mcpServers[MCP_SERVER_KEY]);
     } finally {
       process.chdir(origCwd);
       fs.rmSync(isolatedDir, { recursive: true, force: true });
@@ -323,7 +331,7 @@ describe('install-mcp', () => {
       // New file should have both original and new content
       const updated = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       assert.equal(updated.existingKey, 'value');
-      assert.deepStrictEqual(updated.mcpServers[MCP_SERVER_KEY], MCP_SERVER_CONFIG);
+      assertPortableMcpConfig(updated.mcpServers[MCP_SERVER_KEY]);
     } finally {
       process.env.HOME = origHome;
       fs.rmSync(isolatedDir, { recursive: true, force: true });
@@ -351,7 +359,7 @@ describe('install-mcp', () => {
 
       const updated = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       assert.ok(updated.mcpServers['other-server'], 'existing server should be preserved');
-      assert.deepStrictEqual(updated.mcpServers[MCP_SERVER_KEY], MCP_SERVER_CONFIG);
+      assertPortableMcpConfig(updated.mcpServers[MCP_SERVER_KEY]);
     } finally {
       process.env.HOME = origHome;
       fs.rmSync(isolatedDir, { recursive: true, force: true });

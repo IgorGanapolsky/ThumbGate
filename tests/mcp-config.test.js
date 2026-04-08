@@ -24,10 +24,14 @@ describe('mcp-config', () => {
     assert.deepStrictEqual(parseWorktreePaths(null), []);
   });
 
-  it('portableMcpEntry returns npx command with version', () => {
+  it('portableMcpEntry returns a shell wrapper that pins the published package version', () => {
     const entry = portableMcpEntry('1.2.3');
-    assert.strictEqual(entry.command, 'npx');
-    assert.deepStrictEqual(entry.args, ['--yes', '--package', 'thumbgate@1.2.3', 'thumbgate', 'serve']);
+    assert.strictEqual(entry.command, 'sh');
+    assert.deepStrictEqual(entry.args.slice(0, 1), ['-lc']);
+    assert.match(entry.args[1], /thumbgate@1\.2\.3/);
+    assert.match(entry.args[1], /thumbgate/);
+    assert.match(entry.args[1], /serve/);
+    assert.match(entry.args[1], /\.thumbgate\/runtime/);
   });
 
   it('localMcpEntry returns node command pointing to server-stdio.js', () => {
