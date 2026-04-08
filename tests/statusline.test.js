@@ -14,6 +14,13 @@ const CACHE_UPDATER_PATH = path.join(__dirname, '..', 'scripts', 'hook-thumbgate
 const AUTO_CAPTURE_HOOK_PATH = path.join(__dirname, '..', 'scripts', 'hook-auto-capture.sh');
 const LOCAL_STATS_PATH = path.join(__dirname, '..', 'scripts', 'statusline-local-stats.js');
 const PKG_VERSION = require('../package.json').version;
+const SAFE_SYSTEM_PATH = Array.from(new Set([
+  path.dirname(process.execPath),
+  '/usr/bin',
+  '/bin',
+  '/usr/sbin',
+  '/sbin',
+])).join(path.delimiter);
 
 function runStatusline(cachePayload, extraEnv = {}) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-render-'));
@@ -139,6 +146,7 @@ test('statusline follows the persisted active project when Claude is running fro
       env: {
         ...process.env,
         HOME: homeDir,
+        PATH: SAFE_SYSTEM_PATH,
         PWD: transientDir,
       },
       timeout: 5000,
