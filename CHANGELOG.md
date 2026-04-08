@@ -1,5 +1,50 @@
 # Changelog
 
+## [1.1.0] - 2026-04-08
+
+### Added
+- **HuggingFace Dataset Export**: New `export_hf_dataset` MCP tool and `npm run export:hf` CLI command. Exports PII-redacted agent traces (traces.jsonl) and DPO preference pairs (preferences.jsonl) as HuggingFace-compatible datasets with dataset_info.json metadata.
+- **Unified Context Manager**: `unified_context` MCP tool provides one-call context assembly combining session state, user profile, relevant lessons, prevention guards, context pack, and code-graph impact. Tiered graceful degradation: full, warm, cold.
+- **Role-Aware Context Filtering**: Agent profiles (Claude, Cursor, ForgeCode, Codex) shape context budget, lesson count, and feature inclusion per agent type.
+- **Changesets**: Added `@changesets/cli` for auditable release management with auto-generated changelogs.
+
+## [1.0.0] - 2026-04-08
+
+### Added
+- **ForgeCode Adapter**: `npx thumbgate init --agent=forge` scaffolds ForgeCode agent integration.
+- **Workflow Sentinel**: Pre-tool guard that predicts workflow failures before execution.
+- **Durable Hosted Jobs**: API server supports long-running job execution with status polling.
+- **Buyer-Intent Geo Pages**: SEO landing pages for location-based discovery.
+- **Daily Revenue Loop**: GitHub Actions workflow for automated revenue tracking.
+- **Plausible Analytics**: Privacy-first analytics across all public pages.
+
+### Changed
+- Scoped dashboard and status to active project context.
+- Extended Railway rollout verification window for more reliable deploys.
+- Closed all duplicate social posting code paths.
+
+## [0.9.9] - 2026-04-05
+
+### Changed
+- Social quality gate wired into all publishers — blocks bot slop before posting.
+- Dependency bumps: Stripe 22.0, Playwright 1.59, dotenv 17.4, HuggingFace Transformers 4.0.
+
+### Fixed
+- Hardened coverage and verification gates for CI stability.
+- Inferred tags for promotable feedback signals.
+
+## [0.9.5] - 2026-04-03
+
+### Added
+- **Landing Page Repositioning**: Visual diagrams, "bad AI PRs" messaging, self-improving agents positioning.
+- **Social Posting Strategy**: Overhauled based on top SaaS research.
+- **Governance Hardening**: Integrity governance assertions stabilized.
+
+### Fixed
+- Restored dashboard and lesson follow-up state.
+- Removed legacy RLHF references.
+- Repaired release health for Railway and npm publish.
+
 ## [0.9.4] - 2026-04-02
 
 ### Added
