@@ -53,6 +53,11 @@ const {
   buildCloudflareSandboxPlan,
 } = require('../../scripts/cloudflare-dynamic-sandbox');
 const {
+  listJobStates,
+  readJobState,
+  requestJobControl,
+} = require('../../scripts/async-job-runner');
+const {
   loadModel,
   getReliability,
   samplePosteriors,
@@ -137,6 +142,13 @@ const {
   resolveAnalyticsWindow,
 } = require('../../scripts/analytics-window');
 const {
+  launchDpoExportJob,
+  launchHarnessJob,
+  pauseQueuedJob,
+  cancelQueuedJob,
+  resumeHostedJob,
+} = require('../../scripts/hosted-job-launcher');
+const {
   appendWorkflowSprintLead,
   advanceWorkflowSprintLead,
 } = require('../../scripts/workflow-sprint-intake');
@@ -165,6 +177,9 @@ const SESSION_COOKIE_NAME = 'thumbgate_session_id';
 const ACQUISITION_COOKIE_NAME = 'thumbgate_acquisition_id';
 const VISITOR_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
 const BUILD_METADATA = resolveBuildMetadata();
+const TERMINAL_JOB_STATUSES = new Set(['completed', 'failed', 'cancelled']);
+const IDLE_JOB_STATUSES = new Set(['queued', 'paused', 'resume_requested']);
+const JOB_CONTROL_ACTIONS = new Set(['pause', 'cancel', 'resume']);
 
 // ---------------------------------------------------------------------------
 // Stripe event tracking helpers
@@ -2170,6 +2185,56 @@ function resolveSafePath(inputPath, { mustExist = false, safeDataDir } = {}) {
   return resolved;
 }
 
+function resolveDpoExportPaths(body = {}, options = {}) {
+  const { safeDataDir, fallbackMemoryLogPath = null } = options;
+  return {
+    inputPath: body.inputPath
+      ? resolveSafePath(body.inputPath, { mustExist: true, safeDataDir })
+      : null,
+    memoryLogPath: body.memoryLogPath
+      ? resolveSafePath(body.memoryLogPath, { mustExist: true, safeDataDir })
+      : null,
+    outputPath: body.outputPath
+      ? resolveSafePath(body.outputPath, { safeDataDir })
+      : null,
+    fallbackMemoryLogPath,
+  };
+}
+
+function loadDpoExportMemories({ inputPath, memoryLogPath, fallbackMemoryLogPath = null }) {
+  if (inputPath) {
+    const raw = fs.readFileSync(inputPath, 'utf-8');
+    const parsedMemories = JSON.parse(raw);
+    return Array.isArray(parsedMemories) ? parsedMemories : parsedMemories.memories || [];
+  }
+
+  return readJSONL(memoryLogPath || fallbackMemoryLogPath || DEFAULT_LOCAL_MEMORY_LOG);
+}
+
+function parseJobStatuses(value) {
+  if (!value) return [];
+  return String(value)
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function readHostedJobOrThrow(jobId) {
+  const state = readJobState(jobId);
+  if (!state) {
+    throw createHttpError(404, `Job not found: ${jobId}`);
+  }
+  return state;
+}
+
+function normalizeJobIdFromPath(pathname, suffix = '') {
+  const pattern = suffix
+    ? new RegExp(`^/v1/jobs/([^/]+)${suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)
+    : /^\/v1\/jobs\/([^/]+)$/;
+  const match = pathname.match(pattern);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 function createApiServer() {
   const expectedApiKey = getExpectedApiKey();
 
@@ -2779,7 +2844,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/settings/status', '/v1/dpo/export', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -3715,6 +3780,112 @@ async function addContext(){
         return;
       }
 
+      if (req.method === 'POST' && pathname === '/v1/jobs/harness') {
+        const body = await parseJsonBody(req);
+        const identifier = body.harness || body.harnessId;
+        if (!identifier) {
+          throw createHttpError(400, 'harness is required');
+        }
+        const inputs = parseOptionalObject(body.inputs, 'inputs') || {};
+        try {
+          const launched = launchHarnessJob(identifier, inputs, {
+            jobId: normalizeNullableText(body.jobId) || undefined,
+            skill: normalizeNullableText(body.skill) || undefined,
+            partnerProfile: normalizeNullableText(body.partnerProfile) || undefined,
+            autoImprove: body.autoImprove !== false,
+          });
+          sendJson(res, 202, {
+            accepted: true,
+            jobId: launched.jobId,
+            status: launched.state.status,
+            launchMode: launched.launchMode,
+            pid: launched.pid,
+            statusUrl: `/v1/jobs/${encodeURIComponent(launched.jobId)}`,
+            job: launched.state,
+          });
+        } catch (err) {
+          throw createHttpError(err.statusCode || 400, err.message || 'Invalid hosted harness request');
+        }
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/jobs') {
+        const limit = Number(parsed.searchParams.get('limit') || 20);
+        const statuses = parseJobStatuses(parsed.searchParams.get('status'));
+        const jobs = listJobStates({
+          limit: Number.isFinite(limit) ? limit : 20,
+          statuses,
+        });
+        sendJson(res, 200, {
+          total: jobs.length,
+          jobs,
+        });
+        return;
+      }
+
+      {
+        const jobId = normalizeJobIdFromPath(pathname);
+        if (req.method === 'GET' && jobId) {
+          sendJson(res, 200, {
+            job: readHostedJobOrThrow(jobId),
+          });
+          return;
+        }
+      }
+
+      {
+        const jobId = normalizeJobIdFromPath(pathname, '/control');
+        if (req.method === 'POST' && jobId) {
+          const state = readHostedJobOrThrow(jobId);
+          const body = await parseJsonBody(req);
+          const action = normalizeNullableText(body.action);
+          if (!action || !JOB_CONTROL_ACTIONS.has(action)) {
+            throw createHttpError(400, 'action must be one of pause, cancel, or resume');
+          }
+
+          if (TERMINAL_JOB_STATUSES.has(state.status)) {
+            throw createHttpError(409, `Job ${jobId} is already ${state.status}`);
+          }
+
+          if (action === 'resume') {
+            const launched = resumeHostedJob(jobId);
+            sendJson(res, 202, {
+              accepted: true,
+              action,
+              jobId,
+              launchMode: launched.launchMode,
+              pid: launched.pid,
+              job: launched.state,
+            });
+            return;
+          }
+
+          if (IDLE_JOB_STATUSES.has(state.status)) {
+            const job = action === 'pause'
+              ? pauseQueuedJob(jobId, parseOptionalObject(body.metadata, 'metadata') || {})
+              : cancelQueuedJob(jobId, parseOptionalObject(body.metadata, 'metadata') || {});
+            sendJson(res, 202, {
+              accepted: true,
+              action,
+              jobId,
+              job,
+            });
+            return;
+          }
+
+          const metadata = parseOptionalObject(body.metadata, 'metadata') || {};
+          const control = requestJobControl(jobId, action, metadata);
+          sendJson(res, 202, {
+            accepted: true,
+            action,
+            jobId,
+            control,
+            job: readHostedJobOrThrow(jobId),
+          });
+          return;
+        }
+      }
+
       if (req.method === 'POST' && pathname === '/v1/gates/constraint') {
         const body = await parseJsonBody(req);
         if (!body.key || body.value === undefined) {
@@ -3943,33 +4114,38 @@ async function addContext(){
 
       if (req.method === 'POST' && pathname === '/v1/dpo/export') {
         const body = await parseJsonBody(req);
-        let memories = [];
+        const paths = resolveDpoExportPaths(body, {
+          safeDataDir: requestSafeDataDir,
+          fallbackMemoryLogPath: requestFeedbackPaths.MEMORY_LOG_PATH,
+        });
+        const wantsAsync = body.async === true || normalizeNullableText(body.mode) === 'async';
 
-        if (body.inputPath) {
-          const safeInputPath = resolveSafePath(body.inputPath, {
-            mustExist: true,
-            safeDataDir: requestSafeDataDir,
-          });
-          const raw = fs.readFileSync(safeInputPath, 'utf-8');
-          const parsedMemories = JSON.parse(raw);
-          memories = Array.isArray(parsedMemories) ? parsedMemories : parsedMemories.memories || [];
-        } else {
-          const localPath = body.memoryLogPath
-            ? resolveSafePath(body.memoryLogPath, {
-              mustExist: true,
-              safeDataDir: requestSafeDataDir,
-            })
-            : requestFeedbackPaths.MEMORY_LOG_PATH;
-          memories = readJSONL(localPath);
+        if (wantsAsync) {
+          try {
+            const launched = launchDpoExportJob(paths, {
+              jobId: normalizeNullableText(body.jobId) || undefined,
+            });
+            sendJson(res, 202, {
+              accepted: true,
+              async: true,
+              jobId: launched.jobId,
+              status: launched.state.status,
+              outputPath: paths.outputPath,
+              statusUrl: `/v1/jobs/${encodeURIComponent(launched.jobId)}`,
+              launchMode: launched.launchMode,
+              job: launched.state,
+            });
+          } catch (err) {
+            throw createHttpError(err.statusCode || 400, err.message || 'Invalid DPO export request');
+          }
+          return;
         }
 
+        const memories = loadDpoExportMemories(paths);
         const result = exportDpoFromMemories(memories);
-        if (body.outputPath) {
-          const safeOutputPath = resolveSafePath(body.outputPath, {
-            safeDataDir: requestSafeDataDir,
-          });
-          fs.mkdirSync(path.dirname(safeOutputPath), { recursive: true });
-          fs.writeFileSync(safeOutputPath, result.jsonl);
+        if (paths.outputPath) {
+          fs.mkdirSync(path.dirname(paths.outputPath), { recursive: true });
+          fs.writeFileSync(paths.outputPath, result.jsonl);
         }
 
         sendJson(res, 200, {
@@ -3978,9 +4154,7 @@ async function addContext(){
           learnings: result.learnings.length,
           unpairedErrors: result.unpairedErrors.length,
           unpairedLearnings: result.unpairedLearnings.length,
-          outputPath: body.outputPath
-            ? resolveSafePath(body.outputPath, { safeDataDir: requestSafeDataDir })
-            : null,
+          outputPath: paths.outputPath,
         });
         return;
       }
