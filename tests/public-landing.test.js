@@ -87,7 +87,7 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
 test('public landing page includes Plausible analytics and search engine proof bar', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /\/js\/analytics\.js/);
+  assert.match(landingPage, /plausible\.io\/js\/script\.js/);
   assert.match(landingPage, /npm downloads/i);
   assert.match(landingPage, /tests passing/i);
   assert.ok(landingPage.includes(PRODUCTHUNT_URL));
