@@ -373,6 +373,9 @@ test('SonarCloud workflow restores the required branch-protection status and wai
   assert.match(workflow, /fetch-depth:\s*0/);
   assert.match(workflow, /npm ci --onnxruntime-node-install-cuda=skip/);
   assert.match(workflow, /Generate coverage for SonarCloud[\s\S]*?npm run test:coverage/);
+  assert.match(workflow, /Disable SonarCloud automatic analysis[\s\S]*?https:\/\/sonarcloud\.io\/api\/autoscan\/activation/);
+  assert.match(workflow, /project_key="\$\(awk -F= '\/\^sonar\.projectKey=\/\{print \$2\}' sonar-project\.properties\)"/);
+  assert.match(workflow, /--data "enable=false&projectKey=\$\{project_key\}"/);
   assert.match(workflow, /uses:\s*SonarSource\/sonarqube-scan-action@v7/);
   assert.match(workflow, /SONAR_TOKEN:\s*\$\{\{\s*secrets\.SONAR_TOKEN\s*\}\}/);
   assert.match(workflow, /-Dsonar\.qualitygate\.wait=true/);

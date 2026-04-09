@@ -40,6 +40,28 @@ jobs:
       - name: Generate coverage for SonarCloud
         run: npm run test:coverage
 
+      - name: Disable SonarCloud automatic analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          project_key="$(awk -F= '/^sonar.projectKey=/{print $2}' sonar-project.properties)"
+          if [ -z "$project_key" ]; then
+            echo "sonar.projectKey missing from sonar-project.properties" >&2
+            exit 1
+          fi
+
+          curl \
+            --silent \
+            --show-error \
+            --fail-with-body \
+            --retry 3 \
+            --retry-delay 5 \
+            --request POST \
+            --user "${SONAR_TOKEN}:" \
+            --header 'Content-Type: application/x-www-form-urlencoded' \
+            --data "enable=false&projectKey=${project_key}" \
+            https://sonarcloud.io/api/autoscan/activation
+
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v7
         env:
