@@ -424,6 +424,7 @@ test('CI workflow supports merge queue and cancels stale non-main runs', () => {
   assert.match(workflow, /group:\s*ci-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
   assert.match(workflow, /name: Check operational integrity[\s\S]*?GH_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}[\s\S]*?npm run ops:integrity:ci/);
+  assert.match(workflow, /name: Check branch protection congruence[\s\S]*?GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT \|\| github\.token\s*\}\}[\s\S]*?npm run branch-protection:check/);
 });
 
 test('CI workflow gives the full suite enough runtime budget', () => {
@@ -524,6 +525,25 @@ test('Publish Claude Plugin workflow builds the MCPB and uploads channel-safe re
   assert.match(workflow, /Create channel asset alias/);
   assert.match(workflow, /steps\.assets\.outputs\.channel_asset/);
   assert.match(workflow, /--prerelease/);
+});
+
+test('Agent auto-merge workflow blocks any failing quality check, not only required checks', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'agent-automerge.yml'), 'utf8');
+
+  assert.match(workflow, /name: Wait for required and critical quality checks/);
+  assert.match(workflow, /gh pr checks "\$PR_URL" --json bucket,name,state,workflow,link,event/);
+  assert.doesNotMatch(workflow, /gh pr checks "\$PR_URL" --required/);
+  assert.match(workflow, /any\(\.\[\]; \.bucket == "fail" or \.bucket == "cancel"\)/);
+  assert.match(workflow, /All critical quality checks completed successfully\./);
+});
+
+test('Agent auto-merge workflow reports the final merge commit instead of the branch head SHA', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'agent-automerge.yml'), 'utf8');
+
+  assert.match(workflow, /name: Resolve final merge commit/);
+  assert.match(workflow, /gh pr view "\$PR_URL" --json state,mergeCommit,url,title/);
+  assert.match(workflow, /Final merge commit: \$merge_commit/);
+  assert.match(workflow, /Final merge commit: pending \(merge queue still processing\)/);
 });
 
 test('Sentry release workflow serializes main release stamping', () => {
