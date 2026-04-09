@@ -290,7 +290,11 @@
     "enforcement",
     "ai agent memory",
     "repeated mistakes",
-    "agent error prevention"
+    "agent error prevention",
+    "ai-authenticity",
+    "prevent-ai-slop",
+    "human-led-ai",
+    "ai-standards-enforcement"
   ],
   "author": "Igor Ganapolsky",
   "license": "MIT",

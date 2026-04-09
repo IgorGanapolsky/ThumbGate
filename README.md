@@ -1,6 +1,6 @@
 # ThumbGate
 
-Make your AI coding agent self-improving. ThumbGate turns thumbs-up and thumbs-down into a learned control plane for autonomous development: pre-action gates, a trained intervention policy, workflow governance, and isolated execution guidance for high-risk runs.
+Make your AI coding agent self-improving — and authentically yours. ThumbGate turns thumbs-up and thumbs-down into a learned control plane for autonomous development: pre-action gates, a trained intervention policy, workflow governance, and isolated execution guidance for high-risk runs. Every gate enforces your team's actual standards, not generic AI patterns.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -39,6 +39,7 @@ ThumbGate is the control plane for AI coding agents:
 - Workflow Sentinel scores blast radius before execution, so risky PR, release, and publish flows are visible early.
 - High-risk local actions can be routed into Docker Sandboxes, while hosted team automations use a signed isolated sandbox lane.
 - Team rollout stays tied to [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) instead of trust-me operator claims.
+- AI agent outputs stay grounded in your team's actual standards — not generic patterns — because every gate enforces human judgment before the action executes.
 
 ## Release Confidence
 
