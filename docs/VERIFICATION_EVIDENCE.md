@@ -9,9 +9,9 @@
 | **Pre-action gates** | Block known mistakes before tool use — tested with real feedback patterns |
 | **Feedback capture** | Up/down signals with context, tags, rubric scores — schema-validated |
 | **Prevention rules** | Auto-promoted from repeated failures — regression-tested |
-| **Filesystem search** | 1,651 ContextFS files searchable without embeddings — 17 tests |
-| **Social analytics** | 10-platform polling pipeline — 26 Zernio + 16 analytics tests |
-| **ThumbGate search** | Two-tier search (MCP tool + REST API) — 18 tests |
+| **Filesystem search** | ContextFS files searchable without embeddings — regression-tested |
+| **Social analytics** | Multi-platform polling pipeline — regression-tested |
+| **ThumbGate search** | Two-tier search (MCP tool + REST API) — regression-tested |
 | **MCP/API parity** | Every MCP tool has a matching REST endpoint — proven by OpenAPI parity tests |
 | **CI pipeline** | All PRs require green CI (tests + CodeQL + GitGuardian + Socket Security) |
 | **Railway deployment** | Auto-deploy on merge, SHA-verified, health-checked |
@@ -21,7 +21,7 @@
 ```bash
 git clone https://github.com/IgorGanapolsky/thumbgate.git
 cd thumbgate && npm ci
-npm test                    # 500+ tests across 25+ suites
+npm test                    # full repository suite
 npm run prove:adapters      # Adapter compatibility proof
 npm run prove:automation    # Automation proof harness
 npm run test:coverage       # Coverage report
@@ -41,6 +41,54 @@ curl -H "Authorization: Bearer YOUR_KEY" \
 ---
 
 # Verification log
+
+## April 9, 2026: technical debt audit follow-through for stale-claim cleanup, docs hygiene regression coverage, and protected-system revalidation
+
+Scope:
+
+- Audited active operator-facing docs, launch copy, and the landing page for brittle hardcoded verification counts and stale product-surface metrics.
+- Replaced those claims with evergreen proof-backed wording.
+- Added `tests/docs-claim-hygiene.test.js` to block future reintroduction of exact-count drift in selected active docs.
+- Updated `tests/public-landing.test.js` and `package.json` so the new hygiene check is enforced in `test:workflow`.
+- Revalidated protected systems: ContextFS/RAG, orchestration, coverage, proof harnesses, and self-heal health.
+
+Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/worktrees/thumbgate-decision-learning-loop-20260409`:
+
+```bash
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed result:
+
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with all-files coverage at:
+  - `90.23` lines
+  - `76.74` branches
+  - `93.45` functions
+- `npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `6/6 healthy` checks.
+- `git diff --check` exited `0`.
+- Repository inventory delta for this pass, excluding `.git` and `node_modules`:
+  - files before: `874`
+  - files after: `875`
+  - lines before: `224174`
+  - lines after: `224216`
+- The one new file added in this pass is `tests/docs-claim-hygiene.test.js`.
+- No tracked RAG/runtime artifacts were added or modified; `.thumbgate/*` and `.claude/*` outputs remained local-only.
+- The latest branch-level GitHub Actions failure observed before PR creation was policy-only: `release_sensitive_changes_require_pr`. That blocker indicates the release-sensitive integrity rule requires an open PR; it does not indicate a failing local verification suite.
+
+Requirements verified:
+
+- Active docs and landing surfaces no longer rely on brittle hardcoded verification counts.
+- A regression test now protects those claim surfaces from drifting again.
+- Protected systems remained operational after the cleanup pass.
+- Repo-wide coverage remains below `100%`, so the requested 100% coverage target is still unmet and must not be claimed.
 
 ## April 6, 2026: technical debt audit hardening for Node 20 coverage, deterministic Pro-gate tests, and CI gate completeness
 

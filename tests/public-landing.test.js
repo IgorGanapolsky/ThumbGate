@@ -88,6 +88,7 @@ test('public landing page includes Plausible analytics and search engine proof b
   assert.match(landingPage, /plausible\.io\/js\/script\.js/);
   assert.match(landingPage, /Verification evidence/i);
   assert.match(landingPage, /Release confidence/i);
+  assert.match(landingPage, /Proof-backed CI/i);
   assert.match(landingPage, /CI and proof lanes/i);
   assert.match(landingPage, /Claude Code · Cursor · Codex · Gemini · Amp · OpenCode/i);
 });

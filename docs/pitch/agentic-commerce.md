@@ -95,8 +95,8 @@ Export preference pairs for fine-tuning commerce-specific agent models. This is 
 
 ## Proof Points
 
-- 384 tests, 100% pass rate
-- 5 agent adapters: Claude, Codex, Gemini, Amp, Cursor
+- Proof-backed CI and verification evidence for the gateway, memory, and enforcement surfaces
+- Multi-agent compatibility across Claude, Codex, Gemini, Amp, and Cursor
 - npm package: `thumbgate`
 - Open source: MIT license
 - Commercial traction is early; use verification evidence for engineering proof and pilots/orders for market proof
