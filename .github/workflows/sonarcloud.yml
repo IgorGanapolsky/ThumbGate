@@ -1,0 +1,69 @@
+name: SonarCloud
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  merge_group:
+    branches: [main]
+    types: [checks_requested]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: sonarcloud-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  sonar:
+    name: SonarCloud Code Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            workers/package-lock.json
+
+      - name: Install deps
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Generate LCOV coverage report
+        run: |
+          rm -rf .coverage coverage
+          mkdir -p .coverage/raw
+          NODE_V8_COVERAGE=.coverage/raw node scripts/test-coverage.js
+          npx c8 report \
+            --temp-directory .coverage/raw \
+            --reports-dir coverage \
+            --reporter=lcov \
+            --reporter=text-summary \
+            --include='.claude/**/*.js' \
+            --include='adapters/**/*.js' \
+            --include='bin/**/*.js' \
+            --include='plugins/**/*.js' \
+            --include='scripts/**/*.js' \
+            --include='src/**/*.js' \
+            --exclude='tests/**/*.js' \
+            --exclude='scripts/social-reply-monitor.js'
+
+      - name: Run SonarCloud scan
+        uses: SonarSource/sonarqube-scan-action@v7.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=600
