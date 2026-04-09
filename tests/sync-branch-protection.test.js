@@ -34,10 +34,11 @@ test('normalizeContexts sorts and deduplicates status check contexts', () => {
 
 test('syncBranchProtection validators reject unsafe CLI and GraphQL input', () => {
   assert.deepEqual(assertSafeGhArgs(['api', 'graphql']), ['api', 'graphql']);
+  assert.deepEqual(assertSafeGhArgs(['api', 'query=\n  mutation { viewer { login } }\n']), ['api', 'query=\n  mutation { viewer { login } }\n']);
   assert.equal(assertSafeBranchPattern('main'), 'main');
   assert.equal(assertSafeRuleId('BPR_123='), 'BPR_123=');
   assert.equal(assertSafeStatusContext('SonarCloud Code Analysis'), 'SonarCloud Code Analysis');
-  assert.throws(() => assertSafeGhArgs(['api\nboom']), /Unsafe GH CLI arg/);
+  assert.throws(() => assertSafeGhArgs([`api${String.fromCharCode(0)}boom`]), /Unsafe GH CLI arg/);
   assert.throws(() => assertSafeBranchPattern('../main'), /Unsafe branch pattern/);
   assert.throws(() => assertSafeRuleId('BPR 123'), /Unsafe branch protection rule id/);
   assert.throws(() => assertSafeStatusContext('bad\ncontext'), /Unsafe status check context/);

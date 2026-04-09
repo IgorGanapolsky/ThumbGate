@@ -36,7 +36,7 @@ function assertSafeGhArgs(args) {
 
   return args.map((arg) => {
     const normalized = String(arg ?? '');
-    if (!normalized || /[\0\r\n]/.test(normalized)) {
+    if (!normalized || /\0/.test(normalized)) {
       throw new Error(`Unsafe GH CLI arg: ${arg}`);
     }
     return normalized;

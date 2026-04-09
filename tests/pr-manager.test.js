@@ -200,7 +200,8 @@ test('PR Manager - normalizePrNumber rejects unsafe values', () => {
 
 test('PR Manager - assertSafeGhArgs rejects control characters', () => {
   assert.deepEqual(assertSafeGhArgs(['pr', 'view', '665']), ['pr', 'view', '665']);
-  assert.throws(() => assertSafeGhArgs(['pr', 'view\n665']), /Unsafe GH CLI arg/);
+  assert.deepEqual(assertSafeGhArgs(['api', 'query=\n  mutation { viewer { login } }\n']), ['api', 'query=\n  mutation { viewer { login } }\n']);
+  assert.throws(() => assertSafeGhArgs([`pr${String.fromCharCode(0)}view`]), /Unsafe GH CLI arg/);
 });
 
 test('PR Manager - getPrChecks rejects invalid PR numbers before invoking GH CLI', () => {
