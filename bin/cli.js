@@ -12,7 +12,7 @@
  *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
  *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
  *   npx thumbgate cfo           # local operational billing summary
- *   npx thumbgate pro           # upgrade to Context Gateway
+ *   npx thumbgate pro           # solo dashboard + exports side lane
  */
 
 'use strict';
@@ -49,7 +49,9 @@ function upgradeNudge() {
     if (isProTier()) return;
   } catch (_) { return; }
   process.stderr.write(
-    `\n  Unlock Pro: unlimited gates, DPO export, searchable dashboard — ${PRO_PRICE_LABEL}\n` +
+    '\n  Team rollout: start with the Workflow Hardening Sprint\n' +
+    '  https://thumbgate-production.up.railway.app/#workflow-sprint-intake\n' +
+    `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
     `  ${PRO_CHECKOUT_URL}\n\n`
   );
 }
@@ -696,8 +698,9 @@ function stats() {
     console.log(`  Repeated Failures detected: ${data.totalNegative}`);
     console.log(`  Estimated Operational Loss: $${revenueAtRisk}`);
     console.log('  Action Required: Run "npx thumbgate rules" to generate guardrails.');
-    console.log('  Strategic Recommendation: Upgrade to Context Gateway to sync these rules across your team.');
-    console.log('  Run: npx thumbgate pro');
+    console.log('  Strategic Recommendation: if this is a shared workflow problem, start the Workflow Hardening Sprint.');
+    console.log('  Team intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake');
+    console.log('  Solo side lane: npx thumbgate pro');
   } else {
     console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');
   }
@@ -804,7 +807,7 @@ function pro() {
     const truthUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
     console.log('\nThumbGate Pro — Local Dashboard');
     console.log('─'.repeat(50));
-    console.log('Self-serve offer today: Pro ($19/mo or $149/yr).');
+    console.log('Self-serve side lane today: Pro ($19/mo or $149/yr).');
     console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
     console.log('\nWhat is available:');
     console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');

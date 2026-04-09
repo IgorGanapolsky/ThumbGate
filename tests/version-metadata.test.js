@@ -140,8 +140,9 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /__PRO_PRICE_DOLLARS__/);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
-  assert.match(publicLanding, /self-improving/i);
-  assert.ok(publicLanding.includes(PRODUCTHUNT_URL));
+  assert.match(publicLanding, /workflow governance|agent governance/i);
+  assert.match(publicLanding, /Verification evidence/i);
+  assert.match(publicLanding, /Release confidence/i);
   assert.doesNotMatch(publicLanding, /billingDuration/);
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
@@ -288,7 +289,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
   assert.match(commercialTruth, /Pro at \$19\/mo or \$149\/yr/);
-  assert.match(commercialTruth, /Team pricing anchor is \*\*\$99\/seat\/mo/i);
+  assert.match(commercialTruth, /Team pricing anchor is \*\*\$12\/seat\/mo/i);
   assert.match(commercialTruth, /auto-gate promotion/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 

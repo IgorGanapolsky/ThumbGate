@@ -19,12 +19,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
-<title>ThumbGate — Self-improving AI coding agents that learn from every mistake</title>
-<meta name="description" content="Pre-action gates, a learned intervention policy, and workflow governance for self-improving AI coding agents. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Team adds shared lessons and org visibility.">
-<meta property="og:title" content="ThumbGate — Self-improving AI coding agents that learn from every mistake">
-<meta property="og:description" content="Pre-action gates, a learned intervention policy, and workflow governance for self-improving AI coding agents. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Team adds shared lessons and org visibility.">
+<title>ThumbGate — Agent governance for AI coding workflows</title>
+<meta name="description" content="CLI-first agent governance for teams shipping AI-generated changes. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Pre-action gates, workflow governance, shared lessons and org visibility, release confidence, and isolated execution guidance turn vibe coding mistakes into shared enforcement and proof-ready rollout.">
+<meta property="og:title" content="ThumbGate — Agent governance for AI coding workflows">
+<meta property="og:description" content="CLI-first agent governance for teams shipping AI-generated changes. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Pre-action gates, workflow governance, shared lessons and org visibility, release confidence, and isolated execution guidance turn vibe coding mistakes into shared enforcement and proof-ready rollout.">
 <meta property="og:type" content="website">
-<meta name="keywords" content="ThumbGate, thumbgate, self-improving AI agents, AI agent self-improvement, AI agent learning, AI agent memory, pre-action gates, human-in-the-loop, MCP server, Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, vibe coding safety, SpecLock alternative, Mem0 alternative, AI coding agent feedback loop, PreToolUse hooks, prevention rules, feedback enforcement, context engineering">
+<meta name="keywords" content="ThumbGate, thumbgate, agent governance, AI coding workflow governance, workflow hardening sprint, pre-action gates, CLI-first agent safety, Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, approval policies, audit trail, release confidence, Docker Sandboxes, feedback enforcement, context engineering">
 
 <!-- Privacy-friendly analytics by Plausible -->
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
@@ -44,7 +44,7 @@ __GA_BOOTSTRAP__
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
   "alternateName": "thumbgate",
-  "description": "Make your AI coding agent self-improving. Every mistake becomes a prevention rule and trains a local intervention policy. Every correction strengthens future recall, verification, and enforcement. ThumbGate adds workflow governance and isolated execution guidance so high-risk runs do not have to happen directly on the host.",
+  "description": "ThumbGate is a CLI-first agent governance control plane for AI coding workflows. Every repeated failure can become shared enforcement, every risky rollout can carry approval and audit boundaries, and high-risk local autonomy can be routed toward isolated execution instead of running directly on the host.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "license": "https://opensource.org/licenses/MIT",
@@ -83,10 +83,18 @@ __GA_BOOTSTRAP__
     },
     {
       "@type": "Offer",
+      "name": "Team",
+      "price": "12",
+      "priceCurrency": "USD",
+      "description": "Intake-led team rollout with a workflow hardening sprint, shared enforcement memory, org dashboard visibility, approval boundaries, release confidence, Docker Sandboxes guidance for risky local autonomy, and pilot support for teams shipping AI-generated changes",
+      "url": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    },
+    {
+      "@type": "Offer",
       "name": "Pro Monthly",
       "price": "19",
       "priceCurrency": "USD",
-      "description": "Personal local dashboard, DPO export, advanced data exports, and founder-license support for individual operators",
+      "description": "Self-serve side lane for solo operators who want a personal local dashboard, DPO export, and proof-ready exports",
       "url": "https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&landing_path=%2F"
     },
     {
@@ -96,14 +104,6 @@ __GA_BOOTSTRAP__
       "priceCurrency": "USD",
       "description": "Annual Pro for individual operators who want the personal local dashboard and proof-ready exports",
       "url": "https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&billing_cycle=annual&landing_path=%2F"
-    },
-    {
-      "@type": "Offer",
-      "name": "Team",
-      "price": "12",
-      "priceCurrency": "USD",
-      "description": "Intake-led team rollout with a workflow hardening sprint, shared enforcement memory, org dashboard visibility, Docker Sandboxes guidance for risky local autonomy, and pilot support for teams shipping AI-generated changes",
-      "url": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
     }
   ]
 }
@@ -120,7 +120,7 @@ __GA_BOOTSTRAP__
       "@type": "HowToStep",
       "position": 1,
       "name": "Install ThumbGate",
-      "text": "Run: npx thumbgate init --agent claude-code. This adds the MCP server to your agent. No API key needed — everything runs locally."
+      "text": "Run: npx thumbgate init --agent claude-code. This installs the local CLI gateway and wires the agent's MCP transport automatically. No API key needed and the core path stays local."
     },
     {
       "@type": "HowToStep",
@@ -453,7 +453,7 @@ __GA_BOOTSTRAP__
     <p><strong>Best first paid motion:</strong> start with one repo, one workflow, and one repeat failure. ThumbGate turns the blocker into enforcement, routes risky runs toward isolated execution, and gives the buyer a proof-ready story around shared memory, approval boundaries, release confidence, and auditability.</p>
     <div class="hero-actions">
       <a href="#workflow-sprint-intake" class="btn-team">Start Workflow Hardening Sprint</a>
-      <a href="/pro?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page" class="btn-pro-page">See Pro for solo operators</a>
+      <a href="/guide?utm_source=website&utm_medium=homepage_hero&utm_campaign=install_free" class="btn-pro-page btn-install-link">Install Free CLI</a>
       <a href="/dashboard?utm_source=website&utm_medium=homepage_hero&utm_campaign=demo" class="btn-demo-link">Open dashboard demo</a>
     </div>
     <p class="hero-paid-note"><strong>Start free as an individual.</strong> Pro stays the self-serve lane for personal dashboard and DPO export. Team pricing anchors at <strong>$99/seat/mo with a 3-seat minimum</strong>, but the team path starts intake-first with the Workflow Hardening Sprint so buyers see proof before a wider rollout.</p>
@@ -463,15 +463,17 @@ __GA_BOOTSTRAP__
       <span class="copy-hint">click to copy</span>
     </div>
     <div class="proof-bar">
-      <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener">1,000+ npm downloads →</a>
+      <a href="/guide" rel="noopener">CLI-first setup guide →</a>
       <span class="dot"></span>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">1,500+ tests passing →</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence →</a>
       <span class="dot"></span>
       <a href="https://arxiv.org/abs/2603.18743" target="_blank" rel="noopener">Research-backed (Memento-Skills, arXiv 2603.18743) →</a>
       <span class="dot"></span>
       <a href="https://www.producthunt.com/products/thumbgate" target="_blank" rel="noopener">Product Hunt →</a>
       <span class="dot"></span>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/LICENSE" target="_blank" rel="noopener">MIT licensed</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/RELEASE_CONFIDENCE.md" target="_blank" rel="noopener">Release confidence →</a>
+      <span class="dot"></span>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">CI and proof lanes →</a>
       <span class="dot"></span>
       <a href="#compatibility">Claude Code · Cursor · Codex · Gemini · Amp · OpenCode</a>
     </div>
@@ -500,7 +502,7 @@ __GA_BOOTSTRAP__
       </a>
       <a class="compat-card seo-card" href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/.claude/skills/thumbgate" target="_blank" rel="noopener">
         <h3>⚡ Claude Code Skill</h3>
-        <p>Type <code>/thumbgate</code> in any Claude Code session. Auto-triggers on "gate", "feedback", "block mistake". Free skill with Pro upgrade path built in.</p>
+        <p>Type <code>/thumbgate</code> in any Claude Code session. Auto-triggers on "gate", "feedback", "block mistake". Free skill on top of the same local gateway teams later harden into a shared workflow.</p>
         <div class="card-arrow">View skill on GitHub →</div>
       </a>
     </div>
@@ -522,8 +524,8 @@ __GA_BOOTSTRAP__
         <p>Every block explains why: which pattern matched, what evidence triggered it, and whether the rule came from your own corrections.</p>
       </div>
       <div class="agent-card">
-        <h3>📊 Org Dashboard (Pro)</h3>
-        <p>See which agents are creating review churn, which gates are saving time, and where rollout risk is still concentrated.</p>
+        <h3>📊 Org Dashboard (Team)</h3>
+        <p>See which agents are creating review churn, which gates are saving time, and where rollout risk is still concentrated across the shared workflow.</p>
       </div>
       <div class="agent-card">
         <h3>🧱 Isolated Execution Lanes</h3>
@@ -688,13 +690,13 @@ __GA_BOOTSTRAP__
 <section class="pricing" id="pricing">
   <div class="container">
     <div class="section-label">Pricing</div>
-    <h2 class="section-title">Start free. Use the workflow hardening sprint to prove team value. Keep Pro as the self-serve lane for individual operators.</h2>
+    <h2 class="section-title">Install free. Buy with the workflow hardening sprint. Keep Pro as the solo side lane.</h2>
     <div class="pricing-grid">
       <div class="price-card">
         <div class="tier">Free</div>
         <div class="price">$0</div>
-        <div class="price-sub">Forever free · Local enforcement for one developer</div>
-        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo developers who want to stop the same agent mistake from showing up twice.</p>
+        <div class="price-sub">Forever free · CLI-first local enforcement for one developer</div>
+        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo developers who want to stop the same agent mistake from showing up twice and prove value before a team rollout conversation exists.</p>
         <ul>
           <li>3 feedback captures/day · 5 lesson searches/day · unlimited recall</li>
           <li>5 auto-promoted gates plus the core safety policy</li>
@@ -707,12 +709,12 @@ __GA_BOOTSTRAP__
         <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free">Install Free</a>
       </div>
       <div class="price-card pro" data-price-dollars="__PRO_PRICE_DOLLARS__">
-        <div class="tier">Pro</div>
+        <div class="tier">Solo Pro</div>
         <div class="price">$19<span style="font-size:16px;color:var(--text-dim)">/mo</span></div>
         <div class="price-sub">or $149/yr (save 35%) · Personal dashboard + exports</div>
-        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">For individual operators who need review-ready evidence, faster debugging, and a dashboard of exactly what got blocked.</p>
+        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">For an individual operator who wants a personal dashboard and proof-ready exports without starting the team rollout motion.</p>
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">Go Pro when:</strong> you want review-ready evidence, need your own dashboard, or keep correcting the same failure modes.
+          <strong style="color:#fff;">Choose Pro when:</strong> you want review-ready evidence, need your own dashboard, or are still operating solo.
         </div>
         <div class="dashboard-preview" style="margin-bottom:16px;border:1px solid #333;border-radius:8px;overflow:hidden;">
           <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:16px;text-align:center;">
@@ -741,14 +743,13 @@ __GA_BOOTSTRAP__
           <input type="email" id="pro-email" data-buyer-email placeholder="Your email to start trial" style="width:100%;padding:10px 14px;border:1px solid #333;border-radius:6px;background:#1a1a2e;color:#fff;font-size:14px;">
         </div>
         <button class="btn-pro" id="pro-trial-btn" onclick="handleProTrial()" style="width:100%;cursor:pointer;border:none;">Start 7-Day Free Trial</button>
-        <p style="font-size:11px;color:#666;margin-top:8px;">Founder pricing — <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" style="color:var(--cyan);text-decoration:underline;">preserved $49 one-time founder link</a> for early buyers who still want that path.</p>
-        <p style="font-size:12px;color:var(--cyan);margin-top:6px;">Mem0 Pro: $249/mo. ThumbGate Pro: $19/mo.</p>
+        <p style="font-size:11px;color:#666;margin-top:8px;">Solo Pro stays available for operators who want a personal dashboard and export-ready evidence without the team rollout motion.</p>
       </div>
       <div class="price-card team">
         <div class="tier">Team</div>
         <div class="price">$12<span style="font-size:16px;color:var(--text-dim)">/seat/mo</span></div>
         <div class="price-sub">3-seat minimum · intake-led rollout for the first workflow</div>
-        <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">For teams shipping AI-generated changes across shared repos who need one correction to protect every reviewer and runtime. The first team step is a workflow hardening sprint, not a blind org-wide rollout.</p>
+        <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">For teams shipping AI-generated changes across shared repos who need one correction to protect every reviewer and runtime. This is the primary buying motion.</p>
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
           <strong style="color:#fff;">Best first paid motion:</strong> one workflow, one owner, one proof review. Qualify the blocker first, then expand into seats.
         </div>
@@ -825,7 +826,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
-        <div class="faq-a">No. Free keeps local enforcement on your machine with 3 daily feedback captures, 5 lesson searches, unlimited recall, gates, and hook blocking. No cloud account is required. Pro adds a personal local dashboard plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, hosted review views, org dashboard visibility, and team-wide proof.</div>
+        <div class="faq-a">No. Free keeps local enforcement on your machine with 3 daily feedback captures, 5 lesson searches, unlimited recall, gates, and hook blocking. No cloud account is required. The business starts when a team wants shared rules, approval boundaries, hosted review views, org dashboard visibility, and proof that survives handoffs. Pro is the optional solo side lane for a personal dashboard and DPO export.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What if my thumbs-down is vague?</div>
@@ -847,11 +848,11 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="newsletter" style="padding: 48px 0;">
   <div class="container" style="text-align: center;">
     <div class="section-label">Buyer Follow-Up</div>
-    <h2 class="section-title" style="margin-bottom: 16px;">Not ready to buy today? Keep the sprint brief, demo, and checkout path one click away.</h2>
-    <p style="color: var(--text-dim); margin-bottom: 24px; max-width: 560px; margin-left: auto; margin-right: auto;">Save your work email for launch updates, new gate patterns, the workflow sprint brief, and the paid demo path. We also keep it on this device so the Pro checkout can open prefilled instead of making you type it again.</p>
+    <h2 class="section-title" style="margin-bottom: 16px;">Not ready to buy today? Keep the sprint brief, demo, and discovery notes one click away.</h2>
+    <p style="color: var(--text-dim); margin-bottom: 24px; max-width: 560px; margin-left: auto; margin-right: auto;">Save your work email for the workflow sprint brief, new gate patterns, and buyer-facing proof updates. If you later choose the solo Pro checkout, we keep that path prefilled on this device too.</p>
     <form action="/api/newsletter" method="POST" data-newsletter-form data-page="homepage" data-intent="buyer_follow_up" style="display: flex; gap: 8px; max-width: 480px; margin: 0 auto; flex-wrap: wrap; justify-content: center;">
       <input type="email" name="email" data-buyer-email placeholder="you@company.com" required style="flex: 1; min-width: 220px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); color: var(--text); font-size: 15px;">
-      <button type="submit" style="padding: 12px 24px; background: var(--cyan); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer;">Get updates + keep checkout ready</button>
+      <button type="submit" style="padding: 12px 24px; background: var(--cyan); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer;">Get sprint brief + updates</button>
     </form>
     <p data-newsletter-status style="min-height:20px;font-size:12px;color:var(--text-dim);margin-top:10px;" aria-live="polite"></p>
   </div>
@@ -861,10 +862,10 @@ __GA_BOOTSTRAP__
 <section class="final-cta">
   <div class="container">
     <h2>Start with one workflow you actually need to defend.</h2>
-    <p>Use the workflow hardening sprint for team rollout, or choose Pro if you are the solo operator who needs a personal dashboard and review-ready exports.</p>
+    <p>Use the workflow hardening sprint for team rollout. Install the free CLI if you are still evaluating alone. Pro remains the solo side lane for a personal dashboard and review-ready exports.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
       <a href="#workflow-sprint-intake" class="btn-team" style="background:var(--green);">Start Workflow Hardening Sprint</a>
-      <a href="/checkout/pro?utm_source=website&utm_medium=homepage_final&utm_campaign=pro_pack&cta_id=homepage_final_trial&cta_placement=final&plan_id=pro&landing_path=%2F" class="btn-pro">Try Pro free for 7 days → $19/mo</a>
+      <a href="/guide?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free" class="btn-pro btn-install-link">Install Free CLI</a>
     </div>
   </div>
 </section>
@@ -875,6 +876,7 @@ __GA_BOOTSTRAP__
     <div class="footer-links">
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
       <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener">npm</a>
+      <a href="https://www.producthunt.com/products/thumbgate" target="_blank" rel="noopener">Product Hunt</a>
       <a href="https://x.com/IgorGanapolsky" target="_blank" rel="noopener">X / Twitter</a>
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
@@ -894,6 +896,7 @@ function initializeBuyerIntentForms() {
 }
 
 function resolvePricingClickTier(el) {
+  if (el.classList.contains('btn-install-link')) return 'install';
   if (el.classList.contains('btn-pro')) return 'pro';
   if (el.classList.contains('btn-pro-page')) return 'pro_page';
   if (el.classList.contains('btn-team')) return 'team';
@@ -937,7 +940,8 @@ function copyInstall(el) {
 
   /* CTA clicks */
   trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 19, billing: 'monthly' });
-  trackClick('.btn-pro-page', 'pro_page_click', { tier: 'pro', source: 'hero' });
+  trackClick('.btn-pro-page:not(.btn-install-link)', 'pro_page_click', { tier: 'pro', source: 'hero' });
+  trackClick('.btn-install-link', 'install_guide_click', { tier: 'free', source: 'homepage_cta' });
   trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
   trackClick('.btn-free', 'install_click', { tier: 'free' });
   trackClick('.btn-demo-link', 'demo_click', { source: 'homepage' });
@@ -945,7 +949,7 @@ function copyInstall(el) {
 
   /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Team button click
      with section context so we can distinguish pricing section vs final CTA section clicks */
-  document.querySelectorAll('.btn-pro, .btn-pro-page, .btn-team, .btn-free, .btn-demo-link, .nav-cta').forEach(function(el) {
+  document.querySelectorAll('.btn-pro, .btn-pro-page, .btn-install-link, .btn-team, .btn-free, .btn-demo-link, .nav-cta').forEach(function(el) {
     el.addEventListener('click', function() {
       var section = el.closest('section');
       var sectionId = section ? (section.id || section.className.split(' ')[0] || 'unknown') : 'unknown';

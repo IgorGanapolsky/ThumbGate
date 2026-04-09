@@ -19,7 +19,7 @@
 **Description:**
 > ThumbGate puts a gate before every AI agent action. One thumbs-down captures the mistake, generates a prevention rule, and permanently blocks that pattern from recurring — across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode. Free to start; Pro at $19/mo adds team dashboards and DPO export.
 
-**Pricing:** Freemium (Free + Pro $19/mo + Team $99/seat/mo)
+**Pricing:** Freemium (Free + Pro $19/mo + Team $12/seat/mo)
 
 **URLs:**
 - Homepage: https://thumbgate-production.up.railway.app

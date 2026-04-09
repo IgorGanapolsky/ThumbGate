@@ -4,12 +4,17 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
+  assertSafeGhArgs,
+  getPrChecks,
   getPrStatus,
   isOpenPr,
   loadManagedPrs,
   managePrs,
+  normalizePrNumber,
   resolveBlockers,
+  resolveGhBinary,
   performMerge,
+  waitForMergeCommit,
 } = require('../scripts/pr-manager');
 
 function createRunner(results) {
@@ -33,7 +38,15 @@ test('PR Manager - Diagnoses Ready state', async (t) => {
     statusCheckRollup: [{ name: 'CI', conclusion: 'SUCCESS' }]
   };
 
-  const result = await resolveBlockers(mockPr);
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify([{ bucket: 'pass', name: 'CI', state: 'SUCCESS' }]),
+      stderr: ''
+    }
+  ]);
+
+  const result = await resolveBlockers(mockPr, runner);
   assert.equal(result.status, 'ready', 'PR with CLEAN/MERGEABLE state should be ready');
 });
 
@@ -60,10 +73,47 @@ test('PR Manager - Detects CI Failure', async () => {
     ]
   };
 
-  const result = await resolveBlockers(mockPr);
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify([{ bucket: 'fail', name: 'CI/test', state: 'FAILURE' }]),
+      stderr: ''
+    }
+  ]);
+
+  const result = await resolveBlockers(mockPr, runner);
   assert.equal(result.status, 'blocked', 'Failing CI should block the PR');
   assert.equal(result.reason, 'ci_failure');
   assert.deepEqual(result.checks, ['CI/test']);
+});
+
+test('PR Manager - Blocks non-required quality failures returned by gh pr checks', async () => {
+  const mockPr = {
+    number: 650,
+    title: 'Sonar failure PR',
+    mergeable: 'MERGEABLE',
+    mergeStateStatus: 'CLEAN',
+    isDraft: false,
+    statusCheckRollup: [
+      { name: 'test', status: 'COMPLETED', conclusion: 'SUCCESS' }
+    ]
+  };
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify([
+        { bucket: 'pass', name: 'test', state: 'SUCCESS' },
+        { bucket: 'fail', name: 'SonarCloud Code Analysis', state: 'FAILURE' }
+      ]),
+      stderr: ''
+    }
+  ]);
+
+  const result = await resolveBlockers(mockPr, runner);
+  assert.equal(result.status, 'blocked');
+  assert.equal(result.reason, 'ci_failure');
+  assert.equal(result.checkSource, 'gh pr checks');
+  assert.deepEqual(result.checks, ['SonarCloud Code Analysis']);
 });
 
 test('PR Manager - Detects Pending Checks', async () => {
@@ -78,7 +128,15 @@ test('PR Manager - Detects Pending Checks', async () => {
     ]
   };
 
-  const result = await resolveBlockers(mockPr);
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify([{ bucket: 'pending', name: 'CI/test', state: 'PENDING' }]),
+      stderr: ''
+    }
+  ]);
+
+  const result = await resolveBlockers(mockPr, runner);
   assert.equal(result.status, 'blocked', 'Pending CI should block the PR');
   assert.equal(result.reason, 'ci_pending');
   assert.deepEqual(result.checks, ['CI/test']);
@@ -111,7 +169,15 @@ test('PR Manager - Detects Required Review', async () => {
     ]
   };
 
-  const result = await resolveBlockers(mockPr);
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify([{ bucket: 'pass', name: 'CI/test', state: 'SUCCESS' }]),
+      stderr: ''
+    }
+  ]);
+
+  const result = await resolveBlockers(mockPr, runner);
   assert.equal(result.status, 'blocked', 'Required review should block the PR');
   assert.equal(result.reason, 'review_required');
 });
@@ -126,6 +192,36 @@ test('PR Manager - getPrStatus returns null when current branch has no PR', () =
   ]);
 
   assert.equal(getPrStatus('', runner), null);
+});
+
+test('PR Manager - normalizePrNumber rejects unsafe values', () => {
+  assert.equal(normalizePrNumber('123'), '123');
+  assert.throws(() => normalizePrNumber('../665', { allowEmpty: false }), /Unsafe PR number/);
+});
+
+test('PR Manager - assertSafeGhArgs rejects control characters', () => {
+  assert.deepEqual(assertSafeGhArgs(['pr', 'view', '665']), ['pr', 'view', '665']);
+  assert.deepEqual(assertSafeGhArgs(['api', 'query=\n  mutation { viewer { login } }\n']), ['api', 'query=\n  mutation { viewer { login } }\n']);
+  assert.throws(() => assertSafeGhArgs([`pr${String.fromCharCode(0)}view`]), /Unsafe GH CLI arg/);
+});
+
+test('PR Manager - getPrChecks rejects invalid PR numbers before invoking GH CLI', () => {
+  assert.throws(() => getPrChecks('665\nboom'), /Unsafe PR number/);
+});
+
+test('PR Manager - resolveGhBinary uses only fixed executable locations', () => {
+  const calls = [];
+  const accessSync = (candidate, mode) => {
+    calls.push([candidate, mode]);
+    if (candidate !== '/usr/local/bin/gh') {
+      throw new Error('missing');
+    }
+  };
+
+  const result = resolveGhBinary({ accessSync });
+  assert.equal(result, '/usr/local/bin/gh');
+  assert.equal(calls[0][0], '/usr/bin/gh');
+  assert.equal(calls[1][0], '/usr/local/bin/gh');
 });
 
 test('PR Manager - loadManagedPrs falls back to open PR list when branch has no PR', () => {
@@ -206,7 +302,7 @@ test('PR Manager - managePrs returns noop when there are no open PRs', async () 
     }
   ]);
 
-  const result = await managePrs('', runner);
+  const result = await managePrs('', runner, { waitForMerge: false });
   assert.equal(result.status, 'noop');
   assert.deepEqual(result.prs, []);
 });
@@ -233,18 +329,24 @@ test('PR Manager - managePrs merges ready open PRs discovered from the repo list
     },
     {
       status: 0,
+      stdout: JSON.stringify([{ bucket: 'pass', name: 'CI', state: 'SUCCESS' }]),
+      stderr: ''
+    },
+    {
+      status: 0,
       stdout: 'merged',
       stderr: ''
     }
   ]);
 
-  const result = await managePrs('', runner);
+  const result = await managePrs('', runner, { waitForMerge: false });
   assert.equal(result.status, 'ok');
   assert.equal(result.prs.length, 1);
   assert.equal(result.prs[0].number, 282);
   assert.equal(result.prs[0].outcome.status, 'ready');
   assert.equal(result.prs[0].outcome.mergeRequested, true);
   assert.match(result.prs[0].outcome.mergeMode, /merged|queued_or_auto/);
+  assert.equal(result.prs[0].outcome.mergeCommit, undefined);
 });
 
 test('PR Manager - managePrs leaves pending-check PRs unmerged', async () => {
@@ -266,6 +368,11 @@ test('PR Manager - managePrs leaves pending-check PRs unmerged', async () => {
       status: 0,
       stdout: JSON.stringify([mockPr]),
       stderr: ''
+    },
+    {
+      status: 0,
+      stdout: JSON.stringify([{ bucket: 'pending', name: 'CI', state: 'PENDING' }]),
+      stderr: ''
     }
   ]);
 
@@ -284,8 +391,114 @@ test('PR Manager - performMerge never uses admin bypass', () => {
     return { status: 0, stdout: 'queued', stderr: '' };
   };
 
-  const result = performMerge(321, runner);
+  const result = performMerge(321, runner, { waitForMerge: false });
   assert.equal(result.ok, true);
   assert.deepEqual(calls[0], ['pr', 'merge', '321', '--squash', '--delete-branch', '--auto']);
   assert.ok(!calls[0].includes('--admin'));
+});
+
+test('PR Manager - resolveBlockers falls back to statusCheckRollup when gh pr checks fails', async () => {
+  const mockPr = {
+    number: 777,
+    title: 'Fallback CI PR',
+    mergeable: 'MERGEABLE',
+    mergeStateStatus: 'BLOCKED',
+    isDraft: false,
+    statusCheckRollup: [
+      { name: 'CI/test', status: 'COMPLETED', conclusion: 'FAILURE' }
+    ]
+  };
+  const warnings = [];
+  const originalWarn = console.warn;
+  console.warn = (value) => warnings.push(value);
+
+  try {
+    const runner = createRunner([
+      {
+        status: 1,
+        stdout: '',
+        stderr: 'gh pr checks failed'
+      }
+    ]);
+    const result = await resolveBlockers(mockPr, runner);
+    assert.equal(result.status, 'blocked');
+    assert.equal(result.reason, 'ci_failure');
+    assert.equal(result.checkSource, 'statusCheckRollup');
+    assert.deepEqual(result.checks, ['CI/test']);
+  } finally {
+    console.warn = originalWarn;
+  }
+
+  assert.match(warnings.join('\n'), /Falling back to statusCheckRollup/);
+});
+
+test('PR Manager - waitForMergeCommit reports closed PRs without merge commits', () => {
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        number: 778,
+        state: 'CLOSED',
+        title: 'Closed PR',
+        mergeCommit: null
+      }),
+      stderr: ''
+    }
+  ]);
+
+  const result = waitForMergeCommit('778', runner, { timeoutMs: 0, intervalMs: 0 });
+  assert.equal(result.finalized, true);
+  assert.equal(result.merged, false);
+  assert.equal(result.reason, 'closed_without_merge');
+});
+
+test('PR Manager - managePrs reports the landed merge commit instead of the PR head SHA', async () => {
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        number: 644,
+        state: 'OPEN',
+        title: 'Merge integrity hardening',
+        mergeable: 'MERGEABLE',
+        mergeStateStatus: 'CLEAN',
+        headRefOid: 'c5c695c5cb0065cd42f8d86e9f6686df7407ea09',
+        isDraft: false,
+        statusCheckRollup: []
+      }),
+      stderr: ''
+    },
+    {
+      status: 0,
+      stdout: JSON.stringify([
+        { bucket: 'pass', name: 'test', state: 'SUCCESS' }
+      ]),
+      stderr: ''
+    },
+    {
+      status: 0,
+      stdout: 'merged',
+      stderr: ''
+    },
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        number: 644,
+        state: 'MERGED',
+        title: 'Merge integrity hardening',
+        headRefOid: 'c5c695c5cb0065cd42f8d86e9f6686df7407ea09',
+        mergeCommit: { oid: 'fd1aa82164c5a00c374493abea60a46d4f5446db' },
+        mergedAt: '2026-04-08T22:50:17Z',
+        mergedBy: { login: 'app/trunk-io' }
+      }),
+      stderr: ''
+    }
+  ]);
+
+  const result = await managePrs('644', runner, { timeoutMs: 0, intervalMs: 0 });
+  const outcome = result.prs[0].outcome;
+  assert.equal(outcome.mergeRequested, true);
+  assert.equal(outcome.mergeFinalized, true);
+  assert.equal(outcome.mergeCommit, 'fd1aa82164c5a00c374493abea60a46d4f5446db');
+  assert.notEqual(outcome.mergeCommit, 'c5c695c5cb0065cd42f8d86e9f6686df7407ea09');
 });
