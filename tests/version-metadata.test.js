@@ -279,7 +279,7 @@ test('active GTM scripts and reports point to the canonical offer without foundi
 test('commercial truth sources stay aligned across public and historical docs', () => {
   const commercialTruth = readText('docs/COMMERCIAL_TRUTH.md');
   const readme = readText('README.md');
-  const pricingResearch = readText('docs/PRICING_RESEARCH_2026-03-09.md');
+  // Removed duplicate pricing doc (03-09 was identical to 03-10)
   const crisisReport = readText('docs/PRICING_RESEARCH_2026-03-10.md');
   const packagingPlan = readText('docs/PACKAGING_AND_SALES_PLAN.md');
   const revenueSprint = readText('docs/REVENUE_SPRINT_MAR2026.md');
@@ -296,7 +296,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   assert.match(readme, /Commercial Truth/);
   assert.doesNotMatch(readme, /500\+ agentic sessions|battle-tested/i);
 
-  for (const historicalDoc of [pricingResearch, crisisReport, packagingPlan, revenueSprint, xStrategy]) {
+  for (const historicalDoc of [crisisReport, packagingPlan, revenueSprint, xStrategy]) {
     assert.match(historicalDoc, /Historical .*note|Historical .*archived|Historical .*hypothesis/i);
     assert.match(historicalDoc, /COMMERCIAL_TRUTH\.md/);
   }
