@@ -2,13 +2,19 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { execFileSync } = require('child_process');
 
 const {
   classifyCommand,
   compareSemver,
   evaluateOperationalIntegrity,
   findReleaseSensitiveFiles,
+  gitVerifyRef,
   isSafeBranchName,
+  isSafeGitObjectId,
   isSafeGitRevision,
   isHeadReachableFrom,
   readPackageVersion,
@@ -16,6 +22,19 @@ const {
   resolveCiBranchName,
   runCli,
 } = require('../scripts/operational-integrity');
+
+function createTempGitRepo() {
+  const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-ops-'));
+  execFileSync('git', ['init', '--initial-branch=main'], { cwd: repoDir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.name', 'ThumbGate Test'], { cwd: repoDir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'thumbgate@example.com'], { cwd: repoDir, stdio: 'ignore' });
+  fs.writeFileSync(path.join(repoDir, 'package.json'), JSON.stringify({ name: 'thumbgate-temp', version: '1.0.0' }, null, 2));
+  execFileSync('git', ['add', 'package.json'], { cwd: repoDir, stdio: 'ignore' });
+  execFileSync('git', ['commit', '-m', 'init'], { cwd: repoDir, stdio: 'ignore' });
+  execFileSync('git', ['branch', 'feature/test'], { cwd: repoDir, stdio: 'ignore' });
+  execFileSync('git', ['pack-refs', '--all', '--prune'], { cwd: repoDir, stdio: 'ignore' });
+  return repoDir;
+}
 
 test('compareSemver orders semantic versions correctly', () => {
   assert.equal(compareSemver('0.9.10', '0.9.9'), 1);
@@ -134,6 +153,22 @@ test('isSafeGitRevision rejects unsafe revision payloads', () => {
   assert.equal(isSafeGitRevision('main..evil'), false);
   assert.equal(isSafeGitRevision('main@{1}'), false);
   assert.equal(isSafeGitRevision('HEAD~1'), false);
+});
+
+test('isSafeGitObjectId only allows full commit hashes', () => {
+  assert.equal(isSafeGitObjectId('0123456789abcdef0123456789abcdef01234567'), true);
+  assert.equal(isSafeGitObjectId('0123456789abcdef'), false);
+  assert.equal(isSafeGitObjectId('not-a-sha'), false);
+});
+
+test('gitVerifyRef resolves loose and packed refs to commit shas', () => {
+  const repoDir = createTempGitRepo();
+  const headSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoDir, encoding: 'utf8' }).trim();
+
+  assert.equal(gitVerifyRef(repoDir, 'HEAD'), headSha);
+  assert.equal(gitVerifyRef(repoDir, 'main'), headSha);
+  assert.equal(gitVerifyRef(repoDir, 'feature/test'), headSha);
+  assert.equal(gitVerifyRef(repoDir, 'refs/heads/feature/test'), headSha);
 });
 
 test('resolveBaseRef short-circuits invalid branch names before git operations', () => {

@@ -86,6 +86,10 @@ function isSafeGitRevision(revision) {
   return true;
 }
 
+function isSafeGitObjectId(objectId) {
+  return /^[0-9a-f]{40}$/i.test(String(objectId || '').trim());
+}
+
 function assertSafeGitRevision(revision, label = 'revision') {
   const normalized = String(revision || '').trim();
   if (!isSafeGitRevision(normalized)) {
@@ -102,13 +106,71 @@ function gitShowTopLevel(repoPath) {
   }).trim();
 }
 
-function gitVerifyRef(repoPath, ref) {
-  const safeRef = assertSafeGitRevision(ref, 'ref');
-  return execFileSync('git', ['rev-parse', '--verify', '--end-of-options', safeRef], {
+function gitDirPath(repoPath) {
+  return execFileSync('git', ['rev-parse', '--git-dir'], {
     cwd: repoPath,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
   }).trim();
+}
+
+function readGitRefFile(gitDir, refName) {
+  const refPath = path.join(gitDir, ...refName.split('/'));
+  try {
+    const value = fs.readFileSync(refPath, 'utf8').trim();
+    return isSafeGitObjectId(value) ? value.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+function readPackedGitRef(gitDir, refName) {
+  try {
+    const packedRefs = fs.readFileSync(path.join(gitDir, 'packed-refs'), 'utf8');
+    for (const line of packedRefs.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('^')) continue;
+      const [objectId, name] = trimmed.split(/\s+/, 2);
+      if (name === refName && isSafeGitObjectId(objectId)) {
+        return objectId.toLowerCase();
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function readGitRefSha(gitDir, refName) {
+  if (!refName || !refName.startsWith('refs/')) return null;
+  return readGitRefFile(gitDir, refName) || readPackedGitRef(gitDir, refName);
+}
+
+function resolveGitRevisionToCommitSha(repoPath, revision) {
+  const safeRevision = assertSafeGitRevision(revision, 'revision');
+  if (safeRevision === 'HEAD') {
+    return gitHeadSha(repoPath);
+  }
+  if (isSafeGitObjectId(safeRevision)) {
+    return safeRevision.toLowerCase();
+  }
+
+  const gitDir = path.resolve(repoPath, gitDirPath(repoPath));
+  if (safeRevision.startsWith('refs/')) {
+    return readGitRefSha(gitDir, safeRevision);
+  }
+  if (safeRevision.startsWith('origin/')) {
+    return readGitRefSha(gitDir, `refs/remotes/${safeRevision}`);
+  }
+  return readGitRefSha(gitDir, `refs/heads/${safeRevision}`) || readGitRefSha(gitDir, `refs/remotes/origin/${safeRevision}`);
+}
+
+function gitVerifyRef(repoPath, ref) {
+  const commitSha = resolveGitRevisionToCommitSha(repoPath, ref);
+  if (!commitSha) {
+    throw new Error(`Unknown git ref: ${ref}`);
+  }
+  return commitSha;
 }
 
 function gitCurrentBranch(repoPath) {
@@ -128,8 +190,8 @@ function gitHeadSha(repoPath) {
 }
 
 function gitShowPackageJsonAtRef(repoPath, ref) {
-  const safeRef = assertSafeGitRevision(ref, 'ref');
-  return execFileSync('git', ['show', '--end-of-options', `${safeRef}:package.json`], {
+  const safeCommitSha = gitVerifyRef(repoPath, ref);
+  return execFileSync('git', ['show', '--end-of-options', `${safeCommitSha}:package.json`], {
     cwd: repoPath,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
@@ -137,8 +199,8 @@ function gitShowPackageJsonAtRef(repoPath, ref) {
 }
 
 function gitDiffNameOnlyAgainstBase(repoPath, baseRef) {
-  const safeBaseRef = assertSafeGitRevision(baseRef, 'base ref');
-  return execFileSync('git', ['diff', '--name-only', `${safeBaseRef}...HEAD`, '--'], {
+  const safeBaseCommitSha = gitVerifyRef(repoPath, baseRef);
+  return execFileSync('git', ['diff', '--name-only', `${safeBaseCommitSha}...HEAD`, '--'], {
     cwd: repoPath,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
@@ -146,9 +208,9 @@ function gitDiffNameOnlyAgainstBase(repoPath, baseRef) {
 }
 
 function gitMergeBaseIsAncestor(repoPath, commit, ref) {
-  const safeCommit = assertSafeGitRevision(commit, 'commit');
-  const safeRef = assertSafeGitRevision(ref, 'ref');
-  return spawnSync('git', ['merge-base', '--is-ancestor', safeCommit, safeRef], {
+  const safeCommitSha = gitVerifyRef(repoPath, commit);
+  const safeRefCommitSha = gitVerifyRef(repoPath, ref);
+  return spawnSync('git', ['merge-base', '--is-ancestor', safeCommitSha, safeRefCommitSha], {
     cwd: repoPath,
     encoding: 'utf8',
   });
@@ -587,7 +649,9 @@ module.exports = {
   findOpenPrForBranch,
   findReleaseSensitiveFiles,
   getCurrentBranch,
+  gitVerifyRef,
   isSafeBranchName,
+  isSafeGitObjectId,
   isSafeGitRevision,
   isHeadReachableFrom,
   listChangedFilesAgainstBase,

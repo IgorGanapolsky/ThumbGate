@@ -28,12 +28,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache Sonar packages
-        uses: actions/cache@v4
+      - name: Setup Node
+        uses: actions/setup-node@v6
         with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            workers/package-lock.json
+
+      - name: Install deps
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Generate coverage report
+        run: npm run test:coverage
 
       - name: Run SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v7.1.0
