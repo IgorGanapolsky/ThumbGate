@@ -20,8 +20,8 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ### Free (local, `npx thumbgate serve`)
 
-- 5 daily feedback captures
-- 10 daily lesson searches
+- 3 daily feedback captures
+- 5 daily lesson searches
 - Unlimited recall on the local runtime
 - 10 auto-promoted gates plus the core safety policy
 - 5 built-in gates

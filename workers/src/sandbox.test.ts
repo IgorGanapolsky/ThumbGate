@@ -39,7 +39,7 @@ function createEnv(secret = 'worker-secret') {
     STRIPE_SECRET_KEY: '',
     STRIPE_WEBHOOK_SECRET: '',
     STRIPE_PRICE_ID: '',
-    FREE_DAILY_LIMIT: '5',
+    FREE_DAILY_LIMIT: '3',
     SANDBOX_SHARED_SECRET: secret,
   } satisfies Env;
 
