@@ -153,10 +153,10 @@ function decodeHtmlEntities(text) {
 
 function stripHtml(html) {
   const withLineBreaks = String(html || '')
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, ' ')
     .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/<\/(?:p|div|section|article|header|footer|aside|main|li|tr|td|th|h[1-6]|br)>/gi, '\n')
+    .replace(/<\/(?:p|div|section|article|header|footer|aside|main|li|tr|td|th|h[1-6]|br)\s*>/gi, '\n')
     .replace(/<[^>]+>/g, ' ');
   return normalizeText(decodeHtmlEntities(withLineBreaks));
 }

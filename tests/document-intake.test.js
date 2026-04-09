@@ -82,3 +82,27 @@ test('document listing and search surfaces imported runbooks for ThumbGate recal
   assert.equal(results[0].documentId, document.documentId);
   assert.ok(results[0].proposals.some((proposal) => proposal.templateId === 'evidence-before-done'));
 });
+
+test('importDocument strips script/style tags even when closing tags include whitespace', () => {
+  const document = importDocument({
+    content: [
+      '<html>',
+      '<head>',
+      '<title>HTML Policy</title>',
+      '<style>body { color: red; }</style >',
+      '</head>',
+      '<body>',
+      '<script>window.pwned = true;</script >',
+      '<p>Never force-push to main.</p>',
+      '</body>',
+      '</html>',
+    ].join(''),
+    sourceFormat: 'html',
+    tags: ['policy'],
+  });
+
+  assert.equal(document.title, 'HTML Policy');
+  assert.doesNotMatch(document.content, /window\.pwned/);
+  assert.doesNotMatch(document.content, /color:\s*red/);
+  assert.match(document.content, /Never force-push to main/);
+});
