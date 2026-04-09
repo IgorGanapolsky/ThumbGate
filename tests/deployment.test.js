@@ -211,6 +211,8 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_HEALTHCHECK_SLEEP_SECONDS/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS/);
+  assert.match(workflow, /RAILWAY_LOG_LINES/);
+  assert.match(workflow, /RAILWAY_HTTP_LOG_LINES/);
   assert.match(workflow, /secrets\.THUMBGATE_API_KEY/);
   assert.match(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
   assert.match(workflow, /vars\.THUMBGATE_BILLING_API_BASE_URL \|\| vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
@@ -248,6 +250,47 @@ test('Deploy to Railway workflow waits long enough to verify the promoted build 
   assert.match(workflow, /curl --connect-timeout "\$CONNECT_TIMEOUT_SECONDS" --max-time "\$MAX_TIME_SECONDS" -sS -o "\$RESPONSE_FILE" -w "%\{http_code\}" "\$RAILWAY_HEALTHCHECK_URL"/);
   assert.match(workflow, /Observed build SHA/);
   assert.match(workflow, /Expected build SHA/);
+});
+
+test('Deploy to Railway workflow captures Railway diagnostics when health verification fails', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+
+  assert.match(workflow, /name: Capture Railway diagnostics/);
+  assert.match(workflow, /if: failure\(\) && steps\.railway-config\.outputs\.enabled == 'true'/);
+  assert.match(workflow, /bash scripts\/capture-railway-diagnostics\.sh railway-diagnostics/);
+  assert.match(workflow, /actions\/upload-artifact@v4/);
+  assert.match(workflow, /railway-diagnostics-\$\{\{\s*github\.run_id\s*\}\}/);
+});
+
+test('Railway diagnostics workflow can inspect or bounce the service with the live Railway config', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'railway-diagnostics.yml'), 'utf8');
+
+  assert.match(workflow, /name:\s*Railway Diagnostics/);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /action:/);
+  assert.match(workflow, /inspect/);
+  assert.match(workflow, /restart/);
+  assert.match(workflow, /redeploy/);
+  assert.match(workflow, /RAILWAY_PROJECT_ID/);
+  assert.match(workflow, /RAILWAY_ENVIRONMENT_ID/);
+  assert.match(workflow, /RAILWAY_SERVICE/);
+  assert.match(workflow, /railway restart --service "\$RAILWAY_SERVICE" --yes --json/);
+  assert.match(workflow, /railway redeploy --service "\$RAILWAY_SERVICE" --yes --json/);
+  assert.match(workflow, /bash scripts\/capture-railway-diagnostics\.sh railway-diagnostics/);
+  assert.match(workflow, /actions\/upload-artifact@v4/);
+});
+
+test('Railway diagnostics helper captures service status, latest logs, and a direct health probe', () => {
+  const script = fs.readFileSync(path.join(PROJECT_ROOT, 'scripts', 'capture-railway-diagnostics.sh'), 'utf8');
+
+  assert.match(script, /railway link --project "\$RAILWAY_PROJECT_ID"/);
+  assert.match(script, /railway service status/);
+  assert.match(script, /railway logs .*--latest --deployment --lines "\$LOG_LINES" --json/);
+  assert.match(script, /railway logs .*--latest --build --lines "\$LOG_LINES" --json/);
+  assert.match(script, /railway logs .*--latest --http --path \/health --status '>=500' --lines "\$HTTP_LOG_LINES" --json/);
+  assert.match(script, /railway logs .*--latest --http --status '>=500' --lines "\$HTTP_LOG_LINES" --json/);
+  assert.match(script, /curl \\/);
+  assert.match(script, /HEALTHCHECK_URL/);
 });
 
 test('Deploy to Railway workflow retries transient Railway CLI failures before failing the lane', () => {
