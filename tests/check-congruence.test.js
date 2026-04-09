@@ -6,6 +6,8 @@ const {
   collectLocalGitHubAboutErrors,
   compareGitHubAbout,
   loadGitHubAboutConfig,
+  VERIFY_ATTEMPTS_ENV,
+  VERIFY_DELAY_MS_ENV,
   normalizeTopics,
   verifyLiveGitHubAbout,
 } = require('../scripts/github-about');
@@ -159,4 +161,48 @@ test('verifyLiveGitHubAbout returns final drift after exhausting retries', async
   assert.match(result.errors.join('\n'), /homepage mismatch/);
   assert.match(result.errors.join('\n'), /topics mismatch/);
   assert.deepEqual(sleepCalls, [10, 20]);
+});
+
+test('verifyLiveGitHubAbout honors environment retry overrides', async () => {
+  const about = loadGitHubAboutConfig(ROOT);
+  const originalAttempts = process.env[VERIFY_ATTEMPTS_ENV];
+  const originalDelay = process.env[VERIFY_DELAY_MS_ENV];
+  const sleepCalls = [];
+  let fetchCalls = 0;
+
+  process.env[VERIFY_ATTEMPTS_ENV] = '4';
+  process.env[VERIFY_DELAY_MS_ENV] = '15';
+
+  try {
+    const result = await verifyLiveGitHubAbout({
+      expected: about,
+      fetcher: async () => {
+        fetchCalls += 1;
+        return {
+          description: `${about.description} drift`,
+          homepageUrl: about.homepageUrl,
+          topics: about.topics,
+        };
+      },
+      sleep: async (delayMs) => {
+        sleepCalls.push(delayMs);
+      },
+    });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.attemptsUsed, 4);
+    assert.equal(fetchCalls, 4);
+    assert.deepEqual(sleepCalls, [15, 30, 45]);
+  } finally {
+    if (originalAttempts === undefined) {
+      delete process.env[VERIFY_ATTEMPTS_ENV];
+    } else {
+      process.env[VERIFY_ATTEMPTS_ENV] = originalAttempts;
+    }
+    if (originalDelay === undefined) {
+      delete process.env[VERIFY_DELAY_MS_ENV];
+    } else {
+      process.env[VERIFY_DELAY_MS_ENV] = originalDelay;
+    }
+  }
 });

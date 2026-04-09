@@ -410,8 +410,8 @@ test('CI workflow runs evolution proof and uploads evolution evidence artifacts'
 test('CI workflow treats GitHub About sync as best-effort but still verifies the live About state', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 
-  assert.match(workflow, /name: Sync GitHub About metadata on main[\s\S]*?continue-on-error:\s*true[\s\S]*?GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\}\}[\s\S]*?npm run github:about:sync/);
-  assert.match(workflow, /name: Verify live GitHub About congruence on main[\s\S]*?run:\s*npm run test:congruence:live/);
+  assert.match(workflow, /name: Sync GitHub About metadata on main[\s\S]*?continue-on-error:\s*true[\s\S]*?GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\}\}[\s\S]*?THUMBGATE_GITHUB_ABOUT_VERIFY_ATTEMPTS:\s*6[\s\S]*?THUMBGATE_GITHUB_ABOUT_VERIFY_DELAY_MS:\s*5000[\s\S]*?npm run github:about:sync/);
+  assert.match(workflow, /name: Verify live GitHub About congruence on main[\s\S]*?THUMBGATE_GITHUB_ABOUT_VERIFY_ATTEMPTS:\s*6[\s\S]*?THUMBGATE_GITHUB_ABOUT_VERIFY_DELAY_MS:\s*5000[\s\S]*?run:\s*npm run test:congruence:live/);
   assert.doesNotMatch(workflow, /name: Verify live GitHub About congruence on main[\s\S]*?GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\}\}/);
 });
 
