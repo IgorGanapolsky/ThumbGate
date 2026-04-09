@@ -1,30 +1,41 @@
 # Team Pilot Outreach Messages
 
-Status: current  
-Updated: April 9, 2026
+Copy-paste these into Reddit Chat. These are the 4 highest-value leads from comment engagement.
 
-Use these for the first warm outbound pass when the goal is to book a Workflow Hardening Sprint discovery call.
+---
 
-## 1. Deep_Ad1959
+## 1. Deep_Ad1959 (r/cursor — already in your DMs)
 
-> Your question about rollback rates when context changes is exactly the right one. The bigger question for us is whether you are solving that problem solo or across a team.
->
-> We are focused on workflow governance for engineering teams: shared enforcement memory, CI gates, approval policies, and audit trails. One developer's correction protects every agent on the team. If you already have a workflow that keeps repeating the same mistakes, I can send the sprint brief and proof pack.
+> Your question about rollback rates when context changes is exactly the right one. Short answer: rarely, because Thompson Sampling auto-adjusts gate weights — gates that fire incorrectly in new contexts lose confidence and stop blocking on their own.
 
-## 2. game-of-kton
+> Bigger question: are you working solo or on a team? We're pivoting to "agent governance for engineering teams" — shared enforcement memory, CI gates, approval policies, audit trails. One developer's correction protects every agent on the team. If you're coordinating agent workflows across people, I'd love to get 15 minutes of your time to understand what safety looks like for your setup. No pitch — just trying to learn what teams actually need. Interested?
 
-> Your ACT-R engram work is much closer to the real memory problem than most "AI memory" tools get. The question we are chasing now is what has to exist at the team and CI layer once a serious memory system leaves a solo workflow.
->
-> We are leading with a Workflow Hardening Sprint for one shared workflow, one owner, and one proof review. If that is relevant, I would value a short call and can send the brief first.
+---
 
-## 3. leogodin217
+## 2. game-of-kton (r/cursor — mentioned ACT-R engrams)
 
-> Your arch-create -> review -> sprint -> implement -> review workflow is mature enough that the next pain is probably not prompting. It is governance once multiple people or agents touch the same workflow.
->
-> We are focused on workflow governance for teams: shared enforcement, approval boundaries, audit trails, and proof. If you want, I can send the sprint brief for the one-workflow pilot we are using as the first paid motion.
+> Your ACT-R engram work is fascinating — especially the conflict resolution for opposing facts and the decay model. That's a much more sophisticated approach than most people take with agent memory.
 
-## 4. Enthu-Cutlet-1337
+> Quick question: is this a team project or solo? We're building "agent governance for engineering teams" — shared enforcement, CI integration, approval policies, audit trails. Your background with PreToolUse hooks and memory architecture means you'd have sharp feedback on what actually needs to exist at the team/CI level vs. the individual agent level.
 
-> You called out the Thompson Sampling angle correctly: the hard part is making guardrails adapt without turning into brittle prompt hacks.
->
-> We are turning that into an engineering-team offer: one workflow, one owner, one proof review. If your team already has a workflow that is valuable but not safe enough to trust yet, I can send the Workflow Hardening Sprint brief and proof pack.
+> Would you be open to a 15-min call? I'm specifically trying to learn from people who've built serious agent memory systems. No sales pitch — just want to understand the problem space better.
+
+---
+
+## 3. leogodin217 (r/ClaudeCode — mature sprint workflow)
+
+> Your arch-create → review → sprint → implement → review workflow is one of the most mature agent processes I've seen anyone describe. And the point about conflicting context docs being a killer problem — that's the exact pain we're building for.
+
+> Are you running this with a team or solo? We're focused on "workflow governance for engineering teams" — shared enforcement so one correction applies across every developer's agent, plus CI gates, approval policies, and audit trails. Your workflow would be a great test case since you already have the structured phases.
+
+> Would 15 minutes be useful? I want to understand what breaks when this workflow scales to a team. No pitch — just learning.
+
+---
+
+## 4. Enthu-Cutlet-1337 (r/ClaudeCode — called Thompson Sampling "genuinely clever")
+
+> Appreciate the kind words on the Thompson Sampling approach. You nailed the core insight — most guardrails are brittle prompt hacks that break when context shifts.
+
+> Question: are you working on a team or solo? We're pivoting to "agent governance for engineering teams" — shared enforcement memory, CI gates, approval policies, audit trails. The Thompson Sampling approach scales well across multiple agents because each gate self-tunes per-context.
+
+> Would you be open to a 15-min call? Trying to learn what agent safety pain looks like for teams managing shared codebases. No commitment — just a conversation.

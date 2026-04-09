@@ -20,6 +20,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
 <title>ThumbGate — Self-improving AI coding agents that learn from every mistake</title>
+<link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
+<meta name="llm-context-url" content="https://thumbgate-production.up.railway.app/public/llm-context.md">
 <meta name="description" content="Pre-action gates and workflow governance for AI coding agents. 👎 Thumbs down → prevention rule → mistake permanently blocked. 👍 Thumbs up → pattern reinforced. History-aware lessons from your corrections. Risky local runs can route into Docker Sandboxes. Team adds shared lessons and org visibility, plus isolated execution guidance.">
 <meta property="og:title" content="ThumbGate — Self-improving AI coding agents that learn from every mistake">
 <meta property="og:description" content="Pre-action gates and workflow governance for AI coding agents. 👎 Thumbs down → prevention rule → mistake permanently blocked. 👍 Thumbs up → pattern reinforced. History-aware lessons from your corrections. Risky local runs can route into Docker Sandboxes. Team adds shared lessons and org visibility, plus isolated execution guidance.">
@@ -100,9 +102,7 @@ __GA_BOOTSTRAP__
     {
       "@type": "Offer",
       "name": "Team",
-      "price": "12",
-      "priceCurrency": "USD",
-      "description": "Intake-led team rollout with a workflow hardening sprint, shared enforcement memory, org dashboard visibility, Docker Sandboxes guidance for risky local autonomy, and pilot support for teams shipping AI-generated changes",
+      "description": "Shared enforcement memory, review visibility, org dashboard, Docker Sandboxes guidance for risky local autonomy, and pilot rollout support for teams shipping AI-generated changes",
       "url": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
     }
   ]
@@ -434,7 +434,7 @@ __GA_BOOTSTRAP__
       <a href="/learn">Learn</a>
       <a href="/compare">Compare</a>
       <a href="/dashboard">Dashboard Demo</a>
-      <a href="#workflow-sprint-intake" class="nav-cta">Start Sprint</a>
+      <a href="/pro?utm_source=website&utm_medium=homepage_nav&utm_campaign=pro_page" class="nav-cta">See Pro</a>
     </div>
   </div>
 </nav>
@@ -443,20 +443,19 @@ __GA_BOOTSTRAP__
 <section class="hero">
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
-    <div class="hero-badge">● Workflow Hardening Sprint for teams shipping AI-generated changes</div>
-    <h1>Make one AI workflow<br>safe enough to ship team-wide.</h1>
+    <div class="hero-badge">● Agent safety and workflow governance for teams shipping AI-generated code</div>
+    <h1>Stop unsafe AI agent actions<br>before they hit your repo.</h1>
     <div class="hero-signals">
-      <div class="signal-pill signal-down">👎 Repeated failure becomes enforcement before the next run</div>
-      <div class="signal-pill signal-up">👍 Safe pattern reinforced across the shared workflow</div>
+      <div class="signal-pill signal-down">👎 Force-push to main? Blocked before execution.</div>
+      <div class="signal-pill signal-up">👍 Safe pattern reinforced across every team member's agent.</div>
     </div>
-    <p class="hero-persona">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
-    <p><strong>Best first paid motion:</strong> start with one repo, one workflow, and one repeat failure. ThumbGate turns the blocker into enforcement, routes risky runs toward isolated execution, and gives the buyer a proof-ready story around shared memory, approval boundaries, release confidence, and auditability.</p>
+    <p class="hero-persona">For engineering teams where AI agents touch shared repos, CI pipelines, and production surfaces. One correction protects every developer on the team — permanently.</p>
+    <p><strong>Concrete failures prevented:</strong> Force-pushes to protected branches. PRs merged with unresolved review threads. Secrets committed to public repos. Destructive package-lock edits. Unsafe publishes. Every blocked action is logged, auditable, and shared across your team's agents.</p>
     <div class="hero-actions">
-      <a href="#workflow-sprint-intake" class="btn-team">Start Workflow Hardening Sprint</a>
-      <a href="/pro?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page" class="btn-pro-page">See Pro for solo operators</a>
+      <a href="/pro?utm_source=website&utm_medium=homepage_hero&utm_campaign=team_page" class="btn-pro-page">See Team plan — $99/seat/mo</a>
       <a href="/dashboard?utm_source=website&utm_medium=homepage_hero&utm_campaign=demo" class="btn-demo-link">Open dashboard demo</a>
     </div>
-    <p class="hero-paid-note"><strong>Start free as an individual.</strong> Pro stays the self-serve lane for personal dashboard and DPO export. Team pricing anchors at <strong>$12/seat/mo with a 3-seat minimum</strong>, but the team path starts intake-first with the Workflow Hardening Sprint so buyers see proof before a wider rollout.</p>
+    <p class="hero-paid-note"><strong>Start free as an individual.</strong> When your team needs shared enforcement, CI gates, approval policies, and audit logs — upgrade to Team. Pro ($19/mo) is available for solo operators who need a personal dashboard and DPO export.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx thumbgate init</span>
@@ -648,10 +647,6 @@ __GA_BOOTSTRAP__
         <h3>Keep risky runs off the host</h3>
         <p>When Workflow Sentinel predicts a risky local action, ThumbGate can recommend Docker Sandboxes before the agent touches the host filesystem or broader credentials.</p>
       </div>
-      <div class="agent-card">
-        <h3>Ship with versioned proof</h3>
-        <p>Changesets, SemVer, sync checks, and verification evidence make new package releases inspectable before a buyer trusts the next rollout.</p>
-      </div>
     </div>
   </div>
 </section>
@@ -686,7 +681,7 @@ __GA_BOOTSTRAP__
 <section class="pricing" id="pricing">
   <div class="container">
     <div class="section-label">Pricing</div>
-    <h2 class="section-title">Start free. Use the workflow hardening sprint to prove team value. Keep Pro as the self-serve lane for individual operators.</h2>
+    <h2 class="section-title">Open-source core. Enterprise governance when your team needs shared enforcement and audit.</h2>
     <div class="pricing-grid">
       <div class="price-card">
         <div class="tier">Free</div>
@@ -742,27 +737,27 @@ __GA_BOOTSTRAP__
         <p style="font-size:11px;color:#666;margin-top:8px;">Founder pricing — <a href="https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05" style="color:var(--cyan);text-decoration:underline;">preserved $49 one-time founder link</a> for early buyers who still want that path.</p>
         <p style="font-size:12px;color:var(--cyan);margin-top:6px;">Mem0 Pro: $249/mo. ThumbGate Pro: $19/mo.</p>
       </div>
-      <div class="price-card team">
+      <div class="price-card team" style="border:2px solid var(--green);position:relative;">
+        <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;padding:4px 16px;border-radius:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Recommended</div>
         <div class="tier">Team</div>
-        <div class="price">$12<span style="font-size:16px;color:var(--text-dim)">/seat/mo</span></div>
-        <div class="price-sub">3-seat minimum · intake-led rollout for the first workflow</div>
-        <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">For teams shipping AI-generated changes across shared repos who need one correction to protect every reviewer and runtime. The first team step is a workflow hardening sprint, not a blind org-wide rollout.</p>
+        <div class="price">$99<span style="font-size:16px;color:var(--text-dim)">/seat/mo</span></div>
+        <div class="price-sub">Agent governance for engineering teams · Billed annually or monthly</div>
+        <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">For engineering teams running 10+ agent sessions/day where one unsafe action can break shared repos, CI pipelines, or production.</p>
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">Best first paid motion:</strong> one workflow, one owner, one proof review. Qualify the blocker first, then expand into seats.
+          <strong style="color:#fff;">ROI:</strong> One prevented force-push to main, one blocked secret commit, or one caught unsafe publish pays for a year of seats.
         </div>
         <ul>
-          <li>Workflow hardening sprint — map one painful workflow, one repeated failure, and one buyer proof review before wider rollout</li>
-          <li>Shared enforcement memory — a shared lesson database where one developer's 👎 on a bad migration protects every agent on the team</li>
-          <li>Org dashboard — active agents, gate hit rates, risk agents, and proof-backed team metrics in one place</li>
-          <li>Hosted review views — constrained cards, lists, and callouts for rollout, incident, and audit visibility</li>
-          <li>Gate template library — pre-built guardrails for force-pushes, skipped tests, destructive SQL, and evidence-before-done</li>
-          <li>Docker Sandboxes guidance — route risky local autonomy into an isolated microVM-backed lane instead of running it directly on a shared host</li>
-          <li>Signed hosted sandbox dispatch — isolated execution path for team automations that do not need repo-bound local access</li>
-          <li>Release confidence story — Changesets, SemVer, version sync, and verification evidence keep publishes and rollout claims inspectable</li>
-          <li>Proof pack — attach verification evidence and rollout diagnostics so the buyer does not have to trust a demo</li>
+          <li><strong>Shared enforcement memory</strong> — one developer's 👎 on a bad migration protects every agent on the team, permanently</li>
+          <li><strong>CI gate integration</strong> — block unsafe merges, enforce test requirements, prevent PRs with unresolved threads</li>
+          <li><strong>Approval policies</strong> — require human sign-off for high-risk actions (destructive SQL, production deploys, schema migrations)</li>
+          <li><strong>Org dashboard</strong> — active agents, gate hit rates, risk agents, blocked actions, and audit trail in one view</li>
+          <li><strong>Sandbox routing</strong> — route risky agent runs into isolated execution environments instead of shared hosts</li>
+          <li><strong>Gate template library</strong> — pre-built guardrails for force-pushes, skipped tests, secret exposure, destructive SQL</li>
+          <li><strong>Audit trail</strong> — every blocked action logged with timestamp, agent, context, and the rule that fired</li>
+          <li><strong>Workflow proof sprint</strong> — we pilot one painful workflow first, measure before/after, then expand</li>
         </ul>
-        <a href="#workflow-sprint-intake" class="btn-team">Start Workflow Hardening Sprint</a>
-        <p style="font-size:11px;color:#666;margin-top:8px;">Team pricing anchors at $12/seat/mo with a 3-seat minimum after qualification. The first step is a 30-minute intake around one real blocker.</p>
+        <a href="#workflow-sprint-intake" class="btn-team" style="background:var(--green);font-size:16px;padding:14px 28px;">Book a Team Pilot Call</a>
+        <p style="font-size:11px;color:#666;margin-top:8px;">Starts with a 30-min call and one workflow pilot. No commitment until you see measurable results.</p>
       </div>
     </div>
   </div>
@@ -772,7 +767,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Team Pilot</div>
     <h2 class="section-title">Start with one repo, one workflow, one repeat failure</h2>
-    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">This is the fastest path to first paid value for teams. Start with one workflow, one owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
+    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">The recurring value is shared enforcement. Start with one workflow, one owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
     <form class="team-form" action="/v1/intake/workflow-sprint" method="POST">
       <input type="hidden" name="ctaId" value="workflow_sprint_intake">
       <input type="hidden" name="ctaPlacement" value="team_pricing">
@@ -818,10 +813,6 @@ __GA_BOOTSTRAP__
         <div class="faq-a">ThumbGate is the control plane, not just a prompt layer. Workflow Sentinel predicts blast radius before execution, and risky local autonomy can be routed into Docker Sandboxes instead of running directly on the host. Team workflows also have a signed hosted sandbox lane for isolated dispatch when local repo access is not required.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we trust a new package release?</div>
-        <div class="faq-a">ThumbGate does not rely on vibes. Release-relevant PRs need a Changeset, SemVer rules keep version bumps honest, sync checks keep manifests aligned, proof lanes run before merge, and the exact main-branch merge commit is verified before the work is called done.</div>
-      </div>
-      <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
         <div class="faq-a">No. Free keeps local enforcement on your machine with 3 daily feedback captures, 5 lesson searches, unlimited recall, gates, and hook blocking. No cloud account is required. Pro adds a personal local dashboard plus DPO export. Team is the hosted rollout lane when your group wants a shared lesson database, hosted review views, org dashboard visibility, and team-wide proof.</div>
       </div>
@@ -835,7 +826,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
-        <div class="faq-a">Pro is $19/mo or $149/yr (save 35%) for individual operators. Team pricing anchors at $12/seat/mo with a 3-seat minimum, and team buyers start with the workflow sprint intake instead of a blind org-wide rollout.</div>
+        <div class="faq-a">Pro is $19/mo or $149/yr (save 35%). Team starts at $36/mo for 3 seats, then $12/seat/mo, or $297/yr at the 3-seat floor. Cancel anytime. No contracts.</div>
       </div>
     </div>
   </div>
@@ -845,8 +836,8 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="newsletter" style="padding: 48px 0;">
   <div class="container" style="text-align: center;">
     <div class="section-label">Buyer Follow-Up</div>
-    <h2 class="section-title" style="margin-bottom: 16px;">Not ready to buy today? Keep the sprint brief, demo, and checkout path one click away.</h2>
-    <p style="color: var(--text-dim); margin-bottom: 24px; max-width: 560px; margin-left: auto; margin-right: auto;">Save your work email for launch updates, new gate patterns, the workflow sprint brief, and the paid demo path. We also keep it on this device so the Pro checkout can open prefilled instead of making you type it again.</p>
+    <h2 class="section-title" style="margin-bottom: 16px;">Not ready to buy today? Keep the demo and checkout link one click away.</h2>
+    <p style="color: var(--text-dim); margin-bottom: 24px; max-width: 560px; margin-left: auto; margin-right: auto;">Save your work email for launch updates, new gate patterns, and the paid demo path. We also keep it on this device so the Pro checkout can open prefilled instead of making you type it again.</p>
     <form action="/api/newsletter" method="POST" data-newsletter-form data-page="homepage" data-intent="buyer_follow_up" style="display: flex; gap: 8px; max-width: 480px; margin: 0 auto; flex-wrap: wrap; justify-content: center;">
       <input type="email" name="email" data-buyer-email placeholder="you@company.com" required style="flex: 1; min-width: 220px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); color: var(--text); font-size: 15px;">
       <button type="submit" style="padding: 12px 24px; background: var(--cyan); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer;">Get updates + keep checkout ready</button>
@@ -858,10 +849,10 @@ __GA_BOOTSTRAP__
 <!-- FINAL CTA -->
 <section class="final-cta">
   <div class="container">
-    <h2>Start with one workflow you actually need to defend.</h2>
-    <p>Use the workflow hardening sprint for team rollout, or choose Pro if you are the solo operator who needs a personal dashboard and review-ready exports.</p>
+    <h2>Put ThumbGate on your next AI-generated change.</h2>
+    <p>Try the dashboard demo first or install in 30 seconds. Prove the value on a real PR, deploy, or migration.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <a href="#workflow-sprint-intake" class="btn-team" style="background:var(--green);">Start Workflow Hardening Sprint</a>
+      <a href="/dashboard" class="btn-demo-link" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);">Try Dashboard Demo</a>
       <a href="/checkout/pro?utm_source=website&utm_medium=homepage_final&utm_campaign=pro_pack&cta_id=homepage_final_trial&cta_placement=final&plan_id=pro&landing_path=%2F" class="btn-pro">Try Pro free for 7 days → $19/mo</a>
     </div>
   </div>
@@ -897,7 +888,6 @@ function resolvePricingClickTier(el) {
   if (el.classList.contains('btn-team')) return 'team';
   if (el.classList.contains('btn-free')) return 'free';
   if (el.classList.contains('btn-demo-link')) return 'demo';
-  if (el.classList.contains('nav-cta')) return 'team';
   return 'nav';
 }
 
@@ -939,7 +929,7 @@ function copyInstall(el) {
   trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
   trackClick('.btn-free', 'install_click', { tier: 'free' });
   trackClick('.btn-demo-link', 'demo_click', { source: 'homepage' });
-  trackClick('.nav-cta', 'workflow_sprint_intake_click', { tier: 'team', source: 'nav', offer: 'workflow_hardening_sprint' });
+  trackClick('.nav-cta', 'pro_page_click', { tier: 'pro', source: 'nav' });
 
   /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Team button click
      with section context so we can distinguish pricing section vs final CTA section clicks */

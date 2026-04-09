@@ -47,6 +47,9 @@ const {
   buildSafeSummary,
   redactText,
 } = require('./secret-scanner');
+const {
+  evaluateSecurityScan,
+} = require('./security-scanner');
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
 
@@ -1374,9 +1377,26 @@ async function runAsync(input) {
     return formatOutput(secretGuard);
   }
 
+  // Security vulnerability scan (Tier 1: pattern match, Tier 2: supply chain)
+  const securityScan = evaluateSecurityScan(input);
+  if (securityScan && securityScan.decision === 'deny') {
+    return formatOutput(securityScan);
+  }
+
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
   const result = await evaluateGatesAsync(toolName, toolInput);
+
+  // Attach security warnings to allow/warn results
+  if (securityScan && securityScan.decision === 'warn') {
+    if (result) {
+      result.securityWarnings = securityScan.securityScan.findings;
+      result.reasoning = (result.reasoning || []).concat(securityScan.reasoning);
+    } else {
+      return formatOutput(securityScan);
+    }
+  }
+
   return formatOutput(result);
 }
 
@@ -1386,9 +1406,26 @@ function run(input) {
     return formatOutput(secretGuard);
   }
 
+  // Security vulnerability scan (Tier 1: pattern match, Tier 2: supply chain)
+  const securityScan = evaluateSecurityScan(input);
+  if (securityScan && securityScan.decision === 'deny') {
+    return formatOutput(securityScan);
+  }
+
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
   const result = evaluateGates(toolName, toolInput);
+
+  // Attach security warnings to allow/warn results
+  if (securityScan && securityScan.decision === 'warn') {
+    if (result) {
+      result.securityWarnings = securityScan.securityScan.findings;
+      result.reasoning = (result.reasoning || []).concat(securityScan.reasoning);
+    } else {
+      return formatOutput(securityScan);
+    }
+  }
+
   return formatOutput(result);
 }
 
@@ -1580,6 +1617,7 @@ module.exports = {
   saveStats,
   recordStat,
   evaluateSecretGuard,
+  evaluateSecurityScan,
   buildSecretGuardResult,
   buildReasoning,
   matchesGate,

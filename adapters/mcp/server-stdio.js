@@ -489,6 +489,19 @@ async function callToolInner(name, args) {
       }));
     case 'enforcement_matrix':
       return toTextResult(listEnforcementMatrix());
+    case 'security_scan': {
+      const { scanCode, scanDependencyChange, scanGitDiff } = require('../../scripts/security-scanner');
+      if (args.diffMode) {
+        return toTextResult(scanGitDiff(args.content));
+      }
+      const codeResult = scanCode(args.content, args.filePath || '');
+      if (args.filePath && args.filePath.endsWith('package.json')) {
+        const supplyResult = scanDependencyChange('', args.content);
+        codeResult.findings = (codeResult.findings || []).concat(supplyResult.findings || []);
+        codeResult.detected = codeResult.detected || supplyResult.detected;
+      }
+      return toTextResult(codeResult);
+    }
     case 'prevention_rules': {
       const outputPath = args.outputPath ? resolveSafePath(args.outputPath) : undefined;
       return toTextResult(writePreventionRules(outputPath, Number(args.minOccurrences || 2)));
@@ -680,6 +693,14 @@ async function callToolInner(name, args) {
       return toTextResult(appendFeedbackContext(args.sessionId, args.message, args.role));
     case 'finalize_feedback_session':
       return toTextResult(finalizeFeedbackSession(args.sessionId));
+    case 'run_managed_lesson_agent': {
+      const { runManagedAgent } = require('../../scripts/managed-lesson-agent');
+      return toTextResult(await runManagedAgent({ dryRun: args.dryRun, limit: args.limit, model: args.model }));
+    }
+    case 'managed_agent_status': {
+      const { getManagedAgentStatus } = require('../../scripts/managed-lesson-agent');
+      return toTextResult(getManagedAgentStatus() || { message: 'No managed agent runs recorded yet.' });
+    }
     default:
       throw new Error(`Unsupported tool: ${name}`);
   }

@@ -175,6 +175,15 @@
       "severity": "high"
     },
     {
+      "id": "supply-chain-dep-add",
+      "layer": "Supply Chain",
+      "toolNames": ["Edit", "Write"],
+      "pattern": "package\\.json$",
+      "action": "warn",
+      "message": "Dependency mutation detected in package.json. Security scanner will audit for typosquatting, wildcard versions, and suspicious install scripts.",
+      "severity": "high"
+    },
+    {
       "id": "blocked-npx-content",
       "layer": "Supply Chain",
       "trigger": "Bash:exec",

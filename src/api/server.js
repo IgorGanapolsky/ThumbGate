@@ -1345,6 +1345,32 @@ function renderRobotsTxt(runtimeConfig) {
   return [
     'User-agent: *',
     'Allow: /',
+    '',
+    '# AI crawler access — allow all major LLM crawlers',
+    'User-agent: GPTBot',
+    'Allow: /',
+    '',
+    'User-agent: ClaudeBot',
+    'Allow: /',
+    '',
+    'User-agent: PerplexityBot',
+    'Allow: /',
+    '',
+    'User-agent: Googlebot',
+    'Allow: /',
+    '',
+    'User-agent: Bingbot',
+    'Allow: /',
+    '',
+    'User-agent: anthropic-ai',
+    'Allow: /',
+    '',
+    'User-agent: Google-Extended',
+    'Allow: /',
+    '',
+    '# LLM context document — clean declarative content for AI retrieval',
+    `# ${runtimeConfig.appOrigin}/llm-context.md`,
+    '',
     `Sitemap: ${runtimeConfig.appOrigin}/sitemap.xml`,
   ].join('\n');
 }
@@ -1353,6 +1379,7 @@ function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
+    { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
   return [
@@ -2525,6 +2552,22 @@ function createApiServer() {
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/llm-context.md') {
+      const llmContextPath = path.resolve(__dirname, '../../public/llm-context.md');
+      try {
+        const content = fs.readFileSync(llmContextPath, 'utf8');
+        sendText(res, 200, content, {
+          'Content-Type': 'text/markdown; charset=utf-8',
+          'X-Robots-Tag': 'all',
+        }, {
+          headOnly: isHeadRequest,
+        });
+      } catch (_err) {
+        sendJson(res, 404, { error: 'Not found' });
+      }
+      return;
+    }
+
     // Quick feedback capture via GET — for statusline clickable links
     if (isGetLikeRequest && pathname === '/feedback/quick') {
       const signal = parsed.searchParams.get('signal');
@@ -3067,6 +3110,19 @@ async function addContext(){
         renderCheckoutCancelledPage(hostedConfig),
         journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}
       );
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/.well-known/llms.txt') {
+      const llmsTxtPath = path.join(__dirname, '..', '..', '.well-known', 'llms.txt');
+      try {
+        const content = fs.readFileSync(llmsTxtPath, 'utf8');
+        res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' });
+        if (!isHeadRequest) res.write(content);
+        res.end();
+      } catch {
+        sendJson(res, 404, { error: 'llms.txt not found' });
+      }
       return;
     }
 
