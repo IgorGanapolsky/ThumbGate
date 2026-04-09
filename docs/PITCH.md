@@ -21,7 +21,7 @@ We make one workflow measurable enough to justify and safe enough to roll out.
 
 - **Buyer:** consultancy owner, platform lead, head of ops, or AI product lead.
 - **User:** the operator running the workflow day to day.
-- **Champion:** the engineer or platform owner wiring Context Gateway, the Reliability Gateway, and Pre-Action Gates into the workflow.
+- **Champion:** the engineer or platform owner wiring ThumbGate, the Reliability Gateway, and Pre-Action Gates into the workflow.
 
 # High-Signal Features
 
@@ -43,7 +43,9 @@ Start with one workflow, not a platform migration or generic "AI employee" pitch
 
 - Start with the sprint, not the subscription pitch.
 - The first repeatable next dollar should come from a booked workflow hardening sprint or named pilot agreement, not from hoping low-intent self-serve traffic converts.
-- Expand into hosted Pro when the buyer needs synced memory, shared rules, and usage analytics.
+- Keep the local CLI free as the adoption wedge and proof surface.
+- Expand into Team seats when the buyer needs synced memory, shared rules, approval boundaries, auditability, and usage analytics across operators.
+- Keep Pro as the solo self-serve side lane, not the headline offer.
 - Use [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md), [FIRST_DOLLAR_PLAYBOOK.md](FIRST_DOLLAR_PLAYBOOK.md), and [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) in every sales conversation.
 
 # ICP (Ideal Customer Profile)

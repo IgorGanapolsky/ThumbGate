@@ -10,14 +10,14 @@
 > Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> Pre-action gates, a learned intervention policy, and workflow governance for self-improving AI coding agents. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Team adds shared lessons and org visibility.
+> CLI-first agent governance for teams shipping AI-generated changes. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Pre-action gates, workflow governance, shared lessons and org visibility, release confidence, and isolated execution guidance turn vibe coding mistakes into shared enforcement and proof-ready rollout.
 
 ### NPM package.json
 > Pre-action gates that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
 
 ### GitHub Repo About
 **Canonical source:** `config/github-about.json`
-> Pre-action gates, a learned intervention policy, and workflow governance for self-improving AI coding agents. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Team adds shared lessons and org visibility.
+> CLI-first agent governance for teams shipping AI-generated changes. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Pre-action gates, workflow governance, shared lessons and org visibility, release confidence, and isolated execution guidance turn vibe coding mistakes into shared enforcement and proof-ready rollout.
 
 **Canonical topics:** `thumbgate`, `pre-action-gates`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`
 

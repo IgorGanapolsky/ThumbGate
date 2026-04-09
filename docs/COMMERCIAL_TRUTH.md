@@ -8,6 +8,8 @@ This document is the source of truth for product, pricing, traction, and proof c
 ## What is true today
 
 - The open-source `thumbgate` package is free and MIT licensed.
+- The local CLI is the adoption wedge; it is not the primary monetization story.
+- The primary commercial motion is the **Workflow Hardening Sprint** for one workflow, followed by Team expansion when shared enforcement, approval boundaries, and auditability matter across operators.
 - The current public self-serve commercial offer is **Pro at $19/mo or $149/yr** via Stripe checkout.
 - The preserved founder one-time Stripe link still exists for legacy founder buyers, but it is not the default commercial offer.
 - The current Team pricing anchor is **$99/seat/mo with a 3-seat minimum**, and the public Team path remains an **intake-led pilot for the first workflow** until hosted rollout scope is qualified.
@@ -37,9 +39,11 @@ This document is the source of truth for product, pricing, traction, and proof c
 - DPO export and advanced data exports
 - Founder-license support
 - Unlimited custom gates with auto-gate promotion
+- Secondary self-serve lane for solo operators, not the default enterprise pitch
 
 ### Team ($99/seat/mo, min 3, hosted rollout intake-first)
 
+- Workflow hardening sprint as the first paid step
 - Shared hosted lesson database
 - Generated hosted review views for team, incident, and rollout operations
 - Org dashboard with active agents, gate hit rates, and risk agents
