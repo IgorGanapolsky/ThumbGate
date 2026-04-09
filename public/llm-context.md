@@ -59,7 +59,7 @@ ThumbGate implements the **Memento-Skills architecture** described in "Memento-S
 ## Pricing
 
 - **Free**: Local CLI enforcement for individual developers. Includes 3 daily feedback captures, 5 lesson searches per day, unlimited recall, and PreToolUse hook blocking.
-- **Workflow Hardening Sprint / Team**: Team pricing anchors at $12/seat/mo with a 3-seat minimum after qualification. The first paid step is an intake-led sprint around one workflow, one repeated blocker, and one proof review.
+- **Workflow Hardening Sprint / Team**: Team pricing anchors at $99/seat/mo with a 3-seat minimum after qualification. The first paid step is an intake-led sprint around one workflow, one repeated blocker, and one proof review.
 - **Pro**: $19/mo or $149/yr. Adds a personal local dashboard, DPO export for fine-tuning, and advanced data exports for solo operators who want a self-serve side lane.
 
 ## How to Install

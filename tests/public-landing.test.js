@@ -71,7 +71,7 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /\$0/);
   assert.match(landingPage, /\$19/);
   assert.match(landingPage, /\/mo/);
-  assert.match(landingPage, /\$12/);
+  assert.match(landingPage, /\$99/);
   assert.match(landingPage, /\/seat\/mo/);
   assert.match(landingPage, /Forever free/);
   assert.match(landingPage, /CLI-first local enforcement for one developer/i);
@@ -150,7 +150,7 @@ test('public landing page exposes the free CLI wedge above the fold and keeps Pr
 
   assert.match(landingPage, /Install Free CLI/i);
   assert.match(landingPage, /btn-install-link/);
-  assert.match(landingPage, /team-first/i);
+  assert.match(landingPage, /intake-first/i);
   assert.match(landingPage, /solo side lane/i);
 });
 
@@ -198,7 +198,7 @@ test('public landing page includes FAQ section with accordion interaction', () =
   assert.match(landingPage, /What AI agents and editors does this work with\?/);
   assert.match(landingPage, /Do I need a cloud account\?/);
   assert.match(landingPage, /How are (?:pre-action )?gates different from prompt rules\?/);
-  assert.match(landingPage, /What are the buying paths\?/);
+  assert.match(landingPage, /What does Pro cost\?/);
   assert.match(landingPage, /role="button"/);
   assert.match(landingPage, /tabindex="0"/);
   assert.match(landingPage, /aria-expanded="true"/);
