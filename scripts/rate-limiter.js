@@ -10,9 +10,9 @@ const {
 const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.thumbgate', 'usage-limits.json');
 
 const FREE_TIER_LIMITS = {
-  capture_feedback: { daily: Infinity, label: 'feedback captures' },
+  capture_feedback: { daily: 3, label: 'feedback captures' },
   search_lessons: { daily: 5, label: 'lesson searches' },
-  search_thumbgate: { daily: 10, label: 'ThumbGate searches' },
+  search_thumbgate: { daily: 5, label: 'ThumbGate searches' },
   commerce_recall: { daily: 5, label: 'commerce recalls' },
   export_dpo: { daily: 0, label: 'DPO exports (Pro only)' },
   export_databricks: { daily: 0, label: 'Databricks exports (Pro only)' },
@@ -83,7 +83,7 @@ function checkLimit(action, authContext) {
   const current = usage.counts[action] || 0;
 
   if (current >= dailyLimit) {
-    return { allowed: false, message: UPGRADE_MESSAGE, used: current, limit: dailyLimit };
+    return { allowed: false, message: `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro\n${UPGRADE_MESSAGE}`, used: current, limit: dailyLimit };
   }
 
   // Increment

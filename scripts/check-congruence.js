@@ -222,7 +222,7 @@ async function main() {
     'public/index.html must mention the linked feedback session flow'
   );
   check(
-    /unlimited feedback captures/i.test(landingHtml) && /5 lesson searches\/day/i.test(landingHtml),
+    /3 feedback captures\/day/i.test(landingHtml) && /5 lesson searches\/day/i.test(landingHtml),
     'public/index.html must advertise the truthful free-tier capture and lesson-search limits'
   );
   check(

@@ -143,13 +143,13 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 │ Unlimited    │ Unlimited feedback │ Shared hosted lesson DB      │
 │ feedback     │ captures + search  │ Org dashboard                │
 │ captures     │ DPO export         │ Gate template library         │
-│ 5 daily      │ Personal dashboard │ Isolated execution guidance   │
-│ lesson       │                    │                              │
-│ searches     │                    │                              │
+│ 3 captures   │ Personal dashboard │ Isolated execution guidance   │
+│ 5 lesson     │                    │                              │
+│ searches/day │                    │                              │
 └──────────────┴────────────────────┴──────────────────────────────┘
 ```
 
-Free includes unlimited feedback captures, 5 daily lesson searches, unlimited recall, and gating. History-aware distillation turns vague feedback into concrete lessons. Feedback sessions (`open_feedback_session` → `append_feedback_context` → `finalize_feedback_session`) link follow-up context to one record.
+Free includes 3 daily feedback captures, 5 daily lesson searches, unlimited recall, and gating. History-aware distillation turns vague feedback into concrete lessons. Feedback sessions (`open_feedback_session` → `append_feedback_context` → `finalize_feedback_session`) link follow-up context to one record.
 
 It does not update model weights. It's context engineering plus execution control: enforcement that gets smarter every session, with Docker Sandboxes guidance for the riskiest local actions and a hosted isolated lane for team workflows.
 
