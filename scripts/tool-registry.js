@@ -36,7 +36,7 @@ const TOOLS = [
         whatWorked: { type: 'string' },
         chatHistory: {
           type: 'array',
-          description: 'Optional recent conversation window used for history-aware lesson distillation.',
+          description: 'Optional caller-supplied recent conversation window used for history-aware lesson distillation. The current Claude auto-capture path sends up to 8 prior recorded entries for vague negative inline signals.',
           items: {
             type: 'object',
             properties: {
@@ -59,7 +59,7 @@ const TOOLS = [
               timestamp: { type: 'string' },
             },
           },
-          description: 'Last 5-10 conversation turns before the feedback signal. Raw messages, not summaries.',
+          description: 'Recent conversation turns before the feedback signal. Raw messages, not summaries.',
         },
         rubricScores: {
           type: 'array',

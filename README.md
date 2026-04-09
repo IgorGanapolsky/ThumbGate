@@ -147,7 +147,7 @@ Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-co
               └─► lesson inferred from full conversation
 ```
 
-History-aware distillation turns vague signals into concrete lessons using the last ~10 messages and the failed tool call.
+History-aware distillation turns vague negative signals into concrete lessons. In the current Claude auto-capture path, ThumbGate can reuse up to 8 prior recorded conversation entries plus the failed tool call, then keep a linked 60-second follow-up session open for later clarification.
 
 Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx thumbgate lessons`.
 
@@ -166,7 +166,7 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 └──────────────┴────────────────────┴──────────────────────────────┘
 ```
 
-Free includes 3 daily feedback captures, 5 daily lesson searches, unlimited recall, and gating. History-aware distillation turns vague feedback into concrete lessons. Feedback sessions (`open_feedback_session` → `append_feedback_context` → `finalize_feedback_session`) link follow-up context to one record.
+Free includes 3 daily feedback captures, 5 daily lesson searches, unlimited recall, and gating. History-aware distillation turns vague feedback into concrete lessons, and feedback sessions (`open_feedback_session` → `append_feedback_context` → `finalize_feedback_session`) keep later clarification linked to one record. The current Claude auto-capture path uses up to 8 prior recorded entries for vague thumbs-down signals; the follow-up session stays open for 60 seconds and resets when more context is appended.
 
 It does not update model weights. It's context engineering plus execution control: enforcement that gets smarter every session, with Docker Sandboxes guidance for the riskiest local actions and a hosted isolated lane for team workflows.
 
