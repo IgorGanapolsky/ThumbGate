@@ -645,6 +645,10 @@ __GA_BOOTSTRAP__
         <h3>Keep risky runs off the host</h3>
         <p>When Workflow Sentinel predicts a risky local action, ThumbGate can recommend Docker Sandboxes before the agent touches the host filesystem or broader credentials.</p>
       </div>
+      <div class="agent-card">
+        <h3>Ship with versioned proof</h3>
+        <p>Changesets, SemVer, sync checks, and verification evidence make new package releases inspectable before a buyer trusts the next rollout.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -808,6 +812,10 @@ __GA_BOOTSTRAP__
       <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</button>
         <div class="faq-a">ThumbGate is the control plane, not just a prompt layer. Workflow Sentinel predicts blast radius before execution, and risky local autonomy can be routed into Docker Sandboxes instead of running directly on the host. Team workflows also have a signed hosted sandbox lane for isolated dispatch when local repo access is not required.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we trust a new package release?</div>
+        <div class="faq-a">ThumbGate does not rely on vibes. Release-relevant PRs need a Changeset, SemVer rules keep version bumps honest, sync checks keep manifests aligned, proof lanes run before merge, and the exact main-branch merge commit is verified before the work is called done.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>

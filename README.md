@@ -36,6 +36,17 @@ ThumbGate is the control plane for AI coding agents:
 - High-risk local actions can be routed into Docker Sandboxes, while hosted team automations use a signed isolated sandbox lane.
 - Team rollout stays tied to [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) instead of trust-me operator claims.
 
+## Release Confidence
+
+Enterprise buyers do not just need a safer runtime. They need legible publishes.
+
+- Release-relevant PRs must carry a `.changeset/*.md` entry, so every shipped package version has a customer-readable explanation before publish.
+- [SemVer Policy](docs/SEMVER_POLICY.md) and version-sync checks keep `package.json`, `CHANGELOG.md`, plugin manifests, and installer metadata aligned.
+- CI enforces changeset coverage, version sync, tests, coverage, proof lanes, and operational integrity before merge.
+- Final close-out requires verifying the exact `main` merge commit, with proof anchored in [Verification Evidence](docs/VERIFICATION_EVIDENCE.md).
+
+See [Release Confidence](docs/RELEASE_CONFIDENCE.md) for the full trust chain.
+
 ## Before / After
 
 ```
@@ -180,6 +191,7 @@ It does not update model weights. It's context engineering plus execution contro
 
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md) — pricing, claims, what we don't say
 - [Changeset Strategy](docs/CHANGESET_STRATEGY.md) — how release notes, version bumps, and customer-facing change records are enforced
+- [Release Confidence](docs/RELEASE_CONFIDENCE.md) — how Changesets, SemVer, sync checks, proof lanes, and exact-merge verification make publishes inspectable
 - [SemVer Policy](docs/SEMVER_POLICY.md) — stable vs prerelease channel rules
 - [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) — proof artifacts
 - [WORKFLOW.md](WORKFLOW.md) — agent-run contract (scope, hard stops, proof commands)

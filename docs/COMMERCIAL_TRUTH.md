@@ -13,6 +13,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - The current Team pricing anchor is **$12/seat/mo with a 3-seat minimum**, and the public Team path remains an **intake-led pilot for the first workflow** until hosted rollout scope is qualified.
 - The open-source runtime now supports history-aware lesson distillation from the recent conversation window, linked feedback sessions, and reflector rule proposals across CLI, hosted API, Cursor, and Claude Desktop surfaces.
 - The runtime now supports Workflow Sentinel blast-radius scoring plus Docker Sandboxes routing guidance for high-risk local actions, and the hosted path supports signed sandbox dispatch for isolated team automations.
+- Package publishing is governed by Changesets, SemVer, version-sync checks, and verification evidence; release claims should stay inspectable instead of being inferred from a diff.
 - Verified cumulative booked revenue through March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product; there is no evidence of any additional same-day booked charge beyond that cumulative total.
 - Engineering verification is strong and should be cited through `docs/VERIFICATION_EVIDENCE.md` and machine-readable proof reports.
 

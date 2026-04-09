@@ -64,6 +64,7 @@ Use a patch bump for backward-compatible fixes:
 - `node scripts/sync-version.js --check` must pass before merge.
 - publish flows derive the npm dist-tag from the version string.
 - prerelease bundles must not overwrite stable download aliases.
+- release close-out should cite the exact `main` merge commit and its checks, not a branch-level summary.
 
 ## Changeset Workflow
 
@@ -72,4 +73,4 @@ Use a patch bump for backward-compatible fixes:
 3. Keep the summary customer-readable: what changed, why it matters, and whether upgrades require attention.
 4. Before cutting a release, run `npm run changeset:version` so the version bump and changelog are generated before the normal publish pipeline runs.
 
-The point is not just SemVer compliance. It is release traceability: investors, customers, and internal reviewers can see what changed, why the version moved, and which PR introduced the contract shift.
+The point is not just SemVer compliance. It is release traceability: investors, customers, and internal reviewers can see what changed, why the version moved, which PR introduced the contract shift, and which exact merge commit carried it to `main`. For the full chain, see [Release Confidence](RELEASE_CONFIDENCE.md).
