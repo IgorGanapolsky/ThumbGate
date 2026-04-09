@@ -142,7 +142,7 @@ function resolveGitDirEntry(repoRoot, gitEntryPath) {
   }
 
   const pointer = fs.readFileSync(gitEntryPath, 'utf8').trim();
-  const match = pointer.match(/^gitdir:\s*(.+)$/i);
+  const match = /^gitdir:\s*(.+)$/i.exec(pointer);
   if (!match?.[1]) {
     return null;
   }
@@ -315,7 +315,7 @@ function gitReadBlobAtCommit(repoPath, commitSha, filePath) {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
   }).trim();
-  const match = treeEntry.match(/^\d+\s+blob\s+([0-9a-f]{40})\t/);
+  const match = /^\d+\s+blob\s+([0-9a-f]{40})\t/.exec(treeEntry);
   if (!match?.[1]) {
     throw new Error(`Unable to resolve blob for ${safeFilePath} at ${safeCommitSha}`);
   }
@@ -759,7 +759,8 @@ function runCli(env = process.env, argv = process.argv.slice(2)) {
     lines.push(`Release-sensitive files: ${result.releaseSensitiveFiles.join(', ')}`);
   }
   if (openPrNumber) {
-    lines.push(`Open PR: #${openPrNumber}${result.openPr?.url ? ` ${result.openPr.url}` : ''}`);
+    const openPrSuffix = result.openPr?.url ? ` ${result.openPr.url}` : '';
+    lines.push(`Open PR: #${openPrNumber}${openPrSuffix}`);
   }
   for (const blocker of result.blockers) {
     lines.push(`BLOCKER ${blocker.code}: ${blocker.message}`);
