@@ -38,7 +38,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - Founder-license support
 - Unlimited custom gates with auto-gate promotion
 
-### Team ($12/seat/mo, min 3, hosted rollout intake-first)
+### Team ($99/seat/mo, min 3, hosted rollout intake-first)
 
 - Shared hosted lesson database
 - Generated hosted review views for team, incident, and rollout operations

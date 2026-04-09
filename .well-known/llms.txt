@@ -37,8 +37,8 @@ npx thumbgate init --agent claude-code
 ## Pricing
 
 - Free: 3 feedback captures/day, 5 lesson searches/day, 5 built-in gates
-- Pro: $19/mo or $149/yr — unlimited everything, auto-gate promotion, multi-repo sync
-- Founding Member: $49 one-time, Pro forever
+- Pro: $19/mo or $149/yr — personal dashboard, DPO export, founder support
+- Team: $99/seat/mo (min 3) — shared enforcement, three-tier approval routing (block/approve/log), CI gates, org dashboard, audit trails
 
 ## Links
 
