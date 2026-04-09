@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex CLI Guardrails | Prevent Repeated Mistakes with ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway with pre-action enforcement.">
+<meta name="keywords" content="Codex CLI guardrails, Codex CLI safety, prevent Codex mistakes, ThumbGate, pre-action gates, AI coding agent feedback">
+<meta property="og:title" content="Codex CLI Guardrails That Actually Enforce">
+<meta property="og:description" content="Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway with pre-action enforcement.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails">
+<link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Codex CLI Guardrails That Actually Enforce",
+  "description": "Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway with pre-action enforcement.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-04-09",
+  "dateModified": "2026-04-09",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails",
+  "about": [
+    {"@type": "Thing", "name": "Codex CLI guardrails"},
+    {"@type": "Thing", "name": "AI coding agent safety"},
+    {"@type": "Thing", "name": "pre-action gates"}
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate only for Codex CLI?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Codex CLI is one supported workflow, but the same feedback and enforcement loop also works across Claude Code, Cursor, Gemini, Amp, and OpenCode."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How are Codex CLI guardrails different from prompt instructions?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Prompt instructions are advisory. ThumbGate pre-action gates intercept the tool call itself and block the known-bad pattern before execution."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can ThumbGate work with Codex CLI sandbox mode?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. ThumbGate adds an additional layer of enforcement on top of any existing sandbox or permission model, so guardrails apply even when sandbox restrictions are relaxed."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens when a gate blocks a Codex CLI command?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The agent receives a rejection with the reason and the linked prevention rule, then adapts its approach. The blocked command never executes."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / <a href="/guides/codex-cli-guardrails">Guides</a> / Codex CLI Guardrails</div>
+  <h1>Codex CLI Guardrails That Actually Enforce</h1>
+  <p style="color:var(--muted);">3 min read &middot; Designed for Codex CLI, works across all MCP agents</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway so repeated mistakes become searchable lessons, linked rules, and pre-action enforcement.</div>
+
+  <h2>What Codex CLI users usually need</h2>
+  <p>The problem is rarely a single bad command. It is the cost of the same failure pattern showing up across branches, sessions, or rushed workflows. Once that pattern is obvious, the buyer wants a durable control point.</p>
+
+  <h2>What ThumbGate adds</h2>
+  <ul>
+    <li>Feedback capture with explicit thumbs-up/down signals.</li>
+    <li>Searchable lessons and linked prevention rules.</li>
+    <li>Pre-action gates that block repeated bad commands before they run.</li>
+    <li>Verification evidence that gives teams something concrete to audit.</li>
+  </ul>
+
+  <div class="callout">
+    <strong>Why this matters:</strong> Guardrails are easier to buy when the outcome is obvious: less rework, fewer repeated failures, and a visible chain from operator feedback to enforced behavior.
+  </div>
+
+  <h2>Install for Codex CLI</h2>
+  <pre><code>npx thumbgate init --agent codex</code></pre>
+  <p>Auto-detects Codex CLI and configures the PreToolUse hook. No build step, no cloud account.</p>
+
+  <h2>Frequently Asked Questions</h2>
+  <h3>Is ThumbGate only for Codex CLI?</h3>
+  <p>No. Codex CLI is one supported workflow, but the same feedback and enforcement loop also works across Claude Code, Cursor, Gemini, Amp, and OpenCode.</p>
+
+  <h3>How are Codex CLI guardrails different from prompt instructions?</h3>
+  <p>Prompt instructions are advisory. ThumbGate pre-action gates intercept the tool call itself and block the known-bad pattern before execution.</p>
+
+  <h3>Can ThumbGate work with Codex CLI sandbox mode?</h3>
+  <p>Yes. ThumbGate adds an additional layer of enforcement on top of any existing sandbox or permission model, so guardrails apply even when sandbox restrictions are relaxed.</p>
+
+  <h3>What happens when a gate blocks a Codex CLI command?</h3>
+  <p>The agent receives a rejection with the reason and the linked prevention rule, then adapts its approach. The blocked command never executes.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Founding Member Deal &mdash; $49</h2>
+    <p>Lock in lifetime Pro access at the founding price. One command to start.</p>
+    <div class="cta-install">$ npx thumbgate init --agent codex</div>
+    <p style="margin-top:8px;"><a href="/pro">Learn about ThumbGate Pro &rarr;</a></p>
+  </div>
+
+  <div class="related">
+    <h3>Related</h3>
+    <a href="/guides/pre-action-gates">What Are Pre-Action Gates? &rarr;</a>
+    <a href="/compare/mem0">ThumbGate vs Mem0 &rarr;</a>
+    <a href="/guides/stop-repeated-ai-agent-mistakes">Stop Repeated AI Agent Mistakes &rarr;</a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init --agent codex</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>

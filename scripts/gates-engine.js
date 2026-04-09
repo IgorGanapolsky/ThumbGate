@@ -47,6 +47,9 @@ const {
   buildSafeSummary,
   redactText,
 } = require('./secret-scanner');
+const {
+  evaluateSecurityScan,
+} = require('./security-scanner');
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
 
@@ -407,11 +410,15 @@ function recordStat(gateId, action, gate) {
   const stats = loadStats();
   if (action === 'block') stats.blocked = (stats.blocked || 0) + 1;
   else if (action === 'warn') stats.warned = (stats.warned || 0) + 1;
+  else if (action === 'approve') stats.pendingApproval = (stats.pendingApproval || 0) + 1;
+  else if (action === 'log') stats.logged = (stats.logged || 0) + 1;
   else stats.passed = (stats.passed || 0) + 1;
   if (!stats.byGate) stats.byGate = {};
-  if (!stats.byGate[gateId]) stats.byGate[gateId] = { blocked: 0, warned: 0 };
+  if (!stats.byGate[gateId]) stats.byGate[gateId] = { blocked: 0, warned: 0, pendingApproval: 0, logged: 0 };
   if (action === 'block') stats.byGate[gateId].blocked += 1;
   else if (action === 'warn') stats.byGate[gateId].warned += 1;
+  else if (action === 'approve') stats.byGate[gateId].pendingApproval = (stats.byGate[gateId].pendingApproval || 0) + 1;
+  else if (action === 'log') stats.byGate[gateId].logged = (stats.byGate[gateId].logged || 0) + 1;
   saveStats(stats);
   // Track lesson freshness when an auto-promoted gate fires
   if (gate && gate.sourceLessonId) {
@@ -1095,6 +1102,23 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
       return result;
     }
 
+    if (gate.action === 'approve') {
+      recordStat(gate.id, 'approve', gate);
+      const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord);
+      return result;
+    }
+
+    if (gate.action === 'log') {
+      recordStat(gate.id, 'log', gate);
+      const result = { decision: 'log', gate: gate.id, message, severity: gate.severity, reasoning, logged: true };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'log', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord);
+      // 'log' action allows the tool call to proceed — do not return early, continue to next gate
+      continue;
+    }
+
     if (gate.action === 'warn') {
       recordStat(gate.id, 'warn', gate);
       const result = { decision: 'warn', gate: gate.id, message, severity: gate.severity, reasoning };
@@ -1179,6 +1203,22 @@ function evaluateGates(toolName, toolInput, configPath) {
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
+    }
+
+    if (gate.action === 'approve') {
+      recordStat(gate.id, 'approve', gate);
+      const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord);
+      return result;
+    }
+
+    if (gate.action === 'log') {
+      recordStat(gate.id, 'log', gate);
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'log', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      auditToFeedback(auditRecord);
+      // 'log' action allows the tool call to proceed — continue to next gate
+      continue;
     }
 
     if (gate.action === 'warn') {
@@ -1374,9 +1414,26 @@ async function runAsync(input) {
     return formatOutput(secretGuard);
   }
 
+  // Security vulnerability scan (Tier 1: pattern match, Tier 2: supply chain)
+  const securityScan = evaluateSecurityScan(input);
+  if (securityScan && securityScan.decision === 'deny') {
+    return formatOutput(securityScan);
+  }
+
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
   const result = await evaluateGatesAsync(toolName, toolInput);
+
+  // Attach security warnings to allow/warn results
+  if (securityScan && securityScan.decision === 'warn') {
+    if (result) {
+      result.securityWarnings = securityScan.securityScan.findings;
+      result.reasoning = (result.reasoning || []).concat(securityScan.reasoning);
+    } else {
+      return formatOutput(securityScan);
+    }
+  }
+
   return formatOutput(result);
 }
 
@@ -1386,9 +1443,26 @@ function run(input) {
     return formatOutput(secretGuard);
   }
 
+  // Security vulnerability scan (Tier 1: pattern match, Tier 2: supply chain)
+  const securityScan = evaluateSecurityScan(input);
+  if (securityScan && securityScan.decision === 'deny') {
+    return formatOutput(securityScan);
+  }
+
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
   const result = evaluateGates(toolName, toolInput);
+
+  // Attach security warnings to allow/warn results
+  if (securityScan && securityScan.decision === 'warn') {
+    if (result) {
+      result.securityWarnings = securityScan.securityScan.findings;
+      result.reasoning = (result.reasoning || []).concat(securityScan.reasoning);
+    } else {
+      return formatOutput(securityScan);
+    }
+  }
+
   return formatOutput(result);
 }
 
@@ -1580,6 +1654,7 @@ module.exports = {
   saveStats,
   recordStat,
   evaluateSecretGuard,
+  evaluateSecurityScan,
   buildSecretGuardResult,
   buildReasoning,
   matchesGate,

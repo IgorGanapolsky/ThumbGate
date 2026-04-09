@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Stop AI Coding Agents From Repeating Mistakes | ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="If your agent keeps repeating the same bad move, the fix is not more memory alone. The fix is a feedback loop that turns repeated failures into pre-action gates.">
+<meta name="keywords" content="stop AI agent mistakes, repeated AI coding errors, AI agent guardrails, ThumbGate, pre-action gates, feedback enforcement">
+<meta property="og:title" content="How to Stop AI Coding Agents From Repeating Mistakes">
+<meta property="og:description" content="Turn repeated agent failures into pre-action gates that block the same mistake before the next tool call executes.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes">
+<link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How to Stop AI Coding Agents From Repeating Mistakes",
+  "description": "If your agent keeps repeating the same bad move, the fix is a feedback loop that turns repeated failures into pre-action gates.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-04-09",
+  "dateModified": "2026-04-09",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes",
+  "about": [
+    {"@type": "Thing", "name": "AI agent mistake prevention"},
+    {"@type": "Thing", "name": "pre-action gates"},
+    {"@type": "Thing", "name": "feedback enforcement"}
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is memory alone enough to stop repeated mistakes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Usually no. Memory helps retrieval, but ThumbGate adds pre-action gates so the same risky move can be blocked before the next command executes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate only punish bad behavior?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Thumbs up reinforces good behavior, so the loop captures safe patterns as well as failures."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How quickly can ThumbGate start blocking repeated mistakes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "After a single thumbs-down with context, ThumbGate generates a prevention rule. After repeated failures on the same pattern, it promotes to a hard gate that blocks before execution."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which AI coding agents does this work with?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate works across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode via MCP PreToolUse hooks."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / <a href="/guides/stop-repeated-ai-agent-mistakes">Guides</a> / Stop Repeated Mistakes</div>
+  <h1>How to Stop AI Coding Agents From Repeating Mistakes</h1>
+  <p style="color:var(--muted);">3 min read &middot; Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> If your agent keeps repeating the same bad move, the fix is not more memory alone. The fix is a feedback loop that turns repeated failures into pre-action gates before the next tool call executes.</div>
+
+  <h2>Why repeated mistakes keep happening</h2>
+  <p>AI coding agents are fast, but they forget operational pain surprisingly easily. One bad deployment, force-push, or skipped verification step often turns into another because the system remembered the transcript but never enforced the lesson.</p>
+  <p>That is why teams feel stuck in a correction loop. They keep teaching the same rule, but the next session still allows the same risky action.</p>
+
+  <h2>What changes when feedback becomes enforcement</h2>
+  <ul>
+    <li>Thumbs down captures the exact failure you do not want repeated.</li>
+    <li>Repeated failures promote into linked prevention rules.</li>
+    <li>Pre-action gates intercept the risky tool call before execution.</li>
+    <li>Thumbs up reinforces the safe path so the agent learns what good looks like too.</li>
+  </ul>
+
+  <div class="callout">
+    <strong>The difference:</strong> Memory tells the agent what went wrong. Pre-action gates physically stop the agent from doing it again. ThumbGate does both.
+  </div>
+
+  <h2>Get started in 60 seconds</h2>
+  <pre><code>npx thumbgate init --agent claude-code</code></pre>
+  <p>Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode. Auto-detects your agent and configures the PreToolUse hook.</p>
+
+  <h2>What a buyer should do next</h2>
+  <p>If the pain is already real, do not start with a long architecture project. Start by wiring ThumbGate into the workflow where the agent has already burned time or trust, then watch the next repeat attempt get blocked before damage lands.</p>
+
+  <h2>Frequently Asked Questions</h2>
+  <h3>Is memory alone enough to stop repeated mistakes?</h3>
+  <p>Usually no. Memory helps retrieval, but ThumbGate adds pre-action gates so the same risky move can be blocked before the next command executes.</p>
+
+  <h3>Does ThumbGate only punish bad behavior?</h3>
+  <p>No. Thumbs up reinforces good behavior, so the loop captures safe patterns as well as failures.</p>
+
+  <h3>How quickly can ThumbGate start blocking repeated mistakes?</h3>
+  <p>After a single thumbs-down with context, ThumbGate generates a prevention rule. After repeated failures on the same pattern, it promotes to a hard gate that blocks before execution.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Founding Member Deal &mdash; $49</h2>
+    <p>Lock in lifetime Pro access at the founding price. One command to start.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+    <p style="margin-top:8px;"><a href="/pro">Learn about ThumbGate Pro &rarr;</a></p>
+  </div>
+
+  <div class="related">
+    <h3>Related</h3>
+    <a href="/guides/pre-action-gates">What Are Pre-Action Gates? &rarr;</a>
+    <a href="/guides/claude-code-prevent-repeated-mistakes">Claude Code Feedback Memory &rarr;</a>
+    <a href="/compare/mem0">ThumbGate vs Mem0 &rarr;</a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>

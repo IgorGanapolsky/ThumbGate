@@ -2,10 +2,12 @@
 const { isProLicensed } = require('./license');
 const {
   PRO_MONTHLY_PAYMENT_LINK,
+  PRO_FOUNDER_PAYMENT_LINK,
   PRO_PRICE_LABEL,
 } = require('./commercial-offer');
 
 const PRO_URL = PRO_MONTHLY_PAYMENT_LINK;
+const FOUNDER_URL = PRO_FOUNDER_PAYMENT_LINK;
 
 function requirePro(
   featureName,
@@ -30,8 +32,8 @@ function requirePro(
   const desc = descriptions[featureName] || featureName;
   write(
     `\n  🔒 Pro Feature Required: ${desc}\n` +
-    `     Upgrade to ThumbGate Pro — ${PRO_PRICE_LABEL}:\n` +
-    `     ${PRO_URL}\n` +
+    `     Founding Member: $49 once, Pro forever — ${FOUNDER_URL}\n` +
+    `     Or subscribe: ${PRO_PRICE_LABEL} — ${PRO_URL}\n` +
     `     Or run: npx thumbgate pro\n\n`
   );
   return false;

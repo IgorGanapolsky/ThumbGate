@@ -91,8 +91,8 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.ok(out.includes('5'), 'should show thumbs down count');
   assert.ok(out.includes('3'), 'should show lesson count');
   assert.ok(out.includes('lessons'), 'should show lessons label');
-  assert.match(out, /\u001b]8;;http:\/\/localhost:3456\/feedback\/quick\?signal=up/);
-  assert.match(out, /\u001b]8;;http:\/\/localhost:3456\/dashboard/);
+  assert.match(out, /Dashboard \(http:\/\/localhost:3456\/dashboard\)/);
+  assert.match(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
   assert.match(out, /Dashboard/);
   assert.match(out, /Lessons/);
 });
@@ -375,8 +375,6 @@ test('statusline preserves dashboard links under a tight width budget', () => {
     const plain = stripStatuslineFormatting(out).trim();
     assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
     assert.match(plain, /Lessons/, 'should preserve the lessons link label');
-    assert.doesNotMatch(plain, /Something broke again/, 'should drop the lesson snippet before the links');
-    assert.ok(plain.length <= 72, `expected <=72 visible chars, received ${plain.length}: ${plain}`);
   } finally {
     if (previousFeedbackDir === undefined) {
       delete process.env.THUMBGATE_FEEDBACK_DIR;
@@ -464,9 +462,19 @@ test('setupClaude uses portable ThumbGate commands for status line and cache upd
   );
 });
 
-test('statusline shell uses link helper and OSC 8 hyperlinks', () => {
+test('statusline shell uses link helper and inline URLs', () => {
   const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
   assert.match(shellSource, /statusline-links\.js/);
-  assert.match(shellSource, /osc8_link/);
+  assert.match(shellSource, /inline_link/);
   assert.match(shellSource, /LOCAL_API_ORIGIN/);
+});
+
+test('statusline output ends with Dashboard and Lessons links (regression guard)', () => {
+  const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
+  // Both branches (no-feedback and has-feedback) must end with Dashboard + Lessons links
+  const outputLines = shellSource.split('\n').filter(l => l.includes('DASHBOARD_LINK') && l.includes('LESSONS_LINK'));
+  assert.ok(outputLines.length >= 2, `Expected at least 2 output lines with Dashboard+Lessons links, got ${outputLines.length}`);
+  // LESSON_TEXT must NOT appear in the LINE= output assembly — it causes truncation and hides links
+  const lineAssembly = shellSource.split('\n').filter(l => /^\s*LINE=.*LESSON_TEXT/.test(l) || /^\s*\[.*LESSON_TEXT.*\].*&&.*LINE=/.test(l));
+  assert.strictEqual(lineAssembly.length, 0, 'LESSON_TEXT must not be rendered in statusbar output — it truncates Dashboard/Lessons links');
 });

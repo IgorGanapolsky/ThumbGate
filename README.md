@@ -92,6 +92,32 @@ Session 3:                           Session 3+:
    │                        │                            │
 ```
 
+## Use Cases
+
+- **Stop AI agent force-push to main** — Prevent lost commits with a pre-action gate that blocks `git push --force` on protected branches
+- **Prevent repeated database migration failures** — Each mistake becomes a searchable lesson that fires before the next migration attempt
+- **Block unauthorized file edits** — Control which files agents can modify with path-based gates
+- **Memory across sessions** — Agent remembers feedback from yesterday's mistakes without any manual rule-writing
+- **Shared team safety** — One developer's thumbs-down protects the whole team from the same mistake
+- **Auto-improving without human feedback** — Self-distillation mode evaluates agent outcomes and generates lessons automatically
+
+## FAQ
+
+**Is ThumbGate a model fine-tuning tool?**
+No. ThumbGate doesn't update model weights. It works by capturing feedback into structured lessons, injecting relevant context at runtime, and blocking bad actions via PreToolUse hooks.
+
+**How is this different from CLAUDE.md or .cursorrules?**
+CLAUDE.md files are suggestions that agents can ignore. ThumbGate gates are enforcement — they physically block the action before it executes via PreToolUse hooks. Gates also auto-generate from feedback instead of requiring manual rule-writing.
+
+**Does it work with my agent?**
+Yes. ThumbGate is MCP-compatible and works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any agent that supports PreToolUse hooks or MCP.
+
+**What's the self-distillation mode?**
+ThumbGate can auto-evaluate agent action outcomes (test failures, reverted edits, error patterns) and generate prevention rules without any human feedback. Your agent gets smarter every session automatically.
+
+**Is it free?**
+Free tier: 3 feedback captures/day, 5 lesson searches/day, 5 built-in gates. Founding Member: $49 one-time, Pro forever.
+
 ## The Loop
 
 ```

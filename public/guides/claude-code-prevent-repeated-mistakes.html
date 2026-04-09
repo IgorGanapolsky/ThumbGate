@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code Feedback Memory with Thumbs Up and Thumbs Down | ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Claude Code can remember more when the memory is structured, but reliability improves when thumbs-up/down feedback also becomes enforceable behavior. That is ThumbGate.">
+<meta name="keywords" content="Claude Code feedback, Claude Code memory, prevent repeated mistakes, ThumbGate, pre-action gates, Claude Code guardrails">
+<meta property="og:title" content="Claude Code Feedback Memory That Actually Enforces">
+<meta property="og:description" content="Claude Code can remember more when the memory is structured, but reliability improves when thumbs-up/down feedback also becomes enforceable behavior.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes">
+<link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Claude Code Feedback Memory That Actually Enforces",
+  "description": "Claude Code can remember more when the memory is structured, but reliability improves when thumbs-up/down feedback also becomes enforceable behavior via ThumbGate pre-action gates.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-04-09",
+  "dateModified": "2026-04-09",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes",
+  "about": [
+    {"@type": "Thing", "name": "Claude Code memory"},
+    {"@type": "Thing", "name": "feedback enforcement"},
+    {"@type": "Thing", "name": "pre-action gates"}
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does this only work with Claude Code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Claude Code is a strong entry point, but the same thumbs-up/down feedback loop and pre-action gates work across other MCP-compatible coding agents too."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why mention thumbs up as well as thumbs down?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Because reinforcement matters. Good behavior should become easier to repeat, not only bad behavior harder to repeat."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does ThumbGate differ from Claude Code CLAUDE.md rules?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CLAUDE.md rules are advisory and can be overridden by context overflow or chain-of-thought reasoning. ThumbGate pre-action gates intercept tool calls at the hook layer and physically block them before execution."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can ThumbGate prevent Claude Code from repeating the same mistake across sessions?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. ThumbGate persists lessons and prevention rules in a local SQLite+FTS5 database, so gates survive across sessions and prevent repeat failures even when the conversation context resets."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / <a href="/guides/claude-code-prevent-repeated-mistakes">Guides</a> / Claude Code Feedback</div>
+  <h1>Claude Code Feedback Memory That Actually Enforces</h1>
+  <p style="color:var(--muted);">3 min read &middot; Designed for Claude Code, works across all MCP agents</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Claude Code can remember more when the memory is structured, but reliability improves when thumbs-up/down feedback also becomes enforceable behavior. That is ThumbGate's angle.</div>
+
+  <h2>The Claude Code problem</h2>
+  <p>Claude Code is strongest when the context is fresh, but teams still hit repeated mistakes, compaction drift, and re-explaining constraints. A memory file alone helps, but it does not physically stop the next bad move.</p>
+
+  <div class="callout callout-red">
+    <strong>Common pattern:</strong> You add a rule to CLAUDE.md. The agent follows it for two sessions. Then context fills up, the rule gets compressed, and the same mistake happens again. Memory without enforcement is a suggestion, not a guarantee.
+  </div>
+
+  <h2>The ThumbGate angle</h2>
+  <ul>
+    <li>Thumbs up reinforces good behavior.</li>
+    <li>Thumbs down becomes a prevention rule.</li>
+    <li>Pre-action gates stop the repeated mistake before the next command executes.</li>
+    <li>The same flow works across Cursor, Codex, Gemini, Amp, and OpenCode.</li>
+  </ul>
+
+  <h2>Install for Claude Code</h2>
+  <pre><code>npx thumbgate init --agent claude-code</code></pre>
+  <p>Auto-detects Claude Code and configures the PreToolUse hook. No build step, no cloud account.</p>
+
+  <h2>What to expect</h2>
+  <p>Compatibility proof, install speed, and verification evidence matter more than generic "memory" copy. ThumbGate is the enforcement layer for Claude Code, not just another notebook of past context.</p>
+
+  <h2>Frequently Asked Questions</h2>
+  <h3>Does this only work with Claude Code?</h3>
+  <p>No. Claude Code is a strong entry point, but the same thumbs-up/down feedback loop and pre-action gates work across other MCP-compatible coding agents too.</p>
+
+  <h3>Why mention thumbs up as well as thumbs down?</h3>
+  <p>Because reinforcement matters. Good behavior should become easier to repeat, not only bad behavior harder to repeat.</p>
+
+  <h3>How does ThumbGate differ from Claude Code CLAUDE.md rules?</h3>
+  <p>CLAUDE.md rules are advisory and can be overridden by context overflow or chain-of-thought reasoning. ThumbGate pre-action gates intercept tool calls at the hook layer and physically block them before execution.</p>
+
+  <h3>Can ThumbGate prevent Claude Code from repeating the same mistake across sessions?</h3>
+  <p>Yes. ThumbGate persists lessons and prevention rules in a local SQLite+FTS5 database, so gates survive across sessions and prevent repeat failures even when the conversation context resets.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Founding Member Deal &mdash; $49</h2>
+    <p>Lock in lifetime Pro access at the founding price. One command to start.</p>
+    <div class="cta-install">$ npx thumbgate init --agent claude-code</div>
+    <p style="margin-top:8px;"><a href="/pro">Learn about ThumbGate Pro &rarr;</a></p>
+  </div>
+
+  <div class="related">
+    <h3>Related</h3>
+    <a href="/guides/pre-action-gates">What Are Pre-Action Gates? &rarr;</a>
+    <a href="/compare/mem0">ThumbGate vs Mem0 &rarr;</a>
+    <a href="/guides/stop-repeated-ai-agent-mistakes">Stop Repeated AI Agent Mistakes &rarr;</a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init --agent claude-code</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>
