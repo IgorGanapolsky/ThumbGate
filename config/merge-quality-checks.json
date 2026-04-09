@@ -1,0 +1,23 @@
+{
+  "requiredStatusCheckContexts": [
+    "test",
+    "CodeQL",
+    "Analyze JavaScript (javascript-typescript)",
+    "Verify changeset",
+    "SonarCloud Code Analysis",
+    "GitGuardian Security Checks",
+    "Socket Security: Project Report",
+    "Socket Security: Pull Request Alerts"
+  ],
+  "passingBuckets": [
+    "pass",
+    "skipping"
+  ],
+  "pendingBuckets": [
+    "pending"
+  ],
+  "failingBuckets": [
+    "fail",
+    "cancel"
+  ]
+}

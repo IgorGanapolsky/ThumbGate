@@ -8,8 +8,14 @@
 
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const { spawnSync } = require('child_process');
-const PR_FIELDS = 'number,state,mergeable,mergeStateStatus,statusCheckRollup,reviewDecision,isDraft,title';
+const PR_FIELDS = 'number,state,mergeable,mergeStateStatus,statusCheckRollup,reviewDecision,isDraft,title,url,headRefOid,baseRefName,mergeCommit,mergedAt,mergedBy';
+const PR_CHECK_FIELDS = 'bucket,name,state,workflow,link,event';
+const MERGE_QUALITY_CHECKS = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'config', 'merge-quality-checks.json'), 'utf8')
+);
 const SUCCESSFUL_CHECK_CONCLUSIONS = new Set(['SUCCESS', 'SKIPPED', 'NEUTRAL']);
 const FAILING_CHECK_CONCLUSIONS = new Set([
   'ACTION_REQUIRED',
@@ -19,6 +25,9 @@ const FAILING_CHECK_CONCLUSIONS = new Set([
   'STARTUP_FAILURE',
   'TIMED_OUT',
 ]);
+const PASSING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.passingBuckets || []).map((value) => String(value || '').toLowerCase()));
+const PENDING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.pendingBuckets || []).map((value) => String(value || '').toLowerCase()));
+const FAILING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.failingBuckets || []).map((value) => String(value || '').toLowerCase()));
 
 function runGh(args) {
   return spawnSync('gh', args, { encoding: 'utf-8' });
@@ -55,6 +64,19 @@ function getPrStatus(prNumber = '', runner = runGh) {
   return JSON.parse(result.stdout);
 }
 
+function getPrChecks(prNumber = '', runner = runGh) {
+  const args = ['pr', 'checks'];
+  if (prNumber) args.push(prNumber.toString());
+  args.push('--json', PR_CHECK_FIELDS);
+
+  const result = runner(args);
+  if (result.status !== 0) {
+    throw new Error(`Failed to fetch PR checks: ${formatGhError(result)}`);
+  }
+
+  return JSON.parse(result.stdout || '[]');
+}
+
 function listOpenPrs(runner = runGh) {
   const result = runner(['pr', 'list', '--state', 'open', '--json', PR_FIELDS]);
   if (result.status !== 0) {
@@ -87,6 +109,23 @@ function summarizeChecks(checks = []) {
 
   for (const check of checks) {
     const name = check.name || 'unknown-check';
+    const bucket = String(check.bucket || '').toLowerCase();
+    if (bucket) {
+      if (FAILING_BUCKETS.has(bucket)) {
+        failing.push(name);
+        continue;
+      }
+
+      if (PENDING_BUCKETS.has(bucket)) {
+        pending.push(name);
+        continue;
+      }
+
+      if (PASSING_BUCKETS.has(bucket)) {
+        continue;
+      }
+    }
+
     const conclusion = check.conclusion || null;
     const status = check.status || (conclusion ? 'COMPLETED' : 'UNKNOWN');
 
@@ -106,6 +145,11 @@ function summarizeChecks(checks = []) {
   }
 
   return { failing, pending };
+}
+
+function sleep(ms) {
+  if (!ms || ms <= 0) return;
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
 /**
@@ -140,17 +184,29 @@ async function resolveBlockers(pr, runner = runGh) {
   }
 
   // 3. Handle CI Failures
-  const checkSummary = summarizeChecks(pr.statusCheckRollup || []);
+  let checks = pr.statusCheckRollup || [];
+  let checkSource = 'statusCheckRollup';
+
+  if (pr.number) {
+    try {
+      checks = getPrChecks(pr.number, runner);
+      checkSource = 'gh pr checks';
+    } catch (error) {
+      console.warn(`[PR Manager] Falling back to statusCheckRollup for PR #${pr.number}: ${error.message}`);
+    }
+  }
+
+  const checkSummary = summarizeChecks(checks);
   const failingChecks = checkSummary.failing;
 
   if (failingChecks.length > 0) {
-    console.log(`[PR Manager] BLOCKED: ${failingChecks.length} failing CI checks.`);
-    return { status: 'blocked', reason: 'ci_failure', checks: failingChecks };
+    console.log(`[PR Manager] BLOCKED: ${failingChecks.length} failing quality checks via ${checkSource}.`);
+    return { status: 'blocked', reason: 'ci_failure', checks: failingChecks, checkSource };
   }
 
   if (checkSummary.pending.length > 0) {
-    console.log(`[PR Manager] BLOCKED: ${checkSummary.pending.length} CI checks still pending.`);
-    return { status: 'blocked', reason: 'ci_pending', checks: checkSummary.pending };
+    console.log(`[PR Manager] BLOCKED: ${checkSummary.pending.length} quality checks still pending via ${checkSource}.`);
+    return { status: 'blocked', reason: 'ci_pending', checks: checkSummary.pending, checkSource };
   }
 
   // 4. Handle Review Blockers
@@ -173,10 +229,51 @@ async function resolveBlockers(pr, runner = runGh) {
   return { status: 'pending', reason: 'unknown_state' };
 }
 
+function waitForMergeCommit(prNumber, runner = runGh, options = {}) {
+  const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 300000;
+  const intervalMs = Number.isFinite(options.intervalMs) ? options.intervalMs : 10000;
+  const startedAt = Date.now();
+
+  while ((Date.now() - startedAt) <= timeoutMs) {
+    const pr = getPrStatus(prNumber, runner);
+    if (pr && String(pr.state || '').toUpperCase() === 'MERGED' && pr.mergeCommit && pr.mergeCommit.oid) {
+      return {
+        finalized: true,
+        merged: true,
+        mergeCommit: pr.mergeCommit.oid,
+        mergedAt: pr.mergedAt || null,
+        mergedBy: pr.mergedBy && pr.mergedBy.login ? pr.mergedBy.login : null,
+        pr,
+      };
+    }
+
+    if (pr && String(pr.state || '').toUpperCase() === 'CLOSED') {
+      return {
+        finalized: true,
+        merged: false,
+        reason: 'closed_without_merge',
+        pr,
+      };
+    }
+
+    if (intervalMs <= 0) {
+      break;
+    }
+
+    sleep(intervalMs);
+  }
+
+  return {
+    finalized: false,
+    merged: false,
+    reason: 'merge_commit_pending',
+  };
+}
+
 /**
  * Perform autonomous merge
  */
-function performMerge(prNumber, runner = runGh) {
+function performMerge(prNumber, runner = runGh, options = {}) {
   const args = ['pr', 'merge', prNumber.toString(), '--squash', '--delete-branch', '--auto'];
   console.log(`[PR Manager] Initiating protected squash merge for PR #${prNumber}...`);
   const result = runner(args);
@@ -184,14 +281,17 @@ function performMerge(prNumber, runner = runGh) {
     const output = `${result.stdout || ''}\n${result.stderr || ''}`;
     const mode = /merge queue|queued|auto-merge/i.test(output) ? 'queued_or_auto' : 'merged';
     console.log(`[PR Manager] Merge accepted for PR #${prNumber} (${mode}).`);
-    return { ok: true, mode, args };
+    const mergeStatus = options.waitForMerge === false
+      ? { finalized: false, merged: false, reason: 'merge_commit_pending' }
+      : waitForMergeCommit(prNumber, runner, options);
+    return { ok: true, mode, args, ...mergeStatus };
   } else {
     console.error(`[PR Manager] Merge failed: ${formatGhError(result)}`);
     return { ok: false, mode: 'failed', args, error: formatGhError(result) };
   }
 }
 
-async function managePrs(prNumber = '', runner = runGh) {
+async function managePrs(prNumber = '', runner = runGh, options = {}) {
   const prs = loadManagedPrs(prNumber, runner).filter(Boolean);
 
   if (prs.length === 0) {
@@ -203,9 +303,18 @@ async function managePrs(prNumber = '', runner = runGh) {
   for (const pr of prs) {
     const outcome = await resolveBlockers(pr, runner);
     if (outcome.status === 'ready') {
-      const mergeResult = performMerge(pr.number, runner);
+      const mergeResult = performMerge(pr.number, runner, options);
       outcome.mergeRequested = mergeResult.ok;
       outcome.mergeMode = mergeResult.mode;
+      if (mergeResult.mergeCommit) {
+        outcome.mergeCommit = mergeResult.mergeCommit;
+      }
+      if (mergeResult.finalized !== undefined) {
+        outcome.mergeFinalized = mergeResult.finalized;
+      }
+      if (mergeResult.reason) {
+        outcome.mergeResolution = mergeResult.reason;
+      }
     }
 
     results.push({
@@ -230,10 +339,13 @@ if (require.main === module) {
 
 module.exports = {
   getPrStatus,
+  getPrChecks,
   listOpenPrs,
   isOpenPr,
   loadManagedPrs,
   resolveBlockers,
+  waitForMergeCommit,
   performMerge,
   managePrs,
+  summarizeChecks,
 };

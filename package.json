@@ -157,6 +157,8 @@
     "adk:consolidate": "node scripts/adk-consolidator.js",
     "adk:watch": "node scripts/adk-consolidator.js --watch",
     "pr:manage": "node scripts/pr-manager.js",
+    "branch-protection:check": "node scripts/sync-branch-protection.js --check",
+    "branch-protection:sync": "node scripts/sync-branch-protection.js",
     "self-heal:run": "node scripts/self-heal.js",
     "self-heal:check": "node scripts/self-healing-check.js",
     "skill:verify": "node scripts/tessl-export.js verify",
