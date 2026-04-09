@@ -172,6 +172,8 @@ const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
+const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
+const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
 const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
 const VISITOR_COOKIE_NAME = 'thumbgate_visitor_id';
 const SESSION_COOKIE_NAME = 'thumbgate_session_id';
@@ -2892,6 +2894,28 @@ async function addContext(){
       } catch {
         sendJson(res, 404, { error: 'Article not found' });
       }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname.startsWith('/guides/')) {
+      try {
+        const slug = pathname.replace('/guides/', '').replace(/[^a-z0-9-]/g, '');
+        const guidePath = path.join(GUIDES_DIR, `${slug}.html`);
+        if (!guidePath.startsWith(GUIDES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
+        const html = fs.readFileSync(guidePath, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch { sendJson(res, 404, { error: 'Guide not found' }); }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname.startsWith('/compare/') && pathname !== '/compare') {
+      try {
+        const slug = pathname.replace('/compare/', '').replace(/[^a-z0-9-]/g, '');
+        const comparePath = path.join(COMPARE_DIR, `${slug}.html`);
+        if (!comparePath.startsWith(COMPARE_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
+        const html = fs.readFileSync(comparePath, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch { sendJson(res, 404, { error: 'Comparison not found' }); }
       return;
     }
 

@@ -701,6 +701,14 @@ async function callToolInner(name, args) {
       const { getManagedAgentStatus } = require('../../scripts/managed-lesson-agent');
       return toTextResult(getManagedAgentStatus() || { message: 'No managed agent runs recorded yet.' });
     }
+    case 'run_self_distill': {
+      const { runSelfDistill } = require('../../scripts/self-distill-agent');
+      return toTextResult(await runSelfDistill({ dryRun: args.dryRun, limit: args.limit, model: args.model }));
+    }
+    case 'self_distill_status': {
+      const { getSelfDistillStatus } = require('../../scripts/self-distill-agent');
+      return toTextResult(getSelfDistillStatus() || { message: 'No self-distill runs found.' });
+    }
     default:
       throw new Error(`Unsupported tool: ${name}`);
   }

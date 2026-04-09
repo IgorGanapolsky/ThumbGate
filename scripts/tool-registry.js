@@ -982,6 +982,26 @@ const TOOLS = [
       properties: {},
     },
   }),
+  destructiveTool({
+    name: 'run_self_distill',
+    description: 'Run the self-distillation agent to auto-evaluate recent agent sessions and generate improvement lessons without human feedback. Reads conversation logs, detects success/failure signals, and persists lessons.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        dryRun: { type: 'boolean', description: 'If true, analyzes but does not persist lessons' },
+        limit: { type: 'number', description: 'Max conversation logs to process (default 20)' },
+        model: { type: 'string', description: 'LLM model to use for analysis (requires ANTHROPIC_API_KEY)' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'self_distill_status',
+    description: 'Show status of the last self-distillation run: sessions analyzed, lessons generated, signals detected.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  }),
 ];
 
 module.exports = {
