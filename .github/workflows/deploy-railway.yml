@@ -23,6 +23,8 @@ jobs:
       RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL || 'https://thumbgate-production.up.railway.app/health' }}
       RAILWAY_HEALTHCHECK_MAX_ATTEMPTS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS || '120' }}
       RAILWAY_HEALTHCHECK_SLEEP_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_SLEEP_SECONDS || '10' }}
+      RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS || '5' }}
+      RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS || '20' }}
       THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_FEEDBACK_DIR: ${{ vars.THUMBGATE_FEEDBACK_DIR }}
@@ -165,13 +167,16 @@ jobs:
           # Railway promotion can lag well past five minutes after a detached upload succeeds.
           MAX_ATTEMPTS="${RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-120}"
           SLEEP_SECONDS="${RAILWAY_HEALTHCHECK_SLEEP_SECONDS:-10}"
+          CONNECT_TIMEOUT_SECONDS="${RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:-5}"
+          MAX_TIME_SECONDS="${RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:-20}"
           STATUS=""
           RESPONSE_FILE="$(mktemp)"
           LIVE_SHA=""
 
           echo "Waiting for deploy to stabilise with up to $MAX_ATTEMPTS health checks and build SHA verification..."
+          echo "Per-attempt probe budget: connect timeout ${CONNECT_TIMEOUT_SECONDS}s, max time ${MAX_TIME_SECONDS}s."
           for ATTEMPT in $(seq 1 "$MAX_ATTEMPTS"); do
-            STATUS=$(curl -sS -o "$RESPONSE_FILE" -w "%{http_code}" "$RAILWAY_HEALTHCHECK_URL" || true)
+            STATUS=$(curl --connect-timeout "$CONNECT_TIMEOUT_SECONDS" --max-time "$MAX_TIME_SECONDS" -sS -o "$RESPONSE_FILE" -w "%{http_code}" "$RAILWAY_HEALTHCHECK_URL" || true)
             echo "Health check attempt $ATTEMPT/$MAX_ATTEMPTS: $STATUS"
             if [ "$STATUS" = "200" ]; then
               LIVE_SHA=$(node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(String(data.buildSha || ''));" "$RESPONSE_FILE" || true)
