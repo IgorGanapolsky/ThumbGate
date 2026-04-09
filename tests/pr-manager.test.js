@@ -12,6 +12,7 @@ const {
   managePrs,
   normalizePrNumber,
   resolveBlockers,
+  resolveGhBinary,
   performMerge,
   waitForMergeCommit,
 } = require('../scripts/pr-manager');
@@ -206,6 +207,21 @@ test('PR Manager - assertSafeGhArgs rejects control characters', () => {
 
 test('PR Manager - getPrChecks rejects invalid PR numbers before invoking GH CLI', () => {
   assert.throws(() => getPrChecks('665\nboom'), /Unsafe PR number/);
+});
+
+test('PR Manager - resolveGhBinary uses only fixed executable locations', () => {
+  const calls = [];
+  const accessSync = (candidate, mode) => {
+    calls.push([candidate, mode]);
+    if (candidate !== '/usr/local/bin/gh') {
+      throw new Error('missing');
+    }
+  };
+
+  const result = resolveGhBinary({ accessSync });
+  assert.equal(result, '/usr/local/bin/gh');
+  assert.equal(calls[0][0], '/usr/bin/gh');
+  assert.equal(calls[1][0], '/usr/local/bin/gh');
 });
 
 test('PR Manager - loadManagedPrs falls back to open PR list when branch has no PR', () => {

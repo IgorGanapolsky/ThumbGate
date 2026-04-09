@@ -11,6 +11,7 @@ const {
   diffContexts,
   normalizeContexts,
   runCli,
+  resolveGhBinary,
   syncBranchProtection,
 } = require('../scripts/sync-branch-protection');
 
@@ -42,6 +43,20 @@ test('syncBranchProtection validators reject unsafe CLI and GraphQL input', () =
   assert.throws(() => assertSafeBranchPattern('../main'), /Unsafe branch pattern/);
   assert.throws(() => assertSafeRuleId('BPR 123'), /Unsafe branch protection rule id/);
   assert.throws(() => assertSafeStatusContext('bad\ncontext'), /Unsafe status check context/);
+});
+
+test('syncBranchProtection resolves gh from fixed executable paths only', () => {
+  const calls = [];
+  const accessSync = (candidate, mode) => {
+    calls.push([candidate, mode]);
+    if (candidate !== '/usr/bin/gh') {
+      throw new Error('missing');
+    }
+  };
+
+  const result = resolveGhBinary({ accessSync });
+  assert.equal(result, '/usr/bin/gh');
+  assert.equal(calls[0][0], '/usr/bin/gh');
 });
 
 test('diffContexts identifies missing and unexpected required contexts', () => {

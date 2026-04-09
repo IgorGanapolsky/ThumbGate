@@ -8,14 +8,19 @@
 
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const PR_FIELDS = 'number,state,mergeable,mergeStateStatus,statusCheckRollup,reviewDecision,isDraft,title,url,headRefOid,baseRefName,mergeCommit,mergedAt,mergedBy';
 const PR_CHECK_FIELDS = 'bucket,name,state,workflow,link,event';
 const MERGE_QUALITY_CHECKS = JSON.parse(
   fs.readFileSync(path.join(__dirname, '..', 'config', 'merge-quality-checks.json'), 'utf8')
 );
+const FIXED_GH_BINARIES = [
+  '/usr/bin/gh',
+  '/usr/local/bin/gh',
+  '/opt/homebrew/bin/gh',
+];
 const SUCCESSFUL_CHECK_CONCLUSIONS = new Set(['SUCCESS', 'SKIPPED', 'NEUTRAL']);
 const FAILING_CHECK_CONCLUSIONS = new Set([
   'ACTION_REQUIRED',
@@ -59,8 +64,34 @@ function normalizePrNumber(prNumber, { allowEmpty = true } = {}) {
   return normalized;
 }
 
-function runGh(args) {
-  return spawnSync('gh', assertSafeGhArgs(args), {
+function resolveGhBinary(options = {}) {
+  const accessSync = options.accessSync || fs.accessSync;
+  const candidates = [];
+  const configuredBinary = String(process.env.THUMBGATE_GH_BIN || '').trim();
+
+  if (configuredBinary) {
+    if (!path.isAbsolute(configuredBinary)) {
+      throw new Error(`Unsafe GH binary path: ${configuredBinary}`);
+    }
+    candidates.push(configuredBinary);
+  }
+
+  candidates.push(...FIXED_GH_BINARIES);
+
+  for (const candidate of candidates) {
+    try {
+      accessSync(candidate, fs.constants.X_OK);
+      return candidate;
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error(`Unable to locate GH CLI in fixed paths: ${candidates.join(', ')}`);
+}
+
+function runGh(args, options = {}) {
+  return spawnSync(resolveGhBinary(options), assertSafeGhArgs(args), {
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -100,11 +131,7 @@ function getPrStatus(prNumber = '', runner = runGh) {
 
 function getPrChecks(prNumber = '', runner = runGh) {
   const normalizedPrNumber = normalizePrNumber(prNumber, { allowEmpty: false });
-  const args = ['pr', 'checks'];
-  args.push(normalizedPrNumber);
-  args.push('--json', PR_CHECK_FIELDS);
-
-  const result = runner(args);
+  const result = runner(['pr', 'checks', normalizedPrNumber, '--json', PR_CHECK_FIELDS]);
   if (result.status !== 0) {
     throw new Error(`Failed to fetch PR checks: ${formatGhError(result)}`);
   }
@@ -382,6 +409,7 @@ module.exports = {
   loadManagedPrs,
   normalizePrNumber,
   resolveBlockers,
+  resolveGhBinary,
   waitForMergeCommit,
   performMerge,
   managePrs,

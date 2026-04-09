@@ -1,11 +1,18 @@
 #!/usr/bin/env node
 'use strict';
 
-const { spawnSync } = require('child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const MERGE_QUALITY_CHECKS = require('../config/merge-quality-checks.json');
 
 const DEFAULT_REPO = process.env.GITHUB_REPOSITORY || 'IgorGanapolsky/ThumbGate';
 const DEFAULT_BRANCH = process.env.DEFAULT_BRANCH || 'main';
+const FIXED_GH_BINARIES = [
+  '/usr/bin/gh',
+  '/usr/local/bin/gh',
+  '/opt/homebrew/bin/gh',
+];
 
 function assertSafeGhArgs(args) {
   if (!Array.isArray(args) || args.length === 0) {
@@ -21,13 +28,39 @@ function assertSafeGhArgs(args) {
   });
 }
 
-function runGh(args) {
+function resolveGhBinary(options = {}) {
+  const accessSync = options.accessSync || fs.accessSync;
+  const candidates = [];
+  const configuredBinary = String(process.env.THUMBGATE_GH_BIN || '').trim();
+
+  if (configuredBinary) {
+    if (!path.isAbsolute(configuredBinary)) {
+      throw new Error(`Unsafe GH binary path: ${configuredBinary}`);
+    }
+    candidates.push(configuredBinary);
+  }
+
+  candidates.push(...FIXED_GH_BINARIES);
+
+  for (const candidate of candidates) {
+    try {
+      accessSync(candidate, fs.constants.X_OK);
+      return candidate;
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error(`Unable to locate GH CLI in fixed paths: ${candidates.join(', ')}`);
+}
+
+function runGh(args, options = {}) {
   const env = { ...process.env };
   if (!env.GITHUB_ACTIONS && env.GITHUB_TOKEN && !env.GH_TOKEN) {
     delete env.GITHUB_TOKEN;
   }
 
-  return spawnSync('gh', assertSafeGhArgs(args), {
+  return spawnSync(resolveGhBinary(options), assertSafeGhArgs(args), {
     encoding: 'utf8',
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -120,7 +153,7 @@ function normalizeContexts(contexts = []) {
   return [...new Set((Array.isArray(contexts) ? contexts : []).map((value) => {
     const normalized = String(value || '').trim();
     return normalized ? assertSafeStatusContext(normalized) : '';
-  }).filter(Boolean))].sort();
+  }).filter(Boolean))].sort((left, right) => left.localeCompare(right));
 }
 
 function loadBranchProtectionRule(repo, runner = runGh) {
@@ -282,10 +315,10 @@ function runCli(argv = process.argv.slice(2), runner = runGh) {
     console.log(`Branch protection synced: ${result.repo} ${result.branch}`);
   }
 
-  return options.check && !result.ok ? 1 : 0;
+  return options.check ? (result.ok ? 0 : 1) : 0;
 }
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   process.exitCode = runCli();
 }
 
@@ -299,6 +332,7 @@ module.exports = {
   loadBranchProtectionRule,
   normalizeContexts,
   parseArgs,
+  resolveGhBinary,
   runCli,
   splitRepo,
   syncBranchProtection,
