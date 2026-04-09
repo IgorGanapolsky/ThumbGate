@@ -13,10 +13,11 @@ function readJson(relativePath) {
   return JSON.parse(readText(relativePath));
 }
 
-test('package metadata leads with self-improving framing instead of generic memory-layer phrasing', () => {
+test('package metadata leads with self-improving governance framing instead of generic memory-layer phrasing', () => {
   const packageJson = readJson('package.json');
 
   assert.match(packageJson.description, /self-improving/i);
+  assert.match(packageJson.description, /governance/i);
   assert.match(packageJson.description, /prevention rule/i);
   assert.doesNotMatch(packageJson.description, /Universal Context & Memory Layer/i);
 });
@@ -42,13 +43,15 @@ test('README routes paid buyers to the dedicated Pro page', () => {
 test('README exposes prompt-shaped buyer questions with tracked guide links', () => {
   const readme = readText('README.md');
 
+  assert.match(readme, /Workflow Hardening Sprint/i);
   assert.match(readme, /Popular buyer questions/i);
   assert.match(readme, /guides\/stop-repeated-ai-agent-mistakes\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/cursor-agent-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/gemini-cli-feedback-memory\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
-  assert.match(readme, /\/\?utm_source=github&utm_medium=readme&utm_campaign=top_cta#pricing/);
+  assert.match(readme, /\/\?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake/);
   assert.match(readme, /\/\?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake/);
+  assert.match(readme, /First Dollar Playbook/i);
 });
 
 test('README exposes the actual shipped tech stack', () => {
@@ -124,4 +127,17 @@ test('GEO demand engine prioritizes action queries and proof-backed fan-out surf
   assert.match(geoDemandEngine, /medium\.com/i);
   assert.doesNotMatch(geoDemandEngine, /founding members/i);
   assert.doesNotMatch(geoDemandEngine, /customer proof/i);
+});
+
+test('first dollar playbook keeps the sales motion sprint-first and proof-backed', () => {
+  const playbook = readText(path.join('docs', 'FIRST_DOLLAR_PLAYBOOK.md'));
+
+  assert.match(playbook, /Status: current/i);
+  assert.match(playbook, /next repeatable dollar/i);
+  assert.match(playbook, /Workflow Hardening Sprint/i);
+  assert.match(playbook, /proof pack/i);
+  assert.match(playbook, /named pilot agreement/i);
+  assert.match(playbook, /COMMERCIAL_TRUTH\.md/);
+  assert.match(playbook, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(playbook, /RELEASE_CONFIDENCE\.md/);
 });

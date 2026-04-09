@@ -20,7 +20,7 @@ process.env.THUMBGATE_BUILD_GENERATED_AT = '2026-03-21T00:00:00.000Z';
 // Use insecure mode so auth doesn't interfere with /health unauthenticated check
 process.env.THUMBGATE_ALLOW_INSECURE = 'true';
 
-const { startServer } = require('../src/api/server');
+const { createApiServer, startServer } = require('../src/api/server');
 const pkg = require('../package.json');
 const PROJECT_ROOT = path.join(__dirname, '..');
 
@@ -161,6 +161,24 @@ test('THUMBGATE_ALLOW_INSECURE=true bypasses API key requirement', async () => {
   assert.equal(res.status, 200);
 });
 
+test('createApiServer fails fast when THUMBGATE_API_KEY is missing in secure mode', () => {
+  const previousApiKey = process.env.THUMBGATE_API_KEY;
+  const previousAllowInsecure = process.env.THUMBGATE_ALLOW_INSECURE;
+
+  delete process.env.THUMBGATE_API_KEY;
+  delete process.env.THUMBGATE_ALLOW_INSECURE;
+
+  try {
+    assert.throws(() => createApiServer(), /THUMBGATE_API_KEY is required unless THUMBGATE_ALLOW_INSECURE=true/);
+  } finally {
+    if (previousApiKey === undefined) delete process.env.THUMBGATE_API_KEY;
+    else process.env.THUMBGATE_API_KEY = previousApiKey;
+
+    if (previousAllowInsecure === undefined) delete process.env.THUMBGATE_ALLOW_INSECURE;
+    else process.env.THUMBGATE_ALLOW_INSECURE = previousAllowInsecure;
+  }
+});
+
 test('feedback endpoint returns valid JSON under insecure mode', async () => {
   const res = await fetch(deployUrl('/v1/feedback/stats'));
   const body = await res.json();
@@ -176,10 +194,20 @@ test('CI workflow stays test-only and leaves Railway deploys to the dedicated wo
   assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
 });
 
+test('runtime Docker image installs git for operational integrity checks', () => {
+  const dockerfile = fs.readFileSync(path.join(PROJECT_ROOT, 'Dockerfile'), 'utf8');
+
+  assert.match(dockerfile, /FROM node:20-alpine AS runtime/);
+  assert.match(dockerfile, /RUN apk add --no-cache git/);
+});
+
 test('Deploy to Railway workflow is the single authoritative Railway deploy lane', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
   assert.match(workflow, /Check Railway deployment configuration/);
+  assert.match(workflow, /missing required deploy config/);
+  assert.match(workflow, /missing required runtime secrets/);
+  assert.match(workflow, /THUMBGATE_API_KEY/);
   assert.match(workflow, /Enforce deploy policy/);
   assert.match(workflow, /node scripts\/deploy-policy\.js --profiles=billing,deploy/);
   assert.match(workflow, /steps\.railway-config\.outputs\.enabled == 'true'/);
@@ -188,6 +216,10 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_HEALTHCHECK_URL/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_SLEEP_SECONDS/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS/);
+  assert.match(workflow, /RAILWAY_LOG_LINES/);
+  assert.match(workflow, /RAILWAY_HTTP_LOG_LINES/);
   assert.match(workflow, /secrets\.THUMBGATE_API_KEY/);
   assert.match(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
   assert.match(workflow, /vars\.THUMBGATE_BILLING_API_BASE_URL \|\| vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
@@ -199,6 +231,8 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /--project "\$RAILWAY_PROJECT_ID"/);
   assert.match(workflow, /--environment "\$RAILWAY_ENVIRONMENT_ID"/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS\s*\|\|\s*'120'\s*\}\}/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS\s*\|\|\s*'5'\s*\}\}/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS\s*\|\|\s*'20'\s*\}\}/);
   assert.doesNotMatch(workflow, /secrets\.THUMBGATE_API_KEY\s*\|\|/);
   assert.doesNotMatch(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN\s*\|\|\s*vars\./);
   assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
@@ -213,10 +247,57 @@ test('Deploy to Railway workflow waits long enough to verify the promoted build 
   assert.match(workflow, /--detach/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS\s*\|\|\s*'120'\s*\}\}/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_SLEEP_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_SLEEP_SECONDS\s*\|\|\s*'10'\s*\}\}/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS\s*\|\|\s*'5'\s*\}\}/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS\s*\|\|\s*'20'\s*\}\}/);
   assert.match(workflow, /MAX_ATTEMPTS="\$\{RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-120\}"/);
   assert.match(workflow, /SLEEP_SECONDS="\$\{RAILWAY_HEALTHCHECK_SLEEP_SECONDS:-10\}"/);
+  assert.match(workflow, /CONNECT_TIMEOUT_SECONDS="\$\{RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:-5\}"/);
+  assert.match(workflow, /MAX_TIME_SECONDS="\$\{RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:-20\}"/);
+  assert.match(workflow, /Per-attempt probe budget: connect timeout \$\{CONNECT_TIMEOUT_SECONDS\}s, max time \$\{MAX_TIME_SECONDS\}s\./);
+  assert.match(workflow, /curl --connect-timeout "\$CONNECT_TIMEOUT_SECONDS" --max-time "\$MAX_TIME_SECONDS" -sS -o "\$RESPONSE_FILE" -w "%\{http_code\}" "\$RAILWAY_HEALTHCHECK_URL"/);
   assert.match(workflow, /Observed build SHA/);
   assert.match(workflow, /Expected build SHA/);
+});
+
+test('Deploy to Railway workflow captures Railway diagnostics when health verification fails', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+
+  assert.match(workflow, /name: Capture Railway diagnostics/);
+  assert.match(workflow, /if: failure\(\) && steps\.railway-config\.outputs\.enabled == 'true'/);
+  assert.match(workflow, /bash scripts\/capture-railway-diagnostics\.sh railway-diagnostics/);
+  assert.match(workflow, /actions\/upload-artifact@v4/);
+  assert.match(workflow, /railway-diagnostics-\$\{\{\s*github\.run_id\s*\}\}/);
+});
+
+test('Railway diagnostics workflow can inspect or bounce the service with the live Railway config', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'railway-diagnostics.yml'), 'utf8');
+
+  assert.match(workflow, /name:\s*Railway Diagnostics/);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /action:/);
+  assert.match(workflow, /inspect/);
+  assert.match(workflow, /restart/);
+  assert.match(workflow, /redeploy/);
+  assert.match(workflow, /RAILWAY_PROJECT_ID/);
+  assert.match(workflow, /RAILWAY_ENVIRONMENT_ID/);
+  assert.match(workflow, /RAILWAY_SERVICE/);
+  assert.match(workflow, /railway restart --service "\$RAILWAY_SERVICE" --yes --json/);
+  assert.match(workflow, /railway redeploy --service "\$RAILWAY_SERVICE" --yes --json/);
+  assert.match(workflow, /bash scripts\/capture-railway-diagnostics\.sh railway-diagnostics/);
+  assert.match(workflow, /actions\/upload-artifact@v4/);
+});
+
+test('Railway diagnostics helper captures service status, latest logs, and a direct health probe', () => {
+  const script = fs.readFileSync(path.join(PROJECT_ROOT, 'scripts', 'capture-railway-diagnostics.sh'), 'utf8');
+
+  assert.match(script, /railway link --project "\$RAILWAY_PROJECT_ID"/);
+  assert.match(script, /railway service status/);
+  assert.match(script, /railway logs .*--latest --deployment --lines "\$LOG_LINES" --json/);
+  assert.match(script, /railway logs .*--latest --build --lines "\$LOG_LINES" --json/);
+  assert.match(script, /railway logs .*--latest --http --path \/health --status '>=500' --lines "\$HTTP_LOG_LINES" --json/);
+  assert.match(script, /railway logs .*--latest --http --status '>=500' --lines "\$HTTP_LOG_LINES" --json/);
+  assert.match(script, /curl \\/);
+  assert.match(script, /HEALTHCHECK_URL/);
 });
 
 test('Deploy to Railway workflow retries transient Railway CLI failures before failing the lane', () => {
@@ -236,17 +317,28 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
   assert.match(workflow, /Retrying in \$\{sleep_seconds\}s/);
 });
 
-test('Deploy to Railway workflow always promotes the latest main commit, even for workflow-only or test-only pushes', () => {
+test('Deploy to Railway workflow skips non-runtime pushes and only deploys when runtime-serving files changed', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
   assert.match(workflow, /fetch-depth:\s*2/);
   assert.match(workflow, /name: Detect deployable changes/);
   assert.match(workflow, /BEFORE_SHA='\$\{\{\s*github\.event\.before\s*\}\}'/);
   assert.match(workflow, /git diff --name-only "\$BEFORE_SHA" "\$GITHUB_SHA"/);
+  assert.match(workflow, /DEPLOYABLE_PATTERN='.*src\/.*public\/.*Dockerfile\$/);
+  assert.ok(
+    workflow.includes('scripts/.*\\.(js|mjs|cjs)$'),
+    'workflow should only treat runtime JS script modules as deployable',
+  );
+  assert.ok(
+    !workflow.includes("DEPLOYABLE_PATTERN='^(src/|scripts/|"),
+    'workflow should not treat every scripts/ path as deployable',
+  );
+  assert.match(workflow, /! printf '%s\\n' "\$CHANGED_FILES" \| grep -Eq "\$DEPLOYABLE_PATTERN"/);
   assert.match(workflow, /should_deploy=\$SHOULD_DEPLOY/);
   assert.match(workflow, /SHOULD_DEPLOY=true/);
-  assert.doesNotMatch(workflow, /grep -Eqv '\^\(\\\.github\/\|tests\/\)'/);
-  assert.doesNotMatch(workflow, /Railway deploy skipped: only workflow\/test files changed on this commit\./);
+  assert.match(workflow, /SHOULD_DEPLOY=false/);
+  assert.match(workflow, /Railway deploy skipped: no runtime-serving files changed on this commit\./);
+  assert.doesNotMatch(workflow, /Railway deploy skipped: deploy-scope disabled this run\./);
 });
 
 test('Deploy to Railway workflow stamps runtime deployment env metadata before health verification', () => {

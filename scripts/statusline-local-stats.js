@@ -3,8 +3,10 @@
 
 const { analyzeFeedback } = require('./feedback-loop');
 const { normalizeStatsPayload } = require('./hook-thumbgate-cache-updater');
+const { syncClaudeHistoryFeedback } = require('./claude-feedback-sync');
 
 try {
+  syncClaudeHistoryFeedback();
   const stats = analyzeFeedback();
   const payload = {
     ...normalizeStatsPayload(stats),

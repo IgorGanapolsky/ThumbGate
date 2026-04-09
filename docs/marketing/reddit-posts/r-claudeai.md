@@ -8,7 +8,7 @@ So I built ThumbGate. The core idea is simple: when your agent does something wr
 
 The enforcement part is what makes it different from just writing notes. ThumbGate generates PreToolUse hooks -- these fire before every tool call the agent makes. If the agent tries to run `git push --force` and you previously flagged that as bad, the hook blocks it before it executes. The agent is forced to find a safe alternative.
 
-The feedback loop looks like this: capture (thumbs up/down) -> distill (history-aware, uses the last ~10 messages for context) -> store (SQLite + FTS5) -> generate rules -> enforce via PreToolUse hooks. Every session your agent gets a little smarter.
+The feedback loop looks like this: capture (thumbs up/down) -> distill (history-aware, reuses up to 8 prior recorded entries for vague thumbs-downs and links a 60-second follow-up thread) -> store (SQLite + FTS5) -> generate rules -> enforce via PreToolUse hooks. Every session your agent gets a little smarter.
 
 It ships with built-in gates for the most common footguns: force-push, direct push to main, pushing with unresolved review threads, destructive package-lock edits, and .env file exposure. You can add custom gates too.
 

@@ -42,8 +42,9 @@ Start with one workflow, not a platform migration or generic "AI employee" pitch
 # Commercial Motion
 
 - Start with the sprint, not the subscription pitch.
+- The first repeatable next dollar should come from a booked workflow hardening sprint or named pilot agreement, not from hoping low-intent self-serve traffic converts.
 - Expand into hosted Pro when the buyer needs synced memory, shared rules, and usage analytics.
-- Use [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md) and [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) in every sales conversation.
+- Use [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md), [FIRST_DOLLAR_PLAYBOOK.md](FIRST_DOLLAR_PLAYBOOK.md), and [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) in every sales conversation.
 
 # ICP (Ideal Customer Profile)
 

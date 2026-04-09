@@ -136,28 +136,20 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
 
   // Hero big emoji must show BOTH thumbs — not just one
   assert.match(landingPage, /class="hero-thumbs">👍👎</);
-  // Headline: self-improvement framing
-  assert.match(landingPage, /Your AI agent learns/i);
-  assert.match(landingPage, /from every mistake/i);
   // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /Mistake becomes a prevention rule/i);
-  assert.match(landingPage, /Good pattern reinforced/i);
+  assert.match(landingPage, /Repeated failure becomes enforcement before the next run/i);
+  assert.match(landingPage, /Safe pattern reinforced across the shared workflow/i);
   // Persona targeting
   assert.match(landingPage, /class="hero-persona"/);
-  assert.match(landingPage, /developers using Claude Code/i);
-  assert.match(landingPage, /self-improvement loop/i);
+  assert.match(landingPage, /product teams/i);
 });
 
 test('public landing page exposes a dedicated Pro path above the fold', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /See Pro for individual operators/i);
-  assert.match(landingPage, /Paid path:/i);
-  assert.match(landingPage, /personal local dashboard/i);
-  assert.match(landingPage, /DPO export/i);
-  assert.match(landingPage, /review-ready evidence/i);
+  assert.match(landingPage, /See Pro for solo operators/i);
   assert.match(landingPage, /href="\/pro\?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page"/);
 });
 
@@ -251,7 +243,7 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
   assert.match(landingPage, /trackClick\('.btn-demo-link', 'demo_click'/);
-  assert.match(landingPage, /trackClick\('.nav-cta', 'pro_page_click'/);
+  assert.match(landingPage, /trackClick\('.nav-cta', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /plausible\('faq_open'/);
   assert.match(landingPage, /plausible\('scroll_depth'/);
   assert.match(landingPage, /trackClick\('.proof-bar a', 'proof_bar_click'\)/);
@@ -352,10 +344,15 @@ test('lessons page exists and has three tabs', () => {
   assert.match(html, /Insights/i);
 });
 
-test('lessons page has rule cards with effectiveness metric', () => {
+test('lessons page has defensible live metrics and rule frequency labels', () => {
   const html = readLessonsPage();
-  assert.match(html, /Prevented/i);
-  assert.match(html, /Mistakes Prevented/i);
+  assert.match(html, /Actions Blocked/i);
+  assert.match(html, /Recorded gate denies, not inferred repeats/i);
+  assert.match(html, /Improvement Over Time/i);
+  assert.match(html, /Recent Feedback \+ Gate Activity/i);
+  assert.match(html, /Gate deny/i);
+  assert.match(html, /Gate warn/i);
+  assert.match(html, /Repeat pressure/i);
   assert.match(html, /rule-effectiveness/);
   assert.match(html, /rule-severity/);
 });

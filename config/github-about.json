@@ -2,7 +2,7 @@
   "repo": "IgorGanapolsky/ThumbGate",
   "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
   "homepageUrl": "https://thumbgate-production.up.railway.app",
-  "description": "Pre-action gates and workflow governance for AI coding agents. 👎 Thumbs down → prevention rule → mistake permanently blocked. 👍 Thumbs up → pattern reinforced. History-aware lessons from your corrections. Risky local runs can route into Docker Sandboxes. Team adds shared lessons and org visibility, plus isolated execution guidance.",
+  "description": "Pre-action gates, a learned intervention policy, and workflow governance for self-improving AI coding agents. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Team adds shared lessons and org visibility.",
   "topics": [
     "thumbgate",
     "pre-action-gates",

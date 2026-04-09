@@ -208,12 +208,11 @@ function getStatusbarLessonData() {
   const recent = getRecentLesson();
   if (!recent) return { hasLesson: false, text: null, link: null };
 
-  const emoji = (recent.signal === 'negative' || recent.signal === 'down') ? '👎' : '👍';
   const truncated = recent.lesson.length > 60 ? recent.lesson.slice(0, 57) + '...' : recent.lesson;
 
   return {
     hasLesson: true,
-    text: `${emoji} ${truncated}`,
+    text: truncated,
     link: recent.link,
     lessonId: recent.id,
     confidence: recent.confidence,
@@ -306,10 +305,90 @@ function consumePhrase(lower, original, phrases) {
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// 6. LLM-Powered Structured Lesson Extraction
+// ---------------------------------------------------------------------------
+
+const LLM_LESSON_SYSTEM_PROMPT = `You are a lesson extraction engine for an AI coding agent safety system called ThumbGate.
+
+Given a conversation window and a feedback signal (positive or negative), extract a structured lesson.
+
+Return ONLY valid JSON matching this exact schema:
+{
+  "trigger": { "condition": "<when this lesson applies>", "type": "<one of: debugging, implementation, question, error-report, constraint>" },
+  "action": { "type": "<do or avoid>", "description": "<specific action to take or avoid>" },
+  "confidence": <0.0 to 1.0>,
+  "scope": "<global, file-level, or project-level>",
+  "tags": ["<relevant tags>"]
+}
+
+Guidelines:
+- Be specific and actionable. "Avoid: editing files without reading them first" is better than "Avoid: bad edits".
+- confidence should reflect how clear the lesson is from the conversation context.
+- tags should include tool names, file types, or domain areas mentioned.
+- Do NOT include any text outside the JSON object.`;
+
+async function inferStructuredLessonLLM(conversationWindow, signal, context) {
+  const { isAvailable, callClaude, MODELS } = require('./llm-client');
+  if (!isAvailable()) return null;
+
+  const normalizedWindow = Array.isArray(conversationWindow) ? conversationWindow : [];
+  if (normalizedWindow.length === 0 && !context) return null;
+
+  const windowText = normalizedWindow
+    .slice(-10)
+    .map((m) => `[${m.role}]: ${(m.content || '').slice(0, 400)}`)
+    .join('\n')
+    .slice(0, 4000);
+
+  const userPrompt = [
+    `Signal: ${signal === 'positive' || signal === 'up' ? 'positive (thumbs up — something worked well)' : 'negative (thumbs down — something went wrong)'}`,
+    context ? `User context: ${context}` : '',
+    `\nConversation:\n${windowText}`,
+  ].filter(Boolean).join('\n');
+
+  const raw = await callClaude({
+    systemPrompt: LLM_LESSON_SYSTEM_PROMPT,
+    userPrompt,
+    model: MODELS.FAST,
+    maxTokens: 512,
+  });
+
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed.trigger || !parsed.action) return null;
+
+    const filePaths = extractFilePaths(normalizedWindow);
+    const toolCalls = extractToolCalls(normalizedWindow);
+    const errorPatterns = extractErrors(normalizedWindow);
+    const userMessages = normalizedWindow.filter((m) => m.role === 'user');
+    const assistantMessages = normalizedWindow.filter((m) => m.role === 'assistant');
+    const lastUser = userMessages[userMessages.length - 1]?.content || '';
+    const lastAssistant = assistantMessages[assistantMessages.length - 1]?.content || '';
+
+    return {
+      format: 'if-then-v1-llm',
+      trigger: parsed.trigger,
+      action: parsed.action,
+      signal: signal === 'positive' || signal === 'up' ? 'positive' : 'negative',
+      confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0.5)),
+      scope: parsed.scope || inferScope(filePaths, toolCalls),
+      examples: [{ userIntent: lastUser.slice(0, 300), assistantAction: lastAssistant.slice(0, 300), outcome: signal === 'positive' || signal === 'up' ? 'approved' : 'rejected' }],
+      metadata: { toolsUsed: toolCalls, filesInvolved: filePaths.slice(0, 10), errorPatterns: errorPatterns.slice(0, 5), conversationLength: normalizedWindow.length, inferredAt: new Date().toISOString(), llmModel: MODELS.FAST },
+      tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
 module.exports = {
   inferFromSurroundingMessages, createLesson, getRecentLesson,
   searchLessons, getLessonStats, getStatusbarLessonData,
   getLessonsPath, getRecentLessonPath,
-  inferStructuredLesson, extractTrigger, extractAction, extractToolCalls,
+  inferStructuredLesson, inferStructuredLessonLLM,
+  extractTrigger, extractAction, extractToolCalls,
   extractFilePaths, extractErrors, calculateConfidence, inferScope,
 };
