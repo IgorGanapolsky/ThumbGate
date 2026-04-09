@@ -31,6 +31,7 @@ COPY src/ ./src/
 COPY config/ ./config/
 COPY adapters/ ./adapters/
 COPY public/ ./public/
+COPY .well-known/ ./.well-known/
 
 # Data directory for runtime feedback logs
 RUN mkdir -p /data && chown thumbgate:thumbgate /data
