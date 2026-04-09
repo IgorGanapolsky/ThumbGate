@@ -12,12 +12,19 @@
  *   "content:linkedin:preview": "node scripts/content-engine/linkedin-content-generator.js --preview"
  */
 
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
 // Read gate config
 const configPath = path.join(__dirname, '../../config/gates/default.json');
-const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+let config;
+try {
+  config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+} catch (err) {
+  process.stderr.write(`Failed to load gate config from ${configPath}: ${err.message}\n`);
+  process.exit(1);
+}
 
 // Select 7 diverse gates across severity levels
 const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -43,9 +50,12 @@ const selected = [];
   }
 });
 
-// Fill remaining slots (7 total) from largest remaining buckets
+// Fill remaining slots (7 total) — shuffle with crypto-secure randomness (Fisher-Yates)
 const remaining = config.gates.filter(g => !selected.includes(g));
-remaining.sort(() => Math.random() - 0.5);
+for (let i = remaining.length - 1; i > 0; i--) {
+  const j = crypto.randomInt(i + 1);
+  [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+}
 while (selected.length < 7 && remaining.length > 0) {
   selected.push(remaining.pop());
 }
