@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
@@ -22,7 +23,7 @@ function ensureDir(dirPath) {
 }
 
 function buildActionId(prefix = 'decision') {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
 }
 
 function readDecisionLog(logPath) {
