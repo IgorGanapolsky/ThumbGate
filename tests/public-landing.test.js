@@ -139,18 +139,18 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
   // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /Force-push to main\? Blocked before execution\./i);
-  assert.match(landingPage, /Safe pattern reinforced across every team member's agent\./i);
+  assert.match(landingPage, /Repeated failure becomes enforcement before the next run/i);
+  assert.match(landingPage, /Safe pattern reinforced across the shared workflow/i);
   // Persona targeting
   assert.match(landingPage, /class="hero-persona"/);
-  assert.match(landingPage, /engineering teams/i);
+  assert.match(landingPage, /product teams/i);
 });
 
 test('public landing page exposes a dedicated Pro path above the fold', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /See Team plan — \$99\/seat\/mo/i);
-  assert.match(landingPage, /href="\/pro\?utm_source=website&utm_medium=homepage_hero&utm_campaign=team_page"/);
+  assert.match(landingPage, /See Pro for solo operators/i);
+  assert.match(landingPage, /href="\/pro\?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page"/);
 });
 
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
@@ -243,7 +243,7 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
   assert.match(landingPage, /trackClick\('.btn-demo-link', 'demo_click'/);
-  assert.match(landingPage, /trackClick\('.nav-cta', 'pro_page_click'/);
+  assert.match(landingPage, /trackClick\('.nav-cta', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /plausible\('faq_open'/);
   assert.match(landingPage, /plausible\('scroll_depth'/);
   assert.match(landingPage, /trackClick\('.proof-bar a', 'proof_bar_click'\)/);
