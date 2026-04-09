@@ -81,7 +81,7 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /\$12/);
   assert.match(landingPage, /Install Free/);
   assert.match(landingPage, /Free Trial/);
-  assert.match(landingPage, /Start Team Pilot/);
+  assert.match(landingPage, /Start Workflow Hardening Sprint/);
 });
 
 test('public landing page includes Plausible analytics and search engine proof bar', () => {
@@ -131,33 +131,33 @@ test('public landing page positions ThumbGate as self-improving AI agents', () =
   assert.doesNotMatch(landingPage, /official Anthropic partner/i);
 });
 
-test('public landing page hero features both thumbs up AND thumbs down prominently', () => {
+test('public landing page hero routes team buyers to the workflow hardening sprint while keeping Pro visible', () => {
   const landingPage = readLandingPage();
 
-  // Hero big emoji must show BOTH thumbs — not just one
   assert.match(landingPage, /class="hero-thumbs">👍👎</);
-  // Headline: self-improvement framing
-  assert.match(landingPage, /Your AI agent learns/i);
-  assert.match(landingPage, /from every mistake/i);
-  // Signal pills must show both
+  assert.match(landingPage, /Workflow Hardening Sprint/i);
+  assert.match(landingPage, /Make one AI workflow/i);
+  assert.match(landingPage, /safe enough to ship team-wide/i);
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /Mistake becomes a prevention rule/i);
-  assert.match(landingPage, /Good pattern reinforced/i);
-  // Persona targeting
+  assert.match(landingPage, /repeated failure becomes enforcement/i);
+  assert.match(landingPage, /shared workflow/i);
   assert.match(landingPage, /class="hero-persona"/);
-  assert.match(landingPage, /developers using Claude Code/i);
-  assert.match(landingPage, /self-improvement loop/i);
+  assert.match(landingPage, /consultancies, platform teams, and AI product teams/i);
+  assert.match(landingPage, /one workflow owner/i);
+  assert.match(landingPage, /one buyer who needs proof/i);
+  assert.match(landingPage, /Start Workflow Hardening Sprint/i);
+  assert.match(landingPage, /See Pro for solo operators/i);
 });
 
 test('public landing page exposes a dedicated Pro path above the fold', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /See Pro for individual operators/i);
-  assert.match(landingPage, /Paid path:/i);
+  assert.match(landingPage, /See Pro for solo operators/i);
+  assert.match(landingPage, /Start free as an individual/i);
   assert.match(landingPage, /personal local dashboard/i);
   assert.match(landingPage, /DPO export/i);
-  assert.match(landingPage, /review-ready evidence/i);
+  assert.match(landingPage, /self-serve lane/i);
   assert.match(landingPage, /href="\/pro\?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page"/);
 });
 
@@ -185,6 +185,7 @@ test('public landing page includes an explicit Team rollout lane with shared wor
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /<div class="tier">Team<\/div>/);
+  assert.match(landingPage, /workflow hardening sprint/i);
   assert.match(landingPage, /Shared enforcement memory/i);
   assert.match(landingPage, /Hosted review views/i);
   assert.match(landingPage, /Org dashboard/i);
@@ -251,7 +252,7 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
   assert.match(landingPage, /trackClick\('.btn-demo-link', 'demo_click'/);
-  assert.match(landingPage, /trackClick\('.nav-cta', 'pro_page_click'/);
+  assert.match(landingPage, /trackClick\('.nav-cta', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /plausible\('faq_open'/);
   assert.match(landingPage, /plausible\('scroll_depth'/);
   assert.match(landingPage, /trackClick\('.proof-bar a', 'proof_bar_click'\)/);
@@ -319,6 +320,7 @@ test('landing page has newsletter signup', () => {
   assert.match(html, /action="\/api\/newsletter"/);
   assert.match(html, /data-newsletter-form/);
   assert.match(html, /Get updates \+ keep checkout ready/i);
+  assert.match(html, /workflow sprint brief/i);
 });
 
 test('landing page has social links in footer', () => {
