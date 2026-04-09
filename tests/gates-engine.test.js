@@ -1808,3 +1808,161 @@ test('evaluateSecretGuard handles missing tool_input gracefully', () => {
   const result = evaluateSecretGuard({});
   assert.equal(result, null);
 });
+
+// ---------------------------------------------------------------------------
+// Three-tier approval routing: approve and log gate actions
+// ---------------------------------------------------------------------------
+
+test('evaluateGates returns approve decision for approve-action gate', () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('approve-action-test.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [{
+      id: 'test-approve-gate',
+      pattern: 'deploy.*prod',
+      action: 'approve',
+      message: 'Production deploy requires approval',
+      severity: 'high',
+    }],
+  }));
+
+  try {
+    const result = evaluateGates('Bash', { command: 'deploy to prod' }, tmpConfig);
+    assert.ok(result);
+    assert.equal(result.decision, 'approve');
+    assert.equal(result.gate, 'test-approve-gate');
+    assert.equal(result.requiresApproval, true);
+    assert.equal(result.severity, 'high');
+  } finally {
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
+
+test('evaluateGates returns log decision and continues for log-action gate', () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('log-action-test.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [{
+      id: 'test-log-gate',
+      pattern: '.*style.*',
+      action: 'log',
+      message: 'Style violation logged',
+      severity: 'low',
+    }],
+  }));
+
+  try {
+    // log gates should NOT block — evaluateGates returns null when only log gates fire
+    const result = evaluateGates('Bash', { command: 'fix style issues' }, tmpConfig);
+    assert.equal(result, null);
+
+    // But the stat should be recorded
+    const stats = loadStats();
+    assert.ok(stats.logged >= 1, 'logged stat should be incremented');
+  } finally {
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
+
+test('evaluateGatesAsync returns approve decision for approve-action gate', async () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('async-approve-test.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [{
+      id: 'async-approve-gate',
+      pattern: 'migrate.*schema',
+      action: 'approve',
+      message: 'Schema migration requires approval',
+      severity: 'high',
+    }],
+  }));
+
+  try {
+    const result = await evaluateGatesAsync('Bash', { command: 'migrate schema v2' }, tmpConfig);
+    assert.ok(result);
+    assert.equal(result.decision, 'approve');
+    assert.equal(result.gate, 'async-approve-gate');
+    assert.equal(result.requiresApproval, true);
+  } finally {
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
+
+test('evaluateGatesAsync log gate does not block and records stat', async () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('async-log-test.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [{
+      id: 'async-log-gate',
+      pattern: '.*warning.*',
+      action: 'log',
+      message: 'Non-critical warning logged',
+      severity: 'low',
+    }],
+  }));
+
+  try {
+    const result = await evaluateGatesAsync('Bash', { command: 'process warning event' }, tmpConfig);
+    assert.equal(result, null);
+
+    const stats = loadStats();
+    assert.ok(stats.logged >= 1, 'logged stat should be incremented');
+  } finally {
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
+
+test('recordStat tracks pendingApproval and logged counters', () => {
+  cleanupStateFiles();
+  recordStat('test-approve', 'approve', { id: 'test-approve', severity: 'high' });
+  recordStat('test-log', 'log', { id: 'test-log', severity: 'low' });
+
+  const stats = loadStats();
+  assert.ok(stats.pendingApproval >= 1, 'pendingApproval should be incremented');
+  assert.ok(stats.logged >= 1, 'logged should be incremented');
+  assert.ok(stats.byGate['test-approve']?.pendingApproval >= 1);
+  assert.ok(stats.byGate['test-log']?.logged >= 1);
+  cleanupStateFiles();
+});
+
+test('approve gate blocks before log gate fires on same input', () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('approve-before-log-test.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [
+      {
+        id: 'approve-first',
+        pattern: 'deploy.*prod',
+        action: 'approve',
+        message: 'Needs approval',
+        severity: 'high',
+      },
+      {
+        id: 'log-second',
+        pattern: 'deploy.*prod',
+        action: 'log',
+        message: 'Logged deploy',
+        severity: 'low',
+      },
+    ],
+  }));
+
+  try {
+    const result = evaluateGates('Bash', { command: 'deploy to prod' }, tmpConfig);
+    assert.ok(result);
+    assert.equal(result.decision, 'approve');
+    assert.equal(result.gate, 'approve-first');
+  } finally {
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
