@@ -137,7 +137,7 @@ async function main() {
     'public/guide.html must advertise the current Pro monthly and annual pricing'
   );
   check(
-    /\$99\/seat\/mo/i.test(guideHtml),
+    /\$12\/seat\/mo/i.test(guideHtml),
     'public/guide.html must advertise the current Team pricing anchor'
   );
   check(
@@ -153,7 +153,7 @@ async function main() {
     'README.md must advertise the current Pro monthly and annual pricing'
   );
   check(
-    /\$99\/seat\/mo/i.test(readmeMd),
+    /\$12\/seat\/mo/i.test(readmeMd),
     'README.md must advertise the current Team pricing anchor'
   );
   check(
