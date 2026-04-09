@@ -20,6 +20,7 @@ const { routeProfile } = require('./profile-router');
 const { getSettingsStatus } = require('./settings-hierarchy');
 const { summarizeWorkflowRuns } = require('./workflow-runs');
 const { searchLessons } = require('./lesson-search');
+const { getInterventionPolicySummary } = require('./intervention-policy');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -785,6 +786,7 @@ function generateDashboard(feedbackDir, options = {}) {
   const delegation = summarizeDelegation(feedbackDir);
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
   const harness = computeHarnessOverview(feedbackDir, entries);
+  const interventionPolicy = getInterventionPolicySummary(feedbackDir);
   const settingsStatus = getSettingsStatus({ projectRoot: PROJECT_ROOT });
   settingsStatus.routingPreview = {
     dashboardTool: routeProfile({
@@ -854,6 +856,7 @@ function generateDashboard(feedbackDir, options = {}) {
     observability,
     instrumentation,
     readiness,
+    interventionPolicy,
     settingsStatus,
     team,
     templateLibrary,
@@ -882,6 +885,7 @@ function printDashboard(data) {
     observability,
     instrumentation,
     readiness,
+    interventionPolicy,
     settingsStatus,
     team,
     templateLibrary,
@@ -925,6 +929,20 @@ function printDashboard(data) {
   console.log(`  Error Lessons    : ${harness.errorLessonCount}/${harness.lessonCount}`);
   if (harness.topRecommendations[0]) {
     console.log(`  Top Next Fix     : ${harness.topRecommendations[0].type} (${harness.topRecommendations[0].count} lessons)`);
+  }
+
+  console.log('');
+  console.log('🧠 Learned Policy');
+  console.log(`  Enabled          : ${interventionPolicy.enabled ? 'yes' : 'no'}`);
+  console.log(`  Examples         : ${interventionPolicy.exampleCount}`);
+  console.log(`  Train Accuracy   : ${Math.round((interventionPolicy.metrics.trainingAccuracy || 0) * 100)}%`);
+  console.log(`  Holdout Accuracy : ${Math.round((interventionPolicy.metrics.holdoutAccuracy || 0) * 100)}%`);
+  console.log(`  Recent Pressure  : ${Math.round((interventionPolicy.nonAllowRate || 0) * 100)}% non-allow`);
+  if (interventionPolicy.updatedAt) {
+    console.log(`  Updated          : ${interventionPolicy.updatedAt}`);
+  }
+  if (interventionPolicy.topTokens && interventionPolicy.topTokens.deny && interventionPolicy.topTokens.deny[0]) {
+    console.log(`  Top Deny Signal  : ${interventionPolicy.topTokens.deny[0].token}`);
   }
 
   console.log('');
@@ -1108,6 +1126,7 @@ module.exports = {
   computeSystemHealth,
   computeEfficiencyMetrics,
   computeHarnessOverview,
+  getInterventionPolicySummary,
   computeAnalyticsSummary,
   computeSecretGuardStats,
   computeObservabilityStats,
