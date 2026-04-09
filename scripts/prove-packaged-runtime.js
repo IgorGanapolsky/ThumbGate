@@ -216,11 +216,13 @@ async function runPackagedRuntimeSmoke(options = {}) {
     if (!readyStatusline.includes(`${origin}/lessons`)) {
       throw new Error(`Ready statusline missing lessons URL: ${readyStatusline.trim()}`);
     }
-    if (!readyStatusline.includes(`${origin}/feedback/quick?signal=up`)) {
-      throw new Error(`Ready statusline missing thumbs-up URL: ${readyStatusline.trim()}`);
+    // Thumbs-up/down icons are plain emoji (not hyperlinks) since the switch
+    // from OSC 8 to inline URLs. Only dashboard + lessons URLs are required.
+    if (!readyStatusline.includes('👍')) {
+      throw new Error(`Ready statusline missing thumbs-up icon: ${readyStatusline.trim()}`);
     }
-    if (!readyStatusline.includes(`${origin}/feedback/quick?signal=down`)) {
-      throw new Error(`Ready statusline missing thumbs-down URL: ${readyStatusline.trim()}`);
+    if (!readyStatusline.includes('👎')) {
+      throw new Error(`Ready statusline missing thumbs-down icon: ${readyStatusline.trim()}`);
     }
 
     return {
