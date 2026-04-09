@@ -4677,9 +4677,9 @@ async function addContext(){
         return;
       }
 
-      // POST /webhook/stripe — Track Stripe subscription events (checkout, subscription changes)
-      // TODO: Add STRIPE_WEBHOOK_SECRET to .env and enable signature verification via
-      // verifyWebhookSignature() once the webhook endpoint is registered in the Stripe Dashboard.
+      // POST /webhook/stripe — legacy Stripe event log bridge kept for backward compatibility.
+      // When STRIPE_WEBHOOK_SECRET is configured, verify the same Stripe signature used by
+      // the /v1/billing/webhook route before touching any payload.
       if (req.method === 'POST' && pathname === '/webhook/stripe') {
         try {
           const rawBody = await new Promise((resolve, reject) => {
@@ -4688,6 +4688,18 @@ async function addContext(){
             req.on('end', () => resolve(Buffer.concat(chunks)));
             req.on('error', reject);
           });
+
+          const sig = req.headers['stripe-signature'] || '';
+          if (!verifyWebhookSignature(rawBody, sig)) {
+            sendProblem(res, {
+              type: PROBLEM_TYPES.WEBHOOK_INVALID,
+              title: 'Invalid webhook signature',
+              status: 400,
+              detail: 'The webhook signature could not be verified.',
+            });
+            return;
+          }
+
           let event;
           try {
             event = JSON.parse(rawBody.toString('utf-8'));
