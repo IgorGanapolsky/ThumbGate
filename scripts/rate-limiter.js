@@ -21,7 +21,7 @@ const FREE_TIER_LIMITS = {
 
 const FREE_TIER_MAX_GATES = 5;
 
-const UPGRADE_MESSAGE = `Founding Member deal: $49 once, Pro forever (no subscription): ${PRO_FOUNDER_PAYMENT_LINK}\n  Or subscribe: $19/mo — ${PRO_MONTHLY_PAYMENT_LINK}`;
+const UPGRADE_MESSAGE = `Founding Member deal: $49 once, Pro forever — includes dashboard, DPO export, and hosted API key: ${PRO_FOUNDER_PAYMENT_LINK}\n  Or subscribe: $19/mo — ${PRO_MONTHLY_PAYMENT_LINK}`;
 
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;
