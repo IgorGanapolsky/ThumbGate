@@ -199,6 +199,52 @@ test('statusline follows the persisted active project when Claude is running fro
   }
 });
 
+test('statusline resolves project feedback from Claude cwd instead of the runtime cwd', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-claude-cwd-'));
+  const homeDir = path.join(tmpDir, 'home');
+  const projectDir = path.join(tmpDir, 'project-bravo');
+  const runtimeDir = path.join(homeDir, '.thumbgate', 'runtime');
+  const feedbackDir = path.join(projectDir, '.claude', 'memory', 'feedback');
+  fs.mkdirSync(homeDir, { recursive: true });
+  fs.mkdirSync(runtimeDir, { recursive: true });
+  fs.mkdirSync(feedbackDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(feedbackDir, 'feedback-log.jsonl'),
+    [
+      JSON.stringify({ signal: 'positive', timestamp: '2026-04-09T18:00:00.000Z', context: 'kept scope tight' }),
+      JSON.stringify({ signal: 'positive', timestamp: '2026-04-09T18:01:00.000Z', context: 'verified clean worktree' }),
+      JSON.stringify({ signal: 'negative', timestamp: '2026-04-09T18:02:00.000Z', context: 'stale runtime cwd' }),
+    ].join('\n') + '\n'
+  );
+
+  try {
+    const out = execFileSync('bash', [STATUSLINE_PATH], {
+      cwd: runtimeDir,
+      encoding: 'utf8',
+      input: JSON.stringify({
+        cwd: projectDir,
+        context_window: { used_percentage: 33 },
+      }),
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        PATH: SAFE_SYSTEM_PATH,
+        PWD: runtimeDir,
+      },
+      timeout: 5000,
+    });
+
+    assert.ok(out.includes('2'), 'should show project thumbs up count from Claude cwd');
+    assert.ok(out.includes('1'), 'should show project thumbs down count from Claude cwd');
+
+    const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
+    assert.equal(cache.thumbs_up, '2');
+    assert.equal(cache.thumbs_down, '1');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test('statusline shows Pro when a valid ThumbGate license is present', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-license-'));
   const homeDir = path.join(tmpDir, 'home');

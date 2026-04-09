@@ -11,9 +11,18 @@ LOCAL_API_ORIGIN="${THUMBGATE_LOCAL_API_ORIGIN:-http://localhost:3456}"
 # ── Parse Claude Code session JSON from stdin ─────────────────────
 eval "$(cat | jq -r '
   def n(f): f // 0;
-  @sh "CTX_PCT=\(n(.context_window.used_percentage) | floor)"
+  @sh "CTX_PCT=\(n(.context_window.used_percentage) | floor)",
+  @sh "PROJECT_CWD=\(.cwd // .working_directory // "")"
 ' 2>/dev/null)"
 CTX_PCT="${CTX_PCT:-0}"
+PROJECT_CWD="${PROJECT_CWD:-}"
+
+if [ -n "$PROJECT_CWD" ] && [ -d "$PROJECT_CWD" ]; then
+  export THUMBGATE_PROJECT_DIR="$PROJECT_CWD"
+  if [ -z "${THUMBGATE_FEEDBACK_DIR:-}" ]; then
+    export THUMBGATE_FEEDBACK_DIR="${PROJECT_CWD}/.claude/memory/feedback"
+  fi
+fi
 
 # ── ThumbGate stats from cache ────────────────────────────────────────
 THUMBGATE_CACHE=""
