@@ -1774,6 +1774,36 @@ describe('bin/cli.js', () => {
     assert.notEqual(result.status, 1, `capture should not exit 1:\n${result.stderr}`);
   });
 
+  test('import-doc ingests a policy file and returns proposed gates as JSON', () => {
+    const cwd = makeTmpDir();
+    const feedbackDir = makeTmpDir();
+    const docPath = path.join(cwd, 'docs', 'release-policy.md');
+    fs.mkdirSync(path.dirname(docPath), { recursive: true });
+    fs.writeFileSync(docPath, [
+      '# Release Policy',
+      '',
+      '- Never force-push to main.',
+      '- Always run tests before commit.',
+    ].join('\n'));
+
+    const result = spawnSync(process.execPath, [CLI, 'import-doc', docPath, '--json'], {
+      cwd,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const body = JSON.parse(result.stdout);
+    assert.equal(body.ok, true);
+    assert.equal(body.document.sourceFormat, 'markdown');
+    assert.ok(body.document.proposals.some((proposal) => proposal.templateId === 'never-force-push-main'));
+    assert.equal(fs.existsSync(path.join(feedbackDir, 'documents', `${body.document.documentId}.json`)), true);
+  });
+
   test('serve responds to initialize over Content-Length framed transport', async () => {
     const { response } = await runServeHandshake((stdin, payload) => {
       stdin.write(frameMcpMessage(payload));

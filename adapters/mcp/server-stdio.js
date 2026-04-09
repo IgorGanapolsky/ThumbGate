@@ -84,6 +84,11 @@ const {
 const {
   searchThumbgate,
 } = require('../../scripts/thumbgate-search');
+const {
+  importDocument,
+  listImportedDocuments,
+  readImportedDocument,
+} = require('../../scripts/document-intake');
 const { checkLimit, UPGRADE_MESSAGE } = require('../../scripts/rate-limiter');
 const { generateOrgDashboard } = require('../../scripts/org-dashboard');
 const {
@@ -139,6 +144,28 @@ function resolveSafePath(targetPath, { mustExist = false } = {}) {
   }
 
   if (mustExist && !fs.existsSync(resolved)) {
+    throw new Error(`Path does not exist: ${resolved}`);
+  }
+
+  return resolved;
+}
+
+function resolveImportDocumentPath(targetPath) {
+  const workspaceRoot = path.resolve(process.cwd());
+  const resolved = path.resolve(workspaceRoot, String(targetPath || ''));
+  const allowedRoots = [workspaceRoot, SAFE_DATA_DIR]
+    .filter(Boolean)
+    .map((root) => path.resolve(root));
+  const allowed = allowedRoots.some((root) => {
+    const relative = path.relative(root, resolved);
+    return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+  });
+
+  if (!allowed) {
+    throw new Error(`Path must stay within ${workspaceRoot} or ${SAFE_DATA_DIR}`);
+  }
+
+  if (!fs.existsSync(resolved)) {
     throw new Error(`Path does not exist: ${resolved}`);
   }
 
@@ -421,6 +448,29 @@ async function callToolInner(name, args) {
         source: args.source,
         signal: args.signal,
       }));
+    case 'import_document':
+      return toTextResult(importDocument({
+        filePath: args.filePath ? resolveImportDocumentPath(args.filePath) : null,
+        content: typeof args.content === 'string' ? args.content : null,
+        title: args.title,
+        sourceFormat: args.sourceFormat,
+        sourceUrl: args.sourceUrl,
+        tags: Array.isArray(args.tags) ? args.tags : [],
+        proposeGates: args.proposeGates !== false,
+      }));
+    case 'list_imported_documents':
+      return toTextResult(listImportedDocuments({
+        query: args.query || '',
+        tag: args.tag || null,
+        limit: Number(args.limit || 20),
+      }));
+    case 'get_imported_document': {
+      const document = readImportedDocument(args.documentId);
+      if (!document) {
+        throw new Error(`Imported document not found: ${args.documentId}`);
+      }
+      return toTextResult(document);
+    }
     case 'feedback_stats':
       return toTextResult(analyzeFeedback());
     case 'diagnose_failure':

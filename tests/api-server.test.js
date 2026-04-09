@@ -189,6 +189,47 @@ test('protected endpoints accept x-api-key as an alternate auth header', async (
   assert.equal(typeof body.summary, 'string');
 });
 
+test('document import API persists searchable policy docs and exposes proposed gates', async () => {
+  const importRes = await fetch(apiUrl('/v1/documents/import'), {
+    method: 'POST',
+    headers: { ...authHeader, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Release Policy',
+      content: [
+        '# Release Policy',
+        '',
+        '- Never force-push to main.',
+        '- Always run tests before commit.',
+        '- Do not drop production tables without approval.',
+      ].join('\n'),
+      sourceFormat: 'markdown',
+      tags: ['policy', 'team'],
+    }),
+  });
+
+  assert.equal(importRes.status, 201);
+  const importBody = await importRes.json();
+  assert.equal(importBody.ok, true);
+  assert.match(importBody.document.documentId, /^doc_/);
+  assert.ok(importBody.document.proposals.some((proposal) => proposal.templateId === 'never-force-push-main'));
+
+  const listRes = await fetch(apiUrl('/v1/documents?query=release&limit=5'), {
+    headers: authHeader,
+  });
+  assert.equal(listRes.status, 200);
+  const listBody = await listRes.json();
+  assert.equal(listBody.total >= 1, true);
+  assert.ok(listBody.documents.some((entry) => entry.documentId === importBody.document.documentId));
+
+  const detailRes = await fetch(apiUrl(`/v1/documents/${encodeURIComponent(importBody.document.documentId)}`), {
+    headers: authHeader,
+  });
+  assert.equal(detailRes.status, 200);
+  const detailBody = await detailRes.json();
+  assert.equal(detailBody.document.documentId, importBody.document.documentId);
+  assert.match(detailBody.document.content, /Never force-push to main/);
+});
+
 test('admin API sets, reads, and clears task scope via HTTP', async () => {
   const setRes = await fetch(apiUrl('/v1/gates/task-scope'), {
     method: 'POST',

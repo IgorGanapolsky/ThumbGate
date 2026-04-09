@@ -153,6 +153,11 @@ const {
   advanceWorkflowSprintLead,
 } = require('../../scripts/workflow-sprint-intake');
 const {
+  importDocument,
+  listImportedDocuments,
+  readImportedDocument,
+} = require('../../scripts/document-intake');
+const {
   checkLimit,
   UPGRADE_MESSAGE: RATE_LIMIT_MESSAGE,
 } = require('../../scripts/rate-limiter');
@@ -2240,6 +2245,40 @@ function normalizeJobIdFromPath(pathname, suffix = '') {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+function normalizeDocumentIdFromPath(pathname) {
+  const match = pathname.match(/^\/v1\/documents\/([^/]+)$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function isWithinDir(targetPath, baseDir) {
+  if (!baseDir) return false;
+  const resolvedBase = path.resolve(baseDir);
+  const resolvedTarget = path.resolve(targetPath);
+  const relative = path.relative(resolvedBase, resolvedTarget);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function resolveDocumentImportFilePath(inputPath, options = {}) {
+  const normalized = normalizeNullableText(inputPath);
+  if (!normalized) return null;
+
+  const { req, parsed, safeDataDir } = options;
+  if (!isLoopbackHost(getRequestHostHeader(req))) {
+    throw createHttpError(400, 'filePath import is only available on localhost requests; use content for hosted imports');
+  }
+
+  const projectDir = resolveRequestProjectDir(req, parsed) || process.cwd();
+  const resolved = path.resolve(projectDir, normalized);
+  const allowed = isWithinDir(resolved, projectDir) || isWithinDir(resolved, safeDataDir);
+  if (!allowed) {
+    throw createHttpError(400, `Path must stay within ${projectDir} or ${safeDataDir}`);
+  }
+  if (!fs.existsSync(resolved)) {
+    throw createHttpError(400, `Path does not exist: ${resolved}`);
+  }
+  return resolved;
+}
+
 function createApiServer() {
   const expectedApiKey = getExpectedApiKey();
 
@@ -2859,7 +2898,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/compare', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/compare', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -4054,6 +4093,34 @@ async function addContext(){
         return;
       }
 
+      if (req.method === 'GET' && pathname === '/v1/documents') {
+        const limit = Number(parsed.searchParams.get('limit') || 20);
+        const query = parsed.searchParams.get('q') || parsed.searchParams.get('query') || '';
+        const tag = parsed.searchParams.get('tag') || '';
+        const results = listImportedDocuments({
+          feedbackDir: requestFeedbackDir,
+          limit: Number.isFinite(limit) ? limit : 20,
+          query,
+          tag,
+        });
+        sendJson(res, 200, results);
+        return;
+      }
+
+      {
+        const documentId = normalizeDocumentIdFromPath(pathname);
+        if (req.method === 'GET' && documentId) {
+          const document = readImportedDocument(documentId, {
+            feedbackDir: requestFeedbackDir,
+          });
+          if (!document) {
+            throw createHttpError(404, `Imported document not found: ${documentId}`);
+          }
+          sendJson(res, 200, { document });
+          return;
+        }
+      }
+
       if (req.method === 'POST' && pathname === '/v1/feedback/capture') {
         const captureLimit = checkLimit('capture_feedback');
         if (!captureLimit.allowed) {
@@ -4124,6 +4191,31 @@ async function addContext(){
           skills = skills.filter(s => (s.tags || []).some(t => tagSet.has(t.toLowerCase())));
         }
         sendJson(res, 200, { skills });
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/documents/import') {
+        const body = await parseJsonBody(req, 2 * 1024 * 1024);
+        const document = importDocument({
+          filePath: body.filePath
+            ? resolveDocumentImportFilePath(body.filePath, {
+              req,
+              parsed,
+              safeDataDir: requestSafeDataDir,
+            })
+            : null,
+          content: normalizeNullableText(body.content),
+          title: normalizeNullableText(body.title),
+          sourceFormat: normalizeNullableText(body.sourceFormat),
+          sourceUrl: normalizeNullableText(body.sourceUrl),
+          tags: extractTags(body.tags),
+          proposeGates: body.proposeGates !== false,
+          feedbackDir: requestFeedbackDir,
+        });
+        sendJson(res, 201, {
+          ok: true,
+          document,
+        });
         return;
       }
 
