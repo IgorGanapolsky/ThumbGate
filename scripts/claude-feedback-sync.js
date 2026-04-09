@@ -149,7 +149,7 @@ function extractPromptText(entry) {
 }
 
 function buildExternalId(entry, promptText) {
-  const hash = crypto.createHash('sha1');
+  const hash = crypto.createHash('sha256');
   hash.update(String(entry.sessionId || ''));
   hash.update('|');
   hash.update(String(entry.timestamp || ''));
