@@ -28,6 +28,7 @@ We make one workflow measurable enough to justify and safe enough to roll out.
 - **Context Packs:** Dynamic semantic assembly of project knowledge for agent boot-up and bounded retrieval.
 - **Pre-Action Gates:** Repeated failures trigger non-bypassable `CLAUDE.md` / `AGENTS.md` rules and shared prevention policies.
 - **Proof-Ready Runs:** Machine-readable evidence, audit trails, and hosted workflow artifacts for rollout decisions.
+- **Release Confidence:** Changesets, SemVer, version sync, and exact-merge verification keep package publishes legible to enterprise buyers.
 
 # Best First Wedge
 
