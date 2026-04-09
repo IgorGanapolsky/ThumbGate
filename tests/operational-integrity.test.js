@@ -9,6 +9,9 @@ const {
   evaluateOperationalIntegrity,
   findReleaseSensitiveFiles,
   isSafeBranchName,
+  isSafeGitRevision,
+  isHeadReachableFrom,
+  readPackageVersion,
   resolveBaseRef,
   resolveCiBranchName,
   runCli,
@@ -123,9 +126,29 @@ test('isSafeBranchName rejects branch-shaped injection payloads', () => {
   assert.equal(isSafeBranchName('main@{1}'), false);
 });
 
+test('isSafeGitRevision rejects unsafe revision payloads', () => {
+  assert.equal(isSafeGitRevision('HEAD'), true);
+  assert.equal(isSafeGitRevision('origin/main'), true);
+  assert.equal(isSafeGitRevision('a1b2c3d4'), true);
+  assert.equal(isSafeGitRevision('--upload-pack=evil'), false);
+  assert.equal(isSafeGitRevision('main..evil'), false);
+  assert.equal(isSafeGitRevision('main@{1}'), false);
+  assert.equal(isSafeGitRevision('HEAD~1'), false);
+});
+
 test('resolveBaseRef short-circuits invalid branch names before git operations', () => {
   const baseRef = resolveBaseRef(__dirname, '--upload-pack=evil', { fetchIfMissing: true });
   assert.equal(baseRef, null);
+});
+
+test('readPackageVersion rejects unsafe git refs before git execution', () => {
+  assert.equal(readPackageVersion(__dirname, '--upload-pack=evil'), null);
+  assert.equal(readPackageVersion(__dirname, 'main@{1}'), null);
+});
+
+test('isHeadReachableFrom rejects unsafe revision payloads', () => {
+  assert.equal(isHeadReachableFrom(__dirname, 'main', '--upload-pack=evil'), false);
+  assert.equal(isHeadReachableFrom(__dirname, 'main@{1}', 'HEAD'), false);
 });
 
 test('resolveCiBranchName prefers PR head refs over synthetic merge refs', () => {

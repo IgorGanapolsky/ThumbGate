@@ -76,25 +76,87 @@ function matchesAnyGlob(filePath, globs) {
   });
 }
 
-function runGit(repoPath, args) {
-  return execFileSync('git', args, {
+function isSafeGitRevision(revision) {
+  const normalized = String(revision || '').trim();
+  if (!normalized) return false;
+  if (normalized.startsWith('-')) return false;
+  if (normalized.includes('..') || normalized.includes('//') || normalized.includes('@{')) return false;
+  if (normalized.endsWith('.') || normalized.endsWith('/')) return false;
+  if (!/^[A-Za-z0-9._/-]+$/.test(normalized)) return false;
+  return true;
+}
+
+function assertSafeGitRevision(revision, label = 'revision') {
+  const normalized = String(revision || '').trim();
+  if (!isSafeGitRevision(normalized)) {
+    throw new Error(`Unsafe git ${label}: ${revision}`);
+  }
+  return normalized;
+}
+
+function gitShowTopLevel(repoPath) {
+  return execFileSync('git', ['rev-parse', '--show-toplevel'], {
     cwd: repoPath,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
   }).trim();
 }
 
-function tryRunGit(repoPath, args) {
-  try {
-    return runGit(repoPath, args);
-  } catch {
-    return '';
-  }
+function gitVerifyRef(repoPath, ref) {
+  const safeRef = assertSafeGitRevision(ref, 'ref');
+  return execFileSync('git', ['rev-parse', '--verify', '--end-of-options', safeRef], {
+    cwd: repoPath,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+}
+
+function gitCurrentBranch(repoPath) {
+  return execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+    cwd: repoPath,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+}
+
+function gitHeadSha(repoPath) {
+  return execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: repoPath,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+}
+
+function gitShowPackageJsonAtRef(repoPath, ref) {
+  const safeRef = assertSafeGitRevision(ref, 'ref');
+  return execFileSync('git', ['show', '--end-of-options', `${safeRef}:package.json`], {
+    cwd: repoPath,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+}
+
+function gitDiffNameOnlyAgainstBase(repoPath, baseRef) {
+  const safeBaseRef = assertSafeGitRevision(baseRef, 'base ref');
+  return execFileSync('git', ['diff', '--name-only', `${safeBaseRef}...HEAD`, '--'], {
+    cwd: repoPath,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+}
+
+function gitMergeBaseIsAncestor(repoPath, commit, ref) {
+  const safeCommit = assertSafeGitRevision(commit, 'commit');
+  const safeRef = assertSafeGitRevision(ref, 'ref');
+  return spawnSync('git', ['merge-base', '--is-ancestor', safeCommit, safeRef], {
+    cwd: repoPath,
+    encoding: 'utf8',
+  });
 }
 
 function resolveRepoRoot(repoPath = process.cwd()) {
   try {
-    return runGit(repoPath, ['rev-parse', '--show-toplevel']);
+    return gitShowTopLevel(repoPath);
   } catch {
     return null;
   }
@@ -103,10 +165,7 @@ function resolveRepoRoot(repoPath = process.cwd()) {
 function gitRefExists(repoPath, ref) {
   if (!repoPath || !ref) return false;
   try {
-    execFileSync('git', ['rev-parse', '--verify', ref], {
-      cwd: repoPath,
-      stdio: 'ignore',
-    });
+    gitVerifyRef(repoPath, ref);
     return true;
   } catch {
     return false;
@@ -152,11 +211,19 @@ function resolveBaseRef(repoPath, baseBranch = DEFAULT_BASE_BRANCH, { fetchIfMis
 }
 
 function getCurrentBranch(repoPath) {
-  return tryRunGit(repoPath, ['rev-parse', '--abbrev-ref', 'HEAD']) || null;
+  try {
+    return gitCurrentBranch(repoPath) || null;
+  } catch {
+    return null;
+  }
 }
 
 function getHeadSha(repoPath) {
-  return tryRunGit(repoPath, ['rev-parse', 'HEAD']) || null;
+  try {
+    return gitHeadSha(repoPath) || null;
+  } catch {
+    return null;
+  }
 }
 
 function readPackageVersion(repoPath, ref = 'HEAD') {
@@ -165,7 +232,7 @@ function readPackageVersion(repoPath, ref = 'HEAD') {
     if (ref === 'HEAD') {
       raw = fs.readFileSync(path.join(repoPath, 'package.json'), 'utf8');
     } else {
-      raw = runGit(repoPath, ['show', `${ref}:package.json`]);
+      raw = gitShowPackageJsonAtRef(repoPath, ref);
     }
     return JSON.parse(raw).version || null;
   } catch {
@@ -236,8 +303,12 @@ function compareSemver(left, right) {
 function listChangedFilesAgainstBase(repoPath, baseBranch = DEFAULT_BASE_BRANCH, { fetchIfMissing = false } = {}) {
   const baseRef = resolveBaseRef(repoPath, baseBranch, { fetchIfMissing });
   if (!baseRef) return [];
-  const diff = tryRunGit(repoPath, ['diff', '--name-only', `${baseRef}...HEAD`]);
-  return diff.split('\n').map((line) => normalizePosix(line)).filter(Boolean);
+  try {
+    const diff = gitDiffNameOnlyAgainstBase(repoPath, baseRef);
+    return diff.split('\n').map((line) => normalizePosix(line)).filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
 function findReleaseSensitiveFiles(files, globs = DEFAULT_RELEASE_SENSITIVE_GLOBS) {
@@ -246,11 +317,12 @@ function findReleaseSensitiveFiles(files, globs = DEFAULT_RELEASE_SENSITIVE_GLOB
 
 function isHeadReachableFrom(repoPath, ref, commit = 'HEAD') {
   if (!repoPath || !ref) return false;
-  const result = spawnSync('git', ['merge-base', '--is-ancestor', commit, ref], {
-    cwd: repoPath,
-    encoding: 'utf8',
-  });
-  return result.status === 0;
+  try {
+    const result = gitMergeBaseIsAncestor(repoPath, commit, ref);
+    return result.status === 0;
+  } catch {
+    return false;
+  }
 }
 
 function runGh(args) {
@@ -516,6 +588,8 @@ module.exports = {
   findReleaseSensitiveFiles,
   getCurrentBranch,
   isSafeBranchName,
+  isSafeGitRevision,
+  isHeadReachableFrom,
   listChangedFilesAgainstBase,
   normalizeGlob,
   normalizePosix,
