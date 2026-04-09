@@ -751,6 +751,7 @@ __GA_BOOTSTRAP__
           <li><strong>Shared enforcement memory</strong> — one developer's 👎 on a bad migration protects every agent on the team, permanently</li>
           <li><strong>CI gate integration</strong> — block unsafe merges, enforce test requirements, prevent PRs with unresolved threads</li>
           <li><strong>Approval policies</strong> — require human sign-off for high-risk actions (destructive SQL, production deploys, schema migrations)</li>
+          <li><strong>Three-tier approval routing</strong> — block hard-stops the agent, approve-first pauses for human confirmation, log-and-continue records the action without halting; each gate declares its own tier</li>
           <li><strong>Org dashboard</strong> — active agents, gate hit rates, risk agents, blocked actions, and audit trail in one view</li>
           <li><strong>Sandbox routing</strong> — route risky agent runs into isolated execution environments instead of shared hosts</li>
           <li><strong>Gate template library</strong> — pre-built guardrails for force-pushes, skipped tests, secret exposure, destructive SQL</li>

@@ -193,6 +193,62 @@
       "action": "block",
       "message": "Blocked npx execution by content hash. Renaming the binary does not bypass this gate.",
       "severity": "critical"
+    },
+    {
+      "id": "production-deploy-approval",
+      "layer": "Execution",
+      "toolNames": ["Bash"],
+      "pattern": "(?:railway|fly|heroku|vercel|render|kubectl|helm)\\s+(?:deploy|up|apply|release|push|rollout)",
+      "action": "approve",
+      "message": "Production deploy detected. Human approval required before this action can proceed.",
+      "severity": "high"
+    },
+    {
+      "id": "schema-migration-approval",
+      "layer": "Execution",
+      "toolNames": ["Bash"],
+      "pattern": "(?:npx\\s+(?:sequelize|typeorm|prisma|knex|drizzle|flyway|liquibase)|alembic\\s+upgrade|rails\\s+db:migrate|php\\s+artisan\\s+migrate)\\b",
+      "action": "approve",
+      "message": "Database schema migration detected. Human approval required before this action can proceed.",
+      "severity": "high"
+    },
+    {
+      "id": "permission-change-approval",
+      "layer": "Execution",
+      "toolNames": ["Bash"],
+      "pattern": "(?:chmod|chown|setfacl|iam|policy|role|grant|revoke)\\s+",
+      "action": "approve",
+      "message": "Permission or IAM change detected. Human approval required before this action can proceed.",
+      "severity": "high"
+    },
+    {
+      "id": "style-violation-log",
+      "layer": "Decisions",
+      "toolNames": ["Edit", "Write", "MultiEdit"],
+      "pattern": ".*",
+      "action": "log",
+      "when": { "constraints": { "THUMBGATE_STYLE_AUDIT": true } },
+      "message": "Style audit mode active. Action recorded for review but allowed to proceed.",
+      "severity": "low"
+    },
+    {
+      "id": "large-file-creation-log",
+      "layer": "Execution",
+      "toolNames": ["Write"],
+      "pattern": ".*",
+      "action": "log",
+      "when": { "constraints": { "THUMBGATE_LARGE_FILE_AUDIT": true } },
+      "message": "Large file write detected. Action recorded for audit trail but allowed to proceed.",
+      "severity": "low"
+    },
+    {
+      "id": "non-critical-warning-log",
+      "layer": "Decisions",
+      "toolNames": ["Bash"],
+      "pattern": "(?:console\\.log|debugger|TODO|FIXME|HACK|XXX)",
+      "action": "log",
+      "message": "Non-critical code pattern detected. Action recorded for audit trail but allowed to proceed.",
+      "severity": "low"
     }
   ]
 }

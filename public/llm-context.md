@@ -30,6 +30,14 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **Audit Trail**: Every gate decision (blocked, approved, overridden) is logged with a timestamp, the triggering tool call, the matching lesson ID, and the identity of any human who approved an exception. This log is queryable and exportable for compliance reporting.
 
+**Three-Tier Approval Routing (OVIS-inspired)**: ThumbGate gates operate on three distinct tiers, inspired by the OVIS decision framework (Owner, Veto, Influence). Each gate carries an `action` field that determines the routing outcome:
+
+- **`block`** — Hard stop. The agent cannot proceed. The tool call is denied immediately. Used for force-pushes, secret commits, destructive SQL, and any irreversible action. The agent receives an error message explaining why the action was blocked.
+- **`approve`** — Pause and escalate. The agent is halted and the caller receives `{ decision: "approve", requiresApproval: true }`. A human must explicitly confirm before the action can proceed. Used for production deploys, schema migrations, and permission changes where human oversight is mandatory.
+- **`log`** — Record and continue. The action is allowed to proceed but is written to the audit trail. The agent receives `{ decision: "log", logged: true }` and continues without interruption. Used for style violations, large file writes, and non-critical warnings where visibility matters but blocking would create friction.
+
+This model maps directly to the OVIS framework: `block` exercises Veto authority, `approve` requires Owner sign-off, and `log` satisfies Influence-layer audit requirements without halting execution.
+
 ## Who ThumbGate Is For
 
 Engineering teams of 2 to 200+ developers who are actively using AI coding agents on shared repositories and need:
