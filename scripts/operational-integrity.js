@@ -28,16 +28,51 @@ const DEFAULT_RELEASE_SENSITIVE_GLOBS = [
   'config/mcp-allowlists.json',
 ];
 
-function resolveGitBinary() {
-  for (const candidate of FIXED_GIT_BIN_CANDIDATES) {
+function canExecuteBinary(candidate) {
+  const normalized = String(candidate || '').trim();
+  if (!normalized) return false;
+  if (normalized.includes(path.sep)) {
     try {
-      fs.accessSync(candidate, fs.constants.X_OK);
-      return candidate;
+      fs.accessSync(normalized, fs.constants.X_OK);
+      return true;
     } catch {
-      continue;
+      return false;
     }
   }
-  throw new Error('Unable to locate git in fixed system paths');
+
+  const probe = spawnSync(normalized, ['--version'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'ignore', 'ignore'],
+  });
+  return !probe.error && probe.status === 0;
+}
+
+function resolveGitBinary(options = {}) {
+  const env = options.env || process.env;
+  const allowPathLookup = options.allowPathLookup !== false;
+  const configuredCandidates = Array.isArray(options.candidates) && options.candidates.length > 0
+    ? options.candidates
+    : [
+      env.THUMBGATE_GIT_BIN,
+      ...FIXED_GIT_BIN_CANDIDATES,
+      allowPathLookup ? 'git' : null,
+    ];
+
+  for (const candidate of configuredCandidates) {
+    if (!canExecuteBinary(candidate)) continue;
+    return String(candidate).trim();
+  }
+
+  return null;
+}
+
+function getGitBinary(options = {}) {
+  const gitBin = GIT_BIN || resolveGitBinary(options);
+  const required = options.required !== false;
+  if (!gitBin && required) {
+    throw new Error('Git executable is unavailable in this runtime');
+  }
+  return gitBin;
 }
 
 const GIT_BIN = resolveGitBinary();
@@ -316,7 +351,7 @@ function assertSafeRepoRelativePath(filePath, label = 'path') {
 function gitReadBlobAtCommit(repoPath, commitSha, filePath) {
   const safeCommitSha = assertSafeGitObjectId(commitSha, 'commit sha');
   const safeFilePath = assertSafeRepoRelativePath(filePath, 'file path');
-  const treeEntry = execFileSync(GIT_BIN, ['ls-tree', safeCommitSha, '--', safeFilePath], {
+  const treeEntry = execFileSync(getGitBinary(), ['ls-tree', safeCommitSha, '--', safeFilePath], {
     cwd: repoPath,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
@@ -327,7 +362,7 @@ function gitReadBlobAtCommit(repoPath, commitSha, filePath) {
   }
 
   const blobSha = assertSafeGitObjectId(match[1], 'blob sha');
-  return execFileSync(GIT_BIN, ['cat-file', 'blob', blobSha], {
+  return execFileSync(getGitBinary(), ['cat-file', 'blob', blobSha], {
     cwd: repoPath,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
@@ -341,7 +376,7 @@ function gitShowPackageJsonAtRef(repoPath, ref) {
 
 function gitDiffNameOnlyAgainstBase(repoPath, baseRef) {
   const safeBaseCommitSha = assertSafeGitObjectId(gitVerifyRef(repoPath, baseRef), 'base commit sha');
-  return execFileSync(GIT_BIN, ['diff', '--name-only', `${safeBaseCommitSha}...HEAD`, '--'], {
+  return execFileSync(getGitBinary(), ['diff', '--name-only', `${safeBaseCommitSha}...HEAD`, '--'], {
     cwd: repoPath,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
@@ -351,7 +386,7 @@ function gitDiffNameOnlyAgainstBase(repoPath, baseRef) {
 function gitMergeBaseIsAncestor(repoPath, commit, ref) {
   const safeCommitSha = assertSafeGitObjectId(gitVerifyRef(repoPath, commit), 'ancestor commit sha');
   const safeRefCommitSha = assertSafeGitObjectId(gitVerifyRef(repoPath, ref), 'descendant commit sha');
-  return spawnSync(GIT_BIN, ['merge-base', '--is-ancestor', safeCommitSha, safeRefCommitSha], {
+  return spawnSync(getGitBinary(), ['merge-base', '--is-ancestor', safeCommitSha, safeRefCommitSha], {
     cwd: repoPath,
     encoding: 'utf8',
   });
@@ -387,8 +422,10 @@ function isSafeBranchName(branchName) {
 
 function fetchBaseBranch(repoPath, baseBranch) {
   if (!repoPath || !isSafeBranchName(baseBranch)) return false;
+  const gitBin = getGitBinary({ required: false });
+  if (!gitBin) return false;
   // Fetch the remote tracking refs without passing user-controlled branch names to git.
-  const result = spawnSync(GIT_BIN, ['fetch', '--no-tags', '--depth=64', 'origin'], {
+  const result = spawnSync(gitBin, ['fetch', '--no-tags', '--depth=64', 'origin'], {
     cwd: repoPath,
     encoding: 'utf8',
   });
@@ -794,6 +831,7 @@ module.exports = {
   findOpenPrForBranch,
   findReleaseSensitiveFiles,
   getCurrentBranch,
+  getGitBinary,
   assertSafeGitObjectId,
   gitVerifyRef,
   isSafeBranchName,
@@ -805,6 +843,7 @@ module.exports = {
   normalizePosix,
   parseSemver,
   readPackageVersion,
+  resolveGitBinary,
   resolveBaseRef,
   resolveCiBranchName,
   resolveRepoRoot,

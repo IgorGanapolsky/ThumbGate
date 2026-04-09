@@ -194,6 +194,13 @@ test('CI workflow stays test-only and leaves Railway deploys to the dedicated wo
   assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
 });
 
+test('runtime Docker image installs git for operational integrity checks', () => {
+  const dockerfile = fs.readFileSync(path.join(PROJECT_ROOT, 'Dockerfile'), 'utf8');
+
+  assert.match(dockerfile, /FROM node:20-alpine AS runtime/);
+  assert.match(dockerfile, /RUN apk add --no-cache git/);
+});
+
 test('Deploy to Railway workflow is the single authoritative Railway deploy lane', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 

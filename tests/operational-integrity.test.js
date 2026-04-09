@@ -21,6 +21,7 @@ const {
   isHeadReachableFrom,
   listChangedFilesAgainstBase,
   readPackageVersion,
+  resolveGitBinary,
   resolveBaseRef,
   resolveCiBranchName,
   resolveRepoRoot,
@@ -47,6 +48,31 @@ test('compareSemver orders semantic versions correctly', () => {
   assert.equal(compareSemver('1.0.0-beta.2', '1.0.0-beta.1'), 1);
   assert.equal(compareSemver('1.0.0', '1.0.0-rc.1'), 1);
   assert.equal(compareSemver('1.0.0-beta.1', '1.0.0'), -1);
+});
+
+test('resolveGitBinary returns null when no configured git binary is executable', () => {
+  assert.equal(resolveGitBinary({
+    candidates: ['/definitely/missing/git'],
+    allowPathLookup: false,
+  }), null);
+});
+
+test('resolveGitBinary accepts candidates that are executable via PATH lookup', () => {
+  const binDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-git-bin-'));
+  const fakeGit = path.join(binDir, 'thumbgate-git-probe');
+  fs.writeFileSync(fakeGit, '#!/bin/sh\nexit 0\n');
+  fs.chmodSync(fakeGit, 0o755);
+
+  const originalPath = process.env.PATH;
+  process.env.PATH = `${binDir}${path.delimiter}${originalPath || ''}`;
+  try {
+    assert.equal(resolveGitBinary({
+      candidates: ['thumbgate-git-probe'],
+      allowPathLookup: false,
+    }), 'thumbgate-git-probe');
+  } finally {
+    process.env.PATH = originalPath;
+  }
 });
 
 test('findReleaseSensitiveFiles filters release surfaces by glob', () => {
@@ -230,6 +256,11 @@ test('getCurrentBranch reports HEAD for detached checkouts', () => {
 test('resolveBaseRef short-circuits invalid branch names before git operations', () => {
   const baseRef = resolveBaseRef(__dirname, '--upload-pack=evil', { fetchIfMissing: true });
   assert.equal(baseRef, null);
+});
+
+test('resolveBaseRef can attempt a safe remote fetch before falling back to a local branch', () => {
+  const repoDir = createTempGitRepo();
+  assert.equal(resolveBaseRef(repoDir, 'main', { fetchIfMissing: true }), 'main');
 });
 
 test('resolveBaseRef and changed-file helpers work on temporary repos', () => {
