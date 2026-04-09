@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
+const { AUDIT_LOG_FILENAME } = require('./audit-trail');
 const { getBillingSummary, loadFunnelLedger, loadResolvedRevenueEvents } = require('./billing');
 const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-analytics');
 const { getAutoGatesPath } = require('./auto-promote-gates');
@@ -58,6 +59,15 @@ function pickFirstText(...values) {
     if (normalized) return normalized;
   }
   return null;
+}
+
+function toLocalDayKey(value) {
+  const ts = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(ts.getTime())) return null;
+  const year = ts.getFullYear();
+  const month = String(ts.getMonth() + 1).padStart(2, '0');
+  const day = String(ts.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -140,6 +150,58 @@ function computeGateStats() {
     topBlocked,
     topBlockedCount,
     byGate: stats.byGate || {},
+  };
+}
+
+function computeGateAuditSeries(feedbackDir, options = {}) {
+  const auditLogPath = path.join(feedbackDir, AUDIT_LOG_FILENAME);
+  const entries = readJSONL(auditLogPath).filter((entry) => entry && entry.timestamp);
+  const dayCount = Number.isInteger(options.dayCount) ? options.dayCount : 14;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const countsByDay = new Map();
+
+  for (const entry of entries) {
+    if (!['allow', 'deny', 'warn'].includes(entry.decision)) continue;
+    const dayKey = toLocalDayKey(entry.timestamp);
+    if (!dayKey) continue;
+    if (!countsByDay.has(dayKey)) {
+      countsByDay.set(dayKey, { allow: 0, deny: 0, warn: 0 });
+    }
+    countsByDay.get(dayKey)[entry.decision] += 1;
+  }
+
+  const days = [];
+  const totals = { allow: 0, deny: 0, warn: 0, intercepted: 0, total: 0 };
+
+  for (let offset = dayCount - 1; offset >= 0; offset -= 1) {
+    const day = new Date(today);
+    day.setDate(today.getDate() - offset);
+    const dayKey = toLocalDayKey(day);
+    const record = countsByDay.get(dayKey) || { allow: 0, deny: 0, warn: 0 };
+    const intercepted = record.deny + record.warn;
+    const total = intercepted + record.allow;
+    const summary = {
+      dayKey,
+      allow: record.allow,
+      deny: record.deny,
+      warn: record.warn,
+      intercepted,
+      total,
+    };
+    totals.allow += record.allow;
+    totals.deny += record.deny;
+    totals.warn += record.warn;
+    totals.intercepted += intercepted;
+    totals.total += total;
+    days.push(summary);
+  }
+
+  return {
+    dayCount,
+    days,
+    totals,
+    activeDays: days.filter((day) => day.total > 0).length,
   };
 }
 
@@ -710,6 +772,7 @@ function generateDashboard(feedbackDir, options = {}) {
   const prevention = computePreventionImpact(feedbackDir, gateStats);
   const trend = computeSessionTrend(entries, 10);
   const health = computeSystemHealth(feedbackDir, gateStats);
+  const gateAudit = computeGateAuditSeries(feedbackDir);
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
   const secretGuard = computeSecretGuardStats(diagnosticEntries);
   const gates = listActiveGates();
@@ -782,6 +845,7 @@ function generateDashboard(feedbackDir, options = {}) {
     prevention,
     trend,
     health,
+    gateAudit,
     diagnostics,
     delegation,
     secretGuard,
@@ -809,6 +873,7 @@ function printDashboard(data) {
     prevention,
     trend,
     health,
+    gateAudit,
     diagnostics,
     delegation,
     secretGuard,

@@ -65,16 +65,23 @@
   .metrics-legend-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
   .metrics-legend-dot.up { background: var(--green); }
   .metrics-legend-dot.down { background: var(--red); }
+  .metrics-legend-dot.deny { background: var(--cyan); }
+  .metrics-legend-dot.warn { background: var(--yellow); }
   .metrics-chart { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 8px; align-items: end; min-height: 180px; }
   .metrics-bar { background: transparent; border: 1px solid transparent; border-radius: 10px; padding: 8px 4px; color: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
   .metrics-bar:hover { border-color: rgba(34,211,238,0.35); background: rgba(34,211,238,0.04); }
   .metrics-bar.selected { border-color: rgba(34,211,238,0.65); background: rgba(34,211,238,0.08); }
-  .metrics-bar-stack { width: 100%; max-width: 44px; height: 120px; display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; }
+  .metrics-bar-body { width: 100%; display: flex; justify-content: center; align-items: flex-end; gap: 6px; }
+  .metrics-bar-stack { width: 100%; max-width: 28px; height: 120px; display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; }
+  .metrics-bar-stack.gate { max-width: 16px; height: 84px; }
   .metrics-bar-empty { width: 100%; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px dashed rgba(255,255,255,0.05); flex: 1; }
   .metrics-segment { width: 100%; border-radius: 8px; min-height: 0; }
   .metrics-segment.up { background: linear-gradient(180deg, rgba(74,222,128,0.95), rgba(74,222,128,0.55)); }
   .metrics-segment.down { background: linear-gradient(180deg, rgba(248,113,113,0.95), rgba(248,113,113,0.55)); }
+  .metrics-segment.deny { background: linear-gradient(180deg, rgba(34,211,238,0.95), rgba(34,211,238,0.55)); }
+  .metrics-segment.warn { background: linear-gradient(180deg, rgba(251,191,36,0.95), rgba(251,191,36,0.55)); }
   .metrics-bar-total { font-size: 12px; font-weight: 600; color: var(--text); }
+  .metrics-bar-subtotal { font-size: 10px; color: var(--text-muted); line-height: 1; }
   .metrics-bar-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
   .metrics-chart-note { font-size: 12px; color: var(--text-muted); margin-top: 12px; }
 
@@ -257,12 +264,14 @@
     </div>
     <div class="metrics-chart-wrap">
       <div class="metrics-chart-title">
-        <h3>Recent Feedback Activity</h3>
-        <p>Click any day to inspect the recorded events behind the trend.</p>
+        <h3>Recent Feedback + Gate Activity</h3>
+        <p>Click any day to inspect the recorded feedback behind the trend and compare it with gate interceptions.</p>
       </div>
       <div class="metrics-legend">
         <span><i class="metrics-legend-dot up"></i> Positive feedback</span>
         <span><i class="metrics-legend-dot down"></i> Negative feedback</span>
+        <span><i class="metrics-legend-dot deny"></i> Gate deny</span>
+        <span><i class="metrics-legend-dot warn"></i> Gate warn</span>
       </div>
       <div class="metrics-chart" id="metricsChart">
         <div class="loading" style="grid-column:1 / -1;">Loading chart...</div>
@@ -342,6 +351,7 @@ var API_KEY = '';
 var dashboardSnapshot = null;
 var activeTimelineSignal = 'all';
 var activeTimelineDay = null;
+var currentImprovementSeries = [];
 const BOOTSTRAP_API_KEY = __LESSONS_BOOTSTRAP_KEY__;
 const LOCAL_PRO_BOOTSTRAP = __LESSONS_BOOTSTRAP_ENABLED__;
 
@@ -475,9 +485,14 @@ function updateMetricsSelection() {
   var note = document.getElementById('metricsChartNote');
   if (!note) return;
   if (activeTimelineDay) {
-    note.textContent = 'Showing timeline events for ' + formatShortDay(activeTimelineDay) + '. Clear the day filter to return to the full timeline.';
+    var selected = currentImprovementSeries.find(function(item) { return item.dayKey === activeTimelineDay; }) || null;
+    if (selected) {
+      note.textContent = 'Showing timeline events for ' + formatShortDay(activeTimelineDay) + '. Feedback: ' + selected.total + ' (' + selected.up + ' positive, ' + selected.down + ' negative). Gate audit: ' + selected.intercepted + ' intercepted (' + selected.deny + ' denies, ' + selected.warn + ' warns).';
+    } else {
+      note.textContent = 'Showing timeline events for ' + formatShortDay(activeTimelineDay) + '. Clear the day filter to return to the full timeline.';
+    }
   } else {
-    note.textContent = 'The chart uses recorded feedback events, not inferred rule strength.';
+    note.textContent = 'The chart combines recorded feedback events with daily gate-audit activity.';
   }
 }
 
@@ -621,12 +636,14 @@ function renderImprovementMetrics(stats, data) {
     ].map(function(tile) {
       return '<div class="metric-tile"><div class="metric-kicker">' + escHtml(tile.label) + '</div><div class="metric-number ' + escHtml(tile.tone) + '">' + escHtml(tile.value) + '</div><div class="metric-note">' + escHtml(tile.note) + '</div></div>';
     }).join('');
-    chart.innerHTML = '<div class="empty" style="grid-column:1 / -1;">Upgrade to Pro to see the clickable live activity timeline.</div>';
+    currentImprovementSeries = [];
+    chart.innerHTML = '<div class="empty" style="grid-column:1 / -1;">Upgrade to Pro to see the clickable live feedback and gate-audit timeline.</div>';
     updateMetricsSelection();
     return;
   }
 
   var gateStats = (data && data.gateStats) || {};
+  var gateAudit = (data && data.gateAudit) || {};
   var liveMetrics = (data && data.liveMetrics) || {};
   var harness = (data && data.harness) || {};
   var approvalRate = Math.round(((stats && (stats.recentRate || stats.approvalRate)) || 0) * 100);
@@ -649,32 +666,65 @@ function renderImprovementMetrics(stats, data) {
     return '<div class="metric-tile"><div class="metric-kicker">' + escHtml(tile.label) + '</div><div class="metric-number ' + escHtml(tile.tone) + '">' + escHtml(tile.value) + '</div><div class="metric-note">' + escHtml(tile.note) + '</div></div>';
   }).join('');
 
-  var series = buildFeedbackSeries(allTimeline, 14);
-  var maxTotal = series.reduce(function(max, item) { return Math.max(max, item.total); }, 0);
-  if (maxTotal === 0) {
+  var gateDays = {};
+  ((gateAudit.days) || []).forEach(function(day) {
+    gateDays[day.dayKey] = day;
+  });
+  var series = buildFeedbackSeries(allTimeline, 14).map(function(item) {
+    var gateDay = gateDays[item.dayKey] || { deny: 0, warn: 0, intercepted: 0 };
+    return {
+      dayKey: item.dayKey,
+      label: item.label,
+      up: item.up,
+      down: item.down,
+      total: item.total,
+      deny: gateDay.deny || 0,
+      warn: gateDay.warn || 0,
+      intercepted: gateDay.intercepted || 0
+    };
+  });
+  currentImprovementSeries = series;
+  var maxFeedbackTotal = series.reduce(function(max, item) { return Math.max(max, item.total); }, 0);
+  var maxGateTotal = series.reduce(function(max, item) { return Math.max(max, item.intercepted); }, 0);
+  if (maxFeedbackTotal === 0 && maxGateTotal === 0) {
+    currentImprovementSeries = [];
     chart.innerHTML = '<div class="empty" style="grid-column:1 / -1;">No recent feedback events to chart yet.</div>';
     updateMetricsSelection();
     return;
   }
 
   chart.innerHTML = series.map(function(item) {
-    if (!item.total) {
+    if (!item.total && !item.intercepted) {
       return '<button class="metrics-bar" type="button" data-day-key="' + escAttr(item.dayKey) + '" onclick="focusTimelineDay(\'' + escAttr(item.dayKey) + '\')">' +
-        '<div class="metrics-bar-stack"><div class="metrics-bar-empty"></div></div>' +
-        '<div class="metrics-bar-total">0</div>' +
+        '<div class="metrics-bar-body"><div class="metrics-bar-stack"><div class="metrics-bar-empty"></div></div><div class="metrics-bar-stack gate"><div class="metrics-bar-empty"></div></div></div>' +
+        '<div class="metrics-bar-total">F0</div>' +
+        '<div class="metrics-bar-subtotal">G0</div>' +
         '<div class="metrics-bar-label">' + escHtml(item.label) + '</div>' +
       '</button>';
     }
-    var totalHeight = Math.max(14, Math.round((item.total / maxTotal) * 120));
-    var upHeight = item.up > 0 ? Math.max(8, Math.round((item.up / item.total) * totalHeight)) : 0;
-    var downHeight = item.down > 0 ? Math.max(8, totalHeight - upHeight) : 0;
+    var feedbackHeight = item.total > 0 ? Math.max(14, Math.round((item.total / Math.max(maxFeedbackTotal, 1)) * 120)) : 0;
+    var upHeight = item.up > 0 ? Math.max(8, Math.round((item.up / Math.max(item.total, 1)) * feedbackHeight)) : 0;
+    var downHeight = item.down > 0 ? Math.max(8, feedbackHeight - upHeight) : 0;
     if (item.up > 0 && item.down > 0 && upHeight + downHeight > 120) downHeight = Math.max(8, 120 - upHeight);
+    var gateHeight = item.intercepted > 0 ? Math.max(12, Math.round((item.intercepted / Math.max(maxGateTotal, 1)) * 84)) : 0;
+    var denyHeight = item.deny > 0 ? Math.max(8, Math.round((item.deny / Math.max(item.intercepted, 1)) * gateHeight)) : 0;
+    var warnHeight = item.warn > 0 ? Math.max(8, gateHeight - denyHeight) : 0;
+    if (item.deny > 0 && item.warn > 0 && denyHeight + warnHeight > 84) warnHeight = Math.max(8, 84 - denyHeight);
     return '<button class="metrics-bar" type="button" data-day-key="' + escAttr(item.dayKey) + '" onclick="focusTimelineDay(\'' + escAttr(item.dayKey) + '\')">' +
-      '<div class="metrics-bar-stack">' +
-        (item.up ? '<div class="metrics-segment up" style="height:' + upHeight + 'px" title="' + item.up + ' positive"></div>' : '') +
-        (item.down ? '<div class="metrics-segment down" style="height:' + downHeight + 'px" title="' + item.down + ' negative"></div>' : '') +
+      '<div class="metrics-bar-body">' +
+        '<div class="metrics-bar-stack">' +
+          (item.up ? '<div class="metrics-segment up" style="height:' + upHeight + 'px" title="' + item.up + ' positive feedback"></div>' : '') +
+          (item.down ? '<div class="metrics-segment down" style="height:' + downHeight + 'px" title="' + item.down + ' negative feedback"></div>' : '') +
+          (!item.total ? '<div class="metrics-bar-empty"></div>' : '') +
+        '</div>' +
+        '<div class="metrics-bar-stack gate">' +
+          (item.deny ? '<div class="metrics-segment deny" style="height:' + denyHeight + 'px" title="' + item.deny + ' gate denies"></div>' : '') +
+          (item.warn ? '<div class="metrics-segment warn" style="height:' + warnHeight + 'px" title="' + item.warn + ' gate warns"></div>' : '') +
+          (!item.intercepted ? '<div class="metrics-bar-empty"></div>' : '') +
+        '</div>' +
       '</div>' +
-      '<div class="metrics-bar-total">' + item.total + '</div>' +
+      '<div class="metrics-bar-total">F' + item.total + '</div>' +
+      '<div class="metrics-bar-subtotal">G' + item.intercepted + '</div>' +
       '<div class="metrics-bar-label">' + escHtml(item.label) + '</div>' +
     '</button>';
   }).join('');

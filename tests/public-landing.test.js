@@ -359,7 +359,9 @@ test('lessons page has defensible live metrics and rule frequency labels', () =>
   assert.match(html, /Actions Blocked/i);
   assert.match(html, /Recorded gate denies, not inferred repeats/i);
   assert.match(html, /Improvement Over Time/i);
-  assert.match(html, /Recent Feedback Activity/i);
+  assert.match(html, /Recent Feedback \+ Gate Activity/i);
+  assert.match(html, /Gate deny/i);
+  assert.match(html, /Gate warn/i);
   assert.match(html, /Repeat pressure/i);
   assert.match(html, /rule-effectiveness/);
   assert.match(html, /rule-severity/);
