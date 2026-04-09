@@ -21,6 +21,7 @@ const {
   isHeadReachableFrom,
   listChangedFilesAgainstBase,
   readPackageVersion,
+  resolveGitBinary,
   resolveBaseRef,
   resolveCiBranchName,
   resolveRepoRoot,
@@ -47,6 +48,13 @@ test('compareSemver orders semantic versions correctly', () => {
   assert.equal(compareSemver('1.0.0-beta.2', '1.0.0-beta.1'), 1);
   assert.equal(compareSemver('1.0.0', '1.0.0-rc.1'), 1);
   assert.equal(compareSemver('1.0.0-beta.1', '1.0.0'), -1);
+});
+
+test('resolveGitBinary returns null when no configured git binary is executable', () => {
+  assert.equal(resolveGitBinary({
+    candidates: ['/definitely/missing/git'],
+    allowPathLookup: false,
+  }), null);
 });
 
 test('findReleaseSensitiveFiles filters release surfaces by glob', () => {

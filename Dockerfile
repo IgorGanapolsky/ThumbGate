@@ -14,6 +14,8 @@ RUN npm ci --omit=dev --no-audit --no-fund
 # ── Runtime stage ──────────────────────────────────────────────────────────────
 FROM node:20-alpine AS runtime
 
+RUN apk add --no-cache git
+
 # Non-root user for security
 RUN addgroup -S thumbgate && adduser -S thumbgate -G thumbgate
 
