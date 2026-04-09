@@ -317,7 +317,15 @@ test('Deploy to Railway workflow skips non-runtime pushes and only deploys when 
   assert.match(workflow, /name: Detect deployable changes/);
   assert.match(workflow, /BEFORE_SHA='\$\{\{\s*github\.event\.before\s*\}\}'/);
   assert.match(workflow, /git diff --name-only "\$BEFORE_SHA" "\$GITHUB_SHA"/);
-  assert.match(workflow, /DEPLOYABLE_PATTERN='.*src\/.*scripts\/.*public\/.*Dockerfile\$/);
+  assert.match(workflow, /DEPLOYABLE_PATTERN='.*src\/.*public\/.*Dockerfile\$/);
+  assert.ok(
+    workflow.includes('scripts/.*\\.(js|mjs|cjs)$'),
+    'workflow should only treat runtime JS script modules as deployable',
+  );
+  assert.ok(
+    !workflow.includes("DEPLOYABLE_PATTERN='^(src/|scripts/|"),
+    'workflow should not treat every scripts/ path as deployable',
+  );
   assert.match(workflow, /! printf '%s\\n' "\$CHANGED_FILES" \| grep -Eq "\$DEPLOYABLE_PATTERN"/);
   assert.match(workflow, /should_deploy=\$SHOULD_DEPLOY/);
   assert.match(workflow, /SHOULD_DEPLOY=true/);
