@@ -360,6 +360,24 @@ test('CodeQL workflow supports merge queue and cancels stale non-main runs', () 
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
 });
 
+test('SonarCloud workflow restores the required branch-protection status and waits on the quality gate', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'sonarcloud.yml'), 'utf8');
+
+  assert.match(workflow, /^name:\s*SonarCloud/m);
+  assert.match(workflow, /pull_request:/);
+  assert.match(workflow, /merge_group:/);
+  assert.match(workflow, /types:\s*\[checks_requested\]/);
+  assert.match(workflow, /group:\s*sonarcloud-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
+  assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
+  assert.match(workflow, /name:\s*SonarCloud Code Analysis/);
+  assert.match(workflow, /fetch-depth:\s*0/);
+  assert.match(workflow, /npm ci --onnxruntime-node-install-cuda=skip/);
+  assert.match(workflow, /Generate coverage for SonarCloud[\s\S]*?npm run test:coverage/);
+  assert.match(workflow, /uses:\s*SonarSource\/sonarqube-scan-action@v7/);
+  assert.match(workflow, /SONAR_TOKEN:\s*\$\{\{\s*secrets\.SONAR_TOKEN\s*\}\}/);
+  assert.match(workflow, /-Dsonar\.qualitygate\.wait=true/);
+});
+
 test('Claude Code Review workflow only cancels manual issue-comment review reruns', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'claude-code-review.yml'), 'utf8');
 
