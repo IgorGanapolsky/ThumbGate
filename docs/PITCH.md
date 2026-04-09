@@ -46,6 +46,10 @@ Start with one workflow, not a platform migration or generic "AI employee" pitch
 - Expand into hosted Pro when the buyer needs synced memory, shared rules, and usage analytics.
 - Use [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md), [FIRST_DOLLAR_PLAYBOOK.md](FIRST_DOLLAR_PLAYBOOK.md), and [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) in every sales conversation.
 
+# Academic Validation
+
+ThumbGate's architecture — external skill memory that rewrites itself from failure feedback without retraining the underlying model — is validated by the Memento-Skills framework (arXiv 2603.18743, March 2026). That peer-reviewed research demonstrated 26–116% relative accuracy improvements using the same Read → Execute → Reflect → Write loop that ThumbGate implements as capture → infer → enforce → block. This is not a feature comparison; it is independent confirmation that context engineering beats fine-tuning for agent governance.
+
 # ICP (Ideal Customer Profile)
 
 - AI-first product teams shipping copilots or agentic workflows with real business owners.

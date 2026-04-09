@@ -50,6 +50,10 @@ Engineering teams of 2 to 200+ developers who are actively using AI coding agent
 
 ThumbGate is not a model training pipeline. It does not retrain the underlying LLM. It shapes agent behavior through context injection and hard enforcement hooks.
 
+## Academic Validation
+
+ThumbGate implements the **Memento-Skills architecture** described in "Memento-Skills: Let Agents Design Agents" (arXiv 2603.18743, March 2026). This architecture—Read → Execute → Reflect → Write—allows agents to improve themselves through external skill memory that rewrites from failure feedback, eliminating the need for model retraining. Published results demonstrate 26.2% and 116.2% relative accuracy improvements on General AI Assistants benchmarks and Humanity's Last Exam. ThumbGate applies this same pattern to production AI coding agents via PreToolUse hooks, Thompson Sampling, SQLite+FTS5 lesson databases, and LanceDB vectors—treating each agent mistake as a skill refinement opportunity rather than a training event.
+
 ## Pricing
 
 - **Free**: Local enforcement for individual developers. Includes 3 daily feedback captures, 5 lesson searches per day, unlimited recall, and PreToolUse hook blocking.
