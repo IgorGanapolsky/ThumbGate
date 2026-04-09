@@ -94,7 +94,8 @@ test('cursor plugin docs explain runtime updates versus listing updates', () => 
   assert.match(readme, new RegExp(canonicalDescription.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(readme, /thumbgate@latest/);
   assert.match(readme, /History-aware lesson distillation/i);
-  assert.match(readme, /last ~10 messages/i);
+  assert.match(readme, /up to 8 prior recorded entries/i);
+  assert.match(readme, /60-second follow-up/i);
   assert.match(readme, /failed tool call/i);
   assert.match(readme, /relatedFeedbackId/);
   assert.equal(fs.existsSync(opsDocPath), true, 'Cursor plugin operations doc should exist');
@@ -105,7 +106,8 @@ test('cursor plugin docs explain runtime updates versus listing updates', () => 
   assert.match(opsDoc, /npm publish/i);
   assert.match(opsDoc, /VERIFICATION_EVIDENCE\.md/);
   assert.match(opsDoc, /history-aware lesson distillation/i);
-  assert.match(opsDoc, /last ~10 messages/i);
+  assert.match(opsDoc, /up to 8 prior recorded entries/i);
+  assert.match(opsDoc, /60-second follow-up/i);
   assert.match(opsDoc, new RegExp(canonicalDescription.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
 
@@ -116,21 +118,24 @@ test('cursor feedback command, skill, and rule encode history-aware distillation
 
   assert.match(command, /chatHistory/);
   assert.match(command, /relatedFeedbackId/);
-  assert.match(command, /last ~10 messages/i);
+  assert.match(command, /up to 8 prior recorded entries/i);
+  assert.match(command, /60-second follow-up/i);
   assert.match(command, /failed tool call/i);
   assert.match(command, /history-aware distillation/i);
 
   assert.match(skill, /history-aware lesson distillation/i);
   assert.match(skill, /chatHistory/);
   assert.match(skill, /relatedFeedbackId/);
-  assert.match(skill, /last ~10 messages/i);
+  assert.match(skill, /up to 8 prior recorded entries/i);
+  assert.match(skill, /60-second follow-up/i);
   assert.match(skill, /whatWentWrong/);
   assert.match(skill, /whatToChange/);
 
   assert.match(rule, /history-aware lesson distillation/i);
   assert.match(rule, /chatHistory/);
   assert.match(rule, /relatedFeedbackId/);
-  assert.match(rule, /last ~10 messages/i);
+  assert.match(rule, /up to 8 prior recorded entries/i);
+  assert.match(rule, /60-second follow-up/i);
   assert.match(rule, /bare thumbs signal/i);
 });
 

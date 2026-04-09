@@ -250,7 +250,7 @@
   <div class="step-card">
     <div class="step-number">3</div>
     <h3>Learn</h3>
-    <p>When your agent makes a mistake, give it a thumbs-down. ThumbGate captures the feedback and auto-generates prevention rules from repeated failures.</p>
+    <p>When your agent makes a mistake, give it a thumbs-down. In the current Claude auto-capture path, vague negative signals can reuse up to 8 prior recorded entries plus the failed tool call, then stay linked to a 60-second follow-up session before repeated failures harden into prevention rules.</p>
   </div>
 </div>
 
@@ -289,7 +289,7 @@
 
 <div class="card">
   <h3>Can ThumbGate learn from mistakes automatically?</h3>
-  <p>Yes. When your AI agent makes a mistake, give a thumbs-down with context. After repeated failures with the same pattern, ThumbGate auto-generates a prevention rule and wires it as a pre-action gate. Gates adapt over time using Thompson Sampling, a Bayesian multi-armed bandit algorithm.</p>
+  <p>Yes. When your AI agent makes a mistake, give a thumbs-down with context. In the current Claude auto-capture path, vague negative signals can reuse up to 8 prior recorded entries plus the failed tool call, then stay linked to a 60-second follow-up session. After repeated failures with the same pattern, ThumbGate auto-generates a prevention rule and wires it as a pre-action gate. Gates adapt over time using Thompson Sampling, a Bayesian multi-armed bandit algorithm.</p>
 </div>
 
 </div>
