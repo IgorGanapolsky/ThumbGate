@@ -172,6 +172,8 @@ const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
+const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
+const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
 const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
 const VISITOR_COOKIE_NAME = 'thumbgate_visitor_id';
 const SESSION_COOKIE_NAME = 'thumbgate_session_id';
@@ -1345,6 +1347,32 @@ function renderRobotsTxt(runtimeConfig) {
   return [
     'User-agent: *',
     'Allow: /',
+    '',
+    '# AI crawler access — allow all major LLM crawlers',
+    'User-agent: GPTBot',
+    'Allow: /',
+    '',
+    'User-agent: ClaudeBot',
+    'Allow: /',
+    '',
+    'User-agent: PerplexityBot',
+    'Allow: /',
+    '',
+    'User-agent: Googlebot',
+    'Allow: /',
+    '',
+    'User-agent: Bingbot',
+    'Allow: /',
+    '',
+    'User-agent: anthropic-ai',
+    'Allow: /',
+    '',
+    'User-agent: Google-Extended',
+    'Allow: /',
+    '',
+    '# LLM context document — clean declarative content for AI retrieval',
+    `# ${runtimeConfig.appOrigin}/llm-context.md`,
+    '',
     `Sitemap: ${runtimeConfig.appOrigin}/sitemap.xml`,
   ].join('\n');
 }
@@ -1353,6 +1381,7 @@ function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
+    { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
   return [
@@ -2516,12 +2545,39 @@ function createApiServer() {
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/.well-known/llms.txt') {
+      const llmsTxtPath = path.join(__dirname, '..', '..', '.well-known', 'llms.txt');
+      try {
+        const content = fs.readFileSync(llmsTxtPath, 'utf8');
+        sendText(res, 200, content, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' }, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'llms.txt not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/sitemap.xml') {
       sendText(res, 200, renderSitemapXml(hostedConfig), {
         'Content-Type': 'application/xml; charset=utf-8',
       }, {
         headOnly: isHeadRequest,
       });
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/llm-context.md') {
+      const llmContextPath = path.resolve(__dirname, '../../public/llm-context.md');
+      try {
+        const content = fs.readFileSync(llmContextPath, 'utf8');
+        sendText(res, 200, content, {
+          'Content-Type': 'text/markdown; charset=utf-8',
+          'X-Robots-Tag': 'all',
+        }, {
+          headOnly: isHeadRequest,
+        });
+      } catch (_err) {
+        sendJson(res, 404, { error: 'Not found' });
+      }
       return;
     }
 
@@ -2849,6 +2905,28 @@ async function addContext(){
       } catch {
         sendJson(res, 404, { error: 'Article not found' });
       }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname.startsWith('/guides/')) {
+      try {
+        const slug = pathname.replace('/guides/', '').replace(/[^a-z0-9-]/g, '');
+        const guidePath = path.join(GUIDES_DIR, `${slug}.html`);
+        if (!guidePath.startsWith(GUIDES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
+        const html = fs.readFileSync(guidePath, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch { sendJson(res, 404, { error: 'Guide not found' }); }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname.startsWith('/compare/') && pathname !== '/compare') {
+      try {
+        const slug = pathname.replace('/compare/', '').replace(/[^a-z0-9-]/g, '');
+        const comparePath = path.join(COMPARE_DIR, `${slug}.html`);
+        if (!comparePath.startsWith(COMPARE_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
+        const html = fs.readFileSync(comparePath, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch { sendJson(res, 404, { error: 'Comparison not found' }); }
       return;
     }
 

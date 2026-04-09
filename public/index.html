@@ -20,9 +20,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
 <title>ThumbGate — Self-improving AI coding agents that learn from every mistake</title>
-<meta name="description" content="Pre-action gates and workflow governance for AI coding agents. 👎 Thumbs down → prevention rule → mistake permanently blocked. 👍 Thumbs up → pattern reinforced. History-aware lessons from your corrections. Risky local runs can route into Docker Sandboxes. Team adds shared lessons and org visibility, plus isolated execution guidance.">
+<meta name="description" content="Pre-action gates, a learned intervention policy, and workflow governance for self-improving AI coding agents. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Team adds shared lessons and org visibility.">
 <meta property="og:title" content="ThumbGate — Self-improving AI coding agents that learn from every mistake">
-<meta property="og:description" content="Pre-action gates and workflow governance for AI coding agents. 👎 Thumbs down → prevention rule → mistake permanently blocked. 👍 Thumbs up → pattern reinforced. History-aware lessons from your corrections. Risky local runs can route into Docker Sandboxes. Team adds shared lessons and org visibility, plus isolated execution guidance.">
+<meta property="og:description" content="Pre-action gates, a learned intervention policy, and workflow governance for self-improving AI coding agents. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Team adds shared lessons and org visibility.">
 <meta property="og:type" content="website">
 <meta name="keywords" content="ThumbGate, thumbgate, self-improving AI agents, AI agent self-improvement, AI agent learning, AI agent memory, pre-action gates, human-in-the-loop, MCP server, Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, vibe coding safety, SpecLock alternative, Mem0 alternative, AI coding agent feedback loop, PreToolUse hooks, prevention rules, feedback enforcement, context engineering">
 
@@ -44,7 +44,7 @@ __GA_BOOTSTRAP__
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
   "alternateName": "thumbgate",
-  "description": "Make your AI coding agent self-improving. Every mistake becomes a prevention rule. Every correction makes it permanently smarter. ThumbGate adds workflow governance and isolated execution guidance so high-risk runs do not have to happen directly on the host.",
+  "description": "Make your AI coding agent self-improving. Every mistake becomes a prevention rule and trains a local intervention policy. Every correction strengthens future recall, verification, and enforcement. ThumbGate adds workflow governance and isolated execution guidance so high-risk runs do not have to happen directly on the host.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "license": "https://opensource.org/licenses/MIT",
@@ -114,7 +114,7 @@ __GA_BOOTSTRAP__
   "@context": "https://schema.org",
   "@type": "HowTo",
   "name": "How to make your AI coding agent self-improving",
-  "description": "Set up ThumbGate so your AI agent learns from every mistake and never repeats it — a self-improvement loop powered by feedback enforcement.",
+  "description": "Set up ThumbGate so your AI agent learns from every mistake and never repeats it — a self-improvement loop powered by feedback enforcement and a trained local intervention policy.",
   "step": [
     {
       "@type": "HowToStep",
@@ -126,7 +126,7 @@ __GA_BOOTSTRAP__
       "@type": "HowToStep",
       "position": 2,
       "name": "Give feedback when something goes wrong",
-      "text": "When your agent makes a mistake, give it a thumbs down with context: what went wrong and how to avoid it. ThumbGate validates the feedback and promotes it to a reusable memory."
+      "text": "When your agent makes a mistake, give it a thumbs down with context. In the current Claude auto-capture hook, vague negative signals can reuse up to 8 prior recorded entries before promotion and stay linked to a 60-second feedback session for later clarification."
     },
     {
       "@type": "HowToStep",
@@ -533,7 +533,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="agent-card">
         <h3>🪞 History-Aware Lessons</h3>
-        <p>When a thumbs signal is vague, ThumbGate can reuse the last ~10 messages plus the failed tool call, propose what went wrong, and turn that into one linked lesson instead of a dead-end note.</p>
+        <p>When the current Claude auto-capture hook only gets a vague thumbs-down, ThumbGate can reuse up to 8 prior recorded entries plus the failed tool call, then keep a linked 60-second feedback session open for later corrections instead of creating a dead-end note.</p>
       </div>
     </div>
   </div>
@@ -599,13 +599,13 @@ __GA_BOOTSTRAP__
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
   <div class="container">
-    <div class="section-label">New in v1.2.0</div>
+    <div class="section-label">New in v1.3.0</div>
     <h2 class="section-title">Three steps to stop repeated AI failures</h2>
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
         <h3>Feedback</h3>
-        <p>Give <code>👍</code> or <code>👎</code> on your AI agent's actions. Feedback is stored in a SQLite+FTS5 lesson DB. If the signal is vague, ThumbGate can distill it from the recent conversation window and failed tool call before promotion. Example: you 👎 a risky migration → it auto-promotes to a "never run DROP on prod" gate.</p>
+        <p>Give <code>👍</code> or <code>👎</code> on your AI agent's actions. Feedback is stored in a SQLite+FTS5 lesson DB. In the current Claude auto-capture hook, a vague thumbs-down can distill from up to 8 prior recorded entries and the failed tool call before promotion, then stay linked to a 60-second feedback session. Example: you 👎 a risky migration → it auto-promotes to a "never run DROP on prod" gate.</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
@@ -827,7 +827,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What if my thumbs-down is vague?</div>
-        <div class="faq-a">ThumbGate can reuse the last ~10 messages, the failed tool call, and later follow-up notes to propose <code>whatWentWrong</code>, <code>whatToChange</code>, and a reusable lesson. The feedback session stays linked instead of creating duplicate records.</div>
+        <div class="faq-a">For the current Claude auto-capture hook, ThumbGate can reuse up to 8 prior recorded entries and the failed tool call for a vague thumbs-down, then keep a linked 60-second feedback session open for later clarification. The timer resets when more context arrives, so the lesson stays attached to one feedback record instead of fragmenting into duplicates.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are pre-action gates different from prompt rules?</div>
@@ -877,7 +877,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.2.0</span>
+    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.3.0</span>
   </div>
 </footer>
 

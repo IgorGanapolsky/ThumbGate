@@ -6,16 +6,16 @@ const PRO_FOUNDER_PAYMENT_LINK = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05
 
 const PRO_MONTHLY_PRICE_ID = 'price_1THQY7GGBpd520QYHoS7RG0J';
 const PRO_ANNUAL_PRICE_ID = 'price_1THQZ7GGBpd520QYxzDRnxhB';
-const TEAM_MONTHLY_PRICE_ID = 'price_1THQa5GGBpd520QYoqdq1R1S';
+const TEAM_MONTHLY_PRICE_ID = 'price_1TKLUhGGBpd520QYr5pgEZit';
 
 const PRO_MONTHLY_PRICE_DOLLARS = 19;
 const PRO_ANNUAL_PRICE_DOLLARS = 149;
-const TEAM_MONTHLY_PRICE_DOLLARS = 12;
-const TEAM_ANNUAL_PRICE_DOLLARS = 99;
+const TEAM_MONTHLY_PRICE_DOLLARS = 99;
+const TEAM_ANNUAL_PRICE_DOLLARS = 948;
 const TEAM_MIN_SEATS = 3;
 
-const PRO_PRICE_LABEL = '$19/mo or $149/yr';
-const TEAM_PRICE_LABEL = 'Starts at $36/mo for 3 seats, then $12/seat/mo';
+const PRO_PRICE_LABEL = '$19/mo or $149/yr (individual)';
+const TEAM_PRICE_LABEL = '$99/seat/mo — Agent governance for engineering teams';
 
 function normalizePlanId(value) {
   const text = String(value || '').trim().toLowerCase();

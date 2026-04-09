@@ -582,11 +582,11 @@ function init() {
   trackEvent('cli_init', { command: 'init' });
   proNudge();
   console.log('');
-  console.log('  ┌─────────────────────────────────────────────────────┐');
-  console.log('  │  Unlock unlimited captures, searches & dashboard:   │');
-  console.log('  │  https://thumbgate-production.up.railway.app/pro    │');
-  console.log('  │  Pro starts at $19/mo — 7-day free trial included   │');
-  console.log('  └─────────────────────────────────────────────────────┘');
+  console.log('  ┌──────────────────────────────────────────────────────────┐');
+  console.log('  │  Teams: shared enforcement, CI gates, audit trails      │');
+  console.log('  │  One correction protects every agent on your team.      │');
+  console.log('  │  https://thumbgate-production.up.railway.app/pro        │');
+  console.log('  └──────────────────────────────────────────────────────────┘');
 
   try {
     const { appendFunnelEvent } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
@@ -1233,6 +1233,10 @@ function cacheUpdate() {
 
 function statuslineRender() {
   syncActiveProjectContext();
+  try {
+    const { syncClaudeHistoryFeedback } = require(path.join(PKG_ROOT, 'scripts', 'claude-feedback-sync'));
+    syncClaudeHistoryFeedback();
+  } catch (_) { /* best-effort fallback sync */ }
   const payload = readStdinText();
   const output = execFileSync('bash', [path.join(PKG_ROOT, 'scripts', 'statusline.sh')], {
     encoding: 'utf8',
@@ -1284,6 +1288,10 @@ function hookAutoCapture() {
 
 function sessionStart() {
   syncActiveProjectContext();
+  try {
+    const { syncClaudeHistoryFeedback } = require(path.join(PKG_ROOT, 'scripts', 'claude-feedback-sync'));
+    syncClaudeHistoryFeedback();
+  } catch (_) { /* best-effort fallback sync */ }
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { refreshStatuslineCache } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
   refreshStatuslineCache(analyzeFeedback());

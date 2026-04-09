@@ -181,7 +181,7 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
 
   try {
     const runtimeConfig = resolveHostedBillingConfig();
-    assert.equal(runtimeConfig.proPriceLabel, '$19/mo or $149/yr');
+    assert.equal(runtimeConfig.proPriceLabel, '$19/mo or $149/yr (individual)');
     assert.equal(runtimeConfig.proPriceDollars, 19);
     assert.equal(runtimeConfig.checkoutFallbackUrl, DEFAULT_CHECKOUT_FALLBACK_URL);
     assert.equal(runtimeConfig.gaMeasurementId, '');
@@ -288,7 +288,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
   assert.match(commercialTruth, /Pro at \$19\/mo or \$149\/yr/);
-  assert.match(commercialTruth, /Team pricing anchor is \*\*\$12\/seat\/mo/i);
+  assert.match(commercialTruth, /Team pricing anchor is \*\*\$99\/seat\/mo/i);
   assert.match(commercialTruth, /auto-gate promotion/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 

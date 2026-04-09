@@ -151,13 +151,23 @@ async function main() {
     const messages = [
       {
         to: 'game-of-kton',
-        subject: 'ThumbGate Pro — Try it free, get the hook',
-        text: 'Hey, thanks for the thoughtful comments on the Cursor thread about agent memory. You clearly get the hooks-based enforcement approach. Would you be open to trying ThumbGate Pro for free? I\'d love to get your honest take — if you like it, a one-sentence quote I can use on the landing page would be huge. No strings attached either way. Here\'s the repo: https://github.com/IgorGanapolsky/ThumbGate'
+        subject: 'Quick question about your agent workflow',
+        text: 'Hey — you left some really thoughtful comments on the AI coding agent thread. I\'m building ThumbGate (agent mistake prevention via PreToolUse hooks) and your feedback was the most useful I got.\n\nI\'m trying to figure out if this is worth building further. Would you be open to a quick 15-min call this week? Just want to understand how you handle agent mistakes in your workflow.\n\nI\'ll give you lifetime Pro access regardless — no strings attached.\n\nHere\'s the repo if you want to look first: https://github.com/IgorGanapolsky/ThumbGate'
       },
       {
         to: 'Deep_Ad1959',
-        subject: 'ThumbGate Pro — Context-dependent blocking (your idea)',
-        text: 'Hey, your point about context-dependent blocking was spot on — it\'s exactly why we use Thompson Sampling instead of hard binary blocks. Would you be interested in trying ThumbGate Pro for free? If you find it useful, I\'d appreciate a quick testimonial quote for the site. No obligation. Repo: https://github.com/IgorGanapolsky/ThumbGate'
+        subject: 'Your context-dependent blocking idea',
+        text: 'Hey — your point about context-dependent blocking was really insightful. That\'s exactly the problem I\'m trying to solve with ThumbGate (using Thompson Sampling for adaptive gates instead of hard binary blocks).\n\nWould you be open to a quick 15-min call this week? I\'m trying to figure out what developers would actually pay for in this space. Your perspective would be genuinely valuable.\n\nLifetime Pro access is yours either way. Repo: https://github.com/IgorGanapolsky/ThumbGate'
+      },
+      {
+        to: 'leogodin217',
+        subject: 'Quick question about AI agent safety in your workflow',
+        text: 'Hey — you engaged with one of my posts about AI coding agent tooling and your take stood out. I\'m building ThumbGate (prevents AI agents from repeating mistakes via automated prevention rules).\n\nI\'m at the stage where I need honest feedback from people who actually use agents daily. Would you do a quick 15-min call this week? Just want to understand your pain points.\n\nLifetime Pro access is yours regardless. Repo: https://github.com/IgorGanapolsky/ThumbGate'
+      },
+      {
+        to: 'Enthu-Cutlet-1337',
+        subject: 'Quick question about your AI coding agent setup',
+        text: 'Hey — you commented on one of my posts about agent memory/safety tooling and your feedback was one of the few that was genuinely useful.\n\nI\'m building ThumbGate (automated mistake prevention for AI coding agents) and I\'m trying to figure out if this solves a real problem or if everyone just uses CLAUDE.md files. Would you be open to a quick 15-min call this week?\n\nLifetime Pro access is yours either way — no pitch, just questions. Repo: https://github.com/IgorGanapolsky/ThumbGate'
       }
     ];
 

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cursor Agent Guardrails | Stop Repeated Mistakes with ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Cursor moves fast, which makes repeated mistakes expensive. ThumbGate gives Cursor users a feedback loop that turns thumbs-down corrections into pre-action gates.">
+<meta name="keywords" content="Cursor guardrails, Cursor prevent mistakes, Cursor agent safety, ThumbGate, pre-action gates, AI coding agent feedback">
+<meta property="og:title" content="Cursor Guardrails That Block Repeated Mistakes">
+<meta property="og:description" content="Cursor moves fast, which makes repeated mistakes expensive. ThumbGate gives Cursor users a feedback loop that turns thumbs-down corrections into pre-action gates.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/guides/cursor-prevent-repeated-mistakes">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/guides/cursor-prevent-repeated-mistakes">
+<link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Cursor Agent Guardrails That Block Repeated Mistakes",
+  "description": "Cursor moves fast, which makes repeated mistakes expensive. ThumbGate gives Cursor users a feedback loop that turns thumbs-down corrections into pre-action gates.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-04-09",
+  "dateModified": "2026-04-09",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/guides/cursor-prevent-repeated-mistakes",
+  "about": [
+    {"@type": "Thing", "name": "Cursor guardrails"},
+    {"@type": "Thing", "name": "AI coding agent safety"},
+    {"@type": "Thing", "name": "pre-action gates"}
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Do I need to leave Cursor to use ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate is designed to sit alongside existing coding-agent workflows so you can add enforcement without switching tools."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What kind of mistakes can Cursor guardrails stop?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Repeated failures like risky git actions, destructive scripts, skipped verification, or any other known-bad pattern you have already corrected once."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is ThumbGate different from a Cursor rules file?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Static rules help on day one. ThumbGate helps on day two and day twenty because it keeps learning from live corrections instead of relying on a fixed checklist that drifts out of date."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate slow down Cursor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. The PreToolUse hook adds a sub-millisecond pattern check before each tool call. You keep Cursor's speed while gaining enforcement."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / <a href="/guides/cursor-prevent-repeated-mistakes">Guides</a> / Cursor Guardrails</div>
+  <h1>Cursor Guardrails That Block Repeated Mistakes</h1>
+  <p style="color:var(--muted);">3 min read &middot; Designed for Cursor, works across all MCP agents</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Cursor moves fast, which makes repeated mistakes expensive. ThumbGate gives Cursor users a feedback loop that turns thumbs-down corrections into pre-action gates before the next risky step fires.</div>
+
+  <h2>The Cursor workflow problem</h2>
+  <p>Cursor can move from idea to edits quickly, but the failure mode is familiar: the same wrong refactor, risky shell command, or skipped check comes back in the next session because nothing hardened the workflow.</p>
+
+  <div class="callout callout-red">
+    <strong>Sound familiar?</strong> You correct the agent. It apologizes. Next session, same mistake. The problem is not the agent's memory. The problem is that nothing enforces what was learned.
+  </div>
+
+  <h2>How ThumbGate fits into Cursor</h2>
+  <ul>
+    <li>Capture thumbs-up/down feedback on agent behavior.</li>
+    <li>Promote repeated failures into prevention rules.</li>
+    <li>Block known-bad commands with pre-action gates before execution.</li>
+    <li>Keep the memory and gates local-first so the operator retains control.</li>
+  </ul>
+
+  <h2>Install for Cursor</h2>
+  <pre><code>npx thumbgate init --agent cursor</code></pre>
+  <p>Auto-detects Cursor and configures the PreToolUse hook. No build step, no cloud account.</p>
+
+  <h2>What makes this different from a rule file</h2>
+  <p>Static rules help on day one. ThumbGate helps on day two and day twenty because it keeps learning from live corrections instead of relying on a fixed checklist that drifts out of date.</p>
+
+  <h2>Frequently Asked Questions</h2>
+  <h3>Do I need to leave Cursor to use ThumbGate?</h3>
+  <p>No. ThumbGate is designed to sit alongside existing coding-agent workflows so you can add enforcement without switching tools.</p>
+
+  <h3>What kind of mistakes can Cursor guardrails stop?</h3>
+  <p>Repeated failures like risky git actions, destructive scripts, skipped verification, or any other known-bad pattern you have already corrected once.</p>
+
+  <h3>How is ThumbGate different from a Cursor rules file?</h3>
+  <p>Static rules help on day one. ThumbGate helps on day two and day twenty because it keeps learning from live corrections instead of relying on a fixed checklist that drifts out of date.</p>
+
+  <h3>Does ThumbGate slow down Cursor?</h3>
+  <p>No. The PreToolUse hook adds a sub-millisecond pattern check before each tool call. You keep Cursor's speed while gaining enforcement.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Founding Member Deal &mdash; $49</h2>
+    <p>Lock in lifetime Pro access at the founding price. One command to start.</p>
+    <div class="cta-install">$ npx thumbgate init --agent cursor</div>
+    <p style="margin-top:8px;"><a href="/pro">Learn about ThumbGate Pro &rarr;</a></p>
+  </div>
+
+  <div class="related">
+    <h3>Related</h3>
+    <a href="/guides/stop-repeated-ai-agent-mistakes">Stop Repeated AI Agent Mistakes &rarr;</a>
+    <a href="/guides/pre-action-gates">What Are Pre-Action Gates? &rarr;</a>
+    <a href="/compare/speclock">ThumbGate vs SpecLock &rarr;</a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init --agent cursor</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>

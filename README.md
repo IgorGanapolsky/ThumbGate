@@ -1,6 +1,6 @@
 # ThumbGate
 
-Make your AI coding agent self-improving. ThumbGate turns thumbs-up and thumbs-down into a control plane for autonomous development: pre-action gates, workflow governance, and isolated execution guidance for high-risk runs.
+Make your AI coding agent self-improving. ThumbGate turns thumbs-up and thumbs-down into a learned control plane for autonomous development: pre-action gates, a trained intervention policy, workflow governance, and isolated execution guidance for high-risk runs.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -21,7 +21,7 @@ One workflow. One owner. One proof review. That is the fastest path to a paid te
 
 **Self-serve for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the paid lane for the personal local dashboard, DPO export, and review-ready evidence.
 
-Free stays for individual developers. Pro is **$19/mo or $149/yr** for solo operators. Team pricing anchors at **$12/seat/mo with a 3-seat minimum**, but the public Team path remains intake-first through the sprint. [See pricing →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=pricing_link#pricing)
+Free stays for individual developers. Pro is **$19/mo or $149/yr** for solo operators. Team pricing anchors at **$99/seat/mo with a 3-seat minimum**, but the public Team path remains intake-first through the sprint. [See pricing →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=pricing_link#pricing)
 
 **Paid path for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the buyer-ready page for the personal local dashboard, DPO export, and review-ready evidence. It makes the paid upgrade legible before checkout while the self-hosted path below stays optimized for open source evaluation.
 
@@ -92,6 +92,32 @@ Session 3:                           Session 3+:
    │                        │                            │
 ```
 
+## Use Cases
+
+- **Stop AI agent force-push to main** — Prevent lost commits with a pre-action gate that blocks `git push --force` on protected branches
+- **Prevent repeated database migration failures** — Each mistake becomes a searchable lesson that fires before the next migration attempt
+- **Block unauthorized file edits** — Control which files agents can modify with path-based gates
+- **Memory across sessions** — Agent remembers feedback from yesterday's mistakes without any manual rule-writing
+- **Shared team safety** — One developer's thumbs-down protects the whole team from the same mistake
+- **Auto-improving without human feedback** — Self-distillation mode evaluates agent outcomes and generates lessons automatically
+
+## FAQ
+
+**Is ThumbGate a model fine-tuning tool?**
+No. ThumbGate doesn't update model weights. It works by capturing feedback into structured lessons, injecting relevant context at runtime, and blocking bad actions via PreToolUse hooks.
+
+**How is this different from CLAUDE.md or .cursorrules?**
+CLAUDE.md files are suggestions that agents can ignore. ThumbGate gates are enforcement — they physically block the action before it executes via PreToolUse hooks. Gates also auto-generate from feedback instead of requiring manual rule-writing.
+
+**Does it work with my agent?**
+Yes. ThumbGate is MCP-compatible and works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any agent that supports PreToolUse hooks or MCP.
+
+**What's the self-distillation mode?**
+ThumbGate can auto-evaluate agent action outcomes (test failures, reverted edits, error patterns) and generate prevention rules without any human feedback. Your agent gets smarter every session automatically.
+
+**Is it free?**
+Free tier: 3 feedback captures/day, 5 lesson searches/day, 5 built-in gates. Founding Member: $49 one-time, Pro forever.
+
 ## The Loop
 
 ```
@@ -147,7 +173,7 @@ Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-co
               └─► lesson inferred from full conversation
 ```
 
-History-aware distillation turns vague signals into concrete lessons using the last ~10 messages and the failed tool call.
+History-aware distillation turns vague negative signals into concrete lessons. In the current Claude auto-capture path, ThumbGate can reuse up to 8 prior recorded conversation entries plus the failed tool call, then keep a linked 60-second follow-up session open for later clarification.
 
 Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx thumbgate lessons`.
 
@@ -155,7 +181,7 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 
 ```
 ┌──────────────┬──────────────────────┬──────────────────────────────┐
-│    FREE      │ PRO $19/mo or $149/yr│   TEAM $12/seat/mo (min 3)   │
+│    FREE      │ PRO $19/mo or $149/yr│   TEAM $99/seat/mo (min 3)   │
 ├──────────────┼──────────────────────┼──────────────────────────────┤
 │ Unlimited    │ Unlimited feedback │ Shared hosted lesson DB      │
 │ feedback     │ captures + search  │ Org dashboard                │
@@ -166,9 +192,9 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 └──────────────┴────────────────────┴──────────────────────────────┘
 ```
 
-Free includes 3 daily feedback captures, 5 daily lesson searches, unlimited recall, and gating. History-aware distillation turns vague feedback into concrete lessons. Feedback sessions (`open_feedback_session` → `append_feedback_context` → `finalize_feedback_session`) link follow-up context to one record.
+Free includes 3 daily feedback captures, 5 daily lesson searches, unlimited recall, and gating. History-aware distillation turns vague feedback into concrete lessons, and feedback sessions (`open_feedback_session` → `append_feedback_context` → `finalize_feedback_session`) keep later clarification linked to one record. The current Claude auto-capture path uses up to 8 prior recorded entries for vague thumbs-down signals; the follow-up session stays open for 60 seconds and resets when more context is appended.
 
-It does not update model weights. It's context engineering plus execution control: enforcement that gets smarter every session, with Docker Sandboxes guidance for the riskiest local actions and a hosted isolated lane for team workflows.
+It does not update model weights in frontier LLMs. ThumbGate improves runtime behavior by training a local sidecar intervention policy from feedback, gate audits, and diagnostics, then using that policy to strengthen recall, verification, and enforcement decisions on future runs.
 
 The fastest commercial path is not a generic self-serve subscription pitch. It is the Workflow Hardening Sprint: qualify one repeated failure in one valuable workflow, prove the control plane on that surface, then expand into Team seats when shared enforcement matters.
 

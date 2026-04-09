@@ -81,7 +81,7 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /\$12/);
   assert.match(landingPage, /Install Free/);
   assert.match(landingPage, /Free Trial/);
-  assert.match(landingPage, /Start Workflow Hardening Sprint/);
+  assert.match(landingPage, /Start Team Pilot/);
 });
 
 test('public landing page includes Plausible analytics and search engine proof bar', () => {
@@ -131,33 +131,25 @@ test('public landing page positions ThumbGate as self-improving AI agents', () =
   assert.doesNotMatch(landingPage, /official Anthropic partner/i);
 });
 
-test('public landing page hero routes team buyers to the workflow hardening sprint while keeping Pro visible', () => {
+test('public landing page hero features both thumbs up AND thumbs down prominently', () => {
   const landingPage = readLandingPage();
 
+  // Hero big emoji must show BOTH thumbs — not just one
   assert.match(landingPage, /class="hero-thumbs">👍👎</);
-  assert.match(landingPage, /Workflow Hardening Sprint/i);
-  assert.match(landingPage, /Make one AI workflow/i);
-  assert.match(landingPage, /safe enough to ship team-wide/i);
+  // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /repeated failure becomes enforcement/i);
-  assert.match(landingPage, /shared workflow/i);
+  assert.match(landingPage, /Repeated failure becomes enforcement before the next run/i);
+  assert.match(landingPage, /Safe pattern reinforced across the shared workflow/i);
+  // Persona targeting
   assert.match(landingPage, /class="hero-persona"/);
-  assert.match(landingPage, /consultancies, platform teams, and AI product teams/i);
-  assert.match(landingPage, /one workflow owner/i);
-  assert.match(landingPage, /one buyer who needs proof/i);
-  assert.match(landingPage, /Start Workflow Hardening Sprint/i);
-  assert.match(landingPage, /See Pro for solo operators/i);
+  assert.match(landingPage, /product teams/i);
 });
 
 test('public landing page exposes a dedicated Pro path above the fold', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /See Pro for solo operators/i);
-  assert.match(landingPage, /Start free as an individual/i);
-  assert.match(landingPage, /personal local dashboard/i);
-  assert.match(landingPage, /DPO export/i);
-  assert.match(landingPage, /self-serve lane/i);
   assert.match(landingPage, /href="\/pro\?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page"/);
 });
 
@@ -185,7 +177,6 @@ test('public landing page includes an explicit Team rollout lane with shared wor
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /<div class="tier">Team<\/div>/);
-  assert.match(landingPage, /workflow hardening sprint/i);
   assert.match(landingPage, /Shared enforcement memory/i);
   assert.match(landingPage, /Hosted review views/i);
   assert.match(landingPage, /Org dashboard/i);
@@ -320,7 +311,6 @@ test('landing page has newsletter signup', () => {
   assert.match(html, /action="\/api\/newsletter"/);
   assert.match(html, /data-newsletter-form/);
   assert.match(html, /Get updates \+ keep checkout ready/i);
-  assert.match(html, /workflow sprint brief/i);
 });
 
 test('landing page has social links in footer', () => {
@@ -354,10 +344,15 @@ test('lessons page exists and has three tabs', () => {
   assert.match(html, /Insights/i);
 });
 
-test('lessons page has rule cards with effectiveness metric', () => {
+test('lessons page has defensible live metrics and rule frequency labels', () => {
   const html = readLessonsPage();
-  assert.match(html, /Prevented/i);
-  assert.match(html, /Mistakes Prevented/i);
+  assert.match(html, /Actions Blocked/i);
+  assert.match(html, /Recorded gate denies, not inferred repeats/i);
+  assert.match(html, /Improvement Over Time/i);
+  assert.match(html, /Recent Feedback \+ Gate Activity/i);
+  assert.match(html, /Gate deny/i);
+  assert.match(html, /Gate warn/i);
+  assert.match(html, /Repeat pressure/i);
   assert.match(html, /rule-effectiveness/);
   assert.match(html, /rule-severity/);
 });

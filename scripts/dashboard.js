@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
+const { AUDIT_LOG_FILENAME } = require('./audit-trail');
 const { getBillingSummary, loadFunnelLedger, loadResolvedRevenueEvents } = require('./billing');
 const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-analytics');
 const { getAutoGatesPath } = require('./auto-promote-gates');
@@ -19,6 +20,7 @@ const { routeProfile } = require('./profile-router');
 const { getSettingsStatus } = require('./settings-hierarchy');
 const { summarizeWorkflowRuns } = require('./workflow-runs');
 const { searchLessons } = require('./lesson-search');
+const { getInterventionPolicySummary } = require('./intervention-policy');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -58,6 +60,15 @@ function pickFirstText(...values) {
     if (normalized) return normalized;
   }
   return null;
+}
+
+function toLocalDayKey(value) {
+  const ts = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(ts.getTime())) return null;
+  const year = ts.getFullYear();
+  const month = String(ts.getMonth() + 1).padStart(2, '0');
+  const day = String(ts.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -140,6 +151,58 @@ function computeGateStats() {
     topBlocked,
     topBlockedCount,
     byGate: stats.byGate || {},
+  };
+}
+
+function computeGateAuditSeries(feedbackDir, options = {}) {
+  const auditLogPath = path.join(feedbackDir, AUDIT_LOG_FILENAME);
+  const entries = readJSONL(auditLogPath).filter((entry) => entry && entry.timestamp);
+  const dayCount = Number.isInteger(options.dayCount) ? options.dayCount : 14;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const countsByDay = new Map();
+
+  for (const entry of entries) {
+    if (!['allow', 'deny', 'warn'].includes(entry.decision)) continue;
+    const dayKey = toLocalDayKey(entry.timestamp);
+    if (!dayKey) continue;
+    if (!countsByDay.has(dayKey)) {
+      countsByDay.set(dayKey, { allow: 0, deny: 0, warn: 0 });
+    }
+    countsByDay.get(dayKey)[entry.decision] += 1;
+  }
+
+  const days = [];
+  const totals = { allow: 0, deny: 0, warn: 0, intercepted: 0, total: 0 };
+
+  for (let offset = dayCount - 1; offset >= 0; offset -= 1) {
+    const day = new Date(today);
+    day.setDate(today.getDate() - offset);
+    const dayKey = toLocalDayKey(day);
+    const record = countsByDay.get(dayKey) || { allow: 0, deny: 0, warn: 0 };
+    const intercepted = record.deny + record.warn;
+    const total = intercepted + record.allow;
+    const summary = {
+      dayKey,
+      allow: record.allow,
+      deny: record.deny,
+      warn: record.warn,
+      intercepted,
+      total,
+    };
+    totals.allow += record.allow;
+    totals.deny += record.deny;
+    totals.warn += record.warn;
+    totals.intercepted += intercepted;
+    totals.total += total;
+    days.push(summary);
+  }
+
+  return {
+    dayCount,
+    days,
+    totals,
+    activeDays: days.filter((day) => day.total > 0).length,
   };
 }
 
@@ -710,6 +773,7 @@ function generateDashboard(feedbackDir, options = {}) {
   const prevention = computePreventionImpact(feedbackDir, gateStats);
   const trend = computeSessionTrend(entries, 10);
   const health = computeSystemHealth(feedbackDir, gateStats);
+  const gateAudit = computeGateAuditSeries(feedbackDir);
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
   const secretGuard = computeSecretGuardStats(diagnosticEntries);
   const gates = listActiveGates();
@@ -722,6 +786,7 @@ function generateDashboard(feedbackDir, options = {}) {
   const delegation = summarizeDelegation(feedbackDir);
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
   const harness = computeHarnessOverview(feedbackDir, entries);
+  const interventionPolicy = getInterventionPolicySummary(feedbackDir);
   const settingsStatus = getSettingsStatus({ projectRoot: PROJECT_ROOT });
   settingsStatus.routingPreview = {
     dashboardTool: routeProfile({
@@ -782,6 +847,7 @@ function generateDashboard(feedbackDir, options = {}) {
     prevention,
     trend,
     health,
+    gateAudit,
     diagnostics,
     delegation,
     secretGuard,
@@ -790,6 +856,7 @@ function generateDashboard(feedbackDir, options = {}) {
     observability,
     instrumentation,
     readiness,
+    interventionPolicy,
     settingsStatus,
     team,
     templateLibrary,
@@ -809,6 +876,7 @@ function printDashboard(data) {
     prevention,
     trend,
     health,
+    gateAudit,
     diagnostics,
     delegation,
     secretGuard,
@@ -817,6 +885,7 @@ function printDashboard(data) {
     observability,
     instrumentation,
     readiness,
+    interventionPolicy,
     settingsStatus,
     team,
     templateLibrary,
@@ -860,6 +929,20 @@ function printDashboard(data) {
   console.log(`  Error Lessons    : ${harness.errorLessonCount}/${harness.lessonCount}`);
   if (harness.topRecommendations[0]) {
     console.log(`  Top Next Fix     : ${harness.topRecommendations[0].type} (${harness.topRecommendations[0].count} lessons)`);
+  }
+
+  console.log('');
+  console.log('🧠 Learned Policy');
+  console.log(`  Enabled          : ${interventionPolicy.enabled ? 'yes' : 'no'}`);
+  console.log(`  Examples         : ${interventionPolicy.exampleCount}`);
+  console.log(`  Train Accuracy   : ${Math.round((interventionPolicy.metrics.trainingAccuracy || 0) * 100)}%`);
+  console.log(`  Holdout Accuracy : ${Math.round((interventionPolicy.metrics.holdoutAccuracy || 0) * 100)}%`);
+  console.log(`  Recent Pressure  : ${Math.round((interventionPolicy.nonAllowRate || 0) * 100)}% non-allow`);
+  if (interventionPolicy.updatedAt) {
+    console.log(`  Updated          : ${interventionPolicy.updatedAt}`);
+  }
+  if (interventionPolicy.topTokens && interventionPolicy.topTokens.deny && interventionPolicy.topTokens.deny[0]) {
+    console.log(`  Top Deny Signal  : ${interventionPolicy.topTokens.deny[0].token}`);
   }
 
   console.log('');
@@ -1043,6 +1126,7 @@ module.exports = {
   computeSystemHealth,
   computeEfficiencyMetrics,
   computeHarnessOverview,
+  getInterventionPolicySummary,
   computeAnalyticsSummary,
   computeSecretGuardStats,
   computeObservabilityStats,

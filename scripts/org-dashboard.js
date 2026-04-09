@@ -181,7 +181,7 @@ function generateOrgDashboard(opts = {}) {
   };
 
   if (!pro) {
-    summary.upgradeMessage = 'Upgrade to Pro for full org visibility — all agents, all gates, all history. https://thumbgate-production.up.railway.app/checkout/pro';
+    summary.upgradeMessage = 'Founding Member: $49 once, Pro forever — https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05 | Or $19/mo: https://thumbgate-production.up.railway.app/checkout/pro';
   }
 
   return summary;
