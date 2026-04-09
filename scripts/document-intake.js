@@ -144,19 +144,33 @@ function decodeHtmlEntities(text) {
     '&lt;': '<',
     '&gt;': '>',
     '&quot;': '"',
-    '&#39;': '\'',
+    '&#39;': "'",
     '&nbsp;': ' ',
   };
 
   return String(text || '').replace(/&(?:amp|lt|gt|quot|#39|nbsp);/g, (match) => entityMap[match] || match);
 }
 
+/**
+ * Strip HTML tags and dangerous content from a string.
+ * This function is used for text extraction only — output is never rendered as HTML.
+ * Defense-in-depth: strips scripts, styles, event handlers, and all remaining tags.
+ */
 function stripHtml(html) {
   const withLineBreaks = String(html || '')
-    .replace(/<script\b[\s\S]*?<\/script[^>]*>/gi, ' ')
-    .replace(/<style\b[\s\S]*?<\/style[^>]*>/gi, ' ')
+    // Remove script blocks entirely — use greedy end-tag match to handle malformed markup
+    .replace(/<script[\s\S]*?<\/script[^>]*>/gi, ' ')
+    // Remove style blocks
+    .replace(/<style[\s\S]*?<\/style[^>]*>/gi, ' ')
+    // Remove HTML comments
     .replace(/<!--[\s\S]*?-->/g, ' ')
+    // Strip event-handler attributes (onclick, onerror, onload, etc.) before removing tags
+    .replace(/\s+on[a-z][a-z0-9]*\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, ' ')
+    // Strip javascript: and data: URIs in attributes
+    .replace(/(?:href|src|action)\s*=\s*(?:"(?:javascript|data):[^"]*"|'(?:javascript|data):[^']*')/gi, '')
+    // Add line breaks for block-level elements
     .replace(/<\/(?:p|div|section|article|header|footer|aside|main|li|tr|td|th|h[1-6]|br)\s*>/gi, '\n')
+    // Remove all remaining tags
     .replace(/<[^>]+>/g, ' ');
   return normalizeText(decodeHtmlEntities(withLineBreaks));
 }
@@ -249,7 +263,7 @@ function buildExcerpt(content, maxLength = 280) {
   const compact = String(content || '').replace(/\s+/g, ' ').trim();
   if (!compact) return '';
   if (compact.length <= maxLength) return compact;
-  return `${compact.slice(0, maxLength - 1)}…`;
+  return `${compact.slice(0, maxLength - 1)}\u2026`;
 }
 
 function normalizePolicyLine(line) {
@@ -383,7 +397,7 @@ function buildPolicyProposal(document, statement) {
     proposalId,
     type: 'policy_statement',
     status: 'proposed',
-    title: statement.length > 96 ? `${statement.slice(0, 95)}…` : statement,
+    title: statement.length > 96 ? `${statement.slice(0, 95)}\u2026` : statement,
     templateId: null,
     sourceDocumentId: document.documentId,
     action,
