@@ -48,7 +48,7 @@ test('README commercial copy stays aligned with current Pro and Team packaging',
   assert.match(readme, /org dashboard/i);
   assert.match(readme, /history-aware/i);
   assert.match(readme, /feedback session|open_feedback_session|append_feedback_context|finalize_feedback_session/i);
-  assert.match(readme, /unlimited feedback captures/i);
+  assert.match(readme, /3 daily feedback captures/i);
   assert.match(readme, /5 daily lesson searches/i);
   assert.doesNotMatch(readme, /shared team DB/i);
   assert.doesNotMatch(readme, /\/mo\$19/i);

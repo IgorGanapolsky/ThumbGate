@@ -134,8 +134,8 @@ function proNudge(context) {
 function limitNudge(action) {
   if (process.env.THUMBGATE_NO_NUDGE === '1') return;
   process.stderr.write(
-    `\n  ⚠️  Free tier: ${action} daily limit reached.\n` +
-    `     Upgrade to Pro for unlimited usage — ${PRO_PRICE_LABEL}:\n` +
+    `\n  ⚠️  Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro\n` +
+    `     ${action} daily limit reached. Upgrade to Pro for unlimited usage — ${PRO_PRICE_LABEL}:\n` +
     `     ${PRO_CHECKOUT_URL}\n\n`
   );
 }
@@ -580,13 +580,12 @@ function init() {
   console.log('Run: npx thumbgate help');
   trackEvent('cli_init', { command: 'init' });
   proNudge();
-  process.stderr.write(
-    '\n  ┌──────────────────────────────────────────────────┐\n' +
-    '  │  Free: unlimited 👍👎 · 5 searches · 5 gates   │\n' +
-    '  │  Pro:  + dashboard + DPO export + full search   │\n' +
-    '  │        $19/mo → npx thumbgate pro      │\n' +
-    '  └──────────────────────────────────────────────────┘\n\n'
-  );
+  console.log('');
+  console.log('  ┌─────────────────────────────────────────────────────┐');
+  console.log('  │  Unlock unlimited captures, searches & dashboard:   │');
+  console.log('  │  https://thumbgate-production.up.railway.app/pro    │');
+  console.log('  │  Pro starts at $19/mo — 7-day free trial included   │');
+  console.log('  └─────────────────────────────────────────────────────┘');
 
   try {
     const { appendFunnelEvent } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
@@ -663,7 +662,7 @@ function capture() {
       const pct = Math.round((capLimit.used / capLimit.limit) * 100);
       console.log(`  Usage       : ${capLimit.used}/${capLimit.limit} captures today (${pct}%)`);
       if (capLimit.remaining <= 1) {
-        console.log(`  ⚠️  Last capture for today. Upgrade to Pro for unlimited.`);
+        console.log(`  ⚠️  Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro`);
       }
     }
     console.log('');

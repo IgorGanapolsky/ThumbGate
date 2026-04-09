@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 STRIPE_PRICE_ID = "price_1TFfD6GGBpd520QYh9J0qGtg"
-FREE_DAILY_LIMIT = "5"
+FREE_DAILY_LIMIT = "3"
 
 # KV namespace bindings — create with:
 #   wrangler kv namespace create MEMORY_KV

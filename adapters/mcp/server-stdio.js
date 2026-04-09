@@ -105,7 +105,7 @@ function enforceLimit(action) {
   const limit = checkLimit(action);
   if (!limit.allowed) {
     const err = new Error(
-      `Free tier daily limit reached for "${action}". ${UPGRADE_MESSAGE}\nUpgrade now: ${PRO_CHECKOUT_URL}`
+      `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro\n${UPGRADE_MESSAGE}\nUpgrade now: ${PRO_CHECKOUT_URL}`
     );
     err.errorCategory = 'rate_limit';
     err.isRetryable = false;

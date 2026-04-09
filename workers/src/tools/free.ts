@@ -13,7 +13,7 @@ export const FREE_TOOLS: McpTool[] = [
   {
     name: 'capture_feedback',
     description:
-      'Capture explicit up/down feedback with context. Free: 5/day. Pro: unlimited.',
+      'Capture explicit up/down feedback with context. Free: 3/day. Pro: unlimited.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -127,7 +127,7 @@ export async function executeFree(
 ): Promise<ToolResult> {
   const ownerId = getOwnerId(auth.customerId, request);
   const dailyLimit =
-    auth.tier === 'pro' ? Infinity : parseInt(env.FREE_DAILY_LIMIT || '5', 10);
+    auth.tier === 'pro' ? Infinity : parseInt(env.FREE_DAILY_LIMIT || '3', 10);
 
   switch (name) {
     case 'capture_feedback':
@@ -157,7 +157,7 @@ async function handleCaptureFeedback(
     const rl = await checkRateLimit(env, ownerId, 'capture_feedback', dailyLimit);
     if (!rl.allowed) {
       return textResult(
-        `Rate limit exceeded. ${rl.remaining} captures remaining. Resets at ${rl.resetAt}. Upgrade to Pro for unlimited.`,
+        `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro — ${rl.remaining} captures remaining. Resets at ${rl.resetAt}.`,
         true,
       );
     }
@@ -200,7 +200,7 @@ async function handleRecall(
     const rl = await checkRateLimit(env, ownerId, 'recall', dailyLimit);
     if (!rl.allowed) {
       return textResult(
-        `Rate limit exceeded. Resets at ${rl.resetAt}. Upgrade to Pro for unlimited.`,
+        `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro — Resets at ${rl.resetAt}.`,
         true,
       );
     }

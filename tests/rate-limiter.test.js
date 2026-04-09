@@ -51,11 +51,14 @@ describe('rate-limiter', () => {
     if (fs.existsSync(TEMP_USAGE_FILE)) fs.unlinkSync(TEMP_USAGE_FILE);
   });
 
-  it('allows unlimited capture_feedback on free tier', () => {
-    for (let i = 0; i < 20; i++) {
+  it('allows 3 capture_feedback on free tier then blocks', () => {
+    for (let i = 0; i < 3; i++) {
       const result = rateLimiter.checkLimit('capture_feedback');
       assert.equal(result.allowed, true, `call ${i + 1} should be allowed`);
     }
+    const blocked = rateLimiter.checkLimit('capture_feedback');
+    assert.equal(blocked.allowed, false, 'call 4 should be blocked');
+    assert.ok(blocked.message.includes('Free tier limit reached'), 'blocked message should mention free tier limit');
   });
 
   it('allows unlimited recall calls on free tier', () => {
