@@ -40,8 +40,24 @@ jobs:
       - name: Install deps
         run: npm ci --onnxruntime-node-install-cuda=skip
 
-      - name: Generate coverage report
-        run: npm run test:coverage
+      - name: Generate LCOV coverage report
+        run: |
+          rm -rf .coverage coverage
+          mkdir -p .coverage/raw
+          NODE_V8_COVERAGE=.coverage/raw node scripts/test-coverage.js
+          npx c8 report \
+            --temp-directory .coverage/raw \
+            --reports-dir coverage \
+            --reporter=lcov \
+            --reporter=text-summary \
+            --include='.claude/**/*.js' \
+            --include='adapters/**/*.js' \
+            --include='bin/**/*.js' \
+            --include='plugins/**/*.js' \
+            --include='scripts/**/*.js' \
+            --include='src/**/*.js' \
+            --exclude='tests/**/*.js' \
+            --exclude='scripts/social-reply-monitor.js'
 
       - name: Run SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v7.1.0
