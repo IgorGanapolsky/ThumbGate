@@ -684,7 +684,12 @@ module.exports = {
   trainInterventionPolicy,
 };
 
-if (require.main === module) {
+function isDirectExecution() {
+  if (!Array.isArray(process.argv) || !process.argv[1]) return false;
+  return path.resolve(process.argv[1]) === __filename;
+}
+
+if (isDirectExecution()) {
   const feedbackDir = process.argv[2] || resolveFeedbackDir();
   const { modelPath, model } = trainAndPersistInterventionPolicy(feedbackDir);
   process.stdout.write(`${JSON.stringify({ modelPath, model }, null, 2)}\n`);
