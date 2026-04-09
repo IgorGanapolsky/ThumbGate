@@ -1,7 +1,7 @@
 # Revenue Pipeline Outreach Targets
 
 Status: current  
-Updated: March 17, 2026
+Updated: April 9, 2026
 
 The goal is not generic awareness. The goal is booked pilots and named pilot agreements for the [Workflow Hardening Sprint](WORKFLOW_HARDENING_SPRINT.md).
 
@@ -64,8 +64,20 @@ The goal is to determine:
 2. whether the buyer needs proof or implementation support
 3. whether the next step is a pilot proposal
 
+## 14-Day Execution Cadence
+
+1. Send the four warm outreach notes first.
+2. Add ten more qualified targets across consultancies, platform teams, and AI product teams.
+3. Book only calls that match the qualification rules above.
+4. Send the sprint brief and proof pack on the same day as every qualified call.
+5. Move the next step to a paid sprint proposal or a named pilot agreement within `48` hours.
+
+The operating goal is not "more awareness." The goal is the next booked workflow hardening sprint.
+
 ## Core Links
 
 - Product: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Sprint brief: [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md)
 - Proof pack: [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md)
+- Execution brief: [FIRST_DOLLAR_PLAYBOOK.md](FIRST_DOLLAR_PLAYBOOK.md)
+- Warm outreach messages: [marketing/team-outreach-messages.md](marketing/team-outreach-messages.md)

@@ -100,7 +100,9 @@ __GA_BOOTSTRAP__
     {
       "@type": "Offer",
       "name": "Team",
-      "description": "Shared enforcement memory, review visibility, org dashboard, Docker Sandboxes guidance for risky local autonomy, and pilot rollout support for teams shipping AI-generated changes",
+      "price": "12",
+      "priceCurrency": "USD",
+      "description": "Intake-led team rollout with a workflow hardening sprint, shared enforcement memory, org dashboard visibility, Docker Sandboxes guidance for risky local autonomy, and pilot support for teams shipping AI-generated changes",
       "url": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
     }
   ]
@@ -432,7 +434,7 @@ __GA_BOOTSTRAP__
       <a href="/learn">Learn</a>
       <a href="/compare">Compare</a>
       <a href="/dashboard">Dashboard Demo</a>
-      <a href="/pro?utm_source=website&utm_medium=homepage_nav&utm_campaign=pro_page" class="nav-cta">See Pro</a>
+      <a href="#workflow-sprint-intake" class="nav-cta">Start Sprint</a>
     </div>
   </div>
 </nav>
@@ -441,19 +443,20 @@ __GA_BOOTSTRAP__
 <section class="hero">
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
-    <div class="hero-badge">● Self-improving AI agents with workflow governance and isolated execution</div>
-    <h1>Your AI agent learns<br>from every mistake.</h1>
+    <div class="hero-badge">● Workflow Hardening Sprint for teams shipping AI-generated changes</div>
+    <h1>Make one AI workflow<br>safe enough to ship team-wide.</h1>
     <div class="hero-signals">
-      <div class="signal-pill signal-down">👎 Mistake becomes a prevention rule — permanently blocked</div>
-      <div class="signal-pill signal-up">👍 Good pattern reinforced — reused across sessions</div>
+      <div class="signal-pill signal-down">👎 Repeated failure becomes enforcement before the next run</div>
+      <div class="signal-pill signal-up">👍 Safe pattern reinforced across the shared workflow</div>
     </div>
-    <p class="hero-persona">For developers using Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode who want their AI agent to actually get better over time — and for teams that need the riskiest runs governed before they touch shared repos or the host machine.</p>
-    <p><strong>The self-improvement loop:</strong> Your agent makes a mistake → you give a thumbs-down → ThumbGate auto-generates a prevention rule → a gate physically blocks that mistake from ever happening again. Your agent gets permanently smarter with every correction. No model retraining. No prompt hacking. Just enforcement that compounds, plus isolated execution guidance when autonomy gets risky.</p>
+    <p class="hero-persona">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
+    <p><strong>Best first paid motion:</strong> start with one repo, one workflow, and one repeat failure. ThumbGate turns the blocker into enforcement, routes risky runs toward isolated execution, and gives the buyer a proof-ready story around shared memory, approval boundaries, release confidence, and auditability.</p>
     <div class="hero-actions">
-      <a href="/pro?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page" class="btn-pro-page">See Pro for individual operators</a>
+      <a href="#workflow-sprint-intake" class="btn-team">Start Workflow Hardening Sprint</a>
+      <a href="/pro?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page" class="btn-pro-page">See Pro for solo operators</a>
       <a href="/dashboard?utm_source=website&utm_medium=homepage_hero&utm_campaign=demo" class="btn-demo-link">Open dashboard demo</a>
     </div>
-    <p class="hero-paid-note"><strong>Paid path:</strong> Free stays the local install lane. Pro is the buyer-ready page for your personal local dashboard, DPO export, and review-ready evidence. Team adds shared workflow governance, org proof, and isolated execution guidance for high-risk runs.</p>
+    <p class="hero-paid-note"><strong>Start free as an individual.</strong> Pro stays the self-serve lane for personal dashboard and DPO export. Team pricing anchors at <strong>$12/seat/mo with a 3-seat minimum</strong>, but the team path starts intake-first with the Workflow Hardening Sprint so buyers see proof before a wider rollout.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
       <span class="cmd">npx thumbgate init</span>
@@ -683,7 +686,7 @@ __GA_BOOTSTRAP__
 <section class="pricing" id="pricing">
   <div class="container">
     <div class="section-label">Pricing</div>
-    <h2 class="section-title">Start free. Prove value on a real workflow. Upgrade when review churn costs more than $19/mo.</h2>
+    <h2 class="section-title">Start free. Use the workflow hardening sprint to prove team value. Keep Pro as the self-serve lane for individual operators.</h2>
     <div class="pricing-grid">
       <div class="price-card">
         <div class="tier">Free</div>
@@ -742,23 +745,24 @@ __GA_BOOTSTRAP__
       <div class="price-card team">
         <div class="tier">Team</div>
         <div class="price">$12<span style="font-size:16px;color:var(--text-dim)">/seat/mo</span></div>
-        <div class="price-sub">Starts at $36/mo for 3 seats · or $297/yr · Shared enforcement + org visibility</div>
-        <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">For teams shipping AI-generated changes across shared repos who need one correction to protect every reviewer and runtime.</p>
+        <div class="price-sub">3-seat minimum · intake-led rollout for the first workflow</div>
+        <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">For teams shipping AI-generated changes across shared repos who need one correction to protect every reviewer and runtime. The first team step is a workflow hardening sprint, not a blind org-wide rollout.</p>
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">Start Team when:</strong> you need shared enforcement, org-wide proof, or one workflow pilot that proves ROI internally.
+          <strong style="color:#fff;">Best first paid motion:</strong> one workflow, one owner, one proof review. Qualify the blocker first, then expand into seats.
         </div>
         <ul>
+          <li>Workflow hardening sprint — map one painful workflow, one repeated failure, and one buyer proof review before wider rollout</li>
           <li>Shared enforcement memory — a shared lesson database where one developer's 👎 on a bad migration protects every agent on the team</li>
           <li>Org dashboard — active agents, gate hit rates, risk agents, and proof-backed team metrics in one place</li>
           <li>Hosted review views — constrained cards, lists, and callouts for rollout, incident, and audit visibility</li>
           <li>Gate template library — pre-built guardrails for force-pushes, skipped tests, destructive SQL, and evidence-before-done</li>
           <li>Docker Sandboxes guidance — route risky local autonomy into an isolated microVM-backed lane instead of running it directly on a shared host</li>
           <li>Signed hosted sandbox dispatch — isolated execution path for team automations that do not need repo-bound local access</li>
-          <li>Workflow proof sprint — pilot one painful workflow first, then expand once the before/after evidence is real</li>
-          <li>Rollout attribution stays tied to the team funnel instead of disappearing into generic referral traffic</li>
+          <li>Release confidence story — Changesets, SemVer, version sync, and verification evidence keep publishes and rollout claims inspectable</li>
+          <li>Proof pack — attach verification evidence and rollout diagnostics so the buyer does not have to trust a demo</li>
         </ul>
-        <a href="#workflow-sprint-intake" class="btn-team">Start Team Pilot</a>
-        <p style="font-size:11px;color:#666;margin-top:8px;">Hosted rollout starts with one workflow pilot so the first expansion has measurable before/after proof.</p>
+        <a href="#workflow-sprint-intake" class="btn-team">Start Workflow Hardening Sprint</a>
+        <p style="font-size:11px;color:#666;margin-top:8px;">Team pricing anchors at $12/seat/mo with a 3-seat minimum after qualification. The first step is a 30-minute intake around one real blocker.</p>
       </div>
     </div>
   </div>
@@ -768,7 +772,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Team Pilot</div>
     <h2 class="section-title">Start with one repo, one workflow, one repeat failure</h2>
-    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">The recurring value is shared enforcement. Start with one workflow, one owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
+    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">This is the fastest path to first paid value for teams. Start with one workflow, one owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
     <form class="team-form" action="/v1/intake/workflow-sprint" method="POST">
       <input type="hidden" name="ctaId" value="workflow_sprint_intake">
       <input type="hidden" name="ctaPlacement" value="team_pricing">
@@ -831,7 +835,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
-        <div class="faq-a">Pro is $19/mo or $149/yr (save 35%). Team starts at $36/mo for 3 seats, then $12/seat/mo, or $297/yr at the 3-seat floor. Cancel anytime. No contracts.</div>
+        <div class="faq-a">Pro is $19/mo or $149/yr (save 35%) for individual operators. Team pricing anchors at $12/seat/mo with a 3-seat minimum, and team buyers start with the workflow sprint intake instead of a blind org-wide rollout.</div>
       </div>
     </div>
   </div>
@@ -841,8 +845,8 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="newsletter" style="padding: 48px 0;">
   <div class="container" style="text-align: center;">
     <div class="section-label">Buyer Follow-Up</div>
-    <h2 class="section-title" style="margin-bottom: 16px;">Not ready to buy today? Keep the demo and checkout link one click away.</h2>
-    <p style="color: var(--text-dim); margin-bottom: 24px; max-width: 560px; margin-left: auto; margin-right: auto;">Save your work email for launch updates, new gate patterns, and the paid demo path. We also keep it on this device so the Pro checkout can open prefilled instead of making you type it again.</p>
+    <h2 class="section-title" style="margin-bottom: 16px;">Not ready to buy today? Keep the sprint brief, demo, and checkout path one click away.</h2>
+    <p style="color: var(--text-dim); margin-bottom: 24px; max-width: 560px; margin-left: auto; margin-right: auto;">Save your work email for launch updates, new gate patterns, the workflow sprint brief, and the paid demo path. We also keep it on this device so the Pro checkout can open prefilled instead of making you type it again.</p>
     <form action="/api/newsletter" method="POST" data-newsletter-form data-page="homepage" data-intent="buyer_follow_up" style="display: flex; gap: 8px; max-width: 480px; margin: 0 auto; flex-wrap: wrap; justify-content: center;">
       <input type="email" name="email" data-buyer-email placeholder="you@company.com" required style="flex: 1; min-width: 220px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); color: var(--text); font-size: 15px;">
       <button type="submit" style="padding: 12px 24px; background: var(--cyan); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer;">Get updates + keep checkout ready</button>
@@ -854,10 +858,10 @@ __GA_BOOTSTRAP__
 <!-- FINAL CTA -->
 <section class="final-cta">
   <div class="container">
-    <h2>Put ThumbGate on your next AI-generated change.</h2>
-    <p>Try the dashboard demo first or install in 30 seconds. Prove the value on a real PR, deploy, or migration.</p>
+    <h2>Start with one workflow you actually need to defend.</h2>
+    <p>Use the workflow hardening sprint for team rollout, or choose Pro if you are the solo operator who needs a personal dashboard and review-ready exports.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <a href="/dashboard" class="btn-demo-link" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);">Try Dashboard Demo</a>
+      <a href="#workflow-sprint-intake" class="btn-team" style="background:var(--green);">Start Workflow Hardening Sprint</a>
       <a href="/checkout/pro?utm_source=website&utm_medium=homepage_final&utm_campaign=pro_pack&cta_id=homepage_final_trial&cta_placement=final&plan_id=pro&landing_path=%2F" class="btn-pro">Try Pro free for 7 days → $19/mo</a>
     </div>
   </div>
@@ -893,6 +897,7 @@ function resolvePricingClickTier(el) {
   if (el.classList.contains('btn-team')) return 'team';
   if (el.classList.contains('btn-free')) return 'free';
   if (el.classList.contains('btn-demo-link')) return 'demo';
+  if (el.classList.contains('nav-cta')) return 'team';
   return 'nav';
 }
 
@@ -934,7 +939,7 @@ function copyInstall(el) {
   trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
   trackClick('.btn-free', 'install_click', { tier: 'free' });
   trackClick('.btn-demo-link', 'demo_click', { source: 'homepage' });
-  trackClick('.nav-cta', 'pro_page_click', { tier: 'pro', source: 'nav' });
+  trackClick('.nav-cta', 'workflow_sprint_intake_click', { tier: 'team', source: 'nav', offer: 'workflow_hardening_sprint' });
 
   /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Team button click
      with section context so we can distinguish pricing section vs final CTA section clicks */
