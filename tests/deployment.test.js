@@ -310,17 +310,20 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
   assert.match(workflow, /Retrying in \$\{sleep_seconds\}s/);
 });
 
-test('Deploy to Railway workflow always promotes the latest main commit, even for workflow-only or test-only pushes', () => {
+test('Deploy to Railway workflow skips non-runtime pushes and only deploys when runtime-serving files changed', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
   assert.match(workflow, /fetch-depth:\s*2/);
   assert.match(workflow, /name: Detect deployable changes/);
   assert.match(workflow, /BEFORE_SHA='\$\{\{\s*github\.event\.before\s*\}\}'/);
   assert.match(workflow, /git diff --name-only "\$BEFORE_SHA" "\$GITHUB_SHA"/);
+  assert.match(workflow, /DEPLOYABLE_PATTERN='.*src\/.*scripts\/.*public\/.*Dockerfile\$/);
+  assert.match(workflow, /! printf '%s\\n' "\$CHANGED_FILES" \| grep -Eq "\$DEPLOYABLE_PATTERN"/);
   assert.match(workflow, /should_deploy=\$SHOULD_DEPLOY/);
   assert.match(workflow, /SHOULD_DEPLOY=true/);
-  assert.doesNotMatch(workflow, /grep -Eqv '\^\(\\\.github\/\|tests\/\)'/);
-  assert.doesNotMatch(workflow, /Railway deploy skipped: only workflow\/test files changed on this commit\./);
+  assert.match(workflow, /SHOULD_DEPLOY=false/);
+  assert.match(workflow, /Railway deploy skipped: no runtime-serving files changed on this commit\./);
+  assert.doesNotMatch(workflow, /Railway deploy skipped: deploy-scope disabled this run\./);
 });
 
 test('Deploy to Railway workflow stamps runtime deployment env metadata before health verification', () => {
