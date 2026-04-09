@@ -4,6 +4,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  assertSafeBranchPattern,
+  assertSafeGhArgs,
+  assertSafeRuleId,
+  assertSafeStatusContext,
   diffContexts,
   normalizeContexts,
   runCli,
@@ -26,6 +30,17 @@ test('normalizeContexts sorts and deduplicates status check contexts', () => {
     normalizeContexts(['test', 'CodeQL', 'test', ' SonarCloud Code Analysis ']),
     ['CodeQL', 'SonarCloud Code Analysis', 'test']
   );
+});
+
+test('syncBranchProtection validators reject unsafe CLI and GraphQL input', () => {
+  assert.deepEqual(assertSafeGhArgs(['api', 'graphql']), ['api', 'graphql']);
+  assert.equal(assertSafeBranchPattern('main'), 'main');
+  assert.equal(assertSafeRuleId('BPR_123='), 'BPR_123=');
+  assert.equal(assertSafeStatusContext('SonarCloud Code Analysis'), 'SonarCloud Code Analysis');
+  assert.throws(() => assertSafeGhArgs(['api\nboom']), /Unsafe GH CLI arg/);
+  assert.throws(() => assertSafeBranchPattern('../main'), /Unsafe branch pattern/);
+  assert.throws(() => assertSafeRuleId('BPR 123'), /Unsafe branch protection rule id/);
+  assert.throws(() => assertSafeStatusContext('bad\ncontext'), /Unsafe status check context/);
 });
 
 test('diffContexts identifies missing and unexpected required contexts', () => {
@@ -121,6 +136,33 @@ test('syncBranchProtection updates main branch protection to the configured qual
   assert.equal(result.updated, true);
   assert.equal(result.actualContexts.includes('SonarCloud Code Analysis'), true);
   assert.deepEqual(result.diff, { missing: [], unexpected: [] });
+});
+
+test('syncBranchProtection rejects invalid repository names before invoking gh', () => {
+  assert.throws(() => syncBranchProtection({ check: true, repo: 'IgorGanapolsky/ThumbGate;rm' }), /Unsafe repository name/);
+});
+
+test('syncBranchProtection throws when the protected branch rule does not exist', () => {
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        data: {
+          repository: {
+            branchProtectionRules: {
+              nodes: []
+            }
+          }
+        }
+      }),
+      stderr: ''
+    }
+  ]);
+
+  assert.throws(
+    () => syncBranchProtection({ check: true, repo: 'IgorGanapolsky/ThumbGate', branch: 'main' }, runner),
+    /No branch protection rule found/
+  );
 });
 
 test('runCli exits nonzero when branch protection drifts from the configured quality checks', () => {

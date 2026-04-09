@@ -29,8 +29,41 @@ const PASSING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.passingBuckets || []).map(
 const PENDING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.pendingBuckets || []).map((value) => String(value || '').toLowerCase()));
 const FAILING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.failingBuckets || []).map((value) => String(value || '').toLowerCase()));
 
+function assertSafeGhArgs(args) {
+  if (!Array.isArray(args) || args.length === 0) {
+    throw new Error('GH CLI args must be a non-empty array.');
+  }
+
+  return args.map((arg) => {
+    const normalized = String(arg ?? '');
+    if (!normalized || /[\0\r\n]/.test(normalized)) {
+      throw new Error(`Unsafe GH CLI arg: ${arg}`);
+    }
+    return normalized;
+  });
+}
+
+function normalizePrNumber(prNumber, { allowEmpty = true } = {}) {
+  const normalized = String(prNumber ?? '').trim();
+  if (!normalized) {
+    if (allowEmpty) {
+      return '';
+    }
+    throw new Error('PR number is required.');
+  }
+
+  if (!/^[1-9]\d*$/.test(normalized)) {
+    throw new Error(`Unsafe PR number: ${prNumber}`);
+  }
+
+  return normalized;
+}
+
 function runGh(args) {
-  return spawnSync('gh', args, { encoding: 'utf-8' });
+  return spawnSync('gh', assertSafeGhArgs(args), {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 }
 
 function formatGhError(result) {
@@ -49,13 +82,14 @@ function isMissingCurrentBranchPr(result, prNumber) {
  * Fetch granular PR status using GH CLI
  */
 function getPrStatus(prNumber = '', runner = runGh) {
+  const normalizedPrNumber = normalizePrNumber(prNumber);
   const args = ['pr', 'view'];
-  if (prNumber) args.push(prNumber);
+  if (normalizedPrNumber) args.push(normalizedPrNumber);
   args.push('--json', PR_FIELDS);
 
   const result = runner(args);
   if (result.status !== 0) {
-    if (isMissingCurrentBranchPr(result, prNumber)) {
+    if (isMissingCurrentBranchPr(result, normalizedPrNumber)) {
       return null;
     }
 
@@ -65,8 +99,9 @@ function getPrStatus(prNumber = '', runner = runGh) {
 }
 
 function getPrChecks(prNumber = '', runner = runGh) {
+  const normalizedPrNumber = normalizePrNumber(prNumber, { allowEmpty: false });
   const args = ['pr', 'checks'];
-  if (prNumber) args.push(prNumber.toString());
+  args.push(normalizedPrNumber);
   args.push('--json', PR_CHECK_FIELDS);
 
   const result = runner(args);
@@ -274,16 +309,17 @@ function waitForMergeCommit(prNumber, runner = runGh, options = {}) {
  * Perform autonomous merge
  */
 function performMerge(prNumber, runner = runGh, options = {}) {
-  const args = ['pr', 'merge', prNumber.toString(), '--squash', '--delete-branch', '--auto'];
-  console.log(`[PR Manager] Initiating protected squash merge for PR #${prNumber}...`);
+  const normalizedPrNumber = normalizePrNumber(prNumber, { allowEmpty: false });
+  const args = ['pr', 'merge', normalizedPrNumber, '--squash', '--delete-branch', '--auto'];
+  console.log(`[PR Manager] Initiating protected squash merge for PR #${normalizedPrNumber}...`);
   const result = runner(args);
   if (result.status === 0) {
     const output = `${result.stdout || ''}\n${result.stderr || ''}`;
     const mode = /merge queue|queued|auto-merge/i.test(output) ? 'queued_or_auto' : 'merged';
-    console.log(`[PR Manager] Merge accepted for PR #${prNumber} (${mode}).`);
+    console.log(`[PR Manager] Merge accepted for PR #${normalizedPrNumber} (${mode}).`);
     const mergeStatus = options.waitForMerge === false
       ? { finalized: false, merged: false, reason: 'merge_commit_pending' }
-      : waitForMergeCommit(prNumber, runner, options);
+      : waitForMergeCommit(normalizedPrNumber, runner, options);
     return { ok: true, mode, args, ...mergeStatus };
   } else {
     console.error(`[PR Manager] Merge failed: ${formatGhError(result)}`);
@@ -338,11 +374,13 @@ if (require.main === module) {
 }
 
 module.exports = {
+  assertSafeGhArgs,
   getPrStatus,
   getPrChecks,
   listOpenPrs,
   isOpenPr,
   loadManagedPrs,
+  normalizePrNumber,
   resolveBlockers,
   waitForMergeCommit,
   performMerge,

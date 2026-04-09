@@ -4,12 +4,16 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
+  assertSafeGhArgs,
+  getPrChecks,
   getPrStatus,
   isOpenPr,
   loadManagedPrs,
   managePrs,
+  normalizePrNumber,
   resolveBlockers,
   performMerge,
+  waitForMergeCommit,
 } = require('../scripts/pr-manager');
 
 function createRunner(results) {
@@ -189,6 +193,20 @@ test('PR Manager - getPrStatus returns null when current branch has no PR', () =
   assert.equal(getPrStatus('', runner), null);
 });
 
+test('PR Manager - normalizePrNumber rejects unsafe values', () => {
+  assert.equal(normalizePrNumber('123'), '123');
+  assert.throws(() => normalizePrNumber('../665', { allowEmpty: false }), /Unsafe PR number/);
+});
+
+test('PR Manager - assertSafeGhArgs rejects control characters', () => {
+  assert.deepEqual(assertSafeGhArgs(['pr', 'view', '665']), ['pr', 'view', '665']);
+  assert.throws(() => assertSafeGhArgs(['pr', 'view\n665']), /Unsafe GH CLI arg/);
+});
+
+test('PR Manager - getPrChecks rejects invalid PR numbers before invoking GH CLI', () => {
+  assert.throws(() => getPrChecks('665\nboom'), /Unsafe PR number/);
+});
+
 test('PR Manager - loadManagedPrs falls back to open PR list when branch has no PR', () => {
   const mockPr = {
     number: 281,
@@ -360,6 +378,61 @@ test('PR Manager - performMerge never uses admin bypass', () => {
   assert.equal(result.ok, true);
   assert.deepEqual(calls[0], ['pr', 'merge', '321', '--squash', '--delete-branch', '--auto']);
   assert.ok(!calls[0].includes('--admin'));
+});
+
+test('PR Manager - resolveBlockers falls back to statusCheckRollup when gh pr checks fails', async () => {
+  const mockPr = {
+    number: 777,
+    title: 'Fallback CI PR',
+    mergeable: 'MERGEABLE',
+    mergeStateStatus: 'BLOCKED',
+    isDraft: false,
+    statusCheckRollup: [
+      { name: 'CI/test', status: 'COMPLETED', conclusion: 'FAILURE' }
+    ]
+  };
+  const warnings = [];
+  const originalWarn = console.warn;
+  console.warn = (value) => warnings.push(value);
+
+  try {
+    const runner = createRunner([
+      {
+        status: 1,
+        stdout: '',
+        stderr: 'gh pr checks failed'
+      }
+    ]);
+    const result = await resolveBlockers(mockPr, runner);
+    assert.equal(result.status, 'blocked');
+    assert.equal(result.reason, 'ci_failure');
+    assert.equal(result.checkSource, 'statusCheckRollup');
+    assert.deepEqual(result.checks, ['CI/test']);
+  } finally {
+    console.warn = originalWarn;
+  }
+
+  assert.match(warnings.join('\n'), /Falling back to statusCheckRollup/);
+});
+
+test('PR Manager - waitForMergeCommit reports closed PRs without merge commits', () => {
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        number: 778,
+        state: 'CLOSED',
+        title: 'Closed PR',
+        mergeCommit: null
+      }),
+      stderr: ''
+    }
+  ]);
+
+  const result = waitForMergeCommit('778', runner, { timeoutMs: 0, intervalMs: 0 });
+  assert.equal(result.finalized, true);
+  assert.equal(result.merged, false);
+  assert.equal(result.reason, 'closed_without_merge');
 });
 
 test('PR Manager - managePrs reports the landed merge commit instead of the PR head SHA', async () => {
