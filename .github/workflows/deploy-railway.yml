@@ -25,6 +25,8 @@ jobs:
       RAILWAY_HEALTHCHECK_SLEEP_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_SLEEP_SECONDS || '10' }}
       RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS || '5' }}
       RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS || '20' }}
+      RAILWAY_LOG_LINES: ${{ vars.RAILWAY_LOG_LINES || '200' }}
+      RAILWAY_HTTP_LOG_LINES: ${{ vars.RAILWAY_HTTP_LOG_LINES || '50' }}
       THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_FEEDBACK_DIR: ${{ vars.THUMBGATE_FEEDBACK_DIR }}
@@ -214,3 +216,14 @@ jobs:
             echo "Observed build SHA: ${LIVE_SHA:-<missing>}"
             exit 1
           fi
+      - name: Capture Railway diagnostics
+        if: failure() && steps.railway-config.outputs.enabled == 'true'
+        continue-on-error: true
+        run: bash scripts/capture-railway-diagnostics.sh railway-diagnostics
+      - name: Upload Railway diagnostics artifact
+        if: always() && steps.railway-config.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: railway-diagnostics-${{ github.run_id }}
+          path: railway-diagnostics/
+          if-no-files-found: warn
