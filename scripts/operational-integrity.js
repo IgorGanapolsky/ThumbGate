@@ -11,6 +11,7 @@ const FIXED_GIT_BIN_CANDIDATES = [
   '/opt/homebrew/bin/git',
   '/usr/local/bin/git',
 ];
+const SEMVER_PATTERN = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$/;
 const DEFAULT_RELEASE_SENSITIVE_GLOBS = [
   'package.json',
   'package-lock.json',
@@ -142,12 +143,17 @@ function resolveGitDirEntry(repoRoot, gitEntryPath) {
   }
 
   const pointer = fs.readFileSync(gitEntryPath, 'utf8').trim();
-  const match = /^gitdir:\s*(.+)$/i.exec(pointer);
-  if (!match?.[1]) {
+  const separatorIndex = pointer.indexOf(':');
+  if (separatorIndex < 0 || pointer.slice(0, separatorIndex).trim().toLowerCase() !== 'gitdir') {
     return null;
   }
 
-  return path.resolve(repoRoot, match[1].trim());
+  const gitDirValue = pointer.slice(separatorIndex + 1).trim();
+  if (!gitDirValue) {
+    return null;
+  }
+
+  return path.resolve(repoRoot, gitDirValue);
 }
 
 function findGitRepoMetadata(repoPath) {
@@ -438,7 +444,7 @@ function readPackageVersion(repoPath, ref = 'HEAD') {
 }
 
 function parseSemver(version) {
-  const match = String(version || '').trim().match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$/);
+  const match = SEMVER_PATTERN.exec(String(version || '').trim());
   if (!match) return null;
   return {
     major: Number(match[1]),
