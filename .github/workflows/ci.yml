@@ -63,7 +63,7 @@ jobs:
         run: npm run ops:integrity:ci
       - name: Check branch protection congruence
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
         run: npm run branch-protection:check
       - name: Run tests
         run: npm test

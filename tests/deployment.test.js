@@ -424,7 +424,7 @@ test('CI workflow supports merge queue and cancels stale non-main runs', () => {
   assert.match(workflow, /group:\s*ci-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
   assert.match(workflow, /name: Check operational integrity[\s\S]*?GH_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}[\s\S]*?npm run ops:integrity:ci/);
-  assert.match(workflow, /name: Check branch protection congruence[\s\S]*?GH_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}[\s\S]*?npm run branch-protection:check/);
+  assert.match(workflow, /name: Check branch protection congruence[\s\S]*?GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT \|\| github\.token\s*\}\}[\s\S]*?npm run branch-protection:check/);
 });
 
 test('CI workflow gives the full suite enough runtime budget', () => {
