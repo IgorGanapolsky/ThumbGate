@@ -24,7 +24,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <meta property="og:title" content="ThumbGate — Agent governance for AI coding workflows">
 <meta property="og:description" content="CLI-first agent governance for teams shipping AI-generated changes. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Pre-action gates, workflow governance, shared lessons and org visibility, release confidence, and isolated execution guidance turn vibe coding mistakes into shared enforcement and proof-ready rollout.">
 <meta property="og:type" content="website">
-<meta name="keywords" content="ThumbGate, thumbgate, agent governance, AI coding workflow governance, workflow hardening sprint, pre-action gates, CLI-first agent safety, Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, approval policies, audit trail, release confidence, Docker Sandboxes, feedback enforcement, context engineering">
+<meta name="keywords" content="ThumbGate, thumbgate, agent governance, AI coding workflow governance, workflow hardening sprint, pre-action gates, CLI-first agent safety, Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, approval policies, audit trail, release confidence, Docker Sandboxes, feedback enforcement, context engineering, AI authenticity, prevent AI slop, human-led AI, AI agent standards enforcement, brand authenticity AI">
 
 <!-- Privacy-friendly analytics by Plausible -->
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
@@ -51,7 +51,7 @@ __GA_BOOTSTRAP__
   "url": "https://github.com/IgorGanapolsky/ThumbGate",
   "downloadUrl": "https://www.npmjs.com/package/thumbgate",
   "installUrl": "https://www.npmjs.com/package/thumbgate",
-  "dateModified": "2026-04-03",
+  "dateModified": "2026-04-09",
   "creator": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -71,7 +71,8 @@ __GA_BOOTSTRAP__
     "Prompt-Level DLP — scans tool call inputs before execution",
     "Per-Step Scoring — every gate decision becomes a DPO/KTO training signal",
     "HuggingFace Export — share PII-redacted agent traces as open training datasets",
-    "Unified Context — one-call context assembly with session, lessons, guards, and code-graph"
+    "Unified Context — one-call context assembly with session, lessons, guards, and code-graph",
+    "AI Authenticity Enforcement — every gate reflects your team's actual standards, not generic AI patterns"
   ],
   "offers": [
     {
@@ -197,6 +198,14 @@ __GA_BOOTSTRAP__
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Prompt rules are suggestions agents can ignore. Pre-Action Gates are enforcement — they block the action before execution via PreToolUse hooks. Gates are auto-generated from feedback and use Thompson Sampling to adapt."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does ThumbGate prevent AI slop and protect brand authenticity?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "AI slop happens when agents act without human judgment as a hard gate — generating repetitive, generic outputs that erode trust and dilute your brand. ThumbGate inserts human thumbs-up/down between AI intent and execution. Every thumbs-down becomes a prevention rule that blocks the bad pattern permanently. Every thumbs-up reinforces what 'good' looks like for your specific context. Your agent's outputs reflect your actual standards, not generic AI patterns. This is authenticity enforcement at the tool-call level."
       }
     },
     {
@@ -448,6 +457,7 @@ __GA_BOOTSTRAP__
     <div class="hero-signals">
       <div class="signal-pill signal-down">👎 Repeated failure becomes enforcement before the next run</div>
       <div class="signal-pill signal-up">👍 Safe pattern reinforced across the shared workflow</div>
+      <div class="signal-pill">🛡️ Human judgment gates every AI action — your standards, not AI slop</div>
     </div>
     <p class="hero-persona">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
     <p><strong>Best first paid motion:</strong> start with one repo, one workflow, and one repeat failure. ThumbGate turns the blocker into enforcement, routes risky runs toward isolated execution, and gives the buyer a proof-ready story around shared memory, approval boundaries, release confidence, and auditability.</p>

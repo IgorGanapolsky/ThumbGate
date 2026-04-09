@@ -41,6 +41,26 @@
 ## GitHub Metadata
 **Automation:** CI syncs the live GitHub About section from `config/github-about.json` on `main` and verifies it after the write.
 
+## AI Authenticity Angle (New)
+
+**Context**: In the age of AI slop — oversaturation with generic, low-quality AI-generated outputs — brands and engineering teams are actively seeking ways to ensure AI acts with human-backed standards. Merriam-Webster named "slop" its 2025 Word of the Year. The antidote the market wants: "human insight leads, AI supports."
+
+**ThumbGate's answer**: ThumbGate is the authenticity enforcement layer for AI agents. The thumbs-up/down mechanism is a hard gate between AI intent and execution — not a soft suggestion. Every thumbs-down becomes a prevention rule specific to your team's actual standards.
+
+**Key messages to use on this angle:**
+- "Your AI's outputs should reflect your standards, not generic patterns."
+- "Human judgment leads. ThumbGate enforces it."
+- "Stop AI slop before it ships — at the tool-call level."
+- "The authenticity enforcement layer for AI coding agents."
+
+**When to use**: On authenticity-conscious buyer surfaces, developer community content (AI slop is acutely felt by developers), and comparison pages where differentiating from unconstrained agent tools matters.
+
+**Terminology rules for this angle:**
+- Say: "AI authenticity enforcement" (not "AI content quality")
+- Say: "human judgment as a hard gate" (not "human oversight")
+- Say: "your team's actual standards" (not "best practices")
+- Avoid claiming ThumbGate prevents "bad content" — it prevents bad *agent actions*
+
 ## Surface Rules
 - Root landing page stays vendor-neutral. Claude-first positioning belongs only on Claude-specific distribution pages, extension docs, and Anthropic-facing partner assets.
 - Promote shipped surfaces explicitly: Claude Code, Cursor plugin, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent.
