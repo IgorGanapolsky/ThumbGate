@@ -20,11 +20,14 @@
  *   6. Revert (discard) candidates that regress
  *   7. Write promoted rules to auto-promoted-gates.json + prevention-rules.md
  *   8. Record results in evolution-state.json with a rollback snapshot
+ *   9. [optional] Run workspace evolution to auto-tune Thompson Sampling hyperparameters
+ *      when >= EVOLVE_MIN_FAILURES failures are present (--evolve flag or THUMBGATE_META_EVOLVE=1)
  *
  * Runs autonomously at session end (Stop hook) or on demand:
  *   node scripts/meta-agent-loop.js
  *   node scripts/meta-agent-loop.js --dry-run
  *   node scripts/meta-agent-loop.js --status
+ *   node scripts/meta-agent-loop.js --evolve   (also runs workspace evolution)
  */
 
 const fs = require('fs');
@@ -49,6 +52,7 @@ const FP_WEIGHT = 2.0;          // false positives penalised 2× vs true positiv
 const MIN_SCORE_THRESHOLD = 0.1; // candidate must score at least 0.1 to be promoted
 const MAX_PROMOTED_PER_RUN = 3;  // at most 3 new rules per overnight run
 const RECENT_WINDOW_DAYS = 14;   // look back 14 days for failures
+const EVOLVE_MIN_FAILURES = 5;   // minimum failures before workspace evolution runs
 
 const META_RUNS_PATH = path.join(
   require('os').homedir(),
@@ -452,6 +456,40 @@ async function runMetaAgentLoop({ dryRun = false, verbose = false } = {}) {
     });
   }
 
+  // Step 9: Workspace evolution — auto-tune Thompson Sampling hyperparameters.
+  // Runs when: not dry-run, --evolve flag or THUMBGATE_META_EVOLVE=1, and
+  // enough failure signal exists (>= EVOLVE_MIN_FAILURES).
+  let evolutionResult = null;
+  const shouldEvolve = !dryRun && (process.env.THUMBGATE_META_EVOLVE === '1');
+  if (shouldEvolve && failures.length >= EVOLVE_MIN_FAILURES) {
+    try {
+      const { runWorkspaceEvolution, recommendEvolutionTarget } = require('./workspace-evolver');
+      const failureTags = failures.flatMap((f) => f.tags || []);
+      const dominantFailureType = toRevert.length > toPromote.length ? 'decision' : 'execution';
+      const targetName = recommendEvolutionTarget({ failureType: dominantFailureType, tags: failureTags });
+
+      if (verbose) {
+        process.stdout.write(`[meta-agent] running workspace evolution: target=${targetName}\n`);
+      }
+
+      evolutionResult = runWorkspaceEvolution({
+        targetName,
+        primaryCommands: ['node --test tests/meta-agent-loop.test.js'],
+        timeoutMs: 30000,
+      });
+
+      if (verbose) {
+        const status = evolutionResult.skipped ? 'skipped' : (evolutionResult.kept ? 'kept' : 'reverted');
+        process.stdout.write(`[meta-agent] evolution: target=${targetName} status=${status}\n`);
+        if (!evolutionResult.skipped) {
+          process.stdout.write(`[meta-agent] evolution: ${evolutionResult.currentValue} → ${evolutionResult.nextValue} (kept=${evolutionResult.kept})\n`);
+        }
+      }
+    } catch (err) {
+      if (verbose) process.stdout.write(`[meta-agent] workspace evolution failed (non-fatal): ${err.message}\n`);
+    }
+  }
+
   const completedAt = new Date().toISOString();
   const manifest = {
     runId,
@@ -470,6 +508,15 @@ async function runMetaAgentLoop({ dryRun = false, verbose = false } = {}) {
       pattern: candidate.pattern,
       score: parseFloat(metrics.score.toFixed(3)),
     })),
+    evolution: evolutionResult
+      ? {
+        target: evolutionResult.target?.name,
+        from: evolutionResult.currentValue,
+        to: evolutionResult.nextValue,
+        kept: evolutionResult.kept,
+        skipped: evolutionResult.skipped || false,
+      }
+      : null,
   };
 
   if (!dryRun) {
@@ -572,4 +619,5 @@ module.exports = {
   CANDIDATES_PER_RUN,
   MIN_SCORE_THRESHOLD,
   FP_WEIGHT,
+  EVOLVE_MIN_FAILURES,
 };

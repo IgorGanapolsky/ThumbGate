@@ -1298,6 +1298,20 @@ function sessionStart() {
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { refreshStatuslineCache } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
   refreshStatuslineCache(analyzeFeedback());
+
+  // Surface gate-program.md active rules so the agent starts aware of what is blocked.
+  try {
+    const { readGateProgram, extractBlockPatterns } = require(path.join(PKG_ROOT, 'scripts', 'meta-agent-loop'));
+    const gateProgram = readGateProgram();
+    if (gateProgram) {
+      const blockPatterns = extractBlockPatterns(gateProgram);
+      if (blockPatterns.length > 0) {
+        process.stderr.write('\n[ThumbGate] Active hard-block rules from gate-program.md:\n');
+        blockPatterns.forEach((p, i) => process.stderr.write(`  ${i + 1}. ${p}\n`));
+        process.stderr.write('\n');
+      }
+    }
+  } catch (_) { /* gate-program awareness is best-effort */ }
 }
 
 function installMcp() {

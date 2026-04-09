@@ -38,7 +38,7 @@
           },
           {
             "type": "command",
-            "command": "node scripts/meta-agent-loop.js --dry-run"
+            "command": "node scripts/meta-agent-loop.js"
           }
         ]
       }
