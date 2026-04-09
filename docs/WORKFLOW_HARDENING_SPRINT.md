@@ -54,7 +54,7 @@ Only move forward when the buyer has:
 
 - This is a pilot-by-request service offer, not a new public self-serve subscription tier.
 - The public self-serve offer remains Pro at `$19/mo or $149/yr` per [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
-- Team pricing currently anchors at `$12/seat/mo` with a `3`-seat minimum, but the public Team path is still intake-first.
+- Team pricing currently anchors at `$99/seat/mo` with a `3`-seat minimum, but the public Team path is still intake-first.
 - Use booked pilots, paid orders, or named pilot agreements as commercial proof.
 - Same-day next step after a qualified call: send the sprint brief, the proof pack, and the proposed buyer review path.
 

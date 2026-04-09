@@ -21,7 +21,7 @@ One workflow. One owner. One proof review. That is the fastest path to a paid te
 
 **Self-serve for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the paid lane for the personal local dashboard, DPO export, and review-ready evidence.
 
-Free stays for individual developers. Pro is **$19/mo or $149/yr** for solo operators. Team pricing anchors at **$12/seat/mo with a 3-seat minimum**, but the public Team path remains intake-first through the sprint. [See pricing →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=pricing_link#pricing)
+Free stays for individual developers. Pro is **$19/mo or $149/yr** for solo operators. Team pricing anchors at **$99/seat/mo with a 3-seat minimum**, but the public Team path remains intake-first through the sprint. [See pricing →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=pricing_link#pricing)
 
 **Paid path for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the buyer-ready page for the personal local dashboard, DPO export, and review-ready evidence. It makes the paid upgrade legible before checkout while the self-hosted path below stays optimized for open source evaluation.
 
@@ -181,7 +181,7 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 
 ```
 ┌──────────────┬──────────────────────┬──────────────────────────────┐
-│    FREE      │ PRO $19/mo or $149/yr│   TEAM $12/seat/mo (min 3)   │
+│    FREE      │ PRO $19/mo or $149/yr│   TEAM $99/seat/mo (min 3)   │
 ├──────────────┼──────────────────────┼──────────────────────────────┤
 │ Unlimited    │ Unlimited feedback │ Shared hosted lesson DB      │
 │ feedback     │ captures + search  │ Org dashboard                │

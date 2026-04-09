@@ -44,7 +44,7 @@ test('GitHub About description highlights both thumbs-up and thumbs-down feedbac
 test('README commercial copy stays aligned with current Pro and Team packaging', () => {
   const readme = execSync('sed -n \'1,320p\' README.md', { cwd: ROOT, encoding: 'utf-8' });
   assert.match(readme, /\$19\/mo or \$149\/yr/);
-  assert.match(readme, /\$12\/seat\/mo/);
+  assert.match(readme, /\$99\/seat\/mo/);
   assert.match(readme, /shared hosted lesson DB/i);
   assert.match(readme, /org dashboard/i);
   assert.match(readme, /history-aware/i);

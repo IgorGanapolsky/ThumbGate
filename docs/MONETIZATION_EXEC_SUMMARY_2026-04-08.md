@@ -14,7 +14,7 @@ The job of go-to-market is to turn ThumbGate from an interesting open-source rel
 
 - The open-source `thumbgate` package is free and MIT licensed.
 - The current public self-serve commercial offer is **Pro at `$19/mo` or `$149/yr`**.
-- The current Team pricing anchor is **`$12/seat/mo` with a `3`-seat minimum**, and the Team path is still intake-led.
+- The current Team pricing anchor is **`$99/seat/mo` with a `3`-seat minimum**, and the Team path is still intake-led.
 - Verified commercial proof is still early-stage. Public claims must stay aligned with [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
 - Weekly npm installs, GitHub stars, and directory listings are acquisition signals, not revenue proof.
 
