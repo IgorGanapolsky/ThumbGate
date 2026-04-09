@@ -10,6 +10,9 @@ test('SonarCloud workflow refreshes main and stamps scans with the package versi
   assert.match(workflow, /push:\s*\n\s*branches:\s*\[main\]/);
   assert.match(workflow, /name: Read package version/);
   assert.match(workflow, /VERSION=\$\(node -p 'require\("\.\/package\.json"\)\.version'\)/);
+  assert.match(workflow, /name: Build Sonar mainline analysis version/);
+  assert.match(workflow, /SHORT_SHA=\$\(printf '%s' "\$GITHUB_SHA" \| cut -c1-12\)/);
+  assert.match(workflow, /echo "value=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}\+sha\.\$SHORT_SHA" >> "\$GITHUB_OUTPUT"/);
   assert.match(workflow, /-Dsonar\.projectVersion=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}/);
 });
 
@@ -27,7 +30,9 @@ test('SonarCloud workflow waits on quality gates only for PR and merge-queue sca
   assert.match(gatedSection, /if:\s*github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'/);
   assert.match(gatedSection, /-Dsonar\.qualitygate\.wait=true/);
   assert.match(gatedSection, /-Dsonar\.qualitygate\.timeout=600/);
+  assert.match(gatedSection, /-Dsonar\.projectVersion=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}/);
   assert.match(refreshSection, /if:\s*github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/);
+  assert.match(refreshSection, /-Dsonar\.projectVersion=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
   assert.doesNotMatch(refreshSection, /-Dsonar\.qualitygate\.wait=true/);
   assert.doesNotMatch(refreshSection, /-Dsonar\.qualitygate\.timeout=600/);
 });

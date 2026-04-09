@@ -67,6 +67,12 @@ jobs:
           VERSION=$(node -p 'require("./package.json").version')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Build Sonar mainline analysis version
+        id: sonar-mainline-version
+        run: |
+          SHORT_SHA=$(printf '%s' "$GITHUB_SHA" | cut -c1-12)
+          echo "value=${{ steps.package-version.outputs.version }}+sha.$SHORT_SHA" >> "$GITHUB_OUTPUT"
+
       - name: Run SonarCloud scan (quality gate)
         if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
         uses: SonarSource/sonarqube-scan-action@v7.1.0
@@ -85,4 +91,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.projectVersion=${{ steps.package-version.outputs.version }}
+            -Dsonar.projectVersion=${{ steps.sonar-mainline-version.outputs.value }}
