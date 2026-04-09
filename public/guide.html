@@ -58,7 +58,7 @@
       "@type": "HowToStep",
       "position": 2,
       "name": "Give feedback when your agent makes a mistake",
-      "text": "Say thumbs down with context about what went wrong. ThumbGate captures it as structured feedback."
+      "text": "Say thumbs down with context about what went wrong. In the current Claude auto-capture path, vague negative signals can reuse up to 8 prior recorded entries and stay linked to a 60-second feedback session."
     },
     {
       "@type": "HowToStep",
@@ -234,7 +234,7 @@ npx thumbgate init --agent gemini</code></pre>
 <h2>How It Works</h2>
 
 <h3>1. You give feedback</h3>
-<p>When your agent makes a mistake, tell it. ThumbGate captures the feedback as structured data with context, tags, and domain. If the signal is vague, it can reuse the recent conversation window and failed tool call to propose a better lesson instead of discarding the feedback.</p>
+<p>When your agent makes a mistake, tell it. ThumbGate captures the feedback as structured data with context, tags, and domain. In the current Claude auto-capture path, if the thumbs-down is vague, it can reuse up to 8 prior recorded entries and the failed tool call to propose a better lesson instead of discarding the feedback.</p>
 <pre><code># Your agent force-pushed. You say:
 "thumbs down — force-pushed to main, lost commits"
 
@@ -265,7 +265,7 @@ npx thumbgate init --agent gemini</code></pre>
 </ul>
 
 <h2>History-Aware Feedback Sessions</h2>
-<p>ThumbGate supports linked feedback sessions for the messy reality of AI debugging. You can start one correction thread, append more context, and finalize it once the lesson is clear.</p>
+<p>ThumbGate supports linked feedback sessions for the messy reality of AI debugging. In the current Claude flow, accepted feedback opens a 60-second follow-up session. You can append more context, reset the timer, and finalize once the lesson is clear.</p>
 <ul>
   <li><code>open_feedback_session</code> starts a linked correction thread.</li>
   <li><code>append_feedback_context</code> adds later notes, failed tool output, or user corrections to the same thread.</li>

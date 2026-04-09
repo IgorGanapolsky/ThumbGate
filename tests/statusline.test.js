@@ -156,6 +156,52 @@ test('statusline rebuilds counters from local feedback logs when cache is empty'
   }
 });
 
+test('statusline rebuilds counters from Claude history when the prompt hook missed feedback', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-claude-history-'));
+  const projectDir = path.join(tmpDir, 'project');
+  const feedbackDir = path.join(projectDir, '.thumbgate');
+  const homeDir = path.join(tmpDir, 'home');
+  const historyPath = path.join(homeDir, '.claude', 'history.jsonl');
+  fs.mkdirSync(feedbackDir, { recursive: true });
+  fs.mkdirSync(path.dirname(historyPath), { recursive: true });
+  fs.writeFileSync(
+    historyPath,
+    `${JSON.stringify({
+      display: 'thumbs down',
+      timestamp: 1775750156301,
+      project: projectDir,
+      sessionId: 'session-1',
+    })}\n`
+  );
+  fs.writeFileSync(
+    path.join(feedbackDir, 'statusline_cache.json'),
+    JSON.stringify({ thumbs_up: '0', thumbs_down: '0', lessons: '0', trend: '?', updated_at: '0' })
+  );
+
+  try {
+    const out = execFileSync('bash', [STATUSLINE_PATH], {
+      encoding: 'utf8',
+      input: JSON.stringify({ context_window: { used_percentage: 5 } }),
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        USERPROFILE: homeDir,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_PROJECT_DIR: projectDir,
+        THUMBGATE_CLAUDE_HISTORY_PATH: historyPath,
+      },
+      timeout: 5000,
+    });
+    assert.ok(out.includes('1'), 'should show the synced negative count');
+
+    const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
+    assert.equal(cache.thumbs_down, '1');
+    assert.ok(fs.existsSync(path.join(feedbackDir, 'feedback-log.jsonl')), 'feedback log should be created from Claude history');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test('statusline follows the persisted active project when Claude is running from a transient cwd', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-project-'));
   const homeDir = path.join(tmpDir, 'home');

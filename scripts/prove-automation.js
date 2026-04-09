@@ -17,7 +17,7 @@ const { startServer } = require('../src/api/server');
 const { handleRequest } = require('../adapters/mcp/server-stdio');
 const { collectHealthReport } = require('./self-healing-check');
 const { runSelfHeal } = require('./self-heal');
-const { CONTEXTFS_ROOT, NAMESPACES } = require('./contextfs');
+const { getContextFsRoot, NAMESPACES } = require('./contextfs');
 const { traceForProofCheck, aggregateTraces } = require('./code-reasoning');
 const { runVerificationLoop } = require('./verification-loop');
 const { run: runGateCheck } = require('./gates-engine');
@@ -513,7 +513,7 @@ async function runAutomationProof(options = {}) {
     // 19) semantic cache hit on equivalent query
     {
       currentCheck = 'context.semantic_cache.hit.first';
-      fs.rmSync(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'semantic-cache.jsonl'), { force: true });
+      fs.rmSync(path.join(getContextFsRoot(), NAMESPACES.provenance, 'semantic-cache.jsonl'), { force: true });
       const first = await fetchWithRetry(`${baseUrl}/v1/context/construct`, {
         method: 'POST',
         headers: {

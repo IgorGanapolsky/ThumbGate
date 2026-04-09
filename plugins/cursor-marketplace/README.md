@@ -11,7 +11,7 @@ How it works:
 
 - 👎 **Thumbs down** a mistake — it gets blocked from happening again
 - 👍 **Thumbs up** good work — the agent remembers the pattern
-- **History-aware lesson distillation** — vague thumbs signals can be grounded in the last ~10 messages and failed tool call
+- **History-aware lesson distillation** — vague thumbs-down signals can be grounded in up to 8 prior recorded entries and the failed tool call
 - **Cross-session memory** — lessons persist between conversations
 - **Automatic enforcement** — repeated failures become prevention rules
 - **Zero config** — install and start giving feedback
@@ -108,7 +108,7 @@ Or copy the plugin MCP config into `.cursor/mcp.json`:
 
 Use the `/capture-feedback` command or the `capture_feedback` MCP tool to send structured feedback directly to the ThumbGate memory system. Feedback drives prevention rule generation — repeated failure patterns are auto-promoted into enforceable gates.
 
-When the user only gives a quick `thumbs_down`, `wrong`, or `correct`, the Cursor plugin should include the last ~10 messages and the failed tool call in `chatHistory` so ThumbGate can propose the lesson automatically. If the explanation comes later, reuse the earlier event with `relatedFeedbackId` instead of creating an isolated duplicate.
+When the user only gives a quick `thumbs_down`, `wrong`, or `correct`, the Cursor plugin should include up to 8 prior recorded entries and the failed tool call in `chatHistory` so ThumbGate can propose the lesson automatically. If the explanation comes later, reuse the earlier event with `relatedFeedbackId` so the linked 60-second follow-up session refines the same feedback record instead of creating an isolated duplicate.
 
 ## What makes this useful in Cursor
 

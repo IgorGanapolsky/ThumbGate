@@ -617,6 +617,107 @@ describe('bin/cli.js', () => {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
+  test('statusline-render syncs missed Claude feedback even when the cache is still fresh', () => {
+    const projectDir = makeTmpDir();
+    const feedbackDir = path.join(projectDir, '.thumbgate');
+    const homeDir = makeTmpDir();
+    const historyPath = path.join(homeDir, '.claude', 'history.jsonl');
+
+    fs.mkdirSync(feedbackDir, { recursive: true });
+    fs.mkdirSync(path.dirname(historyPath), { recursive: true });
+    fs.writeFileSync(
+      historyPath,
+      `${JSON.stringify({
+        display: 'thumbs down',
+        timestamp: 1775750156301,
+        project: projectDir,
+        sessionId: 'session-1',
+      })}\n`
+    );
+    fs.writeFileSync(
+      path.join(feedbackDir, 'feedback-log.jsonl'),
+      `${JSON.stringify({
+        id: 'fb_seed_positive',
+        signal: 'positive',
+        context: 'thumbs up Thorough PR review',
+        submittedContext: 'thumbs up Thorough PR review',
+        whatWorked: 'thumbs up Thorough PR review',
+        actionType: 'store-learning',
+        timestamp: '2026-04-09T15:07:34.046Z',
+      })}\n`
+    );
+    fs.writeFileSync(
+      path.join(feedbackDir, 'statusline_cache.json'),
+      JSON.stringify({
+        thumbs_up: '1',
+        thumbs_down: '0',
+        lessons: '0',
+        trend: 'stable',
+        updated_at: String(Math.floor(Date.now() / 1000)),
+      })
+    );
+
+    const result = runCliSync(['statusline-render'], {
+      input: JSON.stringify({ context_window: { used_percentage: 10 } }),
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        USERPROFILE: homeDir,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_PROJECT_DIR: projectDir,
+        THUMBGATE_CLAUDE_HISTORY_PATH: historyPath,
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.equal(result.status, 0, `statusline-render failed:\n${result.stderr}`);
+    const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
+    assert.equal(cache.thumbs_up, '1');
+    assert.equal(cache.thumbs_down, '1');
+
+    fs.rmSync(projectDir, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  test('session-start refreshes the statusline cache from missed Claude feedback', () => {
+    const projectDir = makeTmpDir();
+    const feedbackDir = path.join(projectDir, '.thumbgate');
+    const homeDir = makeTmpDir();
+    const historyPath = path.join(homeDir, '.claude', 'history.jsonl');
+
+    fs.mkdirSync(feedbackDir, { recursive: true });
+    fs.mkdirSync(path.dirname(historyPath), { recursive: true });
+    fs.writeFileSync(
+      historyPath,
+      `${JSON.stringify({
+        display: 'thumbs up Thorough PR review',
+        timestamp: 1775750158301,
+        project: projectDir,
+        sessionId: 'session-2',
+      })}\n`
+    );
+
+    const result = runCliSync(['session-start'], {
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        USERPROFILE: homeDir,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_PROJECT_DIR: projectDir,
+        THUMBGATE_CLAUDE_HISTORY_PATH: historyPath,
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.equal(result.status, 0, `session-start failed:\n${result.stderr}`);
+    const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
+    assert.equal(cache.thumbs_up, '1');
+    assert.equal(cache.total_feedback, '1');
+
+    fs.rmSync(projectDir, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
   test('pro command prints truthful local-first Pro offer info when unlicensed', () => {
     const result = runCliSync(['pro'], {
       env: unlicensedProEnv(testHomeDir),

@@ -1233,6 +1233,10 @@ function cacheUpdate() {
 
 function statuslineRender() {
   syncActiveProjectContext();
+  try {
+    const { syncClaudeHistoryFeedback } = require(path.join(PKG_ROOT, 'scripts', 'claude-feedback-sync'));
+    syncClaudeHistoryFeedback();
+  } catch (_) { /* best-effort fallback sync */ }
   const payload = readStdinText();
   const output = execFileSync('bash', [path.join(PKG_ROOT, 'scripts', 'statusline.sh')], {
     encoding: 'utf8',
@@ -1284,6 +1288,10 @@ function hookAutoCapture() {
 
 function sessionStart() {
   syncActiveProjectContext();
+  try {
+    const { syncClaudeHistoryFeedback } = require(path.join(PKG_ROOT, 'scripts', 'claude-feedback-sync'));
+    syncClaudeHistoryFeedback();
+  } catch (_) { /* best-effort fallback sync */ }
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { refreshStatuslineCache } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
   refreshStatuslineCache(analyzeFeedback());

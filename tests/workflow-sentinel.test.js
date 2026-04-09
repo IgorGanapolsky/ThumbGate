@@ -7,7 +7,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  buildEvidence,
+  buildReasoning,
+  buildRemediations,
   evaluateWorkflowSentinel,
+  scoreRisk,
 } = require('../scripts/workflow-sentinel');
 const {
   evaluateGatesAsync,
@@ -108,10 +112,12 @@ test('workflow sentinel denies recurring destructive pattern with high blast rad
 });
 
 test('workflow sentinel treats explicit changed files as authoritative for PR handoff', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-empty-'));
   const report = evaluateWorkflowSentinel('Bash', {
     command: 'gh pr create --title "test"',
     changed_files: ['README.md'],
   }, {
+    feedbackDir,
     repoPath: process.cwd(),
     governanceState: {
       taskScope: {
@@ -140,23 +146,31 @@ test('workflow sentinel treats explicit changed files as authoritative for PR ha
 
 test('evaluateGatesAsync returns workflow sentinel warning when no static gate matches', async () => {
   const configPath = makeTempPath('gates.json');
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-empty-'));
   writeJson(configPath, { version: 1, gates: [] });
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
 
-  const result = await evaluateGatesAsync('Bash', {
-    command: 'node scripts/deploy-policy.js --dry-run',
-    changed_files: [
-      'src/api/server.js',
-      'adapters/mcp/server-stdio.js',
-      'config/mcp-allowlists.json',
-      'tests/mcp-server.test.js',
-    ],
-  }, configPath);
+  try {
+    const result = await evaluateGatesAsync('Bash', {
+      command: 'node scripts/deploy-policy.js --dry-run',
+      changed_files: [
+        'src/api/server.js',
+        'adapters/mcp/server-stdio.js',
+        'config/mcp-allowlists.json',
+        'tests/mcp-server.test.js',
+      ],
+    }, configPath);
 
-  assert.ok(result);
-  assert.equal(result.decision, 'warn');
-  assert.equal(result.gate, 'workflow-sentinel');
-  assert.match(result.message, /Predicted workflow risk/);
-  assert.match(result.reasoning.join('\n'), /Workflow sentinel risk/);
+    assert.ok(result);
+    assert.equal(result.decision, 'warn');
+    assert.equal(result.gate, 'workflow-sentinel');
+    assert.match(result.message, /Predicted workflow risk/);
+    assert.match(result.reasoning.join('\n'), /Workflow sentinel risk/);
+  } finally {
+    if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+  }
 });
 
 test('evaluateGatesAsync enriches memory guard results with workflow sentinel context', async () => {
@@ -217,7 +231,192 @@ test('workflow_sentinel MCP tool returns structured report text', async () => {
 
   assert.equal(Array.isArray(result.content), true);
   assert.equal(result.content[0].type, 'text');
-  assert.match(result.content[0].text, /workflow-sentinel-v1/);
+  assert.match(result.content[0].text, /workflow-sentinel-v2/);
   assert.match(result.content[0].text, /blastRadius/);
   assert.match(result.content[0].text, /executionSurface/);
+});
+
+test('workflow sentinel surfaces learned verify policy in warning decisions', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-policy-'));
+  const now = Date.now();
+  writeJsonl(path.join(feedbackDir, 'feedback-log.jsonl'), [
+    {
+      id: 'fb_verify_1',
+      timestamp: new Date(now - 9000).toISOString(),
+      signal: 'negative',
+      context: 'tests were failing and coverage was not verified before claiming success',
+      diagnosis: {
+        rootCauseCategory: 'tool_output_misread',
+        criticalFailureStep: 'verification',
+      },
+      tags: ['testing', 'verification'],
+    },
+    {
+      id: 'fb_verify_2',
+      timestamp: new Date(now - 8000).toISOString(),
+      signal: 'negative',
+      context: 'verification failed because the proof command output was misread',
+      diagnosis: {
+        rootCauseCategory: 'tool_output_misread',
+        criticalFailureStep: 'verification',
+      },
+      tags: ['testing', 'verification'],
+    },
+  ]);
+  writeJsonl(path.join(feedbackDir, 'diagnostic-log.jsonl'), Array.from({ length: 6 }, (_, index) => ({
+    id: `diag_verify_${index}`,
+    timestamp: new Date(now - ((6 - index) * 1000)).toISOString(),
+    source: 'verification_loop',
+    step: 'verification',
+    context: 'coverage claim mismatched the actual output',
+    diagnosis: {
+      rootCauseCategory: 'tool_output_misread',
+      criticalFailureStep: 'verification',
+      violations: [{ constraintId: 'workflow:proof_commands' }],
+    },
+  })));
+
+  const report = evaluateWorkflowSentinel('Bash', {
+    command: 'npm test --coverage',
+    changed_files: [
+      'src/api/server.js',
+      'tests/mcp-server.test.js',
+    ],
+  }, {
+    feedbackDir,
+    repoPath: process.cwd(),
+    governanceState: {
+      taskScope: {
+        summary: 'verification-heavy edit',
+        allowedPaths: ['src/**', 'tests/**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        baseBranch: 'main',
+        prRequired: true,
+      },
+    },
+    memoryGuard: {
+      mode: 'allow',
+      reason: '',
+    },
+  });
+
+  assert.equal(report.decision, 'warn');
+  assert.equal(report.learnedPolicy.enabled, true);
+  assert.equal(report.learnedPolicy.prediction.label, 'verify');
+  assert.ok(report.remediations.some((entry) => entry.id === 'verify_before_closeout'));
+  assert.match(report.evidence.join('\n'), /Learned policy predicted verify/);
+});
+
+test('workflow sentinel scores deny, warn, and recall learned-policy drivers', () => {
+  const baseInput = {
+    toolName: 'Edit',
+    toolInput: {
+      command: 'apply_patch',
+      file_path: 'docs/MARKETING_COPY_CONGRUENCE.md',
+    },
+    affectedFiles: ['docs/MARKETING_COPY_CONGRUENCE.md'],
+    integrity: {
+      blockers: [],
+    },
+    memoryGuard: {
+      mode: 'allow',
+      reason: '',
+    },
+    blastRadius: {
+      fileCount: 1,
+      surfaceCount: 1,
+      releaseSensitiveFiles: [],
+      summary: '1 file across 1 workflow surface',
+      severity: 'low',
+      unapprovedProtectedFiles: 0,
+    },
+    taskScopeViolation: null,
+    protectedSurface: {
+      unapprovedProtectedFiles: [],
+    },
+  };
+
+  const denyRisk = scoreRisk({
+    ...baseInput,
+    learnedPolicy: {
+      enabled: true,
+      prediction: { label: 'deny', confidence: 0.8 },
+    },
+  });
+  const warnRisk = scoreRisk({
+    ...baseInput,
+    learnedPolicy: {
+      enabled: true,
+      prediction: { label: 'warn', confidence: 0.5 },
+    },
+  });
+  const recallRisk = scoreRisk({
+    ...baseInput,
+    learnedPolicy: {
+      enabled: true,
+      prediction: { label: 'recall', confidence: 0.6 },
+    },
+  });
+
+  assert.ok(denyRisk.drivers.some((entry) => entry.key === 'learned_policy_deny'));
+  assert.ok(warnRisk.drivers.some((entry) => entry.key === 'learned_policy_warn'));
+  assert.ok(recallRisk.drivers.some((entry) => entry.key === 'learned_policy_recall'));
+});
+
+test('workflow sentinel learned recall evidence and remediations are operator-readable', () => {
+  const learnedPolicy = {
+    enabled: true,
+    prediction: {
+      label: 'recall',
+      confidence: 0.61,
+    },
+    topTokens: [
+      { token: 'tag:repeat', weight: 2.4 },
+      { token: 'text:again', weight: 1.8 },
+    ],
+  };
+  const blastRadius = {
+    fileCount: 3,
+    surfaceCount: 2,
+    releaseSensitiveFiles: [],
+    summary: '3 files across 2 workflow surfaces',
+    severity: 'medium',
+    unapprovedProtectedFiles: 0,
+  };
+  const evidence = buildEvidence({
+    integrity: { blockers: [] },
+    memoryGuard: { mode: 'allow', reason: '' },
+    learnedPolicy,
+    blastRadius,
+    taskScopeViolation: null,
+    protectedSurface: { unapprovedProtectedFiles: [] },
+  });
+  const remediations = buildRemediations({
+    integrity: { blockers: [] },
+    taskScopeViolation: null,
+    protectedSurface: { unapprovedProtectedFiles: [] },
+    blastRadius,
+    memoryGuard: { mode: 'allow', reason: '' },
+    learnedPolicy,
+    executionSurface: { shouldSandbox: false },
+  });
+  const reasoning = buildReasoning({
+    toolName: 'Edit',
+    band: 'medium',
+    riskScore: 0.36,
+    blastRadius,
+    drivers: [{ key: 'learned_policy_recall', weight: 0.09, reason: 'Needs prior lessons.' }],
+    remediations,
+    executionSurface: { shouldSandbox: false },
+    learnedPolicy,
+  });
+
+  assert.match(evidence.join('\n'), /Learned policy predicted recall/);
+  assert.match(evidence.join('\n'), /tag:repeat, text:again/);
+  assert.ok(remediations.some((entry) => entry.id === 'retrieve_lessons'));
+  assert.match(reasoning.join('\n'), /Learned policy predicted recall/);
+  assert.match(reasoning.join('\n'), /Inspect prior lessons/);
 });

@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Best Agent Governance Tools for Engineering Teams (2026 Comparison)</title>
+<title>Best Pre-Action Gate Tools for AI Coding Agents (2026 Comparison)</title>
 <!-- Privacy-friendly analytics by Plausible -->
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
-<meta name="description" content="Compare agent governance tools that prevent AI coding agents from making unsafe changes to shared repositories. ThumbGate vs manual review vs CLAUDE.md vs ESLint.">
-<meta name="keywords" content="agent governance, AI agent safety, pre-action gates, AI coding agent comparison, ThumbGate vs manual review, AI agent guardrails, PreToolUse hooks, Claude Code safety, Codex safety, Gemini safety, Cursor rules alternative, approval policies AI agents, CI gates AI agents">
-<meta property="og:title" content="Best Agent Governance Tools for Engineering Teams (2026 Comparison)">
-<meta property="og:description" content="Compare agent governance tools that prevent AI coding agents from making unsafe changes to shared repositories. ThumbGate vs manual review vs CLAUDE.md vs ESLint.">
+<script defer data-domain="rlhf-feedback-loop-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Compare pre-action gate tools that prevent AI coding agents from making costly mistakes. ThumbGate vs manual review vs post-hoc fixes.">
+<meta name="keywords" content="AI agent safety, pre-action gates, AI coding agent comparison, ThumbGate vs manual review, AI agent guardrails, PreToolUse hooks, Claude Code safety, Codex safety, Gemini safety, Cursor rules alternative">
+<meta property="og:title" content="Best Pre-Action Gate Tools for AI Coding Agents (2026 Comparison)">
+<meta property="og:description" content="Compare pre-action gate tools that prevent AI coding agents from making costly mistakes. ThumbGate vs manual review vs post-hoc fixes.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://thumbgate-production.up.railway.app/compare">
 <link rel="canonical" href="https://thumbgate-production.up.railway.app/compare">
@@ -18,8 +18,8 @@
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "Best Agent Governance Tools for Engineering Teams (2026 Comparison)",
-  "description": "Compare agent governance tools that prevent AI coding agents from making unsafe changes to shared repositories. ThumbGate vs manual review vs post-hoc fixes vs Cursor rules vs linters.",
+  "headline": "Best Pre-Action Gate Tools for AI Coding Agents (2026 Comparison)",
+  "description": "Compare pre-action gate tools that prevent AI coding agents from making costly mistakes. ThumbGate vs manual review vs post-hoc fixes vs Cursor rules vs linters.",
   "author": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -31,7 +31,7 @@
     "url": "https://thumbgate-production.up.railway.app"
   },
   "datePublished": "2026-04-08",
-  "dateModified": "2026-04-09",
+  "dateModified": "2026-04-08",
   "mainEntityOfPage": "https://thumbgate-production.up.railway.app/compare"
 }
 </script>
@@ -41,38 +41,6 @@
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "How do you prevent AI coding agents from making unsafe changes to shared repositories?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "ThumbGate enforces approval policies via PreToolUse hooks that fire before every agent tool call. When an agent attempts a dangerous action — force-pushing to main, deleting production files, or bypassing CI — the hook intercepts and blocks it before execution. Teams configure shared enforcement rules in a central policy file, so every agent on every seat respects the same governance constraints."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What is agent governance for engineering teams?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Agent governance is the practice of enforcing shared policies, approval workflows, and audit trails across all AI coding agents operating on a shared codebase. ThumbGate provides agent governance for engineering teams at $99/seat/mo: shared enforcement memory, approval policies for protected actions, CI gates that block known-bad patterns, and a full audit trail of agent decisions and human overrides."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How do you enforce approval policies for AI agent tool calls?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "ThumbGate's gates engine lets teams define approval policies for specific tool calls — for example, requiring a human approval before any agent pushes to a protected branch or modifies a production config. Policies are stored in a shared config, enforced via PreToolUse hooks on every seat, and all approval decisions are logged to the audit trail."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What is the difference between CLAUDE.md rules and enforcement hooks?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "CLAUDE.md rules are plain-text instructions that live in a file the AI agent reads at session start. The agent can ignore, misinterpret, or forget them mid-session. Enforcement hooks (PreToolUse hooks) are code that runs in the Claude Code runtime before every tool call — they physically block execution and cannot be overridden by the agent. ThumbGate auto-generates enforcement hooks from feedback so teams get hard guarantees, not soft suggestions."
-      }
-    },
     {
       "@type": "Question",
       "name": "What is a pre-action gate for AI coding agents?",
@@ -91,10 +59,18 @@
     },
     {
       "@type": "Question",
-      "name": "How much does ThumbGate cost for teams?",
+      "name": "Is ThumbGate free?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "ThumbGate for engineering teams is $99/seat/mo. This includes shared enforcement memory across all seats, approval policies for protected actions, CI gate integration, an org-level audit trail, and pilot rollout support. A free individual tier is also available for solo developers evaluating the tool."
+        "text": "ThumbGate has a free tier that includes local enforcement with 3 daily feedback captures, 5 lesson searches, unlimited recall, blocking, and history-aware lesson distillation. Pro ($19/mo or $149/yr) adds a personal local dashboard and DPO export. Team rollout ($12/seat/mo) adds a shared lesson database and org dashboard."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is ThumbGate different from .cursorrules or CLAUDE.md rules?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Cursor rules and CLAUDE.md are prompt-level instructions that the AI agent can read, forget, or override. ThumbGate enforces rules at the tool-call level via PreToolUse hooks. When a tool call matches a known failure pattern, it is physically blocked before execution. Additionally, ThumbGate auto-generates prevention rules from feedback, so you never have to write rules manually."
       }
     },
     {
@@ -102,7 +78,7 @@
       "name": "Can ThumbGate learn from mistakes automatically?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. When your AI agent makes a mistake, you give a thumbs-down with context. After repeated failures with the same pattern, ThumbGate auto-generates a prevention rule and wires it as a pre-action gate. Gates adapt their sensitivity over time using Thompson Sampling, a Bayesian multi-armed bandit algorithm. In team mode, lessons learned by one seat propagate to all seats via the shared lesson database."
+        "text": "Yes. When your AI agent makes a mistake, you give a thumbs-down with context. After repeated failures with the same pattern, ThumbGate auto-generates a prevention rule and wires it as a pre-action gate. Gates adapt their sensitivity over time using Thompson Sampling, a Bayesian multi-armed bandit algorithm."
       }
     }
   ]
@@ -170,8 +146,8 @@
 <div class="container">
 <p class="breadcrumb"><a href="/">Home</a> / Compare</p>
 
-<h1>Best Agent Governance Tools for Engineering Teams (2026 Comparison)</h1>
-<p style="color:var(--muted);">Your AI coding agent force-pushed to main — again. Your teammate's agent repeated the same mistake yours made last week. Which tool actually prevents that? We compared the five most common approaches to governing AI agents on shared codebases.</p>
+<h1>Best Pre-Action Gate Tools for AI Coding Agents (2026 Comparison)</h1>
+<p style="color:var(--muted);">Your AI coding agent force-pushed to main again. Which tool actually prevents that? We compared the five most common approaches to AI agent safety.</p>
 
 <h2>Comparison Table</h2>
 <div style="overflow-x:auto;">
@@ -241,24 +217,8 @@
     <td class="no">No -- build-time only</td>
   </tr>
   <tr>
-    <td>Team enforcement (shared lessons)</td>
-    <td class="yes">Yes -- shared lesson DB, all seats</td>
-    <td class="partial">Partial -- PR culture only</td>
-    <td class="no">No</td>
-    <td class="no">No -- per-developer files</td>
-    <td class="partial">Partial -- shared config, no memory</td>
-  </tr>
-  <tr>
-    <td>Audit trail of agent decisions</td>
-    <td class="yes">Yes -- every gate decision logged</td>
-    <td class="partial">Partial -- PR history</td>
-    <td class="partial">Partial -- git log</td>
-    <td class="no">No</td>
-    <td class="no">No</td>
-  </tr>
-  <tr>
     <td>Cost</td>
-    <td>Free tier + $99/seat/mo (Team)</td>
+    <td>Free tier + Pro $19/mo</td>
     <td>Engineer time per review</td>
     <td>Time lost + recovery cost</td>
     <td>Free</td>
@@ -290,7 +250,7 @@
   <div class="step-card">
     <div class="step-number">3</div>
     <h3>Learn</h3>
-    <p>When your agent makes a mistake, give it a thumbs-down. ThumbGate captures the feedback and auto-generates prevention rules from repeated failures.</p>
+    <p>When your agent makes a mistake, give it a thumbs-down. In the current Claude auto-capture path, vague negative signals can reuse up to 8 prior recorded entries plus the failed tool call, then stay linked to a 60-second follow-up session before repeated failures harden into prevention rules.</p>
   </div>
 </div>
 
@@ -308,26 +268,6 @@
 <h2>Frequently Asked Questions</h2>
 
 <div class="card">
-  <h3>How do you prevent AI coding agents from making unsafe changes to shared repositories?</h3>
-  <p>ThumbGate enforces approval policies via PreToolUse hooks that fire before every agent tool call. When an agent attempts a dangerous action — force-pushing to main, deleting production files, or bypassing CI — the hook intercepts and blocks it before execution. Teams configure shared enforcement rules in a central policy file, so every agent on every seat respects the same governance constraints.</p>
-</div>
-
-<div class="card">
-  <h3>What is agent governance for engineering teams?</h3>
-  <p>Agent governance is the practice of enforcing shared policies, approval workflows, and audit trails across all AI coding agents operating on a shared codebase. ThumbGate provides agent governance at $99/seat/mo: shared enforcement memory, approval policies for protected actions, CI gate integration, and a full audit trail of every agent decision and human override.</p>
-</div>
-
-<div class="card">
-  <h3>How do you enforce approval policies for AI agent tool calls?</h3>
-  <p>ThumbGate's gates engine lets teams define approval policies for specific tool calls — for example, requiring human approval before any agent pushes to a protected branch or modifies a production config. Policies are stored in shared config, enforced via PreToolUse hooks on every seat, and all decisions are logged to the audit trail.</p>
-</div>
-
-<div class="card">
-  <h3>What is the difference between CLAUDE.md rules and enforcement hooks?</h3>
-  <p>CLAUDE.md rules are plain-text instructions the AI agent reads at session start. The agent can ignore, misinterpret, or forget them mid-session. Enforcement hooks (PreToolUse hooks) are code that runs in the Claude Code runtime before every tool call — they physically block execution and cannot be overridden by the agent. ThumbGate auto-generates enforcement hooks from feedback so teams get hard guarantees, not soft suggestions.</p>
-</div>
-
-<div class="card">
   <h3>What is a pre-action gate?</h3>
   <p>A pre-action gate is an enforcement layer that intercepts AI agent tool calls before they execute. Unlike prompt rules that agents can ignore, pre-action gates physically block dangerous actions such as force-pushing to main, deleting production files, or committing code with failing tests.</p>
 </div>
@@ -338,18 +278,18 @@
 </div>
 
 <div class="card">
-  <h3>How much does ThumbGate cost for teams?</h3>
-  <p>ThumbGate for engineering teams is $99/seat/mo. This includes shared enforcement memory across all seats, approval policies for protected actions, CI gate integration, an org-level audit trail, and pilot rollout support. A free individual tier and Pro ($19/mo) are also available for solo developers.</p>
+  <h3>Is ThumbGate free?</h3>
+  <p>ThumbGate has a free tier that includes local enforcement with 3 daily feedback captures, 5 lesson searches, unlimited recall, and pre-action gate blocking. Pro ($19/mo or $149/yr) adds a personal local dashboard and DPO export. Team rollout ($12/seat/mo) adds a shared lesson database and org dashboard.</p>
 </div>
 
 <div class="card">
   <h3>How is ThumbGate different from .cursorrules or CLAUDE.md rules?</h3>
-  <p>Cursor rules and CLAUDE.md are prompt-level instructions that the AI agent can read, forget, or override. ThumbGate enforces rules at the tool-call level via PreToolUse hooks. When a tool call matches a known failure pattern, it is physically blocked before execution. Additionally, ThumbGate auto-generates prevention rules from feedback — no manual rule writing required.</p>
+  <p>Cursor rules and CLAUDE.md are prompt-level instructions that the AI agent can read, forget, or override. ThumbGate enforces rules at the tool-call level via PreToolUse hooks. When a tool call matches a known failure pattern, it is physically blocked before execution. Additionally, ThumbGate auto-generates prevention rules from feedback -- no manual rule writing.</p>
 </div>
 
 <div class="card">
   <h3>Can ThumbGate learn from mistakes automatically?</h3>
-  <p>Yes. When your AI agent makes a mistake, give a thumbs-down with context. After repeated failures with the same pattern, ThumbGate auto-generates a prevention rule and wires it as a pre-action gate. In team mode, lessons learned by one seat propagate to all seats. Gates adapt over time using Thompson Sampling, a Bayesian multi-armed bandit algorithm.</p>
+  <p>Yes. When your AI agent makes a mistake, give a thumbs-down with context. In the current Claude auto-capture path, vague negative signals can reuse up to 8 prior recorded entries plus the failed tool call, then stay linked to a 60-second follow-up session. After repeated failures with the same pattern, ThumbGate auto-generates a prevention rule and wires it as a pre-action gate. Gates adapt over time using Thompson Sampling, a Bayesian multi-armed bandit algorithm.</p>
 </div>
 
 </div>
