@@ -10,6 +10,9 @@ const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_PUBLISH_INSTALL_RETRIES = 6;
+const DEFAULT_PUBLISH_INSTALL_DELAY_MS = 5000;
+const MAX_PUBLISH_INSTALL_DELAY_MS = 30000;
 const STATUSLINE_INPUT = JSON.stringify({ context_window: { used_percentage: 12 } });
 
 function parseArgs(argv = process.argv.slice(2)) {
@@ -53,6 +56,53 @@ function installPackage(prefixDir, packageSpec) {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   return path.join(prefixDir, 'node_modules', '.bin', 'thumbgate');
+}
+
+function isRemotePackageSpec(packageSpec) {
+  if (!packageSpec) return false;
+  return !/^(?:\.{0,2}\/|\/|file:)/.test(packageSpec) && !packageSpec.endsWith('.tgz');
+}
+
+function isTransientRegistryMiss(error) {
+  const text = [
+    error && error.message,
+    error && error.stdout,
+    error && error.stderr,
+  ]
+    .filter(Boolean)
+    .join('\n');
+  return /ETARGET|No matching version found|npm error code E404|404 Not Found/i.test(text);
+}
+
+async function installPackageWithRetry(prefixDir, packageSpec, options = {}) {
+  const installImpl = options.installImpl || installPackage;
+  const sleepImpl = options.sleepImpl || sleep;
+  const remotePackage = options.remotePackage !== undefined ? options.remotePackage : isRemotePackageSpec(packageSpec);
+  const attempts = remotePackage ? Number(options.attempts || DEFAULT_PUBLISH_INSTALL_RETRIES) : 1;
+  let delayMs = Number(options.delayMs || DEFAULT_PUBLISH_INSTALL_DELAY_MS);
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    if (attempt > 1) {
+      fs.rmSync(prefixDir, { recursive: true, force: true });
+    }
+    try {
+      return installImpl(prefixDir, packageSpec);
+    } catch (error) {
+      lastError = error;
+      const retryable = remotePackage && isTransientRegistryMiss(error) && attempt < attempts;
+      if (!retryable) {
+        throw error;
+      }
+      process.stderr.write(
+        `Retrying published package install for ${packageSpec} after transient registry miss (${attempt}/${attempts - 1})\n`
+      );
+      await sleepImpl(delayMs);
+      delayMs = Math.min(Math.round(delayMs * 1.5), MAX_PUBLISH_INSTALL_DELAY_MS);
+    }
+  }
+
+  throw lastError || new Error(`Failed to install package ${packageSpec}`);
 }
 
 function request(url, timeoutMs = 2000) {
@@ -175,7 +225,10 @@ async function runPackagedRuntimeSmoke(options = {}) {
 
   try {
     const packageSpec = options.packageSpec || packCurrentRepo(packDir);
-    const runtimeBin = installPackage(runtimeDir, packageSpec);
+    const runtimeBin = await installPackageWithRetry(runtimeDir, packageSpec, {
+      attempts: options.installAttempts,
+      delayMs: options.installDelayMs,
+    });
     if (!fs.existsSync(runtimeBin)) {
       throw new Error(`Installed runtime binary is missing: ${runtimeBin}`);
     }
@@ -243,6 +296,8 @@ async function main() {
     packageSpec: args.packageSpec,
     expectedVersion: args.expectedVersion,
     timeoutMs: args.timeoutMs,
+    installAttempts: args.installAttempts,
+    installDelayMs: args.installDelayMs,
   });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
@@ -256,6 +311,9 @@ if (require.main === module) {
 
 module.exports = {
   getAvailablePort,
+  installPackageWithRetry,
+  isRemotePackageSpec,
+  isTransientRegistryMiss,
   packCurrentRepo,
   runPackagedRuntimeSmoke,
   waitForHealthy,
