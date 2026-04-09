@@ -70,10 +70,23 @@ jobs:
             exit 0
           fi
 
-          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$RAILWAY_PROJECT_ID" ] || [ -z "$RAILWAY_ENVIRONMENT_ID" ] || [ -z "$RAILWAY_HEALTHCHECK_URL" ]; then
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Railway deploy skipped: missing RAILWAY_TOKEN, RAILWAY_PROJECT_ID, RAILWAY_ENVIRONMENT_ID, or RAILWAY_HEALTHCHECK_URL."
-            exit 0
+          missing_config=()
+          [ -z "$RAILWAY_TOKEN" ] && missing_config+=('RAILWAY_TOKEN')
+          [ -z "$RAILWAY_PROJECT_ID" ] && missing_config+=('RAILWAY_PROJECT_ID')
+          [ -z "$RAILWAY_ENVIRONMENT_ID" ] && missing_config+=('RAILWAY_ENVIRONMENT_ID')
+          [ -z "$RAILWAY_HEALTHCHECK_URL" ] && missing_config+=('RAILWAY_HEALTHCHECK_URL')
+
+          if [ "${#missing_config[@]}" -gt 0 ]; then
+            echo "::error::Railway deploy blocked: missing required deploy config: ${missing_config[*]}"
+            exit 1
+          fi
+
+          missing_runtime_secrets=()
+          [ -z "$THUMBGATE_API_KEY" ] && missing_runtime_secrets+=('THUMBGATE_API_KEY')
+
+          if [ "${#missing_runtime_secrets[@]}" -gt 0 ]; then
+            echo "::error::Railway deploy blocked: missing required runtime secrets: ${missing_runtime_secrets[*]}"
+            exit 1
           fi
 
           echo "enabled=true" >> "$GITHUB_OUTPUT"

@@ -20,7 +20,7 @@ process.env.THUMBGATE_BUILD_GENERATED_AT = '2026-03-21T00:00:00.000Z';
 // Use insecure mode so auth doesn't interfere with /health unauthenticated check
 process.env.THUMBGATE_ALLOW_INSECURE = 'true';
 
-const { startServer } = require('../src/api/server');
+const { createApiServer, startServer } = require('../src/api/server');
 const pkg = require('../package.json');
 const PROJECT_ROOT = path.join(__dirname, '..');
 
@@ -161,6 +161,24 @@ test('THUMBGATE_ALLOW_INSECURE=true bypasses API key requirement', async () => {
   assert.equal(res.status, 200);
 });
 
+test('createApiServer fails fast when THUMBGATE_API_KEY is missing in secure mode', () => {
+  const previousApiKey = process.env.THUMBGATE_API_KEY;
+  const previousAllowInsecure = process.env.THUMBGATE_ALLOW_INSECURE;
+
+  delete process.env.THUMBGATE_API_KEY;
+  delete process.env.THUMBGATE_ALLOW_INSECURE;
+
+  try {
+    assert.throws(() => createApiServer(), /THUMBGATE_API_KEY is required unless THUMBGATE_ALLOW_INSECURE=true/);
+  } finally {
+    if (previousApiKey === undefined) delete process.env.THUMBGATE_API_KEY;
+    else process.env.THUMBGATE_API_KEY = previousApiKey;
+
+    if (previousAllowInsecure === undefined) delete process.env.THUMBGATE_ALLOW_INSECURE;
+    else process.env.THUMBGATE_ALLOW_INSECURE = previousAllowInsecure;
+  }
+});
+
 test('feedback endpoint returns valid JSON under insecure mode', async () => {
   const res = await fetch(deployUrl('/v1/feedback/stats'));
   const body = await res.json();
@@ -180,6 +198,9 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
   assert.match(workflow, /Check Railway deployment configuration/);
+  assert.match(workflow, /missing required deploy config/);
+  assert.match(workflow, /missing required runtime secrets/);
+  assert.match(workflow, /THUMBGATE_API_KEY/);
   assert.match(workflow, /Enforce deploy policy/);
   assert.match(workflow, /node scripts\/deploy-policy\.js --profiles=billing,deploy/);
   assert.match(workflow, /steps\.railway-config\.outputs\.enabled == 'true'/);
