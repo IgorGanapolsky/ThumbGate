@@ -46,14 +46,19 @@ jobs:
           BEFORE_SHA='${{ github.event.before }}'
           CHANGED_FILES=''
           SHOULD_DEPLOY=true
+          DEPLOYABLE_PATTERN='^(src/|scripts/|config/|adapters/|public/|\.well-known/|openapi/|workers/|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
 
           if [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
             CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | sed '/^$/d')"
+            if [ -n "$CHANGED_FILES" ] && ! printf '%s\n' "$CHANGED_FILES" | grep -Eq "$DEPLOYABLE_PATTERN"; then
+              SHOULD_DEPLOY=false
+            fi
           fi
 
           echo "before_sha=${BEFORE_SHA:-<none>}"
           echo 'changed_files:'
           printf '%s\n' "${CHANGED_FILES:-<none>}"
+          echo "deployable_pattern=$DEPLOYABLE_PATTERN"
           echo "should_deploy=$SHOULD_DEPLOY"
 
           echo "changed_files<<EOF" >> "$GITHUB_OUTPUT"
@@ -68,7 +73,7 @@ jobs:
         run: |
           if [ "${{ steps.deploy-scope.outputs.should_deploy }}" != "true" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Railway deploy skipped: deploy-scope disabled this run."
+            echo "Railway deploy skipped: no runtime-serving files changed on this commit."
             exit 0
           fi
 
