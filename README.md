@@ -21,7 +21,7 @@ One workflow. One owner. One proof review. That is the fastest path to a paid te
 
 **Self-serve for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the paid lane for the personal local dashboard, DPO export, and review-ready evidence.
 
-Free stays for individual developers. Pro is **$19/mo or $149/yr** for solo operators. Team pricing anchors at **$12/seat/mo with a 3-seat minimum**, but the public Team path remains intake-first through the sprint. [See pricing →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=pricing_link#pricing)
+Free stays for individual developers. Pro is **$19/mo or $149/yr** for solo operators. Team pricing anchors at **$99/seat/mo with a 3-seat minimum**, but the public Team path remains intake-first through the sprint. [See pricing →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=pricing_link#pricing)
 
 **Paid path for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the buyer-ready page for the personal local dashboard, DPO export, and review-ready evidence. It makes the paid upgrade legible before checkout while the self-hosted path below stays optimized for open source evaluation.
 
@@ -39,6 +39,11 @@ ThumbGate is the control plane for AI coding agents:
 - Workflow Sentinel scores blast radius before execution, so risky PR, release, and publish flows are visible early.
 - High-risk local actions can be routed into Docker Sandboxes, while hosted team automations use a signed isolated sandbox lane.
 - Team rollout stays tied to [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) instead of trust-me operator claims.
+
+Enterprise MCP rollout proof lives in:
+
+- [Enterprise MCP Governance](docs/ENTERPRISE_MCP_GOVERNANCE.md)
+- [Enterprise Proof Pack](docs/ENTERPRISE_PROOF_PACK.md)
 
 ## Release Confidence
 
@@ -116,7 +121,7 @@ Yes. ThumbGate is MCP-compatible and works with Claude Code, Cursor, Codex, Gemi
 ThumbGate can auto-evaluate agent action outcomes (test failures, reverted edits, error patterns) and generate prevention rules without any human feedback. Your agent gets smarter every session automatically.
 
 **Is it free?**
-Free tier: 3 feedback captures/day, 5 lesson searches/day, 5 built-in gates. Founding Member: $49 one-time, Pro forever.
+Yes for the OSS core. Individuals can stay on the free self-hosted path, upgrade to Pro at $19/mo or $149/yr for the personal local dashboard and DPO export, and teams start with the Workflow Hardening Sprint before broader seat rollout.
 
 ## The Loop
 
@@ -181,7 +186,7 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 
 ```
 ┌──────────────┬──────────────────────┬──────────────────────────────┐
-│    FREE      │ PRO $19/mo or $149/yr│   TEAM $12/seat/mo (min 3)   │
+│    FREE      │ PRO $19/mo or $149/yr│   TEAM $99/seat/mo (min 3)   │
 ├──────────────┼──────────────────────┼──────────────────────────────┤
 │ Unlimited    │ Unlimited feedback │ Shared hosted lesson DB      │
 │ feedback     │ captures + search  │ Org dashboard                │
