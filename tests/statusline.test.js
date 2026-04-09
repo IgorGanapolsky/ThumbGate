@@ -8,6 +8,7 @@ const { execFileSync } = require('child_process');
 const { cacheUpdateHookCommand, statuslineCommand } = require('../scripts/hook-runtime');
 const { activateLicense } = require('../scripts/license');
 const { writeActiveProjectState } = require('../scripts/feedback-paths');
+const { createLesson } = require('../scripts/lesson-inference');
 
 const STATUSLINE_PATH = path.join(__dirname, '..', 'scripts', 'statusline.sh');
 const CACHE_UPDATER_PATH = path.join(__dirname, '..', 'scripts', 'hook-thumbgate-cache-updater.js');
@@ -63,6 +64,13 @@ function runStatusline(cachePayload, extraEnv = {}) {
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
+}
+
+function stripStatuslineFormatting(text) {
+  return String(text)
+    .replace(/\u001b]8;;[^\u0007]*\u0007/g, '')
+    .replace(/\u001b]8;;\u0007/g, '')
+    .replace(/\u001b\[[0-9;]*m/g, '');
 }
 
 test('statusline script exists and is executable', () => {
@@ -235,6 +243,56 @@ test('statusline shows booting labels while the local dashboard is coming online
   assert.match(out, /Dashboard…/);
   assert.match(out, /Lessons…/);
   assert.doesNotMatch(out, /\u001b]8;;http:\/\/localhost:3456\/dashboard/);
+});
+
+test('statusline preserves dashboard links under a tight width budget', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-budget-'));
+  const homeDir = path.join(tmpDir, 'home');
+  fs.mkdirSync(homeDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(tmpDir, 'statusline_cache.json'),
+    JSON.stringify({
+      thumbs_up: '157',
+      thumbs_down: '1450',
+      lessons: '27',
+      trend: 'stable',
+      updated_at: String(Math.floor(Date.now() / 1000)),
+    })
+  );
+
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  createLesson({
+    signal: 'negative',
+    inferredLesson: 'MISTAKE: Something broke again because the deploy health check was skipped after merge.',
+  });
+
+  try {
+    const out = execFileSync('bash', [STATUSLINE_PATH], {
+      encoding: 'utf8',
+      input: JSON.stringify({ context_window: { used_percentage: 25 } }),
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        THUMBGATE_FEEDBACK_DIR: tmpDir,
+        THUMBGATE_STATUSLINE_MAX_CHARS: '72',
+        _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture()),
+      },
+      timeout: 5000,
+    });
+    const plain = stripStatuslineFormatting(out).trim();
+    assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
+    assert.match(plain, /Lessons/, 'should preserve the lessons link label');
+    assert.doesNotMatch(plain, /Something broke again/, 'should drop the lesson snippet before the links');
+    assert.ok(plain.length <= 72, `expected <=72 visible chars, received ${plain.length}: ${plain}`);
+  } finally {
+    if (previousFeedbackDir === undefined) {
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
+    } else {
+      process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+    }
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });
 
 test('cache updater hook script exists', () => {

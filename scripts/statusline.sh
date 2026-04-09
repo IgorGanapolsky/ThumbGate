@@ -150,25 +150,155 @@ DOWN_ICON="$(osc8_link "$DOWN_URL" "👎")"
 DASHBOARD_LINK="$(osc8_link "$DASHBOARD_URL" "$DASHBOARD_LABEL")"
 LESSONS_LINK="$(osc8_link "$LESSONS_URL" "$LESSONS_LABEL")"
 
-# ── Output (single line) ─────────────────────────────────────────
-LINE="ThumbGate v${TG_VERSION} · ${TG_TIER}"
-if [ "$UP" = "0" ] && [ "$DOWN" = "0" ]; then
-  LINE="${D}${LINE} · no feedback yet${RST} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
-  printf '%b\n' "$LINE"
+is_numeric() {
+  case "$1" in
+    ''|*[!0-9]*) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+# Keep ThumbGate within a conservative left-side budget so Claude's own
+# right-side notices do not visually collide with our line.
+STATUSLINE_DEFAULT_MAX_CHARS="${THUMBGATE_STATUSLINE_DEFAULT_MAX_CHARS:-96}"
+STATUSLINE_RIGHT_RESERVE="${THUMBGATE_STATUSLINE_RIGHT_RESERVE:-28}"
+if ! is_numeric "$STATUSLINE_DEFAULT_MAX_CHARS"; then STATUSLINE_DEFAULT_MAX_CHARS=96; fi
+if ! is_numeric "$STATUSLINE_RIGHT_RESERVE"; then STATUSLINE_RIGHT_RESERVE=28; fi
+
+if is_numeric "${THUMBGATE_STATUSLINE_MAX_CHARS:-}"; then
+  STATUSLINE_MAX_CHARS="$THUMBGATE_STATUSLINE_MAX_CHARS"
 else
-  LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_ICON} ${R}${BD}${DOWN}${RST}${DOWN_ICON} ${ARROW}"
+  STATUSLINE_MAX_CHARS="$STATUSLINE_DEFAULT_MAX_CHARS"
+  if is_numeric "${COLUMNS:-}"; then
+    _AVAILABLE_CHARS=$(( COLUMNS - STATUSLINE_RIGHT_RESERVE ))
+    if [ "$_AVAILABLE_CHARS" -gt 0 ] && [ "$_AVAILABLE_CHARS" -lt "$STATUSLINE_MAX_CHARS" ]; then
+      STATUSLINE_MAX_CHARS="$_AVAILABLE_CHARS"
+    fi
+  fi
+fi
+if [ "$STATUSLINE_MAX_CHARS" -lt 48 ]; then STATUSLINE_MAX_CHARS=48; fi
 
-  # Lessons count
-  [ "${LESSONS:-0}" -gt 0 ] && LINE="${LINE} · ${M}${BD}${LESSONS}${RST} lessons"
+PLAIN_SEGMENTS=()
+RENDERED_SEGMENTS=()
 
-  # Latest lesson snippet
-  [ -n "${LESSON_TEXT}" ] && LINE="${LINE} · ${D}${LESSON_TEXT}${RST}"
+current_plain_length() {
+  local total=0
+  local i
+  for ((i = 0; i < ${#PLAIN_SEGMENTS[@]}; i++)); do
+    if [ "$i" -gt 0 ]; then
+      total=$((total + 3))
+    fi
+    total=$((total + ${#PLAIN_SEGMENTS[$i]}))
+  done
+  printf '%s' "$total"
+}
 
-  # Control Tower alerts (if any)
-  [ "${SLO_V:-0}" -gt 0 ] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"
-  [ "${AT_RISK:-0}" -gt 0 ] && LINE="${LINE} ${R}${AT_RISK}⚠${RST}"
-  [ "${ANOMALIES:-0}" -gt 0 ] && LINE="${LINE} ${R}${ANOMALIES}☠${RST}"
-  LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
+push_segment() {
+  PLAIN_SEGMENTS+=("$1")
+  RENDERED_SEGMENTS+=("$2")
+}
 
-  printf '%b\n' "$LINE"
+add_segment_if_fit() {
+  local plain="$1"
+  local rendered="$2"
+  local current extra
+  current=$(current_plain_length)
+  extra=${#plain}
+  if [ "${#PLAIN_SEGMENTS[@]}" -gt 0 ]; then
+    extra=$((extra + 3))
+  fi
+  if [ $((current + extra)) -le "$STATUSLINE_MAX_CHARS" ]; then
+    push_segment "$plain" "$rendered"
+    return 0
+  fi
+  return 1
+}
+
+truncate_plain_text() {
+  local text="$1"
+  local max_chars="$2"
+  if [ "$max_chars" -le 0 ]; then
+    printf ''
+  elif [ "${#text}" -le "$max_chars" ]; then
+    printf '%s' "$text"
+  elif [ "$max_chars" -le 3 ]; then
+    printf '%.*s' "$max_chars" "$text"
+  else
+    printf '%s...' "${text:0:$((max_chars - 3))}"
+  fi
+}
+
+add_truncated_segment_if_fit() {
+  local plain="$1"
+  local color="$2"
+  local min_chars="${3:-14}"
+  local current sep remaining truncated
+  current=$(current_plain_length)
+  sep=0
+  if [ "${#PLAIN_SEGMENTS[@]}" -gt 0 ]; then
+    sep=3
+  fi
+  remaining=$((STATUSLINE_MAX_CHARS - current - sep))
+  if [ "$remaining" -lt "$min_chars" ]; then
+    return 1
+  fi
+  truncated=$(truncate_plain_text "$plain" "$remaining")
+  push_segment "$truncated" "${color}${truncated}${RST}"
+  return 0
+}
+
+render_segments() {
+  local line=''
+  local i
+  for ((i = 0; i < ${#RENDERED_SEGMENTS[@]}; i++)); do
+    if [ "$i" -gt 0 ]; then
+      line="${line} · "
+    fi
+    line="${line}${RENDERED_SEGMENTS[$i]}"
+  done
+  printf '%b\n' "$line"
+}
+
+# ── Output (single line) ─────────────────────────────────────────
+if [ "$UP" = "0" ] && [ "$DOWN" = "0" ]; then
+  push_segment "ThumbGate v${TG_VERSION}" "${D}ThumbGate v${TG_VERSION}${RST}"
+  push_segment "${TG_TIER}" "${D}${TG_TIER}${RST}"
+  push_segment "no feedback yet" "${D}no feedback yet${RST}"
+  add_segment_if_fit "${DASHBOARD_LABEL}" "${C}${DASHBOARD_LINK}${RST}"
+  add_segment_if_fit "${LESSONS_LABEL}" "${M}${LESSONS_LINK}${RST}"
+  render_segments
+else
+  STATS_PLAIN="${UP}👍 ${DOWN}👎 ${ARROW}"
+  STATS_RENDERED="${G}${BD}${UP}${RST}${UP_ICON} ${R}${BD}${DOWN}${RST}${DOWN_ICON} ${ARROW}"
+  ALERTS_PLAIN=''
+  ALERTS_RENDERED=''
+
+  if [ "${SLO_V:-0}" -gt 0 ]; then
+    ALERTS_PLAIN="${ALERTS_PLAIN}${ALERTS_PLAIN:+ }${SLO_V} SLO"
+    ALERTS_RENDERED="${ALERTS_RENDERED}${ALERTS_RENDERED:+ }${R}${SLO_V} SLO${RST}"
+  fi
+  if [ "${AT_RISK:-0}" -gt 0 ]; then
+    ALERTS_PLAIN="${ALERTS_PLAIN}${ALERTS_PLAIN:+ }${AT_RISK}⚠"
+    ALERTS_RENDERED="${ALERTS_RENDERED}${ALERTS_RENDERED:+ }${R}${AT_RISK}⚠${RST}"
+  fi
+  if [ "${ANOMALIES:-0}" -gt 0 ]; then
+    ALERTS_PLAIN="${ALERTS_PLAIN}${ALERTS_PLAIN:+ }${ANOMALIES}☠"
+    ALERTS_RENDERED="${ALERTS_RENDERED}${ALERTS_RENDERED:+ }${R}${ANOMALIES}☠${RST}"
+  fi
+
+  push_segment "ThumbGate v${TG_VERSION}" "ThumbGate v${TG_VERSION}"
+  push_segment "${TG_TIER}" "${TG_TIER}"
+  push_segment "${STATS_PLAIN}" "${STATS_RENDERED}"
+  add_segment_if_fit "${DASHBOARD_LABEL}" "${C}${DASHBOARD_LINK}${RST}"
+  add_segment_if_fit "${LESSONS_LABEL}" "${M}${LESSONS_LINK}${RST}"
+  if [ "${LESSONS:-0}" -gt 0 ]; then
+    add_segment_if_fit "${LESSONS} lessons" "${M}${BD}${LESSONS}${RST} lessons"
+  fi
+  if [ -n "${ALERTS_PLAIN}" ]; then
+    add_segment_if_fit "${ALERTS_PLAIN}" "${ALERTS_RENDERED}"
+  fi
+  if [ -n "${LESSON_TEXT}" ]; then
+    add_truncated_segment_if_fit "${LESSON_TEXT}" "${D}" 14
+  fi
+
+  render_segments
 fi
