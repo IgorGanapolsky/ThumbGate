@@ -97,4 +97,17 @@ npx thumbgate dashboard
 - Comparison: https://thumbgate-production.up.railway.app/compare
 - Team sprint intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
+## How ThumbGate Promotes AI Authenticity
+
+In an era of AI slop — where agents generate repetitive, generic outputs that erode brand trust — ThumbGate is the enforcement layer that keeps AI behavior grounded in human judgment.
+
+The core thesis: AI slop happens when agents act without human judgment as a hard gate. ThumbGate solves this at the tool-call level, not through prompt suggestions the agent can ignore.
+
+- **Human insight leads**: The thumbs-up/down mechanism is a literal human gate between AI intent and execution. The agent cannot proceed on blocked patterns.
+- **Standards, not patterns**: Every thumbs-down distills into a prevention rule specific to your team's context — not a generic best practice.
+- **Authenticity over volume**: ThumbGate reinforces what "good" looks like for your specific codebase, standards, and risk tolerance. Agents learn your standards, not average AI behavior.
+- **Discovery advantage**: As platforms and search engines increasingly reward authentic, human-verified outputs over high-volume AI generation, ThumbGate provides the enforcement infrastructure that proves human oversight was applied.
+
+**Positioning for authenticity-conscious audiences**: ThumbGate is the authenticity enforcement layer for AI coding agents. Where AI slop is the symptom, unconstrained agent autonomy is the cause. ThumbGate addresses the cause.
+
 *Last updated: 2026-04-09*
