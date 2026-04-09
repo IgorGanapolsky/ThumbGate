@@ -8,10 +8,12 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const {
+  assertSafeGitObjectId,
   classifyCommand,
   compareSemver,
   evaluateOperationalIntegrity,
   findReleaseSensitiveFiles,
+  getCurrentBranch,
   gitVerifyRef,
   isSafeBranchName,
   isSafeGitObjectId,
@@ -161,6 +163,14 @@ test('isSafeGitObjectId only allows full commit hashes', () => {
   assert.equal(isSafeGitObjectId('not-a-sha'), false);
 });
 
+test('assertSafeGitObjectId normalizes valid shas and rejects invalid values', () => {
+  assert.equal(
+    assertSafeGitObjectId('0123456789ABCDEF0123456789ABCDEF01234567'),
+    '0123456789abcdef0123456789abcdef01234567'
+  );
+  assert.throws(() => assertSafeGitObjectId('not-a-sha'), /Unsafe git object id/);
+});
+
 test('gitVerifyRef resolves loose and packed refs to commit shas', () => {
   const repoDir = createTempGitRepo();
   const headSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoDir, encoding: 'utf8' }).trim();
@@ -171,6 +181,11 @@ test('gitVerifyRef resolves loose and packed refs to commit shas', () => {
   assert.equal(gitVerifyRef(repoDir, 'refs/heads/feature/test'), headSha);
 });
 
+test('getCurrentBranch reads the symbolic HEAD branch without git exec', () => {
+  const repoDir = createTempGitRepo();
+  assert.equal(getCurrentBranch(repoDir), 'main');
+});
+
 test('resolveBaseRef short-circuits invalid branch names before git operations', () => {
   const baseRef = resolveBaseRef(__dirname, '--upload-pack=evil', { fetchIfMissing: true });
   assert.equal(baseRef, null);
@@ -179,6 +194,12 @@ test('resolveBaseRef short-circuits invalid branch names before git operations',
 test('readPackageVersion rejects unsafe git refs before git execution', () => {
   assert.equal(readPackageVersion(__dirname, '--upload-pack=evil'), null);
   assert.equal(readPackageVersion(__dirname, 'main@{1}'), null);
+});
+
+test('readPackageVersion resolves package.json from packed refs', () => {
+  const repoDir = createTempGitRepo();
+  assert.equal(readPackageVersion(repoDir, 'main'), '1.0.0');
+  assert.equal(readPackageVersion(repoDir, 'feature/test'), '1.0.0');
 });
 
 test('isHeadReachableFrom rejects unsafe revision payloads', () => {

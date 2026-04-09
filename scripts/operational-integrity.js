@@ -6,6 +6,11 @@ const path = require('path');
 const { execFileSync, spawnSync } = require('child_process');
 
 const DEFAULT_BASE_BRANCH = 'main';
+const FIXED_GIT_BIN_CANDIDATES = [
+  '/usr/bin/git',
+  '/opt/homebrew/bin/git',
+  '/usr/local/bin/git',
+];
 const DEFAULT_RELEASE_SENSITIVE_GLOBS = [
   'package.json',
   'package-lock.json',
@@ -21,6 +26,20 @@ const DEFAULT_RELEASE_SENSITIVE_GLOBS = [
   'config/gates/**',
   'config/mcp-allowlists.json',
 ];
+
+function resolveGitBinary() {
+  for (const candidate of FIXED_GIT_BIN_CANDIDATES) {
+    try {
+      fs.accessSync(candidate, fs.constants.X_OK);
+      return candidate;
+    } catch {
+      continue;
+    }
+  }
+  throw new Error('Unable to locate git in fixed system paths');
+}
+
+const GIT_BIN = resolveGitBinary();
 
 function normalizePosix(filePath) {
   return String(filePath || '')
@@ -90,6 +109,14 @@ function isSafeGitObjectId(objectId) {
   return /^[0-9a-f]{40}$/i.test(String(objectId || '').trim());
 }
 
+function assertSafeGitObjectId(objectId, label = 'object id') {
+  const normalized = String(objectId || '').trim().toLowerCase();
+  if (!isSafeGitObjectId(normalized)) {
+    throw new Error(`Unsafe git ${label}: ${objectId}`);
+  }
+  return normalized;
+}
+
 function assertSafeGitRevision(revision, label = 'revision') {
   const normalized = String(revision || '').trim();
   if (!isSafeGitRevision(normalized)) {
@@ -98,27 +125,76 @@ function assertSafeGitRevision(revision, label = 'revision') {
   return normalized;
 }
 
+function resolveGitDirEntry(repoRoot, gitEntryPath) {
+  let stat;
+  try {
+    stat = fs.statSync(gitEntryPath);
+  } catch {
+    return null;
+  }
+
+  if (stat.isDirectory()) {
+    return gitEntryPath;
+  }
+
+  if (!stat.isFile()) {
+    return null;
+  }
+
+  const pointer = fs.readFileSync(gitEntryPath, 'utf8').trim();
+  const match = pointer.match(/^gitdir:\s*(.+)$/i);
+  if (!match?.[1]) {
+    return null;
+  }
+
+  return path.resolve(repoRoot, match[1].trim());
+}
+
+function findGitRepoMetadata(repoPath) {
+  let currentPath = path.resolve(repoPath || process.cwd());
+
+  try {
+    if (!fs.statSync(currentPath).isDirectory()) {
+      currentPath = path.dirname(currentPath);
+    }
+  } catch {
+    currentPath = path.dirname(currentPath);
+  }
+
+  while (true) {
+    const gitDir = resolveGitDirEntry(currentPath, path.join(currentPath, '.git'));
+    if (gitDir) {
+      return { repoRoot: currentPath, gitDir };
+    }
+
+    const parentPath = path.dirname(currentPath);
+    if (parentPath === currentPath) {
+      break;
+    }
+    currentPath = parentPath;
+  }
+
+  throw new Error(`Not a git repository: ${repoPath}`);
+}
+
 function gitShowTopLevel(repoPath) {
-  return execFileSync('git', ['rev-parse', '--show-toplevel'], {
-    cwd: repoPath,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  }).trim();
+  return findGitRepoMetadata(repoPath).repoRoot;
 }
 
 function gitDirPath(repoPath) {
-  return execFileSync('git', ['rev-parse', '--git-dir'], {
-    cwd: repoPath,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  }).trim();
+  return findGitRepoMetadata(repoPath).gitDir;
 }
 
 function readGitRefFile(gitDir, refName) {
-  const refPath = path.join(gitDir, ...refName.split('/'));
+  const refSegments = refName?.split('/').filter(Boolean);
+  if (!Array.isArray(refSegments) || refSegments.length === 0) {
+    return null;
+  }
+
+  const refPath = path.join(gitDir, ...refSegments);
   try {
     const value = fs.readFileSync(refPath, 'utf8').trim();
-    return isSafeGitObjectId(value) ? value.toLowerCase() : null;
+    return isSafeGitObjectId(value) ? assertSafeGitObjectId(value) : null;
   } catch {
     return null;
   }
@@ -132,7 +208,7 @@ function readPackedGitRef(gitDir, refName) {
       if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('^')) continue;
       const [objectId, name] = trimmed.split(/\s+/, 2);
       if (name === refName && isSafeGitObjectId(objectId)) {
-        return objectId.toLowerCase();
+        return assertSafeGitObjectId(objectId);
       }
     }
   } catch {
@@ -142,8 +218,33 @@ function readPackedGitRef(gitDir, refName) {
 }
 
 function readGitRefSha(gitDir, refName) {
-  if (!refName || !refName.startsWith('refs/')) return null;
+  if (!refName?.startsWith('refs/')) return null;
   return readGitRefFile(gitDir, refName) || readPackedGitRef(gitDir, refName);
+}
+
+function readGitHeadState(repoPath) {
+  const gitDir = gitDirPath(repoPath);
+  const headValue = fs.readFileSync(path.join(gitDir, 'HEAD'), 'utf8').trim();
+
+  if (headValue.startsWith('ref:')) {
+    const refName = headValue.slice(4).trim();
+    return {
+      refName,
+      objectId: readGitRefSha(gitDir, refName),
+    };
+  }
+
+  if (isSafeGitObjectId(headValue)) {
+    return {
+      refName: null,
+      objectId: assertSafeGitObjectId(headValue, 'HEAD sha'),
+    };
+  }
+
+  return {
+    refName: null,
+    objectId: null,
+  };
 }
 
 function resolveGitRevisionToCommitSha(repoPath, revision) {
@@ -170,37 +271,71 @@ function gitVerifyRef(repoPath, ref) {
   if (!commitSha) {
     throw new Error(`Unknown git ref: ${ref}`);
   }
-  return commitSha;
+  return assertSafeGitObjectId(commitSha, 'commit sha');
 }
 
 function gitCurrentBranch(repoPath) {
-  return execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
-    cwd: repoPath,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  }).trim();
+  const headState = readGitHeadState(repoPath);
+  if (headState.refName?.startsWith('refs/heads/')) {
+    return headState.refName.slice('refs/heads/'.length);
+  }
+  if (headState.refName?.startsWith('refs/remotes/')) {
+    return headState.refName.slice('refs/remotes/'.length);
+  }
+  if (headState.objectId) {
+    return 'HEAD';
+  }
+  throw new Error('Unable to resolve current branch');
 }
 
 function gitHeadSha(repoPath) {
-  return execFileSync('git', ['rev-parse', 'HEAD'], {
+  const headState = readGitHeadState(repoPath);
+  if (headState.objectId) {
+    return headState.objectId;
+  }
+  throw new Error('Unable to resolve HEAD commit');
+}
+
+function assertSafeRepoRelativePath(filePath, label = 'path') {
+  const normalized = normalizePosix(filePath);
+  if (!normalized || normalized.startsWith('-') || normalized.startsWith('.git')) {
+    throw new Error(`Unsafe repo-relative ${label}: ${filePath}`);
+  }
+  if (normalized.includes('..') || normalized.includes('//')) {
+    throw new Error(`Unsafe repo-relative ${label}: ${filePath}`);
+  }
+  return normalized;
+}
+
+function gitReadBlobAtCommit(repoPath, commitSha, filePath) {
+  const safeCommitSha = assertSafeGitObjectId(commitSha, 'commit sha');
+  const safeFilePath = assertSafeRepoRelativePath(filePath, 'file path');
+  const treeEntry = execFileSync(GIT_BIN, ['ls-tree', safeCommitSha, '--', safeFilePath], {
     cwd: repoPath,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
   }).trim();
+  const match = treeEntry.match(/^\d+\s+blob\s+([0-9a-f]{40})\t/);
+  if (!match?.[1]) {
+    throw new Error(`Unable to resolve blob for ${safeFilePath} at ${safeCommitSha}`);
+  }
+
+  const blobSha = assertSafeGitObjectId(match[1], 'blob sha');
+  return execFileSync(GIT_BIN, ['cat-file', 'blob', blobSha], {
+    cwd: repoPath,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
 }
 
 function gitShowPackageJsonAtRef(repoPath, ref) {
-  const safeCommitSha = gitVerifyRef(repoPath, ref);
-  return execFileSync('git', ['show', '--end-of-options', `${safeCommitSha}:package.json`], {
-    cwd: repoPath,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  }).trim();
+  const safeCommitSha = assertSafeGitObjectId(gitVerifyRef(repoPath, ref), 'commit sha');
+  return gitReadBlobAtCommit(repoPath, safeCommitSha, 'package.json').trim();
 }
 
 function gitDiffNameOnlyAgainstBase(repoPath, baseRef) {
-  const safeBaseCommitSha = gitVerifyRef(repoPath, baseRef);
-  return execFileSync('git', ['diff', '--name-only', `${safeBaseCommitSha}...HEAD`, '--'], {
+  const safeBaseCommitSha = assertSafeGitObjectId(gitVerifyRef(repoPath, baseRef), 'base commit sha');
+  return execFileSync(GIT_BIN, ['diff', '--name-only', `${safeBaseCommitSha}...HEAD`, '--'], {
     cwd: repoPath,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
@@ -208,9 +343,9 @@ function gitDiffNameOnlyAgainstBase(repoPath, baseRef) {
 }
 
 function gitMergeBaseIsAncestor(repoPath, commit, ref) {
-  const safeCommitSha = gitVerifyRef(repoPath, commit);
-  const safeRefCommitSha = gitVerifyRef(repoPath, ref);
-  return spawnSync('git', ['merge-base', '--is-ancestor', safeCommitSha, safeRefCommitSha], {
+  const safeCommitSha = assertSafeGitObjectId(gitVerifyRef(repoPath, commit), 'ancestor commit sha');
+  const safeRefCommitSha = assertSafeGitObjectId(gitVerifyRef(repoPath, ref), 'descendant commit sha');
+  return spawnSync(GIT_BIN, ['merge-base', '--is-ancestor', safeCommitSha, safeRefCommitSha], {
     cwd: repoPath,
     encoding: 'utf8',
   });
@@ -247,7 +382,7 @@ function isSafeBranchName(branchName) {
 function fetchBaseBranch(repoPath, baseBranch) {
   if (!repoPath || !isSafeBranchName(baseBranch)) return false;
   // Fetch the remote tracking refs without passing user-controlled branch names to git.
-  const result = spawnSync('git', ['fetch', '--no-tags', '--depth=64', 'origin'], {
+  const result = spawnSync(GIT_BIN, ['fetch', '--no-tags', '--depth=64', 'origin'], {
     cwd: repoPath,
     encoding: 'utf8',
   });
@@ -438,6 +573,7 @@ function evaluateOperationalIntegrity(options = {}) {
     : (repoRoot ? listChangedFilesAgainstBase(repoRoot, baseBranch, { fetchIfMissing: options.fetchBase === true }) : []);
   const releaseSensitiveGlobs = sanitizeGlobList(options.releaseSensitiveGlobs || DEFAULT_RELEASE_SENSITIVE_GLOBS);
   const releaseSensitiveFiles = findReleaseSensitiveFiles(changedFiles, releaseSensitiveGlobs);
+  const hasReleaseSensitiveFiles = releaseSensitiveFiles.length > 0;
   const packageVersion = options.packageVersion !== undefined
     ? options.packageVersion
     : (repoRoot ? readPackageVersion(repoRoot, 'HEAD') : null);
@@ -517,7 +653,7 @@ function evaluateOperationalIntegrity(options = {}) {
     }
   }
 
-  if (options.requirePrForReleaseSensitive && releaseSensitiveFiles.length > 0 && currentBranch && currentBranch !== baseBranch && !openPr) {
+  if (options.requirePrForReleaseSensitive && hasReleaseSensitiveFiles && currentBranch && currentBranch !== baseBranch && !openPr) {
     blockers.push(buildBlocker(
       'release_sensitive_changes_require_pr',
       `Release-sensitive changes on ${currentBranch} require an open pull request before continuing.`,
@@ -525,7 +661,7 @@ function evaluateOperationalIntegrity(options = {}) {
     ));
   }
 
-  if (options.requireVersionNotBehindBase && releaseSensitiveFiles.length > 0 && versionComparison !== null && versionComparison < 0) {
+  if (options.requireVersionNotBehindBase && hasReleaseSensitiveFiles && versionComparison !== null && versionComparison < 0) {
     blockers.push(buildBlocker(
       'version_behind_base',
       `package.json version ${packageVersion} is behind ${baseBranch} version ${baseVersion} while release-sensitive files changed.`,
@@ -608,6 +744,8 @@ function runCli(env = process.env, argv = process.argv.slice(2)) {
   });
 
   const lines = [];
+  const hasReleaseSensitiveFiles = Array.isArray(result.releaseSensitiveFiles) && result.releaseSensitiveFiles.length > 0;
+  const openPrNumber = result.openPr?.number;
   lines.push(`Operational integrity: ${result.ok ? 'ok' : 'blocked'}`);
   lines.push(`Base branch: ${result.baseBranch}`);
   lines.push(`Current branch: ${result.currentBranch || 'unknown'}`);
@@ -617,11 +755,11 @@ function runCli(env = process.env, argv = process.argv.slice(2)) {
   if (result.baseVersion) {
     lines.push(`${result.baseBranch} version: ${result.baseVersion}`);
   }
-  if (result.releaseSensitiveFiles.length > 0) {
+  if (hasReleaseSensitiveFiles) {
     lines.push(`Release-sensitive files: ${result.releaseSensitiveFiles.join(', ')}`);
   }
-  if (result.openPr && result.openPr.number) {
-    lines.push(`Open PR: #${result.openPr.number}${result.openPr.url ? ` ${result.openPr.url}` : ''}`);
+  if (openPrNumber) {
+    lines.push(`Open PR: #${openPrNumber}${result.openPr?.url ? ` ${result.openPr.url}` : ''}`);
   }
   for (const blocker of result.blockers) {
     lines.push(`BLOCKER ${blocker.code}: ${blocker.message}`);
@@ -636,7 +774,7 @@ function runCli(env = process.env, argv = process.argv.slice(2)) {
   return result.ok ? 0 : 1;
 }
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   process.exitCode = runCli();
 }
 
@@ -649,6 +787,7 @@ module.exports = {
   findOpenPrForBranch,
   findReleaseSensitiveFiles,
   getCurrentBranch,
+  assertSafeGitObjectId,
   gitVerifyRef,
   isSafeBranchName,
   isSafeGitObjectId,
