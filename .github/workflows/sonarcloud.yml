@@ -1,6 +1,8 @@
 name: SonarCloud
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
@@ -59,11 +61,28 @@ jobs:
             --exclude='tests/**/*.js' \
             --exclude='scripts/social-reply-monitor.js'
 
-      - name: Run SonarCloud scan
+      - name: Read package version
+        id: package-version
+        run: |
+          VERSION=$(node -p 'require("./package.json").version')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Run SonarCloud scan (quality gate)
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
         uses: SonarSource/sonarqube-scan-action@v7.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
+            -Dsonar.projectVersion=${{ steps.package-version.outputs.version }}
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=600
+
+      - name: Run SonarCloud scan (default branch refresh)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: SonarSource/sonarqube-scan-action@v7.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectVersion=${{ steps.package-version.outputs.version }}
