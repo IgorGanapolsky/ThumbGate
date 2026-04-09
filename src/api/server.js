@@ -2545,6 +2545,17 @@ function createApiServer() {
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/.well-known/llms.txt') {
+      const llmsTxtPath = path.join(__dirname, '..', '..', '.well-known', 'llms.txt');
+      try {
+        const content = fs.readFileSync(llmsTxtPath, 'utf8');
+        sendText(res, 200, content, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' }, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'llms.txt not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/sitemap.xml') {
       sendText(res, 200, renderSitemapXml(hostedConfig), {
         'Content-Type': 'application/xml; charset=utf-8',
@@ -3134,19 +3145,6 @@ async function addContext(){
         renderCheckoutCancelledPage(hostedConfig),
         journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}
       );
-      return;
-    }
-
-    if (isGetLikeRequest && pathname === '/.well-known/llms.txt') {
-      const llmsTxtPath = path.join(__dirname, '..', '..', '.well-known', 'llms.txt');
-      try {
-        const content = fs.readFileSync(llmsTxtPath, 'utf8');
-        res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' });
-        if (!isHeadRequest) res.write(content);
-        res.end();
-      } catch {
-        sendJson(res, 404, { error: 'llms.txt not found' });
-      }
       return;
     }
 
