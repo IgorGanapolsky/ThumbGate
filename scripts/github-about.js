@@ -14,6 +14,8 @@ const LEGACY_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/thumbgate';
 const GITHUB_API_BASE_URL = 'https://api.github.com';
 const DEFAULT_VERIFY_ATTEMPTS = 5;
 const DEFAULT_VERIFY_DELAY_MS = 2000;
+const VERIFY_ATTEMPTS_ENV = 'THUMBGATE_GITHUB_ABOUT_VERIFY_ATTEMPTS';
+const VERIFY_DELAY_MS_ENV = 'THUMBGATE_GITHUB_ABOUT_VERIFY_DELAY_MS';
 
 function readText(root, relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
@@ -303,6 +305,13 @@ function normalizePositiveInteger(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function resolveVerifySetting(optionValue, envName, fallback) {
+  if (optionValue !== undefined) {
+    return normalizePositiveInteger(optionValue, fallback);
+  }
+  return normalizePositiveInteger(process.env[envName], fallback);
+}
+
 function sleep(delayMs) {
   return new Promise((resolve) => {
     setTimeout(resolve, delayMs);
@@ -314,8 +323,8 @@ async function verifyLiveGitHubAbout(options = {}) {
   const expected = options.expected || loadGitHubAboutConfig(root);
   const repo = normalizeText(options.repo) || expected.repo;
   const label = options.label || `Live GitHub About (${repo})`;
-  const attempts = normalizePositiveInteger(options.attempts, DEFAULT_VERIFY_ATTEMPTS);
-  const delayMs = normalizePositiveInteger(options.delayMs, DEFAULT_VERIFY_DELAY_MS);
+  const attempts = resolveVerifySetting(options.attempts, VERIFY_ATTEMPTS_ENV, DEFAULT_VERIFY_ATTEMPTS);
+  const delayMs = resolveVerifySetting(options.delayMs, VERIFY_DELAY_MS_ENV, DEFAULT_VERIFY_DELAY_MS);
   const fetcher = typeof options.fetcher === 'function' ? options.fetcher : fetchLiveGitHubAbout;
   const sleeper = typeof options.sleep === 'function' ? options.sleep : sleep;
   let actual = null;
@@ -390,6 +399,8 @@ module.exports = {
   DEFAULT_VERIFY_ATTEMPTS,
   DEFAULT_VERIFY_DELAY_MS,
   LEGACY_REPOSITORY_URL,
+  VERIFY_ATTEMPTS_ENV,
+  VERIFY_DELAY_MS_ENV,
   buildCanonicalRepoUrls,
   collectLocalGitHubAboutErrors,
   compareGitHubAbout,
