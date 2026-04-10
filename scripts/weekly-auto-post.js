@@ -14,10 +14,10 @@ const path = require('path');
 const os = require('os');
 const { generateWeeklyStatsPost } = require('./daily-digest');
 const { createSchedule } = require('./schedule-manager');
+const { ensureDir } = require('./fs-utils');
 
 const POSTS_DIR = path.join(os.homedir(), '.thumbgate', 'weekly-posts');
 
-function ensureDir(p) { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
 
 /**
  * Generate a weekly stats post file in post-everywhere format.

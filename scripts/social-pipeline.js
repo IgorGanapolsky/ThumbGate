@@ -8,6 +8,7 @@ const net = require('net');
 const os = require('os');
 const path = require('path');
 const { pathToFileURL } = require('url');
+const { ensureDir } = require('./fs-utils');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_ASSET_HTML = path.join(
@@ -77,9 +78,6 @@ function parseArgs(argv) {
   return args;
 }
 
-function ensureDir(dirPath) {
-  fs.mkdirSync(dirPath, { recursive: true });
-}
 
 function readText(filePath) {
   return fs.readFileSync(filePath, 'utf8');

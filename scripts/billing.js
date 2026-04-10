@@ -43,6 +43,7 @@ const {
   resolveAnalyticsWindow,
   serializeAnalyticsWindow,
 } = require('./analytics-window');
+const { ensureParentDir } = require('./fs-utils');
 
 // ---------------------------------------------------------------------------
 // Config
@@ -147,13 +148,6 @@ function safeCompareHex(expectedHex, actualHex) {
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
-
-function ensureParentDir(filePath) {
-  const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-}
 
 function sanitizeMetadata(metadata) {
   if (!metadata || typeof metadata !== 'object') return {};

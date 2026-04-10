@@ -15,14 +15,12 @@ const SKILL_SPECS_DIR = path.join(ROOT, 'config', 'skill-specs');
 const POLICY_BUNDLES_DIR = path.join(ROOT, 'config', 'policy-bundles');
 const DIST_DIR = path.join(ROOT, 'dist', 'skills');
 const PKG = require(path.join(ROOT, 'package.json'));
+const { ensureDir } = require('./fs-utils');
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
-function ensureDir(dirPath) {
-  fs.mkdirSync(dirPath, { recursive: true });
-}
 
 /**
  * Load a SkillSpec by name from config/skill-specs/.

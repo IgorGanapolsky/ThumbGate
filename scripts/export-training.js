@@ -17,6 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { ensureDir } = require('./fs-utils');
 
 const SEQUENCE_WINDOW = 10;
 
@@ -40,11 +41,6 @@ function readJSONL(filePath) {
     .filter(Boolean);
 }
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 // ---------------------------------------------------------------------------
 // XPRT-04: validateMemoryStructure
