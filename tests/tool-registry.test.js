@@ -26,6 +26,22 @@ test('capture_feedback tool exists with required signal param', () => {
   assert.ok(captureTool.inputSchema.properties.relatedFeedbackId, 'capture_feedback must expose relatedFeedbackId');
 });
 
+test('document import tools exist and search_thumbgate exposes document search', () => {
+  const importTool = TOOLS.find((tool) => tool.name === 'import_document');
+  const listTool = TOOLS.find((tool) => tool.name === 'list_imported_documents');
+  const getTool = TOOLS.find((tool) => tool.name === 'get_imported_document');
+  const searchTool = TOOLS.find((tool) => tool.name === 'search_thumbgate');
+
+  assert.ok(importTool, 'import_document tool must exist');
+  assert.ok(listTool, 'list_imported_documents tool must exist');
+  assert.ok(getTool, 'get_imported_document tool must exist');
+  assert.ok(searchTool, 'search_thumbgate tool must exist');
+  assert.equal(importTool.annotations.destructiveHint, true);
+  assert.equal(listTool.annotations.readOnlyHint, true);
+  assert.equal(getTool.annotations.readOnlyHint, true);
+  assert.ok(searchTool.inputSchema.properties.source.enum.includes('documents'));
+});
+
 test('conversation follow-up tools exist with the expected safety hints', () => {
   const openTool = TOOLS.find((tool) => tool.name === 'open_feedback_session');
   const appendTool = TOOLS.find((tool) => tool.name === 'append_feedback_context');
