@@ -122,15 +122,54 @@ const TOOLS = [
   }),
   readOnlyTool({
     name: 'search_thumbgate',
-    description: 'Search raw ThumbGate state across feedback logs, ContextFS memory, and prevention rules.',
+    description: 'Search raw ThumbGate state across feedback logs, ContextFS memory, prevention rules, and imported policy documents.',
     inputSchema: {
       type: 'object',
       required: ['query'],
       properties: {
         query: { type: 'string', description: 'Search query for ThumbGate state.' },
         limit: { type: 'number', description: 'Maximum results to return (default 10)' },
-        source: { type: 'string', enum: ['all', 'feedback', 'context', 'rules'], description: 'Restrict search to a single ThumbGate source.' },
+        source: { type: 'string', enum: ['all', 'feedback', 'context', 'rules', 'documents'], description: 'Restrict search to a single ThumbGate source.' },
         signal: { type: 'string', enum: ['up', 'down', 'positive', 'negative'], description: 'Optional feedback-signal filter when searching feedback data.' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'import_document',
+    description: 'Import a local policy or runbook document into ThumbGate, normalize it for search, and propose provenance-backed gate candidates.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filePath: { type: 'string', description: 'Local file path inside the active workspace or ThumbGate runtime.' },
+        content: { type: 'string', description: 'Inline document content for hosted or generated imports.' },
+        title: { type: 'string', description: 'Optional display title override.' },
+        sourceFormat: { type: 'string', enum: ['markdown', 'text', 'yaml', 'json', 'html'], description: 'Optional source format override when importing inline content.' },
+        sourceUrl: { type: 'string', description: 'Optional external URL or provenance label for the imported document.' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Optional tags such as policy, runbook, or team.' },
+        proposeGates: { type: 'boolean', description: 'When true (default), derive reviewable gate proposals from the document.' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'list_imported_documents',
+    description: 'List imported policy and runbook documents stored in local ThumbGate state.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Optional title or excerpt filter.' },
+        tag: { type: 'string', description: 'Optional tag or matched template id filter.' },
+        limit: { type: 'number', description: 'Maximum documents to return (default 20).' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'get_imported_document',
+    description: 'Read a previously imported document with its proposed gate candidates and provenance.',
+    inputSchema: {
+      type: 'object',
+      required: ['documentId'],
+      properties: {
+        documentId: { type: 'string', description: 'Imported document id.' },
       },
     },
   }),
