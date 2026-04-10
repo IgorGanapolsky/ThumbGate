@@ -1298,6 +1298,20 @@ function sessionStart() {
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { refreshStatuslineCache } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
   refreshStatuslineCache(analyzeFeedback());
+
+  // Surface gate-program.md active rules so the agent starts aware of what is blocked.
+  try {
+    const { readGateProgram, extractBlockPatterns } = require(path.join(PKG_ROOT, 'scripts', 'meta-agent-loop'));
+    const gateProgram = readGateProgram();
+    if (gateProgram) {
+      const blockPatterns = extractBlockPatterns(gateProgram);
+      if (blockPatterns.length > 0) {
+        process.stderr.write('\n[ThumbGate] Active hard-block rules from gate-program.md:\n');
+        blockPatterns.forEach((p, i) => process.stderr.write(`  ${i + 1}. ${p}\n`));
+        process.stderr.write('\n');
+      }
+    }
+  } catch (_) { /* gate-program awareness is best-effort */ }
 }
 
 function installMcp() {
@@ -1376,6 +1390,9 @@ function help() {
   console.log('  rules                 Generate prevention rules from repeated failures');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Pre-Action Gates');
   console.log('  force-gate <PATTERN>  Immediately create a blocking gate from a pattern');
+  console.log('  meta-agent            Run meta-agent loop: generate + evaluate + promote prevention rules');
+  console.log('    --dry-run           Preview rules without writing');
+  console.log('    --status            Show last run summary');
   console.log('  self-heal             Run self-healing check and auto-fix');
   console.log('  activate <KEY>        Activate a Pro license key (from Stripe checkout)');
   console.log('  pro                   Show Pro plan ($19/mo) + hosted pilot info');
@@ -1578,6 +1595,32 @@ switch (COMMAND) {
     const result = forcePromote(context, 'block');
     console.log(`✅ Forced block gate created: ${result.gateId}`);
     console.log(`Total auto-promoted gates: ${result.totalGates}`);
+    break;
+  }
+  case 'meta-agent': {
+    const metaArgs = parseArgs(process.argv.slice(3));
+    if (metaArgs.status) {
+      const { getMetaAgentStatus } = require(path.join(PKG_ROOT, 'scripts', 'meta-agent-loop'));
+      const status = getMetaAgentStatus();
+      if (!status) {
+        console.log('No meta-agent runs recorded yet. Run: npx thumbgate meta-agent');
+      } else {
+        console.log(JSON.stringify(status, null, 2));
+      }
+    } else {
+      const { runMetaAgentLoop } = require(path.join(PKG_ROOT, 'scripts', 'meta-agent-loop'));
+      runMetaAgentLoop({ dryRun: Boolean(metaArgs['dry-run']), verbose: true })
+        .then((manifest) => {
+          console.log(`\nMeta-agent run complete.`);
+          console.log(`  Promoted : ${manifest.promotedCount} rule(s)`);
+          console.log(`  Reverted : ${manifest.revertedCount} candidate(s)`);
+          if (manifest.dryRun) console.log('  [DRY RUN] No rules written.');
+        })
+        .catch((err) => {
+          console.error('Meta-agent failed:', err.message);
+          process.exit(1);
+        });
+    }
     break;
   }
   case 'self-heal':
