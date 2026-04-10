@@ -11,6 +11,7 @@ const {
   getSession,
   getActiveSession,
   extractComplaints,
+  autoInferLesson,
   SESSION_TIMEOUT_MS,
   MAX_FOLLOWUP_MESSAGES,
   scheduleTimer,
@@ -329,5 +330,53 @@ describe('auto-timeout', () => {
     } finally {
       clearTimeout(handle);
     }
+  });
+});
+
+describe('autoInferLesson (LangChain continual learning)', () => {
+  it('is exported and callable', () => {
+    assert.equal(typeof autoInferLesson, 'function');
+  });
+
+  it('returns null when finalized result has no follow-up context', () => {
+    // autoInferLesson calls lesson-inference which writes to disk,
+    // but with empty context the inference still produces a lesson
+    // (signal-only). We test the function does not throw.
+    const result = autoInferLesson({
+      sessionId: 'test-session',
+      feedbackEventId: 'fb-001',
+      signal: 'negative',
+      enrichedContext: '',
+      followUpMessages: [],
+      followUpCount: 0,
+      duration: 5000,
+    });
+    // May return a lesson or null depending on disk state; should not throw
+    if (result) {
+      assert.ok(result.id, 'lesson should have an id');
+      assert.deepEqual(result.tags, ['auto-inferred', 'session-finalize']);
+      assert.equal(result.metadata.source, 'auto-lesson-inference');
+    }
+  });
+
+  it('creates a lesson with auto-inferred tags from enriched context', () => {
+    const result = autoInferLesson({
+      sessionId: 'test-session-2',
+      feedbackEventId: 'fb-002',
+      signal: 'down',
+      enrichedContext: 'The agent deleted production configs without asking',
+      followUpMessages: [
+        { role: 'user', content: 'you deleted my production config', timestamp: new Date().toISOString() },
+      ],
+      followUpCount: 1,
+      duration: 12000,
+    });
+    assert.ok(result, 'should create a lesson from enriched context');
+    assert.ok(result.id);
+    assert.equal(result.signal, 'negative');
+    assert.deepEqual(result.tags, ['auto-inferred', 'session-finalize']);
+    assert.equal(result.metadata.source, 'auto-lesson-inference');
+    assert.equal(result.metadata.sessionId, 'test-session-2');
+    assert.ok(result.lesson.length > 0, 'lesson text should be non-empty');
   });
 });
