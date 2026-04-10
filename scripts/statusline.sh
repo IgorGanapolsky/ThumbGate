@@ -127,12 +127,14 @@ if [ -n "$_TOWER_JSON" ]; then
 fi
 
 # ── Latest lesson (data available for extensions; not rendered in statusbar) ──
-LESSON_TEXT=""; LESSON_ID=""
+LESSON_TEXT=""; LESSON_ID=""; LESSON_LABEL=""; LESSON_LINK=""
 _LESSON_JSON=$(node "${SCRIPT_DIR}/statusline-lesson.js" 2>/dev/null)
 if [ -n "$_LESSON_JSON" ]; then
   eval "$(echo "$_LESSON_JSON" | jq -r '
     @sh "LESSON_TEXT=\(.text // "")",
-    @sh "LESSON_ID=\(.lessonId // "")"
+    @sh "LESSON_ID=\(.lessonId // "")",
+    @sh "LESSON_LABEL=\(.label // "")",
+    @sh "LESSON_LINK=\(.link // "")"
   ' 2>/dev/null)"
 fi
 
@@ -156,13 +158,22 @@ inline_link() {
 
 UP_ICON="👍"
 DOWN_ICON="👎"
-DASHBOARD_LINK="$(inline_link "$DASHBOARD_URL" "$DASHBOARD_LABEL")"
-LESSONS_LINK="$(inline_link "$LESSONS_URL" "$LESSONS_LABEL")"
+DASHBOARD_LINK="$DASHBOARD_LABEL"
+LESSONS_LINK="$LESSONS_LABEL"
+LATEST_LESSON_LINK=""
+if [ -n "$LESSON_LABEL" ]; then
+  if [ -n "$LESSON_TEXT" ]; then
+    LATEST_LESSON_LINK="$(inline_link "$LESSON_LINK" "${LESSON_LABEL}: ${LESSON_TEXT}")"
+  else
+    LATEST_LESSON_LINK="$(inline_link "$LESSON_LINK" "$LESSON_LABEL")"
+  fi
+fi
 
 # ── Output (single line) ─────────────────────────────────────────
 LINE="ThumbGate v${TG_VERSION} · ${TG_TIER}"
 if [ "$UP" = "0" ] && [ "$DOWN" = "0" ]; then
   LINE="${D}${LINE} · no feedback yet${RST} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
+  [ -n "$LATEST_LESSON_LINK" ] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
   printf '%b\n' "$LINE"
 else
   LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_ICON} ${R}${BD}${DOWN}${RST}${DOWN_ICON} ${ARROW}"
@@ -172,6 +183,7 @@ else
   [ "${AT_RISK:-0}" -gt 0 ] && LINE="${LINE} ${R}${AT_RISK}⚠${RST}"
   [ "${ANOMALIES:-0}" -gt 0 ] && LINE="${LINE} ${R}${ANOMALIES}☠${RST}"
   LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
+  [ -n "$LATEST_LESSON_LINK" ] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
 
   printf '%b\n' "$LINE"
 fi
