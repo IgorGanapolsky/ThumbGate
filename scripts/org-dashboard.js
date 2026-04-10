@@ -19,6 +19,11 @@ const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { readAuditLog, auditStats, skillAdherence } = require('./audit-trail');
 const { isProTier } = require('./rate-limiter');
+const {
+  PRO_MONTHLY_PAYMENT_LINK,
+  PRO_PRICE_LABEL,
+  TEAM_PRICE_LABEL,
+} = require('./commercial-offer');
 
 // ---------------------------------------------------------------------------
 // Agent Registry
@@ -181,7 +186,7 @@ function generateOrgDashboard(opts = {}) {
   };
 
   if (!pro) {
-    summary.upgradeMessage = 'Founding Member: $49 once, Pro forever — https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05 | Or $19/mo: https://thumbgate-production.up.railway.app/checkout/pro';
+    summary.upgradeMessage = `Pro checkout: ${PRO_PRICE_LABEL} — ${PRO_MONTHLY_PAYMENT_LINK} | Team: ${TEAM_PRICE_LABEL} after workflow qualification.`;
   }
 
   return summary;
