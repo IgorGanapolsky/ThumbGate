@@ -14,7 +14,7 @@ The job of go-to-market is to turn ThumbGate from an interesting open-source rel
 
 - The open-source `thumbgate` package is free and MIT licensed.
 - The current public self-serve commercial offer is **Pro at `$19/mo` or `$149/yr`**.
-- The current Team pricing anchor is **`$12/seat/mo` with a `3`-seat minimum**, and the Team path is still intake-led.
+- The current Team pricing anchor is **`$99/seat/mo` with a `3`-seat minimum**, and the Team path is still intake-led.
 - Verified commercial proof is still early-stage. Public claims must stay aligned with [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
 - Weekly npm installs, GitHub stars, and directory listings are acquisition signals, not revenue proof.
 
@@ -40,8 +40,8 @@ These signals matter because they show demand and discovery, but they do not pro
 | Path | Formula | Monthly revenue |
 | --- | --- | ---: |
 | Pro only | `226 x $19` | `$4,294` |
-| Mixed target | `150 Pro x $19 + 12 teams x 10 seats x $12` | `$4,290` |
-| Team-heavier | `90 Pro x $19 + 18 teams x 12 seats x $12` | `$4,302` |
+| Mixed target | `150 Pro x $19 + 2 teams x 8 seats x $99` | `$4,434` |
+| Team-heavier | `45 Pro x $19 + 4 teams x 9 seats x $99` | `$4,419` |
 
 Recommended planning path:
 
@@ -51,7 +51,7 @@ Recommended planning path:
 
 ## Funnel Math
 
-The original research target of `2,000` monthly visitors and `4.2%` overall conversion is too loose if it is meant to support `150` Pro subscribers plus `12` paying team accounts.
+The original research target of `2,000` monthly visitors and `4.2%` overall conversion is too loose if it is meant to support `150` Pro subscribers plus multiple paying team accounts.
 
 If the target is `162` paying accounts:
 

@@ -80,10 +80,10 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
   const context = readText(path.join('public', 'llm-context.md'));
 
   assert.match(context, /Workflow Hardening Sprint/i);
-  assert.match(context, /\$12\/seat\/mo/i);
+  assert.match(context, /\$99\/seat\/mo/i);
   assert.match(context, /CLI-first/i);
   assert.match(context, /solo side lane/i);
-  assert.doesNotMatch(context, /\$99\/seat\/mo/i);
+  assert.doesNotMatch(context, /\$12\/seat\/mo/i);
 });
 
 test('continuity guide frames the gateway as downstream reliability, not a new orchestrator', () => {
