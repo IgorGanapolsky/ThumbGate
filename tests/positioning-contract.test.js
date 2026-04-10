@@ -86,6 +86,19 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
   assert.doesNotMatch(context, /\$12\/seat\/mo/i);
 });
 
+test('LLM context maps ThumbGate to LangChain three-layer continual learning framework', () => {
+  const context = readText(path.join('public', 'llm-context.md'));
+
+  assert.match(context, /Continual Learning Architecture/);
+  assert.match(context, /Model layer/);
+  assert.match(context, /Harness layer/);
+  assert.match(context, /Context layer/);
+  assert.match(context, /LangChain/i);
+  assert.match(context, /DPO pairs/i);
+  assert.match(context, /recall.*MCP tool/i);
+  assert.match(context, /PreToolUse hooks/i);
+});
+
 test('continuity guide frames the gateway as downstream reliability, not a new orchestrator', () => {
   const guide = readText(path.join('docs', 'guides', 'continuity-tools-integration.md'));
 

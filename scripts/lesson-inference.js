@@ -189,6 +189,59 @@ function getLessonStats() {
 }
 
 // ---------------------------------------------------------------------------
+// 2b. Context Stuffing — dump all lessons for injection into agent context
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns ALL lessons condensed for context-window injection.
+ * Bypasses RAG/search — just stuff everything into context.
+ * For most projects (20-200 lessons), this is 1K-10K tokens.
+ * @param {object} opts
+ * @param {number} opts.maxTokenBudget - approximate token budget (default 10000)
+ * @param {string} opts.signal - filter by 'positive' or 'negative'
+ * @param {string} opts.format - 'compact' (default) or 'full'
+ * @returns {{ lessons: string, count: number, truncated: boolean }}
+ */
+function getAllLessonsForContext({ maxTokenBudget = 10000, signal, format = 'compact' } = {}) {
+  let lessons = readJsonl(getLessonsPath());
+  if (signal) lessons = lessons.filter((l) => l.signal === signal || (signal === 'negative' && l.signal === 'down') || (signal === 'positive' && l.signal === 'up'));
+
+  // Sort by confidence descending — most important lessons first
+  lessons.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+
+  const lines = [];
+  let approxTokens = 0;
+  let truncated = false;
+
+  for (const l of lessons) {
+    let line;
+    if (format === 'compact') {
+      const sig = l.signal === 'positive' || l.signal === 'up' ? 'DO' : 'AVOID';
+      line = `[${sig}] ${l.lesson || l.inferredLesson || ''}`;
+    } else {
+      line = JSON.stringify({ signal: l.signal, lesson: l.lesson || l.inferredLesson, confidence: l.confidence, tags: l.tags, createdAt: l.createdAt });
+    }
+
+    const lineTokens = Math.ceil(line.length / 4); // rough token estimate
+    if (approxTokens + lineTokens > maxTokenBudget) {
+      truncated = true;
+      break;
+    }
+
+    lines.push(line);
+    approxTokens += lineTokens;
+  }
+
+  return {
+    lessons: lines.join('\n'),
+    count: lines.length,
+    totalAvailable: lessons.length,
+    truncated,
+    approxTokens,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // 3. Statusbar Data Provider
 // ---------------------------------------------------------------------------
 
@@ -378,7 +431,7 @@ async function inferStructuredLessonLLM(conversationWindow, signal, context) {
 
 module.exports = {
   inferFromSurroundingMessages, createLesson, getRecentLesson,
-  searchLessons, getLessonStats, getStatusbarLessonData,
+  searchLessons, getLessonStats, getStatusbarLessonData, getAllLessonsForContext,
   getLessonsPath, getRecentLessonPath,
   inferStructuredLesson, inferStructuredLessonLLM,
   extractTrigger, extractAction, extractToolCalls,
