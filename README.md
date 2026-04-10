@@ -117,7 +117,7 @@ Yes. ThumbGate is MCP-compatible and works with Claude Code, Cursor, Codex, Gemi
 ThumbGate can auto-evaluate agent action outcomes (test failures, reverted edits, error patterns) and generate prevention rules without any human feedback. Your agent gets smarter every session automatically.
 
 **Is it free?**
-Free tier: 3 feedback captures/day, 5 lesson searches/day, 5 built-in gates. Founding Member: $49 one-time, Pro forever.
+Free tier: 3 feedback captures/day, 5 lesson searches/day, 5 built-in gates. Pro is $19/mo or $149/yr for solo operators who need the personal local dashboard and exports. Team rollout starts intake-first at $99/seat/mo with a 3-seat minimum when shared lessons, org visibility, and approval boundaries matter.
 
 ## The Loop
 

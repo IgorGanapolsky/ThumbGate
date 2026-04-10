@@ -15,7 +15,11 @@
 
 ## Recommended Tier Structure
 
-These tiers map directly to ThumbGate's existing pricing and feature set.
+These tiers are donation rails, not the canonical ThumbGate pricing surface. Current commercial truth remains:
+
+- Pro: `$19/mo or $149/yr` for individual operators.
+- Team: `$99/seat/mo` with a `3`-seat minimum after workflow qualification.
+- GitHub Sponsors should not publish alternate Team pricing or lifetime Pro claims.
 
 ### $5/mo — Supporter
 
@@ -31,7 +35,7 @@ These tiers map directly to ThumbGate's existing pricing and feature set.
 ### $19/mo — Pro Sponsor
 
 **Perks:**
-- Full **ThumbGate Pro** license (`thumbgate-pro` npm package)
+- Full **ThumbGate Pro** license equivalent to the public monthly Pro offer
 - Access to Pro features: LanceDB vector similarity, Thompson Sampling bandit, ContextFS context packs, DPO export
 - Priority support via GitHub Issues (SLA: response within 48 hours)
 - All Supporter perks
@@ -40,28 +44,15 @@ These tiers map directly to ThumbGate's existing pricing and feature set.
 
 ---
 
-### $49/mo — Power Sponsor
+### Team Sponsor — route to intake, not a fixed Sponsors tier
 
 **Perks:**
-- Everything in Pro Sponsor
-- **1 hour onboarding/architecture call per month** (scheduled via Calendly or GitHub discussion)
-- Direct feedback channel — sponsor's use cases prioritized in roadmap planning
-- Pre-release beta access to new features before npm publish
+- Shared hosted lesson DB
+- Org dashboard and review surfaces
+- Approval boundaries and rollout proof across operators
+- Support scope defined after the Workflow Hardening Sprint
 
-**Rationale:** Targets individual power users or consultants who want hands-on help integrating ThumbGate into their agent pipelines. The onboarding call converts sponsors into active product champions.
-
----
-
-### $149/mo — Team Sponsor
-
-**Perks:**
-- Everything in Power Sponsor
-- **Team license for up to 10 seats** (`thumbgate-pro` for 10 npm accounts or CI environments)
-- Dedicated **private Slack channel** (or Discord thread) for direct async support
-- Logo placement in README and on the ThumbGate landing page
-- Quarterly roadmap review call (30 min)
-
-**Rationale:** Targets small engineering teams running AI coding agents at scale. Maps to the ThumbGate team/enterprise tier. Slack channel access reduces friction for multi-engineer adoption.
+**Rationale:** GitHub Sponsors is too blunt for Team rollout. Team pricing starts at `$99/seat/mo` with a `3`-seat minimum and should be sold through intake so scope, seats, proof, and support boundaries are explicit.
 
 ---
 
@@ -71,13 +62,14 @@ The listing already exists. The only remaining step is adding tiers.
 
 1. Go to [github.com/sponsors/IgorGanapolsky/manage](https://github.com/sponsors/IgorGanapolsky/manage)
 2. Click **"Tiers"** in the left sidebar.
-3. Click **"Add tier"** and fill in for each tier:
-   - **Monthly price** (5, 19, 49, 149)
-   - **Name** (Supporter, Pro Sponsor, Power Sponsor, Team Sponsor)
+3. Click **"Add tier"** and fill in only the donation and Pro-equivalent tiers:
+   - **Monthly price** (5, 19)
+   - **Name** (Supporter, Pro Sponsor)
    - **Description** (copy from the perks above)
    - **Is one-time?** — leave unchecked (recurring monthly)
 4. For the $19 tier, enable **"Welcome message"** with instructions on how to access the `thumbgate-pro` package (npm token or GitHub Packages invite).
-5. Click **"Publish"** on each tier.
+5. Link Team buyers to the Workflow Hardening Sprint intake instead of adding a fixed Team Sponsor tier.
+6. Click **"Publish"** on each tier.
 
 To verify tiers are live after creation:
 
@@ -89,8 +81,6 @@ Expected output once tiers exist:
 ```
 5
 19
-49
-149
 ```
 
 ---
@@ -115,7 +105,7 @@ Sponsoring funds:
 - ContextFS context assembly and DPO export for fine-tuning pipelines
 - Documentation, examples, and community support
 
-Pro and Team sponsors receive a `thumbgate-pro` license as part of their tier.
+Pro sponsors receive a `thumbgate-pro` license as part of their tier. Team buyers should use the Workflow Hardening Sprint intake so shared rollout scope is qualified before seats are sold.
 ```
 
 ---
@@ -130,9 +120,8 @@ Pro and Team sponsors receive a `thumbgate-pro` license as part of their tier.
 | Thompson Sampling bandit | Adaptive lesson retrieval | $19+/mo |
 | ContextFS context packs | `npm run feedback:rules` context assembly | $19+/mo |
 | DPO export for fine-tuning | `npm run feedback:export:dpo` | $19+/mo |
-| Onboarding call | Architecture review, pipeline integration | $49+/mo |
-| Multi-seat license | 10 CI/CD environments or npm accounts | $149/mo |
-| Direct async support channel | Slack/Discord | $149/mo |
+| Team rollout | Shared lesson DB, org visibility, approval boundaries | Intake, then $99/seat/mo |
+| Minimum Team scope | Qualified workflow and at least 3 seats | Intake-led |
 
 ---
 

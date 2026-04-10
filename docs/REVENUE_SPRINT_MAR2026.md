@@ -1,6 +1,6 @@
 # Revenue Sprint: First Paying Customer TODAY, $1K MRR in 30 Days
 
-> Historical research note: community-size figures, pricing experiments, and growth targets in this file are point-in-time planning assumptions from March 11, 2026. They are not current product truth. Use `docs/COMMERCIAL_TRUTH.md` for current pricing, traction, and proof language. All `$5/mo`, `$10/mo`, "Founding Member", and scarcity references below are retired experiments retained for historical context only.
+> Historical research note: community-size figures, pricing experiments, and growth targets in this file are point-in-time planning assumptions from March 11, 2026. They are not current product truth. Use `docs/COMMERCIAL_TRUTH.md` for current pricing, traction, and proof language. The low-dollar founder, scarcity, and flat-rate subscription ideas below are retired experiments retained for historical context only.
 
 **Date:** 2026-03-11
 **Status:** Historical plan archived
@@ -51,7 +51,7 @@
 
 ---
 
-## Part 2: Historical Buyer Profile Hypothesis For A Then-Proposed $10/mo Offer
+## Part 2: Historical Buyer Profile Hypothesis For A Retired Low-Price Offer
 
 ### Primary Persona: "The AI Team Lead"
 - **Role:** Engineering lead or senior dev running 2-5 person team using Claude Code daily
@@ -70,7 +70,7 @@
 ### Secondary Persona: "The Solo AI Engineer"
 - Building MCP integrations or AI products
 - Needs DPO/KTO export pairs for fine-tuning
-- Would have paid `$10/mo` to avoid building their own feedback infrastructure
+- Would have paid a low monthly subscription to avoid building their own feedback infrastructure
 
 ### Trigger Moment (converts "interesting" to "shut up and take my money"):
 > "I just spent 2 hours debugging because Claude forgot what we decided yesterday. I need persistent memory that works across sessions WITHOUT me managing infrastructure."
@@ -108,30 +108,30 @@
 ## Part 4: Historical Pricing Experiment Considered For Day-1 Conversion
 
 ### Current State Analysis
-- $10/mo flat is **not wrong** but friction is high
+- A low flat monthly price was not obviously wrong, but friction was high
 - 2026 market expects consumption-based pricing (per-request, per-GB)
 - Less than 5% of 11,000+ MCP servers are monetized — opportunity is wide open
 
 ### Historical Pricing Structure Considered At The Time
 
-Retired experiment: the `$5/mo`, `$10/mo`, and scarcity-based tiers below are preserved as research history only. They are not current product truth.
+Retired experiment: the low-dollar founder, Pro, and scarcity-based tiers below are preserved as research history only. They are not current product truth.
 
 | Tier | Price | What's Included | Conversion Target |
 |------|-------|-----------------|-------------------|
 | **Free** | $0 | `npx thumbgate serve` local, 1000 feedback captures/mo | Funnel entry |
-| **Founding Member** | **$5/mo forever** (locked, first 50 users) | Hosted gateway, 10K captures/mo, team sharing (3 seats), DPO export, dashboard | **Day-1 conversion** |
-| **Pro** | $10/mo | 50K captures/mo, 10 seats, priority support, custom guardrails | Standard |
-| **Team** | $29/mo | Unlimited captures, unlimited seats, SSO, audit log, SLA | Upsell target |
+| **Retired founder test** | Low-dollar launch price with scarcity | Hosted gateway, capped captures, team sharing, DPO export, dashboard | Day-1 conversion |
+| **Retired Pro test** | Low flat monthly price | Higher capture cap, multiple seats, support, custom guardrails | Standard |
+| **Retired Team test** | Low bundled team price | Unlimited-style team packaging, SSO, audit log, SLA | Upsell target |
 
-### Why The Team Believed "Founding Member $5/mo Forever" Could Convert At The Time:
+### Why The Team Believed The Retired Founder Scarcity Test Could Convert At The Time:
 1. **Loss aversion** — "This price disappears after 50 users" creates urgency
-2. **Lower barrier** — $5 is impulse-buy territory for developers
+2. **Lower barrier** — low-dollar pricing felt like impulse-buy territory for developers
 3. **"Forever" lock** — developers hate price increases, this removes the objection
-4. **Social proof** — "Join 12 founding members" (update counter in real-time)
+4. **Social proof** — display a founding-member counter in real time
 
 ### Alternative Quick Test Considered At The Time:
-- **72-hour flash: $1 first month** via Stripe coupon code `FOUNDING1`
-- After 72 hours, price reverts to $10/mo
+- **72-hour flash:** discounted first month via a limited Stripe coupon
+- After 72 hours, price reverts to the standard self-serve rate
 - Post this coupon in every Reddit/Discord/HN thread
 
 ---
@@ -144,7 +144,7 @@ Retired experiment: the `$5/mo`, `$10/mo`, and scarcity-based tiers below are pr
 |---------|-----|--------|
 | **MCPize.com** | 85% rev share, they handle everything | Deploy via `mcpize deploy`, list on their marketplace |
 | **PulseMCP** | 8,610+ servers indexed, has partnership program | Email hello@pulsemcp.com for featured placement |
-| **Claude Code YouTubers** | 25+ active creators ranking Claude Code videos | DM top 5 with "free Founding Member account + affiliate 30%" |
+| **Claude Code YouTubers** | 25+ active creators ranking Claude Code videos | DM top 5 with free pilot access + affiliate offer |
 | **Anthropic MCP team** | Already on their registry | Request featured/spotlight via MCP Discord |
 | **awesome-mcp-servers maintainers** | Submit PR to all 5 major lists | PRs to punkpeye, wong2, appcypher, hireblackout, tolkonepiu |
 
@@ -168,17 +168,17 @@ npm install -g @mcpize/cli
 mcpize login
 mcpize init thumbgate
 mcpize deploy
-# Set pricing: Founding $5/mo, Pro $10/mo via MCPize dashboard
+# Set the retired founder and Pro test offers via MCPize dashboard
 # Connect Stripe for payouts
 ```
 **Why first:** Instant distribution to paying MCP users. 85% rev share. Zero ops.
 
-### 2. Create "Founding Member $5/mo Forever" Stripe Link (30 min, HIGH impact)
+### 2. Create Retired Founder-Member Stripe Link (30 min, HIGH impact)
 ```bash
 # In Stripe Dashboard:
-# 1. Create product "ThumbGate — Founding Member"
-# 2. Price: $5/mo recurring
-# 3. Create promotion code: FOUNDING50 (limits to 50 redemptions)
+# 1. Create product "ThumbGate — Founder Test"
+# 2. Create the retired low-dollar recurring test price
+# 3. Create a limited redemption promotion code
 # 4. Generate payment link
 # 5. Update Railway landing page with prominent CTA
 ```
@@ -192,7 +192,7 @@ Body:
 - Problem: Claude forgets everything between sessions
 - Solution: ThumbGate captures feedback, prevents repeated mistakes
 - Free: npx thumbgate serve
-- Hosted: $5/mo founding member (50 spots)
+- Hosted: retired founder-price test
 - Demo: [Railway URL]
 - GitHub: [repo URL]
 - On official MCP registry
@@ -238,7 +238,7 @@ Body: Technical, concise. Focus on:
 Share in Model Context Protocol Discord (11,565 members):
 - What it does (persistent memory + guardrails)
 - How to install (one-liner npx)
-- Hosted option with founding member pricing
+- Hosted option with the retired founder-price test
 - Link to registry listing
 ```
 **Why:** Direct access to MCP builders. Some are building agents that NEED memory.
@@ -252,7 +252,7 @@ Script:
 2:00 - Show prevention rules auto-generated
 3:00 - Export DPO pairs
 4:00 - Hosted dashboard demo
-4:30 - "Founding member: $5/mo forever. Link in description."
+4:30 - "Free local install, Pro checkout, and Team intake links in description."
 ```
 **Why:** YouTube is where devs discover tools. Searchable forever.
 
@@ -273,7 +273,7 @@ Contact:
 # 3. DM top 5 Claude Code YouTubers and MCP bloggers
 # 4. Provide them: free Pro account + affiliate link + one-liner install script
 ```
-**Why:** Leverages other people's audiences. 30% of $10/mo = $3/mo per conversion, scales infinitely.
+**Why:** Leverages other people's audiences. Recurring affiliate economics scale if self-serve Pro converts.
 
 ---
 
@@ -281,8 +281,8 @@ Contact:
 
 | Time | Action | Expected Outcome |
 |------|--------|-----------------|
-| 9:00 AM | Create Founding Member Stripe link ($5/mo) | Payment infrastructure ready |
-| 9:30 AM | Update Railway landing page with Founding CTA | Conversion path live |
+| 9:00 AM | Create retired founder-member Stripe link | Payment infrastructure ready |
+| 9:30 AM | Update Railway landing page with founder CTA | Conversion path live |
 | 10:00 AM | Deploy to MCPize marketplace | Second distribution channel |
 | 11:00 AM | Post to r/ClaudeCode | First 500+ views within hours |
 | 11:30 AM | Post to r/ClaudeAI | Second high-intent audience |
@@ -302,9 +302,9 @@ Contact:
 | 3 | 500-1000 | 30-50 | $150-250 |
 | 4 | 1000-2000 | 80-150 | $400-750 |
 
-**To hit $1K MRR by April 11:** Need 200 paying users at $5/mo OR 100 at $10/mo. Requires ~2,000-4,000 free users with 5% conversion. Achievable if HN post performs + Reddit traction + directory listings compound.
+**To hit $1K MRR by April 11:** The retired March model required hundreds of low-price paying users from a few thousand free users. The current model should be evaluated against `docs/COMMERCIAL_TRUTH.md` instead: Pro is self-serve, and Team is intake-led around workflow proof.
 
-**Aggressive path to $1K MRR:** Add MCPize marketplace revenue (85% of their sales) + affiliate-driven conversions + upgrade Founding Members to Pro after 30 days.
+**Aggressive path to $1K MRR:** Add marketplace revenue share + affiliate-driven conversions + upgrade early self-serve customers into the current Pro or Team motion after proof exists.
 
 ---
 

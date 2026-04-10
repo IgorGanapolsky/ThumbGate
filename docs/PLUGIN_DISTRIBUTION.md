@@ -20,7 +20,7 @@ Rubric scoring and anti-hacking guardrails are shared via `config/rubrics/defaul
 3. Offer managed hosted API + analytics as paid SaaS.
 4. Sell enterprise controls (SSO, audit, retention policies, support SLA).
 
-This avoids platform-specific rewrite cost and keeps the product under a `$10/mo` bootstrap budget until paid demand exists.
+This avoids platform-specific rewrite cost and keeps the product under a small bootstrap budget until paid demand exists.
 
 ## Public vs Pro repo boundary
 
