@@ -41,6 +41,7 @@ const { startServer, __test__ } = require('../src/api/server');
 const billing = require('../scripts/billing');
 const gatesEngine = require('../scripts/gates-engine');
 const { buildHostedSuccessUrl } = require('../scripts/hosted-config');
+const { readJsonl } = require('../scripts/fs-utils');
 const {
   recordConversationEntry,
   getConversationPaths,
@@ -60,15 +61,6 @@ test('api servers 2026 pricing', () => {
 
 function apiUrl(pathname = '/') {
   return new URL(pathname, apiOrigin).toString();
-}
-
-function readJsonl(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  return fs.readFileSync(filePath, 'utf8')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
 }
 
 function extractCookieValue(setCookies, name) {

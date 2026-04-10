@@ -16,20 +16,12 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { ensureParentDir, readJsonl } = require('./fs-utils');
 
 const RUNS_FILE = 'agent-runs.jsonl';
 
 function getFeedbackDir() { return resolveFeedbackDir(); }
 function getRunsPath() { return path.join(getFeedbackDir(), RUNS_FILE); }
-
-function readJsonl(fp) {
-  if (!fs.existsSync(fp)) return [];
-  const raw = fs.readFileSync(fp, 'utf-8').trim();
-  if (!raw) return [];
-  return raw.split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
-}
-
-function ensureDir(fp) { const d = path.dirname(fp); if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); }
 
 // ---------------------------------------------------------------------------
 // 1. Run Tracking
@@ -41,7 +33,7 @@ function ensureDir(fp) { const d = path.dirname(fp); if (!fs.existsSync(d)) fs.m
  */
 function recordAgentRun({ agentId, runType, source, branch, prNumber, status, gatesChecked, gatesBlocked, filesChanged, ciPassed, duration, metadata } = {}) {
   const runsPath = getRunsPath();
-  ensureDir(runsPath);
+  ensureParentDir(runsPath);
   const run = {
     id: `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     timestamp: new Date().toISOString(),

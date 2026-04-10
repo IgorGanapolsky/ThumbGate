@@ -25,6 +25,7 @@ const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { createLesson, inferStructuredLesson } = require('./lesson-inference');
 const { buildStableId } = require('./conversation-context');
+const { ensureParentDir, readJsonl } = require('./fs-utils');
 
 const HOME = process.env.HOME || process.env.USERPROFILE || os.homedir() || '';
 const SELF_DISTILL_RUNS_PATH = path.join(HOME, '.thumbgate', 'self-distill-runs.jsonl');
@@ -63,19 +64,6 @@ function discoverConversationLogs({ limit = 20 } = {}) {
   } catch { /* resolve errors — skip */ }
 
   return logs.slice(0, limit);
-}
-
-function readJsonlFile(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  try {
-    const raw = fs.readFileSync(filePath, 'utf-8').trim();
-    if (!raw) return [];
-    return raw.split('\n').map((line) => {
-      try { return JSON.parse(line); } catch { return null; }
-    }).filter(Boolean);
-  } catch {
-    return [];
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -417,18 +405,14 @@ async function generateLlmLessons(conversationWindow, model) {
 // 5. Persistence
 // ---------------------------------------------------------------------------
 
-function ensureDir(filePath) {
-  const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
 
 function writeRunManifest(manifest) {
-  ensureDir(SELF_DISTILL_RUNS_PATH);
+  ensureParentDir(SELF_DISTILL_RUNS_PATH);
   fs.appendFileSync(SELF_DISTILL_RUNS_PATH, JSON.stringify(manifest) + '\n');
 }
 
 function readRunManifests() {
-  return readJsonlFile(SELF_DISTILL_RUNS_PATH);
+  return readJsonl(SELF_DISTILL_RUNS_PATH);
 }
 
 // ---------------------------------------------------------------------------
@@ -446,7 +430,7 @@ async function runSelfDistill({ dryRun = false, limit = 20, model } = {}) {
   let sessionsSkipped = 0;
 
   for (const logPath of logPaths) {
-    const entries = readJsonlFile(logPath);
+    const entries = readJsonl(logPath);
     if (entries.length === 0) {
       sessionsSkipped++;
       continue;

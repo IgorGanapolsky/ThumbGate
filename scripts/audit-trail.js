@@ -13,6 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { ensureDir } = require('./fs-utils');
 
 const AUDIT_LOG_FILENAME = 'audit-trail.jsonl';
 
@@ -24,11 +25,6 @@ function getAuditLogPath() {
   return path.join(resolveFeedbackDir(), AUDIT_LOG_FILENAME);
 }
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Core audit record

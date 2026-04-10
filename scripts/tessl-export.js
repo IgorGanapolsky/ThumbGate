@@ -4,6 +4,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { ensureDir } = require('./fs-utils');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_CONFIG_PATH = path.join(ROOT, 'config', 'tessl-tiles.json');
@@ -14,9 +15,6 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
-function ensureDir(dirPath) {
-  fs.mkdirSync(dirPath, { recursive: true });
-}
 
 function cleanDir(dirPath) {
   fs.rmSync(dirPath, { recursive: true, force: true });
