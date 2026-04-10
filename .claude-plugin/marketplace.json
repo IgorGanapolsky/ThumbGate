@@ -1,23 +1,42 @@
 {
-  "name": "thumbgate",
+  "name": "thumbgate-marketplace",
   "version": "1.3.0",
+  "owner": {
+    "name": "Igor Ganapolsky",
+    "email": "ig5973700@gmail.com"
+  },
   "plugins": [
     {
       "name": "thumbgate",
       "description": "Pre-action gates that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.",
-      "type": "mcp",
       "source": {
-        "type": "npm",
-        "package": "thumbgate",
-        "command": "npx",
-        "args": [
-          "--yes",
-          "--package",
-          "thumbgate",
-          "thumbgate",
-          "serve"
-        ]
+        "source": "npm",
+        "package": "thumbgate"
       },
+      "version": "1.3.0",
+      "author": {
+        "name": "Igor Ganapolsky"
+      },
+      "homepage": "https://thumbgate-production.up.railway.app",
+      "repository": "https://github.com/IgorGanapolsky/ThumbGate",
+      "license": "MIT",
+      "category": "developer-tools",
+      "tags": [
+        "pre-action-gates",
+        "ai-agent-safety",
+        "mcp",
+        "memory",
+        "workflow-hardening"
+      ],
+      "keywords": [
+        "claude-desktop",
+        "desktop-extension",
+        "pre-action-gates",
+        "ai-agent-safety",
+        "mcp",
+        "memory",
+        "workflow-hardening"
+      ],
       "metadata": {
         "author": "Igor Ganapolsky",
         "homepage": "https://thumbgate-production.up.railway.app",

@@ -17,5 +17,12 @@
     "memory",
     "guardrails",
     "workflow-hardening"
-  ]
+  ],
+  "skills": "skills",
+  "mcpServers": {
+    "thumbgate": {
+      "command": "npx",
+      "args": ["--yes", "--package", "thumbgate", "thumbgate", "serve"]
+    }
+  }
 }
