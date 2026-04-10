@@ -99,6 +99,18 @@ test('LLM context maps ThumbGate to LangChain three-layer continual learning fra
   assert.match(context, /PreToolUse hooks/i);
 });
 
+test('LLM context aligns ThumbGate with Google Cloud enterprise safety framework pattern', () => {
+  const context = readText(path.join('public', 'llm-context.md'));
+
+  assert.match(context, /Enterprise Safety Framework Alignment/);
+  assert.match(context, /Google Cloud/);
+  assert.match(context, /Safety Framework gate/);
+  assert.match(context, /PreToolUse hooks/);
+  assert.match(context, /Canned response/i);
+  assert.match(context, /Quality Framework/);
+  assert.match(context, /audit trail/i);
+});
+
 test('continuity guide frames the gateway as downstream reliability, not a new orchestrator', () => {
   const guide = readText(path.join('docs', 'guides', 'continuity-tools-integration.md'));
 
