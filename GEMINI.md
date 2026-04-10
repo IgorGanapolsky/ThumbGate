@@ -45,6 +45,7 @@ Source of truth for Gemini declarations:
 - Prefer clean worktrees for verification and branch maintenance rather than a dirty primary checkout.
 - Do not report PR completion until the exact merge commit is green on `main`.
 - Pending CI checks and `REVIEW_REQUIRED` are blockers, not mergeable states; do not admin-merge around them.
+- For `main`, merge automation should submit `/trunk merge` and exit. Do not long-poll helper workflow checks or wait inside the helper workflow for the final merge commit.
 - Archive unique orphan branches before deletion and remove clean redundant worktrees once they are no longer needed.
 
 ## Suggested Runtime Mapping

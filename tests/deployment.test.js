@@ -501,6 +501,13 @@ test('Dependabot auto-merge trusts the pull request author instead of the trigge
   assert.match(workflow, /pull_request_target:/);
   assert.match(workflow, /github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'/);
   assert.doesNotMatch(workflow, /if:\s*github\.actor == 'dependabot\[bot\]'/);
+  assert.match(workflow, /issues:\s+write/s);
+  assert.match(workflow, /group:\s*dependabot-automerge-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.run_id\s*\}\}/);
+  assert.match(workflow, /jobs:\s+dependabot-automerge:\s+name:\s*dependabot-automerge/s);
+  assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
+  assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
+  assert.match(workflow, /-f body='\/trunk merge'/);
+  assert.doesNotMatch(workflow, /gh pr checks "\$PR_URL"/);
 });
 
 test('Publish Claude Plugin workflow builds the MCPB and uploads channel-safe release assets', () => {
@@ -527,23 +534,37 @@ test('Publish Claude Plugin workflow builds the MCPB and uploads channel-safe re
   assert.match(workflow, /--prerelease/);
 });
 
-test('Agent auto-merge workflow blocks any failing quality check, not only required checks', () => {
+test('Agent auto-merge workflow submits queue requests instead of polling its own check state', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'agent-automerge.yml'), 'utf8');
 
-  assert.match(workflow, /name: Wait for required and critical quality checks/);
-  assert.match(workflow, /gh pr checks "\$PR_URL" --json bucket,name,state,workflow,link,event/);
-  assert.doesNotMatch(workflow, /gh pr checks "\$PR_URL" --required/);
-  assert.match(workflow, /any\(\.\[\]; \.bucket == "fail" or \.bucket == "cancel"\)/);
-  assert.match(workflow, /All critical quality checks completed successfully\./);
+  assert.match(workflow, /issues:\s+write/s);
+  assert.match(workflow, /group:\s*agent-automerge-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.run_id\s*\}\}/);
+  assert.match(workflow, /jobs:\s+agent-automerge:\s+name:\s*agent-automerge/s);
+  assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
+  assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
+  assert.match(workflow, /-f body='\/trunk merge'/);
+  assert.doesNotMatch(workflow, /gh pr checks "\$PR_URL"/);
+  assert.doesNotMatch(workflow, /timeout_seconds=1800/);
 });
 
-test('Agent auto-merge workflow reports the final merge commit instead of the branch head SHA', () => {
+test('Agent auto-merge workflow records merge submission without waiting for the final merge commit', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'agent-automerge.yml'), 'utf8');
 
-  assert.match(workflow, /name: Resolve final merge commit/);
-  assert.match(workflow, /gh pr view "\$PR_URL" --json state,mergeCommit,url,title/);
-  assert.match(workflow, /Final merge commit: \$merge_commit/);
-  assert.match(workflow, /Final merge commit: pending \(merge queue still processing\)/);
+  assert.match(workflow, /name: Request merge automation/);
+  assert.match(workflow, /### Merge automation/);
+  assert.match(workflow, /Queue request: \\`\/trunk merge\\`/);
+  assert.doesNotMatch(workflow, /gh pr view "\$PR_URL" --json state,mergeCommit,url,title/);
+  assert.doesNotMatch(workflow, /Final merge commit:/);
+});
+
+test('Merge branch workflow requests trunk merge for main instead of forcing GitHub auto-merge', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'merge-branch.yml'), 'utf8');
+
+  assert.match(workflow, /issues:\s+write/s);
+  assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
+  assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
+  assert.match(workflow, /-f body='\/trunk merge'/);
+  assert.match(workflow, /if \[ "\$\{THUMBGATE_MAIN_MERGE_PROVIDER\}" = "trunk" \]/);
 });
 
 test('Sentry release workflow serializes main release stamping', () => {
