@@ -20,7 +20,7 @@ process.env.THUMBGATE_BUILD_GENERATED_AT = '2026-03-21T00:00:00.000Z';
 // Use insecure mode so auth doesn't interfere with /health unauthenticated check
 process.env.THUMBGATE_ALLOW_INSECURE = 'true';
 
-const { startServer } = require('../src/api/server');
+const { createApiServer, startServer } = require('../src/api/server');
 const pkg = require('../package.json');
 const PROJECT_ROOT = path.join(__dirname, '..');
 
@@ -161,6 +161,24 @@ test('THUMBGATE_ALLOW_INSECURE=true bypasses API key requirement', async () => {
   assert.equal(res.status, 200);
 });
 
+test('createApiServer fails fast when THUMBGATE_API_KEY is missing in secure mode', () => {
+  const previousApiKey = process.env.THUMBGATE_API_KEY;
+  const previousAllowInsecure = process.env.THUMBGATE_ALLOW_INSECURE;
+
+  delete process.env.THUMBGATE_API_KEY;
+  delete process.env.THUMBGATE_ALLOW_INSECURE;
+
+  try {
+    assert.throws(() => createApiServer(), /THUMBGATE_API_KEY is required unless THUMBGATE_ALLOW_INSECURE=true/);
+  } finally {
+    if (previousApiKey === undefined) delete process.env.THUMBGATE_API_KEY;
+    else process.env.THUMBGATE_API_KEY = previousApiKey;
+
+    if (previousAllowInsecure === undefined) delete process.env.THUMBGATE_ALLOW_INSECURE;
+    else process.env.THUMBGATE_ALLOW_INSECURE = previousAllowInsecure;
+  }
+});
+
 test('feedback endpoint returns valid JSON under insecure mode', async () => {
   const res = await fetch(deployUrl('/v1/feedback/stats'));
   const body = await res.json();
@@ -176,10 +194,20 @@ test('CI workflow stays test-only and leaves Railway deploys to the dedicated wo
   assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
 });
 
+test('runtime Docker image installs git for operational integrity checks', () => {
+  const dockerfile = fs.readFileSync(path.join(PROJECT_ROOT, 'Dockerfile'), 'utf8');
+
+  assert.match(dockerfile, /FROM node:20-alpine AS runtime/);
+  assert.match(dockerfile, /RUN apk add --no-cache git/);
+});
+
 test('Deploy to Railway workflow is the single authoritative Railway deploy lane', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
   assert.match(workflow, /Check Railway deployment configuration/);
+  assert.match(workflow, /missing required deploy config/);
+  assert.match(workflow, /missing required runtime secrets/);
+  assert.match(workflow, /THUMBGATE_API_KEY/);
   assert.match(workflow, /Enforce deploy policy/);
   assert.match(workflow, /node scripts\/deploy-policy\.js --profiles=billing,deploy/);
   assert.match(workflow, /steps\.railway-config\.outputs\.enabled == 'true'/);
@@ -188,6 +216,10 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_HEALTHCHECK_URL/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_SLEEP_SECONDS/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS/);
+  assert.match(workflow, /RAILWAY_LOG_LINES/);
+  assert.match(workflow, /RAILWAY_HTTP_LOG_LINES/);
   assert.match(workflow, /secrets\.THUMBGATE_API_KEY/);
   assert.match(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
   assert.match(workflow, /vars\.THUMBGATE_BILLING_API_BASE_URL \|\| vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
@@ -199,6 +231,8 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /--project "\$RAILWAY_PROJECT_ID"/);
   assert.match(workflow, /--environment "\$RAILWAY_ENVIRONMENT_ID"/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS\s*\|\|\s*'120'\s*\}\}/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS\s*\|\|\s*'5'\s*\}\}/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS\s*\|\|\s*'20'\s*\}\}/);
   assert.doesNotMatch(workflow, /secrets\.THUMBGATE_API_KEY\s*\|\|/);
   assert.doesNotMatch(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN\s*\|\|\s*vars\./);
   assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
@@ -213,10 +247,57 @@ test('Deploy to Railway workflow waits long enough to verify the promoted build 
   assert.match(workflow, /--detach/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS\s*\|\|\s*'120'\s*\}\}/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_SLEEP_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_SLEEP_SECONDS\s*\|\|\s*'10'\s*\}\}/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS\s*\|\|\s*'5'\s*\}\}/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS\s*\|\|\s*'20'\s*\}\}/);
   assert.match(workflow, /MAX_ATTEMPTS="\$\{RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-120\}"/);
   assert.match(workflow, /SLEEP_SECONDS="\$\{RAILWAY_HEALTHCHECK_SLEEP_SECONDS:-10\}"/);
+  assert.match(workflow, /CONNECT_TIMEOUT_SECONDS="\$\{RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:-5\}"/);
+  assert.match(workflow, /MAX_TIME_SECONDS="\$\{RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:-20\}"/);
+  assert.match(workflow, /Per-attempt probe budget: connect timeout \$\{CONNECT_TIMEOUT_SECONDS\}s, max time \$\{MAX_TIME_SECONDS\}s\./);
+  assert.match(workflow, /curl --connect-timeout "\$CONNECT_TIMEOUT_SECONDS" --max-time "\$MAX_TIME_SECONDS" -sS -o "\$RESPONSE_FILE" -w "%\{http_code\}" "\$RAILWAY_HEALTHCHECK_URL"/);
   assert.match(workflow, /Observed build SHA/);
   assert.match(workflow, /Expected build SHA/);
+});
+
+test('Deploy to Railway workflow captures Railway diagnostics when health verification fails', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+
+  assert.match(workflow, /name: Capture Railway diagnostics/);
+  assert.match(workflow, /if: failure\(\) && steps\.railway-config\.outputs\.enabled == 'true'/);
+  assert.match(workflow, /bash scripts\/capture-railway-diagnostics\.sh railway-diagnostics/);
+  assert.match(workflow, /actions\/upload-artifact@v4/);
+  assert.match(workflow, /railway-diagnostics-\$\{\{\s*github\.run_id\s*\}\}/);
+});
+
+test('Railway diagnostics workflow can inspect or bounce the service with the live Railway config', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'railway-diagnostics.yml'), 'utf8');
+
+  assert.match(workflow, /name:\s*Railway Diagnostics/);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /action:/);
+  assert.match(workflow, /inspect/);
+  assert.match(workflow, /restart/);
+  assert.match(workflow, /redeploy/);
+  assert.match(workflow, /RAILWAY_PROJECT_ID/);
+  assert.match(workflow, /RAILWAY_ENVIRONMENT_ID/);
+  assert.match(workflow, /RAILWAY_SERVICE/);
+  assert.match(workflow, /railway restart --service "\$RAILWAY_SERVICE" --yes --json/);
+  assert.match(workflow, /railway redeploy --service "\$RAILWAY_SERVICE" --yes --json/);
+  assert.match(workflow, /bash scripts\/capture-railway-diagnostics\.sh railway-diagnostics/);
+  assert.match(workflow, /actions\/upload-artifact@v4/);
+});
+
+test('Railway diagnostics helper captures service status, latest logs, and a direct health probe', () => {
+  const script = fs.readFileSync(path.join(PROJECT_ROOT, 'scripts', 'capture-railway-diagnostics.sh'), 'utf8');
+
+  assert.match(script, /railway link --project "\$RAILWAY_PROJECT_ID"/);
+  assert.match(script, /railway service status/);
+  assert.match(script, /railway logs .*--latest --deployment --lines "\$LOG_LINES" --json/);
+  assert.match(script, /railway logs .*--latest --build --lines "\$LOG_LINES" --json/);
+  assert.match(script, /railway logs .*--latest --http --path \/health --status '>=500' --lines "\$HTTP_LOG_LINES" --json/);
+  assert.match(script, /railway logs .*--latest --http --status '>=500' --lines "\$HTTP_LOG_LINES" --json/);
+  assert.match(script, /curl \\/);
+  assert.match(script, /HEALTHCHECK_URL/);
 });
 
 test('Deploy to Railway workflow retries transient Railway CLI failures before failing the lane', () => {
@@ -236,17 +317,28 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
   assert.match(workflow, /Retrying in \$\{sleep_seconds\}s/);
 });
 
-test('Deploy to Railway workflow always promotes the latest main commit, even for workflow-only or test-only pushes', () => {
+test('Deploy to Railway workflow skips non-runtime pushes and only deploys when runtime-serving files changed', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
   assert.match(workflow, /fetch-depth:\s*2/);
   assert.match(workflow, /name: Detect deployable changes/);
   assert.match(workflow, /BEFORE_SHA='\$\{\{\s*github\.event\.before\s*\}\}'/);
   assert.match(workflow, /git diff --name-only "\$BEFORE_SHA" "\$GITHUB_SHA"/);
+  assert.match(workflow, /DEPLOYABLE_PATTERN='.*src\/.*public\/.*Dockerfile\$/);
+  assert.ok(
+    workflow.includes('scripts/.*\\.(js|mjs|cjs)$'),
+    'workflow should only treat runtime JS script modules as deployable',
+  );
+  assert.ok(
+    !workflow.includes("DEPLOYABLE_PATTERN='^(src/|scripts/|"),
+    'workflow should not treat every scripts/ path as deployable',
+  );
+  assert.match(workflow, /! printf '%s\\n' "\$CHANGED_FILES" \| grep -Eq "\$DEPLOYABLE_PATTERN"/);
   assert.match(workflow, /should_deploy=\$SHOULD_DEPLOY/);
   assert.match(workflow, /SHOULD_DEPLOY=true/);
-  assert.doesNotMatch(workflow, /grep -Eqv '\^\(\\\.github\/\|tests\/\)'/);
-  assert.doesNotMatch(workflow, /Railway deploy skipped: only workflow\/test files changed on this commit\./);
+  assert.match(workflow, /SHOULD_DEPLOY=false/);
+  assert.match(workflow, /Railway deploy skipped: no runtime-serving files changed on this commit\./);
+  assert.doesNotMatch(workflow, /Railway deploy skipped: deploy-scope disabled this run\./);
 });
 
 test('Deploy to Railway workflow stamps runtime deployment env metadata before health verification', () => {
@@ -272,7 +364,7 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /DEFAULT_BRANCH:\s*main/);
   assert.match(workflow, /steps\.plan\.outputs\.skip_publish == 'true'/);
   assert.match(workflow, /steps\.plan\.outputs\.publish_npm == 'true'/);
-  assert.match(workflow, /npm publish --provenance/);
+  assert.match(workflow, /npm publish --tag "\$\{\{\s*steps\.plan\.outputs\.npm_tag \|\| 'latest'\s*\}\}" --provenance/);
 });
 
 test('CODEOWNERS explicitly covers release-critical governance surfaces', () => {
@@ -318,8 +410,8 @@ test('CI workflow runs evolution proof and uploads evolution evidence artifacts'
 test('CI workflow treats GitHub About sync as best-effort but still verifies the live About state', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 
-  assert.match(workflow, /name: Sync GitHub About metadata on main[\s\S]*?continue-on-error:\s*true[\s\S]*?GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\}\}[\s\S]*?npm run github:about:sync/);
-  assert.match(workflow, /name: Verify live GitHub About congruence on main[\s\S]*?run:\s*npm run test:congruence:live/);
+  assert.match(workflow, /name: Sync GitHub About metadata on main[\s\S]*?continue-on-error:\s*true[\s\S]*?GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\}\}[\s\S]*?THUMBGATE_GITHUB_ABOUT_VERIFY_ATTEMPTS:\s*6[\s\S]*?THUMBGATE_GITHUB_ABOUT_VERIFY_DELAY_MS:\s*5000[\s\S]*?npm run github:about:sync/);
+  assert.match(workflow, /name: Verify live GitHub About congruence on main[\s\S]*?THUMBGATE_GITHUB_ABOUT_VERIFY_ATTEMPTS:\s*6[\s\S]*?THUMBGATE_GITHUB_ABOUT_VERIFY_DELAY_MS:\s*5000[\s\S]*?run:\s*npm run test:congruence:live/);
   assert.doesNotMatch(workflow, /name: Verify live GitHub About congruence on main[\s\S]*?GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\}\}/);
 });
 
@@ -332,6 +424,7 @@ test('CI workflow supports merge queue and cancels stale non-main runs', () => {
   assert.match(workflow, /group:\s*ci-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
   assert.match(workflow, /name: Check operational integrity[\s\S]*?GH_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}[\s\S]*?npm run ops:integrity:ci/);
+  assert.match(workflow, /name: Check branch protection congruence[\s\S]*?GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT \|\| github\.token\s*\}\}[\s\S]*?npm run branch-protection:check/);
 });
 
 test('CI workflow gives the full suite enough runtime budget', () => {
@@ -408,9 +501,16 @@ test('Dependabot auto-merge trusts the pull request author instead of the trigge
   assert.match(workflow, /pull_request_target:/);
   assert.match(workflow, /github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'/);
   assert.doesNotMatch(workflow, /if:\s*github\.actor == 'dependabot\[bot\]'/);
+  assert.match(workflow, /issues:\s+write/s);
+  assert.match(workflow, /group:\s*dependabot-automerge-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.run_id\s*\}\}/);
+  assert.match(workflow, /jobs:\s+dependabot-automerge:\s+name:\s*dependabot-automerge/s);
+  assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
+  assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
+  assert.match(workflow, /-f body='\/trunk merge'/);
+  assert.doesNotMatch(workflow, /gh pr checks "\$PR_URL"/);
 });
 
-test('Publish Claude Plugin workflow builds the MCPB and uploads stable release assets', () => {
+test('Publish Claude Plugin workflow builds the MCPB and uploads channel-safe release assets', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'publish-claude-plugin.yml'), 'utf8');
 
   assert.match(workflow, /name: Publish Claude Plugin/);
@@ -422,14 +522,49 @@ test('Publish Claude Plugin workflow builds the MCPB and uploads stable release 
   assert.match(workflow, /scripts\/distribution-surfaces/);
   assert.match(workflow, /version=\$\(node -p "require\('\.\/package\.json'\)\.version"\)/);
   assert.match(workflow, /versioned_asset=\$\(node -e "const \{ getClaudePluginVersionedAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getClaudePluginVersionedAssetName\(\)\)"\)/);
-  assert.match(workflow, /latest_asset=\$\(node -e "const \{ CLAUDE_PLUGIN_LATEST_ASSET_NAME \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(CLAUDE_PLUGIN_LATEST_ASSET_NAME\)"\)/);
+  assert.match(workflow, /channel_asset=\$\(node -e "const \{ getClaudePluginChannelAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getClaudePluginChannelAssetName\(\)\)"\)/);
+  assert.match(workflow, /is_prerelease=\$\(node -e "const \{ isPrereleaseVersion \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(String\(isPrereleaseVersion\(\)\)\)"\)/);
   assert.doesNotMatch(workflow, /require\\+"/);
   assert.match(workflow, /claude-plugin-mcpb/);
   assert.match(workflow, /gh release create/);
   assert.match(workflow, /gh release upload/);
   assert.match(workflow, /--clobber/);
-  assert.match(workflow, /CLAUDE_PLUGIN_LATEST_ASSET_NAME/);
-  assert.match(workflow, /steps\.assets\.outputs\.latest_asset/);
+  assert.match(workflow, /Create channel asset alias/);
+  assert.match(workflow, /steps\.assets\.outputs\.channel_asset/);
+  assert.match(workflow, /--prerelease/);
+});
+
+test('Agent auto-merge workflow submits queue requests instead of polling its own check state', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'agent-automerge.yml'), 'utf8');
+
+  assert.match(workflow, /issues:\s+write/s);
+  assert.match(workflow, /group:\s*agent-automerge-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.run_id\s*\}\}/);
+  assert.match(workflow, /jobs:\s+agent-automerge:\s+name:\s*agent-automerge/s);
+  assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
+  assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
+  assert.match(workflow, /-f body='\/trunk merge'/);
+  assert.doesNotMatch(workflow, /gh pr checks "\$PR_URL"/);
+  assert.doesNotMatch(workflow, /timeout_seconds=1800/);
+});
+
+test('Agent auto-merge workflow records merge submission without waiting for the final merge commit', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'agent-automerge.yml'), 'utf8');
+
+  assert.match(workflow, /name: Request merge automation/);
+  assert.match(workflow, /### Merge automation/);
+  assert.match(workflow, /Queue request: \\`\/trunk merge\\`/);
+  assert.doesNotMatch(workflow, /gh pr view "\$PR_URL" --json state,mergeCommit,url,title/);
+  assert.doesNotMatch(workflow, /Final merge commit:/);
+});
+
+test('Merge branch workflow requests trunk merge for main instead of forcing GitHub auto-merge', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'merge-branch.yml'), 'utf8');
+
+  assert.match(workflow, /issues:\s+write/s);
+  assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
+  assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
+  assert.match(workflow, /-f body='\/trunk merge'/);
+  assert.match(workflow, /if \[ "\$\{THUMBGATE_MAIN_MERGE_PROVIDER\}" = "trunk" \]/);
 });
 
 test('Sentry release workflow serializes main release stamping', () => {

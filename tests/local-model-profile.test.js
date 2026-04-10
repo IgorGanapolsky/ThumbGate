@@ -13,6 +13,7 @@ const {
   resolveEmbeddingProfile,
   writeModelFitReport,
   resolveModelRole,
+  GLM_MODEL_ROLES,
   MODEL_ROLES,
   VALID_MODEL_ROLES,
 } = require('../scripts/local-model-profile');
@@ -104,6 +105,35 @@ test('resolveModelRole respects env override', () => {
 
 test('resolveModelRole throws on unknown role', () => {
   assert.throws(() => resolveModelRole('nonexistent', {}), /Unknown model role/);
+});
+
+test('GLM_MODEL_ROLES covers all valid roles and uses lite variant for compaction', () => {
+  for (const role of VALID_MODEL_ROLES) {
+    assert.ok(typeof GLM_MODEL_ROLES[role] === 'string' && GLM_MODEL_ROLES[role].length > 0,
+      `GLM_MODEL_ROLES missing role: ${role}`);
+  }
+  assert.ok(GLM_MODEL_ROLES.compaction.includes('4-9b') || GLM_MODEL_ROLES.compaction.includes('lite'),
+    'compaction should use a lighter GLM model');
+  assert.notEqual(GLM_MODEL_ROLES.normal, GLM_MODEL_ROLES.thinking,
+    'thinking role should use a larger model than normal');
+});
+
+test('resolveModelRole returns local provider and GLM model IDs when GLM family is set', () => {
+  const env = { THUMBGATE_LOCAL_MODEL_FAMILY: 'glm-z1' };
+  for (const role of VALID_MODEL_ROLES) {
+    const result = resolveModelRole(role, env);
+    assert.equal(result.provider, 'local', `role ${role} should have local provider`);
+    assert.equal(result.model, GLM_MODEL_ROLES[role], `role ${role} should use GLM model ID`);
+  }
+});
+
+test('resolveModelRole env override takes precedence over GLM defaults', () => {
+  const result = resolveModelRole('normal', {
+    THUMBGATE_LOCAL_MODEL_FAMILY: 'glm-z1',
+    THUMBGATE_MODEL_ROLE_NORMAL: 'glm-custom-fine-tune',
+  });
+  assert.equal(result.provider, 'local');
+  assert.equal(result.model, 'glm-custom-fine-tune');
 });
 
 test('detectInferenceBackend defaults to managed API and is not IndexCache-eligible', () => {

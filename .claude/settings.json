@@ -35,6 +35,10 @@
           {
             "type": "command",
             "command": "bash scripts/hook-stop-pr-thread-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "node scripts/meta-agent-loop.js"
           }
         ]
       }

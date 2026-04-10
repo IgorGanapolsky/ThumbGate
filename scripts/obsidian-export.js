@@ -346,7 +346,6 @@ function exportGates(configPath, outputDir) {
   // Read auto-promoted gates if present (check common locations)
   const autoGatePaths = [
     path.join(path.dirname(configPath), '..', '.thumbgate', 'auto-promoted-gates.json'),
-    path.join(path.dirname(configPath), '..', '.rlhf', 'auto-promoted-gates.json'),
     path.join(path.dirname(configPath), '..', '.claude', 'memory', 'feedback', 'auto-promoted-gates.json'),
   ];
   for (const agPath of autoGatePaths) {

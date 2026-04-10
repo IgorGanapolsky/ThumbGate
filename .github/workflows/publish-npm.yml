@@ -33,6 +33,7 @@ jobs:
       - run: npm ci --onnxruntime-node-install-cuda=skip
       - run: node scripts/sync-version.js --check
       - run: npm test
+      - run: npm run prove:runtime
       - name: Resolve package version
         id: package
         run: |
@@ -86,9 +87,14 @@ jobs:
           git push origin "v${VERSION}"
       - name: Publish npm package
         if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.publish_npm == 'true') || (github.event_name == 'release' && steps.npm.outputs.published == 'false')
-        run: npm publish --provenance
+        run: npm publish --tag "${{ steps.plan.outputs.npm_tag || 'latest' }}" --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Verify published npm runtime smoke
+        if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.publish_npm == 'true') || (github.event_name == 'release' && steps.npm.outputs.published == 'false')
+        env:
+          VERSION: ${{ steps.package.outputs.version }}
+        run: node scripts/prove-packaged-runtime.js --package-spec "thumbgate@${VERSION}" --expected-version "${VERSION}"
       - name: Ensure GitHub Release exists
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.ensure_release == 'true'
         env:

@@ -23,6 +23,10 @@ jobs:
       RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL || 'https://thumbgate-production.up.railway.app/health' }}
       RAILWAY_HEALTHCHECK_MAX_ATTEMPTS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS || '120' }}
       RAILWAY_HEALTHCHECK_SLEEP_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_SLEEP_SECONDS || '10' }}
+      RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS || '5' }}
+      RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS || '20' }}
+      RAILWAY_LOG_LINES: ${{ vars.RAILWAY_LOG_LINES || '200' }}
+      RAILWAY_HTTP_LOG_LINES: ${{ vars.RAILWAY_HTTP_LOG_LINES || '50' }}
       THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_FEEDBACK_DIR: ${{ vars.THUMBGATE_FEEDBACK_DIR }}
@@ -42,14 +46,19 @@ jobs:
           BEFORE_SHA='${{ github.event.before }}'
           CHANGED_FILES=''
           SHOULD_DEPLOY=true
+          DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/|public/|\.well-known/|openapi/|workers/|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
 
           if [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
             CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | sed '/^$/d')"
+            if [ -n "$CHANGED_FILES" ] && ! printf '%s\n' "$CHANGED_FILES" | grep -Eq "$DEPLOYABLE_PATTERN"; then
+              SHOULD_DEPLOY=false
+            fi
           fi
 
           echo "before_sha=${BEFORE_SHA:-<none>}"
           echo 'changed_files:'
           printf '%s\n' "${CHANGED_FILES:-<none>}"
+          echo "deployable_pattern=$DEPLOYABLE_PATTERN"
           echo "should_deploy=$SHOULD_DEPLOY"
 
           echo "changed_files<<EOF" >> "$GITHUB_OUTPUT"
@@ -64,14 +73,27 @@ jobs:
         run: |
           if [ "${{ steps.deploy-scope.outputs.should_deploy }}" != "true" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Railway deploy skipped: deploy-scope disabled this run."
+            echo "Railway deploy skipped: no runtime-serving files changed on this commit."
             exit 0
           fi
 
-          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$RAILWAY_PROJECT_ID" ] || [ -z "$RAILWAY_ENVIRONMENT_ID" ] || [ -z "$RAILWAY_HEALTHCHECK_URL" ]; then
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Railway deploy skipped: missing RAILWAY_TOKEN, RAILWAY_PROJECT_ID, RAILWAY_ENVIRONMENT_ID, or RAILWAY_HEALTHCHECK_URL."
-            exit 0
+          missing_config=()
+          [ -z "$RAILWAY_TOKEN" ] && missing_config+=('RAILWAY_TOKEN')
+          [ -z "$RAILWAY_PROJECT_ID" ] && missing_config+=('RAILWAY_PROJECT_ID')
+          [ -z "$RAILWAY_ENVIRONMENT_ID" ] && missing_config+=('RAILWAY_ENVIRONMENT_ID')
+          [ -z "$RAILWAY_HEALTHCHECK_URL" ] && missing_config+=('RAILWAY_HEALTHCHECK_URL')
+
+          if [ "${#missing_config[@]}" -gt 0 ]; then
+            echo "::error::Railway deploy blocked: missing required deploy config: ${missing_config[*]}"
+            exit 1
+          fi
+
+          missing_runtime_secrets=()
+          [ -z "$THUMBGATE_API_KEY" ] && missing_runtime_secrets+=('THUMBGATE_API_KEY')
+
+          if [ "${#missing_runtime_secrets[@]}" -gt 0 ]; then
+            echo "::error::Railway deploy blocked: missing required runtime secrets: ${missing_runtime_secrets[*]}"
+            exit 1
           fi
 
           echo "enabled=true" >> "$GITHUB_OUTPUT"
@@ -165,13 +187,16 @@ jobs:
           # Railway promotion can lag well past five minutes after a detached upload succeeds.
           MAX_ATTEMPTS="${RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-120}"
           SLEEP_SECONDS="${RAILWAY_HEALTHCHECK_SLEEP_SECONDS:-10}"
+          CONNECT_TIMEOUT_SECONDS="${RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:-5}"
+          MAX_TIME_SECONDS="${RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:-20}"
           STATUS=""
           RESPONSE_FILE="$(mktemp)"
           LIVE_SHA=""
 
           echo "Waiting for deploy to stabilise with up to $MAX_ATTEMPTS health checks and build SHA verification..."
+          echo "Per-attempt probe budget: connect timeout ${CONNECT_TIMEOUT_SECONDS}s, max time ${MAX_TIME_SECONDS}s."
           for ATTEMPT in $(seq 1 "$MAX_ATTEMPTS"); do
-            STATUS=$(curl -sS -o "$RESPONSE_FILE" -w "%{http_code}" "$RAILWAY_HEALTHCHECK_URL" || true)
+            STATUS=$(curl --connect-timeout "$CONNECT_TIMEOUT_SECONDS" --max-time "$MAX_TIME_SECONDS" -sS -o "$RESPONSE_FILE" -w "%{http_code}" "$RAILWAY_HEALTHCHECK_URL" || true)
             echo "Health check attempt $ATTEMPT/$MAX_ATTEMPTS: $STATUS"
             if [ "$STATUS" = "200" ]; then
               LIVE_SHA=$(node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(String(data.buildSha || ''));" "$RESPONSE_FILE" || true)
@@ -196,3 +221,14 @@ jobs:
             echo "Observed build SHA: ${LIVE_SHA:-<missing>}"
             exit 1
           fi
+      - name: Capture Railway diagnostics
+        if: failure() && steps.railway-config.outputs.enabled == 'true'
+        continue-on-error: true
+        run: bash scripts/capture-railway-diagnostics.sh railway-diagnostics
+      - name: Upload Railway diagnostics artifact
+        if: always() && steps.railway-config.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: railway-diagnostics-${{ github.run_id }}
+          path: railway-diagnostics/
+          if-no-files-found: warn

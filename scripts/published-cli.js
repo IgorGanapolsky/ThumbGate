@@ -13,6 +13,10 @@ function runtimePrefixDir(prefixDir) {
   return prefixDir || path.join(os.homedir(), '.thumbgate', 'runtime');
 }
 
+function installedRuntimeBin(prefixDir) {
+  return path.join(runtimePrefixDir(prefixDir), 'node_modules', '.bin', 'thumbgate');
+}
+
 function publishedCliArgs(pkgVersion, commandArgs = [], options = {}) {
   return [
     'exec',
@@ -29,7 +33,11 @@ function publishedCliArgs(pkgVersion, commandArgs = [], options = {}) {
 
 function publishedCliShellCommand(pkgVersion, commandArgs = [], options = {}) {
   const prefixDir = runtimePrefixDir(options.prefixDir);
-  return `mkdir -p ${shellQuote(prefixDir)} && exec npm ${publishedCliArgs(pkgVersion, commandArgs, { prefixDir }).map(shellQuote).join(' ')}`;
+  const runtimeBin = installedRuntimeBin(prefixDir);
+  const escapedArgs = commandArgs.map(shellQuote).join(' ');
+  const fastPath = `[ -x ${shellQuote(runtimeBin)} ] && exec ${shellQuote(runtimeBin)}${escapedArgs ? ` ${escapedArgs}` : ''}`;
+  const installPath = `mkdir -p ${shellQuote(prefixDir)} && exec npm ${publishedCliArgs(pkgVersion, commandArgs, { prefixDir }).map(shellQuote).join(' ')}`;
+  return `${fastPath} || ${installPath}`;
 }
 
 function runPublishedCli(pkgVersion, commandArgs = [], options = {}) {
@@ -55,6 +63,7 @@ function runPublishedCliHelp(pkgVersion, options = {}) {
 module.exports = {
   publishedCliArgs,
   publishedCliShellCommand,
+  installedRuntimeBin,
   runtimePrefixDir,
   runPublishedCli,
   runPublishedCliHelp,

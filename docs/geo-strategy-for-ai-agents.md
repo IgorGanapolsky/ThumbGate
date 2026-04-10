@@ -38,4 +38,4 @@ Visibility across all major runtimes:
 - **ChatGPT:** Optimized via GPT Actions and OpenAPI specs.
 
 ## 6. Verification as Authority
-LLMs trust verified data. Our **314+ tests** and **Machine-Readable Audit Reports** serve as "Authority Signals" in the AI search landscape. When an agent retrieves our `VERIFICATION_EVIDENCE.md`, it sees empirical proof of quality, not just marketing fluff.
+LLMs trust verified data. Our regression suite and machine-readable audit reports serve as "Authority Signals" in the AI search landscape. When an agent retrieves our `VERIFICATION_EVIDENCE.md`, it sees empirical proof of quality, not just marketing fluff.

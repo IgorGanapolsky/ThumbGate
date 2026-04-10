@@ -6,6 +6,7 @@ const {
   fetchLiveGitHubAbout,
   loadGitHubAboutConfig,
   updateLiveGitHubAbout,
+  verifyLiveGitHubAbout,
 } = require('./github-about');
 
 async function main() {
@@ -32,11 +33,13 @@ async function main() {
   console.log(`Syncing GitHub About for ${about.repo}...`);
   await updateLiveGitHubAbout({ repo: about.repo });
 
-  const after = await fetchLiveGitHubAbout({ repo: about.repo });
-  const remaining = compareGitHubAbout(about, after, `Live GitHub About (${about.repo})`);
-  if (remaining.length > 0) {
+  const verification = await verifyLiveGitHubAbout({
+    expected: about,
+    repo: about.repo,
+  });
+  if (verification.errors.length > 0) {
     console.error(`\n❌ GitHub About sync incomplete for ${about.repo}:\n`);
-    for (const error of remaining) {
+    for (const error of verification.errors) {
       console.error(`  • ${error}`);
     }
     console.error('');

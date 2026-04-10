@@ -51,7 +51,7 @@ Works in local mode (zero config, no API key) or connected to the Context Gatewa
 ### Option A: Local mode (OSS, no API key needed)
 
 ```bash
-claude mcp add thumbgate -- npx -y thumbgate@0.9.14 serve
+claude mcp add thumbgate -- npx -y thumbgate@1.3.0 serve
 ```
 
 Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/settings.json`):
@@ -61,7 +61,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["-y", "thumbgate@0.9.14", "serve"],
+      "args": ["-y", "thumbgate@1.3.0", "serve"],
       "env": {
         "THUMBGATE_BASE_URL": "http://localhost:8787"
       }
@@ -77,7 +77,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["-y", "thumbgate@0.9.14", "serve"],
+      "args": ["-y", "thumbgate@1.3.0", "serve"],
       "env": {
         "THUMBGATE_BASE_URL": "https://thumbgate-production.up.railway.app",
         "THUMBGATE_API_KEY": "tg_YOUR_KEY_HERE"
@@ -89,7 +89,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 
 Hosted API access is currently pilot/by-request rather than a public self-serve monthly subscription.
 Current self-serve commercial offer: Pro ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
-Team rollout pricing anchor: $12/seat/mo (min 3 seats), intake-first on the landing page.
+Team rollout pricing anchor: $99/seat/mo (min 3 seats), intake-first on the landing page.
 Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ---
@@ -125,7 +125,7 @@ Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/doc
 
 ## Transport
 
-- **stdio** (primary): `npx -y thumbgate@0.9.14 serve` — version-pinned portable MCP launcher for Claude Code desktop and CLI
+- **stdio** (primary): `npx -y thumbgate@1.3.0 serve` — version-pinned portable MCP launcher for Claude Code desktop and CLI
 - **HTTP** (secondary): `src/api/server.js` — REST API (`POST /v1/feedback/capture`, `GET /v1/feedback/summary`, `POST /v1/dpo/export`)
 
 ---
@@ -172,7 +172,7 @@ MIT
 
 ## Version
 
-0.9.14
+1.3.0
 
 ---
 

@@ -41,6 +41,7 @@ function initGitRepo() {
   execFileSync('git', ['init', '-b', 'main'], { cwd: repoPath, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.name', 'ThumbGate Proof'], { cwd: repoPath, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.email', 'proof@example.com'], { cwd: repoPath, stdio: 'ignore' });
+  execFileSync('git', ['config', 'commit.gpgsign', 'false'], { cwd: repoPath, stdio: 'ignore' });
   fs.writeFileSync(path.join(repoPath, 'README.md'), '# proof repo\n');
   execFileSync('git', ['add', 'README.md'], { cwd: repoPath, stdio: 'ignore' });
   execFileSync('git', ['commit', '-m', 'init'], { cwd: repoPath, stdio: 'ignore' });

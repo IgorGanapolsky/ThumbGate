@@ -2,10 +2,208 @@
 
 const path = require('path');
 const fs = require('fs');
-const Database = require('better-sqlite3');
+let Database = null;
+try {
+  Database = require('better-sqlite3');
+} catch (_) {
+  Database = null;
+}
 
 const DEFAULT_DB_PATH = path.join(__dirname, 'db', 'social-analytics.db');
 const SCHEMA_PATH = path.join(__dirname, 'db', 'schema.sql');
+
+class MemoryStatement {
+  constructor(handler) {
+    this.handler = handler;
+  }
+
+  run(params) {
+    return this.handler.run(params);
+  }
+
+  all(params) {
+    return this.handler.all(params);
+  }
+}
+
+class MemoryDatabase {
+  constructor() {
+    this.tables = {
+      engagement_metrics: [],
+      follower_snapshots: [],
+    };
+  }
+
+  pragma() {}
+
+  exec() {}
+
+  close() {}
+
+  prepare(sql) {
+    const normalized = sql.replace(/\s+/g, ' ').trim();
+
+    if (normalized.includes('INSERT OR REPLACE INTO engagement_metrics')) {
+      return new MemoryStatement({
+        run: (params) => {
+          const index = this.tables.engagement_metrics.findIndex(
+            (row) =>
+              row.platform === params.platform &&
+              row.post_id === params.post_id &&
+              row.metric_date === params.metric_date
+          );
+          const row = { ...params };
+          if (index >= 0) {
+            this.tables.engagement_metrics[index] = row;
+          } else {
+            this.tables.engagement_metrics.push(row);
+          }
+          return { changes: 1 };
+        },
+      });
+    }
+
+    if (normalized.includes('INSERT OR REPLACE INTO follower_snapshots')) {
+      return new MemoryStatement({
+        run: (params) => {
+          const index = this.tables.follower_snapshots.findIndex(
+            (row) => row.platform === params.platform && row.snapshot_date === params.snapshot_date
+          );
+          const row = { ...params };
+          if (index >= 0) {
+            this.tables.follower_snapshots[index] = row;
+          } else {
+            this.tables.follower_snapshots.push(row);
+          }
+          return { changes: 1 };
+        },
+      });
+    }
+
+    if (normalized.includes('SELECT * FROM engagement_metrics WHERE platform = ?')) {
+      return new MemoryStatement({
+        all: (platform) =>
+          this.tables.engagement_metrics.filter((row) => row.platform === platform),
+      });
+    }
+
+    const literalPlatformMatch = normalized.match(
+      /^SELECT \* FROM engagement_metrics WHERE platform = '([^']+)'$/i
+    );
+    if (literalPlatformMatch) {
+      const [, platform] = literalPlatformMatch;
+      return new MemoryStatement({
+        all: () =>
+          this.tables.engagement_metrics.filter((row) => row.platform === platform),
+      });
+    }
+
+    if (normalized.includes('FROM engagement_metrics') && normalized.includes('GROUP BY platform')) {
+      return new MemoryStatement({
+        all: (params = {}) => {
+          const rows = this.tables.engagement_metrics.filter((row) => {
+            if (row.metric_date < params.cutoff) return false;
+            if (params.platform && row.platform !== params.platform) return false;
+            return true;
+          });
+          const grouped = new Map();
+          for (const row of rows) {
+            const bucket = grouped.get(row.platform) || {
+              platform: row.platform,
+              post_count: 0,
+              total_impressions: 0,
+              total_reach: 0,
+              total_likes: 0,
+              total_comments: 0,
+              total_shares: 0,
+              total_saves: 0,
+              total_clicks: 0,
+              total_video_views: 0,
+              _postIds: new Set(),
+              _rows: 0,
+            };
+            bucket._postIds.add(row.post_id);
+            bucket.total_impressions += row.impressions || 0;
+            bucket.total_reach += row.reach || 0;
+            bucket.total_likes += row.likes || 0;
+            bucket.total_comments += row.comments || 0;
+            bucket.total_shares += row.shares || 0;
+            bucket.total_saves += row.saves || 0;
+            bucket.total_clicks += row.clicks || 0;
+            bucket.total_video_views += row.video_views || 0;
+            bucket._rows += 1;
+            grouped.set(row.platform, bucket);
+          }
+          return [...grouped.values()]
+            .map((bucket) => ({
+              platform: bucket.platform,
+              post_count: bucket._postIds.size,
+              total_impressions: bucket.total_impressions,
+              total_reach: bucket.total_reach,
+              total_likes: bucket.total_likes,
+              total_comments: bucket.total_comments,
+              total_shares: bucket.total_shares,
+              total_saves: bucket.total_saves,
+              total_clicks: bucket.total_clicks,
+              total_video_views: bucket.total_video_views,
+              avg_impressions: Number((bucket.total_impressions / bucket._rows).toFixed(2)),
+              avg_likes: Number((bucket.total_likes / bucket._rows).toFixed(2)),
+            }))
+            .sort((a, b) => b.total_impressions - a.total_impressions);
+        },
+      });
+    }
+
+    if (normalized.includes('FROM engagement_metrics') && normalized.includes('GROUP BY platform, post_id')) {
+      return new MemoryStatement({
+        all: ({ cutoff, limit }) => {
+          const rows = this.tables.engagement_metrics.filter((row) => row.metric_date >= cutoff);
+          const grouped = new Map();
+          for (const row of rows) {
+            const key = `${row.platform}::${row.post_id}`;
+            const bucket = grouped.get(key) || {
+              platform: row.platform,
+              content_type: row.content_type,
+              post_id: row.post_id,
+              post_url: row.post_url ?? null,
+              published_at: row.published_at ?? null,
+              total_engagement: 0,
+              total_impressions: 0,
+              total_likes: 0,
+              total_comments: 0,
+              total_shares: 0,
+              total_saves: 0,
+              total_video_views: 0,
+            };
+            bucket.total_engagement +=
+              (row.likes || 0) + (row.comments || 0) + (row.shares || 0) + (row.saves || 0);
+            bucket.total_impressions += row.impressions || 0;
+            bucket.total_likes += row.likes || 0;
+            bucket.total_comments += row.comments || 0;
+            bucket.total_shares += row.shares || 0;
+            bucket.total_saves += row.saves || 0;
+            bucket.total_video_views += row.video_views || 0;
+            grouped.set(key, bucket);
+          }
+          return [...grouped.values()]
+            .sort((a, b) => b.total_engagement - a.total_engagement)
+            .slice(0, limit);
+        },
+      });
+    }
+
+    if (normalized.includes('FROM follower_snapshots')) {
+      return new MemoryStatement({
+        all: ({ platform, cutoff }) =>
+          this.tables.follower_snapshots
+            .filter((row) => row.platform === platform && row.snapshot_date >= cutoff)
+            .sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date)),
+      });
+    }
+
+    throw new Error(`MemoryDatabase does not support query: ${normalized}`);
+  }
+}
 
 /**
  * Opens the SQLite database, applies the schema, and returns the db instance.
@@ -23,7 +221,7 @@ function initDb(dbPath = DEFAULT_DB_PATH) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  const db = new Database(resolvedPath);
+  const db = Database ? new Database(resolvedPath) : new MemoryDatabase();
   db.pragma('busy_timeout = 3000');
 
   // Enable WAL mode for better concurrent read performance.

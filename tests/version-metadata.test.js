@@ -8,7 +8,9 @@ const {
   resolveHostedBillingConfig,
 } = require('../scripts/hosted-config');
 const {
+  CLAUDE_PLUGIN_NEXT_ASSET_NAME,
   PRODUCTHUNT_URL,
+  getClaudePluginChannelAssetName,
   getClaudePluginLatestDownloadUrl,
 } = require('../scripts/distribution-surfaces');
 
@@ -95,6 +97,11 @@ test('public docs render the current package version', () => {
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
 });
 
+test('distribution surfaces reserve a separate prerelease Claude asset alias', () => {
+  assert.equal(getClaudePluginChannelAssetName('1.0.0'), 'thumbgate-claude-desktop.mcpb');
+  assert.equal(getClaudePluginChannelAssetName('1.1.0-beta.1'), CLAUDE_PLUGIN_NEXT_ASSET_NAME);
+});
+
 test('landing page keeps GTM and schema assets wired', () => {
   const landingPage = readText('docs/landing-page.html');
   const gtmPlan = readText('docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md');
@@ -133,8 +140,9 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /__PRO_PRICE_DOLLARS__/);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
-  assert.match(publicLanding, /self-improving/i);
-  assert.ok(publicLanding.includes(PRODUCTHUNT_URL));
+  assert.match(publicLanding, /workflow governance|agent governance/i);
+  assert.match(publicLanding, /Verification evidence/i);
+  assert.match(publicLanding, /Release confidence/i);
   assert.doesNotMatch(publicLanding, /billingDuration/);
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
@@ -174,7 +182,7 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
 
   try {
     const runtimeConfig = resolveHostedBillingConfig();
-    assert.equal(runtimeConfig.proPriceLabel, '$19/mo or $149/yr');
+    assert.equal(runtimeConfig.proPriceLabel, '$19/mo or $149/yr (individual)');
     assert.equal(runtimeConfig.proPriceDollars, 19);
     assert.equal(runtimeConfig.checkoutFallbackUrl, DEFAULT_CHECKOUT_FALLBACK_URL);
     assert.equal(runtimeConfig.gaMeasurementId, '');
@@ -271,7 +279,7 @@ test('active GTM scripts and reports point to the canonical offer without foundi
 test('commercial truth sources stay aligned across public and historical docs', () => {
   const commercialTruth = readText('docs/COMMERCIAL_TRUTH.md');
   const readme = readText('README.md');
-  const pricingResearch = readText('docs/PRICING_RESEARCH_2026-03-09.md');
+  // Removed duplicate pricing doc (03-09 was identical to 03-10)
   const crisisReport = readText('docs/PRICING_RESEARCH_2026-03-10.md');
   const packagingPlan = readText('docs/PACKAGING_AND_SALES_PLAN.md');
   const revenueSprint = readText('docs/REVENUE_SPRINT_MAR2026.md');
@@ -281,14 +289,14 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
   assert.match(commercialTruth, /Pro at \$19\/mo or \$149\/yr/);
-  assert.match(commercialTruth, /Team pricing anchor is \*\*\$12\/seat\/mo/i);
+  assert.match(commercialTruth, /Team pricing anchor is \*\*\$99\/seat\/mo/i);
   assert.match(commercialTruth, /auto-gate promotion/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 
   assert.match(readme, /Commercial Truth/);
   assert.doesNotMatch(readme, /500\+ agentic sessions|battle-tested/i);
 
-  for (const historicalDoc of [pricingResearch, crisisReport, packagingPlan, revenueSprint, xStrategy]) {
+  for (const historicalDoc of [crisisReport, packagingPlan, revenueSprint, xStrategy]) {
     assert.match(historicalDoc, /Historical .*note|Historical .*archived|Historical .*hypothesis/i);
     assert.match(historicalDoc, /COMMERCIAL_TRUTH\.md/);
   }

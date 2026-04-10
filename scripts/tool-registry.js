@@ -36,7 +36,7 @@ const TOOLS = [
         whatWorked: { type: 'string' },
         chatHistory: {
           type: 'array',
-          description: 'Optional recent conversation window used for history-aware lesson distillation.',
+          description: 'Optional caller-supplied recent conversation window used for history-aware lesson distillation. The current Claude auto-capture path sends up to 8 prior recorded entries for vague negative inline signals.',
           items: {
             type: 'object',
             properties: {
@@ -59,7 +59,7 @@ const TOOLS = [
               timestamp: { type: 'string' },
             },
           },
-          description: 'Last 5-10 conversation turns before the feedback signal. Raw messages, not summaries.',
+          description: 'Recent conversation turns before the feedback signal. Raw messages, not summaries.',
         },
         rubricScores: {
           type: 'array',
@@ -297,6 +297,19 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'security_scan',
+    description: 'Scan code for OWASP vulnerabilities (injection, XSS, path traversal, SSRF, prototype pollution) and supply chain risks (typosquatting, install script abuse, wildcard versions). Returns findings with severity, category, and line numbers.',
+    inputSchema: {
+      type: 'object',
+      required: ['content'],
+      properties: {
+        content: { type: 'string', description: 'Code content to scan' },
+        filePath: { type: 'string', description: 'File path for language-aware scanning' },
+        diffMode: { type: 'boolean', description: 'When true, treats content as git diff output' },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'capture_memory_feedback',
     description: 'Capture success/failure feedback to harden future workflows. Aliased to capture_feedback.',
     inputSchema: {
@@ -396,6 +409,17 @@ const TOOLS = [
       type: 'object',
       properties: {
         memoryLogPath: { type: 'string' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'export_hf_dataset',
+    description: 'Export ThumbGate agent traces and DPO preference pairs as a HuggingFace-compatible dataset. Produces traces.jsonl, preferences.jsonl, and dataset_info.json with PII-redacted paths. Ready for huggingface-cli upload.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        outputDir: { type: 'string', description: 'Output directory (default: feedback-dir/hf-dataset)' },
+        includeProvenance: { type: 'boolean', description: 'Include provenance events in traces (default: true)' },
       },
     },
   }),
@@ -936,6 +960,46 @@ const TOOLS = [
         body: { type: 'string', description: 'Description of the problem or suggestion, in the user own words' },
         category: { type: 'string', enum: ['bug', 'feature', 'question'], description: 'Issue category' },
       },
+    },
+  }),
+  destructiveTool({
+    name: 'run_managed_lesson_agent',
+    description: 'Run the LLM-powered lesson inference and rule generation agent over accumulated feedback. Requires ANTHROPIC_API_KEY for LLM mode; falls back to heuristics if unavailable.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        dryRun: { type: 'boolean', description: 'Preview what would be written without persisting' },
+        limit: { type: 'number', description: 'Max feedback entries to process (default: 20)' },
+        model: { type: 'string', description: 'Override the Claude model (default: claude-haiku-4-5)' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'managed_agent_status',
+    description: 'Show status of the last managed lesson agent run: entries processed, lessons created, gates promoted, and total runs.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  }),
+  destructiveTool({
+    name: 'run_self_distill',
+    description: 'Run the self-distillation agent to auto-evaluate recent agent sessions and generate improvement lessons without human feedback. Reads conversation logs, detects success/failure signals, and persists lessons.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        dryRun: { type: 'boolean', description: 'If true, analyzes but does not persist lessons' },
+        limit: { type: 'number', description: 'Max conversation logs to process (default 20)' },
+        model: { type: 'string', description: 'LLM model to use for analysis (requires ANTHROPIC_API_KEY)' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'self_distill_status',
+    description: 'Show status of the last self-distillation run: sessions analyzed, lessons generated, signals detected.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
     },
   }),
 ];

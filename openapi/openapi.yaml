@@ -814,6 +814,98 @@ paths:
           description: Invalid dashboard render view or query
         '401':
           description: Unauthorized
+  /v1/decisions/evaluate:
+    post:
+      operationId: evaluateDecision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [toolName]
+              properties:
+                toolName:
+                  type: string
+                command:
+                  type: string
+                filePath:
+                  type: string
+                changedFiles:
+                  type: array
+                  items:
+                    type: string
+                repoPath:
+                  type: string
+                baseBranch:
+                  type: string
+                requirePrForReleaseSensitive:
+                  type: boolean
+                requireVersionNotBehindBase:
+                  type: boolean
+      responses:
+        '200':
+          description: Persisted workflow-sentinel recommendation with decision-control metadata and actionId
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          description: Invalid decision evaluation request
+        '401':
+          description: Unauthorized
+  /v1/decisions/outcome:
+    post:
+      operationId: recordDecisionOutcome
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actionId, outcome]
+              properties:
+                actionId:
+                  type: string
+                outcome:
+                  type: string
+                actualDecision:
+                  type: string
+                actor:
+                  type: string
+                notes:
+                  type: string
+                latencyMs:
+                  type: number
+                metadata:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Recorded a decision override, rollback, completion, or block outcome
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          description: Invalid decision outcome request
+        '401':
+          description: Unauthorized
+  /v1/decisions/metrics:
+    get:
+      operationId: getDecisionMetrics
+      responses:
+        '200':
+          description: Decision-loop metrics derived from recorded evaluations and outcomes
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          description: Unauthorized
   /v1/settings/status:
     get:
       operationId: getSettingsStatus
@@ -1101,11 +1193,116 @@ paths:
                   type: string
                 outputPath:
                   type: string
+                async:
+                  type: boolean
+                mode:
+                  type: string
+                  enum: [sync, async]
+                jobId:
+                  type: string
       responses:
         '200':
           description: DPO export completed
+        '202':
+          description: DPO export accepted as a hosted background job
         '401':
           description: Unauthorized
+  /v1/jobs:
+    get:
+      operationId: listHostedJobs
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: Optional comma-separated list of job statuses to filter.
+      responses:
+        '200':
+          description: Hosted job states
+        '401':
+          description: Unauthorized
+  /v1/jobs/harness:
+    post:
+      operationId: launchHostedHarness
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [harness]
+              properties:
+                harness:
+                  type: string
+                harnessId:
+                  type: string
+                jobId:
+                  type: string
+                skill:
+                  type: string
+                partnerProfile:
+                  type: string
+                autoImprove:
+                  type: boolean
+                inputs:
+                  type: object
+      responses:
+        '202':
+          description: Hosted harness accepted
+        '401':
+          description: Unauthorized
+  /v1/jobs/{jobId}:
+    get:
+      operationId: getHostedJob
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Hosted job state
+        '401':
+          description: Unauthorized
+        '404':
+          description: Job not found
+  /v1/jobs/{jobId}/control:
+    post:
+      operationId: controlHostedJob
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [pause, cancel, resume]
+                metadata:
+                  type: object
+      responses:
+        '202':
+          description: Hosted job control accepted
+        '401':
+          description: Unauthorized
+        '404':
+          description: Job not found
+        '409':
+          description: Job cannot accept the requested control action
   /v1/analytics/databricks/export:
     post:
       operationId: exportDatabricksBundle

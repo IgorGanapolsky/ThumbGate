@@ -97,6 +97,7 @@ const {
   assembleUnifiedContext,
   formatUnifiedContext,
 } = require('../../scripts/context-manager');
+const { exportHfDataset } = require('../../scripts/export-hf-dataset');
 
 const PRO_CHECKOUT_URL = 'https://thumbgate-production.up.railway.app/checkout/pro';
 
@@ -104,7 +105,7 @@ function enforceLimit(action) {
   const limit = checkLimit(action);
   if (!limit.allowed) {
     const err = new Error(
-      `Free tier daily limit reached for "${action}". ${UPGRADE_MESSAGE}\nUpgrade now: ${PRO_CHECKOUT_URL}`
+      `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro\n${UPGRADE_MESSAGE}\nUpgrade now: ${PRO_CHECKOUT_URL}`
     );
     err.errorCategory = 'rate_limit';
     err.isRetryable = false;
@@ -118,7 +119,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '0.9.14' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.3.0' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -363,12 +364,14 @@ function buildEstimateUncertaintyResponse(args = {}) {
 
 async function callTool(name, args = {}) {
   assertToolAllowed(name, getActiveMcpProfile());
-  const firewallResult = (await evaluateGatesAsync(name, args)) || evaluateSecretGuard({ tool_name: name, tool_input: args });
-  if (firewallResult && firewallResult.decision === 'deny') {
-    const err = new Error(`Action blocked by Semantic Firewall: ${firewallResult.message}`);
-    err.errorCategory = 'permission';
-    err.isRetryable = false;
-    throw err;
+  if (name !== 'workflow_sentinel') {
+    const firewallResult = (await evaluateGatesAsync(name, args)) || evaluateSecretGuard({ tool_name: name, tool_input: args });
+    if (firewallResult && firewallResult.decision === 'deny') {
+      const err = new Error(`Action blocked by Semantic Firewall: ${firewallResult.message}`);
+      err.errorCategory = 'permission';
+      err.isRetryable = false;
+      throw err;
+    }
   }
   const startMs = Date.now();
   const result = await callToolInner(name, args);
@@ -486,6 +489,19 @@ async function callToolInner(name, args) {
       }));
     case 'enforcement_matrix':
       return toTextResult(listEnforcementMatrix());
+    case 'security_scan': {
+      const { scanCode, scanDependencyChange, scanGitDiff } = require('../../scripts/security-scanner');
+      if (args.diffMode) {
+        return toTextResult(scanGitDiff(args.content));
+      }
+      const codeResult = scanCode(args.content, args.filePath || '');
+      if (args.filePath && args.filePath.endsWith('package.json')) {
+        const supplyResult = scanDependencyChange('', args.content);
+        codeResult.findings = (codeResult.findings || []).concat(supplyResult.findings || []);
+        codeResult.detected = codeResult.detected || supplyResult.detected;
+      }
+      return toTextResult(codeResult);
+    }
     case 'prevention_rules': {
       const outputPath = args.outputPath ? resolveSafePath(args.outputPath) : undefined;
       return toTextResult(writePreventionRules(outputPath, Number(args.minOccurrences || 2)));
@@ -493,6 +509,14 @@ async function callToolInner(name, args) {
     case 'export_dpo_pairs':
       enforceLimit('export_dpo');
       return buildExportDpoResponse(args);
+    case 'export_hf_dataset': {
+      enforceLimit('export_dpo');
+      const outputDir = args.outputDir ? resolveSafePath(args.outputDir) : undefined;
+      return toTextResult(exportHfDataset({
+        outputDir,
+        includeProvenance: args.includeProvenance !== false,
+      }));
+    }
     case 'export_databricks_bundle': {
       enforceLimit('export_databricks');
       const outputPath = args.outputPath ? resolveSafePath(args.outputPath) : undefined;
@@ -619,6 +643,7 @@ async function callToolInner(name, args) {
         affectedFiles: Array.isArray(args.changedFiles) ? args.changedFiles : undefined,
         requirePrForReleaseSensitive: args.requirePrForReleaseSensitive === true,
         requireVersionNotBehindBase: args.requireVersionNotBehindBase === true,
+        governanceState: getScopeState(),
       }));
     case 'register_claim_gate':
       return toTextResult(registerClaimGate(args.claimPattern, args.requiredActions, args.message));
@@ -668,6 +693,22 @@ async function callToolInner(name, args) {
       return toTextResult(appendFeedbackContext(args.sessionId, args.message, args.role));
     case 'finalize_feedback_session':
       return toTextResult(finalizeFeedbackSession(args.sessionId));
+    case 'run_managed_lesson_agent': {
+      const { runManagedAgent } = require('../../scripts/managed-lesson-agent');
+      return toTextResult(await runManagedAgent({ dryRun: args.dryRun, limit: args.limit, model: args.model }));
+    }
+    case 'managed_agent_status': {
+      const { getManagedAgentStatus } = require('../../scripts/managed-lesson-agent');
+      return toTextResult(getManagedAgentStatus() || { message: 'No managed agent runs recorded yet.' });
+    }
+    case 'run_self_distill': {
+      const { runSelfDistill } = require('../../scripts/self-distill-agent');
+      return toTextResult(await runSelfDistill({ dryRun: args.dryRun, limit: args.limit, model: args.model }));
+    }
+    case 'self_distill_status': {
+      const { getSelfDistillStatus } = require('../../scripts/self-distill-agent');
+      return toTextResult(getSelfDistillStatus() || { message: 'No self-distill runs found.' });
+    }
     default:
       throw new Error(`Unsupported tool: ${name}`);
   }

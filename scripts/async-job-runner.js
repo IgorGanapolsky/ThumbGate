@@ -132,9 +132,52 @@ function serializeJobForState(job) {
     skill: job.skill || null,
     partnerProfile: job.partnerProfile || null,
     autoImprove: job.autoImprove !== false,
+    verificationMode: job.verificationMode === 'none' ? 'none' : 'standard',
+    recordFeedback: job.recordFeedback !== false,
     jobFilePath: job.jobFilePath || null,
     stages,
   };
+}
+
+function queueJob(job) {
+  const normalizedJob = {
+    ...job,
+    id: job.id || generateJobId(),
+    tags: Array.isArray(job.tags) ? job.tags : [],
+    autoImprove: job.autoImprove !== false,
+    verificationMode: job.verificationMode === 'none' ? 'none' : 'standard',
+    recordFeedback: job.recordFeedback !== false,
+    stages: normalizeStages(job),
+  };
+  const previousState = readJobState(normalizedJob.id);
+  const currentStage = normalizedJob.stages[0] ? normalizedJob.stages[0].name : null;
+  return writeJobState({
+    jobId: normalizedJob.id,
+    status: 'queued',
+    createdAt: previousState && previousState.createdAt ? previousState.createdAt : nowIso(),
+    startedAt: previousState && previousState.startedAt ? previousState.startedAt : null,
+    resumedAt: null,
+    updatedAt: nowIso(),
+    endedAt: null,
+    tags: normalizedJob.tags,
+    skill: normalizedJob.skill || null,
+    partnerProfile: normalizedJob.partnerProfile || null,
+    autoImprove: normalizedJob.autoImprove,
+    verificationMode: normalizedJob.verificationMode,
+    recordFeedback: normalizedJob.recordFeedback,
+    totalStages: normalizedJob.stages.length,
+    nextStageIndex: 0,
+    currentStage,
+    currentContext: '',
+    checkpoints: [],
+    stageHistory: [],
+    jobFilePath: normalizedJob.jobFilePath || null,
+    jobSpec: serializeJobForState(normalizedJob),
+    lastError: null,
+    stopReason: null,
+    improvementExperimentId: null,
+    verification: null,
+  });
 }
 
 function readJobState(jobId) {
@@ -618,6 +661,8 @@ function executeJob(job, options = {}) {
     id: job.id || generateJobId(),
     tags: Array.isArray(job.tags) ? job.tags : [],
     autoImprove: job.autoImprove !== false,
+    verificationMode: job.verificationMode === 'none' ? 'none' : 'standard',
+    recordFeedback: job.recordFeedback !== false,
     stages: normalizeStages(job),
   };
   const previousState = options.previousState || readJobState(normalizedJob.id);
@@ -643,6 +688,8 @@ function executeJob(job, options = {}) {
     skill: normalizedJob.skill || null,
     partnerProfile: normalizedJob.partnerProfile || null,
     autoImprove: normalizedJob.autoImprove,
+    verificationMode: normalizedJob.verificationMode,
+    recordFeedback: normalizedJob.recordFeedback,
     totalStages: normalizedJob.stages.length,
     nextStageIndex,
     currentStage: normalizedJob.stages[nextStageIndex] ? normalizedJob.stages[nextStageIndex].name : 'verification',
@@ -733,7 +780,7 @@ function executeJob(job, options = {}) {
 
       clearJobControl(normalizedJob.id);
 
-      const feedback = error && error.code === 'JOB_CANCELLED'
+      const feedback = (error && error.code === 'JOB_CANCELLED') || normalizedJob.recordFeedback === false
         ? null
         : captureFeedback({
           signal: 'down',
@@ -756,48 +803,60 @@ function executeJob(job, options = {}) {
     }
   }
 
-  const verification = runVerificationLoop({
-    context: currentContext,
-    tags: normalizedJob.tags,
-    skill: normalizedJob.skill,
-    partnerProfile: normalizedJob.partnerProfile,
-    onRetry: normalizedJob.onRetry,
-    maxRetries: normalizedJob.maxRetries,
-  });
+  const verification = normalizedJob.verificationMode === 'none'
+    ? null
+    : runVerificationLoop({
+      context: currentContext,
+      tags: normalizedJob.tags,
+      skill: normalizedJob.skill,
+      partnerProfile: normalizedJob.partnerProfile,
+      onRetry: normalizedJob.onRetry,
+      maxRetries: normalizedJob.maxRetries,
+    });
 
-  const improvementExperiment = verification.accepted
+  const improvementExperiment = !verification || verification.accepted
     ? null
     : maybeQueueImprovementExperiment(normalizedJob, state, recall, {
       type: 'verification',
       verification,
     });
 
-  const feedback = captureFeedback({
-    signal: verification.accepted ? 'up' : 'down',
-    context: verification.accepted
-      ? `Job ${normalizedJob.id} passed verification after ${verification.attempts} attempt(s)`
-      : `Job ${normalizedJob.id} failed verification after ${verification.attempts} attempt(s): ${(verification.finalVerification.violations || []).map((violation) => violation.pattern).join('; ')}`,
-    whatWorked: verification.accepted ? 'Verification loop accepted output' : undefined,
-    whatWentWrong: !verification.accepted ? `Failed ${verification.attempts} verification attempts` : undefined,
-    whatToChange: !verification.accepted ? 'Improve output to avoid known mistake patterns' : undefined,
-    tags: [...normalizedJob.tags, 'verification-loop'],
-    skill: normalizedJob.skill || 'async-job-runner',
-  });
+  const feedback = normalizedJob.recordFeedback === false
+    ? null
+    : captureFeedback({
+      signal: !verification || verification.accepted ? 'up' : 'down',
+      context: !verification
+        ? `Job ${normalizedJob.id} completed without post-run verification`
+        : verification.accepted
+          ? `Job ${normalizedJob.id} passed verification after ${verification.attempts} attempt(s)`
+          : `Job ${normalizedJob.id} failed verification after ${verification.attempts} attempt(s): ${(verification.finalVerification.violations || []).map((violation) => violation.pattern).join('; ')}`,
+      whatWorked: !verification
+        ? 'Operational job completed successfully'
+        : verification.accepted
+          ? 'Verification loop accepted output'
+          : undefined,
+      whatWentWrong: verification && !verification.accepted ? `Failed ${verification.attempts} verification attempts` : undefined,
+      whatToChange: verification && !verification.accepted ? 'Improve output to avoid known mistake patterns' : undefined,
+      tags: !verification
+        ? [...normalizedJob.tags, 'async-job-runner', 'verification-skipped']
+        : [...normalizedJob.tags, 'verification-loop'],
+      skill: normalizedJob.skill || 'async-job-runner',
+    });
 
   const terminalState = writeJobState({
     ...(readJobState(normalizedJob.id) || state),
-    status: verification.accepted ? 'completed' : 'failed',
+    status: !verification || verification.accepted ? 'completed' : 'failed',
     updatedAt: nowIso(),
     endedAt: nowIso(),
     currentStage: null,
     nextStageIndex: normalizedJob.stages.length,
     currentContext,
     improvementExperimentId: improvementExperiment ? improvementExperiment.id : null,
-    verification: {
+    verification: verification ? {
       accepted: verification.accepted,
       attempts: verification.attempts,
       score: verification.finalVerification ? verification.finalVerification.score : 0,
-    },
+    } : null,
   });
 
   clearJobControl(normalizedJob.id);
@@ -880,6 +939,7 @@ function runBatch(jobs) {
 module.exports = {
   recallContext,
   executeJob,
+  queueJob,
   runBatch,
   appendJobLog,
   readJobLog,

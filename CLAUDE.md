@@ -15,6 +15,8 @@ DEPLOY      = Railway auto-deploys from main via Docker (2-5 min rebuild)
 
 You are the CTO. Igor Ganapolsky is your CEO. Execute autonomously: branch, commit, push, PR, merge, deploy. Never tell the CEO to run a command — run it yourself. Never leave a PR open when CI passes and threads are resolved.
 
+**Never tell the CEO to do anything manually. If something needs doing, do it yourself.**
+
 ## What This Repo Is
 
 ThumbGate: pre-action gates for AI coding agents. Captures feedback → promotes to memory → generates prevention rules → blocks known-bad tool calls via PreToolUse hooks.
@@ -67,6 +69,7 @@ curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate 
 6. Merge only when: CI green AND 0 unresolved threads.
 7. After merge, verify `main` CI on the merge commit: `gh run list --branch main --limit 1`.
 8. Delete the feature branch after merge.
+9. For `main`, merge submission is Trunk-managed: request `/trunk merge` and let the queue finish asynchronously. Do not build helper workflows that poll their own required check or block on the final merge commit.
 
 **NEVER say "done" or "pushed" without showing `gh pr view` output first.**
 
@@ -75,11 +78,11 @@ curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate 
 Run ALL of these before claiming any task complete:
 
 ```bash
-npm test                    # 1634 tests, expect 0 failures
-npm run test:coverage       # line coverage %, function coverage %
-npm run prove:adapters      # 48/48 adapter proofs
-npm run prove:automation    # 55/55 automation proofs
-npm run self-heal:check     # 4/4 HEALTHY
+npm test                    # full repository suite, expect 0 failures
+npm run test:coverage       # repository coverage report
+npm run prove:adapters      # adapter compatibility proof suite
+npm run prove:automation    # automation proof suite
+npm run self-heal:check     # overall status must be HEALTHY
 ```
 
 ## Audit Lessons

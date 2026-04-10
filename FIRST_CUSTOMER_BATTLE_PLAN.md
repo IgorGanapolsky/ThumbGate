@@ -95,7 +95,7 @@ ThumbGate is an MCP server that turns agent feedback into enforced prevention ru
 
 Stack: Node.js ≥18.18.0, SQLite+FTS5, LanceDB vectors, ContextFS for rule assembly.
 
-Free tier: local enforcement, unlimited feedback captures, 5 lesson searches/day, unlimited recall, and no cloud account required.
+Free tier: local enforcement, 3 feedback captures/day, 5 lesson searches/day, unlimited recall, and no cloud account required.
 Pro ($19/mo, 7-day trial): personal local dashboard, DPO export, gate debugger, and model hardening guidance.
 
 ```

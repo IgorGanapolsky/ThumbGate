@@ -1,0 +1,99 @@
+name: Railway Diagnostics
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Diagnostic action to run before capturing status and logs'
+        required: true
+        default: 'inspect'
+        type: choice
+        options:
+          - inspect
+          - restart
+          - redeploy
+      log_lines:
+        description: 'How many deploy/build log lines to capture'
+        required: true
+        default: '200'
+        type: string
+      http_log_lines:
+        description: 'How many HTTP log lines to capture'
+        required: true
+        default: '50'
+        type: string
+      settle_seconds:
+        description: 'Seconds to wait after restart/redeploy before probing health'
+        required: true
+        default: '20'
+        type: string
+
+concurrency:
+  group: railway-diagnostics-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+      RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
+      RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
+      RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL || 'https://thumbgate-production.up.railway.app/health' }}
+      RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS || '5' }}
+      RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS || '20' }}
+      RAILWAY_LOG_LINES: ${{ github.event.inputs.log_lines || '200' }}
+      RAILWAY_HTTP_LOG_LINES: ${{ github.event.inputs.http_log_lines || '50' }}
+      RAILWAY_SETTLE_SECONDS: ${{ github.event.inputs.settle_seconds || '20' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Check Railway diagnostics configuration
+        run: |
+          missing_config=()
+          [ -z "$RAILWAY_TOKEN" ] && missing_config+=('RAILWAY_TOKEN')
+          [ -z "$RAILWAY_PROJECT_ID" ] && missing_config+=('RAILWAY_PROJECT_ID')
+          [ -z "$RAILWAY_ENVIRONMENT_ID" ] && missing_config+=('RAILWAY_ENVIRONMENT_ID')
+          [ -z "$RAILWAY_SERVICE" ] && missing_config+=('RAILWAY_SERVICE')
+          [ -z "$RAILWAY_HEALTHCHECK_URL" ] && missing_config+=('RAILWAY_HEALTHCHECK_URL')
+
+          if [ "${#missing_config[@]}" -gt 0 ]; then
+            echo "::error::Railway diagnostics blocked: missing required config: ${missing_config[*]}"
+            exit 1
+          fi
+
+      - name: Install Railway CLI
+        run: |
+          npm install -g @railway/cli
+          railway version || true
+
+      - name: Restart Railway service
+        if: github.event.inputs.action == 'restart'
+        run: railway restart --service "$RAILWAY_SERVICE" --yes --json | tee railway-restart.json
+
+      - name: Redeploy Railway service
+        if: github.event.inputs.action == 'redeploy'
+        run: railway redeploy --service "$RAILWAY_SERVICE" --yes --json | tee railway-redeploy.json
+
+      - name: Allow Railway action to settle
+        if: github.event.inputs.action != 'inspect'
+        run: sleep "$RAILWAY_SETTLE_SECONDS"
+
+      - name: Capture Railway diagnostics
+        run: bash scripts/capture-railway-diagnostics.sh railway-diagnostics
+
+      - name: Upload Railway diagnostics artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: railway-diagnostics-${{ github.run_id }}
+          path: |
+            railway-diagnostics/
+            railway-restart.json
+            railway-redeploy.json
+          if-no-files-found: warn

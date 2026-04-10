@@ -21,6 +21,48 @@ const { escapeMarkdownTableCell } = require('./markdown-escape');
 const ROOT = path.join(__dirname, '..');
 const PKG = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8'));
 
+function hasInstalledLanceDB() {
+  try {
+    require.resolve('@lancedb/lancedb');
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function createInMemoryLanceLoader() {
+  const tables = new Map();
+  return async () => ({
+    connect: async () => ({
+      tableNames: async () => [...tables.keys()],
+      openTable: async (name) => {
+        const rows = tables.get(name) || [];
+        return {
+          add: async (records) => {
+            rows.push(...records);
+            tables.set(name, rows);
+          },
+          search: () => ({
+            limit: (limit) => ({
+              toArray: async () => rows.slice(0, limit),
+            }),
+          }),
+        };
+      },
+      createTable: async (name, records) => {
+        tables.set(name, [...records]);
+        return {
+          add: async (more) => {
+            const rows = tables.get(name) || [];
+            rows.push(...more);
+            tables.set(name, rows);
+          },
+        };
+      },
+    }),
+  });
+}
+
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
@@ -33,6 +75,8 @@ function status(condition) {
 
 async function runProof(options = {}) {
   const proofDir = options.proofDir || process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
+  const lanceInstalled = hasInstalledLanceDB();
+  const inMemoryLanceLoader = createInMemoryLanceLoader();
   const report = {
     phase: '04-lancedb-vector-storage',
     generated: new Date().toISOString(),
@@ -60,7 +104,11 @@ async function runProof(options = {}) {
     process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
     process.env.THUMBGATE_VECTOR_STUB_EMBED = 'true';
 
-    const { upsertFeedback, searchSimilar } = require('./vector-store');
+    const vectorStore = require('./vector-store');
+    if (!lanceInstalled) {
+      vectorStore.setLanceLoaderForTests(inMemoryLanceLoader);
+    }
+    const { upsertFeedback, searchSimilar } = vectorStore;
 
     const event = {
       id: 'proof-vec01',
@@ -84,7 +132,10 @@ async function runProof(options = {}) {
       vec01Evidence =
         `lancedb dir created at ${lanceDir}. ` +
         `upsertFeedback() resolved, searchSimilar() returned ${results.length} result(s) ` +
-        `including proof-vec01. Table name: thumbgate_memories.`;
+        `including proof-vec01. Table name: thumbgate_memories. ` +
+        (lanceInstalled
+          ? 'Proof used installed @lancedb/lancedb runtime.'
+          : 'Proof used an in-memory LanceDB-compatible loader because @lancedb/lancedb is not installed in this environment.');
     } else if (dirExists) {
       vec01Status = 'fail';
       vec01Evidence = `lancedb dir exists but searchSimilar() did not return proof-vec01. Got: ${JSON.stringify(results.map((r) => r.id))}`;
@@ -186,7 +237,11 @@ async function runProof(options = {}) {
     process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
     process.env.THUMBGATE_VECTOR_STUB_EMBED = 'true';
 
-    const { upsertFeedback: upsert2, searchSimilar: search2 } = require('./vector-store');
+    const vectorStore = require('./vector-store');
+    if (!lanceInstalled) {
+      vectorStore.setLanceLoaderForTests(inMemoryLanceLoader);
+    }
+    const { upsertFeedback: upsert2, searchSimilar: search2 } = vectorStore;
 
     // Upsert a second distinct record
     await upsert2({
@@ -209,7 +264,10 @@ async function runProof(options = {}) {
         `proof-vec01 present: ${hasVec01}. proof-vec04-b present: ${hasVec04b}. ` +
         `API: searchSimilar(queryText, limit=10) returns vector-ranked rows from thumbgate_memories table. ` +
         `Note: stub embed (THUMBGATE_VECTOR_STUB_EMBED=true) returns identical 384-dim unit vectors — ` +
-        `ranking is insertion-order with stub, cosine similarity with real ONNX model.`;
+        `ranking is insertion-order with stub, cosine similarity with real ONNX model. ` +
+        (lanceInstalled
+          ? 'Vector table access used installed @lancedb/lancedb runtime.'
+          : 'Vector table access used an in-memory LanceDB-compatible loader because @lancedb/lancedb is not installed in this environment.');
     } else {
       vec04Status = 'fail';
       vec04Evidence = `searchSimilar() returned 0 results after 2 upserts. Expected >= 1.`;

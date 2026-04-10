@@ -53,6 +53,11 @@ const {
   buildCloudflareSandboxPlan,
 } = require('../../scripts/cloudflare-dynamic-sandbox');
 const {
+  listJobStates,
+  readJobState,
+  requestJobControl,
+} = require('../../scripts/async-job-runner');
+const {
   loadModel,
   getReliability,
   samplePosteriors,
@@ -104,6 +109,14 @@ const {
   evaluateOperationalIntegrity,
 } = require('../../scripts/operational-integrity');
 const {
+  evaluateWorkflowSentinel,
+} = require('../../scripts/workflow-sentinel');
+const {
+  recordDecisionEvaluation,
+  recordDecisionOutcome,
+  computeDecisionMetrics,
+} = require('../../scripts/decision-journal');
+const {
   generateDashboard,
 } = require('../../scripts/dashboard');
 const {
@@ -137,6 +150,13 @@ const {
   resolveAnalyticsWindow,
 } = require('../../scripts/analytics-window');
 const {
+  launchDpoExportJob,
+  launchHarnessJob,
+  pauseQueuedJob,
+  cancelQueuedJob,
+  resumeHostedJob,
+} = require('../../scripts/hosted-job-launcher');
+const {
   appendWorkflowSprintLead,
   advanceWorkflowSprintLead,
 } = require('../../scripts/workflow-sprint-intake');
@@ -157,14 +177,20 @@ const PRO_PAGE_PATH = path.resolve(__dirname, '../../public/pro.html');
 const DASHBOARD_PAGE_PATH = path.resolve(__dirname, '../../public/dashboard.html');
 const LESSONS_PAGE_PATH = path.resolve(__dirname, '../../public/lessons.html');
 const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
+const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
+const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
+const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
 const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
 const VISITOR_COOKIE_NAME = 'thumbgate_visitor_id';
 const SESSION_COOKIE_NAME = 'thumbgate_session_id';
 const ACQUISITION_COOKIE_NAME = 'thumbgate_acquisition_id';
 const VISITOR_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
 const BUILD_METADATA = resolveBuildMetadata();
+const TERMINAL_JOB_STATUSES = new Set(['completed', 'failed', 'cancelled']);
+const IDLE_JOB_STATUSES = new Set(['queued', 'paused', 'resume_requested']);
+const JOB_CONTROL_ACTIONS = new Set(['pause', 'cancel', 'resume']);
 
 // ---------------------------------------------------------------------------
 // Stripe event tracking helpers
@@ -1329,6 +1355,32 @@ function renderRobotsTxt(runtimeConfig) {
   return [
     'User-agent: *',
     'Allow: /',
+    '',
+    '# AI crawler access — allow all major LLM crawlers',
+    'User-agent: GPTBot',
+    'Allow: /',
+    '',
+    'User-agent: ClaudeBot',
+    'Allow: /',
+    '',
+    'User-agent: PerplexityBot',
+    'Allow: /',
+    '',
+    'User-agent: Googlebot',
+    'Allow: /',
+    '',
+    'User-agent: Bingbot',
+    'Allow: /',
+    '',
+    'User-agent: anthropic-ai',
+    'Allow: /',
+    '',
+    'User-agent: Google-Extended',
+    'Allow: /',
+    '',
+    '# LLM context document — clean declarative content for AI retrieval',
+    `# ${runtimeConfig.appOrigin}/llm-context.md`,
+    '',
     `Sitemap: ${runtimeConfig.appOrigin}/sitemap.xml`,
   ].join('\n');
 }
@@ -1337,6 +1389,7 @@ function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
+    { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
   return [
@@ -2174,6 +2227,56 @@ function resolveSafePath(inputPath, { mustExist = false, safeDataDir } = {}) {
   return resolved;
 }
 
+function resolveDpoExportPaths(body = {}, options = {}) {
+  const { safeDataDir, fallbackMemoryLogPath = null } = options;
+  return {
+    inputPath: body.inputPath
+      ? resolveSafePath(body.inputPath, { mustExist: true, safeDataDir })
+      : null,
+    memoryLogPath: body.memoryLogPath
+      ? resolveSafePath(body.memoryLogPath, { mustExist: true, safeDataDir })
+      : null,
+    outputPath: body.outputPath
+      ? resolveSafePath(body.outputPath, { safeDataDir })
+      : null,
+    fallbackMemoryLogPath,
+  };
+}
+
+function loadDpoExportMemories({ inputPath, memoryLogPath, fallbackMemoryLogPath = null }) {
+  if (inputPath) {
+    const raw = fs.readFileSync(inputPath, 'utf-8');
+    const parsedMemories = JSON.parse(raw);
+    return Array.isArray(parsedMemories) ? parsedMemories : parsedMemories.memories || [];
+  }
+
+  return readJSONL(memoryLogPath || fallbackMemoryLogPath || DEFAULT_LOCAL_MEMORY_LOG);
+}
+
+function parseJobStatuses(value) {
+  if (!value) return [];
+  return String(value)
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function readHostedJobOrThrow(jobId) {
+  const state = readJobState(jobId);
+  if (!state) {
+    throw createHttpError(404, `Job not found: ${jobId}`);
+  }
+  return state;
+}
+
+function normalizeJobIdFromPath(pathname, suffix = '') {
+  const pattern = suffix
+    ? new RegExp(`^/v1/jobs/([^/]+)${suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)
+    : /^\/v1\/jobs\/([^/]+)$/;
+  const match = pathname.match(pattern);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 function createApiServer() {
   const expectedApiKey = getExpectedApiKey();
 
@@ -2450,12 +2553,39 @@ function createApiServer() {
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/.well-known/llms.txt') {
+      const llmsTxtPath = path.join(__dirname, '..', '..', '.well-known', 'llms.txt');
+      try {
+        const content = fs.readFileSync(llmsTxtPath, 'utf8');
+        sendText(res, 200, content, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' }, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'llms.txt not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/sitemap.xml') {
       sendText(res, 200, renderSitemapXml(hostedConfig), {
         'Content-Type': 'application/xml; charset=utf-8',
       }, {
         headOnly: isHeadRequest,
       });
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/llm-context.md') {
+      const llmContextPath = path.resolve(__dirname, '../../public/llm-context.md');
+      try {
+        const content = fs.readFileSync(llmContextPath, 'utf8');
+        sendText(res, 200, content, {
+          'Content-Type': 'text/markdown; charset=utf-8',
+          'X-Robots-Tag': 'all',
+        }, {
+          headOnly: isHeadRequest,
+        });
+      } catch (_err) {
+        sendJson(res, 404, { error: 'Not found' });
+      }
       return;
     }
 
@@ -2726,6 +2856,16 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/compare') {
+      try {
+        const html = fs.readFileSync(COMPARE_PAGE_PATH, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'Compare page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/blog') {
       try {
         const blogPath = path.resolve(__dirname, '../../public/blog.html');
@@ -2776,6 +2916,28 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname.startsWith('/guides/')) {
+      try {
+        const slug = pathname.replace('/guides/', '').replace(/[^a-z0-9-]/g, '');
+        const guidePath = path.join(GUIDES_DIR, `${slug}.html`);
+        if (!guidePath.startsWith(GUIDES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
+        const html = fs.readFileSync(guidePath, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch { sendJson(res, 404, { error: 'Guide not found' }); }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname.startsWith('/compare/') && pathname !== '/compare') {
+      try {
+        const slug = pathname.replace('/compare/', '').replace(/[^a-z0-9-]/g, '');
+        const comparePath = path.join(COMPARE_DIR, `${slug}.html`);
+        if (!comparePath.startsWith(COMPARE_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
+        const html = fs.readFileSync(comparePath, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch { sendJson(res, 404, { error: 'Comparison not found' }); }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/') {
       if (wantsJson(req, parsed)) {
         sendJson(res, 200, {
@@ -2783,7 +2945,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/settings/status', '/v1/dpo/export', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/compare', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -3719,6 +3881,112 @@ async function addContext(){
         return;
       }
 
+      if (req.method === 'POST' && pathname === '/v1/jobs/harness') {
+        const body = await parseJsonBody(req);
+        const identifier = body.harness || body.harnessId;
+        if (!identifier) {
+          throw createHttpError(400, 'harness is required');
+        }
+        const inputs = parseOptionalObject(body.inputs, 'inputs') || {};
+        try {
+          const launched = launchHarnessJob(identifier, inputs, {
+            jobId: normalizeNullableText(body.jobId) || undefined,
+            skill: normalizeNullableText(body.skill) || undefined,
+            partnerProfile: normalizeNullableText(body.partnerProfile) || undefined,
+            autoImprove: body.autoImprove !== false,
+          });
+          sendJson(res, 202, {
+            accepted: true,
+            jobId: launched.jobId,
+            status: launched.state.status,
+            launchMode: launched.launchMode,
+            pid: launched.pid,
+            statusUrl: `/v1/jobs/${encodeURIComponent(launched.jobId)}`,
+            job: launched.state,
+          });
+        } catch (err) {
+          throw createHttpError(err.statusCode || 400, err.message || 'Invalid hosted harness request');
+        }
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/jobs') {
+        const limit = Number(parsed.searchParams.get('limit') || 20);
+        const statuses = parseJobStatuses(parsed.searchParams.get('status'));
+        const jobs = listJobStates({
+          limit: Number.isFinite(limit) ? limit : 20,
+          statuses,
+        });
+        sendJson(res, 200, {
+          total: jobs.length,
+          jobs,
+        });
+        return;
+      }
+
+      {
+        const jobId = normalizeJobIdFromPath(pathname);
+        if (req.method === 'GET' && jobId) {
+          sendJson(res, 200, {
+            job: readHostedJobOrThrow(jobId),
+          });
+          return;
+        }
+      }
+
+      {
+        const jobId = normalizeJobIdFromPath(pathname, '/control');
+        if (req.method === 'POST' && jobId) {
+          const state = readHostedJobOrThrow(jobId);
+          const body = await parseJsonBody(req);
+          const action = normalizeNullableText(body.action);
+          if (!action || !JOB_CONTROL_ACTIONS.has(action)) {
+            throw createHttpError(400, 'action must be one of pause, cancel, or resume');
+          }
+
+          if (TERMINAL_JOB_STATUSES.has(state.status)) {
+            throw createHttpError(409, `Job ${jobId} is already ${state.status}`);
+          }
+
+          if (action === 'resume') {
+            const launched = resumeHostedJob(jobId);
+            sendJson(res, 202, {
+              accepted: true,
+              action,
+              jobId,
+              launchMode: launched.launchMode,
+              pid: launched.pid,
+              job: launched.state,
+            });
+            return;
+          }
+
+          if (IDLE_JOB_STATUSES.has(state.status)) {
+            const job = action === 'pause'
+              ? pauseQueuedJob(jobId, parseOptionalObject(body.metadata, 'metadata') || {})
+              : cancelQueuedJob(jobId, parseOptionalObject(body.metadata, 'metadata') || {});
+            sendJson(res, 202, {
+              accepted: true,
+              action,
+              jobId,
+              job,
+            });
+            return;
+          }
+
+          const metadata = parseOptionalObject(body.metadata, 'metadata') || {};
+          const control = requestJobControl(jobId, action, metadata);
+          sendJson(res, 202, {
+            accepted: true,
+            action,
+            jobId,
+            control,
+            job: readHostedJobOrThrow(jobId),
+          });
+          return;
+        }
+      }
+
       if (req.method === 'POST' && pathname === '/v1/gates/constraint') {
         const body = await parseJsonBody(req);
         if (!body.key || body.value === undefined) {
@@ -3947,33 +4215,38 @@ async function addContext(){
 
       if (req.method === 'POST' && pathname === '/v1/dpo/export') {
         const body = await parseJsonBody(req);
-        let memories = [];
+        const paths = resolveDpoExportPaths(body, {
+          safeDataDir: requestSafeDataDir,
+          fallbackMemoryLogPath: requestFeedbackPaths.MEMORY_LOG_PATH,
+        });
+        const wantsAsync = body.async === true || normalizeNullableText(body.mode) === 'async';
 
-        if (body.inputPath) {
-          const safeInputPath = resolveSafePath(body.inputPath, {
-            mustExist: true,
-            safeDataDir: requestSafeDataDir,
-          });
-          const raw = fs.readFileSync(safeInputPath, 'utf-8');
-          const parsedMemories = JSON.parse(raw);
-          memories = Array.isArray(parsedMemories) ? parsedMemories : parsedMemories.memories || [];
-        } else {
-          const localPath = body.memoryLogPath
-            ? resolveSafePath(body.memoryLogPath, {
-              mustExist: true,
-              safeDataDir: requestSafeDataDir,
-            })
-            : requestFeedbackPaths.MEMORY_LOG_PATH;
-          memories = readJSONL(localPath);
+        if (wantsAsync) {
+          try {
+            const launched = launchDpoExportJob(paths, {
+              jobId: normalizeNullableText(body.jobId) || undefined,
+            });
+            sendJson(res, 202, {
+              accepted: true,
+              async: true,
+              jobId: launched.jobId,
+              status: launched.state.status,
+              outputPath: paths.outputPath,
+              statusUrl: `/v1/jobs/${encodeURIComponent(launched.jobId)}`,
+              launchMode: launched.launchMode,
+              job: launched.state,
+            });
+          } catch (err) {
+            throw createHttpError(err.statusCode || 400, err.message || 'Invalid DPO export request');
+          }
+          return;
         }
 
+        const memories = loadDpoExportMemories(paths);
         const result = exportDpoFromMemories(memories);
-        if (body.outputPath) {
-          const safeOutputPath = resolveSafePath(body.outputPath, {
-            safeDataDir: requestSafeDataDir,
-          });
-          fs.mkdirSync(path.dirname(safeOutputPath), { recursive: true });
-          fs.writeFileSync(safeOutputPath, result.jsonl);
+        if (paths.outputPath) {
+          fs.mkdirSync(path.dirname(paths.outputPath), { recursive: true });
+          fs.writeFileSync(paths.outputPath, result.jsonl);
         }
 
         sendJson(res, 200, {
@@ -3982,9 +4255,7 @@ async function addContext(){
           learnings: result.learnings.length,
           unpairedErrors: result.unpairedErrors.length,
           unpairedLearnings: result.unpairedLearnings.length,
-          outputPath: body.outputPath
-            ? resolveSafePath(body.outputPath, { safeDataDir: requestSafeDataDir })
-            : null,
+          outputPath: paths.outputPath,
         });
         return;
       }
@@ -4384,6 +4655,85 @@ async function addContext(){
         return;
       }
 
+      if (req.method === 'POST' && pathname === '/v1/decisions/evaluate') {
+        const body = await parseJsonBody(req);
+        if (!body.toolName) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Bad Request',
+            status: 400,
+            detail: 'toolName is required.',
+          });
+          return;
+        }
+
+        const report = evaluateWorkflowSentinel(body.toolName, {
+          command: body.command,
+          path: body.filePath,
+          changed_files: Array.isArray(body.changedFiles) ? body.changedFiles : [],
+          repoPath: body.repoPath,
+          baseBranch: body.baseBranch,
+        }, {
+          repoPath: body.repoPath,
+          baseBranch: body.baseBranch,
+          affectedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : undefined,
+          requirePrForReleaseSensitive: body.requirePrForReleaseSensitive === true,
+          requireVersionNotBehindBase: body.requireVersionNotBehindBase === true,
+          governanceState: getScopeState(),
+          feedbackDir: requestFeedbackDir,
+        });
+        const evaluation = recordDecisionEvaluation(report, {
+          source: 'api',
+          toolName: body.toolName,
+          toolInput: {
+            command: body.command,
+            filePath: body.filePath,
+            changedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : [],
+            repoPath: body.repoPath,
+            baseBranch: body.baseBranch,
+          },
+          changedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : [],
+        }, {
+          feedbackDir: requestFeedbackDir,
+        });
+        report.actionId = evaluation.actionId;
+        if (report.decisionControl) report.decisionControl.actionId = evaluation.actionId;
+        sendJson(res, 200, report);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/decisions/outcome') {
+        const body = await parseJsonBody(req);
+        if (!body.actionId || !body.outcome) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Bad Request',
+            status: 400,
+            detail: 'actionId and outcome are required.',
+          });
+          return;
+        }
+        const outcome = recordDecisionOutcome({
+          actionId: body.actionId,
+          outcome: body.outcome,
+          actualDecision: body.actualDecision,
+          actor: body.actor,
+          notes: body.notes,
+          metadata: body.metadata,
+          latencyMs: body.latencyMs,
+          source: 'api',
+        }, {
+          feedbackDir: requestFeedbackDir,
+        });
+        sendJson(res, 200, outcome);
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/decisions/metrics') {
+        sendJson(res, 200, computeDecisionMetrics(requestFeedbackDir));
+        return;
+      }
+
       // GET /v1/settings/status -- Resolved settings hierarchy with origin metadata
       if (req.method === 'GET' && pathname === '/v1/settings/status') {
         sendJson(res, 200, getSettingsStatus());
@@ -4414,9 +4764,9 @@ async function addContext(){
         return;
       }
 
-      // POST /webhook/stripe — Track Stripe subscription events (checkout, subscription changes)
-      // TODO: Add STRIPE_WEBHOOK_SECRET to .env and enable signature verification via
-      // verifyWebhookSignature() once the webhook endpoint is registered in the Stripe Dashboard.
+      // POST /webhook/stripe — legacy Stripe event log bridge kept for backward compatibility.
+      // When STRIPE_WEBHOOK_SECRET is configured, verify the same Stripe signature used by
+      // the /v1/billing/webhook route before touching any payload.
       if (req.method === 'POST' && pathname === '/webhook/stripe') {
         try {
           const rawBody = await new Promise((resolve, reject) => {
@@ -4425,6 +4775,18 @@ async function addContext(){
             req.on('end', () => resolve(Buffer.concat(chunks)));
             req.on('error', reject);
           });
+
+          const sig = req.headers['stripe-signature'] || '';
+          if (!verifyWebhookSignature(rawBody, sig)) {
+            sendProblem(res, {
+              type: PROBLEM_TYPES.WEBHOOK_INVALID,
+              title: 'Invalid webhook signature',
+              status: 400,
+              detail: 'The webhook signature could not be verified.',
+            });
+            return;
+          }
+
           let event;
           try {
             event = JSON.parse(rawBody.toString('utf-8'));

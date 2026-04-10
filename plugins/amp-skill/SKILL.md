@@ -1,6 +1,5 @@
 ---
 name: thumbgate-feedback
-name: rlhf-feedback
 description: Dual-write feedback to Amp MCP memory AND thumbgate for DPO export, analytics, and cross-platform portability
 ---
 

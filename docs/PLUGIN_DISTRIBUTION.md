@@ -38,7 +38,7 @@ This avoids platform-specific rewrite cost and keeps the product under a `$10/mo
 ## Claude (MCP)
 
 - Use: `adapters/claude/.mcp.json`
-- Transport: local stdio MCP server launched via `npx -y thumbgate@0.9.14 serve`
+- Transport: local stdio MCP server launched via `npx -y thumbgate@1.3.0 serve`
 
 ## Claude Desktop Extensions
 
@@ -51,7 +51,7 @@ This avoids platform-specific rewrite cost and keeps the product under a `$10/mo
 - Bundle build command: `npm run build:claude-mcpb`
 - Release workflow: `.github/workflows/publish-claude-plugin.yml`
 - Latest direct download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
-- Local install path: `claude mcp add thumbgate -- npx -y thumbgate@0.9.14 serve`
+- Local install path: `claude mcp add thumbgate -- npx -y thumbgate@1.3.0 serve`
 - Promotion rule: treat directory inclusion as a discoverability lane, not customer proof
 
 Build the `.mcpb` for Claude Desktop review or direct installation with:
@@ -78,7 +78,7 @@ This lane is for Claude Code users who want Codex review, adversarial review, an
 - Repo-local Codex plugin manifest: `plugins/codex-profile/.codex-plugin/plugin.json`
 - Repo-local Codex MCP config: `plugins/codex-profile/.mcp.json`
 - Repo-local Codex marketplace: `.agents/plugins/marketplace.json`
-- Transport: local stdio MCP server launched via `npx -y thumbgate@0.9.14 serve`
+- Transport: local stdio MCP server launched via `npx -y thumbgate@1.3.0 serve`
 
 ## Cursor Plugins
 
@@ -120,6 +120,7 @@ Promotion and release operations are tracked in [CURSOR_PLUGIN_OPERATIONS.md](CU
 
 1. `npm test` output is green.
 2. `npm run prove:adapters` produces [proof/compatibility/report.md](../proof/compatibility/report.md) and [proof/compatibility/report.json](../proof/compatibility/report.json).
-3. README links to evidence + platform adapter files.
-4. GitHub About text calls out cross-agent ThumbGate loop + DPO export.
-5. Verification narrative is published in [docs/VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).
+3. Release-relevant PRs carry a `.changeset/*.md` record and the release operator can run `npm run changeset:version` before publish.
+4. README links to evidence + platform adapter files.
+5. GitHub About text calls out cross-agent ThumbGate loop + DPO export.
+6. Verification narrative is published in [docs/VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md).

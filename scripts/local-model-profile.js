@@ -22,6 +22,17 @@ const MODEL_ROLES = {
   vlm: 'gemini-2.5-flash',
 };
 
+// GLM 5.1 open-source model IDs for self-hosted local inference.
+// Activate by setting THUMBGATE_LOCAL_MODEL_FAMILY=glm-z1 (or any glm-* variant).
+// Each role can still be overridden via THUMBGATE_MODEL_ROLE_<ROLE>.
+const GLM_MODEL_ROLES = {
+  normal: 'glm-z1-9b',
+  thinking: 'glm-z1-32b',
+  critique: 'glm-z1-9b',
+  compaction: 'glm-4-9b',
+  vlm: 'glm-4v-9b',
+};
+
 const VALID_MODEL_ROLES = Object.keys(MODEL_ROLES);
 
 const EMBEDDING_PROFILES = {
@@ -323,8 +334,12 @@ function resolveModelRole(role, env) {
     throw new Error(`Unknown model role: '${normalized}'. Valid roles: ${VALID_MODEL_ROLES.join(', ')}`);
   }
   const envKey = `THUMBGATE_MODEL_ROLE_${normalized.toUpperCase()}`;
-  const model = (e[envKey] && String(e[envKey]).trim()) || MODEL_ROLES[normalized];
-  return { role: normalized, model, provider: 'gemini', envKey };
+  const modelFamily = resolveModelFamily(e);
+  const isLocalGlm = modelFamily.startsWith('glm');
+  const provider = isLocalGlm ? 'local' : 'gemini';
+  const defaultModel = isLocalGlm ? (GLM_MODEL_ROLES[normalized] || MODEL_ROLES[normalized]) : MODEL_ROLES[normalized];
+  const model = (e[envKey] && String(e[envKey]).trim()) || defaultModel;
+  return { role: normalized, model, provider, envKey };
 }
 
 function buildModelFitReport(options = {}) {
@@ -361,6 +376,7 @@ module.exports = {
   DEFAULT_EMBED_MODEL,
   DEFAULT_FEEDBACK_DIR,
   EMBEDDING_PROFILES,
+  GLM_MODEL_ROLES,
   INDEXCACHE_SERVER_ENGINES,
   LONG_CONTEXT_TAGS,
   LONG_CONTEXT_TASK_TYPES,

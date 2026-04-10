@@ -12,7 +12,6 @@
 - Plugin slug: `thumbgate`
 - npm package: `thumbgate`
 - MCP server label inside the plugin config: `thumbgate`
-- MCP server label inside the plugin config: `rlhf`
 
 ## Update behavior
 
@@ -46,7 +45,7 @@
 
 👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.
 
-When the feedback is vague, ThumbGate can distill the lesson from the last ~10 messages and failed tool call, then propose a corrective rule automatically.
+When the feedback is a vague thumbs-down, ThumbGate can distill the lesson from up to 8 prior recorded entries and the failed tool call, then keep a linked 60-second follow-up session open for later clarification.
 
 ## Suggested manual submission fields
 

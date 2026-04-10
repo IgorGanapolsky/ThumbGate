@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "0.9.14",
+  "version": "1.3.0",
   "plugins": [
     {
       "name": "thumbgate",

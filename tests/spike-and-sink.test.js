@@ -21,19 +21,57 @@ function restoreEnv(snapshot) {
   });
 }
 
+function freshVectorStore(tmpDir) {
+  delete require.cache[require.resolve('../scripts/vector-store')];
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_VECTOR_STUB_EMBED = 'true';
+  const vectorStore = require('../scripts/vector-store');
+  vectorStore.setLanceLoaderForTests(async () => {
+    const tables = new Map();
+    return {
+      connect: async () => ({
+        tableNames: async () => [...tables.keys()],
+        openTable: async (name) => {
+          const rows = tables.get(name) || [];
+          return {
+            add: async (records) => {
+              rows.push(...records);
+              tables.set(name, rows);
+            },
+            search: () => ({
+              limit: (limit) => ({
+                toArray: async () =>
+                  rows.slice(0, limit).map((row, index) => ({ ...row, _distance: index })),
+              }),
+            }),
+          };
+        },
+        createTable: async (name, records) => {
+          tables.set(name, [...records]);
+          return {
+            add: async (more) => {
+              const rows = tables.get(name) || [];
+              rows.push(...more);
+              tables.set(name, rows);
+            },
+          };
+        },
+      }),
+    };
+  });
+  return vectorStore;
+}
+
 test('Inverse Sink Weighting - penalizes generic logs', async (t) => {
   const envSnapshot = snapshotEnv(['THUMBGATE_VECTOR_STUB_EMBED', 'THUMBGATE_FEEDBACK_DIR']);
-  // Use stub embed for speed/determinism
-  process.env.THUMBGATE_VECTOR_STUB_EMBED = 'true';
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sink-test-'));
-  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
     restoreEnv(envSnapshot);
+    delete require.cache[require.resolve('../scripts/vector-store')];
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  // Require inside to pick up env vars
-  const { searchSimilar, upsertFeedback } = require('../scripts/vector-store');
+  const { searchSimilar, upsertFeedback } = freshVectorStore(tmpDir);
 
   // 1. Upsert a "Spike" (Unique, rare failure)
   const spike = {

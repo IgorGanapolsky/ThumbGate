@@ -5,12 +5,13 @@ const fs = require('fs');
 const path = require('path');
 
 const REPO_ROOT = path.resolve(process.argv[2] || process.cwd());
-const RLHF_ENTRY = {
+const THUMBGATE_ENTRY = {
   command: 'npx',
   args: ['-y', 'thumbgate@latest', 'serve'],
 };
-const LEGACY_SERVER_NAMES = ['thumbgate', 'rlhf_feedback_loop'];
-const INFO_EXCLUDE_ENTRIES = ['.rlhf/', '.thumbgate/', '.mcp.json'];
+const MCP_SERVER_KEY = 'thumbgate';
+const LEGACY_SERVER_NAMES = ['rlhf', 'mcp-memory-gateway', 'rlhf_feedback_loop'];
+const INFO_EXCLUDE_ENTRIES = ['.thumbgate/', '.mcp.json'];
 
 function readJson(filePath) {
   try {
@@ -36,11 +37,11 @@ function writeJsonIfChanged(filePath, value) {
   return true;
 }
 
-function mergeRlhfEntry(entry = {}) {
+function mergeThumbgateEntry(entry = {}) {
   return {
     ...entry,
-    command: RLHF_ENTRY.command,
-    args: RLHF_ENTRY.args.slice(),
+    command: THUMBGATE_ENTRY.command,
+    args: THUMBGATE_ENTRY.args.slice(),
   };
 }
 
@@ -49,7 +50,7 @@ function ensureMcpJson(repoRoot) {
   const existing = readJson(filePath);
   const config = existing && typeof existing === 'object' ? existing : {};
   config.mcpServers = config.mcpServers && typeof config.mcpServers === 'object' ? config.mcpServers : {};
-  config.mcpServers.rlhf = mergeRlhfEntry(config.mcpServers.rlhf);
+  config.mcpServers[MCP_SERVER_KEY] = mergeThumbgateEntry(config.mcpServers[MCP_SERVER_KEY]);
   for (const legacyName of LEGACY_SERVER_NAMES) {
     delete config.mcpServers[legacyName];
   }
@@ -63,13 +64,13 @@ function ensureClaudeSettings(repoRoot) {
     return false;
   }
   const hasRelevantServer =
-    Boolean(existing.mcpServers && existing.mcpServers.rlhf) ||
+    Boolean(existing.mcpServers && existing.mcpServers[MCP_SERVER_KEY]) ||
     LEGACY_SERVER_NAMES.some((name) => Boolean(existing.mcpServers && existing.mcpServers[name]));
   if (!hasRelevantServer) {
     return false;
   }
   existing.mcpServers = existing.mcpServers && typeof existing.mcpServers === 'object' ? existing.mcpServers : {};
-  existing.mcpServers.rlhf = mergeRlhfEntry(existing.mcpServers.rlhf);
+  existing.mcpServers[MCP_SERVER_KEY] = mergeThumbgateEntry(existing.mcpServers[MCP_SERVER_KEY]);
   for (const legacyName of LEGACY_SERVER_NAMES) {
     delete existing.mcpServers[legacyName];
   }
@@ -106,19 +107,19 @@ function ensureInfoExclude(repoRoot) {
   return true;
 }
 
-function ensureRlhfDir(repoRoot) {
-  const rlhfDir = path.join(repoRoot, '.rlhf');
-  if (fs.existsSync(rlhfDir)) {
+function ensureThumbgateDir(repoRoot) {
+  const thumbgateDir = path.join(repoRoot, '.thumbgate');
+  if (fs.existsSync(thumbgateDir)) {
     return false;
   }
-  fs.mkdirSync(rlhfDir, { recursive: true });
+  fs.mkdirSync(thumbgateDir, { recursive: true });
   return true;
 }
 
 function main() {
   const results = {
     repoRoot: REPO_ROOT,
-    createdRlhfDir: ensureRlhfDir(REPO_ROOT),
+    createdThumbgateDir: ensureThumbgateDir(REPO_ROOT),
     updatedMcpJson: ensureMcpJson(REPO_ROOT),
     updatedClaudeSettings: ensureClaudeSettings(REPO_ROOT),
     updatedInfoExclude: ensureInfoExclude(REPO_ROOT),
