@@ -7,6 +7,8 @@ const ROOT = path.join(__dirname, '..');
 const PRODUCTHUNT_URL = 'https://www.producthunt.com/products/thumbgate';
 const CLAUDE_PLUGIN_LATEST_ASSET_NAME = 'thumbgate-claude-desktop.mcpb';
 const CLAUDE_PLUGIN_NEXT_ASSET_NAME = 'thumbgate-claude-desktop-next.mcpb';
+const CODEX_PLUGIN_LATEST_ASSET_NAME = 'thumbgate-codex-plugin.zip';
+const CODEX_PLUGIN_NEXT_ASSET_NAME = 'thumbgate-codex-plugin-next.zip';
 
 function readJson(root, relativePath) {
   return JSON.parse(fs.readFileSync(path.join(root, relativePath), 'utf8'));
@@ -42,14 +44,38 @@ function getClaudePluginVersionedDownloadUrl(root = ROOT, version = getPackageVe
   return `${getRepositoryUrl(root)}/releases/download/v${normalized}/${getClaudePluginVersionedAssetName(normalized)}`;
 }
 
+function getCodexPluginVersionedAssetName(version = getPackageVersion(ROOT)) {
+  const normalized = String(version || '').replace(/^v/, '');
+  return `thumbgate-codex-plugin-v${normalized}.zip`;
+}
+
+function getCodexPluginChannelAssetName(version = getPackageVersion(ROOT)) {
+  return isPrereleaseVersion(version) ? CODEX_PLUGIN_NEXT_ASSET_NAME : CODEX_PLUGIN_LATEST_ASSET_NAME;
+}
+
+function getCodexPluginLatestDownloadUrl(root = ROOT) {
+  return `${getRepositoryUrl(root)}/releases/latest/download/${CODEX_PLUGIN_LATEST_ASSET_NAME}`;
+}
+
+function getCodexPluginVersionedDownloadUrl(root = ROOT, version = getPackageVersion(root)) {
+  const normalized = String(version || '').replace(/^v/, '');
+  return `${getRepositoryUrl(root)}/releases/download/v${normalized}/${getCodexPluginVersionedAssetName(normalized)}`;
+}
+
 module.exports = {
   CLAUDE_PLUGIN_LATEST_ASSET_NAME,
   CLAUDE_PLUGIN_NEXT_ASSET_NAME,
+  CODEX_PLUGIN_LATEST_ASSET_NAME,
+  CODEX_PLUGIN_NEXT_ASSET_NAME,
   PRODUCTHUNT_URL,
   getClaudePluginChannelAssetName,
   getClaudePluginLatestDownloadUrl,
   getClaudePluginVersionedAssetName,
   getClaudePluginVersionedDownloadUrl,
+  getCodexPluginChannelAssetName,
+  getCodexPluginLatestDownloadUrl,
+  getCodexPluginVersionedAssetName,
+  getCodexPluginVersionedDownloadUrl,
   getPackageVersion,
   getRepositoryUrl,
   isPrereleaseVersion,

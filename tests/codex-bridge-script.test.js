@@ -12,29 +12,45 @@ const BRIDGE_PATH = path.join(ROOT, 'plugins', 'claude-codex-bridge', 'scripts',
 
 function makeStubCodex(tmpDir) {
   const stubPath = path.join(tmpDir, 'codex');
-  const content = `#!/usr/bin/env node
-'use strict';
-const fs = require('node:fs');
+  const content = `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  printf 'codex-cli 0.0-test\\n'
+  exit 0
+fi
+if [ "$1" = "exec" ] && [ "$2" = "--help" ]; then
+  printf 'exec help\\n'
+  exit 0
+fi
+if [ "$1" = "exec" ] && [ "$2" = "review" ] && [ "$3" = "--help" ]; then
+  printf 'review help\\n'
+  exit 0
+fi
 
-const argv = process.argv.slice(2);
-if (argv[0] === '--version') {
-  process.stdout.write('codex-cli 0.0-test\\n');
-  process.exit(0);
-}
-if (argv[0] === 'exec' && argv[1] === '--help') {
-  process.stdout.write('exec help\\n');
-  process.exit(0);
-}
-if (argv[0] === 'exec' && argv[1] === 'review' && argv[2] === '--help') {
-  process.stdout.write('review help\\n');
-  process.exit(0);
-}
-const outputIndex = argv.findIndex((token) => token === '--output-last-message');
-if (outputIndex !== -1) {
-  fs.writeFileSync(argv[outputIndex + 1], 'Stub Codex result for ' + argv.join(' ') + '\\n');
-}
-process.stdout.write(JSON.stringify({ event: 'completed', argv }) + '\\n');
-process.exit(0);
+output_file=''
+expect_output_path=0
+for arg in "$@"; do
+  if [ "$expect_output_path" -eq 1 ]; then
+    output_file="$arg"
+    expect_output_path=0
+    continue
+  fi
+  if [ "$arg" = "--output-last-message" ]; then
+    expect_output_path=1
+  fi
+done
+
+if [ -n "$output_file" ]; then
+  {
+    printf 'Stub Codex result for'
+    for arg in "$@"; do
+      printf ' %s' "$arg"
+    done
+    printf '\\n'
+  } > "$output_file"
+fi
+
+printf '{"event":"completed"}\\n'
+exit 0
 `;
   fs.writeFileSync(stubPath, content, { mode: 0o755 });
   return stubPath;
