@@ -3,11 +3,6 @@ name: Changeset Check
 on:
   pull_request:
     branches: [main]
-    paths-ignore:
-      - '*.md'
-      - 'docs/**'
-      - '.github/workflows/daily-*.yml'
-      - '.github/workflows/marketing-*.yml'
 
 jobs:
   changeset-check:
