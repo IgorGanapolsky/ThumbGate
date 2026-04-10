@@ -64,6 +64,15 @@
       "severity": "high"
     },
     {
+      "id": "raw-gh-auto-merge-blocked",
+      "layer": "Execution",
+      "toolNames": ["Bash"],
+      "pattern": "gh\\s+pr\\s+merge\\b[^\\n]*--auto",
+      "action": "block",
+      "message": "Raw GitHub auto-merge is blocked. Use npm run pr:manage after all critical quality checks have terminal success.",
+      "severity": "critical"
+    },
+    {
       "id": "gh-pr-merge-restricted",
       "layer": "Identity",
       "pattern": "gh\\s+pr\\s+merge",

@@ -345,7 +345,7 @@ test('PR Manager - managePrs merges ready open PRs discovered from the repo list
   assert.equal(result.prs[0].number, 282);
   assert.equal(result.prs[0].outcome.status, 'ready');
   assert.equal(result.prs[0].outcome.mergeRequested, true);
-  assert.match(result.prs[0].outcome.mergeMode, /merged|queued_or_auto/);
+  assert.match(result.prs[0].outcome.mergeMode, /merged|queued/);
   assert.equal(result.prs[0].outcome.mergeCommit, undefined);
 });
 
@@ -393,8 +393,9 @@ test('PR Manager - performMerge never uses admin bypass', () => {
 
   const result = performMerge(321, runner, { waitForMerge: false });
   assert.equal(result.ok, true);
-  assert.deepEqual(calls[0], ['pr', 'merge', '321', '--squash', '--delete-branch', '--auto']);
+  assert.deepEqual(calls[0], ['pr', 'merge', '321', '--squash', '--delete-branch']);
   assert.ok(!calls[0].includes('--admin'));
+  assert.ok(!calls[0].includes('--auto'));
 });
 
 test('PR Manager - resolveBlockers falls back to statusCheckRollup when gh pr checks fails', async () => {

@@ -87,16 +87,11 @@ jobs:
             exit 0
           fi
 
-          if gh pr merge --auto --squash --delete-branch "$PR_URL"; then
-            echo "GitHub auto-merge enabled for $PR_URL"
-          else
-            echo "GitHub auto-merge unavailable; trying direct squash merge"
-            gh pr merge --squash --delete-branch "$PR_URL"
-          fi
+          gh pr merge --squash --delete-branch "$PR_URL"
 
           {
             echo "### Merge automation"
             echo "- Provider: github"
             echo "- PR: $PR_URL"
-            echo "- Mode: auto-merge or direct squash fallback"
+            echo "- Mode: direct squash after terminal checks"
           } >> "$GITHUB_STEP_SUMMARY"

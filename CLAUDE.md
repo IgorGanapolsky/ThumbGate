@@ -67,6 +67,7 @@ curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate 
 4. After push, run: `gh pr view --json reviewDecision,comments,reviewThreads`
 5. If unresolved threads > 0 → fix them → push again → re-check.
 6. Merge only when: CI green AND 0 unresolved threads.
+   - Never use raw `gh pr merge --auto`; use `npm run pr:manage` after all critical quality checks have terminal success.
 7. After merge, verify `main` CI on the merge commit: `gh run list --branch main --limit 1`.
 8. Delete the feature branch after merge.
 9. For `main`, merge submission is Trunk-managed: request `/trunk merge` and let the queue finish asynchronously. Do not build helper workflows that poll their own required check or block on the final merge commit.

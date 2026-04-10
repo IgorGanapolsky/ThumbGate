@@ -84,6 +84,6 @@ jobs:
                 echo "Requested Trunk merge for $PR_URL"
               fi
             else
-              gh pr merge --auto --squash --delete-branch "$PR_URL" || true
+              node scripts/pr-manager.js "$PR_NUMBER"
             fi
           fi
