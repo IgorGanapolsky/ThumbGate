@@ -453,6 +453,72 @@ test('PR Manager - waitForMergeCommit reports closed PRs without merge commits',
   assert.equal(result.reason, 'closed_without_merge');
 });
 
+test('PR Manager - waitForMergeCommit polls again when the interval fits the timeout', () => {
+  const originalNow = Date.now;
+  const nowValues = [1000, 1000, 1001];
+  Date.now = () => nowValues.shift() || 1001;
+
+  try {
+    const runner = createRunner([
+      {
+        status: 0,
+        stdout: JSON.stringify({
+          number: 779,
+          state: 'OPEN',
+          title: 'Queued PR',
+          mergeCommit: null
+        }),
+        stderr: ''
+      },
+      {
+        status: 0,
+        stdout: JSON.stringify({
+          number: 779,
+          state: 'CLOSED',
+          title: 'Closed PR',
+          mergeCommit: null
+        }),
+        stderr: ''
+      }
+    ]);
+
+    const result = waitForMergeCommit('779', runner, { timeoutMs: 5, intervalMs: 1 });
+    assert.equal(result.finalized, true);
+    assert.equal(result.merged, false);
+    assert.equal(result.reason, 'closed_without_merge');
+  } finally {
+    Date.now = originalNow;
+  }
+});
+
+test('PR Manager - waitForMergeCommit stops before sleeping past the timeout', () => {
+  const originalNow = Date.now;
+  const nowValues = [2000, 2000];
+  Date.now = () => nowValues.shift() || 2000;
+
+  try {
+    const runner = createRunner([
+      {
+        status: 0,
+        stdout: JSON.stringify({
+          number: 780,
+          state: 'OPEN',
+          title: 'Still queued PR',
+          mergeCommit: null
+        }),
+        stderr: ''
+      }
+    ]);
+
+    const result = waitForMergeCommit('780', runner, { timeoutMs: 1, intervalMs: 2 });
+    assert.equal(result.finalized, false);
+    assert.equal(result.merged, false);
+    assert.equal(result.reason, 'merge_commit_pending');
+  } finally {
+    Date.now = originalNow;
+  }
+});
+
 test('PR Manager - managePrs reports the landed merge commit instead of the PR head SHA', async () => {
   const runner = createRunner([
     {
