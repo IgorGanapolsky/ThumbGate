@@ -143,7 +143,8 @@
       "pattern": "git\\s+push\\s+(--force|-f)",
       "action": "block",
       "message": "Force push blocked. This is destructive and irreversible.",
-      "severity": "critical"
+      "severity": "critical",
+      "compliance": ["NIST-CM-5", "SOC2-CC8.1", "CWE-863"]
     },
     {
       "id": "protected-branch-push",
@@ -161,7 +162,8 @@
       "pattern": "\\.env",
       "action": "warn",
       "message": "Editing .env file — verify you are not deleting existing tokens",
-      "severity": "medium"
+      "severity": "medium",
+      "compliance": ["NIST-IA-5", "SOC2-CC6.1", "CWE-798"]
     },
     {
       "id": "deny-network-egress",
@@ -170,7 +172,8 @@
       "action": "warn",
       "unless": "egress_approved",
       "message": "Potential unauthorized network egress detected.",
-      "severity": "medium"
+      "severity": "medium",
+      "compliance": ["NIST-SC-7", "SOC2-CC6.6", "OWASP-A10"]
     },
     {
       "id": "unverified-skill-use",
@@ -190,7 +193,8 @@
       "pattern": "package\\.json$",
       "action": "warn",
       "message": "Dependency mutation detected in package.json. Security scanner will audit for typosquatting, wildcard versions, and suspicious install scripts.",
-      "severity": "high"
+      "severity": "high",
+      "compliance": ["NIST-SA-12", "OWASP-A06", "CWE-1357"]
     },
     {
       "id": "blocked-npx-content",
@@ -210,7 +214,8 @@
       "pattern": "(?:railway|fly|heroku|vercel|render|kubectl|helm)\\s+(?:deploy|up|apply|release|push|rollout)",
       "action": "approve",
       "message": "Production deploy detected. Human approval required before this action can proceed.",
-      "severity": "high"
+      "severity": "high",
+      "compliance": ["NIST-CM-3", "SOC2-CC8.1", "OWASP-A05"]
     },
     {
       "id": "schema-migration-approval",
@@ -219,7 +224,8 @@
       "pattern": "(?:npx\\s+(?:sequelize|typeorm|prisma|knex|drizzle|flyway|liquibase)|alembic\\s+upgrade|rails\\s+db:migrate|php\\s+artisan\\s+migrate)\\b",
       "action": "approve",
       "message": "Database schema migration detected. Human approval required before this action can proceed.",
-      "severity": "high"
+      "severity": "high",
+      "compliance": ["NIST-CM-3", "SOC2-CC8.1", "CWE-89"]
     },
     {
       "id": "permission-change-approval",
@@ -228,7 +234,8 @@
       "pattern": "(?:chmod|chown|setfacl|iam|policy|role|grant|revoke)\\s+",
       "action": "approve",
       "message": "Permission or IAM change detected. Human approval required before this action can proceed.",
-      "severity": "high"
+      "severity": "high",
+      "compliance": ["NIST-AC-6", "SOC2-CC6.1", "CWE-732"]
     },
     {
       "id": "style-violation-log",
@@ -267,7 +274,8 @@
       "requireTaskScope": true,
       "action": "block",
       "message": "SQL MCP delete_record requires explicit task scope. Destructive database operations must be scoped to prevent accidental data loss.",
-      "severity": "critical"
+      "severity": "critical",
+      "compliance": ["NIST-AC-3", "SOC2-CC6.1", "CWE-89"]
     },
     {
       "id": "mcp-sql-execute-warn",
@@ -285,7 +293,48 @@
       "pattern": "(?:WHERE\\s+1\\s*=\\s*1|WHERE\\s+true|WITHOUT\\s+WHERE)",
       "action": "block",
       "message": "SQL MCP bulk update without a safe WHERE clause. This could modify all records in the table.",
-      "severity": "critical"
+      "severity": "critical",
+      "compliance": ["NIST-AC-3", "CWE-89"]
+    },
+    {
+      "id": "self-protect-config",
+      "layer": "Execution",
+      "toolNames": ["Edit", "Write", "MultiEdit"],
+      "pattern": "(?:config/gates/|config/budget\\.json|\\.thumbgate/|thumbgate\\.json)",
+      "action": "block",
+      "message": "Self-protection: agent cannot modify ThumbGate configuration, gate rules, or budget settings.",
+      "severity": "critical",
+      "compliance": ["NIST-AC-3", "OWASP-A01", "SOC2-CC6.1"]
+    },
+    {
+      "id": "self-protect-kill",
+      "layer": "Execution",
+      "toolNames": ["Bash"],
+      "pattern": "(?:kill|pkill|killall)\\s+.*(?:thumbgate|gates-engine|budget-enforcer)",
+      "action": "block",
+      "message": "Self-protection: agent cannot terminate ThumbGate processes.",
+      "severity": "critical",
+      "compliance": ["NIST-AC-3", "OWASP-A01"]
+    },
+    {
+      "id": "self-protect-env-override",
+      "layer": "Execution",
+      "toolNames": ["Bash"],
+      "pattern": "(?:export|unset)\\s+(?:THUMBGATE_|LANEKEEP_)",
+      "action": "block",
+      "message": "Self-protection: agent cannot modify ThumbGate environment variables.",
+      "severity": "critical",
+      "compliance": ["NIST-AC-3", "SOC2-CC6.1"]
+    },
+    {
+      "id": "self-protect-hooks-disable",
+      "layer": "Execution",
+      "toolNames": ["Edit", "Write", "Bash"],
+      "pattern": "(?:settings\\.json|settings\\.local\\.json).*(?:hooks|PreToolUse|PostToolUse)",
+      "action": "block",
+      "message": "Self-protection: agent cannot modify hook registrations.",
+      "severity": "critical",
+      "compliance": ["NIST-AC-3", "OWASP-A01", "SOC2-CC6.1"]
     }
   ]
 }

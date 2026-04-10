@@ -459,8 +459,78 @@ function setupForge() {
   return true;
 }
 
-function init() {
-  const args = parseArgs(process.argv.slice(3));
+function detectAgent(projectDir) {
+  if (fs.existsSync(path.join(projectDir, '.claude'))) return 'claude-code';
+  if (fs.existsSync(path.join(projectDir, '.cursorrules'))) return 'cursor';
+  if (fs.existsSync(path.join(projectDir, '.cursor'))) return 'cursor';
+  if (fs.existsSync(path.join(projectDir, '.codex'))) return 'codex';
+  if (fs.existsSync(path.join(projectDir, '.gemini'))) return 'gemini';
+  if (fs.existsSync(path.join(projectDir, '.amp'))) return 'amp';
+  return null;
+}
+
+function quickStart() {
+  const qsArgs = parseArgs(process.argv.slice(3));
+  const projectDir = process.cwd();
+  const detectedAgent = detectAgent(projectDir);
+  const agent = qsArgs.agent || detectedAgent || 'claude-code';
+  const thumbgateDir = path.join(projectDir, '.thumbgate');
+  const configPath = path.join(thumbgateDir, 'config.json');
+  const agentSource = qsArgs.agent ? 'specified' : (detectedAgent ? 'auto-detected' : 'default');
+
+  console.log(`\nthumbgate quick-start v${pkgVersion()}`);
+  console.log(`Agent: ${agent} (${agentSource})`);
+  console.log('');
+
+  // 1. Run init with the resolved agent so hook wiring uses the same target.
+  init({ ...qsArgs, agent });
+
+  // 2. Copy default gates
+  const defaultGates = path.join(PKG_ROOT, 'config', 'gates', 'default.json');
+  const targetGates = path.join(thumbgateDir, 'gates.json');
+  if (fs.existsSync(defaultGates)) {
+    fs.mkdirSync(thumbgateDir, { recursive: true });
+    fs.copyFileSync(defaultGates, targetGates);
+    console.log('  Copied default gates to .thumbgate/gates.json');
+  }
+
+  // 3. Write config
+  let baseConfig = {};
+  if (fs.existsSync(configPath)) {
+    try {
+      baseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } catch (_) {
+      baseConfig = {};
+    }
+  }
+  const config = {
+    ...baseConfig,
+    selfDistillation: true,
+    contextStuffing: true,
+    maxTokenBudget: 10000,
+    autoGatePromotion: true,
+    agent,
+    version: pkgVersion(),
+    installId: baseConfig.installId || require('crypto').randomBytes(8).toString('hex'),
+    quickStart: true,
+    createdAt: baseConfig.createdAt || new Date().toISOString(),
+  };
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+  console.log('  Created .thumbgate/config.json');
+
+  console.log('\n  Enforcement setup complete:');
+  console.log('    Self-distillation: ON (agent auto-learns from outcomes)');
+  console.log('    Context-stuffing:  ON (all lessons injected at session start)');
+  console.log('    Auto-gate promotion: ON (recurring failures become hard blocks)');
+  console.log('    Default gates: ' + (fs.existsSync(targetGates) ? 'loaded' : 'not found'));
+  console.log('\n  Next steps:');
+  console.log('    npx thumbgate capture --feedback=down --context="what failed"');
+  console.log('    npx thumbgate stats');
+  console.log('');
+}
+
+function init(cliArgs = parseArgs(process.argv.slice(3))) {
+  const args = { ...cliArgs };
 
   // --wire-hooks only mode: skip scaffolding, just wire hooks
   if (args['wire-hooks']) {
@@ -1497,6 +1567,9 @@ switch (COMMAND) {
   case 'init':
     init();
     upgradeNudge();
+    break;
+  case 'quick-start':
+    quickStart();
     break;
   case 'install':
     install();
