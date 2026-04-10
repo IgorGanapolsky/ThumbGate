@@ -205,8 +205,7 @@ function buildClaudeReviewZip(outputDir = DEFAULT_OUTPUT_DIR) {
   };
 }
 
-if (require.main === module) {
-  const args = process.argv.slice(2);
+function resolveBuildRequest(args = [], cwd = process.cwd()) {
   const mode = args.includes('--review-zip')
     ? 'review-zip'
     : args.includes('--all')
@@ -214,20 +213,34 @@ if (require.main === module) {
       : 'mcpb';
   const outputArg = args.find((arg) => !arg.startsWith('--'));
   const outputDir = outputArg
-    ? path.resolve(process.cwd(), outputArg)
+    ? path.resolve(cwd, outputArg)
     : DEFAULT_OUTPUT_DIR;
 
+  return { mode, outputDir };
+}
+
+function runBuildRequest({ mode, outputDir }, deps = { buildClaudeMcpb, buildClaudeReviewZip }) {
   if (mode === 'review-zip') {
-    const { outputFile } = buildClaudeReviewZip(outputDir);
-    console.log(`Built Claude plugin review zip: ${outputFile}`);
-  } else if (mode === 'all') {
-    const { outputFile } = buildClaudeMcpb(outputDir);
-    const { outputFile: reviewOutputFile } = buildClaudeReviewZip(outputDir);
-    console.log(`Built Claude Desktop bundle: ${outputFile}`);
-    console.log(`Built Claude plugin review zip: ${reviewOutputFile}`);
-  } else {
-    const { outputFile } = buildClaudeMcpb(outputDir);
-    console.log(`Built Claude Desktop bundle: ${outputFile}`);
+    const { outputFile } = deps.buildClaudeReviewZip(outputDir);
+    return [`Built Claude plugin review zip: ${outputFile}`];
+  }
+
+  if (mode === 'all') {
+    const { outputFile } = deps.buildClaudeMcpb(outputDir);
+    const { outputFile: reviewOutputFile } = deps.buildClaudeReviewZip(outputDir);
+    return [
+      `Built Claude Desktop bundle: ${outputFile}`,
+      `Built Claude plugin review zip: ${reviewOutputFile}`,
+    ];
+  }
+
+  const { outputFile } = deps.buildClaudeMcpb(outputDir);
+  return [`Built Claude Desktop bundle: ${outputFile}`];
+}
+
+if (require.main === module) {
+  for (const line of runBuildRequest(resolveBuildRequest(process.argv.slice(2)))) {
+    console.log(line);
   }
 }
 
@@ -237,4 +250,6 @@ module.exports = {
   buildClaudeReviewZip,
   stageClaudeMcpbBundle,
   buildClaudeMcpb,
+  resolveBuildRequest,
+  runBuildRequest,
 };
