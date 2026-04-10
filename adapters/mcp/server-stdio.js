@@ -124,7 +124,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.3.0' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.4.0' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
