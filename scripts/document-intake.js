@@ -1,8 +1,8 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
 
 const { getFeedbackPaths } = require('./feedback-loop');
 const { loadGateTemplates } = require('./gate-templates');
@@ -29,9 +29,70 @@ const TEXT_FORMAT_ALIASES = {
   '.htm': 'html',
 };
 
-const POLICY_LINE_PATTERN = /\b(?:must(?:\s+not)?|should(?:\s+not)?|do not|don't|never|always|required?|forbid(?:den)?|only|block(?:ed)?|deny|approved?|verify|verification|proof)\b/i;
-const HIGH_SEVERITY_PATTERN = /\b(?:production|prod|main|master|force(?:\s|-)?push|drop|truncate|delete|secret|token|credential|api[_ -]?key|publish|release)\b/i;
-const MEDIUM_SEVERITY_PATTERN = /\b(?:tests?|verify|verification|proof|review|ci|lint|branch|workflow|deploy)\b/i;
+const POLICY_LINE_PATTERNS = [
+  /\bmust\b/i,
+  /\bmust\s+not\b/i,
+  /\bshould\b/i,
+  /\bshould\s+not\b/i,
+  /\bdo not\b/i,
+  /\bdon't\b/i,
+  /\bnever\b/i,
+  /\balways\b/i,
+  /\brequired?\b/i,
+  /\bforbid(?:den)?\b/i,
+  /\bonly\b/i,
+  /\bblock(?:ed)?\b/i,
+  /\bdeny\b/i,
+  /\bapproved?\b/i,
+  /\bverify\b/i,
+  /\bverification\b/i,
+  /\bproof\b/i,
+];
+const HIGH_SEVERITY_PATTERNS = [
+  /\bproduction\b/i,
+  /\bprod\b/i,
+  /\bmain\b/i,
+  /\bmaster\b/i,
+  /\bforce(?:\s|-)?push\b/i,
+  /\bdrop\b/i,
+  /\btruncate\b/i,
+  /\bdelete\b/i,
+  /\bsecret\b/i,
+  /\btoken\b/i,
+  /\bcredential\b/i,
+  /\bapi[_ -]?key\b/i,
+  /\bpublish\b/i,
+  /\brelease\b/i,
+];
+const MEDIUM_SEVERITY_PATTERNS = [
+  /\btests?\b/i,
+  /\bverify\b/i,
+  /\bverification\b/i,
+  /\bproof\b/i,
+  /\breview\b/i,
+  /\bci\b/i,
+  /\blint\b/i,
+  /\bbranch\b/i,
+  /\bworkflow\b/i,
+  /\bdeploy\b/i,
+];
+const BLOCK_ACTION_PATTERNS = [
+  /\bnever\b/i,
+  /\bmust not\b/i,
+  /\bdo not\b/i,
+  /\bdon't\b/i,
+  /\bforbid(?:den)?\b/i,
+  /\bblock(?:ed)?\b/i,
+  /\bdeny\b/i,
+];
+const WARN_ACTION_PATTERNS = [
+  /\balways\b/i,
+  /\brequired?\b/i,
+  /\bverify\b/i,
+  /\bverification\b/i,
+  /\bproof\b/i,
+  /\breview\b/i,
+];
 
 const TEMPLATE_HINTS = {
   'never-force-push-main': [
@@ -108,12 +169,13 @@ function writeJsonl(filePath, records) {
 }
 
 function normalizeText(value) {
-  return String(value || '')
-    .replace(/\uFEFF/g, '')
-    .replace(/\r\n?/g, '\n')
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  const withoutBom = String(value || '').split('\uFEFF').join('');
+  const normalizedNewlines = normalizeNewlines(withoutBom);
+  const trimmedLines = normalizedNewlines
+    .split('\n')
+    .map(trimTrailingSpacesAndTabs)
+    .join('\n');
+  return collapseBlankLines(trimmedLines).trim();
 }
 
 function safeArray(values) {
@@ -127,15 +189,75 @@ function normalizeTags(tags) {
     .filter(Boolean)));
 }
 
+function normalizeNewlines(value) {
+  let result = '';
+  const text = String(value || '');
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (char !== '\r') {
+      result += char;
+      continue;
+    }
+    result += '\n';
+    if (text[index + 1] === '\n') {
+      index += 1;
+    }
+  }
+  return result;
+}
+
+function trimTrailingSpacesAndTabs(value) {
+  const text = String(value || '');
+  let end = text.length;
+  while (end > 0 && (text[end - 1] === ' ' || text[end - 1] === '\t')) {
+    end -= 1;
+  }
+  return text.slice(0, end);
+}
+
+function collapseBlankLines(value) {
+  const compacted = [];
+  let blankCount = 0;
+  for (const line of String(value || '').split('\n')) {
+    if (line === '') {
+      blankCount += 1;
+      if (blankCount <= 2) compacted.push(line);
+      continue;
+    }
+    blankCount = 0;
+    compacted.push(line);
+  }
+  return compacted.join('\n');
+}
+
 function slugify(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  const output = [];
+  let previousWasDash = false;
+  for (const char of String(value || '').toLowerCase()) {
+    const code = char.charCodeAt(0);
+    const isAlphanumeric = (code >= 97 && code <= 122) || (code >= 48 && code <= 57);
+    if (isAlphanumeric) {
+      output.push(char);
+      previousWasDash = false;
+      continue;
+    }
+    if (!previousWasDash && output.length > 0) {
+      output.push('-');
+      previousWasDash = true;
+    }
+  }
+  if (output[output.length - 1] === '-') {
+    output.pop();
+  }
+  return output.join('');
 }
 
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value || ''), 'utf8').digest('hex');
+}
+
+function matchesAnyPattern(value, patterns) {
+  return patterns.some((pattern) => pattern.test(value));
 }
 
 function decodeHtmlEntities(text) {
@@ -148,7 +270,7 @@ function decodeHtmlEntities(text) {
     '&nbsp;': ' ',
   };
 
-  return String(text || '').replace(/&(?:amp|lt|gt|quot|#39|nbsp);/g, (match) => entityMap[match] || match);
+  return String(text || '').replaceAll(/&(?:amp|lt|gt|quot|#39|nbsp);/g, (match) => entityMap[match] || match);
 }
 
 /**
@@ -159,19 +281,19 @@ function decodeHtmlEntities(text) {
 function stripHtml(html) {
   const withLineBreaks = String(html || '')
     // Remove script blocks entirely — use greedy end-tag match to handle malformed markup
-    .replace(/<script[\s\S]*?<\/script[^>]*>/gi, ' ')
+    .replaceAll(/<script[\s\S]*?<\/script[^>]*>/gi, ' ')
     // Remove style blocks
-    .replace(/<style[\s\S]*?<\/style[^>]*>/gi, ' ')
+    .replaceAll(/<style[\s\S]*?<\/style[^>]*>/gi, ' ')
     // Remove HTML comments
-    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replaceAll(/<!--[\s\S]*?-->/g, ' ')
     // Strip event-handler attributes (onclick, onerror, onload, etc.) before removing tags
-    .replace(/\s+on[a-z][a-z0-9]*\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, ' ')
+    .replaceAll(/\s+on[a-z][a-z0-9]*\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, ' ')
     // Strip javascript: and data: URIs in attributes
-    .replace(/(?:href|src|action)\s*=\s*(?:"(?:javascript|data):[^"]*"|'(?:javascript|data):[^']*')/gi, '')
+    .replaceAll(/(?:href|src|action)\s*=\s*(?:"(?:javascript|data):[^"]*"|'(?:javascript|data):[^']*')/gi, '')
     // Add line breaks for block-level elements
-    .replace(/<\/(?:p|div|section|article|header|footer|aside|main|li|tr|td|th|h[1-6]|br)\s*>/gi, '\n')
+    .replaceAll(/<\/(?:p|div|section|article|header|footer|aside|main|li|tr|td|th|h[1-6]|br)\s*>/gi, '\n')
     // Remove all remaining tags
-    .replace(/<[^>]+>/g, ' ');
+    .replaceAll(/<[^>]+>/g, ' ');
   return normalizeText(decodeHtmlEntities(withLineBreaks));
 }
 
@@ -211,56 +333,69 @@ function normalizeDocumentBody(rawContent, sourceFormat) {
   throw new Error(`Unsupported document format: ${normalizedFormat || 'unknown'}`);
 }
 
+function extractMarkdownTitle(normalizedContent) {
+  const markdownHeading = /^#\s+(.+)$/m.exec(String(normalizedContent || ''));
+  return markdownHeading?.[1]?.trim() || null;
+}
+
+function extractHtmlTitle(rawContent) {
+  const titleMatch = /<title[^>]*>([^<]+)<\/title>/i.exec(String(rawContent || ''));
+  const title = titleMatch?.[1]?.trim();
+  return title ? decodeHtmlEntities(title) : null;
+}
+
+function extractJsonTitle(rawContent) {
+  try {
+    const parsed = JSON.parse(String(rawContent || ''));
+    if (!parsed || typeof parsed !== 'object') return null;
+    for (const key of ['title', 'name', 'policy', 'document']) {
+      const value = parsed[key];
+      if (typeof value === 'string' && value.trim()) {
+        return value.trim();
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function extractFallbackTitle(filePath) {
+  return filePath
+    ? path.basename(filePath, path.extname(filePath))
+    : 'Imported document';
+}
+
+function extractFormatTitle(sourceFormat, rawContent) {
+  if (sourceFormat === 'html') {
+    return extractHtmlTitle(rawContent);
+  }
+  if (sourceFormat === 'json') {
+    return extractJsonTitle(rawContent);
+  }
+  return null;
+}
+
 function extractTitle({ explicitTitle, filePath, rawContent, normalizedContent, sourceFormat }) {
   const provided = String(explicitTitle || '').trim();
   if (provided) return provided;
 
-  const markdownHeading = String(normalizedContent || '').match(/^#\s+(.+)$/m);
-  if (markdownHeading && markdownHeading[1]) {
-    return markdownHeading[1].trim();
-  }
-
-  if (sourceFormat === 'html') {
-    const titleMatch = String(rawContent || '').match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (titleMatch && titleMatch[1]) {
-      return decodeHtmlEntities(titleMatch[1]).trim();
-    }
-  }
-
-  if (sourceFormat === 'json') {
-    try {
-      const parsed = JSON.parse(String(rawContent || ''));
-      if (parsed && typeof parsed === 'object') {
-        for (const key of ['title', 'name', 'policy', 'document']) {
-          const value = parsed[key];
-          if (typeof value === 'string' && value.trim()) {
-            return value.trim();
-          }
-        }
-      }
-    } catch {
-      // Fall through to file name.
-    }
-  }
-
-  if (filePath) {
-    return path.basename(filePath, path.extname(filePath));
-  }
-
-  return 'Imported document';
+  return extractMarkdownTitle(normalizedContent)
+    || extractFormatTitle(sourceFormat, rawContent)
+    || extractFallbackTitle(filePath);
 }
 
 function extractHeadings(content) {
   return String(content || '')
     .split('\n')
-    .map((line) => line.match(/^#{1,6}\s+(.+)$/))
+    .map((line) => /^#{1,6}\s+(.+)$/.exec(line))
     .filter(Boolean)
     .map((match) => match[1].trim())
     .slice(0, 12);
 }
 
 function buildExcerpt(content, maxLength = 280) {
-  const compact = String(content || '').replace(/\s+/g, ' ').trim();
+  const compact = String(content || '').replaceAll(/\s+/g, ' ').trim();
   if (!compact) return '';
   if (compact.length <= maxLength) return compact;
   return `${compact.slice(0, maxLength - 1)}\u2026`;
@@ -268,10 +403,10 @@ function buildExcerpt(content, maxLength = 280) {
 
 function normalizePolicyLine(line) {
   return String(line || '')
-    .replace(/^#{1,6}\s+/, '')
-    .replace(/^[-*+]\s+/, '')
-    .replace(/^\d+\.\s+/, '')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/^#{1,6}\s+/g, '')
+    .replaceAll(/^[-*+]\s+/g, '')
+    .replaceAll(/^\d+\.\s+/g, '')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
@@ -293,22 +428,22 @@ function extractPolicyStatements(content) {
     .map(normalizePolicyLine)
     .filter(Boolean)
     .filter((line) => line.length >= 18 && line.length <= 220)
-    .filter((line) => POLICY_LINE_PATTERN.test(line));
+    .filter((line) => matchesAnyPattern(line, POLICY_LINE_PATTERNS));
 
   return uniqueBy(lines, (line) => line.toLowerCase()).slice(0, MAX_POLICY_PROPOSALS * 2);
 }
 
 function inferProposalSeverity(statement) {
-  if (HIGH_SEVERITY_PATTERN.test(statement)) return 'critical';
-  if (MEDIUM_SEVERITY_PATTERN.test(statement)) return 'high';
+  if (matchesAnyPattern(statement, HIGH_SEVERITY_PATTERNS)) return 'critical';
+  if (matchesAnyPattern(statement, MEDIUM_SEVERITY_PATTERNS)) return 'high';
   return 'medium';
 }
 
 function inferProposalAction(statement) {
-  if (/\b(?:never|must not|do not|don't|forbid(?:den)?|block(?:ed)?|deny)\b/i.test(statement)) {
+  if (matchesAnyPattern(statement, BLOCK_ACTION_PATTERNS)) {
     return 'block';
   }
-  if (/\b(?:always|required?|verify|verification|proof|review)\b/i.test(statement)) {
+  if (matchesAnyPattern(statement, WARN_ACTION_PATTERNS)) {
     return 'warn';
   }
   return 'warn';
@@ -390,7 +525,8 @@ function buildTemplateProposal(document, template, score) {
 }
 
 function buildPolicyProposal(document, statement) {
-  const proposalId = `proposal_${sha256(`${document.documentId}:${statement}`).slice(0, 12)}`;
+  const proposalInput = `${document.documentId}:${statement}`;
+  const proposalId = `proposal_${sha256(proposalInput).slice(0, 12)}`;
   const severity = inferProposalSeverity(statement);
   const action = inferProposalAction(statement);
   return {
