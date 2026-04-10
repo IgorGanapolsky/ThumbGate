@@ -9,9 +9,12 @@ const {
 } = require('../scripts/hosted-config');
 const {
   CLAUDE_PLUGIN_NEXT_ASSET_NAME,
+  CODEX_PLUGIN_NEXT_ASSET_NAME,
   PRODUCTHUNT_URL,
   getClaudePluginChannelAssetName,
   getClaudePluginLatestDownloadUrl,
+  getCodexPluginChannelAssetName,
+  getCodexPluginLatestDownloadUrl,
 } = require('../scripts/distribution-surfaces');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
@@ -57,6 +60,9 @@ test('public docs render the current package version', () => {
   const claudePluginReadme = readText('.claude-plugin/README.md');
   const claudeCodexBridgeReadme = readText('plugins/claude-codex-bridge/README.md');
   const claudeCodexBridgeInstall = readText('plugins/claude-codex-bridge/INSTALL.md');
+  const codexPluginReadme = readText('plugins/codex-profile/README.md');
+  const codexPluginInstall = readText('plugins/codex-profile/INSTALL.md');
+  const distributionDoc = readText('docs/PLUGIN_DISTRIBUTION.md');
   const claudeDesktopPacket = readText('docs/CLAUDE_DESKTOP_EXTENSION.md');
   const productHuntKit = readText('docs/marketing/product-hunt-launch.md');
 
@@ -83,6 +89,14 @@ test('public docs render the current package version', () => {
   assert.match(claudeCodexBridgeReadme, /claude plugin validate/i);
   assert.match(claudeCodexBridgeInstall, /\/codex-bridge:review/);
   assert.match(claudeCodexBridgeInstall, /\/codex-bridge:adversarial-review/);
+  assert.match(codexPluginReadme, /standalone Codex plugin bundle/i);
+  assert.match(codexPluginReadme, /build:codex-plugin/i);
+  assert.match(codexPluginReadme, new RegExp(getCodexPluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(codexPluginInstall, /thumbgate-codex-plugin\.zip/i);
+  assert.match(codexPluginInstall, /build:codex-plugin/i);
+  assert.match(distributionDoc, /publish-codex-plugin\.yml/);
+  assert.match(distributionDoc, /thumbgate-codex-plugin\.zip/);
+  assert.match(distributionDoc, new RegExp(getCodexPluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(claudeDesktopPacket, /Anthropic Local MCP Server Submission Guide/i);
   assert.match(claudeDesktopPacket, /Build the MCPB/i);
   assert.match(claudeDesktopPacket, /privacy_policies/i);
@@ -100,6 +114,8 @@ test('public docs render the current package version', () => {
 test('distribution surfaces reserve a separate prerelease Claude asset alias', () => {
   assert.equal(getClaudePluginChannelAssetName('1.0.0'), 'thumbgate-claude-desktop.mcpb');
   assert.equal(getClaudePluginChannelAssetName('1.1.0-beta.1'), CLAUDE_PLUGIN_NEXT_ASSET_NAME);
+  assert.equal(getCodexPluginChannelAssetName('1.0.0'), 'thumbgate-codex-plugin.zip');
+  assert.equal(getCodexPluginChannelAssetName('1.1.0-beta.1'), CODEX_PLUGIN_NEXT_ASSET_NAME);
 });
 
 test('landing page keeps GTM and schema assets wired', () => {
@@ -143,6 +159,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /workflow governance|agent governance/i);
   assert.match(publicLanding, /Verification evidence/i);
   assert.match(publicLanding, /Release confidence/i);
+  assert.match(publicLanding, /standalone plugin bundle/i);
   assert.doesNotMatch(publicLanding, /billingDuration/);
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
