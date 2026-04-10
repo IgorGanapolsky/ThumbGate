@@ -25,7 +25,11 @@
 require('dotenv').config();
 
 const { generateWeeklyStatsPost } = require('./daily-digest');
-const { publishPost, getConnectedAccounts } = require('./social-analytics/publishers/zernio');
+const {
+  getConnectedAccounts,
+  isZernioQuotaError,
+  publishPost,
+} = require('./social-analytics/publishers/zernio');
 
 // Platforms that support text-only posts.
 // Reddit EXCLUDED — engagement only via reply-monitor, not auto-posting.
@@ -179,7 +183,28 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error('[daily-post] Fatal:', err.message);
-  process.exit(1);
-});
+function isNonFatalPostFailure(err) {
+  return isZernioQuotaError(err);
+}
+
+if (require.main === module) {
+  main().catch(err => {
+    if (isNonFatalPostFailure(err)) {
+      console.warn(`[daily-post] Skipped: ${err.message}`);
+      console.warn('[daily-post] Zernio monthly post quota reached; treating as a controlled skip.');
+      return;
+    }
+
+    console.error('[daily-post] Fatal:', err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  DAILY_ANGLES,
+  TEXT_PLATFORMS,
+  generatePost,
+  getTodayAngle,
+  isNonFatalPostFailure,
+  main,
+};
