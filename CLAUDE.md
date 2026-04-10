@@ -66,11 +66,13 @@ curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate 
 3. Wait for CI (runs on push to `main` and `feat/**` branches).
 4. After push, run: `gh pr view --json reviewDecision,comments,reviewThreads`
 5. If unresolved threads > 0 → fix them → push again → re-check.
+6. If a PR is not mergeable, report the exact blocker (`REVIEW_REQUIRED`, pending checks, failing checks, behind base, merge conflicts).
 6. Merge only when: CI green AND 0 unresolved threads.
    - Never use raw `gh pr merge --auto`; use `npm run pr:manage` after all critical quality checks have terminal success.
-7. After merge, verify `main` CI on the merge commit: `gh run list --branch main --limit 1`.
-8. Delete the feature branch after merge.
+7. After merge, verify `main` CI on the exact merge commit, not just the latest branch run.
+8. Delete the feature branch after merge. Archive unique orphan branches before deleting them.
 9. For `main`, merge submission is Trunk-managed: request `/trunk merge` and let the queue finish asynchronously. Do not build helper workflows that poll their own required check or block on the final merge commit.
+10. Never persist secrets, PATs, or copied credentials into tracked repo files, PR bodies, or local memory notes.
 
 **NEVER say "done" or "pushed" without showing `gh pr view` output first.**
 
@@ -179,10 +181,14 @@ node bin/cli.js cfo --today
 ## Session Startup
 
 ```bash
-# 1. Read primer to recover context
+# 1. Read directives and primer to recover context
+cat AGENTS.md
+cat CLAUDE.md
+cat GEMINI.md
 cat primer.md
 
-# 2. Check for open PRs
+# 2. Check local ThumbGate memory and open PRs
+npm run feedback:summary
 npm run pr:manage
 
 # 3. Verify main is green
