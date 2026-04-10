@@ -4,17 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const gatesEngine = require('../scripts/gates-engine');
+const { readJsonl } = require('../scripts/fs-utils');
 
 const GOVERNED_RELEASE_VERSION_MISMATCH = '9999.0.0';
-
-function readJsonl(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  return fs.readFileSync(filePath, 'utf8')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
-}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));

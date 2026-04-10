@@ -36,6 +36,7 @@ const {
   aggregateFailureDiagnostics,
 } = require('./failure-diagnostics');
 const { getEffectiveSetting } = require('./evolution-state');
+const { ensureDir } = require('./fs-utils');
 const {
   buildFeedbackPathsFromDir,
   getFeedbackPaths: resolveFeedbackPaths,
@@ -204,11 +205,6 @@ function getMemoryFirewallModule() {
   }
 }
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function appendJSONL(filePath, record) {
   ensureDir(path.dirname(filePath));

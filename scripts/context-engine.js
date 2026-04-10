@@ -20,6 +20,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { constructContextPack } = require('./contextfs');
+const { ensureDir } = require('./fs-utils');
 
 // ---------------------------------------------------------------------------
 // Default paths
@@ -75,11 +76,6 @@ const TOOL_CONSOLIDATION = {
 // Utility: ensure directory exists
 // ---------------------------------------------------------------------------
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Knowledge Bundle Builder
