@@ -11,6 +11,7 @@ const {
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_OUTPUT_DIR = path.join(PROJECT_ROOT, '.artifacts', 'codex-plugin');
 const BUNDLE_ROOT_NAME = 'thumbgate-codex-plugin';
+const FIXED_BINARY_DIRS = ['/usr/bin', '/bin'];
 
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, relativePath), 'utf8'));
@@ -50,6 +51,23 @@ function buildStandaloneMarketplace() {
   };
 }
 
+function resolveFixedBinary(binaryName, options = {}) {
+  const accessSync = options.accessSync || fs.accessSync;
+  const dirs = options.dirs || FIXED_BINARY_DIRS;
+
+  for (const dir of dirs) {
+    const binaryPath = path.join(dir, binaryName);
+    try {
+      accessSync(binaryPath, fs.constants.X_OK);
+      return binaryPath;
+    } catch {
+      // Try the next fixed, system-owned directory.
+    }
+  }
+
+  throw new Error(`Unable to find executable ${binaryName} in fixed system paths: ${dirs.join(', ')}`);
+}
+
 function stageCodexPluginBundle(outputDir = DEFAULT_OUTPUT_DIR) {
   const packageJson = readJson('package.json');
   const bundleDir = path.join(outputDir, 'bundle');
@@ -82,13 +100,15 @@ function stageCodexPluginBundle(outputDir = DEFAULT_OUTPUT_DIR) {
 
 function buildCodexPlugin(outputDir = DEFAULT_OUTPUT_DIR) {
   const { bundleDir, stageDir, outputFile } = stageCodexPluginBundle(outputDir);
+  const zipBinary = resolveFixedBinary('zip');
+  const unzipBinary = resolveFixedBinary('unzip');
 
-  execFileSync('zip', ['-qr', outputFile, BUNDLE_ROOT_NAME], {
+  execFileSync(zipBinary, ['-qr', outputFile, BUNDLE_ROOT_NAME], {
     cwd: bundleDir,
     stdio: 'inherit',
   });
 
-  const contents = execFileSync('unzip', ['-l', outputFile], {
+  const contents = execFileSync(unzipBinary, ['-l', outputFile], {
     cwd: PROJECT_ROOT,
     encoding: 'utf8',
   });
@@ -102,18 +122,31 @@ function buildCodexPlugin(outputDir = DEFAULT_OUTPUT_DIR) {
   };
 }
 
-if (require.main === module) {
-  const outputDir = process.argv[2]
-    ? path.resolve(process.cwd(), process.argv[2])
+function isCliEntrypoint(argv = process.argv) {
+  return path.resolve(argv[1] || '') === __filename;
+}
+
+function runCli(argv = process.argv, cwd = process.cwd(), log = console.log) {
+  const outputDir = argv[2]
+    ? path.resolve(cwd, argv[2])
     : DEFAULT_OUTPUT_DIR;
   const { outputFile } = buildCodexPlugin(outputDir);
-  console.log(`Built Codex plugin bundle: ${outputFile}`);
+  log(`Built Codex plugin bundle: ${outputFile}`);
+  return outputFile;
+}
+
+if (isCliEntrypoint()) {
+  runCli();
 }
 
 module.exports = {
   BUNDLE_ROOT_NAME,
   DEFAULT_OUTPUT_DIR,
+  FIXED_BINARY_DIRS,
   buildCodexPlugin,
   buildStandaloneMarketplace,
+  isCliEntrypoint,
+  resolveFixedBinary,
+  runCli,
   stageCodexPluginBundle,
 };

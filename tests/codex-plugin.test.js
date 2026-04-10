@@ -5,6 +5,10 @@ const os = require('node:os');
 const path = require('node:path');
 const {
   BUNDLE_ROOT_NAME,
+  buildCodexPlugin,
+  isCliEntrypoint,
+  resolveFixedBinary,
+  runCli,
   stageCodexPluginBundle,
 } = require('../scripts/build-codex-plugin');
 const {
@@ -95,6 +99,61 @@ test('codex plugin staging writes a standalone bundle with self-contained market
     assert.match(readme, /self-contained plugin root/i);
     assert.match(install, /standalone release bundle/i);
     assert.match(configToml, new RegExp(`thumbgate@${packageJson.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  } finally {
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test('codex plugin build creates a zip with the expected bundle contents', () => {
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-plugin-build-'));
+
+  try {
+    const { contents, outputFile } = buildCodexPlugin(outputDir);
+
+    assert.equal(path.basename(outputFile), getCodexPluginVersionedAssetName(packageJson.version));
+    assert.equal(fs.existsSync(outputFile), true);
+    assert.match(contents, /thumbgate-codex-plugin\/\.codex-plugin\/plugin\.json/);
+    assert.match(contents, /thumbgate-codex-plugin\/\.mcp\.json/);
+    assert.match(contents, /thumbgate-codex-plugin\/\.agents\/plugins\/marketplace\.json/);
+    assert.match(contents, /thumbgate-codex-plugin\/config\.toml/);
+  } finally {
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test('codex plugin builder resolves zip tools only from fixed system paths', () => {
+  const visited = [];
+  const accessSync = (candidate) => {
+    visited.push(candidate);
+    if (candidate !== '/usr/bin/zip') {
+      throw new Error('not found');
+    }
+  };
+
+  assert.equal(resolveFixedBinary('zip', { accessSync, dirs: ['/bin', '/usr/bin'] }), '/usr/bin/zip');
+  assert.deepEqual(visited, ['/bin/zip', '/usr/bin/zip']);
+});
+
+test('codex plugin builder fails closed when zip tools are missing from fixed paths', () => {
+  assert.throws(
+    () => resolveFixedBinary('zip', { accessSync: () => { throw new Error('missing'); }, dirs: ['/bin'] }),
+    /Unable to find executable zip/
+  );
+});
+
+test('codex plugin CLI entrypoint predicate and runner are testable', () => {
+  assert.equal(isCliEntrypoint(['node', path.join(root, 'scripts', 'build-codex-plugin.js')]), true);
+  assert.equal(isCliEntrypoint(['node', path.join(root, 'tests', 'codex-plugin.test.js')]), false);
+
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-plugin-cli-'));
+  const logs = [];
+
+  try {
+    const outputFile = runCli(['node', path.join(root, 'scripts', 'build-codex-plugin.js'), outputDir], root, (line) => logs.push(line));
+
+    assert.equal(fs.existsSync(outputFile), true);
+    assert.match(logs.join('\n'), /Built Codex plugin bundle:/);
+    assert.match(outputFile, /thumbgate-codex-plugin-v/);
   } finally {
     fs.rmSync(outputDir, { recursive: true, force: true });
   }
