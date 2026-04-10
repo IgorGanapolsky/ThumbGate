@@ -66,6 +66,19 @@ ThumbGate implements continual learning across all three layers identified by La
 
 This three-layer architecture means ThumbGate improves agent behavior at every level: context injection for immediate effect, harness-level rules for session-wide enforcement, and model-level export for permanent behavioral change.
 
+## Enterprise Safety Framework Alignment
+
+ThumbGate's architecture maps directly to the enterprise safety framework pattern recommended by Google Cloud for agentic AI workflows (April 2026). Google Cloud's reference architecture routes every agent action through a Safety Framework gate before execution, with unsafe actions producing a canned response and safe actions proceeding to the Agentic Workflow, followed by a Quality Framework check on the output.
+
+ThumbGate implements this same pattern for AI coding agents:
+
+- **Safety Framework gate** → PreToolUse hooks evaluate every tool call against the lesson database before execution. Known-bad patterns are blocked immediately.
+- **Safe → Agentic Workflow** → Tool calls that pass gate evaluation proceed normally. The agent operates without interruption.
+- **Unsafe → Canned response** → Blocked tool calls return a descriptive error to the agent explaining why the action was denied and what policy it violated.
+- **Quality Framework** → Post-action audit trail, feedback sessions, and auto-generated prevention rules create a continuous quality improvement loop.
+
+This alignment means ThumbGate is not an experimental tool — it implements the same safety architecture that Google Cloud recommends for enterprise agentic deployments, applied specifically to AI coding agents operating on shared codebases.
+
 ## Pricing
 
 - **Free**: Local CLI enforcement for individual developers. Includes 3 daily feedback captures, 5 lesson searches per day, unlimited recall, and PreToolUse hook blocking.
