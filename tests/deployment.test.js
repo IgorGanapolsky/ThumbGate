@@ -550,7 +550,7 @@ test('Dependabot auto-merge trusts the pull request author instead of the trigge
   assert.doesNotMatch(workflow, /gh pr checks "\$PR_URL"/);
 });
 
-test('Publish Claude Plugin workflow builds the MCPB and uploads channel-safe release assets', () => {
+test('Publish Claude Plugin workflow builds the MCPB and review zip and uploads channel-safe release assets', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'publish-claude-plugin.yml'), 'utf8');
 
   assert.match(workflow, /name: Publish Claude Plugin/);
@@ -559,18 +559,22 @@ test('Publish Claude Plugin workflow builds the MCPB and uploads channel-safe re
   assert.match(workflow, /cancel-in-progress:\s*true/);
   assert.match(workflow, /npm ci --onnxruntime-node-install-cuda=skip/);
   assert.match(workflow, /npm run build:claude-mcpb/);
+  assert.match(workflow, /npm run build:claude-review-zip/);
   assert.match(workflow, /scripts\/distribution-surfaces/);
   assert.match(workflow, /version=\$\(node -p "require\('\.\/package\.json'\)\.version"\)/);
-  assert.match(workflow, /versioned_asset=\$\(node -e "const \{ getClaudePluginVersionedAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getClaudePluginVersionedAssetName\(\)\)"\)/);
-  assert.match(workflow, /channel_asset=\$\(node -e "const \{ getClaudePluginChannelAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getClaudePluginChannelAssetName\(\)\)"\)/);
+  assert.match(workflow, /versioned_bundle=\$\(node -e "const \{ getClaudePluginVersionedAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getClaudePluginVersionedAssetName\(\)\)"\)/);
+  assert.match(workflow, /channel_bundle=\$\(node -e "const \{ getClaudePluginChannelAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getClaudePluginChannelAssetName\(\)\)"\)/);
+  assert.match(workflow, /versioned_review=\$\(node -e "const \{ getClaudePluginReviewVersionedAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getClaudePluginReviewVersionedAssetName\(\)\)"\)/);
+  assert.match(workflow, /channel_review=\$\(node -e "const \{ getClaudePluginReviewChannelAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getClaudePluginReviewChannelAssetName\(\)\)"\)/);
   assert.match(workflow, /is_prerelease=\$\(node -e "const \{ isPrereleaseVersion \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(String\(isPrereleaseVersion\(\)\)\)"\)/);
   assert.doesNotMatch(workflow, /require\\+"/);
-  assert.match(workflow, /claude-plugin-mcpb/);
+  assert.match(workflow, /claude-plugin-assets/);
   assert.match(workflow, /gh release create/);
   assert.match(workflow, /gh release upload/);
   assert.match(workflow, /--clobber/);
-  assert.match(workflow, /Create channel asset alias/);
-  assert.match(workflow, /steps\.assets\.outputs\.channel_asset/);
+  assert.match(workflow, /Create release asset aliases/);
+  assert.match(workflow, /steps\.assets\.outputs\.channel_bundle/);
+  assert.match(workflow, /steps\.assets\.outputs\.channel_review/);
   assert.match(workflow, /--prerelease/);
 });
 
