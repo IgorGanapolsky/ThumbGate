@@ -8,15 +8,11 @@ const { startServer } = require('../src/api/server');
 const { handleRequest } = require('../adapters/mcp/server-stdio');
 const { validateSubagentProfiles, listSubagentProfiles } = require('./subagent-profiles');
 const { getAllowedTools } = require('./mcp-policy');
+const { ensureDir } = require('./fs-utils');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_PROOF_DIR = path.join(ROOT, 'proof', 'compatibility');
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function check(condition, message) {
   if (!condition) {

@@ -9,13 +9,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { getOperationalBillingSummary } = require('./operational-summary');
+const { ensureParentDir } = require('./fs-utils');
 
 const DEFAULT_STATE_PATH = path.resolve(__dirname, '..', '.thumbgate', 'commercial-watch-state.json');
 const DEFAULT_ALERT_LOG_PATH = path.resolve(__dirname, '..', '.thumbgate', 'commercial-alerts.jsonl');
-
-function ensureParentDir(filePath) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-}
 
 function getCommercialRevenueSnapshot(summary = {}) {
   const revenue = summary && typeof summary === 'object' ? summary.revenue || {} : {};

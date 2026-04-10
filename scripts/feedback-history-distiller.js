@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir: resolveSharedFeedbackDir } = require('./feedback-paths');
+const { readJsonlTail } = require('./fs-utils');
 
 const DEFAULT_HISTORY_LIMIT = 10;
 
@@ -60,22 +61,6 @@ function truncate(value, max = 180) {
 function appendJsonl(filePath, record) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
-}
-
-function readJsonlTail(filePath, limit = DEFAULT_HISTORY_LIMIT) {
-  if (!filePath || !fs.existsSync(filePath)) return [];
-  const lines = fs.readFileSync(filePath, 'utf8').split('\n');
-  const records = [];
-  for (let index = lines.length - 1; index >= 0 && records.length < limit; index -= 1) {
-    const line = lines[index].trim();
-    if (!line) continue;
-    try {
-      records.push(JSON.parse(line));
-    } catch {
-      // ignore malformed lines
-    }
-  }
-  return records.reverse();
 }
 
 function resolveFeedbackDir(feedbackDir) {

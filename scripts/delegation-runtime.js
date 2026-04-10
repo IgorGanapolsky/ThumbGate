@@ -4,6 +4,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { ensureDir } = require('./fs-utils');
 const {
   loadSubagentProfiles,
   getAllowedTools,
@@ -32,11 +33,6 @@ function getVerificationLoopModule() {
   return require('./verification-loop');
 }
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function readJSONL(filePath) {
   if (!fs.existsSync(filePath)) return [];

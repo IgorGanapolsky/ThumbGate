@@ -18,17 +18,13 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 const { escapeMarkdownTableCell } = require('./markdown-escape');
+const { ensureDir } = require('./fs-utils');
 
 const ROOT = path.join(__dirname, '..');
 
 // Phase 5 node-runner test baseline (before Phase 6 attribution tests)
 const PHASE5_BASELINE = 142;
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 async function runProof(options = {}) {
   const proofDir = options.proofDir || process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
