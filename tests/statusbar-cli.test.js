@@ -89,7 +89,7 @@ test('formatCliOutput handles no distill result', () => {
 
 // === statusline-lesson.js ===
 test('statusline-lesson.js outputs valid JSON', () => {
-  createLesson({ signal: 'positive', inferredLesson: 'Deploy health check works' });
+  createLesson({ signal: 'negative', inferredLesson: 'MISTAKE: Deploy health check was skipped after merge' });
   const { execFileSync } = require('child_process');
   const result = execFileSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'statusline-lesson.js')], {
     encoding: 'utf-8',
@@ -98,6 +98,33 @@ test('statusline-lesson.js outputs valid JSON', () => {
   const parsed = JSON.parse(result);
   assert.equal(parsed.hasLesson, true);
   assert.ok(parsed.text.includes('Deploy health check'));
+  assert.match(parsed.label, /^Latest mistake \d{4}-\d{2}-\d{2} \d{2}:\d{2}Z$/);
+  assert.match(parsed.link, /\/lessons#lesson_/);
+});
+
+test('statusline-lesson.js falls back to the latest success when no mistakes exist', () => {
+  const { execFileSync } = require('child_process');
+  const isolatedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-cli-success-'));
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  try {
+    process.env.THUMBGATE_FEEDBACK_DIR = isolatedDir;
+    createLesson({ signal: 'positive', inferredLesson: 'SUCCESS: Deploy health check passed after merge' });
+    const result = execFileSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'statusline-lesson.js')], {
+      encoding: 'utf-8',
+      env: { ...process.env, THUMBGATE_FEEDBACK_DIR: isolatedDir },
+    });
+    const parsed = JSON.parse(result);
+    assert.equal(parsed.hasLesson, true);
+    assert.match(parsed.label, /^Latest success \d{4}-\d{2}-\d{2} \d{2}:\d{2}Z$/);
+    assert.ok(parsed.text.includes('Deploy health check passed'));
+  } finally {
+    if (previousFeedbackDir === undefined) {
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
+    } else {
+      process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+    }
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  }
 });
 
 // === statusline.sh structure ===
@@ -108,6 +135,8 @@ test('statusline.sh uses CLI commands and local lesson context for feedback', ()
   assert.ok(sh.includes('statusline-tower.js'), 'should reference tower helper');
   assert.ok(sh.includes('statusline-lesson.js'), 'should reference lesson helper');
   assert.ok(sh.includes('LESSON_TEXT'), 'should support latest lesson snippets in output');
+  assert.ok(sh.includes('LESSON_LABEL'), 'should support latest lesson labels in output');
+  assert.ok(sh.includes('LESSON_LINK'), 'should support latest lesson deep links in output');
   assert.ok(sh.includes('TG_VERSION'), 'should show package version');
   assert.ok(sh.includes('TG_TIER'), 'should show license tier');
 });
