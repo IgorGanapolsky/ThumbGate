@@ -296,7 +296,7 @@ function waitForMergeCommit(prNumber, runner = runGh, options = {}) {
   const intervalMs = Number.isFinite(options.intervalMs) ? options.intervalMs : 10000;
   const startedAt = Date.now();
 
-  while ((Date.now() - startedAt) <= timeoutMs) {
+  do {
     const pr = getPrStatus(prNumber, runner);
     if (pr && String(pr.state || '').toUpperCase() === 'MERGED' && pr.mergeCommit && pr.mergeCommit.oid) {
       return {
@@ -322,8 +322,12 @@ function waitForMergeCommit(prNumber, runner = runGh, options = {}) {
       break;
     }
 
+    if ((Date.now() - startedAt + intervalMs) > timeoutMs) {
+      break;
+    }
+
     sleep(intervalMs);
-  }
+  } while ((Date.now() - startedAt) <= timeoutMs);
 
   return {
     finalized: false,
@@ -337,12 +341,12 @@ function waitForMergeCommit(prNumber, runner = runGh, options = {}) {
  */
 function performMerge(prNumber, runner = runGh, options = {}) {
   const normalizedPrNumber = normalizePrNumber(prNumber, { allowEmpty: false });
-  const args = ['pr', 'merge', normalizedPrNumber, '--squash', '--delete-branch', '--auto'];
+  const args = ['pr', 'merge', normalizedPrNumber, '--squash', '--delete-branch'];
   console.log(`[PR Manager] Initiating protected squash merge for PR #${normalizedPrNumber}...`);
   const result = runner(args);
   if (result.status === 0) {
     const output = `${result.stdout || ''}\n${result.stderr || ''}`;
-    const mode = /merge queue|queued|auto-merge/i.test(output) ? 'queued_or_auto' : 'merged';
+    const mode = /merge queue|queued/i.test(output) ? 'queued' : 'merged';
     console.log(`[PR Manager] Merge accepted for PR #${normalizedPrNumber} (${mode}).`);
     const mergeStatus = options.waitForMerge === false
       ? { finalized: false, merged: false, reason: 'merge_commit_pending' }
