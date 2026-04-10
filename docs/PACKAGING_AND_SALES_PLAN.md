@@ -24,7 +24,7 @@ This is the metric that matters most. Stars, visits, and installs matter only if
 - DPO export
 - Local MCP server
 
-### Tier 2: Historical Context Gateway Hypothesis (Then-Proposed $10/mo)
+### Tier 2: Historical Context Gateway Hypothesis (Retired Low-Price Test)
 
 - Hosted API endpoint
 - Provisioned API keys and hosted onboarding
@@ -35,7 +35,7 @@ This is the metric that matters most. Stars, visits, and installs matter only if
 
 Pricing note:
 
-- At the time, the plan was to keep the live Stripe price at `$10/mo` while Context Gateway was still proving conversion.
+- At the time, the plan was to keep a low live Stripe price while Context Gateway was still proving conversion.
 - At the time, the plan was to revisit repricing after the hosted workflow layer showed retained usage and stronger buyer pull.
 
 Current note:
