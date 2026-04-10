@@ -85,8 +85,8 @@ Works with Claude Code, Cursor, Codex, Gemini CLI, and any MCP client.
 
 ## Numbers
 
-- 466 tests, 90%+ coverage
-- 18 MCP tools in the default profile
+- Full regression suite and coverage reporting in CI
+- MCP tool surface for capture, recall, search, and gates
 - MIT licensed, free OSS core
 - $19/mo or $149/yr Pro tier for dashboard and analytics
 

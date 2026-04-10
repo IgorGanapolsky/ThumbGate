@@ -242,24 +242,24 @@
     </div>
     <div class="metrics-summary-grid" id="metricsSummaryGrid">
       <div class="metric-tile">
-        <div class="metric-kicker">7d approval</div>
+        <div class="metric-kicker">Fast path rate</div>
         <div class="metric-number purple">--</div>
-        <div class="metric-note">Waiting for live feedback</div>
+        <div class="metric-note">Waiting for live decisions</div>
       </div>
       <div class="metric-tile">
-        <div class="metric-kicker">This week negatives</div>
+        <div class="metric-kicker">Override rate</div>
         <div class="metric-number red">--</div>
-        <div class="metric-note">Waiting for live feedback</div>
+        <div class="metric-note">Waiting for live decisions</div>
       </div>
       <div class="metric-tile">
-        <div class="metric-kicker">Actions blocked</div>
-        <div class="metric-number green">--</div>
-        <div class="metric-note">Recorded gate denies</div>
-      </div>
-      <div class="metric-tile">
-        <div class="metric-kicker">Repeat pressure</div>
+        <div class="metric-kicker">Rollback rate</div>
         <div class="metric-number cyan">--</div>
-        <div class="metric-note">Share of negatives that repeat</div>
+        <div class="metric-note">Waiting for live decisions</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-kicker">Median latency</div>
+        <div class="metric-number green">--</div>
+        <div class="metric-note">Time from recommendation to recorded outcome</div>
       </div>
     </div>
     <div class="metrics-chart-wrap">
@@ -492,7 +492,7 @@ function updateMetricsSelection() {
       note.textContent = 'Showing timeline events for ' + formatShortDay(activeTimelineDay) + '. Clear the day filter to return to the full timeline.';
     }
   } else {
-    note.textContent = 'The chart combines recorded feedback events with daily gate-audit activity.';
+    note.textContent = 'The chart combines recorded feedback events with daily gate-audit activity. Decision-loop metrics above come from recorded evaluations and outcomes.';
   }
 }
 
@@ -627,12 +627,12 @@ function renderImprovementMetrics(stats, data) {
   if (!summary || !grid || !chart) return;
 
   if (isDemo) {
-    summary.textContent = 'Live improvement trends appear here once local Pro is connected. The chart is based on recorded feedback, gate denials, and repeat-failure pressure.';
+    summary.textContent = 'Live improvement trends appear here once local Pro is connected. The decision tiles are based on recorded evaluations plus override and rollback outcomes, while the chart below stays anchored to feedback and gate audits.';
     grid.innerHTML = [
-      { label: '7d approval', value: '12.5%', tone: 'purple', note: 'Demo preview only' },
-      { label: 'This week negatives', value: '4', tone: 'red', note: 'Sample trend only' },
-      { label: 'Actions blocked', value: '42', tone: 'green', note: 'Sample gate denies' },
-      { label: 'Repeat pressure', value: '38%', tone: 'cyan', note: 'Sample repeated failures' }
+      { label: 'Fast path rate', value: '62%', tone: 'purple', note: 'Sample auto-execute share' },
+      { label: 'Override rate', value: '14%', tone: 'red', note: 'Sample operator overrides' },
+      { label: 'Rollback rate', value: '4%', tone: 'cyan', note: 'Sample reversed decisions' },
+      { label: 'Median latency', value: '6m', tone: 'green', note: 'Sample decision completion speed' }
     ].map(function(tile) {
       return '<div class="metric-tile"><div class="metric-kicker">' + escHtml(tile.label) + '</div><div class="metric-number ' + escHtml(tile.tone) + '">' + escHtml(tile.value) + '</div><div class="metric-note">' + escHtml(tile.note) + '</div></div>';
     }).join('');
@@ -645,23 +645,32 @@ function renderImprovementMetrics(stats, data) {
   var gateStats = (data && data.gateStats) || {};
   var gateAudit = (data && data.gateAudit) || {};
   var liveMetrics = (data && data.liveMetrics) || {};
+  var decisionLoop = (data && data.decisions) || {};
   var harness = (data && data.harness) || {};
   var approvalRate = Math.round(((stats && (stats.recentRate || stats.approvalRate)) || 0) * 100);
   var errorTrend = liveMetrics.errorTrend || {};
-  var repeatPressure = Math.round(((harness.repeatFailureRate || 0) * 100));
-  var repeatedCount = harness.repeatedFailureCount || 0;
+  var fastPathRate = Math.round(((decisionLoop.fastPathRate || 0) * 100));
+  var overrideRate = Math.round(((decisionLoop.overrideRate || 0) * 100));
+  var rollbackRate = Math.round(((decisionLoop.rollbackRate || 0) * 100));
+  var medianLatencyMs = Number(decisionLoop.medianLatencyMs || 0);
+  var medianLatencyText = medianLatencyMs >= 3600000
+    ? (medianLatencyMs / 3600000).toFixed(1) + 'h'
+    : medianLatencyMs >= 60000
+      ? Math.round(medianLatencyMs / 60000) + 'm'
+      : Math.round(medianLatencyMs / 1000) + 's';
   var thisWeekNeg = errorTrend.thisWeek || 0;
   var lastWeekNeg = errorTrend.lastWeek || 0;
   var blocked = gateStats.blocked || 0;
+  var resolvedCount = decisionLoop.resolvedCount || 0;
 
-  summary.textContent = '7-day approval is ' + approvalRate + '%. This week logged ' + thisWeekNeg + ' negative signal' + (thisWeekNeg === 1 ? '' : 's')
-    + ' versus ' + lastWeekNeg + ' last week, while gates recorded ' + blocked + ' deny decision' + (blocked === 1 ? '' : 's') + '.';
+  summary.textContent = 'ThumbGate is auto-routing ' + fastPathRate + '% of tracked decisions while holding override rate at ' + overrideRate + '% and rollback rate at ' + rollbackRate + '% across '
+    + resolvedCount + ' resolved decision' + (resolvedCount === 1 ? '' : 's') + '. Feedback approval is ' + approvalRate + '%, and gates still recorded ' + blocked + ' deny decision' + (blocked === 1 ? '' : 's') + '.';
 
   grid.innerHTML = [
-    { label: '7d approval', value: approvalRate + '%', tone: 'purple', note: 'Recent approval rate from feedback signals' },
-    { label: 'This week negatives', value: String(thisWeekNeg), tone: 'red', note: 'Vs ' + lastWeekNeg + ' last week' },
-    { label: 'Actions blocked', value: String(blocked), tone: 'green', note: 'Recorded gate denies from the audit trail' },
-    { label: 'Repeat pressure', value: repeatPressure + '%', tone: 'cyan', note: repeatedCount + ' repeated failure pattern' + (repeatedCount === 1 ? '' : 's') }
+    { label: 'Fast path rate', value: fastPathRate + '%', tone: 'purple', note: 'Recorded evaluations that stayed auto-executable' },
+    { label: 'Override rate', value: overrideRate + '%', tone: 'red', note: 'Resolved decisions later changed by a human' },
+    { label: 'Rollback rate', value: rollbackRate + '%', tone: 'cyan', note: 'Resolved decisions later reversed' },
+    { label: 'Median latency', value: medianLatencyText, tone: 'green', note: 'Time from recommendation to recorded outcome' }
   ].map(function(tile) {
     return '<div class="metric-tile"><div class="metric-kicker">' + escHtml(tile.label) + '</div><div class="metric-number ' + escHtml(tile.tone) + '">' + escHtml(tile.value) + '</div><div class="metric-note">' + escHtml(tile.note) + '</div></div>';
   }).join('');
