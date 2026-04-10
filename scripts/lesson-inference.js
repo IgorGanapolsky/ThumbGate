@@ -157,6 +157,55 @@ function getRecentLesson() {
   try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch { return null; }
 }
 
+function isNegativeSignal(signal) {
+  return signal === 'negative' || signal === 'down';
+}
+
+function isPositiveSignal(signal) {
+  return signal === 'positive' || signal === 'up';
+}
+
+function selectStatusbarLesson() {
+  const lessons = readJsonl(getLessonsPath())
+    .slice()
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  const latestNegative = lessons.find((lesson) => isNegativeSignal(lesson.signal));
+  if (latestNegative) return latestNegative;
+  const latestPositive = lessons.find((lesson) => isPositiveSignal(lesson.signal));
+  if (latestPositive) return latestPositive;
+  return getRecentLesson();
+}
+
+function getLessonKind(lesson = {}) {
+  const normalizedTitle = String(lesson.lesson || '').trim();
+  if (isNegativeSignal(lesson.signal) || /^MISTAKE:/i.test(normalizedTitle)) return 'mistake';
+  if (isPositiveSignal(lesson.signal) || /^SUCCESS:/i.test(normalizedTitle)) return 'success';
+  if (/^LEARNING:/i.test(normalizedTitle)) return 'learning';
+  if (/^PREFERENCE:/i.test(normalizedTitle)) return 'preference';
+  return 'lesson';
+}
+
+function stripLessonPrefix(lessonText = '') {
+  return String(lessonText || '').replace(/^(MISTAKE|SUCCESS|LEARNING|PREFERENCE):\s*/i, '').trim();
+}
+
+function formatLessonTimestamp(createdAt = '') {
+  const parsed = new Date(createdAt);
+  if (!Number.isFinite(parsed.getTime())) return '';
+  return parsed.toISOString().slice(0, 16).replace('T', ' ') + 'Z';
+}
+
+function buildStatusbarLessonLabel(lesson = {}) {
+  const kind = getLessonKind(lesson);
+  const prefix = kind === 'mistake'
+    ? 'Latest mistake'
+    : kind === 'success'
+      ? 'Latest success'
+      : 'Latest lesson';
+  const timestamp = formatLessonTimestamp(lesson.createdAt);
+  return timestamp ? `${prefix} ${timestamp}` : prefix;
+}
+
 /**
  * Search lessons by query text.
  */
@@ -250,10 +299,11 @@ function getAllLessonsForContext({ maxTokenBudget = 10000, signal, format = 'com
  * Returns the most recent lesson with link, formatted for display.
  */
 function getStatusbarLessonData() {
-  const recent = getRecentLesson();
+  const recent = selectStatusbarLesson();
   if (!recent) return { hasLesson: false, text: null, link: null };
 
-  const truncated = recent.lesson.length > 60 ? recent.lesson.slice(0, 57) + '...' : recent.lesson;
+  const normalizedLesson = stripLessonPrefix(recent.lesson || '');
+  const truncated = normalizedLesson.length > 48 ? normalizedLesson.slice(0, 45) + '...' : normalizedLesson;
 
   return {
     hasLesson: true,
@@ -262,6 +312,8 @@ function getStatusbarLessonData() {
     lessonId: recent.id,
     confidence: recent.confidence,
     createdAt: recent.createdAt,
+    label: buildStatusbarLessonLabel(recent),
+    kind: getLessonKind(recent),
   };
 }
 
@@ -433,6 +485,8 @@ module.exports = {
   inferFromSurroundingMessages, createLesson, getRecentLesson,
   searchLessons, getLessonStats, getStatusbarLessonData, getAllLessonsForContext,
   getLessonsPath, getRecentLessonPath,
+  selectStatusbarLesson, getLessonKind, stripLessonPrefix,
+  formatLessonTimestamp, buildStatusbarLessonLabel,
   inferStructuredLesson, inferStructuredLessonLLM,
   extractTrigger, extractAction, extractToolCalls,
   extractFilePaths, extractErrors, calculateConfidence, inferScope,

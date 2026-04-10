@@ -90,11 +90,10 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.ok(out.includes('10'), 'should show thumbs up count');
   assert.ok(out.includes('5'), 'should show thumbs down count');
   assert.ok(out.includes('3'), 'should show lesson count');
-  assert.ok(out.includes('lessons'), 'should show lessons label');
-  assert.match(out, /Dashboard \(http:\/\/localhost:3456\/dashboard\)/);
-  assert.match(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
   assert.match(out, /Dashboard/);
   assert.match(out, /Lessons/);
+  assert.doesNotMatch(out, /Dashboard \(http:\/\/localhost:3456\/dashboard\)/);
+  assert.doesNotMatch(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
 });
 
 test('statusline shows "no feedback yet" when cache has zeros', () => {
@@ -375,6 +374,8 @@ test('statusline preserves dashboard links under a tight width budget', () => {
     const plain = stripStatuslineFormatting(out).trim();
     assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
     assert.match(plain, /Lessons/, 'should preserve the lessons link label');
+    assert.match(plain, /Latest mistake \d{4}-\d{2}-\d{2} \d{2}:\d{2}Z:/, 'should clarify that the snippet is the latest mistake');
+    assert.match(plain, /http:\/\/localhost:3456\/lessons#lesson_/, 'should include a deep link to the latest lesson');
   } finally {
     if (previousFeedbackDir === undefined) {
       delete process.env.THUMBGATE_FEEDBACK_DIR;
@@ -462,19 +463,23 @@ test('setupClaude uses portable ThumbGate commands for status line and cache upd
   );
 });
 
-test('statusline shell uses link helper and inline URLs', () => {
+test('statusline shell keeps dashboard labels compact and leaves deep links to lesson chips', () => {
   const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
   assert.match(shellSource, /statusline-links\.js/);
   assert.match(shellSource, /inline_link/);
   assert.match(shellSource, /LOCAL_API_ORIGIN/);
+  assert.match(shellSource, /DASHBOARD_LINK="\$DASHBOARD_LABEL"/);
+  assert.match(shellSource, /LESSONS_LINK="\$LESSONS_LABEL"/);
+  assert.match(shellSource, /LATEST_LESSON_LINK="\$\(inline_link/);
 });
 
 test('statusline output ends with Dashboard and Lessons links (regression guard)', () => {
   const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
-  // Both branches (no-feedback and has-feedback) must end with Dashboard + Lessons links
+  // Both branches (no-feedback and has-feedback) must retain Dashboard + Lessons links
   const outputLines = shellSource.split('\n').filter(l => l.includes('DASHBOARD_LINK') && l.includes('LESSONS_LINK'));
   assert.ok(outputLines.length >= 2, `Expected at least 2 output lines with Dashboard+Lessons links, got ${outputLines.length}`);
-  // LESSON_TEXT must NOT appear in the LINE= output assembly — it causes truncation and hides links
-  const lineAssembly = shellSource.split('\n').filter(l => /^\s*LINE=.*LESSON_TEXT/.test(l) || /^\s*\[.*LESSON_TEXT.*\].*&&.*LINE=/.test(l));
-  assert.strictEqual(lineAssembly.length, 0, 'LESSON_TEXT must not be rendered in statusbar output — it truncates Dashboard/Lessons links');
+  const lineAssembly = shellSource.split('\n').filter(l => l.includes('LATEST_LESSON_LINK') && l.includes('LINE='));
+  assert.ok(lineAssembly.length >= 2, 'latest lesson metadata should be rendered in both output branches');
+  const lessonBeforeLinks = shellSource.split('\n').filter(l => /^\s*LINE=.*LATEST_LESSON_LINK.*DASHBOARD_LINK/.test(l));
+  assert.strictEqual(lessonBeforeLinks.length, 0, 'latest lesson link should not appear before Dashboard/Lessons links');
 });

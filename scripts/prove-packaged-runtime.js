@@ -263,14 +263,20 @@ async function runPackagedRuntimeSmoke(options = {}) {
     }
 
     const readyStatusline = renderStatusline(runtimeBin, projectDir, env);
-    if (!readyStatusline.includes(`${origin}/dashboard`)) {
-      throw new Error(`Ready statusline missing dashboard URL: ${readyStatusline.trim()}`);
+    if (!/(Dashboard|Dashboard…)/.test(readyStatusline)) {
+      throw new Error(`Ready statusline missing dashboard label: ${readyStatusline.trim()}`);
     }
-    if (!readyStatusline.includes(`${origin}/lessons`)) {
-      throw new Error(`Ready statusline missing lessons URL: ${readyStatusline.trim()}`);
+    if (!/(Lessons|Lessons…)/.test(readyStatusline)) {
+      throw new Error(`Ready statusline missing lessons label: ${readyStatusline.trim()}`);
     }
-    // Thumbs-up/down icons are plain emoji (not hyperlinks) since the switch
-    // from OSC 8 to inline URLs. Only dashboard + lessons URLs are required.
+    if (readyStatusline.includes(`${origin}/dashboard`)) {
+      throw new Error(`Ready statusline leaked dashboard URL: ${readyStatusline.trim()}`);
+    }
+    if (readyStatusline.includes(`${origin}/lessons`)) {
+      throw new Error(`Ready statusline leaked lessons URL: ${readyStatusline.trim()}`);
+    }
+    // Thumbs-up/down icons stay inline while dashboard + lessons remain compact
+    // labels, even after the local API is up.
     if (!readyStatusline.includes('👍')) {
       throw new Error(`Ready statusline missing thumbs-up icon: ${readyStatusline.trim()}`);
     }
