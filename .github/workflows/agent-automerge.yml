@@ -14,9 +14,18 @@ permissions:
   contents: write
   pull-requests: write
   checks: read
+  issues: write
+
+concurrency:
+  group: agent-automerge-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  THUMBGATE_MAIN_MERGE_PROVIDER: trunk
 
 jobs:
-  auto-merge:
+  agent-automerge:
+    name: agent-automerge
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository &&
@@ -30,43 +39,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Wait for required and critical quality checks
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          set -euo pipefail
-
-          timeout_seconds=1800
-          interval_seconds=20
-          elapsed=0
-
-          while true; do
-            checks_json="$(gh pr checks "$PR_URL" --json bucket,name,state,workflow,link,event --jq '.' || echo '[]')"
-
-            if jq -e 'length == 0' <<<"$checks_json" >/dev/null; then
-              echo "No quality checks configured."
-              break
-            elif jq -e 'any(.[]; .bucket == "fail" or .bucket == "cancel")' <<<"$checks_json" >/dev/null; then
-              echo "A critical quality check failed. Auto-merge skipped."
-              jq -r '.[] | select(.bucket == "fail" or .bucket == "cancel") | "- \(.name): \(.state) \(.link)"' <<<"$checks_json"
-              exit 1
-            elif jq -e 'all(.[]; .bucket == "pass" or .bucket == "skipping")' <<<"$checks_json" >/dev/null; then
-              echo "All critical quality checks completed successfully."
-              break
-            else
-              echo "Quality checks are still running."
-            fi
-
-            sleep "$interval_seconds"
-            elapsed=$((elapsed + interval_seconds))
-
-            if [ "$elapsed" -ge "$timeout_seconds" ]; then
-              echo "Timed out waiting for required checks to complete."
-              exit 1
-            fi
-          done
-
       - name: Auto-approve PR
         continue-on-error: true
         uses: actions/github-script@v8
@@ -81,62 +53,50 @@ jobs:
               body: "Auto-approved by agent automerge policy.",
             });
 
-      - name: Enable auto-merge
+      - name: Request merge automation
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           set -euo pipefail
 
+          if [ "$BASE_REF" = "main" ] && [ "${THUMBGATE_MAIN_MERGE_PROVIDER}" = "trunk" ]; then
+            existing_comment_id="$(
+              gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+                --jq '.[] | select(.user.login == "github-actions[bot]" and .body == "/trunk merge") | .id' \
+                | head -n 1
+            )"
+
+            if [ -n "${existing_comment_id:-}" ]; then
+              echo "Trunk merge request already exists for $PR_URL"
+            else
+              gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+                --method POST \
+                -f body='/trunk merge' >/dev/null
+              echo "Requested Trunk merge for $PR_URL"
+            fi
+
+            {
+              echo "### Merge automation"
+              echo "- Provider: trunk"
+              echo "- PR: $PR_URL"
+              echo "- Queue request: \`/trunk merge\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           if gh pr merge --auto --squash --delete-branch "$PR_URL"; then
-            echo "Auto-merge enabled for $PR_URL"
+            echo "GitHub auto-merge enabled for $PR_URL"
           else
-            echo "Auto-merge not available; trying direct squash merge"
+            echo "GitHub auto-merge unavailable; trying direct squash merge"
             gh pr merge --squash --delete-branch "$PR_URL"
           fi
 
-      - name: Resolve final merge commit
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          set -euo pipefail
-
-          timeout_seconds=1800
-          interval_seconds=20
-          elapsed=0
-
-          while true; do
-            pr_json="$(gh pr view "$PR_URL" --json state,mergeCommit,url,title --jq '.')"
-            pr_state="$(jq -r '.state' <<<"$pr_json")"
-            merge_commit="$(jq -r '.mergeCommit.oid // empty' <<<"$pr_json")"
-
-            if [ "$pr_state" = "MERGED" ] && [ -n "$merge_commit" ]; then
-              echo "Final merge commit: $merge_commit"
-              {
-                echo "### Merge result"
-                echo "- PR: $PR_URL"
-                echo "- Merge commit: \`$merge_commit\`"
-              } >> "$GITHUB_STEP_SUMMARY"
-              break
-            fi
-
-            if [ "$pr_state" = "CLOSED" ]; then
-              echo "PR closed without a merge commit."
-              exit 1
-            fi
-
-            if [ "$elapsed" -ge "$timeout_seconds" ]; then
-              echo "Final merge commit is not available yet; auto-merge remains queued."
-              {
-                echo "### Merge result"
-                echo "- PR: $PR_URL"
-                echo "- Final merge commit: pending (merge queue still processing)"
-              } >> "$GITHUB_STEP_SUMMARY"
-              break
-            fi
-
-            sleep "$interval_seconds"
-            elapsed=$((elapsed + interval_seconds))
-          done
+          {
+            echo "### Merge automation"
+            echo "- Provider: github"
+            echo "- PR: $PR_URL"
+            echo "- Mode: auto-merge or direct squash fallback"
+          } >> "$GITHUB_STEP_SUMMARY"
