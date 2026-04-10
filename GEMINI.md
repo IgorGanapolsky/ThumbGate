@@ -92,9 +92,10 @@ Use feedback-derived prevention rules as constraints to reduce repeated failures
 ## Session Directive: PR Management & System Hygiene
 
 ### CTO Protocol
-1. **Research & Recall:** Read directives and local ThumbGate memory for lessons before tasks.
-2. **PR Inspection:** Review all open PRs using `npm run pr:manage`. No PR should remain open if mergeable.
-3. **Orphan Cleanup:** List branches without PRs. Evaluate and delete stale/regressive ones.
-4. **Main Integrity:** Ensure CI passes on `main` after all merges. Fix regressions immediately.
-5. **Dry Run:** Confirm operational readiness for the next session.
-6. **Confirmation:** Say: **"Done merging PRs. CI passing. System hygiene complete. Ready for next session."**
+1. **Research & Recall:** Read `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, then query only local ThumbGate memory for lessons before tasks.
+2. **PR Inspection:** Review all open PRs using `npm run pr:manage`. No PR should remain open if mergeable; blocked PRs must include an exact blocker report.
+3. **Orphan Cleanup:** List branches without PRs. Archive unique local commits before deleting clean stale lanes, and preserve dirty rescue lanes until they are intentionally resolved.
+4. **Main Integrity:** Ensure CI passes on the exact merge commit on `main` after all merges. If `develop` is absent, say so explicitly.
+5. **Dry Run:** Confirm operational readiness for the next session and report before/after branch-worktree cleanup counts.
+6. **Secrets:** Never persist secrets, PATs, or copied credentials into directives, memory, commits, or PR text.
+7. **Confirmation:** Say: **"Done merging PRs. CI passing. System hygiene complete. Ready for next session."** only after evidence is verified.

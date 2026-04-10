@@ -90,9 +90,10 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 ## Session Directive: PR Management & System Hygiene
 
 ### CTO Protocol
-1. **Research:** Read directives and local ThumbGate memory first.
-2. **PRs:** Inspect all open PRs with `npm run pr:manage`. Merge green, non-blocking ones.
-3. **Orphans:** Delete branches/worktrees without PRs after evaluation.
-4. **Integrity:** `main` must be 100% green. Fix regressions on sight.
-5. **Hygiene:** Remove stale logs and temporary files.
-6. **Ready:** Say: **"Done merging PRs. CI passing. System hygiene complete. Ready for next session."**
+1. **Research:** Read `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, then query local ThumbGate memory before acting.
+2. **PRs:** Inspect all open PRs with `npm run pr:manage`. Merge only when critical checks have terminal success and no actionable review blockers remain. If a PR is blocked, report the exact failing check or merge-state reason.
+3. **Orphans:** Classify non-PR branches/worktrees as merge candidate, archive-delete candidate, or protected dirty lane. Archive unique local commits before deletion.
+4. **Integrity:** `main` must be green on the exact merge commit before any completion claim. If `develop` does not exist, state that explicitly instead of implying coverage.
+5. **Hygiene:** Remove stale logs and temporary files. Report before/after branch and worktree counts for cleanup actions.
+6. **Secrets:** Never persist secrets, PATs, or copied credentials into directives, memory logs, commits, or PR bodies.
+7. **Ready:** Say: **"Done merging PRs. CI passing. System hygiene complete. Ready for next session."** only after evidence is in hand.
