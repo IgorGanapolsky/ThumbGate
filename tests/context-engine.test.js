@@ -58,4 +58,26 @@ describe('context-engine', () => {
     assert.ok(result.entries.some(e => e.id === 'e0'), 'Anchor should be preserved');
     assert.strictEqual(result.stage, 5);
   });
+
+  it('compactContext applies Stage 6 token budget when totalMaxChars triggers trimming', () => {
+    const entries = [
+      { id: 'e0', signal: 'down', context: 'ctx', whatWentWrong: 'error zero' },
+      { id: 'e1', signal: 'down', context: 'ctx', whatWentWrong: 'error one' },
+      { id: 'e2', signal: 'down', context: 'ctx', whatWentWrong: 'error two' },
+    ];
+    // Budget tight enough to fit only the most recent entry (~72 chars each)
+    const result = compactContext(entries, [], { totalMaxChars: 80 });
+    assert.strictEqual(result.stage, 6);
+    assert.ok(result.entries.length < entries.length, 'Some entries should be dropped by budget');
+    assert.ok(result.entries.map(e => e.id).includes('e2'), 'Most recent entry should be preserved');
+  });
+
+  it('compactContext Stage 6 is skipped when all entries fit within totalMaxChars', () => {
+    const entries = [
+      { id: 'e0', signal: 'down', context: 'x', whatWentWrong: 'err' },
+    ];
+    const result = compactContext(entries, [], { totalMaxChars: 999999 });
+    assert.strictEqual(result.stage, 5);
+    assert.strictEqual(result.entries.length, 1);
+  });
 });
