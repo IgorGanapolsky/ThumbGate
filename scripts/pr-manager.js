@@ -296,7 +296,7 @@ function waitForMergeCommit(prNumber, runner = runGh, options = {}) {
   const intervalMs = Number.isFinite(options.intervalMs) ? options.intervalMs : 10000;
   const startedAt = Date.now();
 
-  while ((Date.now() - startedAt) <= timeoutMs) {
+  do {
     const pr = getPrStatus(prNumber, runner);
     if (pr && String(pr.state || '').toUpperCase() === 'MERGED' && pr.mergeCommit && pr.mergeCommit.oid) {
       return {
@@ -322,8 +322,12 @@ function waitForMergeCommit(prNumber, runner = runGh, options = {}) {
       break;
     }
 
+    if ((Date.now() - startedAt + intervalMs) > timeoutMs) {
+      break;
+    }
+
     sleep(intervalMs);
-  }
+  } while ((Date.now() - startedAt) <= timeoutMs);
 
   return {
     finalized: false,
