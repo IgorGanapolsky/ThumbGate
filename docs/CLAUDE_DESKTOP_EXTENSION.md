@@ -156,9 +156,10 @@ That command:
 The repo now publishes a user-consumable Claude Desktop bundle on GitHub Releases:
 
 - Latest direct download: https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb
+- Latest review packet zip: https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip
 - Release notes: https://github.com/IgorGanapolsky/ThumbGate/releases
 
-This is the clean public install lane for buyers who do not want to build the bundle locally.
+This is the clean public install lane for buyers who do not want to build the bundle locally. The review packet zip is the backup lane when Anthropic asks for a source zip instead of a GitHub repository link.
 
 ## Promotion lanes
 
@@ -168,6 +169,7 @@ Call out the Claude Desktop extension path as:
 
 - install locally today
 - download the packaged `.mcpb` from GitHub Releases
+- keep a review-ready source zip handy for submission forms
 - review proof and privacy before rollout
 - treat directory inclusion as discoverability, not traction proof
 
@@ -200,7 +202,8 @@ Keep the generated MCPB manifest aligned with:
 2. Keep Claude plugin metadata version-aligned with `package.json`.
 3. Run `npm run build:claude-mcpb`.
 4. Confirm the GitHub Release asset exists at `releases/latest/download/thumbgate-claude-desktop.mcpb`.
-5. Confirm privacy, support, and proof links resolve.
-6. Inspect the resulting `.mcpb` with `mcpb info`.
-7. Submit through Anthropic's official directory process.
-8. Do not market the directory listing until approval is real.
+5. Confirm the GitHub Release asset exists at `releases/latest/download/thumbgate-claude-plugin-review.zip`.
+6. Confirm privacy, support, and proof links resolve.
+7. Inspect the resulting `.mcpb` with `mcpb info`.
+8. Submit through Anthropic's official directory process using the GitHub repository link or the review packet zip.
+9. Do not market the directory listing until approval is real.

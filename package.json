@@ -37,6 +37,7 @@
     "changeset:status": "changeset status",
     "changeset:check": "node scripts/changeset-check.js",
     "build:claude-mcpb": "node scripts/build-claude-mcpb.js",
+    "build:claude-review-zip": "node scripts/build-claude-mcpb.js --review-zip",
     "build:codex-plugin": "node scripts/build-codex-plugin.js",
     "verify:quick": "node scripts/verify-run.js quick",
     "verify:full": "node scripts/verify-run.js full",
