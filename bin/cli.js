@@ -811,7 +811,7 @@ function pro() {
     console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
     console.log('\nWhat is available:');
     console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
-    console.log('  - Optional hosted API key: shared lesson DB for teams and multi-agent workflows');
+    console.log('  - Team rollout path: shared hosted lessons, org visibility, and workflow proof');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');
     console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);

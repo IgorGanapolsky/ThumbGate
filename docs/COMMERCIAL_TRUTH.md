@@ -1,7 +1,7 @@
 # Commercial Truth
 
 Status: current
-Updated: April 1, 2026
+Updated: April 10, 2026
 
 This document is the source of truth for product, pricing, traction, and proof claims in this repository.
 
@@ -12,7 +12,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - The primary commercial motion is the **Workflow Hardening Sprint** for one workflow, followed by Team expansion when shared enforcement, approval boundaries, and auditability matter across operators.
 - The current public self-serve commercial offer is **Pro at $19/mo or $149/yr** via Stripe checkout.
 - The preserved founder one-time Stripe link still exists for legacy founder buyers, but it is not the default commercial offer.
-- The current Team pricing anchor is **$12/seat/mo with a 3-seat minimum**, and the public Team path remains an **intake-led pilot for the first workflow** until hosted rollout scope is qualified.
+- The current Team pricing anchor is **$99/seat/mo with a 3-seat minimum**, and the public Team path remains an **intake-led pilot for the first workflow** until hosted rollout scope is qualified.
 - The open-source runtime now supports history-aware lesson distillation from up to 8 prior recorded entries in the current Claude auto-capture path, linked 60-second feedback sessions, and reflector rule proposals across CLI, hosted API, Cursor, and Claude Desktop surfaces.
 - The runtime now supports Workflow Sentinel blast-radius scoring plus Docker Sandboxes routing guidance for high-risk local actions, and the hosted path supports signed sandbox dispatch for isolated team automations.
 - Package publishing is governed by Changesets, SemVer, version-sync checks, and verification evidence; release claims should stay inspectable instead of being inferred from a diff.
@@ -41,7 +41,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - Unlimited custom gates with auto-gate promotion
 - Secondary self-serve lane for solo operators, not the default enterprise pitch
 
-### Team ($12/seat/mo, min 3, hosted rollout intake-first)
+### Team ($99/seat/mo, min 3, hosted rollout intake-first)
 
 - Workflow hardening sprint as the first paid step
 - Shared hosted lesson database

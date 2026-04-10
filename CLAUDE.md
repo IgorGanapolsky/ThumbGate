@@ -69,6 +69,7 @@ curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate 
 6. Merge only when: CI green AND 0 unresolved threads.
 7. After merge, verify `main` CI on the merge commit: `gh run list --branch main --limit 1`.
 8. Delete the feature branch after merge.
+9. For `main`, merge submission is Trunk-managed: request `/trunk merge` and let the queue finish asynchronously. Do not build helper workflows that poll their own required check or block on the final merge commit.
 
 **NEVER say "done" or "pushed" without showing `gh pr view` output first.**
 
