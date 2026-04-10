@@ -1292,6 +1292,23 @@ test('evaluateGates allows gh pr create after explicit approval even when bash m
   }
 });
 
+test('evaluateGates blocks raw GitHub auto-merge even after merge permission is satisfied', () => {
+  cleanupStateFiles();
+  setTaskScope({
+    allowedPaths: ['scripts/**', 'tests/**'],
+    summary: 'Allow merge-gate hardening work.',
+  });
+  satisfyCondition('pr_merge_allowed', 'User approved PR merge after checks');
+  const result = evaluateGates('Bash', {
+    command: 'gh pr merge 676 --auto --squash --delete-branch',
+    changed_files: ['scripts/pr-manager.js', 'tests/pr-manager.test.js'],
+  });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'raw-gh-auto-merge-blocked');
+  assert.match(result.message, /Raw GitHub auto-merge is blocked/);
+});
+
 test('evaluateGates blocks gh pr create without branch governance', () => {
   cleanupStateFiles();
   const repoPath = createPushTestRepo('scripts/ops.js');
