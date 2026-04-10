@@ -6,8 +6,11 @@ const {
   searchContextFs,
   searchPreventionRulesSync,
 } = require('./filesystem-search');
+const {
+  searchImportedDocuments,
+} = require('./document-intake');
 
-const VALID_SOURCES = ['all', 'feedback', 'context', 'rules'];
+const VALID_SOURCES = ['all', 'feedback', 'context', 'rules', 'documents'];
 const SIGNAL_ALIASES = {
   up: 'up',
   positive: 'up',
@@ -118,6 +121,27 @@ function mapRuleResult(record) {
   };
 }
 
+function mapDocumentResult(record) {
+  return {
+    id: record.documentId || null,
+    source: 'document',
+    score: clampScore(record._score),
+    signal: null,
+    tags: safeArray(record.tags),
+    timestamp: record.importedAt || null,
+    title: record.title || null,
+    context: excerpt(record.excerpt || record.content || ''),
+    correctiveAction: safeArray(record.proposals)[0]
+      ? safeArray(record.proposals)[0].title || safeArray(record.proposals)[0].evidence || null
+      : null,
+    matchedTokens: safeArray(record._matchedTokens),
+    documentId: record.documentId || null,
+    proposalCount: safeArray(record.proposals).length,
+    matchedTemplateIds: safeArray(record.matchedTemplateIds),
+    sourceFormat: record.sourceFormat || null,
+  };
+}
+
 function sortResults(results) {
   return [...results].sort((left, right) => {
     if ((right.score || 0) !== (left.score || 0)) {
@@ -144,6 +168,10 @@ function getRuleResults(query, limit) {
   return searchPreventionRulesSync(query, limit).map(mapRuleResult);
 }
 
+function getDocumentResults(query, limit) {
+  return searchImportedDocuments({ query, limit }).map(mapDocumentResult);
+}
+
 function searchThumbgate({ query, source = 'all', limit = 10, signal = null } = {}) {
   const trimmedQuery = String(query || '').trim();
   if (!trimmedQuery) {
@@ -161,11 +189,14 @@ function searchThumbgate({ query, source = 'all', limit = 10, signal = null } = 
     results = getContextResults(trimmedQuery, normalizedLimit);
   } else if (normalizedSource === 'rules') {
     results = getRuleResults(trimmedQuery, normalizedLimit);
+  } else if (normalizedSource === 'documents') {
+    results = getDocumentResults(trimmedQuery, normalizedLimit);
   } else {
     results = sortResults([
       ...getFeedbackResults(trimmedQuery, normalizedLimit, normalizedSignal),
       ...getContextResults(trimmedQuery, normalizedLimit),
       ...getRuleResults(trimmedQuery, normalizedLimit),
+      ...getDocumentResults(trimmedQuery, normalizedLimit),
     ]).slice(0, normalizedLimit);
   }
 

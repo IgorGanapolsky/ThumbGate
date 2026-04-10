@@ -29,6 +29,9 @@ test('chatgpt openapi includes all core API routes', () => {
     '/v1/lessons/search',
     '/v1/search',
     '/v1/feedback/rules',
+    '/v1/documents',
+    '/v1/documents/import',
+    '/v1/documents/{documentId}',
     '/v1/dpo/export',
     '/v1/jobs',
     '/v1/jobs/harness',
@@ -93,6 +96,9 @@ test('all core routes present in canonical openapi', () => {
   const content = fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf-8');
   const coreRoutes = [
     '/v1/feedback/capture',
+    '/v1/documents',
+    '/v1/documents/import',
+    '/v1/documents/{documentId}',
     '/v1/dpo/export',
     '/v1/jobs',
     '/v1/jobs/harness',
@@ -106,6 +112,9 @@ test('all core routes present in canonical openapi', () => {
     '/v1/internal-agent/bootstrap',
     '/v1/lessons/search',
     '/v1/search',
+    '/v1/documents',
+    '/v1/documents/import',
+    '/v1/documents/{documentId}',
   ];
   for (const route of coreRoutes) {
     assert.match(content, new RegExp(route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
@@ -127,6 +136,9 @@ test('chatgpt adapter preserves core endpoint parity with canonical openapi', ()
     '/v1/internal-agent/bootstrap',
     '/v1/lessons/search',
     '/v1/search',
+    '/v1/documents',
+    '/v1/documents/import',
+    '/v1/documents/{documentId}',
     '/v1/dpo/export',
     '/v1/jobs',
     '/v1/jobs/harness',
