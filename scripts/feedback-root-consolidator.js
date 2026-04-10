@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ensureParentDir, readJsonl } = require('./fs-utils');
 const {
   getThumbgateFeedbackDir,
   listFeedbackArtifactPaths,
@@ -42,10 +43,6 @@ function getScopedProjectOptions(options = {}) {
   };
 }
 
-function ensureParentDir(filePath) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-}
-
 function readJsonFile(filePath, fallbackFactory) {
   if (!filePath || !fs.existsSync(filePath)) return fallbackFactory();
   try {
@@ -54,22 +51,6 @@ function readJsonFile(filePath, fallbackFactory) {
   } catch {
     return fallbackFactory();
   }
-}
-
-function readJsonlFile(filePath) {
-  if (!filePath || !fs.existsSync(filePath)) return [];
-  const raw = fs.readFileSync(filePath, 'utf8').trim();
-  if (!raw) return [];
-  return raw
-    .split('\n')
-    .map((line) => {
-      try {
-        return JSON.parse(line);
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean);
 }
 
 function stableArtifactTimestamp(record = {}) {
@@ -176,7 +157,7 @@ function consolidateJsonArtifact(fileName, primaryPath, sourcePaths, write) {
 }
 
 function consolidateJsonlArtifact(fileName, primaryPath, sourcePaths, write) {
-  const merged = dedupeJsonlRows(sourcePaths.flatMap((candidate) => readJsonlFile(candidate)));
+  const merged = dedupeJsonlRows(sourcePaths.flatMap((candidate) => readJsonl(candidate)));
   const initializedEmpty = sourcePaths.length === 0;
   const writeResult = writeIfChanged(primaryPath, serializeJsonl(merged), write);
 

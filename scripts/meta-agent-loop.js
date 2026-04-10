@@ -37,6 +37,7 @@ const { parseFeedbackFile, classifySignal, promoteToGates } = require('./feedbac
 const { loadAutoGates, saveAutoGates, getAutoGatesPath, patternToGateId } = require('./auto-promote-gates');
 const { readEvolutionState, writeEvolutionState, captureEvolutionSnapshot, applyAcceptedMutation } = require('./evolution-state');
 const { isAvailable, callClaude, MODELS } = require('./llm-client');
+const { ensureParentDir } = require('./fs-utils');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -320,14 +321,9 @@ function writePreventionRulesFromGates(autoGatesData, rulesPath) {
 // 6. Persistence
 // ---------------------------------------------------------------------------
 
-function ensureDir(p) {
-  if (!fs.existsSync(path.dirname(p))) {
-    fs.mkdirSync(path.dirname(p), { recursive: true });
-  }
-}
 
 function appendRunManifest(manifest) {
-  ensureDir(META_RUNS_PATH);
+  ensureParentDir(META_RUNS_PATH);
   fs.appendFileSync(META_RUNS_PATH, JSON.stringify(manifest) + '\n');
 }
 

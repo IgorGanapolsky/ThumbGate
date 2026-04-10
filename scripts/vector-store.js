@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ensureDir } = require('./fs-utils');
 const {
   resolveEmbeddingProfile,
   writeModelFitReport,
@@ -35,11 +36,6 @@ function getLanceDir() {
   return path.join(getFeedbackDir(), 'lancedb');
 }
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function truncateForEmbedding(text, maxChars) {
   const raw = String(text || '');

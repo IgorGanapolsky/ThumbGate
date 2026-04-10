@@ -15,11 +15,9 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { ensureParentDir, readJsonl } = require('./fs-utils');
 
 function getFeedbackDir() { return resolveFeedbackDir(); }
-function ensureDir(fp) { const d = path.dirname(fp); if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); }
-function readJsonl(fp) { if (!fs.existsSync(fp)) return []; const raw = fs.readFileSync(fp, 'utf-8').trim(); if (!raw) return []; return raw.split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean); }
-
 const SCORES_FILE = 'step-scores.jsonl';
 function getScoresPath() { return path.join(getFeedbackDir(), SCORES_FILE); }
 
@@ -62,7 +60,7 @@ function scoreStep(auditEntry) {
 function scoreAuditTrail(auditEntries) {
   const scores = auditEntries.map(scoreStep);
   const scoresPath = getScoresPath();
-  ensureDir(scoresPath);
+  ensureParentDir(scoresPath);
   for (const s of scores) fs.appendFileSync(scoresPath, JSON.stringify(s) + '\n');
   return { scored: scores.length, scores };
 }

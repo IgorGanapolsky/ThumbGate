@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { ensureDir } = require('./fs-utils');
 
 const {
   buildCloudflareSandboxPlan,
@@ -17,9 +18,6 @@ function npmCommand() {
   return process.platform === 'win32' ? 'npm.cmd' : 'npm';
 }
 
-function ensureDir(dirPath) {
-  fs.mkdirSync(dirPath, { recursive: true });
-}
 
 function runCommand(command, args, cwd = ROOT) {
   const result = spawnSync(command, args, {

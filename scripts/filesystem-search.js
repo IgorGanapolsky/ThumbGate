@@ -20,6 +20,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { readJsonl } = require('./fs-utils');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_FEEDBACK_DIR = resolveFeedbackDir();
@@ -35,15 +36,6 @@ function getFeedbackDir() {
 
 function getContextFsDir() {
   return process.env.THUMBGATE_CONTEXTFS_DIR || path.join(getFeedbackDir(), 'contextfs');
-}
-
-function readJsonl(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const raw = fs.readFileSync(filePath, 'utf-8').trim();
-  if (!raw) return [];
-  return raw.split('\n').map((line) => {
-    try { return JSON.parse(line); } catch { return null; }
-  }).filter(Boolean);
 }
 
 function listJsonFiles(dirPath) {

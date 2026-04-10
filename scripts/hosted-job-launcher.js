@@ -6,6 +6,7 @@ const { spawn } = require('child_process');
 
 const runner = require('./async-job-runner');
 const { buildHarnessJob } = require('./natural-language-harness');
+const { ensureDir } = require('./fs-utils');
 
 const RUNNER_SCRIPT_PATH = path.join(__dirname, 'async-job-runner.js');
 const MANAGED_DPO_EXPORT_SCRIPT_PATH = path.join(__dirname, 'managed-dpo-export.js');
@@ -17,11 +18,6 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
