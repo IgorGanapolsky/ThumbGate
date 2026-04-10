@@ -203,4 +203,14 @@ describe('compliance tags in default.json', () => {
       assert.ok(gate.compliance.includes('NIST-AC-3'), `${gate.id} should include NIST-AC-3`);
     }
   });
+
+  it('SQL MCP destructive gates have compliance mappings', () => {
+    const configPath = path.join(__dirname, '..', 'config', 'gates', 'default.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const deleteGate = config.gates.find((g) => g.id === 'mcp-sql-delete-block');
+    const bulkUpdateGate = config.gates.find((g) => g.id === 'mcp-sql-bulk-update-warn');
+
+    assert.deepEqual(deleteGate.compliance, ['NIST-AC-3', 'SOC2-CC6.1', 'CWE-89']);
+    assert.deepEqual(bulkUpdateGate.compliance, ['NIST-AC-3', 'CWE-89']);
+  });
 });

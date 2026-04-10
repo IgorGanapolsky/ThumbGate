@@ -274,7 +274,8 @@
       "requireTaskScope": true,
       "action": "block",
       "message": "SQL MCP delete_record requires explicit task scope. Destructive database operations must be scoped to prevent accidental data loss.",
-      "severity": "critical"
+      "severity": "critical",
+      "compliance": ["NIST-AC-3", "SOC2-CC6.1", "CWE-89"]
     },
     {
       "id": "mcp-sql-execute-warn",
@@ -292,7 +293,8 @@
       "pattern": "(?:WHERE\\s+1\\s*=\\s*1|WHERE\\s+true|WITHOUT\\s+WHERE)",
       "action": "block",
       "message": "SQL MCP bulk update without a safe WHERE clause. This could modify all records in the table.",
-      "severity": "critical"
+      "severity": "critical",
+      "compliance": ["NIST-AC-3", "CWE-89"]
     },
     {
       "id": "self-protect-config",
