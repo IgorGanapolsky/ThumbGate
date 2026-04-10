@@ -12,9 +12,13 @@ test('lessons page uses defensible live-metric language', () => {
   assert.match(lessonsPage, /Recorded gate denies, not inferred repeats/i);
   assert.match(lessonsPage, /Improvement Over Time/i);
   assert.match(lessonsPage, /Recent Feedback \+ Gate Activity/i);
+  assert.match(lessonsPage, /Fast path rate/i);
+  assert.match(lessonsPage, /Override rate/i);
+  assert.match(lessonsPage, /Rollback rate/i);
+  assert.match(lessonsPage, /recorded evaluations and outcomes/i);
   assert.match(lessonsPage, /Gate deny/i);
   assert.match(lessonsPage, /Gate warn/i);
-  assert.match(lessonsPage, /The chart combines recorded feedback events with daily gate-audit activity/i);
+  assert.match(lessonsPage, /The chart combines recorded feedback events with daily gate-audit activity\. Decision-loop metrics above come from recorded evaluations and outcomes/i);
   assert.doesNotMatch(lessonsPage, /Mistakes Prevented/i);
   assert.doesNotMatch(lessonsPage, /Most Effective Rules/i);
 });

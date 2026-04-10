@@ -572,13 +572,24 @@ function runGh(args) {
   });
 }
 
-function findOpenPrForBranch({ branchName, runner = runGh } = {}) {
+function resolveGitHubRepository(env = process.env) {
+  const repository = String(env.GITHUB_REPOSITORY || '').trim();
+  return /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository) ? repository : null;
+}
+
+function findOpenPrForBranch({ branchName, runner = runGh, env = process.env } = {}) {
   const normalizedBranch = String(branchName || '').trim();
   if (!normalizedBranch) return null;
-  if (!process.env.GH_TOKEN && !process.env.GITHUB_TOKEN) {
+  if (!env.GH_TOKEN && !env.GITHUB_TOKEN) {
     return null;
   }
-  const result = runner(['pr', 'list', '--head', normalizedBranch, '--state', 'open', '--json', 'number,state,isDraft,url']);
+  const args = ['pr', 'list'];
+  const repository = resolveGitHubRepository(env);
+  if (repository) {
+    args.push('--repo', repository);
+  }
+  args.push('--head', normalizedBranch, '--state', 'open', '--json', 'number,state,isDraft,url');
+  const result = runner(args);
   if (!result || result.status !== 0) {
     return null;
   }
@@ -846,6 +857,7 @@ module.exports = {
   resolveGitBinary,
   resolveBaseRef,
   resolveCiBranchName,
+  resolveGitHubRepository,
   resolveRepoRoot,
   runCli,
   sanitizeGlobList,

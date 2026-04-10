@@ -1,4 +1,4 @@
-# Product Hunt Listing Kit — ThumbGate v0.8.4
+# Product Hunt Listing Kit — ThumbGate
 
 Status: live listing at https://www.producthunt.com/products/thumbgate
 
@@ -41,7 +41,7 @@ Every AI coding agent has the same problem: **you correct a mistake, and next se
 
 **No swarm. No planner. No orchestrator.** Just one sharp agent that can't repeat known mistakes.
 
-**What's under the hood (36 MCP tools):**
+**What's under the hood (core MCP toolset):**
 - `recall` — injects relevant past failures at session start
 - `search_lessons` — shows corrective actions, lifecycle state, linked rules & gates
 - Pre-action gates — physically block tool calls matching failure patterns
@@ -118,7 +118,7 @@ ThumbGate also enforces.
 
 Give your AI coding agent a thumbs-down → it auto-generates a prevention rule → a PreToolUse gate physically blocks the agent from repeating that mistake. Not a suggestion. A constraint.
 
-36 MCP tools. Zero config. Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.
+Core MCP toolset. Zero config. Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.
 
 Free and open source: npx thumbgate init
 
@@ -133,7 +133,7 @@ I got tired of correcting the same mistakes across sessions. Prompts are suggest
 
 How it works: 👎 → prevention rule → gate blocks the action before execution.
 
-36 MCP tools, SQLite+FTS5 for sub-ms search, Thompson Sampling for adaptive gate sensitivity.
+Core MCP toolset, SQLite+FTS5 for sub-ms search, Thompson Sampling for adaptive gate sensitivity.
 
 npx thumbgate init — auto-detects your agent.
 
