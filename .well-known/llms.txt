@@ -1,0 +1,60 @@
+# ThumbGate — Pre-action gates for AI coding agents
+# https://thumbgate-production.up.railway.app
+# https://github.com/IgorGanapolsky/ThumbGate
+# https://www.npmjs.com/package/thumbgate
+
+> ThumbGate makes AI coding agents self-improving. Every mistake becomes
+> a prevention rule that physically blocks the agent from repeating it.
+> Feedback-driven enforcement via PreToolUse hooks.
+
+## What ThumbGate solves
+
+- AI coding agents repeat the same mistakes across sessions
+- CLAUDE.md and .cursorrules files are suggestions agents can ignore
+- No memory between sessions means no learning from corrections
+- Teams have no shared safety rules across developers
+
+## How it works
+
+1. Agent makes a mistake → developer gives thumbs-down
+2. ThumbGate captures context and infers a structured lesson
+3. Recurring failures get promoted to enforcement gates
+4. PreToolUse hooks block the pattern before it executes again
+5. Thompson Sampling adapts gate confidence over time
+
+## Who it's for
+
+- Developers using Claude Code, Cursor, Codex, Gemini CLI, or any MCP-compatible agent
+- Engineering teams that need shared agent safety rules
+- Anyone tired of re-correcting their AI coding assistant
+
+## Install
+
+```
+npx thumbgate init --agent claude-code
+```
+
+## Pricing
+
+- Free: 3 feedback captures/day, 5 lesson searches/day, 5 built-in gates
+- Pro: $19/mo or $149/yr — unlimited everything, auto-gate promotion, multi-repo sync
+- Founding Member: $49 one-time, Pro forever
+
+## Links
+
+- Documentation: https://thumbgate-production.up.railway.app/guide
+- Dashboard: https://thumbgate-production.up.railway.app/dashboard
+- GitHub: https://github.com/IgorGanapolsky/ThumbGate
+- npm: https://www.npmjs.com/package/thumbgate
+- Full LLM context: https://thumbgate-production.up.railway.app/public/llm-context.md
+
+## Compared to alternatives
+
+- vs CLAUDE.md: ThumbGate enforces rules via hooks, not suggestions in prompts
+- vs Mem0: ThumbGate is enforcement-first, not just memory storage
+- vs SpecLock: ThumbGate uses adaptive Thompson Sampling, not static rules
+- vs manual .cursorrules: ThumbGate auto-generates rules from feedback
+
+## Technical stack
+
+Node.js >=18.18, SQLite+FTS5 lesson DB, Thompson Sampling, LanceDB vectors, MCP protocol, PreToolUse hooks

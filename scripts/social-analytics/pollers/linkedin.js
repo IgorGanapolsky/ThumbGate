@@ -22,7 +22,7 @@ const LI_V2_BASE = 'https://api.linkedin.com/v2';
 function buildRestHeaders(token) {
   return {
     Authorization: `Bearer ${token}`,
-    'LinkedIn-Version': '202401',
+    'LinkedIn-Version': '202601',
     'X-Restli-Protocol-Version': '2.0.0',
   };
 }
@@ -155,20 +155,22 @@ async function fetchPostAnalytics(token, postUrn) {
 async function fetchLinkedInProfile(token) {
   if (!token) throw new Error('fetchLinkedInProfile: token is required');
 
-  const url = `${LI_V2_BASE}/me`;
-
-  const res = await fetch(url, { headers: buildV2Headers(token) });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`fetchLinkedInProfile HTTP ${res.status}: ${body}`);
+  // Try /v2/userinfo first (works with openid+profile scopes), fall back to /v2/me.
+  for (const url of [`${LI_V2_BASE}/userinfo`, `${LI_V2_BASE}/me`]) {
+    const res = await fetch(url, { headers: buildV2Headers(token) });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.warn(`[linkedin] ${url} HTTP ${res.status}: ${body.slice(0, 120)}`);
+      continue;
+    }
+    const json = await res.json();
+    if (json.serviceErrorCode) {
+      console.warn(`[linkedin] ${url} API error: ${JSON.stringify(json).slice(0, 120)}`);
+      continue;
+    }
+    return json;
   }
-
-  const json = await res.json();
-  if (json.serviceErrorCode) {
-    throw new Error(`fetchLinkedInProfile API error: ${JSON.stringify(json)}`);
-  }
-
-  return json;
+  throw new Error('fetchLinkedInProfile: all endpoints failed');
 }
 
 /**
@@ -237,8 +239,16 @@ async function pollLinkedIn(db) {
 
   console.log(`[linkedin] Starting poll for ${personUrn}`);
 
-  const posts = await fetchLinkedInPosts(token, personUrn);
-  console.log(`[linkedin] Got ${posts.length} posts`);
+  let posts = [];
+  try {
+    posts = await fetchLinkedInPosts(token, personUrn);
+    console.log(`[linkedin] Got ${posts.length} posts`);
+  } catch (err) {
+    // 403 = token lacks r_member_social scope; 426 = version expired.
+    // Either way, skip posts but still collect follower count.
+    console.warn(`[linkedin] Posts fetch failed (non-fatal): ${err.message}`);
+    console.warn('[linkedin] To read posts, re-authorize with r_member_social scope.');
+  }
 
   for (const post of posts) {
     // Post URN is at post.id for the Posts API (urn:li:share:... or urn:li:ugcPost:...).

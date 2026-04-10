@@ -11,6 +11,7 @@ const { getHomeDir, getRuntimeDir, resolveProjectDir } = require('./feedback-pat
 const { resolveProKey } = require('./pro-local-dashboard');
 
 const DEFAULT_ORIGIN = 'http://localhost:3456';
+const PROD_ORIGIN = 'https://thumbgate-production.up.railway.app';
 const DEFAULT_TIMEOUT_MS = 150;
 const DEFAULT_BOOT_GRACE_MS = 5000;
 const PKG_ROOT = path.join(__dirname, '..');
@@ -153,8 +154,8 @@ function buildLinkState({
       lessonsLabel: 'Lessons…',
       upLabel: '👍',
       downLabel: '👎',
-      dashboardUrl: '',
-      lessonsUrl: '',
+      dashboardUrl: `${PROD_ORIGIN}/dashboard`,
+      lessonsUrl: `${PROD_ORIGIN}/lessons`,
       upUrl: '',
       downUrl: '',
     };
@@ -163,11 +164,11 @@ function buildLinkState({
   return {
     state: canBootstrap ? 'offline' : 'unavailable',
     dashboardLabel: canBootstrap ? 'Dash: thumbgate pro' : 'Dashboard',
-    lessonsLabel: 'Learn: thumbgate lessons',
+    lessonsLabel: 'Lessons',
     upLabel: '👍',
     downLabel: '👎',
-    dashboardUrl: '',
-    lessonsUrl: '',
+    dashboardUrl: `${PROD_ORIGIN}/dashboard`,
+    lessonsUrl: `${PROD_ORIGIN}/lessons`,
     upUrl: '',
     downUrl: '',
   };

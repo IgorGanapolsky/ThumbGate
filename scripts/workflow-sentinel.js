@@ -16,6 +16,7 @@ const {
 } = require('./operational-integrity');
 const { buildDockerSandboxPlan } = require('./docker-sandbox-planner');
 const { evaluatePretool } = require('./hybrid-feedback-context');
+const { getInterventionRecommendation } = require('./intervention-policy');
 
 const GOVERNANCE_STATE_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'governance-state.json');
 const DEFAULT_PROTECTED_FILE_GLOBS = [
@@ -387,6 +388,7 @@ function scoreRisk({
   affectedFiles,
   integrity,
   memoryGuard,
+  learnedPolicy,
   blastRadius,
   taskScopeViolation,
   protectedSurface,
@@ -472,6 +474,43 @@ function scoreRisk({
       { mode: memoryGuard.mode }
     );
   }
+  if (learnedPolicy && learnedPolicy.enabled && learnedPolicy.prediction) {
+    const confidence = learnedPolicy.prediction.confidence || 0;
+    const label = learnedPolicy.prediction.label;
+    if (label === 'deny' && confidence >= 0.6) {
+      addDriver(
+        drivers,
+        'learned_policy_deny',
+        Math.min(0.26, 0.16 + (confidence * 0.12)),
+        'Learned intervention policy predicts a deny-worthy failure pattern.',
+        { confidence, label }
+      );
+    } else if (label === 'warn' && confidence >= 0.3) {
+      addDriver(
+        drivers,
+        'learned_policy_warn',
+        Math.min(0.18, 0.1 + (confidence * 0.08)),
+        'Learned intervention policy predicts elevated execution risk.',
+        { confidence, label }
+      );
+    } else if (label === 'verify' && confidence >= 0.3) {
+      addDriver(
+        drivers,
+        'learned_policy_verify',
+        Math.min(0.16, 0.08 + (confidence * 0.06)),
+        'Learned intervention policy predicts a verification gap before close-out.',
+        { confidence, label }
+      );
+    } else if (label === 'recall' && confidence >= 0.3) {
+      addDriver(
+        drivers,
+        'learned_policy_recall',
+        Math.min(0.14, 0.06 + (confidence * 0.05)),
+        'Learned intervention policy predicts prior lessons are needed before execution.',
+        { confidence, label }
+      );
+    }
+  }
 
   const score = Math.min(1, drivers.reduce((sum, driver) => sum + driver.weight, 0));
   return {
@@ -492,6 +531,7 @@ function scoreRisk({
 function buildEvidence({
   integrity,
   memoryGuard,
+  learnedPolicy,
   blastRadius,
   taskScopeViolation,
   protectedSurface,
@@ -499,6 +539,16 @@ function buildEvidence({
   const evidence = [];
   if (memoryGuard && memoryGuard.mode && memoryGuard.mode !== 'allow') {
     evidence.push(`Memory guard predicted ${memoryGuard.mode}: ${memoryGuard.reason}`);
+  }
+  if (learnedPolicy && learnedPolicy.enabled && learnedPolicy.prediction) {
+    const topTokens = Array.isArray(learnedPolicy.topTokens)
+      ? learnedPolicy.topTokens.map((entry) => entry.token).slice(0, 3)
+      : [];
+    evidence.push(
+      `Learned policy predicted ${learnedPolicy.prediction.label} (${Math.round((learnedPolicy.prediction.confidence || 0) * 100)}% confidence)`
+      + (topTokens.length ? ` from ${topTokens.join(', ')}` : '')
+      + '.'
+    );
   }
   if (taskScopeViolation) {
     evidence.push(
@@ -575,6 +625,7 @@ function buildRemediations({
   protectedSurface,
   blastRadius,
   memoryGuard,
+  learnedPolicy,
   executionSurface,
 }) {
   const remediations = [];
@@ -611,6 +662,24 @@ function buildRemediations({
       'The system already has evidence that this action pattern failed before.'
     );
   }
+  if (learnedPolicy && learnedPolicy.enabled && learnedPolicy.prediction) {
+    if (learnedPolicy.prediction.label === 'verify' && learnedPolicy.prediction.confidence >= 0.3) {
+      push(
+        'verify_before_closeout',
+        'Raise verification before claiming success',
+        'Run the relevant proof or test command and confirm the exact output before retrying or closing out.',
+        'The learned policy predicts this path tends to fail at verification time.'
+      );
+    }
+    if (learnedPolicy.prediction.label === 'recall' && learnedPolicy.prediction.confidence >= 0.3) {
+      push(
+        'retrieve_lessons',
+        'Inspect prior lessons',
+        'Call retrieve_lessons or search_lessons for this tool context before retrying.',
+        'The learned policy predicts this action needs prior lessons and corrective context.'
+      );
+    }
+  }
   if (blastRadius.fileCount >= 4 || blastRadius.surfaceCount >= 3) {
     push(
       'split_blast_radius',
@@ -636,6 +705,16 @@ function buildReasoning(report) {
     `Workflow sentinel risk ${report.band} (${report.riskScore}) for ${report.toolName}.`,
     `Blast radius: ${report.blastRadius.summary}.`,
   ];
+  if (report.decisionControl) {
+    lines.push(
+      `Decision control: ${report.decisionControl.decisionOwner} owns a ${report.decisionControl.reversibility} action via ${report.decisionControl.executionMode}.`
+    );
+  }
+  if (report.learnedPolicy && report.learnedPolicy.enabled && report.learnedPolicy.prediction) {
+    lines.push(
+      `Learned policy predicted ${report.learnedPolicy.prediction.label} (${report.learnedPolicy.prediction.confidence}).`
+    );
+  }
   if (report.executionSurface?.shouldSandbox) {
     lines.push(`Execution surface: ${report.executionSurface.summary}`);
   }
@@ -658,15 +737,106 @@ function getSentinelActionType(toolName) {
   return '';
 }
 
-function chooseDecision({ riskScore, integrity, memoryGuard, blastRadius, command }) {
+function classifyReversibility({ command, blastRadius, integrity, protectedSurface }) {
+  const text = String(command || '');
+  const blockers = integrity && Array.isArray(integrity.blockers) ? integrity.blockers : [];
+  const destructiveCommand = /\bgit\s+push\b.*(?:--force|-f)\b/i.test(text)
+    || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(text)
+    || /\brm\s+-rf\b/i.test(text)
+    || /\b(?:npm|yarn|pnpm)\s+publish\b/i.test(text)
+    || /\bgh\s+release\s+create\b/i.test(text)
+    || /\bgit\s+tag\b/i.test(text);
+  const releaseSensitive = blastRadius && Array.isArray(blastRadius.releaseSensitiveFiles)
+    ? blastRadius.releaseSensitiveFiles.length > 0
+    : false;
+  const unapprovedProtected = protectedSurface && Array.isArray(protectedSurface.unapprovedProtectedFiles)
+    ? protectedSurface.unapprovedProtectedFiles.length > 0
+    : false;
+  const hardBlockers = blockers.some((blocker) => /publish|merge|release|protected/i.test(String(blocker.code || '')));
+
+  if (destructiveCommand || releaseSensitive || unapprovedProtected || hardBlockers) {
+    return 'one_way_door';
+  }
+  if ((blastRadius && blastRadius.fileCount >= 4) || (blastRadius && blastRadius.surfaceCount >= 2)) {
+    return 'reviewable';
+  }
+  return 'two_way_door';
+}
+
+function buildDecisionControl({
+  decision,
+  risk,
+  command,
+  blastRadius,
+  integrity,
+  protectedSurface,
+}) {
+  const reversibility = classifyReversibility({
+    command,
+    blastRadius,
+    integrity,
+    protectedSurface,
+  });
+  const hasOperationalBlockers = Boolean(integrity && Array.isArray(integrity.blockers) && integrity.blockers.length > 0);
+  const requiresCheckpoint = decision === 'warn'
+    || (decision === 'allow' && (reversibility !== 'two_way_door' || hasOperationalBlockers));
+  const executionMode = decision === 'deny'
+    ? 'blocked'
+    : requiresCheckpoint
+      ? 'checkpoint_required'
+      : 'auto_execute';
+  const decisionOwner = executionMode === 'blocked'
+    ? 'human'
+    : executionMode === 'checkpoint_required'
+      ? reversibility === 'two_way_door' && !hasOperationalBlockers
+        ? 'shared'
+        : 'human'
+      : 'agent';
+
+  return {
+    executionMode,
+    decisionOwner,
+    reversibility,
+    requiresHumanApproval: executionMode === 'checkpoint_required' && decisionOwner !== 'agent',
+    recommendedAction: executionMode === 'blocked'
+      ? 'halt'
+      : executionMode === 'checkpoint_required'
+        ? 'review'
+        : 'proceed',
+    summary: executionMode === 'blocked'
+      ? 'Do not proceed until the remediation steps are completed.'
+      : executionMode === 'checkpoint_required'
+        ? 'Pause for explicit review before executing this action.'
+        : 'Safe to execute quickly with standard evidence capture.',
+  };
+}
+
+function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command }) {
   const hasOperationalBlockers = Boolean(integrity && Array.isArray(integrity.blockers) && integrity.blockers.length > 0);
   const destructiveBypass = /\bgit\s+push\b.*(?:--force|-f)\b/i.test(command) || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(command);
+  const learnedPrediction = learnedPolicy && learnedPolicy.enabled ? learnedPolicy.prediction : null;
+  const learnedHardStop = Boolean(
+    learnedPrediction
+      && learnedPrediction.label === 'deny'
+      && learnedPrediction.confidence >= 0.7
+  );
+  const learnedWarning = Boolean(
+    learnedPrediction
+      && ['warn', 'verify', 'deny'].includes(learnedPrediction.label)
+      && learnedPrediction.confidence >= 0.3
+  );
+  const learnedRecall = Boolean(
+    learnedPrediction
+      && learnedPrediction.label === 'recall'
+      && learnedPrediction.confidence >= 0.3
+  );
   const lowBlastRadius = blastRadius.fileCount <= 1
     && blastRadius.surfaceCount <= 1
     && blastRadius.releaseSensitiveFiles.length === 0
     && blastRadius.unapprovedProtectedFiles === 0;
   const lowRiskHandoff = /\bgit\s+push\b|\bgh\s+pr\s+(?:create|merge)\b/i.test(command)
     && !destructiveBypass
+    && !learnedHardStop
     && lowBlastRadius
     && !hasOperationalBlockers
     && memoryGuard
@@ -686,10 +856,10 @@ function chooseDecision({ riskScore, integrity, memoryGuard, blastRadius, comman
   if (lowRiskHandoff) {
     return 'allow';
   }
-  if (destructiveBypass || repeatedHighBlast || (hasOperationalBlockers && riskScore >= 0.72) || riskScore >= 0.86) {
+  if (destructiveBypass || learnedHardStop || repeatedHighBlast || (hasOperationalBlockers && riskScore >= 0.72) || riskScore >= 0.86) {
     return 'deny';
   }
-  if (riskScore >= 0.45) {
+  if (riskScore >= 0.45 || (learnedWarning && riskScore >= 0.3) || (learnedRecall && riskScore >= 0.34)) {
     return 'warn';
   }
   return 'allow';
@@ -732,6 +902,20 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     affectedFiles,
   }), options.feedbackOptions || {});
   const memoryGuard = normalizeMemoryGuardForSentinel(rawMemoryGuard, highRiskAction);
+  const learnedPolicy = getInterventionRecommendation({
+    toolName,
+    command: toolInput.command || '',
+    affectedFiles,
+    integrity,
+    memoryGuard,
+    riskBand: highRiskAction ? 'high' : 'low',
+    taskScopeViolation,
+    protectedSurface: protectedSurfaceForRisk,
+  }, {
+    feedbackDir: options.feedbackDir
+      || process.env.THUMBGATE_FEEDBACK_DIR
+      || (repoRoot ? path.join(repoRoot, '.thumbgate') : null),
+  });
   const blastRadius = buildBlastRadius({
     affectedFiles,
     integrity,
@@ -743,6 +927,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     affectedFiles,
     integrity,
     memoryGuard,
+    learnedPolicy,
     blastRadius,
     taskScopeViolation,
     protectedSurface: protectedSurfaceForRisk,
@@ -763,6 +948,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     riskScore: risk.score,
     integrity,
     memoryGuard,
+    learnedPolicy,
     blastRadius: {
       ...blastRadius,
       unapprovedProtectedFiles: protectedSurfaceForRisk.unapprovedProtectedFiles.length,
@@ -772,6 +958,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
   const evidence = buildEvidence({
     integrity,
     memoryGuard,
+    learnedPolicy,
     blastRadius,
     taskScopeViolation,
     protectedSurface: protectedSurfaceForRisk,
@@ -782,6 +969,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     protectedSurface: protectedSurfaceForRisk,
     blastRadius,
     memoryGuard,
+    learnedPolicy,
     executionSurface,
   });
   const summary = decision === 'allow'
@@ -790,7 +978,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
       ? 'Predicted workflow risk is elevated before execution.'
       : 'Predicted workflow failure before execution.';
   const report = {
-    sentinelVersion: 'workflow-sentinel-v1',
+    sentinelVersion: 'workflow-sentinel-v2',
     toolName,
     decision,
     riskScore: risk.score,
@@ -802,6 +990,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     remediations,
     executionSurface,
     memoryGuard,
+    learnedPolicy,
     taskScopeViolation,
     operationalIntegrity: {
       ok: integrity.ok,
@@ -813,11 +1002,23 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
       commandInfo: integrity.commandInfo,
     },
   };
+  report.decisionControl = buildDecisionControl({
+    decision,
+    risk,
+    command: toolInput.command || '',
+    blastRadius: {
+      ...blastRadius,
+      unapprovedProtectedFiles: protectedSurfaceForRisk.unapprovedProtectedFiles.length,
+    },
+    integrity,
+    protectedSurface: protectedSurfaceForRisk,
+  });
   report.reasoning = buildReasoning(report);
   return report;
 }
 
 module.exports = {
+  buildDecisionControl,
   DEFAULT_PROTECTED_FILE_GLOBS,
   buildBlastRadius,
   buildEvidence,

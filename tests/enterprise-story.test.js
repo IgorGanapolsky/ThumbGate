@@ -16,6 +16,9 @@ test('README keeps the enterprise story tied to control-plane language and proof
   assert.match(readme, /Workflow Sentinel/i);
   assert.match(readme, /Docker Sandboxes/i);
   assert.match(readme, /Verification Evidence/i);
+  assert.match(readme, /Release Confidence/i);
+  assert.match(readme, /Changeset/i);
+  assert.match(readme, /exact `main` merge commit/i);
 });
 
 test('public landing page positions ThumbGate as policy plus isolated execution', () => {
@@ -25,6 +28,8 @@ test('public landing page positions ThumbGate as policy plus isolated execution'
   assert.match(landing, /isolated execution/i);
   assert.match(landing, /Docker Sandboxes/i);
   assert.match(landing, /signed hosted sandbox dispatch/i);
+  assert.match(landing, /Changeset/i);
+  assert.match(landing, /exact main-branch merge commit/i);
 });
 
 test('docs landing page carries the enterprise story across buyer-facing copy', () => {
@@ -34,6 +39,8 @@ test('docs landing page carries the enterprise story across buyer-facing copy', 
   assert.match(docsLanding, /isolated execution/i);
   assert.match(docsLanding, /Docker Sandboxes/i);
   assert.match(docsLanding, /proof/i);
+  assert.match(docsLanding, /Release confidence/i);
+  assert.match(docsLanding, /Changesets/i);
 });
 
 test('commercial truth documents the isolated execution claim precisely', () => {
@@ -42,4 +49,15 @@ test('commercial truth documents the isolated execution claim precisely', () => 
   assert.match(truth, /Workflow Sentinel blast-radius scoring/i);
   assert.match(truth, /Docker Sandboxes routing guidance/i);
   assert.match(truth, /signed sandbox dispatch/i);
+  assert.match(truth, /Changesets/i);
+  assert.match(truth, /version-sync/i);
+});
+
+test('release confidence doc ties package publishes to proof and exact-merge verification', () => {
+  const releaseConfidence = read(path.join('docs', 'RELEASE_CONFIDENCE.md'));
+
+  assert.match(releaseConfidence, /Changesets/i);
+  assert.match(releaseConfidence, /SemVer/i);
+  assert.match(releaseConfidence, /Verification Evidence/i);
+  assert.match(releaseConfidence, /exact `main` merge commit/i);
 });

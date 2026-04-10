@@ -2,6 +2,8 @@
 
 ThumbGate uses Changesets for customer-visible release planning and auditable versioning.
 
+This is part of the release-confidence chain we can show to customers and investors when they ask how package publishes stay controlled.
+
 Rules:
 
 1. Any PR that changes release-relevant runtime or public surfaces must add a `.changeset/*.md` file.

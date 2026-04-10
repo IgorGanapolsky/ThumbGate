@@ -58,12 +58,12 @@ async function startServerWithBillingOverrides(overrides = {}) {
   return startServer({ port: 0 });
 }
 
-function postWebhook(port, body, signature = 't=1,v1=deadbeef') {
+function postWebhook(port, pathname, body, signature = 't=1,v1=deadbeef') {
   return new Promise((resolve, reject) => {
     const req = http.request({
       hostname: '127.0.0.1',
       port,
-      path: '/v1/billing/webhook',
+      path: pathname,
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -123,7 +123,7 @@ test('billing webhook returns 400 when Stripe verification fails after precheck'
     delete require.cache[serverModulePath];
   });
 
-  const response = await postWebhook(handle.port, '{"id":"evt_invalid"}');
+  const response = await postWebhook(handle.port, '/v1/billing/webhook', '{"id":"evt_invalid"}');
   assert.equal(response.status, 400);
   assert.match(response.body.detail, /Stripe SDK rejected payload/);
 });
@@ -141,8 +141,62 @@ test('billing webhook returns 200 for handled Stripe events', async (t) => {
     delete require.cache[serverModulePath];
   });
 
-  const response = await postWebhook(handle.port, '{"id":"evt_valid"}');
+  const response = await postWebhook(handle.port, '/v1/billing/webhook', '{"id":"evt_valid"}');
   assert.equal(response.status, 200);
   assert.equal(response.body.handled, true);
   assert.equal(response.body.action, 'provisioned_api_key');
+});
+
+test('legacy Stripe webhook returns 400 when signature verification fails', async (t) => {
+  const handle = await startServerWithBillingOverrides({
+    verifyWebhookSignature: () => false,
+  });
+
+  t.after(async () => {
+    await new Promise((resolve) => handle.server.close(resolve));
+    restoreEnv();
+    delete require.cache[billingModulePath];
+    delete require.cache[serverModulePath];
+  });
+
+  const response = await postWebhook(
+    handle.port,
+    '/webhook/stripe',
+    JSON.stringify({ id: 'evt_legacy_invalid', type: 'checkout.session.completed', data: { object: {} } }),
+  );
+  assert.equal(response.status, 400);
+  assert.match(response.body.detail, /could not be verified/i);
+});
+
+test('legacy Stripe webhook returns 200 for verified tracked events', async (t) => {
+  const handle = await startServerWithBillingOverrides({
+    verifyWebhookSignature: () => true,
+  });
+
+  t.after(async () => {
+    await new Promise((resolve) => handle.server.close(resolve));
+    restoreEnv();
+    delete require.cache[billingModulePath];
+    delete require.cache[serverModulePath];
+  });
+
+  const response = await postWebhook(
+    handle.port,
+    '/webhook/stripe',
+    JSON.stringify({
+      id: 'evt_legacy_valid',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          customer_email: 'buyer@example.com',
+          amount_total: 1900,
+          currency: 'usd',
+          subscription: 'sub_123',
+        },
+      },
+    }),
+  );
+  assert.equal(response.status, 200);
+  assert.equal(response.body.received, true);
+  assert.equal(response.body.event_type, 'checkout.session.completed');
 });

@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "harness": "deploy",
+  "description": "Specialized gates for deployment operations. Loaded when tool context matches deploy patterns (Railway, Docker, npm publish, git push to main).",
+  "gates": [
+    {
+      "id": "deploy-unverified-claim",
+      "layer": "Execution",
+      "pattern": "(?:deployed|live|shipped|pushed to prod)",
+      "toolNames": ["Bash"],
+      "action": "warn",
+      "severity": "critical",
+      "message": "Deployment claim detected. Run the verification gate first: curl -s $PROD_URL/health | grep version"
+    },
+    {
+      "id": "deploy-force-push-main",
+      "layer": "Execution",
+      "pattern": "git\\s+push\\s+.*--force(?!-with-lease)|git\\s+push\\s+--force(?!-with-lease).*main|git\\s+push\\s+--force(?!-with-lease).*master",
+      "toolNames": ["Bash"],
+      "action": "block",
+      "severity": "critical",
+      "message": "Force-push to a protected branch is blocked. Use --force-with-lease if you need to force-push a feature branch."
+    },
+    {
+      "id": "deploy-skip-ci",
+      "layer": "Execution",
+      "pattern": "--no-verify|--no-gpg-sign|-c\\s+commit\\.gpgsign=false",
+      "toolNames": ["Bash"],
+      "action": "block",
+      "severity": "critical",
+      "message": "Bypassing commit hooks or signing is blocked. Fix the underlying issue instead."
+    },
+    {
+      "id": "deploy-publish-without-test",
+      "layer": "Execution",
+      "pattern": "npm\\s+publish|yarn\\s+publish|pnpm\\s+publish",
+      "toolNames": ["Bash"],
+      "action": "warn",
+      "severity": "high",
+      "message": "Publishing to npm. Confirm tests pass (npm test) and version is synced (node scripts/sync-version.js --check) before proceeding."
+    },
+    {
+      "id": "deploy-version-drift-risk",
+      "layer": "Execution",
+      "pattern": "railway\\s+(deploy|up|run)|docker\\s+(push|build\\s+.*&&\\s*.*push)",
+      "toolNames": ["Bash"],
+      "action": "warn",
+      "severity": "medium",
+      "message": "Deploying to Railway/Docker. Verify version sync: node scripts/sync-version.js --check"
+    },
+    {
+      "id": "deploy-env-secret-exposure",
+      "layer": "Execution",
+      "pattern": "(?:ANTHROPIC_API_KEY|STRIPE_SECRET|JWT_SECRET|DATABASE_URL|RAILWAY_TOKEN)\\s*=",
+      "toolNames": ["Bash", "Edit", "Write"],
+      "action": "block",
+      "severity": "critical",
+      "message": "Secret value detected in command or file edit. Use environment variables or secret managers instead."
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pre-Action Gates for AI Coding Agents | ThumbGate Guide</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Pre-action gates stop the risky move before the agent executes it. ThumbGate uses thumbs-up/down feedback to decide what should be reinforced, warned, or blocked.">
+<meta name="keywords" content="pre-action gates, AI coding agent guardrails, ThumbGate, prevent agent mistakes, PreToolUse hook, feedback enforcement">
+<meta property="og:title" content="What Are Pre-Action Gates?">
+<meta property="og:description" content="Pre-action gates stop the risky move before the agent executes it. ThumbGate uses thumbs-up/down feedback to decide what should be reinforced, warned, or blocked.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/guides/pre-action-gates">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/guides/pre-action-gates">
+<link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Pre-Action Gates for AI Coding Agents",
+  "description": "Pre-action gates stop the risky move before the agent executes it. ThumbGate uses thumbs-up/down feedback to decide what should be reinforced, warned, or blocked.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-04-09",
+  "dateModified": "2026-04-09",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/guides/pre-action-gates",
+  "about": [
+    {"@type": "Thing", "name": "pre-action gates"},
+    {"@type": "Thing", "name": "AI coding agent safety"},
+    {"@type": "Thing", "name": "feedback enforcement"}
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How are pre-action gates different from prompt rules?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Prompt rules ask the model nicely. Pre-action gates intercept the tool call and block it before execution when the known-bad pattern matches."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can a thumbs up matter too?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. ThumbGate explicitly uses thumbs up to reinforce successful behavior so the system is not only punitive."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which AI coding agents support pre-action gates?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate pre-action gates work across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode via MCP PreToolUse hooks."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does Thompson Sampling improve gate accuracy?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Thompson Sampling scores gate rules based on accumulated thumbs-up and thumbs-down feedback, so high-risk patterns get strict enforcement while low-risk ones stay relaxed."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / <a href="/guides/pre-action-gates">Guides</a> / Pre-Action Gates</div>
+  <h1>What Are Pre-Action Gates?</h1>
+  <p style="color:var(--muted);">3 min read &middot; Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Pre-action gates stop the risky move before the agent executes it. ThumbGate uses thumbs-up/down feedback to decide what should be reinforced, warned, or blocked.</div>
+
+  <h2>Why this matters</h2>
+  <p>Most AI coding failures are not mysterious. They are repeated mistakes: force-pushes, destructive scripts, missed verification steps, or breaking architectural constraints.</p>
+  <p>A pre-action gate turns that failure pattern into a runtime checkpoint. The agent sees the stop before the bad action lands.</p>
+
+  <div class="callout callout-red">
+    <strong>Key insight:</strong> Prompt rules are advisory. Pre-action gates are enforcement. The gate runs at the hook layer, outside the agent's reasoning chain, so it cannot be overridden by context or chain-of-thought.
+  </div>
+
+  <h2>How ThumbGate makes the loop useful</h2>
+  <ul>
+    <li>Capture structured thumbs-up/down feedback.</li>
+    <li>Promote repeated failures into prevention rules.</li>
+    <li>Score and enforce the rules with Thompson Sampling and pre-action hooks.</li>
+    <li>Publish verification evidence so the system is auditable.</li>
+  </ul>
+
+  <h2>Install in 60 seconds</h2>
+  <pre><code>npx thumbgate init --agent claude-code</code></pre>
+  <p>This auto-detects your agent and configures the PreToolUse hook. Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.</p>
+
+  <h2>Best next step</h2>
+  <p>If you are exploring the category, start with a comparison page to see how ThumbGate differs from memory-only tooling, or dive into the product proof pack.</p>
+
+  <h2>Frequently Asked Questions</h2>
+  <h3>How are pre-action gates different from prompt rules?</h3>
+  <p>Prompt rules ask the model nicely. Pre-action gates intercept the tool call and block it before execution when the known-bad pattern matches.</p>
+
+  <h3>Can a thumbs up matter too?</h3>
+  <p>Yes. ThumbGate explicitly uses thumbs up to reinforce successful behavior so the system is not only punitive.</p>
+
+  <h3>Which AI coding agents support pre-action gates?</h3>
+  <p>ThumbGate pre-action gates work across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode via MCP PreToolUse hooks.</p>
+
+  <h3>How does Thompson Sampling improve gate accuracy?</h3>
+  <p>Thompson Sampling scores gate rules based on accumulated thumbs-up and thumbs-down feedback, so high-risk patterns get strict enforcement while low-risk ones stay relaxed.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Founding Member Deal &mdash; $49</h2>
+    <p>Lock in lifetime Pro access at the founding price. One command to start.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+    <p style="margin-top:8px;"><a href="/pro">Learn about ThumbGate Pro &rarr;</a></p>
+  </div>
+
+  <div class="related">
+    <h3>Related</h3>
+    <a href="/compare/speclock">ThumbGate vs SpecLock &rarr;</a>
+    <a href="/guides/claude-code-prevent-repeated-mistakes">Claude Code Feedback Memory &rarr;</a>
+    <a href="/guides/stop-repeated-ai-agent-mistakes">Stop Repeated AI Agent Mistakes &rarr;</a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>

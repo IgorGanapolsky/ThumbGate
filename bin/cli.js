@@ -12,7 +12,7 @@
  *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
  *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
  *   npx thumbgate cfo           # local operational billing summary
- *   npx thumbgate pro           # upgrade to Context Gateway
+ *   npx thumbgate pro           # solo dashboard + exports side lane
  */
 
 'use strict';
@@ -49,7 +49,9 @@ function upgradeNudge() {
     if (isProTier()) return;
   } catch (_) { return; }
   process.stderr.write(
-    `\n  Unlock Pro: unlimited gates, DPO export, searchable dashboard — ${PRO_PRICE_LABEL}\n` +
+    '\n  Team rollout: start with the Workflow Hardening Sprint\n' +
+    '  https://thumbgate-production.up.railway.app/#workflow-sprint-intake\n' +
+    `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
     `  ${PRO_CHECKOUT_URL}\n\n`
   );
 }
@@ -582,11 +584,11 @@ function init() {
   trackEvent('cli_init', { command: 'init' });
   proNudge();
   console.log('');
-  console.log('  ┌─────────────────────────────────────────────────────┐');
-  console.log('  │  Unlock unlimited captures, searches & dashboard:   │');
-  console.log('  │  https://thumbgate-production.up.railway.app/pro    │');
-  console.log('  │  Pro starts at $19/mo — 7-day free trial included   │');
-  console.log('  └─────────────────────────────────────────────────────┘');
+  console.log('  ┌──────────────────────────────────────────────────────────┐');
+  console.log('  │  Teams: shared enforcement, CI gates, audit trails      │');
+  console.log('  │  One correction protects every agent on your team.      │');
+  console.log('  │  https://thumbgate-production.up.railway.app/pro        │');
+  console.log('  └──────────────────────────────────────────────────────────┘');
 
   try {
     const { appendFunnelEvent } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
@@ -696,8 +698,9 @@ function stats() {
     console.log(`  Repeated Failures detected: ${data.totalNegative}`);
     console.log(`  Estimated Operational Loss: $${revenueAtRisk}`);
     console.log('  Action Required: Run "npx thumbgate rules" to generate guardrails.');
-    console.log('  Strategic Recommendation: Upgrade to Context Gateway to sync these rules across your team.');
-    console.log('  Run: npx thumbgate pro');
+    console.log('  Strategic Recommendation: if this is a shared workflow problem, start the Workflow Hardening Sprint.');
+    console.log('  Team intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake');
+    console.log('  Solo side lane: npx thumbgate pro');
   } else {
     console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');
   }
@@ -804,11 +807,11 @@ function pro() {
     const truthUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
     console.log('\nThumbGate Pro — Local Dashboard');
     console.log('─'.repeat(50));
-    console.log('Self-serve offer today: Pro ($19/mo or $149/yr).');
+    console.log('Self-serve side lane today: Pro ($19/mo or $149/yr).');
     console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
     console.log('\nWhat is available:');
     console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
-    console.log('  - Optional hosted API key: shared lesson DB for teams and multi-agent workflows');
+    console.log('  - Team rollout path: shared hosted lessons, org visibility, and workflow proof');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');
     console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
@@ -1233,6 +1236,10 @@ function cacheUpdate() {
 
 function statuslineRender() {
   syncActiveProjectContext();
+  try {
+    const { syncClaudeHistoryFeedback } = require(path.join(PKG_ROOT, 'scripts', 'claude-feedback-sync'));
+    syncClaudeHistoryFeedback();
+  } catch (_) { /* best-effort fallback sync */ }
   const payload = readStdinText();
   const output = execFileSync('bash', [path.join(PKG_ROOT, 'scripts', 'statusline.sh')], {
     encoding: 'utf8',
@@ -1284,9 +1291,27 @@ function hookAutoCapture() {
 
 function sessionStart() {
   syncActiveProjectContext();
+  try {
+    const { syncClaudeHistoryFeedback } = require(path.join(PKG_ROOT, 'scripts', 'claude-feedback-sync'));
+    syncClaudeHistoryFeedback();
+  } catch (_) { /* best-effort fallback sync */ }
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { refreshStatuslineCache } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
   refreshStatuslineCache(analyzeFeedback());
+
+  // Surface gate-program.md active rules so the agent starts aware of what is blocked.
+  try {
+    const { readGateProgram, extractBlockPatterns } = require(path.join(PKG_ROOT, 'scripts', 'meta-agent-loop'));
+    const gateProgram = readGateProgram();
+    if (gateProgram) {
+      const blockPatterns = extractBlockPatterns(gateProgram);
+      if (blockPatterns.length > 0) {
+        process.stderr.write('\n[ThumbGate] Active hard-block rules from gate-program.md:\n');
+        blockPatterns.forEach((p, i) => process.stderr.write(`  ${i + 1}. ${p}\n`));
+        process.stderr.write('\n');
+      }
+    }
+  } catch (_) { /* gate-program awareness is best-effort */ }
 }
 
 function installMcp() {
@@ -1365,6 +1390,9 @@ function help() {
   console.log('  rules                 Generate prevention rules from repeated failures');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Pre-Action Gates');
   console.log('  force-gate <PATTERN>  Immediately create a blocking gate from a pattern');
+  console.log('  meta-agent            Run meta-agent loop: generate + evaluate + promote prevention rules');
+  console.log('    --dry-run           Preview rules without writing');
+  console.log('    --status            Show last run summary');
   console.log('  self-heal             Run self-healing check and auto-fix');
   console.log('  activate <KEY>        Activate a Pro license key (from Stripe checkout)');
   console.log('  pro                   Show Pro plan ($19/mo) + hosted pilot info');
@@ -1567,6 +1595,32 @@ switch (COMMAND) {
     const result = forcePromote(context, 'block');
     console.log(`✅ Forced block gate created: ${result.gateId}`);
     console.log(`Total auto-promoted gates: ${result.totalGates}`);
+    break;
+  }
+  case 'meta-agent': {
+    const metaArgs = parseArgs(process.argv.slice(3));
+    if (metaArgs.status) {
+      const { getMetaAgentStatus } = require(path.join(PKG_ROOT, 'scripts', 'meta-agent-loop'));
+      const status = getMetaAgentStatus();
+      if (!status) {
+        console.log('No meta-agent runs recorded yet. Run: npx thumbgate meta-agent');
+      } else {
+        console.log(JSON.stringify(status, null, 2));
+      }
+    } else {
+      const { runMetaAgentLoop } = require(path.join(PKG_ROOT, 'scripts', 'meta-agent-loop'));
+      runMetaAgentLoop({ dryRun: Boolean(metaArgs['dry-run']), verbose: true })
+        .then((manifest) => {
+          console.log(`\nMeta-agent run complete.`);
+          console.log(`  Promoted : ${manifest.promotedCount} rule(s)`);
+          console.log(`  Reverted : ${manifest.revertedCount} candidate(s)`);
+          if (manifest.dryRun) console.log('  [DRY RUN] No rules written.');
+        })
+        .catch((err) => {
+          console.error('Meta-agent failed:', err.message);
+          process.exit(1);
+        });
+    }
     break;
   }
   case 'self-heal':

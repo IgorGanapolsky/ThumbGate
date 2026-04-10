@@ -168,3 +168,68 @@ test('scoreRelevance boosts negative signal lessons', () => {
   const posScore = scoreRelevance(positiveMem, 'Bash', 'run command');
   assert.ok(negScore > posScore, `Negative signal should boost score: ${negScore} vs ${posScore}`);
 });
+
+test('textBigrams extracts character bigrams', () => {
+  const { textBigrams } = require('../scripts/lesson-retrieval');
+  const result = textBigrams('hello');
+  assert.ok(result instanceof Set);
+  assert.ok(result.has('he'));
+  assert.ok(result.has('el'));
+  assert.ok(result.has('ll'));
+  assert.ok(result.has('lo'));
+});
+
+test('bigramJaccard returns 1 for identical text', () => {
+  const { textBigrams, bigramJaccard } = require('../scripts/lesson-retrieval');
+  const a = textBigrams('force push to main');
+  const b = textBigrams('force push to main');
+  assert.strictEqual(bigramJaccard(a, b), 1);
+});
+
+test('bigramJaccard returns high score for paraphrases', () => {
+  const { textBigrams, bigramJaccard } = require('../scripts/lesson-retrieval');
+  const a = textBigrams('force pushed to main branch');
+  const b = textBigrams('force push to the main branch');
+  const score = bigramJaccard(a, b);
+  assert.ok(score > 0.6, `Paraphrases should have high bigram overlap: ${score}`);
+});
+
+test('bigramJaccard returns low score for unrelated text', () => {
+  const { textBigrams, bigramJaccard } = require('../scripts/lesson-retrieval');
+  const a = textBigrams('force push to main');
+  const b = textBigrams('testing authentication module');
+  const score = bigramJaccard(a, b);
+  assert.ok(score < 0.3, `Unrelated text should have low overlap: ${score}`);
+});
+
+test('buildActionSignature creates a complete signature', () => {
+  const { buildActionSignature } = require('../scripts/lesson-retrieval');
+  const sig = buildActionSignature('Bash', 'git push to src/features/auth.ts');
+  assert.strictEqual(sig.toolLower, 'bash');
+  assert.ok(sig.paths.length > 0, 'Should extract file paths');
+  assert.ok(sig.tokens.length > 0, 'Should extract tokens');
+  assert.ok(sig.ngramSet.size > 0, 'Should compute bigrams');
+});
+
+test('scoreRelevance boosts fuzzy matches via n-gram similarity', () => {
+  const { scoreRelevance } = require('../scripts/lesson-retrieval');
+  const now = new Date().toISOString();
+
+  const similarMem = {
+    title: 'deployment issue',
+    content: 'force pushed to the main branch causing data loss',
+    tags: ['negative'],
+    timestamp: now,
+  };
+  const unrelatedMem = {
+    title: 'testing note',
+    content: 'authentication module needs integration tests',
+    tags: ['negative'],
+    timestamp: now,
+  };
+
+  const similarScore = scoreRelevance(similarMem, 'Bash', 'force push to main branch');
+  const unrelatedScore = scoreRelevance(unrelatedMem, 'Bash', 'force push to main branch');
+  assert.ok(similarScore > unrelatedScore,
+    `Fuzzy match should boost similar content: ${similarScore} vs ${unrelatedScore}`);
+});
