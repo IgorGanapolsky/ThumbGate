@@ -1300,7 +1300,7 @@ Requirements verified:
 
 Scope:
 
-- Replaced stale `$5/mo` and `$10/mo` self-serve subscription language on live-facing surfaces with the actual public offer: Pro (`$19/mo`).
+- Replaced stale low-dollar self-serve subscription language on live-facing surfaces with the actual public offer: Pro (`$19/mo`).
 - Removed unsupported scarcity and adoption framing from CLI and landing-page copy.
 - Added `docs/COMMERCIAL_TRUTH.md` as the source of truth for pricing, traction, and proof claims.
 
@@ -1366,7 +1366,7 @@ Status:
 Scope:
 
 - Version sync across `package.json`, `mcpize.yaml`, and `server.json` to `v0.7.1`.
-- Historical pricing experiment: tested a "Founding Member $5/mo" offer and urgency hooks before the current commercial-truth correction.
+- Historical pricing experiment: tested a low-dollar founder offer and urgency hooks before the current commercial-truth correction.
 - Discovery optimization: Added high-ROI GitHub topics and updated `SKILL.md` auto-indexing keywords.
 - Launch content package: Created `docs/marketing/LAUNCH_CONTENT.md` with Reddit, HN, and Discord assets.
 - CLI `pro` command was, at that time, updated to reflect the same historical pricing experiment.

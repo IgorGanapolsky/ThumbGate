@@ -27,13 +27,44 @@ const {
 const ROOT = path.join(__dirname, '..');
 const PRICING_SURFACE_ROOTS = [
   'README.md',
+  'SKILL.md',
   'bin',
   'docs',
   'public',
   '.agents/skills/thumbgate/SKILL.md',
+  '.claude/skills/thumbgate/SKILL.md',
 ];
 const PRICING_SURFACE_EXTENSIONS = new Set(['.html', '.js', '.json', '.md', '.txt']);
-const LEGACY_TEAM_PRICE_PATTERN = /\$12\s*\/\s*seat\s*\/\s*mo|\$12\/seat|\bTEAM \$12\b|"price":\s*"12"/i;
+const LEGACY_THUMBGATE_PRICING_PATTERNS = [
+  {
+    label: 'legacy $12 Team seat price',
+    pattern: /\$12\s*\/\s*seat\s*\/\s*mo|\$12\/seat|\bTEAM \$12\b|"price":\s*"12"/i,
+  },
+  {
+    label: 'retired founder $5 pricing',
+    pattern: /(?:Founding Member|Founding|founder)[^\n]{0,80}\$5\/mo|\$5\/mo[^\n]{0,80}(?:Founding Member|Founding|founder)|Price:\s*\$5\/mo recurring/i,
+  },
+  {
+    label: 'retired $10 Pro pricing',
+    pattern: /(?:\*\*Pro\*\*|\bPro\b|price reverts|paying users)[^\n]{0,80}\$10\/mo|\$10\/mo[^\n]{0,80}(?:\*\*Pro\*\*|\bPro\b|price reverts|paying users)/i,
+  },
+  {
+    label: 'retired $29 Team pricing',
+    pattern: /(?:\*\*Team\*\*|Team)[^\n]{0,80}\$29\/mo|\$29\/mo[^\n]{0,80}(?:\*\*Team\*\*|Team)/i,
+  },
+  {
+    label: 'retired $19 starter-pack positioning',
+    pattern: /Mistake-Free Starter Pack|Mistake-Free Starter Pack[^\n]{0,80}\$19\/mo|\$19\/mo[^\n]{0,80}subscriptions/i,
+  },
+  {
+    label: 'retired $49 founder lifetime pricing',
+    pattern: /(?:Founding Member|Founder|Founding Member Deal)[^\n]{0,100}\$49|\$49[^\n]{0,100}(?:Pro forever|Founding Member|Founder)/i,
+  },
+  {
+    label: 'retired founder-license positioning',
+    pattern: /founder[- ]license/i,
+  },
+];
 
 function read(rel) {
   const full = path.join(ROOT, rel);
@@ -95,9 +126,15 @@ async function main() {
   const teamSeatPrice = `$${TEAM_MONTHLY_PRICE_DOLLARS}/seat/mo`;
   const teamSeatPricePattern = new RegExp(`\\$${TEAM_MONTHLY_PRICE_DOLLARS}/seat/mo`, 'i');
   const pricingSurfaceFiles = PRICING_SURFACE_ROOTS.flatMap(listTextFiles);
-  const legacyTeamPricingHits = pricingSurfaceFiles.filter((rel) => (
-    LEGACY_TEAM_PRICE_PATTERN.test(read(rel) || '')
-  ));
+  const legacyPricingHits = [];
+  for (const rel of pricingSurfaceFiles) {
+    const text = read(rel) || '';
+    for (const { label, pattern } of LEGACY_THUMBGATE_PRICING_PATTERNS) {
+      if (pattern.test(text)) {
+        legacyPricingHits.push(`${rel} (${label})`);
+      }
+    }
+  }
 
   check(
     landingHtml.includes(`v${version}`),
@@ -190,8 +227,8 @@ async function main() {
     'scripts/commercial-offer.js Team label must match the canonical Team seat price'
   );
   check(
-    legacyTeamPricingHits.length === 0,
-    `Legacy $12 Team pricing found in public pricing surfaces: ${legacyTeamPricingHits.join(', ')}`
+    legacyPricingHits.length === 0,
+    `Legacy ThumbGate pricing found in public pricing surfaces: ${legacyPricingHits.join(', ')}`
   );
   check(
     teamSeatPricePattern.test(guideHtml),
