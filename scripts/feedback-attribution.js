@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { readJsonl } = require('./fs-utils');
 
 function getAttributionPaths(options = {}) {
   const feedbackDir = resolveFeedbackDir({
@@ -29,22 +30,6 @@ const STOPWORDS = new Set([
   'their', 'them', 'then', 'there', 'these', 'they', 'this', 'under', 'until', 'very', 'what', 'when',
   'where', 'which', 'while', 'with', 'without', 'would', 'thumbs', 'down', 'up', 'please', 'avoid',
 ]);
-
-function readJsonl(filePath, maxLines = 500) {
-  if (!filePath || !fs.existsSync(filePath)) return [];
-  const lines = fs.readFileSync(filePath, 'utf8').split('\n');
-  const out = [];
-  for (let i = lines.length - 1; i >= 0 && out.length < maxLines; i -= 1) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    try {
-      out.push(JSON.parse(line));
-    } catch {
-      // ignore malformed jsonl lines
-    }
-  }
-  return out.reverse();
-}
 
 function appendJsonl(filePath, obj) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });

@@ -2,16 +2,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ensureDir } = require('./fs-utils');
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function readJSONL(filePath) {
   if (!fs.existsSync(filePath)) return [];

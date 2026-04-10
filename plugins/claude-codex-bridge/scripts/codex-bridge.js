@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { ensureDir } = require('../../../scripts/fs-utils');
 
 function getPluginRoot() {
   return process.env.CLAUDE_PLUGIN_ROOT || path.resolve(__dirname, '..');
@@ -20,9 +21,6 @@ function getCodexBin() {
   return process.env.THUMBGATE_CODEX_BIN || 'codex';
 }
 
-function ensureDir(dirPath) {
-  fs.mkdirSync(dirPath, { recursive: true });
-}
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));

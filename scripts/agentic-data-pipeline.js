@@ -18,6 +18,7 @@ const {
 } = require('./analytics-window');
 const { appendWorkflowRun } = require('./workflow-runs');
 const { buildPredictiveInsights } = require('./predictive-insights');
+const { ensureDir } = require('./fs-utils');
 
 const PIPELINE_DIRNAME = 'agentic-data-pipeline';
 const DEFAULT_JOB_ID = 'agentic-data-pipeline';
@@ -32,9 +33,6 @@ function normalizeText(value) {
   return text || null;
 }
 
-function ensureDir(dirPath) {
-  fs.mkdirSync(dirPath, { recursive: true });
-}
 
 function readJson(filePath) {
   try {

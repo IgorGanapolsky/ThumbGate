@@ -5,7 +5,14 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { ensureDir, readJsonl, appendJsonl, writeJson } = require('../scripts/fs-utils');
+const {
+  ensureDir,
+  ensureParentDir,
+  readJsonl,
+  readJsonlTail,
+  appendJsonl,
+  writeJson,
+} = require('../scripts/fs-utils');
 
 describe('fs-utils', () => {
   describe('ensureDir', () => {
@@ -21,6 +28,16 @@ describe('fs-utils', () => {
       const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fsutils-'));
       ensureDir(tmp);
       assert.ok(fs.existsSync(tmp));
+      fs.rmSync(tmp, { recursive: true, force: true });
+    });
+  });
+
+  describe('ensureParentDir', () => {
+    it('creates the parent directory for a file path', () => {
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fsutils-'));
+      const targetFile = path.join(tmp, 'parent', 'child', 'data.jsonl');
+      ensureParentDir(targetFile);
+      assert.ok(fs.existsSync(path.dirname(targetFile)));
       fs.rmSync(tmp, { recursive: true, force: true });
     });
   });
@@ -63,6 +80,22 @@ describe('fs-utils', () => {
       assert.strictEqual(result.length, 2);
       assert.strictEqual(result[0].c, 3);
       assert.strictEqual(result[1].b, 2);
+      fs.unlinkSync(tmp);
+    });
+
+    it('supports numeric max lines as a chronological tail read', () => {
+      const tmp = path.join(os.tmpdir(), 'fsutils-tail-number.jsonl');
+      fs.writeFileSync(tmp, '{"a":1}\n{"b":2}\n{"c":3}\n');
+      const result = readJsonl(tmp, 2);
+      assert.deepStrictEqual(result.map((row) => Object.keys(row)[0]), ['b', 'c']);
+      fs.unlinkSync(tmp);
+    });
+
+    it('supports explicit chronological tail reads', () => {
+      const tmp = path.join(os.tmpdir(), 'fsutils-tail.jsonl');
+      fs.writeFileSync(tmp, '{"a":1}\n{"b":2}\n{"c":3}\n');
+      const result = readJsonlTail(tmp, 2);
+      assert.deepStrictEqual(result.map((row) => Object.keys(row)[0]), ['b', 'c']);
       fs.unlinkSync(tmp);
     });
   });
