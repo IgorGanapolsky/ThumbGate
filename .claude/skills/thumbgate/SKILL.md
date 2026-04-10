@@ -105,15 +105,17 @@ When the MCP server is running, these tools are available to your agent:
 
 ## Pro Features
 
-Pro users ($19/mo, founder license) unlock:
+Pro users ($19/mo or $149/yr) unlock:
 
 - **Visual gate debugger** — see every blocked action and the gate that fired
 - **Multi-hop recall** — chain related lessons across hops for deeper context
 - **Synthetic DPO augmentation** — expand real feedback into larger training datasets
-- **Shared team lesson DB** — one dev's thumbs-down protects every agent on the team
 - **Gate wiring support** — help enforcing your riskiest flows in the first week
 
-Upgrade: https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05
+Team rollout ($99/seat/mo, 3-seat minimum after intake) adds the shared hosted lesson DB,
+org dashboard, approval boundaries, and proof-backed workflow hardening sprint.
+
+Upgrade: https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06
 
 ## Detailed Reference
 
