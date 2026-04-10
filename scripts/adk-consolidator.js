@@ -23,11 +23,6 @@ const { validateApiKey } = require('./billing');
 // Keep track of the last processed ID to avoid re-consolidating the exact same logs
 const STATE_FILE = process.env.ADK_STATE_FILE || path.join(PROJECT_ROOT, '.thumbgate', 'adk-state.json');
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function loadState() {
   if (fs.existsSync(STATE_FILE)) {
@@ -46,6 +41,7 @@ function saveState(state) {
 }
 
 const { createRuleProposal, createReasoningTrace } = require('./a2ui-engine');
+const { ensureDir } = require('./fs-utils');
 
 function buildFakeConsolidation(anchorLogs, newLogs) {
   const combined = [...anchorLogs, ...newLogs].filter(Boolean);

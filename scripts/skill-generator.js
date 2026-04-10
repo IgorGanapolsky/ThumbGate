@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { ensureDir } = require('./fs-utils');
 
 const NEG = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
 const POS = new Set(['positive', 'positive_strong', 'up', 'thumbs_up']);
@@ -38,11 +39,6 @@ function discoverFeedbackDir() {
  * Ensure a directory exists, creating it recursively if needed.
  * @param {string} dirPath
  */
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 /**
  * Append a JSON record as a single line to a JSONL file.

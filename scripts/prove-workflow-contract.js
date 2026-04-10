@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
+const { ensureDir } = require('./fs-utils');
 const {
   runWorkflowContractValidation,
 } = require('./validate-workflow-contract');
@@ -8,11 +9,6 @@ const {
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_PROOF_DIR = path.join(PROJECT_ROOT, 'proof', 'workflow-contract');
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function toMarkdown(report) {
   const lines = [
