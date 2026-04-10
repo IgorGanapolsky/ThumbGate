@@ -145,8 +145,8 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the current Pro offer'
   );
   check(
-    /shared lessons and org visibility/i.test(githubAbout.description),
-    'config/github-about.json description must mention shared lessons and org visibility'
+    /shared lessons and org visibility/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention shared lessons and org visibility'
   );
   check(
     /\$19\/mo or \$149\/yr/i.test(readmeMd),
@@ -190,11 +190,11 @@ async function main() {
   );
 
   check(
-    landingHtml.includes('👍'),
+    landingHtml.includes('\ud83d\udc4d'),
     'public/index.html must visibly include the thumbs-up icon'
   );
   check(
-    landingHtml.includes('👎'),
+    landingHtml.includes('\ud83d\udc4e'),
     'public/index.html must visibly include the thumbs-down icon'
   );
   check(
@@ -246,35 +246,43 @@ async function main() {
     'public/index.html must explain the thumbs-down feedback path'
   );
   check(
-    githubAbout.description.includes('👍'),
-    'config/github-about.json description must include the thumbs-up icon'
+    githubAbout.metaDescription.includes('\ud83d\udc4d'),
+    'config/github-about.json metaDescription must include the thumbs-up icon'
   );
   check(
-    githubAbout.description.includes('👎'),
-    'config/github-about.json description must include the thumbs-down icon'
+    githubAbout.metaDescription.includes('\ud83d\udc4e'),
+    'config/github-about.json metaDescription must include the thumbs-down icon'
   );
   check(
-    /thumbs[\s-]?up/i.test(githubAbout.description),
-    'config/github-about.json description must mention thumbs-up feedback'
+    /thumbs[\s-]?up/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention thumbs-up feedback'
   );
   check(
-    /thumbs[\s-]?down/i.test(githubAbout.description),
-    'config/github-about.json description must mention thumbs-down feedback'
+    /thumbs[\s-]?down/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention thumbs-down feedback'
   );
   check(
-    /history-aware lessons/i.test(githubAbout.description),
-    'config/github-about.json description must mention history-aware lessons'
+    /history-aware lessons/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention history-aware lessons'
+  );
+  check(
+    /agent governance/i.test(githubAbout.githubDescription),
+    'config/github-about.json githubDescription must mention agent governance'
+  );
+  check(
+    /pre-action gates|shared lessons|team safeguards/i.test(githubAbout.githubDescription),
+    'config/github-about.json githubDescription must preserve the GitHub repo positioning'
   );
   check(
     productHuntKit.includes(PRODUCTHUNT_URL),
     'docs/marketing/product-hunt-launch.md must include the live Product Hunt URL'
   );
   check(
-    /thumbs[\s-]?up|👍/i.test(productHuntKit),
+    /thumbs[\s-]?up|\ud83d\udc4d/i.test(productHuntKit),
     'docs/marketing/product-hunt-launch.md must mention the thumbs-up path'
   );
   check(
-    /thumbs[\s-]?down|👎/i.test(productHuntKit),
+    /thumbs[\s-]?down|\ud83d\udc4e/i.test(productHuntKit),
     'docs/marketing/product-hunt-launch.md must mention the thumbs-down path'
   );
   check(
@@ -306,20 +314,20 @@ async function main() {
   }
 
   if (errors.length > 0) {
-    console.error(`\n❌ Congruence check FAILED — ${errors.length} issue(s):\n`);
+    console.error(`\n\u274c Congruence check FAILED \u2014 ${errors.length} issue(s):\n`);
     for (const error of errors) {
-      console.error(`  • ${error}`);
+      console.error(`  \u2022 ${error}`);
     }
     console.error('');
     process.exit(1);
   }
 
   console.log(
-    `✅ Congruence check passed — version v${version}, brand "ThumbGate", ${techTerms.length} tech terms verified across repo surfaces, GitHub About source-of-truth verified${checkLiveGitHubAbout ? ', and live GitHub metadata verified' : ''}.`
+    `\u2705 Congruence check passed \u2014 version v${version}, brand "ThumbGate", ${techTerms.length} tech terms verified across repo surfaces, GitHub About source-of-truth verified${checkLiveGitHubAbout ? ', and live GitHub metadata verified' : ''}.`
   );
 }
 
 main().catch((error) => {
-  console.error(`\n❌ Congruence check FAILED — ${error.message}\n`);
+  console.error(`\n\u274c Congruence check FAILED \u2014 ${error.message}\n`);
   process.exit(1);
 });
