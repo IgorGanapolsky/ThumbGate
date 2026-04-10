@@ -3,6 +3,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { readJsonl } = require('../fs-utils');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_REPLY_STATE_PATH = path.join(REPO_ROOT, '.thumbgate', 'reply-monitor-state.json');
@@ -57,24 +58,6 @@ function readJson(filePath, fallback) {
   } catch {
     return fallback;
   }
-}
-
-function readJsonl(filePath) {
-  if (!fs.existsSync(filePath)) {
-    return [];
-  }
-  return fs.readFileSync(filePath, 'utf8')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      try {
-        return JSON.parse(line);
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean);
 }
 
 function formatDateInTimezone(date, timezone = DEFAULT_TIMEZONE) {

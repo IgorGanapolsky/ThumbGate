@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { ensureDir, readJsonl } = require('./fs-utils');
 const {
   retrieveHierarchicalDocuments,
   shouldUseHierarchicalRetrieval,
@@ -99,11 +100,6 @@ const PACK_TEMPLATES = {
   },
 };
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function ensureContextFs() {
   Object.values(NAMESPACES).forEach((subPath) => {
@@ -138,22 +134,6 @@ function writeJson(filePath, payload) {
 function appendJsonl(filePath, payload) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, `${JSON.stringify(payload)}\n`);
-}
-
-function readJsonl(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const raw = fs.readFileSync(filePath, 'utf-8').trim();
-  if (!raw) return [];
-  return raw
-    .split('\n')
-    .map((line) => {
-      try {
-        return JSON.parse(line);
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean);
 }
 
 function listJsonFiles(dirPath) {

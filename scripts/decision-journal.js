@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { sanitizeToolInput } = require('./audit-trail');
+const { ensureDir } = require('./fs-utils');
 
 const DECISION_LOG_FILENAME = 'decision-journal.jsonl';
 const DEFAULT_DAY_COUNT = 14;
@@ -16,11 +17,6 @@ function getDecisionLogPath(feedbackDir) {
   return path.join(resolveFeedbackDir({ feedbackDir }), DECISION_LOG_FILENAME);
 }
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function buildActionId(prefix = 'decision') {
   return `${prefix}_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;

@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { ensureDir } = require('./fs-utils');
 
 const DEFAULT_SETTINGS = Object.freeze({
   half_life_days: 7,
@@ -12,11 +13,6 @@ const DEFAULT_SETTINGS = Object.freeze({
   dpo_beta: 0.1,
 });
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function appendJSONL(filePath, record) {
   ensureDir(path.dirname(filePath));

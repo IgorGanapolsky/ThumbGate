@@ -17,6 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { readJsonl } = require('./fs-utils');
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -62,38 +63,11 @@ const POS = new Set([
   'success', 'pass', 'passed', 'great', 'excellent', 'perfect', 'works',
 ]);
 
+const HYBRID_JSONL_READ_LIMIT = 400;
+
 // ---------------------------------------------------------------------------
 // Low-level helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Read last maxLines of a JSONL file in reverse, then re-reverse so oldest-first.
- */
-function readJsonl(filePath, maxLines) {
-  const limit = maxLines !== undefined ? maxLines : 400;
-  if (!fs.existsSync(filePath)) return [];
-  let raw;
-  try {
-    raw = fs.readFileSync(filePath, 'utf8').trimEnd();
-  } catch (_) {
-    return [];
-  }
-  if (!raw) return [];
-  const lines = raw.split('\n');
-  const slice = lines.slice(-limit);
-  const parsed = [];
-  for (let i = slice.length - 1; i >= 0; i--) {
-    const line = slice[i].trim();
-    if (!line) continue;
-    try {
-      parsed.push(JSON.parse(line));
-    } catch (_) {
-      // skip malformed
-    }
-  }
-  parsed.reverse(); // back to chronological order
-  return parsed;
-}
 
 /**
  * Normalize text: strip /Users/ paths, port numbers, lowercase.
@@ -208,10 +182,10 @@ function buildHybridState(opts) {
   const pendingSyncPath = o.pendingSyncPath || process.env.THUMBGATE_PENDING_SYNC || paths.pendingSync;
   const attributedFeedbackPath = o.attributedFeedbackPath || process.env.THUMBGATE_ATTRIBUTED_FEEDBACK || paths.attributedFeedback;
 
-  const feedbackEntries = readJsonl(feedbackLogPath);
-  const inboxEntries = readJsonl(inboxPath);
-  const pendingSyncEntries = readJsonl(pendingSyncPath);
-  const attributedEntries = readJsonl(attributedFeedbackPath);
+  const feedbackEntries = readJsonl(feedbackLogPath, HYBRID_JSONL_READ_LIMIT);
+  const inboxEntries = readJsonl(inboxPath, HYBRID_JSONL_READ_LIMIT);
+  const pendingSyncEntries = readJsonl(pendingSyncPath, HYBRID_JSONL_READ_LIMIT);
+  const attributedEntries = readJsonl(attributedFeedbackPath, HYBRID_JSONL_READ_LIMIT);
 
   // Deduplicate by id across all sources
   const seen = new Set();

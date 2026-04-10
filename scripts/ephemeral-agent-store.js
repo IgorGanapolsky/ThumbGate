@@ -14,16 +14,9 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { ensureDir, readJsonl } = require('./fs-utils');
 
 function getFeedbackDir() { return resolveFeedbackDir(); }
-function ensureDir(p) { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
-
-function readJsonl(fp) {
-  if (!fs.existsSync(fp)) return [];
-  const raw = fs.readFileSync(fp, 'utf-8').trim();
-  if (!raw) return [];
-  return raw.split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
-}
 
 // ---------------------------------------------------------------------------
 // 1. Per-Agent Namespace Isolation

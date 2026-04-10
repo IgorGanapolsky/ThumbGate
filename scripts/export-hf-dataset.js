@@ -26,6 +26,7 @@ const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { exportDpoFromMemories } = require('./export-dpo-pairs');
 const { getProvenance } = require('./contextfs');
+const { ensureDir } = require('./fs-utils');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -43,11 +44,6 @@ function readJSONL(filePath) {
     .filter(Boolean);
 }
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function writeJSONL(filePath, rows) {
   const content = rows.map((row) => JSON.stringify(row)).join('\n');

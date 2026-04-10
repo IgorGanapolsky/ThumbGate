@@ -18,6 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 const { getFeedbackPaths, readJSONL } = require('./feedback-loop');
+const { ensureDir } = require('./fs-utils');
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -31,11 +32,6 @@ function getExperimentPaths() {
   };
 }
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function appendJSONL(filePath, record) {
   ensureDir(path.dirname(filePath));

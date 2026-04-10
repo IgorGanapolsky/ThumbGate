@@ -14,11 +14,9 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { ensureParentDir, readJsonl } = require('./fs-utils');
 
 function getFeedbackDir() { return resolveFeedbackDir(); }
-function ensureDir(fp) { const d = path.dirname(fp); if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); }
-function readJsonl(fp) { if (!fs.existsSync(fp)) return []; const raw = fs.readFileSync(fp, 'utf-8').trim(); if (!raw) return []; return raw.split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean); }
-
 const CRED_LOG = 'credential-attestations.jsonl';
 const ESCALATION_LOG = 'escalation-events.jsonl';
 const DEP_LOG = 'dependency-attestations.jsonl';
@@ -47,7 +45,7 @@ function attestCredential({ agentId, credentialType, credentialId, toolName, sco
     sessionId: sessionId || null,
   };
   const logPath = getCredLogPath();
-  ensureDir(logPath);
+  ensureParentDir(logPath);
   fs.appendFileSync(logPath, JSON.stringify(entry) + '\n');
   return entry;
 }
@@ -114,7 +112,7 @@ function detectPrivilegeEscalation({ agentId, toolName, mcpProfile } = {}) {
       message: `Agent "${agentId}" attempted to use "${toolName}" which is outside "${profile}" profile scope`,
     };
     const logPath = getEscalationLogPath();
-    ensureDir(logPath);
+    ensureParentDir(logPath);
     fs.appendFileSync(logPath, JSON.stringify(event) + '\n');
     return { escalation: true, event };
   }
@@ -197,7 +195,7 @@ function attestDependency({ packageName, version, agentId, action } = {}) {
   };
 
   const logPath = getDepLogPath();
-  ensureDir(logPath);
+  ensureParentDir(logPath);
   fs.appendFileSync(logPath, JSON.stringify(event) + '\n');
 
   return { allowed, findings, isTrustedScope, event };
