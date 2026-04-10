@@ -160,6 +160,55 @@ Codex install guide: `plugins/codex-profile/INSTALL.md`
 >
 > **Need a personal dashboard and DPO export for yourself?** [See ThumbGate Pro →](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=quickstart_cta_pro)
 
+## Install for Your Agent
+
+### Claude Code
+```bash
+npx thumbgate init --agent claude-code
+```
+Wires PreToolUse hooks automatically. Works immediately.
+
+### Cursor
+```bash
+npx thumbgate init --agent cursor
+```
+Installs as a Cursor extension with 4 skills: capture-feedback, prevention-rules, search-lessons, recall-context.
+
+### Codex
+```bash
+npx thumbgate init --agent codex
+```
+Bridges to Codex CLI with 6 skills including adversarial review and second-pass analysis.
+
+### Gemini CLI
+```bash
+npx thumbgate init --agent gemini
+```
+
+### Amp
+```bash
+npx thumbgate init --agent amp
+```
+
+### Any MCP-Compatible Agent
+```bash
+npx thumbgate serve
+```
+Starts the MCP server on stdio. Connect from any MCP-compatible client.
+
+### Claude Desktop
+Add to your `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "thumbgate": {
+      "command": "npx",
+      "args": ["--yes", "thumbgate", "serve"]
+    }
+  }
+}
+```
+
 ## Built-in Gates
 
 ```
