@@ -77,11 +77,11 @@ curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate 
 Run ALL of these before claiming any task complete:
 
 ```bash
-npm test                    # 1634 tests, expect 0 failures
-npm run test:coverage       # line coverage %, function coverage %
-npm run prove:adapters      # 48/48 adapter proofs
-npm run prove:automation    # 55/55 automation proofs
-npm run self-heal:check     # 4/4 HEALTHY
+npm test                    # full repository suite, expect 0 failures
+npm run test:coverage       # repository coverage report
+npm run prove:adapters      # adapter compatibility proof suite
+npm run prove:automation    # automation proof suite
+npm run self-heal:check     # overall status must be HEALTHY
 ```
 
 ## Audit Lessons

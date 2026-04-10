@@ -12,6 +12,7 @@ const {
   classifyCommand,
   compareSemver,
   evaluateOperationalIntegrity,
+  findOpenPrForBranch,
   findReleaseSensitiveFiles,
   getCurrentBranch,
   gitVerifyRef,
@@ -24,6 +25,7 @@ const {
   resolveGitBinary,
   resolveBaseRef,
   resolveCiBranchName,
+  resolveGitHubRepository,
   resolveRepoRoot,
   runCli,
 } = require('../scripts/operational-integrity');
@@ -117,6 +119,31 @@ test('evaluateOperationalIntegrity allows release-sensitive feature work with an
 
   assert.equal(result.ok, true);
   assert.deepEqual(result.blockers, []);
+});
+
+test('resolveGitHubRepository accepts owner/repo env values only', () => {
+  assert.equal(resolveGitHubRepository({ GITHUB_REPOSITORY: 'IgorGanapolsky/ThumbGate' }), 'IgorGanapolsky/ThumbGate');
+  assert.equal(resolveGitHubRepository({ GITHUB_REPOSITORY: 'not valid' }), null);
+  assert.equal(resolveGitHubRepository({}), null);
+});
+
+test('findOpenPrForBranch passes --repo when GITHUB_REPOSITORY is set', () => {
+  let capturedArgs = null;
+  const result = findOpenPrForBranch({
+    branchName: 'feat/thumbgate-hardening',
+    env: { GH_TOKEN: 'token', GITHUB_REPOSITORY: 'IgorGanapolsky/ThumbGate' },
+    runner: (args) => {
+      capturedArgs = args;
+      return {
+        status: 0,
+        stdout: JSON.stringify([{ number: 678, url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/678' }]),
+      };
+    },
+  });
+
+  assert.deepEqual(result, { number: 678, url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/678' });
+  assert.ok(Array.isArray(capturedArgs));
+  assert.deepEqual(capturedArgs.slice(0, 4), ['pr', 'list', '--repo', 'IgorGanapolsky/ThumbGate']);
 });
 
 test('evaluateOperationalIntegrity blocks publish from a non-base branch', () => {

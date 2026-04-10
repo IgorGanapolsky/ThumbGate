@@ -27,6 +27,7 @@ test.beforeEach(() => {
     'memory-log.jsonl',
     'diagnostic-log.jsonl',
     'audit-trail.jsonl',
+    'decision-journal.jsonl',
     'intervention-policy.json',
     'telemetry-pings.jsonl',
     'funnel-events.jsonl',
@@ -97,6 +98,12 @@ function writeAuditLog(entries) {
   const auditPath = path.join(tmpDir, 'audit-trail.jsonl');
   const lines = entries.map((entry) => JSON.stringify(entry)).join('\n');
   fs.writeFileSync(auditPath, lines + '\n');
+}
+
+function writeDecisionLog(entries) {
+  const decisionPath = path.join(tmpDir, 'decision-journal.jsonl');
+  const lines = entries.map((entry) => JSON.stringify(entry)).join('\n');
+  fs.writeFileSync(decisionPath, lines + '\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -443,6 +450,69 @@ test('generateDashboard returns a daily gate audit series from the audit trail',
   assert.equal(data.gateAudit.totals.warn, 1);
   assert.equal(data.gateAudit.totals.allow, 1);
   assert.equal(data.gateAudit.activeDays >= 2, true);
+});
+
+test('generateDashboard summarizes live decision-loop metrics from the decision journal', () => {
+  writeDecisionLog([
+    {
+      recordType: 'evaluation',
+      actionId: 'decision_fast',
+      timestamp: '2026-04-09T10:00:00.000Z',
+      toolName: 'Edit',
+      toolInput: { filePath: 'README.md' },
+      changedFiles: ['README.md'],
+      recommendation: {
+        decision: 'allow',
+        executionMode: 'auto_execute',
+        decisionOwner: 'agent',
+        reversibility: 'two_way_door',
+        riskBand: 'low',
+      },
+      blastRadius: { severity: 'low', fileCount: 1, surfaceCount: 1 },
+    },
+    {
+      recordType: 'outcome',
+      actionId: 'decision_fast',
+      timestamp: '2026-04-09T10:02:00.000Z',
+      outcome: 'completed',
+      actor: 'agent',
+      actualDecision: 'allow',
+      latencyMs: 120000,
+    },
+    {
+      recordType: 'evaluation',
+      actionId: 'decision_review',
+      timestamp: '2026-04-09T11:00:00.000Z',
+      toolName: 'Bash',
+      toolInput: { command: 'npm publish' },
+      changedFiles: ['package.json'],
+      recommendation: {
+        decision: 'warn',
+        executionMode: 'checkpoint_required',
+        decisionOwner: 'human',
+        reversibility: 'one_way_door',
+        riskBand: 'high',
+      },
+      blastRadius: { severity: 'high', fileCount: 1, surfaceCount: 1 },
+    },
+    {
+      recordType: 'outcome',
+      actionId: 'decision_review',
+      timestamp: '2026-04-09T11:06:00.000Z',
+      outcome: 'overridden',
+      actor: 'human',
+      actualDecision: 'warn',
+      latencyMs: 360000,
+    },
+  ]);
+
+  const data = generateDashboard(tmpDir);
+  assert.equal(data.decisions.evaluationCount, 2);
+  assert.equal(data.decisions.fastPathCount, 1);
+  assert.equal(data.decisions.overrideCount, 1);
+  assert.equal(data.liveMetrics.decisionLoop.fastPathRate, 0.5);
+  assert.equal(data.liveMetrics.decisionLoop.overrideRate, 0.5);
+  assert.equal(data.liveMetrics.decisionLoop.medianLatencyMs, 240000);
 });
 
 test('generateDashboard aggregates persisted diagnostics beyond feedback capture', () => {
@@ -911,4 +981,7 @@ test('printDashboard renders learned policy metrics for operator review', () => 
   assert.match(output, /Holdout Accuracy/);
   assert.match(output, /Recent Pressure/);
   assert.match(output, /Top Deny Signal/);
+  assert.match(output, /🧭 Decision Loop/);
+  assert.match(output, /Fast Path/);
+  assert.match(output, /Override Rate/);
 });

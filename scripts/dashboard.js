@@ -21,6 +21,7 @@ const { getSettingsStatus } = require('./settings-hierarchy');
 const { summarizeWorkflowRuns } = require('./workflow-runs');
 const { searchLessons } = require('./lesson-search');
 const { getInterventionPolicySummary } = require('./intervention-policy');
+const { computeDecisionMetrics } = require('./decision-journal');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -787,6 +788,7 @@ function generateDashboard(feedbackDir, options = {}) {
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
   const harness = computeHarnessOverview(feedbackDir, entries);
   const interventionPolicy = getInterventionPolicySummary(feedbackDir);
+  const decisions = computeDecisionMetrics(feedbackDir);
   const settingsStatus = getSettingsStatus({ projectRoot: PROJECT_ROOT });
   settingsStatus.routingPreview = {
     dashboardTool: routeProfile({
@@ -820,6 +822,13 @@ function generateDashboard(feedbackDir, options = {}) {
     lessonEffectiveness: { rate: totalNeg > 0 ? Math.round((autoGates / totalNeg) * 10000) / 100 : 0, totalNegative: totalNeg, autoGatesCreated: autoGates },
     errorTrend: { direction: lastWeekNeg > 0 ? (negRecent.length < lastWeekNeg ? 'improving' : negRecent.length > lastWeekNeg ? 'worsening' : 'stable') : (negRecent.length > 0 ? 'new-errors' : 'clean'), thisWeek: negRecent.length, lastWeek: lastWeekNeg },
     weeklyActivity: { positive: posRecent.length, negative: negRecent.length, total: recentEntries.length },
+    decisionLoop: {
+      fastPathRate: decisions.fastPathRate,
+      overrideRate: decisions.overrideRate,
+      rollbackRate: decisions.rollbackRate,
+      medianLatencyMs: decisions.medianLatencyMs,
+      resolvedCount: decisions.resolvedCount,
+    },
   };
 
   const team = generateOrgDashboard({
@@ -857,6 +866,7 @@ function generateDashboard(feedbackDir, options = {}) {
     instrumentation,
     readiness,
     interventionPolicy,
+    decisions,
     settingsStatus,
     team,
     templateLibrary,
@@ -886,6 +896,7 @@ function printDashboard(data) {
     instrumentation,
     readiness,
     interventionPolicy,
+    decisions,
     settingsStatus,
     team,
     templateLibrary,
@@ -944,6 +955,14 @@ function printDashboard(data) {
   if (interventionPolicy.topTokens && interventionPolicy.topTokens.deny && interventionPolicy.topTokens.deny[0]) {
     console.log(`  Top Deny Signal  : ${interventionPolicy.topTokens.deny[0].token}`);
   }
+
+  console.log('');
+  console.log('🧭 Decision Loop');
+  console.log(`  Evaluations      : ${decisions.evaluationCount}`);
+  console.log(`  Fast Path        : ${Math.round((decisions.fastPathRate || 0) * 100)}%`);
+  console.log(`  Override Rate    : ${Math.round((decisions.overrideRate || 0) * 100)}%`);
+  console.log(`  Rollback Rate    : ${Math.round((decisions.rollbackRate || 0) * 100)}%`);
+  console.log(`  Median Latency   : ${Math.round((decisions.medianLatencyMs || 0) / 1000)}s`);
 
   console.log('');
   console.log('🎯 North Star');
@@ -1120,6 +1139,7 @@ module.exports = {
   generateDashboard,
   printDashboard,
   computeApprovalStats,
+  computeDecisionMetrics,
   computeGateStats,
   computePreventionImpact,
   computeSessionTrend,

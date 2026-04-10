@@ -140,8 +140,9 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /__PRO_PRICE_DOLLARS__/);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
-  assert.match(publicLanding, /self-improving/i);
-  assert.ok(publicLanding.includes(PRODUCTHUNT_URL));
+  assert.match(publicLanding, /workflow governance|agent governance/i);
+  assert.match(publicLanding, /Verification evidence/i);
+  assert.match(publicLanding, /Release confidence/i);
   assert.doesNotMatch(publicLanding, /billingDuration/);
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);
@@ -278,7 +279,7 @@ test('active GTM scripts and reports point to the canonical offer without foundi
 test('commercial truth sources stay aligned across public and historical docs', () => {
   const commercialTruth = readText('docs/COMMERCIAL_TRUTH.md');
   const readme = readText('README.md');
-  const pricingResearch = readText('docs/PRICING_RESEARCH_2026-03-09.md');
+  // Removed duplicate pricing doc (03-09 was identical to 03-10)
   const crisisReport = readText('docs/PRICING_RESEARCH_2026-03-10.md');
   const packagingPlan = readText('docs/PACKAGING_AND_SALES_PLAN.md');
   const revenueSprint = readText('docs/REVENUE_SPRINT_MAR2026.md');
@@ -288,14 +289,14 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
   assert.match(commercialTruth, /Pro at \$19\/mo or \$149\/yr/);
-  assert.match(commercialTruth, /Team pricing anchor is \*\*\$99\/seat\/mo/i);
+  assert.match(commercialTruth, /Team pricing anchor is \*\*\$12\/seat\/mo/i);
   assert.match(commercialTruth, /auto-gate promotion/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 
   assert.match(readme, /Commercial Truth/);
   assert.doesNotMatch(readme, /500\+ agentic sessions|battle-tested/i);
 
-  for (const historicalDoc of [pricingResearch, crisisReport, packagingPlan, revenueSprint, xStrategy]) {
+  for (const historicalDoc of [crisisReport, packagingPlan, revenueSprint, xStrategy]) {
     assert.match(historicalDoc, /Historical .*note|Historical .*archived|Historical .*hypothesis/i);
     assert.match(historicalDoc, /COMMERCIAL_TRUTH\.md/);
   }

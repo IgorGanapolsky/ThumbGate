@@ -137,7 +137,7 @@ async function main() {
     'public/guide.html must advertise the current Pro monthly and annual pricing'
   );
   check(
-    /\$99\/seat\/mo/i.test(guideHtml),
+    /\$12\/seat\/mo/i.test(guideHtml),
     'public/guide.html must advertise the current Team pricing anchor'
   );
   check(
@@ -145,15 +145,15 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the current Pro offer'
   );
   check(
-    /shared lessons and org visibility/i.test(githubAbout.description),
-    'config/github-about.json description must mention shared lessons and org visibility'
+    /shared lessons and org visibility/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention shared lessons and org visibility'
   );
   check(
     /\$19\/mo or \$149\/yr/i.test(readmeMd),
     'README.md must advertise the current Pro monthly and annual pricing'
   );
   check(
-    /\$99\/seat\/mo/i.test(readmeMd),
+    /\$12\/seat\/mo/i.test(readmeMd),
     'README.md must advertise the current Team pricing anchor'
   );
   check(
@@ -246,24 +246,32 @@ async function main() {
     'public/index.html must explain the thumbs-down feedback path'
   );
   check(
-    githubAbout.description.includes('👍'),
-    'config/github-about.json description must include the thumbs-up icon'
+    githubAbout.metaDescription.includes('👍'),
+    'config/github-about.json metaDescription must include the thumbs-up icon'
   );
   check(
-    githubAbout.description.includes('👎'),
-    'config/github-about.json description must include the thumbs-down icon'
+    githubAbout.metaDescription.includes('👎'),
+    'config/github-about.json metaDescription must include the thumbs-down icon'
   );
   check(
-    /thumbs[\s-]?up/i.test(githubAbout.description),
-    'config/github-about.json description must mention thumbs-up feedback'
+    /thumbs[\s-]?up/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention thumbs-up feedback'
   );
   check(
-    /thumbs[\s-]?down/i.test(githubAbout.description),
-    'config/github-about.json description must mention thumbs-down feedback'
+    /thumbs[\s-]?down/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention thumbs-down feedback'
   );
   check(
-    /history-aware lessons/i.test(githubAbout.description),
-    'config/github-about.json description must mention history-aware lessons'
+    /history-aware lessons/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention history-aware lessons'
+  );
+  check(
+    /agent governance/i.test(githubAbout.githubDescription),
+    'config/github-about.json githubDescription must mention agent governance'
+  );
+  check(
+    /pre-action gates|shared lessons|team safeguards/i.test(githubAbout.githubDescription),
+    'config/github-about.json githubDescription must preserve the GitHub repo positioning'
   );
   check(
     productHuntKit.includes(PRODUCTHUNT_URL),

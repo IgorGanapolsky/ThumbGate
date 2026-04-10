@@ -6,6 +6,9 @@ const {
   collectLocalGitHubAboutErrors,
   compareGitHubAbout,
   loadGitHubAboutConfig,
+  MAX_GITHUB_DESCRIPTION_LENGTH,
+  VERIFY_ATTEMPTS_ENV,
+  VERIFY_DELAY_MS_ENV,
   normalizeTopics,
   verifyLiveGitHubAbout,
 } = require('../scripts/github-about');
@@ -31,20 +34,22 @@ test('GitHub About source-of-truth matches local public surfaces', () => {
   assert.deepEqual(collectLocalGitHubAboutErrors(ROOT), []);
 });
 
-test('GitHub About description highlights both thumbs-up and thumbs-down feedback', () => {
+test('GitHub About config keeps a rich landing description and a valid GitHub description', () => {
   const about = loadGitHubAboutConfig(ROOT);
-  assert.match(about.description, /👍/u);
-  assert.match(about.description, /👎/u);
-  assert.match(about.description, /thumbs up/i);
-  assert.match(about.description, /thumbs down/i);
-  assert.match(about.description, /history-aware lessons/i);
-  assert.match(about.description, /shared lessons and org visibility/i);
+  assert.match(about.metaDescription, /👍/u);
+  assert.match(about.metaDescription, /👎/u);
+  assert.match(about.metaDescription, /thumbs up/i);
+  assert.match(about.metaDescription, /thumbs down/i);
+  assert.match(about.metaDescription, /history-aware lessons/i);
+  assert.match(about.metaDescription, /shared lessons and org visibility/i);
+  assert.match(about.githubDescription, /agent governance/i);
+  assert.ok(about.githubDescription.length <= MAX_GITHUB_DESCRIPTION_LENGTH);
 });
 
 test('README commercial copy stays aligned with current Pro and Team packaging', () => {
   const readme = execSync('sed -n \'1,320p\' README.md', { cwd: ROOT, encoding: 'utf-8' });
   assert.match(readme, /\$19\/mo or \$149\/yr/);
-  assert.match(readme, /\$99\/seat\/mo/);
+  assert.match(readme, /\$12\/seat\/mo/);
   assert.match(readme, /shared hosted lesson DB/i);
   assert.match(readme, /org dashboard/i);
   assert.match(readme, /history-aware/i);
@@ -79,7 +84,7 @@ test('GitHub About comparison normalizes topic order and flags real drift', () =
 
   assert.deepEqual(
     compareGitHubAbout(about, {
-      description: about.description,
+      description: about.githubDescription,
       homepageUrl: about.homepageUrl,
       topics: [...about.topics].reverse(),
     }, 'Live GitHub About'),
@@ -87,7 +92,7 @@ test('GitHub About comparison normalizes topic order and flags real drift', () =
   );
 
   const errors = compareGitHubAbout(about, {
-    description: `${about.description} Extra drift`,
+    description: `${about.githubDescription} Extra drift`,
     homepageUrl: 'https://example.com',
     topics: normalizeTopics(['thumbgate', 'cursor']),
   }, 'Live GitHub About');
@@ -112,13 +117,13 @@ test('verifyLiveGitHubAbout retries until eventual consistency resolves', async 
       attempt += 1;
       if (attempt < 3) {
         return {
-          description: `${about.description} drift`,
+          description: `${about.githubDescription} drift`,
           homepageUrl: about.homepageUrl,
           topics: about.topics,
         };
       }
       return {
-        description: about.description,
+        description: about.githubDescription,
         homepageUrl: about.homepageUrl,
         topics: about.topics,
       };
@@ -144,7 +149,7 @@ test('verifyLiveGitHubAbout returns final drift after exhausting retries', async
     attempts: 3,
     delayMs: 10,
     fetcher: async () => ({
-      description: `${about.description} drift`,
+      description: `${about.githubDescription} drift`,
       homepageUrl: 'https://example.com',
       topics: ['thumbgate'],
     }),
@@ -159,4 +164,48 @@ test('verifyLiveGitHubAbout returns final drift after exhausting retries', async
   assert.match(result.errors.join('\n'), /homepage mismatch/);
   assert.match(result.errors.join('\n'), /topics mismatch/);
   assert.deepEqual(sleepCalls, [10, 20]);
+});
+
+test('verifyLiveGitHubAbout honors environment retry overrides', async () => {
+  const about = loadGitHubAboutConfig(ROOT);
+  const originalAttempts = process.env[VERIFY_ATTEMPTS_ENV];
+  const originalDelay = process.env[VERIFY_DELAY_MS_ENV];
+  const sleepCalls = [];
+  let fetchCalls = 0;
+
+  process.env[VERIFY_ATTEMPTS_ENV] = '4';
+  process.env[VERIFY_DELAY_MS_ENV] = '15';
+
+  try {
+    const result = await verifyLiveGitHubAbout({
+      expected: about,
+      fetcher: async () => {
+        fetchCalls += 1;
+        return {
+          description: `${about.githubDescription} drift`,
+          homepageUrl: about.homepageUrl,
+          topics: about.topics,
+        };
+      },
+      sleep: async (delayMs) => {
+        sleepCalls.push(delayMs);
+      },
+    });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.attemptsUsed, 4);
+    assert.equal(fetchCalls, 4);
+    assert.deepEqual(sleepCalls, [15, 30, 45]);
+  } finally {
+    if (originalAttempts === undefined) {
+      delete process.env[VERIFY_ATTEMPTS_ENV];
+    } else {
+      process.env[VERIFY_ATTEMPTS_ENV] = originalAttempts;
+    }
+    if (originalDelay === undefined) {
+      delete process.env[VERIFY_DELAY_MS_ENV];
+    } else {
+      process.env[VERIFY_DELAY_MS_ENV] = originalDelay;
+    }
+  }
 });

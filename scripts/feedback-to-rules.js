@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { deduplicateFeedback } = require('./semantic-dedup');
 
 const DEFAULT_LOG = path.join(resolveFeedbackDir(), 'feedback-log.jsonl');
 const NEG = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
@@ -51,19 +52,23 @@ function analyze(entries) {
     if (cls === 'negative') {
       const tool = e.tool_name || 'unknown';
       toolBuckets[tool] = (toolBuckets[tool] || 0) + 1;
-      const key = normalize(e.context);
-      if (key.length > 10) {
-        if (!contextCounts[key]) {
-          contextCounts[key] = { 
-            raw: e.context, 
-            count: 0, 
-            tool, 
-            tags: e.tags || [],
-            hasHighRisk: (e.tags || []).some(t => HIGH_RISK_TAGS.has(t))
-          };
-        }
-        contextCounts[key].count++;
-      }
+    }
+  }
+
+  // Semantic dedup: cluster near-duplicate negatives into weighted "feedback tokens"
+  const negEntries = entries.filter((e) => classifySignal(e) === 'negative');
+  const dedupedNeg = deduplicateFeedback(negEntries);
+  for (const d of dedupedNeg) {
+    const key = normalize(d.context);
+    if (key.length > 10 && !contextCounts[key]) {
+      const tags = d._mergedTags || d.tags || [];
+      contextCounts[key] = {
+        raw: d.context,
+        count: d._clusterCount || 1,
+        tool: d.tool_name || 'unknown',
+        tags,
+        hasHighRisk: tags.some(t => HIGH_RISK_TAGS.has(t)),
+      };
     }
   }
 
