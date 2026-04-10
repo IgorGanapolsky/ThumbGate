@@ -65,11 +65,11 @@ describe('SEO guide and comparison pages', () => {
         assert.ok(html.includes('ThumbGate'), `${file} does not mention ThumbGate`);
       });
 
-      it('mentions the founding member deal', () => {
+      it('mentions the current Pro and Team pricing', () => {
         html = html || fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf-8');
         assert.ok(
-          html.includes('$49') || html.includes('Founding Member'),
-          `${file} missing founding member deal`
+          html.includes('$19/mo') && html.includes('$149/yr') && html.includes('$99/seat/mo'),
+          `${file} missing current Pro and Team pricing`
         );
       });
     });

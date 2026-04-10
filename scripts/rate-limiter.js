@@ -5,7 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const {
   PRO_MONTHLY_PAYMENT_LINK,
-  PRO_FOUNDER_PAYMENT_LINK,
+  PRO_PRICE_LABEL,
+  TEAM_PRICE_LABEL,
 } = require('./commercial-offer');
 
 const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.thumbgate', 'usage-limits.json');
@@ -21,7 +22,7 @@ const FREE_TIER_LIMITS = {
 
 const FREE_TIER_MAX_GATES = 5;
 
-const UPGRADE_MESSAGE = `Founding Member deal: $49 once, Pro forever — includes dashboard and DPO export: ${PRO_FOUNDER_PAYMENT_LINK}\n  Or subscribe: $19/mo — ${PRO_MONTHLY_PAYMENT_LINK}`;
+const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — dashboard and DPO export: ${PRO_MONTHLY_PAYMENT_LINK}\n  Team: ${TEAM_PRICE_LABEL} after workflow qualification.`;
 
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;

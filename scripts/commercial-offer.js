@@ -2,7 +2,6 @@
 
 const PRO_MONTHLY_PAYMENT_LINK = 'https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06';
 const PRO_ANNUAL_PAYMENT_LINK = 'https://buy.stripe.com/3cI8wPfCYaPs2dzdKz3sI07';
-const PRO_FOUNDER_PAYMENT_LINK = 'https://buy.stripe.com/aFa4gz1M84r419v7mb3sI05';
 
 const PRO_MONTHLY_PRICE_ID = 'price_1THQY7GGBpd520QYHoS7RG0J';
 const PRO_ANNUAL_PRICE_ID = 'price_1THQZ7GGBpd520QYxzDRnxhB';
@@ -39,7 +38,6 @@ function normalizeSeatCount(value, fallback = TEAM_MIN_SEATS) {
 module.exports = {
   PRO_MONTHLY_PAYMENT_LINK,
   PRO_ANNUAL_PAYMENT_LINK,
-  PRO_FOUNDER_PAYMENT_LINK,
   PRO_MONTHLY_PRICE_ID,
   PRO_ANNUAL_PRICE_ID,
   TEAM_MONTHLY_PRICE_ID,

@@ -73,15 +73,7 @@ const CONFIG = {
   get NEWSLETTER_SUBSCRIBERS_PATH() {
     return process.env._TEST_NEWSLETTER_SUBSCRIBERS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'newsletter-subscribers.jsonl');
   },
-  CREDIT_PACKS: {
-    'mistake-free-starter': {
-      id: 'mistake-free-starter',
-      name: 'Mistake-Free Starter Pack',
-      amountCents: 4900,
-      credits: 500,
-      currency: 'USD',
-    }
-  }
+  CREDIT_PACKS: {}
 };
 
 function resolveLegacyBillingPath(fileName) {

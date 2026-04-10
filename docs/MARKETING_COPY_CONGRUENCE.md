@@ -23,7 +23,7 @@
 
 ### Stripe Pro Offer
 **Title:** ThumbGate Pro — Personal Local Dashboard + DPO Export
-**Description:** ThumbGate Pro gives individual operators a personal local dashboard, DPO export, advanced data exports, and founder-license support. Team rollout remains intake-first for shared hosted lessons and org visibility.
+**Description:** ThumbGate Pro gives individual operators a personal local dashboard, DPO export, advanced data exports, and review-ready workflow support. Team rollout remains intake-first for shared hosted lessons, approval boundaries, and org visibility.
 
 ### DEV.TO Blog Post
 **Title:** I built pre-action gates that physically block Claude Code from repeating mistakes

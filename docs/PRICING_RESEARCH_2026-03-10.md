@@ -8,10 +8,10 @@ At the time, the go-to-market (GTM) strategy was misaligned with the March 2026 
 Here is the empirical breakdown of why our funnel is failing:
 
 ### 1. The "Local-First" Trap
-At the time, developers in 2026 wanted zero-friction "agentic primitives." We required them to clone a repository, run local tests, and manually discover `docs/landing-page.html` to find the then-proposed `$10/mo` "Context Gateway" upgrade. **This report concluded that top-of-funnel acquisition was weak because the monetization surface was buried inside a local codebase.**
+At the time, developers in 2026 wanted zero-friction "agentic primitives." We required them to clone a repository, run local tests, and manually discover `docs/landing-page.html` to find the then-proposed low-price "Context Gateway" upgrade. **This report concluded that top-of-funnel acquisition was weak because the monetization surface was buried inside a local codebase.**
 
 ### 2. Pricing Model Mismatch
-The March 2026 market for agent tooling was operating largely on **consumption-based credit systems** or "per-agent identity" models (like Okta for Agents). This report argued that the flat `$10/month` subscription felt outdated. The thesis was that developers would rather pay for the *inference and storage costs* associated with "Always-On" memory than for a recurring fee on a local tool.
+The March 2026 market for agent tooling was operating largely on **consumption-based credit systems** or "per-agent identity" models (like Okta for Agents). This report argued that the low flat subscription felt outdated. The thesis was that developers would rather pay for the *inference and storage costs* associated with "Always-On" memory than for a recurring fee on a local tool.
 
 ### 3. Misaligned Positioning (ThumbGate vs. MCP Gateway)
 We are marketing ourselves as an "ThumbGate." However, the March 2026 market data shows that the highest revenue growth is in **MCP (Model Context Protocol) Gateways and Observability**. MCP has become the "USB-C of AI." We already have deep MCP integration, but we aren't selling ourselves as an "MCP Memory & Context Hub." 
@@ -27,7 +27,7 @@ To move from $0 to revenue immediately, we must execute the following pivot in "
 2.  **Frictionless Onboarding:** Allow users to authenticate via GitHub OAuth, instantly generate an `THUMBGATE_API_KEY`, and view their local agent's memory graph in the cloud.
 
 ### Phase 2: Pivot the Pricing Model
-1.  **Usage-Based Billing:** Shift from a $10/mo flat fee to a consumption model via Stripe Metered Billing. Charge per 1,000 "Context Consolidations" or per GB of "Agent Memory Stored."
+1.  **Usage-Based Billing:** Shift from a low flat fee to a consumption model via Stripe Metered Billing. Charge per 1,000 "Context Consolidations" or per GB of "Agent Memory Stored."
 2.  **Freemium Gate:** Give the local CLI tool away for free (as we do), but hard-gate the advanced A2UI (Agent-to-User Interface) dashboard and the "Always-On" background consolidator behind an API key that requires a credit card on file.
 
 ### Phase 3: Rebrand for 2026 Market Fit
