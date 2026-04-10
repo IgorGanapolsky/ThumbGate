@@ -11,6 +11,7 @@ const {
   collectChangesets,
   evaluateChangesetRequirement,
   isReleaseRelevantFile,
+  isVersionedReleaseChangeSet,
   parseChangesetMarkdown,
 } = require('../scripts/changeset-check');
 
@@ -117,4 +118,44 @@ test('evaluateChangesetRequirement allows release-relevant changes with a valid 
   assert.equal(result.ok, true);
   assert.equal(result.required, true);
   assert.equal(result.validChangesets.length, 1);
+});
+
+test('isVersionedReleaseChangeSet detects a release PR that already consumed its changesets', () => {
+  assert.equal(isVersionedReleaseChangeSet([
+    '.changeset/fix-clickable-statusline-affordances.md',
+    'CHANGELOG.md',
+    'package.json',
+  ]), true);
+  assert.equal(isVersionedReleaseChangeSet([
+    'CHANGELOG.md',
+    'package.json',
+  ]), false);
+});
+
+test('evaluateChangesetRequirement allows release-relevant changes when a release PR already consumed changesets', () => {
+  const result = evaluateChangesetRequirement({
+    changedFiles: [
+      '.changeset/fix-clickable-statusline-affordances.md',
+      'CHANGELOG.md',
+      'package.json',
+      'scripts/statusline-links.js',
+    ],
+    changesets: [],
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.required, true);
+  assert.match(result.reason, /already consumed pending changesets/i);
+});
+
+test('release confidence docs keep the buyer-facing changeset story explicit', () => {
+  const strategy = fs.readFileSync(path.join(__dirname, '..', 'docs', 'CHANGESET_STRATEGY.md'), 'utf8');
+  const semver = fs.readFileSync(path.join(__dirname, '..', 'docs', 'SEMVER_POLICY.md'), 'utf8');
+  const confidence = fs.readFileSync(path.join(__dirname, '..', 'docs', 'RELEASE_CONFIDENCE.md'), 'utf8');
+
+  assert.match(strategy, /customers|buyers|investors/i);
+  assert.match(strategy, /changeset:check/i);
+  assert.match(semver, /exact `main` merge commit/i);
+  assert.match(confidence, /Verification Evidence/i);
+  assert.match(confidence, /version-sync/i);
 });

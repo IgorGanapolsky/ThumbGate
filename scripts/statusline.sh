@@ -11,9 +11,18 @@ LOCAL_API_ORIGIN="${THUMBGATE_LOCAL_API_ORIGIN:-http://localhost:3456}"
 # ── Parse Claude Code session JSON from stdin ─────────────────────
 eval "$(cat | jq -r '
   def n(f): f // 0;
-  @sh "CTX_PCT=\(n(.context_window.used_percentage) | floor)"
+  @sh "CTX_PCT=\(n(.context_window.used_percentage) | floor)",
+  @sh "PROJECT_CWD=\(.cwd // .working_directory // "")"
 ' 2>/dev/null)"
 CTX_PCT="${CTX_PCT:-0}"
+PROJECT_CWD="${PROJECT_CWD:-}"
+
+if [ -n "$PROJECT_CWD" ] && [ -d "$PROJECT_CWD" ]; then
+  export THUMBGATE_PROJECT_DIR="$PROJECT_CWD"
+  if [ -z "${THUMBGATE_FEEDBACK_DIR:-}" ]; then
+    export THUMBGATE_FEEDBACK_DIR="${PROJECT_CWD}/.claude/memory/feedback"
+  fi
+fi
 
 # ── ThumbGate stats from cache ────────────────────────────────────────
 THUMBGATE_CACHE=""
@@ -117,6 +126,16 @@ if [ -n "$_TOWER_JSON" ]; then
   ' 2>/dev/null)"
 fi
 
+# ── Latest lesson (data available for extensions; not rendered in statusbar) ──
+LESSON_TEXT=""; LESSON_ID=""
+_LESSON_JSON=$(node "${SCRIPT_DIR}/statusline-lesson.js" 2>/dev/null)
+if [ -n "$_LESSON_JSON" ]; then
+  eval "$(echo "$_LESSON_JSON" | jq -r '
+    @sh "LESSON_TEXT=\(.text // "")",
+    @sh "LESSON_ID=\(.lessonId // "")"
+  ' 2>/dev/null)"
+fi
+
 # ── Colors ────────────────────────────────────────────────────────
 G='\033[32m'; R='\033[31m'; M='\033[35m'; C='\033[36m'; D='\033[90m'; BD='\033[1m'; RST='\033[0m'
 
@@ -125,20 +144,20 @@ case "${TREND}" in
   improving) ARROW="↗" ;; degrading) ARROW="↘" ;; stable) ARROW="→" ;; *) ARROW="?" ;;
 esac
 
-osc8_link() {
+inline_link() {
   local url="$1"
   local label="$2"
   if [ -n "$url" ]; then
-    printf '\033]8;;%s\a%s\033]8;;\a' "$url" "$label"
+    printf '%s (%s)' "$label" "$url"
   else
     printf '%s' "$label"
   fi
 }
 
-UP_ICON="$(osc8_link "$UP_URL" "👍")"
-DOWN_ICON="$(osc8_link "$DOWN_URL" "👎")"
-DASHBOARD_LINK="$(osc8_link "$DASHBOARD_URL" "$DASHBOARD_LABEL")"
-LESSONS_LINK="$(osc8_link "$LESSONS_URL" "$LESSONS_LABEL")"
+UP_ICON="👍"
+DOWN_ICON="👎"
+DASHBOARD_LINK="$(inline_link "$DASHBOARD_URL" "$DASHBOARD_LABEL")"
+LESSONS_LINK="$(inline_link "$LESSONS_URL" "$LESSONS_LABEL")"
 
 # ── Output (single line) ─────────────────────────────────────────
 LINE="ThumbGate v${TG_VERSION} · ${TG_TIER}"

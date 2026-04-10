@@ -37,6 +37,8 @@ jobs:
 
       - run: node scripts/sync-version.js --check
 
+      - run: npm run prove:runtime
+
       - run: npm run build:claude-mcpb
 
       - name: Resolve Claude plugin asset names
@@ -89,3 +91,19 @@ jobs:
             ".artifacts/claude-desktop/${{ steps.assets.outputs.versioned_asset }}" \
             ".artifacts/claude-desktop/${{ steps.assets.outputs.channel_asset }}" \
             --clobber
+
+      - name: Verify Claude plugin release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.assets.outputs.version }}
+          VERSIONED_ASSET: ${{ steps.assets.outputs.versioned_asset }}
+          CHANNEL_ASSET: ${{ steps.assets.outputs.channel_asset }}
+        run: |
+          release_json="$(gh release view "v${VERSION}" --json assets)"
+          echo "$release_json" | jq -e --arg versioned "$VERSIONED_ASSET" --arg channel "$CHANNEL_ASSET" '
+            [.assets[].name] as $names
+            | ($names | index($versioned))
+            | select(. != null)
+            | ($names | index($channel))
+            | select(. != null)
+          ' >/dev/null

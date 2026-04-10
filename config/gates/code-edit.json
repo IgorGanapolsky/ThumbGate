@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "harness": "code-edit",
+  "description": "Specialized gates for code editing operations. Loaded when tool context involves Edit, Write, or MultiEdit tools.",
+  "gates": [
+    {
+      "id": "edit-env-direct",
+      "layer": "Execution",
+      "toolNames": ["Edit", "Write", "MultiEdit"],
+      "pattern": "\\.env$|\\.env\\.local$|\\.env\\.production$",
+      "action": "warn",
+      "severity": "high",
+      "message": "Editing a .env file directly. Ensure you are editing .env.example instead, and that no real secrets are committed."
+    },
+    {
+      "id": "edit-lockfile-manual",
+      "layer": "Execution",
+      "toolNames": ["Edit", "Write"],
+      "pattern": "package-lock\\.json$|yarn\\.lock$|pnpm-lock\\.yaml$",
+      "action": "warn",
+      "severity": "medium",
+      "message": "Manually editing a lockfile is not recommended. Run npm install / yarn / pnpm install to regenerate it."
+    },
+    {
+      "id": "edit-generated-file",
+      "layer": "Execution",
+      "toolNames": ["Edit", "Write"],
+      "pattern": "dist/|build/|\\.min\\.js$|\\.min\\.css$",
+      "action": "warn",
+      "severity": "medium",
+      "message": "Editing a generated/built file. Edit the source instead and rebuild."
+    },
+    {
+      "id": "edit-test-skip",
+      "layer": "Execution",
+      "toolNames": ["Edit", "Write", "MultiEdit"],
+      "pattern": "\\.skip\\(|test\\.skip|describe\\.skip|it\\.skip|xit\\(|xdescribe\\(",
+      "action": "warn",
+      "severity": "high",
+      "message": "Skipping a test. Only skip tests intentionally and document why — never skip to pass CI."
+    },
+    {
+      "id": "edit-console-log-commit",
+      "layer": "Execution",
+      "toolNames": ["Edit", "Write"],
+      "pattern": "console\\.log\\(.*password|console\\.log\\(.*secret|console\\.log\\(.*token|console\\.log\\(.*api.?key",
+      "action": "block",
+      "severity": "critical",
+      "message": "Logging a secret value to console is blocked. Remove the log or redact the value."
+    },
+    {
+      "id": "edit-version-file-without-sync",
+      "layer": "Execution",
+      "toolNames": ["Edit", "Write"],
+      "pattern": "\"version\"\\s*:\\s*\"",
+      "action": "warn",
+      "severity": "medium",
+      "message": "Editing a version field. Run node scripts/sync-version.js after changing package.json version to propagate to all targets."
+    }
+  ]
+}

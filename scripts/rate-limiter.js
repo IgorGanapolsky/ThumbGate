@@ -5,14 +5,15 @@ const fs = require('fs');
 const path = require('path');
 const {
   PRO_MONTHLY_PAYMENT_LINK,
+  PRO_FOUNDER_PAYMENT_LINK,
 } = require('./commercial-offer');
 
 const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.thumbgate', 'usage-limits.json');
 
 const FREE_TIER_LIMITS = {
-  capture_feedback: { daily: Infinity, label: 'feedback captures' },
+  capture_feedback: { daily: 3, label: 'feedback captures' },
   search_lessons: { daily: 5, label: 'lesson searches' },
-  search_thumbgate: { daily: 10, label: 'ThumbGate searches' },
+  search_thumbgate: { daily: 5, label: 'ThumbGate searches' },
   commerce_recall: { daily: 5, label: 'commerce recalls' },
   export_dpo: { daily: 0, label: 'DPO exports (Pro only)' },
   export_databricks: { daily: 0, label: 'Databricks exports (Pro only)' },
@@ -20,7 +21,7 @@ const FREE_TIER_LIMITS = {
 
 const FREE_TIER_MAX_GATES = 5;
 
-const UPGRADE_MESSAGE = `Upgrade to Pro ($19/mo) for a personal local dashboard, DPO export, and optional hosted API key: ${PRO_MONTHLY_PAYMENT_LINK}`;
+const UPGRADE_MESSAGE = `Founding Member deal: $49 once, Pro forever — includes dashboard and DPO export: ${PRO_FOUNDER_PAYMENT_LINK}\n  Or subscribe: $19/mo — ${PRO_MONTHLY_PAYMENT_LINK}`;
 
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;
@@ -83,7 +84,7 @@ function checkLimit(action, authContext) {
   const current = usage.counts[action] || 0;
 
   if (current >= dailyLimit) {
-    return { allowed: false, message: UPGRADE_MESSAGE, used: current, limit: dailyLimit };
+    return { allowed: false, message: `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro\n${UPGRADE_MESSAGE}`, used: current, limit: dailyLimit };
   }
 
   // Increment

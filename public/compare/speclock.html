@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate vs SpecLock | Thumbs Feedback vs Manual Specs</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action gates that block repeated mistakes.">
+<meta name="keywords" content="ThumbGate vs SpecLock, SpecLock alternative, AI agent guardrails comparison, pre-action gates, feedback enforcement">
+<meta property="og:title" content="ThumbGate vs SpecLock">
+<meta property="og:description" content="SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action gates that block repeated mistakes.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/compare/speclock">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/compare/speclock">
+<link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs SpecLock — Thumbs Feedback vs Manual Specs",
+  "description": "SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action gates that block repeated mistakes.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-04-09",
+  "dateModified": "2026-04-09",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/compare/speclock",
+  "about": [
+    {"@type": "Thing", "name": "ThumbGate vs SpecLock"},
+    {"@type": "Thing", "name": "AI agent guardrails comparison"},
+    {"@type": "Thing", "name": "pre-action gates"}
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate trying to replace specs?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate complements specs by capturing thumbs-up/down feedback from live agent behavior and enforcing the learned rules as pre-action gates."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does ThumbGate do that SpecLock does not?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate turns explicit feedback into searchable memory, auto-generated prevention rules, and runtime gates that block repeated mistakes before the next tool call executes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I use ThumbGate and SpecLock together?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. SpecLock can handle upfront spec enforcement while ThumbGate handles the emergent failures that specs did not anticipate, using thumbs-up/down feedback to learn and enforce new rules."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which tool is better for fast-moving teams?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate is better for fast-moving agent workflows where the problem is not writing more specs, but preventing the same mistake from happening again tomorrow."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / <a href="/compare/speclock">Compare</a> / ThumbGate vs SpecLock</div>
+  <h1>ThumbGate vs SpecLock</h1>
+  <p style="color:var(--muted);">3 min read &middot; Bottom-of-funnel comparison for buyers choosing between feedback enforcement and manual specs</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action gates that block repeated mistakes.</div>
+
+  <h2>The product difference in one sentence</h2>
+  <p>SpecLock helps a team codify rules before the work begins. ThumbGate helps a team convert real thumbs-up/down feedback into live pre-action gates after the work reveals what actually breaks.</p>
+  <p>That means ThumbGate is better for fast-moving agent workflows where the problem is not writing more specs, but preventing the same mistake from happening again tomorrow.</p>
+
+  <table style="width:100%;border-collapse:collapse;margin:1.5rem 0;">
+    <thead>
+      <tr style="border-bottom:2px solid var(--border, #333);">
+        <th style="text-align:left;padding:8px;">Capability</th>
+        <th style="text-align:center;padding:8px;">ThumbGate</th>
+        <th style="text-align:center;padding:8px;">SpecLock</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:8px;">Feedback-driven learning</td><td style="text-align:center;">Yes</td><td style="text-align:center;">No</td></tr>
+      <tr><td style="padding:8px;">Pre-action gate enforcement</td><td style="text-align:center;">Yes</td><td style="text-align:center;">Spec-based only</td></tr>
+      <tr><td style="padding:8px;">Thumbs-up/down capture</td><td style="text-align:center;">Yes</td><td style="text-align:center;">No</td></tr>
+      <tr><td style="padding:8px;">Multi-agent support</td><td style="text-align:center;">6 agents</td><td style="text-align:center;">Varies</td></tr>
+      <tr><td style="padding:8px;">Requires upfront spec writing</td><td style="text-align:center;">No</td><td style="text-align:center;">Yes</td></tr>
+      <tr><td style="padding:8px;">Thompson Sampling scoring</td><td style="text-align:center;">Yes</td><td style="text-align:center;">No</td></tr>
+      <tr><td style="padding:8px;">Verification evidence</td><td style="text-align:center;">Yes</td><td style="text-align:center;">Varies</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Choose ThumbGate when</h2>
+  <ul>
+    <li>Your agent already repeats known mistakes and you need the block to happen before tool execution.</li>
+    <li>You want one feedback loop that supports both reinforcement from thumbs up and prevention from thumbs down.</li>
+    <li>You need proof assets, automation reports, and compatibility across multiple coding agents.</li>
+  </ul>
+
+  <h2>Choose SpecLock when</h2>
+  <ul>
+    <li>Your team already maintains strong PRDs or system specs and wants the model constrained against those artifacts.</li>
+    <li>Your primary problem is uncontrolled file edits, not a missing feedback-to-enforcement loop.</li>
+    <li>You are willing to invest in manual constraint authoring as part of the workflow.</li>
+  </ul>
+
+  <h2>Install ThumbGate</h2>
+  <pre><code>npx thumbgate init --agent claude-code</code></pre>
+  <p>Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.</p>
+
+  <h2>Frequently Asked Questions</h2>
+  <h3>Is ThumbGate trying to replace specs?</h3>
+  <p>No. ThumbGate complements specs by capturing thumbs-up/down feedback from live agent behavior and enforcing the learned rules as pre-action gates.</p>
+
+  <h3>What does ThumbGate do that SpecLock does not?</h3>
+  <p>ThumbGate turns explicit feedback into searchable memory, auto-generated prevention rules, and runtime gates that block repeated mistakes before the next tool call executes.</p>
+
+  <h3>Can I use ThumbGate and SpecLock together?</h3>
+  <p>Yes. SpecLock can handle upfront spec enforcement while ThumbGate handles the emergent failures that specs did not anticipate, using thumbs-up/down feedback to learn and enforce new rules.</p>
+
+  <h3>Which tool is better for fast-moving teams?</h3>
+  <p>ThumbGate is better for fast-moving agent workflows where the problem is not writing more specs, but preventing the same mistake from happening again tomorrow.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Founding Member Deal &mdash; $49</h2>
+    <p>Lock in lifetime Pro access at the founding price. One command to start.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+    <p style="margin-top:8px;"><a href="/pro">Learn about ThumbGate Pro &rarr;</a></p>
+  </div>
+
+  <div class="related">
+    <h3>Related</h3>
+    <a href="/compare/mem0">ThumbGate vs Mem0 &rarr;</a>
+    <a href="/guides/pre-action-gates">What Are Pre-Action Gates? &rarr;</a>
+    <a href="/guides/stop-repeated-ai-agent-mistakes">Stop Repeated AI Agent Mistakes &rarr;</a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>

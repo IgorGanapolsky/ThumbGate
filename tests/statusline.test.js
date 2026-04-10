@@ -8,6 +8,7 @@ const { execFileSync } = require('child_process');
 const { cacheUpdateHookCommand, statuslineCommand } = require('../scripts/hook-runtime');
 const { activateLicense } = require('../scripts/license');
 const { writeActiveProjectState } = require('../scripts/feedback-paths');
+const { createLesson } = require('../scripts/lesson-inference');
 
 const STATUSLINE_PATH = path.join(__dirname, '..', 'scripts', 'statusline.sh');
 const CACHE_UPDATER_PATH = path.join(__dirname, '..', 'scripts', 'hook-thumbgate-cache-updater.js');
@@ -65,6 +66,13 @@ function runStatusline(cachePayload, extraEnv = {}) {
   }
 }
 
+function stripStatuslineFormatting(text) {
+  return String(text)
+    .replace(/\u001b]8;;[^\u0007]*\u0007/g, '')
+    .replace(/\u001b]8;;\u0007/g, '')
+    .replace(/\u001b\[[0-9;]*m/g, '');
+}
+
 test('statusline script exists and is executable', () => {
   assert.ok(fs.existsSync(STATUSLINE_PATH), 'scripts/statusline.sh must exist');
   const stat = fs.statSync(STATUSLINE_PATH);
@@ -81,9 +89,10 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.ok(out.includes('Free'), 'should show license tier');
   assert.ok(out.includes('10'), 'should show thumbs up count');
   assert.ok(out.includes('5'), 'should show thumbs down count');
-  assert.doesNotMatch(out, /\b\d+\s+lessons?\b/i, 'should not show a lesson count label');
-  assert.match(out, /\u001b]8;;http:\/\/localhost:3456\/feedback\/quick\?signal=up/);
-  assert.match(out, /\u001b]8;;http:\/\/localhost:3456\/dashboard/);
+  assert.ok(out.includes('3'), 'should show lesson count');
+  assert.ok(out.includes('lessons'), 'should show lessons label');
+  assert.match(out, /Dashboard \(http:\/\/localhost:3456\/dashboard\)/);
+  assert.match(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
   assert.match(out, /Dashboard/);
   assert.match(out, /Lessons/);
 });
@@ -147,6 +156,52 @@ test('statusline rebuilds counters from local feedback logs when cache is empty'
   }
 });
 
+test('statusline rebuilds counters from Claude history when the prompt hook missed feedback', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-claude-history-'));
+  const projectDir = path.join(tmpDir, 'project');
+  const feedbackDir = path.join(projectDir, '.thumbgate');
+  const homeDir = path.join(tmpDir, 'home');
+  const historyPath = path.join(homeDir, '.claude', 'history.jsonl');
+  fs.mkdirSync(feedbackDir, { recursive: true });
+  fs.mkdirSync(path.dirname(historyPath), { recursive: true });
+  fs.writeFileSync(
+    historyPath,
+    `${JSON.stringify({
+      display: 'thumbs down',
+      timestamp: 1775750156301,
+      project: projectDir,
+      sessionId: 'session-1',
+    })}\n`
+  );
+  fs.writeFileSync(
+    path.join(feedbackDir, 'statusline_cache.json'),
+    JSON.stringify({ thumbs_up: '0', thumbs_down: '0', lessons: '0', trend: '?', updated_at: '0' })
+  );
+
+  try {
+    const out = execFileSync('bash', [STATUSLINE_PATH], {
+      encoding: 'utf8',
+      input: JSON.stringify({ context_window: { used_percentage: 5 } }),
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        USERPROFILE: homeDir,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_PROJECT_DIR: projectDir,
+        THUMBGATE_CLAUDE_HISTORY_PATH: historyPath,
+      },
+      timeout: 5000,
+    });
+    assert.ok(out.includes('1'), 'should show the synced negative count');
+
+    const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
+    assert.equal(cache.thumbs_down, '1');
+    assert.ok(fs.existsSync(path.join(feedbackDir, 'feedback-log.jsonl')), 'feedback log should be created from Claude history');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test('statusline follows the persisted active project when Claude is running from a transient cwd', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-project-'));
   const homeDir = path.join(tmpDir, 'home');
@@ -185,6 +240,52 @@ test('statusline follows the persisted active project when Claude is running fro
     assert.ok(out.includes('7'), 'should show the active project thumbs up count');
     assert.ok(out.includes('3'), 'should show the active project thumbs down count');
     assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('statusline resolves project feedback from Claude cwd instead of the runtime cwd', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-claude-cwd-'));
+  const homeDir = path.join(tmpDir, 'home');
+  const projectDir = path.join(tmpDir, 'project-bravo');
+  const runtimeDir = path.join(homeDir, '.thumbgate', 'runtime');
+  const feedbackDir = path.join(projectDir, '.claude', 'memory', 'feedback');
+  fs.mkdirSync(homeDir, { recursive: true });
+  fs.mkdirSync(runtimeDir, { recursive: true });
+  fs.mkdirSync(feedbackDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(feedbackDir, 'feedback-log.jsonl'),
+    [
+      JSON.stringify({ signal: 'positive', timestamp: '2026-04-09T18:00:00.000Z', context: 'kept scope tight' }),
+      JSON.stringify({ signal: 'positive', timestamp: '2026-04-09T18:01:00.000Z', context: 'verified clean worktree' }),
+      JSON.stringify({ signal: 'negative', timestamp: '2026-04-09T18:02:00.000Z', context: 'stale runtime cwd' }),
+    ].join('\n') + '\n'
+  );
+
+  try {
+    const out = execFileSync('bash', [STATUSLINE_PATH], {
+      cwd: runtimeDir,
+      encoding: 'utf8',
+      input: JSON.stringify({
+        cwd: projectDir,
+        context_window: { used_percentage: 33 },
+      }),
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        PATH: SAFE_SYSTEM_PATH,
+        PWD: runtimeDir,
+      },
+      timeout: 5000,
+    });
+
+    assert.ok(out.includes('2'), 'should show project thumbs up count from Claude cwd');
+    assert.ok(out.includes('1'), 'should show project thumbs down count from Claude cwd');
+
+    const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
+    assert.equal(cache.thumbs_up, '2');
+    assert.equal(cache.thumbs_down, '1');
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
@@ -234,6 +335,54 @@ test('statusline shows booting labels while the local dashboard is coming online
   assert.match(out, /Dashboard…/);
   assert.match(out, /Lessons…/);
   assert.doesNotMatch(out, /\u001b]8;;http:\/\/localhost:3456\/dashboard/);
+});
+
+test('statusline preserves dashboard links under a tight width budget', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-budget-'));
+  const homeDir = path.join(tmpDir, 'home');
+  fs.mkdirSync(homeDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(tmpDir, 'statusline_cache.json'),
+    JSON.stringify({
+      thumbs_up: '157',
+      thumbs_down: '1450',
+      lessons: '27',
+      trend: 'stable',
+      updated_at: String(Math.floor(Date.now() / 1000)),
+    })
+  );
+
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  createLesson({
+    signal: 'negative',
+    inferredLesson: 'MISTAKE: Something broke again because the deploy health check was skipped after merge.',
+  });
+
+  try {
+    const out = execFileSync('bash', [STATUSLINE_PATH], {
+      encoding: 'utf8',
+      input: JSON.stringify({ context_window: { used_percentage: 25 } }),
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        THUMBGATE_FEEDBACK_DIR: tmpDir,
+        THUMBGATE_STATUSLINE_MAX_CHARS: '72',
+        _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture()),
+      },
+      timeout: 5000,
+    });
+    const plain = stripStatuslineFormatting(out).trim();
+    assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
+    assert.match(plain, /Lessons/, 'should preserve the lessons link label');
+  } finally {
+    if (previousFeedbackDir === undefined) {
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
+    } else {
+      process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+    }
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });
 
 test('cache updater hook script exists', () => {
@@ -313,9 +462,19 @@ test('setupClaude uses portable ThumbGate commands for status line and cache upd
   );
 });
 
-test('statusline shell uses link helper and OSC 8 hyperlinks', () => {
+test('statusline shell uses link helper and inline URLs', () => {
   const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
   assert.match(shellSource, /statusline-links\.js/);
-  assert.match(shellSource, /osc8_link/);
+  assert.match(shellSource, /inline_link/);
   assert.match(shellSource, /LOCAL_API_ORIGIN/);
+});
+
+test('statusline output ends with Dashboard and Lessons links (regression guard)', () => {
+  const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
+  // Both branches (no-feedback and has-feedback) must end with Dashboard + Lessons links
+  const outputLines = shellSource.split('\n').filter(l => l.includes('DASHBOARD_LINK') && l.includes('LESSONS_LINK'));
+  assert.ok(outputLines.length >= 2, `Expected at least 2 output lines with Dashboard+Lessons links, got ${outputLines.length}`);
+  // LESSON_TEXT must NOT appear in the LINE= output assembly — it causes truncation and hides links
+  const lineAssembly = shellSource.split('\n').filter(l => /^\s*LINE=.*LESSON_TEXT/.test(l) || /^\s*\[.*LESSON_TEXT.*\].*&&.*LINE=/.test(l));
+  assert.strictEqual(lineAssembly.length, 0, 'LESSON_TEXT must not be rendered in statusbar output — it truncates Dashboard/Lessons links');
 });

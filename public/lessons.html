@@ -42,6 +42,49 @@
   .stat-value.purple { color: var(--purple); }
   .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
+  /* IMPROVEMENT METRICS */
+  .metrics-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin: 0 0 24px; }
+  .metrics-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 18px; }
+  .metrics-header h2 { margin-bottom: 6px; }
+  .metrics-header p { font-size: 13px; color: var(--text-muted); max-width: 720px; }
+  .metrics-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .metric-tile { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 16px; min-height: 94px; }
+  .metric-kicker { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
+  .metric-number { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .metric-number.green { color: var(--green); }
+  .metric-number.red { color: var(--red); }
+  .metric-number.cyan { color: var(--cyan); }
+  .metric-number.purple { color: var(--purple); }
+  .metric-note { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+  .metrics-chart-wrap { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .metrics-chart-title { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 12px; }
+  .metrics-chart-title h3 { font-size: 14px; margin: 0; }
+  .metrics-chart-title p { font-size: 12px; color: var(--text-muted); }
+  .metrics-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .metrics-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .metrics-legend-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+  .metrics-legend-dot.up { background: var(--green); }
+  .metrics-legend-dot.down { background: var(--red); }
+  .metrics-legend-dot.deny { background: var(--cyan); }
+  .metrics-legend-dot.warn { background: var(--yellow); }
+  .metrics-chart { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 8px; align-items: end; min-height: 180px; }
+  .metrics-bar { background: transparent; border: 1px solid transparent; border-radius: 10px; padding: 8px 4px; color: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+  .metrics-bar:hover { border-color: rgba(34,211,238,0.35); background: rgba(34,211,238,0.04); }
+  .metrics-bar.selected { border-color: rgba(34,211,238,0.65); background: rgba(34,211,238,0.08); }
+  .metrics-bar-body { width: 100%; display: flex; justify-content: center; align-items: flex-end; gap: 6px; }
+  .metrics-bar-stack { width: 100%; max-width: 28px; height: 120px; display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; }
+  .metrics-bar-stack.gate { max-width: 16px; height: 84px; }
+  .metrics-bar-empty { width: 100%; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px dashed rgba(255,255,255,0.05); flex: 1; }
+  .metrics-segment { width: 100%; border-radius: 8px; min-height: 0; }
+  .metrics-segment.up { background: linear-gradient(180deg, rgba(74,222,128,0.95), rgba(74,222,128,0.55)); }
+  .metrics-segment.down { background: linear-gradient(180deg, rgba(248,113,113,0.95), rgba(248,113,113,0.55)); }
+  .metrics-segment.deny { background: linear-gradient(180deg, rgba(34,211,238,0.95), rgba(34,211,238,0.55)); }
+  .metrics-segment.warn { background: linear-gradient(180deg, rgba(251,191,36,0.95), rgba(251,191,36,0.55)); }
+  .metrics-bar-total { font-size: 12px; font-weight: 600; color: var(--text); }
+  .metrics-bar-subtotal { font-size: 10px; color: var(--text-muted); line-height: 1; }
+  .metrics-bar-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .metrics-chart-note { font-size: 12px; color: var(--text-muted); margin-top: 12px; }
+
   /* TABS */
   .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
   .tab { padding: 12px 20px; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
@@ -114,6 +157,9 @@
 
   @media (max-width: 700px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .metrics-header { flex-direction: column; }
+    .metrics-summary-grid { grid-template-columns: repeat(2, 1fr); }
+    .metrics-chart { grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 12px; }
     .filter-row { flex-wrap: wrap; }
     .rule-meta { flex-direction: column; gap: 8px; }
   }
@@ -152,7 +198,7 @@
 <div class="container">
   <div style="margin:32px 0 24px;padding:24px;background:linear-gradient(135deg,rgba(167,139,250,0.08),rgba(34,211,238,0.05));border:1px solid rgba(167,139,250,0.2);border-radius:12px;">
     <h1 style="font-size:22px;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;">📚 Lessons Learned</h1>
-    <p style="font-size:14px;color:var(--text-muted);line-height:1.6;max-width:700px;">Is your AI getting smarter? See every rule auto-generated from your feedback, how many mistakes each one prevented, and which patterns keep recurring. <span style="color:var(--purple);font-weight:600;">This is the proof your feedback works.</span></p>
+    <p style="font-size:14px;color:var(--text-muted);line-height:1.6;max-width:700px;">See what ThumbGate learned from your feedback, which failure patterns keep repeating, and how many actions the gate layer actually blocked. <span style="color:var(--purple);font-weight:600;">This view separates repeated failures from recorded gate blocks so the proof stays honest.</span></p>
     <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted);">
       <span>📋 <strong style="color:var(--text);">Active Rules</strong> — what was learned</span>
       <span>📊 <strong style="color:var(--text);">Timeline</strong> — when it was learned</span>
@@ -171,9 +217,9 @@
       <div class="stat-sub">Highest severity rules</div>
     </div>
     <div class="stat-card" onclick="switchTab('timeline')">
-      <div class="stat-label">Mistakes Prevented</div>
-      <div class="stat-value green" id="statPrevented">0</div>
-      <div class="stat-sub">Gate blocks from learned rules</div>
+      <div class="stat-label">Actions Blocked</div>
+      <div class="stat-value green" id="statBlocked">0</div>
+      <div class="stat-sub">Recorded gate denies, not inferred repeats</div>
     </div>
     <div class="stat-card" onclick="switchTab('insights')">
       <div class="stat-label">Approval Trend</div>
@@ -184,6 +230,54 @@
 
   <div id="lessonsMode" style="margin:-8px 0 20px;padding:12px 16px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);font-size:13px;color:var(--text-muted);">
     Loading lessons view...
+  </div>
+
+  <div class="metrics-panel" id="metricsPanel">
+    <div class="metrics-header">
+      <div>
+        <h2>Improvement Over Time</h2>
+        <p id="metricsSummary">Loading defensible live metrics...</p>
+      </div>
+      <button class="filter-btn" id="metricsClearBtn" type="button" style="display:none;" onclick="clearTimelineDayFilter()">Clear day filter</button>
+    </div>
+    <div class="metrics-summary-grid" id="metricsSummaryGrid">
+      <div class="metric-tile">
+        <div class="metric-kicker">Fast path rate</div>
+        <div class="metric-number purple">--</div>
+        <div class="metric-note">Waiting for live decisions</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-kicker">Override rate</div>
+        <div class="metric-number red">--</div>
+        <div class="metric-note">Waiting for live decisions</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-kicker">Rollback rate</div>
+        <div class="metric-number cyan">--</div>
+        <div class="metric-note">Waiting for live decisions</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-kicker">Median latency</div>
+        <div class="metric-number green">--</div>
+        <div class="metric-note">Time from recommendation to recorded outcome</div>
+      </div>
+    </div>
+    <div class="metrics-chart-wrap">
+      <div class="metrics-chart-title">
+        <h3>Recent Feedback + Gate Activity</h3>
+        <p>Click any day to inspect the recorded feedback behind the trend and compare it with gate interceptions.</p>
+      </div>
+      <div class="metrics-legend">
+        <span><i class="metrics-legend-dot up"></i> Positive feedback</span>
+        <span><i class="metrics-legend-dot down"></i> Negative feedback</span>
+        <span><i class="metrics-legend-dot deny"></i> Gate deny</span>
+        <span><i class="metrics-legend-dot warn"></i> Gate warn</span>
+      </div>
+      <div class="metrics-chart" id="metricsChart">
+        <div class="loading" style="grid-column:1 / -1;">Loading chart...</div>
+      </div>
+      <div class="metrics-chart-note" id="metricsChartNote">The chart uses recorded feedback events, not inferred rule strength.</div>
+    </div>
   </div>
 
   <div class="tabs">
@@ -224,13 +318,13 @@
   <!-- TAB 3: INSIGHTS (PRO) -->
   <div class="tab-content" id="tab-insights">
     <div class="insight-card">
-      <h3>🔥 Top Recurring Mistakes This Week</h3>
+      <h3>🔥 Top Recurring Failure Patterns</h3>
       <ul class="insight-list" id="insightMistakes">
         <li><span>Loading...</span></li>
       </ul>
     </div>
     <div class="insight-card">
-      <h3>🛡️ Most Effective Rules</h3>
+      <h3>🛡️ Most Reinforced Rules</h3>
       <ul class="insight-list" id="insightEffective">
         <li><span>Loading...</span></li>
       </ul>
@@ -243,7 +337,7 @@
     </div>
     <div class="pro-badge" id="proBadge" style="display:none;">
       <h3>Unlock Full Insights</h3>
-      <p>DPO training data export, effectiveness charts, pattern clustering, and weekly auto-digests.</p>
+      <p>DPO training data export, effectiveness charts, pattern clustering, weekly auto-digests, and a learned intervention policy trained from feedback, audits, and diagnostics.</p>
       <a href="/#pricing">Get Pro — $19/mo</a>
     </div>
   </div>
@@ -255,10 +349,14 @@ var allTimeline = [];
 var isDemo = true;
 var API_KEY = '';
 var dashboardSnapshot = null;
+var activeTimelineSignal = 'all';
+var activeTimelineDay = null;
+var currentImprovementSeries = [];
 const BOOTSTRAP_API_KEY = __LESSONS_BOOTSTRAP_KEY__;
 const LOCAL_PRO_BOOTSTRAP = __LESSONS_BOOTSTRAP_ENABLED__;
 
 function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function escAttr(s) { return escHtml(String(s || '')).replace(/"/g, '&quot;'); }
 
 function getHeaders() {
   return { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
@@ -282,6 +380,29 @@ function formatDate(value) {
   var ts = new Date(value);
   if (Number.isNaN(ts.getTime())) return String(value);
   return ts.toLocaleString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
+}
+
+function formatShortDay(dayKey) {
+  if (!dayKey) return '';
+  var ts = new Date(dayKey + 'T00:00:00');
+  if (Number.isNaN(ts.getTime())) return dayKey;
+  return ts.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function normalizeSignal(value) {
+  var signal = String(value || '').toLowerCase();
+  if (signal === 'up' || signal === 'positive' || signal === 'thumbs_up') return 'up';
+  return 'down';
+}
+
+function toDayKey(value) {
+  if (!value) return '';
+  var ts = new Date(value);
+  if (Number.isNaN(ts.getTime())) return '';
+  var year = ts.getFullYear();
+  var month = String(ts.getMonth() + 1).padStart(2, '0');
+  var day = String(ts.getDate()).padStart(2, '0');
+  return year + '-' + month + '-' + day;
 }
 
 function highlightCard(index) {
@@ -325,12 +446,54 @@ function filterSeverity(level, el) {
 }
 
 function filterTimeline(signal, el) {
+  activeTimelineSignal = signal;
   if (el) {
     document.querySelectorAll('#tab-timeline .filter-btn').forEach(function(b) { b.classList.remove('active'); });
     el.classList.add('active');
   }
-  var filtered = signal === 'all' ? allTimeline : allTimeline.filter(function(r) { return r.signal === signal; });
-  renderTimeline(filtered);
+  renderTimeline(getFilteredTimelineItems());
+  updateMetricsSelection();
+}
+
+function getFilteredTimelineItems() {
+  return allTimeline.filter(function(item) {
+    if (activeTimelineSignal !== 'all' && item.signal !== activeTimelineSignal) return false;
+    if (activeTimelineDay && item.dayKey !== activeTimelineDay) return false;
+    return true;
+  });
+}
+
+function focusTimelineDay(dayKey) {
+  activeTimelineDay = dayKey;
+  switchTab('timeline');
+  renderTimeline(getFilteredTimelineItems());
+  updateMetricsSelection();
+}
+
+function clearTimelineDayFilter() {
+  activeTimelineDay = null;
+  renderTimeline(getFilteredTimelineItems());
+  updateMetricsSelection();
+}
+
+function updateMetricsSelection() {
+  document.querySelectorAll('.metrics-bar').forEach(function(bar) {
+    bar.classList.toggle('selected', activeTimelineDay && bar.getAttribute('data-day-key') === activeTimelineDay);
+  });
+  var clearBtn = document.getElementById('metricsClearBtn');
+  if (clearBtn) clearBtn.style.display = activeTimelineDay ? 'inline-flex' : 'none';
+  var note = document.getElementById('metricsChartNote');
+  if (!note) return;
+  if (activeTimelineDay) {
+    var selected = currentImprovementSeries.find(function(item) { return item.dayKey === activeTimelineDay; }) || null;
+    if (selected) {
+      note.textContent = 'Showing timeline events for ' + formatShortDay(activeTimelineDay) + '. Feedback: ' + selected.total + ' (' + selected.up + ' positive, ' + selected.down + ' negative). Gate audit: ' + selected.intercepted + ' intercepted (' + selected.deny + ' denies, ' + selected.warn + ' warns).';
+    } else {
+      note.textContent = 'Showing timeline events for ' + formatShortDay(activeTimelineDay) + '. Clear the day filter to return to the full timeline.';
+    }
+  } else {
+    note.textContent = 'The chart combines recorded feedback events with daily gate-audit activity. Decision-loop metrics above come from recorded evaluations and outcomes.';
+  }
 }
 
 function searchRules() {
@@ -362,7 +525,7 @@ function renderRules(rules) {
       '</div>' +
       (r.context ? '<div class="rule-context">' + escHtml(r.context) + '</div>' : '') +
       '<div class="rule-meta">' +
-        '<div class="rule-meta-item">Triggered <span class="value">' + (r.occurrences || 0) + '</span> times</div>' +
+        '<div class="rule-meta-item">Seen in feedback <span class="value">' + (r.occurrences || 0) + '</span> times</div>' +
         (r.lastTriggered ? '<div class="rule-meta-item">Last: <span class="value">' + escHtml(r.lastTriggered) + '</span></div>' : '') +
       '</div>' +
       (r.tags && r.tags.length ? '<div class="rule-tags">' + r.tags.map(function(t) { return '<span class="tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
@@ -420,15 +583,161 @@ function renderInsights(data) {
 
   mistakes.innerHTML = topMistakes.length ? topMistakes.map(function(r) {
     return insightRow(r, '<span style="color:var(--red);font-weight:600">' + (r.occurrences || 0) + 'x</span>');
-  }).join('') : '<li><span style="color:var(--green)">No critical mistakes this week</span></li>';
+  }).join('') : '<li><span style="color:var(--green)">No critical repeated failures this week</span></li>';
 
   effective.innerHTML = topEffective.length ? topEffective.map(function(r) {
-    return insightRow(r, '<span class="rule-effectiveness">Triggered ' + (r.occurrences || 0) + 'x</span>');
-  }).join('') : '<li><span>No high-frequency rules yet</span></li>';
+    return insightRow(r, '<span class="rule-effectiveness">Seen ' + (r.occurrences || 0) + 'x</span>');
+  }).join('') : '<li><span>No reinforced rules yet</span></li>';
 
   stale.innerHTML = staleRules.length ? staleRules.map(function(r) {
     return insightRow(r, '<span style="color:var(--text-muted)">Archive?</span>');
   }).join('') : '<li><span style="color:var(--green)">All rules are active</span></li>';
+}
+
+function buildFeedbackSeries(items, dayCount) {
+  var series = [];
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var counts = {};
+  items.forEach(function(item) {
+    if (!item.dayKey) return;
+    if (!counts[item.dayKey]) counts[item.dayKey] = { up: 0, down: 0 };
+    counts[item.dayKey][item.signal] = (counts[item.dayKey][item.signal] || 0) + 1;
+  });
+  for (var idx = dayCount - 1; idx >= 0; idx--) {
+    var day = new Date(today);
+    day.setDate(today.getDate() - idx);
+    var dayKey = toDayKey(day.toISOString());
+    var entry = counts[dayKey] || { up: 0, down: 0 };
+    series.push({
+      dayKey: dayKey,
+      label: formatShortDay(dayKey),
+      up: entry.up || 0,
+      down: entry.down || 0,
+      total: (entry.up || 0) + (entry.down || 0)
+    });
+  }
+  return series;
+}
+
+function renderImprovementMetrics(stats, data) {
+  var summary = document.getElementById('metricsSummary');
+  var grid = document.getElementById('metricsSummaryGrid');
+  var chart = document.getElementById('metricsChart');
+  if (!summary || !grid || !chart) return;
+
+  if (isDemo) {
+    summary.textContent = 'Live improvement trends appear here once local Pro is connected. The decision tiles are based on recorded evaluations plus override and rollback outcomes, while the chart below stays anchored to feedback and gate audits.';
+    grid.innerHTML = [
+      { label: 'Fast path rate', value: '62%', tone: 'purple', note: 'Sample auto-execute share' },
+      { label: 'Override rate', value: '14%', tone: 'red', note: 'Sample operator overrides' },
+      { label: 'Rollback rate', value: '4%', tone: 'cyan', note: 'Sample reversed decisions' },
+      { label: 'Median latency', value: '6m', tone: 'green', note: 'Sample decision completion speed' }
+    ].map(function(tile) {
+      return '<div class="metric-tile"><div class="metric-kicker">' + escHtml(tile.label) + '</div><div class="metric-number ' + escHtml(tile.tone) + '">' + escHtml(tile.value) + '</div><div class="metric-note">' + escHtml(tile.note) + '</div></div>';
+    }).join('');
+    currentImprovementSeries = [];
+    chart.innerHTML = '<div class="empty" style="grid-column:1 / -1;">Upgrade to Pro to see the clickable live feedback and gate-audit timeline.</div>';
+    updateMetricsSelection();
+    return;
+  }
+
+  var gateStats = (data && data.gateStats) || {};
+  var gateAudit = (data && data.gateAudit) || {};
+  var liveMetrics = (data && data.liveMetrics) || {};
+  var decisionLoop = (data && data.decisions) || {};
+  var harness = (data && data.harness) || {};
+  var approvalRate = Math.round(((stats && (stats.recentRate || stats.approvalRate)) || 0) * 100);
+  var errorTrend = liveMetrics.errorTrend || {};
+  var fastPathRate = Math.round(((decisionLoop.fastPathRate || 0) * 100));
+  var overrideRate = Math.round(((decisionLoop.overrideRate || 0) * 100));
+  var rollbackRate = Math.round(((decisionLoop.rollbackRate || 0) * 100));
+  var medianLatencyMs = Number(decisionLoop.medianLatencyMs || 0);
+  var medianLatencyText = medianLatencyMs >= 3600000
+    ? (medianLatencyMs / 3600000).toFixed(1) + 'h'
+    : medianLatencyMs >= 60000
+      ? Math.round(medianLatencyMs / 60000) + 'm'
+      : Math.round(medianLatencyMs / 1000) + 's';
+  var thisWeekNeg = errorTrend.thisWeek || 0;
+  var lastWeekNeg = errorTrend.lastWeek || 0;
+  var blocked = gateStats.blocked || 0;
+  var resolvedCount = decisionLoop.resolvedCount || 0;
+
+  summary.textContent = 'ThumbGate is auto-routing ' + fastPathRate + '% of tracked decisions while holding override rate at ' + overrideRate + '% and rollback rate at ' + rollbackRate + '% across '
+    + resolvedCount + ' resolved decision' + (resolvedCount === 1 ? '' : 's') + '. Feedback approval is ' + approvalRate + '%, and gates still recorded ' + blocked + ' deny decision' + (blocked === 1 ? '' : 's') + '.';
+
+  grid.innerHTML = [
+    { label: 'Fast path rate', value: fastPathRate + '%', tone: 'purple', note: 'Recorded evaluations that stayed auto-executable' },
+    { label: 'Override rate', value: overrideRate + '%', tone: 'red', note: 'Resolved decisions later changed by a human' },
+    { label: 'Rollback rate', value: rollbackRate + '%', tone: 'cyan', note: 'Resolved decisions later reversed' },
+    { label: 'Median latency', value: medianLatencyText, tone: 'green', note: 'Time from recommendation to recorded outcome' }
+  ].map(function(tile) {
+    return '<div class="metric-tile"><div class="metric-kicker">' + escHtml(tile.label) + '</div><div class="metric-number ' + escHtml(tile.tone) + '">' + escHtml(tile.value) + '</div><div class="metric-note">' + escHtml(tile.note) + '</div></div>';
+  }).join('');
+
+  var gateDays = {};
+  ((gateAudit.days) || []).forEach(function(day) {
+    gateDays[day.dayKey] = day;
+  });
+  var series = buildFeedbackSeries(allTimeline, 14).map(function(item) {
+    var gateDay = gateDays[item.dayKey] || { deny: 0, warn: 0, intercepted: 0 };
+    return {
+      dayKey: item.dayKey,
+      label: item.label,
+      up: item.up,
+      down: item.down,
+      total: item.total,
+      deny: gateDay.deny || 0,
+      warn: gateDay.warn || 0,
+      intercepted: gateDay.intercepted || 0
+    };
+  });
+  currentImprovementSeries = series;
+  var maxFeedbackTotal = series.reduce(function(max, item) { return Math.max(max, item.total); }, 0);
+  var maxGateTotal = series.reduce(function(max, item) { return Math.max(max, item.intercepted); }, 0);
+  if (maxFeedbackTotal === 0 && maxGateTotal === 0) {
+    currentImprovementSeries = [];
+    chart.innerHTML = '<div class="empty" style="grid-column:1 / -1;">No recent feedback events to chart yet.</div>';
+    updateMetricsSelection();
+    return;
+  }
+
+  chart.innerHTML = series.map(function(item) {
+    if (!item.total && !item.intercepted) {
+      return '<button class="metrics-bar" type="button" data-day-key="' + escAttr(item.dayKey) + '" onclick="focusTimelineDay(\'' + escAttr(item.dayKey) + '\')">' +
+        '<div class="metrics-bar-body"><div class="metrics-bar-stack"><div class="metrics-bar-empty"></div></div><div class="metrics-bar-stack gate"><div class="metrics-bar-empty"></div></div></div>' +
+        '<div class="metrics-bar-total">F0</div>' +
+        '<div class="metrics-bar-subtotal">G0</div>' +
+        '<div class="metrics-bar-label">' + escHtml(item.label) + '</div>' +
+      '</button>';
+    }
+    var feedbackHeight = item.total > 0 ? Math.max(14, Math.round((item.total / Math.max(maxFeedbackTotal, 1)) * 120)) : 0;
+    var upHeight = item.up > 0 ? Math.max(8, Math.round((item.up / Math.max(item.total, 1)) * feedbackHeight)) : 0;
+    var downHeight = item.down > 0 ? Math.max(8, feedbackHeight - upHeight) : 0;
+    if (item.up > 0 && item.down > 0 && upHeight + downHeight > 120) downHeight = Math.max(8, 120 - upHeight);
+    var gateHeight = item.intercepted > 0 ? Math.max(12, Math.round((item.intercepted / Math.max(maxGateTotal, 1)) * 84)) : 0;
+    var denyHeight = item.deny > 0 ? Math.max(8, Math.round((item.deny / Math.max(item.intercepted, 1)) * gateHeight)) : 0;
+    var warnHeight = item.warn > 0 ? Math.max(8, gateHeight - denyHeight) : 0;
+    if (item.deny > 0 && item.warn > 0 && denyHeight + warnHeight > 84) warnHeight = Math.max(8, 84 - denyHeight);
+    return '<button class="metrics-bar" type="button" data-day-key="' + escAttr(item.dayKey) + '" onclick="focusTimelineDay(\'' + escAttr(item.dayKey) + '\')">' +
+      '<div class="metrics-bar-body">' +
+        '<div class="metrics-bar-stack">' +
+          (item.up ? '<div class="metrics-segment up" style="height:' + upHeight + 'px" title="' + item.up + ' positive feedback"></div>' : '') +
+          (item.down ? '<div class="metrics-segment down" style="height:' + downHeight + 'px" title="' + item.down + ' negative feedback"></div>' : '') +
+          (!item.total ? '<div class="metrics-bar-empty"></div>' : '') +
+        '</div>' +
+        '<div class="metrics-bar-stack gate">' +
+          (item.deny ? '<div class="metrics-segment deny" style="height:' + denyHeight + 'px" title="' + item.deny + ' gate denies"></div>' : '') +
+          (item.warn ? '<div class="metrics-segment warn" style="height:' + warnHeight + 'px" title="' + item.warn + ' gate warns"></div>' : '') +
+          (!item.intercepted ? '<div class="metrics-bar-empty"></div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="metrics-bar-total">F' + item.total + '</div>' +
+      '<div class="metrics-bar-subtotal">G' + item.intercepted + '</div>' +
+      '<div class="metrics-bar-label">' + escHtml(item.label) + '</div>' +
+    '</button>';
+  }).join('');
+  updateMetricsSelection();
 }
 
 function searchAndHighlight(ruleId) {
@@ -452,7 +761,6 @@ function mapLiveRules(payload) {
       title: result.title || ((result.lesson || {}).summary) || 'Lesson',
       context: ((result.lesson || {}).howToAvoid) || ((result.lesson || {}).summary) || (sourceFeedback && sourceFeedback.context) || '',
       occurrences: linkedGate && linkedGate.occurrences ? linkedGate.occurrences : 1,
-      prevented: linkedGate && linkedGate.occurrences ? linkedGate.occurrences : 0,
       severity: deriveSeverity(result),
       tags: Array.isArray(result.tags) ? result.tags : [],
       lastTriggered: sourceFeedback && sourceFeedback.timestamp ? formatDate(sourceFeedback.timestamp) : formatDate(result.timestamp),
@@ -464,10 +772,13 @@ function mapLiveRules(payload) {
 function mapTimelineItems(payload, lessonMap) {
   return (payload.results || []).map(function(entry) {
     var linkedLesson = lessonMap.get(entry.id) || null;
+    var timestamp = entry.timestamp || null;
     return {
-      signal: entry.signal || 'down',
+      signal: normalizeSignal(entry.signal || entry.feedback),
       context: entry.context || entry.title || '',
       date: formatDate(entry.timestamp),
+      timestamp: timestamp,
+      dayKey: toDayKey(timestamp),
       learned: linkedLesson ? linkedLesson.title : '',
       feedbackId: entry.id || ''
     };
@@ -517,16 +828,19 @@ function loadDemo() {
   allRules = demoRules.slice(0, 3);
   allTimeline = demoTimeline.slice(0, 3);
   dashboardSnapshot = null;
+  activeTimelineSignal = 'all';
+  activeTimelineDay = null;
 
   document.getElementById('statRules').textContent = demoRules.length;
   document.getElementById('statCritical').textContent = demoRules.filter(function(r) { return r.severity === 'critical'; }).length;
-  document.getElementById('statPrevented').textContent = demoRules.reduce(function(sum, r) { return sum + (r.prevented || 0); }, 0);
+  document.getElementById('statBlocked').textContent = demoRules.reduce(function(sum, r) { return sum + (r.prevented || 0); }, 0);
   document.getElementById('statTrend').textContent = '12.5%';
   document.getElementById('statTrendSub').textContent = '7-day approval rate';
 
   renderRules(allRules);
   renderTimeline(allTimeline);
   renderInsights();
+  renderImprovementMetrics({ recentRate: 0.125 }, null);
   renderUpgradeWall('rulesList');
   renderUpgradeWall('timelineList');
   setMode('Demo preview — upgrade to Pro to see your live lessons, timeline, and insights.', true);
@@ -560,16 +874,19 @@ async function loadLive() {
       .filter(function(rule) { return rule.sourceFeedbackId; })
       .map(function(rule) { return [rule.sourceFeedbackId, rule]; }));
     allTimeline = mapTimelineItems(feedbackPayload, lessonMap);
+    activeTimelineSignal = 'all';
+    activeTimelineDay = null;
 
     document.getElementById('statRules').textContent = allRules.length;
     document.getElementById('statCritical').textContent = allRules.filter(function(r) { return r.severity === 'critical'; }).length;
-    document.getElementById('statPrevented').textContent = allRules.reduce(function(sum, r) { return sum + (r.prevented || 0); }, 0);
+    document.getElementById('statBlocked').textContent = ((dashboardSnapshot.gateStats || {}).blocked || 0);
     document.getElementById('statTrend').textContent = ((stats.recentRate || stats.approvalRate || 0) * 100).toFixed(1) + '%';
     document.getElementById('statTrendSub').textContent = 'Live approval rate';
 
     renderRules(allRules);
     renderTimeline(allTimeline);
     renderInsights(dashboardSnapshot);
+    renderImprovementMetrics(stats, dashboardSnapshot);
     document.getElementById('proBadge').style.display = 'none';
     setMode('Local Pro connected — this lessons view is reading your live rules, feedback timeline, and insights.', false);
   } catch (_err) {

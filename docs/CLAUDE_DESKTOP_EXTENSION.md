@@ -106,7 +106,7 @@ The Claude extension README includes three examples:
 - PR review hardening
 - code modernization workflow
 - internal ops or release workflow
-- bare thumbs-down with automatic lesson proposal from recent conversation history
+- bare thumbs-down with automatic lesson proposal from up to 8 prior recorded entries in the current Claude hook path
 
 ### 5. Proof and trust layer
 
@@ -123,14 +123,14 @@ For Claude Desktop, the highest-ROI feedback improvement is allowing a user to g
 Current shipped behavior:
 
 - `capture_feedback` accepts optional `chatHistory` and `relatedFeedbackId`
-- negative signals can distill `whatWentWrong` and `whatToChange` from the last ~10 messages plus the failed tool call
-- positive signals can distill `whatWorked` from the recent conversation window
-- linked follow-up notes can refine an earlier feedback record instead of creating isolated duplicates
+- negative signals can distill `whatWentWrong` and `whatToChange` from up to 8 prior recorded entries plus the failed tool call in the current Claude auto-capture path
+- positive signals are stored directly; they do not use that same 8-entry history window in the current hook path
+- accepted feedback opens a linked 60-second follow-up session, and appended notes reset the timer instead of creating isolated duplicates
 
 Do not market this as generic black-box summarization. Market it as:
 
 - local-first history-aware lesson distillation
-- recent-message inference for vague thumbs feedback
+- up-to-8-entry inference for vague thumbs-down feedback in the current Claude hook path
 - reusable corrective rules grounded in the actual workflow transcript
 
 ## Build the MCPB

@@ -47,6 +47,7 @@ function createHarness() {
   execSync('git init', { cwd: repoDir, stdio: 'ignore' });
   execSync('git config user.email "thumbgate-tests@example.com"', { cwd: repoDir, stdio: 'ignore' });
   execSync('git config user.name "ThumbGate Tests"', { cwd: repoDir, stdio: 'ignore' });
+  execSync('git config commit.gpgsign false', { cwd: repoDir, stdio: 'ignore' });
   fs.writeFileSync(filePath, 'base\n');
   execSync('git add safe-file.txt', { cwd: repoDir, stdio: 'ignore' });
   execSync('git commit -m "init"', { cwd: repoDir, stdio: 'ignore' });

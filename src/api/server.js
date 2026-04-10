@@ -109,6 +109,14 @@ const {
   evaluateOperationalIntegrity,
 } = require('../../scripts/operational-integrity');
 const {
+  evaluateWorkflowSentinel,
+} = require('../../scripts/workflow-sentinel');
+const {
+  recordDecisionEvaluation,
+  recordDecisionOutcome,
+  computeDecisionMetrics,
+} = require('../../scripts/decision-journal');
+const {
   generateDashboard,
 } = require('../../scripts/dashboard');
 const {
@@ -172,6 +180,8 @@ const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
+const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
+const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
 const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
 const VISITOR_COOKIE_NAME = 'thumbgate_visitor_id';
 const SESSION_COOKIE_NAME = 'thumbgate_session_id';
@@ -1345,6 +1355,32 @@ function renderRobotsTxt(runtimeConfig) {
   return [
     'User-agent: *',
     'Allow: /',
+    '',
+    '# AI crawler access — allow all major LLM crawlers',
+    'User-agent: GPTBot',
+    'Allow: /',
+    '',
+    'User-agent: ClaudeBot',
+    'Allow: /',
+    '',
+    'User-agent: PerplexityBot',
+    'Allow: /',
+    '',
+    'User-agent: Googlebot',
+    'Allow: /',
+    '',
+    'User-agent: Bingbot',
+    'Allow: /',
+    '',
+    'User-agent: anthropic-ai',
+    'Allow: /',
+    '',
+    'User-agent: Google-Extended',
+    'Allow: /',
+    '',
+    '# LLM context document — clean declarative content for AI retrieval',
+    `# ${runtimeConfig.appOrigin}/llm-context.md`,
+    '',
     `Sitemap: ${runtimeConfig.appOrigin}/sitemap.xml`,
   ].join('\n');
 }
@@ -1353,6 +1389,7 @@ function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
+    { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
   return [
@@ -2516,12 +2553,39 @@ function createApiServer() {
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/.well-known/llms.txt') {
+      const llmsTxtPath = path.join(__dirname, '..', '..', '.well-known', 'llms.txt');
+      try {
+        const content = fs.readFileSync(llmsTxtPath, 'utf8');
+        sendText(res, 200, content, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' }, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'llms.txt not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/sitemap.xml') {
       sendText(res, 200, renderSitemapXml(hostedConfig), {
         'Content-Type': 'application/xml; charset=utf-8',
       }, {
         headOnly: isHeadRequest,
       });
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/llm-context.md') {
+      const llmContextPath = path.resolve(__dirname, '../../public/llm-context.md');
+      try {
+        const content = fs.readFileSync(llmContextPath, 'utf8');
+        sendText(res, 200, content, {
+          'Content-Type': 'text/markdown; charset=utf-8',
+          'X-Robots-Tag': 'all',
+        }, {
+          headOnly: isHeadRequest,
+        });
+      } catch (_err) {
+        sendJson(res, 404, { error: 'Not found' });
+      }
       return;
     }
 
@@ -2852,6 +2916,28 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname.startsWith('/guides/')) {
+      try {
+        const slug = pathname.replace('/guides/', '').replace(/[^a-z0-9-]/g, '');
+        const guidePath = path.join(GUIDES_DIR, `${slug}.html`);
+        if (!guidePath.startsWith(GUIDES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
+        const html = fs.readFileSync(guidePath, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch { sendJson(res, 404, { error: 'Guide not found' }); }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname.startsWith('/compare/') && pathname !== '/compare') {
+      try {
+        const slug = pathname.replace('/compare/', '').replace(/[^a-z0-9-]/g, '');
+        const comparePath = path.join(COMPARE_DIR, `${slug}.html`);
+        if (!comparePath.startsWith(COMPARE_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
+        const html = fs.readFileSync(comparePath, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch { sendJson(res, 404, { error: 'Comparison not found' }); }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/') {
       if (wantsJson(req, parsed)) {
         sendJson(res, 200, {
@@ -2859,7 +2945,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/compare', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/compare', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -4569,6 +4655,85 @@ async function addContext(){
         return;
       }
 
+      if (req.method === 'POST' && pathname === '/v1/decisions/evaluate') {
+        const body = await parseJsonBody(req);
+        if (!body.toolName) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Bad Request',
+            status: 400,
+            detail: 'toolName is required.',
+          });
+          return;
+        }
+
+        const report = evaluateWorkflowSentinel(body.toolName, {
+          command: body.command,
+          path: body.filePath,
+          changed_files: Array.isArray(body.changedFiles) ? body.changedFiles : [],
+          repoPath: body.repoPath,
+          baseBranch: body.baseBranch,
+        }, {
+          repoPath: body.repoPath,
+          baseBranch: body.baseBranch,
+          affectedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : undefined,
+          requirePrForReleaseSensitive: body.requirePrForReleaseSensitive === true,
+          requireVersionNotBehindBase: body.requireVersionNotBehindBase === true,
+          governanceState: getScopeState(),
+          feedbackDir: requestFeedbackDir,
+        });
+        const evaluation = recordDecisionEvaluation(report, {
+          source: 'api',
+          toolName: body.toolName,
+          toolInput: {
+            command: body.command,
+            filePath: body.filePath,
+            changedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : [],
+            repoPath: body.repoPath,
+            baseBranch: body.baseBranch,
+          },
+          changedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : [],
+        }, {
+          feedbackDir: requestFeedbackDir,
+        });
+        report.actionId = evaluation.actionId;
+        if (report.decisionControl) report.decisionControl.actionId = evaluation.actionId;
+        sendJson(res, 200, report);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/decisions/outcome') {
+        const body = await parseJsonBody(req);
+        if (!body.actionId || !body.outcome) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Bad Request',
+            status: 400,
+            detail: 'actionId and outcome are required.',
+          });
+          return;
+        }
+        const outcome = recordDecisionOutcome({
+          actionId: body.actionId,
+          outcome: body.outcome,
+          actualDecision: body.actualDecision,
+          actor: body.actor,
+          notes: body.notes,
+          metadata: body.metadata,
+          latencyMs: body.latencyMs,
+          source: 'api',
+        }, {
+          feedbackDir: requestFeedbackDir,
+        });
+        sendJson(res, 200, outcome);
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/decisions/metrics') {
+        sendJson(res, 200, computeDecisionMetrics(requestFeedbackDir));
+        return;
+      }
+
       // GET /v1/settings/status -- Resolved settings hierarchy with origin metadata
       if (req.method === 'GET' && pathname === '/v1/settings/status') {
         sendJson(res, 200, getSettingsStatus());
@@ -4599,9 +4764,9 @@ async function addContext(){
         return;
       }
 
-      // POST /webhook/stripe — Track Stripe subscription events (checkout, subscription changes)
-      // TODO: Add STRIPE_WEBHOOK_SECRET to .env and enable signature verification via
-      // verifyWebhookSignature() once the webhook endpoint is registered in the Stripe Dashboard.
+      // POST /webhook/stripe — legacy Stripe event log bridge kept for backward compatibility.
+      // When STRIPE_WEBHOOK_SECRET is configured, verify the same Stripe signature used by
+      // the /v1/billing/webhook route before touching any payload.
       if (req.method === 'POST' && pathname === '/webhook/stripe') {
         try {
           const rawBody = await new Promise((resolve, reject) => {
@@ -4610,6 +4775,18 @@ async function addContext(){
             req.on('end', () => resolve(Buffer.concat(chunks)));
             req.on('error', reject);
           });
+
+          const sig = req.headers['stripe-signature'] || '';
+          if (!verifyWebhookSignature(rawBody, sig)) {
+            sendProblem(res, {
+              type: PROBLEM_TYPES.WEBHOOK_INVALID,
+              title: 'Invalid webhook signature',
+              status: 400,
+              detail: 'The webhook signature could not be verified.',
+            });
+            return;
+          }
+
           let event;
           try {
             event = JSON.parse(rawBody.toString('utf-8'));

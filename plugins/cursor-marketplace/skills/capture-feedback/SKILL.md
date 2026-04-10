@@ -21,7 +21,7 @@ Use the `capture_feedback` MCP tool with:
 - **signal** — `"thumbs_up"` or `"thumbs_down"`
 - **context** — Description of what happened and why when the user already said it clearly
 - **tags** — Array of relevant tags for categorization (e.g., `["test-failure", "refactor"]`)
-- **chatHistory** — The last ~10 messages plus the failed tool call when the thumbs signal is vague and the lesson must be distilled from recent context
+- **chatHistory** — Up to 8 prior recorded entries plus the failed tool call when the thumbs-down signal is vague and the lesson must be distilled from recent context
 - **relatedFeedbackId** — Use when the user adds clarifying detail later and it should refine the existing feedback event
 - **rubric_scores** — Optional object with structured quality scores
 
@@ -39,8 +39,9 @@ If the user only says `thumbs_down`, `wrong`, `correct`, or `this failed`, do no
 
 - the signal
 - any minimal context the user already gave
-- `chatHistory` containing the recent conversation window
+- `chatHistory` containing up to 8 prior recorded entries from the current correction thread
 - the failed tool call or command when available
+- `relatedFeedbackId` if the user is clarifying an already-open 60-second follow-up session
 
 That lets ThumbGate propose `whatWentWrong`, `whatToChange`, and a candidate rule automatically.
 

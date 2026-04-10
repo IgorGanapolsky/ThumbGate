@@ -128,6 +128,7 @@
 
   <h3>Episodic layer: the feedback log</h3>
   <p>Every thumbs-up or thumbs-down you give an agent action is written to a structured feedback log. Each entry captures the tool call that was made, the context at the time, what worked or went wrong, and any tags you add. The log is append-only and survives across sessions.</p>
+  <p>In the current Claude auto-capture hook, a vague thumbs-down can borrow up to 8 prior recorded entries plus the failed tool call before promotion. Accepted feedback also opens a linked 60-second follow-up session so later corrections stay attached to the same memory trace instead of fragmenting into duplicates.</p>
 
   <pre><code># Thumbs-down: record a specific failure
 node .claude/scripts/feedback/capture-feedback.js \

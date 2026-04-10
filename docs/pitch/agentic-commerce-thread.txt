@@ -31,7 +31,7 @@ All three protocols support MCP transport. Zero custom integration needed.
 
 L'Oreal, Unilever, and Mars are adopting AMP. Their agents need this layer.
 
-6/6: Open source. MIT license. 384 tests passing.
+6/6: Open source. MIT license. Proof-backed verification.
 
 Works with Claude, ChatGPT, Gemini, Codex, Cursor.
 
