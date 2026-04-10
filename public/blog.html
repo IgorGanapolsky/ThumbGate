@@ -36,6 +36,12 @@
         "blogPost": [
           {
             "@type": "BlogPosting",
+            "headline": "Your AI agent is a supply chain attack surface. Here's how to gate it.",
+            "datePublished": "2026-04-10",
+            "keywords": "AI agent security, supply chain attack, pre-action gates, agent governance, ThumbGate"
+          },
+          {
+            "@type": "BlogPosting",
             "headline": "The Claude Code Leak Proves Why Pre-Action Gates Matter",
             "datePublished": "2026-04-01",
             "keywords": "Claude Code security, Claude Code guardrails, AI agent safety, pre-action gates"
@@ -166,6 +172,73 @@
     </header>
 
     <div class="container">
+      <article class="post">
+        <div class="post-date">April 10, 2026</div>
+        <h2>Your AI agent is a supply chain attack surface. Here's how to gate it.</h2>
+
+        <p>
+          Your AI coding agent runs shell commands. It installs packages. It
+          modifies files, pushes commits, and calls external APIs &mdash; all
+          without requiring you to type a single character. That's the pitch.
+          That's also the attack surface.
+        </p>
+
+        <h3>The gap is pre-action enforcement</h3>
+        <p>
+          Static analysis catches known-bad patterns in code you've already
+          written. Dependency scanners audit lock files <em>after</em> packages
+          are installed. By the time your scanner flags a problem, the agent
+          already ran the command.
+        </p>
+        <p>
+          These tools operate on the <em>output</em> of agent actions. You need
+          something that operates on the <em>input</em> &mdash; before execution.
+        </p>
+
+        <h3>Pre-Action Gates via PreToolUse hooks</h3>
+        <p>
+          ThumbGate implements pre-action gates via <code>PreToolUse</code> hooks
+          &mdash; interception points that run before every tool invocation. No
+          action reaches execution without passing through the gate. Not Bash
+          commands, not file edits, not web fetches.
+        </p>
+        <p>
+          What makes this more than a static blocklist is the
+          <strong>feedback-to-enforcement pipeline</strong>. When something goes
+          wrong, you record a thumbs-down with context. That failure feeds a
+          promotion engine. One failure becomes a warning. Three confirmed
+          failures of the same pattern become a hard block.
+        </p>
+
+        <h3>Real examples</h3>
+        <ul>
+          <li>
+            <strong>Force-push to main</strong> &mdash; Gate fires, push never
+            happens. Agent is redirected to create a branch and open a PR.
+          </li>
+          <li>
+            <strong>Unknown dependency install</strong> &mdash; Flagged for human
+            review. Agent pauses until you approve.
+          </li>
+          <li>
+            <strong>Destructive shell command</strong> &mdash; Blocked by a
+            prevention rule learned from a prior incident.
+          </li>
+        </ul>
+
+        <h3>Five-minute setup</h3>
+        <p>
+          <code>npx thumbgate init</code> installs the PreToolUse hook and
+          generates a starter gate config. Gates are just JSON &mdash; commit
+          them, review them, share them across your team.
+        </p>
+        <p>
+          <strong>Human judgment leads. AI supports. ThumbGate enforces it.</strong>
+        </p>
+
+        <a class="cta" href="/guide">Full setup guide &rarr;</a>
+      </article>
+
       <article class="post">
         <div class="post-date">April 1, 2026</div>
         <h2>Dual-Signal Feedback: Why "What Failed" Isn't Enough</h2>
