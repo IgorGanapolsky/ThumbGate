@@ -103,6 +103,7 @@ describe('zernio publisher', () => {
   const publisher = require('../scripts/social-analytics/publishers/zernio');
   const {
     getConnectedAccounts,
+    isZernioQuotaError,
     publishPost,
     publishToAllPlatforms,
     schedulePost,
@@ -174,6 +175,37 @@ describe('zernio publisher', () => {
     assert.deepEqual(body.platforms, platforms);
 
     assert.equal(result.id, 'post_123');
+  });
+
+  it('publishPost throws a typed quota error when the Zernio plan limit is reached', async () => {
+    global.fetch = async () => ({
+      ok: false,
+      status: 403,
+      text: async () => JSON.stringify({
+        billingPeriod: 'monthly',
+        current: 120,
+        error: 'Post limit reached. Your Build plan allows 120 posts per month. You have used 120.',
+        limit: 120,
+        planName: 'Build',
+      }),
+    });
+
+    await assert.rejects(
+      () => publishPost(
+        'This is test content long enough to pass the social quality gate check',
+        [{ platform: 'twitter', accountId: 'acc_xyz' }]
+      ),
+      (err) => {
+        assert.equal(isZernioQuotaError(err), true);
+        assert.equal(err.code, 'ZERNIO_POST_LIMIT_REACHED');
+        assert.equal(err.current, 120);
+        assert.equal(err.limit, 120);
+        assert.equal(err.planName, 'Build');
+        assert.equal(err.status, 403);
+        assert.match(err.message, /Post limit reached/);
+        return true;
+      }
+    );
   });
 
   it('publishPost throws content required error', async () => {

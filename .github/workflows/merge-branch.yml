@@ -42,7 +42,7 @@ jobs:
       - name: Create or find PR
         if: steps.branch.outputs.exists == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
