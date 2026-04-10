@@ -30,13 +30,15 @@ test('README explains the product as self-improving agent enforcement', () => {
   assert.match(readme, /permanently/i);
 });
 
-test('README routes paid buyers to the dedicated Pro page', () => {
+test('README keeps the business sprint-first while preserving the Pro side lane', () => {
   const readme = readText('README.md');
 
+  assert.match(readme, /Best first paid motion for teams/i);
+  assert.match(readme, /Best first technical motion/i);
+  assert.match(readme, /CLI-first/i);
+  assert.match(readme, /Workflow Hardening Sprint/i);
   assert.match(readme, /Paid path for individual operators/i);
-  assert.match(readme, /personal local dashboard/i);
-  assert.match(readme, /DPO export/i);
-  assert.match(readme, /review-ready evidence/i);
+  assert.match(readme, /self-serve side lane/i);
   assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/pro\?utm_source=github&utm_medium=readme&utm_campaign=pro_page/);
 });
 
@@ -72,6 +74,16 @@ test('README exposes lesson search as a free self-hosted MCP surface', () => {
   assert.match(readme, /search_lessons/i);
   assert.match(readme, /self-hosted users can invoke `search_lessons` directly through MCP/i);
   assert.match(readme, /npx thumbgate lessons/i);
+});
+
+test('LLM context keeps team pricing and CLI-first positioning aligned with commercial truth', () => {
+  const context = readText(path.join('public', 'llm-context.md'));
+
+  assert.match(context, /Workflow Hardening Sprint/i);
+  assert.match(context, /\$99\/seat\/mo/i);
+  assert.match(context, /CLI-first/i);
+  assert.match(context, /solo side lane/i);
+  assert.doesNotMatch(context, /\$12\/seat\/mo/i);
 });
 
 test('continuity guide frames the gateway as downstream reliability, not a new orchestrator', () => {
@@ -140,4 +152,15 @@ test('first dollar playbook keeps the sales motion sprint-first and proof-backed
   assert.match(playbook, /COMMERCIAL_TRUTH\.md/);
   assert.match(playbook, /VERIFICATION_EVIDENCE\.md/);
   assert.match(playbook, /RELEASE_CONFIDENCE\.md/);
+});
+
+test('customer discovery sprint turns the GTM recommendation into a concrete interview loop', () => {
+  const discovery = readText(path.join('docs', 'CUSTOMER_DISCOVERY_SPRINT.md'));
+  const outreach = readText(path.join('docs', 'marketing', 'team-outreach-messages.md'));
+
+  assert.match(discovery, /Pause broad posting for 7 days/i);
+  assert.match(discovery, /3-5 people/i);
+  assert.match(discovery, /Workflow Hardening Sprint/i);
+  assert.match(discovery, /team agent governance|enterprise-first/i);
+  assert.match(outreach, /CUSTOMER_DISCOVERY_SPRINT\.md/);
 });

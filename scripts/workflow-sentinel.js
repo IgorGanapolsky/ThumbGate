@@ -705,6 +705,11 @@ function buildReasoning(report) {
     `Workflow sentinel risk ${report.band} (${report.riskScore}) for ${report.toolName}.`,
     `Blast radius: ${report.blastRadius.summary}.`,
   ];
+  if (report.decisionControl) {
+    lines.push(
+      `Decision control: ${report.decisionControl.decisionOwner} owns a ${report.decisionControl.reversibility} action via ${report.decisionControl.executionMode}.`
+    );
+  }
   if (report.learnedPolicy && report.learnedPolicy.enabled && report.learnedPolicy.prediction) {
     lines.push(
       `Learned policy predicted ${report.learnedPolicy.prediction.label} (${report.learnedPolicy.prediction.confidence}).`
@@ -730,6 +735,80 @@ function getSentinelActionType(toolName) {
     return 'file.write';
   }
   return '';
+}
+
+function classifyReversibility({ command, blastRadius, integrity, protectedSurface }) {
+  const text = String(command || '');
+  const blockers = integrity && Array.isArray(integrity.blockers) ? integrity.blockers : [];
+  const destructiveCommand = /\bgit\s+push\b.*(?:--force|-f)\b/i.test(text)
+    || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(text)
+    || /\brm\s+-rf\b/i.test(text)
+    || /\b(?:npm|yarn|pnpm)\s+publish\b/i.test(text)
+    || /\bgh\s+release\s+create\b/i.test(text)
+    || /\bgit\s+tag\b/i.test(text);
+  const releaseSensitive = blastRadius && Array.isArray(blastRadius.releaseSensitiveFiles)
+    ? blastRadius.releaseSensitiveFiles.length > 0
+    : false;
+  const unapprovedProtected = protectedSurface && Array.isArray(protectedSurface.unapprovedProtectedFiles)
+    ? protectedSurface.unapprovedProtectedFiles.length > 0
+    : false;
+  const hardBlockers = blockers.some((blocker) => /publish|merge|release|protected/i.test(String(blocker.code || '')));
+
+  if (destructiveCommand || releaseSensitive || unapprovedProtected || hardBlockers) {
+    return 'one_way_door';
+  }
+  if ((blastRadius && blastRadius.fileCount >= 4) || (blastRadius && blastRadius.surfaceCount >= 2)) {
+    return 'reviewable';
+  }
+  return 'two_way_door';
+}
+
+function buildDecisionControl({
+  decision,
+  risk,
+  command,
+  blastRadius,
+  integrity,
+  protectedSurface,
+}) {
+  const reversibility = classifyReversibility({
+    command,
+    blastRadius,
+    integrity,
+    protectedSurface,
+  });
+  const hasOperationalBlockers = Boolean(integrity && Array.isArray(integrity.blockers) && integrity.blockers.length > 0);
+  const requiresCheckpoint = decision === 'warn'
+    || (decision === 'allow' && (reversibility !== 'two_way_door' || hasOperationalBlockers));
+  const executionMode = decision === 'deny'
+    ? 'blocked'
+    : requiresCheckpoint
+      ? 'checkpoint_required'
+      : 'auto_execute';
+  const decisionOwner = executionMode === 'blocked'
+    ? 'human'
+    : executionMode === 'checkpoint_required'
+      ? reversibility === 'two_way_door' && !hasOperationalBlockers
+        ? 'shared'
+        : 'human'
+      : 'agent';
+
+  return {
+    executionMode,
+    decisionOwner,
+    reversibility,
+    requiresHumanApproval: executionMode === 'checkpoint_required' && decisionOwner !== 'agent',
+    recommendedAction: executionMode === 'blocked'
+      ? 'halt'
+      : executionMode === 'checkpoint_required'
+        ? 'review'
+        : 'proceed',
+    summary: executionMode === 'blocked'
+      ? 'Do not proceed until the remediation steps are completed.'
+      : executionMode === 'checkpoint_required'
+        ? 'Pause for explicit review before executing this action.'
+        : 'Safe to execute quickly with standard evidence capture.',
+  };
 }
 
 function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command }) {
@@ -923,11 +1002,23 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
       commandInfo: integrity.commandInfo,
     },
   };
+  report.decisionControl = buildDecisionControl({
+    decision,
+    risk,
+    command: toolInput.command || '',
+    blastRadius: {
+      ...blastRadius,
+      unapprovedProtectedFiles: protectedSurfaceForRisk.unapprovedProtectedFiles.length,
+    },
+    integrity,
+    protectedSurface: protectedSurfaceForRisk,
+  });
   report.reasoning = buildReasoning(report);
   return report;
 }
 
 module.exports = {
+  buildDecisionControl,
   DEFAULT_PROTECTED_FILE_GLOBS,
   buildBlastRadius,
   buildEvidence,

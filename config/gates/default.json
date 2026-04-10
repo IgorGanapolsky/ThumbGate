@@ -249,6 +249,34 @@
       "action": "log",
       "message": "Non-critical code pattern detected. Action recorded for audit trail but allowed to proceed.",
       "severity": "low"
+    },
+    {
+      "id": "mcp-sql-delete-block",
+      "layer": "Execution",
+      "toolNames": ["delete_record"],
+      "pattern": ".*",
+      "requireTaskScope": true,
+      "action": "block",
+      "message": "SQL MCP delete_record requires explicit task scope. Destructive database operations must be scoped to prevent accidental data loss.",
+      "severity": "critical"
+    },
+    {
+      "id": "mcp-sql-execute-warn",
+      "layer": "Execution",
+      "toolNames": ["execute_entity"],
+      "pattern": "(?:drop|truncate|alter|grant|revoke)",
+      "action": "warn",
+      "message": "SQL MCP execute_entity matches a potentially destructive DDL pattern. Review before proceeding.",
+      "severity": "high"
+    },
+    {
+      "id": "mcp-sql-bulk-update-warn",
+      "layer": "Execution",
+      "toolNames": ["update_record"],
+      "pattern": "(?:WHERE\\s+1\\s*=\\s*1|WHERE\\s+true|WITHOUT\\s+WHERE)",
+      "action": "block",
+      "message": "SQL MCP bulk update without a safe WHERE clause. This could modify all records in the table.",
+      "severity": "critical"
     }
   ]
 }

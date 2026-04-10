@@ -14,6 +14,10 @@ const {
 const {
   evaluateWorkflowSentinel,
 } = require('./workflow-sentinel');
+const {
+  recordDecisionEvaluation,
+  recordDecisionOutcome,
+} = require('./decision-journal');
 
 /**
  * Computes the SHA-256 hash of an executable binary to prevent path-based bypasses.
@@ -84,7 +88,7 @@ const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+pr\s+(?:crea
 // Config loading
 // ---------------------------------------------------------------------------
 
-function loadGatesConfig(configPath) {
+function loadGatesConfig(configPath, harnessPath) {
   const primaryPath = configPath || process.env.THUMBGATE_GATES_CONFIG || DEFAULT_CONFIG_PATH;
 
   if (!fs.existsSync(primaryPath)) {
@@ -121,6 +125,15 @@ function loadGatesConfig(configPath) {
       ? autoGates
       : autoGates.slice(0, FREE_TIER_MAX_GATES);
     mergedConfig.gates.push(...limitedAutoGates);
+  }
+
+  // Load workflow-specific harness gates (always additive, never replaces default).
+  // Resolved by harness-selector based on tool name + command context.
+  const resolvedHarness = harnessPath || process.env.THUMBGATE_HARNESS_CONFIG;
+  if (resolvedHarness && fs.existsSync(resolvedHarness)) {
+    const harnessGates = (loadOne(resolvedHarness, false) || [])
+      .map(g => ({ ...g, layer: g.layer || 'Execution', source: g.source || 'harness' }));
+    mergedConfig.gates.push(...harnessGates);
   }
 
   return mergedConfig;
@@ -1004,6 +1017,47 @@ function buildSentinelGateResult(report) {
   };
 }
 
+function recordSentinelDecision(report, toolName, toolInput) {
+  if (!report) return null;
+  const entry = recordDecisionEvaluation(report, {
+    source: 'gates-engine',
+    toolName,
+    toolInput,
+    changedFiles: report && report.blastRadius && Array.isArray(report.blastRadius.affectedFiles)
+      ? report.blastRadius.affectedFiles
+      : [],
+  });
+  report.actionId = entry.actionId;
+  if (report.decisionControl && !report.decisionControl.actionId) {
+    report.decisionControl.actionId = entry.actionId;
+  }
+  return entry;
+}
+
+function recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard) {
+  if (!sentinelDecision) return;
+  recordDecisionOutcome({
+    actionId: sentinelDecision.actionId,
+    outcome: 'blocked',
+    actualDecision: 'deny',
+    actor: 'system',
+    source: 'gates-engine',
+    notes: enrichedMemoryGuard.message,
+  });
+}
+
+function recordSentinelBlockDecision(sentinelDecision, sentinelResult) {
+  if (!sentinelDecision) return;
+  recordDecisionOutcome({
+    actionId: sentinelDecision.actionId,
+    outcome: sentinelResult.decision === 'deny' ? 'blocked' : 'warned',
+    actualDecision: sentinelResult.decision,
+    actor: 'system',
+    source: 'workflow-sentinel',
+    notes: sentinelResult.message,
+  });
+}
+
 function enrichResultWithSentinel(result, report) {
   if (!result || !report || report.decision === 'allow') {
     return result;
@@ -1043,7 +1097,12 @@ async function checkMetricCondition(metricCondition) {
 async function evaluateGatesAsync(toolName, toolInput, configPath) {
   let config;
   try {
-    config = loadGatesConfig(configPath);
+    let harnessPath;
+    try {
+      const { selectHarness } = require('./harness-selector');
+      harnessPath = selectHarness(toolName, toolInput);
+    } catch { /* harness-selector is optional */ }
+    config = loadGatesConfig(configPath, harnessPath);
   } catch {
     return null;
   }
@@ -1131,10 +1190,12 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   const sentinelReport = evaluateWorkflowSentinel(toolName, toolInput, {
     governanceState: loadGovernanceState(),
   });
+  const sentinelDecision = recordSentinelDecision(sentinelReport, toolName, toolInput);
   const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
   if (memoryGuard) {
     const enrichedMemoryGuard = enrichResultWithSentinel(memoryGuard, sentinelReport);
     recordStat(enrichedMemoryGuard.gate, 'block');
+    recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard);
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
@@ -1151,6 +1212,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   if (sentinelReport && sentinelReport.decision !== 'allow') {
     const sentinelResult = buildSentinelGateResult(sentinelReport);
     recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn');
+    recordSentinelBlockDecision(sentinelDecision, sentinelResult);
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
@@ -1172,7 +1234,12 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 function evaluateGates(toolName, toolInput, configPath) {
   let config;
   try {
-    config = loadGatesConfig(configPath);
+    let harnessPath;
+    try {
+      const { selectHarness } = require('./harness-selector');
+      harnessPath = selectHarness(toolName, toolInput);
+    } catch { /* harness-selector is optional */ }
+    config = loadGatesConfig(configPath, harnessPath);
   } catch {
     // If config can't be loaded, pass through
     return null;
@@ -1233,10 +1300,12 @@ function evaluateGates(toolName, toolInput, configPath) {
   const sentinelReport = evaluateWorkflowSentinel(toolName, toolInput, {
     governanceState: loadGovernanceState(),
   });
+  const sentinelDecision = recordSentinelDecision(sentinelReport, toolName, toolInput);
   const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
   if (memoryGuard) {
     const enrichedMemoryGuard = enrichResultWithSentinel(memoryGuard, sentinelReport);
     recordStat(enrichedMemoryGuard.gate, 'block');
+    recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard);
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
@@ -1253,6 +1322,7 @@ function evaluateGates(toolName, toolInput, configPath) {
   if (sentinelReport && sentinelReport.decision !== 'allow') {
     const sentinelResult = buildSentinelGateResult(sentinelReport);
     recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn');
+    recordSentinelBlockDecision(sentinelDecision, sentinelResult);
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,

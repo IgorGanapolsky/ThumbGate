@@ -169,6 +169,75 @@ test('intervention policy ignores unsupported audit decisions during example ext
   assert.equal(sourceCounts.audit, 0);
 });
 
+test('intervention policy learns from decision overrides and rollbacks', () => {
+  const feedbackDir = makeFeedbackDir();
+  writeJsonl(path.join(feedbackDir, 'decision-journal.jsonl'), [
+    {
+      recordType: 'evaluation',
+      actionId: 'decision_1',
+      timestamp: '2026-04-09T12:00:00.000Z',
+      toolName: 'Bash',
+      toolInput: { command: 'npm publish' },
+      changedFiles: ['package.json', 'server.json'],
+      recommendation: {
+        decision: 'warn',
+        executionMode: 'checkpoint_required',
+        decisionOwner: 'human',
+        reversibility: 'one_way_door',
+        riskBand: 'high',
+      },
+      blastRadius: {
+        severity: 'high',
+        fileCount: 2,
+        surfaceCount: 2,
+      },
+    },
+    {
+      recordType: 'outcome',
+      actionId: 'decision_1',
+      timestamp: '2026-04-09T12:06:00.000Z',
+      outcome: 'overridden',
+      actualDecision: 'warn',
+      actor: 'human',
+      notes: 'Manual checkpoint required before release.',
+    },
+    {
+      recordType: 'evaluation',
+      actionId: 'decision_2',
+      timestamp: '2026-04-09T13:00:00.000Z',
+      toolName: 'Bash',
+      toolInput: { command: 'gh pr merge --admin' },
+      changedFiles: ['package.json'],
+      recommendation: {
+        decision: 'deny',
+        executionMode: 'blocked',
+        decisionOwner: 'human',
+        reversibility: 'one_way_door',
+        riskBand: 'very_high',
+      },
+      blastRadius: {
+        severity: 'critical',
+        fileCount: 1,
+        surfaceCount: 1,
+      },
+    },
+    {
+      recordType: 'outcome',
+      actionId: 'decision_2',
+      timestamp: '2026-04-09T13:03:00.000Z',
+      outcome: 'rolled_back',
+      actualDecision: 'deny',
+      actor: 'system',
+      notes: 'Decision reversed after governance check.',
+    },
+  ]);
+
+  const { examples, sourceCounts } = buildExamplesFromFeedbackDir(feedbackDir);
+  assert.equal(sourceCounts.decision, 2);
+  assert.ok(examples.some((example) => example.source === 'decision' && example.label === 'warn'));
+  assert.ok(examples.some((example) => example.source === 'decision' && example.label === 'deny'));
+});
+
 test('intervention policy summary falls back when the persisted model is invalid JSON', () => {
   const feedbackDir = makeFeedbackDir();
   const now = Date.now();

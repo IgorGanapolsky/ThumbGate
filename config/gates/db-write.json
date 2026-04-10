@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "harness": "db-write",
+  "description": "Specialized gates for database write operations. Loaded when tool context involves SQL mutations, SQLite writes, or ORM model changes.",
+  "gates": [
+    {
+      "id": "db-drop-table-production",
+      "layer": "Execution",
+      "pattern": "DROP\\s+TABLE(?!.*test|.*tmp|.*temp|.*_test|.*staging)",
+      "toolNames": ["Bash"],
+      "action": "block",
+      "severity": "critical",
+      "message": "DROP TABLE on a non-test table is blocked. Use a migration with a rollback path or confirm this is against a test/staging database."
+    },
+    {
+      "id": "db-delete-without-where",
+      "layer": "Execution",
+      "pattern": "DELETE\\s+FROM\\s+\\w+\\s*;|DELETE\\s+FROM\\s+\\w+\\s*$",
+      "toolNames": ["Bash"],
+      "action": "block",
+      "severity": "critical",
+      "message": "DELETE without a WHERE clause deletes all rows. Add a WHERE clause or use TRUNCATE deliberately."
+    },
+    {
+      "id": "db-truncate-production",
+      "layer": "Execution",
+      "pattern": "TRUNCATE\\s+(?!.*test|.*tmp|.*temp)",
+      "toolNames": ["Bash"],
+      "action": "warn",
+      "severity": "critical",
+      "message": "TRUNCATE detected. Confirm this is against a test or staging table, not production data."
+    },
+    {
+      "id": "db-raw-sql-no-migration",
+      "layer": "Execution",
+      "pattern": "ALTER\\s+TABLE|ADD\\s+COLUMN|DROP\\s+COLUMN|RENAME\\s+COLUMN",
+      "toolNames": ["Bash"],
+      "action": "warn",
+      "severity": "high",
+      "message": "Schema change detected outside a migration file. Create a versioned migration instead of running raw DDL."
+    },
+    {
+      "id": "db-sqlite-delete-runtime",
+      "layer": "Execution",
+      "pattern": "rm\\s+.*\\.sqlite|unlink\\s+.*\\.sqlite|fs\\.rmSync.*\\.sqlite",
+      "toolNames": ["Bash"],
+      "action": "warn",
+      "severity": "high",
+      "message": "Deleting a SQLite database file. Confirm this is not the production lesson DB (.claude/memory/lessons.sqlite)."
+    },
+    {
+      "id": "db-lancedb-wipe",
+      "layer": "Execution",
+      "pattern": "rm\\s+-rf\\s+.*lancedb|rmSync.*lancedb",
+      "toolNames": ["Bash"],
+      "action": "warn",
+      "severity": "high",
+      "message": "Wiping the LanceDB vector store. This deletes all embedded feedback memories. Confirm intent."
+    }
+  ]
+}

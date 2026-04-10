@@ -17,7 +17,7 @@
 > One thumbs-down permanently blocks that AI mistake
 
 **Description:**
-> ThumbGate puts a gate before every AI agent action. One thumbs-down captures the mistake, generates a prevention rule, and permanently blocks that pattern from recurring — across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode. Free to start; Pro at $19/mo adds team dashboards and DPO export.
+> ThumbGate puts a gate before every AI agent action. One thumbs-down captures the mistake, generates a prevention rule, and permanently blocks that pattern from recurring — across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode. Free to start; Pro at $19/mo adds the personal dashboard and DPO export. Team at $99/seat/mo adds shared governance for engineering teams.
 
 **Pricing:** Freemium (Free + Pro $19/mo + Team $99/seat/mo)
 
