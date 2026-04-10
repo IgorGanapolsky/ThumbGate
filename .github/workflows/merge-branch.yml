@@ -14,6 +14,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
+
+env:
+  THUMBGATE_MAIN_MERGE_PROVIDER: trunk
 
 jobs:
   merge:
@@ -38,7 +42,7 @@ jobs:
       - name: Create or find PR
         if: steps.branch.outputs.exists == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -62,5 +66,24 @@ jobs:
           fi
 
           if [ "${{ github.event.inputs.auto_merge }}" = "true" ]; then
-            gh pr merge --auto --squash --delete-branch "$PR_URL" || true
+            PR_NUMBER="$(gh pr view "$PR_URL" --json number --jq '.number')"
+
+            if [ "${THUMBGATE_MAIN_MERGE_PROVIDER}" = "trunk" ]; then
+              existing_comment_id="$(
+                gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+                  --jq '.[] | select(.user.login == "github-actions[bot]" and .body == "/trunk merge") | .id' \
+                  | head -n 1
+              )"
+
+              if [ -n "${existing_comment_id:-}" ]; then
+                echo "Trunk merge request already exists for $PR_URL"
+              else
+                gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+                  --method POST \
+                  -f body='/trunk merge' >/dev/null
+                echo "Requested Trunk merge for $PR_URL"
+              fi
+            else
+              gh pr merge --auto --squash --delete-branch "$PR_URL" || true
+            fi
           fi

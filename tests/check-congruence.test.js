@@ -49,13 +49,14 @@ test('GitHub About config keeps a rich landing description and a valid GitHub de
 test('README commercial copy stays aligned with current Pro and Team packaging', () => {
   const readme = execSync('sed -n \'1,320p\' README.md', { cwd: ROOT, encoding: 'utf-8' });
   assert.match(readme, /\$19\/mo or \$149\/yr/);
-  assert.match(readme, /\$12\/seat\/mo/);
+  assert.match(readme, /\$99\/seat\/mo/);
   assert.match(readme, /shared hosted lesson DB/i);
   assert.match(readme, /org dashboard/i);
   assert.match(readme, /history-aware/i);
   assert.match(readme, /feedback session|open_feedback_session|append_feedback_context|finalize_feedback_session/i);
   assert.match(readme, /3 daily feedback captures/i);
   assert.match(readme, /5 daily lesson searches/i);
+  assert.doesNotMatch(readme, /\$12\/seat\/mo/i);
   assert.doesNotMatch(readme, /shared team DB/i);
   assert.doesNotMatch(readme, /\/mo\$19/i);
 });

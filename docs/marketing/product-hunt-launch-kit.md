@@ -60,11 +60,11 @@ I'm here all day — ask me anything.
 
 Happy launch day! A few things to know before you try it:
 
-The free tier does everything described above — unlimited feedback capture, auto-generated prevention rules, local enforcement via PreToolUse hooks. No cloud account, no credit card.
+The free tier gives you the local loop: 3 daily feedback captures, 5 daily lesson searches, auto-generated prevention rules, and local enforcement via PreToolUse hooks. No cloud account, no credit card.
 
 Pro ($19/mo) adds the personal local dashboard, DPO export pairs for downstream fine-tuning, and a gate debugger to trace exactly why a rule fired.
 
-Team plan is $12/seat/mo if you want shared lesson libraries across an engineering team.
+Team anchors at $99/seat/mo if you want shared lesson libraries, org visibility, and approval boundaries across an engineering team.
 
 The quickest way to see it work: install it, give your agent a thumbs down on the next mistake, and watch the gate appear.
 
@@ -118,7 +118,7 @@ $ git push --force
 **Purpose:** Developers respond to real terminal output over marketing copy. Shows zero-config setup and a gate firing end-to-end.
 
 ### Screenshot 5: Pricing Tiers
-**What to capture:** Clean pricing comparison — Free vs Pro ($19/mo) vs Team ($12/seat/mo).  
+**What to capture:** Clean pricing comparison — Free vs Pro ($19/mo or $149/yr) vs Team ($99/seat/mo).
 Pull from https://thumbgate-production.up.railway.app/#pricing  
 Highlight "Free forever" tier prominently to reduce friction on PH visitors.  
 **Purpose:** Removes the "how much does this cost?" friction before visitors click through.
@@ -300,7 +300,7 @@ What free does NOT include:
 - DPO export pairs (for downstream fine-tuning your own models)
 - Gate debugger (trace why a specific rule fired, with confidence scores)
 
-Pro is $19/mo or $149/yr. Team is $12/seat/mo.
+Pro is $19/mo or $149/yr. Team is $99/seat/mo.
 
 ---
 
