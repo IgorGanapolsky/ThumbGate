@@ -463,9 +463,11 @@ __GA_BOOTSTRAP__
     <p><strong>Best first paid motion:</strong> start with one repo, one workflow, and one repeat failure. ThumbGate turns the blocker into enforcement, routes risky runs toward isolated execution, and gives the buyer a proof-ready story around shared memory, approval boundaries, release confidence, and auditability.</p>
     <div class="hero-actions">
       <a href="#workflow-sprint-intake" class="btn-team">Start Workflow Hardening Sprint</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener">Install Codex plugin</a>
       <a href="/guide?utm_source=website&utm_medium=homepage_hero&utm_campaign=install_free" class="btn-pro-page btn-install-link">Install Free CLI</a>
       <a href="/dashboard?utm_source=website&utm_medium=homepage_hero&utm_campaign=demo" class="btn-demo-link">Open dashboard demo</a>
     </div>
+    <p class="hero-paid-note"><strong>Running Codex?</strong> Download the published plugin bundle or open the <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/INSTALL.md" target="_blank" rel="noopener">Codex install guide</a> for the repo-local profile and MCP path.</p>
     <p class="hero-paid-note"><strong>Start free as an individual.</strong> Pro stays the self-serve lane for personal dashboard and DPO export. Team pricing anchors at <strong>$99/seat/mo with a 3-seat minimum</strong>, but the team path starts intake-first with the Workflow Hardening Sprint so buyers see proof before a wider rollout.</p>
     <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
       <span class="prompt">$</span>
@@ -474,6 +476,8 @@ __GA_BOOTSTRAP__
     </div>
     <div class="proof-bar">
       <a href="/guide" rel="noopener">CLI-first setup guide →</a>
+      <span class="dot"></span>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener">Codex plugin download →</a>
       <span class="dot"></span>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence →</a>
       <span class="dot"></span>
@@ -505,6 +509,11 @@ __GA_BOOTSTRAP__
         <h3>🤖 AI CLIs</h3>
         <p>Claude Code, Claw-code, Codex, Gemini CLI, Amp, and OpenCode all use the same gateway and memory model. Any MCP-compatible agent gets pre-action gates, feedback memory, and enforcement out of the box.</p>
         <div class="card-arrow">View setup guide →</div>
+      </a>
+      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/INSTALL.md" target="_blank" rel="noopener">
+        <h3>🧩 Codex plugin</h3>
+        <p>Codex ships with a published standalone ThumbGate plugin bundle plus a repo-local plugin profile. Download the zip, extract it, and install without wiring MCP by hand.</p>
+        <div class="card-arrow">Get the Codex plugin →</div>
       </a>
       <a class="compat-card" href="/guides/claude-desktop">
         <h3>🧩 Claude Desktop plugin</h3>
@@ -830,7 +839,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What AI agents and editors does this work with?</div>
-        <div class="faq-a">ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any other MCP-compatible agent. Cursor ships with a plugin bundle in this repo. Codex now ships both a standalone plugin bundle and a repo-local app plugin profile. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</div>
+        <div class="faq-a">ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any other MCP-compatible agent. Cursor ships with a plugin bundle in this repo. Codex now ships both a standalone plugin bundle and a repo-local app plugin profile, and the published download is linked directly from this page. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</button>

@@ -281,6 +281,16 @@ test('public landing page internally links to comparison and guide pages without
   assert.doesNotMatch(landingPage, /convert.*search.*demand/i);
 });
 
+test('public landing page advertises the Codex standalone plugin install path', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /Install Codex plugin/);
+  assert.match(landingPage, /Codex plugin download →/);
+  assert.match(landingPage, /Get the Codex plugin →/);
+  assert.match(landingPage, /plugins\/codex-profile\/INSTALL\.md/);
+  assert.match(landingPage, /thumbgate-codex-plugin\.zip/);
+});
+
 test('public landing page FAQ defaults first item open for credibility', () => {
   const landingPage = readLandingPage();
 
