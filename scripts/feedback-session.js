@@ -161,6 +161,11 @@ function finalizeSession(sessionId) {
     persistSession(result);
   } catch (_err) { /* non-critical */ }
 
+  // Auto-infer lesson from the enriched session context (LangChain continual learning)
+  try {
+    autoInferLesson(result);
+  } catch (_err) { /* non-critical — lesson inference is best-effort */ }
+
   // Clean up from active sessions after a delay (allow reads)
   scheduleTimer(() => activeSessions.delete(sessionId), 5000);
 
@@ -262,6 +267,49 @@ function getActiveSession() {
 }
 
 /**
+ * Auto-infer a lesson from a finalized feedback session.
+ *
+ * Implements the Context-layer continual learning pattern identified by
+ * LangChain's three-layer framework (Model / Harness / Context):
+ * when a session finalizes, the enriched follow-up context is fed to
+ * lesson-inference so the next agent session starts with the new lesson
+ * already in recall — no retraining required.
+ */
+function autoInferLesson(finalizedResult) {
+  const { inferFromSurroundingMessages, createLesson } = require('./lesson-inference');
+
+  const priorMessages = (finalizedResult.followUpMessages || []).map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
+
+  const inference = inferFromSurroundingMessages({
+    priorMessages,
+    followingMessages: [],
+    signal: finalizedResult.signal === 'up' || finalizedResult.signal === 'positive' ? 'positive' : 'negative',
+    feedbackContext: finalizedResult.enrichedContext || '',
+  });
+
+  if (!inference || !inference.inferredLesson) return null;
+
+  return createLesson({
+    feedbackId: finalizedResult.feedbackEventId,
+    signal: inference.signal,
+    inferredLesson: inference.inferredLesson,
+    triggerMessage: inference.triggerMessage,
+    priorSummary: inference.priorSummary,
+    confidence: inference.confidence,
+    tags: ['auto-inferred', 'session-finalize'],
+    metadata: {
+      sessionId: finalizedResult.sessionId,
+      followUpCount: finalizedResult.followUpCount,
+      duration: finalizedResult.duration,
+      source: 'auto-lesson-inference',
+    },
+  });
+}
+
+/**
  * Persist finalized session to disk
  */
 function persistSession(result) {
@@ -278,6 +326,7 @@ module.exports = {
   getSession,
   getActiveSession,
   extractComplaints,
+  autoInferLesson,
   SESSION_TIMEOUT_MS,
   MAX_FOLLOWUP_MESSAGES,
   scheduleTimer,
