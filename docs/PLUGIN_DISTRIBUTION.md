@@ -49,8 +49,10 @@ This avoids platform-specific rewrite cost and keeps the product under a small b
 - Claude Desktop bundle icon: `.claude-plugin/bundle/icon.png`
 - Internal submission packet: `docs/CLAUDE_DESKTOP_EXTENSION.md`
 - Bundle build command: `npm run build:claude-mcpb`
+- Review packet build command: `npm run build:claude-review-zip`
 - Release workflow: `.github/workflows/publish-claude-plugin.yml`
 - Latest direct download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
+- Latest review packet zip: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip`
 - Local install path: `claude mcp add thumbgate -- npx -y thumbgate@1.4.0 serve`
 - Promotion rule: treat directory inclusion as a discoverability lane, not customer proof
 
@@ -58,6 +60,12 @@ Build the `.mcpb` for Claude Desktop review or direct installation with:
 
 ```bash
 npm run build:claude-mcpb
+```
+
+Build the review-ready source zip for Anthropic submission backup with:
+
+```bash
+npm run build:claude-review-zip
 ```
 
 ## Claude Code repo-local plugin

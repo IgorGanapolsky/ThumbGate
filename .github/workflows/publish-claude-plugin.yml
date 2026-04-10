@@ -40,33 +40,42 @@ jobs:
       - run: npm run prove:runtime
 
       - run: npm run build:claude-mcpb
+      - run: npm run build:claude-review-zip
 
       - name: Resolve Claude plugin asset names
         id: assets
         run: |
           version=$(node -p "require('./package.json').version")
-          versioned_asset=$(node -e "const { getClaudePluginVersionedAssetName } = require('./scripts/distribution-surfaces'); process.stdout.write(getClaudePluginVersionedAssetName())")
-          channel_asset=$(node -e "const { getClaudePluginChannelAssetName } = require('./scripts/distribution-surfaces'); process.stdout.write(getClaudePluginChannelAssetName())")
+          versioned_bundle=$(node -e "const { getClaudePluginVersionedAssetName } = require('./scripts/distribution-surfaces'); process.stdout.write(getClaudePluginVersionedAssetName())")
+          channel_bundle=$(node -e "const { getClaudePluginChannelAssetName } = require('./scripts/distribution-surfaces'); process.stdout.write(getClaudePluginChannelAssetName())")
+          versioned_review=$(node -e "const { getClaudePluginReviewVersionedAssetName } = require('./scripts/distribution-surfaces'); process.stdout.write(getClaudePluginReviewVersionedAssetName())")
+          channel_review=$(node -e "const { getClaudePluginReviewChannelAssetName } = require('./scripts/distribution-surfaces'); process.stdout.write(getClaudePluginReviewChannelAssetName())")
           is_prerelease=$(node -e "const { isPrereleaseVersion } = require('./scripts/distribution-surfaces'); process.stdout.write(String(isPrereleaseVersion()))")
           {
             echo "version=$version"
-            echo "versioned_asset=$versioned_asset"
-            echo "channel_asset=$channel_asset"
+            echo "versioned_bundle=$versioned_bundle"
+            echo "channel_bundle=$channel_bundle"
+            echo "versioned_review=$versioned_review"
+            echo "channel_review=$channel_review"
             echo "is_prerelease=$is_prerelease"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Create channel asset alias
+      - name: Create release asset aliases
         run: |
-          cp ".artifacts/claude-desktop/${{ steps.assets.outputs.versioned_asset }}" \
-            ".artifacts/claude-desktop/${{ steps.assets.outputs.channel_asset }}"
+          cp ".artifacts/claude-desktop/${{ steps.assets.outputs.versioned_bundle }}" \
+            ".artifacts/claude-desktop/${{ steps.assets.outputs.channel_bundle }}"
+          cp ".artifacts/claude-desktop/${{ steps.assets.outputs.versioned_review }}" \
+            ".artifacts/claude-desktop/${{ steps.assets.outputs.channel_review }}"
 
       - name: Upload Claude plugin artifact
         uses: actions/upload-artifact@v7
         with:
-          name: claude-plugin-mcpb
+          name: claude-plugin-assets
           path: |
-            .artifacts/claude-desktop/${{ steps.assets.outputs.versioned_asset }}
-            .artifacts/claude-desktop/${{ steps.assets.outputs.channel_asset }}
+            .artifacts/claude-desktop/${{ steps.assets.outputs.versioned_bundle }}
+            .artifacts/claude-desktop/${{ steps.assets.outputs.channel_bundle }}
+            .artifacts/claude-desktop/${{ steps.assets.outputs.versioned_review }}
+            .artifacts/claude-desktop/${{ steps.assets.outputs.channel_review }}
 
       - name: Ensure GitHub Release exists
         env:
@@ -88,22 +97,34 @@ jobs:
           VERSION: ${{ steps.assets.outputs.version }}
         run: |
           gh release upload "v${VERSION}" \
-            ".artifacts/claude-desktop/${{ steps.assets.outputs.versioned_asset }}" \
-            ".artifacts/claude-desktop/${{ steps.assets.outputs.channel_asset }}" \
+            ".artifacts/claude-desktop/${{ steps.assets.outputs.versioned_bundle }}" \
+            ".artifacts/claude-desktop/${{ steps.assets.outputs.channel_bundle }}" \
+            ".artifacts/claude-desktop/${{ steps.assets.outputs.versioned_review }}" \
+            ".artifacts/claude-desktop/${{ steps.assets.outputs.channel_review }}" \
             --clobber
 
       - name: Verify Claude plugin release assets
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.assets.outputs.version }}
-          VERSIONED_ASSET: ${{ steps.assets.outputs.versioned_asset }}
-          CHANNEL_ASSET: ${{ steps.assets.outputs.channel_asset }}
+          VERSIONED_BUNDLE: ${{ steps.assets.outputs.versioned_bundle }}
+          CHANNEL_BUNDLE: ${{ steps.assets.outputs.channel_bundle }}
+          VERSIONED_REVIEW: ${{ steps.assets.outputs.versioned_review }}
+          CHANNEL_REVIEW: ${{ steps.assets.outputs.channel_review }}
         run: |
           release_json="$(gh release view "v${VERSION}" --json assets)"
-          echo "$release_json" | jq -e --arg versioned "$VERSIONED_ASSET" --arg channel "$CHANNEL_ASSET" '
+          echo "$release_json" | jq -e \
+            --arg versioned_bundle "$VERSIONED_BUNDLE" \
+            --arg channel_bundle "$CHANNEL_BUNDLE" \
+            --arg versioned_review "$VERSIONED_REVIEW" \
+            --arg channel_review "$CHANNEL_REVIEW" '
             [.assets[].name] as $names
-            | ($names | index($versioned))
+            | ($names | index($versioned_bundle))
             | select(. != null)
-            | ($names | index($channel))
+            | ($names | index($channel_bundle))
+            | select(. != null)
+            | ($names | index($versioned_review))
+            | select(. != null)
+            | ($names | index($channel_review))
             | select(. != null)
           ' >/dev/null

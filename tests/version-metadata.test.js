@@ -9,10 +9,13 @@ const {
 } = require('../scripts/hosted-config');
 const {
   CLAUDE_PLUGIN_NEXT_ASSET_NAME,
+  CLAUDE_PLUGIN_REVIEW_NEXT_ASSET_NAME,
   CODEX_PLUGIN_NEXT_ASSET_NAME,
   PRODUCTHUNT_URL,
   getClaudePluginChannelAssetName,
   getClaudePluginLatestDownloadUrl,
+  getClaudePluginReviewChannelAssetName,
+  getClaudePluginReviewLatestDownloadUrl,
   getCodexPluginChannelAssetName,
   getCodexPluginLatestDownloadUrl,
 } = require('../scripts/distribution-surfaces');
@@ -84,7 +87,9 @@ test('public docs render the current package version', () => {
   assert.match(claudePluginReadme, /Support/i);
   assert.match(claudePluginReadme, /claude mcp add thumbgate -- npx --yes --package thumbgate thumbgate serve/i);
   assert.match(claudePluginReadme, /npm run build:claude-mcpb/i);
+  assert.match(claudePluginReadme, /npm run build:claude-review-zip/i);
   assert.match(claudePluginReadme, new RegExp(getClaudePluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(claudePluginReadme, new RegExp(getClaudePluginReviewLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(claudeCodexBridgeReadme, /claude --plugin-dir/i);
   assert.match(claudeCodexBridgeReadme, /claude plugin validate/i);
   assert.match(claudeCodexBridgeInstall, /\/codex-bridge:review/);
@@ -97,11 +102,14 @@ test('public docs render the current package version', () => {
   assert.match(distributionDoc, /publish-codex-plugin\.yml/);
   assert.match(distributionDoc, /thumbgate-codex-plugin\.zip/);
   assert.match(distributionDoc, new RegExp(getCodexPluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(distributionDoc, /build:claude-review-zip/);
+  assert.match(distributionDoc, new RegExp(getClaudePluginReviewLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(claudeDesktopPacket, /Anthropic Local MCP Server Submission Guide/i);
   assert.match(claudeDesktopPacket, /Build the MCPB/i);
   assert.match(claudeDesktopPacket, /privacy_policies/i);
   assert.match(claudeDesktopPacket, /npm run build:claude-mcpb/i);
   assert.match(claudeDesktopPacket, new RegExp(getClaudePluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(claudeDesktopPacket, new RegExp(getClaudePluginReviewLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(claudeDesktopPacket, /Tool safety annotations/i);
   assert.match(claudeDesktopPacket, /Do not claim directory approval/i);
   assert.ok(productHuntKit.includes(PRODUCTHUNT_URL));
@@ -114,6 +122,8 @@ test('public docs render the current package version', () => {
 test('distribution surfaces reserve a separate prerelease Claude asset alias', () => {
   assert.equal(getClaudePluginChannelAssetName('1.0.0'), 'thumbgate-claude-desktop.mcpb');
   assert.equal(getClaudePluginChannelAssetName('1.1.0-beta.1'), CLAUDE_PLUGIN_NEXT_ASSET_NAME);
+  assert.equal(getClaudePluginReviewChannelAssetName('1.0.0'), 'thumbgate-claude-plugin-review.zip');
+  assert.equal(getClaudePluginReviewChannelAssetName('1.1.0-beta.1'), CLAUDE_PLUGIN_REVIEW_NEXT_ASSET_NAME);
   assert.equal(getCodexPluginChannelAssetName('1.0.0'), 'thumbgate-codex-plugin.zip');
   assert.equal(getCodexPluginChannelAssetName('1.1.0-beta.1'), CODEX_PLUGIN_NEXT_ASSET_NAME);
 });

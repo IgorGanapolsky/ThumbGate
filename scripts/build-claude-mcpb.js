@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const {
+  getClaudePluginReviewVersionedAssetName,
   getClaudePluginVersionedAssetName,
 } = require('./distribution-surfaces');
 
@@ -22,6 +23,14 @@ const RUNTIME_COPY_PATHS = [
   'public',
   '.well-known',
   '.claude-plugin',
+  'README.md',
+  'LICENSE',
+  'SECURITY.md',
+  'server.json',
+];
+const REVIEW_PACKET_COPY_PATHS = [
+  '.claude-plugin',
+  'docs/CLAUDE_DESKTOP_EXTENSION.md',
   'README.md',
   'LICENSE',
   'SECURITY.md',
@@ -173,17 +182,74 @@ function buildClaudeMcpb(outputDir = DEFAULT_OUTPUT_DIR) {
   };
 }
 
-if (require.main === module) {
-  const outputDir = process.argv[2]
-    ? path.resolve(process.cwd(), process.argv[2])
+function buildClaudeReviewZip(outputDir = DEFAULT_OUTPUT_DIR) {
+  const packageJson = readJson('package.json');
+  const reviewRoot = path.join(outputDir, 'review');
+  const reviewDirName = 'thumbgate-claude-plugin-review';
+  const stageDir = path.join(reviewRoot, reviewDirName);
+  const outputFile = path.join(outputDir, getClaudePluginReviewVersionedAssetName(packageJson.version));
+
+  fs.rmSync(reviewRoot, { recursive: true, force: true });
+  fs.mkdirSync(stageDir, { recursive: true });
+
+  for (const relativePath of REVIEW_PACKET_COPY_PATHS) {
+    copyEntry(relativePath, stageDir);
+  }
+
+  fs.rmSync(outputFile, { force: true });
+  exec('zip', ['-qr', outputFile, reviewDirName], { cwd: reviewRoot });
+
+  return {
+    stageDir,
+    outputFile,
+  };
+}
+
+function resolveBuildRequest(args = [], cwd = process.cwd()) {
+  const mode = args.includes('--review-zip')
+    ? 'review-zip'
+    : args.includes('--all')
+      ? 'all'
+      : 'mcpb';
+  const outputArg = args.find((arg) => !arg.startsWith('--'));
+  const outputDir = outputArg
+    ? path.resolve(cwd, outputArg)
     : DEFAULT_OUTPUT_DIR;
-  const { outputFile } = buildClaudeMcpb(outputDir);
-  console.log(`Built Claude Desktop bundle: ${outputFile}`);
+
+  return { mode, outputDir };
+}
+
+function runBuildRequest({ mode, outputDir }, deps = { buildClaudeMcpb, buildClaudeReviewZip }) {
+  if (mode === 'review-zip') {
+    const { outputFile } = deps.buildClaudeReviewZip(outputDir);
+    return [`Built Claude plugin review zip: ${outputFile}`];
+  }
+
+  if (mode === 'all') {
+    const { outputFile } = deps.buildClaudeMcpb(outputDir);
+    const { outputFile: reviewOutputFile } = deps.buildClaudeReviewZip(outputDir);
+    return [
+      `Built Claude Desktop bundle: ${outputFile}`,
+      `Built Claude plugin review zip: ${reviewOutputFile}`,
+    ];
+  }
+
+  const { outputFile } = deps.buildClaudeMcpb(outputDir);
+  return [`Built Claude Desktop bundle: ${outputFile}`];
+}
+
+if (require.main === module) {
+  for (const line of runBuildRequest(resolveBuildRequest(process.argv.slice(2)))) {
+    console.log(line);
+  }
 }
 
 module.exports = {
   DEFAULT_OUTPUT_DIR,
   buildClaudeMcpbManifest,
+  buildClaudeReviewZip,
   stageClaudeMcpbBundle,
   buildClaudeMcpb,
+  resolveBuildRequest,
+  runBuildRequest,
 };

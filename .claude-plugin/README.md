@@ -38,11 +38,22 @@ https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-c
 
 That bundle is built from the same `.claude-plugin` metadata in this repo and is meant for people who want a ready-to-install artifact instead of building locally.
 
+### Review packet zip
+
+Anthropic's submission flow may ask for a GitHub link or a zip that preserves the plugin folder structure. The review-ready source zip lives on GitHub Releases:
+
+https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip
+
 ### Anthropic directory path
 
 If Anthropic approves the listing, install from Claude Desktop via `Settings -> Extensions`.
 
 Directory inclusion is an external review process. Do not claim listing or approval before it is real.
+
+Submission forms:
+
+- https://claude.ai/settings/plugins/submit
+- https://platform.claude.com/plugins/submit
 
 ### MCPB bundle build
 
@@ -131,4 +142,5 @@ For complete privacy information, see: https://thumbgate-production.up.railway.a
 
 - Local Claude metadata lives in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`.
 - The MCPB bundle is built with `npm run build:claude-mcpb`.
+- The review packet zip is built with `npm run build:claude-review-zip`.
 - Anthropic directory requirements and the internal publish checklist live in `docs/CLAUDE_DESKTOP_EXTENSION.md`.

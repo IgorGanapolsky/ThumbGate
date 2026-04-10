@@ -7,9 +7,11 @@ Make your AI coding agent self-improving — and authentically yours. ThumbGate 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Start Sprint](https://img.shields.io/badge/Workflow%20Hardening%20Sprint-Start%20Intake%20→-16a34a?style=for-the-badge)](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=badge_cta#workflow-sprint-intake)
 
-**[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Setup Guide](https://thumbgate-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Install Codex Plugin](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)**
+**[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Install Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** · **[Claude Plugin Guide](docs/CLAUDE_DESKTOP_EXTENSION.md)** · **[Install Codex Plugin](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)**
 
 **Popular buyer questions:** **[How to stop repeated AI agent mistakes](https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
+
+**Running Claude Desktop?** **[Download the packaged Claude bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** · **[Open the Claude install + submission guide](docs/CLAUDE_DESKTOP_EXTENSION.md)** · **[Review packet zip](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip)**
 
 **Running Codex?** **[Download the standalone Codex plugin bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Open the Codex install guide](plugins/codex-profile/INSTALL.md)**
 
@@ -22,6 +24,12 @@ Make your AI coding agent self-improving — and authentically yours. ThumbGate 
 One workflow. One owner. One proof review. That is the fastest path to a paid team engagement because it qualifies a real blocker before anyone tries to sell a full rollout.
 
 **Best first technical motion:** install the local CLI and let `init` wire the hooks and MCP transport for the agent you already use.
+
+**Best first Claude motion:** install the published Claude Desktop bundle if you want a one-click extension path today, then keep the review packet zip ready for Anthropic's official directory submission flow.
+
+- Bundle download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
+- Submission guide: `docs/CLAUDE_DESKTOP_EXTENSION.md`
+- Review packet zip: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip`
 
 **Best first Codex motion:** install the published Codex plugin bundle if you want ThumbGate to show up as a first-class Codex plugin instead of wiring MCP by hand.
 
@@ -118,7 +126,7 @@ No. ThumbGate doesn't update model weights. It works by capturing feedback into 
 CLAUDE.md files are suggestions that agents can ignore. ThumbGate gates are enforcement — they physically block the action before it executes via PreToolUse hooks. Gates also auto-generate from feedback instead of requiring manual rule-writing.
 
 **Does it work with my agent?**
-Yes. ThumbGate is MCP-compatible and works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any agent that supports PreToolUse hooks or MCP. Codex now has a standalone plugin bundle at `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip` in addition to the repo-local profile.
+Yes. ThumbGate is MCP-compatible and works with Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any agent that supports PreToolUse hooks or MCP. Claude Desktop has a published bundle at `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`, and Codex has a standalone plugin bundle at `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip`.
 
 **What's the self-distillation mode?**
 ThumbGate can auto-evaluate agent action outcomes (test failures, reverted edits, error patterns) and generate prevention rules without any human feedback. Your agent gets smarter every session automatically.
@@ -151,6 +159,10 @@ npx thumbgate dashboard                               # local dashboard
 Or wire MCP directly: `claude mcp add thumbgate -- npx -y thumbgate serve`
 
 Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
+
+Claude Desktop bundle: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
+
+Claude review packet zip: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip`
 
 Codex standalone plugin bundle: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip`
 
@@ -208,6 +220,10 @@ Add to your `claude_desktop_config.json`:
   }
 }
 ```
+
+Or install the packaged extension bundle directly:
+
+`https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
 
 ## Built-in Gates
 
