@@ -1,0 +1,110 @@
+name: Publish Codex Plugin
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.agents/plugins/marketplace.json'
+      - 'adapters/codex/config.toml'
+      - 'plugins/codex-profile/**'
+      - 'docs/PLUGIN_DISTRIBUTION.md'
+      - 'public/index.html'
+      - 'scripts/build-codex-plugin.js'
+      - 'scripts/distribution-surfaces.js'
+      - '.github/workflows/publish-codex-plugin.yml'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-codex-plugin-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - run: node scripts/sync-version.js --check
+
+      - run: npm run prove:adapters
+
+      - run: npm run build:codex-plugin
+
+      - name: Resolve Codex plugin asset names
+        id: assets
+        run: |
+          version=$(node -p "require('./package.json').version")
+          versioned_asset=$(node -e "const { getCodexPluginVersionedAssetName } = require('./scripts/distribution-surfaces'); process.stdout.write(getCodexPluginVersionedAssetName())")
+          channel_asset=$(node -e "const { getCodexPluginChannelAssetName } = require('./scripts/distribution-surfaces'); process.stdout.write(getCodexPluginChannelAssetName())")
+          is_prerelease=$(node -e "const { isPrereleaseVersion } = require('./scripts/distribution-surfaces'); process.stdout.write(String(isPrereleaseVersion()))")
+          {
+            echo "version=$version"
+            echo "versioned_asset=$versioned_asset"
+            echo "channel_asset=$channel_asset"
+            echo "is_prerelease=$is_prerelease"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create channel asset alias
+        run: |
+          cp ".artifacts/codex-plugin/${{ steps.assets.outputs.versioned_asset }}" \
+            ".artifacts/codex-plugin/${{ steps.assets.outputs.channel_asset }}"
+
+      - name: Upload Codex plugin artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: codex-plugin-zip
+          path: |
+            .artifacts/codex-plugin/${{ steps.assets.outputs.versioned_asset }}
+            .artifacts/codex-plugin/${{ steps.assets.outputs.channel_asset }}
+
+      - name: Ensure GitHub Release exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.assets.outputs.version }}
+          IS_PRERELEASE: ${{ steps.assets.outputs.is_prerelease }}
+        run: |
+          if ! gh release view "v${VERSION}" >/dev/null 2>&1; then
+            if [ "$IS_PRERELEASE" = "true" ]; then
+              gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes --prerelease
+            else
+              gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
+            fi
+          fi
+
+      - name: Upload Codex plugin assets to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.assets.outputs.version }}
+        run: |
+          gh release upload "v${VERSION}" \
+            ".artifacts/codex-plugin/${{ steps.assets.outputs.versioned_asset }}" \
+            ".artifacts/codex-plugin/${{ steps.assets.outputs.channel_asset }}" \
+            --clobber
+
+      - name: Verify Codex plugin release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.assets.outputs.version }}
+          VERSIONED_ASSET: ${{ steps.assets.outputs.versioned_asset }}
+          CHANNEL_ASSET: ${{ steps.assets.outputs.channel_asset }}
+        run: |
+          release_json="$(gh release view "v${VERSION}" --json assets)"
+          echo "$release_json" | jq -e --arg versioned "$VERSIONED_ASSET" --arg channel "$CHANNEL_ASSET" '
+            [.assets[].name] as $names
+            | ($names | index($versioned))
+            | select(. != null)
+            | ($names | index($channel))
+            | select(. != null)
+          ' >/dev/null

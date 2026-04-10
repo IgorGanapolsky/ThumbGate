@@ -1,6 +1,29 @@
 # ThumbGate for Codex
 
-ThumbGate now ships a repo-local Codex app plugin surface plus the version-pinned MCP profile. Use the plugin files when you want a distributable Codex artifact, or copy the TOML block for a manual install.
+ThumbGate now ships a standalone Codex plugin bundle, a repo-local Codex app plugin surface, and the version-pinned MCP profile.
+
+## Option 1: Use the standalone release bundle
+
+Download the latest bundle:
+
+- `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip`
+
+Or build it from source:
+
+```bash
+npm run build:codex-plugin
+```
+
+After extracting `thumbgate-codex-plugin.zip`, the folder already contains:
+
+- `.codex-plugin/plugin.json`
+- `.mcp.json`
+- `.agents/plugins/marketplace.json`
+- `config.toml`
+
+The bundled marketplace catalog points at `./`, so the extracted directory is a self-contained plugin root instead of a repo-relative stub.
+
+## Option 2: Use the repo-local plugin files
 
 ## Shipped plugin files
 
@@ -9,7 +32,7 @@ ThumbGate now ships a repo-local Codex app plugin surface plus the version-pinne
 - Codex marketplace entry: `.agents/plugins/marketplace.json`
 - Manual install profile: `adapters/codex/config.toml`
 
-## One-Command Install
+## Option 3: Manual MCP install
 
 Add the MCP server block to your Codex config:
 
@@ -59,7 +82,7 @@ Then restart Codex. The `thumbgate` MCP server will appear in the tool list.
 
 - Codex with MCP support
 - Node.js 18+ in PATH
-- Config file at `~/.codex/config.toml`
+- Config file at `~/.codex/config.toml` when using the manual MCP install path
 
 ## Uninstall
 
