@@ -19,6 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const { buildStableId } = require('./conversation-context');
+const { inferFromSurroundingMessages, createLesson } = require('./lesson-inference');
 
 const SESSION_TIMEOUT_MS = 60000; // 60 seconds
 const MAX_FOLLOWUP_MESSAGES = 20;
@@ -276,8 +277,6 @@ function getActiveSession() {
  * already in recall — no retraining required.
  */
 function autoInferLesson(finalizedResult) {
-  const { inferFromSurroundingMessages, createLesson } = require('./lesson-inference');
-
   const priorMessages = (finalizedResult.followUpMessages || []).map((m) => ({
     role: m.role,
     content: m.content,
