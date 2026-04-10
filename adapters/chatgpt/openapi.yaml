@@ -814,6 +814,98 @@ paths:
           description: Invalid dashboard render view or query
         '401':
           description: Unauthorized
+  /v1/decisions/evaluate:
+    post:
+      operationId: evaluateDecision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [toolName]
+              properties:
+                toolName:
+                  type: string
+                command:
+                  type: string
+                filePath:
+                  type: string
+                changedFiles:
+                  type: array
+                  items:
+                    type: string
+                repoPath:
+                  type: string
+                baseBranch:
+                  type: string
+                requirePrForReleaseSensitive:
+                  type: boolean
+                requireVersionNotBehindBase:
+                  type: boolean
+      responses:
+        '200':
+          description: Persisted workflow-sentinel recommendation with decision-control metadata and actionId
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          description: Invalid decision evaluation request
+        '401':
+          description: Unauthorized
+  /v1/decisions/outcome:
+    post:
+      operationId: recordDecisionOutcome
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actionId, outcome]
+              properties:
+                actionId:
+                  type: string
+                outcome:
+                  type: string
+                actualDecision:
+                  type: string
+                actor:
+                  type: string
+                notes:
+                  type: string
+                latencyMs:
+                  type: number
+                metadata:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Recorded a decision override, rollback, completion, or block outcome
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          description: Invalid decision outcome request
+        '401':
+          description: Unauthorized
+  /v1/decisions/metrics:
+    get:
+      operationId: getDecisionMetrics
+      responses:
+        '200':
+          description: Decision-loop metrics derived from recorded evaluations and outcomes
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          description: Unauthorized
   /v1/settings/status:
     get:
       operationId: getSettingsStatus

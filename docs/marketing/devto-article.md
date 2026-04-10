@@ -86,7 +86,7 @@ I have not fine-tuned a model with this data yet, but the export pipeline is tes
 
 **MCP is the right abstraction layer.** Building this as an MCP server means it works with any MCP-compatible agent — Claude Code, Codex CLI, Gemini CLI, Amp — without agent-specific integration code. One server, multiple agents.
 
-**Testing feedback systems is hard.** You cannot unit test "does the agent learn" in the traditional sense. I ended up with 314 tests and 12 proof-of-correctness reports that verify the pipeline mechanics (capture, storage, retrieval, gate generation, DPO export) without trying to test emergent behavior.
+**Testing feedback systems is hard.** You cannot unit test "does the agent learn" in the traditional sense. I ended up with a large regression suite and proof-backed verification reports that cover the pipeline mechanics (capture, storage, retrieval, gate generation, DPO export) without pretending to test emergent behavior directly.
 
 ## Try It
 
