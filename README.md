@@ -7,9 +7,11 @@ Make your AI coding agent self-improving — and authentically yours. ThumbGate 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Start Sprint](https://img.shields.io/badge/Workflow%20Hardening%20Sprint-Start%20Intake%20→-16a34a?style=for-the-badge)](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=badge_cta#workflow-sprint-intake)
 
-**[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Setup Guide](https://thumbgate-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)**
+**[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Setup Guide](https://thumbgate-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Install Codex Plugin](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)**
 
 **Popular buyer questions:** **[How to stop repeated AI agent mistakes](https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
+
+**Running Codex?** **[Download the standalone Codex plugin bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Open the Codex install guide](plugins/codex-profile/INSTALL.md)**
 
 ### Get Started
 
@@ -20,6 +22,11 @@ Make your AI coding agent self-improving — and authentically yours. ThumbGate 
 One workflow. One owner. One proof review. That is the fastest path to a paid team engagement because it qualifies a real blocker before anyone tries to sell a full rollout.
 
 **Best first technical motion:** install the local CLI and let `init` wire the hooks and MCP transport for the agent you already use.
+
+**Best first Codex motion:** install the published Codex plugin bundle if you want ThumbGate to show up as a first-class Codex plugin instead of wiring MCP by hand.
+
+- Standalone download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip`
+- Install guide: `plugins/codex-profile/INSTALL.md`
 
 Free stays for individual developers. The commercial path is enterprise-first: Team pricing anchors at **$99/seat/mo with a 3-seat minimum**, and the public paid motion starts with the Workflow Hardening Sprint so one blocker gets qualified before a wider rollout. [See pricing →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=pricing_link#pricing)
 
@@ -146,6 +153,8 @@ Or wire MCP directly: `claude mcp add thumbgate -- npx -y thumbgate serve`
 Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
 
 Codex standalone plugin bundle: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip`
+
+Codex install guide: `plugins/codex-profile/INSTALL.md`
 
 > **Need shared enforcement, auditability, approval boundaries, and rollout proof for a team workflow?** [Start with the Workflow Hardening Sprint →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=quickstart_cta#workflow-sprint-intake)
 >

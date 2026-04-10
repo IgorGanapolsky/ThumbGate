@@ -58,6 +58,15 @@ test('codex plugin manifest uses ThumbGate branding and local MCP config', () =>
   assert.match(install, /marketplace catalog points at `\.\/`/i);
 });
 
+test('root README promotes the Codex plugin as a first-class install path', () => {
+  const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf-8');
+
+  assert.match(readme, /Install Codex Plugin/);
+  assert.match(readme, /Download the standalone Codex plugin bundle/i);
+  assert.match(readme, /plugins\/codex-profile\/INSTALL\.md/);
+  assert.match(readme, new RegExp(getCodexPluginLatestDownloadUrl(root).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+});
+
 test('codex plugin staging writes a standalone bundle with self-contained marketplace metadata', () => {
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-plugin-stage-'));
 
