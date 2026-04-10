@@ -273,28 +273,114 @@ function decodeHtmlEntities(text) {
   return String(text || '').replaceAll(/&(?:amp|lt|gt|quot|#39|nbsp);/g, (match) => entityMap[match] || match);
 }
 
+function stripElementBlocks(html, tagName) {
+  let remaining = String(html || '');
+  let lower = remaining.toLowerCase();
+  const openToken = `<${tagName}`;
+  const closeToken = `</${tagName}`;
+  let result = '';
+
+  while (remaining) {
+    const openIndex = lower.indexOf(openToken);
+    if (openIndex === -1) {
+      result += remaining;
+      break;
+    }
+
+    result += remaining.slice(0, openIndex);
+    const closeIndex = lower.indexOf(closeToken, openIndex + openToken.length);
+    if (closeIndex === -1) break;
+
+    const closeEnd = remaining.indexOf('>', closeIndex + closeToken.length);
+    if (closeEnd === -1) break;
+
+    remaining = remaining.slice(closeEnd + 1);
+    lower = remaining.toLowerCase();
+  }
+
+  return result;
+}
+
+function stripHtmlComments(html) {
+  let remaining = String(html || '');
+  let result = '';
+
+  while (remaining) {
+    const start = remaining.indexOf('<!--');
+    if (start === -1) {
+      result += remaining;
+      break;
+    }
+
+    result += remaining.slice(0, start);
+    const end = remaining.indexOf('-->', start + 4);
+    if (end === -1) break;
+    remaining = remaining.slice(end + 3);
+  }
+
+  return result;
+}
+
+function getTagName(tagContent) {
+  const trimmed = String(tagContent || '').trim();
+  let start = 0;
+  if (trimmed[start] === '/') start += 1;
+
+  let end = start;
+  while (end < trimmed.length) {
+    const char = trimmed[end];
+    const code = char.charCodeAt(0);
+    const isNameChar = (code >= 97 && code <= 122)
+      || (code >= 65 && code <= 90)
+      || (code >= 48 && code <= 57)
+      || char === '-';
+    if (!isNameChar) break;
+    end += 1;
+  }
+
+  return trimmed.slice(start, end).toLowerCase();
+}
+
+function htmlToText(html) {
+  const blockTags = new Set([
+    'p', 'div', 'section', 'article', 'header', 'footer', 'aside', 'main',
+    'li', 'tr', 'td', 'th', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'br',
+  ]);
+  const withoutScripts = stripElementBlocks(html, 'script');
+  const withoutStyles = stripElementBlocks(withoutScripts, 'style');
+  const text = stripHtmlComments(withoutStyles);
+  let result = '';
+  let cursor = 0;
+
+  while (cursor < text.length) {
+    const tagStart = text.indexOf('<', cursor);
+    if (tagStart === -1) {
+      result += text.slice(cursor);
+      break;
+    }
+
+    result += text.slice(cursor, tagStart);
+    const tagEnd = text.indexOf('>', tagStart + 1);
+    if (tagEnd === -1) {
+      result += ' ';
+      break;
+    }
+
+    const tagName = getTagName(text.slice(tagStart + 1, tagEnd));
+    result += blockTags.has(tagName) ? '\n' : ' ';
+    cursor = tagEnd + 1;
+  }
+
+  return result;
+}
+
 /**
  * Strip HTML tags and dangerous content from a string.
  * This function is used for text extraction only — output is never rendered as HTML.
  * Defense-in-depth: strips scripts, styles, event handlers, and all remaining tags.
  */
 function stripHtml(html) {
-  const withLineBreaks = String(html || '')
-    // Remove script blocks entirely — use greedy end-tag match to handle malformed markup
-    .replaceAll(/<script[\s\S]*?<\/script[^>]*>/gi, ' ')
-    // Remove style blocks
-    .replaceAll(/<style[\s\S]*?<\/style[^>]*>/gi, ' ')
-    // Remove HTML comments
-    .replaceAll(/<!--[\s\S]*?-->/g, ' ')
-    // Strip event-handler attributes (onclick, onerror, onload, etc.) before removing tags
-    .replaceAll(/\s+on[a-z][a-z0-9]*\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, ' ')
-    // Strip javascript: and data: URIs in attributes
-    .replaceAll(/(?:href|src|action)\s*=\s*(?:"(?:javascript|data):[^"]*"|'(?:javascript|data):[^']*')/gi, '')
-    // Add line breaks for block-level elements
-    .replaceAll(/<\/(?:p|div|section|article|header|footer|aside|main|li|tr|td|th|h[1-6]|br)\s*>/gi, '\n')
-    // Remove all remaining tags
-    .replaceAll(/<[^>]+>/g, ' ');
-  return normalizeText(decodeHtmlEntities(withLineBreaks));
+  return normalizeText(decodeHtmlEntities(htmlToText(html)));
 }
 
 function inferSourceFormat(filePath, explicitFormat) {
@@ -334,14 +420,25 @@ function normalizeDocumentBody(rawContent, sourceFormat) {
 }
 
 function extractMarkdownTitle(normalizedContent) {
-  const markdownHeading = /^#\s+(.+)$/m.exec(String(normalizedContent || ''));
-  return markdownHeading?.[1]?.trim() || null;
+  for (const line of String(normalizedContent || '').split('\n')) {
+    if (!line.startsWith('# ')) continue;
+    const title = line.slice(2).trim();
+    if (title) return title;
+  }
+  return null;
 }
 
 function extractHtmlTitle(rawContent) {
-  const titleMatch = /<title[^>]*>([^<]+)<\/title>/i.exec(String(rawContent || ''));
-  const title = titleMatch?.[1]?.trim();
-  return title ? decodeHtmlEntities(title) : null;
+  const html = String(rawContent || '');
+  const lower = html.toLowerCase();
+  const openStart = lower.indexOf('<title');
+  if (openStart === -1) return null;
+  const openEnd = html.indexOf('>', openStart + 6);
+  if (openEnd === -1) return null;
+  const closeStart = lower.indexOf('</title', openEnd + 1);
+  if (closeStart === -1) return null;
+  const title = decodeHtmlEntities(html.slice(openEnd + 1, closeStart)).trim();
+  return title || null;
 }
 
 function extractJsonTitle(rawContent) {
@@ -388,10 +485,20 @@ function extractTitle({ explicitTitle, filePath, rawContent, normalizedContent, 
 function extractHeadings(content) {
   return String(content || '')
     .split('\n')
-    .map((line) => /^#{1,6}\s+(.+)$/.exec(line))
+    .map(extractMarkdownHeading)
     .filter(Boolean)
-    .map((match) => match[1].trim())
     .slice(0, 12);
+}
+
+function extractMarkdownHeading(line) {
+  const text = String(line || '');
+  let level = 0;
+  while (level < text.length && text[level] === '#' && level < 6) {
+    level += 1;
+  }
+  if (level === 0 || text[level] !== ' ') return null;
+  const heading = text.slice(level + 1).trim();
+  return heading || null;
 }
 
 function buildExcerpt(content, maxLength = 280) {
