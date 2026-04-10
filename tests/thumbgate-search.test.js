@@ -86,11 +86,26 @@ fs.writeFileSync(
   })
 );
 
+const { importDocument } = require('../scripts/document-intake');
+importDocument({
+  title: 'Release Policy',
+  content: [
+    '# Release Policy',
+    '',
+    '- Never force-push to main.',
+    '- Always run tests before commit.',
+  ].join('\n'),
+  sourceFormat: 'markdown',
+  tags: ['policy', 'team'],
+  feedbackDir: tmpDir,
+});
+
 function clearModuleCache() {
   for (const key of Object.keys(require.cache)) {
     if (
       key.includes('filesystem-search')
       || key.includes('thumbgate-search')
+      || key.includes('document-intake')
       || key.includes('server-stdio')
       || key.includes('tool-registry')
       || key.includes(`${path.sep}src${path.sep}api${path.sep}server.js`)
@@ -233,6 +248,27 @@ test('MCP search_thumbgate filters prevention-rule results', async () => {
   payload.results.forEach((entry) => {
     assert.equal(entry.source, 'prevention_rule');
   });
+});
+
+test('MCP search_thumbgate filters imported document results', async () => {
+  const { handleRequest } = loadMcpServer();
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 131,
+    method: 'tools/call',
+    params: {
+      name: 'search_thumbgate',
+      arguments: { query: 'force push main', source: 'documents' },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.source, 'documents');
+  assert.ok(payload.results.length > 0);
+  payload.results.forEach((entry) => {
+    assert.equal(entry.source, 'document');
+  });
+  assert.ok(payload.results.some((entry) => entry.title === 'Release Policy'));
 });
 
 test('MCP search_thumbgate honors signal filters across signal aliases', async () => {
