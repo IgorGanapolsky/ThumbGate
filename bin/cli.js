@@ -8,6 +8,7 @@
  *   npx thumbgate init --agent claude-code   # scaffold + wire hooks for specific agent
  *   npx thumbgate gate-check    # PreToolUse hook: pipe tool JSON via stdin, get verdict
  *   npx thumbgate capture       # capture feedback
+ *   npx thumbgate import-doc    # import a local policy/runbook document and propose gates
  *   npx thumbgate export-dpo    # export DPO training pairs
  *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
  *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
@@ -1041,6 +1042,67 @@ function exportDatabricks() {
   }
 }
 
+function importDoc() {
+  syncActiveProjectContext();
+  const args = parseArgs(process.argv.slice(3));
+  const positionalFilePath = process.argv.slice(3).find((arg) => !arg.startsWith('--'));
+  const filePath = positionalFilePath || args.file || args.path || null;
+  const inlineContent = typeof args.content === 'string' && args.content.trim()
+    ? args.content
+    : (!filePath ? readStdinText().trim() : '');
+  const tags = String(args.tags || args.tag || '')
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  if (!filePath && !inlineContent) {
+    console.error('Error: import-doc requires a file path, --content, or stdin text');
+    process.exit(1);
+  }
+
+  try {
+    const { importDocument: importDocumentLocal } = require(path.join(PKG_ROOT, 'scripts', 'document-intake'));
+    const document = importDocumentLocal({
+      filePath,
+      content: inlineContent || null,
+      title: args.title || null,
+      sourceFormat: args.format || args['source-format'] || null,
+      sourceUrl: args.url || args['source-url'] || null,
+      tags,
+      proposeGates: args['no-proposals'] ? false : args.proposeGates !== 'false',
+    });
+    trackEvent('cli_import_doc', {
+      command: 'import-doc',
+      documentId: document.documentId,
+      sourceFormat: document.sourceFormat,
+      proposalCount: Array.isArray(document.proposals) ? document.proposals.length : 0,
+    });
+
+    const payload = {
+      ok: true,
+      document,
+    };
+    if (args.json) {
+      console.log(JSON.stringify(payload, null, 2));
+      return;
+    }
+
+    console.log(`Imported document: ${document.title}`);
+    console.log(`  ID: ${document.documentId}`);
+    console.log(`  Format: ${document.sourceFormat}`);
+    console.log(`  Proposals: ${Array.isArray(document.proposals) ? document.proposals.length : 0}`);
+    if (Array.isArray(document.proposals) && document.proposals.length > 0) {
+      console.log('\nProposed gates:');
+      for (const proposal of document.proposals.slice(0, 6)) {
+        console.log(`  - [${proposal.type}] ${proposal.title} (${proposal.action}/${proposal.severity})`);
+      }
+    }
+  } catch (err) {
+    console.error(err && err.message ? err.message : err);
+    process.exit(1);
+  }
+}
+
 function obsidianExport() {
   const args = parseArgs(process.argv.slice(3));
   const { exportAll } = require(path.join(PKG_ROOT, 'scripts', 'obsidian-export'));
@@ -1382,6 +1444,7 @@ function help() {
   console.log('  risk [flags]          Train or query the boosted local risk scorer');
   console.log('  doctor                Audit runtime isolation, bootstrap context, and permission tier');
   console.log('  dispatch              Print a Dispatch-safe remote ops brief for phone-driven review sessions');
+  console.log('  import-doc            Import a local policy/runbook and propose reviewable gate candidates');
   console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
   console.log('  export-databricks     Export feedback logs + proof artifacts as a Databricks-ready analytics bundle');
   console.log('  obsidian-export       Export all feedback data as interlinked Obsidian markdown notes');
@@ -1414,6 +1477,7 @@ function help() {
   console.log('  npx thumbgate init');
   console.log('  npx thumbgate stats');
   console.log('  npx thumbgate cfo');
+  console.log('  npx thumbgate import-doc docs/release-policy.md --json');
   console.log('  npx thumbgate repair-github-marketplace --write');
   console.log('  npx thumbgate lessons --query="verification" --limit=5');
   console.log('  npx thumbgate model-fit');
@@ -1578,6 +1642,10 @@ switch (COMMAND) {
     break;
   case 'obsidian-export':
     obsidianExport();
+    break;
+  case 'import-doc':
+  case 'import-document':
+    importDoc();
     break;
   case 'rules':
     rules();
