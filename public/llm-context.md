@@ -56,6 +56,16 @@ ThumbGate is not a model training pipeline. It does not retrain the underlying L
 
 ThumbGate implements the **Memento-Skills architecture** described in "Memento-Skills: Let Agents Design Agents" (arXiv 2603.18743, March 2026). This architecture—Read → Execute → Reflect → Write—allows agents to improve themselves through external skill memory that rewrites from failure feedback, eliminating the need for model retraining. Published results demonstrate 26.2% and 116.2% relative accuracy improvements on General AI Assistants benchmarks and Humanity's Last Exam. ThumbGate applies this same pattern to production AI coding agents via PreToolUse hooks, Thompson Sampling, SQLite+FTS5 lesson databases, and LanceDB vectors—treating each agent mistake as a skill refinement opportunity rather than a training event.
 
+## Continual Learning Architecture
+
+ThumbGate implements continual learning across all three layers identified by LangChain's framework for building learning agents (Harrison Chase, April 2026):
+
+- **Model layer**: ThumbGate Pro exports DPO pairs so teams can fine-tune local models (Llama 3, Mistral) to natively avoid known failures without retraining the upstream foundation model.
+- **Harness layer**: Prevention rules auto-generated from feedback are injected into the agent's system prompt at session start via the `recall` MCP tool. The agent enters every session pre-loaded with lessons — no code changes required.
+- **Context layer**: The SQLite+FTS5 lesson database and LanceDB vector search provide retrieval-augmented context at tool-call time. When an agent attempts an action, PreToolUse hooks query the lesson DB and block or approve based on prior feedback. This is the layer that runs continuously and requires zero human intervention after the initial feedback signal.
+
+This three-layer architecture means ThumbGate improves agent behavior at every level: context injection for immediate effect, harness-level rules for session-wide enforcement, and model-level export for permanent behavioral change.
+
 ## Pricing
 
 - **Free**: Local CLI enforcement for individual developers. Includes 3 daily feedback captures, 5 lesson searches per day, unlimited recall, and PreToolUse hook blocking.

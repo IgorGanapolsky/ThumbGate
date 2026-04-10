@@ -1041,6 +1041,18 @@ const TOOLS = [
       properties: {},
     },
   }),
+  readOnlyTool({
+    name: 'context_stuff_lessons',
+    description: 'Dump ALL prevention lessons into a single text block for context-window injection. Bypasses RAG/search — returns every lesson sorted by confidence. For most projects (20-200 lessons), fits in 1K-10K tokens.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        maxTokenBudget: { type: 'number', description: 'Approximate token budget (default: 10000)' },
+        signal: { type: 'string', enum: ['positive', 'negative'], description: 'Filter by signal type' },
+        format: { type: 'string', enum: ['compact', 'full'], description: 'Output format (default: compact)' },
+      },
+    },
+  }),
 ];
 
 module.exports = {

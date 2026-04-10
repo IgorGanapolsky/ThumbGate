@@ -759,6 +759,10 @@ async function callToolInner(name, args) {
       const { getSelfDistillStatus } = require('../../scripts/self-distill-agent');
       return toTextResult(getSelfDistillStatus() || { message: 'No self-distill runs found.' });
     }
+    case 'context_stuff_lessons': {
+      const { getAllLessonsForContext } = require('../../scripts/lesson-inference');
+      return toTextResult(getAllLessonsForContext({ maxTokenBudget: args.maxTokenBudget, signal: args.signal, format: args.format }));
+    }
     default:
       throw new Error(`Unsupported tool: ${name}`);
   }
