@@ -23,6 +23,7 @@ const path = require('path');
 const { getFeedbackPaths, readJSONL } = require('./feedback-loop');
 const { loadModel, saveModel, updateModel, samplePosteriors, getReliability } = require('./thompson-sampling');
 const { buildResearchBrief } = require('./hf-papers');
+const { ensureDir, readJsonl } = require('./fs-utils');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -80,25 +81,10 @@ function getMarketingPaths() {
   };
 }
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function appendJSONL(filePath, record) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
-}
-
-function readJSONLFile(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const lines = fs.readFileSync(filePath, 'utf-8').trim().split('\n').filter(Boolean);
-  const records = [];
-  for (const line of lines) {
-    try { records.push(JSON.parse(line)); } catch { /* skip bad lines */ }
-  }
-  return records;
 }
 
 // ---------------------------------------------------------------------------
@@ -300,7 +286,7 @@ function recordVariantMetrics(params) {
   }
 
   const paths = getMarketingPaths();
-  const variants = readJSONLFile(paths.variantsPath);
+  const variants = readJsonl(paths.variantsPath);
   const variant = variants.find(v => v.id === params.variantId);
 
   if (!variant) {
@@ -333,7 +319,7 @@ function selectWinners(params) {
   }
 
   const paths = getMarketingPaths();
-  const allVariants = readJSONLFile(paths.variantsPath);
+  const allVariants = readJsonl(paths.variantsPath);
 
   // Get latest state of each variant in this batch (last write wins)
   const batchMap = new Map();
@@ -479,7 +465,7 @@ function extractPattern(variant) {
  */
 function getWinningPatterns(channel, limit = 5) {
   const paths = getMarketingPaths();
-  const winners = readJSONLFile(paths.winnersPath);
+  const winners = readJsonl(paths.winnersPath);
   return winners
     .filter(w => w.channel === channel)
     .slice(-limit)
@@ -496,7 +482,7 @@ function getWinningPatterns(channel, limit = 5) {
  */
 function getKnowledgeBase(opts = {}) {
   const paths = getMarketingPaths();
-  let entries = readJSONLFile(paths.knowledgePath);
+  let entries = readJsonl(paths.knowledgePath);
   if (opts.channel) {
     entries = entries.filter(e => e.channel === opts.channel);
   }
@@ -509,9 +495,9 @@ function getKnowledgeBase(opts = {}) {
 
 function updateMarketingProgress() {
   const paths = getMarketingPaths();
-  const experiments = readJSONLFile(paths.experimentsPath);
-  const knowledge = readJSONLFile(paths.knowledgePath);
-  const winners = readJSONLFile(paths.winnersPath);
+  const experiments = readJsonl(paths.experimentsPath);
+  const knowledge = readJsonl(paths.knowledgePath);
+  const winners = readJsonl(paths.winnersPath);
 
   const channelStats = {};
   for (const ch of MARKETING_CHANNELS) {

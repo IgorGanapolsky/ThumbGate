@@ -22,13 +22,11 @@ const { traceForProofCheck, aggregateTraces } = require('./code-reasoning');
 const { runVerificationLoop } = require('./verification-loop');
 const { run: runGateCheck } = require('./gates-engine');
 const { evaluatePromptGuard } = require('./prompt-guard');
+const { ensureDir } = require('./fs-utils');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_PROOF_DIR = path.join(ROOT, 'proof', 'automation');
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-}
 
 function check(condition, message) {
   if (!condition) throw new Error(message);

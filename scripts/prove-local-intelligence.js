@@ -5,13 +5,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execSync } = require('child_process');
+const { ensureDir } = require('./fs-utils');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_PROOF_DIR = process.env.THUMBGATE_PROOF_DIR || path.join(ROOT, 'proof');
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-}
 
 function runTests() {
   try {

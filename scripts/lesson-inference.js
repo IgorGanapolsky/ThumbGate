@@ -17,6 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { ensureParentDir, readJsonl } = require('./fs-utils');
 const {
   buildStableId,
   extractFilePaths,
@@ -38,15 +39,6 @@ function getLessonBaseUrl() {
 
 function getLessonsPath() { return path.join(getFeedbackDir(), LESSONS_FILE); }
 function getRecentLessonPath() { return path.join(getFeedbackDir(), RECENT_LESSON_FILE); }
-
-function readJsonl(fp) {
-  if (!fs.existsSync(fp)) return [];
-  const raw = fs.readFileSync(fp, 'utf-8').trim();
-  if (!raw) return [];
-  return raw.split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
-}
-
-function ensureDir(p) { const d = path.dirname(p); if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); }
 
 // ---------------------------------------------------------------------------
 // 1. Surrounding Message Context Extraction
@@ -146,7 +138,7 @@ function createLesson({ feedbackId, signal, inferredLesson, triggerMessage, prio
   lesson.link = `${getLessonBaseUrl()}/lessons#${lesson.id}`;
 
   const lessonsPath = getLessonsPath();
-  ensureDir(lessonsPath);
+  ensureParentDir(lessonsPath);
   fs.appendFileSync(lessonsPath, JSON.stringify(lesson) + '\n');
 
   // Update recent lesson for statusbar

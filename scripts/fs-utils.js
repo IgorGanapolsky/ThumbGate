@@ -22,6 +22,14 @@ function ensureDir(dirPath) {
 }
 
 /**
+ * Recursively create the parent directory for a file path.
+ * @param {string} filePath
+ */
+function ensureParentDir(filePath) {
+  ensureDir(path.dirname(filePath));
+}
+
+/**
  * Read a JSONL (JSON Lines) file into an array of parsed objects.
  * Silently skips malformed lines and returns [] if file is missing.
  *
@@ -29,21 +37,29 @@ function ensureDir(dirPath) {
  * @param {object} [options]
  * @param {number} [options.maxLines] - Read at most N lines (from the end if reverse=true)
  * @param {boolean} [options.reverse] - Read lines in reverse order (most recent first)
+ * @param {boolean} [options.tail] - Read from the end while preserving chronological order
  * @returns {object[]}
  */
 function readJsonl(filePath, options = {}) {
-  if (!fs.existsSync(filePath)) return [];
+  if (!filePath || !fs.existsSync(filePath)) return [];
   const raw = fs.readFileSync(filePath, 'utf-8').trim();
   if (!raw) return [];
 
+  const normalizedOptions = typeof options === 'number'
+    ? { maxLines: options, tail: true }
+    : (options || {});
   let lines = raw.split('\n');
 
-  if (options.reverse) {
+  if (normalizedOptions.tail && normalizedOptions.maxLines > 0) {
+    lines = lines.slice(-normalizedOptions.maxLines);
+  }
+
+  if (normalizedOptions.reverse) {
     lines = lines.reverse();
   }
 
-  if (options.maxLines && options.maxLines > 0) {
-    lines = lines.slice(0, options.maxLines);
+  if (!normalizedOptions.tail && normalizedOptions.maxLines && normalizedOptions.maxLines > 0) {
+    lines = lines.slice(0, normalizedOptions.maxLines);
   }
 
   return lines
@@ -65,7 +81,7 @@ function readJsonl(filePath, options = {}) {
  * @param {object} payload
  */
 function appendJsonl(filePath, payload) {
-  ensureDir(path.dirname(filePath));
+  ensureParentDir(filePath);
   fs.appendFileSync(filePath, JSON.stringify(payload) + '\n');
 }
 
@@ -77,8 +93,12 @@ function appendJsonl(filePath, payload) {
  * @param {object} payload
  */
 function writeJson(filePath, payload) {
-  ensureDir(path.dirname(filePath));
+  ensureParentDir(filePath);
   fs.writeFileSync(filePath, JSON.stringify(payload, null, 2) + '\n');
 }
 
-module.exports = { ensureDir, readJsonl, appendJsonl, writeJson };
+function readJsonlTail(filePath, limit) {
+  return readJsonl(filePath, { maxLines: limit, tail: true });
+}
+
+module.exports = { ensureDir, ensureParentDir, readJsonl, readJsonlTail, appendJsonl, writeJson };

@@ -14,6 +14,7 @@
 
 const path = require('node:path');
 const fs = require('node:fs');
+const { readJsonl } = require('./fs-utils');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_DB_PATH = path.join(PROJECT_ROOT, '.claude', 'memory', 'lessons.sqlite');
@@ -495,8 +496,8 @@ function backfillFromJsonl(db, feedbackDir) {
   const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
 
-  const feedbackEntries = readJsonlSafe(feedbackLogPath);
-  const memoryEntries = readJsonlSafe(memoryLogPath);
+  const feedbackEntries = readJsonl(feedbackLogPath);
+  const memoryEntries = readJsonl(memoryLogPath);
 
   // Index memories by sourceFeedbackId for joining
   const memoryByFeedbackId = new Map();
@@ -579,22 +580,6 @@ function safeParseTags(tagsStr) {
   } catch {
     return [];
   }
-}
-
-function readJsonlSafe(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const raw = fs.readFileSync(filePath, 'utf-8').trim();
-  if (!raw) return [];
-  return raw
-    .split('\n')
-    .map((line) => {
-      try {
-        return JSON.parse(line);
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean);
 }
 
 module.exports = {
