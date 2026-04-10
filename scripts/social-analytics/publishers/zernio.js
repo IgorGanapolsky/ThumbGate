@@ -80,6 +80,43 @@ function requireApiKey() {
   return key;
 }
 
+class ZernioQuotaError extends Error {
+  constructor(message, details = {}) {
+    super(message);
+    this.name = 'ZernioQuotaError';
+    this.code = 'ZERNIO_POST_LIMIT_REACHED';
+    this.billingPeriod = details.billingPeriod || null;
+    this.current = Number.isFinite(details.current) ? details.current : null;
+    this.endpoint = details.endpoint || null;
+    this.limit = Number.isFinite(details.limit) ? details.limit : null;
+    this.method = details.method || null;
+    this.planName = details.planName || null;
+    this.status = details.status || null;
+  }
+}
+
+function parseZernioErrorText(errorText) {
+  if (!errorText || typeof errorText !== 'string') return null;
+  try {
+    const parsed = JSON.parse(errorText);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function isZernioQuotaError(error) {
+  return Boolean(
+    error &&
+    (error instanceof ZernioQuotaError || error.code === 'ZERNIO_POST_LIMIT_REACHED')
+  );
+}
+
+function isZernioQuotaPayload(status, payload, errorText) {
+  const message = String(payload?.error || payload?.message || errorText || '');
+  return status === 403 && /post limit reached/i.test(message);
+}
+
 function resolveAccountId(account) {
   if (!account || typeof account !== 'object') {
     return '';
@@ -176,6 +213,18 @@ async function zernioFetch(method, endpoint, body = null) {
 
   if (!res.ok) {
     const errorText = await res.text().catch(() => '');
+    const payload = parseZernioErrorText(errorText);
+    if (isZernioQuotaPayload(res.status, payload, errorText)) {
+      throw new ZernioQuotaError(payload?.error || 'Zernio post limit reached', {
+        billingPeriod: payload?.billingPeriod,
+        current: Number(payload?.current),
+        endpoint,
+        limit: Number(payload?.limit),
+        method,
+        planName: payload?.planName,
+        status: res.status,
+      });
+    }
     throw new Error(`Zernio API ${res.status} for ${method} ${endpoint}: ${errorText}`);
   }
 
@@ -434,7 +483,9 @@ module.exports = {
   buildDedupKey,
   deletePost,
   isDuplicate,
+  isZernioQuotaError,
   listPosts,
+  ZernioQuotaError,
   publishPost,
   recordPost,
   schedulePost,
