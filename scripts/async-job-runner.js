@@ -8,6 +8,7 @@ const { captureFeedback, analyzeFeedback, getFeedbackPaths, readJSONL } = requir
 const { runVerificationLoop } = require('./verification-loop');
 const { createExperiment } = require('./experiment-tracker');
 const { recommendEvolutionTarget } = require('./workspace-evolver');
+const { ensureDir } = require('./fs-utils');
 
 const JOB_LOG_FILENAME = 'job-log.jsonl';
 const JOB_CONTROL_FILENAME = 'job-control.json';
@@ -17,11 +18,6 @@ const RESUMABLE_STATUSES = new Set(['paused', 'running', 'resume_requested']);
 const TERMINAL_STATUSES = new Set(['completed', 'failed', 'cancelled']);
 const CONTROL_ACTIONS = new Set(['pause', 'cancel', 'resume']);
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function nowIso() {
   return new Date().toISOString();

@@ -6,13 +6,11 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 const { buildAgenticDataPipelineJobSpec } = require('./agentic-data-pipeline');
+const { ensureDir } = require('./fs-utils');
 
 const SCHEDULES_DIR = path.join(os.homedir(), '.thumbgate', 'schedules');
 const PLIST_PREFIX = 'com.thumbgate.schedule';
 
-function ensureDir() {
-  if (!fs.existsSync(SCHEDULES_DIR)) fs.mkdirSync(SCHEDULES_DIR, { recursive: true });
-}
 
 function escapePlistString(value) {
   return String(value || '')
@@ -153,7 +151,7 @@ function buildAgenticDataPipelineSchedule(params = {}) {
 }
 
 function createSchedule(params) {
-  ensureDir();
+  ensureDir(SCHEDULES_DIR);
 
   const id = params.id || params.name || `sched_${Date.now()}`;
   const calendarInterval = parseCronSpec(params.schedule);
@@ -214,7 +212,7 @@ function createSchedule(params) {
 }
 
 function listSchedules() {
-  ensureDir();
+  ensureDir(SCHEDULES_DIR);
   const files = fs.readdirSync(SCHEDULES_DIR).filter(f => f.endsWith('.json'));
   return files.map(f => {
     try {

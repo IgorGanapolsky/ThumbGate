@@ -17,6 +17,7 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 const { escapeMarkdownTableCell } = require('./markdown-escape');
+const { ensureDir } = require('./fs-utils');
 
 const ROOT = path.join(__dirname, '..');
 const PKG = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8'));
@@ -63,11 +64,6 @@ function createInMemoryLanceLoader() {
   });
 }
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function status(condition) {
   return condition ? 'pass' : 'fail';

@@ -16,6 +16,7 @@ const { SECRET_PATTERNS } = require('./secret-scanner');
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { ensureParentDir } = require('./fs-utils');
 
 const DLP_LOG_FILE = 'dlp-events.jsonl';
 const DEFAULT_MAX_SENSITIVITY = 'internal'; // block sensitive + restricted
@@ -24,7 +25,6 @@ function getDlpLogPath() {
   return path.join(resolveFeedbackDir(), DLP_LOG_FILE);
 }
 
-function ensureDir(fp) { const d = path.dirname(fp); if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); }
 
 /**
  * Scan a tool call input for PII and secrets before execution.
@@ -75,7 +75,7 @@ function scanToolCallInput({ toolName, input, agentId, maxSensitivity } = {}) {
 
   // Log the event
   const logPath = getDlpLogPath();
-  ensureDir(logPath);
+  ensureParentDir(logPath);
   fs.appendFileSync(logPath, JSON.stringify(event) + '\n');
 
   return {
@@ -123,7 +123,7 @@ function detectShadowAction({ toolName, source, agentId } = {}) {
       gated: false,
     };
     const logPath = getShadowLogPath();
-    ensureDir(logPath);
+    ensureParentDir(logPath);
     fs.appendFileSync(logPath, JSON.stringify(event) + '\n');
     return { isShadow: true, event };
   }

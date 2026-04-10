@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { getFeedbackPaths } = require('./feedback-loop');
+const { ensureDir } = require('./fs-utils');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_PROOF_DIR = process.env.THUMBGATE_PROOF_DIR
@@ -20,11 +21,6 @@ function parseArgs(argv) {
   return args;
 }
 
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function readJSONL(filePath) {
   if (!fs.existsSync(filePath)) return [];

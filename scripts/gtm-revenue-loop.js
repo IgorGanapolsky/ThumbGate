@@ -6,6 +6,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { getOperationalBillingSummary } = require('./operational-summary');
+const { ensureDir } = require('./fs-utils');
 
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
@@ -63,11 +64,6 @@ function clampTargetCount(value) {
     return 6;
   }
   return Math.max(1, Math.min(parsed, 12));
-}
-
-function ensureDir(dirPath) {
-  if (!dirPath) return;
-  fs.mkdirSync(dirPath, { recursive: true });
 }
 
 function normalizeText(value) {
