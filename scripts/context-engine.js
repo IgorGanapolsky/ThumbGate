@@ -649,10 +649,29 @@ function compactContext(entries, anchors, opts) {
     return true;
   });
 
+  // Stage 6: Global token budget — drop entries (oldest first) until total chars fit
+  let finalStage = 5;
+  const totalMaxChars = typeof options.totalMaxChars === 'number' ? options.totalMaxChars : null;
+  if (totalMaxChars !== null) {
+    let budget = totalMaxChars;
+    const budgeted = [];
+    // Iterate newest-first so most recent entries are preserved
+    for (let i = working.length - 1; i >= 0; i--) {
+      const entrySize = JSON.stringify(working[i]).length;
+      if (budget - entrySize < 0) break;
+      budget -= entrySize;
+      budgeted.unshift(working[i]);
+    }
+    if (budgeted.length < working.length) {
+      working = budgeted;
+      finalStage = 6;
+    }
+  }
+
   const removedCount = initial - working.length;
   return {
     entries: [...anchorEntries, ...working],
-    stage: 5,
+    stage: finalStage,
     removedCount,
     compacted: removedCount > 0,
   };

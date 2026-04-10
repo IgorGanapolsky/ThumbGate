@@ -3,7 +3,7 @@
 
 const MODELS = {
   FAST: 'claude-haiku-4-5-20251001',
-  SMART: 'claude-sonnet-4-5-20241022',
+  SMART: 'claude-sonnet-4-6',
 };
 
 const DEFAULT_MODEL = MODELS.FAST;

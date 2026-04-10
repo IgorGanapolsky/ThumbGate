@@ -143,10 +143,32 @@ function toRules(report) {
   const lines = ['# Suggested Rules from Feedback Analysis', `# Generated: ${report.generatedAt}`, ''];
   lines.push(`# Negative rate: ${report.negativeRate} (${report.negativeCount}/${report.totalFeedback})`);
   lines.push('');
-  for (const issue of report.recurringIssues) {
-    lines.push(`- [${issue.severity.toUpperCase()}] (${issue.count}x) ${issue.suggestedRule}`);
+
+  if (!report.recurringIssues.length) {
+    lines.push('- No recurring issues detected.');
+    return lines.join('\n');
   }
-  if (!report.recurringIssues.length) lines.push('- No recurring issues detected.');
+
+  // Group by severity: critical → high → medium
+  const ORDER = ['critical', 'high', 'medium'];
+  const bySeverity = { critical: [], high: [], medium: [] };
+  for (const issue of report.recurringIssues) {
+    const sev = issue.severity || 'medium';
+    (bySeverity[sev] || bySeverity.medium).push(issue);
+  }
+
+  for (const sev of ORDER) {
+    const issues = bySeverity[sev];
+    if (!issues || !issues.length) continue;
+    lines.push(`## ${sev.toUpperCase()}`);
+    for (const issue of issues) {
+      const action = issue.action ? ` [${issue.action.toUpperCase()}]` : '';
+      lines.push(`- [${sev.toUpperCase()}]${action} (${issue.count}x) ${issue.suggestedRule}`);
+      if (issue.reasoning) lines.push(`  > ${issue.reasoning}`);
+    }
+    lines.push('');
+  }
+
   return lines.join('\n');
 }
 
@@ -154,28 +176,62 @@ function toRules(report) {
 // LLM-Powered Rule Analysis
 // ---------------------------------------------------------------------------
 
-const LLM_RULES_SYSTEM_PROMPT = `You are a rule generation engine for ThumbGate, an AI coding agent safety system.
+const LLM_RULES_SYSTEM_PROMPT = `You are a senior security engineer and AI agent safety architect at ThumbGate, responsible for creating prevention rules that block dangerous or unwanted AI agent behaviors before they execute.
 
-Given a batch of negative feedback entries from developers using AI coding agents, generate prevention rules.
+<role>
+You analyze patterns of developer frustration and AI agent failures to generate precise, actionable prevention rules. Your rules are loaded into a real-time PreToolUse gate that intercepts tool calls before they run. A bad rule that over-blocks degrades agent usefulness; a weak rule that under-blocks causes production incidents.
+</role>
+
+<chain_of_thought>
+Before generating each rule, reason through:
+1. What is the root-cause pattern across similar failures?
+2. What is the minimum-specific regex that catches it without over-blocking legitimate use?
+3. Is this action irreversible (→ block) or risky-but-recoverable (→ warn)?
+4. What message explains WHY this is dangerous, not just what is blocked?
+</chain_of_thought>
+
+<examples>
+Example 1 — Direct push to main:
+Input: Multiple failures where agent pushed directly to main without a PR
+Output rule:
+{
+  "pattern": "push.*(?:main|master)(?!.*--dry-run)",
+  "action": "block",
+  "message": "Direct push to main is forbidden — create a PR and get CI green first",
+  "severity": "critical",
+  "reasoning": "Bypasses code review and CI gates; irreversible without force-push"
+}
+
+Example 2 — Deleting secrets:
+Input: Agent ran rm -rf on production config files
+Output rule:
+{
+  "pattern": "rm\\\\s+-rf?\\\\s+(?:\\\\.env|config|credentials|secrets)",
+  "action": "block",
+  "message": "Deleting config/secrets files is blocked — use git checkout or restore instead",
+  "severity": "critical",
+  "reasoning": "Permanent deletion of secrets/config causes immediate production outage"
+}
+</examples>
 
 Return ONLY a valid JSON array of rule objects:
 [
   {
     "pattern": "<valid JavaScript regex string to match against tool call input>",
-    "action": "block" or "warn",
-    "message": "<human-readable explanation of why this is blocked/warned>",
-    "severity": "critical", "high", or "medium",
-    "reasoning": "<why this pattern was identified as problematic>"
+    "action": "block" | "warn",
+    "message": "<explain WHY this is dangerous, not just what is blocked>",
+    "severity": "critical" | "high" | "medium",
+    "reasoning": "<root cause and risk analysis from the chain-of-thought>"
   }
 ]
 
-Guidelines:
-- Pattern must be a valid JavaScript regex (will be used with new RegExp(pattern, 'i')).
-- Prefer specific patterns over broad ones. "force.*push.*main" is better than "push".
-- Use "block" for destructive or high-risk patterns, "warn" for patterns that need review.
-- Deduplicate similar entries — one rule can cover multiple related failures.
-- Return at most 10 rules, prioritized by severity.
-- Do NOT include any text outside the JSON array.`;
+Constraints:
+- Pattern must be a valid JavaScript regex (used with new RegExp(pattern, 'i')).
+- Prefer specific patterns: "force.*push.*main" beats "push".
+- Use "block" for destructive/irreversible actions, "warn" for risky-but-recoverable.
+- Deduplicate: one rule can cover multiple related failures.
+- Return at most 10 rules, sorted by severity (critical first).
+- Return ONLY the JSON array — no markdown, no explanation outside the array.`;
 
 async function analyzeWithLLM(entries) {
   const { isAvailable, callClaude, MODELS } = require('./llm-client');
@@ -192,14 +248,20 @@ async function analyzeWithLLM(entries) {
     const ctx = (e.context || '').slice(0, 200);
     const tool = e.tool_name || 'unknown';
     const tags = (e.tags || []).join(', ');
-    return `${i + 1}. [${tool}] ${ctx}${tags ? ` (tags: ${tags})` : ''}`;
-  }).join('\n');
+    const wentWrong = (e.what_went_wrong || e.whatWentWrong || '').slice(0, 150);
+    const toChange = (e.what_to_change || e.whatToChange || '').slice(0, 100);
+    let entry = `${i + 1}. [tool:${tool}] context: ${ctx}`;
+    if (wentWrong) entry += `\n   what_went_wrong: ${wentWrong}`;
+    if (toChange) entry += `\n   what_to_change: ${toChange}`;
+    if (tags) entry += `\n   tags: ${tags}`;
+    return entry;
+  }).join('\n\n');
 
   const raw = await callClaude({
     systemPrompt: LLM_RULES_SYSTEM_PROMPT,
     userPrompt: `Analyze these ${negativeEntries.length} negative feedback entries and generate prevention rules:\n\n${batch}`,
-    model: MODELS.FAST,
-    maxTokens: 1024,
+    model: MODELS.SMART,
+    maxTokens: 2048,
   });
 
   if (!raw) return null;
