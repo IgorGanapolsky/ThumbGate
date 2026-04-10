@@ -21,7 +21,7 @@ One workflow. One owner. One proof review. That is the fastest path to a paid te
 
 **Best first technical motion:** install the local CLI and let `init` wire the hooks and MCP transport for the agent you already use.
 
-Free stays for individual developers. The commercial path is enterprise-first: Team pricing anchors at **$12/seat/mo with a 3-seat minimum**, and the public paid motion starts with the Workflow Hardening Sprint so one blocker gets qualified before a wider rollout. [See pricing →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=pricing_link#pricing)
+Free stays for individual developers. The commercial path is enterprise-first: Team pricing anchors at **$99/seat/mo with a 3-seat minimum**, and the public paid motion starts with the Workflow Hardening Sprint so one blocker gets qualified before a wider rollout. [See pricing →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=pricing_link#pricing)
 
 **Paid path for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) remains the self-serve side lane for the personal local dashboard, DPO export, and review-ready evidence. It is useful when one operator wants proof and debugging help without the team rollout motion.
 
@@ -184,7 +184,7 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 
 ```
 ┌──────────────┬──────────────────────────────┬──────────────────────┐
-│    FREE      │   TEAM $12/seat/mo (min 3)   │ PRO $19/mo or $149/yr│
+│    FREE      │   TEAM $99/seat/mo (min 3)   │ PRO $19/mo or $149/yr│
 ├──────────────┼──────────────────────────────┼──────────────────────┤
 │ Local CLI    │ Workflow hardening sprint    │ Personal dashboard   │
 │ enforcement  │ Shared hosted lesson DB      │ DPO export           │

@@ -15,6 +15,7 @@ if (isCI || isQuiet) process.exit(0);
 const {
   PRO_MONTHLY_PAYMENT_LINK,
   PRO_PRICE_LABEL,
+  TEAM_PRICE_LABEL,
 } = require('../scripts/commercial-offer');
 const WORKFLOW_SPRINT_URL = 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake';
 
@@ -31,8 +32,9 @@ process.stderr.write(`
   │   Sprint: ${WORKFLOW_SPRINT_URL} │
   │                                                     │
   │   Solo side lane: Pro (personal local dashboard,    │
-  │   DPO export, optional hosted API key) — ${PRO_PRICE_LABEL}: │
+  │   DPO export) — ${PRO_PRICE_LABEL}: │
   │     ${PRO_MONTHLY_PAYMENT_LINK}       │
+  │   Team: ${TEAM_PRICE_LABEL} after intake. │
   │                                                     │
   │   Or run: npx thumbgate pro                │
   │                                                     │
