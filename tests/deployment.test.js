@@ -574,6 +574,30 @@ test('Publish Claude Plugin workflow builds the MCPB and uploads channel-safe re
   assert.match(workflow, /--prerelease/);
 });
 
+test('Publish Codex Plugin workflow builds the zip bundle and uploads channel-safe release assets', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'publish-codex-plugin.yml'), 'utf8');
+
+  assert.match(workflow, /name: Publish Codex Plugin/);
+  assert.match(workflow, /concurrency:/);
+  assert.match(workflow, /group:\s*publish-codex-plugin-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
+  assert.match(workflow, /cancel-in-progress:\s*true/);
+  assert.match(workflow, /npm ci --onnxruntime-node-install-cuda=skip/);
+  assert.match(workflow, /npm run prove:adapters/);
+  assert.match(workflow, /npm run build:codex-plugin/);
+  assert.match(workflow, /scripts\/distribution-surfaces/);
+  assert.match(workflow, /version=\$\(node -p "require\('\.\/package\.json'\)\.version"\)/);
+  assert.match(workflow, /versioned_asset=\$\(node -e "const \{ getCodexPluginVersionedAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getCodexPluginVersionedAssetName\(\)\)"\)/);
+  assert.match(workflow, /channel_asset=\$\(node -e "const \{ getCodexPluginChannelAssetName \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(getCodexPluginChannelAssetName\(\)\)"\)/);
+  assert.match(workflow, /is_prerelease=\$\(node -e "const \{ isPrereleaseVersion \} = require\('\.\/scripts\/distribution-surfaces'\); process\.stdout\.write\(String\(isPrereleaseVersion\(\)\)\)"\)/);
+  assert.match(workflow, /codex-plugin-zip/);
+  assert.match(workflow, /gh release create/);
+  assert.match(workflow, /gh release upload/);
+  assert.match(workflow, /--clobber/);
+  assert.match(workflow, /Create channel asset alias/);
+  assert.match(workflow, /steps\.assets\.outputs\.channel_asset/);
+  assert.match(workflow, /--prerelease/);
+});
+
 test('Agent auto-merge workflow submits queue requests instead of polling its own check state', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'agent-automerge.yml'), 'utf8');
 
