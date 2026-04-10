@@ -111,7 +111,7 @@ No. ThumbGate doesn't update model weights. It works by capturing feedback into 
 CLAUDE.md files are suggestions that agents can ignore. ThumbGate gates are enforcement — they physically block the action before it executes via PreToolUse hooks. Gates also auto-generate from feedback instead of requiring manual rule-writing.
 
 **Does it work with my agent?**
-Yes. ThumbGate is MCP-compatible and works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any agent that supports PreToolUse hooks or MCP.
+Yes. ThumbGate is MCP-compatible and works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any agent that supports PreToolUse hooks or MCP. Codex now has a standalone plugin bundle at `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip` in addition to the repo-local profile.
 
 **What's the self-distillation mode?**
 ThumbGate can auto-evaluate agent action outcomes (test failures, reverted edits, error patterns) and generate prevention rules without any human feedback. Your agent gets smarter every session automatically.
@@ -144,6 +144,8 @@ npx thumbgate dashboard                               # local dashboard
 Or wire MCP directly: `claude mcp add thumbgate -- npx -y thumbgate serve`
 
 Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
+
+Codex standalone plugin bundle: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip`
 
 > **Need shared enforcement, auditability, approval boundaries, and rollout proof for a team workflow?** [Start with the Workflow Hardening Sprint →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=quickstart_cta#workflow-sprint-intake)
 >
