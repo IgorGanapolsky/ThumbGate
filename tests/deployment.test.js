@@ -410,8 +410,8 @@ test('CI workflow runs evolution proof and uploads evolution evidence artifacts'
 test('CI workflow treats GitHub About sync as best-effort but still verifies the live About state', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 
-  assert.match(workflow, /name: Sync GitHub About metadata on main[\s\S]*?continue-on-error:\s*true[\s\S]*?GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\}\}[\s\S]*?npm run github:about:sync/);
-  assert.match(workflow, /name: Verify live GitHub About congruence on main[\s\S]*?run:\s*npm run test:congruence:live/);
+  assert.match(workflow, /name: Sync GitHub About metadata on main[\s\S]*?continue-on-error:\s*true[\s\S]*?GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\}\}[\s\S]*?THUMBGATE_GITHUB_ABOUT_VERIFY_ATTEMPTS:\s*6[\s\S]*?THUMBGATE_GITHUB_ABOUT_VERIFY_DELAY_MS:\s*5000[\s\S]*?npm run github:about:sync/);
+  assert.match(workflow, /name: Verify live GitHub About congruence on main[\s\S]*?THUMBGATE_GITHUB_ABOUT_VERIFY_ATTEMPTS:\s*6[\s\S]*?THUMBGATE_GITHUB_ABOUT_VERIFY_DELAY_MS:\s*5000[\s\S]*?run:\s*npm run test:congruence:live/);
   assert.doesNotMatch(workflow, /name: Verify live GitHub About congruence on main[\s\S]*?GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\}\}/);
 });
 
@@ -424,6 +424,7 @@ test('CI workflow supports merge queue and cancels stale non-main runs', () => {
   assert.match(workflow, /group:\s*ci-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
   assert.match(workflow, /name: Check operational integrity[\s\S]*?GH_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}[\s\S]*?npm run ops:integrity:ci/);
+  assert.match(workflow, /name: Check branch protection congruence[\s\S]*?GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT \|\| github\.token\s*\}\}[\s\S]*?npm run branch-protection:check/);
 });
 
 test('CI workflow gives the full suite enough runtime budget', () => {
@@ -521,6 +522,13 @@ test('Dependabot auto-merge trusts the pull request author instead of the trigge
   assert.match(workflow, /pull_request_target:/);
   assert.match(workflow, /github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'/);
   assert.doesNotMatch(workflow, /if:\s*github\.actor == 'dependabot\[bot\]'/);
+  assert.match(workflow, /issues:\s+write/s);
+  assert.match(workflow, /group:\s*dependabot-automerge-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.run_id\s*\}\}/);
+  assert.match(workflow, /jobs:\s+dependabot-automerge:\s+name:\s*dependabot-automerge/s);
+  assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
+  assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
+  assert.match(workflow, /-f body='\/trunk merge'/);
+  assert.doesNotMatch(workflow, /gh pr checks "\$PR_URL"/);
 });
 
 test('Publish Claude Plugin workflow builds the MCPB and uploads channel-safe release assets', () => {
@@ -545,6 +553,39 @@ test('Publish Claude Plugin workflow builds the MCPB and uploads channel-safe re
   assert.match(workflow, /Create channel asset alias/);
   assert.match(workflow, /steps\.assets\.outputs\.channel_asset/);
   assert.match(workflow, /--prerelease/);
+});
+
+test('Agent auto-merge workflow submits queue requests instead of polling its own check state', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'agent-automerge.yml'), 'utf8');
+
+  assert.match(workflow, /issues:\s+write/s);
+  assert.match(workflow, /group:\s*agent-automerge-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.run_id\s*\}\}/);
+  assert.match(workflow, /jobs:\s+agent-automerge:\s+name:\s*agent-automerge/s);
+  assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
+  assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
+  assert.match(workflow, /-f body='\/trunk merge'/);
+  assert.doesNotMatch(workflow, /gh pr checks "\$PR_URL"/);
+  assert.doesNotMatch(workflow, /timeout_seconds=1800/);
+});
+
+test('Agent auto-merge workflow records merge submission without waiting for the final merge commit', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'agent-automerge.yml'), 'utf8');
+
+  assert.match(workflow, /name: Request merge automation/);
+  assert.match(workflow, /### Merge automation/);
+  assert.match(workflow, /Queue request: \\`\/trunk merge\\`/);
+  assert.doesNotMatch(workflow, /gh pr view "\$PR_URL" --json state,mergeCommit,url,title/);
+  assert.doesNotMatch(workflow, /Final merge commit:/);
+});
+
+test('Merge branch workflow requests trunk merge for main instead of forcing GitHub auto-merge', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'merge-branch.yml'), 'utf8');
+
+  assert.match(workflow, /issues:\s+write/s);
+  assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
+  assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
+  assert.match(workflow, /-f body='\/trunk merge'/);
+  assert.match(workflow, /if \[ "\$\{THUMBGATE_MAIN_MERGE_PROVIDER\}" = "trunk" \]/);
 });
 
 test('Sentry release workflow serializes main release stamping', () => {

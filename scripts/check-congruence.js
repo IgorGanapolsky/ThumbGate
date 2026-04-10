@@ -18,13 +18,48 @@ const {
   PRODUCTHUNT_URL,
   getClaudePluginLatestDownloadUrl,
 } = require('./distribution-surfaces');
+const {
+  TEAM_MIN_SEATS,
+  TEAM_MONTHLY_PRICE_DOLLARS,
+  TEAM_PRICE_LABEL,
+} = require('./commercial-offer');
 
 const ROOT = path.join(__dirname, '..');
+const PRICING_SURFACE_ROOTS = [
+  'README.md',
+  'bin',
+  'docs',
+  'public',
+  '.agents/skills/thumbgate/SKILL.md',
+];
+const PRICING_SURFACE_EXTENSIONS = new Set(['.html', '.js', '.json', '.md', '.txt']);
+const LEGACY_TEAM_PRICE_PATTERN = /\$12\s*\/\s*seat\s*\/\s*mo|\$12\/seat|\bTEAM \$12\b|"price":\s*"12"/i;
 
 function read(rel) {
   const full = path.join(ROOT, rel);
   if (!fs.existsSync(full)) return null;
   return fs.readFileSync(full, 'utf-8');
+}
+
+function listTextFiles(rel) {
+  const full = path.join(ROOT, rel);
+  if (!fs.existsSync(full)) return [];
+  const stat = fs.statSync(full);
+  if (stat.isFile()) {
+    return PRICING_SURFACE_EXTENSIONS.has(path.extname(full)) ? [rel] : [];
+  }
+  if (!stat.isDirectory()) return [];
+
+  const files = [];
+  for (const entry of fs.readdirSync(full, { withFileTypes: true })) {
+    const childRel = path.join(rel, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...listTextFiles(childRel));
+    } else if (PRICING_SURFACE_EXTENSIONS.has(path.extname(entry.name))) {
+      files.push(childRel);
+    }
+  }
+  return files;
 }
 
 async function main() {
@@ -43,16 +78,26 @@ async function main() {
 
   const landingHtml = read('public/index.html') || '';
   const guideHtml = read('public/guide.html') || '';
+  const compareHtml = read('public/compare.html') || '';
+  const proHtml = read('public/pro.html') || '';
   const readmeMd = read('README.md') || '';
   const commercialTruth = read('docs/COMMERCIAL_TRUTH.md') || '';
+  const docsLandingHtml = read('docs/landing-page.html') || '';
   const agentsMd = read('AGENTS.md') || '';
   const claudeMd = read('CLAUDE.md') || '';
   const geminiMd = read('GEMINI.md') || '';
   const serverStdio = read('adapters/mcp/server-stdio.js') || '';
   const productHuntKit = read('docs/marketing/product-hunt-launch.md') || '';
+  const productHuntLaunchKit = read('docs/marketing/product-hunt-launch-kit.md') || '';
   const claudePluginReadme = read('.claude-plugin/README.md') || '';
   const claudeDesktopPacket = read('docs/CLAUDE_DESKTOP_EXTENSION.md') || '';
   const latestClaudePluginUrl = getClaudePluginLatestDownloadUrl(ROOT);
+  const teamSeatPrice = `$${TEAM_MONTHLY_PRICE_DOLLARS}/seat/mo`;
+  const teamSeatPricePattern = new RegExp(`\\$${TEAM_MONTHLY_PRICE_DOLLARS}/seat/mo`, 'i');
+  const pricingSurfaceFiles = PRICING_SURFACE_ROOTS.flatMap(listTextFiles);
+  const legacyTeamPricingHits = pricingSurfaceFiles.filter((rel) => (
+    LEGACY_TEAM_PRICE_PATTERN.test(read(rel) || '')
+  ));
 
   check(
     landingHtml.includes(`v${version}`),
@@ -137,7 +182,19 @@ async function main() {
     'public/guide.html must advertise the current Pro monthly and annual pricing'
   );
   check(
-    /\$99\/seat\/mo/i.test(guideHtml),
+    TEAM_MONTHLY_PRICE_DOLLARS === 99 && TEAM_MIN_SEATS === 3,
+    'scripts/commercial-offer.js must anchor Team at $99/seat/mo with a 3-seat minimum'
+  );
+  check(
+    TEAM_PRICE_LABEL.includes(teamSeatPrice),
+    'scripts/commercial-offer.js Team label must match the canonical Team seat price'
+  );
+  check(
+    legacyTeamPricingHits.length === 0,
+    `Legacy $12 Team pricing found in public pricing surfaces: ${legacyTeamPricingHits.join(', ')}`
+  );
+  check(
+    teamSeatPricePattern.test(guideHtml),
     'public/guide.html must advertise the current Team pricing anchor'
   );
   check(
@@ -145,17 +202,33 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the current Pro offer'
   );
   check(
-    /shared lessons and org visibility/i.test(githubAbout.description),
-    'config/github-about.json description must mention shared lessons and org visibility'
+    teamSeatPricePattern.test(commercialTruth),
+    'docs/COMMERCIAL_TRUTH.md must record the current Team pricing anchor'
+  );
+  check(
+    /shared lessons and org visibility/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention shared lessons and org visibility'
   );
   check(
     /\$19\/mo or \$149\/yr/i.test(readmeMd),
     'README.md must advertise the current Pro monthly and annual pricing'
   );
   check(
-    /\$99\/seat\/mo/i.test(readmeMd),
+    teamSeatPricePattern.test(readmeMd),
     'README.md must advertise the current Team pricing anchor'
   );
+  for (const [surface, text] of Object.entries({
+    'public/index.html': landingHtml,
+    'public/compare.html': compareHtml,
+    'public/pro.html': proHtml,
+    'docs/landing-page.html': docsLandingHtml,
+    'docs/marketing/product-hunt-launch-kit.md': productHuntLaunchKit,
+  })) {
+    check(
+      teamSeatPricePattern.test(text),
+      `${surface} must advertise the current Team pricing anchor`
+    );
+  }
   check(
     /shared hosted lesson db/i.test(readmeMd),
     'README.md must describe the shared hosted Team lesson database'
@@ -246,24 +319,32 @@ async function main() {
     'public/index.html must explain the thumbs-down feedback path'
   );
   check(
-    githubAbout.description.includes('👍'),
-    'config/github-about.json description must include the thumbs-up icon'
+    githubAbout.metaDescription.includes('👍'),
+    'config/github-about.json metaDescription must include the thumbs-up icon'
   );
   check(
-    githubAbout.description.includes('👎'),
-    'config/github-about.json description must include the thumbs-down icon'
+    githubAbout.metaDescription.includes('👎'),
+    'config/github-about.json metaDescription must include the thumbs-down icon'
   );
   check(
-    /thumbs[\s-]?up/i.test(githubAbout.description),
-    'config/github-about.json description must mention thumbs-up feedback'
+    /thumbs[\s-]?up/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention thumbs-up feedback'
   );
   check(
-    /thumbs[\s-]?down/i.test(githubAbout.description),
-    'config/github-about.json description must mention thumbs-down feedback'
+    /thumbs[\s-]?down/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention thumbs-down feedback'
   );
   check(
-    /history-aware lessons/i.test(githubAbout.description),
-    'config/github-about.json description must mention history-aware lessons'
+    /history-aware lessons/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention history-aware lessons'
+  );
+  check(
+    /agent governance/i.test(githubAbout.githubDescription),
+    'config/github-about.json githubDescription must mention agent governance'
+  );
+  check(
+    /pre-action gates|shared lessons|team safeguards/i.test(githubAbout.githubDescription),
+    'config/github-about.json githubDescription must preserve the GitHub repo positioning'
   );
   check(
     productHuntKit.includes(PRODUCTHUNT_URL),

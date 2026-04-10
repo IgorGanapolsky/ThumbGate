@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { getDecisionLogPath, readDecisionLog, collapseDecisionTimeline } = require('./decision-journal');
 
 const LABELS = ['allow', 'recall', 'verify', 'warn', 'deny'];
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -323,14 +324,64 @@ function buildDiagnosticExample(entry) {
   };
 }
 
+function deriveLabelFromDecisionOutcome(outcome) {
+  const status = normalizeText(outcome && outcome.outcome);
+  const actualDecision = normalizeText(outcome && outcome.actualDecision);
+  if (status === 'blocked' || status === 'rolled_back' || actualDecision === 'deny') return 'deny';
+  if (status === 'warned' || status === 'overridden' || actualDecision === 'warn') return 'warn';
+  if (status === 'accepted' || status === 'completed') return 'allow';
+  if (status === 'aborted') return 'warn';
+  return null;
+}
+
+function buildDecisionExample(action) {
+  const evaluation = action && action.evaluation ? action.evaluation : null;
+  const latestOutcome = action && Array.isArray(action.outcomes) && action.outcomes.length > 0
+    ? action.outcomes[action.outcomes.length - 1]
+    : null;
+  const label = deriveLabelFromDecisionOutcome(latestOutcome);
+  if (!evaluation || !latestOutcome || !label) return null;
+
+  const recommendation = evaluation.recommendation || {};
+  const blastRadius = evaluation.blastRadius || {};
+  const toolInput = evaluation.toolInput && typeof evaluation.toolInput === 'object' ? evaluation.toolInput : {};
+  const changedFiles = Array.isArray(evaluation.changedFiles) ? evaluation.changedFiles : [];
+  const tokens = buildFeatureTokens([
+    'kind:decision',
+    `tool:${evaluation.toolName || latestOutcome.toolName || 'unknown'}`,
+    `decision:${recommendation.decision || 'allow'}`,
+    `execution:${recommendation.executionMode || 'auto_execute'}`,
+    `owner:${recommendation.decisionOwner || 'agent'}`,
+    `reversibility:${recommendation.reversibility || 'reviewable'}`,
+    recommendation.riskBand ? `risk:${recommendation.riskBand}` : null,
+    blastRadius.severity ? `blast:${blastRadius.severity}` : null,
+    latestOutcome.outcome ? `outcome:${latestOutcome.outcome}` : null,
+    latestOutcome.actor ? `actor:${latestOutcome.actor}` : null,
+    ...extractCommandTokens(toolInput.command || ''),
+    ...changedFiles.flatMap((filePath) => extractFileTokens(filePath)),
+    ...tokenizeText([recommendation.summary, latestOutcome.notes].filter(Boolean).join(' '), 10).map((token) => `decisiontok:${token}`),
+  ]);
+
+  if (!tokens.length) return null;
+  return {
+    id: latestOutcome.actionId || evaluation.actionId || null,
+    source: 'decision',
+    label,
+    timestamp: latestOutcome.timestamp || evaluation.timestamp || new Date().toISOString(),
+    tokens,
+  };
+}
+
 function buildExamplesFromFeedbackDir(feedbackDir) {
   const resolvedDir = resolveFeedbackDir({ feedbackDir });
   const feedbackEntries = readJSONL(path.join(resolvedDir, 'feedback-log.jsonl'));
   const auditEntries = readJSONL(path.join(resolvedDir, 'audit-trail.jsonl'));
   const diagnosticEntries = readJSONL(path.join(resolvedDir, 'diagnostic-log.jsonl'));
+  const decisionEntries = readDecisionLog(getDecisionLogPath(resolvedDir));
+  const decisions = collapseDecisionTimeline(decisionEntries);
 
   const examples = [];
-  const sourceCounts = { feedback: 0, audit: 0, diagnostic: 0 };
+  const sourceCounts = { feedback: 0, audit: 0, diagnostic: 0, decision: 0 };
 
   for (const entry of feedbackEntries) {
     const example = buildFeedbackExample(entry);
@@ -348,6 +399,12 @@ function buildExamplesFromFeedbackDir(feedbackDir) {
     const example = buildDiagnosticExample(entry);
     if (!example) continue;
     sourceCounts.diagnostic += 1;
+    examples.push(example);
+  }
+  for (const action of decisions) {
+    const example = buildDecisionExample(action);
+    if (!example) continue;
+    sourceCounts.decision += 1;
     examples.push(example);
   }
 

@@ -40,8 +40,8 @@ These signals matter because they show demand and discovery, but they do not pro
 | Path | Formula | Monthly revenue |
 | --- | --- | ---: |
 | Pro only | `226 x $19` | `$4,294` |
-| Mixed target | `150 Pro x $19 + 12 teams x 10 seats x $12` | `$4,290` |
-| Team-heavier | `90 Pro x $19 + 18 teams x 12 seats x $12` | `$4,302` |
+| Mixed target | `150 Pro x $19 + 2 teams x 8 seats x $99` | `$4,434` |
+| Team-heavier | `45 Pro x $19 + 4 teams x 9 seats x $99` | `$4,419` |
 
 Recommended planning path:
 
@@ -51,7 +51,7 @@ Recommended planning path:
 
 ## Funnel Math
 
-The original research target of `2,000` monthly visitors and `4.2%` overall conversion is too loose if it is meant to support `150` Pro subscribers plus `12` paying team accounts.
+The original research target of `2,000` monthly visitors and `4.2%` overall conversion is too loose if it is meant to support `150` Pro subscribers plus multiple paying team accounts.
 
 If the target is `162` paying accounts:
 

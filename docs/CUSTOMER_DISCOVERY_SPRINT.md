@@ -1,0 +1,88 @@
+# Customer Discovery Sprint
+
+Status: current
+Updated: April 9, 2026
+
+This document turns the current go-to-market recommendation into one week of concrete execution.
+
+## Goal
+
+Replace broad broadcasting with direct customer discovery so ThumbGate sharpens around one buyer: teams that need agent governance for one valuable workflow.
+
+## Working Thesis
+
+- The local CLI is the adoption wedge.
+- The business is enterprise-first.
+- The first paid motion is the Workflow Hardening Sprint, not a generic self-serve subscription.
+- Pro stays available for solo operators, but it is the side lane, not the primary narrative.
+
+## Seven-Day Sprint
+
+1. Pause broad posting for 7 days. No new generic launch threads, no volume-first social loops.
+2. Contact the 3-5 people who engaged meaningfully.
+3. Ask for 15 minutes to understand their current workflow, failure modes, and approval needs.
+4. Capture exact language around blockers, proof needs, rollout friction, and who actually signs off.
+5. Compare those answers against the current sprint offer, Team story, and CLI wedge.
+6. Rewrite the landing page, README, and pitch with the words buyers actually use.
+7. End the sprint with a decision memo: double down on team agent governance or keep the local tool as a niche side path.
+
+## Target Interviews
+
+Start with the engagers already identified in [team-outreach-messages.md](marketing/team-outreach-messages.md).
+
+- Deep_Ad1959
+- game-of-kton
+- leogodin217
+- Enthu-Cutlet-1337
+
+If those stall, prioritize anyone who:
+
+- described a real workflow instead of just reacting to the launch
+- mentioned teams, CI, approvals, or shared repos
+- already built memory, hooks, or reliability layers of their own
+
+## Interview Script
+
+Use these in order. Do not pitch until the end, and only if they ask.
+
+1. What agent workflow are you running often enough that failures actually hurt?
+2. What mistake or handoff failure keeps repeating?
+3. Who feels the pain first: the operator, the reviewer, the team lead, or the buyer?
+4. What has to be true before you would trust that workflow to scale to a team?
+5. Where do prompt files and local notes stop being enough?
+6. If you had one control plane for that workflow, what would it need to prove?
+7. If this were valuable, would you expect to buy a local tool, a team pilot, or something else?
+
+## What To Capture
+
+- Workflow name
+- Owner of the workflow
+- Repeated blocker
+- Current agent/runtime
+- Approval boundary
+- Proof requirement
+- Whether the pain is solo or team-wide
+- Exact language they used to describe the problem
+
+## Success Criteria
+
+The sprint is useful if it produces at least one of these:
+
+- one named workflow that clearly fits the Workflow Hardening Sprint
+- one pricing or packaging objection that changes the public story
+- one repeated buyer phrase we can use across the README, landing page, and outreach
+- one explicit reason the local-only path is insufficient for team rollout
+
+## Decision Rule
+
+At the end of the sprint, answer this directly:
+
+- If buyers consistently talk about approvals, auditability, shared rules, and rollout proof, stay enterprise-first.
+- If buyers only want a local convenience layer and resist any team motion, keep Pro as a smaller side business and stop pretending it is the main company story.
+
+## Related Assets
+
+- [PITCH.md](PITCH.md)
+- [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md)
+- [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md)
+- [marketing/team-outreach-messages.md](marketing/team-outreach-messages.md)

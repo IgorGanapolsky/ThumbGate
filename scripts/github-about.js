@@ -14,6 +14,9 @@ const LEGACY_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/thumbgate';
 const GITHUB_API_BASE_URL = 'https://api.github.com';
 const DEFAULT_VERIFY_ATTEMPTS = 5;
 const DEFAULT_VERIFY_DELAY_MS = 2000;
+const MAX_GITHUB_DESCRIPTION_LENGTH = 160;
+const VERIFY_ATTEMPTS_ENV = 'THUMBGATE_GITHUB_ABOUT_VERIFY_ATTEMPTS';
+const VERIFY_DELAY_MS_ENV = 'THUMBGATE_GITHUB_ABOUT_VERIFY_DELAY_MS';
 
 function readText(root, relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
@@ -63,11 +66,14 @@ function hasRepositoryUrl(text, targetUrl) {
 
 function loadGitHubAboutConfig(root = ROOT) {
   const about = readJson(root, CONFIG_RELATIVE_PATH);
+  const metaDescription = normalizeText(about.metaDescription || about.description);
+  const githubDescription = normalizeText(about.githubDescription || about.description);
   return {
     repo: normalizeText(about.repo),
     repositoryUrl: normalizeText(about.repositoryUrl),
     homepageUrl: normalizeText(about.homepageUrl),
-    description: normalizeText(about.description),
+    githubDescription,
+    metaDescription,
     topics: normalizeTopics(about.topics),
   };
 }
@@ -101,7 +107,7 @@ function compareGitHubAbout(expected, actual, label = 'Live GitHub About') {
   const actualHomepage = normalizeText(actual.homepageUrl || actual.homepage);
   const actualTopics = normalizeTopics(actual.topics);
 
-  if (actualDescription !== expected.description) {
+  if (actualDescription !== expected.githubDescription) {
     errors.push(`${label} description mismatch`);
   }
   if (actualHomepage !== expected.homepageUrl) {
@@ -135,8 +141,12 @@ function collectLocalGitHubAboutErrors(root = ROOT) {
   }
 
   check(
-    extractMetaDescription(landingHtml) === about.description,
-    'config/github-about.json description must match public/index.html meta description'
+    extractMetaDescription(landingHtml) === about.metaDescription,
+    'config/github-about.json metaDescription must match public/index.html meta description'
+  );
+  check(
+    about.githubDescription.length <= MAX_GITHUB_DESCRIPTION_LENGTH,
+    `config/github-about.json githubDescription must be ${MAX_GITHUB_DESCRIPTION_LENGTH} characters or fewer for GitHub repo metadata`
   );
   check(
     packageJson.homepage === about.homepageUrl,
@@ -179,7 +189,11 @@ function collectLocalGitHubAboutErrors(root = ROOT) {
     'docs/MARKETING_COPY_CONGRUENCE.md must reference config/github-about.json as the source of truth'
   );
   check(
-    marketingCopy.includes(about.description),
+    marketingCopy.includes(about.metaDescription),
+    'docs/MARKETING_COPY_CONGRUENCE.md must include the canonical landing meta description'
+  );
+  check(
+    marketingCopy.includes(about.githubDescription),
     'docs/MARKETING_COPY_CONGRUENCE.md must include the canonical GitHub About description'
   );
   check(
@@ -303,6 +317,13 @@ function normalizePositiveInteger(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function resolveVerifySetting(optionValue, envName, fallback) {
+  if (optionValue !== undefined) {
+    return normalizePositiveInteger(optionValue, fallback);
+  }
+  return normalizePositiveInteger(process.env[envName], fallback);
+}
+
 function sleep(delayMs) {
   return new Promise((resolve) => {
     setTimeout(resolve, delayMs);
@@ -314,8 +335,8 @@ async function verifyLiveGitHubAbout(options = {}) {
   const expected = options.expected || loadGitHubAboutConfig(root);
   const repo = normalizeText(options.repo) || expected.repo;
   const label = options.label || `Live GitHub About (${repo})`;
-  const attempts = normalizePositiveInteger(options.attempts, DEFAULT_VERIFY_ATTEMPTS);
-  const delayMs = normalizePositiveInteger(options.delayMs, DEFAULT_VERIFY_DELAY_MS);
+  const attempts = resolveVerifySetting(options.attempts, VERIFY_ATTEMPTS_ENV, DEFAULT_VERIFY_ATTEMPTS);
+  const delayMs = resolveVerifySetting(options.delayMs, VERIFY_DELAY_MS_ENV, DEFAULT_VERIFY_DELAY_MS);
   const fetcher = typeof options.fetcher === 'function' ? options.fetcher : fetchLiveGitHubAbout;
   const sleeper = typeof options.sleep === 'function' ? options.sleep : sleep;
   let actual = null;
@@ -362,7 +383,7 @@ async function updateLiveGitHubAbout(options = {}) {
     method: 'PATCH',
     headers: buildGitHubApiHeaders(token),
     body: JSON.stringify({
-      description: about.description,
+      description: about.githubDescription,
       homepage: about.homepageUrl,
     }),
   });
@@ -390,6 +411,9 @@ module.exports = {
   DEFAULT_VERIFY_ATTEMPTS,
   DEFAULT_VERIFY_DELAY_MS,
   LEGACY_REPOSITORY_URL,
+  MAX_GITHUB_DESCRIPTION_LENGTH,
+  VERIFY_ATTEMPTS_ENV,
+  VERIFY_DELAY_MS_ENV,
   buildCanonicalRepoUrls,
   collectLocalGitHubAboutErrors,
   compareGitHubAbout,

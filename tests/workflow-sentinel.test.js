@@ -60,8 +60,12 @@ test('workflow sentinel warns on multi-surface release-sensitive blast radius', 
   assert.equal(report.decision, 'warn');
   assert.equal(report.blastRadius.surfaceCount >= 3, true);
   assert.equal(report.blastRadius.releaseSensitiveFiles.includes('config/mcp-allowlists.json'), true);
+  assert.equal(report.decisionControl.executionMode, 'checkpoint_required');
+  assert.equal(report.decisionControl.decisionOwner, 'human');
+  assert.equal(report.decisionControl.reversibility, 'one_way_door');
   assert.ok(report.remediations.some((entry) => entry.id === 'split_blast_radius'));
   assert.match(report.reasoning.join('\n'), /Blast radius:/);
+  assert.match(report.reasoning.join('\n'), /Decision control:/);
 });
 
 test('workflow sentinel denies recurring destructive pattern with high blast radius', () => {
@@ -106,6 +110,8 @@ test('workflow sentinel denies recurring destructive pattern with high blast rad
   assert.equal(report.memoryGuard.mode, 'block');
   assert.equal(report.executionSurface.shouldSandbox, true);
   assert.equal(report.executionSurface.recommendation, 'required');
+  assert.equal(report.decisionControl.executionMode, 'blocked');
+  assert.equal(report.decisionControl.recommendedAction, 'halt');
   assert.ok(report.remediations.some((entry) => entry.id === 'retrieve_lessons'));
   assert.ok(report.remediations.some((entry) => entry.id === 'route_to_docker_sandbox'));
   assert.match(report.evidence.join('\n'), /Memory guard predicted block/);
@@ -142,6 +148,8 @@ test('workflow sentinel treats explicit changed files as authoritative for PR ha
 
   assert.equal(report.decision, 'allow');
   assert.deepEqual(report.blastRadius.affectedFiles, ['README.md']);
+  assert.equal(report.decisionControl.executionMode, 'auto_execute');
+  assert.equal(report.decisionControl.decisionOwner, 'agent');
 });
 
 test('evaluateGatesAsync returns workflow sentinel warning when no static gate matches', async () => {
@@ -306,6 +314,7 @@ test('workflow sentinel surfaces learned verify policy in warning decisions', ()
   assert.equal(report.decision, 'warn');
   assert.equal(report.learnedPolicy.enabled, true);
   assert.equal(report.learnedPolicy.prediction.label, 'verify');
+  assert.equal(report.decisionControl.executionMode, 'checkpoint_required');
   assert.ok(report.remediations.some((entry) => entry.id === 'verify_before_closeout'));
   assert.match(report.evidence.join('\n'), /Learned policy predicted verify/);
 });

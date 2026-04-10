@@ -34,9 +34,9 @@ Works with Claude Code, Codex CLI, Gemini CLI, Amp, Cursor. All data stays on yo
 
 ---
 
-**5/7:** Validated using four independent AI agents — Claude, Codex, Amp, Gemini — each running the same test suite.
+**5/7:** Validated using four independent AI agents — Claude, Codex, Amp, Gemini — each running the same compatibility and proof lanes.
 
-933 tests. Zero failures. Compatibility report generated in CI on every push.
+Verification evidence and compatibility checks are generated in CI on every push.
 
 ---
 

@@ -2,7 +2,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { PRODUCTHUNT_URL } = require('../scripts/distribution-surfaces');
 
 const landingPagePath = path.join(__dirname, '..', 'public', 'index.html');
 const buyerIntentScriptPath = path.join(__dirname, '..', 'public', 'js', 'buyer-intent.js');
@@ -72,26 +71,26 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /\$0/);
   assert.match(landingPage, /\$19/);
   assert.match(landingPage, /\/mo/);
-  assert.match(landingPage, /\$12/);
+  assert.match(landingPage, /\$99/);
   assert.match(landingPage, /\/seat\/mo/);
   assert.match(landingPage, /Forever free/);
-  assert.match(landingPage, /Local enforcement for one developer/);
-  assert.match(landingPage, /Founder pricing/);
+  assert.match(landingPage, /CLI-first local enforcement for one developer/i);
+  assert.match(landingPage, /solo side lane/i);
   assert.match(landingPage, /Shared enforcement/i);
-  assert.match(landingPage, /\$12/);
   assert.match(landingPage, /Install Free/);
   assert.match(landingPage, /Free Trial/);
-  assert.match(landingPage, /Start Team Pilot/);
+  assert.match(landingPage, /Start Workflow Hardening Sprint/);
 });
 
 test('public landing page includes Plausible analytics and search engine proof bar', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /plausible\.io\/js\/script\.js/);
-  assert.match(landingPage, /npm downloads/i);
-  assert.match(landingPage, /tests passing/i);
-  assert.ok(landingPage.includes(PRODUCTHUNT_URL));
-  assert.match(landingPage, /MIT licensed/i);
+  assert.match(landingPage, /Verification evidence/i);
+  assert.match(landingPage, /Release confidence/i);
+  assert.match(landingPage, /Proof-backed CI/i);
+  assert.match(landingPage, /CI and proof lanes/i);
+  assert.match(landingPage, /Claude Code · Cursor · Codex · Gemini · Amp · OpenCode/i);
 });
 
 test('public landing page includes the three-step how-it-works section', () => {
@@ -115,12 +114,13 @@ test('public landing page includes a Reddit campaign banner and subreddit-aware 
   assert.doesNotMatch(landingPage, /parseRedditCommunity/);
 });
 
-test('public landing page positions ThumbGate as self-improving AI agents', () => {
+test('public landing page positions ThumbGate as agent governance for AI coding workflows', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /ThumbGate/);
-  assert.match(landingPage, /self-improving/i);
-  assert.match(landingPage, /learns from every mistake/i);
+  assert.match(landingPage, /workflow governance/i);
+  assert.match(landingPage, /Workflow Hardening Sprint/i);
+  assert.match(landingPage, /CLI-first/i);
   assert.match(landingPage, /Claude Code/);
   assert.match(landingPage, /Cursor/);
   assert.match(landingPage, /Codex/);
@@ -146,11 +146,13 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
   assert.match(landingPage, /product teams/i);
 });
 
-test('public landing page exposes a dedicated Pro path above the fold', () => {
+test('public landing page exposes the free CLI wedge above the fold and keeps Pro secondary', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /See Pro for solo operators/i);
-  assert.match(landingPage, /href="\/pro\?utm_source=website&utm_medium=homepage_hero&utm_campaign=pro_page"/);
+  assert.match(landingPage, /Install Free CLI/i);
+  assert.match(landingPage, /btn-install-link/);
+  assert.match(landingPage, /intake-first/i);
+  assert.match(landingPage, /solo side lane/i);
 });
 
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
@@ -164,12 +166,12 @@ test('public landing page Pro tier uses outcome-framed bullets that justify upgr
   assert.match(landingPage, /DPO training data export/i);
   assert.match(landingPage, /ready-to-use preference pairs for fine-tuning/i);
   assert.match(landingPage, /Personal local dashboard/i);
-  assert.match(landingPage, /Founder-license support/i);
+  assert.match(landingPage, /export-ready evidence/i);
   // Persona targeting for Pro
-  assert.match(landingPage, /individual operators/i);
-  assert.match(landingPage, /dashboard of exactly what got blocked/i);
+  assert.match(landingPage, /individual operator/i);
+  assert.match(landingPage, /without starting the team rollout motion/i);
   // Upgrade triggers
-  assert.match(landingPage, /Go Pro when:/i);
+  assert.match(landingPage, /Choose Pro when:/i);
   assert.match(landingPage, /review-ready evidence/i);
 });
 
@@ -239,7 +241,7 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
 
   // trackClick wires up CTA events by selector and event name
   assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
-  assert.match(landingPage, /trackClick\('.btn-pro-page', 'pro_page_click'/);
+  assert.match(landingPage, /trackClick\('.btn-install-link', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
   assert.match(landingPage, /trackClick\('.btn-demo-link', 'demo_click'/);
@@ -310,7 +312,7 @@ test('landing page has newsletter signup', () => {
   assert.ok(html.includes('type="email"'), 'must include email input');
   assert.match(html, /action="\/api\/newsletter"/);
   assert.match(html, /data-newsletter-form/);
-  assert.match(html, /Get updates \+ keep checkout ready/i);
+  assert.match(html, /Get sprint brief \+ updates/i);
 });
 
 test('landing page has social links in footer', () => {
@@ -352,7 +354,10 @@ test('lessons page has defensible live metrics and rule frequency labels', () =>
   assert.match(html, /Recent Feedback \+ Gate Activity/i);
   assert.match(html, /Gate deny/i);
   assert.match(html, /Gate warn/i);
-  assert.match(html, /Repeat pressure/i);
+  assert.match(html, /Fast path rate/i);
+  assert.match(html, /Override rate/i);
+  assert.match(html, /Rollback rate/i);
+  assert.match(html, /Median latency/i);
   assert.match(html, /rule-effectiveness/);
   assert.match(html, /rule-severity/);
 });

@@ -1,13 +1,13 @@
 # ThumbGate
 
-Make your AI coding agent self-improving. ThumbGate turns thumbs-up and thumbs-down into a learned control plane for autonomous development: pre-action gates, a trained intervention policy, workflow governance, and isolated execution guidance for high-risk runs.
+Make your AI coding agent self-improving — and authentically yours. ThumbGate turns thumbs-up and thumbs-down into a learned control plane for autonomous development: pre-action gates, a trained intervention policy, workflow governance, and isolated execution guidance for high-risk runs. Every gate enforces your team's actual standards, not generic AI patterns.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Start Sprint](https://img.shields.io/badge/Workflow%20Hardening%20Sprint-Start%20Intake%20→-16a34a?style=for-the-badge)](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=badge_cta#workflow-sprint-intake)
 
-**[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Setup Guide](https://thumbgate-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=top_cta)**
+**[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Setup Guide](https://thumbgate-production.up.railway.app/guide?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)**
 
 **Popular buyer questions:** **[How to stop repeated AI agent mistakes](https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
 
@@ -19,11 +19,11 @@ Make your AI coding agent self-improving. ThumbGate turns thumbs-up and thumbs-d
 
 One workflow. One owner. One proof review. That is the fastest path to a paid team engagement because it qualifies a real blocker before anyone tries to sell a full rollout.
 
-**Self-serve for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the paid lane for the personal local dashboard, DPO export, and review-ready evidence.
+**Best first technical motion:** install the local CLI and let `init` wire the hooks and MCP transport for the agent you already use.
 
-Free stays for individual developers. Pro is **$19/mo or $149/yr** for solo operators. Team pricing anchors at **$99/seat/mo with a 3-seat minimum**, but the public Team path remains intake-first through the sprint. [See pricing →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=pricing_link#pricing)
+Free stays for individual developers. The commercial path is enterprise-first: Team pricing anchors at **$99/seat/mo with a 3-seat minimum**, and the public paid motion starts with the Workflow Hardening Sprint so one blocker gets qualified before a wider rollout. [See pricing →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=pricing_link#pricing)
 
-**Paid path for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the buyer-ready page for the personal local dashboard, DPO export, and review-ready evidence. It makes the paid upgrade legible before checkout while the self-hosted path below stays optimized for open source evaluation.
+**Paid path for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) remains the self-serve side lane for the personal local dashboard, DPO export, and review-ready evidence. It is useful when one operator wants proof and debugging help without the team rollout motion.
 
 **Open Source (Self-Hosted):**
 
@@ -39,6 +39,7 @@ ThumbGate is the control plane for AI coding agents:
 - Workflow Sentinel scores blast radius before execution, so risky PR, release, and publish flows are visible early.
 - High-risk local actions can be routed into Docker Sandboxes, while hosted team automations use a signed isolated sandbox lane.
 - Team rollout stays tied to [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) instead of trust-me operator claims.
+- AI agent outputs stay grounded in your team's actual standards — not generic patterns — because every gate enforces human judgment before the action executes.
 
 ## Release Confidence
 
@@ -131,6 +132,8 @@ Free tier: 3 feedback captures/day, 5 lesson searches/day, 5 built-in gates. Fou
 
 ## Quick Start (Self-Hosted)
 
+ThumbGate is CLI-first. MCP is the compatibility transport, and `npx thumbgate init` wires it for the agent instead of making the transport the product.
+
 ```bash
 npx thumbgate init                                    # auto-detect agent + wire hooks
 npx thumbgate doctor                                  # health check
@@ -142,7 +145,7 @@ Or wire MCP directly: `claude mcp add thumbgate -- npx -y thumbgate serve`
 
 Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
 
-> **Need shared enforcement, auditability, and rollout proof for a team workflow?** [Start with the Workflow Hardening Sprint →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=quickstart_cta#workflow-sprint-intake)
+> **Need shared enforcement, auditability, approval boundaries, and rollout proof for a team workflow?** [Start with the Workflow Hardening Sprint →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=quickstart_cta#workflow-sprint-intake)
 >
 > **Need a personal dashboard and DPO export for yourself?** [See ThumbGate Pro →](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=quickstart_cta_pro)
 
@@ -177,28 +180,28 @@ History-aware distillation turns vague negative signals into concrete lessons. I
 
 Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx thumbgate lessons`.
 
-## Pricing
+## Buying Paths
 
 ```
-┌──────────────┬──────────────────────┬──────────────────────────────┐
-│    FREE      │ PRO $19/mo or $149/yr│   TEAM $99/seat/mo (min 3)   │
-├──────────────┼──────────────────────┼──────────────────────────────┤
-│ Unlimited    │ Unlimited feedback │ Shared hosted lesson DB      │
-│ feedback     │ captures + search  │ Org dashboard                │
-│ captures     │ DPO export         │ Gate template library         │
-│ 3 captures   │ Personal dashboard │ Isolated execution guidance   │
-│ 5 lesson     │                    │                              │
-│ searches/day │                    │                              │
-└──────────────┴────────────────────┴──────────────────────────────┘
+┌──────────────┬──────────────────────────────┬──────────────────────┐
+│    FREE      │   TEAM $99/seat/mo (min 3)   │ PRO $19/mo or $149/yr│
+├──────────────┼──────────────────────────────┼──────────────────────┤
+│ Local CLI    │ Workflow hardening sprint    │ Personal dashboard   │
+│ enforcement  │ Shared hosted lesson DB      │ DPO export           │
+│ 3 captures   │ Org dashboard                │ Review-ready exports │
+│ 5 searches   │ Approval + audit proof       │                      │
+│ Unlimited    │ Isolated execution guidance  │                      │
+│ recall       │                              │                      │
+└──────────────┴──────────────────────────────┴──────────────────────┘
 ```
 
-Free includes 3 daily feedback captures, 5 daily lesson searches, unlimited recall, and gating. History-aware distillation turns vague feedback into concrete lessons, and feedback sessions (`open_feedback_session` → `append_feedback_context` → `finalize_feedback_session`) keep later clarification linked to one record. The current Claude auto-capture path uses up to 8 prior recorded entries for vague thumbs-down signals; the follow-up session stays open for 60 seconds and resets when more context is appended.
+Free is the CLI-first adoption wedge: 3 daily feedback captures, 5 daily lesson searches, unlimited recall, and gating. History-aware distillation turns vague feedback into concrete lessons, and feedback sessions (`open_feedback_session` → `append_feedback_context` → `finalize_feedback_session`) keep later clarification linked to one record. The current Claude auto-capture path uses up to 8 prior recorded entries for vague thumbs-down signals; the follow-up session stays open for 60 seconds and resets when more context is appended.
 
 It does not update model weights in frontier LLMs. ThumbGate improves runtime behavior by training a local sidecar intervention policy from feedback, gate audits, and diagnostics, then using that policy to strengthen recall, verification, and enforcement decisions on future runs.
 
-The fastest commercial path is not a generic self-serve subscription pitch. It is the Workflow Hardening Sprint: qualify one repeated failure in one valuable workflow, prove the control plane on that surface, then expand into Team seats when shared enforcement matters.
+The fastest commercial path is not a generic self-serve subscription pitch. It is the Workflow Hardening Sprint: qualify one repeated failure in one valuable workflow, prove the control plane on that surface, then expand into Team seats when shared enforcement matters. Pro stays available as the side lane for a solo operator who needs a personal dashboard and export-ready evidence, but it is not the headline buying motion.
 
-**[Start Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)** | **[Get Pro](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)**
+**[Start Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)** | **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)** | **[See Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=thumbgate)**
 
 ## Tech Stack
 

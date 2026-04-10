@@ -2,6 +2,8 @@
 
 Copy-paste these into Reddit Chat. These are the 4 highest-value leads from comment engagement.
 
+Use them as part of the one-week discovery loop in [CUSTOMER_DISCOVERY_SPRINT.md](../CUSTOMER_DISCOVERY_SPRINT.md). The goal is not to sell on first touch. The goal is to learn whether the real buyer problem is team agent governance, approval boundaries, and rollout proof.
+
 ---
 
 ## 1. Deep_Ad1959 (r/cursor — already in your DMs)

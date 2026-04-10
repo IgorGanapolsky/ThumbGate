@@ -2451,6 +2451,53 @@ test('settings status endpoint returns resolved settings and origin metadata', a
   assert.ok(body.origins.some((entry) => entry.path === 'mcp.defaultProfile'));
 });
 
+test('decision endpoints persist evaluations, outcomes, and live metrics', async () => {
+  const evaluateRes = await fetch(apiUrl('/v1/decisions/evaluate'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      toolName: 'Bash',
+      command: 'npm publish',
+      changedFiles: ['package.json', 'server.json'],
+      repoPath: process.cwd(),
+    }),
+  });
+
+  assert.equal(evaluateRes.status, 200);
+  const evaluation = await evaluateRes.json();
+  assert.ok(typeof evaluation.actionId === 'string');
+  assert.ok(evaluation.decisionControl);
+  assert.ok(['auto_execute', 'checkpoint_required', 'blocked'].includes(evaluation.decisionControl.executionMode));
+
+  const outcomeRes = await fetch(apiUrl('/v1/decisions/outcome'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      actionId: evaluation.actionId,
+      outcome: 'overridden',
+      actor: 'human',
+      actualDecision: 'warn',
+      notes: 'Human added a manual release checkpoint.',
+    }),
+  });
+  assert.equal(outcomeRes.status, 200);
+  const outcome = await outcomeRes.json();
+  assert.equal(outcome.actionId, evaluation.actionId);
+  assert.equal(outcome.outcome, 'overridden');
+
+  const metricsRes = await fetch(apiUrl('/v1/decisions/metrics'), {
+    headers: authHeader,
+  });
+  assert.equal(metricsRes.status, 200);
+  const metrics = await metricsRes.json();
+  assert.ok(metrics.evaluationCount >= 1);
+  assert.ok(metrics.overrideCount >= 1);
+
+  const decisionLog = readJsonl(path.join(tmpFeedbackDir, 'decision-journal.jsonl'));
+  assert.ok(decisionLog.some((entry) => entry.recordType === 'evaluation' && entry.actionId === evaluation.actionId));
+  assert.ok(decisionLog.some((entry) => entry.recordType === 'outcome' && entry.actionId === evaluation.actionId));
+});
+
 test('dashboard render-spec endpoint returns constrained hosted views', async () => {
   const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-dashboard-render-spec-'));
   const savedEnv = {

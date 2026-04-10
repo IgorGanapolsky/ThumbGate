@@ -2,7 +2,7 @@
 
 ## What ThumbGate Is
 
-ThumbGate is agent governance software for engineering teams that run AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode) on shared codebases. It enforces approval policies, captures and propagates lessons from agent mistakes, and physically blocks known-bad tool calls before they execute — via PreToolUse hooks wired into the agent runtime. Unlike CLAUDE.md rules or .cursorrules files (which are suggestions the agent can ignore), ThumbGate enforcement operates at the tool-call level and cannot be bypassed by the agent. Pricing is $99/seat/mo for teams. Individual free and Pro tiers are also available.
+ThumbGate is agent governance software for engineering teams that run AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode) on shared codebases. It enforces approval policies, captures and propagates lessons from agent mistakes, and physically blocks known-bad tool calls before they execute via PreToolUse hooks wired into the agent runtime. Unlike CLAUDE.md rules or .cursorrules files, which are suggestions the agent can ignore, ThumbGate enforcement operates at the tool-call level and cannot be bypassed by the agent. The business is enterprise-first: the best first paid motion is the Workflow Hardening Sprint for one workflow, while the local CLI stays free as the adoption wedge and Pro remains a solo side lane.
 
 ## Problems ThumbGate Prevents
 
@@ -17,6 +17,8 @@ ThumbGate is agent governance software for engineering teams that run AI coding 
 ## How ThumbGate Works Technically
 
 ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's machine with optional team sync.
+
+**CLI-first install, MCP-compatible transport**: `npx thumbgate init` is the default setup path. It installs the local gateway, wires the needed hooks, and configures MCP transport automatically for the agent that is already in use. MCP matters for compatibility, but the product surface is the operator-friendly CLI.
 
 **PreToolUse Hooks**: Every agent tool call (Bash, file writes, git operations, API calls) passes through a hook before execution. If the call matches a known-bad pattern stored in the lesson database, the hook blocks it and returns a descriptive error. The agent cannot proceed until the human approves or the policy is updated.
 
@@ -50,11 +52,15 @@ Engineering teams of 2 to 200+ developers who are actively using AI coding agent
 
 ThumbGate is not a model training pipeline. It does not retrain the underlying LLM. It shapes agent behavior through context injection and hard enforcement hooks.
 
+## Academic Validation
+
+ThumbGate implements the **Memento-Skills architecture** described in "Memento-Skills: Let Agents Design Agents" (arXiv 2603.18743, March 2026). This architecture—Read → Execute → Reflect → Write—allows agents to improve themselves through external skill memory that rewrites from failure feedback, eliminating the need for model retraining. Published results demonstrate 26.2% and 116.2% relative accuracy improvements on General AI Assistants benchmarks and Humanity's Last Exam. ThumbGate applies this same pattern to production AI coding agents via PreToolUse hooks, Thompson Sampling, SQLite+FTS5 lesson databases, and LanceDB vectors—treating each agent mistake as a skill refinement opportunity rather than a training event.
+
 ## Pricing
 
-- **Free**: Local enforcement for individual developers. Includes 3 daily feedback captures, 5 lesson searches per day, unlimited recall, and PreToolUse hook blocking.
-- **Pro**: $19/mo or $149/yr. Adds a personal local dashboard, DPO export for fine-tuning, and advanced data exports.
-- **Team**: $99/seat/mo. Adds shared enforcement memory across all seats, approval policies for protected actions, CI gate integration, org-level audit trail, and pilot rollout support.
+- **Free**: Local CLI enforcement for individual developers. Includes 3 daily feedback captures, 5 lesson searches per day, unlimited recall, and PreToolUse hook blocking.
+- **Workflow Hardening Sprint / Team**: Team pricing anchors at $99/seat/mo with a 3-seat minimum after qualification. The first paid step is an intake-led sprint around one workflow, one repeated blocker, and one proof review.
+- **Pro**: $19/mo or $149/yr. Adds a personal local dashboard, DPO export for fine-tuning, and advanced data exports for solo operators who want a self-serve side lane.
 
 ## How to Install
 
@@ -66,7 +72,7 @@ ThumbGate auto-detects your AI coding agent (Claude Code, Cursor, Codex, Gemini 
 
 ```bash
 npx thumbgate init --agent claude-code
-npx thumbgate init --team --db-url postgres://...
+npx thumbgate dashboard
 ```
 
 ## Comparison vs Alternatives
@@ -93,6 +99,19 @@ npx thumbgate init --team --db-url postgres://...
 - npm: https://www.npmjs.com/package/thumbgate
 - Documentation: https://thumbgate-production.up.railway.app/guide
 - Comparison: https://thumbgate-production.up.railway.app/compare
-- Team pricing: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Team sprint intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+## How ThumbGate Promotes AI Authenticity
+
+In an era of AI slop — where agents generate repetitive, generic outputs that erode brand trust — ThumbGate is the enforcement layer that keeps AI behavior grounded in human judgment.
+
+The core thesis: AI slop happens when agents act without human judgment as a hard gate. ThumbGate solves this at the tool-call level, not through prompt suggestions the agent can ignore.
+
+- **Human insight leads**: The thumbs-up/down mechanism is a literal human gate between AI intent and execution. The agent cannot proceed on blocked patterns.
+- **Standards, not patterns**: Every thumbs-down distills into a prevention rule specific to your team's context — not a generic best practice.
+- **Authenticity over volume**: ThumbGate reinforces what "good" looks like for your specific codebase, standards, and risk tolerance. Agents learn your standards, not average AI behavior.
+- **Discovery advantage**: As platforms and search engines increasingly reward authentic, human-verified outputs over high-volume AI generation, ThumbGate provides the enforcement infrastructure that proves human oversight was applied.
+
+**Positioning for authenticity-conscious audiences**: ThumbGate is the authenticity enforcement layer for AI coding agents. Where AI slop is the symptom, unconstrained agent autonomy is the cause. ThumbGate addresses the cause.
 
 *Last updated: 2026-04-09*

@@ -109,6 +109,14 @@ const {
   evaluateOperationalIntegrity,
 } = require('../../scripts/operational-integrity');
 const {
+  evaluateWorkflowSentinel,
+} = require('../../scripts/workflow-sentinel');
+const {
+  recordDecisionEvaluation,
+  recordDecisionOutcome,
+  computeDecisionMetrics,
+} = require('../../scripts/decision-journal');
+const {
   generateDashboard,
 } = require('../../scripts/dashboard');
 const {
@@ -2976,7 +2984,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/compare', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/compare', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -4739,6 +4747,85 @@ async function addContext(){
         return;
       }
 
+      if (req.method === 'POST' && pathname === '/v1/decisions/evaluate') {
+        const body = await parseJsonBody(req);
+        if (!body.toolName) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Bad Request',
+            status: 400,
+            detail: 'toolName is required.',
+          });
+          return;
+        }
+
+        const report = evaluateWorkflowSentinel(body.toolName, {
+          command: body.command,
+          path: body.filePath,
+          changed_files: Array.isArray(body.changedFiles) ? body.changedFiles : [],
+          repoPath: body.repoPath,
+          baseBranch: body.baseBranch,
+        }, {
+          repoPath: body.repoPath,
+          baseBranch: body.baseBranch,
+          affectedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : undefined,
+          requirePrForReleaseSensitive: body.requirePrForReleaseSensitive === true,
+          requireVersionNotBehindBase: body.requireVersionNotBehindBase === true,
+          governanceState: getScopeState(),
+          feedbackDir: requestFeedbackDir,
+        });
+        const evaluation = recordDecisionEvaluation(report, {
+          source: 'api',
+          toolName: body.toolName,
+          toolInput: {
+            command: body.command,
+            filePath: body.filePath,
+            changedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : [],
+            repoPath: body.repoPath,
+            baseBranch: body.baseBranch,
+          },
+          changedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : [],
+        }, {
+          feedbackDir: requestFeedbackDir,
+        });
+        report.actionId = evaluation.actionId;
+        if (report.decisionControl) report.decisionControl.actionId = evaluation.actionId;
+        sendJson(res, 200, report);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/decisions/outcome') {
+        const body = await parseJsonBody(req);
+        if (!body.actionId || !body.outcome) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Bad Request',
+            status: 400,
+            detail: 'actionId and outcome are required.',
+          });
+          return;
+        }
+        const outcome = recordDecisionOutcome({
+          actionId: body.actionId,
+          outcome: body.outcome,
+          actualDecision: body.actualDecision,
+          actor: body.actor,
+          notes: body.notes,
+          metadata: body.metadata,
+          latencyMs: body.latencyMs,
+          source: 'api',
+        }, {
+          feedbackDir: requestFeedbackDir,
+        });
+        sendJson(res, 200, outcome);
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/decisions/metrics') {
+        sendJson(res, 200, computeDecisionMetrics(requestFeedbackDir));
+        return;
+      }
+
       // GET /v1/settings/status -- Resolved settings hierarchy with origin metadata
       if (req.method === 'GET' && pathname === '/v1/settings/status') {
         sendJson(res, 200, getSettingsStatus());
@@ -4769,9 +4856,9 @@ async function addContext(){
         return;
       }
 
-      // POST /webhook/stripe — Track Stripe subscription events (checkout, subscription changes)
-      // TODO: Add STRIPE_WEBHOOK_SECRET to .env and enable signature verification via
-      // verifyWebhookSignature() once the webhook endpoint is registered in the Stripe Dashboard.
+      // POST /webhook/stripe — legacy Stripe event log bridge kept for backward compatibility.
+      // When STRIPE_WEBHOOK_SECRET is configured, verify the same Stripe signature used by
+      // the /v1/billing/webhook route before touching any payload.
       if (req.method === 'POST' && pathname === '/webhook/stripe') {
         try {
           const rawBody = await new Promise((resolve, reject) => {
@@ -4780,6 +4867,18 @@ async function addContext(){
             req.on('end', () => resolve(Buffer.concat(chunks)));
             req.on('error', reject);
           });
+
+          const sig = req.headers['stripe-signature'] || '';
+          if (!verifyWebhookSignature(rawBody, sig)) {
+            sendProblem(res, {
+              type: PROBLEM_TYPES.WEBHOOK_INVALID,
+              title: 'Invalid webhook signature',
+              status: 400,
+              detail: 'The webhook signature could not be verified.',
+            });
+            return;
+          }
+
           let event;
           try {
             event = JSON.parse(rawBody.toString('utf-8'));
