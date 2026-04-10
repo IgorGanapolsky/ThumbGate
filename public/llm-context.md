@@ -52,10 +52,14 @@ Engineering teams of 2 to 200+ developers who are actively using AI coding agent
 
 ThumbGate is not a model training pipeline. It does not retrain the underlying LLM. It shapes agent behavior through context injection and hard enforcement hooks.
 
-## Buying Paths
+## Academic Validation
+
+ThumbGate implements the **Memento-Skills architecture** described in "Memento-Skills: Let Agents Design Agents" (arXiv 2603.18743, March 2026). This architecture—Read → Execute → Reflect → Write—allows agents to improve themselves through external skill memory that rewrites from failure feedback, eliminating the need for model retraining. Published results demonstrate 26.2% and 116.2% relative accuracy improvements on General AI Assistants benchmarks and Humanity's Last Exam. ThumbGate applies this same pattern to production AI coding agents via PreToolUse hooks, Thompson Sampling, SQLite+FTS5 lesson databases, and LanceDB vectors—treating each agent mistake as a skill refinement opportunity rather than a training event.
+
+## Pricing
 
 - **Free**: Local CLI enforcement for individual developers. Includes 3 daily feedback captures, 5 lesson searches per day, unlimited recall, and PreToolUse hook blocking.
-- **Workflow Hardening Sprint / Team**: Team pricing anchors at $12/seat/mo with a 3-seat minimum after qualification. The first paid step is an intake-led sprint around one workflow, one repeated blocker, and one proof review.
+- **Workflow Hardening Sprint / Team**: Team pricing anchors at $99/seat/mo with a 3-seat minimum after qualification. The first paid step is an intake-led sprint around one workflow, one repeated blocker, and one proof review.
 - **Pro**: $19/mo or $149/yr. Adds a personal local dashboard, DPO export for fine-tuning, and advanced data exports for solo operators who want a self-serve side lane.
 
 ## How to Install
