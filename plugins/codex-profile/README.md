@@ -45,7 +45,7 @@ That profile launches:
 ```toml
 [mcp_servers.thumbgate]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.3.0", "thumbgate", "serve"]
+args = ["--yes", "--package", "thumbgate@1.4.0", "thumbgate", "serve"]
 ```
 
 ### Build from source
