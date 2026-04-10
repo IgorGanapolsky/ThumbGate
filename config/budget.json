@@ -1,0 +1,18 @@
+{
+  "max_actions": 2000,
+  "max_time_minutes": 600,
+  "profiles": {
+    "strict": {
+      "max_actions": 500,
+      "max_time_minutes": 150
+    },
+    "guided": {
+      "max_actions": 2000,
+      "max_time_minutes": 600
+    },
+    "autonomous": {
+      "max_actions": 5000,
+      "max_time_minutes": 1200
+    }
+  }
+}
