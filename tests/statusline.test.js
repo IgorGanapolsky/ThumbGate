@@ -92,8 +92,8 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.ok(out.includes('3'), 'should show lesson count');
   assert.match(out, /Dashboard/);
   assert.match(out, /Lessons/);
-  assert.doesNotMatch(out, /Dashboard \(http:\/\/localhost:3456\/dashboard\)/);
-  assert.doesNotMatch(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
+  assert.match(out, /Dashboard \(http:\/\/localhost:3456\/dashboard\)/);
+  assert.match(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
 });
 
 test('statusline shows "no feedback yet" when cache has zeros', () => {
@@ -463,13 +463,13 @@ test('setupClaude uses portable ThumbGate commands for status line and cache upd
   );
 });
 
-test('statusline shell keeps dashboard labels compact and leaves deep links to lesson chips', () => {
+test('statusline shell keeps dashboard and lessons inline URLs before lesson chips', () => {
   const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
   assert.match(shellSource, /statusline-links\.js/);
   assert.match(shellSource, /inline_link/);
   assert.match(shellSource, /LOCAL_API_ORIGIN/);
-  assert.match(shellSource, /DASHBOARD_LINK="\$DASHBOARD_LABEL"/);
-  assert.match(shellSource, /LESSONS_LINK="\$LESSONS_LABEL"/);
+  assert.match(shellSource, /DASHBOARD_LINK="\$\(inline_link "\$DASHBOARD_URL" "\$DASHBOARD_LABEL"\)"/);
+  assert.match(shellSource, /LESSONS_LINK="\$\(inline_link "\$LESSONS_URL" "\$LESSONS_LABEL"\)"/);
   assert.match(shellSource, /LATEST_LESSON_LINK="\$\(inline_link/);
 });
 
