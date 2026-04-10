@@ -502,6 +502,8 @@ test('Dependabot auto-merge trusts the pull request author instead of the trigge
   assert.match(workflow, /github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'/);
   assert.doesNotMatch(workflow, /if:\s*github\.actor == 'dependabot\[bot\]'/);
   assert.match(workflow, /issues:\s+write/s);
+  assert.match(workflow, /GH_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}/);
+  assert.doesNotMatch(workflow, /GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT \|\| github\.token\s*\}\}/);
   assert.match(workflow, /group:\s*dependabot-automerge-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.run_id\s*\}\}/);
   assert.match(workflow, /jobs:\s+dependabot-automerge:\s+name:\s*dependabot-automerge/s);
   assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
@@ -538,6 +540,8 @@ test('Agent auto-merge workflow submits queue requests instead of polling its ow
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'agent-automerge.yml'), 'utf8');
 
   assert.match(workflow, /issues:\s+write/s);
+  assert.match(workflow, /GH_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}/);
+  assert.doesNotMatch(workflow, /GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT \|\| github\.token\s*\}\}/);
   assert.match(workflow, /group:\s*agent-automerge-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.run_id\s*\}\}/);
   assert.match(workflow, /jobs:\s+agent-automerge:\s+name:\s*agent-automerge/s);
   assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
@@ -561,6 +565,8 @@ test('Merge branch workflow requests trunk merge for main instead of forcing Git
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'merge-branch.yml'), 'utf8');
 
   assert.match(workflow, /issues:\s+write/s);
+  assert.match(workflow, /GH_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}/);
+  assert.doesNotMatch(workflow, /GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT \|\| github\.token\s*\}\}/);
   assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
   assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
   assert.match(workflow, /-f body='\/trunk merge'/);
