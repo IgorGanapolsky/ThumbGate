@@ -187,17 +187,32 @@ function isNonFatalPostFailure(err) {
   return isZernioQuotaError(err);
 }
 
-if (require.main === module) {
-  main().catch(err => {
-    if (isNonFatalPostFailure(err)) {
-      console.warn(`[daily-post] Skipped: ${err.message}`);
-      console.warn('[daily-post] Zernio monthly post quota reached; treating as a controlled skip.');
-      return;
-    }
+function handlePostFailure(err) {
+  if (isNonFatalPostFailure(err)) {
+    console.warn(`[daily-post] Skipped: ${err.message}`);
+    console.warn('[daily-post] Zernio monthly post quota reached; treating as a controlled skip.');
+    return 0;
+  }
 
-    console.error('[daily-post] Fatal:', err.message);
-    process.exit(1);
+  console.error('[daily-post] Fatal:', err.message);
+  return 1;
+}
+
+function runCli({ run = main, exit = process.exit } = {}) {
+  return run().catch(err => {
+    const exitCode = handlePostFailure(err);
+    if (exitCode !== 0) {
+      exit(exitCode);
+    }
   });
+}
+
+function isCliEntrypoint(entryModule = require.main) {
+  return Boolean(entryModule && entryModule.filename === __filename);
+}
+
+if (isCliEntrypoint()) {
+  void runCli();
 }
 
 module.exports = {
@@ -205,6 +220,9 @@ module.exports = {
   TEXT_PLATFORMS,
   generatePost,
   getTodayAngle,
+  handlePostFailure,
+  isCliEntrypoint,
   isNonFatalPostFailure,
   main,
+  runCli,
 };
