@@ -711,6 +711,61 @@ __GA_BOOTSTRAP__
   </div>
 </section>
 
+<section id="install" style="padding: 60px 40px; max-width: 900px; margin: 0 auto;">
+  <h2 style="font-size: 2em; text-align: center; margin-bottom: 40px;">Install for Your Agent</h2>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <div style="background: #161b22; border-radius: 12px; padding: 24px; border: 1px solid #30363d;">
+      <h3>Claude Code</h3>
+      <code style="display: block; background: #0d1117; padding: 12px; border-radius: 8px; color: #58a6ff; margin: 12px 0;">npx thumbgate init --agent claude-code</code>
+      <p style="color: #8b949e; font-size: 14px;">Wires PreToolUse hooks automatically</p>
+    </div>
+
+    <div style="background: #161b22; border-radius: 12px; padding: 24px; border: 1px solid #30363d;">
+      <h3>Cursor</h3>
+      <code style="display: block; background: #0d1117; padding: 12px; border-radius: 8px; color: #58a6ff; margin: 12px 0;">npx thumbgate init --agent cursor</code>
+      <p style="color: #8b949e; font-size: 14px;">4 skills: feedback, rules, search, recall</p>
+    </div>
+
+    <div style="background: #161b22; border-radius: 12px; padding: 24px; border: 1px solid #30363d;">
+      <h3>Codex</h3>
+      <code style="display: block; background: #0d1117; padding: 12px; border-radius: 8px; color: #58a6ff; margin: 12px 0;">npx thumbgate init --agent codex</code>
+      <p style="color: #8b949e; font-size: 14px;">6 skills including adversarial review</p>
+    </div>
+
+    <div style="background: #161b22; border-radius: 12px; padding: 24px; border: 1px solid #30363d;">
+      <h3>Gemini CLI</h3>
+      <code style="display: block; background: #0d1117; padding: 12px; border-radius: 8px; color: #58a6ff; margin: 12px 0;">npx thumbgate init --agent gemini</code>
+      <p style="color: #8b949e; font-size: 14px;">Gemini CLI integration</p>
+    </div>
+
+    <div style="background: #161b22; border-radius: 12px; padding: 24px; border: 1px solid #30363d;">
+      <h3>Amp</h3>
+      <code style="display: block; background: #0d1117; padding: 12px; border-radius: 8px; color: #58a6ff; margin: 12px 0;">npx thumbgate init --agent amp</code>
+      <p style="color: #8b949e; font-size: 14px;">Amp agent integration</p>
+    </div>
+
+    <div style="background: #161b22; border-radius: 12px; padding: 24px; border: 1px solid #30363d;">
+      <h3>Any MCP Client</h3>
+      <code style="display: block; background: #0d1117; padding: 12px; border-radius: 8px; color: #58a6ff; margin: 12px 0;">npx thumbgate serve</code>
+      <p style="color: #8b949e; font-size: 14px;">MCP stdio server for any compatible client</p>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 40px;">
+    <h3>Claude Desktop</h3>
+    <p style="color: #8b949e;">Add to your <code>claude_desktop_config.json</code>:</p>
+    <pre style="background: #0d1117; padding: 16px; border-radius: 8px; color: #58a6ff; text-align: left; display: inline-block; margin: 12px auto;">{
+  "mcpServers": {
+    "thumbgate": {
+      "command": "npx",
+      "args": ["--yes", "thumbgate", "serve"]
+    }
+  }
+}</pre>
+  </div>
+</section>
+
 <!-- PRICING -->
 <section class="pricing" id="pricing">
   <div class="container">
