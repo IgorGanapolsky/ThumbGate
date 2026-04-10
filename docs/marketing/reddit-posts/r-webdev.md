@@ -31,6 +31,6 @@ Things I would especially love feedback on:
 - Are there gates you would want out of the box that are not included?
 - Any thoughts on the local-first approach vs. a hosted service?
 
-The project also has a Pro tier for team features (shared lesson database, team dashboard, DPO export) but the core tool is fully functional and free.
+The project also has Pro for individual dashboard/export workflows and Team for shared lesson databases, org dashboards, and rollout proof, but the core local gate loop is usable without a paid account.
 
 Thanks in advance for any feedback.

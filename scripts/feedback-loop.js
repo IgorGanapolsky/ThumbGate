@@ -377,6 +377,10 @@ function appendDiagnosticRecord(params = {}) {
     timestamp: params.timestamp || new Date().toISOString(),
   };
   appendJSONL(DIAGNOSTIC_LOG_PATH, record);
+  try {
+    const { trainAndPersistInterventionPolicy } = require('./intervention-policy');
+    trainAndPersistInterventionPolicy(getFeedbackPaths().FEEDBACK_DIR);
+  } catch { /* non-critical */ }
   return record;
 }
 
@@ -1090,6 +1094,10 @@ function captureFeedback(params) {
       const riskScorer = getRiskScorerModule();
       if (riskScorer) riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
     } catch { /* non-critical */ }
+    try {
+      const { trainAndPersistInterventionPolicy } = require('./intervention-policy');
+      trainAndPersistInterventionPolicy(FEEDBACK_DIR);
+    } catch { /* non-critical */ }
     updateStatuslineWithLesson({
       accepted: false,
       signal,
@@ -1126,6 +1134,10 @@ function captureFeedback(params) {
     try {
       const riskScorer = getRiskScorerModule();
       if (riskScorer) riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
+    } catch { /* non-critical */ }
+    try {
+      const { trainAndPersistInterventionPolicy } = require('./intervention-policy');
+      trainAndPersistInterventionPolicy(FEEDBACK_DIR);
     } catch { /* non-critical */ }
     return {
       accepted: false,
@@ -1284,6 +1296,10 @@ function captureFeedback(params) {
   try {
     const riskScorer = getRiskScorerModule();
     if (riskScorer) riskScorer.trainAndPersistRiskModel(FEEDBACK_DIR);
+  } catch { /* non-critical */ }
+  try {
+    const { trainAndPersistInterventionPolicy } = require('./intervention-policy');
+    trainAndPersistInterventionPolicy(FEEDBACK_DIR);
   } catch { /* non-critical */ }
   try {
     const toolName = feedbackEvent.toolName || feedbackEvent.tool_name || 'unknown';

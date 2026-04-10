@@ -31,6 +31,7 @@ const {
   COVERAGE_THRESHOLD,
   PRUNE_SCORE_FLOOR,
 } = require('../scripts/contextfs');
+const contextfs = require('../scripts/contextfs');
 
 test.after(() => {
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
@@ -189,6 +190,24 @@ test('constructContextPack returns semantic cache hit on similar query', () => {
   assert.equal(first.cache.hit, false);
   assert.equal(second.cache.hit, true);
   assert.equal(second.cache.sourcePackId, first.packId);
+});
+
+test('contextfs root follows feedback dir changes after module load', () => {
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const alternateFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-contextfs-switch-'));
+
+  try {
+    process.env.THUMBGATE_FEEDBACK_DIR = alternateFeedbackDir;
+    contextfs.ensureContextFs();
+
+    const dynamicRoot = path.join(alternateFeedbackDir, 'contextfs');
+    assert.equal(contextfs.CONTEXTFS_ROOT, dynamicRoot);
+    assert.equal(fs.existsSync(path.join(dynamicRoot, NAMESPACES.provenance)), true);
+  } finally {
+    if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+    fs.rmSync(alternateFeedbackDir, { recursive: true, force: true });
+  }
 });
 
 test('constructContextPack uses hierarchical retrieval for long-horizon memory namespaces', () => {

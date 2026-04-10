@@ -14,7 +14,7 @@ The system uses PreToolUse hooks that fire before every tool call. Each hook che
 
 **Content-hash dedup:** Every feedback entry is content-hashed before storage. If you thumbs-down the same mistake twice, it deduplicates rather than creating redundant lessons. This keeps the lesson DB clean without manual curation.
 
-**The feedback loop:** Capture (thumbs up/down with conversation context) -> history-aware distillation (uses last ~10 messages) -> SQLite + FTS5 storage -> automatic rule generation -> PreToolUse hook enforcement.
+**The feedback loop:** Capture (thumbs up/down with conversation context) -> history-aware distillation (reuses up to 8 prior recorded entries for vague thumbs-downs and links a 60-second follow-up thread) -> SQLite + FTS5 storage -> automatic rule generation -> PreToolUse hook enforcement.
 
 The whole thing runs locally, no API calls for the enforcement path. Node.js, SQLite, no GPU needed.
 

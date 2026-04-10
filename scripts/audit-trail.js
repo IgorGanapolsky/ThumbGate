@@ -64,6 +64,12 @@ function recordAuditEvent(params = {}) {
   };
 
   fs.appendFileSync(logPath, JSON.stringify(record) + '\n');
+  try {
+    const { trainAndPersistInterventionPolicy } = require('./intervention-policy');
+    trainAndPersistInterventionPolicy(path.dirname(logPath));
+  } catch {
+    // Keep audit recording resilient even if the learned policy refresh fails.
+  }
   return record;
 }
 

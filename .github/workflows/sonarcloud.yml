@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened]
   merge_group:
     branches: [main]
     types: [checks_requested]
@@ -12,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: sonarcloud-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -21,7 +23,7 @@ jobs:
   sonar:
     name: SonarCloud Code Analysis
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -33,40 +35,60 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            workers/package-lock.json
 
       - name: Install deps
         run: npm ci --onnxruntime-node-install-cuda=skip
 
-      - name: Generate coverage for SonarCloud
-        run: npm run test:coverage
-
-      - name: Disable SonarCloud automatic analysis
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Generate LCOV coverage report
         run: |
-          project_key="$(awk -F= '/^sonar.projectKey=/{print $2}' sonar-project.properties)"
-          if [ -z "$project_key" ]; then
-            echo "sonar.projectKey missing from sonar-project.properties" >&2
-            exit 1
-          fi
+          rm -rf .coverage coverage
+          mkdir -p .coverage/raw
+          NODE_V8_COVERAGE=.coverage/raw node scripts/test-coverage.js
+          npx c8 report \
+            --temp-directory .coverage/raw \
+            --reports-dir coverage \
+            --reporter=lcov \
+            --reporter=text-summary \
+            --include='.claude/**/*.js' \
+            --include='adapters/**/*.js' \
+            --include='bin/**/*.js' \
+            --include='plugins/**/*.js' \
+            --include='scripts/**/*.js' \
+            --include='src/**/*.js' \
+            --exclude='tests/**/*.js' \
+            --exclude='scripts/social-reply-monitor.js'
 
-          curl \
-            --silent \
-            --show-error \
-            --fail-with-body \
-            --retry 3 \
-            --retry-delay 5 \
-            --request POST \
-            --user "${SONAR_TOKEN}:" \
-            --header 'Content-Type: application/x-www-form-urlencoded' \
-            --data "enable=false&projectKey=${project_key}" \
-            https://sonarcloud.io/api/autoscan/activation
+      - name: Read package version
+        id: package-version
+        run: |
+          VERSION=$(node -p 'require("./package.json").version')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: SonarCloud scan
-        uses: SonarSource/sonarqube-scan-action@v7
+      - name: Build Sonar mainline analysis version
+        id: sonar-mainline-version
+        run: |
+          SHORT_SHA=$(printf '%s' "$GITHUB_SHA" | cut -c1-12)
+          echo "value=${{ steps.package-version.outputs.version }}+sha.$SHORT_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Run SonarCloud scan (quality gate)
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        uses: SonarSource/sonarqube-scan-action@v7.1.0
         env:
-          GITHUB_TOKEN: ${{ github.token }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
+            -Dsonar.projectVersion=${{ steps.package-version.outputs.version }}
             -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=600
+
+      - name: Run SonarCloud scan (default branch refresh)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: SonarSource/sonarqube-scan-action@v7.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectVersion=${{ steps.sonar-mainline-version.outputs.value }}

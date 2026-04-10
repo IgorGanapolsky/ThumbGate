@@ -16,6 +16,7 @@ const {
   generateDashboard,
   computeApprovalStats,
   computeSessionTrend,
+  printDashboard,
   readJSONL,
   readJsonFile,
 } = require('../scripts/dashboard');
@@ -25,6 +26,9 @@ test.beforeEach(() => {
     'feedback-log.jsonl',
     'memory-log.jsonl',
     'diagnostic-log.jsonl',
+    'audit-trail.jsonl',
+    'decision-journal.jsonl',
+    'intervention-policy.json',
     'telemetry-pings.jsonl',
     'funnel-events.jsonl',
     'revenue-events.jsonl',
@@ -90,6 +94,18 @@ function writeContextPacks(entries) {
   fs.writeFileSync(packsPath, lines + '\n');
 }
 
+function writeAuditLog(entries) {
+  const auditPath = path.join(tmpDir, 'audit-trail.jsonl');
+  const lines = entries.map((entry) => JSON.stringify(entry)).join('\n');
+  fs.writeFileSync(auditPath, lines + '\n');
+}
+
+function writeDecisionLog(entries) {
+  const decisionPath = path.join(tmpDir, 'decision-journal.jsonl');
+  const lines = entries.map((entry) => JSON.stringify(entry)).join('\n');
+  fs.writeFileSync(decisionPath, lines + '\n');
+}
+
 // ---------------------------------------------------------------------------
 // Empty state
 // ---------------------------------------------------------------------------
@@ -110,6 +126,9 @@ test('generateDashboard handles empty state (no files)', () => {
   assert.equal(data.harness.score, 20);
   assert.equal(data.harness.status, 'bootstrapping');
   assert.equal(data.harness.lessonCount, 0);
+  assert.equal(data.gateAudit.dayCount, 14);
+  assert.equal(data.gateAudit.totals.deny, 0);
+  assert.equal(data.gateAudit.totals.warn, 0);
   assert.ok(data.delegation);
   assert.equal(data.delegation.attemptCount, 0);
   assert.equal(data.secretGuard.blocked, 0);
@@ -303,7 +322,9 @@ test('generateDashboard returns complete structure with data', () => {
   assert.ok(data.prevention);
   assert.ok(data.trend);
   assert.ok(data.health);
+  assert.ok(data.gateAudit);
   assert.ok(data.harness);
+  assert.ok(data.interventionPolicy);
   assert.ok(data.diagnostics);
   assert.ok(data.delegation);
   assert.ok(data.secretGuard);
@@ -319,13 +340,179 @@ test('generateDashboard returns complete structure with data', () => {
   assert.equal(data.health.memoryCount, 2);
   assert.equal(data.harness.errorLessonCount, 0);
   assert.equal(data.harness.topRecommendations.length, 0);
+  assert.equal(data.interventionPolicy.exampleCount >= 30, true);
+  assert.equal(typeof data.interventionPolicy.metrics.trainingAccuracy, 'number');
   assert.equal(data.diagnostics.totalDiagnosed, 10);
   assert.equal(data.delegation.attemptCount, 0);
   assert.equal(data.diagnostics.categories[0].key, 'tool_output_misread');
   assert.equal(data.secretGuard.blocked, 0);
+  assert.equal(data.gateAudit.dayCount, 14);
   assert.equal(data.analytics.funnel.visitors, 0);
   assert.ok(data.predictive.upgradePropensity.pro.score >= 0);
   assert.equal(data.templateLibrary.total, 6);
+});
+
+test('generateDashboard summarizes learned intervention policy from mixed evidence', () => {
+  const now = Date.now();
+  writeFeedbackLog([
+    {
+      signal: 'negative',
+      timestamp: new Date(now - 3000).toISOString(),
+      context: 'tests were failing and coverage was not verified before claiming success',
+      diagnosis: {
+        rootCauseCategory: 'tool_output_misread',
+        criticalFailureStep: 'verification',
+      },
+      tags: ['testing', 'verification'],
+    },
+    {
+      signal: 'positive',
+      timestamp: new Date(now - 2000).toISOString(),
+      context: 'verified the proof commands and fixed the release flow',
+    },
+  ]);
+  writeDiagnosticLog(Array.from({ length: 4 }, (_, index) => ({
+    source: 'verification_loop',
+    timestamp: new Date(now - ((4 - index) * 1000)).toISOString(),
+    step: 'verification',
+    context: 'coverage claim mismatched the actual output',
+    diagnosis: {
+      rootCauseCategory: 'tool_output_misread',
+      criticalFailureStep: 'verification',
+      violations: [{ constraintId: 'workflow:proof_commands' }],
+    },
+  })));
+  writeAuditLog(Array.from({ length: 4 }, (_, index) => ({
+    id: `audit_${index}`,
+    timestamp: new Date(now - ((8 - index) * 1000)).toISOString(),
+    toolName: 'Bash',
+    toolInput: {
+      command: 'npm publish',
+      changed_files: ['package.json', 'server.json'],
+    },
+    decision: 'deny',
+    gateId: 'publish_requires_mainline_head',
+    message: 'Publish and tag flows should execute from the protected mainline branch.',
+    source: 'gates-engine',
+  })));
+
+  const data = generateDashboard(tmpDir);
+  assert.equal(data.interventionPolicy.enabled, true);
+  assert.ok(data.interventionPolicy.exampleCount >= 10);
+  assert.ok(data.interventionPolicy.labelCounts.verify >= 1);
+  assert.ok(data.interventionPolicy.labelCounts.deny >= 1);
+  assert.equal(data.interventionPolicy.daily.length, 14);
+  assert.ok(data.interventionPolicy.nonAllowRate > 0);
+});
+
+test('generateDashboard returns a daily gate audit series from the audit trail', () => {
+  const now = Date.now();
+  writeAuditLog([
+    {
+      id: 'audit_today_deny',
+      timestamp: new Date(now).toISOString(),
+      toolName: 'Bash',
+      decision: 'deny',
+      gateId: 'force-push',
+      source: 'gates-engine',
+    },
+    {
+      id: 'audit_today_warn',
+      timestamp: new Date(now).toISOString(),
+      toolName: 'Edit',
+      decision: 'warn',
+      gateId: 'protected-file',
+      source: 'gates-engine',
+    },
+    {
+      id: 'audit_yesterday_allow',
+      timestamp: new Date(now - (24 * 60 * 60 * 1000)).toISOString(),
+      toolName: 'Read',
+      decision: 'allow',
+      source: 'gates-engine',
+    },
+  ]);
+
+  const data = generateDashboard(tmpDir);
+  const todayKey = new Date(now).toISOString().slice(0, 10);
+  const yesterdayKey = new Date(now - (24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+  const todaySeries = data.gateAudit.days.find((entry) => entry.dayKey === todayKey);
+  const yesterdaySeries = data.gateAudit.days.find((entry) => entry.dayKey === yesterdayKey);
+
+  assert.ok(todaySeries);
+  assert.equal(todaySeries.deny, 1);
+  assert.equal(todaySeries.warn, 1);
+  assert.equal(todaySeries.intercepted, 2);
+  assert.ok(yesterdaySeries);
+  assert.equal(yesterdaySeries.allow, 1);
+  assert.equal(yesterdaySeries.intercepted, 0);
+  assert.equal(data.gateAudit.totals.deny, 1);
+  assert.equal(data.gateAudit.totals.warn, 1);
+  assert.equal(data.gateAudit.totals.allow, 1);
+  assert.equal(data.gateAudit.activeDays >= 2, true);
+});
+
+test('generateDashboard summarizes live decision-loop metrics from the decision journal', () => {
+  writeDecisionLog([
+    {
+      recordType: 'evaluation',
+      actionId: 'decision_fast',
+      timestamp: '2026-04-09T10:00:00.000Z',
+      toolName: 'Edit',
+      toolInput: { filePath: 'README.md' },
+      changedFiles: ['README.md'],
+      recommendation: {
+        decision: 'allow',
+        executionMode: 'auto_execute',
+        decisionOwner: 'agent',
+        reversibility: 'two_way_door',
+        riskBand: 'low',
+      },
+      blastRadius: { severity: 'low', fileCount: 1, surfaceCount: 1 },
+    },
+    {
+      recordType: 'outcome',
+      actionId: 'decision_fast',
+      timestamp: '2026-04-09T10:02:00.000Z',
+      outcome: 'completed',
+      actor: 'agent',
+      actualDecision: 'allow',
+      latencyMs: 120000,
+    },
+    {
+      recordType: 'evaluation',
+      actionId: 'decision_review',
+      timestamp: '2026-04-09T11:00:00.000Z',
+      toolName: 'Bash',
+      toolInput: { command: 'npm publish' },
+      changedFiles: ['package.json'],
+      recommendation: {
+        decision: 'warn',
+        executionMode: 'checkpoint_required',
+        decisionOwner: 'human',
+        reversibility: 'one_way_door',
+        riskBand: 'high',
+      },
+      blastRadius: { severity: 'high', fileCount: 1, surfaceCount: 1 },
+    },
+    {
+      recordType: 'outcome',
+      actionId: 'decision_review',
+      timestamp: '2026-04-09T11:06:00.000Z',
+      outcome: 'overridden',
+      actor: 'human',
+      actualDecision: 'warn',
+      latencyMs: 360000,
+    },
+  ]);
+
+  const data = generateDashboard(tmpDir);
+  assert.equal(data.decisions.evaluationCount, 2);
+  assert.equal(data.decisions.fastPathCount, 1);
+  assert.equal(data.decisions.overrideCount, 1);
+  assert.equal(data.liveMetrics.decisionLoop.fastPathRate, 0.5);
+  assert.equal(data.liveMetrics.decisionLoop.overrideRate, 0.5);
+  assert.equal(data.liveMetrics.decisionLoop.medianLatencyMs, 240000);
 });
 
 test('generateDashboard aggregates persisted diagnostics beyond feedback capture', () => {
@@ -728,4 +915,73 @@ test('readJsonFile returns null for invalid JSON', () => {
   fs.writeFileSync(badPath, 'not json');
   const result = readJsonFile(badPath);
   assert.equal(result, null);
+});
+
+test('printDashboard renders learned policy metrics for operator review', () => {
+  const now = Date.now();
+  writeFeedbackLog([
+    {
+      signal: 'negative',
+      timestamp: new Date(now - 3000).toISOString(),
+      context: 'tests were failing and coverage was not verified before claiming success',
+      diagnosis: {
+        rootCauseCategory: 'tool_output_misread',
+        criticalFailureStep: 'verification',
+      },
+      tags: ['testing', 'verification'],
+    },
+    {
+      signal: 'positive',
+      timestamp: new Date(now - 2000).toISOString(),
+      context: 'verified the proof commands and fixed the release flow',
+    },
+  ]);
+  writeDiagnosticLog(Array.from({ length: 4 }, (_, index) => ({
+    source: 'verification_loop',
+    timestamp: new Date(now - ((4 - index) * 1000)).toISOString(),
+    step: 'verification',
+    context: 'coverage claim mismatched the actual output',
+    diagnosis: {
+      rootCauseCategory: 'tool_output_misread',
+      criticalFailureStep: 'verification',
+      violations: [{ constraintId: 'workflow:proof_commands' }],
+    },
+  })));
+  writeAuditLog(Array.from({ length: 4 }, (_, index) => ({
+    id: `audit_${index}`,
+    timestamp: new Date(now - ((8 - index) * 1000)).toISOString(),
+    toolName: 'Bash',
+    toolInput: {
+      command: 'npm publish',
+      changed_files: ['package.json', 'server.json'],
+    },
+    decision: 'deny',
+    gateId: 'publish_requires_mainline_head',
+    message: 'Publish and tag flows should execute from the protected mainline branch.',
+    source: 'gates-engine',
+  })));
+
+  const data = generateDashboard(tmpDir);
+  const lines = [];
+  const originalLog = console.log;
+  console.log = (...args) => {
+    lines.push(args.join(' '));
+  };
+
+  try {
+    printDashboard(data);
+  } finally {
+    console.log = originalLog;
+  }
+
+  const output = lines.join('\n');
+  assert.match(output, /🧠 Learned Policy/);
+  assert.match(output, /Enabled\s+: yes/);
+  assert.match(output, /Train Accuracy/);
+  assert.match(output, /Holdout Accuracy/);
+  assert.match(output, /Recent Pressure/);
+  assert.match(output, /Top Deny Signal/);
+  assert.match(output, /🧭 Decision Loop/);
+  assert.match(output, /Fast Path/);
+  assert.match(output, /Override Rate/);
 });

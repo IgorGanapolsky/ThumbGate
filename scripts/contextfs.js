@@ -23,9 +23,15 @@ function getFeedbackBaseDir() {
   return resolveFeedbackDir();
 }
 
-const FEEDBACK_DIR = getFeedbackBaseDir();
-const CONTEXTFS_ROOT = process.env.THUMBGATE_CONTEXTFS_DIR
-  || (FEEDBACK_DIR.endsWith('contextfs') ? FEEDBACK_DIR : path.join(FEEDBACK_DIR, 'contextfs'));
+function getContextFsRoot() {
+  const feedbackDir = getFeedbackBaseDir();
+  if (process.env.THUMBGATE_CONTEXTFS_DIR) return process.env.THUMBGATE_CONTEXTFS_DIR;
+  return feedbackDir.endsWith('contextfs') ? feedbackDir : path.join(feedbackDir, 'contextfs');
+}
+
+function contextFsPath(...segments) {
+  return path.join(getContextFsRoot(), ...segments);
+}
 
 const NAMESPACES = {
   rawHistory: 'raw_history',
@@ -101,7 +107,7 @@ function ensureDir(dirPath) {
 
 function ensureContextFs() {
   Object.values(NAMESPACES).forEach((subPath) => {
-    ensureDir(path.join(CONTEXTFS_ROOT, subPath));
+    ensureDir(contextFsPath(subPath));
   });
 }
 
@@ -111,7 +117,7 @@ function nowIso() {
 
 function inferNamespaceFromPath(filePath) {
   if (!filePath) return '';
-  const relativeDir = path.relative(CONTEXTFS_ROOT, path.dirname(filePath));
+  const relativeDir = path.relative(getContextFsRoot(), path.dirname(filePath));
   if (!relativeDir || relativeDir.startsWith('..')) return '';
   return relativeDir;
 }
@@ -211,7 +217,7 @@ function getSemanticCacheConfig() {
 }
 
 function getSemanticCachePath() {
-  return path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'semantic-cache.jsonl');
+  return contextFsPath(NAMESPACES.provenance, 'semantic-cache.jsonl');
 }
 
 function loadSemanticCacheEntries() {
@@ -227,7 +233,7 @@ function getSourceHash(namespaces) {
   const normalizedNamespaces = normalizeNamespaces(namespaces);
 
   for (const ns of normalizedNamespaces) {
-    const dirPath = path.join(CONTEXTFS_ROOT, ns);
+    const dirPath = contextFsPath(ns);
     if (!fs.existsSync(dirPath)) continue;
 
     const files = fs.readdirSync(dirPath).sort();
@@ -291,7 +297,7 @@ function recordProvenance(event) {
     timestamp: nowIso(),
     ...event,
   };
-  appendJsonl(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'events.jsonl'), payload);
+  appendJsonl(contextFsPath(NAMESPACES.provenance, 'events.jsonl'), payload);
   return payload;
 }
 
@@ -299,7 +305,7 @@ function writeContextObject({ namespace, title, content, tags = [], source, ttl 
   ensureContextFs();
 
   const id = `${Date.now()}_${toSlug(title)}`;
-  const filePath = path.join(CONTEXTFS_ROOT, namespace, `${id}.json`);
+  const filePath = contextFsPath(namespace, `${id}.json`);
 
   const doc = {
     id,
@@ -361,7 +367,7 @@ function findExistingContextObject({ namespace, title, content, tags = [], sourc
   ensureContextFs();
 
   const expectedTags = normalizeTagList(tags);
-  const dirPath = path.join(CONTEXTFS_ROOT, namespace);
+  const dirPath = contextFsPath(namespace);
   const files = listJsonFiles(dirPath).sort();
 
   for (const filePath of files) {
@@ -507,7 +513,7 @@ function loadCandidates(namespaces) {
   const docs = [];
 
   selected.forEach((namespace) => {
-    const dir = path.join(CONTEXTFS_ROOT, namespace);
+    const dir = contextFsPath(namespace);
     const files = listJsonFiles(dir);
     files.forEach((filePath) => {
       try {
@@ -624,7 +630,7 @@ function selectFlatContextItems(candidates, maxItems, maxChars) {
 const MEMEX_INDEX_FILE = 'memex-index.jsonl';
 
 function getMemexIndexPath() {
-  return path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, MEMEX_INDEX_FILE);
+  return contextFsPath(NAMESPACES.provenance, MEMEX_INDEX_FILE);
 }
 
 function buildIndexEntry(doc, filePath) {
@@ -751,7 +757,7 @@ function constructMemexPack({ query = '', maxItems = 8, maxChars = 6000, namespa
     cache: { hit: false },
   };
 
-  appendJsonl(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'packs.jsonl'), pack);
+  appendJsonl(contextFsPath(NAMESPACES.provenance, 'packs.jsonl'), pack);
   recordProvenance({
     type: 'memex_pack_constructed',
     packId,
@@ -792,7 +798,7 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
       },
     };
 
-    appendJsonl(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'packs.jsonl'), pack);
+    appendJsonl(contextFsPath(NAMESPACES.provenance, 'packs.jsonl'), pack);
     recordProvenance({
       type: 'context_pack_cache_hit',
       packId,
@@ -861,7 +867,7 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
     retrieval: selection.retrieval,
   };
 
-  appendJsonl(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'packs.jsonl'), pack);
+  appendJsonl(contextFsPath(NAMESPACES.provenance, 'packs.jsonl'), pack);
   appendSemanticCacheEntry({
     id: `cache_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     timestamp: nowIso(),
@@ -899,7 +905,7 @@ function evaluateContextPack({ packId, outcome, signal = null, notes = '', rubri
     timestamp: nowIso(),
   };
 
-  appendJsonl(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'evaluations.jsonl'), evaluation);
+  appendJsonl(contextFsPath(NAMESPACES.provenance, 'evaluations.jsonl'), evaluation);
   recordProvenance({
     type: 'context_pack_evaluated',
     packId,
@@ -912,7 +918,7 @@ function evaluateContextPack({ packId, outcome, signal = null, notes = '', rubri
 }
 
 function getProvenance(limit = 50) {
-  const eventsPath = path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'events.jsonl');
+  const eventsPath = contextFsPath(NAMESPACES.provenance, 'events.jsonl');
   const events = readJsonl(eventsPath);
   return events.slice(-limit);
 }
@@ -923,7 +929,7 @@ function getProvenance(limit = 50) {
  * session starts with full context — no manual primer.md needed.
  */
 function writeSessionHandoff({ project, branch, lastTask, nextStep, blockers, openFiles, customContext } = {}) {
-  ensureDir(path.join(CONTEXTFS_ROOT, NAMESPACES.session));
+  ensureDir(contextFsPath(NAMESPACES.session));
 
   let gitContext = {};
   try {
@@ -951,7 +957,7 @@ function writeSessionHandoff({ project, branch, lastTask, nextStep, blockers, op
     customContext: customContext || null,
   };
 
-  const primerPath = path.join(CONTEXTFS_ROOT, NAMESPACES.session, 'primer.json');
+  const primerPath = contextFsPath(NAMESPACES.session, 'primer.json');
   fs.writeFileSync(primerPath, JSON.stringify(primer, null, 2));
 
   // Sync to primer.md if it exists
@@ -991,7 +997,7 @@ function writeSessionHandoff({ project, branch, lastTask, nextStep, blockers, op
  * Read the most recent session handoff primer.
  */
 function readSessionHandoff() {
-  const primerPath = path.join(CONTEXTFS_ROOT, NAMESPACES.session, 'primer.json');
+  const primerPath = contextFsPath(NAMESPACES.session, 'primer.json');
   if (!fs.existsSync(primerPath)) return null;
   try {
     return JSON.parse(fs.readFileSync(primerPath, 'utf8'));
@@ -1192,7 +1198,7 @@ function constructMultiHopPack({ query = '', maxItems = 8, maxChars = 6000, name
     },
   };
 
-  appendJsonl(path.join(CONTEXTFS_ROOT, NAMESPACES.provenance, 'packs.jsonl'), pack);
+  appendJsonl(contextFsPath(NAMESPACES.provenance, 'packs.jsonl'), pack);
   appendSemanticCacheEntry({
     id: `cache_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     timestamp: nowIso(),
@@ -1244,7 +1250,10 @@ function listPackTemplates() {
 }
 
 module.exports = {
-  CONTEXTFS_ROOT,
+  get CONTEXTFS_ROOT() {
+    return getContextFsRoot();
+  },
+  getContextFsRoot,
   NAMESPACES,
   ensureContextFs,
   recordProvenance,
@@ -1283,5 +1292,5 @@ module.exports = {
 
 if (require.main === module) {
   ensureContextFs();
-  console.log(`ContextFS ready at ${CONTEXTFS_ROOT}`);
+  console.log(`ContextFS ready at ${getContextFsRoot()}`);
 }
