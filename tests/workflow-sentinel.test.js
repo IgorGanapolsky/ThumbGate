@@ -33,6 +33,9 @@ function makeTempPath(name) {
 }
 
 test('workflow sentinel warns on multi-surface release-sensitive blast radius', () => {
+  // Use an isolated empty feedbackDir so local learned policy data does not
+  // inflate the risk score beyond the warn threshold in this deterministic test.
+  const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-fb-'));
   const report = evaluateWorkflowSentinel('Bash', {
     command: 'node scripts/deploy-policy.js --dry-run',
     changed_files: [
@@ -43,6 +46,8 @@ test('workflow sentinel warns on multi-surface release-sensitive blast radius', 
     ],
   }, {
     repoPath: process.cwd(),
+    feedbackDir: isolatedFeedbackDir,
+    feedbackOptions: { feedbackDir: isolatedFeedbackDir },
     governanceState: {
       taskScope: {
         summary: 'sentinel dry run',

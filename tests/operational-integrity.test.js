@@ -35,6 +35,7 @@ function createTempGitRepo() {
   execFileSync('git', ['init', '--initial-branch=main'], { cwd: repoDir, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.name', 'ThumbGate Test'], { cwd: repoDir, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.email', 'thumbgate@example.com'], { cwd: repoDir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'commit.gpgsign', 'false'], { cwd: repoDir, stdio: 'ignore' });
   fs.writeFileSync(path.join(repoDir, 'package.json'), JSON.stringify({ name: 'thumbgate-temp', version: '1.0.0' }, null, 2));
   execFileSync('git', ['add', 'package.json'], { cwd: repoDir, stdio: 'ignore' });
   execFileSync('git', ['commit', '-m', 'init'], { cwd: repoDir, stdio: 'ignore' });
