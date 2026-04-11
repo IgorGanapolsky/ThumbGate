@@ -15,9 +15,9 @@ function normalizeText(value) {
   return text || null;
 }
 
-function loadOperatorConfig() {
+function loadOperatorConfig(configPath = OPERATOR_CONFIG_PATH) {
   try {
-    const raw = fs.readFileSync(OPERATOR_CONFIG_PATH, 'utf8');
+    const raw = fs.readFileSync(configPath, 'utf8');
     const parsed = JSON.parse(raw);
     return {
       operatorKey: normalizeText(parsed.operatorKey),
@@ -112,4 +112,5 @@ module.exports = {
   getOperationalBillingSummary,
   resolveHostedSummaryConfig,
   shouldPreferHostedSummary,
+  loadOperatorConfig,
 };
