@@ -1,13 +1,31 @@
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
 const { getBillingSummaryLive } = require('./billing');
 const { resolveAnalyticsWindow } = require('./analytics-window');
 const { resolveHostedBillingConfig } = require('./hosted-config');
+
+const OPERATOR_CONFIG_PATH = path.join(os.homedir(), '.config', 'thumbgate', 'operator.json');
 
 function normalizeText(value) {
   if (value === undefined || value === null) return null;
   const text = String(value).trim();
   return text || null;
+}
+
+function loadOperatorConfig() {
+  try {
+    const raw = fs.readFileSync(OPERATOR_CONFIG_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    return {
+      operatorKey: normalizeText(parsed.operatorKey),
+      baseUrl: normalizeText(parsed.baseUrl),
+    };
+  } catch {
+    return { operatorKey: null, baseUrl: null };
+  }
 }
 
 function shouldPreferHostedSummary() {
@@ -16,8 +34,14 @@ function shouldPreferHostedSummary() {
 
 function resolveHostedSummaryConfig() {
   const runtimeConfig = resolveHostedBillingConfig();
-  const apiBaseUrl = normalizeText(process.env.THUMBGATE_BILLING_API_BASE_URL) || runtimeConfig.billingApiBaseUrl;
-  const apiKey = normalizeText(process.env.THUMBGATE_API_KEY);
+  const operatorConfig = loadOperatorConfig();
+  // Priority: env THUMBGATE_OPERATOR_KEY > local config file > env THUMBGATE_API_KEY
+  const apiKey = normalizeText(process.env.THUMBGATE_OPERATOR_KEY)
+    || operatorConfig.operatorKey
+    || normalizeText(process.env.THUMBGATE_API_KEY);
+  const apiBaseUrl = normalizeText(process.env.THUMBGATE_BILLING_API_BASE_URL)
+    || operatorConfig.baseUrl
+    || runtimeConfig.billingApiBaseUrl;
   return {
     apiBaseUrl,
     apiKey,
@@ -74,9 +98,7 @@ async function getOperationalBillingSummary(options = {}) {
     };
   } catch (err) {
     const reason = err && err.message ? err.message : 'hosted_summary_unavailable';
-    // TODO: Configure hosted billing via THUMBGATE_BILLING_API_BASE_URL and THUMBGATE_API_KEY
-    // to avoid falling back to local state. See docs/PRICING_RESEARCH_2026-03-10.md
-    console.warn(`[operational-summary] Hosted billing not configured — falling back to local state. Reason: ${reason}`);
+    console.warn(`[operational-summary] Hosted billing unavailable — falling back to local state. Reason: ${reason}`);
     return {
       source: 'local',
       summary: await getBillingSummaryLive(analyticsWindow),
