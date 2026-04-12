@@ -57,6 +57,24 @@ function upgradeNudge() {
   );
 }
 
+function starNudge() {
+  if (process.env.THUMBGATE_NO_NUDGE === '1') return;
+  const os = require('os');
+  const flagDir = path.join(os.homedir(), '.thumbgate');
+  const flagFile = path.join(flagDir, '.star-prompted');
+  try {
+    if (fs.existsSync(flagFile)) return;
+    process.stderr.write(
+      '\n─────────────────────────────────────────\n' +
+      'ThumbGate just blocked a mistake. If it\'s useful, a ⭐ on GitHub helps others find it:\n' +
+      'https://github.com/IgorGanapolsky/ThumbGate\n' +
+      '─────────────────────────────────────────\n\n'
+    );
+    fs.mkdirSync(flagDir, { recursive: true });
+    fs.writeFileSync(flagFile, new Date().toISOString() + '\n');
+  } catch (_) { /* best-effort */ }
+}
+
 function appendLocalTelemetry(payload) {
   try {
     const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
@@ -1357,6 +1375,16 @@ async function gateCheck() {
   const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
   const output = await gatesEngine.runAsync(input);
   process.stdout.write(output + '\n');
+  try {
+    const parsed = JSON.parse(output);
+    if (
+      parsed &&
+      parsed.hookSpecificOutput &&
+      parsed.hookSpecificOutput.permissionDecision === 'deny'
+    ) {
+      starNudge();
+    }
+  } catch (_) { /* best-effort */ }
 }
 
 function cacheUpdate() {
