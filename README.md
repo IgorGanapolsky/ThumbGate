@@ -13,7 +13,7 @@
 
 **Running Claude Desktop?** **[Download Claude bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** · **[Install + submission guide](docs/CLAUDE_DESKTOP_EXTENSION.md)** · **[Review packet zip](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip)**
 
-**Running Codex?** **[Download Codex plugin bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Codex install guide](plugins/codex-profile/INSTALL.md)**
+**Running Codex?** **[Download the standalone Codex plugin bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Codex install guide](plugins/codex-profile/INSTALL.md)**
 
 ---
 
