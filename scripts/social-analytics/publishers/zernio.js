@@ -21,12 +21,19 @@ const DEFAULT_DEDUP_LOG_PATH = path.join(__dirname, '..', '..', '..', '.thumbgat
 
 loadLocalEnv();
 
-/**
- * Content-hash dedup: prevents the same content from being posted to the same
- * platform twice within a 24-hour window.
- */
-function getDedupLogPath() {
-  return process.env.THUMBGATE_DEDUP_LOG_PATH || DEFAULT_DEDUP_LOG_PATH;
+// ---------------------------------------------------------------------------
+// Dedup — backed by marketing DB (SQLite) with JSON-file fallback
+// ---------------------------------------------------------------------------
+
+let _mktgDb = null;
+function getMktgDb() {
+  if (_mktgDb) return _mktgDb;
+  try {
+    _mktgDb = require('../db/marketing-db');
+    return _mktgDb;
+  } catch {
+    return null; // graceful degradation to JSON log
+  }
 }
 
 function buildDedupKey(content, platform) {
@@ -34,38 +41,54 @@ function buildDedupKey(content, platform) {
   return `${platform}::${hash}`;
 }
 
+// Legacy JSON log helpers (fallback when DB unavailable)
+function getDedupLogPath() {
+  return process.env.THUMBGATE_DEDUP_LOG_PATH || DEFAULT_DEDUP_LOG_PATH;
+}
 function loadDedupLog() {
-  const logPath = getDedupLogPath();
   try {
-    if (fs.existsSync(logPath)) {
-      return JSON.parse(fs.readFileSync(logPath, 'utf8'));
-    }
-  } catch { /* ignore corrupt log */ }
+    const p = getDedupLogPath();
+    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch { /* ignore */ }
   return {};
 }
-
 function saveDedupLog(log) {
-  const logPath = getDedupLogPath();
-  const dir = path.dirname(logPath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(logPath, JSON.stringify(log, null, 2));
+  const p = getDedupLogPath();
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, JSON.stringify(log, null, 2));
 }
 
 function isDuplicate(content, platform) {
+  const db = getMktgDb();
+  if (db) {
+    const hash = db.hashContent(content);
+    return !!db.isDuplicate(platform, hash, 1); // 24-hour window
+  }
+  // fallback
   const log = loadDedupLog();
-  const key = buildDedupKey(content, platform);
-  const entry = log[key];
+  const entry = log[buildDedupKey(content, platform)];
   if (!entry) return false;
-  const ageMs = Date.now() - new Date(entry.postedAt).getTime();
-  return ageMs < 24 * 60 * 60 * 1000; // 24-hour dedup window
+  return Date.now() - new Date(entry.postedAt).getTime() < 86_400_000;
 }
 
-function recordPost(content, platform) {
+function recordPost(content, platform, extra = {}) {
+  const db = getMktgDb();
+  if (db) {
+    db.record({
+      type: 'post', platform,
+      contentHash: db.hashContent(content),
+      postUrl: extra.postUrl || null,
+      postId: extra.postId || null,
+      campaign: extra.campaign || 'organic',
+      tags: extra.tags || [],
+    });
+    return;
+  }
+  // fallback
   const log = loadDedupLog();
   const key = buildDedupKey(content, platform);
   log[key] = { platform, postedAt: new Date().toISOString() };
-  // Prune entries older than 7 days
-  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const cutoff = Date.now() - 7 * 86_400_000;
   for (const [k, v] of Object.entries(log)) {
     if (new Date(v.postedAt).getTime() < cutoff) delete log[k];
   }

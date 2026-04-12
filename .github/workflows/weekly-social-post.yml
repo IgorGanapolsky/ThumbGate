@@ -44,6 +44,11 @@ jobs:
       X_API_SECRET: ${{ secrets.X_API_SECRET }}
       X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
       X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+      # Dev.to — article publishing
+      DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+      # Reddit
+      REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
 
     steps:
       - name: Checkout
@@ -84,24 +89,28 @@ jobs:
             .catch(e => { console.error(e.message); process.exit(1); });
           "
 
-      - name: Generate YouTube Short slides
-        if: github.event.inputs.dry_run != 'true'
-        run: |
-          mkdir -p .artifacts/youtube-short
-          node .artifacts/youtube-short/generate-slides.js
+      - name: Install Python deps for video generation
+        run: pip install Pillow --quiet
 
-      - name: Stitch slides into MP4 with ffmpeg
-        if: github.event.inputs.dry_run != 'true'
+      - name: Generate and post marketing video (TikTok + YouTube + Instagram Reels)
+        env:
+          ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+          ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
+          ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
+          ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
         run: |
-          ffmpeg -y \
-            -framerate 0.1 \
-            -i .artifacts/youtube-short/slide_%02d.png \
-            -c:v libx264 -r 30 -pix_fmt yuv420p \
-            -vf "scale=1080:1920" \
-            .artifacts/youtube-short/thumbgate-short.mp4
+          DRY_RUN_FLAG=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+          # post-video.js: generates slides → stitches with ffmpeg → uploads → posts to all video platforms
+          # Marketing DB dedup prevents double-posting within 7 days
+          node scripts/social-analytics/post-video.js \
+            --campaign=weekly-$(date +%Y-W%V) \
+            $DRY_RUN_FLAG
 
-      - name: Upload YouTube Short via Zernio
-        if: github.event.inputs.dry_run != 'true'
+      - name: _legacy_youtube_short_placeholder
+        if: false
         env:
           ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
           ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}

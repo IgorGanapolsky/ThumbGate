@@ -30,3 +30,26 @@ CREATE TABLE IF NOT EXISTS follower_snapshots (
 
 CREATE INDEX IF NOT EXISTS idx_metrics_platform_date ON engagement_metrics(platform, metric_date);
 CREATE INDEX IF NOT EXISTS idx_metrics_published ON engagement_metrics(published_at);
+
+-- Marketing posts: tracks every post, video, and article published to any platform.
+-- Used to prevent double-posting and to measure marketing effort over time.
+CREATE TABLE IF NOT EXISTS marketing_posts (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  type          TEXT NOT NULL CHECK(type IN ('post','video','article','reply','thread')),
+  platform      TEXT NOT NULL,
+  account_id    TEXT,
+  post_id       TEXT,
+  post_url      TEXT,
+  title         TEXT,
+  content_hash  TEXT NOT NULL,
+  published_at  TEXT NOT NULL,
+  status        TEXT NOT NULL DEFAULT 'published' CHECK(status IN ('published','failed','skipped','draft')),
+  tags          TEXT,            -- JSON array
+  campaign      TEXT,            -- e.g. 'v1.4.0-launch', 'weekly-stats'
+  extra_json    TEXT,            -- arbitrary metadata
+  UNIQUE(platform, content_hash)
+);
+
+CREATE INDEX IF NOT EXISTS idx_mktg_platform_published ON marketing_posts(platform, published_at);
+CREATE INDEX IF NOT EXISTS idx_mktg_campaign ON marketing_posts(campaign);
+CREATE INDEX IF NOT EXISTS idx_mktg_type ON marketing_posts(type);
