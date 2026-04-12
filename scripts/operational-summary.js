@@ -7,6 +7,19 @@ const { getBillingSummaryLive } = require('./billing');
 const { resolveAnalyticsWindow } = require('./analytics-window');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 
+// Configure fetch proxy when running behind a corporate/sandbox proxy
+(function configureProxy() {
+  const proxyUrl = process.env.HTTPS_PROXY || process.env.https_proxy
+    || process.env.HTTP_PROXY || process.env.http_proxy;
+  if (!proxyUrl) return;
+  try {
+    const { ProxyAgent, setGlobalDispatcher } = require('undici');
+    setGlobalDispatcher(new ProxyAgent(proxyUrl));
+  } catch {
+    // undici not available — fetch will use default dispatcher
+  }
+}());
+
 const OPERATOR_CONFIG_PATH = path.join(os.homedir(), '.config', 'thumbgate', 'operator.json');
 
 function normalizeText(value) {
