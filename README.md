@@ -9,7 +9,7 @@
 
 **[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Install Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** · **[Claude Plugin Guide](docs/CLAUDE_DESKTOP_EXTENSION.md)** · **[Install Codex Plugin](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)**
 
-**Popular questions:** **[Stop repeated AI agent mistakes](https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
+**Popular buyer questions:** **[Stop repeated AI agent mistakes](https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
 
 **Running Claude Desktop?** **[Download Claude bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** · **[Install + submission guide](docs/CLAUDE_DESKTOP_EXTENSION.md)** · **[Review packet zip](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip)**
 
@@ -37,7 +37,7 @@ AI agents repeat mistakes. You fix the same problem in session after session —
 └─────────────────────────────────────────────────────────────┘
 ```
 
-ThumbGate turns your feedback into **enforced rules** — not suggestions.
+ThumbGate is the **control plane** for AI coding agents — turning your feedback into **enforced rules**, not suggestions.
 
 ---
 
@@ -92,6 +92,16 @@ Session 3:                     │  Session 3+:
 │          │    │          │    │          │    │ feedback │    │ live     │
 └──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
 ```
+
+---
+
+## Get Started
+
+**Best first paid motion for teams:** the **Workflow Hardening Sprint** — qualify one repeated failure before committing to a full rollout. **[Start intake →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
+
+**Best first technical motion:** install the CLI-first and let `init` wire hooks for the agent you already use.
+
+**Paid path for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the self-serve side lane for a personal dashboard and export-ready evidence.
 
 ---
 
@@ -191,6 +201,8 @@ Give the agent more context when a thumbs-down isn't enough:
 
 ThumbGate uses up to 8 prior conversation entries to turn vague negative signals into specific, actionable lessons. A 60-second follow-up window stays open for additional context.
 
+Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx thumbgate lessons`.
+
 ---
 
 ## Built-in Gates
@@ -242,7 +254,7 @@ ThumbGate uses up to 8 prior conversation entries to turn vague negative signals
 │                      │                       │                      │
 │ SQLite + full-text   │ Smart recall: picks   │ Pre-action hook      │
 │ search               │ the most relevant     │ engine               │
-│ Vector search DB     │ lessons for context   │ Gates config         │
+│ LanceDB vectors      │ lessons for context   │ Gates config         │
 │ JSONL logs           │ Adaptive selection:   │ Hook wiring          │
 │ File-based context   │ learns which lessons  │                      │
 │                      │ actually help         │                      │
@@ -274,6 +286,25 @@ ThumbGate can watch for failure signals (test failures, reverted edits, error pa
 
 **Is it free?**
 Free tier includes 3 feedback captures/day, 5 lesson searches/day, and unlimited recall with enforced gates. Pro is $19/mo or $149/yr for a personal dashboard and exports. Team rollout starts at $99/seat/mo (3-seat minimum).
+
+---
+
+## Enterprise Story
+
+ThumbGate is the control plane for AI coding agents:
+
+- Feedback becomes enforcement — repeated failures stop at the gate instead of reappearing in review.
+- **Workflow Sentinel** scores blast radius before execution, so risky PR, release, and publish flows are visible early.
+- High-risk local actions route into **Docker Sandboxes**; hosted team automations use a signed isolated sandbox lane.
+- Team rollout stays tied to [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) instead of trust-me operator claims.
+
+## Release Confidence
+
+- Every PR must carry a **Changeset** entry — each shipped version has a customer-readable explanation before publish.
+- Version-sync checks keep `package.json`, `CHANGELOG.md`, plugin manifests, and installer metadata aligned.
+- Final close-out requires verifying the exact `main` merge commit, with proof anchored in [Verification Evidence](docs/VERIFICATION_EVIDENCE.md).
+
+See [Release Confidence](docs/RELEASE_CONFIDENCE.md) for the full trust chain.
 
 ---
 
