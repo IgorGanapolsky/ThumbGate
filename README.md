@@ -2,7 +2,7 @@
 
 **Your AI coding agent just repeated that mistake. Again.**
 
-ThumbGate gives AI coding agents persistent memory and enforceable rules — so every session builds on the last. No rule-writing. No prompt files. Just feedback.
+ThumbGate makes your AI coding agent self-improving — persistent memory, enforcement gates, and auto-generated prevention rules that make every session build on the last. No rule-writing. No prompt files. Just feedback.
 
 👎 thumbs down → lesson stored → gate blocks it next time  
 👍 thumbs up → lesson reinforced → agent keeps doing it right
@@ -103,8 +103,17 @@ claude mcp add thumbgate -- npx -y thumbgate serve
 
 Works with **Claude Code, Cursor, Codex, Gemini, Amp, OpenCode**, and any MCP-compatible agent.
 
-> **Need shared enforcement and org-wide visibility?** [Start with the Workflow Hardening Sprint →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=quickstart_cta#workflow-sprint-intake)  
-> **Need a personal dashboard and DPO export?** [See ThumbGate Pro →](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=quickstart_cta_pro)
+**Best first technical motion:** ThumbGate is CLI-first — install the local CLI and let `init` wire the hooks and MCP transport for the agent you already use.
+
+**Best first paid motion for teams:** the **[Workflow Hardening Sprint →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)**. One workflow. One owner. One proof review.
+
+**Paid path for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) — the self-serve side lane for the personal local dashboard, DPO export, and review-ready evidence.
+
+**Open Source (Self-Hosted):**
+
+```bash
+npx thumbgate init
+```
 
 ---
 
@@ -128,7 +137,7 @@ npx thumbgate init --agent codex
 ```
 Bridges to Codex CLI with 6 skills including adversarial review and second-pass analysis.
 
-**Standalone Codex plugin bundle:** [Download →](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip) · [Install guide](plugins/codex-profile/INSTALL.md)
+[Install Codex Plugin](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip) — [Download the standalone Codex plugin bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip) · [plugins/codex-profile/INSTALL.md](plugins/codex-profile/INSTALL.md)
 
 ### Gemini CLI
 ```bash
@@ -183,7 +192,7 @@ Starts the MCP server on stdio. Add to any MCP-compatible client.
 
 History-aware distillation turns vague negative signals into concrete lessons. ThumbGate can reuse up to 8 prior recorded conversation entries plus the failed tool call, then keep a linked 60-second follow-up session open for later clarification.
 
-Search your lessons anytime: `npx thumbgate lessons` or via MCP with `search_lessons`.
+Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx thumbgate lessons`.
 
 ---
 
@@ -201,7 +210,7 @@ Search your lessons anytime: `npx thumbgate lessons` or via MCP with `search_les
 ## FAQ
 
 **Is ThumbGate a model fine-tuning tool?**
-No. ThumbGate doesn't update model weights. It works by capturing feedback into structured lessons, injecting relevant context at runtime, and blocking bad actions via PreToolUse hooks.
+No. ThumbGate does not update model weights in frontier LLMs. It works by capturing feedback into structured lessons, injecting relevant context at runtime, and blocking bad actions via PreToolUse hooks.
 
 **How is this different from CLAUDE.md or .cursorrules?**
 CLAUDE.md files are suggestions that agents can ignore. ThumbGate gates are enforcement — they physically block the action before it executes via PreToolUse hooks. Gates also auto-generate from feedback instead of requiring manual rule-writing.
@@ -213,7 +222,7 @@ Yes. ThumbGate is MCP-compatible and works with Claude Code, Claude Desktop, Cur
 ThumbGate can auto-evaluate agent action outcomes (test failures, reverted edits, error patterns) and generate prevention rules without any human feedback. Your agent gets smarter every session automatically.
 
 **Is it free?**
-Free tier: 3 feedback captures/day, 5 lesson searches/day, 5 built-in gates, unlimited recall. Pro is $19/mo or $149/yr for solo operators who need the personal local dashboard and exports. Team rollout starts at $99/seat/mo (3-seat minimum) for shared lessons, org dashboard, and approval boundaries.
+Free tier: 3 daily feedback captures, 5 daily lesson searches, 5 built-in gates, unlimited recall. Pro is $19/mo or $149/yr for solo operators who need the personal local dashboard and exports. Team rollout starts at $99/seat/mo (3-seat minimum) for shared lessons, org dashboard, and approval boundaries.
 
 ---
 
@@ -246,11 +255,17 @@ ThumbGate is the control plane for AI coding agents at scale:
 - Team rollout stays tied to [Verification Evidence](docs/VERIFICATION_EVIDENCE.md) instead of trust-me operator claims
 - Every gate enforces your team's actual standards — not generic AI patterns — because human judgment is captured before the action executes
 
-**Fastest enterprise path:** the [Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=enterprise#workflow-sprint-intake) — qualify one repeated failure in one valuable workflow, prove the control plane, then expand into Team seats.
+**Fastest enterprise path:** the [Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake) — qualify one repeated failure in one valuable workflow, prove the control plane, then expand into Team seats. See the [First Dollar Playbook](docs/FIRST_DOLLAR_PLAYBOOK.md) for the full operator loop.
 
 [![Start Workflow Hardening Sprint](https://img.shields.io/badge/>>%20Start%20Intake%20→%20Workflow%20Hardening%20Sprint-16a34a?style=for-the-badge)](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=badge_cta#workflow-sprint-intake)
 
-**Popular enterprise questions:** [How to stop repeated AI agent mistakes](https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions) · [Cursor guardrails](https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions) · [Codex CLI guardrails](https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions) · [Gemini CLI memory + enforcement](https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)
+**Popular buyer questions:** [How to stop repeated AI agent mistakes](https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions) · [Cursor guardrails](https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions) · [Codex CLI guardrails](https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions) · [Gemini CLI memory + enforcement](https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)
+
+## Release Confidence
+
+Enterprise buyers need legible publishes. Every PR must carry a Changeset entry. CI enforces version-sync, tests, proof lanes, and operational integrity before merge. Final close-out verifies the exact `main` merge commit with proof anchored in [Verification Evidence](docs/VERIFICATION_EVIDENCE.md).
+
+See [Release Confidence](docs/RELEASE_CONFIDENCE.md) for the full trust chain.
 
 ---
 
