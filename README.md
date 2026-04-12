@@ -199,7 +199,7 @@ Give the agent more context when a thumbs-down isn't enough:
               └─► lesson inferred from full conversation
 ```
 
-ThumbGate uses up to 8 prior conversation entries to turn vague negative signals into specific, actionable lessons. A 60-second follow-up window stays open for additional context.
+ThumbGate uses up to 8 prior conversation entries to turn vague, history-aware negative signals into specific, actionable lessons. A 60-second follow-up window stays open for additional context via `open_feedback_session` → `append_feedback_context` → `finalize_feedback_session`.
 
 Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx thumbgate lessons`.
 
@@ -252,12 +252,12 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 ┌──────────────────────┬──────────────────────┬──────────────────────┐
 │   STORAGE            │   INTELLIGENCE        │   ENFORCEMENT        │
 │                      │                       │                      │
-│ SQLite + full-text   │ Smart recall: picks   │ Pre-action hook      │
-│ search               │ the most relevant     │ engine               │
-│ LanceDB vectors      │ lessons for context   │ Gates config         │
-│ JSONL logs           │ Adaptive selection:   │ Hook wiring          │
-│ File-based context   │ learns which lessons  │                      │
-│                      │ actually help         │                      │
+│ SQLite + FTS5        │ MemAlign dual recall  │ PreToolUse hook      │
+│ LanceDB vectors      │ Thompson Sampling     │ engine               │
+│ JSONL logs           │ (adaptive lesson      │ Gates config         │
+│ File-based context   │  selection)           │ Hook wiring          │
+│                      │                       │                      │
+│                      │                       │                      │
 ├──────────────────────┼──────────────────────┼──────────────────────┤
 │   INTERFACES         │   BILLING             │   EXECUTION          │
 │                      │                       │                      │
@@ -285,7 +285,7 @@ Yes. It's MCP-compatible and works with Claude Code, Claude Desktop, Cursor, Cod
 ThumbGate can watch for failure signals (test failures, reverted edits, error patterns) and auto-generate prevention rules — no thumbs-down required. Your agent gets smarter every session.
 
 **Is it free?**
-Free tier includes 3 feedback captures/day, 5 lesson searches/day, and unlimited recall with enforced gates. Pro is $19/mo or $149/yr for a personal dashboard and exports. Team rollout starts at $99/seat/mo (3-seat minimum).
+Free tier: **3 daily feedback captures**, **5 daily lesson searches**, unlimited recall, enforced gates. History-aware distillation turns vague feedback into specific lessons. Pro is $19/mo or $149/yr for a personal dashboard and exports. Team rollout starts at $99/seat/mo (3-seat minimum) with shared hosted lesson DB, org dashboard, approval + audit proof, and isolated execution guidance.
 
 ---
 
