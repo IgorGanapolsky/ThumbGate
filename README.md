@@ -273,7 +273,7 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 ## FAQ
 
 **Is ThumbGate a model fine-tuning tool?**
-No. It doesn't touch model weights. It captures your feedback, stores lessons, injects context at runtime, and blocks bad actions before they execute.
+No. ThumbGate does not update model weights in frontier LLMs. It captures your feedback, stores lessons, injects context at runtime, and blocks bad actions before they execute.
 
 **How is this different from CLAUDE.md or .cursorrules?**
 Those are suggestions the agent can ignore. ThumbGate gates are enforced — they physically block the action before it runs. They also auto-generate from feedback instead of requiring manual writing.
