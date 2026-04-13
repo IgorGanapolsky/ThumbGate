@@ -336,7 +336,7 @@
     "@huggingface/transformers": "^4.0.1",
     "@lancedb/lancedb": "^0.27.2",
     "apache-arrow": "^18.1.0",
-    "better-sqlite3": "^12.8.0",
+    "better-sqlite3": "^12.9.0",
     "dotenv": "^17.4.1",
     "playwright-core": "^1.59.1",
     "stripe": "^22.0.1"
