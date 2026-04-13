@@ -571,11 +571,17 @@ function formatLeadsMarkdown(report) {
 }
 
 function escapeMarkdownTable(value) {
-  return String(value || '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  return String(value || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|')
+    .replace(/[\r\n]+/g, ' ');
 }
 
 function escapeMarkdownLinkText(value) {
-  return String(value || 'Untitled').replace(/]/g, '\\]');
+  return String(value || 'Untitled')
+    .replace(/\\/g, '\\\\')
+    .replace(/\[/g, '\\[')
+    .replace(/]/g, '\\]');
 }
 
 async function main() {

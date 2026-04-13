@@ -9,6 +9,7 @@ const path = require('node:path');
 const {
   buildMcpConfig,
   dedupeLeads,
+  formatLeadsMarkdown,
   parseArgs,
   runCommand,
   scoreLead,
@@ -124,6 +125,25 @@ test('scoreLead rewards ThumbGate buyer-intent signals', () => {
   assert.ok(scored.score >= 12);
   assert.ok(scored.reasons.includes('clear pain signal'));
   assert.match(scored.outreachAngle, /repeated-agent-mistake/);
+});
+
+test('lead markdown escapes backslashes, table pipes, and link brackets', () => {
+  const markdown = formatLeadsMarkdown({
+    date: '2026-04-13',
+    mode: 'live',
+    leadCount: 1,
+    leads: [{
+      score: 12,
+      title: 'bad \\ title [x]',
+      url: 'https://example.com/thread',
+      reasons: ['pipe | backslash \\ newline\nx'],
+      outreachAngle: 'angle | \\',
+    }],
+  });
+
+  assert.match(markdown, /\[bad \\\\ title \\\[x\\\]\]\(https:\/\/example\.com\/thread\)/);
+  assert.match(markdown, /pipe \\\| backslash \\\\ newline x/);
+  assert.match(markdown, /angle \\\| \\\\/);
 });
 
 test('buildMcpConfig returns official Perplexity MCP install commands', () => {
