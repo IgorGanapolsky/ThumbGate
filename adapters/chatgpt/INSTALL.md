@@ -32,6 +32,17 @@ Use these as GPT conversation starters so regular users know how to teach ThumbG
 
 Use typed chat replies. ChatGPT's native feedback buttons may send feedback to OpenAI, but they should not be described as the ThumbGate capture path unless OpenAI exposes them to GPT Actions.
 
+## Pre-action gate flow
+
+Use this when the user asks whether an AI agent should run a proposed action, command, file edit, deployment, merge, or publish step:
+
+1. The GPT calls `evaluateDecision` (`POST /v1/decisions/evaluate`) before answering.
+2. If the response has `decisionControl.executionMode: "blocked"`, the GPT says the action is blocked and explains the returned reason.
+3. If the response has `decisionControl.executionMode: "checkpoint_required"`, the GPT asks for explicit confirmation before proceeding.
+4. If the response has `decisionControl.executionMode: "auto_execute"`, the GPT can say the action is allowed and summarize why.
+
+Plain thumbs-up/down feedback is the memory loop. The decision endpoint is the gate loop. Do not claim hard blocking unless the decision endpoint, a saved lesson, or a prevention rule was actually applied.
+
 ## Best first GPT message
 
 Use this as the first response for regular users:
@@ -45,7 +56,9 @@ Ask me anything. After my answer, reply 👍 if it helped or 👎 plus one sente
 - A ChatGPT Plus or Team account (Custom GPTs require a paid plan)
 - ThumbGate API running at `https://thumbgate-production.up.railway.app`
 - Privacy policy URL: `https://thumbgate-production.up.railway.app/privacy`
-- Bearer API key for the Actions auth prompt
+- Owner-managed `THUMBGATE_API_KEY` for one-time GPT Builder Actions auth
+
+Regular GPT users should not need an API key, JSON payload, OpenAPI knowledge, or developer setup. They should only see the thumbs-up/down memory loop.
 
 ## Step 1 — Open GPT Builder
 
@@ -73,6 +86,8 @@ In the Actions panel:
 1. Select **Authentication type: API Key**
 2. **Auth type**: Bearer
 3. **API Key**: paste your `THUMBGATE_API_KEY` value
+
+This is an owner setup field. Do not ask regular GPT users to provide an API key.
 
 ## Step 4 — Update the Server URL
 
