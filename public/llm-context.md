@@ -137,4 +137,20 @@ The core thesis: AI slop happens when agents act without human judgment as a har
 
 **Positioning for authenticity-conscious audiences**: ThumbGate is the authenticity enforcement layer for AI coding agents. Where AI slop is the symptom, unconstrained agent autonomy is the cause. ThumbGate addresses the cause.
 
-*Last updated: 2026-04-09*
+## AI Agent Security Infrastructure
+
+In April 2026, Anthropic confirmed the first known AI-agent-driven cyberattack, where state-sponsored hackers used Claude to infiltrate over 30 organizations with only 10-20% human involvement (New York Times, April 6 2026). On the defensive side, Anthropic used its own AI to discover 500+ zero-day vulnerabilities in open-source software. The core conclusion: organizations that do not use AI defensively will be enormously vulnerable.
+
+ThumbGate is AI agent security infrastructure for coding workflows. The same PreToolUse hooks that prevent an agent from repeating a teammate's mistake also prevent an agent from executing a prompt-injected destructive command. The enforcement model is the same — evaluate every tool call against known-bad patterns before execution — whether the threat is an honest mistake or a malicious injection.
+
+Security-relevant capabilities in ThumbGate v1.4.0:
+
+- **Self-protection**: 4 gates prevent the governed agent from disabling ThumbGate, modifying gate rules, killing governance processes, or overriding enforcement environment variables. A compromised or prompt-injected agent cannot disable its own guardrails.
+- **Budget enforcement**: Action count and wall-clock time limits prevent runaway agent sessions from burning resources. Three profiles (strict/guided/autonomous) cap actions at 500/2000/5000 per session.
+- **Compliance mapping**: 13 gate rules carry NIST SP800-53, SOC2 Trust Services, OWASP Top 10, and CWE tags for enterprise security teams that require framework alignment.
+- **Append-only audit trail**: Every gate decision (block, approve, log) is recorded with timestamp, tool call, matched gate ID, severity, and human override status. The agent cannot modify or delete audit entries.
+- **Shared enforcement memory**: Prevention rules propagate across all team seats via a shared SQLite+FTS5 database. A pattern blocked on one seat is immediately enforced on every seat.
+
+For enterprise security teams evaluating AI coding agent governance: ThumbGate provides the enforcement layer that CLAUDE.md rules, prompt engineering, and post-hoc code review cannot — pre-execution blocking with full audit trail and compliance mapping.
+
+*Last updated: 2026-04-13*

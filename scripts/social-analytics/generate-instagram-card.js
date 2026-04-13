@@ -19,9 +19,35 @@ try { sharp = require('sharp'); } catch { /* optional dependency */ }
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const DEFAULT_OUTPUT = path.join(REPO_ROOT, '.thumbgate', 'instagram-card.png');
 
-async function generateInstagramCard(outputPath = DEFAULT_OUTPUT) {
+const CARD_VARIANTS = [
+  { headline: ['Your AI agent', 'has amnesia.'], sub: ['Give it memory that', 'survives restarts.'] },
+  { headline: ['CLAUDE.md is', 'a wish list.'], sub: ['ThumbGate is', 'enforcement.'] },
+  { headline: ['One thumbs-down.', 'Never again.'], sub: ['Mistakes become', 'prevention rules.'] },
+  { headline: ['33 pre-action', 'gates.'], sub: ['Block before execution.', 'Not after damage.'] },
+  { headline: ['AI agent broke', 'production?'], sub: ['That exact pattern', 'is now blocked forever.'] },
+  { headline: ['Fight AI', 'with AI.'], sub: ['Self-tuning gates.', 'Thompson Sampling.'] },
+  { headline: ['Your agent can\'t', 'disable this.'], sub: ['Self-protection gates.', '4 layers deep.'] },
+  { headline: ['NIST. SOC2.', 'OWASP. CWE.'], sub: ['Compliance tags on', 'every gate rule.'] },
+  { headline: ['500 actions.', '2.5 hours.'], sub: ['Budget enforcement.', 'No runaway agents.'] },
+  { headline: ['First AI-agent', 'cyberattack confirmed.'], sub: ['PreToolUse hooks', 'block before execution.'] },
+];
+
+async function generateInstagramCard(outputPath = DEFAULT_OUTPUT, options = {}) {
   const width = 1080;
   const height = 1080;
+
+  // Pick a variant: explicit, random, or rotate based on day
+  let variant;
+  if (options.variantIndex !== undefined) {
+    variant = CARD_VARIANTS[options.variantIndex % CARD_VARIANTS.length];
+  } else {
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    const hourSlot = Math.floor(new Date().getHours() / 8); // 3 slots per day
+    variant = CARD_VARIANTS[(dayOfYear * 3 + hourSlot) % CARD_VARIANTS.length];
+  }
+
+  const h1 = options.headline || variant.headline;
+  const sub = options.sub || variant.sub;
 
   // Create SVG markup for the card
   const svg = `
@@ -31,18 +57,18 @@ async function generateInstagramCard(outputPath = DEFAULT_OUTPUT) {
 
       <!-- Main heading -->
       <text x="${width / 2}" y="400" font-size="72" font-weight="bold" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif">
-        Your AI agent
+        ${h1[0]}
       </text>
       <text x="${width / 2}" y="490" font-size="72" font-weight="bold" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif">
-        has amnesia.
+        ${h1[1]}
       </text>
 
       <!-- Subheading -->
       <text x="${width / 2}" y="620" font-size="48" text-anchor="middle" fill="#888888" font-family="Arial, sans-serif">
-        Give it memory that
+        ${sub[0]}
       </text>
       <text x="${width / 2}" y="680" font-size="48" text-anchor="middle" fill="#888888" font-family="Arial, sans-serif">
-        survives restarts.
+        ${sub[1]}
       </text>
 
       <!-- Brand -->
