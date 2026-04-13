@@ -160,19 +160,24 @@ function findSameUrlEndpoints(endpoints, endpointUrl, excludeId) {
     && endpoint?.status !== 'disabled');
 }
 
+function resolveRequireLiveStripeKey(options) {
+  if (Object.prototype.hasOwnProperty.call(options, 'requireLive')) {
+    return options.requireLive;
+  }
+  const envModes = {
+    false: false,
+    true: true,
+  };
+  return envModes[process.env.REQUIRE_LIVE_STRIPE_KEY] ?? true;
+}
+
 async function rotateStripeWebhookSecret(options = {}) {
   const endpointUrl = options.endpointUrl || process.env.STRIPE_WEBHOOK_ENDPOINT_URL || DEFAULT_ENDPOINT_URL;
   const repo = options.repo || process.env.GITHUB_REPOSITORY;
   const stripeKey = options.stripeKey || process.env.STRIPE_SECRET_KEY;
   const githubToken = options.githubToken || process.env.GH_ADMIN_TOKEN || process.env.THUMBGATE_MAINTENANCE_GH_TOKEN;
   const timestamp = options.timestamp || new Date().toISOString();
-  let requireLive = true;
-  if (process.env.REQUIRE_LIVE_STRIPE_KEY === 'false') {
-    requireLive = false;
-  }
-  if (Object.prototype.hasOwnProperty.call(options, 'requireLive')) {
-    requireLive = options.requireLive;
-  }
+  const requireLive = resolveRequireLiveStripeKey(options);
   const dryRun = options.dryRun === true || process.env.DRY_RUN === 'true';
 
   assertLiveStripeKey(stripeKey, requireLive);
@@ -266,5 +271,6 @@ module.exports = {
   encodeForm,
   findSameUrlEndpoints,
   redact,
+  resolveRequireLiveStripeKey,
   rotateStripeWebhookSecret,
 };
