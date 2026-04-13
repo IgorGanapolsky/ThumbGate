@@ -47,6 +47,65 @@ test('postTweet returns a skipped result instead of fabricating success on X 401
   }
 });
 
+test('replyTweet reports only real reply ids as success', async () => {
+  const subject = loadRalphMode();
+  const originalFetch = global.fetch;
+  const requests = [];
+  global.fetch = async (_url, options) => {
+    requests.push(JSON.parse(options.body));
+    if (requests.length === 1) {
+      return {
+        ok: false,
+        status: 403,
+        json: async () => ({ errors: [{ message: 'Forbidden by policy' }] }),
+      };
+    }
+    return {
+      ok: true,
+      status: 201,
+      json: async () => ({ data: { id: 'reply_456' } }),
+    };
+  };
+
+  try {
+    const blocked = await subject.replyTweet('blocked reply', 'tweet_1');
+    assert.deepEqual(blocked, {
+      id: '',
+      ok: false,
+      status: 403,
+      error: 'Forbidden by policy',
+    });
+    assert.deepEqual(requests[0].reply, { in_reply_to_tweet_id: 'tweet_1' });
+
+    const posted = await subject.replyTweet('posted reply', 'tweet_2');
+    assert.deepEqual(posted, {
+      id: 'reply_456',
+      ok: true,
+      status: 201,
+      error: '',
+    });
+    assert.deepEqual(requests[1].reply, { in_reply_to_tweet_id: 'tweet_2' });
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('parseJsonResponse and extractApiError keep API failures readable', async () => {
+  const subject = loadRalphMode();
+
+  const parsed = await subject.parseJsonResponse({
+    json: async () => {
+      throw new Error('invalid json');
+    },
+  });
+  assert.deepEqual(parsed, {});
+
+  assert.equal(subject.extractApiError({ title: 'Rate limited' }, 429), 'Rate limited');
+  assert.equal(subject.extractApiError({ errors: [{ detail: 'Token expired' }] }, 401), 'Token expired');
+  assert.equal(subject.extractApiError({}, 502), 'HTTP 502');
+  assert.equal(subject.extractApiError({}, 0), 'HTTP unknown');
+});
+
 test('recordTweetPost increments only when X returns a real tweet id', () => {
   const subject = loadRalphMode();
   const report = { tweets: 0 };
