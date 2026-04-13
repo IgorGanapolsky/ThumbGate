@@ -374,7 +374,7 @@ test('statusline preserves dashboard links under a tight width budget', () => {
     const plain = stripStatuslineFormatting(out).trim();
     assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
     assert.match(plain, /Lessons/, 'should preserve the lessons link label');
-    assert.match(plain, /Latest mistake \d{4}-\d{2}-\d{2} \d{2}:\d{2}Z:/, 'should clarify that the snippet is the latest mistake');
+    assert.match(plain, /Latest mistake \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}:/, 'should clarify that the snippet is the latest mistake');
     assert.match(plain, /http:\/\/localhost:3456\/lessons#lesson_/, 'should include a deep link to the latest lesson');
   } finally {
     if (previousFeedbackDir === undefined) {

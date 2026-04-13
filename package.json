@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "ThumbGate: self-improving agent governance for engineering teams. Three-tier approval routing (block/approve/log), shared enforcement, CI gates, and audit trails. Every mistake becomes a prevention rule. PreToolUse hooks, Thompson Sampling, SQLite+FTS5 lesson DB, and LanceDB vector search.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": {
