@@ -1020,6 +1020,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__AUTOMATION_REPORT_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json',
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
+    '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
   });
 }
 

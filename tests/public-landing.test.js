@@ -229,6 +229,14 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /compatibility-grid/);
   assert.match(landingPage, /View setup guide/);
   assert.match(landingPage, /Get the Claude plugin/);
+  assert.match(landingPage, /thumbgate-marketplace/);
+  assert.match(landingPage, /\/plugin marketplace add IgorGanapolsky\/ThumbGate/);
+  assert.match(landingPage, /ChatGPT GPT Actions/);
+  assert.match(landingPage, /Use in ChatGPT/);
+  assert.match(landingPage, /Regular users reply with 👍\/👎/);
+  assert.match(landingPage, /save the lesson/i);
+  assert.match(landingPage, /reinforce the answer patterns that worked/i);
+  assert.match(landingPage, /adapters\/chatgpt\/INSTALL\.md/);
   assert.match(landingPage, /Browse plugins/);
   assert.match(landingPage, /View skill on GitHub/);
 });

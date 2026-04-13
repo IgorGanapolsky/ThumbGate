@@ -14,6 +14,34 @@ It exists so we can ship founder-style IG and TikTok content without filming, ma
 6. Blocks duplicate live publishes via `.thumbgate/social-post-history.jsonl` unless `--force` is supplied.
 7. Publishes through the already-authenticated Chrome session for Instagram and TikTok.
 
+## Ralph Mode CI
+
+Ralph Mode is the always-on acquisition loop for audience engagement. Two GitHub Actions workflows
+share the lane:
+
+- `.github/workflows/ralph-mode.yml` runs every two hours for outbound campaign posts, GitHub issue
+  monitoring, repo discovery, and dev.to outreach through `scripts/ralph-mode-ci.js`. It restores
+  and saves `.thumbgate/ralph-state.json` so CI does not re-contact the same audience.
+- `.github/workflows/ralph-loop.yml` runs hourly for audience sensing, reply monitoring, analytics
+  polling, launch asset sync, and machine-readable evidence from `scripts/ralph-loop.js`.
+
+The guardrails are intentional:
+
+- Reddit stays draft-only. Suggested replies go to `.thumbgate/reply-drafts.jsonl`.
+- X replies pass the contextual social quality gate before posting.
+- LinkedIn comment intake remains limited until the required API approval is available.
+- Ralph Mode outbound state and Ralph Loop reply state are cache-backed so CI does not spam the audience.
+- Ralph reports link back to [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) for authority evidence.
+
+Run the same loop locally:
+
+```bash
+node scripts/ralph-loop.js --mode=all --dry-run
+```
+
+Manual CI modes are `all`, `engage`, `poll`, `audit`, and `post`. The scheduled hourly mode uses
+`all`, which senses, engages, and audits without invoking the manual-post lane.
+
 ## Canonical Source
 
 - Carousel HTML: [assets/pre-action-gates-instagram-carousel.html](./assets/pre-action-gates-instagram-carousel.html)
