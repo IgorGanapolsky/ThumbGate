@@ -21,10 +21,14 @@
 
 const fs = require('fs');
 const path = require('path');
+const {
+  PerplexityClient,
+  extractChatText,
+  extractCitations,
+} = require('./perplexity-client');
 
-const API_KEY = process.env.PERPLEXITY_API_KEY;
 const OUTPUT_DIR = path.join(__dirname, '..', '.amp', 'in', 'artifacts', 'marketing');
-const SONAR_URL = 'https://api.perplexity.ai/chat/completions';
+const perplexity = new PerplexityClient();
 
 const PRODUCT = {
   name: 'ThumbGate',
@@ -39,31 +43,15 @@ const PRODUCT = {
 };
 
 async function sonarRequest(model, messages, options = {}) {
-  if (!API_KEY) {
+  if (!perplexity.hasApiKey()) {
     throw new Error('PERPLEXITY_API_KEY not set. Get yours at https://www.perplexity.ai/settings/api');
   }
 
-  const body = {
+  return perplexity.chatCompletion({
     model,
     messages,
-    ...options,
-  };
-
-  const resp = await fetch(SONAR_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
+    options,
   });
-
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`Perplexity API ${resp.status}: ${text}`);
-  }
-
-  return resp.json();
 }
 
 function ensureOutputDir() {
@@ -107,8 +95,8 @@ Be specific with URLs, community names, and actionable steps.`,
     },
   ]);
 
-  const content = result.choices[0].message.content;
-  const citations = result.citations || [];
+  const content = extractChatText(result);
+  const citations = extractCitations(result);
 
   let output = `# Market Research Report — ThumbGate\n\nGenerated: ${new Date().toISOString()}\n\n`;
   output += content;
@@ -149,8 +137,8 @@ async function findThreads() {
         web_search_options: { search_context_size: 'high' },
       });
 
-      const content = result.choices[0].message.content;
-      const citations = result.citations || [];
+      const content = extractChatText(result);
+      const citations = extractCitations(result);
       results.push({ query: q, content, citations });
     } catch (err) {
       console.log(`  ⚠ Query failed: ${q} — ${err.message}`);
@@ -314,7 +302,7 @@ Requirements:
         web_search_options: { search_context_size: 'low' },
       });
 
-      const content = result.choices[0].message.content;
+      const content = extractChatText(result);
       saveOutput(platform.file, `# ${platform.name.toUpperCase()} — Launch Post\n\nGenerated: ${new Date().toISOString()}\n\n${content}`);
       posts.push({ platform: platform.name, content });
     } catch (err) {
@@ -358,7 +346,7 @@ Make all content factually accurate and technically specific.`,
     web_search_options: { search_context_size: 'medium' },
   });
 
-  const content = result.choices[0].message.content;
+  const content = extractChatText(result);
   saveOutput('04-seo-geo-content.md', `# SEO/GEO Optimization Content\n\nGenerated: ${new Date().toISOString()}\n\n${content}`);
   console.log('  ✓ SEO content generated\n');
   return content;
@@ -389,7 +377,7 @@ Include [PERSONALIZATION] placeholders.`,
     },
   ]);
 
-  const content = result.choices[0].message.content;
+  const content = extractChatText(result);
   saveOutput('05-outreach-templates.md', `# Outreach Templates\n\nGenerated: ${new Date().toISOString()}\n\n${content}`);
   console.log('  ✓ Outreach templates generated\n');
   return content;
@@ -405,7 +393,7 @@ async function main() {
   console.log('║  ThumbGate — First Dollar Campaign         ║');
   console.log('╚══════════════════════════════════════════════════════╝');
 
-  if (!API_KEY) {
+  if (!perplexity.hasApiKey()) {
     console.error('\n❌ PERPLEXITY_API_KEY not set.');
     console.error('   Add it to .env: PERPLEXITY_API_KEY=pplx-...');
     console.error('   Get your key: https://www.perplexity.ai/settings/api\n');
