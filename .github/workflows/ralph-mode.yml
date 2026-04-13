@@ -25,7 +25,7 @@ jobs:
           X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
           LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
           LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
-          DEVTO_API_KEY: cqbr9ojEEz97TDmkH5XJ2q8W
+          DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
           GH_TOKEN: ${{ secrets.GH_PAT }}
           ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
         run: |
