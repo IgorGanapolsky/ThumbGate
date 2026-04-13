@@ -44,7 +44,7 @@ function xAuthHeader(method, url) {
 // ── Helpers ─────────────────────────────────────────────────────────────
 async function postTweet(text) {
   const url = 'https://api.twitter.com/2/tweets';
-  console.log('  X auth debug: key=' + X_API_KEY.slice(0, 5) + '... token=' + X_ACCESS_TOKEN.slice(0, 5) + '...');
+  console.log('  X auth debug: credentials ' + (X_API_KEY && X_ACCESS_TOKEN ? 'present' : 'missing'));
   const r = await fetch(url, {
     method: 'POST',
     headers: { Authorization: xAuthHeader('POST', url), 'Content-Type': 'application/json' },
