@@ -123,6 +123,7 @@ function resolveHostedBillingConfig({ requestOrigin } = {}, env = process.env) {
   const proPriceDollars = normalizePriceDollars(env.THUMBGATE_PRO_PRICE_DOLLARS) || DEFAULT_PRO_PRICE_DOLLARS;
   const proPriceLabel = env.THUMBGATE_PRO_PRICE_LABEL || DEFAULT_PRO_PRICE_LABEL;
   const gaMeasurementId = normalizeTrackingId(env.THUMBGATE_GA_MEASUREMENT_ID, GA_MEASUREMENT_ID_PATTERN);
+  const posthogApiKey = env.POSTHOG_API_KEY || '';
   const googleSiteVerification = normalizeTrackingId(env.THUMBGATE_GOOGLE_SITE_VERIFICATION);
 
   return {
@@ -137,6 +138,7 @@ function resolveHostedBillingConfig({ requestOrigin } = {}, env = process.env) {
     proPriceLabel,
     gaMeasurementId,
     googleSiteVerification,
+    posthogApiKey,
   };
 }
 
