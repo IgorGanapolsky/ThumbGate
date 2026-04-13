@@ -227,7 +227,7 @@ jobs:
         run: bash scripts/capture-railway-diagnostics.sh railway-diagnostics
       - name: Upload Railway diagnostics artifact
         if: always() && steps.railway-config.outputs.enabled == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: railway-diagnostics-${{ github.run_id }}
           path: railway-diagnostics/
