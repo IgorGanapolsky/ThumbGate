@@ -508,25 +508,21 @@ function evaluateCompiledGuards(artifact, toolName, toolInput) {
   const normTool = (toolName || '').toLowerCase();
 
   for (const guard of artifact.guards) {
-    // Check if tool context is relevant
     const guardText = normalize(guard.text || '');
     const toolMentioned = guardText.includes(normTool) || normTool === 'unknown';
 
-    if (hasTwoKeywordHits(normInput, guard.words || [])) {
-      return {
-        mode: guard.mode || 'warn',
-        reason: `Matched guard pattern (count: ${guard.count}): "${(guard.text || '').slice(0, 80)}"`,
-        source: 'compiled',
-        guardHash: guard.hash,
-        attributed: guard.attributed,
-      };
-    }
+    const keywordMatch = hasTwoKeywordHits(normInput, guard.words || []);
 
-    // Also check tool-level match when input is empty or short
-    if (normInput.length < 10 && toolMentioned && guard.count >= (artifact.blockThreshold || 3)) {
+    // Match if: keyword hits in input, OR tool mentioned + high count.
+    // Previously tool-name matching only worked for short inputs — this was
+    // a false-negative gap that let tool-specific patterns slip through.
+    if (keywordMatch || (toolMentioned && guard.count >= (artifact.blockThreshold || 3))) {
+      const reason = keywordMatch
+        ? `Matched guard pattern (count: ${guard.count}): "${(guard.text || '').slice(0, 80)}"`
+        : `Tool "${toolName}" has recurring negative patterns (count: ${guard.count})`;
       return {
         mode: guard.mode || 'warn',
-        reason: `Tool "${toolName}" has recurring negative patterns (count: ${guard.count})`,
+        reason,
         source: 'compiled',
         guardHash: guard.hash,
         attributed: guard.attributed,
@@ -596,6 +592,12 @@ function evaluatePretoolFromState(state, toolName, toolInput) {
  * @param {string} [opts.attributedFeedbackPath]
  * @returns {{ mode: 'block'|'warn'|'allow', reason: string, source: string }}
  */
+/**
+ * Max age (ms) before compiled guards are considered stale and live state
+ * is also consulted. Default: 1 hour.
+ */
+const GUARD_STALENESS_MS = 60 * 60 * 1000;
+
 function evaluatePretool(toolName, toolInput, opts) {
   const o = opts || {};
 
@@ -605,11 +607,18 @@ function evaluatePretool(toolName, toolInput, opts) {
   if (artifact) {
     const result = evaluateCompiledGuards(artifact, toolName, toolInput);
     if (result.mode !== 'allow') return result;
-    // Even if compiled says allow, we're done (trust compiled)
-    return result;
+
+    // Check staleness: if compiled artifact is fresh enough, trust it
+    const compiledAt = artifact.compiledAt ? Date.parse(artifact.compiledAt) : 0;
+    const age = Date.now() - compiledAt;
+    if (age < GUARD_STALENESS_MS) {
+      return result; // Fresh compiled artifact says allow — trust it
+    }
+    // Stale artifact said allow — fall through to live evaluation
+    // in case new feedback was captured since compilation
   }
 
-  // Slow path: build live state
+  // Slow path: build live state (also used when compiled guards are stale)
   const state = buildHybridState({
     feedbackLogPath: o.feedbackLogPath,
     attributedFeedbackPath: o.attributedFeedbackPath,
@@ -683,6 +692,7 @@ module.exports = {
   readJsonl,
   getHybridPaths,
   PATHS,
+  GUARD_STALENESS_MS,
 };
 
 if (require.main === module) {
