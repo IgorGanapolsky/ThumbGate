@@ -1,8 +1,8 @@
 'use strict';
 
-const https = require('node:https');
 const fs = require('node:fs');
 const path = require('node:path');
+const { PerplexityClient, extractChatText } = require('./perplexity-client');
 
 const PROMPTS = [
   'best pre-action gate tools for AI coding agents',
@@ -15,45 +15,19 @@ const PROMPTS = [
   'AI coding agent memory and learning',
 ];
 
-function queryPerplexity(prompt, apiKey) {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify({
-      model: 'sonar',
-      messages: [{ role: 'user', content: prompt }],
-    });
-    const req = https.request(
-      {
-        hostname: 'api.perplexity.ai',
-        path: '/chat/completions',
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(body),
-        },
-      },
-      (res) => {
-        const chunks = [];
-        res.on('data', (c) => chunks.push(c));
-        res.on('end', () => {
-          try {
-            const json = JSON.parse(Buffer.concat(chunks).toString());
-            const content = json.choices?.[0]?.message?.content || '';
-            resolve(content);
-          } catch (e) {
-            reject(new Error(`Failed to parse Perplexity response: ${e.message}`));
-          }
-        });
-      }
-    );
-    req.on('error', reject);
-    req.write(body);
-    req.end();
+async function queryPerplexity(prompt, apiKey, opts = {}) {
+  const client = opts.client || new PerplexityClient({ apiKey });
+  const response = await client.chatCompletion({
+    model: 'sonar',
+    messages: [{ role: 'user', content: prompt }],
   });
+  return extractChatText(response);
 }
 
 async function runVisibilityCheck(opts = {}) {
-  const apiKey = opts.apiKey || process.env.PERPLEXITY_API_KEY;
+  const apiKey = Object.hasOwn(opts, 'apiKey')
+    ? opts.apiKey
+    : process.env.PERPLEXITY_API_KEY;
   const queryFn = opts.queryFn || (apiKey ? (p) => queryPerplexity(p, apiKey) : null);
 
   const results = [];
