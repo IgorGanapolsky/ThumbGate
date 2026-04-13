@@ -206,6 +206,7 @@
     "test:data-governance": "node --test tests/data-governance.test.js",
     "test:lesson-inference": "node --test tests/conversation-context.test.js tests/lesson-inference.test.js",
     "test:lesson-retrieval": "node --test tests/lesson-retrieval.test.js",
+    "test:cross-encoder": "node --test tests/cross-encoder-reranker.test.js",
     "test:reflector-agent": "node --test tests/reflector-agent.test.js",
     "test:feedback-session": "node --test tests/feedback-session.test.js",
     "test:feedback-history-distiller": "node --test tests/feedback-history-distiller.test.js",
