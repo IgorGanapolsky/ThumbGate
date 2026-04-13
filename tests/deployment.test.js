@@ -330,8 +330,16 @@ test('Deploy to Railway workflow skips non-runtime pushes and only deploys when 
     'workflow should only treat runtime JS script modules as deployable',
   );
   assert.ok(
+    workflow.includes('adapters/.*\\.(js|mjs|cjs|json|ya?ml)$'),
+    'workflow should only treat adapter runtime/spec files as deployable',
+  );
+  assert.ok(
     !workflow.includes("DEPLOYABLE_PATTERN='^(src/|scripts/|"),
     'workflow should not treat every scripts/ path as deployable',
+  );
+  assert.ok(
+    !workflow.includes('|adapters/|'),
+    'workflow should not treat adapter markdown guides as deployable',
   );
   assert.match(workflow, /! printf '%s\\n' "\$CHANGED_FILES" \| grep -Eq "\$DEPLOYABLE_PATTERN"/);
   assert.match(workflow, /should_deploy=\$SHOULD_DEPLOY/);

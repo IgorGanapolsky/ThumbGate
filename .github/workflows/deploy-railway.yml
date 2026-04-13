@@ -46,7 +46,7 @@ jobs:
           BEFORE_SHA='${{ github.event.before }}'
           CHANGED_FILES=''
           SHOULD_DEPLOY=true
-          DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/|public/|\.well-known/|openapi/|workers/|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
+          DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/.*\.(js|mjs|cjs|json|ya?ml)$|public/|\.well-known/|openapi/|workers/|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
 
           if [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
             CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | sed '/^$/d')"
