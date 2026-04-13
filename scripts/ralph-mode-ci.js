@@ -10,12 +10,12 @@
 const crypto = require('crypto');
 const https = require('https');
 
-// ── Env ─────────────────────────────────────────────────────────────────
-const X_API_KEY = process.env.X_API_KEY;
-const X_API_SECRET = process.env.X_API_SECRET;
-const X_ACCESS_TOKEN = process.env.X_ACCESS_TOKEN;
-const X_ACCESS_TOKEN_SECRET = process.env.X_ACCESS_TOKEN_SECRET;
-const X_BEARER_TOKEN = process.env.X_BEARER_TOKEN;
+// ── Env (trim to handle GitHub Actions trailing whitespace) ─────────────
+const X_API_KEY = (process.env.X_API_KEY || '').trim();
+const X_API_SECRET = (process.env.X_API_SECRET || '').trim();
+const X_ACCESS_TOKEN = (process.env.X_ACCESS_TOKEN || '').trim();
+const X_ACCESS_TOKEN_SECRET = (process.env.X_ACCESS_TOKEN_SECRET || '').trim();
+const X_BEARER_TOKEN = (process.env.X_BEARER_TOKEN || '').trim();
 const LINKEDIN_ACCESS_TOKEN = process.env.LINKEDIN_ACCESS_TOKEN;
 const LINKEDIN_PERSON_URN = process.env.LINKEDIN_PERSON_URN;
 const DEVTO_API_KEY = process.env.DEVTO_API_KEY;
@@ -44,13 +44,15 @@ function xAuthHeader(method, url) {
 // ── Helpers ─────────────────────────────────────────────────────────────
 async function postTweet(text) {
   const url = 'https://api.twitter.com/2/tweets';
+  console.log('  X auth debug: key=' + X_API_KEY.slice(0, 5) + '... token=' + X_ACCESS_TOKEN.slice(0, 5) + '...');
   const r = await fetch(url, {
     method: 'POST',
     headers: { Authorization: xAuthHeader('POST', url), 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
   });
   const j = await r.json();
-  return { id: j.data?.id, error: j.detail };
+  if (!j.data?.id) console.log('  X error detail:', JSON.stringify(j).slice(0, 200));
+  return { id: j.data?.id, error: j.detail || j.title };
 }
 
 async function replyTweet(text, replyTo) {
