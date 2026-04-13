@@ -1795,6 +1795,8 @@ module.exports = {
   SESSION_ACTION_TTL_MS,
   PROTECTED_APPROVAL_TTL_MS,
   DEFAULT_PROTECTED_FILE_GLOBS,
+  buildBehavioralContext,
+  isHighRiskAction,
 };
 
 // ---------------------------------------------------------------------------
