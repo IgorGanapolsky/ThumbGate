@@ -106,6 +106,13 @@ test('parseJsonResponse and extractApiError keep API failures readable', async (
   assert.equal(subject.extractApiError({}, 0), 'HTTP unknown');
 });
 
+test('entrypoint detection stays false when Ralph Mode is imported by tests', () => {
+  const subject = loadRalphMode();
+
+  assert.equal(subject.isDirectInvocation(), false);
+  assert.equal(subject.isDirectInvocation({ filename: ralphModePath }), true);
+});
+
 test('recordTweetPost increments only when X returns a real tweet id', () => {
   const subject = loadRalphMode();
   const report = { tweets: 0 };

@@ -376,7 +376,11 @@ async function main() {
   console.log('=== DONE ===');
 }
 
-if (require.main === module) {
+function isDirectInvocation(mainModule = require.main) {
+  return Boolean(mainModule && mainModule.filename === __filename);
+}
+
+if (isDirectInvocation()) {
   main().catch(e => {
     console.error('Ralph Mode CI fatal error:', e.message);
     process.exit(1);
@@ -422,6 +426,7 @@ module.exports = {
   main,
   parseJsonResponse,
   postTweet,
+  isDirectInvocation,
   recordTweetPost,
   recordTweetReply,
   replyTweet,
