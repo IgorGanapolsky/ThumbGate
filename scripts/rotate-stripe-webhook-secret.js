@@ -161,7 +161,7 @@ function findSameUrlEndpoints(endpoints, endpointUrl, excludeId) {
 }
 
 function resolveRequireLiveStripeKey(options) {
-  if (Object.prototype.hasOwnProperty.call(options, 'requireLive')) {
+  if (Object.hasOwn(options, 'requireLive')) {
     return options.requireLive;
   }
   const envModes = {
