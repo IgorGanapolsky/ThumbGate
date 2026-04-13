@@ -268,7 +268,7 @@ test('Deploy to Railway workflow captures Railway diagnostics when health verifi
   assert.match(workflow, /name: Capture Railway diagnostics/);
   assert.match(workflow, /if: failure\(\) && steps\.railway-config\.outputs\.enabled == 'true'/);
   assert.match(workflow, /bash scripts\/capture-railway-diagnostics\.sh railway-diagnostics/);
-  assert.match(workflow, /actions\/upload-artifact@v4/);
+  assert.match(workflow, /actions\/upload-artifact@v7/);
   assert.match(workflow, /railway-diagnostics-\$\{\{\s*github\.run_id\s*\}\}/);
 });
 
@@ -287,7 +287,7 @@ test('Railway diagnostics workflow can inspect or bounce the service with the li
   assert.match(workflow, /railway restart --service "\$RAILWAY_SERVICE" --yes --json/);
   assert.match(workflow, /railway redeploy --service "\$RAILWAY_SERVICE" --yes --json/);
   assert.match(workflow, /bash scripts\/capture-railway-diagnostics\.sh railway-diagnostics/);
-  assert.match(workflow, /actions\/upload-artifact@v4/);
+  assert.match(workflow, /actions\/upload-artifact@v7/);
 });
 
 test('Railway diagnostics helper captures service status, latest logs, and a direct health probe', () => {
