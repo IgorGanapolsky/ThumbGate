@@ -1,0 +1,85 @@
+name: Perplexity Command Center
+
+on:
+  schedule:
+    - cron: '30 12 * * *'
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'Command to run'
+        required: true
+        type: choice
+        default: full
+        options:
+          - visibility
+          - leads
+          - brief
+          - mcp-config
+          - full
+      dry_run:
+        description: 'Force dry run without live API calls'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: perplexity-command-center
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+      PERPLEXITY_TIMEOUT_MS: '120000'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Run Perplexity command center
+        run: |
+          set -euo pipefail
+
+          COMMAND="${{ github.event.inputs.command || '' }}"
+          DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
+
+          if [ -z "$COMMAND" ]; then
+            COMMAND="visibility"
+            if [ "$(date -u +%u)" = "1" ]; then
+              COMMAND="full"
+            fi
+          fi
+
+          DRY_FLAG=""
+          if [ "$DRY_RUN" = "true" ] || [ -z "${PERPLEXITY_API_KEY:-}" ]; then
+            DRY_FLAG="--dry-run"
+          fi
+
+          node scripts/perplexity-command-center.js "$COMMAND" \
+            $DRY_FLAG \
+            --allow-chat-fallback \
+            --limit=8 \
+            --out-dir=.thumbgate/perplexity-ci \
+            --json
+
+      - name: Upload Perplexity artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perplexity-command-center
+          path: .thumbgate/perplexity-ci/**
+          if-no-files-found: warn
+          retention-days: 14
