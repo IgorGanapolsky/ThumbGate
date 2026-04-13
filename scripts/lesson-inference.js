@@ -192,7 +192,13 @@ function stripLessonPrefix(lessonText = '') {
 function formatLessonTimestamp(createdAt = '') {
   const parsed = new Date(createdAt);
   if (!Number.isFinite(parsed.getTime())) return '';
-  return parsed.toISOString().slice(0, 16).replace('T', ' ') + 'Z';
+  const mm = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(parsed.getUTCDate()).padStart(2, '0');
+  const yyyy = parsed.getUTCFullYear();
+  const HH = String(parsed.getUTCHours()).padStart(2, '0');
+  const MM = String(parsed.getUTCMinutes()).padStart(2, '0');
+  const ss = String(parsed.getUTCSeconds()).padStart(2, '0');
+  return `${mm}/${dd}/${yyyy} ${HH}:${MM}:${ss}`;
 }
 
 function buildStatusbarLessonLabel(lesson = {}) {

@@ -10,12 +10,12 @@
 const crypto = require('crypto');
 const https = require('https');
 
-// ── Env ─────────────────────────────────────────────────────────────────
-const X_API_KEY = process.env.X_API_KEY;
-const X_API_SECRET = process.env.X_API_SECRET;
-const X_ACCESS_TOKEN = process.env.X_ACCESS_TOKEN;
-const X_ACCESS_TOKEN_SECRET = process.env.X_ACCESS_TOKEN_SECRET;
-const X_BEARER_TOKEN = process.env.X_BEARER_TOKEN;
+// ── Env (trim to handle GitHub Actions trailing whitespace) ─────────────
+const X_API_KEY = (process.env.X_API_KEY || '').trim();
+const X_API_SECRET = (process.env.X_API_SECRET || '').trim();
+const X_ACCESS_TOKEN = (process.env.X_ACCESS_TOKEN || '').trim();
+const X_ACCESS_TOKEN_SECRET = (process.env.X_ACCESS_TOKEN_SECRET || '').trim();
+const X_BEARER_TOKEN = (process.env.X_BEARER_TOKEN || '').trim();
 const LINKEDIN_ACCESS_TOKEN = process.env.LINKEDIN_ACCESS_TOKEN;
 const LINKEDIN_PERSON_URN = process.env.LINKEDIN_PERSON_URN;
 const DEVTO_API_KEY = process.env.DEVTO_API_KEY;
@@ -44,13 +44,15 @@ function xAuthHeader(method, url) {
 // ── Helpers ─────────────────────────────────────────────────────────────
 async function postTweet(text) {
   const url = 'https://api.twitter.com/2/tweets';
+  console.log('  X auth debug: key=' + X_API_KEY.slice(0, 5) + '... token=' + X_ACCESS_TOKEN.slice(0, 5) + '...');
   const r = await fetch(url, {
     method: 'POST',
     headers: { Authorization: xAuthHeader('POST', url), 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
   });
   const j = await r.json();
-  return { id: j.data?.id, error: j.detail };
+  if (!j.data?.id) console.log('  X error detail:', JSON.stringify(j).slice(0, 200));
+  return { id: j.data?.id, error: j.detail || j.title };
 }
 
 async function replyTweet(text, replyTo) {
@@ -311,6 +313,9 @@ async function main() {
     console.log('GitHub: skipped (no token)');
   }
 
+  // ── 8. Perplexity visibility ──
+  await checkPerplexityVisibility();
+
   // ── Save state ──
   state.lastRun = new Date().toISOString();
   saveState(state);
@@ -329,3 +334,36 @@ main().catch(e => {
   console.error('Ralph Mode CI fatal error:', e.message);
   process.exit(1);
 });
+
+// ── Perplexity AI Search Visibility (appended) ──────────────────────────
+async function checkPerplexityVisibility() {
+  const PPLX_KEY = (process.env.PERPLEXITY_API_KEY || '').trim();
+  if (!PPLX_KEY) { console.log('Perplexity: skipped (no key)'); return; }
+
+  const prompts = [
+    'best pre-action gate tools for AI coding agents',
+    'how to prevent AI coding agent from making mistakes',
+    'Claude Code safety tools',
+    'alternatives to thumbgate',
+  ];
+
+  console.log('Perplexity visibility check (' + prompts.length + ' queries):');
+  let found = 0;
+  for (const prompt of prompts) {
+    try {
+      const r = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + PPLX_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'sonar', messages: [{ role: 'user', content: prompt }] }),
+      });
+      const j = await r.json();
+      const text = j.choices?.[0]?.message?.content || '';
+      const mentioned = /thumbgate/i.test(text);
+      console.log('  "' + prompt.slice(0, 50) + '": ' + (mentioned ? 'FOUND' : 'MISSING'));
+      if (mentioned) found++;
+    } catch (e) {
+      console.log('  "' + prompt.slice(0, 50) + '": ERROR ' + e.message.slice(0, 30));
+    }
+  }
+  console.log('Perplexity: ThumbGate mentioned in ' + found + '/' + prompts.length + ' queries');
+}
