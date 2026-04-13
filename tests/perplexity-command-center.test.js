@@ -10,6 +10,7 @@ const {
   buildMcpConfig,
   dedupeLeads,
   formatLeadsMarkdown,
+  isCliEntrypoint,
   parseArgs,
   runCommand,
   scoreLead,
@@ -32,6 +33,13 @@ test('parseArgs supports command-center flags', () => {
   assert.equal(opts.json, true);
   assert.equal(opts.outDir, '/tmp/out');
   assert.equal(opts.leadLimit, 7);
+});
+
+test('isCliEntrypoint recognizes the command-center script only', () => {
+  const scriptPath = path.join(__dirname, '..', 'scripts', 'perplexity-command-center.js');
+  assert.equal(isCliEntrypoint(['node', scriptPath]), true);
+  assert.equal(isCliEntrypoint(['node', __filename]), false);
+  assert.equal(isCliEntrypoint(['node']), false);
 });
 
 test('dry-run full command writes safe manual artifacts without an API key', async () => {

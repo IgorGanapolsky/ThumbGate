@@ -15,12 +15,16 @@ class PerplexityApiError extends Error {
 
 function redactSecrets(value) {
   return String(value || '')
-    .replace(/pplx-[A-Za-z0-9_-]+/g, 'pplx-***')
-    .replace(/Bearer\s+[A-Za-z0-9._-]+/g, 'Bearer ***');
+    .replaceAll(/pplx-[A-Za-z0-9_-]+/g, 'pplx-***')
+    .replaceAll(/Bearer\s+[A-Za-z0-9._-]+/g, 'Bearer ***');
 }
 
 function trimTrailingSlash(value) {
-  return String(value || '').replace(/\/+$/, '');
+  let text = String(value || '');
+  while (text.endsWith('/')) {
+    text = text.slice(0, -1);
+  }
+  return text;
 }
 
 function ensureLeadingSlash(value) {
@@ -75,20 +79,28 @@ function extractAgentText(response) {
   if (typeof response?.output_text === 'string') return response.output_text;
   if (typeof response?.text === 'string') return response.text;
   const output = Array.isArray(response?.output) ? response.output : [];
+  return output.flatMap(extractOutputItemText).join('\n').trim();
+}
+
+function extractOutputItemText(item) {
   const textParts = [];
-
-  for (const item of output) {
-    if (typeof item?.content === 'string') textParts.push(item.content);
-    if (Array.isArray(item?.content)) {
-      for (const part of item.content) {
-        if (typeof part?.text === 'string') textParts.push(part.text);
-        if (typeof part?.content === 'string') textParts.push(part.content);
-      }
-    }
-    if (typeof item?.text === 'string') textParts.push(item.text);
+  appendString(textParts, item?.content);
+  if (Array.isArray(item?.content)) {
+    textParts.push(...item.content.flatMap(extractContentPartText));
   }
+  appendString(textParts, item?.text);
+  return textParts;
+}
 
-  return textParts.join('\n').trim();
+function extractContentPartText(part) {
+  const textParts = [];
+  appendString(textParts, part?.text);
+  appendString(textParts, part?.content);
+  return textParts;
+}
+
+function appendString(target, value) {
+  if (typeof value === 'string') target.push(value);
 }
 
 function extractCitations(response) {
@@ -117,13 +129,17 @@ class PerplexityClient {
       throw new PerplexityApiError('PERPLEXITY_API_KEY is required for live Perplexity calls', { path });
     }
 
+    const headers = {
+      Authorization: `Bearer ${this.apiKey}`,
+      'Content-Type': 'application/json',
+    };
+    if (options.headers) {
+      Object.assign(headers, options.headers);
+    }
+
     const response = await this.fetchFn(buildUrl(this.baseUrl, path), {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        ...(options.headers || {}),
-      },
+      headers,
       body: JSON.stringify(body),
       signal: timeoutSignal(options.timeoutMs || this.timeoutMs),
     });

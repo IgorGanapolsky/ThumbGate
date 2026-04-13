@@ -104,7 +104,7 @@ function hasLiveAccess(ctx) {
 }
 
 function normalizeStatusResponse(response) {
-  return String(response || '').replace(/\s+/g, ' ').trim();
+  return String(response || '').replaceAll(/\s+/g, ' ').trim();
 }
 
 async function collectVisibility(ctx) {
@@ -220,13 +220,14 @@ function canonicalLeadUrl(url) {
   try {
     const parsed = new URL(url);
     parsed.hash = '';
-    for (const key of [...parsed.searchParams.keys()]) {
+    for (const key of parsed.searchParams.keys()) {
       if (/^(utm$|utm_|fbclid$|gclid$|mc_cid$|mc_eid$)/i.test(key)) {
         parsed.searchParams.delete(key);
       }
     }
     parsed.searchParams.sort();
-    return parsed.toString().replace(/\/$/, '');
+    const cleanUrl = parsed.toString();
+    return cleanUrl.endsWith('/') ? cleanUrl.slice(0, -1) : cleanUrl;
   } catch {
     return String(url || '').trim();
   }
@@ -503,12 +504,16 @@ function writeArtifacts(run, outDir) {
   written.push(writeJson(path.join(outDir, 'summary.json'), run.summary));
 
   if (run.visibility) {
-    written.push(writeJson(path.join(outDir, 'visibility.json'), run.visibility));
-    written.push(writeText(path.join(outDir, 'visibility.md'), formatVisibilityMarkdown(run.visibility)));
+    written.push(
+      writeJson(path.join(outDir, 'visibility.json'), run.visibility),
+      writeText(path.join(outDir, 'visibility.md'), formatVisibilityMarkdown(run.visibility))
+    );
   }
   if (run.leads) {
-    written.push(writeJson(path.join(outDir, 'leads.json'), run.leads));
-    written.push(writeText(path.join(outDir, 'leads.md'), formatLeadsMarkdown(run.leads)));
+    written.push(
+      writeJson(path.join(outDir, 'leads.json'), run.leads),
+      writeText(path.join(outDir, 'leads.md'), formatLeadsMarkdown(run.leads))
+    );
   }
   if (run.brief) {
     written.push(writeText(path.join(outDir, 'agent-brief.md'), run.brief.content || ''));
@@ -545,10 +550,17 @@ function formatVisibilityMarkdown(report) {
   ];
 
   for (const item of report.results) {
-    const note = item.error || (item.found ? 'ThumbGate mentioned' : item.status === 'MANUAL' ? 'Manual check required' : 'ThumbGate missing');
+    const note = visibilityNote(item);
     lines.push(`| ${item.status} | ${escapeMarkdownTable(item.prompt)} | ${escapeMarkdownTable(note)} |`);
   }
   return lines.join('\n') + '\n';
+}
+
+function visibilityNote(item) {
+  if (item.error) return item.error;
+  if (item.found) return 'ThumbGate mentioned';
+  if (item.status === 'MANUAL') return 'Manual check required';
+  return 'ThumbGate missing';
 }
 
 function formatLeadsMarkdown(report) {
@@ -572,16 +584,21 @@ function formatLeadsMarkdown(report) {
 
 function escapeMarkdownTable(value) {
   return String(value || '')
-    .replace(/\\/g, '\\\\')
-    .replace(/\|/g, '\\|')
-    .replace(/[\r\n]+/g, ' ');
+    .split('\\').join('\\\\')
+    .split('|').join('\\|')
+    .split('\r').join(' ')
+    .split('\n').join(' ');
 }
 
 function escapeMarkdownLinkText(value) {
   return String(value || 'Untitled')
-    .replace(/\\/g, '\\\\')
-    .replace(/\[/g, '\\[')
-    .replace(/]/g, '\\]');
+    .split('\\').join('\\\\')
+    .split('[').join('\\[')
+    .split(']').join('\\]');
+}
+
+function isCliEntrypoint(argv = process.argv) {
+  return Boolean(argv[1] && path.resolve(argv[1]) === __filename);
 }
 
 async function main() {
@@ -610,13 +627,14 @@ module.exports = {
   discoverLeads,
   formatLeadsMarkdown,
   formatVisibilityMarkdown,
+  isCliEntrypoint,
   lessonsFromRun,
   parseArgs,
   runCommand,
   scoreLead,
 };
 
-if (require.main === module) {
+if (isCliEntrypoint()) {
   main().catch((err) => {
     console.error(`Perplexity command center failed: ${err.message}`);
     process.exit(1);

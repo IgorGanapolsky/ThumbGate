@@ -25,7 +25,7 @@ async function queryPerplexity(prompt, apiKey, opts = {}) {
 }
 
 async function runVisibilityCheck(opts = {}) {
-  const apiKey = Object.prototype.hasOwnProperty.call(opts, 'apiKey')
+  const apiKey = Object.hasOwn(opts, 'apiKey')
     ? opts.apiKey
     : process.env.PERPLEXITY_API_KEY;
   const queryFn = opts.queryFn || (apiKey ? (p) => queryPerplexity(p, apiKey) : null);
