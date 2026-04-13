@@ -12,12 +12,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { ensureDir } = require('./fs-utils');
 
 const AUDIT_LOG_FILENAME = 'audit-trail.jsonl';
-const GATE_EVENTS_LOG_FILENAME = 'gate-events-log.jsonl';
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -113,10 +111,9 @@ function auditToFeedback(auditRecord) {
   try {
     const { getFeedbackPaths } = require('./feedback-paths');
     const { FEEDBACK_DIR } = getFeedbackPaths();
-    const gateLogPath = path.join(FEEDBACK_DIR, GATE_EVENTS_LOG_FILENAME);
-    fs.mkdirSync(path.dirname(gateLogPath), { recursive: true });
+    const gateLogPath = path.join(FEEDBACK_DIR, 'gate-events-log.jsonl');
     const entry = {
-      id: `gate_${crypto.randomUUID()}`,
+      id: `gate_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       gateId: auditRecord.gateId,
       decision: auditRecord.decision,
       toolName: auditRecord.toolName,
