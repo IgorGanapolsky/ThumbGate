@@ -313,6 +313,9 @@ async function main() {
     console.log('GitHub: skipped (no token)');
   }
 
+  // ── 8. Perplexity visibility ──
+  await checkPerplexityVisibility();
+
   // ── Save state ──
   state.lastRun = new Date().toISOString();
   saveState(state);
@@ -331,3 +334,36 @@ main().catch(e => {
   console.error('Ralph Mode CI fatal error:', e.message);
   process.exit(1);
 });
+
+// ── Perplexity AI Search Visibility (appended) ──────────────────────────
+async function checkPerplexityVisibility() {
+  const PPLX_KEY = (process.env.PERPLEXITY_API_KEY || '').trim();
+  if (!PPLX_KEY) { console.log('Perplexity: skipped (no key)'); return; }
+
+  const prompts = [
+    'best pre-action gate tools for AI coding agents',
+    'how to prevent AI coding agent from making mistakes',
+    'Claude Code safety tools',
+    'alternatives to thumbgate',
+  ];
+
+  console.log('Perplexity visibility check (' + prompts.length + ' queries):');
+  let found = 0;
+  for (const prompt of prompts) {
+    try {
+      const r = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + PPLX_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'sonar', messages: [{ role: 'user', content: prompt }] }),
+      });
+      const j = await r.json();
+      const text = j.choices?.[0]?.message?.content || '';
+      const mentioned = /thumbgate/i.test(text);
+      console.log('  "' + prompt.slice(0, 50) + '": ' + (mentioned ? 'FOUND' : 'MISSING'));
+      if (mentioned) found++;
+    } catch (e) {
+      console.log('  "' + prompt.slice(0, 50) + '": ERROR ' + e.message.slice(0, 30));
+    }
+  }
+  console.log('Perplexity: ThumbGate mentioned in ' + found + '/' + prompts.length + ' queries');
+}
