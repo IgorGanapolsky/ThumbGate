@@ -225,6 +225,9 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /vars\.THUMBGATE_BILLING_API_BASE_URL \|\| vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
   assert.match(workflow, /THUMBGATE_PUBLIC_APP_ORIGIN/);
   assert.match(workflow, /THUMBGATE_BILLING_API_BASE_URL/);
+  assert.match(workflow, /railway variables set --skip-deploys THUMBGATE_API_KEY=/);
+  assert.match(workflow, /railway variables set --skip-deploys THUMBGATE_BUILD_SHA=/);
+  assert.match(workflow, /railway variables set --skip-deploys STRIPE_WEBHOOK_SECRET=/);
   assert.match(workflow, /railway up/);
   assert.match(workflow, /--ci/);
   assert.match(workflow, /--detach/);
@@ -315,6 +318,11 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
   assert.match(workflow, /deploy with railway up/);
   assert.match(workflow, /Railway command failed \(attempt \$attempt\/\$max_attempts\)/);
   assert.match(workflow, /Retrying in \$\{sleep_seconds\}s/);
+  assert.match(workflow, /verify_live_build_sha_after_railway_failure\(\) \{/);
+  assert.match(workflow, /Railway CLI reported a deploy failure; checking whether Railway already promoted \$GITHUB_SHA/);
+  assert.match(workflow, /if ! retry_railway "deploy with railway up" railway up --ci --detach --project "\$RAILWAY_PROJECT_ID"/);
+  assert.match(workflow, /Railway CLI failed after upload, but health verification proves \$GITHUB_SHA is live/);
+  assert.match(workflow, /Final health status after Railway CLI failure/);
 });
 
 test('Deploy to Railway workflow skips non-runtime pushes and only deploys when runtime-serving files changed', () => {
@@ -330,8 +338,16 @@ test('Deploy to Railway workflow skips non-runtime pushes and only deploys when 
     'workflow should only treat runtime JS script modules as deployable',
   );
   assert.ok(
+    workflow.includes('adapters/.*\\.(js|mjs|cjs|json|ya?ml|toml)$'),
+    'workflow should only treat runtime adapter files as deployable',
+  );
+  assert.ok(
     !workflow.includes("DEPLOYABLE_PATTERN='^(src/|scripts/|"),
     'workflow should not treat every scripts/ path as deployable',
+  );
+  assert.ok(
+    !workflow.includes('|adapters/|'),
+    'workflow should not treat adapter Markdown docs as deployable',
   );
   assert.match(workflow, /! printf '%s\\n' "\$CHANGED_FILES" \| grep -Eq "\$DEPLOYABLE_PATTERN"/);
   assert.match(workflow, /should_deploy=\$SHOULD_DEPLOY/);
