@@ -13,7 +13,11 @@ const {
   detectConfusionSignals,
   extractToolUsage,
   sessionSummary,
+  analyzeAndCreateLessons,
+  listSessions,
   formatDuration,
+  runCLI,
+  isCliEntryPoint,
   CONFUSION_KEYWORDS,
 } = require('../scripts/session-analyzer');
 
@@ -26,6 +30,46 @@ function writeMockSession(lines) {
   const sessionPath = path.join(tmpDir, 'test-session.jsonl');
   fs.writeFileSync(sessionPath, lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
   return sessionPath;
+}
+
+function withLessonStub(fn) {
+  const lessonPath = require.resolve('../scripts/lesson-inference');
+  const original = require.cache[lessonPath];
+  require.cache[lessonPath] = {
+    id: lessonPath,
+    filename: lessonPath,
+    loaded: true,
+    exports: {
+      createLesson(input) {
+        return { id: `lesson-${input.tags.join('-')}`, lesson: input.inferredLesson, input };
+      },
+    },
+  };
+
+  try {
+    return fn();
+  } finally {
+    if (original) {
+      require.cache[lessonPath] = original;
+    } else {
+      delete require.cache[lessonPath];
+    }
+  }
+}
+
+function captureCli(args, fn = runCLI) {
+  const originalArgv = process.argv;
+  const originalLog = console.log;
+  const output = [];
+  process.argv = ['node', 'scripts/session-analyzer.js', ...args];
+  console.log = (value) => output.push(String(value));
+  try {
+    fn();
+  } finally {
+    process.argv = originalArgv;
+    console.log = originalLog;
+  }
+  return output.join('\n');
 }
 
 function mockAssistantEvent(overrides = {}) {
@@ -173,6 +217,23 @@ test('detectConfusionSignals: returns context around keyword', () => {
   assert.ok(actuallySignal.context.toLowerCase().includes('actually'));
 });
 
+test('detectConfusionSignals: captures multiple keyword occurrences with timestamps', () => {
+  const events = [
+    mockAssistantEvent({
+      timestamp: '2026-04-09T10:02:00Z',
+      content: [
+        { type: 'text', text: 'Wait, wait, this workaround failed.\nActually wrong.' },
+        { type: 'tool_use', name: 'Read', input: { file_path: '/tmp/a.js' } },
+      ],
+    }),
+  ];
+  const signals = detectConfusionSignals(events);
+  assert.strictEqual(signals.filter((signal) => signal.keyword === 'wait').length, 2);
+  assert.ok(signals.some((signal) => signal.category === 'workarounds'));
+  assert.ok(signals.every((signal) => signal.timestamp === '2026-04-09T10:02:00Z'));
+  assert.ok(signals.every((signal) => !signal.context.includes('\n')));
+});
+
 test('detectConfusionSignals: no false positives on clean text', () => {
   const events = [
     mockAssistantEvent({
@@ -269,6 +330,77 @@ test('analyzeAndCreateLessons: creates lessons from repeated confusion signals',
   const result = analyzeAndCreateLessons(sp);
   assert.strictEqual(result.lessonsCreated.length, 0);
   assert.strictEqual(result.summary.confusionSignals, 0);
+});
+
+test('analyzeAndCreateLessons: creates repeated-confusion and duplicate-read lessons', () => {
+  const events = [
+    mockAssistantEvent({
+      content: [
+        { type: 'text', text: 'Actually this failed. Actually I was wrong.' },
+        { type: 'tool_use', name: 'Read', input: { file_path: '/repo/a.js' } },
+      ],
+    }),
+    mockAssistantEvent({
+      content: [
+        { type: 'tool_use', name: 'Read', input: { file_path: '/repo/a.js' } },
+        { type: 'tool_use', name: 'Read', input: { file_path: '/repo/a.js' } },
+      ],
+    }),
+  ];
+  const sp = writeMockSession(events);
+
+  const result = withLessonStub(() => analyzeAndCreateLessons(sp));
+  assert.strictEqual(result.lessonsCreated.length, 2);
+  assert.ok(result.lessonsCreated.some((lesson) => lesson.lesson.includes('backtracking pattern detected')));
+  assert.ok(result.lessonsCreated.some((lesson) => lesson.lesson.includes('duplicate file reads detected')));
+});
+
+test('listSessions: returns recent Claude project sessions sorted by mtime', () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'session-analyzer-home-'));
+  const originalHome = process.env.HOME;
+  const projectDir = path.join(tmpHome, '.claude', 'projects', 'thumbgate');
+  fs.mkdirSync(projectDir, { recursive: true });
+  const oldSession = path.join(projectDir, 'old.jsonl');
+  const newSession = path.join(projectDir, 'new.jsonl');
+  fs.writeFileSync(oldSession, '{}\n');
+  fs.writeFileSync(newSession, '{}\n');
+  fs.utimesSync(oldSession, new Date('2026-04-09T10:00:00Z'), new Date('2026-04-09T10:00:00Z'));
+  fs.utimesSync(newSession, new Date('2026-04-09T11:00:00Z'), new Date('2026-04-09T11:00:00Z'));
+
+  try {
+    process.env.HOME = tmpHome;
+    const sessions = listSessions({ recent: 1 });
+    assert.strictEqual(sessions.length, 1);
+    assert.strictEqual(sessions[0].sessionId, 'new');
+    assert.strictEqual(sessions[0].project, 'thumbgate');
+  } finally {
+    process.env.HOME = originalHome;
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+
+test('runCLI: emits JSON for valid commands without exiting', () => {
+  const sp = writeMockSession([
+    mockAssistantEvent({
+      content: [
+        { type: 'text', text: 'Actually wrong.' },
+        { type: 'tool_use', name: 'Read', input: { file_path: '/repo/a.js' } },
+      ],
+    }),
+    mockAssistantEvent({
+      content: [{ type: 'tool_use', name: 'Read', input: { file_path: '/repo/a.js' } }],
+    }),
+  ]);
+
+  assert.match(captureCli(['summary', sp]), /"eventCount": 2/);
+  assert.match(captureCli(['tokens', sp]), /"total": 300/);
+  assert.match(captureCli(['waste', sp]), /"wasteScore": 50/);
+  assert.match(captureCli(['confusion', sp]), /"keyword": "actually"/);
+  assert.match(withLessonStub(() => captureCli(['auto-learn', sp])), /"lessonsCreated": 1/);
+});
+
+test('isCliEntryPoint: stays false when imported by tests', () => {
+  assert.strictEqual(isCliEntryPoint(), false);
 });
 
 test('CONFUSION_KEYWORDS: all categories have keywords', () => {

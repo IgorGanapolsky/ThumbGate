@@ -10,9 +10,9 @@
  * integration via lesson-inference.js.
  */
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
 
 // ---------------------------------------------------------------------------
 // 1. JSONL Parsing
@@ -151,36 +151,55 @@ function detectConfusionSignals(events) {
   const signals = [];
 
   for (const event of events) {
-    if (event.type !== 'assistant') continue;
-    const content = event.message?.content;
-    if (!Array.isArray(content)) continue;
+    for (const block of assistantTextBlocks(event)) {
+      signals.push(...detectConfusionInText(block.text, event.timestamp || null));
+    }
+  }
 
-    for (const block of content) {
-      if (block.type !== 'text' || !block.text) continue;
-      const text = block.text;
-      const lower = text.toLowerCase();
+  return signals;
+}
 
-      for (const [category, keywords] of Object.entries(CONFUSION_KEYWORDS)) {
-        for (const keyword of keywords) {
-          let idx = 0;
-          while ((idx = lower.indexOf(keyword, idx)) !== -1) {
-            const start = Math.max(0, idx - 40);
-            const end = Math.min(text.length, idx + keyword.length + 40);
-            const context = text.slice(start, end).replace(/\n/g, ' ').trim();
-            signals.push({
-              category,
-              keyword,
-              context,
-              timestamp: event.timestamp || null,
-            });
-            idx += keyword.length;
-          }
-        }
+function assistantTextBlocks(event) {
+  if (event.type !== 'assistant') return [];
+  const content = event.message?.content;
+  if (!Array.isArray(content)) return [];
+  return content.filter((block) => block.type === 'text' && block.text);
+}
+
+function detectConfusionInText(text, timestamp) {
+  const signals = [];
+  const lower = text.toLowerCase();
+
+  for (const [category, keywords] of Object.entries(CONFUSION_KEYWORDS)) {
+    for (const keyword of keywords) {
+      for (const idx of keywordIndexes(lower, keyword)) {
+        signals.push({
+          category,
+          keyword,
+          context: confusionContext(text, idx, keyword),
+          timestamp,
+        });
       }
     }
   }
 
   return signals;
+}
+
+function keywordIndexes(text, keyword) {
+  const indexes = [];
+  let idx = 0;
+  while ((idx = text.indexOf(keyword, idx)) !== -1) {
+    indexes.push(idx);
+    idx += keyword.length;
+  }
+  return indexes;
+}
+
+function confusionContext(text, idx, keyword) {
+  const start = Math.max(0, idx - 40);
+  const end = Math.min(text.length, idx + keyword.length + 40);
+  return text.slice(start, end).replaceAll('\n', ' ').trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -474,7 +493,7 @@ function runCLI() {
       let recent = 10;
       const recentIdx = args.indexOf('--recent');
       if (recentIdx !== -1 && args[recentIdx + 1]) {
-        recent = parseInt(args[recentIdx + 1], 10) || 10;
+        recent = Number.parseInt(args[recentIdx + 1], 10) || 10;
       }
       const sessions = listSessions({ recent });
       console.log(JSON.stringify(sessions, null, 2));
@@ -484,6 +503,10 @@ function runCLI() {
       console.error(`Unknown command: ${command}`);
       process.exit(1);
   }
+}
+
+function isCliEntryPoint() {
+  return Boolean(process.argv[1]) && path.resolve(process.argv[1]) === __filename;
 }
 
 // ---------------------------------------------------------------------------
@@ -500,9 +523,11 @@ module.exports = {
   analyzeAndCreateLessons,
   listSessions,
   formatDuration,
+  runCLI,
+  isCliEntryPoint,
   CONFUSION_KEYWORDS,
 };
 
-if (require.main === module) {
+if (isCliEntryPoint()) {
   runCLI();
 }
