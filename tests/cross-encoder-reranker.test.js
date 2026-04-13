@@ -9,11 +9,33 @@ const path = require('path');
 
 const {
   heuristicCrossEncode,
+  llmCrossEncode,
   retrieveWithReranking,
   retrieveWithRerankingSync,
   extractPhrases,
   extractVerbs,
 } = require('../scripts/cross-encoder-reranker');
+
+const llmClientPath = require.resolve('../scripts/llm-client');
+
+async function withMockedLlmClient(mock, fn) {
+  const previous = require.cache[llmClientPath];
+  require.cache[llmClientPath] = {
+    id: llmClientPath,
+    filename: llmClientPath,
+    loaded: true,
+    exports: mock,
+  };
+  try {
+    return await fn();
+  } finally {
+    if (previous) {
+      require.cache[llmClientPath] = previous;
+    } else {
+      delete require.cache[llmClientPath];
+    }
+  }
+}
 
 describe('heuristicCrossEncode', () => {
   it('scores exact substring match highest', () => {
@@ -193,5 +215,85 @@ describe('retrieveWithReranking (async)', () => {
     }
 
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('falls back to heuristic reranking when LLM mode is requested but unavailable', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-rerank-'));
+    const lessons = [
+      { id: 'l1', title: 'MISTAKE: force push', content: 'Never git push --force to main', tags: ['negative'], metadata: { toolsUsed: ['Bash'] }, timestamp: new Date().toISOString() },
+      { id: 'l2', title: 'MISTAKE: drop table', content: 'Never run DROP TABLE in production', tags: ['negative'], metadata: { toolsUsed: ['Bash'] }, timestamp: new Date().toISOString() },
+      { id: 'l3', title: 'SUCCESS: deploy', content: 'Railway deploy completed', tags: ['positive'], metadata: { toolsUsed: ['Bash'] }, timestamp: new Date().toISOString() },
+      { id: 'l4', title: 'NOTE: docs', content: 'Updated README', tags: ['positive'], metadata: { toolsUsed: ['Edit'] }, timestamp: new Date().toISOString() },
+      { id: 'l5', title: 'MISTAKE: env secret', content: 'Do not print .env secrets', tags: ['negative'], metadata: { toolsUsed: ['Bash'] }, timestamp: new Date().toISOString() },
+      { id: 'l6', title: 'MISTAKE: reset hard', content: 'Avoid git reset --hard on shared branches', tags: ['negative'], metadata: { toolsUsed: ['Bash'] }, timestamp: new Date().toISOString() },
+    ];
+    fs.writeFileSync(
+      path.join(tmpDir, 'memory-log.jsonl'),
+      lessons.map((l) => JSON.stringify(l)).join('\n') + '\n'
+    );
+
+    const results = await withMockedLlmClient({
+      isAvailable: () => false,
+      callClaude: async () => { throw new Error('should not call unavailable llm'); },
+      MODELS: { FAST: 'mock-fast' },
+    }, () => retrieveWithReranking('Bash', 'git push --force', {
+      feedbackDir: tmpDir,
+      candidateCount: 6,
+      maxResults: 2,
+      useLLM: true,
+    }));
+
+    assert.equal(results.length, 2);
+    assert.ok(results.every((result) => typeof result.crossEncoderScore === 'number'));
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+});
+
+describe('llmCrossEncode', () => {
+  it('returns null when the LLM client is unavailable', async () => {
+    const result = await withMockedLlmClient({
+      isAvailable: () => false,
+      callClaude: async () => { throw new Error('should not call unavailable llm'); },
+      MODELS: { FAST: 'mock-fast' },
+    }, () => llmCrossEncode('git push', [{ title: 'A', content: 'B' }]));
+
+    assert.equal(result, null);
+  });
+
+  it('parses and clamps LLM scores for the document list', async () => {
+    const scores = await withMockedLlmClient({
+      isAvailable: () => true,
+      callClaude: async ({ systemPrompt, userPrompt, model, maxTokens }) => {
+        assert.match(systemPrompt, /relevance scoring engine/);
+        assert.match(userPrompt, /Query: "git push"/);
+        assert.equal(model, 'mock-fast');
+        assert.equal(maxTokens, 256);
+        return '[1.2, -0.2, "not numeric"]';
+      },
+      MODELS: { FAST: 'mock-fast' },
+    }, () => llmCrossEncode('git push', [
+      { title: 'force push', content: 'main branch' },
+      { title: 'docs', content: 'readme' },
+      { title: 'deploy', content: 'railway' },
+    ]));
+
+    assert.deepEqual(scores, [1, 0, 0]);
+  });
+
+  it('falls back when the LLM response is not a matching JSON score array', async () => {
+    const wrongLength = await withMockedLlmClient({
+      isAvailable: () => true,
+      callClaude: async () => '[0.9]',
+      MODELS: { FAST: 'mock-fast' },
+    }, () => llmCrossEncode('git push', [{ title: 'A' }, { title: 'B' }]));
+    assert.equal(wrongLength, null);
+
+    const invalidJson = await withMockedLlmClient({
+      isAvailable: () => true,
+      callClaude: async () => 'not json',
+      MODELS: { FAST: 'mock-fast' },
+    }, () => llmCrossEncode('git push', [{ title: 'A' }]));
+    assert.equal(invalidJson, null);
   });
 });

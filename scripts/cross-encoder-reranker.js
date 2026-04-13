@@ -35,7 +35,7 @@ function heuristicCrossEncode(query, document) {
   if (queryLower.length > 3 && docLower.length > 3 &&
       (docLower.includes(queryLower) || queryLower.includes(docLower))) {
     score += 0.9;
-    return Math.min(score, 1.0);
+    return Math.min(score, 1);
   }
 
   // 2. Shared noun phrases (not just tokens — consecutive word pairs)
@@ -74,7 +74,7 @@ function heuristicCrossEncode(query, document) {
   const docNegated = /\b(don'?t|never|avoid|block|prevent|stop)\b/.test(docLower);
   if (queryNegated && docNegated) score += 0.1;
 
-  return Math.min(score, 1.0);
+  return Math.min(score, 1);
 }
 
 /**
