@@ -49,13 +49,20 @@ For this repo, that means:
 Use the portable install command in Claude Desktop today:
 
 ```bash
-claude mcp add thumbgate -- npx -y thumbgate serve
+claude mcp add thumbgate -- npx --yes --package thumbgate thumbgate serve
 ```
 
 Or bootstrap from the package:
 
 ```bash
 npx thumbgate init
+```
+
+Claude Code users can also add the repo marketplace immediately while Anthropic review is pending:
+
+```text
+/plugin marketplace add IgorGanapolsky/ThumbGate
+/plugin install thumbgate@thumbgate-marketplace
 ```
 
 ## Submission-ready messaging

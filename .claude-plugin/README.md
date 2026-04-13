@@ -55,6 +55,19 @@ Submission forms:
 - https://claude.ai/settings/plugins/submit
 - https://platform.claude.com/plugins/submit
 
+### Repo marketplace while review is pending
+
+Claude Code users do not need to wait for the official directory. Anthropic's plugin docs allow adding a repository marketplace directly when the repo contains `.claude-plugin/marketplace.json`.
+
+Inside Claude Code, run:
+
+```text
+/plugin marketplace add IgorGanapolsky/ThumbGate
+/plugin install thumbgate@thumbgate-marketplace
+```
+
+That uses the marketplace metadata already published in this repository while Anthropic reviews the official directory submission.
+
 ### MCPB bundle build
 
 Maintainers can build the local Claude Desktop bundle directly from this repo:
