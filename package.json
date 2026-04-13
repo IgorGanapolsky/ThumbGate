@@ -324,7 +324,7 @@
     "node": ">=18.18.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.24.0",
+    "@anthropic-ai/sdk": "^0.88.0",
     "@google/genai": "^1.48.0",
     "@huggingface/transformers": "^4.0.1",
     "@lancedb/lancedb": "^0.27.2",
