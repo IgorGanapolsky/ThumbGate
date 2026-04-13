@@ -2,11 +2,13 @@
 'use strict';
 
 const https = require('node:https');
+const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const DEFAULT_ENDPOINT_URL = 'https://thumbgate-production.up.railway.app/v1/billing/webhook';
 const REQUIRED_EVENTS = ['checkout.session.completed', 'customer.subscription.deleted'];
+const FIXED_GH_BINARIES = ['/usr/bin/gh', '/usr/local/bin/gh', '/opt/homebrew/bin/gh'];
 const SECRET_PATTERN = /\b(?:sk|rk)_(?:live|test)_\w+|\bwhsec_\w+/g;
 
 function redact(value) {
@@ -39,10 +41,10 @@ function assertLiveStripeKey(apiKey, requireLive = true) {
   }
 }
 
-function stripeRequest({ method = 'GET', path, apiKey, body }) {
+function stripeRequest({ method = 'GET', path, apiKey, body, request = https.request }) {
   return new Promise((resolve, reject) => {
     const payload = body ? encodeForm(body) : '';
-    const req = https.request({
+    const req = request({
       hostname: 'api.stripe.com',
       path,
       method,
@@ -76,14 +78,15 @@ function stripeRequest({ method = 'GET', path, apiKey, body }) {
   });
 }
 
-async function listWebhookEndpoints(apiKey) {
+async function listWebhookEndpoints(apiKey, options = {}) {
+  const requestStripe = options.stripeRequest || stripeRequest;
   const endpoints = [];
   let startingAfter = '';
   for (;;) {
     const suffix = startingAfter
       ? `&starting_after=${encodeURIComponent(startingAfter)}`
       : '';
-    const response = await stripeRequest({
+    const response = await requestStripe({
       apiKey,
       path: `/v1/webhook_endpoints?limit=100${suffix}`,
     });
@@ -95,8 +98,8 @@ async function listWebhookEndpoints(apiKey) {
   }
 }
 
-async function createWebhookEndpoint({ apiKey, endpointUrl, timestamp }) {
-  const endpoint = await stripeRequest({
+async function createWebhookEndpoint({ apiKey, endpointUrl, timestamp, stripeRequest: requestStripe = stripeRequest }) {
+  const endpoint = await requestStripe({
     method: 'POST',
     path: '/v1/webhook_endpoints',
     apiKey,
@@ -112,8 +115,8 @@ async function createWebhookEndpoint({ apiKey, endpointUrl, timestamp }) {
   return endpoint;
 }
 
-async function disableWebhookEndpoint({ apiKey, endpointId }) {
-  return stripeRequest({
+async function disableWebhookEndpoint({ apiKey, endpointId, stripeRequest: requestStripe = stripeRequest }) {
+  return requestStripe({
     method: 'POST',
     path: `/v1/webhook_endpoints/${encodeURIComponent(endpointId)}`,
     apiKey,
@@ -121,8 +124,24 @@ async function disableWebhookEndpoint({ apiKey, endpointId }) {
   });
 }
 
-function runGh(args, { token, input } = {}) {
-  const result = spawnSync('gh', args, {
+function resolveGhBinary(options = {}) {
+  const accessSync = options.accessSync || fs.accessSync;
+  const candidates = options.candidates || FIXED_GH_BINARIES;
+
+  for (const candidate of candidates) {
+    try {
+      accessSync(candidate, fs.constants.X_OK);
+      return candidate;
+    } catch {
+      // Try the next fixed, system-owned path.
+    }
+  }
+
+  throw new Error(`Unable to locate GH CLI in fixed paths: ${candidates.join(', ')}`);
+}
+
+function runGh(args, { token, input, ghBinary, accessSync, spawnSyncImpl = spawnSync } = {}) {
+  const result = spawnSyncImpl(ghBinary || resolveGhBinary({ accessSync }), args, {
     input,
     encoding: 'utf8',
     env: {
@@ -136,8 +155,8 @@ function runGh(args, { token, input } = {}) {
   return result.stdout.trim();
 }
 
-function getSecretUpdatedAt({ repo, token, secretName }) {
-  return runGh([
+function getSecretUpdatedAt({ repo, token, secretName, runner = runGh }) {
+  return runner([
     'api',
     `repos/${repo}/actions/secrets/${secretName}`,
     '--jq',
@@ -145,12 +164,12 @@ function getSecretUpdatedAt({ repo, token, secretName }) {
   ], { token });
 }
 
-function setGithubSecret({ repo, token, name, value }) {
-  runGh(['secret', 'set', name, '--repo', repo], { token, input: value });
+function setGithubSecret({ repo, token, name, value, runner = runGh }) {
+  runner(['secret', 'set', name, '--repo', repo], { token, input: value });
 }
 
-function setGithubVariable({ repo, token, name, value }) {
-  runGh(['variable', 'set', name, '--repo', repo, '--body', value], { token });
+function setGithubVariable({ repo, token, name, value, runner = runGh }) {
+  runner(['variable', 'set', name, '--repo', repo, '--body', value], { token });
 }
 
 function findSameUrlEndpoints(endpoints, endpointUrl, excludeId) {
@@ -179,6 +198,16 @@ async function rotateStripeWebhookSecret(options = {}) {
   const timestamp = options.timestamp || new Date().toISOString();
   const requireLive = resolveRequireLiveStripeKey(options);
   const dryRun = options.dryRun === true || process.env.DRY_RUN === 'true';
+  const stripe = {
+    listWebhookEndpoints: options.listWebhookEndpoints || listWebhookEndpoints,
+    createWebhookEndpoint: options.createWebhookEndpoint || createWebhookEndpoint,
+    disableWebhookEndpoint: options.disableWebhookEndpoint || disableWebhookEndpoint,
+  };
+  const github = {
+    getSecretUpdatedAt: options.getSecretUpdatedAt || getSecretUpdatedAt,
+    setGithubSecret: options.setGithubSecret || setGithubSecret,
+    setGithubVariable: options.setGithubVariable || setGithubVariable,
+  };
 
   assertLiveStripeKey(stripeKey, requireLive);
   if (!repo) {
@@ -190,7 +219,7 @@ async function rotateStripeWebhookSecret(options = {}) {
     throw new Error('THUMBGATE_MAINTENANCE_GH_TOKEN is required to update GitHub Secrets and Variables.');
   }
 
-  const before = await listWebhookEndpoints(stripeKey);
+  const before = await stripe.listWebhookEndpoints(stripeKey);
   const replacementCandidates = findSameUrlEndpoints(before, endpointUrl);
   if (dryRun) {
     return {
@@ -201,27 +230,27 @@ async function rotateStripeWebhookSecret(options = {}) {
     };
   }
 
-  const endpoint = await createWebhookEndpoint({ apiKey: stripeKey, endpointUrl, timestamp });
-  setGithubSecret({
+  const endpoint = await stripe.createWebhookEndpoint({ apiKey: stripeKey, endpointUrl, timestamp });
+  github.setGithubSecret({
     repo,
     token: githubToken,
     name: 'STRIPE_WEBHOOK_SECRET',
     value: endpoint.secret,
   });
-  setGithubVariable({
+  github.setGithubVariable({
     repo,
     token: githubToken,
     name: 'STRIPE_WEBHOOK_SECRET_ROTATED_AT',
     value: timestamp,
   });
 
-  const stripeSecretUpdatedAt = getSecretUpdatedAt({
+  const stripeSecretUpdatedAt = github.getSecretUpdatedAt({
     repo,
     token: githubToken,
     secretName: 'STRIPE_SECRET_KEY',
   });
   if (stripeSecretUpdatedAt) {
-    setGithubVariable({
+    github.setGithubVariable({
       repo,
       token: githubToken,
       name: 'STRIPE_SECRET_KEY_ROTATED_AT',
@@ -231,7 +260,7 @@ async function rotateStripeWebhookSecret(options = {}) {
 
   const disabledEndpointIds = [];
   for (const oldEndpoint of findSameUrlEndpoints(before, endpointUrl, endpoint.id)) {
-    await disableWebhookEndpoint({ apiKey: stripeKey, endpointId: oldEndpoint.id });
+    await stripe.disableWebhookEndpoint({ apiKey: stripeKey, endpointId: oldEndpoint.id });
     disabledEndpointIds.push(oldEndpoint.id);
   }
 
@@ -268,9 +297,18 @@ module.exports = {
   DEFAULT_ENDPOINT_URL,
   REQUIRED_EVENTS,
   assertLiveStripeKey,
+  createWebhookEndpoint,
+  disableWebhookEndpoint,
   encodeForm,
   findSameUrlEndpoints,
+  getSecretUpdatedAt,
+  listWebhookEndpoints,
   redact,
+  resolveGhBinary,
   resolveRequireLiveStripeKey,
   rotateStripeWebhookSecret,
+  runGh,
+  setGithubSecret,
+  setGithubVariable,
+  stripeRequest,
 };
