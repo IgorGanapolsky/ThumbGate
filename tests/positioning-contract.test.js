@@ -99,6 +99,19 @@ test('LLM context maps ThumbGate to LangChain three-layer continual learning fra
   assert.match(context, /PreToolUse hooks/i);
 });
 
+test('LLM context positions ThumbGate as AI agent security infrastructure', () => {
+  const context = readText(path.join('public', 'llm-context.md'));
+
+  assert.match(context, /AI Agent Security Infrastructure/);
+  assert.match(context, /Self-protection/);
+  assert.match(context, /Budget enforcement/);
+  assert.match(context, /Compliance mapping/);
+  assert.match(context, /NIST/);
+  assert.match(context, /SOC2/);
+  assert.match(context, /append-only audit trail/i);
+  assert.match(context, /prompt-injected/i);
+});
+
 test('LLM context aligns ThumbGate with Google Cloud enterprise safety framework pattern', () => {
   const context = readText(path.join('public', 'llm-context.md'));
 
