@@ -41,7 +41,7 @@ jobs:
     steps:
       - name: Auto-approve PR
         continue-on-error: true
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ github.token }}
           script: |
