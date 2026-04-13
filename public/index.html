@@ -476,6 +476,7 @@ __GA_BOOTSTRAP__
         <span class="copy-hint">click to copy</span>
       </div>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;border-radius:999px;">⭐ Star on GitHub</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" class="btn-install-link" target="_blank" rel="noopener" style="font-size:13px;color:var(--text-muted);text-decoration:none;padding:8px 14px;">Use in ChatGPT →</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" style="font-size:13px;color:var(--text-muted);text-decoration:none;padding:8px 14px;">Install Codex plugin →</a>
     </div>
     <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:480px;">Free to install. No cloud account needed. Works in 30 seconds.</p>
@@ -486,6 +487,10 @@ __GA_BOOTSTRAP__
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener">Claude plugin bundle →</a>
       <span class="dot"></span>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md" target="_blank" rel="noopener">Claude submission packet →</a>
+      <span class="dot"></span>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/.claude-plugin/README.md" target="_blank" rel="noopener">Claude marketplace install →</a>
+      <span class="dot"></span>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" target="_blank" rel="noopener">ChatGPT GPT Actions →</a>
       <span class="dot"></span>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener">Codex plugin download →</a>
       <span class="dot"></span>
@@ -527,9 +532,14 @@ __GA_BOOTSTRAP__
         <p>Codex ships with a published standalone ThumbGate plugin bundle plus a repo-local plugin profile. Download the zip, extract it, and install without wiring MCP by hand.</p>
         <div class="card-arrow">Get the Codex plugin →</div>
       </a>
+      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" target="_blank" rel="noopener">
+        <h3>💬 ChatGPT GPT Actions</h3>
+        <p>Regular users reply with 👍/👎 or "thumbs up/down" on ChatGPT answers, save the lesson, prevent repeated bad answers, and reinforce the answer patterns that worked.</p>
+        <div class="card-arrow">Use in ChatGPT →</div>
+      </a>
       <a class="compat-card" href="/guides/claude-desktop">
         <h3>🧩 Claude Desktop plugin</h3>
-        <p>Install the published <code>.mcpb</code> bundle today, point buyers at the submission packet, and keep the official directory story honest until Anthropic review is real.</p>
+        <p>Install the published <code>.mcpb</code> bundle today, point buyers at the submission packet, and let Claude Code users add the repo marketplace while the official directory review is still pending.</p>
         <div class="card-arrow">Get the Claude plugin →</div>
       </a>
       <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins" target="_blank" rel="noopener">
@@ -771,10 +781,11 @@ __GA_BOOTSTRAP__
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["--yes", "thumbgate", "serve"]
+      "args": ["--yes", "--package", "thumbgate", "thumbgate", "serve"]
     }
   }
 }</pre>
+    <p style="color: #8b949e; max-width: 760px; margin: 16px auto 0;">Official directory review is separate. Claude Code users can install immediately with <code>/plugin marketplace add IgorGanapolsky/ThumbGate</code> and <code>/plugin install thumbgate@thumbgate-marketplace</code>.</p>
   </div>
 </section>
 

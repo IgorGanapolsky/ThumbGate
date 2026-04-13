@@ -1,11 +1,64 @@
 # ChatGPT GPT Actions: ThumbGate Install
 
-Import the OpenAPI spec into a Custom GPT in under 5 minutes. No coding required.
+Use the published ThumbGate GPT from GPT Store when it is visible for your account, or import the OpenAPI spec into a Custom GPT in under 5 minutes. Regular users use it by replying with 👍/👎 or "thumbs up/down" on ChatGPT answers so ThumbGate remembers lessons, prevents repeated bad answers, and reinforces the answers that worked.
+
+## GPT Store path
+
+1. Open ChatGPT.
+2. Open **Explore GPTs**.
+3. Search for `ThumbGate`.
+4. Choose the GPT by **Igor Ganapolsky** in the **Programming** category.
+
+Direct store URL status: published by the operator on April 13, 2026, but the public `chatgpt.com/g/...` URL has not been captured in this repo yet. Do not invent a URL; add it here once the share link is available.
+
+## 30-second regular-user flow
+
+1. Ask the ThumbGate GPT any normal question.
+2. If the answer helped, reply with `👍` plus one sentence about what worked.
+3. If the answer missed, reply with `👎` plus one sentence about what to change.
+4. Ask `What do you remember about how I like answers?` to verify the saved lessons.
+
+The user should never need to know what MCP, OpenAPI, Actions, DPO, or prevention rules mean. The GPT should explain the loop as: "Reply 👍 or 👎. I remember the lesson for next time."
+
+## Regular-user prompts
+
+Use these as GPT conversation starters so regular users know how to teach ThumbGate:
+
+1. `👎 this answer was too vague. Next time give me exact steps.`
+2. `👍 this format worked. Remember to answer with short numbered steps.`
+3. `Thumbs down: you assumed I know technical terms. Next time explain it for a beginner first.`
+4. `Remember this lesson: I prefer direct answers with examples before theory.`
+5. `Search my ThumbGate lessons before answering this.`
+
+Use typed chat replies. ChatGPT's native feedback buttons may send feedback to OpenAI, but they should not be described as the ThumbGate capture path unless OpenAI exposes them to GPT Actions.
+
+## Pre-action gate flow
+
+Use this when the user asks whether an AI agent should run a proposed action, command, file edit, deployment, merge, or publish step:
+
+1. The GPT calls `evaluateDecision` (`POST /v1/decisions/evaluate`) before answering.
+2. If the response has `decisionControl.executionMode: "blocked"`, the GPT says the action is blocked and explains the returned reason.
+3. If the response has `decisionControl.executionMode: "checkpoint_required"`, the GPT asks for explicit confirmation before proceeding.
+4. If the response has `decisionControl.executionMode: "auto_execute"`, the GPT can say the action is allowed and summarize why.
+
+Plain thumbs-up/down feedback is the memory loop. The decision endpoint is the gate loop. Do not claim hard blocking unless the decision endpoint, a saved lesson, or a prevention rule was actually applied.
+
+## Best first GPT message
+
+Use this as the first response for regular users:
+
+```text
+Ask me anything. After my answer, reply 👍 if it helped or 👎 plus one sentence if it missed. I will remember the lesson, avoid repeating bad answer patterns, and reuse the formats you like.
+```
 
 ## Prerequisites
 
 - A ChatGPT Plus or Team account (Custom GPTs require a paid plan)
-- ThumbGate API running at a public HTTPS URL (see [Deployment docs](../../docs/deployment.md))
+- ThumbGate API running at `https://thumbgate-production.up.railway.app`
+- Privacy policy URL: `https://thumbgate-production.up.railway.app/privacy`
+- Owner-managed `THUMBGATE_API_KEY` for one-time GPT Builder Actions auth
+
+Regular GPT users should not need an API key, JSON payload, OpenAPI knowledge, or developer setup. They should only see the thumbs-up/down memory loop.
 
 ## Step 1 — Open GPT Builder
 
@@ -19,7 +72,7 @@ Import the OpenAPI spec into a Custom GPT in under 5 minutes. No coding required
 2. Click **Create new action**
 3. Click **Import from URL** — paste your hosted spec URL:
    ```
-   https://<your-railway-domain>/openapi.yaml
+   https://thumbgate-production.up.railway.app/openapi.yaml
    ```
    Or click **Upload file** and select:
    ```
@@ -34,13 +87,15 @@ In the Actions panel:
 2. **Auth type**: Bearer
 3. **API Key**: paste your `THUMBGATE_API_KEY` value
 
+This is an owner setup field. Do not ask regular GPT users to provide an API key.
+
 ## Step 4 — Update the Server URL
 
 In the imported spec, confirm the `servers.url` points to your deployed API:
 
 ```yaml
 servers:
-  - url: https://<your-railway-domain>
+  - url: https://thumbgate-production.up.railway.app
 ```
 
 If you uploaded the file, edit the server URL in the GPT Actions editor.

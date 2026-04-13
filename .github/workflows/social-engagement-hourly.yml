@@ -2,8 +2,7 @@ name: Social Engagement (Smart Schedule)
 
 # Strategy based on research of Linear, Vercel, Supabase, PostHog, Cursor, Raycast, Cal.com:
 # - 1 quality post/day (not 24 spam posts)
-# - Reply monitoring 4x/day (engagement in first hour is critical for algorithms)
-# - Analytics poll 2x/day
+# - Reply monitoring and analytics polling are owned by Ralph Loop Audience Engagement
 # - Content rotates: horror stories, hot takes, tips, product demos
 # - No Dev.to auto-posting (counterproductive at high volume)
 # - Reddit: reply-only, no auto-posting (ban risk)
@@ -12,8 +11,6 @@ on:
   schedule:
     # Post once daily at 2pm UTC (10am EST — peak dev engagement)
     - cron: '0 14 * * *'
-    # Reply monitor: 4x/day (9am, 1pm, 5pm, 9pm UTC)
-    - cron: '0 9,13,17,21 * * *'
   workflow_dispatch:
     inputs:
       action:
@@ -74,9 +71,8 @@ jobs:
           node scripts/social-post-hourly.js $DRY_RUN
 
   reply-to-comments:
-    # Runs 4x/day on reply-monitor schedule, or on manual trigger
+    # Manual fallback only. Scheduled reply engagement is owned by Ralph Loop.
     if: >-
-      github.event.schedule == '0 9,13,17,21 * * *' ||
       github.event.inputs.action == 'all' ||
       github.event.inputs.action == 'reply'
     runs-on: ubuntu-latest
@@ -120,9 +116,8 @@ jobs:
           node scripts/social-reply-monitor.js $DRY_RUN
 
   poll-analytics:
-    # Runs 2x/day: at 9am and 9pm UTC
+    # Manual fallback only. Scheduled analytics polling is owned by Ralph Loop.
     if: >-
-      github.event.schedule == '0 9,13,17,21 * * *' ||
       github.event.inputs.action == 'all' ||
       github.event.inputs.action == 'poll'
     runs-on: ubuntu-latest

@@ -93,9 +93,9 @@ test('getAutoGatesPath: resolves inside the active feedback directory', () => {
   }
 });
 
-test('threshold constants preserve the 3 warn / 5 block contract', () => {
-  assert.strictEqual(WARN_THRESHOLD, 3);
-  assert.strictEqual(BLOCK_THRESHOLD, 5);
+test('threshold constants preserve the 2 warn / 3 block contract', () => {
+  assert.strictEqual(WARN_THRESHOLD, 2);
+  assert.strictEqual(BLOCK_THRESHOLD, 3);
 });
 
 // -- patternToGateId --
