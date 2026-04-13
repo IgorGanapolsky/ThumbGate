@@ -31,9 +31,14 @@ This avoids platform-specific rewrite cost and keeps the product under a small b
 
 ## ChatGPT (GPT Actions)
 
+- GPT Store listing: published by Igor Ganapolsky in the Programming category; capture and add the direct `chatgpt.com/g/...` URL when the public share URL is available.
 - Import: `adapters/chatgpt/openapi.yaml`
+- Install guide: `adapters/chatgpt/INSTALL.md`
+- Submission pack: `docs/gpt-store-submission.md`
 - Auth: bearer token (`Authorization: Bearer <key>`)
-- Base URL: your deployed HTTPS API URL
+- Base URL: `https://thumbgate-production.up.railway.app`
+- Privacy policy: `https://thumbgate-production.up.railway.app/privacy`
+- Promotion rule: say "GPT Actions" or "Custom GPT", not legacy ChatGPT plugin.
 
 ## Claude (MCP)
 

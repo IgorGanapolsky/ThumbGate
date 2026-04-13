@@ -7,13 +7,17 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Start Sprint](https://img.shields.io/badge/Workflow%20Hardening%20Sprint-Start%20Intake%20→-16a34a?style=for-the-badge)](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=badge_cta#workflow-sprint-intake)
 
-**[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Install Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** · **[Claude Plugin Guide](docs/CLAUDE_DESKTOP_EXTENSION.md)** · **[Install Codex Plugin](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)**
+**[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Use in ChatGPT](adapters/chatgpt/INSTALL.md)** · **[Install Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** · **[Claude Plugin Guide](docs/CLAUDE_DESKTOP_EXTENSION.md)** · **[Install Codex Plugin](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)**
 
 **Popular buyer questions:** **[Stop repeated AI agent mistakes](https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
 
 **Running Claude Desktop?** **[Download Claude bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** · **[Install + submission guide](docs/CLAUDE_DESKTOP_EXTENSION.md)** · **[Review packet zip](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip)**
 
 **Running Codex?** **[Download the standalone Codex plugin bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Codex install guide](plugins/codex-profile/INSTALL.md)**
+
+**Running ChatGPT?** Search GPT Store for `ThumbGate` by Igor Ganapolsky. Regular users reply with 👍/👎 or "thumbs up/down" on answers, save the lesson, prevent repeated bad answers, and reinforce the answers that worked. Developers can import the prepared **[GPT Actions OpenAPI spec](adapters/chatgpt/openapi.yaml)** with the **[ChatGPT install guide](adapters/chatgpt/INSTALL.md)**.
+
+**Official directory pending review?** Claude Code users can install today with `/plugin marketplace add IgorGanapolsky/ThumbGate` then `/plugin install thumbgate@thumbgate-marketplace`.
 
 ---
 
@@ -114,10 +118,7 @@ npx thumbgate lessons # see what's been learned
 npx thumbgate dashboard # open local dashboard
 ```
 
-Or connect via MCP directly:
-```bash
-claude mcp add thumbgate -- npx -y thumbgate serve
-```
+Or wire MCP directly: `claude mcp add thumbgate -- npx --yes --package thumbgate thumbgate serve`
 
 Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode**, and any MCP-compatible agent.
 
@@ -166,7 +167,7 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["--yes", "thumbgate", "serve"]
+      "args": ["--yes", "--package", "thumbgate", "thumbgate", "serve"]
     }
   }
 }
