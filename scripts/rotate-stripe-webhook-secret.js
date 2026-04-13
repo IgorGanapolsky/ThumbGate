@@ -192,7 +192,7 @@ function resolveRequireLiveStripeKey(options) {
 
 async function rotateStripeWebhookSecret(options = {}) {
   const endpointUrl = options.endpointUrl || process.env.STRIPE_WEBHOOK_ENDPOINT_URL || DEFAULT_ENDPOINT_URL;
-  const repo = options.repo || process.env.GITHUB_REPOSITORY;
+  const repo = Object.hasOwn(options, 'repo') ? options.repo : process.env.GITHUB_REPOSITORY;
   const stripeKey = options.stripeKey || process.env.STRIPE_SECRET_KEY;
   const githubToken = options.githubToken || process.env.GH_ADMIN_TOKEN || process.env.THUMBGATE_MAINTENANCE_GH_TOKEN;
   const timestamp = options.timestamp || new Date().toISOString();
