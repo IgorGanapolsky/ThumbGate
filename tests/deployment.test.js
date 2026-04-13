@@ -315,6 +315,11 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
   assert.match(workflow, /deploy with railway up/);
   assert.match(workflow, /Railway command failed \(attempt \$attempt\/\$max_attempts\)/);
   assert.match(workflow, /Retrying in \$\{sleep_seconds\}s/);
+  assert.match(workflow, /verify_live_build_sha_after_railway_failure\(\) \{/);
+  assert.match(workflow, /Railway CLI reported a deploy failure; checking whether Railway already promoted \$GITHUB_SHA/);
+  assert.match(workflow, /if ! retry_railway "deploy with railway up" railway up --ci --detach --project "\$RAILWAY_PROJECT_ID"/);
+  assert.match(workflow, /Railway CLI failed after upload, but health verification proves \$GITHUB_SHA is live/);
+  assert.match(workflow, /Final health status after Railway CLI failure/);
 });
 
 test('Deploy to Railway workflow skips non-runtime pushes and only deploys when runtime-serving files changed', () => {
