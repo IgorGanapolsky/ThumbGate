@@ -124,6 +124,20 @@ test('dedupeLeads canonicalizes tracking variants', () => {
   assert.equal(leads[0].url, 'https://example.com/thread');
 });
 
+test('dedupeLeads removes adjacent tracking params before canonical comparison', () => {
+  const leads = dedupeLeads([
+    {
+      title: 'A',
+      url: 'https://example.com/thread?utm_source=x&utm_medium=y&fbclid=z&keep=1#top',
+      queryLabel: 'one',
+    },
+    { title: 'B', url: 'https://example.com/thread?keep=1', queryLabel: 'two' },
+  ]);
+  assert.equal(leads.length, 1);
+  assert.deepEqual(leads[0].queryLabels, ['one', 'two']);
+  assert.equal(leads[0].url, 'https://example.com/thread?keep=1');
+});
+
 test('scoreLead rewards ThumbGate buyer-intent signals', () => {
   const scored = scoreLead({
     title: 'AI coding agent repeats mistakes in Claude Code team workflow',

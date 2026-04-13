@@ -220,11 +220,13 @@ function canonicalLeadUrl(url) {
   try {
     const parsed = new URL(url);
     parsed.hash = '';
+    const trackingKeys = [];
     for (const key of parsed.searchParams.keys()) {
       if (/^(utm$|utm_|fbclid$|gclid$|mc_cid$|mc_eid$)/i.test(key)) {
-        parsed.searchParams.delete(key);
+        trackingKeys.push(key);
       }
     }
+    for (const key of trackingKeys) parsed.searchParams.delete(key);
     parsed.searchParams.sort();
     const cleanUrl = parsed.toString();
     return cleanUrl.endsWith('/') ? cleanUrl.slice(0, -1) : cleanUrl;
