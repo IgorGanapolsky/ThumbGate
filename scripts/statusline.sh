@@ -162,10 +162,15 @@ DASHBOARD_LINK="$DASHBOARD_LABEL"
 LESSONS_LINK="$LESSONS_LABEL"
 LATEST_LESSON_LINK=""
 if [ -n "$LESSON_LABEL" ]; then
+  # Only include link if it's a real URL (not localhost)
+  _DISPLAY_LINK="$LESSON_LINK"
+  case "$_DISPLAY_LINK" in
+    *localhost*|*127.0.0.1*) _DISPLAY_LINK="" ;;
+  esac
   if [ -n "$LESSON_TEXT" ]; then
-    LATEST_LESSON_LINK="$(inline_link "$LESSON_LINK" "${LESSON_LABEL}: ${LESSON_TEXT}")"
+    LATEST_LESSON_LINK="$(inline_link "$_DISPLAY_LINK" "${LESSON_LABEL}: ${LESSON_TEXT}")"
   else
-    LATEST_LESSON_LINK="$(inline_link "$LESSON_LINK" "$LESSON_LABEL")"
+    LATEST_LESSON_LINK="$(inline_link "$_DISPLAY_LINK" "$LESSON_LABEL")"
   fi
 fi
 
