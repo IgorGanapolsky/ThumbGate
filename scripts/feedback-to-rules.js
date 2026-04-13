@@ -107,35 +107,54 @@ function analyze(entries) {
 
 function promoteToGates(recurringIssues) {
   const autoGatePath = getAutoGatesPath();
-  const autoGates = { version: 1, gates: [] };
-  
+
+  // Load existing auto-gates to MERGE, not overwrite
+  let autoGates = { version: 1, gates: [], promotionLog: [] };
+  if (fs.existsSync(autoGatePath)) {
+    try {
+      autoGates = JSON.parse(fs.readFileSync(autoGatePath, 'utf-8'));
+      if (!Array.isArray(autoGates.gates)) autoGates.gates = [];
+      if (!Array.isArray(autoGates.promotionLog)) autoGates.promotionLog = [];
+    } catch { /* start fresh if corrupt */ }
+  }
+
+  const existingIds = new Set(autoGates.gates.map(g => g.id));
+  let added = 0;
+
   for (const issue of recurringIssues) {
     if (issue.severity === 'critical') {
-      // Extract key nouns/verbs for pattern matching
       const keywords = issue.pattern
         .toLowerCase()
         .replace(/[^a-z0-9\s]/g, '')
         .split(/\s+/)
         .filter(w => w.length > 4)
         .slice(0, 3);
-      
+
       if (keywords.length >= 2) {
         const pattern = keywords.join('.*');
+        const id = `auto-${issue.hasHighRisk ? 'hardened' : 'promoted'}-${Date.now().toString(36)}-${added}`;
+
+        // Skip if a gate with the same pattern already exists
+        const patternExists = autoGates.gates.some(g => g.pattern === pattern);
+        if (patternExists || existingIds.has(id)) continue;
+
         autoGates.gates.push({
-          id: `auto-${issue.hasHighRisk ? 'hardened' : 'promoted'}-${Date.now().toString(36)}`,
+          id,
           pattern,
           action: 'block',
           message: `Automatically blocked due to repeated failures: ${issue.suggestedRule}`,
           severity: 'critical',
-          source: 'feedback-auto-promotion'
+          source: 'feedback-to-rules',
+          promotedAt: new Date().toISOString(),
         });
+        added++;
       }
     }
   }
 
-  if (autoGates.gates.length > 0) {
+  if (added > 0) {
     fs.mkdirSync(path.dirname(autoGatePath), { recursive: true });
-    fs.writeFileSync(autoGatePath, JSON.stringify(autoGates, null, 2));
+    fs.writeFileSync(autoGatePath, JSON.stringify(autoGates, null, 2) + '\n');
   }
 }
 

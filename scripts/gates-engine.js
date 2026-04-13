@@ -595,10 +595,18 @@ function extractAffectedFiles(toolName, toolInput = {}) {
 }
 
 function isHighRiskAction(toolName, toolInput = {}, affectedFiles = []) {
-  if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) return true;
+  if (EDIT_LIKE_TOOLS.has(toolName)) return true;
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '');
-  return HIGH_RISK_BASH_PATTERN.test(command);
+  // Original high-risk pattern (git writes, publishes, destructive ops)
+  if (HIGH_RISK_BASH_PATTERN.test(command)) return true;
+  // Broadened: any Bash command that modifies files or has side effects.
+  // Excludes pure read/analysis commands (node --test, cat, ls, echo, etc.)
+  // to avoid false positives on benign operations.
+  if (/\b(sed|awk|mv|cp|chmod|chown|truncate|tee|patch)\b/.test(command)) return true;
+  if (/\b(npm\s+(?:run|exec|install)|yarn|pnpm)\b/.test(command)) return true;
+  if (/\b(curl|wget)\b/.test(command)) return true;
+  return false;
 }
 
 function isScopeEnforcedAction(toolName, toolInput = {}, affectedFiles = []) {
@@ -1448,9 +1456,16 @@ function evaluateSecretGuard(input = {}) {
 // PreToolUse hook interface (stdin/stdout JSON)
 // ---------------------------------------------------------------------------
 
-function formatOutput(result) {
+function formatOutput(result, behavioralContext) {
   if (!result) {
-    // No gate matched — pass through
+    // No gate matched — inject behavioral context if available
+    if (behavioralContext) {
+      return JSON.stringify({
+        hookSpecificOutput: {
+          additionalContext: behavioralContext,
+        },
+      });
+    }
     return JSON.stringify({});
   }
 
@@ -1468,14 +1483,39 @@ function formatOutput(result) {
   }
 
   if (result.decision === 'warn') {
+    const extra = behavioralContext ? `\n${behavioralContext}` : '';
     return JSON.stringify({
       hookSpecificOutput: {
-        additionalContext: `[GATE:${result.gate}] WARNING: ${result.message}${reasoningSuffix}`,
+        additionalContext: `[GATE:${result.gate}] WARNING: ${result.message}${reasoningSuffix}${extra}`,
       },
     });
   }
 
   return JSON.stringify({});
+}
+
+/**
+ * Build behavioral context string from recurring feedback patterns.
+ * Injected as additionalContext on EVERY tool call so the AI constantly
+ * sees its failure patterns — even when no gate blocks.
+ */
+function buildBehavioralContext() {
+  const hybrid = getHybridFeedbackModule();
+  if (!hybrid || typeof hybrid.buildHybridState !== 'function') return null;
+
+  try {
+    const state = hybrid.buildHybridState({});
+    if (!state || !state.recurringNegativePatterns || state.recurringNegativePatterns.length === 0) {
+      return null;
+    }
+
+    const constraints = hybrid.deriveConstraints(state, 3);
+    if (constraints.length === 0) return null;
+
+    return `[ThumbGate] Recurring failure patterns (enforce these):\n${constraints.map(c => `  - ${c}`).join('\n')}`;
+  } catch {
+    return null;
+  }
 }
 
 async function runAsync(input) {
@@ -1504,7 +1544,8 @@ async function runAsync(input) {
     }
   }
 
-  return formatOutput(result);
+  const behavioralContext = buildBehavioralContext();
+  return formatOutput(result, behavioralContext);
 }
 
 function run(input) {
@@ -1533,7 +1574,8 @@ function run(input) {
     }
   }
 
-  return formatOutput(result);
+  const behavioralContext = buildBehavioralContext();
+  return formatOutput(result, behavioralContext);
 }
 
 // ---------------------------------------------------------------------------
@@ -1753,6 +1795,8 @@ module.exports = {
   SESSION_ACTION_TTL_MS,
   PROTECTED_APPROVAL_TTL_MS,
   DEFAULT_PROTECTED_FILE_GLOBS,
+  buildBehavioralContext,
+  isHighRiskAction,
 };
 
 // ---------------------------------------------------------------------------
