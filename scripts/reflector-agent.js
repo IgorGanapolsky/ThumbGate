@@ -12,7 +12,7 @@
 
 'use strict';
 
-const { retrieveRelevantLessons } = require('./lesson-retrieval');
+const { retrieveWithRerankingSync } = require('./cross-encoder-reranker');
 const {
   extractFilePaths,
   extractToolCalls,
@@ -99,7 +99,7 @@ function checkRecurrence(analysis, feedbackEvent) {
   try {
     const context = `${analysis.userIntent} ${analysis.assistantAction} ${analysis.corrections.join(' ')}`;
     const toolName = analysis.toolsUsed[0] || 'unknown';
-    previousLessons = retrieveRelevantLessons(toolName, context, { maxResults: 5 });
+    previousLessons = retrieveWithRerankingSync(toolName, context, { candidateCount: 20, maxResults: 5 });
     // Filter to only negative lessons
     previousLessons = previousLessons.filter(l => l.signal === 'negative');
   } catch (_err) {

@@ -14,6 +14,7 @@ process.env.THUMBGATE_NO_RATE_LIMIT = '1'; // bypass free-tier rate limits durin
 const RUNNER_PATH = require.resolve('../scripts/async-job-runner');
 const HARNESS_PATH = require.resolve('../scripts/natural-language-harness');
 const VERIFICATION_PATH = require.resolve('../scripts/verification-loop');
+const RERANKER_PATH = require.resolve('../scripts/cross-encoder-reranker');
 
 const { handleRequest, TOOLS, SAFE_DATA_DIR } = require('../adapters/mcp/server-stdio');
 
@@ -97,6 +98,56 @@ test('list_harnesses tool returns the natural-language harness catalog', async (
   const payload = JSON.parse(result.content[0].text);
   assert.equal(payload.harnesses.length, 1);
   assert.equal(payload.harnesses[0].id, 'repo-full-verification');
+});
+
+test('retrieve_lessons tool routes candidates through cross-encoder reranking', async () => {
+  const previous = require.cache[RERANKER_PATH];
+  const calls = [];
+  stubModule(RERANKER_PATH, {
+    retrieveWithRerankingSync(toolName, actionContext, options) {
+      calls.push({ toolName, actionContext, options });
+      return [{
+        id: 'lesson-reranked',
+        title: 'MISTAKE: force push',
+        relevanceScore: 0.5,
+        crossEncoderScore: 0.9,
+        combinedScore: 0.74,
+      }];
+    },
+  });
+
+  try {
+    const result = await handleRequest({
+      jsonrpc: '2.0',
+      id: 31,
+      method: 'tools/call',
+      params: {
+        name: 'retrieve_lessons',
+        arguments: {
+          toolName: 'Bash',
+          actionContext: 'git push --force to main',
+          maxResults: 2,
+        },
+      },
+    });
+
+    const payload = JSON.parse(result.content[0].text);
+    assert.equal(payload[0].id, 'lesson-reranked');
+    assert.deepEqual(calls, [{
+      toolName: 'Bash',
+      actionContext: 'git push --force to main',
+      options: {
+        candidateCount: 20,
+        maxResults: 2,
+      },
+    }]);
+  } finally {
+    if (previous) {
+      require.cache[RERANKER_PATH] = previous;
+    } else {
+      delete require.cache[RERANKER_PATH];
+    }
+  }
 });
 
 test('settings_status tool returns resolved settings with origin metadata', async () => {
