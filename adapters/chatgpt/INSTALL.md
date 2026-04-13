@@ -1,6 +1,6 @@
 # ChatGPT GPT Actions: ThumbGate Install
 
-Use the published ThumbGate GPT from GPT Store when it is visible for your account, or import the OpenAPI spec into a Custom GPT in under 5 minutes. Regular users use it by replying with 👍/👎 or "thumbs up/down" on ChatGPT answers so ThumbGate remembers lessons, prevents repeated bad answers, and reinforces the answers that worked.
+Use the published ThumbGate GPT from GPT Store when it is visible for your account, or import the OpenAPI spec into a Custom GPT in under 5 minutes. The GPT should feel like a Reliability Gateway: paste an AI action to check, save a thumbs-up/down lesson, write a Pre-Action Gate, install ThumbGate for an agent, or export proof.
 
 ## GPT Store path
 
@@ -11,24 +11,37 @@ Use the published ThumbGate GPT from GPT Store when it is visible for your accou
 
 Direct store URL status: published by the operator on April 13, 2026, but the public `chatgpt.com/g/...` URL has not been captured in this repo yet. Do not invent a URL; add it here once the share link is available.
 
-## 30-second regular-user flow
+## 30-second user flow
 
-1. Ask the ThumbGate GPT any normal question.
-2. If the answer helped, reply with `👍` plus one sentence about what worked.
-3. If the answer missed, reply with `👎` plus one sentence about what to change.
-4. Ask `What do you remember about how I like answers?` to verify the saved lessons.
+1. Paste a proposed AI action, command, merge, deploy, file edit, email, payment, or API call.
+2. ThumbGate evaluates whether to allow, block, or require a checkpoint before the action runs.
+3. After any answer or agent run, reply with `thumbs up:` or `thumbs down:` plus one concrete sentence.
+4. ThumbGate saves the lesson, refreshes prevention rules when patterns repeat, and can show what it remembers.
 
-The user should never need to know what MCP, OpenAPI, Actions, DPO, or prevention rules mean. The GPT should explain the loop as: "Reply 👍 or 👎. I remember the lesson for next time."
+Regular users should never need to know MCP, OpenAPI, Actions, DPO, Thompson Sampling, or schema validation. The GPT should explain the loop as: "One signal becomes one remembered rule."
 
-## Regular-user prompts
+## GPT profile card
 
-Use these as GPT conversation starters so regular users know how to teach ThumbGate:
+Use this copy in GPT Builder instead of the generic "AI safety gate" framing:
 
-1. `👎 this answer was too vague. Next time give me exact steps.`
-2. `👍 this format worked. Remember to answer with short numbered steps.`
-3. `Thumbs down: you assumed I know technical terms. Next time explain it for a beginner first.`
-4. `Remember this lesson: I prefer direct answers with examples before theory.`
-5. `Search my ThumbGate lessons before answering this.`
+Short description:
+
+```text
+Turn thumbs-down into prevention gates
+```
+
+Full description:
+
+```text
+Paste a proposed AI action or reply thumbs up/down after an answer. ThumbGate captures the lesson, searches prior mistakes, writes Pre-Action Gates, and tells you when to allow, block, or checkpoint. Built for developers using AI agents and proof-backed Reliability Gateway workflows.
+```
+
+Conversation starters:
+
+1. `Check this agent action before it runs: git push --force --tags`
+2. `Turn this mistake into a ThumbGate rule: the agent edited generated files again.`
+3. `Install ThumbGate for Claude Code or Codex in this repo.`
+4. `Search my saved lessons before you answer.`
 
 Use typed chat replies. ChatGPT's native feedback buttons may send feedback to OpenAI, but they should not be described as the ThumbGate capture path unless OpenAI exposes them to GPT Actions.
 
@@ -45,10 +58,10 @@ Plain thumbs-up/down feedback is the memory loop. The decision endpoint is the g
 
 ## Best first GPT message
 
-Use this as the first response for regular users:
+Use this as the first response:
 
 ```text
-Ask me anything. After my answer, reply 👍 if it helped or 👎 plus one sentence if it missed. I will remember the lesson, avoid repeating bad answer patterns, and reuse the formats you like.
+Paste an AI action to check, or tell me what went right/wrong. I can block risky actions, save the lesson, write a prevention gate, or show what ThumbGate already remembers.
 ```
 
 ## Prerequisites
