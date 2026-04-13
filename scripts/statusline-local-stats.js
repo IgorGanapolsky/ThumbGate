@@ -4,9 +4,11 @@
 const { analyzeFeedback } = require('./feedback-loop');
 const { normalizeStatsPayload } = require('./hook-thumbgate-cache-updater');
 const { syncClaudeHistoryFeedback } = require('./claude-feedback-sync');
+const { resolveProjectDir } = require('./feedback-paths');
 
 try {
-  syncClaudeHistoryFeedback({ projectDir: process.cwd() });
+  const projectDir = resolveProjectDir({ cwd: process.cwd(), env: process.env });
+  syncClaudeHistoryFeedback({ projectDir });
   const stats = analyzeFeedback();
   const payload = {
     ...normalizeStatsPayload(stats),
