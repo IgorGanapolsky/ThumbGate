@@ -1,9 +1,21 @@
 name: Ralph Mode - 24/7 Engagement Loop
 
+# Ralph Mode handles outbound campaign posts and GitHub/dev.to outreach.
+# Ralph Loop Audience Engagement handles hourly reply sensing, analytics, and
+# draft-safe audience replies. Keep both lanes stateful so CI does not repeat
+# the same contact or forget previous engagement.
+
 on:
   schedule:
     - cron: '0 */2 * * *'  # Every 2 hours
   workflow_dispatch: {}      # Manual trigger
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ralph-mode-outbound-state
+  cancel-in-progress: true
 
 jobs:
   ralph-mode:
@@ -15,6 +27,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Prepare Ralph Mode state
+        run: mkdir -p .thumbgate .artifacts/ralph-mode
+
+      - name: Restore Ralph Mode state
+        uses: actions/cache/restore@v4
+        with:
+          path: .thumbgate/ralph-state.json
+          key: ralph-mode-state-${{ github.run_id }}
+          restore-keys: |
+            ralph-mode-state-
 
       - name: Ralph Mode - X + LinkedIn + GitHub + dev.to
         env:
@@ -30,3 +53,19 @@ jobs:
           ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
         run: |
           node scripts/ralph-mode-ci.js
+
+      - name: Upload Ralph Mode evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ralph-mode-state-${{ github.run_id }}
+          path: .thumbgate/ralph-state.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Save Ralph Mode state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .thumbgate/ralph-state.json
+          key: ralph-mode-state-${{ github.run_id }}
