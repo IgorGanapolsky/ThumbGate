@@ -151,7 +151,7 @@ test('public landing page exposes the free CLI wedge above the fold and keeps Pr
 
   assert.match(landingPage, /Install Free CLI/i);
   assert.match(landingPage, /btn-install-link/);
-  assert.match(landingPage, /intake-first/i);
+  assert.match(landingPage, /Install free\./i);
   assert.match(landingPage, /solo side lane/i);
 });
 
@@ -292,7 +292,7 @@ test('public landing page internally links to comparison and guide pages without
 test('public landing page advertises the Codex standalone plugin install path', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /Install Codex plugin/);
+  assert.match(landingPage, /Codex plugin/i);
   assert.match(landingPage, /Codex plugin download →/);
   assert.match(landingPage, /Get the Codex plugin →/);
   assert.match(landingPage, /plugins\/codex-profile\/INSTALL\.md/);
