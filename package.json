@@ -332,7 +332,7 @@
     "better-sqlite3": "^12.8.0",
     "dotenv": "^17.4.2",
     "playwright-core": "^1.59.1",
-    "stripe": "^22.0.0"
+    "stripe": "^22.0.1"
   },
   "overrides": {
     "express@4.22.1": {
