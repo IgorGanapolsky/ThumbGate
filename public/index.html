@@ -477,16 +477,18 @@ __GA_BOOTSTRAP__
     </div>
     <p class="hero-persona" style="display:none">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
     <div class="hero-actions" style="margin-top:32px;">
-      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_trial&cta_id=hero_start_trial" onclick="posthog.capture('hero_cta_click',{cta:'start_trial'})" class="btn-pro-page" style="font-size:16px;padding:14px 32px;margin-bottom:4px;">Start 7-day free trial — $19/mo</a>
       <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;">
         <span class="prompt">$</span>
         <span class="cmd">npx thumbgate init</span>
         <span class="copy-hint">click to copy</span>
       </div>
+      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_trial&cta_id=hero_start_trial" onclick="posthog.capture('hero_cta_click',{cta:'start_trial'})" class="btn-pro-page" style="font-size:16px;padding:14px 32px;margin-bottom:4px;">Start 7-day free trial — $19/mo</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;border-radius:999px;">⭐ Star on GitHub</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" class="btn-install-link" target="_blank" rel="noopener" style="font-size:13px;color:var(--text-muted);text-decoration:none;padding:8px 14px;">Use in ChatGPT →</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" style="font-size:13px;color:var(--text-muted);text-decoration:none;padding:8px 14px;">Install Codex plugin →</a>
     </div>
     <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:480px;">Free tier: 3 captures/day, unlimited enforcement. No cloud account needed.</p>
-    <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:480px;">Pro adds gate debugger, DPO export, and personal dashboard. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
+    <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:480px;">Team plan is intake-first — one workflow, one repeat failure, proof before wider rollout. Pro stays the solo side lane for gate debugger, DPO export, and personal dashboard. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
     <div class="proof-bar">
       <a href="/guide" rel="noopener">CLI-first setup guide →</a>
       <span class="dot"></span>
