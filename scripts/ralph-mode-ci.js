@@ -50,9 +50,15 @@ async function postTweet(text) {
     headers: { Authorization: xAuthHeader('POST', url), 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
   });
-  const j = await r.json();
+  const j = await parseJsonResponse(r);
   if (!j.data?.id) console.log('  X error detail:', JSON.stringify(j).slice(0, 200));
-  return { id: j.data?.id, error: j.detail || j.title };
+  const id = j.data?.id || '';
+  return {
+    id,
+    ok: r.ok && Boolean(id),
+    status: r.status,
+    error: id ? '' : extractApiError(j, r.status),
+  };
 }
 
 async function replyTweet(text, replyTo) {
@@ -62,8 +68,50 @@ async function replyTweet(text, replyTo) {
     headers: { Authorization: xAuthHeader('POST', url), 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, reply: { in_reply_to_tweet_id: replyTo } }),
   });
-  const j = await r.json();
-  return { id: j.data?.id, error: j.detail };
+  const j = await parseJsonResponse(r);
+  const id = j.data?.id || '';
+  return {
+    id,
+    ok: r.ok && Boolean(id),
+    status: r.status,
+    error: id ? '' : extractApiError(j, r.status),
+  };
+}
+
+async function parseJsonResponse(response) {
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
+}
+
+function extractApiError(payload = {}, status = 0) {
+  const firstError = Array.isArray(payload.errors) && payload.errors[0]
+    ? payload.errors[0].message || payload.errors[0].detail || payload.errors[0].title
+    : '';
+  return payload.detail || payload.title || firstError || `HTTP ${status || 'unknown'}`;
+}
+
+function recordTweetPost(report, result, log = console.log) {
+  if (result && result.ok && result.id) {
+    log('Tweet posted: ' + result.id);
+    report.tweets++;
+    return true;
+  }
+  log('Tweet skipped: ' + (result?.error || `HTTP ${result?.status || 'unknown'}`));
+  return false;
+}
+
+function recordTweetReply(report, username, result, log = console.log) {
+  const handle = username ? '@' + username : 'unknown user';
+  if (result && result.ok && result.id) {
+    log('  Replied to ' + handle + ': ' + result.id);
+    report.replies++;
+    return true;
+  }
+  log('  Reply skipped for ' + handle + ': ' + (result?.error || `HTTP ${result?.status || 'unknown'}`));
+  return false;
 }
 
 async function postLinkedIn(text) {
@@ -130,7 +178,7 @@ const TWEET_ANGLES = [
   'Thompson Sampling for AI agent gates:\n\nEach gate: Beta(alpha, beta)\nCorrect block → alpha++ → tighter\nFalse positive → beta++ → relaxes\n\nNo thresholds. Gates converge on their own.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
   'Google DeepMind: hidden prompt injections commandeer AI agents 86% of the time.\n\nThumbGate gates the action, not the prompt. PreToolUse hooks are the last defense.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
   'Every AI agent framework ships memory. None ship enforcement.\n\nMemory: "Don\'t force-push to main"\nEnforcement: *physically blocked*\n\nThumbGate is the enforcement layer.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
-  'Founding Member: $49 once. ThumbGate Pro forever.\n\n50 spots. No subscription.\n\nSelf-distillation, SQL MCP gates, Thompson Sampling, context-stuffing, 68 tools on Smithery.\n\nhttps://buy.stripe.com/aFa4gz1M84r419v7mb3sI05',
+  'ThumbGate Pro is $19/mo or $149/yr for solo AI agent operators.\n\nLocal dashboard, DPO export, self-distillation, SQL MCP gates, Thompson Sampling, and pre-action enforcement.\n\nTeam rollout starts with intake: $99/seat/mo.\n\nhttps://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06',
   'Context-stuffing: skip RAG entirely.\n\nDump ALL prevention rules into agent context at session start. 20-200 rules = 1K-10K tokens.\n\nInspired by Karpathy. Simpler. Faster.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
   'The AI agent safety stack:\n\nGovernance: Paperclip\nOrchestration: iloom\nContext: RepoWise\nEnforcement: ThumbGate\n\nAll open source. All necessary.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
 ];
@@ -172,8 +220,7 @@ async function main() {
         const u = mu[t.author_id] || {};
         const replyText = '@' + u.username + ' ThumbGate: PreToolUse enforcement for AI agents. Thompson Sampling adapts confidence. 68 tools on Smithery.\n\nhttps://github.com/IgorGanapolsky/ThumbGate';
         const r = await replyTweet(replyText, t.id);
-        console.log('  Replied to @' + u.username + ': ' + (r.id || r.error));
-        report.replies++;
+        recordTweetReply(report, u.username, r);
       }
 
       state.lastMentionCheck = new Date().toISOString();
@@ -185,8 +232,7 @@ async function main() {
     try {
       const angleIndex = Math.floor(Date.now() / 7200000) % TWEET_ANGLES.length;
       const r = await postTweet(TWEET_ANGLES[angleIndex]);
-      console.log('Tweet posted: ' + (r.id || r.error));
-      report.tweets++;
+      recordTweetPost(report, r);
     } catch (e) {
       console.log('Tweet error: ' + e.message);
     }
@@ -330,10 +376,12 @@ async function main() {
   console.log('=== DONE ===');
 }
 
-main().catch(e => {
-  console.error('Ralph Mode CI fatal error:', e.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(e => {
+    console.error('Ralph Mode CI fatal error:', e.message);
+    process.exit(1);
+  });
+}
 
 // ── Perplexity AI Search Visibility (appended) ──────────────────────────
 async function checkPerplexityVisibility() {
@@ -367,3 +415,15 @@ async function checkPerplexityVisibility() {
   }
   console.log('Perplexity: ThumbGate mentioned in ' + found + '/' + prompts.length + ' queries');
 }
+
+module.exports = {
+  TWEET_ANGLES,
+  extractApiError,
+  main,
+  parseJsonResponse,
+  postTweet,
+  recordTweetPost,
+  recordTweetReply,
+  replyTweet,
+  xAuthHeader,
+};
