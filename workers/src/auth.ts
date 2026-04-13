@@ -48,6 +48,6 @@ export function requirePro(auth: AuthResult): { code: number; message: string } 
   return {
     code: -32001,
     message:
-      'Payment required. This tool requires an active Pro purchase ($49 one-time). Visit /billing/checkout to upgrade.',
+      'Payment required. This tool requires an active Pro subscription ($19/mo). Visit /billing/checkout to upgrade.',
   };
 }
