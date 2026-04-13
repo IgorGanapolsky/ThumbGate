@@ -6,7 +6,7 @@ const { normalizeStatsPayload } = require('./hook-thumbgate-cache-updater');
 const { syncClaudeHistoryFeedback } = require('./claude-feedback-sync');
 
 try {
-  syncClaudeHistoryFeedback();
+  syncClaudeHistoryFeedback({ projectDir: process.cwd() });
   const stats = analyzeFeedback();
   const payload = {
     ...normalizeStatsPayload(stats),
