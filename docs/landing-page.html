@@ -611,6 +611,7 @@
       <div class='brand'>ThumbGate <span>Control Plane</span></div>
       <div class='nav-links'>
         <a href='#fit-checker'>Fit check</a>
+        <a href='#chatgpt-actions'>ChatGPT</a>
         <a href='#claude-desktop'>Claude Desktop</a>
         <a href='#why'>Why buy</a>
         <a href='#north-star'>North Star</a>
@@ -728,6 +729,36 @@
       </div>
     </section>
 
+    <section id='chatgpt-actions'>
+      <div class='section-inner'>
+        <div class='section-head'>
+          <span class='eyebrow'>Distribution</span>
+          <h2>ChatGPT GPT Actions path: thumbs-up/down memory for regular users.</h2>
+          <p>ThumbGate's ChatGPT lane is a Custom GPT plus Actions, not an old ChatGPT plugin. Regular users reply with 👍/👎 or "thumbs up/down" on answers, save a lesson, prevent repeated bad answers, and reinforce the answer patterns that worked. Developers can import the same OpenAPI Actions spec into their own GPT and point it at the hosted API.</p>
+        </div>
+        <div class='grid-3'>
+          <div class='card'>
+            <h3>Find the GPT</h3>
+            <p>Open ChatGPT, choose Explore GPTs, search <code>ThumbGate</code>, and select the GPT by Igor Ganapolsky in Programming.</p>
+          </div>
+          <div class='card'>
+            <h3>Rate the answer</h3>
+            <p>Use chat replies like <code>👎 this was too vague. Next time give exact steps.</code> or <code>👍 this format worked. Remember it.</code></p>
+          </div>
+          <div class='card'>
+            <h3>Recall and reinforce</h3>
+            <p>ThumbGate captures feedback into lessons, searches them before later answers, turns repeated failures into prevention rules, and reuses positive examples as answer preferences.</p>
+          </div>
+          <div class='card'>
+            <h3>Developer Actions path</h3>
+            <p>Use <code>adapters/chatgpt/openapi.yaml</code> or import <code>https://thumbgate-production.up.railway.app/openapi.yaml</code> into GPT Builder Actions.</p>
+          </div>
+        </div>
+        <p class='note'>Direct GPT URL is not stored in this repo yet. Do not invent a <code>chatgpt.com/g/...</code> link; add the captured share URL once available.</p>
+        <p class='note'><a href='__GITHUB_URL__/blob/main/adapters/chatgpt/INSTALL.md'>ChatGPT install guide</a> • <a href='__GITHUB_URL__/blob/main/adapters/chatgpt/openapi.yaml'>OpenAPI Actions spec</a> • <a href='__GITHUB_URL__/blob/main/docs/gpt-store-submission.md'>GPT Store submission packet</a> • <a href='https://thumbgate-production.up.railway.app/privacy'>Privacy policy</a></p>
+      </div>
+    </section>
+
     <section id='claude-desktop'>
       <div class='section-inner'>
         <div class='section-head'>
@@ -739,7 +770,7 @@
           <div class='card'>
             <h3>Install locally today</h3>
             <p>Use the portable npm launcher in Claude Desktop immediately instead of waiting on a directory decision.</p>
-            <p><code>claude mcp add thumbgate -- npx -y thumbgate serve</code></p>
+            <p><code>claude mcp add thumbgate -- npx --yes --package thumbgate thumbgate serve</code></p>
           </div>
           <div class='card'>
             <h3>Carry the trust layer</h3>
@@ -750,6 +781,7 @@
             <p>Use <code>npm run build:claude-mcpb</code> plus the review-ready source zip to package the real bundle, then market Claude workflow hardening, Pre-Action Gates, and proof-backed reliability without claiming approval before it exists.</p>
           </div>
         </div>
+        <p class='note'>Official directory review is separate. Claude Code users can install now with <code>/plugin marketplace add IgorGanapolsky/ThumbGate</code> and <code>/plugin install thumbgate@thumbgate-marketplace</code>.</p>
         <p class='note'><a href='__GITHUB_URL__/blob/main/.claude-plugin/README.md'>Claude extension guide</a> • <a href='__GITHUB_URL__/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md'>Submission packet</a> • <a href='__GITHUB_URL__/releases/latest/download/thumbgate-claude-desktop.mcpb'>Bundle download</a> • <a href='__GITHUB_URL__/releases/latest/download/thumbgate-claude-plugin-review.zip'>Review packet zip</a> • <a href='https://thumbgate-production.up.railway.app/privacy'>Privacy policy</a></p>
       </div>
     </section>

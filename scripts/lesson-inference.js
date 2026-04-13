@@ -303,7 +303,26 @@ function getStatusbarLessonData() {
   if (!recent) return { hasLesson: false, text: null, link: null };
 
   const normalizedLesson = stripLessonPrefix(recent.lesson || '');
-  const truncated = normalizedLesson.length > 48 ? normalizedLesson.slice(0, 45) + '...' : normalizedLesson;
+
+  // Distill to actionable insight: prefer structured rule action, then
+  // whatToChange, then the lesson text itself. Raw user feedback
+  // ("are you sure?", "is this working?") is not useful in a statusbar.
+  let displayText = normalizedLesson;
+  if (recent.structuredRule && recent.structuredRule.action && recent.structuredRule.action.description) {
+    displayText = recent.structuredRule.action.description;
+  } else if (recent.whatToChange || recent.what_to_change) {
+    displayText = String(recent.whatToChange || recent.what_to_change);
+  }
+
+  // Clean up: strip noise prefixes, collapse whitespace
+  displayText = displayText
+    .replace(/^CRITICAL ERROR - User frustrated:\s*/i, '')
+    .replace(/^thumbs?\s*(up|down)\s*:?\s*/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Truncate to 60 chars (enough to be readable, short enough for statusbar)
+  const truncated = displayText.length > 60 ? displayText.slice(0, 57) + '...' : displayText;
 
   return {
     hasLesson: true,
