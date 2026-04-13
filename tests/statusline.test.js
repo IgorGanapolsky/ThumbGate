@@ -375,7 +375,8 @@ test('statusline preserves dashboard links under a tight width budget', () => {
     assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
     assert.match(plain, /Lessons/, 'should preserve the lessons link label');
     assert.match(plain, /Latest mistake \d{4}-\d{2}-\d{2} \d{2}:\d{2}Z:/, 'should clarify that the snippet is the latest mistake');
-    assert.match(plain, /http:\/\/localhost:3456\/lessons#lesson_/, 'should include a deep link to the latest lesson');
+    // localhost links are intentionally stripped from statusbar display — only real URLs shown
+    assert.doesNotMatch(plain, /http:\/\/localhost/, 'should NOT include localhost links in statusbar');
   } finally {
     if (previousFeedbackDir === undefined) {
       delete process.env.THUMBGATE_FEEDBACK_DIR;

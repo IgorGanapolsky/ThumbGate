@@ -46,7 +46,7 @@ jobs:
           BEFORE_SHA='${{ github.event.before }}'
           CHANGED_FILES=''
           SHOULD_DEPLOY=true
-          DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/|public/|\.well-known/|openapi/|workers/|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
+          DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/.*\.(js|mjs|cjs|json|ya?ml|toml)$|public/|\.well-known/|openapi/|workers/|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
 
           if [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
             CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | sed '/^$/d')"
@@ -135,21 +135,21 @@ jobs:
           if [ -n "$RAILWAY_SERVICE" ]; then
             SERVICE_ARGS+=(--service "$RAILWAY_SERVICE")
           fi
-          retry_railway "set THUMBGATE_API_KEY" railway variables set THUMBGATE_API_KEY="$THUMBGATE_API_KEY" "${SERVICE_ARGS[@]}"
-          retry_railway "set THUMBGATE_BUILD_SHA" railway variables set THUMBGATE_BUILD_SHA="$GITHUB_SHA" "${SERVICE_ARGS[@]}"
-          retry_railway "set THUMBGATE_BUILD_GENERATED_AT" railway variables set THUMBGATE_BUILD_GENERATED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "${SERVICE_ARGS[@]}"
-          retry_railway "set THUMBGATE_PUBLIC_APP_ORIGIN" railway variables set THUMBGATE_PUBLIC_APP_ORIGIN="$THUMBGATE_PUBLIC_APP_ORIGIN" "${SERVICE_ARGS[@]}"
-          retry_railway "set THUMBGATE_BILLING_API_BASE_URL" railway variables set THUMBGATE_BILLING_API_BASE_URL="$THUMBGATE_BILLING_API_BASE_URL" "${SERVICE_ARGS[@]}"
-          retry_railway "set STRIPE_SECRET_KEY" railway variables set STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" "${SERVICE_ARGS[@]}"
-          retry_railway "set STRIPE_WEBHOOK_SECRET" railway variables set STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" "${SERVICE_ARGS[@]}"
+          retry_railway "set THUMBGATE_API_KEY" railway variables set --skip-deploys THUMBGATE_API_KEY="$THUMBGATE_API_KEY" "${SERVICE_ARGS[@]}"
+          retry_railway "set THUMBGATE_BUILD_SHA" railway variables set --skip-deploys THUMBGATE_BUILD_SHA="$GITHUB_SHA" "${SERVICE_ARGS[@]}"
+          retry_railway "set THUMBGATE_BUILD_GENERATED_AT" railway variables set --skip-deploys THUMBGATE_BUILD_GENERATED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "${SERVICE_ARGS[@]}"
+          retry_railway "set THUMBGATE_PUBLIC_APP_ORIGIN" railway variables set --skip-deploys THUMBGATE_PUBLIC_APP_ORIGIN="$THUMBGATE_PUBLIC_APP_ORIGIN" "${SERVICE_ARGS[@]}"
+          retry_railway "set THUMBGATE_BILLING_API_BASE_URL" railway variables set --skip-deploys THUMBGATE_BILLING_API_BASE_URL="$THUMBGATE_BILLING_API_BASE_URL" "${SERVICE_ARGS[@]}"
+          retry_railway "set STRIPE_SECRET_KEY" railway variables set --skip-deploys STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" "${SERVICE_ARGS[@]}"
+          retry_railway "set STRIPE_WEBHOOK_SECRET" railway variables set --skip-deploys STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" "${SERVICE_ARGS[@]}"
           if [ -n "$THUMBGATE_FEEDBACK_DIR" ]; then
-            retry_railway "set THUMBGATE_FEEDBACK_DIR" railway variables set THUMBGATE_FEEDBACK_DIR="$THUMBGATE_FEEDBACK_DIR" "${SERVICE_ARGS[@]}"
+            retry_railway "set THUMBGATE_FEEDBACK_DIR" railway variables set --skip-deploys THUMBGATE_FEEDBACK_DIR="$THUMBGATE_FEEDBACK_DIR" "${SERVICE_ARGS[@]}"
           fi
           if [ -n "$THUMBGATE_GA_MEASUREMENT_ID" ]; then
-            retry_railway "set THUMBGATE_GA_MEASUREMENT_ID" railway variables set THUMBGATE_GA_MEASUREMENT_ID="$THUMBGATE_GA_MEASUREMENT_ID" "${SERVICE_ARGS[@]}"
+            retry_railway "set THUMBGATE_GA_MEASUREMENT_ID" railway variables set --skip-deploys THUMBGATE_GA_MEASUREMENT_ID="$THUMBGATE_GA_MEASUREMENT_ID" "${SERVICE_ARGS[@]}"
           fi
           if [ -n "$THUMBGATE_GOOGLE_SITE_VERIFICATION" ]; then
-            retry_railway "set THUMBGATE_GOOGLE_SITE_VERIFICATION" railway variables set THUMBGATE_GOOGLE_SITE_VERIFICATION="$THUMBGATE_GOOGLE_SITE_VERIFICATION" "${SERVICE_ARGS[@]}"
+            retry_railway "set THUMBGATE_GOOGLE_SITE_VERIFICATION" railway variables set --skip-deploys THUMBGATE_GOOGLE_SITE_VERIFICATION="$THUMBGATE_GOOGLE_SITE_VERIFICATION" "${SERVICE_ARGS[@]}"
           fi
       - name: Deploy to Railway
         if: steps.railway-config.outputs.enabled == 'true'
@@ -174,13 +174,55 @@ jobs:
             done
           }
 
+          verify_live_build_sha_after_railway_failure() {
+            local max_attempts="${RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-120}"
+            local sleep_seconds="${RAILWAY_HEALTHCHECK_SLEEP_SECONDS:-10}"
+            local connect_timeout_seconds="${RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:-5}"
+            local max_time_seconds="${RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:-20}"
+            local response_file
+            local status=""
+            local live_sha=""
+
+            response_file="$(mktemp)"
+            echo "Railway CLI reported a deploy failure; checking whether Railway already promoted $GITHUB_SHA..."
+            for attempt in $(seq 1 "$max_attempts"); do
+              status=$(curl --connect-timeout "$connect_timeout_seconds" --max-time "$max_time_seconds" -sS -o "$response_file" -w "%{http_code}" "$RAILWAY_HEALTHCHECK_URL" || true)
+              echo "Post-failure promotion check $attempt/$max_attempts: $status"
+              if [ "$status" = "200" ]; then
+                live_sha=$(node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(String(data.buildSha || ''));" "$response_file" || true)
+                echo "Observed build SHA after Railway CLI failure: ${live_sha:-<missing>}"
+                if [ "$live_sha" = "$GITHUB_SHA" ]; then
+                  echo "Railway CLI failed after upload, but health verification proves $GITHUB_SHA is live."
+                  rm -f "$response_file"
+                  return 0
+                fi
+              fi
+              if [ -s "$response_file" ]; then
+                echo "Health response body:"
+                sed -n '1,20p' "$response_file"
+              fi
+              if [ "$attempt" -lt "$max_attempts" ]; then
+                sleep "$sleep_seconds"
+              fi
+            done
+
+            echo "Railway CLI failure was not recoverable by health verification."
+            echo "Final health status after Railway CLI failure: $status"
+            echo "Expected build SHA: $GITHUB_SHA"
+            echo "Observed build SHA after Railway CLI failure: ${live_sha:-<missing>}"
+            rm -f "$response_file"
+            return 1
+          }
+
           SERVICE_ARGS=()
           if [ -n "$RAILWAY_SERVICE" ]; then
             SERVICE_ARGS+=(--service "$RAILWAY_SERVICE")
           fi
           # Use --detach to avoid "Failed to retrieve build log" streaming errors
           # (known Railway CLI issue). Health check step below verifies deployment.
-          retry_railway "deploy with railway up" railway up --ci --detach --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT_ID" "${SERVICE_ARGS[@]}"
+          if ! retry_railway "deploy with railway up" railway up --ci --detach --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT_ID" "${SERVICE_ARGS[@]}"; then
+            verify_live_build_sha_after_railway_failure
+          fi
       - name: Verify deployment health
         if: steps.railway-config.outputs.enabled == 'true'
         run: |
