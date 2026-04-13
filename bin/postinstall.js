@@ -41,8 +41,3 @@ process.stderr.write(`
   └─────────────────────────────────────────────────────┘
 
 `);
-
-process.stderr.write(
-  '  ✓ ThumbGate installed. Run: npx thumbgate init\n' +
-  '    GitHub: https://github.com/IgorGanapolsky/ThumbGate — ⭐ if it helps\n\n'
-);
