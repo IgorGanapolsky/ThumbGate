@@ -16,6 +16,34 @@ const { loadLocalEnv } = require('../load-env');
 
 const ZERNIO_UTM = { source: 'zernio', medium: 'social', campaign: 'organic' };
 
+/** Per-platform character limits. Platforms not listed have no enforced limit. */
+const PLATFORM_CHAR_LIMITS = {
+  bluesky: 300,
+  x: 280,
+  twitter: 280,
+  threads: 500,
+  mastodon: 500,
+};
+
+/**
+ * Check content length against platform limits.
+ * Returns platforms that would exceed the limit.
+ * @param {string} content
+ * @param {Array<{platform: string}>} platforms
+ * @returns {Array<{platform: string, limit: number, length: number}>}
+ */
+function checkPlatformCharLimits(content, platforms) {
+  const violations = [];
+  const contentLength = content.length;
+  for (const p of platforms) {
+    const limit = PLATFORM_CHAR_LIMITS[p.platform.toLowerCase()];
+    if (limit && contentLength > limit) {
+      violations.push({ platform: p.platform, limit, length: contentLength });
+    }
+  }
+  return violations;
+}
+
 const ZERNIO_BASE = 'https://zernio.com/api/v1';
 const DEFAULT_DEDUP_LOG_PATH = path.join(__dirname, '..', '..', '..', '.thumbgate', 'zernio-dedup-log.json');
 
@@ -326,6 +354,22 @@ async function publishPost(content, platforms, options = {}) {
     return { blocked: true, reasons: gateResult.findings };
   }
 
+  // Character limit check: reject platforms that would exceed their limit
+  const charViolations = checkPlatformCharLimits(content, normalizedPlatforms);
+  if (charViolations.length > 0) {
+    for (const v of charViolations) {
+      console.error(`[zernio:publisher] BLOCKED ${v.platform} — ${v.length} chars exceeds ${v.limit} limit`);
+    }
+    const violatedNames = new Set(charViolations.map((v) => v.platform.toLowerCase()));
+    const safePlatforms = normalizedPlatforms.filter((p) => !violatedNames.has(p.platform.toLowerCase()));
+    if (safePlatforms.length === 0) {
+      return { blocked: true, reasons: charViolations.map((v) => ({ reason: `${v.platform}: ${v.length}/${v.limit} chars` })) };
+    }
+    // Continue with platforms that fit
+    normalizedPlatforms.length = 0;
+    normalizedPlatforms.push(...safePlatforms);
+  }
+
   // Dedup: filter out platforms where identical content was posted in last 24h
   const dedupedPlatforms = normalizedPlatforms.filter((p) => {
     if (isDuplicate(content, p.platform)) {
@@ -381,6 +425,21 @@ async function schedulePost(content, platforms, scheduledFor, timezone, options 
   }
 
   content = tagUrlsInText(content, options.utm || ZERNIO_UTM);
+
+  // Character limit check: reject platforms that would exceed their limit
+  const charViolations = checkPlatformCharLimits(content, normalizedPlatforms);
+  if (charViolations.length > 0) {
+    for (const v of charViolations) {
+      console.error(`[zernio:publisher] BLOCKED ${v.platform} schedule — ${v.length} chars exceeds ${v.limit} limit`);
+    }
+    const violatedNames = new Set(charViolations.map((v) => v.platform.toLowerCase()));
+    const safePlatforms = normalizedPlatforms.filter((p) => !violatedNames.has(p.platform.toLowerCase()));
+    if (safePlatforms.length === 0) {
+      return { blocked: true, reasons: charViolations.map((v) => ({ reason: `${v.platform}: ${v.length}/${v.limit} chars` })) };
+    }
+    normalizedPlatforms.length = 0;
+    normalizedPlatforms.push(...safePlatforms);
+  }
 
   // Dedup: filter out platforms where identical content was scheduled in last 24h
   const dedupedPlatforms = normalizedPlatforms.filter((p) => {
