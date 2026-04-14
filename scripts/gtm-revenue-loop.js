@@ -313,19 +313,10 @@ function selectOutreachMotion(target, motionCatalog = buildMotionCatalog()) {
     };
   }
 
-  const sprintSignals = /(agent|mcp|platform|workflow|ops|compliance|audit|enterprise|production|reliability|rollout|incident|governance|server|bridge|workspace)/;
-  if (sprintSignals.test(haystack) || haystack.trim().length > 0) {
-    return {
-      key: motionCatalog.sprint.key,
-      label: motionCatalog.sprint.label,
-      reason: 'Target can be approached with one concrete workflow-hardening offer before any generic Pro pitch.',
-    };
-  }
-
   return {
     key: motionCatalog.sprint.key,
     label: motionCatalog.sprint.label,
-    reason: 'Default outbound motion is the Workflow Hardening Sprint; Pro remains the self-serve follow-up.',
+    reason: 'Target can be approached with one concrete workflow-hardening offer before any generic Pro pitch.',
   };
 }
 

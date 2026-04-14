@@ -523,14 +523,15 @@ function parseArgs(argv = []) {
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (!arg.startsWith('--')) continue;
-    const [rawKey, inlineValue] = arg.slice(2).split('=');
+    const eqIndex = arg.indexOf('=', 2);
+    const rawKey = eqIndex === -1 ? arg.slice(2) : arg.slice(2, eqIndex);
     const key = rawKey.replaceAll(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-    if (inlineValue !== undefined) {
-      options[key] = inlineValue;
+    if (eqIndex !== -1) {
+      options[key] = arg.slice(eqIndex + 1);
       continue;
     }
     const nextArg = args[index + 1];
-    if (nextArg ? !nextArg.startsWith('--') : false) {
+    if (nextArg && !nextArg.startsWith('--')) {
       options[key] = nextArg;
       index += 1;
       continue;
