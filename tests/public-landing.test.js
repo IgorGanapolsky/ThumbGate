@@ -33,7 +33,8 @@ test('public landing page routes Pro buyers through the hosted checkout surface'
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /\/checkout\/pro\?/);
-  assert.match(landingPage, /Free Trial/);
+  assert.match(landingPage, /\/go\/pro\?utm_source=website/);
+  assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
   assert.doesNotMatch(landingPage, /gumroad\.com/);
 });
 
@@ -66,7 +67,7 @@ test('public landing page keeps optional GA4 and Search Console hooks available 
 test('public landing page includes pricing section with Free, Pro, and Team tiers', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /class="price-card"/);
+  assert.match(landingPage, /class="price-card/);
   assert.match(landingPage, /class="price-card pro"/);
   assert.match(landingPage, /class="price-card team"/);
   assert.match(landingPage, /\$0/);
@@ -79,7 +80,8 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /solo side lane/i);
   assert.match(landingPage, /Shared enforcement/i);
   assert.match(landingPage, /Install Free/);
-  assert.match(landingPage, /Free Trial/);
+  assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
+  assert.match(landingPage, /Most Popular/i);
   assert.match(landingPage, /Start Workflow Hardening Sprint/);
 });
 
@@ -150,8 +152,9 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
   // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /Repeated failure becomes enforcement before the next run/i);
-  assert.match(landingPage, /Safe pattern reinforced across the shared workflow/i);
+  assert.match(landingPage, /Prevent expensive mistakes/i);
+  assert.match(landingPage, /Fix it once, then block the repeat/i);
+  assert.match(landingPage, /reliable operator/i);
   // Persona targeting
   assert.match(landingPage, /class="hero-persona"/);
   assert.match(landingPage, /product teams/i);
@@ -243,7 +246,7 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /thumbgate-marketplace/);
   assert.match(landingPage, /\/plugin marketplace add IgorGanapolsky\/ThumbGate/);
   assert.match(landingPage, /ChatGPT GPT Actions/);
-  assert.match(landingPage, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
+  assert.match(landingPage, /\/go\/gpt\?utm_source=website/);
   assert.match(landingPage, /Open ThumbGate GPT/);
   assert.match(landingPage, /Live ThumbGate GPT for ChatGPT/);
   assert.match(landingPage, /ChatGPT Entry Point/);
@@ -263,10 +266,16 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
 
   // install_copy fires directly in copyInstall function
   assert.match(landingPage, /plausible\('install_copy'\)/);
+  assert.match(landingPage, /sendFirstPartyTelemetry\('install_copy'/);
+  assert.match(landingPage, /fetch\('\/v1\/telemetry\/ping'/);
+  assert.match(landingPage, /\/go\/gpt\?utm_source=website/);
+  assert.match(landingPage, /\/go\/install\?utm_source=website/);
+  assert.match(landingPage, /\/go\/github\?utm_source=website/);
 
   // trackClick wires up CTA events by selector and event name
   assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
-  assert.match(landingPage, /trackClick\('.btn-gpt-page', 'chatgpt_gpt_click'/);
+  assert.match(landingPage, /trackClick\('.btn-gpt-page:not\(.btn-install-hero\)', 'chatgpt_gpt_click'/);
+  assert.match(landingPage, /trackClick\('.btn-install-hero', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-install-link', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);

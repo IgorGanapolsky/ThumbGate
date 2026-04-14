@@ -4,9 +4,11 @@ Open the published ThumbGate GPT directly:
 
 https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
 
-Use the GPT as the public front door: paste an AI action to check, save a thumbs-up/down lesson, write a Pre-Action Gate, install ThumbGate for an agent, or export proof.
+Use the GPT as the public front door: paste a risky AI action to check, prevent an expensive mistake before it runs, save a thumbs-up/down lesson, write a Pre-Action Gate, install ThumbGate for an agent, or export proof.
 
-Users do **not** have to keep chatting inside the ThumbGate GPT for enforcement. The GPT is the fast demo, guided setup path, and ChatGPT memory surface. Real enforcement for coding agents still runs locally through ThumbGate hooks after `npx thumbgate init`.
+Users do **not** have to keep chatting inside the ThumbGate GPT for enforcement. The GPT is advice, checkpointing, guided setup, and ChatGPT memory capture. Real enforcement for coding agents still runs locally through ThumbGate hooks after `npx thumbgate init`.
+
+Use the term **Reliability Gateway** only after the user understands the outcome: ThumbGate is the gate between AI intent and costly execution.
 
 Marketing rule: every landing page, README, social post, and plugin listing should point to the live GPT before asking a cold user to read OpenAPI docs.
 
@@ -25,22 +27,22 @@ Marketing rule: every landing page, README, social post, and plugin listing shou
 4. ThumbGate saves the lesson, refreshes prevention rules when patterns repeat, and can show what it remembers.
 5. When the user is ready to enforce outside ChatGPT, send them to `npx thumbgate init` for Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, or another MCP-compatible agent.
 
-Regular users should never need to know MCP, OpenAPI, Actions, DPO, Thompson Sampling, or schema validation. The GPT should explain the loop as: "One signal becomes one remembered rule."
+Regular users should never need to know MCP, OpenAPI, Actions, DPO, Thompson Sampling, or schema validation. The GPT should explain the loop as: "One signal becomes one remembered rule. Fix it once; block the repeat before the next tool call."
 
 ## GPT profile card
 
-Use this copy in GPT Builder instead of the generic "AI safety gate" framing:
+Use this copy in GPT Builder instead of the generic "AI safety gate" or "reliability layer" framing:
 
 Short description:
 
 ```text
-Turn thumbs-down into prevention gates
+Stop costly AI mistakes before they run
 ```
 
 Full description:
 
 ```text
-Paste a proposed AI action or reply thumbs up/down after an answer. ThumbGate captures the lesson, searches prior mistakes, writes Pre-Action Gates, and tells you when to allow, block, or checkpoint. Built for developers using AI agents and proof-backed Reliability Gateway workflows.
+Paste a risky AI action before it runs. ThumbGate tells you whether to allow, block, or checkpoint it, then turns thumbs-up/down feedback into Pre-Action Gates so repeated mistakes stop coming back.
 ```
 
 Conversation starters:
@@ -68,7 +70,7 @@ Plain thumbs-up/down feedback is the memory loop. The decision endpoint is the g
 Use this as the first response:
 
 ```text
-Paste an AI action to check, or tell me what went right/wrong. I can block risky actions, save the lesson, write a prevention gate, or show what ThumbGate already remembers.
+Paste the risky AI action before it runs, or tell me what went right/wrong. I can prevent costly mistakes, save the lesson, write a prevention gate, or show what ThumbGate already remembers.
 ```
 
 ## Prerequisites
@@ -78,7 +80,7 @@ Paste an AI action to check, or tell me what went right/wrong. I can block risky
 - Privacy policy URL: `https://thumbgate-production.up.railway.app/privacy`
 - Owner-managed `THUMBGATE_API_KEY` for one-time GPT Builder Actions auth
 
-Regular GPT users should not need an API key, JSON payload, OpenAPI knowledge, or developer setup. They should only see the thumbs-up/down memory loop.
+Regular GPT users should not need an API key, JSON payload, OpenAPI knowledge, or developer setup. They should only see the action-checking path, the thumbs-up/down memory loop, and the handoff to local enforcement when they need hard blocking.
 
 ## Step 1 — Open GPT Builder
 

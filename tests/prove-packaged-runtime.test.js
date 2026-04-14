@@ -42,6 +42,37 @@ test('installPackageWithRetry retries transient registry misses for published pa
   }
 });
 
+test('installPackageWithRetry gives newly published packages a long propagation window by default', async () => {
+  const prefixDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-publish-default-retry-'));
+  const delays = [];
+  let attempts = 0;
+
+  try {
+    await assert.rejects(
+      installPackageWithRetry(prefixDir, 'thumbgate@9.9.9-test', {
+        installImpl() {
+          attempts += 1;
+          const error = new Error('npm error code ETARGET');
+          error.stderr = 'No matching version found for thumbgate@9.9.9-test.';
+          throw error;
+        },
+        sleepImpl(ms) {
+          delays.push(ms);
+          return Promise.resolve();
+        },
+      }),
+      /ETARGET/
+    );
+
+    assert.equal(attempts, 12);
+    assert.equal(delays.length, 11);
+    assert.equal(delays[0], 10000);
+    assert.equal(Math.max(...delays), 45000);
+  } finally {
+    fs.rmSync(prefixDir, { recursive: true, force: true });
+  }
+});
+
 test('installPackageWithRetry does not retry non-remote package specs', async () => {
   const prefixDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-publish-local-'));
   let attempts = 0;

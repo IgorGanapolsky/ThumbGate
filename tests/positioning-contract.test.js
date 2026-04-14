@@ -30,6 +30,27 @@ test('README explains the product as self-improving agent enforcement', () => {
   assert.match(readme, /permanently/i);
 });
 
+test('public surfaces lead with outcomes instead of infrastructure abstractions', () => {
+  const readme = readText('README.md');
+  const landingPage = readText(path.join('public', 'index.html'));
+  const llms = readText(path.join('.well-known', 'llms.txt'));
+  const gptInstructions = readText(path.join('docs', 'chatgpt-gpt-instructions.md'));
+
+  for (const surface of [readme, landingPage, llms, gptInstructions]) {
+    assert.match(surface, /costly|expensive/i);
+    assert.match(surface, /before (?:they|it) (?:make|run|happen)|before execution/i);
+    assert.match(surface, /Pre-Action Gates/i);
+  }
+
+  assert.match(readme, /Prevent expensive AI mistakes/i);
+  assert.match(readme, /Make AI stop repeating mistakes/i);
+  assert.match(readme, /reliable operator/i);
+  assert.match(landingPage, /Stop AI agents before/i);
+  assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
+  assert.doesNotMatch(landingPage, /Global enforcement/i);
+  assert.doesNotMatch(readme, /Behavior control system/i);
+});
+
 test('README keeps the business sprint-first while preserving the Pro side lane', () => {
   const readme = readText('README.md');
 

@@ -75,7 +75,7 @@ test('public docs render the current package version', () => {
   const productHuntKit = readText('docs/marketing/product-hunt-launch.md');
 
   assert.match(readme, /Open ThumbGate GPT/);
-  assert.match(readme, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
+  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/go\/gpt\?utm_source=github/);
   assert.match(readme, /ThumbGate GPT: start here/i);
   assert.match(readme, /No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate/i);
   assert.match(readme, /hard enforcement layer still runs where the work happens/i);
@@ -111,12 +111,12 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstall, /GPT profile card/);
   assert.match(chatgptInstall, /Pre-action gate flow/);
   assert.match(chatgptInstall, /Reliability Gateway/i);
-  assert.match(chatgptInstall, /Turn thumbs-down into prevention gates/);
+  assert.match(chatgptInstall, /Stop costly AI mistakes before they run/);
   assert.match(chatgptInstall, /evaluateDecision/);
   assert.match(chatgptInstall, /decisionControl\.executionMode: "blocked"/);
   assert.match(chatgptInstall, /Plain thumbs-up\/down feedback is the memory loop\. The decision endpoint is the gate loop\./);
   assert.match(chatgptInstall, /Check this agent action before it runs: git push --force --tags/i);
-  assert.match(chatgptInstall, /Paste an AI action to check, or tell me what went right\/wrong/i);
+  assert.match(chatgptInstall, /Paste the risky AI action before it runs, or tell me what went right\/wrong/i);
   assert.match(chatgptInstall, /native feedback buttons may send feedback to OpenAI/i);
   assert.match(chatgptInstall, /Regular GPT users should not need an API key, JSON payload, OpenAPI knowledge, or developer setup/i);
   assert.match(chatgptInstall, /Users do \*\*not\*\* have to keep chatting inside the ThumbGate GPT for enforcement/i);
@@ -126,8 +126,9 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstall, /https:\/\/thumbgate-production\.up\.railway\.app\/privacy/);
   assert.match(chatgptInstructions, /Reliability Gateway for AI agents/i);
   assert.match(chatgptInstructions, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
-  assert.match(chatgptInstructions, /Turn thumbs-down into prevention gates/);
-  assert.match(chatgptInstructions, /Paste an AI action to check, or tell me what went right\/wrong/i);
+  assert.match(chatgptInstructions, /Stop costly AI mistakes before they run/);
+  assert.match(chatgptInstructions, /Paste the risky AI action before it runs, or tell me what went right\/wrong/i);
+  assert.match(chatgptInstructions, /Sell outcomes before infrastructure/i);
   assert.match(chatgptInstructions, /Action check mode/);
   assert.match(chatgptInstructions, /Feedback capture mode/);
   assert.match(chatgptInstructions, /decisionControl\.executionMode/);
@@ -141,9 +142,10 @@ test('public docs render the current package version', () => {
   assert.match(gptStoreSubmission, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
   assert.doesNotMatch(gptStoreSubmission, /URL has not been captured/i);
   assert.match(gptStoreSubmission, /Explore GPTs -> search ThumbGate/i);
-  assert.match(gptStoreSubmission, /Turn thumbs-down into prevention gates/);
+  assert.match(gptStoreSubmission, /Stop costly AI mistakes before they run/);
   assert.match(gptStoreSubmission, /Reliability Gateway/i);
   assert.match(gptStoreSubmission, /one signal becomes one remembered rule/i);
+  assert.match(gptStoreSubmission, /prevent expensive AI mistakes/i);
   assert.match(gptStoreSubmission, /Pre-Action Gates/);
   assert.match(gptStoreSubmission, /POST \/v1\/decisions\/evaluate/);
   assert.match(gptStoreSubmission, /Action check mode/);
