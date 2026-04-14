@@ -1063,38 +1063,131 @@ function loadProPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRO_PAGE_PATH, runtimeConfig, pageContext);
 }
 
-function loadDashboardPageHtml(req, expectedApiKey) {
-  const template = fs.readFileSync(DASHBOARD_PAGE_PATH, 'utf-8');
+function readOptionalPublicTemplate(filePath) {
+  try {
+    return fs.readFileSync(filePath, 'utf-8');
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+function resolveLocalPageBootstrap(req, expectedApiKey) {
   const forwardedHost = req.headers['x-forwarded-host'];
   const hostHeader = Array.isArray(forwardedHost)
     ? forwardedHost[0]
     : forwardedHost || req.headers.host || '';
   const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
-  // Developer override: auth is disabled (expectedApiKey===null), auto-connect with dummy key
   const devOverride = expectedApiKey === null && isLoopbackHost(hostHeader);
   const bootstrapActive = localProBootstrap || devOverride;
   const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : devOverride ? 'dev-override' : '').replace(/</g, '\\u003c');
 
+  return {
+    bootstrapActive,
+    serializedBootstrapKey,
+  };
+}
+
+function renderPackagedDashboardHtml({ bootstrapActive, serializedBootstrapKey }) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ThumbGate Dashboard</title>
+<style>
+:root { color-scheme: light dark; --bg:#0f172a; --panel:#111827; --text:#f8fafc; --muted:#94a3b8; --line:#334155; --accent:#22c55e; }
+body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:linear-gradient(135deg,#020617,#111827); color:var(--text); }
+main { max-width:920px; margin:0 auto; padding:48px 20px; }
+.panel { border:1px solid var(--line); border-radius:20px; background:rgba(15,23,42,.86); padding:28px; box-shadow:0 24px 80px rgba(0,0,0,.32); }
+.eyebrow { color:var(--accent); font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+h1 { font-size:clamp(32px,5vw,54px); line-height:1; margin:14px 0; }
+p { color:var(--muted); font-size:18px; line-height:1.6; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-top:26px; }
+a { color:var(--text); text-decoration:none; }
+.card { display:block; border:1px solid var(--line); border-radius:16px; padding:18px; background:rgba(30,41,59,.7); }
+.card strong { display:block; margin-bottom:8px; }
+.card span { color:var(--muted); font-size:14px; line-height:1.5; }
+</style>
+<script>
+window.THUMBGATE_DASHBOARD_BOOTSTRAP = { enabled: ${bootstrapActive ? 'true' : 'false'}, apiKey: ${serializedBootstrapKey} };
+</script>
+</head>
+<body>
+<main>
+<section class="panel">
+<div class="eyebrow">Packaged runtime</div>
+<h1>ThumbGate is running locally.</h1>
+<p>This lightweight npm dashboard is bundled without marketing assets, so installs stay small while core feedback, lessons, and API routes remain available.</p>
+<div class="grid">
+<a class="card" href="/v1/dashboard"><strong>Dashboard JSON</strong><span>Inspect feedback totals, lesson counts, and Reliability Gateway health.</span></a>
+<a class="card" href="/lessons"><strong>Lessons</strong><span>Review remembered thumbs-up/down lessons and enforcement context.</span></a>
+<a class="card" href="/health"><strong>Health</strong><span>Verify the installed package version and runtime status.</span></a>
+</div>
+</section>
+</main>
+</body>
+</html>`;
+}
+
+function renderPackagedLessonsHtml({ bootstrapActive, serializedBootstrapKey }) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ThumbGate Lessons</title>
+<style>
+:root { color-scheme: light dark; --bg:#0f172a; --panel:#111827; --text:#f8fafc; --muted:#94a3b8; --line:#334155; --accent:#38bdf8; }
+body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:linear-gradient(135deg,#020617,#0f172a); color:var(--text); }
+main { max-width:920px; margin:0 auto; padding:48px 20px; }
+.panel { border:1px solid var(--line); border-radius:20px; background:rgba(15,23,42,.86); padding:28px; box-shadow:0 24px 80px rgba(0,0,0,.32); }
+.eyebrow { color:var(--accent); font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+h1 { font-size:clamp(32px,5vw,54px); line-height:1; margin:14px 0; }
+p { color:var(--muted); font-size:18px; line-height:1.6; }
+.actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:26px; }
+a { color:var(--text); text-decoration:none; border:1px solid var(--line); border-radius:999px; padding:12px 16px; background:rgba(30,41,59,.7); }
+</style>
+<script>
+window.THUMBGATE_LESSONS_BOOTSTRAP = { enabled: ${bootstrapActive ? 'true' : 'false'}, apiKey: ${serializedBootstrapKey} };
+</script>
+</head>
+<body>
+<main>
+<section class="panel">
+<div class="eyebrow">Packaged runtime</div>
+<h1>ThumbGate lessons are available.</h1>
+<p>The full hosted lessons UI is excluded from the npm tarball, but installed packages still expose the lesson APIs and detail pages needed for local agent feedback loops.</p>
+<div class="actions">
+<a href="/v1/lessons/search">Search lessons JSON</a>
+<a href="/v1/feedback/stats">Feedback stats JSON</a>
+<a href="/dashboard">Back to dashboard</a>
+</div>
+</section>
+</main>
+</body>
+</html>`;
+}
+
+function loadDashboardPageHtml(req, expectedApiKey) {
+  const bootstrap = resolveLocalPageBootstrap(req, expectedApiKey);
+  const template = readOptionalPublicTemplate(DASHBOARD_PAGE_PATH);
+  if (!template) return renderPackagedDashboardHtml(bootstrap);
+
   return fillTemplate(template, {
-    '__DASHBOARD_BOOTSTRAP_KEY__': serializedBootstrapKey,
-    '__DASHBOARD_BOOTSTRAP_ENABLED__': bootstrapActive ? 'true' : 'false',
+    '__DASHBOARD_BOOTSTRAP_KEY__': bootstrap.serializedBootstrapKey,
+    '__DASHBOARD_BOOTSTRAP_ENABLED__': bootstrap.bootstrapActive ? 'true' : 'false',
   });
 }
 
 function loadLessonsPageHtml(req, expectedApiKey) {
-  const template = fs.readFileSync(LESSONS_PAGE_PATH, 'utf-8');
-  const forwardedHost = req.headers['x-forwarded-host'];
-  const hostHeader = Array.isArray(forwardedHost)
-    ? forwardedHost[0]
-    : forwardedHost || req.headers.host || '';
-  const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
-  const devOverride = expectedApiKey === null && isLoopbackHost(hostHeader);
-  const bootstrapActive = localProBootstrap || devOverride;
-  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : devOverride ? 'dev-override' : '').replace(/</g, '\\u003c');
+  const bootstrap = resolveLocalPageBootstrap(req, expectedApiKey);
+  const template = readOptionalPublicTemplate(LESSONS_PAGE_PATH);
+  if (!template) return renderPackagedLessonsHtml(bootstrap);
 
   return fillTemplate(template, {
-    '__LESSONS_BOOTSTRAP_KEY__': serializedBootstrapKey,
-    '__LESSONS_BOOTSTRAP_ENABLED__': bootstrapActive ? 'true' : 'false',
+    '__LESSONS_BOOTSTRAP_KEY__': bootstrap.serializedBootstrapKey,
+    '__LESSONS_BOOTSTRAP_ENABLED__': bootstrap.bootstrapActive ? 'true' : 'false',
   });
 }
 
@@ -5079,6 +5172,10 @@ module.exports = {
     getPosthogProxyPath,
     isAllowedPosthogProxyPath,
     renderSitemapXml,
+    renderPackagedDashboardHtml,
+    renderPackagedLessonsHtml,
+    readOptionalPublicTemplate,
+    resolveLocalPageBootstrap,
   },
 };
 

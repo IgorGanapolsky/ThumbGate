@@ -37,6 +37,25 @@ test('sync-version covers the Claude adapter launcher manifest', serial, () => {
   );
 });
 
+test('sync-version detects Claude marketplace nested plugin version drift', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const marketplacePath = path.join(ROOT, '.claude-plugin', 'marketplace.json');
+  const original = fs.readFileSync(marketplacePath, 'utf8');
+  const marketplace = JSON.parse(original);
+
+  try {
+    marketplace.plugins[0].version = '0.0.1';
+    fs.writeFileSync(marketplacePath, JSON.stringify(marketplace, null, 2) + '\n');
+    const result = syncVersion({ checkOnly: true });
+    assert.ok(
+      result.drifted.some((entry) => entry.file === '.claude-plugin/marketplace.json' && entry.field === 'plugins[0].version'),
+      `expected Claude marketplace nested plugin version drift, found: ${JSON.stringify(result.drifted)}`
+    );
+  } finally {
+    fs.writeFileSync(marketplacePath, original);
+  }
+});
+
 test('sync-version covers the MCP stdio server metadata file', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });

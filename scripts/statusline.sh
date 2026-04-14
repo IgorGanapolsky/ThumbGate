@@ -155,6 +155,7 @@ osc_link() {
     *localhost*|*127.0.0.1*|"") printf '%s' "$label" ;;
     *) printf '\033]8;;%s\007%s\033]8;;\007' "$url" "$label" ;;
   esac
+  return 0
 }
 
 UP_ICON="👍"
