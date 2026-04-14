@@ -146,20 +146,21 @@ case "${TREND}" in
   improving) ARROW="↗" ;; degrading) ARROW="↘" ;; stable) ARROW="→" ;; *) ARROW="?" ;;
 esac
 
-inline_link() {
+# OSC 8 hyperlink: \e]8;;URL\a LABEL \e]8;;\a
+# Falls back to plain label when URL is empty or localhost.
+osc_link() {
   local url="$1"
   local label="$2"
-  if [ -n "$url" ]; then
-    printf '%s (%s)' "$label" "$url"
-  else
-    printf '%s' "$label"
-  fi
+  case "$url" in
+    *localhost*|*127.0.0.1*|"") printf '%s' "$label" ;;
+    *) printf '\033]8;;%s\007%s\033]8;;\007' "$url" "$label" ;;
+  esac
 }
 
 UP_ICON="👍"
 DOWN_ICON="👎"
-DASHBOARD_LINK="$DASHBOARD_LABEL"
-LESSONS_LINK="$LESSONS_LABEL"
+DASHBOARD_LINK="$(osc_link "$DASHBOARD_URL" "$DASHBOARD_LABEL")"
+LESSONS_LINK="$(osc_link "$LESSONS_URL" "$LESSONS_LABEL")"
 LATEST_LESSON_LINK=""
 if [ -n "$LESSON_LABEL" ]; then
   _DISPLAY_LINK="$LESSON_LINK"
@@ -167,9 +168,9 @@ if [ -n "$LESSON_LABEL" ]; then
     *localhost*|*127.0.0.1*) _DISPLAY_LINK="" ;;
   esac
   if [ -n "$LESSON_TEXT" ]; then
-    LATEST_LESSON_LINK="$(inline_link "$_DISPLAY_LINK" "${LESSON_LABEL}: ${LESSON_TEXT}")"
+    LATEST_LESSON_LINK="$(osc_link "$_DISPLAY_LINK" "${LESSON_LABEL}: ${LESSON_TEXT}")"
   else
-    LATEST_LESSON_LINK="$(inline_link "$_DISPLAY_LINK" "$LESSON_LABEL")"
+    LATEST_LESSON_LINK="$(osc_link "$_DISPLAY_LINK" "$LESSON_LABEL")"
   fi
 fi
 
