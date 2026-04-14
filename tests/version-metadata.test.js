@@ -63,6 +63,7 @@ test('public docs render the current package version', () => {
   const mcpSubmission = readText('docs/mcp-hub-submission.md');
   const claudePluginReadme = readText('.claude-plugin/README.md');
   const chatgptInstall = readText('adapters/chatgpt/INSTALL.md');
+  const chatgptInstructions = readText('docs/chatgpt-gpt-instructions.md');
   const gptStoreSubmission = readText('docs/gpt-store-submission.md');
   const claudeCodexBridgeReadme = readText('plugins/claude-codex-bridge/README.md');
   const claudeCodexBridgeInstall = readText('plugins/claude-codex-bridge/INSTALL.md');
@@ -112,6 +113,16 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstall, /This is an owner setup field/i);
   assert.match(chatgptInstall, /https:\/\/thumbgate-production\.up\.railway\.app\/openapi\.yaml/);
   assert.match(chatgptInstall, /https:\/\/thumbgate-production\.up\.railway\.app\/privacy/);
+  assert.match(chatgptInstructions, /Reliability Gateway for AI agents/i);
+  assert.match(chatgptInstructions, /Turn thumbs-down into prevention gates/);
+  assert.match(chatgptInstructions, /Paste an AI action to check, or tell me what went right\/wrong/i);
+  assert.match(chatgptInstructions, /Action check mode/);
+  assert.match(chatgptInstructions, /Feedback capture mode/);
+  assert.match(chatgptInstructions, /decisionControl\.executionMode/);
+  assert.match(chatgptInstructions, /one signal becomes one remembered rule/i);
+  assert.match(chatgptInstructions, /Regular users should never need an API key, JSON payload, OpenAPI knowledge, or developer setup/i);
+  assert.doesNotMatch(chatgptInstructions, /Setup Concierge/i);
+  assert.doesNotMatch(chatgptInstructions, /AI safety gate/i);
   assert.match(gptStoreSubmission, /published-user-confirmed/);
   assert.match(gptStoreSubmission, /Explore GPTs -> search ThumbGate/i);
   assert.match(gptStoreSubmission, /Turn thumbs-down into prevention gates/);
