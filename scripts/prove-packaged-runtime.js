@@ -269,10 +269,13 @@ async function runPackagedRuntimeSmoke(options = {}) {
     if (!/(Lessons|Lessons…)/.test(readyStatusline)) {
       throw new Error(`Ready statusline missing lessons label: ${readyStatusline.trim()}`);
     }
-    if (readyStatusline.includes(`${origin}/dashboard`)) {
+    // OSC 8 hyperlinks embed URLs in escape sequences (\033]8;;URL\033\\) — that's expected.
+    // Only reject raw plaintext URLs (not wrapped in OSC 8).
+    const stripOsc8 = (s) => s.replace(/\033\]8;;[^\033]*\033\\/g, '');
+    if (stripOsc8(readyStatusline).includes(`${origin}/dashboard`)) {
       throw new Error(`Ready statusline leaked dashboard URL: ${readyStatusline.trim()}`);
     }
-    if (readyStatusline.includes(`${origin}/lessons`)) {
+    if (stripOsc8(readyStatusline).includes(`${origin}/lessons`)) {
       throw new Error(`Ready statusline leaked lessons URL: ${readyStatusline.trim()}`);
     }
     // Thumbs-up/down icons stay inline while dashboard + lessons remain compact
