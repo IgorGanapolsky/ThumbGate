@@ -386,7 +386,8 @@ __GA_BOOTSTRAP__
   .pricing { padding: 80px 0; }
   .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1080px; margin: 0 auto; }
   .price-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px 28px; }
-  .price-card.pro { border-color: var(--cyan); box-shadow: 0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15); }
+  .price-card.pro { border-color: rgba(34,211,238,0.35); }
+  .price-card.free-highlight { border-color: var(--cyan); box-shadow: 0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15); }
   .price-card.team { border-color: rgba(74,222,128,0.45); box-shadow: inset 0 1px 0 rgba(74,222,128,0.16); }
   .price-card .tier { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
   .price-card.pro .tier { color: var(--cyan); }
@@ -506,13 +507,14 @@ __GA_BOOTSTRAP__
     </div>
     <p class="hero-persona" style="display:none">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
     <div class="hero-actions" style="margin-top:32px;">
-      <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_cta_click',{cta:'open_gpt'})">Open ThumbGate GPT</a>
-      <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;">
+      <div class="hero-install hero-install-primary" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;font-size:20px;padding:18px 32px;border:2px solid var(--cyan);box-shadow:0 0 32px var(--cyan-glow);">
         <span class="prompt">$</span>
         <span class="cmd">npx thumbgate init</span>
         <span class="copy-hint">click to copy</span>
       </div>
-      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_trial&cta_id=hero_start_trial" onclick="posthog.capture('hero_cta_click',{cta:'start_trial'})" class="btn-pro-page" style="font-size:16px;padding:14px 24px;margin-bottom:4px;">Start 7-day free trial</a>
+      <a href="#install" onclick="posthog.capture('hero_install_click',{cta:'install_cli'})" class="btn-gpt-page btn-install-hero" style="font-size:18px;padding:16px 36px;">Install Free CLI</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_go_pro" onclick="posthog.capture('hero_pro_click',{cta:'go_pro'})" class="btn-pro-page" style="font-size:13px;padding:10px 18px;margin-bottom:4px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
+      <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_cta_click',{cta:'open_gpt'})" style="font-size:13px;padding:10px 18px;background:transparent;border:1px solid var(--green);color:var(--green);">Open ThumbGate GPT</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;border-radius:999px;">⭐ Star on GitHub</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" style="font-size:13px;color:var(--text-muted);text-decoration:none;padding:8px 14px;">Install Codex plugin →</a>
     </div>
@@ -865,8 +867,9 @@ __GA_BOOTSTRAP__
     <div class="section-label">Pricing</div>
     <h2 class="section-title">Install free. Pro adds enforcement proof. Team shares it across seats.</h2>
     <div class="pricing-grid">
-      <div class="price-card">
-        <div class="tier">Free</div>
+      <div class="price-card free-highlight" style="border-color:var(--cyan);box-shadow:0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15);position:relative;">
+        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--cyan);color:#000;padding:4px 16px;border-radius:100px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">Most Popular</div>
+        <div class="tier" style="color:var(--cyan);">Free</div>
         <div class="price">$0</div>
         <div class="price-sub">Forever free · CLI-first local enforcement for one developer</div>
         <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo developers who want to stop the same agent mistake from showing up twice and prove local value before a team rollout conversation exists.</p>
@@ -879,6 +882,11 @@ __GA_BOOTSTRAP__
           <li>Unified context assembly — one call gets session, lessons, guards, and code-graph</li>
           <li><a href="/guide" style="color:var(--cyan);text-decoration:underline;">Setup guide for all agents →</a></li>
         </ul>
+        <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:12px;width:100%;justify-content:center;">
+          <span class="prompt">$</span>
+          <span class="cmd">npx thumbgate init</span>
+          <span class="copy-hint">click to copy</span>
+        </div>
         <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free">Install Free</a>
       </div>
       <div class="price-card pro" data-price-dollars="__PRO_PRICE_DOLLARS__">
@@ -911,8 +919,8 @@ __GA_BOOTSTRAP__
           <li>Review-ready workflow support — we help you wire the riskiest flows first: migrations, force-pushes, deploys, and CI</li>
         </ul>
         <div class="trial-badge" style="background:var(--cyan);color:#000;display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:12px;">7-DAY FREE TRIAL</div>
-        <a href="/checkout/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_trial&cta_id=pricing_pro_trial&cta_placement=pricing&plan_id=pro&landing_path=%2F" class="btn-pro" onclick="posthog.capture('pricing_cta_click',{cta:'pro_trial',plan:'pro'})" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Start 7-Day Free Trial — $19/mo</a>
-        <p style="font-size:11px;color:#666;margin-top:8px;">Solo Pro stays available for operators who want personal enforcement proof without the team rollout motion.</p>
+        <a href="/checkout/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" class="btn-pro" onclick="posthog.capture('pricing_cta_click',{cta:'pro_upgrade',plan:'pro'})" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
+        <p style="font-size:11px;color:#666;margin-top:8px;">Start with the free CLI. Upgrade when you hit the 3 captures/day limit and need the dashboard, DPO export, and export-ready evidence.</p>
       </div>
       <div class="price-card team">
         <div class="tier">Team</div>
@@ -1034,13 +1042,17 @@ __GA_BOOTSTRAP__
 <!-- FINAL CTA -->
 <section class="final-cta">
   <div class="container">
-    <h2>Stop the next costly AI mistake before it runs.</h2>
-    <p>Open the GPT for the fastest checkpoint. Install the free CLI when you are ready to enforce the same lesson locally. Use Pro for personal proof and the workflow hardening sprint for team rollout.</p>
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" target="_blank" rel="noopener" onclick="posthog.capture('final_cta_click',{cta:'open_gpt'})" class="btn-gpt-page">Open ThumbGate GPT</a>
-      <a href="/checkout/pro?utm_source=website&utm_medium=final_cta&utm_campaign=pro_trial&cta_id=final_pro_trial" onclick="posthog.capture('final_cta_click',{cta:'pro_trial'})" class="btn-pro" style="padding:12px 32px;font-size:15px;">Start 7-Day Free Trial — $19/mo</a>
+    <h2>Stop the same mistake before it runs again.</h2>
+    <p>Install free. No credit card. No signup. Hit your first gate in 60 seconds. Upgrade to Pro when you need the dashboard and exports.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center;">
+      <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;font-size:16px;padding:14px 24px;border:2px solid var(--cyan);">
+        <span class="prompt">$</span>
+        <span class="cmd">npx thumbgate init</span>
+        <span class="copy-hint">click to copy</span>
+      </div>
+      <a href="/guide?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free" onclick="posthog.capture('final_install_click',{cta:'install_cli'})" class="btn-pro btn-install-link" style="padding:12px 32px;font-size:15px;">Install Free CLI</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=final_cta&utm_campaign=pro_upgrade&cta_id=final_go_pro" onclick="posthog.capture('final_pro_click',{cta:'go_pro'})" class="btn-pro" style="padding:10px 24px;font-size:13px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
       <a href="#workflow-sprint-intake" class="btn-team" style="background:var(--green);">Start Workflow Hardening Sprint</a>
-      <a href="/guide?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free" class="btn-pro btn-install-link">Install Free CLI</a>
     </div>
   </div>
 </section>
@@ -1062,8 +1074,13 @@ __GA_BOOTSTRAP__
 
 <!-- STICKY BOTTOM CTA -->
 <div class="sticky-cta" id="sticky-cta">
-  <span class="sticky-cta-text"><strong>Live ThumbGate GPT</strong> — stop a costly agent action before it runs</span>
-  <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" target="_blank" rel="noopener" onclick="posthog.capture('sticky_cta_click',{cta:'open_gpt'})" class="btn-gpt-page">Open GPT</a>
+  <span class="sticky-cta-text"><strong>npx thumbgate init</strong> — free CLI, zero friction</span>
+  <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;padding:8px 16px;font-size:13px;">
+    <span class="prompt">$</span>
+    <span class="cmd">npx thumbgate init</span>
+    <span class="copy-hint">copy</span>
+  </div>
+  <a href="/checkout/pro?utm_source=website&utm_medium=sticky_cta&utm_campaign=pro_upgrade&cta_id=sticky_go_pro" onclick="posthog.capture('sticky_pro_click',{cta:'go_pro'})" class="btn-pro" style="padding:8px 16px;font-size:12px;border-radius:6px;white-space:nowrap;">Go Pro — $19/mo</a>
 </div>
 <script>
 (function() {
