@@ -1509,6 +1509,7 @@ function help() {
   console.log('  repair-github-marketplace  Dry-run or apply legacy GitHub Marketplace amount repairs (--write)');
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  summary               Human-readable feedback summary');
+  console.log('  explore               Interactive TUI explorer — browse lessons, gates, stats, rules');
   console.log('  lessons [flags]       Search promoted lessons and show linked corrective actions');
   console.log('  model-fit             Detect the current local embedding profile and write evidence report');
   console.log('  risk [flags]          Train or query the boosted local risk scorer');
@@ -1818,6 +1819,11 @@ switch (COMMAND) {
   case 'gate-stats':
     gateStats();
     break;
+  case 'explore': {
+    const { run: runExplore } = require(path.join(PKG_ROOT, 'scripts', 'explore'));
+    runExplore();
+    break;
+  }
   case 'dashboard':
     dashboard();
     break;
