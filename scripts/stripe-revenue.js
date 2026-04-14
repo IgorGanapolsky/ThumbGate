@@ -91,7 +91,7 @@ async function main() {
     process.exit(2);
   }
   if (!/^(sk|rk)_(live|test)_/.test(key)) {
-    console.error(`Key does not look like a Stripe secret/restricted key (got ${key.slice(0, 10)}...).`);
+    console.error('Stripe key format is invalid. Set STRIPE_READ_KEY or STRIPE_SECRET_KEY to a sk_*/rk_* key.');
     process.exit(2);
   }
 
