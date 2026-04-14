@@ -66,7 +66,7 @@ function loadGates(pkgRoot) {
   const gatesDir = path.join(pkgRoot, 'config', 'gates');
   const gates = [];
   if (!fs.existsSync(gatesDir)) return gates;
-  for (const f of fs.readdirSync(gatesDir).sort()) {
+  for (const f of fs.readdirSync(gatesDir).sort((a, b) => a.localeCompare(b))) {
     if (!f.endsWith('.json') || f === 'custom.json') continue;
     try {
       const raw = JSON.parse(fs.readFileSync(path.join(gatesDir, f), 'utf8'));
