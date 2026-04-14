@@ -165,13 +165,19 @@ function parseChangesetMarkdown(content) {
 function collectChangesets({
   dir = CHANGESET_DIR,
   packageName = DEFAULT_PACKAGE_NAME,
+  files,
 } = {}) {
   if (!fs.existsSync(dir)) {
     return [];
   }
 
+  const allowedNames = Array.isArray(files)
+    ? new Set(files.filter(isChangesetMarkdownFile).map((file) => path.basename(file)))
+    : null;
+
   return fs.readdirSync(dir)
     .filter((name) => name.endsWith('.md') && name !== 'README.md')
+    .filter((name) => !allowedNames || allowedNames.has(name))
     .sort()
     .map((name) => {
       const filePath = path.join(dir, name);
@@ -335,7 +341,7 @@ function runCli({
   }
 
   const changedFiles = getChangedFiles({ baseRef, cwd, runner });
-  const changesets = collectChangesets();
+  const changesets = collectChangesets({ files: changedFiles });
   const result = evaluateChangesetRequirement({ changedFiles, changesets });
   if (result.ok) {
     console.log(result.reason);
