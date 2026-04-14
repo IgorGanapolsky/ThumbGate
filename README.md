@@ -18,6 +18,17 @@ ThumbGate checks risky commands, file edits, deploys, API calls, and other agent
 
 **Running Codex?** **[Download the standalone Codex plugin bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Codex install guide](plugins/codex-profile/INSTALL.md)**
 
+## First-dollar activation path
+
+If someone is not already bought into ThumbGate, do not lead with architecture. Lead with one repeated mistake.
+
+1. **Show the pain:** open the **[ThumbGate GPT](https://thumbgate-production.up.railway.app/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=first_dollar_activation&cta_id=readme_first_dollar_open_gpt&cta_placement=readme_first_dollar)** and paste the bad answer, risky command, deploy, PR action, or agent plan before it runs again.
+2. **Capture the lesson:** type `thumbs down:` or `thumbs up:` with one concrete sentence. Native ChatGPT rating buttons are not the ThumbGate capture path; typed feedback is.
+3. **Enforce the repeat:** run `npx thumbgate init` where the agent executes so the lesson can become a Pre-Action Gate instead of another reminder.
+4. **Upgrade only after proof:** Solo Pro is for the dashboard, DPO export, proof-ready evidence, and higher capture limits after one real blocked repeat. Team starts with the Workflow Hardening Sprint around one repeated failure, one owner, and one proof review.
+
+The buying question is simple: **what repeated AI mistake would be worth blocking before the next tool call?**
+
 ## ThumbGate GPT: start here
 
 **Use ThumbGate in ChatGPT now:** **[Open the live ThumbGate GPT](https://thumbgate-production.up.railway.app/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=gpt_intro&cta_id=readme_intro_open_gpt&cta_placement=readme_intro)**, paste the action your AI agent wants to run, and ask whether to allow, block, or checkpoint it before the mistake becomes expensive.

@@ -56,6 +56,9 @@ test('README keeps the business sprint-first while preserving the Pro side lane'
 
   assert.match(readme, /Best first paid motion for teams/i);
   assert.match(readme, /Best first technical motion/i);
+  assert.match(readme, /First-dollar activation path/i);
+  assert.match(readme, /what repeated AI mistake would be worth blocking before the next tool call/i);
+  assert.match(readme, /Native ChatGPT rating buttons are not the ThumbGate capture path/i);
   assert.match(readme, /CLI-first/i);
   assert.match(readme, /Workflow Hardening Sprint/i);
   assert.match(readme, /Paid path for individual operators/i);
@@ -205,6 +208,9 @@ test('first dollar playbook keeps the sales motion sprint-first and proof-backed
 
   assert.match(playbook, /Status: current/i);
   assert.match(playbook, /next repeatable dollar/i);
+  assert.match(playbook, /First-dollar activation ladder/i);
+  assert.match(playbook, /move a cold user from curiosity to one blocked repeat/i);
+  assert.match(playbook, /Do not claim ChatGPT's native rating buttons feed ThumbGate/i);
   assert.match(playbook, /Workflow Hardening Sprint/i);
   assert.match(playbook, /proof pack/i);
   assert.match(playbook, /named pilot agreement/i);

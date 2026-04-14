@@ -82,6 +82,9 @@ test('formatReleaseNotes includes full changeset summaries and verification link
     currentTag: 'v1.4.4',
     currentRef: 'abc123',
     githubRunUrl: 'https://github.com/IgorGanapolsky/ThumbGate/actions/runs/1',
+    npmShasum: '118f7abfbaba942195bc2d62219a9fd28cd52ffd',
+    npmTarballUrl: 'https://registry.npmjs.org/thumbgate/-/thumbgate-1.4.4.tgz',
+    npmPublishedAt: '2026-04-14T16:20:49.754Z',
     changesets: [{
       file: '.changeset/slim-npm-package-boundary.md',
       releaseType: 'patch',
@@ -95,6 +98,11 @@ test('formatReleaseNotes includes full changeset summaries and verification link
   assert.match(markdown, /slim-npm-package-boundary\.md/);
   assert.match(markdown, /generated runtime state cannot leak/);
   assert.match(markdown, /actions\/runs\/1/);
+  assert.match(markdown, /npm Email Companion/);
+  assert.match(markdown, /Successfully published/);
+  assert.match(markdown, /118f7abfbaba942195bc2d62219a9fd28cd52ffd/);
+  assert.match(markdown, /thumbgate-1\.4\.4\.tgz/);
+  assert.match(markdown, /2026-04-14T16:20:49\.754Z/);
   assert.match(markdown, /CHANGELOG\.md Entry/);
   assert.match(markdown, /Changelog copy/);
 });
@@ -142,7 +150,15 @@ test('publish workflow writes full release notes instead of GitHub generated not
   assert.match(workflow, /fetch-depth: 0/);
   assert.match(workflow, /Build full changeset release notes/);
   assert.match(workflow, /scripts\/release-notes\.js/);
+  assert.match(workflow, /Resolve npm publish receipt/);
+  assert.match(workflow, /npm'\s*,\s*\[\s*'view'/);
+  assert.match(workflow, /--npm-shasum="\$\{NPM_SHASUM\}"/);
+  assert.match(workflow, /--npm-tarball-url="\$\{NPM_TARBALL_URL\}"/);
+  assert.match(workflow, /--npm-published-at="\$\{NPM_PUBLISHED_AT\}"/);
   assert.match(workflow, /GITHUB_STEP_SUMMARY/);
+  assert.match(workflow, /Upload full release notes artifact/);
+  assert.match(workflow, /actions\/upload-artifact@v7/);
+  assert.match(workflow, /if-no-files-found:\s*error/);
   assert.match(workflow, /gh release create "v\$\{VERSION\}" --title "thumbgate@\$\{VERSION\}" --notes-file "\$\{notes_file\}"/);
   assert.match(workflow, /gh release edit "v\$\{VERSION\}" --title "thumbgate@\$\{VERSION\}" --notes-file "\$\{notes_file\}"/);
   assert.match(workflow, /gh release upload "v\$\{VERSION\}" "\$\{notes_file\}" --clobber/);

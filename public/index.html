@@ -298,6 +298,14 @@ __GA_BOOTSTRAP__
   .hero-install .cmd { color: var(--cyan); }
   .hero-install .copy-hint { font-size: 11px; color: var(--text-muted); font-family: var(--font); margin-left: 8px; }
   .hero-install .copied { color: var(--green); }
+  .first-gate-card { max-width: 820px; margin: 0 auto 28px; text-align: left; border: 1px solid rgba(34,211,238,0.28); background: linear-gradient(135deg, rgba(34,211,238,0.08) 0%, rgba(74,222,128,0.06) 100%); border-radius: 14px; padding: 22px; box-shadow: 0 18px 60px rgba(0,0,0,0.22); }
+  .first-gate-card h2 { font-size: clamp(22px, 3vw, 30px); line-height: 1.15; margin-bottom: 8px; letter-spacing: -0.025em; }
+  .first-gate-card p { max-width: none; margin: 0 0 16px; color: var(--text-muted); font-size: 15px; }
+  .first-gate-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  .first-gate-step { border: 1px solid var(--border); border-radius: 10px; background: rgba(10,10,11,0.62); padding: 14px; }
+  .first-gate-step strong { display: block; color: var(--cyan); margin-bottom: 6px; }
+  .first-gate-step p { font-size: 13px; line-height: 1.5; margin: 0; }
+  .first-gate-example { font-family: var(--mono); color: var(--green); background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.24); border-radius: 8px; padding: 10px 12px; font-size: 12px; margin-top: 12px; overflow-x: auto; }
 
   /* SOCIAL PROOF BAR */
   .proof-bar { display: flex; justify-content: center; flex-wrap: wrap; gap: 24px; font-size: 13px; color: var(--text-muted); padding: 0 0 8px; }
@@ -447,6 +455,7 @@ __GA_BOOTSTRAP__
   @media (max-width: 700px) {
     .steps { grid-template-columns: 1fr; }
     .compatibility-grid { grid-template-columns: 1fr; }
+    .first-gate-steps { grid-template-columns: 1fr; }
     .gpt-steps { grid-template-columns: 1fr; }
     .seo-grid { grid-template-columns: 1fr; }
     .pricing-grid { grid-template-columns: 1fr; }
@@ -497,9 +506,9 @@ __GA_BOOTSTRAP__
 <section class="hero">
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
-    <div class="hero-badge">● Stop costly AI mistakes before they run</div>
-    <h1>Stop AI agents before<br>they make costly mistakes.</h1>
-    <p style="font-size:18px;color:var(--text-muted);max-width:640px;margin:0 auto 20px;line-height:1.6;">Paste a risky command, file edit, deploy, payment, API call, or email into the live ThumbGate GPT for allow, block, or checkpoint guidance.<br><strong style="color:var(--text)">Then enforce locally with <code>npx thumbgate init</code> where your agent actually executes.</strong></p>
+    <div class="hero-badge">● Block your first repeated AI mistake in 5 minutes</div>
+    <h1>Stop the same AI mistake<br>before it runs again.</h1>
+    <p style="font-size:18px;color:var(--text-muted);max-width:660px;margin:0 auto 20px;line-height:1.6;">Open the ThumbGate GPT, paste the answer or action that went wrong, then type a concrete <code>thumbs down:</code> or <code>thumbs up:</code> lesson.<br><strong style="color:var(--text)">Install locally with <code>npx thumbgate init</code> when you want that lesson enforced before the next agent tool call.</strong></p>
     <div class="hero-signals">
       <div class="signal-pill signal-down">👎 Prevent expensive mistakes: force-pushes, destructive SQL, bad deploys</div>
       <div class="signal-pill signal-up">✅ Fix it once, then block the repeat before the next tool call</div>
@@ -520,6 +529,26 @@ __GA_BOOTSTRAP__
     </div>
     <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:660px;">No, you do not have to chat inside the GPT forever. The GPT is advice and checkpointing; local hooks do the hard blocking for Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and MCP-compatible agents.</p>
     <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:560px;">Free local CLI proves the enforcement loop on one machine. Pro adds personal enforcement proof, the gate debugger, DPO export, and a dashboard. Team shares the gates across seats. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
+    <div class="first-gate-card" id="first-gate">
+      <div class="section-label" style="text-align:left;margin-bottom:8px;">First-Dollar Activation Path</div>
+      <h2>Prove one blocked repeat before asking anyone to buy.</h2>
+      <p>The fastest path to revenue is not another feature. It is one person proving ThumbGate prevents one repeated mistake they already care about.</p>
+      <div class="first-gate-steps">
+        <div class="first-gate-step">
+          <strong>1. Open the GPT</strong>
+          <p>Paste the bad answer, command, deploy, PR action, or agent plan before it runs again.</p>
+        </div>
+        <div class="first-gate-step">
+          <strong>2. Type the signal</strong>
+          <p>Use <code>thumbs down:</code> for the mistake or <code>thumbs up:</code> for the pattern worth repeating. Native ChatGPT rating buttons are not the ThumbGate capture path.</p>
+        </div>
+        <div class="first-gate-step">
+          <strong>3. Enforce the lesson</strong>
+          <p>Run <code>npx thumbgate init</code>. Upgrade to Pro when you need the dashboard, proof, exports, or more captures.</p>
+        </div>
+      </div>
+      <div class="first-gate-example">thumbs down: the answer ignored my request for exact files and tests; next time include file paths, commands, and verification evidence.</div>
+    </div>
     <div class="proof-bar">
       <a href="/guide" rel="noopener">CLI-first setup guide →</a>
       <span class="dot"></span>
@@ -564,8 +593,8 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="gpt-panel">
       <div class="section-label" style="text-align:left;">ChatGPT Entry Point · Live ThumbGate GPT for ChatGPT</div>
-      <h2>Open the GPT. Check the action. Turn the lesson into a gate.</h2>
-      <p>ThumbGate should meet users where they already ask AI for help. The live GPT is the lowest-friction way to prevent an expensive AI mistake before installing anything.</p>
+      <h2>Open the GPT. Give typed thumbs feedback. Turn the lesson into a gate.</h2>
+      <p>ThumbGate should meet users where they already ask AI for help. The live GPT is the lowest-friction way to capture a useful thumbs-up/down lesson, check a risky action, and prove the enforcement loop before installing anything.</p>
       <div class="gpt-steps">
         <div class="gpt-step">
           <strong>1. Try the live GPT</strong>
@@ -573,7 +602,7 @@ __GA_BOOTSTRAP__
         </div>
         <div class="gpt-step">
           <strong>2. Save the signal</strong>
-          <p>Reply with <code>thumbs up:</code> or <code>thumbs down:</code> plus one concrete sentence. One signal becomes one remembered rule.</p>
+          <p>Reply in chat with <code>thumbs up:</code> or <code>thumbs down:</code> plus one concrete sentence. Do not rely on ChatGPT's native rating buttons for ThumbGate memory.</p>
         </div>
         <div class="gpt-step">
           <strong>3. Enforce locally</strong>
@@ -584,7 +613,7 @@ __GA_BOOTSTRAP__
         <a href="/go/gpt?utm_source=website&utm_medium=gpt_section&utm_campaign=chatgpt_gpt&cta_id=gpt_path_open_gpt&cta_placement=gpt_section" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('gpt_path_cta_click',{cta:'open_gpt'})">Open ThumbGate GPT</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" class="btn-free" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">ChatGPT Actions setup</a>
       </div>
-      <p class="gpt-note"><strong>Plain English rule:</strong> ChatGPT is the discovery and memory surface for advice, checkpointing, and typed feedback capture. The hard Reliability Gateway still runs in the local agent or CI lane.</p>
+      <p class="gpt-note"><strong>Plain English rule:</strong> ChatGPT is the discovery and memory surface for advice, checkpointing, and typed feedback capture. One typed signal becomes one remembered rule. The hard Reliability Gateway still runs in the local agent or CI lane.</p>
     </div>
   </div>
 </section>
@@ -872,7 +901,7 @@ __GA_BOOTSTRAP__
         <div class="tier" style="color:var(--cyan);">Free</div>
         <div class="price">$0</div>
         <div class="price-sub">Forever free · CLI-first local enforcement for one developer</div>
-        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo developers who want to stop the same agent mistake from showing up twice and prove local value before a team rollout conversation exists.</p>
+        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo developers who want to stop the same agent mistake from showing up twice and prove one blocked repeat before a team rollout conversation exists.</p>
         <ul>
           <li>3 feedback captures/day · 5 lesson searches/day · unlimited recall</li>
           <li>5 auto-promoted gates plus the core safety policy</li>
@@ -920,7 +949,7 @@ __GA_BOOTSTRAP__
         </ul>
         <div class="trial-badge" style="background:var(--cyan);color:#000;display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:12px;">7-DAY FREE TRIAL</div>
         <a href="/go/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" class="btn-pro" onclick="posthog.capture('pricing_cta_click',{cta:'pro_upgrade',plan:'pro'})" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
-        <p style="font-size:11px;color:#666;margin-top:8px;">Start with the free CLI. Upgrade when you hit the 3 captures/day limit and need the dashboard, DPO export, and export-ready evidence.</p>
+        <p style="font-size:11px;color:#666;margin-top:8px;">Start with the free CLI. Upgrade after one real blocked repeat when you hit the 3 captures/day limit or need dashboard proof, DPO export, and export-ready evidence.</p>
       </div>
       <div class="price-card team">
         <div class="tier">Team</div>
