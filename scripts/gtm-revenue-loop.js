@@ -48,26 +48,26 @@ function applyInlineOption(options, arg) {
   return false;
 }
 
-function applyNamedOption(options, argv, index) {
-  const arg = argv[index];
-  if (arg === '--write-docs') {
+const NAMED_OPTION_HANDLERS = {
+  '--write-docs': (options, _argv, index) => {
     options.writeDocs = true;
     return index;
-  }
-
-  if (arg === '--report-dir') {
+  },
+  '--report-dir': (options, argv, index) => {
     const parsed = readFollowingOption(argv, index);
     options.reportDir = parsed.value || options.reportDir;
     return parsed.index;
-  }
-
-  if (arg === '--max-targets') {
+  },
+  '--max-targets': (options, argv, index) => {
     const parsed = readFollowingOption(argv, index);
     options.maxTargets = parsed.value ? clampTargetCount(parsed.value) : options.maxTargets;
     return parsed.index;
-  }
+  },
+};
 
-  return null;
+function applyNamedOption(options, argv, index) {
+  const handler = NAMED_OPTION_HANDLERS[argv[index]];
+  return handler ? handler(options, argv, index) : null;
 }
 
 function parseArgs(argv = []) {

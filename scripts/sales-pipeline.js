@@ -646,7 +646,7 @@ function runCli(argv = process.argv.slice(2)) {
 
 function isCliInvocation(argv = process.argv) {
   const invokedPath = argv[1];
-  return invokedPath ? path.resolve(invokedPath) === __filename : false;
+  return Boolean(invokedPath) && !path.relative(path.resolve(invokedPath), __filename);
 }
 
 if (isCliInvocation()) {
