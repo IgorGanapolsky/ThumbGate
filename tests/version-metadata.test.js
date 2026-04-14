@@ -318,13 +318,13 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
 
 test('runtime hosted billing config preserves absolute fallback checkout urls', () => {
   const previousFallback = process.env.THUMBGATE_CHECKOUT_FALLBACK_URL;
-  process.env.THUMBGATE_CHECKOUT_FALLBACK_URL = 'https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06?utm_source=website&utm_medium=cta_button';
+  process.env.THUMBGATE_CHECKOUT_FALLBACK_URL = 'https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a?utm_source=website&utm_medium=cta_button';
 
   try {
     const runtimeConfig = resolveHostedBillingConfig();
     assert.equal(
       runtimeConfig.checkoutFallbackUrl,
-      'https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06?utm_source=website&utm_medium=cta_button'
+      'https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a?utm_source=website&utm_medium=cta_button'
     );
   } finally {
     if (previousFallback === undefined) {
