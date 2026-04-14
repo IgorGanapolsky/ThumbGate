@@ -95,8 +95,7 @@ async function main() {
     process.exit(2);
   }
 
-  const mode = key.includes('_live_') ? 'live' : 'test';
-  const sinceTs = args.days ? Math.floor((Date.now() - args.days * 86400_000) / 1000) : null;
+  const sinceTs = args.days ? Math.floor((Date.now() - args.days * 86_400_000) / 1000) : null;
 
   const [balance, charges, subs] = await Promise.all([
     stripeGet('/balance', {}, key),
@@ -104,6 +103,24 @@ async function main() {
     paginate('/subscriptions', { status: 'all' }, key, 10),
   ]);
 
+  const summary = summarizeRevenue({
+    args,
+    key,
+    balance,
+    charges,
+    subs,
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify(summary, null, 2));
+    return;
+  }
+
+  printSummary(summary);
+}
+
+function summarizeRevenue({ args, key, balance, charges, subs }) {
+  const mode = key.includes('_live_') ? 'live' : 'test';
   const succeeded = charges.filter((c) => c.status === 'succeeded');
   const refunded = charges.filter((c) => c.refunded);
   const totalCents = succeeded.reduce((a, c) => a + (c.amount || 0), 0);
@@ -121,7 +138,7 @@ async function main() {
     return a;
   }, 0);
 
-  const summary = {
+  return {
     mode,
     window: args.days ? `last ${args.days} days` : 'lifetime',
     charges: {
@@ -154,13 +171,10 @@ async function main() {
       ? new Date(Math.max(...succeeded.map((c) => c.created)) * 1000).toISOString()
       : null,
   };
+}
 
-  if (args.json) {
-    console.log(JSON.stringify(summary, null, 2));
-    return;
-  }
-
-  const flag = mode === 'live' ? '🔴 LIVE' : '🟡 TEST';
+function printSummary(summary) {
+  const flag = summary.mode === 'live' ? '🔴 LIVE' : '🟡 TEST';
   console.log(`\n${flag}  Stripe revenue summary (${summary.window})`);
   console.log('─'.repeat(60));
   console.log(`  Charges        : ${summary.charges.succeeded} succeeded / ${summary.charges.total} total`);
@@ -177,7 +191,20 @@ async function main() {
   console.log('');
 }
 
-main().catch((err) => {
-  console.error(`stripe-revenue error: ${err.message}`);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(`stripe-revenue error: ${err.message}`);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  STRIPE_API,
+  resolveKey,
+  parseArgs,
+  stripeGet,
+  paginate,
+  summarizeRevenue,
+  printSummary,
+  main,
+};

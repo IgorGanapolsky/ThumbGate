@@ -3492,9 +3492,7 @@ async function addContext(){
       // page instead — no Stripe session created, no funnel pollution.
       // The `?confirm=1` query param or POST below is the real-user path.
       const botClassification = classifyRequester(req.headers);
-      const confirmParam = parsed && parsed.searchParams
-        ? parsed.searchParams.get('confirm')
-        : null;
+      const confirmParam = parsed?.searchParams?.get('confirm') ?? null;
       const isConfirmedCheckout = confirmParam === '1'
         || confirmParam === 'true'
         || req.method === 'POST';

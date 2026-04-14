@@ -389,7 +389,7 @@
     "test:per-step-scoring": "node --test tests/per-step-scoring.test.js",
     "test:weekly-auto-post": "node --test tests/weekly-auto-post.test.js",
     "test:social-post-hourly": "node --test tests/social-post-hourly.test.js",
-    "test:social-quality-gate": "node --test tests/social-quality-gate.test.js",
+    "test:social-quality-gate": "node --test tests/social-quality-gate.test.js tests/validate-social-post.test.js",
     "test:a2ui-engine": "node --test tests/a2ui-engine.test.js",
     "test:gate-satisfy": "node --test tests/gate-satisfy.test.js",
     "test:money-watcher": "node --test tests/money-watcher.test.js",

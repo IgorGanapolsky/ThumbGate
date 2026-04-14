@@ -33,10 +33,8 @@ const LIMITS = {
 
 function charCount(text) {
   // Threads/X/Meta count UTF-16 code units, which is what String.length gives us.
-  // Emojis outside BMP count as 2. Close enough for a pre-flight gate.
-  return Array.from(text).length > text.length
-    ? text.length // grapheme explosion — use raw code-unit count (what Meta does)
-    : text.length;
+  // Emojis outside BMP count as 2, matching publish-time platform behavior.
+  return text.length;
 }
 
 function parseArgs(argv) {
@@ -102,18 +100,30 @@ function evaluateBlock(block) {
   return { block, len, results };
 }
 
+function previewBody(body) {
+  const preview = body.slice(0, 120).replaceAll('\n', ' ');
+  return `${preview}${body.length > 120 ? '…' : ''}`;
+}
+
+function resultMarker(result) {
+  if (result.ok) return '✓';
+  return result.blocking ? '✗' : '⚠';
+}
+
+function renderResult(result) {
+  const tail = result.ok ? '' : `  — OVER by ${result.over} (${result.note})`;
+  console.log(`    ${resultMarker(result)} ${result.platform.padEnd(10)} ${result.len}/${result.max}${tail}`);
+  return !result.ok && result.blocking ? 1 : 0;
+}
+
+function renderEvaluation(evaluation) {
+  console.log(`\n■ ${evaluation.block.label}  (${evaluation.len} chars)`);
+  console.log(`  ${previewBody(evaluation.block.body)}`);
+  return evaluation.results.reduce((failures, result) => failures + renderResult(result), 0);
+}
+
 function render(evals) {
-  let failures = 0;
-  for (const ev of evals) {
-    console.log(`\n■ ${ev.block.label}  (${ev.len} chars)`);
-    console.log('  ' + ev.block.body.slice(0, 120).replace(/\n/g, ' ') + (ev.block.body.length > 120 ? '…' : ''));
-    for (const r of ev.results) {
-      const marker = r.ok ? '✓' : (r.blocking ? '✗' : '⚠');
-      const tail = r.ok ? '' : `  — OVER by ${r.over} (${r.note})`;
-      console.log(`    ${marker} ${r.platform.padEnd(10)} ${r.len}/${r.max}${tail}`);
-      if (!r.ok && r.blocking) failures++;
-    }
-  }
+  const failures = evals.reduce((sum, evaluation) => sum + renderEvaluation(evaluation), 0);
   console.log('');
   return failures;
 }
@@ -134,4 +144,22 @@ function main() {
   console.log('All drafts fit every platform limit. Safe to schedule.');
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  LIMITS,
+  FEED_POST_PLATFORMS,
+  charCount,
+  parseArgs,
+  readSources,
+  extractBlocks,
+  evaluateBlock,
+  previewBody,
+  resultMarker,
+  renderResult,
+  renderEvaluation,
+  render,
+  main,
+};
