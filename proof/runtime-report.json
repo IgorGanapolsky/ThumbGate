@@ -1,8 +1,8 @@
 {
   "phase": "12-interruptible-runtime",
-  "generatedAt": "2026-04-14T21:56:11.618Z",
-  "passed": 6,
-  "failed": 1,
+  "generatedAt": "2026-04-14T22:17:16.659Z",
+  "passed": 7,
+  "failed": 0,
   "total": 7,
   "requirements": {
     "RUNTIME-01": {
@@ -30,9 +30,8 @@
       "desc": "verify-run full includes the runtime proof lane and artifact"
     },
     "RUNTIME-07": {
-      "status": "fail",
-      "desc": "packaged thumbgate runtime boots local API and serves dashboard affordances",
-      "error": "Timed out waiting for packaged runtime health at http://127.0.0.1:44987"
+      "status": "pass",
+      "desc": "packaged thumbgate runtime boots local API and serves dashboard affordances"
     }
   }
 }
