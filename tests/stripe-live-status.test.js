@@ -37,6 +37,17 @@ test('getLiveStatus reports missing dependency when Stripe client shape is inval
   assert.deepEqual(report.gaps, ['Stripe SDK did not create a client']);
 });
 
+test('getLiveStatus reports missing dependency when Stripe export is not a factory', async () => {
+  const report = await getLiveStatus({
+    secretKey: 'sk_test_fake',
+    stripeCtor: {},
+  });
+
+  assert.equal(report.status, 'missing_dependency');
+  assert.equal(report.configured, false);
+  assert.match(report.gaps[0], /Stripe SDK is unavailable/);
+});
+
 test('getLiveStatus summarizes live Stripe objects from an injected client', async () => {
   const now = new Date('2026-04-14T16:00:00Z');
   const stripeClient = {
