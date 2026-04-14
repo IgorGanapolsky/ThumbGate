@@ -2354,6 +2354,31 @@ function createApiServer() {
     const requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
     const requestSafeDataDir = getSafeDataDir(req, parsed);
 
+    // PostHog reverse proxy — bypasses ad blockers
+    if (pathname.startsWith('/ingest')) {
+      const posthogPath = pathname.replace('/ingest', '') || '/';
+      const posthogUrl = `https://us.i.posthog.com${posthogPath}${parsed.search || ''}`;
+
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        const proxyReq = https.request(posthogUrl, {
+          method: req.method,
+          headers: {
+            ...req.headers,
+            host: 'us.i.posthog.com',
+          },
+        }, (proxyRes) => {
+          res.writeHead(proxyRes.statusCode, proxyRes.headers);
+          proxyRes.pipe(res);
+        });
+        proxyReq.on('error', () => { res.writeHead(502); res.end(); });
+        if (body) proxyReq.write(body);
+        proxyReq.end();
+      });
+      return;
+    }
+
     // Public MCP endpoint — responds to Smithery registry scanning and MCP initialize
     // The initialize handshake is unauthenticated; subsequent tool calls require Bearer auth
     if (pathname === '/mcp') {
