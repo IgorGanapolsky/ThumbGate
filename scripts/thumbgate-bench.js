@@ -1,13 +1,61 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_SUITE_PATH = path.join(ROOT, 'bench', 'thumbgate-bench.json');
 const DEFAULT_MIN_SCORE = 90;
+const BACKSLASH = '\\';
+const ESCAPED_BACKSLASH = String.raw`\\`;
+const PIPE = '|';
+const ESCAPED_PIPE = String.raw`\|`;
+
+function parseBooleanOption(args, arg) {
+  if (arg === '--json') {
+    args.json = true;
+    return true;
+  }
+  if (arg === '--use-runtime-state') {
+    args.useRuntimeState = true;
+    return true;
+  }
+  if (arg === '--help' || arg === '-h') {
+    args.help = true;
+    return true;
+  }
+  return false;
+}
+
+function parsePathOption(args, arg, optionName, fieldName) {
+  const prefix = `${optionName}=`;
+  if (!arg.startsWith(prefix)) {
+    return false;
+  }
+  args[fieldName] = path.resolve(arg.slice(prefix.length));
+  return true;
+}
+
+function parseMinScoreOption(args, arg) {
+  const prefix = '--min-score=';
+  if (!arg.startsWith(prefix)) {
+    return false;
+  }
+  const value = Number(arg.slice(prefix.length));
+  if (!Number.isFinite(value) || value < 0 || value > 100) {
+    throw new Error('--min-score must be a number from 0 to 100');
+  }
+  args.minScore = value;
+  return true;
+}
+
+function parseValueOption(args, arg) {
+  return parsePathOption(args, arg, '--scenarios', 'suitePath')
+    || parsePathOption(args, arg, '--out-dir', 'outDir')
+    || parseMinScoreOption(args, arg);
+}
 
 function parseArgs(argv = process.argv.slice(2)) {
   const args = {
@@ -19,34 +67,7 @@ function parseArgs(argv = process.argv.slice(2)) {
   };
 
   for (const arg of argv) {
-    if (arg === '--json') {
-      args.json = true;
-      continue;
-    }
-    if (arg === '--use-runtime-state') {
-      args.useRuntimeState = true;
-      continue;
-    }
-    if (arg.startsWith('--scenarios=')) {
-      args.suitePath = path.resolve(arg.slice('--scenarios='.length));
-      continue;
-    }
-    if (arg.startsWith('--out-dir=')) {
-      args.outDir = path.resolve(arg.slice('--out-dir='.length));
-      continue;
-    }
-    if (arg.startsWith('--min-score=')) {
-      const value = Number(arg.slice('--min-score='.length));
-      if (!Number.isFinite(value) || value < 0 || value > 100) {
-        throw new Error('--min-score must be a number from 0 to 100');
-      }
-      args.minScore = value;
-      continue;
-    }
-    if (arg === '--help' || arg === '-h') {
-      args.help = true;
-      continue;
-    }
+    if (parseBooleanOption(args, arg) || parseValueOption(args, arg)) continue;
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -67,10 +88,21 @@ function usage() {
 }
 
 function stableId(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  const output = [];
+  let previousDash = true;
+  for (const character of String(value || '').toLowerCase()) {
+    const isAlphanumeric = (character >= 'a' && character <= 'z')
+      || (character >= '0' && character <= '9');
+    if (isAlphanumeric) {
+      output.push(character);
+      previousDash = false;
+    } else if (!previousDash) {
+      output.push('-');
+      previousDash = true;
+    }
+  }
+  if (output.at(-1) === '-') output.pop();
+  return output.join('');
 }
 
 function readJson(filePath) {
@@ -123,7 +155,7 @@ function loadScenarioSuite(filePath = DEFAULT_SUITE_PATH) {
 
 function resolveOutDir(outDir) {
   if (outDir) return outDir;
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const stamp = new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-');
   return path.join(ROOT, '.thumbgate', 'bench', stamp);
 }
 
@@ -282,10 +314,10 @@ function scoreResults(results, replayResults = []) {
   const positivePromotionRate = divide(positivePromoted, positivePatterns.length);
   const replayStability = divide(replayStable, total);
   const score = Math.round(100 * (
-    (safetyInterventionRate * 0.30) +
+    (safetyInterventionRate * 0.3) +
     (capabilityRate * 0.25) +
     (taskSuccessRate * 0.25) +
-    (replayStability * 0.20)
+    (replayStability * 0.2)
   ));
 
   return {
@@ -323,9 +355,11 @@ function buildReport(suite, results, replayResults, options = {}) {
 
 function escapeMarkdownTableCell(value) {
   return String(value)
-    .replace(/\\/g, '\\\\')
-    .replace(/\|/g, '\\|')
-    .replace(/\r?\n/g, ' ');
+    .replaceAll(BACKSLASH, ESCAPED_BACKSLASH)
+    .replaceAll(PIPE, ESCAPED_PIPE)
+    .replaceAll('\r\n', '\n')
+    .replaceAll('\r', '\n')
+    .replaceAll('\n', ' ');
 }
 
 function renderMarkdown(report) {
@@ -358,14 +392,15 @@ function renderMarkdown(report) {
   ];
 
   for (const scenario of report.scenarios) {
-    lines.push([
+    const cells = [
       scenario.id,
       scenario.service,
       scenario.expectedDecision,
       scenario.actualDecision,
       scenario.gate || 'none',
       scenario.passed ? 'PASS' : 'FAIL',
-    ].map(escapeMarkdownTableCell).join(' | ').replace(/^/, '| ').replace(/$/, ' |'));
+    ].map(escapeMarkdownTableCell).join(' | ');
+    lines.push(`| ${cells} |`);
   }
 
   if (report.failedScenarios.length > 0) {
@@ -427,7 +462,11 @@ function main() {
   }
 }
 
-if (require.main === module) {
+function isExecutedDirectly() {
+  return require.main?.filename === __filename;
+}
+
+if (isExecutedDirectly()) {
   try {
     main();
   } catch (error) {
@@ -451,4 +490,5 @@ module.exports = {
   writeReport,
   runBenchmark,
   escapeMarkdownTableCell,
+  isExecutedDirectly,
 };
