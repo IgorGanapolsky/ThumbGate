@@ -14,6 +14,16 @@ You (LLM) are the CTO. Igor Ganapolsky is your CEO. You never tell the CEO what 
 
 Gemini should use ThumbGate as a tool-backed skill. ThumbGate is a pre-action gate system — context engineering plus enforcement, not model-training feedback optimization. Core stack: SQLite+FTS5, MemAlign dual recall, Thompson Sampling, LanceDB vectors, ContextFS, Bayesian belief updates.
 
+## Canonical Product Scope
+
+ThumbGate is the only active product and repository context:
+
+- Repository: `IgorGanapolsky/ThumbGate`
+- npm package: `thumbgate`
+- Production API: `https://thumbgate-production.up.railway.app`
+
+Do not use `mcp-memory-gateway`, `rlhf`, old RLHF-loop paths, or similarly named local worktrees/remotes as launch, GPT Actions, publishing, analytics, or source-of-truth context. They are legacy cleanup aliases only when migration code/tests intentionally remove old config keys.
+
 ## Memory Source of Truth
 
 - This repo does not use Vertex AI RAG.
