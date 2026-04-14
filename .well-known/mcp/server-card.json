@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "description": "ThumbGate — 👍👎 feedback that teaches your AI agent. Thumbs down a mistake, it never happens again.",
   "homepage": "https://github.com/IgorGanapolsky/thumbgate",
   "transport": "stdio",
