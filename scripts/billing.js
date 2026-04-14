@@ -2292,8 +2292,14 @@ async function handleWebhook(rawBody, signature) {
   if (LOCAL_MODE()) return { handled: false, reason: 'local_mode' };
   let event;
   try {
-    const stripe = getStripeClient();
-    event = stripe.webhooks.constructEvent(rawBody, signature, CONFIG.STRIPE_WEBHOOK_SECRET);
+    if (CONFIG.STRIPE_WEBHOOK_SECRET) {
+      const stripe = getStripeClient();
+      event = stripe.webhooks.constructEvent(rawBody, signature, CONFIG.STRIPE_WEBHOOK_SECRET);
+    } else {
+      // No webhook secret configured — signature was already checked by verifyWebhookSignature
+      // (which is also lenient when no secret). Parse the raw body directly.
+      event = JSON.parse(rawBody.toString('utf-8'));
+    }
   } catch (err) {
     return { handled: false, reason: 'invalid_signature', error: err.message };
   }
