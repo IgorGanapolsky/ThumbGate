@@ -85,7 +85,7 @@ function checkLimit(action, authContext) {
   const current = usage.counts[action] || 0;
 
   if (current >= dailyLimit) {
-    return { allowed: false, message: `Free tier limit reached. Stop more mistakes with Pro — unlimited captures, auto-gate promotion, and team sharing: https://thumbgate-production.up.railway.app/pro\n${UPGRADE_MESSAGE}`, used: current, limit: dailyLimit };
+    return { allowed: false, message: `Free tier limit reached. Upgrade to Pro — stop more mistakes with unlimited captures, auto-gate promotion, and team sharing: https://thumbgate-production.up.railway.app/pro\n${UPGRADE_MESSAGE}`, used: current, limit: dailyLimit };
   }
 
   // Increment
