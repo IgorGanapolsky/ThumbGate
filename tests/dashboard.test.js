@@ -106,6 +106,14 @@ function writeDecisionLog(entries) {
   fs.writeFileSync(decisionPath, lines + '\n');
 }
 
+function localDayKey(timestamp) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // ---------------------------------------------------------------------------
 // Empty state
 // ---------------------------------------------------------------------------
@@ -434,8 +442,8 @@ test('generateDashboard returns a daily gate audit series from the audit trail',
   ]);
 
   const data = generateDashboard(tmpDir);
-  const todayKey = new Date(now).toISOString().slice(0, 10);
-  const yesterdayKey = new Date(now - (24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+  const todayKey = localDayKey(now);
+  const yesterdayKey = localDayKey(now - (24 * 60 * 60 * 1000));
   const todaySeries = data.gateAudit.days.find((entry) => entry.dayKey === todayKey);
   const yesterdaySeries = data.gateAudit.days.find((entry) => entry.dayKey === yesterdayKey);
 
