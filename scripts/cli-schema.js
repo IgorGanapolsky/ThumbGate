@@ -27,6 +27,7 @@ const CLI_COMMANDS = [
       { name: 'what-to-change',  type: 'string',  description: 'Specific fix required' },
       { name: 'what-worked',     type: 'string',  description: 'What succeeded (positive feedback)' },
       { name: 'tags',            type: 'string',  description: 'Comma-separated tags' },
+      { name: 'json',            type: 'boolean', description: 'Output as JSON' },
     ],
   },
 
@@ -37,7 +38,10 @@ const CLI_COMMANDS = [
     name: 'explore',
     description: 'Interactive TUI — browse lessons, gates, stats, and rules keyboard-first',
     group: 'discovery',
-    flags: [],
+    flags: [
+      { name: 'json', type: 'boolean', description: 'Output as JSON (non-interactive)' },
+      { name: 'limit', type: 'number', description: 'Max items (default 20)' },
+    ],
   },
   {
     name: 'lessons',
@@ -80,6 +84,7 @@ const CLI_COMMANDS = [
     mcpTool: 'feedback_summary',
     flags: [
       { name: 'recent', type: 'number', description: 'Number of recent entries (default 20)' },
+      { name: 'json',   type: 'boolean', description: 'Output as JSON' },
     ],
   },
   {
@@ -123,7 +128,9 @@ const CLI_COMMANDS = [
     description: 'Generate prevention rules from repeated failure patterns',
     group: 'gates',
     mcpTool: 'prevention_rules',
-    flags: [],
+    flags: [
+      { name: 'json', type: 'boolean', description: 'Output as JSON' },
+    ],
   },
 
   // -------------------------------------------------------------------------
@@ -159,12 +166,29 @@ const CLI_COMMANDS = [
   // Ops
   // -------------------------------------------------------------------------
   {
+    name: 'status',
+    description: 'Agent-friendly health check — gates, lessons, feedback, enforcement',
+    group: 'discovery',
+    flags: [
+      { name: 'json', type: 'boolean', description: 'Output as JSON' },
+    ],
+  },
+  {
+    name: 'demo',
+    description: 'Simulated walkthrough — see ThumbGate block a bad action in 10 seconds',
+    group: 'ops',
+    flags: [
+      { name: 'json', type: 'boolean', description: 'Output as JSON' },
+    ],
+  },
+  {
     name: 'init',
     description: 'Scaffold .thumbgate/ config and wire agent hooks',
     group: 'ops',
     flags: [
       { name: 'agent',      type: 'string',  description: 'Target agent: claude-code | cursor | codex | gemini | amp' },
       { name: 'wire-hooks', type: 'boolean', description: 'Wire hooks only (skip scaffold)' },
+      { name: 'json',       type: 'boolean', description: 'Output as JSON' },
     ],
   },
   {

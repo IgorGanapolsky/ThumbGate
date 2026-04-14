@@ -726,6 +726,18 @@ function capture() {
   if (result.accepted) {
     const ev = result.feedbackEvent;
     const mem = result.memoryRecord;
+
+    if (args.json) {
+      console.log(JSON.stringify({
+        ok: true,
+        signal: normalized,
+        feedbackId: ev.id,
+        memoryId: mem.id,
+        actionType: ev.actionType,
+      }, null, 2));
+      return;
+    }
+
     console.log(`\nFeedback Captured [${normalized.toUpperCase()}]`);
     console.log('─'.repeat(50));
     console.log(`  Feedback ID : ${ev.id}`);
@@ -742,6 +754,14 @@ function capture() {
     console.log('');
     proNudge();
   } else {
+    if (args.json) {
+      console.log(JSON.stringify({
+        ok: false,
+        signal: normalized,
+        reason: result.reason,
+      }, null, 2));
+      process.exit(2);
+    }
     console.log(`\nFeedback Recorded [${normalized.toUpperCase()}] — not promoted`);
     console.log('─'.repeat(50));
     console.log(`  Reason      : ${result.reason}\n`);
@@ -793,8 +813,14 @@ function stats() {
 }
 
 function compact() {
+  const args = parseArgs(process.argv.slice(3));
   const { compactMemories } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const result = compactMemories();
+
+  if (args.json) {
+    console.log(JSON.stringify({ before: result.before, after: result.after, removed: result.removed }, null, 2));
+    return;
+  }
 
   console.log('\n🧹 Memory Compaction Complete');
   console.log('─'.repeat(50));
@@ -994,7 +1020,18 @@ function pro() {
 
 function summary() {
   const args = parseArgs(process.argv.slice(3));
-  const { feedbackSummary } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  const { feedbackSummary, analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  if (args.json) {
+    const data = analyzeFeedback();
+    console.log(JSON.stringify({
+      total: data.total,
+      positives: data.totalPositive,
+      negatives: data.totalNegative,
+      approvalRate: Math.round(data.approvalRate * 100),
+      recentTrend: Math.round(data.recentRate * 100),
+    }, null, 2));
+    return;
+  }
   console.log(feedbackSummary(Number(args.recent || 20)));
 }
 
@@ -1259,6 +1296,16 @@ function rules() {
   const { writePreventionRules } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const outPath = args.output || path.join(CWD, '.thumbgate', 'prevention-rules.md');
   const result = writePreventionRules(outPath, Number(args.min || 2));
+  if (args.json) {
+    // Count rule sections (## headers) from the generated markdown
+    const ruleHeaders = (result.markdown || '').match(/^## /gm);
+    console.log(JSON.stringify({
+      ok: true,
+      path: result.path,
+      rulesWritten: ruleHeaders ? ruleHeaders.length : 0,
+    }, null, 2));
+    return;
+  }
   console.log(`Wrote prevention rules to ${result.path}`);
 }
 
@@ -1301,15 +1348,14 @@ function watchCmd() {
 }
 
 function status() {
-  const statusDashboard = require(path.join(PKG_ROOT, 'scripts', 'status-dashboard'));
-  const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
-  const { FEEDBACK_DIR } = getFeedbackPaths();
-  const data = statusDashboard.generateStatus(FEEDBACK_DIR);
-  // printDashboard writes directly to stdout when run as main;
-  // for CLI we call the same renderer
-  statusDashboard.printDashboard
-    ? statusDashboard.printDashboard(data)
-    : console.log(JSON.stringify(data, null, 2));
+  const args = parseArgs(process.argv.slice(3));
+  const { generateAgentStatus, formatStatus } = require(path.join(PKG_ROOT, 'scripts', 'cli-status'));
+  const data = generateAgentStatus({ pkgRoot: PKG_ROOT, projectDir: CWD });
+  if (args.json) {
+    console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+  process.stdout.write(formatStatus(data));
 }
 
 function funnel() {
@@ -1599,14 +1645,24 @@ function help() {
   console.log('  --remote              Fetch from hosted Railway instance');
   console.log('');
 
+  console.log('Explore subcommands (non-interactive):');
+  console.log('  explore lessons [--json] [--limit=N]   List lessons with confidence badges');
+  console.log('  explore rules   [--json]               List prevention rules');
+  console.log('  explore gates   [--json]               List gates with action badges');
+  console.log('  explore firings [--json] [--limit=N]   List recent gate firings');
+  console.log('');
+
   console.log('Examples:');
   console.log('  npx thumbgate init');
-  console.log('  npx thumbgate explore');
+  console.log('  npx thumbgate status --json');
+  console.log('  npx thumbgate explore lessons --json');
+  console.log('  npx thumbgate explore gates --json');
+  console.log('  npx thumbgate demo');
   console.log('  npx thumbgate stats --json');
   console.log('  npx thumbgate lessons "force push" --json');
   console.log('  npx thumbgate lessons --query="deploy" --remote');
   console.log('  npx thumbgate gate-stats --json');
-  console.log('  npx thumbgate capture --feedback=down --context="agent broke deploy"');
+  console.log('  npx thumbgate capture --feedback=down --context="agent broke deploy" --json');
   proNudge();
 }
 
@@ -1876,8 +1932,50 @@ switch (COMMAND) {
     gateStats();
     break;
   case 'explore': {
-    const { run: runExplore } = require(path.join(PKG_ROOT, 'scripts', 'explore'));
-    runExplore();
+    const subCmd = process.argv[3];
+    const exploreArgs = parseArgs(process.argv.slice(3));
+    // If a known subcommand is given (or --json), use non-interactive mode
+    const knownSubs = ['lessons', 'rules', 'gates', 'firings'];
+    if (knownSubs.includes(subCmd) || exploreArgs.json) {
+      const { exploreLessons, exploreRules, exploreGates, exploreGateFirings } = require(path.join(PKG_ROOT, 'scripts', 'explore-subcommands'));
+      const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+      const { FEEDBACK_DIR } = getFeedbackPaths();
+      const subOptions = {
+        feedbackDir: FEEDBACK_DIR,
+        pkgRoot: PKG_ROOT,
+        limit: Number(exploreArgs.limit || 20),
+        json: Boolean(exploreArgs.json),
+      };
+      const effectiveSub = knownSubs.includes(subCmd) ? subCmd : 'lessons';
+      let output;
+      switch (effectiveSub) {
+        case 'lessons': output = exploreLessons(subOptions); break;
+        case 'rules':   output = exploreRules(subOptions); break;
+        case 'gates':   output = exploreGates(subOptions); break;
+        case 'firings': output = exploreGateFirings(subOptions); break;
+        default:        output = exploreLessons(subOptions); break;
+      }
+      if (exploreArgs.json) {
+        console.log(JSON.stringify(output, null, 2));
+      } else {
+        process.stdout.write(output);
+      }
+    } else {
+      // No subcommand and no --json → launch interactive TUI
+      const { run: runExplore } = require(path.join(PKG_ROOT, 'scripts', 'explore'));
+      runExplore();
+    }
+    break;
+  }
+  case 'demo': {
+    const demoArgs = parseArgs(process.argv.slice(3));
+    const { runDemo } = require(path.join(PKG_ROOT, 'scripts', 'cli-demo'));
+    const demoOutput = runDemo({ json: Boolean(demoArgs.json) });
+    if (demoArgs.json) {
+      console.log(JSON.stringify(demoOutput, null, 2));
+    } else {
+      process.stdout.write(demoOutput);
+    }
     break;
   }
   case 'dashboard':
