@@ -507,6 +507,11 @@ test('public HEAD routes stay unauthenticated and side-effect free', async () =>
   assert.match(String(openapiRes.headers.get('content-type')), /(application\/json|text\/yaml)/);
   assert.equal(await openapiRes.text(), '');
 
+  const openapiYamlRes = await fetch(apiUrl('/openapi.yaml'), { method: 'HEAD' });
+  assert.equal(openapiYamlRes.status, 200);
+  assert.match(String(openapiYamlRes.headers.get('content-type')), /text\/yaml/);
+  assert.equal(await openapiYamlRes.text(), '');
+
   const checkoutRes = await fetch(apiUrl('/checkout/pro'), { method: 'HEAD' });
   assert.equal(checkoutRes.status, 200);
   assert.equal(await checkoutRes.text(), '');
@@ -521,6 +526,30 @@ test('public HEAD routes stay unauthenticated and side-effect free', async () =>
     : 0;
   assert.equal(telemetryCountAfter, telemetryCountBefore);
   assert.equal(checkoutSessionsAfter, checkoutSessionsBefore);
+});
+
+test('public openapi yaml stays reachable before bearer auth for GPT Actions import', async () => {
+  const res = await fetch(apiUrl('/openapi.yaml'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/yaml/);
+
+  const body = await res.text();
+  assert.match(body, /^openapi: 3\.1\.0/m);
+  assert.match(body, new RegExp(`servers:\\n  - url: ${apiOrigin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  assert.doesNotMatch(body, /test-api-key/);
+});
+
+test('public openapi yaml advertises forwarded https origin for hosted imports', async () => {
+  const res = await fetch(apiUrl('/openapi.yaml'), {
+    headers: {
+      'x-forwarded-proto': 'https',
+      'x-forwarded-host': 'thumbgate-production.up.railway.app',
+    },
+  });
+  assert.equal(res.status, 200);
+
+  const body = await res.text();
+  assert.match(body, /servers:\n  - url: https:\/\/thumbgate-production\.up\.railway\.app/);
 });
 
 test('public server card exposes MCP tool schemas for directory scanners', async () => {

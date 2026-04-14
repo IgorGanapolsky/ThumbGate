@@ -1211,6 +1211,13 @@ function getPublicOrigin(req) {
   return `${proto}://${host}`;
 }
 
+function renderOpenApiYamlForRequest(yaml, req) {
+  return yaml.replace(
+    /servers:\n\s+- url: .+/m,
+    `servers:\n  - url: ${getPublicOrigin(req)}`
+  );
+}
+
 function getRequestHostHeader(req) {
   const forwardedHost = req.headers['x-forwarded-host'];
   if (Array.isArray(forwardedHost)) {
@@ -3956,18 +3963,23 @@ async function addContext(){
     }
 
     // Public OpenAPI spec — no auth required (needed for ChatGPT GPT Store import)
-    if (isGetLikeRequest && pathname === '/openapi.json') {
+    if (isGetLikeRequest && (pathname === '/openapi.json' || pathname === '/openapi.yaml')) {
       const specPath = path.join(__dirname, '../../adapters/chatgpt/openapi.yaml');
       try {
-        const yaml = fs.readFileSync(specPath, 'utf8');
+        const yaml = renderOpenApiYamlForRequest(fs.readFileSync(specPath, 'utf8'), req);
+        if (pathname === '/openapi.yaml') {
+          sendText(res, 200, yaml, {
+            'Content-Type': 'text/yaml; charset=utf-8',
+            'Access-Control-Allow-Origin': '*',
+          }, {
+            headOnly: isHeadRequest,
+          });
+          return;
+        }
         // Convert YAML to JSON inline (simple key:value conversion via js-yaml if available, else serve as-is)
         try {
           const jsYaml = require('js-yaml');
           const spec = jsYaml.load(yaml);
-          // Override server URL to current deployment
-          if (spec.servers && spec.servers[0]) {
-            spec.servers[0].url = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
-          }
           sendJson(res, 200, spec, {
             'Access-Control-Allow-Origin': '*',
           }, {
