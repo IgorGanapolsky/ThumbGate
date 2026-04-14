@@ -16,6 +16,7 @@ Customers, investors, and internal reviewers should be able to inspect why a ver
    - `npm run prove:automation`
    - `npm run self-heal:check`
 5. **Exact merge proof:** the work is not considered complete until the exact `main` merge commit is verified and its evidence is cited.
+6. **Release-note delivery:** the npm publish workflow renders full Changeset-backed release notes into the GitHub Actions summary, the `vX.Y.Z` GitHub Release body, and a downloadable `thumbgate-X.Y.Z-release-notes.md` release asset.
 
 ## What buyers can inspect
 
@@ -24,6 +25,7 @@ Customers, investors, and internal reviewers should be able to inspect why a ver
 - [Verification Evidence](VERIFICATION_EVIDENCE.md)
 - [CHANGELOG.md](../CHANGELOG.md)
 - [CI workflow](../.github/workflows/ci.yml)
+- [Publish to NPM workflow](../.github/workflows/publish-npm.yml)
 
 These are the public surfaces that explain what changed, why it changed, and what was verified.
 
@@ -33,6 +35,7 @@ These are the public surfaces that explain what changed, why it changed, and wha
 - An investor can see that package releases are governed by durable process, not ad hoc pushes.
 - A platform team can map a release note to its proof artifacts and merge checks.
 - A future incident review can reconstruct the decision path from PR, to version, to proof, to publish.
+- The npm "Successfully published" email links to a GitHub Actions run whose summary contains the full release notes, even though npm's own email template is not customizable.
 
 ## Operating rule
 
