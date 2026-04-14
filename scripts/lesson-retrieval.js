@@ -3,14 +3,22 @@
 
 /**
  * Per-action lesson retrieval.
- * v2: backward retrieval + bigram Jaccard fuzzy matching
+ * v3: bi-encoder retrieval → cross-encoder reranking
+ *
+ * Stage 1 (bi-encoder): score all memories independently using token overlap,
+ *   bigram Jaccard, tool-name matching, and recency decay.  Retrieve top-50.
+ * Stage 2 (cross-encoder): rerank the top-50 candidates by computing a
+ *   field-weighted BM25 score that processes (query, lesson) jointly, then
+ *   blend with the original bi-encoder score.  Return top-maxResults.
  */
 
 const RECENCY_DECAY_DAYS = 30;
+const RERANK_CANDIDATE_POOL = 50; // bi-encoder retrieves this many; reranker picks topK
 
 function retrieveRelevantLessons(toolName, actionContext, options = {}) {
   const { maxResults = 5, feedbackDir } = options;
   const { getFeedbackPaths, readJSONL } = require('./feedback-loop');
+  const { rerankLessons } = require('./lesson-reranker');
   const pathMod = require('path');
   const paths = feedbackDir
     ? { MEMORY_LOG_PATH: pathMod.join(feedbackDir, 'memory-log.jsonl') }
@@ -21,24 +29,33 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
 
   const actionSig = buildActionSignature(toolName, actionContext);
 
-  const scored = memories.map((mem) => ({
-    ...mem,
-    relevanceScore: scoreRelevance(mem, toolName, actionContext, actionSig),
-  }));
-
-  return scored
+  // Stage 1 — bi-encoder: score all memories independently, take top-50 candidates
+  const candidates = memories
+    .map((mem) => ({
+      ...mem,
+      relevanceScore: scoreRelevance(mem, toolName, actionContext, actionSig),
+    }))
     .filter((m) => m.relevanceScore > 0.1)
     .sort((a, b) => b.relevanceScore - a.relevanceScore)
-    .slice(0, maxResults)
-    .map((m) => ({
-      id: m.id,
-      title: m.title,
-      content: m.content,
-      signal: m.tags?.includes('negative') ? 'negative' : 'positive',
-      rule: m.structuredRule || null,
-      relevanceScore: m.relevanceScore,
-      timestamp: m.timestamp,
-    }));
+    .slice(0, RERANK_CANDIDATE_POOL);
+
+  if (candidates.length === 0) return [];
+
+  // Stage 2 — cross-encoder reranker: rerank candidates by joint (query, lesson) score
+  const reranked = rerankLessons(actionContext, candidates, {
+    topK: maxResults,
+    toolName,
+  });
+
+  return reranked.map((m) => ({
+    id: m.id,
+    title: m.title,
+    content: m.content,
+    signal: m.tags?.includes('negative') ? 'negative' : 'positive',
+    rule: m.structuredRule || null,
+    relevanceScore: m.rerankedScore ?? m.relevanceScore,
+    timestamp: m.timestamp,
+  }));
 }
 
 function buildActionSignature(toolName, actionContext) {

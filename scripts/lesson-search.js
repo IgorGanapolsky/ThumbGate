@@ -511,6 +511,16 @@ function searchLessons(query = '', options = {}) {
     return String(b.timestamp || '').localeCompare(String(a.timestamp || ''));
   });
 
+  // Cross-encoder reranking: when a query is present, rerank the top-50 bi-encoder
+  // candidates using field-weighted BM25 so the most relevant lessons surface first.
+  if (query && results.length > 1) {
+    const { rerankLessons } = require('./lesson-reranker');
+    const pool = results.slice(0, 50);
+    const tail  = results.slice(50);
+    const reranked = rerankLessons(query, pool, { topK: pool.length });
+    results = [...reranked, ...tail];
+  }
+
   return {
     query: String(query || ''),
     limit,
