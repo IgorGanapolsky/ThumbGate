@@ -2355,14 +2355,23 @@ function createApiServer() {
     const requestSafeDataDir = getSafeDataDir(req, parsed);
 
     // PostHog reverse proxy — bypasses ad blockers
+    // Only allow known PostHog API paths to prevent SSRF (CodeQL js/request-forgery)
+    const POSTHOG_ALLOWED_PATHS = ['/capture', '/capture/', '/batch', '/batch/', '/decide', '/decide/', '/e', '/e/', '/engage', '/engage/', '/static/'];
     if (pathname.startsWith('/ingest')) {
-      const posthogPath = pathname.replace('/ingest', '') || '/';
-      const posthogUrl = `https://us.i.posthog.com${posthogPath}${parsed.search || ''}`;
+      const posthogPath = pathname.slice('/ingest'.length) || '/';
+      const isAllowed = posthogPath === '/' || POSTHOG_ALLOWED_PATHS.some(p => posthogPath.startsWith(p));
+      if (!isAllowed) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end('Forbidden');
+        return;
+      }
+      const posthogTarget = new URL(`https://us.i.posthog.com${posthogPath}`);
+      if (parsed.search) posthogTarget.search = parsed.search;
 
       let body = '';
       req.on('data', chunk => { body += chunk; });
       req.on('end', () => {
-        const proxyReq = https.request(posthogUrl, {
+        const proxyReq = https.request(posthogTarget.href, {
           method: req.method,
           headers: {
             ...req.headers,
