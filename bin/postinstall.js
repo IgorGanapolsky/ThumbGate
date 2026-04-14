@@ -20,24 +20,17 @@ const {
 const WORKFLOW_SPRINT_URL = 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake';
 
 process.stderr.write(`
-  ┌─────────────────────────────────────────────────────┐
-  │                                                     │
-  │   ThumbGate installed successfully.                 │
-  │                                                     │
-  │   Quick start:                                      │
-  │     npx thumbgate init                     │
-  │     npx thumbgate stats                    │
-  │                                                     │
-  │   Team rollout starts with the Workflow Hardening   │
-  │   Sprint: ${WORKFLOW_SPRINT_URL} │
-  │                                                     │
-  │   Solo side lane: Pro (personal local dashboard,    │
-  │   DPO export) — ${PRO_PRICE_LABEL}: │
-  │     ${PRO_MONTHLY_PAYMENT_LINK}       │
-  │   Team: ${TEAM_PRICE_LABEL} after intake. │
-  │                                                     │
-  │   Or run: npx thumbgate pro                │
-  │                                                     │
-  └─────────────────────────────────────────────────────┘
+  ┌──────────────────────────────────────────────────────┐
+  │  ✅ ThumbGate installed — stop AI mistakes before    │
+  │     they happen.                                     │
+  │                                                      │
+  │  Get started:                                        │
+  │    npx thumbgate init          Wire hooks + gates    │
+  │    npx thumbgate doctor        Health check          │
+  │                                                      │
+  │  Free: 3 feedback captures/day, enforced gates.      │
+  │  Pro:  Unlimited + dashboard + exports.              │
+  │    ${PRO_PRICE_LABEL}: ${PRO_MONTHLY_PAYMENT_LINK}   │
+  └──────────────────────────────────────────────────────┘
 
 `);

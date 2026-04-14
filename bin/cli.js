@@ -650,16 +650,14 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   }
 
   console.log('');
-  console.log(`thumbgate v${pkgVersion()} initialized.`);
-  console.log('Run: npx thumbgate help');
-  trackEvent('cli_init', { command: 'init' });
-  proNudge();
+  console.log(`✅ thumbgate v${pkgVersion()} initialized. Your agent now has enforced gates.`);
   console.log('');
-  console.log('  ┌──────────────────────────────────────────────────────────┐');
-  console.log('  │  Teams: shared enforcement, CI gates, audit trails      │');
-  console.log('  │  One correction protects every agent on your team.      │');
-  console.log('  │  https://thumbgate-production.up.railway.app/pro        │');
-  console.log('  └──────────────────────────────────────────────────────────┘');
+  console.log('  Next: give your first feedback after the agent does something wrong:');
+  console.log('    npx thumbgate capture --feedback=down --context="what went wrong"');
+  console.log('');
+  console.log(`  Free: 3 captures/day. Pro: unlimited + dashboard + exports.`);
+  console.log('    https://thumbgate-production.up.railway.app/pro');
+  trackEvent('cli_init', { command: 'init' });
 
   try {
     const { appendFunnelEvent } = require(path.join(PKG_ROOT, 'scripts', 'billing'));

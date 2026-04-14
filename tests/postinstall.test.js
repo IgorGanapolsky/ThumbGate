@@ -44,10 +44,8 @@ describe('postinstall banner', () => {
     assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'should include checkout URL');
     assert.ok(stderr.includes('ThumbGate'), 'should mention ThumbGate');
     assert.ok(stderr.includes('npx thumbgate'), 'should include quick start');
-    assert.match(stderr, /Workflow Hardening[\s\S]*Sprint/i);
-    assert.match(stderr, /personal local dashboard/i);
-    assert.match(stderr, /Team: \$99\/seat\/mo/i);
-    assert.doesNotMatch(stderr, /optional hosted API key/i);
+    assert.match(stderr, /Free.*captures/i);
+    assert.match(stderr, /Pro.*dashboard/i);
     assert.match(stderr, /\$19\/mo or \$149\/yr/i);
   });
 
