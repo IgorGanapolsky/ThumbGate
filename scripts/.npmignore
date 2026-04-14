@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+social-analytics/db/*.db
+social-analytics/db/*.sqlite
+social-analytics/db/*.sqlite3
+social-analytics/db/*.sqlite-*
+social-analytics/db/*.sqlite3-*
