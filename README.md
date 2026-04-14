@@ -117,6 +117,7 @@ Session 3:                     │  Session 3+:
 npx thumbgate init    # detects your agent and wires everything up
 npx thumbgate doctor  # health check
 npx thumbgate lessons # see what's been learned
+npx thumbgate explore # terminal explorer for lessons, gates, and stats
 npx thumbgate dashboard # open local dashboard
 ```
 
