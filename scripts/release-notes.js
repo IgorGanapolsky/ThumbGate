@@ -37,6 +37,29 @@ function readPackageVersion({ cwd = PROJECT_ROOT } = {}) {
   return String(pkg.version || '').trim();
 }
 
+function resolveInside(baseDir, requestedPath, label = 'path') {
+  const root = path.resolve(baseDir);
+  const resolved = path.resolve(root, requestedPath);
+  const relative = path.relative(root, resolved);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error(`${label} must stay inside ${root}`);
+  }
+  return resolved;
+}
+
+function normalizeChangesetPath(file) {
+  return String(file || '').trim().replaceAll('\\', '/');
+}
+
+function isSafeChangesetPath(file) {
+  const normalized = normalizeChangesetPath(file);
+  return normalized.startsWith('.changeset/')
+    && normalized.endsWith('.md')
+    && path.posix.basename(normalized) !== 'README.md'
+    && !normalized.split('/').includes('..')
+    && !path.posix.isAbsolute(normalized);
+}
+
 function semverTagValue(tag) {
   const match = /^v(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/.exec(String(tag || '').trim());
   if (!match) return null;
@@ -92,7 +115,7 @@ function getChangedChangesetFiles({
   return output
     ? output.split('\n')
       .map((line) => line.trim())
-      .filter((file) => file && path.basename(file) !== 'README.md')
+      .filter(isSafeChangesetPath)
     : [];
 }
 
@@ -102,10 +125,14 @@ function readChangesetEntries({
   cwd = PROJECT_ROOT,
 } = {}) {
   return files.map((file) => {
-    const content = fs.readFileSync(path.join(cwd, file), 'utf8');
+    if (!isSafeChangesetPath(file)) {
+      throw new Error(`Unsafe changeset path: ${file}`);
+    }
+    const safeFile = normalizeChangesetPath(file);
+    const content = fs.readFileSync(resolveInside(cwd, safeFile, 'changeset file'), 'utf8');
     const parsed = parseChangesetMarkdown(content);
     return {
-      file,
+      file: safeFile,
       releaseType: parsed.releases[packageName] || null,
       summary: parsed.summary,
       errors: parsed.errors,
@@ -113,13 +140,24 @@ function readChangesetEntries({
   }).filter((entry) => entry.releaseType);
 }
 
+function changelogHeadingVersion(line) {
+  const trimmed = String(line || '').trim();
+  if (!trimmed.startsWith('##') || trimmed.startsWith('###')) return '';
+  const heading = trimmed.slice(2).trim();
+  if (!heading) return '';
+  const token = heading.split(/\s+/)[0];
+  return token.startsWith('[') && token.endsWith(']')
+    ? token.slice(1, -1)
+    : token;
+}
+
 function extractChangelogEntry(changelog, version) {
   const lines = String(changelog || '').replaceAll('\r\n', '\n').split('\n');
-  const headingPattern = new RegExp(`^##\\s+(?:\\[)?${String(version).replaceAll('.', '\\.')}(?:\\])?(?:\\s|$)`);
-  const start = lines.findIndex((line) => headingPattern.test(line.trim()));
+  const targetVersion = String(version || '').trim();
+  const start = lines.findIndex((line) => changelogHeadingVersion(line) === targetVersion);
   if (start === -1) return '';
 
-  const next = lines.findIndex((line, index) => index > start && /^##\s+/.test(line.trim()));
+  const next = lines.findIndex((line, index) => index > start && changelogHeadingVersion(line));
   return lines.slice(start, next === -1 ? undefined : next).join('\n').trim();
 }
 
@@ -277,7 +315,7 @@ function runCli({
   });
 
   if (options.outputPath) {
-    fs.writeFileSync(path.resolve(cwd, options.outputPath), result.markdown);
+    fs.writeFileSync(resolveInside(cwd, options.outputPath, 'output path'), result.markdown);
   }
   process.stdout.write(result.markdown);
   return result;
@@ -299,8 +337,10 @@ module.exports = {
   extractChangelogEntry,
   formatReleaseNotes,
   getChangedChangesetFiles,
+  isSafeChangesetPath,
   parseArgs,
   readChangesetEntries,
+  resolveInside,
   runCli,
   semverTagValue,
 };

@@ -10,6 +10,8 @@ const {
   buildReleaseNotes,
   extractChangelogEntry,
   formatReleaseNotes,
+  isSafeChangesetPath,
+  resolveInside,
 } = require('../scripts/release-notes');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
@@ -32,6 +34,45 @@ test('extractChangelogEntry returns the exact version section', () => {
   assert.match(entry, /## 1\.4\.4/);
   assert.match(entry, /Slim package boundary/);
   assert.doesNotMatch(entry, /Previous release/);
+
+  const bracketedEntry = extractChangelogEntry('## [1.4.5]\n\n- Bracketed release.\n', '1.4.5');
+  assert.match(bracketedEntry, /Bracketed release/);
+});
+
+test('extractChangelogEntry treats version input as a literal heading value', () => {
+  const changelog = [
+    '# Changelog',
+    '',
+    '## 1.4.4|1.4.3',
+    '',
+    '- Literal version text.',
+    '',
+    '## 1.4.3',
+    '',
+    '- Previous release.',
+  ].join('\n');
+
+  const entry = extractChangelogEntry(changelog, '1.4.4|1.4.3');
+
+  assert.match(entry, /Literal version text/);
+  assert.doesNotMatch(entry, /Previous release/);
+  assert.equal(extractChangelogEntry(changelog, '1.4.4.*'), '');
+});
+
+test('release note file paths stay inside the expected project boundaries', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-release-notes-paths-'));
+
+  try {
+    assert.equal(isSafeChangesetPath('.changeset/release-notes-email.md'), true);
+    assert.equal(isSafeChangesetPath('.changeset/../release-notes-email.md'), false);
+    assert.equal(isSafeChangesetPath('scripts/release-notes-email.md'), false);
+    assert.throws(
+      () => resolveInside(tempDir, '../outside.md', 'output path'),
+      /output path must stay inside/,
+    );
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 });
 
 test('formatReleaseNotes includes full changeset summaries and verification links', () => {
