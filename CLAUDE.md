@@ -25,6 +25,12 @@ ThumbGate: pre-action gates for AI coding agents. Captures feedback → promotes
 
 Stack: Node.js >=18.18.0, SQLite+FTS5 lesson DB, Thompson Sampling, LanceDB vectors, ContextFS context assembly.
 
+## Canonical Product Scope
+
+ThumbGate is the only active source of truth. Use `IgorGanapolsky/ThumbGate`, npm package `thumbgate`, and `https://thumbgate-production.up.railway.app` for repo, package, launch, GPT Actions, and production API references.
+
+Do not use `mcp-memory-gateway`, `rlhf`, old RLHF-loop paths, or similarly named local worktrees/remotes as active product context. Those strings are legacy migration aliases only when cleanup code or tests intentionally remove old config keys.
+
 ## Files You Must Not Commit
 
 | Pattern | Why |
