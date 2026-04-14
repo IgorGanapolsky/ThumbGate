@@ -5172,6 +5172,10 @@ module.exports = {
     getPosthogProxyPath,
     isAllowedPosthogProxyPath,
     renderSitemapXml,
+    renderPackagedDashboardHtml,
+    renderPackagedLessonsHtml,
+    readOptionalPublicTemplate,
+    resolveLocalPageBootstrap,
   },
 };
 
