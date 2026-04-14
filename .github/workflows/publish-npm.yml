@@ -25,6 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           # npm provenance on GitHub Actions is most reliable on current LTS.
@@ -85,6 +87,19 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git tag "v${VERSION}"
           git push origin "v${VERSION}"
+      - name: Build full changeset release notes
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.ensure_release == 'true'
+        env:
+          VERSION: ${{ steps.package.outputs.version }}
+          GITHUB_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          notes_file="thumbgate-${VERSION}-release-notes.md"
+          node scripts/release-notes.js \
+            --version="${VERSION}" \
+            --current-ref="${GITHUB_SHA}" \
+            --github-run-url="${GITHUB_RUN_URL}" \
+            --output="${notes_file}"
+          cat "${notes_file}" >> "$GITHUB_STEP_SUMMARY"
       - name: Publish npm package
         if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.publish_npm == 'true') || (github.event_name == 'release' && steps.npm.outputs.published == 'false')
         run: npm publish --tag "${{ steps.plan.outputs.npm_tag || 'latest' }}" --provenance
@@ -101,6 +116,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.package.outputs.version }}
         run: |
+          notes_file="thumbgate-${VERSION}-release-notes.md"
           if ! gh release view "v${VERSION}" >/dev/null 2>&1; then
-            gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
+            gh release create "v${VERSION}" --title "thumbgate@${VERSION}" --notes-file "${notes_file}"
+          else
+            gh release edit "v${VERSION}" --title "thumbgate@${VERSION}" --notes-file "${notes_file}"
           fi
+          gh release upload "v${VERSION}" "${notes_file}" --clobber
