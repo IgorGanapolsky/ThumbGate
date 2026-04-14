@@ -75,7 +75,7 @@ test('public docs render the current package version', () => {
   const productHuntKit = readText('docs/marketing/product-hunt-launch.md');
 
   assert.match(readme, /Open ThumbGate GPT/);
-  assert.match(readme, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
+  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/go\/gpt\?utm_source=github/);
   assert.match(readme, /ThumbGate GPT: start here/i);
   assert.match(readme, /No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate/i);
   assert.match(readme, /hard enforcement layer still runs where the work happens/i);
