@@ -1,6 +1,6 @@
 'use strict';
 
-const PRO_MONTHLY_PAYMENT_LINK = 'https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06';
+const PRO_MONTHLY_PAYMENT_LINK = 'https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a';
 const PRO_ANNUAL_PAYMENT_LINK = 'https://buy.stripe.com/3cI8wPfCYaPs2dzdKz3sI07';
 
 const PRO_MONTHLY_PRICE_ID = 'price_1THQY7GGBpd520QYHoS7RG0J';
