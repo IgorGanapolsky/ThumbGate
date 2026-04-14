@@ -373,15 +373,14 @@ function syncVersion(opts) {
   const publicIndexPath = 'public/index.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, publicIndexPath))) {
     const publicIndexFile = path.join(PROJECT_ROOT, publicIndexPath);
-    const publicContent = fs.readFileSync(publicIndexFile, 'utf-8');
+    let publicContent = fs.readFileSync(publicIndexFile, 'utf-8');
+    let publicContentChanged = false;
     const heroVersionMatch = publicContent.match(new RegExp(`New in v(${VERSION_PATTERN}):?`));
     if (heroVersionMatch && heroVersionMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'hero-release-note', current: heroVersionMatch[1] });
       if (!checkOnly) {
-        fs.writeFileSync(
-          publicIndexFile,
-          publicContent.replace(new RegExp(`New in v${VERSION_PATTERN}:?`), `New in v${version}`)
-        );
+        publicContent = publicContent.replace(new RegExp(`New in v${VERSION_PATTERN}:?`), `New in v${version}`);
+        publicContentChanged = true;
       }
     }
 
@@ -389,7 +388,8 @@ function syncVersion(opts) {
     if (proofMatch && proofMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'proof-pill', current: proofMatch[1] });
       if (!checkOnly) {
-        replaceInFile(publicIndexPath, `Versioned proof: v${proofMatch[1]}`, `Versioned proof: v${version}`);
+        publicContent = publicContent.replace(`Versioned proof: v${proofMatch[1]}`, `Versioned proof: v${version}`);
+        publicContentChanged = true;
       }
     }
 
@@ -397,14 +397,15 @@ function syncVersion(opts) {
     if (footerMatch && footerMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'footer-version', current: footerMatch[1] });
       if (!checkOnly) {
-        fs.writeFileSync(
-          publicIndexFile,
-          publicContent.replace(
-            new RegExp(`((?:Context Gateway|MIT License) [•·] )v${VERSION_PATTERN}`),
-            `$1v${version}`
-          )
+        publicContent = publicContent.replace(
+          new RegExp(`((?:Context Gateway|MIT License) [•·] )v${VERSION_PATTERN}`),
+          `$1v${version}`
         );
+        publicContentChanged = true;
       }
+    }
+    if (publicContentChanged) {
+      fs.writeFileSync(publicIndexFile, publicContent);
     }
     targets.push(publicIndexPath);
   }
