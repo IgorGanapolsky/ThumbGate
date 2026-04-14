@@ -58,7 +58,7 @@ function parseGhVariableList(stdout = '') {
 function parseHtmlSignals(html = '') {
   const body = String(html);
   return {
-    plausibleScript: body.includes('/js/analytics.js'),
+    plausibleScript: /plausible\.io\/js\/script\.js|\/js\/analytics\.js/.test(body),
     gaLoaderScript: body.includes('googletagmanager.com/gtag/js'),
     gaEventHook: body.includes('window.gtag('),
     gaPlaceholderPresent: body.includes('__GA_MEASUREMENT_ID__'),
@@ -76,6 +76,17 @@ function formatRatio(value) {
   return Number.isFinite(Number(value)) ? Number(value).toFixed(4) : '0.0000';
 }
 
+function normalizeWindowSummary(status, payload = {}) {
+  return {
+    status,
+    trafficMetrics: payload.trafficMetrics || {},
+    signups: payload.signups || {},
+    revenue: payload.revenue || {},
+    pipeline: payload.pipeline || {},
+    dataQuality: payload.dataQuality || {},
+  };
+}
+
 function windowSnapshot(summary = {}) {
   return {
     trafficMetrics: summary.trafficMetrics || {},
@@ -90,6 +101,7 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   const today = hostedAudit && hostedAudit.summaries ? hostedAudit.summaries.today : null;
   const trailing30 = hostedAudit && hostedAudit.summaries ? hostedAudit.summaries['30d'] : null;
   const runtimePresence = hostedAudit ? hostedAudit.runtimePresence : {};
+  const runtimePresenceKnown = Boolean(hostedAudit && hostedAudit.runtimePresenceKnown !== false);
   const traffic30 = trailing30 && trailing30.trafficMetrics ? trailing30.trafficMetrics : {};
   const revenue30 = trailing30 && trailing30.revenue ? trailing30.revenue : {};
 
@@ -117,13 +129,13 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   }
 
   const gaps = [];
-  if (!runtimePresence.THUMBGATE_GA_MEASUREMENT_ID) {
+  if (runtimePresenceKnown && !runtimePresence.THUMBGATE_GA_MEASUREMENT_ID) {
     gaps.push('GA4 runtime env is missing in Railway');
   }
-  if (!runtimePresence.THUMBGATE_PUBLIC_APP_ORIGIN) {
+  if (runtimePresenceKnown && !runtimePresence.THUMBGATE_PUBLIC_APP_ORIGIN) {
     gaps.push('THUMBGATE_PUBLIC_APP_ORIGIN is not explicitly set in Railway runtime');
   }
-  if (!runtimePresence.THUMBGATE_BILLING_API_BASE_URL) {
+  if (runtimePresenceKnown && !runtimePresence.THUMBGATE_BILLING_API_BASE_URL) {
     gaps.push('THUMBGATE_BILLING_API_BASE_URL is not explicitly set in Railway runtime');
   }
   if (trackingImplemented && !publicProbe.root.signals.gaLoaderScript) {
@@ -136,6 +148,8 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
     hostedSummaryWorking,
     hostedTrafficObserved,
     hostedRevenueObserved,
+    runtimePresenceKnown,
+    hostedAuditMethod: hostedAudit?.auditMethod || 'unknown',
     primaryIssue,
     gaps,
   };
@@ -153,27 +167,46 @@ function formatWindowBlock(label, summary = {}) {
   ];
 }
 
+function formatRuntimeState({ value, runtimePresenceKnown }) {
+  if (value) return 'set';
+  return runtimePresenceKnown ? 'missing' : 'unknown';
+}
+
+function formatRuntimeFlags(report) {
+  return RUNTIME_KEYS.map((key) => {
+    const value = report.hostedAudit.runtimePresence[key];
+    const state = formatRuntimeState({
+      value,
+      runtimePresenceKnown: report.diagnosis.runtimePresenceKnown,
+    });
+    return `${key}=${state}`;
+  }).join(', ');
+}
+
 function formatReport(report) {
-  const lines = [];
-  lines.push(`Revenue Status @ ${report.generatedAt}`);
-  lines.push(`Source: ${report.source}`);
-  lines.push(`Primary issue: ${report.diagnosis.primaryIssue}`);
-  lines.push(`Tracking implemented: ${report.diagnosis.trackingImplemented ? 'yes' : 'no'}`);
-  lines.push(`Telemetry ingress working: ${report.diagnosis.telemetryIngressWorking ? 'yes' : 'no'}`);
-  lines.push(`Hosted summary working: ${report.diagnosis.hostedSummaryWorking ? 'yes' : 'no'}`);
-  lines.push(`Hosted traffic observed: ${report.diagnosis.hostedTrafficObserved ? 'yes' : 'no'}`);
-  lines.push(`Hosted revenue observed: ${report.diagnosis.hostedRevenueObserved ? 'yes' : 'no'}`);
-  lines.push('');
-  lines.push(`Public health: ${report.publicProbe.health.status} (${report.publicProbe.health.version || 'unknown version'})`);
-  lines.push(`Telemetry ping probe: ${report.publicProbe.telemetryPing.status}`);
-  lines.push(`Runtime flags: ${RUNTIME_KEYS.map((key) => `${key}=${report.hostedAudit.runtimePresence[key] ? 'set' : 'missing'}`).join(', ')}`);
-  lines.push('');
-  lines.push(...formatWindowBlock('Today', report.hostedAudit.summaries.today));
-  lines.push(...formatWindowBlock('30d', report.hostedAudit.summaries['30d']));
-  lines.push(...formatWindowBlock('Lifetime', report.hostedAudit.summaries.lifetime));
-  lines.push('');
-  lines.push(`30d attribution coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.attributionCoverage)}`);
-  lines.push(`30d telemetry coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.telemetryCoverage)}`);
+  const lines = [
+    `Revenue Status @ ${report.generatedAt}`,
+    `Source: ${report.source}`,
+    `Primary issue: ${report.diagnosis.primaryIssue}`,
+    `Tracking implemented: ${report.diagnosis.trackingImplemented ? 'yes' : 'no'}`,
+    `Telemetry ingress working: ${report.diagnosis.telemetryIngressWorking ? 'yes' : 'no'}`,
+    `Hosted summary working: ${report.diagnosis.hostedSummaryWorking ? 'yes' : 'no'}`,
+    `Hosted traffic observed: ${report.diagnosis.hostedTrafficObserved ? 'yes' : 'no'}`,
+    `Hosted revenue observed: ${report.diagnosis.hostedRevenueObserved ? 'yes' : 'no'}`,
+    `Hosted audit method: ${report.diagnosis.hostedAuditMethod}`,
+    `Railway runtime inspected: ${report.diagnosis.runtimePresenceKnown ? 'yes' : 'no'}`,
+    '',
+    `Public health: ${report.publicProbe.health.status} (${report.publicProbe.health.version || 'unknown version'})`,
+    `Telemetry ping probe: ${report.publicProbe.telemetryPing.status}`,
+    `Runtime flags: ${formatRuntimeFlags(report)}`,
+    '',
+    ...formatWindowBlock('Today', report.hostedAudit.summaries.today),
+    ...formatWindowBlock('30d', report.hostedAudit.summaries['30d']),
+    ...formatWindowBlock('Lifetime', report.hostedAudit.summaries.lifetime),
+    '',
+    `30d attribution coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.attributionCoverage)}`,
+    `30d telemetry coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.telemetryCoverage)}`,
+  ];
 
   if (report.diagnosis.gaps.length) {
     lines.push('');
@@ -298,7 +331,12 @@ function buildRailwayAuditSnippet({ appOrigin, timeZone }) {
         };
       }
 
-      console.log(JSON.stringify({ runtimePresence, summaries }, null, 2));
+      console.log(JSON.stringify({
+        auditMethod: 'railway-env',
+        runtimePresenceKnown: true,
+        runtimePresence,
+        summaries,
+      }, null, 2));
     })().catch((error) => {
       console.error(error && error.stack ? error.stack : error);
       process.exit(1);
@@ -331,7 +369,50 @@ function getHostedAuditViaRailway({
       snippet,
     ])
   );
-  return JSON.parse(stdout);
+  const hostedAudit = JSON.parse(stdout);
+  return {
+    auditMethod: 'railway-env',
+    runtimePresenceKnown: true,
+    ...hostedAudit,
+  };
+}
+
+async function getHostedAuditViaHttp({
+  appOrigin = DEFAULT_PUBLIC_APP_ORIGIN,
+  apiKey = process.env.THUMBGATE_API_KEY,
+  timeZone = 'America/New_York',
+  fetchImpl = fetch,
+} = {}) {
+  if (!apiKey) {
+    throw new Error('THUMBGATE_API_KEY is not set for hosted billing summary audit.');
+  }
+
+  const summaries = {};
+  for (const window of HOSTED_WINDOWS) {
+    const url = new URL('/v1/billing/summary', appOrigin);
+    url.searchParams.set('window', window);
+    url.searchParams.set('timezone', timeZone);
+    const response = await fetchImpl(url, {
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        accept: 'application/json',
+      },
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(`Hosted billing summary ${window} returned ${response.status}`);
+    }
+    summaries[window] = normalizeWindowSummary(response.status, payload);
+  }
+
+  return {
+    auditMethod: 'hosted-http-api',
+    runtimePresenceKnown: false,
+    runtimePresence: {
+      THUMBGATE_API_KEY: true,
+    },
+    summaries,
+  };
 }
 
 async function getLocalFallback(timeZone) {
@@ -354,6 +435,8 @@ async function generateRevenueStatusReport({
   timeZone = 'America/New_York',
   runCommandFn = runCommand,
   fetchPublicProbe = probePublicRuntime,
+  fetchImpl = fetch,
+  apiKey = process.env.THUMBGATE_API_KEY,
 } = {}) {
   let repoVars = {};
   let repoVarError = null;
@@ -365,6 +448,38 @@ async function generateRevenueStatusReport({
 
   const appOrigin = repoVars.THUMBGATE_PUBLIC_APP_ORIGIN || DEFAULT_PUBLIC_APP_ORIGIN;
   const publicProbe = await fetchPublicProbe(appOrigin);
+  const hostedApiOrigin = repoVars.THUMBGATE_BILLING_API_BASE_URL || appOrigin;
+  let hostedHttpError = null;
+
+  try {
+    const hostedAudit = await getHostedAuditViaHttp({
+      appOrigin: hostedApiOrigin,
+      apiKey,
+      timeZone,
+      fetchImpl,
+    });
+
+    return {
+      generatedAt: new Date().toISOString(),
+      repo,
+      source: 'hosted-http-api',
+      repoVars: {
+        RAILWAY_PROJECT_ID: Boolean(repoVars.RAILWAY_PROJECT_ID),
+        RAILWAY_ENVIRONMENT_ID: Boolean(repoVars.RAILWAY_ENVIRONMENT_ID),
+        RAILWAY_SERVICE: repoVars.RAILWAY_SERVICE || DEFAULT_RAILWAY_SERVICE,
+        THUMBGATE_PUBLIC_APP_ORIGIN: appOrigin,
+        THUMBGATE_BILLING_API_BASE_URL: hostedApiOrigin,
+      },
+      publicProbe,
+      hostedAudit,
+      diagnosis: buildDiagnosis({
+        publicProbe,
+        hostedAudit,
+      }),
+    };
+  } catch (error) {
+    hostedHttpError = error;
+  }
 
   try {
     if (!repoVars.RAILWAY_PROJECT_ID || !repoVars.RAILWAY_ENVIRONMENT_ID) {
@@ -375,7 +490,7 @@ async function generateRevenueStatusReport({
       projectId: repoVars.RAILWAY_PROJECT_ID,
       environmentId: repoVars.RAILWAY_ENVIRONMENT_ID,
       service: repoVars.RAILWAY_SERVICE || DEFAULT_RAILWAY_SERVICE,
-      appOrigin: repoVars.THUMBGATE_BILLING_API_BASE_URL || appOrigin,
+      appOrigin: hostedApiOrigin,
       timeZone,
       runCommandFn,
     });
@@ -389,7 +504,7 @@ async function generateRevenueStatusReport({
         RAILWAY_ENVIRONMENT_ID: Boolean(repoVars.RAILWAY_ENVIRONMENT_ID),
         RAILWAY_SERVICE: repoVars.RAILWAY_SERVICE || DEFAULT_RAILWAY_SERVICE,
         THUMBGATE_PUBLIC_APP_ORIGIN: appOrigin,
-        THUMBGATE_BILLING_API_BASE_URL: repoVars.THUMBGATE_BILLING_API_BASE_URL || appOrigin,
+        THUMBGATE_BILLING_API_BASE_URL: hostedApiOrigin,
       },
       publicProbe,
       hostedAudit,
@@ -409,10 +524,12 @@ async function generateRevenueStatusReport({
         RAILWAY_ENVIRONMENT_ID: Boolean(repoVars.RAILWAY_ENVIRONMENT_ID),
         RAILWAY_SERVICE: repoVars.RAILWAY_SERVICE || DEFAULT_RAILWAY_SERVICE,
         THUMBGATE_PUBLIC_APP_ORIGIN: appOrigin,
-        THUMBGATE_BILLING_API_BASE_URL: repoVars.THUMBGATE_BILLING_API_BASE_URL || appOrigin,
+        THUMBGATE_BILLING_API_BASE_URL: hostedApiOrigin,
       },
       publicProbe,
       hostedAudit: {
+        auditMethod: 'local-fallback',
+        runtimePresenceKnown: true,
         runtimePresence: {},
         summaries: {
           today: windowSnapshot(fallback.summary),
@@ -427,8 +544,15 @@ async function generateRevenueStatusReport({
         hostedSummaryWorking: false,
         hostedTrafficObserved: false,
         hostedRevenueObserved: false,
+        runtimePresenceKnown: true,
+        hostedAuditMethod: 'local-fallback',
         primaryIssue: 'hosted_summary_access_or_config_gap',
-        gaps: [repoVarError && repoVarError.message, error.message, fallback.fallbackReason].filter(Boolean),
+        gaps: [
+          repoVarError?.message,
+          hostedHttpError?.message,
+          error.message,
+          fallback.fallbackReason,
+        ].filter(Boolean),
       },
     };
   }
@@ -461,6 +585,7 @@ module.exports = {
   buildDiagnosis,
   formatReport,
   buildRailwayAuditSnippet,
+  getHostedAuditViaHttp,
   generateRevenueStatusReport,
 };
 
