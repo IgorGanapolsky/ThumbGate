@@ -42,6 +42,12 @@ const {
   getFeedbackPaths: resolveFeedbackPaths,
 } = require('./feedback-paths');
 
+const AUDIT_TRAIL_TAG = 'audit-trail';
+
+function isAuditTrailEntry(entry = {}) {
+  return Array.isArray(entry.tags) && entry.tags.includes(AUDIT_TRAIL_TAG);
+}
+
 // Lesson DB — SQLite+FTS5 backing store (dual-write alongside JSONL)
 let _lessonDB = null;
 let _lessonDBPath = null;
@@ -1064,7 +1070,7 @@ function captureFeedback(params) {
 
   const summary = loadSummary();
   // Only count real user feedback in the summary, not audit-trail gate events
-  const isAuditEntry = Array.isArray(tags) && tags.includes('audit-trail');
+  const isAuditEntry = Array.isArray(tags) && tags.includes(AUDIT_TRAIL_TAG);
   if (!isAuditEntry) {
     summary.total += 1;
     summary[signal] += 1;
@@ -1386,13 +1392,8 @@ function analyzeFeedback(logPath) {
   let totalPositive = 0;
   let totalNegative = 0;
 
-  // Gate-denial entries (tagged 'audit-trail') are NOT real user feedback.
-  // Exclude them from user-facing stats to prevent count inflation.
-  const AUDIT_TAG = 'audit-trail';
-
   for (const entry of entries) {
-    const isAuditEntry = Array.isArray(entry.tags) && entry.tags.includes(AUDIT_TAG);
-    if (isAuditEntry) continue;
+    if (isAuditTrailEntry(entry)) continue;
 
     if (entry.signal === 'positive') totalPositive++;
     if (entry.signal === 'negative') totalNegative++;
@@ -1427,7 +1428,7 @@ function analyzeFeedback(logPath) {
 
   const total = totalPositive + totalNegative;
   const approvalRate = total > 0 ? Math.round((totalPositive / total) * 1000) / 1000 : 0;
-  const realEntries = entries.filter((e) => !(Array.isArray(e.tags) && e.tags.includes(AUDIT_TAG)));
+  const realEntries = entries.filter((entry) => !isAuditTrailEntry(entry));
   const recent = realEntries.slice(-20);
   const recentPos = recent.filter((e) => e.signal === 'positive').length;
   const recentRate = recent.length > 0 ? Math.round((recentPos / recent.length) * 1000) / 1000 : 0;
@@ -1700,11 +1701,12 @@ function writePreventionRules(filePath, minOccurrences = 2) {
 function feedbackSummary(recentN = 20, options = {}) {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths(options);
   const entries = readJSONL(FEEDBACK_LOG_PATH);
-  if (entries.length === 0) {
+  const realEntries = entries.filter((entry) => !isAuditTrailEntry(entry));
+  if (realEntries.length === 0) {
     return '## Feedback Summary\nNo feedback recorded yet.';
   }
 
-  const recent = entries.slice(-recentN);
+  const recent = realEntries.slice(-recentN);
   const positive = recent.filter((e) => e.signal === 'positive').length;
   const negative = recent.filter((e) => e.signal === 'negative').length;
   const pct = Math.round((positive / recent.length) * 100);
