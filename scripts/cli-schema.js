@@ -243,7 +243,7 @@ function groupedCommands() {
  * Format:  name [aliases]   description   [--flag ...]
  */
 function commandHelpLine(cmd, opts = {}) {
-  const { showFlags = false, width = 76 } = opts;
+  const { showFlags = false } = opts;
   const nameCol = 22;
   const nameStr = [cmd.name, ...(cmd.aliases || []).slice(0, 1)].join(' | ');
   const pad = ' '.repeat(Math.max(1, nameCol - nameStr.length));

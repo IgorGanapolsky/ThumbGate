@@ -10,6 +10,10 @@ const explore = require('../scripts/explore');
 const {
   applyFilter,
   buildState,
+  decodeKey,
+  handleKey,
+  isDirectInvocation,
+  isExitKey,
   loadGates,
   loadLessons,
   pad,
@@ -131,6 +135,66 @@ test('filter logic: query is case-insensitive', () => {
   const state = buildState({ lessons: items, gates: [], stats: null, rules: [] });
   state.query = 'force push';
   assert.equal(applyFilter(state).length, 1);
+});
+
+test('decodeKey maps terminal escape sequences to semantic keys', () => {
+  assert.equal(decodeKey('\x1b[A'), 'up');
+  assert.equal(decodeKey(Buffer.from('\x1b[B')), 'down');
+  assert.equal(decodeKey('\x1b[B'), 'down');
+  assert.equal(decodeKey('\r'), 'return');
+  assert.equal(decodeKey('x'), 'x');
+});
+
+test('isExitKey recognizes Ctrl-C from terminal buffers', () => {
+  assert.equal(isExitKey(Buffer.from('\x03')), true);
+  assert.equal(isExitKey('x'), false);
+});
+
+test('handleKey updates search mode state', () => {
+  const items = [
+    { id: '1', title: 'force push', tags: ['negative'] },
+    { id: '2', title: 'deploy fail', tags: ['negative'] },
+  ];
+  const state = buildState({ lessons: items, gates: [], stats: null, rules: [] });
+  state.mode = 'search';
+  handleKey(state, 'd', 'd');
+  handleKey(state, 'e', 'e');
+  assert.equal(state.query, 'de');
+  assert.equal(state.filtered.length, 1);
+  handleKey(state, 'backspace');
+  assert.equal(state.query, 'd');
+  handleKey(state, 'return');
+  assert.equal(state.mode, 'list');
+});
+
+test('handleKey updates list and detail navigation state', () => {
+  const state = buildState({
+    lessons: [{ id: '1' }, { id: '2' }],
+    gates: [{ id: 'gate' }],
+    stats: null,
+    rules: [{ id: 'rule', text: 'rule' }],
+  });
+  state.filtered = state.data.lessons;
+  handleKey(state, 'down');
+  assert.equal(state.cursor, 1);
+  handleKey(state, 'up');
+  assert.equal(state.cursor, 0);
+  handleKey(state, 'tab');
+  assert.equal(state.tab, 1);
+  assert.deepEqual(state.filtered, state.data.gates);
+  handleKey(state, 'return');
+  assert.equal(state.mode, 'detail');
+  handleKey(state, 'escape');
+  assert.equal(state.mode, 'list');
+  handleKey(state, '4', '4');
+  assert.equal(state.tab, 3);
+  assert.deepEqual(state.filtered, state.data.rules);
+});
+
+test('isDirectInvocation checks supplied module references', () => {
+  const fakeModule = {};
+  assert.equal(isDirectInvocation(fakeModule, fakeModule), true);
+  assert.equal(isDirectInvocation(fakeModule, {}), false);
 });
 
 // ---------------------------------------------------------------------------

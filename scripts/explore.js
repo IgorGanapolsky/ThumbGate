@@ -16,9 +16,9 @@
  *   Esc / q        go back / quit
  */
 
-const readline = require('readline');
-const fs = require('fs');
-const path = require('path');
+const readline = require('node:readline');
+const fs = require('node:fs');
+const path = require('node:path');
 
 // ---------------------------------------------------------------------------
 // ANSI helpers
@@ -58,7 +58,9 @@ function relDate(ts) {
   const time = new Date(ts).getTime();
   if (!Number.isFinite(time)) return '';
   const d = Math.floor((Date.now() - time) / 86400000);
-  return d === 0 ? 'today' : d === 1 ? '1d ago' : `${d}d ago`;
+  if (d === 0) return 'today';
+  if (d === 1) return '1d ago';
+  return `${d}d ago`;
 }
 
 function write(s) { process.stdout.write(s); }
@@ -79,7 +81,7 @@ function loadGates(pkgRoot) {
   const gatesDir = path.join(pkgRoot, 'config', 'gates');
   const gates = [];
   if (!fs.existsSync(gatesDir)) return gates;
-  for (const f of fs.readdirSync(gatesDir).sort()) {
+  for (const f of fs.readdirSync(gatesDir).sort((a, b) => a.localeCompare(b))) {
     if (!f.endsWith('.json') || f === 'custom.json') continue;
     try {
       const raw = JSON.parse(fs.readFileSync(path.join(gatesDir, f), 'utf8'));
@@ -120,9 +122,30 @@ function loadRules(feedbackDir) {
 
 const TABS = ['Lessons', 'Gates', 'Stats', 'Rules'];
 
+const KEY_MAP = new Map([
+  ['\x1b[A', 'up'],
+  ['\x1b[B', 'down'],
+  ['\x1b[C', 'right'],
+  ['\x1b[D', 'left'],
+  ['\r', 'return'],
+  ['\n', 'return'],
+  ['\x1b', 'escape'],
+  ['\x7f', 'backspace'],
+  ['\t', 'tab'],
+]);
+const EXIT_KEY = '\x03';
+
+function normalizeKeyData(input) {
+  if (Buffer.isBuffer(input)) return input.toString('utf8');
+  if (typeof input === 'string') return input;
+  return '';
+}
+
 function listHeight(state) {
   return Math.max(1, rows() - 8 - (state.query ? 2 : 0));
 }
+
+/* c8 ignore start -- terminal drawing is integration-tested through CLI smoke tests. */
 
 function renderHeader(state) {
   const version = (() => { try { return require('../package.json').version; } catch { return '?'; } })();
@@ -160,7 +183,10 @@ function renderLessons(state) {
   const visible = items.slice(start, start + listH);
 
   if (items.length === 0) {
-    write(`\n  ${A.gy}No lessons found.${state.query ? ` Matching "${state.query}".` : ' Run: npx thumbgate capture'}${A.r}\n`);
+    const suffix = state.query
+      ? ` Matching "${state.query}".`
+      : ' Run: npx thumbgate capture';
+    write(`\n  ${A.gy}No lessons found.${suffix}${A.r}\n`);
     return;
   }
 
@@ -348,41 +374,49 @@ function render(state) {
   else if (state.tab === 3) renderRules(state);
 }
 
+/* c8 ignore stop */
+
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-function handleKey(state, key, data) {
-  if (state.mode === 'search') {
-    if (key === 'escape' || key === '\r') {
-      state.mode = 'list';
-      state.filtered = applyFilter(state);
-      state.cursor = 0;
-    } else if (key === 'backspace') {
-      state.query = state.query.slice(0, -1);
-      state.filtered = applyFilter(state);
-      state.cursor = 0;
-    } else if (data && data.length === 1 && data >= ' ') {
-      state.query += data;
-      state.filtered = applyFilter(state);
-      state.cursor = 0;
-    }
+function resetFiltered(state) {
+  state.filtered = applyFilter(state);
+  state.cursor = 0;
+}
+
+function handleSearchKey(state, key, data) {
+  if (key === 'escape' || key === 'return') {
+    state.mode = 'list';
+    resetFiltered(state);
     return;
   }
-
-  if (state.mode === 'detail') {
-    if (key === 'escape' || key === 'q') {
-      state.mode = 'list';
-    }
+  if (key === 'backspace') {
+    state.query = state.query.slice(0, -1);
+    resetFiltered(state);
     return;
   }
+  if (typeof data === 'string' && data.length === 1 && data >= ' ') {
+    state.query += data;
+    resetFiltered(state);
+  }
+}
 
-  // list mode
+function handleDetailKey(state, key) {
+  if (key === 'escape' || key === 'q') {
+    state.mode = 'list';
+  }
+}
+
+function handleListKey(state, key, data) {
   switch (key) {
     case 'q':
       cleanup();
       process.exit(0);
       break;
     case 'escape':
-      if (state.query) { state.query = ''; state.filtered = applyFilter(state); state.cursor = 0; }
+      if (state.query) {
+        state.query = '';
+        resetFiltered(state);
+      }
       break;
     case '/':
       state.mode = 'search';
@@ -405,17 +439,36 @@ function handleKey(state, key, data) {
       state.cursor = 0;
       state.query = '';
       state.mode = 'list';
-      state.filtered = applyFilter(state);
+      resetFiltered(state);
       break;
     default:
-      if (data >= '1' && data <= '4') {
-        state.tab = parseInt(data) - 1;
+      if (typeof data === 'string' && data >= '1' && data <= '4') {
+        state.tab = Number.parseInt(data, 10) - 1;
         state.cursor = 0;
         state.query = '';
         state.mode = 'list';
-        state.filtered = applyFilter(state);
+        resetFiltered(state);
       }
   }
+}
+
+function handleKey(state, key, data) {
+  if (state.mode === 'search') {
+    handleSearchKey(state, key, data);
+  } else if (state.mode === 'detail') {
+    handleDetailKey(state, key);
+  } else {
+    handleListKey(state, key, data);
+  }
+}
+
+function decodeKey(ch) {
+  const data = normalizeKeyData(ch);
+  return KEY_MAP.get(data) || data;
+}
+
+function isExitKey(ch) {
+  return normalizeKeyData(ch) === EXIT_KEY;
 }
 
 // ---------------------------------------------------------------------------
@@ -427,6 +480,8 @@ function cleanup() {
   if (process.stdin.isTTY) process.stdin.setRawMode(false);
   readline.clearLine(process.stdout, 0);
 }
+
+/* c8 ignore start -- run() owns raw TTY wiring and process lifecycle. */
 
 function run(options = {}) {
   if (!process.stdout.isTTY) {
@@ -469,22 +524,23 @@ function run(options = {}) {
 
   // Keypress handler
   process.stdin.on('data', (ch) => {
-    let key = ch;
-    if (ch === '\x1b[A') key = 'up';
-    else if (ch === '\x1b[B') key = 'down';
-    else if (ch === '\x1b[C') key = 'right';
-    else if (ch === '\x1b[D') key = 'left';
-    else if (ch === '\r' || ch === '\n') key = 'return';
-    else if (ch === '\x1b') key = 'escape';
-    else if (ch === '\x7f') key = 'backspace';
-    else if (ch === '\t') key = 'tab';
-    else if (ch === '\x03') { cleanup(); process.exit(0); }
-
-    handleKey(state, key, ch);
+    const data = normalizeKeyData(ch);
+    if (isExitKey(data)) {
+      cleanup();
+      process.exit(0);
+    }
+    const key = decodeKey(data);
+    handleKey(state, key, data);
     render(state);
   });
 
   render(state);
+}
+
+/* c8 ignore stop */
+
+function isDirectInvocation(moduleRef = module, mainRef = require.main) {
+  return mainRef === moduleRef;
 }
 
 module.exports = {
@@ -492,6 +548,10 @@ module.exports = {
   _internals: {
     applyFilter,
     buildState,
+    decodeKey,
+    handleKey,
+    isDirectInvocation,
+    isExitKey,
     loadGates,
     loadLessons,
     loadRules,
@@ -502,6 +562,6 @@ module.exports = {
   },
 };
 
-if (require.main === module) {
+if (isDirectInvocation()) {
   run();
 }
