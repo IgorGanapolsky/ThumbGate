@@ -19,8 +19,8 @@
 
 1. Agent makes a mistake → developer gives thumbs-down
 2. ThumbGate captures context and infers a structured lesson
-3. Recurring failures get promoted to enforcement gates
-4. PreToolUse hooks block the pattern before it executes again
+3. Recurring failures get promoted to Pre-Action Gates
+4. PreToolUse hooks block the pattern before it runs again
 5. Thompson Sampling adapts gate confidence over time
 
 ## Who it's for

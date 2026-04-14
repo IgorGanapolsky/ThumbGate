@@ -46,6 +46,8 @@ It scores deterministic GitHub, npm, database, Railway, shell, and filesystem sc
 
 ## What problem does this solve?
 
+**Prevent expensive AI mistakes.** **Make AI stop repeating mistakes.** Turn your AI from a smart assistant into a **reliable operator** — permanently, with self-improving Pre-Action Gates and enforcement that never forgets.
+
 AI agents repeat mistakes. You fix the same problem in session after session — force-push to main, broken migrations, unauthorized file edits — because the agent has no memory of your feedback.
 
 ```

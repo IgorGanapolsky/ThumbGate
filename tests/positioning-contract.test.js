@@ -13,12 +13,12 @@ function readJson(relativePath) {
   return JSON.parse(readText(relativePath));
 }
 
-test('package metadata leads with self-improving governance framing instead of generic memory-layer phrasing', () => {
+test('package metadata leads with outcome-focused framing instead of generic memory-layer phrasing', () => {
   const packageJson = readJson('package.json');
 
-  assert.match(packageJson.description, /self-improving/i);
-  assert.match(packageJson.description, /governance/i);
-  assert.match(packageJson.description, /prevention rule/i);
+  assert.match(packageJson.description, /costly mistakes|production data|bad commands/i);
+  assert.match(packageJson.description, /block|prevent|catch|stop/i);
+  assert.match(packageJson.description, /correction permanent|never again|never repeats/i);
   assert.doesNotMatch(packageJson.description, /Universal Context & Memory Layer/i);
 });
 
