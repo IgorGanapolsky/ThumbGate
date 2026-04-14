@@ -76,7 +76,9 @@ test('public docs render the current package version', () => {
 
   assert.match(readme, /Open ThumbGate GPT/);
   assert.match(readme, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
-  assert.match(readme, /hard enforcement for coding agents still runs locally after `npx thumbgate init`/i);
+  assert.match(readme, /ThumbGate GPT: start here/i);
+  assert.match(readme, /No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate/i);
+  assert.match(readme, /hard enforcement layer still runs where the work happens/i);
   assert.match(landingPage, /ThumbGate/);
   assert.match(landingPage, /AI agent reliability/i);
   assert.match(landingPage, /Claude Desktop extension/i);
@@ -117,6 +119,8 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstall, /Paste an AI action to check, or tell me what went right\/wrong/i);
   assert.match(chatgptInstall, /native feedback buttons may send feedback to OpenAI/i);
   assert.match(chatgptInstall, /Regular GPT users should not need an API key, JSON payload, OpenAPI knowledge, or developer setup/i);
+  assert.match(chatgptInstall, /Users do \*\*not\*\* have to keep chatting inside the ThumbGate GPT for enforcement/i);
+  assert.match(chatgptInstall, /every landing page, README, social post, and plugin listing should point to the live GPT/i);
   assert.match(chatgptInstall, /This is an owner setup field/i);
   assert.match(chatgptInstall, /https:\/\/thumbgate-production\.up\.railway\.app\/openapi\.yaml/);
   assert.match(chatgptInstall, /https:\/\/thumbgate-production\.up\.railway\.app\/privacy/);
@@ -128,6 +132,8 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstructions, /Feedback capture mode/);
   assert.match(chatgptInstructions, /decisionControl\.executionMode/);
   assert.match(chatgptInstructions, /one signal becomes one remembered rule/i);
+  assert.match(chatgptInstructions, /public front door for ThumbGate/i);
+  assert.match(chatgptInstructions, /Hard enforcement runs locally after `npx thumbgate init` where your agent actually executes/i);
   assert.match(chatgptInstructions, /Regular users should never need an API key, JSON payload, OpenAPI knowledge, or developer setup/i);
   assert.doesNotMatch(chatgptInstructions, /Setup Concierge/i);
   assert.doesNotMatch(chatgptInstructions, /AI safety gate/i);

@@ -6,6 +6,7 @@
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Start Sprint](https://img.shields.io/badge/Workflow%20Hardening%20Sprint-Start%20Intake%20→-16a34a?style=for-the-badge)](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=badge_cta#workflow-sprint-intake)
+[![Open ThumbGate GPT](https://img.shields.io/badge/ChatGPT-Open%20ThumbGate%20GPT-10a37f?style=for-the-badge&logo=openai&logoColor=white)](https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate)
 
 **[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Open ThumbGate GPT](https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate)** · **[ChatGPT Actions setup](adapters/chatgpt/INSTALL.md)** · **[Install Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** · **[Claude Plugin Guide](docs/CLAUDE_DESKTOP_EXTENSION.md)** · **[Install Codex Plugin](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Perplexity Command Center](docs/PERPLEXITY_MAX_COMMAND_CENTER.md)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)**
 
@@ -15,7 +16,19 @@
 
 **Running Codex?** **[Download the standalone Codex plugin bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Codex install guide](plugins/codex-profile/INSTALL.md)**
 
-**Running ChatGPT?** **[Open the ThumbGate GPT](https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate)** to check proposed AI actions, save thumbs-up/down lessons, and get setup help. The GPT is a setup and memory surface; hard enforcement for coding agents still runs locally after `npx thumbgate init`. Developers can import the prepared **[GPT Actions OpenAPI spec](adapters/chatgpt/openapi.yaml)** with the **[ChatGPT Actions setup guide](adapters/chatgpt/INSTALL.md)**.
+## ThumbGate GPT: start here
+
+**Use ThumbGate in ChatGPT now:** **[Open the live ThumbGate GPT](https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate)**, paste the action your AI agent wants to run, and ask whether to allow, block, or checkpoint it.
+
+Try this first prompt:
+
+```text
+Check this agent action before it runs: git push --force --tags
+```
+
+**No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate.** The GPT is the fast demo, guided setup path, and thumbs-up/down memory surface for ChatGPT users. The hard enforcement layer still runs where the work happens: your local coding agent, CI workflow, or MCP-compatible runtime after `npx thumbgate init`.
+
+Developers can import the prepared **[GPT Actions OpenAPI spec](adapters/chatgpt/openapi.yaml)** with the **[ChatGPT Actions setup guide](adapters/chatgpt/INSTALL.md)**. Regular ChatGPT users should just open the GPT and type what happened.
 
 **Official directory pending review?** Claude Code users can install today with `/plugin marketplace add IgorGanapolsky/ThumbGate` then `/plugin install thumbgate@thumbgate-marketplace`.
 

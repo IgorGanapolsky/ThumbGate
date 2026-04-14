@@ -59,6 +59,7 @@ __GA_BOOTSTRAP__
   },
   "featureList": [
     "Pre-Action Gates — block known-bad tool calls before execution",
+    "ThumbGate GPT for ChatGPT — check proposed agent actions, capture thumbs-up/down lessons, and route users into local enforcement",
     "Workflow Sentinel — score blast radius before PR, merge, release, and publish actions fire",
     "Docker Sandboxes routing — move high-risk local runs into isolated microVM-backed execution",
     "Hosted sandbox dispatch — signed isolated lane for team automations",
@@ -186,6 +187,14 @@ __GA_BOOTSTRAP__
     },
     {
       "@type": "Question",
+      "name": "Do I have to chat inside the ThumbGate GPT for enforcement?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. The ThumbGate GPT is the ChatGPT entrypoint for checking proposed actions, capturing thumbs-up/down lessons, and getting setup help. Hard enforcement still runs locally where the agent executes after npx thumbgate init."
+      }
+    },
+    {
+      "@type": "Question",
       "name": "How does ThumbGate reduce host blast radius for high-risk local runs?",
       "acceptedAnswer": {
         "@type": "Answer",
@@ -277,6 +286,8 @@ __GA_BOOTSTRAP__
   .hero-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 16px; max-width: 760px; }
   .btn-pro-page { display: inline-flex; align-items: center; justify-content: center; padding: 11px 18px; background: var(--cyan); color: var(--bg); border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 700; box-shadow: 0 0 0 1px rgba(34,211,238,0.28), 0 12px 32px rgba(34,211,238,0.18); transition: opacity 0.15s, transform 0.15s; }
   .btn-pro-page:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-gpt-page { display: inline-flex; align-items: center; justify-content: center; padding: 14px 32px; background: var(--green); color: #06120a; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 800; box-shadow: 0 0 0 1px rgba(74,222,128,0.32), 0 12px 32px rgba(74,222,128,0.18); transition: opacity 0.15s, transform 0.15s; }
+  .btn-gpt-page:hover { opacity: 0.92; transform: translateY(-1px); }
   .hero-paid-note { font-size: 14px; color: var(--text-muted); max-width: 720px; margin: 0 auto 24px; }
   .hero-paid-note strong { color: var(--text); }
   .hero-install { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 14px 24px; display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 15px; margin-bottom: 40px; cursor: pointer; transition: border-color 0.2s; position: relative; max-width: 100%; overflow-x: auto; }
@@ -301,6 +312,18 @@ __GA_BOOTSTRAP__
   .compat-card .card-arrow { font-size: 13px; color: var(--cyan); margin-top: 12px; font-weight: 500; }
   .compat-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
   .compat-card code { font-family: var(--mono); font-size: 12px; background: rgba(34,211,238,0.08); color: var(--cyan); padding: 2px 6px; border-radius: 4px; }
+
+  /* CHATGPT GPT PATH */
+  .gpt-path { padding: 0 0 80px; }
+  .gpt-panel { border: 1px solid rgba(74,222,128,0.32); background: linear-gradient(180deg, rgba(17,17,19,0.98) 0%, rgba(15,24,18,0.96) 100%); border-radius: 8px; padding: 28px; }
+  .gpt-panel h2 { font-size: clamp(24px, 3vw, 34px); line-height: 1.15; letter-spacing: -0.025em; margin-bottom: 12px; }
+  .gpt-panel > p { color: var(--text-muted); max-width: 780px; margin-bottom: 22px; }
+  .gpt-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 24px 0; }
+  .gpt-step { border: 1px solid var(--border); border-radius: 8px; background: rgba(10,10,11,0.58); padding: 18px; }
+  .gpt-step strong { display: block; color: var(--green); margin-bottom: 6px; }
+  .gpt-step p { color: var(--text-muted); font-size: 14px; line-height: 1.55; }
+  .gpt-note { font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 16px; }
+  .gpt-note strong { color: var(--text); }
 
   /* SEO PAGES */
   .seo-pages { padding: 0 0 80px; }
@@ -407,7 +430,7 @@ __GA_BOOTSTRAP__
   .sticky-cta.visible { transform: translateY(0); }
   .sticky-cta-text { font-size: 14px; color: var(--text-muted); }
   .sticky-cta-text strong { color: var(--text); }
-  .sticky-cta .btn-pro { padding: 8px 20px; font-size: 13px; border-radius: 6px; white-space: nowrap; }
+  .sticky-cta .btn-pro, .sticky-cta .btn-gpt-page { padding: 8px 20px; font-size: 13px; border-radius: 6px; white-space: nowrap; }
 
   /* FOOTER */
   footer { border-top: 1px solid var(--border); padding: 32px 0; }
@@ -421,6 +444,7 @@ __GA_BOOTSTRAP__
   @media (max-width: 700px) {
     .steps { grid-template-columns: 1fr; }
     .compatibility-grid { grid-template-columns: 1fr; }
+    .gpt-steps { grid-template-columns: 1fr; }
     .seo-grid { grid-template-columns: 1fr; }
     .pricing-grid { grid-template-columns: 1fr; }
     .team-form { grid-template-columns: 1fr; }
@@ -460,7 +484,8 @@ __GA_BOOTSTRAP__
       <a href="/learn">Learn</a>
       <a href="/compare">Compare</a>
       <a href="/dashboard">Dashboard Demo</a>
-      <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')" class="nav-cta">Start Sprint</a>
+      <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')">Start Sprint</a>
+      <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" target="_blank" rel="noopener" onclick="posthog.capture('nav_cta_click',{cta:'open_gpt'})" class="nav-cta">Open GPT</a>
     </div>
   </div>
 </nav>
@@ -469,9 +494,9 @@ __GA_BOOTSTRAP__
 <section class="hero">
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
-    <div class="hero-badge">● Your AI agent just made that mistake again</div>
+    <div class="hero-badge">● Live ThumbGate GPT for ChatGPT</div>
     <h1>Your AI agent just made<br>that mistake again.<br><span style="color:var(--cyan)">One thumbs-down.<br>It never happens again.</span></h1>
-    <p style="font-size:18px;color:var(--text-muted);max-width:560px;margin:0 auto 20px;line-height:1.6;">Session 1: your agent force-pushes, skips tests, or runs a DROP on prod.<br>You give it a 👎.<br><strong style="color:var(--text)">Session 2: gate fires. Action blocked before execution.</strong></p>
+    <p style="font-size:18px;color:var(--text-muted);max-width:620px;margin:0 auto 20px;line-height:1.6;">Start in ChatGPT: paste the proposed action into the live ThumbGate GPT and get allow, block, or checkpoint guidance.<br><strong style="color:var(--text)">Then enforce locally with <code>npx thumbgate init</code> where your agent actually runs.</strong></p>
     <div class="hero-signals">
       <div class="signal-pill signal-down">👎 Repeated failure becomes enforcement before the next run</div>
       <div class="signal-pill signal-up">✅ Safe pattern reinforced across the shared workflow</div>
@@ -479,17 +504,17 @@ __GA_BOOTSTRAP__
     </div>
     <p class="hero-persona" style="display:none">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
     <div class="hero-actions" style="margin-top:32px;">
+      <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_cta_click',{cta:'open_gpt'})">Open ThumbGate GPT</a>
       <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;">
         <span class="prompt">$</span>
         <span class="cmd">npx thumbgate init</span>
         <span class="copy-hint">click to copy</span>
       </div>
-      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_trial&cta_id=hero_start_trial" onclick="posthog.capture('hero_cta_click',{cta:'start_trial'})" class="btn-pro-page" style="font-size:16px;padding:14px 32px;margin-bottom:4px;">Start 7-day free trial — $19/mo</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_trial&cta_id=hero_start_trial" onclick="posthog.capture('hero_cta_click',{cta:'start_trial'})" class="btn-pro-page" style="font-size:16px;padding:14px 24px;margin-bottom:4px;">Start 7-day free trial</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;border-radius:999px;">⭐ Star on GitHub</a>
-      <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" class="btn-install-link" target="_blank" rel="noopener" style="font-size:13px;color:var(--text-muted);text-decoration:none;padding:8px 14px;">Open ThumbGate GPT →</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" style="font-size:13px;color:var(--text-muted);text-decoration:none;padding:8px 14px;">Install Codex plugin →</a>
     </div>
-    <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:480px;">Free tier: 3 captures/day, unlimited enforcement. No cloud account needed.</p>
+    <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:620px;">No, you do not have to chat inside the GPT forever. The GPT is the fastest demo and setup path; local hooks do the hard blocking for Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and MCP-compatible agents.</p>
     <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:480px;">Team plan is intake-first — one workflow, one repeat failure, proof before wider rollout. Pro stays the solo side lane for gate debugger, DPO export, and personal dashboard. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
     <div class="proof-bar">
       <a href="/guide" rel="noopener">CLI-first setup guide →</a>
@@ -525,6 +550,35 @@ __GA_BOOTSTRAP__
       <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">CI and proof lanes →</a>
       <span class="dot"></span>
       <a href="#compatibility">Claude Code · Cursor · Codex · Gemini · Amp · OpenCode</a>
+    </div>
+  </div>
+</section>
+
+<section class="gpt-path" id="thumbgate-gpt">
+  <div class="container">
+    <div class="gpt-panel">
+      <div class="section-label" style="text-align:left;">ChatGPT Entry Point</div>
+      <h2>Open the GPT. Check the action. Turn the lesson into a gate.</h2>
+      <p>ThumbGate should meet users where they already ask AI for help. The live GPT is the lowest-friction way to understand the product before installing anything.</p>
+      <div class="gpt-steps">
+        <div class="gpt-step">
+          <strong>1. Try the live GPT</strong>
+          <p>Paste a proposed command, file edit, merge, deploy, payment, email, or API call and ask what should happen next.</p>
+        </div>
+        <div class="gpt-step">
+          <strong>2. Save the signal</strong>
+          <p>Reply with <code>thumbs up:</code> or <code>thumbs down:</code> plus one concrete sentence. One signal becomes one remembered rule.</p>
+        </div>
+        <div class="gpt-step">
+          <strong>3. Enforce locally</strong>
+          <p>Run <code>npx thumbgate init</code> in the repo so Pre-Action Gates block repeated mistakes before the coding agent executes them.</p>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('gpt_path_cta_click',{cta:'open_gpt'})">Open ThumbGate GPT</a>
+        <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" class="btn-free" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">ChatGPT Actions setup</a>
+      </div>
+      <p class="gpt-note"><strong>Plain English rule:</strong> ChatGPT is the discovery and memory surface. The hard Reliability Gateway still runs in the local agent or CI lane.</p>
     </div>
   </div>
 </section>
@@ -928,6 +982,10 @@ __GA_BOOTSTRAP__
         <div class="faq-a">ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any other MCP-compatible agent. Cursor ships with a plugin bundle in this repo. Codex now ships both a standalone plugin bundle and a repo-local app plugin profile, and the published download is linked directly from this page. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</div>
       </div>
       <div class="faq-item">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I have to chat inside the ThumbGate GPT for enforcement?</div>
+        <div class="faq-a">No. The ThumbGate GPT is the ChatGPT entrypoint for checking proposed actions, capturing thumbs-up/down lessons, and getting setup help. Hard enforcement still runs locally where the agent executes after <code>npx thumbgate init</code>.</div>
+      </div>
+      <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</button>
         <div class="faq-a">ThumbGate is the control plane, not just a prompt layer. Workflow Sentinel predicts blast radius before execution, and risky local autonomy can be routed into Docker Sandboxes instead of running directly on the host. Team workflows also have a signed hosted sandbox lane for isolated dispatch when local repo access is not required.</div>
       </div>
@@ -972,9 +1030,10 @@ __GA_BOOTSTRAP__
 <!-- FINAL CTA -->
 <section class="final-cta">
   <div class="container">
-    <h2>Start with one workflow you actually need to defend.</h2>
-    <p>Use the workflow hardening sprint for team rollout. Install the free CLI if you are still evaluating alone. Pro remains the solo side lane for a personal dashboard and review-ready exports.</p>
+    <h2>Check the next agent action before it runs.</h2>
+    <p>Open the GPT for the fastest demo. Install the free CLI when you are ready to enforce the same lesson locally. Use the workflow hardening sprint for team rollout.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" target="_blank" rel="noopener" onclick="posthog.capture('final_cta_click',{cta:'open_gpt'})" class="btn-gpt-page">Open ThumbGate GPT</a>
       <a href="/checkout/pro?utm_source=website&utm_medium=final_cta&utm_campaign=pro_trial&cta_id=final_pro_trial" onclick="posthog.capture('final_cta_click',{cta:'pro_trial'})" class="btn-pro" style="padding:12px 32px;font-size:15px;">Start 7-Day Free Trial — $19/mo</a>
       <a href="#workflow-sprint-intake" class="btn-team" style="background:var(--green);">Start Workflow Hardening Sprint</a>
       <a href="/guide?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free" class="btn-pro btn-install-link">Install Free CLI</a>
@@ -999,8 +1058,8 @@ __GA_BOOTSTRAP__
 
 <!-- STICKY BOTTOM CTA -->
 <div class="sticky-cta" id="sticky-cta">
-  <span class="sticky-cta-text"><strong>ThumbGate Pro</strong> — gate debugger, DPO export, personal dashboard</span>
-  <a href="/checkout/pro?utm_source=website&utm_medium=sticky_bar&utm_campaign=pro_trial&cta_id=sticky_pro_trial" onclick="posthog.capture('sticky_cta_click',{cta:'pro_trial'})" class="btn-pro">Start free trial — $19/mo</a>
+  <span class="sticky-cta-text"><strong>Live ThumbGate GPT</strong> — check an agent action before it runs</span>
+  <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" target="_blank" rel="noopener" onclick="posthog.capture('sticky_cta_click',{cta:'open_gpt'})" class="btn-gpt-page">Open GPT</a>
 </div>
 <script>
 (function() {
@@ -1032,6 +1091,7 @@ function initializeBuyerIntentForms() {
 
 function resolvePricingClickTier(el) {
   if (el.classList.contains('btn-install-link')) return 'install';
+  if (el.classList.contains('btn-gpt-page')) return 'chatgpt_gpt';
   if (el.classList.contains('btn-pro')) return 'pro';
   if (el.classList.contains('btn-pro-page')) return 'pro_page';
   if (el.classList.contains('btn-team')) return 'team';
@@ -1075,16 +1135,17 @@ function copyInstall(el) {
 
   /* CTA clicks */
   trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 19, billing: 'monthly' });
+  trackClick('.btn-gpt-page', 'chatgpt_gpt_click', { tier: 'free', source: 'homepage_gpt' });
   trackClick('.btn-pro-page:not(.btn-install-link)', 'pro_page_click', { tier: 'pro', source: 'hero' });
   trackClick('.btn-install-link', 'install_guide_click', { tier: 'free', source: 'homepage_cta' });
   trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
   trackClick('.btn-free', 'install_click', { tier: 'free' });
   trackClick('.btn-demo-link', 'demo_click', { source: 'homepage' });
-  trackClick('.nav-cta', 'workflow_sprint_intake_click', { tier: 'team', source: 'nav', offer: 'workflow_hardening_sprint' });
+  trackClick('.nav-cta', 'chatgpt_gpt_click', { tier: 'free', source: 'nav' });
 
   /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Team button click
      with section context so we can distinguish pricing section vs final CTA section clicks */
-  document.querySelectorAll('.btn-pro, .btn-pro-page, .btn-install-link, .btn-team, .btn-free, .btn-demo-link, .nav-cta').forEach(function(el) {
+  document.querySelectorAll('.btn-pro, .btn-gpt-page, .btn-pro-page, .btn-install-link, .btn-team, .btn-free, .btn-demo-link, .nav-cta').forEach(function(el) {
     el.addEventListener('click', function() {
       var section = el.closest('section');
       var sectionId = section ? (section.id || section.className.split(' ')[0] || 'unknown') : 'unknown';
