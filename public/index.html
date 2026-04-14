@@ -19,10 +19,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
-<title>ThumbGate — Your AI agent just made that mistake again. One thumbs-down. It never happens again.</title>
-<meta name="description" content="CLI-first agent governance for teams shipping AI-generated changes. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Pre-action gates, workflow governance, shared lessons and org visibility, release confidence, and isolated execution guidance turn vibe coding mistakes into shared enforcement and proof-ready rollout.">
-<meta property="og:title" content="ThumbGate — Your AI agent just made that mistake again. One thumbs-down. It never happens again.">
-<meta property="og:description" content="CLI-first agent governance for teams shipping AI-generated changes. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Pre-action gates, workflow governance, shared lessons and org visibility, release confidence, and isolated execution guidance turn vibe coding mistakes into shared enforcement and proof-ready rollout.">
+<title>ThumbGate — Stop AI agents before they make costly mistakes</title>
+<meta name="description" content="Stop expensive AI agent mistakes before they happen. 👎 Thumbs down becomes history-aware lessons and Pre-Action Gates; 👍 thumbs up reinforces safe patterns. ThumbGate checks risky commands, deploys, API calls, and file edits across ChatGPT, Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode with workflow governance, shared lessons and org visibility for safer vibe coding.">
+<meta property="og:title" content="ThumbGate — Stop AI agents before they make costly mistakes">
+<meta property="og:description" content="Stop expensive AI agent mistakes before they happen. 👎 Thumbs down becomes history-aware lessons and Pre-Action Gates; 👍 thumbs up reinforces safe patterns. ThumbGate checks risky commands, deploys, API calls, and file edits across ChatGPT, Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode with workflow governance, shared lessons and org visibility for safer vibe coding.">
 <meta property="og:type" content="website">
 <meta name="keywords" content="ThumbGate, thumbgate, agent governance, AI coding workflow governance, workflow hardening sprint, pre-action gates, CLI-first agent safety, Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, approval policies, audit trail, release confidence, Docker Sandboxes, feedback enforcement, context engineering, AI authenticity, prevent AI slop, human-led AI, AI agent standards enforcement, brand authenticity AI">
 
@@ -44,7 +44,7 @@ __GA_BOOTSTRAP__
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
   "alternateName": "thumbgate",
-  "description": "ThumbGate is a CLI-first agent governance control plane for AI coding workflows. Every repeated failure can become shared enforcement, every risky rollout can carry approval and audit boundaries, and high-risk local autonomy can be routed toward isolated execution instead of running directly on the host.",
+  "description": "ThumbGate stops costly AI agent mistakes before they happen. It checks risky commands, file edits, deploys, API calls, and other agent actions before execution, then turns thumbs-up/down feedback into Pre-Action Gates, workflow governance, shared lessons, org visibility, release confidence, and isolated execution guidance.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "license": "https://opensource.org/licenses/MIT",
@@ -58,7 +58,9 @@ __GA_BOOTSTRAP__
     "url": "https://github.com/IgorGanapolsky"
   },
   "featureList": [
-    "Pre-Action Gates — block known-bad tool calls before execution",
+    "Prevent expensive AI mistakes — catch bad commands, destructive database actions, unsafe publishes, and risky API calls before execution",
+    "Make AI stop repeating mistakes — thumbs-down feedback becomes history-aware lessons and Pre-Action Gates",
+    "Turn AI into a reliable operator — checkpoint risky actions, enforce safe patterns, and keep proof of what changed",
     "ThumbGate GPT for ChatGPT — check proposed agent actions, capture thumbs-up/down lessons, and route users into local enforcement",
     "Workflow Sentinel — score blast radius before PR, merge, release, and publish actions fire",
     "Docker Sandboxes routing — move high-risk local runs into isolated microVM-backed execution",
@@ -81,7 +83,7 @@ __GA_BOOTSTRAP__
       "name": "Free",
       "price": "0",
       "priceCurrency": "USD",
-      "description": "Local enforcement — captures, recalls, gates, and PreToolUse hook blocking for solo devs"
+      "description": "Free local CLI enforcement for one developer — captures, recalls, gates, and PreToolUse hook blocking after install"
     },
     {
       "@type": "Offer",
@@ -96,7 +98,7 @@ __GA_BOOTSTRAP__
       "name": "Pro Monthly",
       "price": "19",
       "priceCurrency": "USD",
-      "description": "Self-serve side lane for solo operators who want a personal local dashboard, DPO export, and proof-ready exports",
+      "description": "Self-serve side lane for solo operators who want personal enforcement proof, a local dashboard, DPO export, and proof-ready exports",
       "url": "https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&landing_path=%2F"
     },
     {
@@ -104,7 +106,7 @@ __GA_BOOTSTRAP__
       "name": "Pro Annual",
       "price": "149",
       "priceCurrency": "USD",
-      "description": "Annual Pro for individual operators who want the personal local dashboard and proof-ready exports",
+      "description": "Annual Pro for individual operators who want personal enforcement proof, the local dashboard, and proof-ready exports",
       "url": "https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&billing_cycle=annual&landing_path=%2F"
     }
   ]
@@ -190,7 +192,7 @@ __GA_BOOTSTRAP__
       "name": "Do I have to chat inside the ThumbGate GPT for enforcement?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. The ThumbGate GPT is the ChatGPT entrypoint for checking proposed actions, capturing thumbs-up/down lessons, and getting setup help. Hard enforcement still runs locally where the agent executes after npx thumbgate init."
+        "text": "No. The ThumbGate GPT is the ChatGPT entrypoint for checking proposed actions, capturing thumbs-up/down lessons, and getting setup help. Use it for advice and checkpointing; hard enforcement still runs locally where the agent executes after npx thumbgate init."
       }
     },
     {
@@ -495,13 +497,13 @@ __GA_BOOTSTRAP__
 <section class="hero">
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
-    <div class="hero-badge">● Live ThumbGate GPT for ChatGPT</div>
-    <h1>Your AI agent just made<br>that mistake again.<br><span style="color:var(--cyan)">One thumbs-down.<br>It never happens again.</span></h1>
-    <p style="font-size:18px;color:var(--text-muted);max-width:620px;margin:0 auto 20px;line-height:1.6;">Start in ChatGPT: paste the proposed action into the live ThumbGate GPT and get allow, block, or checkpoint guidance.<br><strong style="color:var(--text)">Then enforce locally with <code>npx thumbgate init</code> where your agent actually runs.</strong></p>
+    <div class="hero-badge">● Stop costly AI mistakes before they run</div>
+    <h1>Stop AI agents before<br>they make costly mistakes.</h1>
+    <p style="font-size:18px;color:var(--text-muted);max-width:640px;margin:0 auto 20px;line-height:1.6;">Paste a risky command, file edit, deploy, payment, API call, or email into the live ThumbGate GPT for allow, block, or checkpoint guidance.<br><strong style="color:var(--text)">Then enforce locally with <code>npx thumbgate init</code> where your agent actually executes.</strong></p>
     <div class="hero-signals">
-      <div class="signal-pill signal-down">👎 Repeated failure becomes enforcement before the next run</div>
-      <div class="signal-pill signal-up">✅ Safe pattern reinforced across the shared workflow</div>
-      <div class="signal-pill">🔁 Works with Claude Code · Cursor · Codex · Gemini · Amp</div>
+      <div class="signal-pill signal-down">👎 Prevent expensive mistakes: force-pushes, destructive SQL, bad deploys</div>
+      <div class="signal-pill signal-up">✅ Fix it once, then block the repeat before the next tool call</div>
+      <div class="signal-pill">🔁 Turn a smart assistant into a reliable operator</div>
     </div>
     <p class="hero-persona" style="display:none">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
     <div class="hero-actions" style="margin-top:32px;">
@@ -516,8 +518,8 @@ __GA_BOOTSTRAP__
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;border-radius:999px;">⭐ Star on GitHub</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" style="font-size:13px;color:var(--text-muted);text-decoration:none;padding:8px 14px;">Install Codex plugin →</a>
     </div>
-    <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:620px;">No, you do not have to chat inside the GPT forever. The GPT is the fastest demo and setup path; local hooks do the hard blocking for Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and MCP-compatible agents.</p>
-    <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:480px;">Team plan is intake-first — one workflow, one repeat failure, proof before wider rollout. Pro stays the solo side lane for gate debugger, DPO export, and personal dashboard. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
+    <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:660px;">No, you do not have to chat inside the GPT forever. The GPT is advice and checkpointing; local hooks do the hard blocking for Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and MCP-compatible agents.</p>
+    <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:560px;">Free local CLI proves the enforcement loop on one machine. Pro adds personal enforcement proof, the gate debugger, DPO export, and a dashboard. Team shares the gates across seats. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
     <div class="proof-bar">
       <a href="/guide" rel="noopener">CLI-first setup guide →</a>
       <span class="dot"></span>
@@ -561,13 +563,13 @@ __GA_BOOTSTRAP__
 <section class="gpt-path" id="thumbgate-gpt">
   <div class="container">
     <div class="gpt-panel">
-      <div class="section-label" style="text-align:left;">ChatGPT Entry Point</div>
+      <div class="section-label" style="text-align:left;">ChatGPT Entry Point · Live ThumbGate GPT for ChatGPT</div>
       <h2>Open the GPT. Check the action. Turn the lesson into a gate.</h2>
-      <p>ThumbGate should meet users where they already ask AI for help. The live GPT is the lowest-friction way to understand the product before installing anything.</p>
+      <p>ThumbGate should meet users where they already ask AI for help. The live GPT is the lowest-friction way to prevent an expensive AI mistake before installing anything.</p>
       <div class="gpt-steps">
         <div class="gpt-step">
           <strong>1. Try the live GPT</strong>
-          <p>Paste a proposed command, file edit, merge, deploy, payment, email, or API call and ask what should happen next.</p>
+          <p>Paste a proposed command, file edit, merge, deploy, payment, email, or API call and ask whether to allow, block, or checkpoint it.</p>
         </div>
         <div class="gpt-step">
           <strong>2. Save the signal</strong>
@@ -582,7 +584,7 @@ __GA_BOOTSTRAP__
         <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('gpt_path_cta_click',{cta:'open_gpt'})">Open ThumbGate GPT</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" class="btn-free" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">ChatGPT Actions setup</a>
       </div>
-      <p class="gpt-note"><strong>Plain English rule:</strong> ChatGPT is the discovery and memory surface. The hard Reliability Gateway still runs in the local agent or CI lane.</p>
+      <p class="gpt-note"><strong>Plain English rule:</strong> ChatGPT is the discovery and memory surface for advice, checkpointing, and typed feedback capture. The hard Reliability Gateway still runs in the local agent or CI lane.</p>
     </div>
   </div>
 </section>
@@ -863,14 +865,14 @@ __GA_BOOTSTRAP__
 <section class="pricing" id="pricing">
   <div class="container">
     <div class="section-label">Pricing</div>
-    <h2 class="section-title">Install free. Buy with the workflow hardening sprint. Keep Pro as the solo side lane.</h2>
+    <h2 class="section-title">Install free. Pro adds enforcement proof. Team shares it across seats.</h2>
     <div class="pricing-grid">
       <div class="price-card free-highlight" style="border-color:var(--cyan);box-shadow:0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15);position:relative;">
         <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--cyan);color:#000;padding:4px 16px;border-radius:100px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">Most Popular</div>
         <div class="tier" style="color:var(--cyan);">Free</div>
         <div class="price">$0</div>
         <div class="price-sub">Forever free · CLI-first local enforcement for one developer</div>
-        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo developers who want to stop the same agent mistake from showing up twice and prove value before a team rollout conversation exists.</p>
+        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo developers who want to stop the same agent mistake from showing up twice and prove local value before a team rollout conversation exists.</p>
         <ul>
           <li>3 feedback captures/day · 5 lesson searches/day · unlimited recall</li>
           <li>5 auto-promoted gates plus the core safety policy</li>
@@ -890,10 +892,10 @@ __GA_BOOTSTRAP__
       <div class="price-card pro" data-price-dollars="__PRO_PRICE_DOLLARS__">
         <div class="tier">Solo Pro</div>
         <div class="price">$19<span style="font-size:16px;color:var(--text-dim)">/mo</span></div>
-        <div class="price-sub">or $149/yr (save 35%) · Personal dashboard + exports</div>
-        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">For an individual operator who wants a personal dashboard and proof-ready exports without starting the team rollout motion.</p>
+        <div class="price-sub">or $149/yr (save 35%) · Personal dashboard + enforcement proof</div>
+        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">For an individual operator who wants the gate debugger, personal dashboard, proof-ready exports, and export-ready evidence without starting the team rollout motion.</p>
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">Choose Pro when:</strong> you want review-ready evidence, need your own dashboard, or are still operating solo.
+          <strong style="color:#fff;">Choose Pro when:</strong> you want review-ready evidence, need your own dashboard, or need to show which mistakes were blocked.
         </div>
         <div class="dashboard-preview" style="margin-bottom:16px;border:1px solid #333;border-radius:8px;overflow:hidden;">
           <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:16px;text-align:center;">
@@ -993,7 +995,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I have to chat inside the ThumbGate GPT for enforcement?</div>
-        <div class="faq-a">No. The ThumbGate GPT is the ChatGPT entrypoint for checking proposed actions, capturing thumbs-up/down lessons, and getting setup help. Hard enforcement still runs locally where the agent executes after <code>npx thumbgate init</code>.</div>
+        <div class="faq-a">No. The ThumbGate GPT is the ChatGPT entrypoint for checking proposed actions, capturing thumbs-up/down lessons, and getting setup help. Use it for advice and checkpointing; hard enforcement still runs locally where the agent executes after <code>npx thumbgate init</code>.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</button>
