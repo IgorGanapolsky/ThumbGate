@@ -643,8 +643,9 @@ function runCli(argv = process.argv.slice(2)) {
   }
 }
 
-function isCliInvocation(mainModule = require.main) {
-  return Boolean(mainModule?.filename === __filename);
+function isCliInvocation(argv = process.argv) {
+  const invokedPath = argv[1];
+  return invokedPath ? path.resolve(invokedPath) === __filename : false;
 }
 
 if (isCliInvocation()) {
@@ -667,6 +668,7 @@ module.exports = {
   buildLeadFromRevenueTarget,
   getSalesPipelinePath,
   importRevenueLoopReport,
+  isCliInvocation,
   loadSalesLeads,
   loadSalesLeadSnapshots,
   normalizeSalesStage,

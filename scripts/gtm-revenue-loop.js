@@ -48,6 +48,28 @@ function applyInlineOption(options, arg) {
   return false;
 }
 
+function applyNamedOption(options, argv, index) {
+  const arg = argv[index];
+  if (arg === '--write-docs') {
+    options.writeDocs = true;
+    return index;
+  }
+
+  if (arg === '--report-dir') {
+    const parsed = readFollowingOption(argv, index);
+    options.reportDir = parsed.value || options.reportDir;
+    return parsed.index;
+  }
+
+  if (arg === '--max-targets') {
+    const parsed = readFollowingOption(argv, index);
+    options.maxTargets = parsed.value ? clampTargetCount(parsed.value) : options.maxTargets;
+    return parsed.index;
+  }
+
+  return null;
+}
+
 function parseArgs(argv = []) {
   const options = {
     maxTargets: 6,
@@ -57,19 +79,12 @@ function parseArgs(argv = []) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
-    if (arg === '--write-docs') {
-      options.writeDocs = true;
-    } else if (arg === '--report-dir') {
-      const parsed = readFollowingOption(argv, index);
-      options.reportDir = parsed.value || options.reportDir;
-      index = parsed.index;
-    } else if (arg === '--max-targets') {
-      const parsed = readFollowingOption(argv, index);
-      options.maxTargets = parsed.value ? clampTargetCount(parsed.value) : options.maxTargets;
-      index = parsed.index;
-    } else {
-      applyInlineOption(options, arg);
+    const namedOptionIndex = applyNamedOption(options, argv, index);
+    if (namedOptionIndex !== null) {
+      index = namedOptionIndex;
+      continue;
     }
+    applyInlineOption(options, arg);
   }
 
   return options;
@@ -578,7 +593,12 @@ async function main(argv = process.argv.slice(2)) {
   }, null, 2));
 }
 
-if (require.main === module) {
+function isCliInvocation(argv = process.argv) {
+  const invokedPath = argv[1];
+  return invokedPath ? path.resolve(invokedPath) === __filename : false;
+}
+
+if (isCliInvocation()) {
   main().catch((err) => {
     console.error(err?.message || err);
     process.exit(1);
@@ -595,6 +615,7 @@ module.exports = {
   clampTargetCount,
   deriveRevenueDirective,
   fetchGitHubJson,
+  isCliInvocation,
   parseArgs,
   prospectTargets,
   renderRevenueLoopMarkdown,
