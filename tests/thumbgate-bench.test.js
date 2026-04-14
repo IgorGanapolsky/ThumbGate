@@ -14,6 +14,7 @@ const {
   scoreResults,
   runBenchmark,
   renderMarkdown,
+  escapeMarkdownTableCell,
 } = require('../scripts/thumbgate-bench');
 
 test('ThumbGate Bench default suite loads ten deterministic scenarios', () => {
@@ -95,6 +96,10 @@ test('ThumbGate Bench markdown includes scenario evidence table', () => {
   assert.match(markdown, /github-force-push-main/);
   assert.match(markdown, /database-drop-production-table/);
   assert.match(markdown, /safe-source-validation/);
+});
+
+test('ThumbGate Bench escapes markdown table cells safely', () => {
+  assert.equal(escapeMarkdownTableCell('a|b\\c\nd'), 'a\\|b\\\\c d');
 });
 
 test('ThumbGate Bench CLI emits JSON report when requested', () => {

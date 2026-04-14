@@ -321,6 +321,13 @@ function buildReport(suite, results, replayResults, options = {}) {
   };
 }
 
+function escapeMarkdownTableCell(value) {
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|')
+    .replace(/\r?\n/g, ' ');
+}
+
 function renderMarkdown(report) {
   const lines = [
     '# ThumbGate Bench Report',
@@ -358,7 +365,7 @@ function renderMarkdown(report) {
       scenario.actualDecision,
       scenario.gate || 'none',
       scenario.passed ? 'PASS' : 'FAIL',
-    ].map((value) => String(value).replace(/\|/g, '\\|')).join(' | ').replace(/^/, '| ').replace(/$/, ' |'));
+    ].map(escapeMarkdownTableCell).join(' | ').replace(/^/, '| ').replace(/$/, ' |'));
   }
 
   if (report.failedScenarios.length > 0) {
@@ -443,4 +450,5 @@ module.exports = {
   renderMarkdown,
   writeReport,
   runBenchmark,
+  escapeMarkdownTableCell,
 };
