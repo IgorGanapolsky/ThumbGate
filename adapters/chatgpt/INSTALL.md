@@ -12,6 +12,17 @@ Use the term **Reliability Gateway** only after the user understands the outcome
 
 Marketing rule: every landing page, README, social post, and plugin listing should point to the live GPT before asking a cold user to read OpenAPI docs.
 
+## Regular-user promise
+
+The GPT should feel like a feedback button that remembers.
+
+- Users paste the answer, plan, or action they want checked.
+- Users type `thumbs down:` when the answer was wrong and one sentence about what should change.
+- Users type `thumbs up:` when the answer was useful and one sentence about what should be repeated.
+- ThumbGate confirms the future behavior it saved, then routes users to `npx thumbgate init` when they need hard blocking outside ChatGPT.
+
+Do not imply ChatGPT's built-in thumbs buttons save ThumbGate lessons. The reliable public capture path is a typed message inside the GPT.
+
 ## GPT Store path
 
 1. Open the direct GPT URL: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
@@ -48,9 +59,9 @@ Paste a risky AI action before it runs. ThumbGate tells you whether to allow, bl
 Conversation starters:
 
 1. `Check this agent action before it runs: git push --force --tags`
-2. `Turn this mistake into a ThumbGate rule: the agent edited generated files again.`
-3. `Install ThumbGate for Claude Code or Codex in this repo.`
-4. `Search my saved lessons before you answer.`
+2. `Thumbs down: that answer ignored my request for exact commands. Remember that.`
+3. `Thumbs up: this answer gave file paths, commands, and tests. Do that again.`
+4. `Turn this mistake into a ThumbGate rule: the agent edited generated files again.`
 
 Use typed chat replies. ChatGPT's native feedback buttons may send feedback to OpenAI, but they should not be described as the ThumbGate capture path unless OpenAI exposes them to GPT Actions.
 

@@ -95,19 +95,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git tag "v${VERSION}"
           git push origin "v${VERSION}"
-      - name: Build full changeset release notes
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.ensure_release == 'true'
-        env:
-          VERSION: ${{ steps.package.outputs.version }}
-          GITHUB_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          notes_file="thumbgate-${VERSION}-release-notes.md"
-          node scripts/release-notes.js \
-            --version="${VERSION}" \
-            --current-ref="${GITHUB_SHA}" \
-            --github-run-url="${GITHUB_RUN_URL}" \
-            --output="${notes_file}"
-          cat "${notes_file}" >> "$GITHUB_STEP_SUMMARY"
       - name: Publish npm package
         if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.publish_npm == 'true') || (github.event_name == 'release' && steps.npm.outputs.published == 'false')
         run: npm publish --tag "${{ steps.plan.outputs.npm_tag || 'latest' }}" --provenance
@@ -118,6 +105,60 @@ jobs:
         env:
           VERSION: ${{ steps.package.outputs.version }}
         run: node scripts/prove-packaged-runtime.js --package-spec "thumbgate@${VERSION}" --expected-version "${VERSION}" --install-attempts 12 --install-delay-ms 10000
+      - name: Resolve npm publish receipt
+        id: receipt
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.ensure_release == 'true'
+        env:
+          VERSION: ${{ steps.package.outputs.version }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const { execFileSync } = require('node:child_process');
+
+          const version = process.env.VERSION;
+          const metadata = JSON.parse(execFileSync('npm', [
+            'view',
+            `thumbgate@${version}`,
+            'dist',
+            'time',
+            '--json',
+          ], { encoding: 'utf8' }));
+          const dist = metadata.dist || {};
+          const time = metadata.time || {};
+          const lines = [
+            `shasum=${dist.shasum || ''}`,
+            `tarball=${dist.tarball || ''}`,
+            `published_at=${time[version] || ''}`,
+          ];
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `${lines.join('\n')}\n`);
+          NODE
+      - name: Build full changeset release notes
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.ensure_release == 'true'
+        env:
+          VERSION: ${{ steps.package.outputs.version }}
+          GITHUB_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          NPM_SHASUM: ${{ steps.receipt.outputs.shasum }}
+          NPM_TARBALL_URL: ${{ steps.receipt.outputs.tarball }}
+          NPM_PUBLISHED_AT: ${{ steps.receipt.outputs.published_at }}
+        run: |
+          notes_file="thumbgate-${VERSION}-release-notes.md"
+          node scripts/release-notes.js \
+            --version="${VERSION}" \
+            --current-ref="${GITHUB_SHA}" \
+            --github-run-url="${GITHUB_RUN_URL}" \
+            --npm-shasum="${NPM_SHASUM}" \
+            --npm-tarball-url="${NPM_TARBALL_URL}" \
+            --npm-published-at="${NPM_PUBLISHED_AT}" \
+            --output="${notes_file}"
+          cat "${notes_file}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload full release notes artifact
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.ensure_release == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: thumbgate-${{ steps.package.outputs.version }}-release-notes
+          path: thumbgate-${{ steps.package.outputs.version }}-release-notes.md
+          if-no-files-found: error
       - name: Ensure GitHub Release exists
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.ensure_release == 'true'
         env:
