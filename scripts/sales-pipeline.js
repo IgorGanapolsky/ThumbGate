@@ -65,7 +65,7 @@ function slugify(value, fallback = 'lead') {
   let slug = '';
   let pendingSeparator = false;
   for (const char of normalized.toLowerCase()) {
-    const code = char.charCodeAt(0);
+    const code = char.codePointAt(0);
     const alphaNumeric = (code >= 97 && code <= 122) || (code >= 48 && code <= 57);
     if (alphaNumeric) {
       if (pendingSeparator && slug) slug += '_';
@@ -643,7 +643,11 @@ function runCli(argv = process.argv.slice(2)) {
   }
 }
 
-if (require.main === module) {
+function isCliInvocation(mainModule = require.main) {
+  return Boolean(mainModule?.filename === __filename);
+}
+
+if (isCliInvocation()) {
   try {
     const result = runCli();
     console.log(JSON.stringify(result, null, 2));

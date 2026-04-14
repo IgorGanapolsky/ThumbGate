@@ -19,6 +19,35 @@ function getGoogleGenAI() {
   }
 }
 
+function readInlineOption(arg, name) {
+  const prefix = `${name}=`;
+  return arg.startsWith(prefix) ? arg.slice(prefix.length).trim() : null;
+}
+
+function readFollowingOption(argv, index) {
+  const nextArg = argv[index + 1];
+  if (!nextArg || nextArg.startsWith('--')) {
+    return { value: null, index };
+  }
+  return { value: String(nextArg).trim(), index: index + 1 };
+}
+
+function applyInlineOption(options, arg) {
+  const reportDir = readInlineOption(arg, '--report-dir');
+  if (reportDir !== null) {
+    options.reportDir = reportDir;
+    return true;
+  }
+
+  const maxTargets = readInlineOption(arg, '--max-targets');
+  if (maxTargets !== null) {
+    options.maxTargets = clampTargetCount(maxTargets);
+    return true;
+  }
+
+  return false;
+}
+
 function parseArgs(argv = []) {
   const options = {
     maxTargets: 6,
@@ -28,35 +57,18 @@ function parseArgs(argv = []) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
-    const nextArg = argv[index + 1];
     if (arg === '--write-docs') {
       options.writeDocs = true;
-      continue;
-    }
-
-    if (arg === '--report-dir') {
-      if (nextArg) {
-        options.reportDir = String(nextArg).trim();
-        index += 1;
-      }
-      continue;
-    }
-
-    if (arg.startsWith('--report-dir=')) {
-      options.reportDir = arg.split('=').slice(1).join('=').trim();
-      continue;
-    }
-
-    if (arg === '--max-targets') {
-      if (nextArg) {
-        options.maxTargets = clampTargetCount(nextArg);
-        index += 1;
-      }
-      continue;
-    }
-
-    if (arg.startsWith('--max-targets=')) {
-      options.maxTargets = clampTargetCount(arg.split('=').slice(1).join('='));
+    } else if (arg === '--report-dir') {
+      const parsed = readFollowingOption(argv, index);
+      options.reportDir = parsed.value || options.reportDir;
+      index = parsed.index;
+    } else if (arg === '--max-targets') {
+      const parsed = readFollowingOption(argv, index);
+      options.maxTargets = parsed.value ? clampTargetCount(parsed.value) : options.maxTargets;
+      index = parsed.index;
+    } else {
+      applyInlineOption(options, arg);
     }
   }
 
