@@ -1,13 +1,13 @@
 ---
 title: GPT Store Submission — ThumbGate
 created: 2026-03-04T00:00:00Z
-updated: 2026-04-13T00:00:00Z
+updated: 2026-04-14T00:00:00Z
 status: published-user-confirmed
 ---
 
 # GPT Store Submission: ThumbGate
 
-ThumbGate was user-confirmed as published to GPT Store in the Programming category on April 13, 2026. The public `chatgpt.com/g/...` URL has not been captured in this repo yet; do not fabricate one. Until the share URL is available, point users to **Explore GPTs -> search ThumbGate -> choose the GPT by Igor Ganapolsky**.
+ThumbGate was user-confirmed as published to GPT Store in the Programming category on April 13, 2026. Direct URL: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate. If that URL is unavailable for a user's account, point them to **Explore GPTs -> search ThumbGate -> choose the GPT by Igor Ganapolsky**.
 
 This page remains the canonical copy-paste submission packet for updating the GPT in ChatGPT GPT Builder (https://chat.openai.com/gpts/editor).
 

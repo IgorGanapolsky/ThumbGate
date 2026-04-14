@@ -1,15 +1,17 @@
 # ChatGPT GPT Actions: ThumbGate Install
 
-Use the published ThumbGate GPT from GPT Store when it is visible for your account, or import the OpenAPI spec into a Custom GPT in under 5 minutes. The GPT should feel like a Reliability Gateway: paste an AI action to check, save a thumbs-up/down lesson, write a Pre-Action Gate, install ThumbGate for an agent, or export proof.
+Open the published ThumbGate GPT directly:
+
+https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
+
+Use the GPT as a setup concierge and memory capture surface: paste an AI action to check, save a thumbs-up/down lesson, write a Pre-Action Gate, install ThumbGate for an agent, or export proof. Real enforcement for coding agents still runs locally through ThumbGate hooks after `npx thumbgate init`.
 
 ## GPT Store path
 
-1. Open ChatGPT.
-2. Open **Explore GPTs**.
+1. Open the direct GPT URL: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
+2. If ChatGPT does not open it for your account, open **Explore GPTs**.
 3. Search for `ThumbGate`.
 4. Choose the GPT by **Igor Ganapolsky** in the **Programming** category.
-
-Direct store URL status: published by the operator on April 13, 2026, but the public `chatgpt.com/g/...` URL has not been captured in this repo yet. Do not invent a URL; add it here once the share link is available.
 
 ## 30-second user flow
 

@@ -31,7 +31,7 @@ This avoids platform-specific rewrite cost and keeps the product under a small b
 
 ## ChatGPT (GPT Actions)
 
-- GPT Store listing: published by Igor Ganapolsky in the Programming category; capture and add the direct `chatgpt.com/g/...` URL when the public share URL is available.
+- GPT Store listing: published by Igor Ganapolsky in the Programming category; direct URL: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate.
 - Import: `adapters/chatgpt/openapi.yaml`
 - Install guide: `adapters/chatgpt/INSTALL.md`
 - Submission pack: `docs/gpt-store-submission.md`
