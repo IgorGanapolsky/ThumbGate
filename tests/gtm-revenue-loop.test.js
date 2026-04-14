@@ -47,13 +47,15 @@ test('cold-start directive stays dual-motion and avoids fake traction language',
   }, catalog);
 
   assert.equal(directive.state, 'cold-start');
-  assert.equal(directive.primaryMotion, 'pro');
-  assert.equal(directive.secondaryMotion, 'sprint');
+  assert.equal(directive.primaryMotion, 'sprint');
+  assert.equal(directive.secondaryMotion, 'pro');
   assert.match(directive.headline, /No verified revenue/);
+  assert.match(directive.headline, /Workflow Hardening Sprint/);
   assert.ok(directive.actions.some((entry) => /paid orders/i.test(entry)));
+  assert.ok(directive.actions.some((entry) => /contacted -> replied -> call booked/i.test(entry)));
 });
 
-test('target classification sends team workflow pain to sprint and builders to pro', () => {
+test('target classification leads with sprint unless target is clearly self-serve only', () => {
   const catalog = buildMotionCatalog(buildRevenueLinks());
 
   const sprintTarget = selectOutreachMotion({
@@ -61,8 +63,8 @@ test('target classification sends team workflow pain to sprint and builders to p
     description: 'Production workflow governance and compliance gates for platform teams.',
   }, catalog);
   const proTarget = selectOutreachMotion({
-    repoName: 'mcp-solo-helper',
-    description: 'CLI for Claude Code builders who want better agent memory locally.',
+    repoName: 'mcp-demo-template',
+    description: 'Tutorial and demo template for Claude Code builders.',
   }, catalog);
 
   assert.equal(sprintTarget.key, 'sprint');
@@ -112,15 +114,37 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
       username: 'builder',
       repoName: 'mcp-solo-helper',
       repoUrl: 'https://github.com/example/mcp-solo-helper',
-      motionLabel: catalog.pro.label,
+      motion: selectedMotion.key,
+      motionLabel: selectedMotion.label,
       motionReason: selectedMotion.reason,
-      cta: catalog.pro.cta,
+      pipelineStage: 'targeted',
+      offer: 'workflow_hardening_sprint',
+      cta: catalog[selectedMotion.key].cta,
       message,
     }],
   });
 
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
-  assert.match(markdown, /Pro at \$19\/mo or \$149\/yr/);
+  assert.match(markdown, /Workflow Hardening Sprint/);
+  assert.match(markdown, /Pipeline stage: targeted/);
   assert.doesNotMatch(markdown, /founding users today/i);
+});
+
+test('first-touch outreach does not push proof before pain is confirmed', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const selectedMotion = selectOutreachMotion({
+    username: 'builder',
+    repoName: 'production-mcp-server',
+    description: 'MCP server for production agent workflows.',
+  }, catalog);
+  const message = buildFallbackMessage({
+    username: 'builder',
+    repoName: 'production-mcp-server',
+  }, selectedMotion, catalog);
+
+  assert.equal(selectedMotion.key, 'sprint');
+  assert.match(message, /harden/);
+  assert.doesNotMatch(message, /VERIFICATION_EVIDENCE/);
+  assert.doesNotMatch(message, /COMMERCIAL_TRUTH/);
 });

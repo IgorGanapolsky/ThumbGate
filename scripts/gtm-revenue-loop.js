@@ -134,13 +134,14 @@ function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog
   if (snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0) {
     return {
       state: 'post-first-dollar',
-      objective: 'Scale the first-10-customers loop with proof-backed self-serve follow-up.',
-      primaryMotion: motionCatalog.pro.key,
-      secondaryMotion: motionCatalog.sprint.key,
-      headline: 'Revenue is proven. Double down on the self-serve/mo Pro CTA and use the sprint motion for expansion deals.',
+      objective: 'Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.',
+      primaryMotion: motionCatalog.sprint.key,
+      secondaryMotion: motionCatalog.pro.key,
+      headline: 'Revenue is proven. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
       actions: [
-        'Reply to every qualified builder lead with the Pro checkout path and the proof pack.',
-        'Use the Workflow Hardening Sprint only when a team already has one workflow owner and a rollout blocker.',
+        'Reply to every qualified lead with one offer: "I will harden one AI-agent workflow for you."',
+        'Use the proof pack after the buyer names the repeated workflow pain, not as the opener.',
+        'Route buyers who only want a tool to the Pro monthly/annual checkout after the pain is qualified.',
         'Publish only booked revenue and paid-order proof from the billing summary or named pilot agreements.',
       ],
     };
@@ -150,26 +151,27 @@ function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog
     return {
       state: 'pipeline-active-no-revenue',
       objective: 'Convert existing interest into the first paid orders without inventing traction.',
-      primaryMotion: motionCatalog.pro.key,
-      secondaryMotion: motionCatalog.sprint.key,
-      headline: 'Interest exists but paid conversion is still zero. Push the Pro monthly/annual CTA to builders and reserve sprint outreach for team workflows.',
+      primaryMotion: motionCatalog.sprint.key,
+      secondaryMotion: motionCatalog.pro.key,
+      headline: 'Interest exists but paid conversion is still zero. Sell the Workflow Hardening Sprint first; Pro is self-serve follow-up.',
       actions: [
-        'Follow up on every checkout start or lead within one business day.',
-        'Use the Pro self-serve path as the default CTA unless the target clearly has team-level rollout pain.',
-        'Attach Commercial Truth and Verification Evidence in every outbound thread so the offer stays defensible.',
+        'Follow up on every checkout start or lead within one business day with one concrete workflow-hardening offer.',
+        'Track every lead as contacted -> replied -> call booked -> checkout or sprint intake -> paid.',
+        'Use Commercial Truth and Verification Evidence only after pain is confirmed to reduce buyer risk.',
       ],
     };
   }
 
   return {
     state: 'cold-start',
-    objective: 'Land the first 10 paying customers with a founder-led, proof-backed dual motion.',
-    primaryMotion: motionCatalog.pro.key,
-    secondaryMotion: motionCatalog.sprint.key,
-    headline: 'No verified revenue and no active pipeline. Run dual motion: Pro for individual builders, sprint for teams with one workflow problem.',
+    objective: 'Land the first 10 paying customers with founder-led workflow hardening.',
+    primaryMotion: motionCatalog.sprint.key,
+    secondaryMotion: motionCatalog.pro.key,
+    headline: 'No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.',
     actions: [
-      'Lead builder outreach with Pro at $19/mo or $149/yr and the direct checkout link.',
-      'Route platform or ops teams to the Workflow Hardening Sprint intake only when they fit the qualification bar.',
+      'Directly contact qualified buyers with: "I will harden one AI-agent workflow for you."',
+      'Use Pro at $19/mo or $149/yr only as the self-serve follow-up after the buyer asks for the tool path.',
+      'Track every lead as contacted -> replied -> call booked -> checkout or sprint intake -> paid.',
       'Treat stars, traffic, and model praise as noise until they become paid orders or named pilot agreements.',
     ],
   };
@@ -243,19 +245,28 @@ function prospectTargets(maxTargets = 6) {
 
 function selectOutreachMotion(target, motionCatalog = buildMotionCatalog()) {
   const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
-  const sprintSignals = /(platform|workflow|ops|compliance|audit|enterprise|production|reliability|rollout|incident|governance)/;
-  if (sprintSignals.test(haystack)) {
+  const proOnlySignals = /(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy)/;
+  if (proOnlySignals.test(haystack)) {
+    return {
+      key: motionCatalog.pro.key,
+      label: motionCatalog.pro.label,
+      reason: 'Target looks like a low-urgency self-serve/tooling fit, so Pro is the fallback CTA.',
+    };
+  }
+
+  const sprintSignals = /(agent|mcp|platform|workflow|ops|compliance|audit|enterprise|production|reliability|rollout|incident|governance|server|bridge|workspace)/;
+  if (sprintSignals.test(haystack) || haystack.trim()) {
     return {
       key: motionCatalog.sprint.key,
       label: motionCatalog.sprint.label,
-      reason: 'Target language suggests a team workflow or production rollout problem.',
+      reason: 'Target can be approached with one concrete workflow-hardening offer before any generic Pro pitch.',
     };
   }
 
   return {
-    key: motionCatalog.pro.key,
-    label: motionCatalog.pro.label,
-    reason: 'Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.',
+    key: motionCatalog.sprint.key,
+    label: motionCatalog.sprint.label,
+    reason: 'Default outbound motion is the Workflow Hardening Sprint; Pro remains the self-serve follow-up.',
   };
 }
 
@@ -264,14 +275,14 @@ function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotio
   const repoRef = `\`${target.repoName}\``;
   if (selectedMotion.key === motionCatalog.sprint.key) {
     return [
-      `Hey @${target.username}, saw you're shipping ${repoRef}. If your production workflows are losing critical architectural context to auto-compaction, I am pitching a Workflow Hardening Sprint for one workflow, one owner, and one proof review: ${motion.cta}`,
-      `Commercial truth: ${motion.truth}. Proof pack: ${motion.proof}.`
+      `Hey @${target.username}, saw you're shipping ${repoRef}. I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention gate, and a proof run.`,
+      `If ${repoRef} has one workflow that keeps breaking or losing context, I can harden that workflow for you: ${motion.cta}`
     ].join(' ');
   }
 
   return [
-    `Hey @${target.username}, saw you're building around ${repoRef}. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate ${motionCatalog.pro.label}: ${motion.cta}`,
-    `Commercial truth: ${motion.truth}. Proof pack: ${motion.proof}.`
+    `Hey @${target.username}, saw you're building around ${repoRef}. If you only want the self-serve path, ThumbGate Pro gives you compaction-safe memory and feedback-to-gate enforcement: ${motion.cta}`,
+    'If you have a painful workflow instead, I can harden one concrete workflow first.'
   ].join(' ');
 }
 
@@ -297,6 +308,8 @@ Reason: ${selectedMotion.reason}
 Write a short founder-style outreach note in 2 sentences max.
 Sound like a senior engineer, not a marketer.
 Use the recommended motion only.
+Do not lead with proof links. Proof is for after the buyer confirms pain.
+For sprint outreach, make the offer concrete: "I will harden one AI-agent workflow for you."
 `;
 }
 
@@ -381,6 +394,8 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
       motion: target.selectedMotion.key,
       motionLabel: target.selectedMotion.label,
       motionReason: target.selectedMotion.reason,
+      pipelineStage: 'targeted',
+      offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
       cta: motionCatalog[target.selectedMotion.key].cta,
       message: target.message,
     })),
@@ -395,6 +410,7 @@ function renderRevenueLoopMarkdown(report) {
   lines.push(`Updated: ${report.generatedAt}`);
   lines.push('');
   lines.push('This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.');
+  lines.push('Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.');
   lines.push('');
   lines.push('## Current Truth');
   lines.push(`- Public self-serve offer: ${report.currentTruth.publicSelfServeOffer}`);
@@ -426,6 +442,8 @@ function renderRevenueLoopMarkdown(report) {
   } else {
     report.targets.forEach((target) => {
       lines.push(`### @${target.username} — ${target.repoName}`);
+      lines.push(`- Pipeline stage: ${target.pipelineStage}`);
+      lines.push(`- Offer: ${target.offer}`);
       lines.push(`- Repo: ${target.repoUrl || 'n/a'}`);
       lines.push(`- Motion: ${target.motionLabel}`);
       lines.push(`- Why: ${target.motionReason}`);
