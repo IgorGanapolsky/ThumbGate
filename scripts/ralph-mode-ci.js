@@ -281,7 +281,7 @@ async function main() {
           const comments = await ghApi('/repos/' + repo + '/issues/' + num + '/comments?per_page=1&page=' + issue.comments);
           const latest = comments[0];
           if (latest && latest.user.login !== 'IgorGanapolsky') {
-            const reply = 'Thanks for the response! ThumbGate adds PreToolUse enforcement — gates that block known-bad actions before execution. Thompson Sampling adapts confidence. Self-distillation auto-generates rules from outcomes.\n\n68 tools on [Smithery](https://smithery.ai/servers/rlhf-loop/thumbgate). Would love to explore integration.\n\nhttps://github.com/IgorGanapolsky/ThumbGate';
+            const reply = 'Thanks for the response! ThumbGate adds PreToolUse enforcement — gates that block known-bad actions before execution. Thompson Sampling adapts confidence. Self-distillation auto-generates rules from outcomes.\n\nInstall with `npx thumbgate init`. Would love to explore integration.\n\nhttps://github.com/IgorGanapolsky/ThumbGate';
             await ghPostComment(repo, num, reply);
             console.log('  Replied to @' + latest.user.login);
             report.ghIssues++;
@@ -309,7 +309,7 @@ async function main() {
         if (contacted.has(repo.full_name)) continue;
         if (repo.full_name.includes('IgorGanapolsky')) continue;
 
-        const body = 'Hey — noticed you\'re building in the AI agent safety space. [ThumbGate](https://github.com/IgorGanapolsky/ThumbGate) adds PreToolUse hooks that block known-bad actions before execution, with Thompson Sampling for adaptive gate confidence and self-distillation for auto-learning from outcomes.\n\n68 tools on [Smithery](https://smithery.ai/servers/rlhf-loop/thumbgate). Could be complementary — would love to explore integration.\n\nMIT licensed, free tier available.';
+        const body = 'Hey — noticed you\'re building in the AI agent safety space. [ThumbGate](https://github.com/IgorGanapolsky/ThumbGate) adds PreToolUse hooks that block known-bad actions before execution, with Thompson Sampling for adaptive gate confidence and self-distillation for auto-learning from outcomes.\n\nInstall with `npx thumbgate init`. Could be complementary — would love to explore integration.\n\nMIT licensed, free tier available.';
 
         try {
           await fetch('https://api.github.com/repos/' + repo.full_name + '/issues', {
