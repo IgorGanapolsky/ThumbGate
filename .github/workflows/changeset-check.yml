@@ -4,56 +4,38 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: changeset-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   changeset-check:
     name: Verify changeset
     runs-on: ubuntu-latest
-    env:
-      PR_TITLE: ${{ github.event.pull_request.title }}
-      PR_ACTOR: ${{ github.actor }}
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      - name: Fetch main for changeset diff
-        run: git fetch origin main:main
+      - name: Fetch base branch for changeset diff
+        run: git fetch --no-tags --prune origin '+refs/heads/main:refs/remotes/origin/main'
 
-      - run: npm ci
+      - name: Install release-check dependencies
+        run: npm ci --ignore-scripts --onnxruntime-node-install-cuda=skip
 
-      - name: Check for changeset
-        run: |
-          # Skip check for release/chore commits and dependabot
-          if [[ "$PR_TITLE" == chore* ]] || [[ "$PR_TITLE" == docs* ]] || [[ "$PR_TITLE" == ci* ]]; then
-            echo "Skipping changeset check for chore/docs/ci PR"
-            exit 0
-          fi
-          if [[ "$PR_ACTOR" == "dependabot[bot]" ]]; then
-            echo "Skipping changeset check for Dependabot"
-            exit 0
-          fi
-
-          # Check if any changeset files exist in this PR
-          CHANGESETS=$(git diff --name-only origin/main...HEAD -- '.changeset/*.md' | grep -v README.md || true)
-          if [ -z "$CHANGESETS" ]; then
-            echo "::warning::No changeset found. If this PR includes user-facing changes, run 'npx changeset' to add one."
-            echo ""
-            echo "To add a changeset:"
-            echo "  npx changeset"
-            echo ""
-            echo "This is a warning, not a blocker. Changesets are required for feat: and fix: PRs."
-
-            # Only fail for feat/fix PRs
-            if [[ "$PR_TITLE" == feat* ]] || [[ "$PR_TITLE" == fix* ]]; then
-              echo "::error::feat/fix PRs require a changeset. Run 'npx changeset' and commit the result."
-              exit 1
-            fi
-          else
-            echo "Found changeset(s):"
-            echo "$CHANGESETS"
-            npx changeset status
-          fi
+      - name: Check release-relevant changeset coverage
+        env:
+          CHANGESET_BASE_REF: refs/remotes/origin/main
+        run: npm run changeset:check

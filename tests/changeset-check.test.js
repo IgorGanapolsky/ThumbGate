@@ -82,6 +82,42 @@ test('collectChangesets validates thumbgate entries from disk', () => {
   assert.ok(bad.errors.some((error) => error.includes('missing thumbgate release entry')));
 });
 
+test('collectChangesets can restrict validation to changesets changed by the PR', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-changeset-filter-'));
+  fs.writeFileSync(path.join(tempDir, 'old-valid.md'), [
+    '---',
+    '\'thumbgate\': patch',
+    '---',
+    '',
+    'Existing pending release note that should not satisfy a separate PR.',
+  ].join('\n'));
+  fs.writeFileSync(path.join(tempDir, 'new-valid.md'), [
+    '---',
+    '\'thumbgate\': patch',
+    '---',
+    '',
+    'New release note attached to this pull request and valid for ThumbGate.',
+  ].join('\n'));
+
+  const changesets = collectChangesets({
+    dir: tempDir,
+    files: ['.changeset/new-valid.md', 'scripts/workflow-sentinel.js'],
+  });
+
+  assert.deepEqual(changesets.map((entry) => entry.file), ['.changeset/new-valid.md']);
+});
+
+test('evaluateChangesetRequirement ignores unrelated existing changesets', () => {
+  const result = evaluateChangesetRequirement({
+    changedFiles: ['scripts/workflow-sentinel.js'],
+    changesets: [],
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.required, true);
+  assert.match(result.reason, /require at least one valid \.changeset/i);
+});
+
 test('evaluateChangesetRequirement skips non-release changes', () => {
   const result = evaluateChangesetRequirement({
     changedFiles: ['docs/SEMVER_POLICY.md', 'tests/publish-decision.test.js'],
@@ -158,4 +194,19 @@ test('release confidence docs keep the buyer-facing changeset story explicit', (
   assert.match(semver, /exact `main` merge commit/i);
   assert.match(confidence, /Verification Evidence/i);
   assert.match(confidence, /version-sync/i);
+});
+
+test('changeset workflow delegates release relevance to the tested checker', () => {
+  const workflow = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'changeset-check.yml'), 'utf8');
+
+  assert.match(workflow, /name:\s*Changeset Check/);
+  assert.match(workflow, /permissions:\s+contents:\s+read\s+pull-requests:\s+read/s);
+  assert.match(workflow, /group:\s*changeset-check-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
+  assert.match(workflow, /cache:\s*'npm'/);
+  assert.match(workflow, /git fetch --no-tags --prune origin '\+refs\/heads\/main:refs\/remotes\/origin\/main'/);
+  assert.match(workflow, /npm ci --ignore-scripts --onnxruntime-node-install-cuda=skip/);
+  assert.match(workflow, /CHANGESET_BASE_REF:\s*refs\/remotes\/origin\/main/);
+  assert.match(workflow, /run:\s*npm run changeset:check/);
+  assert.doesNotMatch(workflow, /PR_TITLE/);
+  assert.doesNotMatch(workflow, /feat\/fix PRs require a changeset/);
 });

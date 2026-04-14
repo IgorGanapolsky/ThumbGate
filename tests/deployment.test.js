@@ -374,6 +374,16 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /cancel-in-progress:\s*true/);
   assert.match(workflow, /permissions:\s+contents:\s+write\s+id-token:\s+write/s);
   assert.match(workflow, /node-version:\s*'24\.x'/);
+  assert.match(workflow, /timeout-minutes:\s*25/);
+  assert.match(workflow, /cache:\s*'npm'/);
+  assert.match(workflow, /name: Run release safety checks/);
+  assert.match(workflow, /node scripts\/sync-version\.js --check/);
+  assert.match(workflow, /npm run test:deployment/);
+  assert.match(workflow, /npm run test:postinstall/);
+  assert.match(workflow, /npm run prove:runtime/);
+  assert.match(workflow, /name: Audit npm package boundary/);
+  assert.match(workflow, /npm pack --dry-run/);
+  assert.doesNotMatch(workflow, /run:\s*npm test/);
   assert.match(workflow, /name: Plan publish action/);
   assert.match(workflow, /run: node scripts\/publish-decision\.js/);
   assert.match(workflow, /CURRENT_BRANCH:\s*\$\{\{\s*github\.ref_name\s*\}\}/);
@@ -381,6 +391,7 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /steps\.plan\.outputs\.skip_publish == 'true'/);
   assert.match(workflow, /steps\.plan\.outputs\.publish_npm == 'true'/);
   assert.match(workflow, /npm publish --tag "\$\{\{\s*steps\.plan\.outputs\.npm_tag \|\| 'latest'\s*\}\}" --provenance/);
+  assert.match(workflow, /--install-attempts 12 --install-delay-ms 10000/);
 });
 
 test('CODEOWNERS explicitly covers release-critical governance surfaces', () => {
