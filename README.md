@@ -8,7 +8,7 @@
 [![Start Sprint](https://img.shields.io/badge/Workflow%20Hardening%20Sprint-Start%20Intake%20→-16a34a?style=for-the-badge)](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=badge_cta#workflow-sprint-intake)
 [![Open ThumbGate GPT](https://img.shields.io/badge/ChatGPT-Open%20ThumbGate%20GPT-10a37f?style=for-the-badge&logo=openai&logoColor=white)](https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate)
 
-**[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Open ThumbGate GPT](https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate)** · **[ChatGPT Actions setup](adapters/chatgpt/INSTALL.md)** · **[Install Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** · **[Claude Plugin Guide](docs/CLAUDE_DESKTOP_EXTENSION.md)** · **[Install Codex Plugin](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[Perplexity Command Center](docs/PERPLEXITY_MAX_COMMAND_CENTER.md)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)**
+**[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Open ThumbGate GPT](https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate)** · **[ChatGPT Actions setup](adapters/chatgpt/INSTALL.md)** · **[Install Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** · **[Claude Plugin Guide](docs/CLAUDE_DESKTOP_EXTENSION.md)** · **[Install Codex Plugin](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** · **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)** · **[Perplexity Command Center](docs/PERPLEXITY_MAX_COMMAND_CENTER.md)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[Pro Page](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)**
 
 **Popular buyer questions:** **[Stop repeated AI agent mistakes](https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
 
@@ -33,6 +33,14 @@ Developers can import the prepared **[GPT Actions OpenAPI spec](adapters/chatgpt
 **Official directory pending review?** Claude Code users can install today with `/plugin marketplace add IgorGanapolsky/ThumbGate` then `/plugin install thumbgate@thumbgate-marketplace`.
 
 **Using Perplexity Max?** ThumbGate ships a **[Perplexity Command Center](docs/PERPLEXITY_MAX_COMMAND_CENTER.md)** that runs AI-search visibility checks, Search API lead discovery, Agent API strategy briefs, and official Perplexity MCP config generation. It is scheduled in GitHub Actions and uploads artifacts without committing runtime `.thumbgate` state.
+
+**Need proof that gates improve safety without killing capability?** Run **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)**:
+
+```bash
+npm run thumbgate:bench
+```
+
+It scores deterministic GitHub, npm, database, Railway, shell, and filesystem scenarios with `unsafeActionRate`, `capabilityRate`, `positivePromotionRate`, and `replayStability` so teams can inspect the Reliability Gateway before a Workflow Hardening Sprint.
 
 ---
 
