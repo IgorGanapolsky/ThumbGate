@@ -9,6 +9,18 @@ This document turns the current go-to-market recommendation into one week of con
 
 Replace broad broadcasting with direct customer discovery so ThumbGate sharpens around one buyer: teams that need agent governance for one valuable workflow.
 
+## Operating Rule
+
+Posts are not sales. A lead only counts when it moves through the tracked pipeline:
+
+`targeted -> contacted -> replied -> call_booked -> checkout_started or sprint_intake -> paid`
+
+Use one first-touch offer:
+
+> I will harden one AI-agent workflow for you.
+
+Use the proof pack only after the buyer confirms the pain. Proof reduces buyer risk; it does not create pain.
+
 ## Working Thesis
 
 - The local CLI is the adoption wedge.
@@ -19,12 +31,40 @@ Replace broad broadcasting with direct customer discovery so ThumbGate sharpens 
 ## Seven-Day Sprint
 
 1. Pause broad posting for 7 days. No new generic launch threads, no volume-first social loops.
-2. Contact the 3-5 people who engaged meaningfully.
+2. Contact the 3-5 people who engaged meaningfully with the Workflow Hardening Sprint offer.
 3. Ask for 15 minutes to understand their current workflow, failure modes, and approval needs.
 4. Capture exact language around blockers, proof needs, rollout friction, and who actually signs off.
 5. Compare those answers against the current sprint offer, Team story, and CLI wedge.
 6. Rewrite the landing page, README, and pitch with the words buyers actually use.
 7. End the sprint with a decision memo: double down on team agent governance or keep the local tool as a niche side path.
+
+## Pipeline Tracking
+
+Generate a target queue:
+
+```bash
+npm run gtm:revenue-loop -- --report-dir reports/gtm/$(date +%F)-selling-now --max-targets=12
+```
+
+Import the queue into the local sales ledger:
+
+```bash
+npm run sales:pipeline -- import \
+  --source reports/gtm/$(date +%F)-selling-now/gtm-revenue-loop.json \
+  --out reports/gtm/$(date +%F)-selling-now/sales-pipeline.md
+```
+
+Advance a lead only when the real-world event happened:
+
+```bash
+npm run sales:pipeline -- advance \
+  --lead github_builder_production_mcp_server \
+  --stage contacted \
+  --channel github \
+  --note "Sent one-workflow hardening offer"
+```
+
+Do not mark a lead replied, call-booked, sprint-intake, checkout-started, or paid until there is evidence for that exact stage.
 
 ## Target Interviews
 
