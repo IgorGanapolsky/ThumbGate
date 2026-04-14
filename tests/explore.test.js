@@ -192,9 +192,10 @@ test('handleKey updates list and detail navigation state', () => {
 });
 
 test('isDirectInvocation checks supplied module references', () => {
-  const fakeModule = {};
+  const fakeModule = { filename: '/tmp/thumbgate/explore.js' };
   assert.equal(isDirectInvocation(fakeModule, fakeModule), true);
-  assert.equal(isDirectInvocation(fakeModule, {}), false);
+  assert.equal(isDirectInvocation(fakeModule, { filename: '/tmp/thumbgate/other.js' }), false);
+  assert.equal(isDirectInvocation({}, fakeModule), false);
 });
 
 // ---------------------------------------------------------------------------

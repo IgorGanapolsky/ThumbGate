@@ -540,7 +540,9 @@ function run(options = {}) {
 /* c8 ignore stop */
 
 function isDirectInvocation(moduleRef = module, mainRef = require.main) {
-  return mainRef === moduleRef;
+  const moduleFile = moduleRef && moduleRef.filename;
+  const mainFile = mainRef && mainRef.filename;
+  return Boolean(moduleFile && mainFile && mainFile === moduleFile);
 }
 
 module.exports = {
