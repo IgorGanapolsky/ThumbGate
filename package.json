@@ -1,7 +1,7 @@
 {
   "name": "thumbgate",
   "version": "1.4.4",
-  "description": "Stop AI agents from repeating costly mistakes. One thumbs-down blocks the pattern before it runs again. Prevent production data loss, catch bad commands before execution, make every AI correction permanent. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp.",
+  "description": "ThumbGate stops AI agents from repeating costly mistakes. One thumbs-down blocks the pattern before it runs again. Prevent production data loss, catch bad commands before execution, make every AI correction permanent. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": {
     "type": "git",
