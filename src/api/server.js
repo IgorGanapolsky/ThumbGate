@@ -3770,7 +3770,14 @@ async function addContext(){
       return;
     }
 
-    if (!isAuthorized(req, expectedApiKey)) {
+    // Operator key is allowed to bypass the general admin gate for its dedicated endpoint
+    const _reqToken = extractApiKey(req);
+    const isOperatorBillingRequest = Boolean(expectedOperatorKey)
+      && _reqToken === expectedOperatorKey
+      && req.method === 'GET'
+      && pathname === '/v1/billing/summary';
+
+    if (!isOperatorBillingRequest && !isAuthorized(req, expectedApiKey)) {
       sendProblem(res, {
         type: PROBLEM_TYPES.UNAUTHORIZED,
         title: 'Unauthorized',
