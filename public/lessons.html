@@ -898,17 +898,39 @@ loadLive().then(function() {
   // Default: highlight Active Rules card on page load
   highlightCard(0);
 
-  // Handle #feedbackId hash — scroll to and highlight the matching item
+  // Handle #hash — scroll to and highlight the matching item.
+  // IMPORTANT: querySelector finds elements in hidden tabs (display:none),
+  // but scrollIntoView silently fails on hidden elements. Always switch to
+  // the correct tab BEFORE querying.
   var hash = window.location.hash.replace('#', '');
   if (!hash) return;
-  // Try rule cards first
-  var el = document.querySelector('[data-rule-id="' + hash + '"]') ||
-           document.querySelector('[data-feedback-id="' + hash + '"]');
-  if (!el) {
-    // Search in timeline by switching tab
-    switchTab('timeline');
-    el = document.querySelector('[data-feedback-id="' + hash + '"]');
+  var el = null;
+
+  // For fb_* hashes (from statusbar links), prefer rules tab (has lesson context)
+  if (hash.indexOf('fb_') === 0 || hash.indexOf('lesson_') === 0) {
+    var matchedRule = allRules.find(function(r) {
+      return r.sourceFeedbackId === hash || r.id === hash;
+    });
+    if (matchedRule) {
+      switchTab('rules');
+      el = document.querySelector('[data-rule-id="' + matchedRule.id + '"]');
+    }
+    if (!el) {
+      switchTab('timeline');
+      el = document.querySelector('[data-feedback-id="' + hash + '"]');
+    }
   }
+
+  // For mem_* or other IDs, search within visible tabs only
+  if (!el) {
+    switchTab('rules');
+    el = document.querySelector('#tab-rules [data-rule-id="' + hash + '"]');
+  }
+  if (!el) {
+    switchTab('timeline');
+    el = document.querySelector('#tab-timeline [data-feedback-id="' + hash + '"]');
+  }
+
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     el.style.borderColor = 'var(--cyan)';

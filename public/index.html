@@ -488,7 +488,7 @@ __GA_BOOTSTRAP__
       <a href="/compare">Compare</a>
       <a href="/dashboard">Dashboard Demo</a>
       <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')">Start Sprint</a>
-      <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" target="_blank" rel="noopener" onclick="posthog.capture('nav_cta_click',{cta:'open_gpt'})" class="nav-cta">Open GPT</a>
+      <a href="/go/gpt?utm_source=website&utm_medium=nav&utm_campaign=chatgpt_gpt&cta_id=nav_open_gpt&cta_placement=nav" target="_blank" rel="noopener" onclick="posthog.capture('nav_cta_click',{cta:'open_gpt'})" class="nav-cta">Open GPT</a>
     </div>
   </div>
 </nav>
@@ -512,10 +512,10 @@ __GA_BOOTSTRAP__
         <span class="cmd">npx thumbgate init</span>
         <span class="copy-hint">click to copy</span>
       </div>
-      <a href="#install" onclick="posthog.capture('hero_install_click',{cta:'install_cli'})" class="btn-gpt-page btn-install-hero" style="font-size:18px;padding:16px 36px;">Install Free CLI</a>
-      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_go_pro" onclick="posthog.capture('hero_pro_click',{cta:'go_pro'})" class="btn-pro-page" style="font-size:13px;padding:10px 18px;margin-bottom:4px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
-      <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_cta_click',{cta:'open_gpt'})" style="font-size:13px;padding:10px 18px;background:transparent;border:1px solid var(--green);color:var(--green);">Open ThumbGate GPT</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;border-radius:999px;">⭐ Star on GitHub</a>
+      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="posthog.capture('hero_install_click',{cta:'install_cli'})" class="btn-gpt-page btn-install-hero" style="font-size:18px;padding:16px 36px;">Install Free CLI</a>
+      <a href="/go/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_go_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" onclick="posthog.capture('hero_pro_click',{cta:'go_pro'})" class="btn-pro-page" style="font-size:13px;padding:10px 18px;margin-bottom:4px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
+      <a href="/go/gpt?utm_source=website&utm_medium=hero_cta&utm_campaign=chatgpt_gpt&cta_id=hero_open_gpt&cta_placement=hero" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_cta_click',{cta:'open_gpt'})" style="font-size:13px;padding:10px 18px;background:transparent;border:1px solid var(--green);color:var(--green);">Open ThumbGate GPT</a>
+      <a href="/go/github?utm_source=website&utm_medium=hero_cta&utm_campaign=github_repo&cta_id=hero_star_github&cta_placement=hero" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;border-radius:999px;">⭐ Star on GitHub</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" style="font-size:13px;color:var(--text-muted);text-decoration:none;padding:8px 14px;">Install Codex plugin →</a>
     </div>
     <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:660px;">No, you do not have to chat inside the GPT forever. The GPT is advice and checkpointing; local hooks do the hard blocking for Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and MCP-compatible agents.</p>
@@ -529,7 +529,7 @@ __GA_BOOTSTRAP__
       <span class="dot"></span>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/.claude-plugin/README.md" target="_blank" rel="noopener">Claude marketplace install →</a>
       <span class="dot"></span>
-      <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" target="_blank" rel="noopener">Open ThumbGate GPT →</a>
+      <a href="/go/gpt?utm_source=website&utm_medium=proof_bar&utm_campaign=chatgpt_gpt&cta_id=proof_bar_open_gpt&cta_placement=proof_bar" target="_blank" rel="noopener">Open ThumbGate GPT →</a>
       <span class="dot"></span>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" target="_blank" rel="noopener">ChatGPT Actions setup →</a>
       <span class="dot"></span>
@@ -581,7 +581,7 @@ __GA_BOOTSTRAP__
         </div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <a href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('gpt_path_cta_click',{cta:'open_gpt'})">Open ThumbGate GPT</a>
+        <a href="/go/gpt?utm_source=website&utm_medium=gpt_section&utm_campaign=chatgpt_gpt&cta_id=gpt_path_open_gpt&cta_placement=gpt_section" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('gpt_path_cta_click',{cta:'open_gpt'})">Open ThumbGate GPT</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" class="btn-free" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">ChatGPT Actions setup</a>
       </div>
       <p class="gpt-note"><strong>Plain English rule:</strong> ChatGPT is the discovery and memory surface for advice, checkpointing, and typed feedback capture. The hard Reliability Gateway still runs in the local agent or CI lane.</p>
@@ -604,7 +604,7 @@ __GA_BOOTSTRAP__
         <p>Codex ships with a published standalone ThumbGate plugin bundle plus a repo-local plugin profile. Download the zip, extract it, and install without wiring MCP by hand.</p>
         <div class="card-arrow">Get the Codex plugin →</div>
       </a>
-      <a class="compat-card" href="https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate" target="_blank" rel="noopener">
+      <a class="compat-card" href="/go/gpt?utm_source=website&utm_medium=compatibility&utm_campaign=chatgpt_gpt&cta_id=compat_open_gpt&cta_placement=compatibility" target="_blank" rel="noopener">
         <h3>💬 ChatGPT GPT Actions</h3>
         <p>Open the ThumbGate GPT to check proposed AI actions, capture thumbs-up/down lessons, and get setup guidance. Real blocking for coding agents still runs locally after <code>npx thumbgate init</code>.</p>
         <div class="card-arrow">Open ThumbGate GPT →</div>
@@ -722,7 +722,7 @@ __GA_BOOTSTRAP__
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
   <div class="container">
-    <div class="section-label">New in v1.4.4</div>
+    <div class="section-label">New in v1.4.6</div>
     <h2 class="section-title">Three steps to stop repeated AI failures</h2>
     <div class="steps">
       <div class="step">
@@ -919,7 +919,7 @@ __GA_BOOTSTRAP__
           <li>Review-ready workflow support — we help you wire the riskiest flows first: migrations, force-pushes, deploys, and CI</li>
         </ul>
         <div class="trial-badge" style="background:var(--cyan);color:#000;display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:12px;">7-DAY FREE TRIAL</div>
-        <a href="/checkout/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" class="btn-pro" onclick="posthog.capture('pricing_cta_click',{cta:'pro_upgrade',plan:'pro'})" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
+        <a href="/go/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" class="btn-pro" onclick="posthog.capture('pricing_cta_click',{cta:'pro_upgrade',plan:'pro'})" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
         <p style="font-size:11px;color:#666;margin-top:8px;">Start with the free CLI. Upgrade when you hit the 3 captures/day limit and need the dashboard, DPO export, and export-ready evidence.</p>
       </div>
       <div class="price-card team">
@@ -1050,8 +1050,8 @@ __GA_BOOTSTRAP__
         <span class="cmd">npx thumbgate init</span>
         <span class="copy-hint">click to copy</span>
       </div>
-      <a href="/guide?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free" onclick="posthog.capture('final_install_click',{cta:'install_cli'})" class="btn-pro btn-install-link" style="padding:12px 32px;font-size:15px;">Install Free CLI</a>
-      <a href="/checkout/pro?utm_source=website&utm_medium=final_cta&utm_campaign=pro_upgrade&cta_id=final_go_pro" onclick="posthog.capture('final_pro_click',{cta:'go_pro'})" class="btn-pro" style="padding:10px 24px;font-size:13px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
+      <a href="/go/install?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free&cta_id=final_install_cli&cta_placement=final_cta" onclick="posthog.capture('final_install_click',{cta:'install_cli'})" class="btn-pro btn-install-link" style="padding:12px 32px;font-size:15px;">Install Free CLI</a>
+      <a href="/go/pro?utm_source=website&utm_medium=final_cta&utm_campaign=pro_upgrade&cta_id=final_go_pro&cta_placement=final_cta&plan_id=pro&landing_path=%2F" onclick="posthog.capture('final_pro_click',{cta:'go_pro'})" class="btn-pro" style="padding:10px 24px;font-size:13px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
       <a href="#workflow-sprint-intake" class="btn-team" style="background:var(--green);">Start Workflow Hardening Sprint</a>
     </div>
   </div>
@@ -1068,7 +1068,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.4.4</span>
+    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.4.6</span>
   </div>
 </footer>
 
@@ -1080,7 +1080,7 @@ __GA_BOOTSTRAP__
     <span class="cmd">npx thumbgate init</span>
     <span class="copy-hint">copy</span>
   </div>
-  <a href="/checkout/pro?utm_source=website&utm_medium=sticky_cta&utm_campaign=pro_upgrade&cta_id=sticky_go_pro" onclick="posthog.capture('sticky_pro_click',{cta:'go_pro'})" class="btn-pro" style="padding:8px 16px;font-size:12px;border-radius:6px;white-space:nowrap;">Go Pro — $19/mo</a>
+  <a href="/go/pro?utm_source=website&utm_medium=sticky_cta&utm_campaign=pro_upgrade&cta_id=sticky_go_pro&cta_placement=sticky_cta&plan_id=pro&landing_path=%2F" onclick="posthog.capture('sticky_pro_click',{cta:'go_pro'})" class="btn-pro" style="padding:8px 16px;font-size:12px;border-radius:6px;white-space:nowrap;">Go Pro — $19/mo</a>
 </div>
 <script>
 (function() {
@@ -1110,7 +1110,51 @@ function initializeBuyerIntentForms() {
   });
 }
 
+function readMarketingParam(name) {
+  try {
+    return new URLSearchParams(globalThis.location.search).get(name);
+  } catch (_err) {
+    return null;
+  }
+}
+
+function sendFirstPartyTelemetry(eventType, props) {
+  var payload = Object.assign({
+    eventType: eventType,
+    clientType: 'web',
+    page: globalThis.location.pathname || '/',
+    landingPath: globalThis.location.pathname || '/',
+    acquisitionId: serverAcquisitionId,
+    visitorId: serverVisitorId,
+    sessionId: serverSessionId,
+    source: readMarketingParam('utm_source') || readMarketingParam('source') || 'website',
+    utmSource: readMarketingParam('utm_source') || 'website',
+    utmMedium: readMarketingParam('utm_medium') || 'landing_page',
+    utmCampaign: readMarketingParam('utm_campaign') || 'organic',
+    utmContent: readMarketingParam('utm_content'),
+    utmTerm: readMarketingParam('utm_term'),
+    creator: readMarketingParam('creator') || readMarketingParam('creator_handle'),
+    community: readMarketingParam('community') || readMarketingParam('subreddit'),
+    postId: readMarketingParam('post_id'),
+    commentId: readMarketingParam('comment_id'),
+    campaignVariant: readMarketingParam('campaign_variant'),
+    offerCode: readMarketingParam('offer_code'),
+  }, props || {});
+  var body = JSON.stringify(payload);
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon('/v1/telemetry/ping', new Blob([body], { type: 'application/json' }));
+    return;
+  }
+  fetch('/v1/telemetry/ping', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: body,
+    keepalive: true,
+  }).catch(function() {});
+}
+
 function resolvePricingClickTier(el) {
+  if (el.classList.contains('btn-install-hero')) return 'install';
   if (el.classList.contains('btn-install-link')) return 'install';
   if (el.classList.contains('btn-gpt-page')) return 'chatgpt_gpt';
   if (el.classList.contains('btn-pro')) return 'pro';
@@ -1130,6 +1174,11 @@ function copyInstall(el) {
     setTimeout(function() { hint.textContent = 'click to copy'; hint.classList.remove('copied'); }, 2000);
   });
   if (typeof plausible === 'function') plausible('install_copy');
+  sendFirstPartyTelemetry('install_copy', {
+    ctaId: 'install_copy',
+    ctaPlacement: 'copy_command',
+    planId: 'free',
+  });
 }
 
 /* ── Plausible custom event tracking ── */
@@ -1138,6 +1187,14 @@ function copyInstall(el) {
     document.querySelectorAll(selector).forEach(function(el) {
       el.addEventListener('click', function() {
         if (typeof plausible === 'function') plausible(eventName, { props: props || {} });
+        var section = el.closest('section');
+        var sectionId = section ? (section.id || String(section.className || '').split(' ')[0] || 'unknown') : 'unknown';
+        var firstPartyEventName = eventName === 'checkout_start' ? 'cta_click' : eventName;
+        sendFirstPartyTelemetry(firstPartyEventName, Object.assign({}, props || {}, {
+          ctaId: (props && (props.ctaId || props.cta)) || eventName,
+          ctaPlacement: (props && props.ctaPlacement) || sectionId,
+          planId: (props && props.planId) || (props && props.tier) || null,
+        }));
       });
     });
   }
@@ -1156,7 +1213,8 @@ function copyInstall(el) {
 
   /* CTA clicks */
   trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 19, billing: 'monthly' });
-  trackClick('.btn-gpt-page', 'chatgpt_gpt_click', { tier: 'free', source: 'homepage_gpt' });
+  trackClick('.btn-gpt-page:not(.btn-install-hero)', 'chatgpt_gpt_click', { tier: 'free', source: 'homepage_gpt' });
+  trackClick('.btn-install-hero', 'install_guide_click', { tier: 'free', source: 'hero_install' });
   trackClick('.btn-pro-page:not(.btn-install-link)', 'pro_page_click', { tier: 'pro', source: 'hero' });
   trackClick('.btn-install-link', 'install_guide_click', { tier: 'free', source: 'homepage_cta' });
   trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
@@ -1166,7 +1224,7 @@ function copyInstall(el) {
 
   /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Team button click
      with section context so we can distinguish pricing section vs final CTA section clicks */
-  document.querySelectorAll('.btn-pro, .btn-gpt-page, .btn-pro-page, .btn-install-link, .btn-team, .btn-free, .btn-demo-link, .nav-cta').forEach(function(el) {
+  document.querySelectorAll('.btn-pro, .btn-gpt-page, .btn-pro-page, .btn-install-hero, .btn-install-link, .btn-team, .btn-free, .btn-demo-link, .nav-cta').forEach(function(el) {
     el.addEventListener('click', function() {
       var section = el.closest('section');
       var sectionId = section ? (section.id || section.className.split(' ')[0] || 'unknown') : 'unknown';

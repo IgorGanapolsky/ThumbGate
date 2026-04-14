@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.4.4",
+  "version": "1.4.6",
   "description": "Self-improving agent governance: type thumbs-up or thumbs-down on any AI agent action. ThumbGate turns every mistake into a prevention rule and blocks the pattern from repeating. One thumbs-down, never again. 33 pre-action gates, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": {
@@ -175,7 +175,11 @@
     "scripts/workflow-sentinel.js",
     "scripts/workflow-sprint-intake.js",
     "scripts/workspace-evolver.js",
-    "scripts/xmemory-lite.js"
+    "scripts/xmemory-lite.js",
+    "public/lessons.html",
+    "public/index.html",
+    "public/guide.html",
+    "public/compare.html"
   ],
   "scripts": {
     "postinstall": "node bin/postinstall.js || true",
@@ -281,7 +285,7 @@
     "test:quality": "node --test tests/validate-feedback.test.js",
     "test:intelligence": "node --test tests/intelligence.test.js",
     "test:training-export": "node --test tests/training-export.test.js tests/databricks-export.test.js",
-    "test:deployment": "node --test tests/deployment.test.js tests/deploy-policy.test.js tests/publish-decision.test.js tests/changeset-check.test.js tests/sonarcloud-workflow.test.js tests/package-boundary.test.js",
+    "test:deployment": "node --test tests/deployment.test.js tests/deploy-policy.test.js tests/publish-decision.test.js tests/changeset-check.test.js tests/release-notes.test.js tests/sonarcloud-workflow.test.js tests/package-boundary.test.js",
     "test:operational-integrity": "node --test tests/operational-integrity.test.js tests/sync-branch-protection.test.js",
     "test:workflow": "node --test tests/workflow-contract.test.js tests/social-marketing-assets.test.js tests/social-pipeline.test.js tests/positioning-contract.test.js tests/docs-claim-hygiene.test.js tests/workflow-runs.test.js tests/workflow-sprint-intake.test.js tests/gtm-revenue-loop.test.js tests/enterprise-story.test.js tests/ralph-loop.test.js tests/ralph-mode-ci.test.js",
     "test:billing": "node --test tests/billing.test.js",

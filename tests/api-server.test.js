@@ -217,6 +217,17 @@ test('newsletter endpoint returns JSON for fetch-style lead capture and deduplic
   assert.equal(duplicateBody.accepted, true);
   assert.equal(duplicateBody.duplicate, true);
   assert.equal(readJsonl(newsletterPath).length, 1);
+
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  const trialEmailEvent = telemetryEvents.find((entry) => (
+    entry.eventType === 'trial_email_captured' &&
+    entry.landingPath === '/pro' &&
+    entry.utmCampaign === 'pro_pack'
+  ));
+  assert.ok(trialEmailEvent);
+  assert.equal(trialEmailEvent.ctaId, 'trial_email');
+  assert.equal(trialEmailEvent.ctaPlacement, 'pro_email_form');
+  assert.equal(trialEmailEvent.planId, 'pro');
 });
 
 test('buyer intent script serves shared checkout helper JavaScript', async () => {
@@ -605,6 +616,80 @@ test('root reuses journey cookies and records SEO landing telemetry from search 
   assert.ok(seoEvent);
   assert.equal(seoEvent.seoSurface, 'google_search');
   assert.equal(seoEvent.seoQuery, 'workflow hardening sprint');
+});
+
+test('tracked link router redirects allowlisted marketing slugs and records first-party click telemetry', async () => {
+  const cookieHeader = [
+    'thumbgate_visitor_id=visitor_go',
+    'thumbgate_session_id=session_go',
+    'thumbgate_acquisition_id=acq_go',
+  ].join('; ');
+  const gptRes = await fetch(apiUrl('/go/gpt?utm_source=linkedin&utm_medium=organic_social&utm_campaign=founder_reply&utm_content=comment_1&creator=igor&cta_id=reply_open_gpt'), {
+    redirect: 'manual',
+    headers: {
+      cookie: cookieHeader,
+      referer: 'https://www.linkedin.com/feed/update/test',
+    },
+  });
+
+  assert.equal(gptRes.status, 302);
+  assert.equal(gptRes.headers.get('x-thumbgate-link-slug'), 'gpt');
+  const gptLocation = new URL(gptRes.headers.get('location'));
+  assert.equal(gptLocation.host, 'chatgpt.com');
+  assert.equal(gptLocation.searchParams.get('utm_source'), 'linkedin');
+  assert.equal(gptLocation.searchParams.get('utm_campaign'), 'founder_reply');
+  assert.equal(gptLocation.searchParams.get('cta_id'), 'reply_open_gpt');
+
+  const proRes = await fetch(apiUrl('/go/pro?utm_source=reddit&utm_medium=organic_social&utm_campaign=checkout_reply&community=ClaudeCode&offer_code=REDDIT-EARLY'), {
+    redirect: 'manual',
+    headers: {
+      cookie: cookieHeader,
+      referer: 'https://www.reddit.com/r/ClaudeCode/comments/example/',
+    },
+  });
+  assert.equal(proRes.status, 302);
+  const proLocation = new URL(proRes.headers.get('location'));
+  assert.equal(proLocation.origin, 'https://app.example.com');
+  assert.equal(proLocation.pathname, '/checkout/pro');
+  assert.equal(proLocation.searchParams.get('utm_source'), 'reddit');
+  assert.equal(proLocation.searchParams.get('community'), 'ClaudeCode');
+  assert.equal(proLocation.searchParams.get('offer_code'), 'REDDIT-EARLY');
+  assert.equal(proLocation.searchParams.get('cta_id'), 'go_pro');
+  assert.equal(proLocation.searchParams.get('landing_path'), '/go/pro');
+
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  const gptClick = telemetryEvents.find((entry) => (
+    entry.eventType === 'chatgpt_gpt_open' &&
+    entry.visitorId === 'visitor_go' &&
+    entry.ctaId === 'reply_open_gpt'
+  ));
+  assert.ok(gptClick);
+  assert.equal(gptClick.source, 'linkedin');
+  assert.equal(gptClick.linkSlug, 'gpt');
+  assert.equal(gptClick.destinationPath, 'chatgpt.com');
+
+  const proClick = telemetryEvents.find((entry) => (
+    entry.eventType === 'cta_click' &&
+    entry.visitorId === 'visitor_go' &&
+    entry.ctaId === 'go_pro'
+  ));
+  assert.ok(proClick);
+  assert.equal(proClick.source, 'reddit');
+  assert.equal(proClick.community, 'ClaudeCode');
+  assert.equal(proClick.linkSlug, 'pro');
+  assert.equal(proClick.destinationPath, '/checkout/pro');
+});
+
+test('tracked link router rejects unknown slugs instead of acting as an open redirect', async () => {
+  const res = await fetch(apiUrl('/go/evil?url=https://evil.example'), {
+    redirect: 'manual',
+  });
+
+  assert.equal(res.status, 404);
+  const body = await res.json();
+  assert.equal(body.error, 'Tracked link not found');
+  assert.ok(body.allowed.includes('gpt'));
+  assert.ok(body.allowed.includes('pro'));
 });
 
 test('SEO comparison pages serve HTML, reuse journey cookies, and record page-specific search telemetry', async () => {
