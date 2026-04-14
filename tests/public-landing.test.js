@@ -93,6 +93,15 @@ test('public landing page includes Plausible analytics and search engine proof b
   assert.match(landingPage, /Claude Code · Cursor · Codex · Gemini · Amp · OpenCode/i);
 });
 
+test('public landing page routes PostHog through same-origin ingest proxy and captures pageviews', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /posthog\.init\('__POSTHOG_API_KEY__'/);
+  assert.match(landingPage, /api_host: '\/ingest'/);
+  assert.match(landingPage, /ui_host: 'https:\/\/us\.posthog\.com'/);
+  assert.match(landingPage, /posthog\.capture\('\$pageview'\)/);
+});
+
 test('public landing page includes the three-step how-it-works section', () => {
   const landingPage = readLandingPage();
 

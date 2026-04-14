@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
+const https = require('node:https');
+const { Readable } = require('node:stream');
 
 const GOVERNED_RELEASE_VERSION_MISMATCH = '9999.0.0';
 
@@ -106,6 +108,73 @@ test('health endpoint returns ok', async () => {
   const body = await res.json();
   assert.equal(body.status, 'ok');
   assert.equal(body.buildSha, 'test-build-sha');
+});
+
+test('PostHog proxy path allowlist blocks sibling-path SSRF attempts', () => {
+  assert.equal(__test__.getPosthogProxyPath('/ingest/capture'), '/capture');
+  assert.equal(__test__.getPosthogProxyPath('/ingest'), '/');
+  assert.equal(__test__.isAllowedPosthogProxyPath('/capture'), true);
+  assert.equal(__test__.isAllowedPosthogProxyPath('/capture/'), true);
+  assert.equal(__test__.isAllowedPosthogProxyPath('/static/array.js'), true);
+  assert.equal(__test__.isAllowedPosthogProxyPath('/captureevil'), false);
+  assert.equal(__test__.isAllowedPosthogProxyPath('/http://evil.example/capture'), false);
+});
+
+test('PostHog ingest proxy forwards allowed analytics requests to PostHog', async () => {
+  const originalRequest = https.request;
+  const captured = { writes: [] };
+  https.request = (options, callback) => {
+    captured.options = options;
+    return {
+      on() { return this; },
+      write(chunk) {
+        captured.writes.push(String(chunk));
+      },
+      end() {
+        const proxyRes = Readable.from(['{"ok":true}']);
+        proxyRes.statusCode = 202;
+        proxyRes.headers = { 'content-type': 'application/json' };
+        callback(proxyRes);
+      },
+    };
+  };
+
+  try {
+    const res = await fetch(apiUrl('/ingest/capture?ip=1'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-posthog-test': 'yes' },
+      body: JSON.stringify({ event: '$pageview' }),
+    });
+    assert.equal(res.status, 202);
+    assert.equal(await res.text(), '{"ok":true}');
+    assert.equal(captured.options.protocol, 'https:');
+    assert.equal(captured.options.hostname, 'us.i.posthog.com');
+    assert.equal(captured.options.path, '/capture?ip=1');
+    assert.equal(captured.options.method, 'POST');
+    assert.equal(captured.options.headers.host, 'us.i.posthog.com');
+    assert.equal(captured.options.headers['x-posthog-test'], 'yes');
+    assert.equal(captured.writes.join(''), '{"event":"$pageview"}');
+  } finally {
+    https.request = originalRequest;
+  }
+});
+
+test('PostHog ingest proxy rejects non-allowlisted upstream paths', async () => {
+  const originalRequest = https.request;
+  let called = false;
+  https.request = () => {
+    called = true;
+    throw new Error('proxy should not run for rejected paths');
+  };
+
+  try {
+    const res = await fetch(apiUrl('/ingest/captureevil'));
+    assert.equal(res.status, 403);
+    assert.equal(await res.text(), 'Forbidden');
+    assert.equal(called, false);
+  } finally {
+    https.request = originalRequest;
+  }
 });
 
 test('newsletter endpoint returns JSON for fetch-style lead capture and deduplicates subscribers', async () => {
