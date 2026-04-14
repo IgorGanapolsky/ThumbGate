@@ -46,12 +46,21 @@ function cols() { return process.stdout.columns || 80; }
 function rows() { return process.stdout.rows || 24; }
 function hr(ch = '─') { return ch.repeat(cols()); }
 function pad(str, w) { const s = String(str || ''); return s.length >= w ? s.slice(0, w) : s + ' '.repeat(w - s.length); }
-function trunc(str, max) { const s = String(str || ''); return s.length > max ? s.slice(0, max - 1) + '…' : s; }
+function trunc(str, max) {
+  const s = String(str || '');
+  if (max <= 0) return '';
+  if (max === 1) return s.length > 1 ? '…' : s;
+  return s.length > max ? s.slice(0, max - 1) + '…' : s;
+}
+
 function relDate(ts) {
   if (!ts) return '';
-  const d = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
+  const time = new Date(ts).getTime();
+  if (!Number.isFinite(time)) return '';
+  const d = Math.floor((Date.now() - time) / 86400000);
   return d === 0 ? 'today' : d === 1 ? '1d ago' : `${d}d ago`;
 }
+
 function write(s) { process.stdout.write(s); }
 
 // ---------------------------------------------------------------------------
@@ -71,7 +80,7 @@ function loadGates(pkgRoot) {
   const gates = [];
   if (!fs.existsSync(gatesDir)) return gates;
   for (const f of fs.readdirSync(gatesDir).sort()) {
-    if (!f.endsWith('.json')) continue;
+    if (!f.endsWith('.json') || f === 'custom.json') continue;
     try {
       const raw = JSON.parse(fs.readFileSync(path.join(gatesDir, f), 'utf8'));
       const items = Array.isArray(raw) ? raw : (raw.gates || raw.rules || [raw]);
@@ -111,6 +120,10 @@ function loadRules(feedbackDir) {
 
 const TABS = ['Lessons', 'Gates', 'Stats', 'Rules'];
 
+function listHeight(state) {
+  return Math.max(1, rows() - 8 - (state.query ? 2 : 0));
+}
+
 function renderHeader(state) {
   const version = (() => { try { return require('../package.json').version; } catch { return '?'; } })();
   const title = `${A.b}${A.cy}thumbgate explore${A.r}  v${version}`;
@@ -142,7 +155,7 @@ function renderSearchBar(state) {
 
 function renderLessons(state) {
   const items = state.filtered;
-  const listH = rows() - 8 - (state.query ? 2 : 0);
+  const listH = listHeight(state);
   const start = Math.max(0, state.cursor - Math.floor(listH / 2));
   const visible = items.slice(start, start + listH);
 
@@ -167,7 +180,7 @@ function renderLessons(state) {
 
 function renderGates(state) {
   const items = state.filtered;
-  const listH = rows() - 8 - (state.query ? 2 : 0);
+  const listH = listHeight(state);
   const start = Math.max(0, state.cursor - Math.floor(listH / 2));
   const visible = items.slice(start, start + listH);
 
@@ -225,7 +238,7 @@ function renderStats(state) {
 
 function renderRules(state) {
   const items = state.filtered;
-  const listH = rows() - 8 - (state.query ? 2 : 0);
+  const listH = listHeight(state);
   const start = Math.max(0, state.cursor - Math.floor(listH / 2));
   const visible = items.slice(start, start + listH);
 
@@ -474,7 +487,20 @@ function run(options = {}) {
   render(state);
 }
 
-module.exports = { run };
+module.exports = {
+  run,
+  _internals: {
+    applyFilter,
+    buildState,
+    loadGates,
+    loadLessons,
+    loadRules,
+    loadStats,
+    pad,
+    relDate,
+    trunc,
+  },
+};
 
 if (require.main === module) {
   run();
