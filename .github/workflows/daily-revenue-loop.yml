@@ -33,7 +33,7 @@ jobs:
           THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
         run: |
           mkdir -p reports/revenue
-          npm run revenue:status -- --json | tee reports/revenue/revenue-status.json
+          node scripts/revenue-status.js --json | tee reports/revenue/revenue-status.json
           SOURCE=$(node -p "require('./reports/revenue/revenue-status.json').source")
           ISSUE=$(node -p "require('./reports/revenue/revenue-status.json').diagnosis.primaryIssue")
           echo "source=$SOURCE" >> "$GITHUB_OUTPUT"
@@ -49,7 +49,7 @@ jobs:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
         run: |
           mkdir -p reports/revenue
-          npm run stripe:live -- --strict | tee reports/revenue/stripe-live.json
+          node scripts/stripe-live-status.js --strict | tee reports/revenue/stripe-live.json
           STATUS=$(node -p "require('./reports/revenue/stripe-live.json').status")
           NET=$(node -p "require('./reports/revenue/stripe-live.json').revenue.netLifetime")
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
