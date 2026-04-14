@@ -84,11 +84,15 @@ jobs:
         run: sudo apt-get install -y ffmpeg --quiet
 
       - name: Generate slides + render + post to all video platforms
+        env:
+          INPUT_TEMPLATE: ${{ github.event.inputs.template || 'auto' }}
+          INPUT_PLATFORMS: ${{ github.event.inputs.platforms || 'tiktok,youtube,instagram' }}
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
-          TEMPLATE="${{ github.event.inputs.template || 'auto' }}"
-          PLATFORMS="${{ github.event.inputs.platforms || 'tiktok,youtube,instagram' }}"
+          TEMPLATE="$INPUT_TEMPLATE"
+          PLATFORMS="$INPUT_PLATFORMS"
           DRY_RUN_FLAG=""
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          if [ "$INPUT_DRY_RUN" = "true" ]; then
             DRY_RUN_FLAG="--dry-run"
           fi
           WEEK=$(date +%Y-W%V)
