@@ -128,3 +128,32 @@ test('sync-version detects public landing footer drift', serial, () => {
     fs.writeFileSync(publicIndexPath, original);
   }
 });
+
+test('sync-version updates multiple public landing markers in one pass', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const { version } = require('../package.json');
+  const publicIndexPath = path.join(ROOT, 'public', 'index.html');
+  const original = fs.readFileSync(publicIndexPath, 'utf8');
+  const drifted = original
+    .replace(/New in v\d+\.\d+\.\d+:?/, 'New in v0.0.1')
+    .replace(/MIT License · v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'MIT License · v0.0.1');
+
+  try {
+    fs.writeFileSync(publicIndexPath, drifted);
+    const result = syncVersion({ checkOnly: false });
+    assert.ok(
+      result.drifted.some((entry) => entry.file === 'public/index.html' && entry.field === 'hero-release-note'),
+      `expected hero drift, found: ${JSON.stringify(result.drifted)}`
+    );
+    assert.ok(
+      result.drifted.some((entry) => entry.file === 'public/index.html' && entry.field === 'footer-version'),
+      `expected footer drift, found: ${JSON.stringify(result.drifted)}`
+    );
+
+    const synced = fs.readFileSync(publicIndexPath, 'utf8');
+    assert.ok(synced.includes(`New in v${version}`), 'hero marker should be synced');
+    assert.ok(synced.includes(`MIT License · v${version}`), 'footer marker should be synced');
+  } finally {
+    fs.writeFileSync(publicIndexPath, original);
+  }
+});
