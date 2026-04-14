@@ -1,6 +1,8 @@
 # ThumbGate
 
-**Thumbs up or thumbs down — and your AI coding agent never makes the same mistake twice.**
+**Stop AI agents before they make costly mistakes.**
+
+ThumbGate checks risky commands, file edits, deploys, API calls, and other agent actions before they run. Thumbs-up/down feedback becomes remembered lessons, repeated failures become Pre-Action Gates, and the next bad action gets blocked instead of becoming another cleanup bill.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -18,7 +20,7 @@
 
 ## ThumbGate GPT: start here
 
-**Use ThumbGate in ChatGPT now:** **[Open the live ThumbGate GPT](https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate)**, paste the action your AI agent wants to run, and ask whether to allow, block, or checkpoint it.
+**Use ThumbGate in ChatGPT now:** **[Open the live ThumbGate GPT](https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate)**, paste the action your AI agent wants to run, and ask whether to allow, block, or checkpoint it before the mistake becomes expensive.
 
 Try this first prompt:
 
@@ -26,7 +28,7 @@ Try this first prompt:
 Check this agent action before it runs: git push --force --tags
 ```
 
-**No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate.** The GPT is the fast demo, guided setup path, and thumbs-up/down memory surface for ChatGPT users. The hard enforcement layer still runs where the work happens: your local coding agent, CI workflow, or MCP-compatible runtime after `npx thumbgate init`.
+**No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate.** The GPT is the fast demo, guided setup path, and thumbs-up/down memory surface for ChatGPT users. Think of the GPT as advice and checkpointing; the hard enforcement layer still runs where the work happens: your local coding agent, CI workflow, or MCP-compatible runtime after `npx thumbgate init`.
 
 Developers can import the prepared **[GPT Actions OpenAPI spec](adapters/chatgpt/openapi.yaml)** with the **[ChatGPT Actions setup guide](adapters/chatgpt/INSTALL.md)**. Regular ChatGPT users should just open the GPT and type what happened.
 
@@ -46,7 +48,13 @@ It scores deterministic GitHub, npm, database, Railway, shell, and filesystem sc
 
 ## What problem does this solve?
 
-AI agents repeat mistakes. You fix the same problem in session after session — force-push to main, broken migrations, unauthorized file edits — because the agent has no memory of your feedback.
+AI agents repeat expensive mistakes. You fix the same problem in session after session — force-push to main, broken migrations, unauthorized file edits, risky deploys — because the agent has no durable memory of your feedback and no gate before execution.
+
+ThumbGate sells three concrete outcomes:
+
+- **Prevent expensive AI mistakes** — catch bad commands, destructive database actions, unsafe publishes, and risky API calls before they run.
+- **Make AI stop repeating mistakes** — fix it once, turn the lesson into a rule, and block the repeat before the next tool call lands.
+- **Turn AI into a reliable operator** — move from a smart assistant that apologizes after damage to a production-ready operator with checkpoints, proof, and enforcement.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -64,7 +72,7 @@ AI agents repeat mistakes. You fix the same problem in session after session —
 └─────────────────────────────────────────────────────────────┘
 ```
 
-ThumbGate is the **control plane** for AI coding agents — turning your feedback into **enforced rules**, not suggestions.
+ThumbGate is the **Reliability Gateway** for AI coding agents — turning your feedback into **enforced rules**, not suggestions.
 
 ---
 
@@ -129,6 +137,8 @@ Session 3:                     │  Session 3+:
 **Best first technical motion:** install the CLI-first and let `init` wire hooks for the agent you already use.
 
 **Paid path for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the self-serve side lane for a personal dashboard and export-ready evidence.
+
+**Plain product line:** GPT preview = advice and checkpointing. Free local CLI (3 daily feedback captures, 5 daily lesson searches) = basic enforcement on one machine. Pro ($19/mo or $149/yr) = personal enforcement proof, dashboard, and exports. Team = shared hosted lesson DB, org dashboard, and shared enforcement so one correction protects every seat.
 
 ---
 
@@ -265,9 +275,9 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 **[Start Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)** · **[See Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page)**
 
 **Where to start:**
-- **Teams:** Begin with the Workflow Hardening Sprint — qualify one real repeated failure before committing to a full rollout
-- **Solo operators:** ThumbGate Pro adds a personal dashboard and export-ready evidence
-- **Individuals & open source:** Free CLI tier, self-hosted
+- **Teams:** Begin with the Workflow Hardening Sprint — prove one costly repeat failure can be blocked before committing to a full rollout
+- **Solo operators:** ThumbGate Pro adds personal enforcement proof, a gate debugger, and export-ready evidence
+- **Individuals & open source:** Free CLI tier, self-hosted, with local Pre-Action Gates after install
 
 ---
 
