@@ -1,18 +1,27 @@
 # ThumbGate for Claude Desktop
 
-`thumbgate` gives Claude Desktop a local-first **Reliability Gateway** and **Pre-Action Gates** for workflow hardening.
+**Give thumbs up 👍 or thumbs down 👎 on any agent action. ThumbGate captures it, runs History-aware lesson distillation across up to 8 prior recorded entries, and blocks the pattern from repeating. Just type "thumbs up" or "thumbs down" in the chat.**
 
-The extension path is useful when a team wants Claude Desktop to keep one workflow sharper over time without adding another orchestration layer. The MCP server captures explicit feedback, recalls past failures, distills lessons from up to 8 prior recorded entries when the current Claude hook only gets a vague thumbs-down, promotes reusable prevention rules, and produces proof-backed rollout artifacts.
+## Try it now
 
-## Features
+1. Install ThumbGate
+2. Start a Claude Desktop session
+3. When the agent does something wrong, type: **thumbs down**
+4. ThumbGate captures the mistake, distills a lesson, and creates a prevention rule
+5. Next session: the agent physically cannot repeat that mistake
 
-- Workflow hardening for Claude-first engineering and ops workflows
-- Pre-Action Gates that block repeated mistakes before tool use
-- History-aware lesson distillation from up to 8 prior recorded entries and failed tool calls in the current Claude auto-capture path
-- Reliability memory and recall across long sessions
-- Bounded context packs, provenance, and diagnostics
-- DPO export and analytics bundle generation after runtime reliability lands
-- Submission-ready MCPB packaging for Claude Desktop review and local installs
+That's it. One thumbs-down, never again.
+
+## What it does
+
+- **👎 Thumbs down** → captures the mistake → distills a lesson → auto-promotes to a prevention rule → PreToolUse hook blocks the pattern before execution
+- **👍 Thumbs up** → reinforces good patterns → agent starts preferring your approved flows without re-explaining them each session
+- **33 pre-action gates** → block destructive actions (force-push, mass delete, destructive SQL) before they execute
+- **Budget enforcement** → action count + time limits prevent runaway sessions
+- **Self-protection** → agent cannot disable its own governance
+- **Compliance tags** → NIST, SOC2, OWASP, CWE on gate rules for enterprise teams
+- **Shared team enforcement** → one engineer's thumbs-down protects the whole team
+- **60-second follow-up** → feedback can link to a prior mistake with `relatedFeedbackId` so delayed corrections still become useful gates
 
 ## Installation
 
@@ -101,37 +110,39 @@ Optional hosted path:
 
 ## Examples
 
-### Example 1: PR review hardening
+### Example 1: Block force-push
 
-**User prompt:** "Review this PR and tell me if any blocker would stop merge."
-**Expected behavior:**
-- Claude Desktop inspects the workflow context instead of relying on one-shot memory
-- The extension recalls prior blocker patterns when they exist
-- The Pre-Action Gates can promote the missed blocker into a reusable gate
+```
+You: "Push my changes to main"
+Claude: [tries git push --force]
+ThumbGate: ⛔ Blocked — "no-force-push" (confidence: 0.94)
+You: Never had to correct it again.
+```
 
-### Example 2: Code modernization workflow
+### Example 2: Thumbs-down on bad action
 
-**User prompt:** "Help me modernize this service, but keep the migration constraints and verification steps across sessions."
-**Expected behavior:**
-- Claude Desktop recalls prior migration notes and architecture constraints
-- The extension keeps the context pack bounded instead of replaying full history
-- Verification steps stay attached to the workflow across sessions
+```
+You: "thumbs down"
+ThumbGate: 👎 Captured. History-aware lesson distillation from up to 8 prior recorded entries...
+           Lesson: "Agent edited production config without approval"
+           Follow-up window: 60-second follow-up can attach relatedFeedbackId
+           Rule auto-promoted. Will block matching actions in future sessions.
+```
 
-### Example 3: Internal ops or release workflow
+### Example 3: Thumbs-up reinforces good patterns
 
-**User prompt:** "Run the release checklist, capture what went wrong, and stop the same mistake next time."
-**Expected behavior:**
-- Claude Desktop records explicit operator feedback and proof artifacts
-- The extension keeps the workflow history local-first and searchable
-- Repeated release failures can be turned into prevention rules before the next run
+```
+You: "thumbs up"
+ThumbGate: 👍 Recorded. Reinforcing: "Agent used feature branch + PR workflow"
+           Agent will prefer this pattern in future sessions.
+```
 
-### Example 4: Bare thumbs-down with automatic lesson proposal
+### Example 4: Budget enforcement
 
-**User prompt:** "👎 That was wrong."
-**Expected behavior:**
-- Claude Desktop can pass up to 8 prior recorded entries and the failed tool call into `capture_feedback`
-- ThumbGate distills a proposed `whatWentWrong` and `whatToChange` from recent history
-- A linked 60-second follow-up session can refine the same feedback record with `relatedFeedbackId`
+```
+[Agent hits 500 actions in strict mode]
+ThumbGate: ⛔ Budget exceeded: 501/500 actions used. Session budget exhausted.
+```
 
 ## Privacy Policy
 

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "thumbgate": {
+      "type": "local",
+      "command": [
+        "npx",
+        "--yes",
+        "--package",
+        "thumbgate@1.4.1",
+        "thumbgate",
+        "serve"
+      ],
+      "enabled": true
+    },
+    "perplexity": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@perplexity-ai/mcp-server"
+      ],
+      "env": {
+        "PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}"
+      },
+      "enabled": true
+    }
+  }
+}

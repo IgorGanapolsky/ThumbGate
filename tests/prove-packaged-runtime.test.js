@@ -67,6 +67,38 @@ test('installPackageWithRetry does not retry non-remote package specs', async ()
   }
 });
 
+test('installPackageWithRetry retries transient network failures for local tarballs', async () => {
+  const prefixDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-publish-local-transient-'));
+  const delays = [];
+  let attempts = 0;
+
+  try {
+    const runtimeBin = await installPackageWithRetry(prefixDir, '/tmp/thumbgate-1.3.0.tgz', {
+      attempts: 3,
+      delayMs: 10,
+      installImpl() {
+        attempts += 1;
+        if (attempts < 2) {
+          const error = new Error('npm error code ETIMEDOUT');
+          error.stderr = 'connect ETIMEDOUT 150.171.109.147:443';
+          throw error;
+        }
+        return '/tmp/thumbgate';
+      },
+      sleepImpl(ms) {
+        delays.push(ms);
+        return Promise.resolve();
+      },
+    });
+
+    assert.equal(runtimeBin, '/tmp/thumbgate');
+    assert.equal(attempts, 2);
+    assert.deepEqual(delays, [10]);
+  } finally {
+    fs.rmSync(prefixDir, { recursive: true, force: true });
+  }
+});
+
 test('remote package detection and transient error parsing match publish smoke expectations', () => {
   assert.equal(isRemotePackageSpec('thumbgate@1.3.0'), true);
   assert.equal(isRemotePackageSpec('/tmp/thumbgate-1.3.0.tgz'), false);
@@ -75,5 +107,8 @@ test('remote package detection and transient error parsing match publish smoke e
   const transient = new Error('npm error code ETARGET');
   transient.stderr = 'No matching version found for thumbgate@1.3.0.';
   assert.equal(isTransientRegistryMiss(transient), true);
+  const timeout = new Error('npm error code ETIMEDOUT');
+  timeout.stderr = 'connect ETIMEDOUT 150.171.109.147:443';
+  assert.equal(isTransientRegistryMiss(timeout), true);
   assert.equal(isTransientRegistryMiss(new Error('permission denied')), false);
 });

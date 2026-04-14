@@ -1,7 +1,7 @@
 {
   "name": "thumbgate",
   "version": "1.4.1",
-  "description": "ThumbGate: self-improving agent governance for engineering teams. Three-tier approval routing (block/approve/log), shared enforcement, CI gates, and audit trails. Every mistake becomes a prevention rule. PreToolUse hooks, Thompson Sampling, SQLite+FTS5 lesson DB, and LanceDB vector search.",
+  "description": "Self-improving agent governance: type thumbs-up or thumbs-down on any AI agent action. ThumbGate turns every mistake into a prevention rule and blocks the pattern from repeating. One thumbs-down, never again. 33 pre-action gates, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": {
     "type": "git",
@@ -276,7 +276,7 @@
     "test:harness-selector": "node --test tests/harness-selector.test.js",
     "test:thumbgate-bench": "node --test tests/thumbgate-bench.test.js",
     "thumbgate:bench": "node scripts/thumbgate-bench.js",
-    "test:perplexity": "node --test tests/perplexity-client.test.js tests/perplexity-command-center.test.js",
+    "test:perplexity": "node --test tests/perplexity-client.test.js tests/perplexity-command-center.test.js tests/perplexity-adapter.test.js",
     "perplexity:visibility": "node scripts/perplexity-command-center.js visibility",
     "perplexity:leads": "node scripts/perplexity-command-center.js leads",
     "perplexity:brief": "node scripts/perplexity-command-center.js brief",

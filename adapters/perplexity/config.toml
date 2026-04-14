@@ -1,0 +1,16 @@
+# Codex MCP profile: ThumbGate + Perplexity (copy into ~/.codex/config.toml or merge section)
+[mcp_servers.thumbgate]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@1.4.1", "thumbgate", "serve"]
+
+[mcp_servers.perplexity]
+command = "npx"
+args = ["-y", "@perplexity-ai/mcp-server"]
+
+[mcp_servers.perplexity.env]
+PERPLEXITY_API_KEY = "${PERPLEXITY_API_KEY}"
+
+# Hard PreToolUse hook for Codex
+[hooks.pre_tool_use]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@1.4.1", "thumbgate", "gate-check"]

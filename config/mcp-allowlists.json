@@ -51,7 +51,11 @@
       "capture_memory_feedback",
       "get_reliability_rules",
       "describe_reliability_entity",
-      "report_product_issue"
+      "report_product_issue",
+      "perplexity_search",
+      "perplexity_ask",
+      "perplexity_research",
+      "perplexity_reason"
     ],
     "essential": [
       "capture_feedback",
@@ -124,7 +128,9 @@
       "get_business_metrics",
       "describe_semantic_entity",
       "get_reliability_rules",
-      "describe_reliability_entity"
+      "describe_reliability_entity",
+      "perplexity_search",
+      "perplexity_ask"
     ],
     "dispatch": [
       "recall",
@@ -151,7 +157,9 @@
       "get_business_metrics",
       "describe_semantic_entity",
       "get_reliability_rules",
-      "describe_reliability_entity"
+      "describe_reliability_entity",
+      "perplexity_search",
+      "perplexity_ask"
     ],
     "locked": [
       "feedback_summary",

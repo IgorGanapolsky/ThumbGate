@@ -640,10 +640,69 @@ function formatLessonSearchResults(payload) {
   return `${lines.join('\n')}\n`;
 }
 
+/**
+ * Enrich lesson search results with Perplexity web context.
+ * Queries Perplexity for each top result's root cause to find external
+ * documentation, known issues, or community solutions.
+ *
+ * Requires PERPLEXITY_API_KEY. Returns original results unmodified if
+ * the API key is missing or calls fail.
+ *
+ * @param {object} searchPayload - Output from searchLessons()
+ * @param {object} [options]
+ * @param {number} [options.enrichLimit=3] - Max results to enrich
+ * @returns {Promise<object>} searchPayload with enriched results
+ */
+async function enrichWithPerplexity(searchPayload, options = {}) {
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey || !searchPayload.results || searchPayload.results.length === 0) {
+    return searchPayload;
+  }
+
+  const enrichLimit = Math.min(options.enrichLimit || 3, searchPayload.results.length);
+  const { PerplexityClient, normalizeSearchResults } = require('./perplexity-client');
+  const client = new PerplexityClient({ apiKey });
+
+  const enriched = await Promise.allSettled(
+    searchPayload.results.slice(0, enrichLimit).map(async (result) => {
+      const query = result.lesson.whatWentWrong || result.lesson.summary || result.title;
+      if (!query || query.length < 10) return result;
+
+      try {
+        const searchResults = await client.search({ query, maxResults: 3 });
+        const normalized = normalizeSearchResults(searchResults);
+        if (normalized.length > 0) {
+          result.perplexityContext = {
+            sources: normalized.slice(0, 3).map((s) => ({
+              title: s.title,
+              url: s.url,
+              snippet: s.snippet,
+            })),
+            enrichedAt: new Date().toISOString(),
+          };
+        }
+      } catch {
+        // Perplexity enrichment is best-effort; never block local results
+      }
+      return result;
+    })
+  );
+
+  for (let i = 0; i < enriched.length; i++) {
+    if (enriched[i].status === 'fulfilled') {
+      searchPayload.results[i] = enriched[i].value;
+    }
+  }
+
+  searchPayload.backend = searchPayload.backend + '+perplexity';
+  return searchPayload;
+}
+
 module.exports = {
   parseLessonContent,
   resolveLessonPaths,
   searchLessons,
+  enrichWithPerplexity,
   formatLessonSearchResults,
 };
 
