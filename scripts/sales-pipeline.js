@@ -62,10 +62,19 @@ function normalizeInteger(value, fallback = 0) {
 function slugify(value, fallback = 'lead') {
   const normalized = normalizeText(value, 320);
   if (!normalized) return fallback;
-  const slug = normalized
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
+  let slug = '';
+  let pendingSeparator = false;
+  for (const char of normalized.toLowerCase()) {
+    const code = char.charCodeAt(0);
+    const alphaNumeric = (code >= 97 && code <= 122) || (code >= 48 && code <= 57);
+    if (alphaNumeric) {
+      if (pendingSeparator && slug) slug += '_';
+      slug += char;
+      pendingSeparator = false;
+    } else {
+      pendingSeparator = true;
+    }
+  }
   return slug || fallback;
 }
 
@@ -587,7 +596,7 @@ function runCli(argv = process.argv.slice(2)) {
   throw new Error(`Unknown sales pipeline command: ${options.command}`);
 }
 
-if (require.main === module) {
+if (require.main && require.main.filename === __filename) {
   try {
     const result = runCli();
     console.log(JSON.stringify(result, null, 2));
