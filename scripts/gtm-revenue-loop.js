@@ -3,11 +3,11 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { getOperationalBillingSummary } = require('./operational-summary');
 const { ensureDir } = require('./fs-utils');
 
+const GITHUB_API_BASE_URL = 'https://api.github.com/';
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
 
@@ -177,19 +177,46 @@ function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog
   };
 }
 
-function runGhJson(endpoint) {
-  const result = spawnSync('gh', ['api', endpoint], {
-    encoding: 'utf8',
-    env: process.env,
-  });
+function buildGitHubApiHeaders(token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN) {
+  const headers = {
+    accept: 'application/vnd.github+json',
+    'user-agent': 'thumbgate-gtm-revenue-loop',
+    'x-github-api-version': '2022-11-28',
+  };
 
-  if (result.status !== 0) {
-    const detail = normalizeText(result.stderr) || normalizeText(result.stdout) || 'unknown gh api failure';
-    return { ok: false, error: detail, data: null };
+  if (normalizeText(token)) {
+    headers.authorization = `Bearer ${normalizeText(token)}`;
+  }
+
+  return headers;
+}
+
+async function fetchGitHubJson(endpoint, { fetchImpl = globalThis.fetch } = {}) {
+  if (typeof fetchImpl !== 'function') {
+    return { ok: false, error: 'global fetch is unavailable', data: null };
+  }
+
+  let response;
+  try {
+    const requestUrl = new URL(endpoint, GITHUB_API_BASE_URL);
+    response = await fetchImpl(requestUrl, {
+      headers: buildGitHubApiHeaders(),
+    });
+  } catch (err) {
+    return { ok: false, error: err && err.message ? err.message : String(err), data: null };
+  }
+
+  const responseText = await response.text();
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: normalizeText(responseText) || `GitHub API request failed with ${response.status}`,
+      data: null,
+    };
   }
 
   try {
-    return { ok: true, error: '', data: JSON.parse(result.stdout) };
+    return { ok: true, error: '', data: JSON.parse(responseText) };
   } catch (err) {
     return { ok: false, error: err.message, data: null };
   }
@@ -209,7 +236,7 @@ function dedupeTargets(targets) {
   return unique;
 }
 
-function prospectTargets(maxTargets = 6) {
+async function prospectTargets(maxTargets = 6, { fetchImpl = globalThis.fetch } = {}) {
   const queries = [
     'search/repositories?q=MCP+Model+Context+Protocol+sort:updated',
     'search/repositories?q=Claude+Code+MCP+sort:updated',
@@ -218,7 +245,7 @@ function prospectTargets(maxTargets = 6) {
   const combined = [];
   const errors = [];
   for (const endpoint of queries) {
-    const response = runGhJson(endpoint);
+    const response = await fetchGitHubJson(endpoint, { fetchImpl });
     if (!response.ok) {
       errors.push(response.error);
       continue;
@@ -255,7 +282,7 @@ function selectOutreachMotion(target, motionCatalog = buildMotionCatalog()) {
   }
 
   const sprintSignals = /(agent|mcp|platform|workflow|ops|compliance|audit|enterprise|production|reliability|rollout|incident|governance|server|bridge|workspace)/;
-  if (sprintSignals.test(haystack) || haystack.trim()) {
+  if (sprintSignals.test(haystack) || haystack.trim().length > 0) {
     return {
       key: motionCatalog.sprint.key,
       label: motionCatalog.sprint.label,
@@ -487,7 +514,9 @@ async function runRevenueLoop(options = {}) {
   const motionCatalog = buildMotionCatalog(links);
   const { source, summary, fallbackReason } = await getOperationalBillingSummary();
   const directive = deriveRevenueDirective(summary, motionCatalog);
-  const { targets, errors } = prospectTargets(options.maxTargets || 6);
+  const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
+    fetchImpl: options.fetchImpl || globalThis.fetch,
+  });
   const enrichedTargets = await generateOutreachMessages(targets, motionCatalog);
   const report = buildRevenueLoopReport({
     source,
@@ -543,6 +572,7 @@ module.exports = {
   buildRevenueLoopReport,
   clampTargetCount,
   deriveRevenueDirective,
+  fetchGitHubJson,
   parseArgs,
   prospectTargets,
   renderRevenueLoopMarkdown,

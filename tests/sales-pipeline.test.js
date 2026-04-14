@@ -7,10 +7,15 @@ const path = require('node:path');
 const {
   addSalesLead,
   advanceSalesLead,
+  getSalesPipelinePath,
   importRevenueLoopReport,
   loadSalesLeads,
+  loadSalesLeadSnapshots,
+  normalizeSalesStage,
+  parseArgs,
   renderSalesPipelineMarkdown,
   runCli,
+  sanitizeSalesLead,
   summarizeSalesPipeline,
 } = require('../scripts/sales-pipeline');
 
@@ -101,6 +106,25 @@ test('manual add rejects duplicate lead ids unless forced', () => {
   );
 });
 
+test('manual add can intentionally force a refreshed snapshot', () => {
+  const tempDir = makeTempDir();
+  const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
+
+  addSalesLead({ source: 'reddit', username: 'game-of-kton', pain: 'Initial pain.' }, { statePath });
+  const refreshed = addSalesLead({
+    source: 'reddit',
+    username: 'game-of-kton',
+    pain: 'Sharper workflow pain.',
+    force: true,
+  }, { statePath });
+  const leads = loadSalesLeads({ statePath });
+
+  assert.equal(refreshed.leadId, 'reddit_game_of_kton');
+  assert.equal(loadSalesLeadSnapshots({ statePath }).length, 2);
+  assert.equal(leads.length, 1);
+  assert.match(leads[0].qualification.painHypothesis, /Sharper workflow pain/);
+});
+
 test('advances leads through the required first-dollar funnel stages', () => {
   const tempDir = makeTempDir();
   const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
@@ -141,6 +165,27 @@ test('rejects skipped funnel stages unless explicitly forced', () => {
   );
 });
 
+test('same-stage advance is idempotent and forced jumps are explicit', () => {
+  const tempDir = makeTempDir();
+  const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
+  importRevenueLoopReport(makeReport(), { statePath });
+  const leadId = loadSalesLeads({ statePath })[0].leadId;
+
+  const unchanged = advanceSalesLead({ leadId, stage: 'targeted' }, { statePath });
+  const forced = advanceSalesLead({
+    leadId,
+    stage: 'paid',
+    amountCents: 9900,
+    force: true,
+    note: 'Manual paid-order correction.',
+  }, { statePath });
+
+  assert.equal(unchanged.unchanged, true);
+  assert.equal(forced.unchanged, false);
+  assert.equal(forced.lead.stage, 'paid');
+  assert.equal(forced.lead.revenue.amountCents, 9900);
+});
+
 test('renders an operator report that separates targeting from actual sales progress', () => {
   const tempDir = makeTempDir();
   const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
@@ -151,6 +196,83 @@ test('renders an operator report that separates targeting from actual sales prog
   assert.match(markdown, /targeted: 1/);
   assert.match(markdown, /Contacted: 0/);
   assert.match(markdown, /Proof rule: Use proof pack only after the buyer confirms pain/);
+});
+
+test('helpers sanitize invalid input without losing operator-safe defaults', () => {
+  const sanitized = sanitizeSalesLead({
+    source: '  ',
+    stage: 'not-real',
+    contact: {
+      username: ' Ada ',
+      url: 'not a url',
+    },
+    account: {
+      stars: '12px',
+    },
+    revenue: {
+      amountCents: -100,
+    },
+    history: [{
+      toStage: 'paid',
+      url: 'https://example.com/path',
+    }],
+  });
+
+  assert.equal(normalizeSalesStage('paid'), 'paid');
+  assert.equal(normalizeSalesStage('wat'), null);
+  assert.equal(sanitized.stage, 'targeted');
+  assert.equal(sanitized.source, 'manual');
+  assert.equal(sanitized.contact.username, 'Ada');
+  assert.equal(sanitized.contact.url, 'not a url');
+  assert.equal(sanitized.account.stars, 12);
+  assert.equal(sanitized.revenue.amountCents, 0);
+  assert.equal(sanitized.history[0].toStage, 'paid');
+});
+
+test('CLI argument parsing, default state path, and error paths are explicit', () => {
+  const tempDir = makeTempDir();
+  const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
+
+  assert.deepEqual(parseArgs(['advance', '--lead', 'abc', '--stage=paid', '--force']), {
+    command: 'advance',
+    lead: 'abc',
+    stage: 'paid',
+    force: true,
+  });
+  assert.equal(getSalesPipelinePath({ feedbackDir: tempDir }), statePath);
+  assert.throws(() => runCli(['import', '--state', statePath]), /--source is required/);
+  assert.throws(() => runCli(['advance', '--state', statePath, '--stage', 'paid']), /leadId is required/);
+  assert.throws(() => runCli(['wat', '--state', statePath]), /Unknown sales pipeline command/);
+});
+
+test('CLI add, report, and advance commands share the same JSONL state', () => {
+  const tempDir = makeTempDir();
+  const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
+  const outPath = path.join(tempDir, 'sales-pipeline.md');
+
+  const added = runCli([
+    'add',
+    '--state', statePath,
+    '--out', outPath,
+    '--source', 'linkedin',
+    '--username', 'founder',
+    '--pain', 'Agent keeps repeating a deployment mistake.',
+  ]);
+  const advanced = runCli([
+    'advance',
+    '--state', statePath,
+    '--lead', added.leadId,
+    '--stage', 'contacted',
+    '--url', 'https://linkedin.com/in/founder',
+    '--note', 'Sent one-workflow hardening offer.',
+  ]);
+  const report = runCli(['report', '--state', statePath, '--out', outPath]);
+
+  assert.equal(added.stage, 'targeted');
+  assert.equal(advanced.stage, 'contacted');
+  assert.equal(report.summary.total, 1);
+  assert.equal(report.summary.contacted, 1);
+  assert.match(fs.readFileSync(outPath, 'utf8'), /linkedin_founder/);
 });
 
 test('CLI imports a report and writes a markdown pipeline report', () => {

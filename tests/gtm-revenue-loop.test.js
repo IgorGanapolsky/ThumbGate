@@ -5,9 +5,14 @@ const {
   buildFallbackMessage,
   buildMotionCatalog,
   buildRevenueLinks,
+  clampTargetCount,
   deriveRevenueDirective,
+  fetchGitHubJson,
+  parseArgs,
+  prospectTargets,
   renderRevenueLoopMarkdown,
   selectOutreachMotion,
+  summarizeCommercialSnapshot,
 } = require('../scripts/gtm-revenue-loop');
 
 test('motion catalog stays aligned with current commercial truth and proof links', () => {
@@ -55,6 +60,56 @@ test('cold-start directive stays dual-motion and avoids fake traction language',
   assert.ok(directive.actions.some((entry) => /contacted -> replied -> call booked/i.test(entry)));
 });
 
+test('revenue directives switch once interest or paid orders exist', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const pipelineActive = deriveRevenueDirective({
+    revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+    trafficMetrics: { checkoutStarts: 1 },
+    signups: { uniqueLeads: 0 },
+    pipeline: {},
+  }, catalog);
+  const postFirstDollar = deriveRevenueDirective({
+    revenue: { paidOrders: 1, bookedRevenueCents: 4900 },
+    trafficMetrics: {},
+    signups: {},
+    pipeline: {},
+  }, catalog);
+
+  assert.equal(pipelineActive.state, 'pipeline-active-no-revenue');
+  assert.match(pipelineActive.headline, /paid conversion is still zero/);
+  assert.equal(postFirstDollar.state, 'post-first-dollar');
+  assert.match(postFirstDollar.headline, /Revenue is proven/);
+});
+
+test('argument and commercial snapshot helpers stay bounded and explicit', () => {
+  assert.deepEqual(parseArgs(['--write-docs', '--report-dir', 'reports/gtm', '--max-targets=99']), {
+    maxTargets: 12,
+    reportDir: 'reports/gtm',
+    writeDocs: true,
+  });
+  assert.equal(clampTargetCount('0'), 6);
+  assert.equal(clampTargetCount('3'), 3);
+  assert.deepEqual(summarizeCommercialSnapshot({
+    revenue: { paidOrders: 2, bookedRevenueCents: 9800 },
+    trafficMetrics: { checkoutStarts: 3, ctaClicks: 4, visitors: 5 },
+    signups: { uniqueLeads: 6 },
+    pipeline: {
+      workflowSprintLeads: { total: 7 },
+      qualifiedWorkflowSprintLeads: { total: 8 },
+    },
+  }), {
+    paidOrders: 2,
+    bookedRevenueCents: 9800,
+    checkoutStarts: 3,
+    ctaClicks: 4,
+    visitors: 5,
+    uniqueLeads: 6,
+    sprintLeads: 7,
+    qualifiedSprintLeads: 8,
+    latestPaidAt: null,
+  });
+});
+
 test('target classification leads with sprint unless target is clearly self-serve only', () => {
   const catalog = buildMotionCatalog(buildRevenueLinks());
 
@@ -69,6 +124,84 @@ test('target classification leads with sprint unless target is clearly self-serv
 
   assert.equal(sprintTarget.key, 'sprint');
   assert.equal(proTarget.key, 'pro');
+});
+
+test('prospects GitHub targets via REST search and dedupes repeated repos', async () => {
+  const requestedUrls = [];
+  const fetchImpl = async (url, options) => {
+    requestedUrls.push(String(url));
+    assert.equal(options.headers.accept, 'application/vnd.github+json');
+    return {
+      ok: true,
+      async text() {
+        return JSON.stringify({
+          items: [
+            {
+              owner: { login: 'builder' },
+              name: 'production-mcp-server',
+              html_url: 'https://github.com/builder/production-mcp-server',
+              description: 'Production MCP server',
+              stargazers_count: 42,
+              updated_at: '2026-04-14T00:00:00Z',
+            },
+            {
+              owner: { login: 'builder' },
+              name: 'production-mcp-server',
+              html_url: 'https://github.com/builder/production-mcp-server',
+              description: 'Duplicate target',
+              stargazers_count: 42,
+              updated_at: '2026-04-14T00:00:00Z',
+            },
+          ],
+        });
+      },
+    };
+  };
+
+  const result = await prospectTargets(5, { fetchImpl });
+
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.targets.length, 1);
+  assert.equal(result.targets[0].username, 'builder');
+  assert.equal(requestedUrls.length, 2);
+  assert.ok(requestedUrls.every((url) => url.startsWith('https://api.github.com/search/repositories')));
+});
+
+test('GitHub discovery reports API and parser failures as non-fatal warnings', async () => {
+  const failed = await fetchGitHubJson('search/repositories?q=test', {
+    fetchImpl: async () => ({
+      ok: false,
+      status: 403,
+      async text() {
+        return 'rate limited';
+      },
+    }),
+  });
+  const invalid = await fetchGitHubJson('search/repositories?q=test', {
+    fetchImpl: async () => ({
+      ok: true,
+      async text() {
+        return '{not json';
+      },
+    }),
+  });
+  const unavailable = await fetchGitHubJson('search/repositories?q=test', { fetchImpl: null });
+  const prospects = await prospectTargets(2, {
+    fetchImpl: async () => ({
+      ok: false,
+      status: 500,
+      async text() {
+        return 'github unavailable';
+      },
+    }),
+  });
+
+  assert.equal(failed.ok, false);
+  assert.match(failed.error, /rate limited/);
+  assert.equal(invalid.ok, false);
+  assert.equal(unavailable.ok, false);
+  assert.equal(prospects.targets.length, 0);
+  assert.equal(prospects.errors.length, 2);
 });
 
 test('rendered revenue loop markdown anchors every target to truth and proof', () => {
