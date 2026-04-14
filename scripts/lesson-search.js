@@ -660,7 +660,7 @@ async function enrichWithPerplexity(searchPayload, options = {}) {
   }
 
   const enrichLimit = Math.min(options.enrichLimit || 3, searchPayload.results.length);
-  const { PerplexityClient } = require('./perplexity-client');
+  const { PerplexityClient, normalizeSearchResults } = require('./perplexity-client');
   const client = new PerplexityClient({ apiKey });
 
   const enriched = await Promise.allSettled(
@@ -670,9 +670,7 @@ async function enrichWithPerplexity(searchPayload, options = {}) {
 
       try {
         const searchResults = await client.search({ query, maxResults: 3 });
-        const normalized = PerplexityClient.normalizeSearchResults
-          ? PerplexityClient.normalizeSearchResults(searchResults)
-          : [];
+        const normalized = normalizeSearchResults(searchResults);
         if (normalized.length > 0) {
           result.perplexityContext = {
             sources: normalized.slice(0, 3).map((s) => ({

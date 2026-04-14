@@ -89,8 +89,11 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.ok(out.includes('Free'), 'should show license tier');
   assert.ok(out.includes('10'), 'should show thumbs up count');
   assert.ok(out.includes('5'), 'should show thumbs down count');
+  assert.ok(out.includes('3'), 'should show lesson count');
   assert.match(out, /Dashboard/);
   assert.match(out, /Lessons/);
+  assert.doesNotMatch(out, /Dashboard \(http:\/\/localhost:3456\/dashboard\)/);
+  assert.doesNotMatch(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
 });
 
 test('statusline shows "no feedback yet" when cache has zeros', () => {
@@ -386,6 +389,52 @@ test('statusline shows booting labels while the local dashboard is coming online
   assert.doesNotMatch(out, /\u001b]8;;http:\/\/localhost:3456\/dashboard/);
 });
 
+test('statusline emits OSC 8 hyperlinks for production (non-localhost) URLs', () => {
+  const PROD = 'https://thumbgate-production.up.railway.app';
+  const out = runStatusline({
+    thumbs_up: '6', thumbs_down: '2', lessons: '1', trend: 'stable'
+  }, {
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture({
+      state: 'unavailable',
+      dashboardLabel: 'Dashboard',
+      lessonsLabel: 'Lessons',
+      dashboardUrl: `${PROD}/dashboard`,
+      lessonsUrl: `${PROD}/lessons`,
+      upUrl: '',
+      downUrl: '',
+    })),
+  });
+  // OSC 8 opening: \e]8;;URL\a
+  assert.match(out, /\u001b]8;;https:\/\/thumbgate-production\.up\.railway\.app\/dashboard\u0007Dashboard\u001b]8;;\u0007/,
+    'Dashboard should be wrapped in an OSC 8 hyperlink');
+  assert.match(out, /\u001b]8;;https:\/\/thumbgate-production\.up\.railway\.app\/lessons\u0007Lessons\u001b]8;;\u0007/,
+    'Lessons should be wrapped in an OSC 8 hyperlink');
+
+  // Verify plain text after stripping still shows labels
+  const plain = stripStatuslineFormatting(out);
+  assert.match(plain, /Dashboard/);
+  assert.match(plain, /Lessons/);
+  assert.doesNotMatch(plain, /https:\/\/thumbgate-production/, 'URLs should be in escape sequences, not visible text');
+});
+
+test('statusline does NOT emit OSC 8 hyperlinks for localhost URLs', () => {
+  const out = runStatusline({
+    thumbs_up: '3', thumbs_down: '1', lessons: '0', trend: 'stable'
+  }, {
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture({
+      state: 'ready',
+      dashboardLabel: 'Dashboard',
+      lessonsLabel: 'Lessons',
+      dashboardUrl: 'http://localhost:3456/dashboard',
+      lessonsUrl: 'http://localhost:3456/lessons',
+    })),
+  });
+  assert.doesNotMatch(out, /\u001b]8;;http:\/\/localhost/,
+    'localhost URLs should not produce OSC 8 hyperlinks');
+  assert.match(out, /Dashboard/);
+  assert.match(out, /Lessons/);
+});
+
 test('statusline preserves dashboard links under a tight width budget', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-budget-'));
   const homeDir = path.join(tmpDir, 'home');
@@ -425,6 +474,8 @@ test('statusline preserves dashboard links under a tight width budget', () => {
     assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
     assert.match(plain, /Lessons/, 'should preserve the lessons link label');
     assert.match(plain, /Latest mistake \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}:/, 'should clarify that the snippet is the latest mistake');
+    // localhost links are intentionally stripped from statusbar display; only real URLs are shown.
+    assert.doesNotMatch(plain, /http:\/\/localhost/, 'should NOT include localhost links in statusbar');
   } finally {
     if (previousFeedbackDir === undefined) {
       delete process.env.THUMBGATE_FEEDBACK_DIR;
@@ -512,14 +563,14 @@ test('setupClaude uses portable ThumbGate commands for status line and cache upd
   );
 });
 
-test('statusline shell keeps dashboard labels compact and leaves deep links to lesson chips', () => {
+test('statusline shell wires dashboard and lesson links through osc_link', () => {
   const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
   assert.match(shellSource, /statusline-links\.js/);
-  assert.match(shellSource, /inline_link/);
+  assert.match(shellSource, /osc_link/);
   assert.match(shellSource, /LOCAL_API_ORIGIN/);
-  assert.match(shellSource, /DASHBOARD_LINK="\$\(inline_link/);
-  assert.match(shellSource, /LESSONS_LINK="\$\(inline_link/);
-  assert.match(shellSource, /LATEST_LESSON_LINK="\$\(inline_link/);
+  assert.match(shellSource, /DASHBOARD_LINK="\$\(osc_link "\$DASHBOARD_URL" "\$DASHBOARD_LABEL"\)"/);
+  assert.match(shellSource, /LESSONS_LINK="\$\(osc_link "\$LESSONS_URL" "\$LESSONS_LABEL"\)"/);
+  assert.match(shellSource, /LATEST_LESSON_LINK="\$\(osc_link/);
 });
 
 test('statusline output ends with Dashboard and Lessons links (regression guard)', () => {

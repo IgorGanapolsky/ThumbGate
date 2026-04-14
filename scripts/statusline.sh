@@ -139,39 +139,38 @@ if [ -n "$_LESSON_JSON" ]; then
 fi
 
 # ── Colors ────────────────────────────────────────────────────────
-# Claude Code statusbar supports ANSI colors but does NOT support OSC 8
-# terminal hyperlinks. The statusbar renders in a constrained UI widget,
-# not a full terminal emulator, so links cannot be made clickable.
-# Use printf '%b' for output so \e sequences are interpreted.
-G='\e[32m'; R='\e[31m'; M='\e[35m'; C='\e[36m'; D='\e[90m'; BD='\e[1m'; RST='\e[0m'
+G='\033[32m'; R='\033[31m'; M='\033[35m'; C='\033[36m'; D='\033[90m'; BD='\033[1m'; RST='\033[0m'
 
 # Trend arrow
 case "${TREND}" in
   improving) ARROW="↗" ;; degrading) ARROW="↘" ;; stable) ARROW="→" ;; *) ARROW="?" ;;
 esac
 
-inline_link() {
+# OSC 8 hyperlink: \e]8;;URL\a LABEL \e]8;;\a
+# Falls back to plain label when URL is empty or localhost.
+osc_link() {
   local url="$1"
   local label="$2"
-  # Claude Code statusbar does not support OSC 8 hyperlinks.
-  # Output plain text labels; URLs remain available via the local API.
-  printf '%s' "$label"
+  case "$url" in
+    *localhost*|*127.0.0.1*|"") printf '%s' "$label" ;;
+    *) printf '\033]8;;%s\007%s\033]8;;\007' "$url" "$label" ;;
+  esac
 }
 
 UP_ICON="👍"
 DOWN_ICON="👎"
-# Wire up clickable links for Dashboard and Lessons.
-# Use whatever URL statusline-links.js returned (localhost when local server
-# is running, production URL otherwise).
-DASHBOARD_LINK="$(inline_link "$DASHBOARD_URL" "$DASHBOARD_LABEL")"
-LESSONS_LINK="$(inline_link "$LESSONS_URL" "$LESSONS_LABEL")"
+DASHBOARD_LINK="$(osc_link "$DASHBOARD_URL" "$DASHBOARD_LABEL")"
+LESSONS_LINK="$(osc_link "$LESSONS_URL" "$LESSONS_LABEL")"
 LATEST_LESSON_LINK=""
 if [ -n "$LESSON_LABEL" ]; then
   _DISPLAY_LINK="$LESSON_LINK"
+  case "$_DISPLAY_LINK" in
+    *localhost*|*127.0.0.1*) _DISPLAY_LINK="" ;;
+  esac
   if [ -n "$LESSON_TEXT" ]; then
-    LATEST_LESSON_LINK="$(inline_link "$_DISPLAY_LINK" "${LESSON_LABEL}: ${LESSON_TEXT}")"
+    LATEST_LESSON_LINK="$(osc_link "$_DISPLAY_LINK" "${LESSON_LABEL}: ${LESSON_TEXT}")"
   else
-    LATEST_LESSON_LINK="$(inline_link "$_DISPLAY_LINK" "$LESSON_LABEL")"
+    LATEST_LESSON_LINK="$(osc_link "$_DISPLAY_LINK" "$LESSON_LABEL")"
   fi
 fi
 

@@ -2,13 +2,13 @@
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["--yes", "--package", "thumbgate@1.4.1", "thumbgate", "serve"]
+      "args": ["--yes", "--package", "thumbgate@1.4.3", "thumbgate", "serve"]
     }
   },
   "hooks": {
     "preToolUse": {
       "command": "npx",
-      "args": ["--yes", "--package", "thumbgate@1.4.1", "thumbgate", "gate-check"]
+      "args": ["--yes", "--package", "thumbgate@1.4.3", "thumbgate", "gate-check"]
     }
   }
 }

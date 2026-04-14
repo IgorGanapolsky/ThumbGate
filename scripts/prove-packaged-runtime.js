@@ -71,14 +71,14 @@ function isTransientRegistryMiss(error) {
   ]
     .filter(Boolean)
     .join('\n');
-  return /ETARGET|No matching version found|npm error code E404|404 Not Found/i.test(text);
+  return /ETARGET|No matching version found|npm error code E404|404 Not Found|ETIMEDOUT|ENETUNREACH|ECONNRESET|EAI_AGAIN|ECONNREFUSED|network timeout/i.test(text);
 }
 
 async function installPackageWithRetry(prefixDir, packageSpec, options = {}) {
   const installImpl = options.installImpl || installPackage;
   const sleepImpl = options.sleepImpl || sleep;
   const remotePackage = options.remotePackage !== undefined ? options.remotePackage : isRemotePackageSpec(packageSpec);
-  const attempts = remotePackage ? Number(options.attempts || DEFAULT_PUBLISH_INSTALL_RETRIES) : 1;
+  const attempts = Number(options.attempts || (remotePackage ? DEFAULT_PUBLISH_INSTALL_RETRIES : 3));
   let delayMs = Number(options.delayMs || DEFAULT_PUBLISH_INSTALL_DELAY_MS);
   let lastError = null;
 
@@ -90,12 +90,13 @@ async function installPackageWithRetry(prefixDir, packageSpec, options = {}) {
       return installImpl(prefixDir, packageSpec);
     } catch (error) {
       lastError = error;
-      const retryable = remotePackage && isTransientRegistryMiss(error) && attempt < attempts;
+      const transient = isTransientRegistryMiss(error);
+      const retryable = transient && attempt < attempts;
       if (!retryable) {
         throw error;
       }
       process.stderr.write(
-        `Retrying published package install for ${packageSpec} after transient registry miss (${attempt}/${attempts - 1})\n`
+        `Retrying package install for ${packageSpec} after transient npm failure (${attempt}/${attempts - 1})\n`
       );
       await sleepImpl(delayMs);
       delayMs = Math.min(Math.round(delayMs * 1.5), MAX_PUBLISH_INSTALL_DELAY_MS);

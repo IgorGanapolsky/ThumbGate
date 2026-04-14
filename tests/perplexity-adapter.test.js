@@ -89,4 +89,84 @@ describe('enrichWithPerplexity', () => {
     const result = await enrichWithPerplexity(payload);
     assert.equal(result.results.length, 0);
   });
+
+  test('adds normalized Perplexity sources to eligible lessons', async () => {
+    const originalKey = process.env.PERPLEXITY_API_KEY;
+    process.env.PERPLEXITY_API_KEY = 'pplx-test-key';
+
+    const clientModule = require('../scripts/perplexity-client');
+    const originalSearch = clientModule.PerplexityClient.prototype.search;
+    clientModule.PerplexityClient.prototype.search = async ({ query, maxResults }) => {
+      assert.equal(query, 'CLI agents repeated a known deployment mistake');
+      assert.equal(maxResults, 3);
+      return {
+        results: [
+          {
+            title: 'Deployment guardrails',
+            url: 'https://example.com/deployment-guardrails',
+            snippet: 'Block repeated release mistakes before execution.',
+          },
+        ],
+      };
+    };
+
+    try {
+      const { enrichWithPerplexity } = require('../scripts/lesson-search');
+      const payload = {
+        backend: 'jsonl-jaccard',
+        results: [
+          {
+            title: 'deployment mistake',
+            lesson: { whatWentWrong: 'CLI agents repeated a known deployment mistake' },
+          },
+          {
+            title: 'short',
+            lesson: { summary: 'too short' },
+          },
+        ],
+      };
+
+      const result = await enrichWithPerplexity(payload, { enrichLimit: 2 });
+      assert.equal(result.backend, 'jsonl-jaccard+perplexity');
+      assert.equal(result.results[0].perplexityContext.sources.length, 1);
+      assert.equal(result.results[0].perplexityContext.sources[0].url, 'https://example.com/deployment-guardrails');
+      assert.match(result.results[0].perplexityContext.enrichedAt, /^\d{4}-\d{2}-\d{2}T/);
+      assert.ok(!result.results[1].perplexityContext, 'short queries should not call Perplexity');
+    } finally {
+      clientModule.PerplexityClient.prototype.search = originalSearch;
+      if (originalKey === undefined) delete process.env.PERPLEXITY_API_KEY;
+      else process.env.PERPLEXITY_API_KEY = originalKey;
+    }
+  });
+
+  test('keeps local lesson results when Perplexity enrichment fails', async () => {
+    const originalKey = process.env.PERPLEXITY_API_KEY;
+    process.env.PERPLEXITY_API_KEY = 'pplx-test-key';
+
+    const clientModule = require('../scripts/perplexity-client');
+    const originalSearch = clientModule.PerplexityClient.prototype.search;
+    clientModule.PerplexityClient.prototype.search = async () => {
+      throw new Error('network unavailable');
+    };
+
+    try {
+      const { enrichWithPerplexity } = require('../scripts/lesson-search');
+      const payload = {
+        backend: 'jsonl-jaccard',
+        results: [{
+          title: 'deployment mistake',
+          lesson: { summary: 'CLI agents repeated a known deployment mistake' },
+        }],
+      };
+
+      const result = await enrichWithPerplexity(payload);
+      assert.equal(result.backend, 'jsonl-jaccard+perplexity');
+      assert.equal(result.results[0].title, 'deployment mistake');
+      assert.ok(!result.results[0].perplexityContext);
+    } finally {
+      clientModule.PerplexityClient.prototype.search = originalSearch;
+      if (originalKey === undefined) delete process.env.PERPLEXITY_API_KEY;
+      else process.env.PERPLEXITY_API_KEY = originalKey;
+    }
+  });
 });

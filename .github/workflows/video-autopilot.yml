@@ -1,0 +1,104 @@
+name: Video Autopilot
+
+# Fires every 4 hours. Generates a marketing slide video and posts to
+# TikTok, YouTube Shorts, and Instagram Reels via Zernio.
+#
+# Content rotation: 6 templates picked by least-recently-used order in
+# the marketing DB — never double-posts the same template within 7 days.
+#
+# Per-platform cooldowns (enforced by marketing DB):
+#   TikTok:    4 h  (up to 6 videos/day)
+#   Instagram: 8 h  (up to 3 Reels/day)
+#   YouTube:  12 h  (up to 2 Shorts/day)
+#
+# The CI run is a no-op (skips all platforms) if cooldowns haven't expired.
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'   # every 4 hours, all days
+  workflow_dispatch:
+    inputs:
+      template:
+        description: 'Slide template (1-6, or auto)'
+        required: false
+        default: 'auto'
+      platforms:
+        description: 'Comma-separated platforms (tiktok,youtube,instagram)'
+        required: false
+        default: 'tiktok,youtube,instagram'
+      dry_run:
+        description: 'Dry run — generate video but do not post'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: video-autopilot
+  cancel-in-progress: false   # never cancel — let the in-flight post finish
+
+jobs:
+  post-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      ZERNIO_API_KEY:             ${{ secrets.ZERNIO_API_KEY }}
+      ZERNIO_TIKTOK_ACCOUNT_ID:   ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
+      ZERNIO_YOUTUBE_ACCOUNT_ID:  ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
+      ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
+      THUMBGATE_ANALYTICS_DB: .thumbgate/marketing-analytics.sqlite
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node deps
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Restore marketing DB cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .thumbgate/marketing-analytics.sqlite
+            .thumbgate/marketing-analytics.sqlite-shm
+            .thumbgate/marketing-analytics.sqlite-wal
+          key: marketing-db-${{ github.run_id }}
+          restore-keys: |
+            marketing-db-
+
+      - name: Install Python + Pillow (slide renderer)
+        run: pip install Pillow --quiet
+
+      - name: Install ffmpeg (video stitcher)
+        run: sudo apt-get install -y ffmpeg --quiet
+
+      - name: Generate slides + render + post to all video platforms
+        run: |
+          TEMPLATE="${{ github.event.inputs.template || 'auto' }}"
+          PLATFORMS="${{ github.event.inputs.platforms || 'tiktok,youtube,instagram' }}"
+          DRY_RUN_FLAG=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+          WEEK=$(date +%Y-W%V)
+          node scripts/social-analytics/post-video.js \
+            --template="$TEMPLATE" \
+            --platforms="$PLATFORMS" \
+            --campaign="autopilot-$WEEK" \
+            $DRY_RUN_FLAG
+
+      - name: Print marketing DB summary
+        if: always()
+        run: |
+          node -e "const db=require('./scripts/social-analytics/db/marketing-db'); console.log(JSON.stringify(db.summary(), null, 2));" || true

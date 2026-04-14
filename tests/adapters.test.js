@@ -244,6 +244,7 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.equal(pluginManifest.version, packageVersion);
   assert.equal(marketplace.version, packageVersion);
   assert.equal(marketplaceEntry.name, pluginManifest.name);
+  assert.equal(pluginManifest.skills, './skills/');
   assert.match(pluginManifest.description, /Pre-Action Gates|pre-action gates|prevention rules/i);
   assert.match(marketplaceEntry.description, /Pre-Action Gates|pre-action gates|prevention rules/i);
   assert.ok(pluginManifest.keywords.includes('pre-action-gates'));
