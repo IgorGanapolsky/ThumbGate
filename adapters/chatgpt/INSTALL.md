@@ -4,7 +4,11 @@ Open the published ThumbGate GPT directly:
 
 https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
 
-Use the GPT as a setup concierge and memory capture surface: paste an AI action to check, save a thumbs-up/down lesson, write a Pre-Action Gate, install ThumbGate for an agent, or export proof. Real enforcement for coding agents still runs locally through ThumbGate hooks after `npx thumbgate init`.
+Use the GPT as the public front door: paste an AI action to check, save a thumbs-up/down lesson, write a Pre-Action Gate, install ThumbGate for an agent, or export proof.
+
+Users do **not** have to keep chatting inside the ThumbGate GPT for enforcement. The GPT is the fast demo, guided setup path, and ChatGPT memory surface. Real enforcement for coding agents still runs locally through ThumbGate hooks after `npx thumbgate init`.
+
+Marketing rule: every landing page, README, social post, and plugin listing should point to the live GPT before asking a cold user to read OpenAPI docs.
 
 ## GPT Store path
 
@@ -19,6 +23,7 @@ Use the GPT as a setup concierge and memory capture surface: paste an AI action 
 2. ThumbGate evaluates whether to allow, block, or require a checkpoint before the action runs.
 3. After any answer or agent run, reply with `thumbs up:` or `thumbs down:` plus one concrete sentence.
 4. ThumbGate saves the lesson, refreshes prevention rules when patterns repeat, and can show what it remembers.
+5. When the user is ready to enforce outside ChatGPT, send them to `npx thumbgate init` for Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, or another MCP-compatible agent.
 
 Regular users should never need to know MCP, OpenAPI, Actions, DPO, Thompson Sampling, or schema validation. The GPT should explain the loop as: "One signal becomes one remembered rule."
 

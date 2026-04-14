@@ -22,6 +22,7 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
   assert.match(landingPage, /How is ThumbGate different from model-training feedback loops\?/);
   assert.match(landingPage, /What is the ThumbGate tech stack\?/);
   assert.match(landingPage, /What AI agents does ThumbGate work with\?/);
+  assert.match(landingPage, /Do I have to chat inside the ThumbGate GPT for enforcement\?/);
   assert.match(landingPage, /How are pre-action gates different from prompt rules\?/);
   assert.match(landingPage, /behavioral immune system/i);
   assert.match(landingPage, /PreToolUse hook enforcement/i);
@@ -243,6 +244,12 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /ChatGPT GPT Actions/);
   assert.match(landingPage, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
   assert.match(landingPage, /Open ThumbGate GPT/);
+  assert.match(landingPage, /Live ThumbGate GPT for ChatGPT/);
+  assert.match(landingPage, /ChatGPT Entry Point/);
+  assert.match(landingPage, /Open the GPT\. Check the action\. Turn the lesson into a gate\./);
+  assert.match(landingPage, /No, you do not have to chat inside the GPT forever/);
+  assert.match(landingPage, /ChatGPT is the discovery and memory surface/);
+  assert.match(landingPage, /Do I have to chat inside the ThumbGate GPT for enforcement\?/);
   assert.match(landingPage, /capture thumbs-up\/down lessons/i);
   assert.match(landingPage, /Real blocking for coding agents still runs locally/);
   assert.match(landingPage, /adapters\/chatgpt\/INSTALL\.md/);
@@ -258,11 +265,12 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
 
   // trackClick wires up CTA events by selector and event name
   assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
+  assert.match(landingPage, /trackClick\('.btn-gpt-page', 'chatgpt_gpt_click'/);
   assert.match(landingPage, /trackClick\('.btn-install-link', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
   assert.match(landingPage, /trackClick\('.btn-demo-link', 'demo_click'/);
-  assert.match(landingPage, /trackClick\('.nav-cta', 'workflow_sprint_intake_click'/);
+  assert.match(landingPage, /trackClick\('.nav-cta', 'chatgpt_gpt_click'/);
   assert.match(landingPage, /plausible\('faq_open'/);
   assert.match(landingPage, /plausible\('scroll_depth'/);
   assert.match(landingPage, /trackClick\('.proof-bar a', 'proof_bar_click'\)/);
