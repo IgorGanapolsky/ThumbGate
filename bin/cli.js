@@ -751,23 +751,37 @@ function capture() {
 
 function stats() {
   trackEvent('cli_stats', { command: 'stats' });
+  const args = parseArgs(process.argv.slice(3));
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const data = analyzeFeedback();
-  
+
+  const avgCostOfMistake = 2.50;
+  const payload = {
+    total: data.total,
+    positives: data.totalPositive,
+    negatives: data.totalNegative,
+    approvalRate: Math.round(data.approvalRate * 100),
+    recentTrend: Math.round(data.recentRate * 100),
+    revenueAtRisk: Number((data.totalNegative * avgCostOfMistake).toFixed(2)),
+    topTags: data.topTags || [],
+    recentActivity: data.recentActivity || [],
+  };
+
+  if (args.json) {
+    console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+
   console.log('\n📊 ThumbGate Performance Metrics');
   console.log('─'.repeat(50));
-  console.log(`  Total Signals   : ${data.total}`);
-  console.log(`  Approval Rate   : ${Math.round(data.approvalRate * 100)}%`);
-  console.log(`  Recent Trend    : ${Math.round(data.recentRate * 100)}%`);
-  
-  // The Pitch: Revenue-at-Risk
-  const avgCostOfMistake = 2.50; // $2.50 per agent turn/fix
-  const revenueAtRisk = (data.totalNegative * avgCostOfMistake).toFixed(2);
-  
-  if (data.totalNegative > 0) {
+  console.log(`  Total Signals   : ${payload.total}`);
+  console.log(`  Approval Rate   : ${payload.approvalRate}%`);
+  console.log(`  Recent Trend    : ${payload.recentTrend}%`);
+
+  if (payload.negatives > 0) {
     console.log('\n⚠️  REVENUE-AT-RISK ANALYSIS');
-    console.log(`  Repeated Failures detected: ${data.totalNegative}`);
-    console.log(`  Estimated Operational Loss: $${revenueAtRisk}`);
+    console.log(`  Repeated Failures detected: ${payload.negatives}`);
+    console.log(`  Estimated Operational Loss: $${payload.revenueAtRisk}`);
     console.log('  Action Required: Run "npx thumbgate rules" to generate guardrails.');
     console.log('  Strategic Recommendation: if this is a shared workflow problem, start the Workflow Hardening Sprint.');
     console.log('  Team intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake');
@@ -987,17 +1001,48 @@ function summary() {
 function lessons() {
   trackEvent('cli_recall', { command: 'lessons' });
   const args = parseArgs(process.argv.slice(3));
+  const tags = String(args.tags || '').split(',').map((t) => t.trim()).filter(Boolean);
+  const query = args.query || process.argv.slice(3).find((a) => !a.startsWith('--')) || '';
+  const limit = Number(args.limit || 10);
+
+  // --remote: fetch from hosted Railway instance
+  if (args.remote) {
+    const apiBase = process.env.THUMBGATE_API_URL || PRO_URL;
+    const params = new URLSearchParams({ q: query, limit: String(limit) });
+    if (args.category) params.set('category', args.category);
+    if (tags.length) params.set('tags', tags.join(','));
+    const url = `${apiBase}/v1/lessons/search?${params}`;
+    const mod = url.startsWith('https') ? require('https') : require('http');
+    let body = '';
+    const req = mod.get(url, { timeout: 8000 }, (res) => {
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(body);
+          if (args.json) {
+            console.log(JSON.stringify(result, null, 2));
+          } else {
+            const { formatLessonSearchResults } = require(path.join(PKG_ROOT, 'scripts', 'lesson-search'));
+            process.stdout.write(`[remote: ${apiBase}]\n`);
+            process.stdout.write(formatLessonSearchResults(result));
+          }
+        } catch {
+          process.stderr.write(`Error parsing remote response: ${body.slice(0, 200)}\n`);
+          process.exit(1);
+        }
+      });
+    });
+    req.on('error', (err) => {
+      process.stderr.write(`Remote fetch failed: ${err.message}\n`);
+      process.exit(1);
+    });
+    req.on('timeout', () => { req.destroy(); process.stderr.write('Remote fetch timed out\n'); process.exit(1); });
+    return;
+  }
+
+  // --local (default)
   const { searchLessons, formatLessonSearchResults } = require(path.join(PKG_ROOT, 'scripts', 'lesson-search'));
-  const tags = String(args.tags || '')
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-  const query = args.query || process.argv.slice(3).find((arg) => !arg.startsWith('--')) || '';
-  const result = searchLessons(query, {
-    limit: Number(args.limit || 10),
-    category: args.category,
-    tags,
-  });
+  const result = searchLessons(query, { limit, category: args.category, tags });
 
   if (args.json) {
     console.log(JSON.stringify(result, null, 2));
@@ -1473,8 +1518,14 @@ function dashboard() {
 }
 
 function gateStats() {
+  const args = parseArgs(process.argv.slice(3));
   const { calculateStats, formatStats } = require(path.join(PKG_ROOT, 'scripts', 'gate-stats'));
   const stats = calculateStats();
+  if (args.json) {
+    const { gates, ...summary } = stats;
+    console.log(JSON.stringify(args.verbose ? stats : summary, null, 2));
+    return;
+  }
   console.log('\n' + formatStats(stats) + '\n');
 }
 
@@ -1489,72 +1540,73 @@ function startApi() {
 
 function help() {
   const v = pkgVersion();
-  console.log(`thumbgate v${v}`);
+  const { groupedCommands, commandHelpLine } = require(path.join(PKG_ROOT, 'scripts', 'cli-schema'));
+  const groups = groupedCommands();
+  const GROUP_LABELS = {
+    capture:   'Feedback capture',
+    discovery: 'Discovery & inspection',
+    gates:     'Gates & rules',
+    export:    'Export',
+    ops:       'Operations',
+    advanced:  'Advanced',
+  };
+
+  console.log(`thumbgate v${v}  — pre-action gates for AI coding agents`);
   console.log('');
-  console.log('Commands:');
-  console.log('  init                  Scaffold .thumbgate/ config + MCP server in current project');
-  console.log('    --agent=NAME        Wire PreToolUse hooks for agent (claude-code|codex|gemini|forge)');
-  console.log('    --wire-hooks        Wire hooks only (auto-detect agent, skip scaffolding)');
-  console.log('    --dry-run           Preview hook changes without writing');
-  console.log('  install-mcp           Install ThumbGate MCP server into Claude Code settings (--project for local)');
-  console.log('  serve                 Start MCP server (stdio) — for claude/codex/gemini/forge mcp add');
-  console.log('  gate-check            Internal: evaluate a PreToolUse payload from stdin');
-  console.log('  cache-update          Internal: refresh the Claude statusline cache from stdin');
-  console.log('  statusline-render     Internal: render the ThumbGate Claude status line');
-  console.log('  hook-auto-capture     Internal: process Claude UserPromptSubmit feedback');
-  console.log('  session-start         Internal: refresh local ThumbGate session cache');
-  console.log('  capture [flags]       Capture feedback (--feedback=up|down --context="..." --tags="...")');
-  console.log('  stats                 Show feedback analytics + Revenue-at-Risk');
-  console.log('  cfo                   Show hosted billing summary when configured, else local fallback JSON');
+
+  for (const [groupKey, label] of Object.entries(GROUP_LABELS)) {
+    const cmds = groups[groupKey];
+    if (!cmds || cmds.length === 0) continue;
+    console.log(`${label}:`);
+    for (const cmd of cmds) {
+      console.log(commandHelpLine(cmd));
+    }
+    console.log('');
+  }
+
+  // Internal / hook commands (called by agent runtime, not operator-facing schema).
+  console.log('Internal hooks (called by agent runtime):');
+  console.log('  gate-check            Evaluate PreToolUse payload from stdin -> ALLOW/BLOCK');
+  console.log('  cache-update          Refresh Claude statusline cache from stdin');
+  console.log('  statusline-render     Render ThumbGate Claude status line');
+  console.log('  hook-auto-capture     Process Claude UserPromptSubmit inline feedback');
+  console.log('  session-start         Refresh local ThumbGate session cache');
+  console.log('');
+
+  // Legacy and specialist commands kept visible until they graduate into the schema.
+  console.log('Also available:');
+  console.log('  install-mcp           Install MCP server into Claude Code settings (--project for local)');
+  console.log('  cfo                   Hosted billing summary (local fallback JSON)');
   console.log('  billing:setup         Generate operator key + print Railway setup instructions');
-  console.log('  repair-github-marketplace  Dry-run or apply legacy GitHub Marketplace amount repairs (--write)');
+  console.log('  repair-github-marketplace  Repair legacy GitHub Marketplace amount mappings');
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
-  console.log('  summary               Human-readable feedback summary');
-  console.log('  explore               Interactive TUI explorer — browse lessons, gates, stats, rules');
-  console.log('  lessons [flags]       Search promoted lessons and show linked corrective actions');
-  console.log('  model-fit             Detect the current local embedding profile and write evidence report');
-  console.log('  risk [flags]          Train or query the boosted local risk scorer');
-  console.log('  doctor                Audit runtime isolation, bootstrap context, and permission tier');
-  console.log('  dispatch              Print a Dispatch-safe remote ops brief for phone-driven review sessions');
-  console.log('  import-doc            Import a local policy/runbook and propose reviewable gate candidates');
-  console.log('  export-dpo            Export DPO training pairs (prompt/chosen/rejected JSONL)');
-  console.log('  export-databricks     Export feedback logs + proof artifacts as a Databricks-ready analytics bundle');
-  console.log('  obsidian-export       Export all feedback data as interlinked Obsidian markdown notes');
-  console.log('    --vault-path=PATH   Obsidian vault path (or set THUMBGATE_OBSIDIAN_VAULT_PATH)');
-  console.log('    --output-dir=DIR    Output subdirectory (default: AI-Memories/thumbgate)');
-  console.log('  rules                 Generate prevention rules from repeated failures');
-  console.log('  optimize              [PRO] Prune CLAUDE.md and migrate manual rules to Pre-Action Gates');
-  console.log('  force-gate <PATTERN>  Immediately create a blocking gate from a pattern');
-  console.log('  meta-agent            Run meta-agent loop: generate + evaluate + promote prevention rules');
-  console.log('    --dry-run           Preview rules without writing');
-  console.log('    --status            Show last run summary');
-  console.log('  self-heal             Run self-healing check and auto-fix');
-  console.log('  activate <KEY>        Activate a Pro license key (from Stripe checkout)');
-  console.log('  pro                   Show Pro plan ($19/mo) + hosted pilot info');
-  console.log('    --upgrade           Install Pro configs into .thumbgate/');
-  console.log('  prove [--target=X]    Run proof harness (adapters|automation|attribution|lancedb|local-intelligence|...)');
-  console.log('  watch [flags]           Watch .thumbgate/ for external signals and ingest through pipeline (--once, --source=X)');
-  console.log('  status                  Show feedback tracking dashboard — approval trend + failure domains');
-  console.log('  dashboard               Full ThumbGate dashboard — approval rate, gate stats, prevention impact');
-  console.log('  funnel                  Show marketing & revenue conversion funnel analytics');
-  console.log('  pulse                   Show real-time GTM velocity and Mission Control summary');
-  console.log('  dispatch                Dispatch-safe brief — metrics, gates, and read-only prompt templates');
-  console.log('  gate-check              PreToolUse hook: reads tool JSON from stdin, outputs gate verdict');
-  console.log('  gate-stats              Show gate statistics — active gates, blocks, warns, time saved');
-  console.log('  analytics               Unified ThumbGate analytics snapshot (npm, GitHub, landing page)');
+  console.log('  model-fit             Detect local embedding profile and write evidence report');
+  console.log('  risk                  Train or query the boosted local risk scorer');
+  console.log('  optimize              [PRO] Prune CLAUDE.md and migrate rules to Pre-Action Gates');
+  console.log('  prove [--target=X]    Run proof harness (adapters|automation|...)');
+  console.log('  watch                 Watch .thumbgate/ for external signals');
+  console.log('  status                Approval trend + failure domain dashboard');
+  console.log('  funnel                Marketing and revenue conversion funnel analytics');
+  console.log('  pulse                 Real-time GTM velocity and Mission Control summary');
+  console.log('  dispatch              Dispatch-safe brief for phone-driven review sessions');
+  console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
   console.log('  start-api             Start the ThumbGate HTTPS API server');
-  console.log('  help                  Show this help message');
   console.log('');
+
+  console.log('Global flags (all commands):');
+  console.log('  --json                Output as machine-readable JSON');
+  console.log('  --local               Use local storage (default for most commands)');
+  console.log('  --remote              Fetch from hosted Railway instance');
+  console.log('');
+
   console.log('Examples:');
   console.log('  npx thumbgate init');
-  console.log('  npx thumbgate stats');
-  console.log('  npx thumbgate cfo');
-  console.log('  npx thumbgate import-doc docs/release-policy.md --json');
-  console.log('  npx thumbgate repair-github-marketplace --write');
-  console.log('  npx thumbgate lessons --query="verification" --limit=5');
-  console.log('  npx thumbgate model-fit');
-  console.log('  npx thumbgate risk');
-  console.log('  npx thumbgate pro');
+  console.log('  npx thumbgate explore');
+  console.log('  npx thumbgate stats --json');
+  console.log('  npx thumbgate lessons "force push" --json');
+  console.log('  npx thumbgate lessons --query="deploy" --remote');
+  console.log('  npx thumbgate gate-stats --json');
+  console.log('  npx thumbgate capture --feedback=down --context="agent broke deploy"');
   proNudge();
 }
 
