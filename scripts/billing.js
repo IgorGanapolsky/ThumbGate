@@ -2068,8 +2068,11 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
       packId: pack ? pack.id : null,
       credits: pack ? pack.credits : null,
     }),
-    // 7-day free trial for subscriptions — reduces checkout abandonment
-    ...(pack ? {} : { subscription_data: { trial_period_days: 7 } }),
+    // 7-day free trial for subscriptions — don't require card upfront
+    ...(pack ? {} : {
+      subscription_data: { trial_period_days: 7 },
+      payment_method_collection: 'if_required',
+    }),
   };
 
   const normalizedCustomerEmail = normalizeText(customerEmail);
