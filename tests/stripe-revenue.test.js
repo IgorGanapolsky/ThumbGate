@@ -11,6 +11,7 @@ const {
   parseArgs,
   paginate,
   summarizeRevenue,
+  isDirectRun,
 } = require('../scripts/stripe-revenue');
 
 test('stripe revenue key validation never logs provided key material', () => {
@@ -38,6 +39,11 @@ test('parseArgs reads JSON mode and day windows', () => {
     days: 30,
     json: true,
   });
+});
+
+test('isDirectRun only accepts the Stripe revenue CLI path', () => {
+  assert.equal(isDirectRun(SCRIPT), true);
+  assert.equal(isDirectRun(__filename), false);
 });
 
 test('paginate follows Stripe cursors without leaking auth details', async () => {

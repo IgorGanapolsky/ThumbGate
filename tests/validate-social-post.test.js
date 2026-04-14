@@ -14,6 +14,7 @@ const {
   parseArgs,
   previewBody,
   resultMarker,
+  isDirectRun,
 } = require('../scripts/validate-social-post');
 
 test('charCount uses publish-time UTF-16 code units', () => {
@@ -74,6 +75,11 @@ test('resultMarker matches pass, blocking fail, and warning states', () => {
   assert.equal(resultMarker({ ok: true, blocking: true }), '✓');
   assert.equal(resultMarker({ ok: false, blocking: true }), '✗');
   assert.equal(resultMarker({ ok: false, blocking: false }), '⚠');
+});
+
+test('isDirectRun only accepts the CLI script path', () => {
+  assert.equal(isDirectRun(SCRIPT), true);
+  assert.equal(isDirectRun(__filename), false);
 });
 
 test('CLI exits 0 when every feed platform accepts the draft', () => {

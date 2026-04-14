@@ -32,6 +32,7 @@
  */
 
 const STRIPE_API = 'https://api.stripe.com/v1';
+const path = require('node:path');
 
 function resolveKey() {
   return (
@@ -191,7 +192,11 @@ function printSummary(summary) {
   console.log('');
 }
 
-if (require.main === module) {
+function isDirectRun(entry = process.argv[1]) {
+  return Boolean(entry) && Object.is(path.resolve(entry), __filename);
+}
+
+if (isDirectRun()) {
   main().catch((err) => {
     console.error(`stripe-revenue error: ${err.message}`);
     process.exit(1);
@@ -207,4 +212,5 @@ module.exports = {
   summarizeRevenue,
   printSummary,
   main,
+  isDirectRun,
 };

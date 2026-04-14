@@ -17,6 +17,7 @@
  */
 
 const fs = require('node:fs');
+const path = require('node:path');
 
 const LIMITS = {
   threads:   { max: 500,  note: 'Meta/Threads API hard limit. Exceeding = publish failure (code:100 THApiException).' },
@@ -144,7 +145,11 @@ function main() {
   console.log('All drafts fit every platform limit. Safe to schedule.');
 }
 
-if (require.main === module) {
+function isDirectRun(entry = process.argv[1]) {
+  return Boolean(entry) && Object.is(path.resolve(entry), __filename);
+}
+
+if (isDirectRun()) {
   main();
 }
 
@@ -162,4 +167,5 @@ module.exports = {
   renderEvaluation,
   render,
   main,
+  isDirectRun,
 };
