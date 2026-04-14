@@ -1,15 +1,17 @@
-# ThumbGate — Type 👍 or 👎 on any AI agent action. Blocks the pattern from repeating. One thumbs-down, never again.
+# ThumbGate — Stop AI agents before they make costly mistakes.
 # https://thumbgate-production.up.railway.app
 # https://github.com/IgorGanapolsky/ThumbGate
 # https://www.npmjs.com/package/thumbgate
 
-> ThumbGate makes AI coding agents self-improving. Every mistake becomes
-> a prevention rule that physically blocks the agent from repeating it.
-> Feedback-driven enforcement via PreToolUse hooks.
+> ThumbGate prevents expensive AI mistakes before they happen. It checks
+> risky commands, file edits, deploys, payments, API calls, and other agent
+> actions before execution. 👎 Thumbs down becomes a history-aware lesson and
+> a Pre-Action Gate; 👍 thumbs up reinforces safe patterns.
 
 ## What ThumbGate solves
 
-- AI coding agents repeat the same mistakes across sessions
+- AI coding agents repeat costly mistakes across sessions
+- Bad commands, destructive SQL, risky deploys, unsafe publishes, and API mistakes are expensive after execution
 - CLAUDE.md and .cursorrules files are suggestions agents can ignore
 - No memory between sessions means no learning from corrections
 - Teams have no shared safety rules across developers
@@ -27,6 +29,7 @@
 - Developers using Claude Code, Cursor, Codex, Gemini CLI, or any MCP-compatible agent
 - Engineering teams that need shared agent safety rules
 - Anyone tired of re-correcting their AI coding assistant
+- Solo operators who want Pro dashboard proof for blocked mistakes and DPO exports
 
 ## Install
 
@@ -36,9 +39,10 @@ npx thumbgate init --agent claude-code
 
 ## Pricing
 
-- Free: 3 feedback captures/day, 5 lesson searches/day, 5 built-in gates
-- Pro: $19/mo or $149/yr — unlimited everything, auto-gate promotion, multi-repo sync
-- Founding Member: $49 one-time, Pro forever
+- Free GPT: advice, checkpointing, and setup help in ChatGPT
+- Free local CLI: 3 feedback captures/day, 5 lesson searches/day, recall, and local Pre-Action Gates after install
+- Pro: $19/mo or $149/yr — personal enforcement proof, local dashboard, gate debugger, DPO export, and review-ready exports
+- Team: $99/seat/mo, 3-seat minimum after intake — shared lessons, org visibility, approval boundaries, and rollout proof
 
 ## Links
 
