@@ -20,6 +20,9 @@ function parseArgs(argv = process.argv.slice(2)) {
     else if (arg.startsWith('--output=')) options.outputPath = arg.slice('--output='.length);
     else if (arg.startsWith('--github-run-url=')) options.githubRunUrl = arg.slice('--github-run-url='.length);
     else if (arg.startsWith('--repo=')) options.repoFullName = arg.slice('--repo='.length);
+    else if (arg.startsWith('--npm-shasum=')) options.npmShasum = arg.slice('--npm-shasum='.length);
+    else if (arg.startsWith('--npm-tarball-url=')) options.npmTarballUrl = arg.slice('--npm-tarball-url='.length);
+    else if (arg.startsWith('--npm-published-at=')) options.npmPublishedAt = arg.slice('--npm-published-at='.length);
   }
   return options;
 }
@@ -197,6 +200,9 @@ function formatReleaseNotes({
   currentTag = `v${version}`,
   currentRef = 'HEAD',
   githubRunUrl = '',
+  npmShasum = '',
+  npmTarballUrl = '',
+  npmPublishedAt = '',
   changesets = [],
   changelogEntry = '',
 } = {}) {
@@ -226,7 +232,14 @@ function formatReleaseNotes({
     `- GitHub Release: ${releaseUrl}`,
     `- Compare: ${compareUrl}`,
     githubRunUrl ? `- Publish workflow: ${githubRunUrl}` : null,
+    npmPublishedAt ? `- npm published at: ${npmPublishedAt}` : null,
+    npmShasum ? `- npm shasum: \`${npmShasum}\`` : null,
+    npmTarballUrl ? `- npm tarball: ${npmTarballUrl}` : null,
     `- Release ref: ${currentRef}`,
+    '',
+    '## npm Email Companion',
+    '',
+    'npm controls the native "Successfully published" email template, so the email itself stays short. Treat this generated artifact as the full release-note companion for that email: it carries the Changeset summaries, CHANGELOG entry, publish workflow, npm tarball, and shasum when available.',
     '',
     '## Full Changeset Release Notes',
     '',
@@ -251,6 +264,9 @@ function buildReleaseNotes({
   currentRef = 'HEAD',
   previousTag,
   githubRunUrl = '',
+  npmShasum = '',
+  npmTarballUrl = '',
+  npmPublishedAt = '',
   cwd = PROJECT_ROOT,
   runner = execFileSync,
 } = {}) {
@@ -287,6 +303,9 @@ function buildReleaseNotes({
       currentTag,
       currentRef,
       githubRunUrl,
+      npmShasum,
+      npmTarballUrl,
+      npmPublishedAt,
       changesets,
       changelogEntry,
     }),
@@ -311,6 +330,9 @@ function runCli({
     currentRef: options.currentRef || env.GITHUB_SHA || 'HEAD',
     previousTag: options.previousTag,
     githubRunUrl: options.githubRunUrl || env.GITHUB_RUN_URL || '',
+    npmShasum: options.npmShasum || env.NPM_SHASUM || '',
+    npmTarballUrl: options.npmTarballUrl || env.NPM_TARBALL_URL || '',
+    npmPublishedAt: options.npmPublishedAt || env.NPM_PUBLISHED_AT || '',
     cwd,
     runner,
   });

@@ -68,8 +68,10 @@ On publish, `.github/workflows/publish-npm.yml` runs `node scripts/release-notes
 
 - collect the `.changeset/*.md` files changed since the previous release tag.
 - render the full Changeset summaries by SemVer impact.
+- fetch npm publish receipt metadata, including published timestamp, tarball URL, and shasum when available.
 - write the same release note into the GitHub Actions summary linked from the npm email.
+- upload `thumbgate-X.Y.Z-release-notes` as a GitHub Actions artifact on the linked publish run.
 - create or update the `vX.Y.Z` GitHub Release with those notes.
 - upload `thumbgate-X.Y.Z-release-notes.md` as a release asset for audit trails.
 
-The npm email remains short, but the first-party release artifact it points to now contains the full release notes.
+The npm email remains short, but the first-party release artifact it points to now contains the full release notes and publish receipt metadata needed for audit review.
