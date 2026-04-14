@@ -150,8 +150,7 @@ inline_link() {
   local url="$1"
   local label="$2"
   if [ -n "$url" ]; then
-    # OSC 8 terminal hyperlink: clickable in WezTerm, iTerm2, etc.
-    printf '\033]8;;%s\033\\%s\033]8;;\033\\' "$url" "$label"
+    printf '%s (%s)' "$label" "$url"
   else
     printf '%s' "$label"
   fi
@@ -159,14 +158,14 @@ inline_link() {
 
 UP_ICON="👍"
 DOWN_ICON="👎"
-# Wire up clickable links for Dashboard and Lessons.
-# Use whatever URL statusline-links.js returned (localhost when local server
-# is running, production URL otherwise).
-DASHBOARD_LINK="$(inline_link "$DASHBOARD_URL" "$DASHBOARD_LABEL")"
-LESSONS_LINK="$(inline_link "$LESSONS_URL" "$LESSONS_LABEL")"
+DASHBOARD_LINK="$DASHBOARD_LABEL"
+LESSONS_LINK="$LESSONS_LABEL"
 LATEST_LESSON_LINK=""
 if [ -n "$LESSON_LABEL" ]; then
   _DISPLAY_LINK="$LESSON_LINK"
+  case "$_DISPLAY_LINK" in
+    *localhost*|*127.0.0.1*) _DISPLAY_LINK="" ;;
+  esac
   if [ -n "$LESSON_TEXT" ]; then
     LATEST_LESSON_LINK="$(inline_link "$_DISPLAY_LINK" "${LESSON_LABEL}: ${LESSON_TEXT}")"
   else

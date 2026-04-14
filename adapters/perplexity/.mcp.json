@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "thumbgate": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "--package",
+        "thumbgate@1.4.1",
+        "thumbgate",
+        "serve"
+      ]
+    },
+    "perplexity": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@perplexity-ai/mcp-server"
+      ],
+      "env": {
+        "PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}"
+      }
+    }
+  },
+  "hooks": {
+    "preToolUse": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "--package",
+        "thumbgate@1.4.1",
+        "thumbgate",
+        "gate-check"
+      ]
+    }
+  }
+}

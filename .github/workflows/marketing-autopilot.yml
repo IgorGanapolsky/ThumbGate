@@ -1,54 +1,92 @@
 name: Marketing Autopilot
 
+# Text content autopilot — fires every 4 hours.
+# Posts to X, LinkedIn, Threads, Bluesky via Zernio.
+# Posts to Reddit via the configured OAuth publisher.
+# Posts Dev.to articles on a separate slower cadence.
+# Marketing DB dedup prevents double-posting within configured windows.
+
 on:
   schedule:
-    - cron: '0 14 * * 1,3,5'
+    - cron: '15 */4 * * *'   # every 4 hours, offset from video-autopilot
   workflow_dispatch:
     inputs:
       action:
-        description: 'Marketing action to perform'
-        required: true
+        description: 'Action to perform'
+        required: false
         type: choice
+        default: full
         options:
-          - tweet
-          - thread
-          - search-and-reply
-          - generate-content
           - full
+          - text-posts
+          - reddit
+          - devto
+          - generate-content
       dry_run:
-        description: 'Dry run (no actual posts)'
+        description: 'Dry run (generate but do not post)'
         required: false
         type: boolean
-        default: true
+        default: false
+      platforms:
+        description: 'Comma-separated Zernio platforms (default: twitter,linkedin,threads,bluesky)'
+        required: false
+        default: 'twitter,linkedin,threads,bluesky'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: marketing-autopilot
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   marketing:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+
     env:
-      X_API_KEY: ${{ secrets.X_API_KEY }}
-      X_API_SECRET: ${{ secrets.X_API_SECRET }}
-      X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
-      X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-      PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
-      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
-      ZERNIO_LINKEDIN_ACCOUNT_ID: ${{ secrets.ZERNIO_LINKEDIN_ACCOUNT_ID }}
-      ZERNIO_PROFILE_ID: ${{ secrets.ZERNIO_PROFILE_ID }}
-      ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
-      ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
+      # Zernio — primary social publisher
+      ZERNIO_API_KEY:               ${{ secrets.ZERNIO_API_KEY }}
+      ZERNIO_PROFILE_ID:            ${{ secrets.ZERNIO_PROFILE_ID }}
+      ZERNIO_LINKEDIN_ACCOUNT_ID:   ${{ secrets.ZERNIO_LINKEDIN_ACCOUNT_ID }}
+      ZERNIO_INSTAGRAM_ACCOUNT_ID:  ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
+      ZERNIO_TIKTOK_ACCOUNT_ID:     ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
+      ZERNIO_YOUTUBE_ACCOUNT_ID:    ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
+      ZERNIO_REDDIT_ACCOUNT_ID:     ${{ secrets.ZERNIO_REDDIT_ACCOUNT_ID }}
+      # X / Twitter — full API access
+      X_API_KEY:                    ${{ secrets.X_API_KEY }}
+      X_API_SECRET:                 ${{ secrets.X_API_SECRET }}
+      X_ACCESS_TOKEN:               ${{ secrets.X_ACCESS_TOKEN }}
+      X_ACCESS_TOKEN_SECRET:        ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+      X_BEARER_TOKEN:               ${{ secrets.X_BEARER_TOKEN }}
+      X_CLIENT_ID:                  ${{ secrets.X_CLIENT_ID }}
+      X_CLIENT_SECRET:              ${{ secrets.X_CLIENT_SECRET }}
+      X_USER_ID:                    ${{ secrets.X_USER_ID }}
+      # Reddit — configured OAuth publisher
+      REDDIT_CLIENT_ID:             ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET:         ${{ secrets.REDDIT_CLIENT_SECRET }}
+      REDDIT_USERNAME:              ${{ secrets.REDDIT_USERNAME }}
+      REDDIT_PASSWORD:              ${{ secrets.REDDIT_PASSWORD }}
+      # LinkedIn — direct API fallback
+      LINKEDIN_ACCESS_TOKEN:        ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+      LINKEDIN_PERSON_URN:          ${{ secrets.LINKEDIN_PERSON_URN }}
+      # Dev.to
+      DEVTO_API_KEY:                ${{ secrets.DEVTO_API_KEY }}
+      THUMBGATE_ANALYTICS_DB:       .thumbgate/marketing-analytics.sqlite
+      # Content generation
+      PERPLEXITY_API_KEY:           ${{ secrets.PERPLEXITY_API_KEY }}
+      XAI_API_KEY:                  ${{ secrets.XAI_API_KEY }}
+      GROK_API_KEY:                 ${{ secrets.GROK_API_KEY }}
+      GEMINI_API_KEY:               ${{ secrets.GEMINI_API_KEY || secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -56,85 +94,233 @@ jobs:
       - name: Install deps
         run: npm ci --onnxruntime-node-install-cuda=skip
 
-      - name: Budget guard
-        id: budget
-        run: |
-          COUNTER_FILE=".marketing-tweet-count"
-          CURRENT_MONTH=$(date +%Y-%m)
+      - name: Restore marketing DB cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .thumbgate/marketing-analytics.sqlite
+            .thumbgate/marketing-analytics.sqlite-shm
+            .thumbgate/marketing-analytics.sqlite-wal
+          key: marketing-db-${{ github.run_id }}
+          restore-keys: |
+            marketing-db-
 
-          # Fetch counter from artifact or initialize
-          if [ -f "$COUNTER_FILE" ]; then
-            STORED_MONTH=$(head -1 "$COUNTER_FILE")
-            COUNT=$(tail -1 "$COUNTER_FILE")
-            if [ "$STORED_MONTH" != "$CURRENT_MONTH" ]; then
-              COUNT=0
-            fi
-          else
-            COUNT=0
-          fi
-
-          MAX_TWEETS=30
-          echo "Tweet count this month: $COUNT / $MAX_TWEETS"
-
-          if [ "$COUNT" -ge "$MAX_TWEETS" ]; then
-            echo "::warning::Budget guard: monthly tweet limit ($MAX_TWEETS) reached. Skipping posts."
-            echo "allowed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "allowed=true" >> "$GITHUB_OUTPUT"
-          fi
-
-          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
-          echo "month=$CURRENT_MONTH" >> "$GITHUB_OUTPUT"
-
-      - name: Generate fresh content
+      - name: Generate fresh content (AI-powered)
         if: |
-          steps.budget.outputs.allowed == 'true' &&
+          github.event_name == 'schedule' ||
+          github.event.inputs.action == 'generate-content' ||
+          github.event.inputs.action == 'full'
+        run: |
+          if [ -n "$PERPLEXITY_API_KEY" ]; then
+            node scripts/perplexity-marketing.js generate || echo "::warning::Content generation failed — using scheduled fallback"
+          else
+            echo "PERPLEXITY_API_KEY not set — skipping AI content generation"
+          fi
+
+      - name: Post text content via Zernio (X, LinkedIn, Threads, Bluesky)
+        if: |
+          github.event_name == 'schedule' ||
+          github.event.inputs.action == 'text-posts' ||
+          github.event.inputs.action == 'full'
+        env:
+          INPUT_PLATFORMS: ${{ github.event.inputs.platforms || 'twitter,linkedin,threads,bluesky' }}
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          PLATFORMS="$INPUT_PLATFORMS"
+          DRY_RUN_FLAG=""
+          if [ "$INPUT_DRY_RUN" = "true" ]; then DRY_RUN_FLAG="--dry-run"; fi
+          WEEK=$(date +%Y-W%V)
+          HOUR=$(date +%H)
+          node scripts/post-everywhere.js \
+            --platforms="$PLATFORMS" \
+            --campaign="autopilot-text-$WEEK-h$HOUR" \
+            $DRY_RUN_FLAG \
+          || node scripts/post-to-x.js --scheduled $DRY_RUN_FLAG  # fallback to X-only
+
+      - name: Post to Reddit via configured OAuth publisher
+        if: |
           (github.event_name == 'schedule' ||
-           github.event.inputs.action == 'generate-content' ||
+           github.event.inputs.action == 'reddit' ||
            github.event.inputs.action == 'full') &&
-          env.PERPLEXITY_API_KEY != ''
-        run: node scripts/perplexity-marketing.js generate
+          env.REDDIT_USERNAME != '' &&
+          env.REDDIT_CLIENT_ID != ''
+        env:
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          DRY_RUN_FLAG=""
+          if [ "$INPUT_DRY_RUN" = "true" ]; then DRY_RUN_FLAG="--dry-run"; fi
+          # Reddit posts use the configured publisher credentials.
+          # Targets subreddits: r/ClaudeAI (link), r/LocalLLaMA (link), r/SideProject (text)
+          node -e "
+            const { loadLocalEnv } = require('./scripts/social-analytics/load-env');
+            loadLocalEnv();
+            const db = require('./scripts/social-analytics/db/marketing-db');
+            const reddit = require('./scripts/social-analytics/publishers/reddit');
 
-      - name: Post tweet
+            const POSTS = [
+              {
+                subreddit: 'ClaudeAI',
+                kind: 'link',
+                title: 'ThumbGate v1.4.1: Pre-action safety gates for Claude Code',
+                url: 'https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
+              },
+              {
+                subreddit: 'SideProject',
+                kind: 'self',
+                title: 'I built pre-action gates that physically block Claude Code from repeating mistakes',
+                text: [
+                  'After my AI agent force-pushed to main and wiped 3 PRs, I built ThumbGate.',
+                  '',
+                  'It intercepts every tool call via PreToolUse hooks and checks it against lessons learned from past failures. 1 bad action = warning gate. 3 bad actions = hard block.',
+                  '',
+                  'v1.4.1 ships with Thompson Sampling for gate ranking and LanceDB for semantic lesson retrieval.',
+                  '',
+                  'Try the live GPT: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
+                  'Free + open source: https://github.com/IgorGanapolsky/ThumbGate',
+                  'npx thumbgate serve',
+                ].join('\\n'),
+              },
+            ];
+
+            const dryRun = process.argv.includes('--dry-run');
+
+            (async () => {
+              for (const p of POSTS) {
+                const hash = db.hashContent(p.title + '::' + p.subreddit);
+                if (db.isDuplicate('reddit', hash, 7)) {
+                  console.log('SKIP reddit/' + p.subreddit + ' — posted within 7 days');
+                  continue;
+                }
+                if (dryRun) { console.log('DRY-RUN reddit/' + p.subreddit); continue; }
+                try {
+                  const r = await reddit.publishToReddit(p);
+                  console.log('Posted reddit/' + p.subreddit + ':', r.url || r.name);
+                  db.record({ type: 'post', platform: 'reddit', contentHash: hash,
+                    postUrl: r.url, campaign: 'autopilot', tags: ['reddit', p.subreddit] });
+                } catch(e) {
+                  console.error('reddit/' + p.subreddit + ' failed:', e.message);
+                }
+              }
+            })();
+          " $DRY_RUN_FLAG || echo "::warning::Reddit posting failed"
+
+      - name: Publish Dev.to article (weekly cadence)
         if: |
-          steps.budget.outputs.allowed == 'true' &&
           (github.event_name == 'schedule' ||
-           github.event.inputs.action == 'tweet' ||
-           github.event.inputs.action == 'full')
+           github.event.inputs.action == 'devto' ||
+           github.event.inputs.action == 'full') &&
+          env.DEVTO_API_KEY != ''
+        env:
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
-          DRY_RUN_FLAG=""
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            DRY_RUN_FLAG="--dry-run"
-          fi
-          node scripts/post-to-x.js --scheduled $DRY_RUN_FLAG
+          DRY_RUN_FLAG="$INPUT_DRY_RUN"
+          node -e "
+            const { loadLocalEnv } = require('./scripts/social-analytics/load-env');
+            loadLocalEnv();
+            const db = require('./scripts/social-analytics/db/marketing-db');
+            const devto = require('./scripts/social-analytics/publishers/devto');
 
-          # Increment tweet counter
-          COUNT=${{ steps.budget.outputs.count }}
-          MONTH=${{ steps.budget.outputs.month }}
-          if [ "${{ github.event.inputs.dry_run }}" != "true" ]; then
-            COUNT=$((COUNT + 1))
-          fi
-          echo "$MONTH" > .marketing-tweet-count
-          echo "$COUNT" >> .marketing-tweet-count
+            const ARTICLE = {
+              title: 'ThumbGate v1.4.1: Pre-action Safety Gates for AI Coding Agents',
+              body_markdown: [
+                '## The Problem',
+                '',
+                'Every new session, your AI coding agent forgets the mistakes it made last time. You told it not to force-push to main — it does it again. You told it not to delete prod config — same story.',
+                '',
+                'CLAUDE.md rules are suggestions. Agents ignore suggestions.',
+                '',
+                '## What ThumbGate Does',
+                '',
+                'ThumbGate intercepts every tool call **before** it executes via Claude Code\\'s PreToolUse hooks. It checks the action against a lesson database built from past failures:',
+                '',
+                '- 👎 thumbs-down on a bad action → lesson written to SQLite+FTS5 DB',
+                '- lesson → prevention rule generated automatically',
+                '- rule → PreToolUse gate activated',
+                '- gate fires on next attempt → **blocked before execution**',
+                '',
+                'No config changes. No CLAUDE.md updates. Automatic.',
+                '',
+                '## v1.4.1 Highlights',
+                '',
+                '- **Thompson Sampling** for gate ranking — high-frequency failures rise, rare ones demote automatically',
+                '- **LanceDB vector search** for semantic lesson retrieval across sessions',
+                '- **SQLite+FTS5** lesson store with full-text search',
+                '- **DPO export** — every blocked action becomes a fine-tuning pair',
+                '- **MCP server** — works with Claude Code, Cursor, Codex CLI',
+                '',
+                '## Install in 30 Seconds',
+                '',
+                '~~~bash',
+                'npx thumbgate serve',
+                '~~~',
+                '',
+                'That\\'s it. The MCP server starts, hooks register, lesson DB initialises.',
+                '',
+                '## How Gates Escalate',
+                '',
+                '| Failures | Gate type |',
+                '|----------|-----------|',
+                '| 1 | Warn gate (agent sees warning, can proceed) |',
+                '| 3+ | Hard block (action rejected before execution) |',
+                '',
+                'Gates auto-promote based on failure frequency. Thompson Sampling keeps signal-to-noise high.',
+                '',
+                '## Open Source',
+                '',
+                'MIT license. No sign-up. No telemetry.',
+                '',
+                '- GitHub: https://github.com/IgorGanapolsky/ThumbGate',
+                '- Live: https://thumbgate-production.up.railway.app',
+                '- GPT: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
+              ].join('\\n'),
+              tags: ['claudecode', 'ai', 'devtools', 'opensource'],
+              canonical_url: 'https://github.com/IgorGanapolsky/ThumbGate',
+            };
 
-      - name: Search and reply
+            const hash = db.hashContent(ARTICLE.title);
+            if (db.isDuplicate('devto', hash, 7)) {
+              console.log('SKIP devto — article posted within 7 days');
+              process.exit(0);
+            }
+
+            if (process.env.INPUT_DRY_RUN === 'true') {
+              console.log('DRY-RUN devto — would post:', ARTICLE.title);
+              process.exit(0);
+            }
+
+            devto.publishArticle(ARTICLE)
+              .then(r => {
+                console.log('devto published:', r.url);
+                db.record({ type: 'article', platform: 'devto', contentHash: hash,
+                  postUrl: r.url, campaign: 'autopilot', tags: ['devto', 'v1.4.1'] });
+              })
+              .catch(e => {
+                console.error('devto failed:', e.message);
+                process.exit(1);
+              });
+          " || echo "::warning::Dev.to posting failed"
+
+      - name: Search X and reply to relevant conversations
         if: |
-          steps.budget.outputs.allowed == 'true' &&
-          (github.event.inputs.action == 'search-and-reply' ||
-           github.event.inputs.action == 'full')
+          github.event_name == 'schedule' &&
+          env.X_BEARER_TOKEN != ''
         run: |
-          DRY_RUN_FLAG=""
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            DRY_RUN_FLAG="--dry-run"
-          fi
-          node scripts/post-to-x.js --search "MCP agent memory" --reply-relevant $DRY_RUN_FLAG
+          node scripts/post-to-x.js \
+            --search "Claude Code agent mistakes" \
+            --reply-relevant \
+          || echo "::warning::X search-reply failed — non-fatal"
+
+      - name: Print marketing DB summary
+        if: always()
+        run: |
+          node -e "const db=require('./scripts/social-analytics/db/marketing-db'); console.log(JSON.stringify(db.summary(), null, 2));" || true
 
       - name: Upload artifacts
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
-          name: marketing-content
+          name: marketing-autopilot-${{ github.run_id }}
+          retention-days: 7
           path: |
-            .marketing-tweet-count
             scripts/marketing-output/
             proof/marketing/

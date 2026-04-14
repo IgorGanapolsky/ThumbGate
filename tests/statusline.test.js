@@ -92,7 +92,8 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.ok(out.includes('3'), 'should show lesson count');
   assert.match(out, /Dashboard/);
   assert.match(out, /Lessons/);
-  assert.match(out, /localhost:3456/, 'should include local dashboard URLs');
+  assert.doesNotMatch(out, /Dashboard \(http:\/\/localhost:3456\/dashboard\)/);
+  assert.doesNotMatch(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
 });
 
 test('statusline shows "no feedback yet" when cache has zeros', () => {
@@ -427,7 +428,8 @@ test('statusline preserves dashboard links under a tight width budget', () => {
     assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
     assert.match(plain, /Lessons/, 'should preserve the lessons link label');
     assert.match(plain, /Latest mistake \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}:/, 'should clarify that the snippet is the latest mistake');
-    assert.match(plain, /localhost:3456/, 'should include local dashboard URLs');
+    // localhost links are intentionally stripped from statusbar display; only real URLs are shown.
+    assert.doesNotMatch(plain, /http:\/\/localhost/, 'should NOT include localhost links in statusbar');
   } finally {
     if (previousFeedbackDir === undefined) {
       delete process.env.THUMBGATE_FEEDBACK_DIR;
@@ -520,8 +522,8 @@ test('statusline shell keeps dashboard labels compact and leaves deep links to l
   assert.match(shellSource, /statusline-links\.js/);
   assert.match(shellSource, /inline_link/);
   assert.match(shellSource, /LOCAL_API_ORIGIN/);
-  assert.match(shellSource, /DASHBOARD_LINK="\$\(inline_link/);
-  assert.match(shellSource, /LESSONS_LINK="\$\(inline_link/);
+  assert.match(shellSource, /DASHBOARD_LINK="\$DASHBOARD_LABEL"/);
+  assert.match(shellSource, /LESSONS_LINK="\$LESSONS_LABEL"/);
   assert.match(shellSource, /LATEST_LESSON_LINK="\$\(inline_link/);
 });
 

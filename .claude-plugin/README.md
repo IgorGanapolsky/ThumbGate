@@ -1,6 +1,6 @@
 # ThumbGate for Claude Desktop
 
-**Give thumbs up 👍 or thumbs down 👎 on any agent action. ThumbGate captures it, distills a lesson, and blocks the pattern from repeating. Just type "thumbs up" or "thumbs down" in the chat.**
+**Give thumbs up 👍 or thumbs down 👎 on any agent action. ThumbGate captures it, runs History-aware lesson distillation across up to 8 prior recorded entries, and blocks the pattern from repeating. Just type "thumbs up" or "thumbs down" in the chat.**
 
 ## Try it now
 
@@ -21,6 +21,7 @@ That's it. One thumbs-down, never again.
 - **Self-protection** → agent cannot disable its own governance
 - **Compliance tags** → NIST, SOC2, OWASP, CWE on gate rules for enterprise teams
 - **Shared team enforcement** → one engineer's thumbs-down protects the whole team
+- **60-second follow-up** → feedback can link to a prior mistake with `relatedFeedbackId` so delayed corrections still become useful gates
 
 ## Installation
 
@@ -122,8 +123,9 @@ You: Never had to correct it again.
 
 ```
 You: "thumbs down"
-ThumbGate: 👎 Captured. Distilling lesson from last 8 entries...
+ThumbGate: 👎 Captured. History-aware lesson distillation from up to 8 prior recorded entries...
            Lesson: "Agent edited production config without approval"
+           Follow-up window: 60-second follow-up can attach relatedFeedbackId
            Rule auto-promoted. Will block matching actions in future sessions.
 ```
 
