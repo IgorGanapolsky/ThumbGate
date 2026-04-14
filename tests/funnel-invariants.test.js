@@ -68,12 +68,18 @@ describe('funnel invariant: free tier has real limits', () => {
 });
 
 describe('funnel invariant: MCP server enforces limits on gated tools', () => {
-  it('server-stdio.js calls enforceLimit for rate-limited tools', () => {
+  it('server-stdio.js gates high-value tools behind enforceLimit or enforceProTier', () => {
     const src = fs.readFileSync(path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js'), 'utf8');
-    const gatedTools = ['search_thumbgate', 'export_dpo', 'export_databricks', 'commerce_recall'];
+    const gatedTools = ['search_thumbgate', 'commerce_recall'];
     for (const tool of gatedTools) {
       assert.ok(src.includes(`enforceLimit('${tool}')`), `MCP server must call enforceLimit('${tool}'). Without this, free users never see the upgrade prompt for ${tool}.`);
     }
+    // These are now Pro-only (stricter than rate limit)
+    const proTools = ['export_dpo_pairs', 'export_hf_dataset', 'export_databricks_bundle', 'reliability_triggered_skills', 'run_self_distill', 'run_managed_lesson_agent', 'org_dashboard'];
+    for (const tool of proTools) {
+      assert.ok(src.includes(`case '${tool}'`), `MCP server must handle tool '${tool}'`);
+    }
+    assert.ok(src.includes('function enforceProTier'), 'MCP server must define enforceProTier for Pro-gated tools');
   });
 
   it('server-stdio.js defines enforceLimit function', () => {

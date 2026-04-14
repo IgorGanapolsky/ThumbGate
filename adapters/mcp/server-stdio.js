@@ -106,6 +106,7 @@ const {
 const { exportHfDataset } = require('../../scripts/export-hf-dataset');
 
 const PRO_CHECKOUT_URL = 'https://thumbgate-production.up.railway.app/checkout/pro';
+const { isProTier } = require('../../scripts/rate-limiter');
 
 function enforceLimit(action) {
   const limit = checkLimit(action);
@@ -117,6 +118,17 @@ function enforceLimit(action) {
     err.isRetryable = false;
     throw err;
   }
+}
+
+function enforceProTier(featureName) {
+  if (isProTier()) return;
+  const err = new Error(
+    `🔒 Pro feature: ${featureName}. Free gives feedback memory. Pro gives enforced intelligence.\n` +
+    `  Upgrade: ${PRO_CHECKOUT_URL}\n  ${UPGRADE_MESSAGE}`
+  );
+  err.errorCategory = 'pro_required';
+  err.isRetryable = false;
+  throw err;
 }
 const { bootstrapInternalAgent } = require('../../scripts/internal-agent-bootstrap');
 const {
@@ -564,10 +576,10 @@ async function callToolInner(name, args) {
       return toTextResult(writePreventionRules(outputPath, Number(args.minOccurrences || 2)));
     }
     case 'export_dpo_pairs':
-      enforceLimit('export_dpo');
+      enforceProTier('Export feedback as DPO training pairs');
       return buildExportDpoResponse(args);
     case 'export_hf_dataset': {
-      enforceLimit('export_dpo');
+      enforceProTier('Export HuggingFace-compatible dataset');
       const outputDir = args.outputDir ? resolveSafePath(args.outputDir) : undefined;
       return toTextResult(exportHfDataset({
         outputDir,
@@ -575,7 +587,7 @@ async function callToolInner(name, args) {
       }));
     }
     case 'export_databricks_bundle': {
-      enforceLimit('export_databricks');
+      enforceProTier('Export Databricks analytics bundle');
       const outputPath = args.outputPath ? resolveSafePath(args.outputPath) : undefined;
       return toTextResult(exportDatabricksBundle(undefined, outputPath));
     }
@@ -595,6 +607,7 @@ async function callToolInner(name, args) {
         }),
       });
     case 'reliability_triggered_skills':
+      enforceProTier('Adaptive skill generation from Thompson Sampling reliability scores');
       return toTextResult(generateReliabilityTriggeredSkills({
         threshold: typeof args.threshold === 'number' ? args.threshold : undefined,
         dryRun: args.dryRun === true,
@@ -715,6 +728,7 @@ async function callToolInner(name, args) {
     case 'dashboard':
       return toTextResult(generateDashboard(getFeedbackPaths().FEEDBACK_DIR));
     case 'org_dashboard':
+      enforceProTier('Org-wide multi-agent dashboard');
       return toTextResult(generateOrgDashboard({ windowHours: Number(args.windowHours || 24) }));
     case 'settings_status':
       return toTextResult(getSettingsStatus());
@@ -757,6 +771,7 @@ async function callToolInner(name, args) {
     case 'finalize_feedback_session':
       return toTextResult(finalizeFeedbackSession(args.sessionId));
     case 'run_managed_lesson_agent': {
+      enforceProTier('LLM-powered lesson inference agent');
       const { runManagedAgent } = require('../../scripts/managed-lesson-agent');
       return toTextResult(await runManagedAgent({ dryRun: args.dryRun, limit: args.limit, model: args.model }));
     }
@@ -765,6 +780,7 @@ async function callToolInner(name, args) {
       return toTextResult(getManagedAgentStatus() || { message: 'No managed agent runs recorded yet.' });
     }
     case 'run_self_distill': {
+      enforceProTier('Auto-evaluate sessions and generate improvement lessons');
       const { runSelfDistill } = require('../../scripts/self-distill-agent');
       return toTextResult(await runSelfDistill({ dryRun: args.dryRun, limit: args.limit, model: args.model }));
     }
