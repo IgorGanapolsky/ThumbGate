@@ -8,6 +8,7 @@ const {
   parseHtmlSignals,
   buildDiagnosis,
   formatReport,
+  getHostedAuditViaHttp,
   generateRevenueStatusReport,
 } = require('../scripts/revenue-status');
 
@@ -31,7 +32,7 @@ test('parseGhVariableList reads gh variable output', () => {
 
 test('parseHtmlSignals detects telemetry and tracking hooks', () => {
   const signals = parseHtmlSignals(`
-    <script defer data-domain="thumbgate-production.up.railway.app" data-api="/api/event" src="/js/analytics.js"></script>
+    <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-TEST1234"></script>
     <script>window.gtag('event', 'checkout_start');</script>
     <script>fetch('/v1/telemetry/ping', { method: 'POST' });</script>
@@ -98,6 +99,7 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
   const report = await generateRevenueStatusReport({
     repo: 'IgorGanapolsky/ThumbGate',
     timeZone: 'America/New_York',
+    apiKey: '',
     runCommandFn(command, args) {
       runCalls.push([command, ...args]);
       if (command === 'gh') {
@@ -239,4 +241,113 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
   assert.match(formatted, /Source: hosted-via-railway-env/);
   assert.match(formatted, /Today: visitors 6, pageViews 4, checkoutStarts 2/);
   assert.match(formatted, /30d: visitors 21, pageViews 15, checkoutStarts 9, paidOrders 2, bookedRevenue \$20.00/);
+});
+
+test('getHostedAuditViaHttp reads hosted billing summary without Railway CLI', async () => {
+  const requestedWindows = [];
+  const hostedAudit = await getHostedAuditViaHttp({
+    appOrigin: 'https://example.com',
+    apiKey: 'tg_test_key',
+    timeZone: 'America/New_York',
+    fetchImpl: async (url, options) => {
+      requestedWindows.push(url.searchParams.get('window'));
+      assert.equal(options.headers.authorization, 'Bearer tg_test_key');
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          trafficMetrics: {
+            visitors: 3,
+            checkoutStarts: 1,
+          },
+          revenue: {
+            paidOrders: 1,
+            bookedRevenueCents: 4900,
+          },
+          dataQuality: {
+            attributionCoverage: 1,
+            telemetryCoverage: 1,
+          },
+        }),
+      };
+    },
+  });
+
+  assert.equal(hostedAudit.auditMethod, 'hosted-http-api');
+  assert.equal(hostedAudit.runtimePresenceKnown, false);
+  assert.deepEqual(requestedWindows, ['today', '30d', 'lifetime']);
+  assert.equal(hostedAudit.summaries['30d'].revenue.bookedRevenueCents, 4900);
+});
+
+test('generateRevenueStatusReport prefers hosted HTTP API when THUMBGATE_API_KEY is available', async () => {
+  const runCalls = [];
+  const report = await generateRevenueStatusReport({
+    repo: 'IgorGanapolsky/ThumbGate',
+    timeZone: 'America/New_York',
+    apiKey: 'tg_test_key',
+    runCommandFn(command, args) {
+      runCalls.push([command, ...args]);
+      if (command === 'gh') {
+        return {
+          status: 0,
+          stdout: 'THUMBGATE_PUBLIC_APP_ORIGIN\thttps://example.com\t2026-04-14T00:00:00Z\n',
+          stderr: '',
+          error: null,
+        };
+      }
+      throw new Error(`Unexpected command: ${command}`);
+    },
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        trafficMetrics: {
+          visitors: 9,
+          pageViews: 7,
+          checkoutStarts: 2,
+        },
+        signups: {
+          uniqueLeads: 1,
+        },
+        revenue: {
+          paidOrders: 1,
+          bookedRevenueCents: 4900,
+        },
+        pipeline: {
+          workflowSprintLeads: {
+            total: 1,
+          },
+        },
+        dataQuality: {
+          attributionCoverage: 1,
+          telemetryCoverage: 1,
+        },
+      }),
+    }),
+    fetchPublicProbe: async () => ({
+      health: {
+        status: 200,
+        version: '1.5.0',
+      },
+      root: {
+        status: 200,
+        signals: {
+          plausibleScript: true,
+          telemetryEndpoint: true,
+          gaLoaderScript: true,
+          gaEventHook: true,
+        },
+      },
+      telemetryPing: {
+        status: 204,
+      },
+    }),
+  });
+
+  assert.equal(report.source, 'hosted-http-api');
+  assert.equal(report.diagnosis.hostedSummaryWorking, true);
+  assert.equal(report.diagnosis.runtimePresenceKnown, false);
+  assert.equal(report.hostedAudit.summaries.today.revenue.bookedRevenueCents, 4900);
+  assert.ok(!runCalls.some((call) => call[0] === 'railway'));
+  assert.match(formatReport(report), /Railway runtime inspected: no/);
 });
