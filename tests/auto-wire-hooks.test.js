@@ -34,6 +34,9 @@ const {
   preToolHookCommand,
   userPromptHookCommand,
   sessionStartHookCommand,
+  pruneStaleFileHooks,
+  pruneStaleHooksInFile,
+  claudeProjectSettingsPath,
 } = require('../scripts/auto-wire-hooks');
 
 function makeTmpDir() {
@@ -498,6 +501,292 @@ describe('auto-wire-hooks', () => {
         process.chdir(origCwd);
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
+    });
+  });
+
+  // --- pruneStaleFileHooks ---
+
+  describe('pruneStaleFileHooks', () => {
+    test('returns empty result for non-array input', () => {
+      const result = pruneStaleFileHooks(null);
+      assert.deepStrictEqual(result.hooks, []);
+      assert.deepStrictEqual(result.removedPaths, []);
+    });
+
+    test('keeps hooks whose command does not reference a file path', () => {
+      const hookArray = [
+        { hooks: [{ type: 'command', command: 'npx thumbgate gate-check' }] },
+        { hooks: [{ type: 'command', command: 'node /dev/null' }] },
+      ];
+      // /dev/null always exists, so only the npx entry (no path) should survive
+      const result = pruneStaleFileHooks(hookArray, '/tmp');
+      assert.equal(result.removedPaths.length, 0);
+      assert.equal(result.hooks.length, 2);
+    });
+
+    test('removes hook entry whose script path does not exist', () => {
+      const tmpDir = makeTmpDir();
+      try {
+        const missingScript = path.join(tmpDir, '.claude', 'hooks', 'user-prompt-submit.sh');
+        const hookArray = [
+          {
+            hooks: [{ type: 'command', command: `${missingScript} --capture` }],
+          },
+          {
+            hooks: [{ type: 'command', command: 'npx thumbgate capture' }],
+          },
+        ];
+        const result = pruneStaleFileHooks(hookArray, tmpDir);
+        assert.equal(result.removedPaths.length, 1);
+        assert.equal(result.removedPaths[0], missingScript);
+        // The npx entry is preserved; the missing-script entry is gone
+        assert.equal(result.hooks.length, 1);
+        assert.equal(result.hooks[0].hooks[0].command, 'npx thumbgate capture');
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test('keeps hook entry whose script path exists on disk', () => {
+      const tmpDir = makeTmpDir();
+      try {
+        const existingScript = path.join(tmpDir, 'my-hook.sh');
+        fs.writeFileSync(existingScript, '#!/bin/sh\necho ok\n');
+        const hookArray = [
+          { hooks: [{ type: 'command', command: existingScript }] },
+        ];
+        const result = pruneStaleFileHooks(hookArray, tmpDir);
+        assert.equal(result.removedPaths.length, 0);
+        assert.equal(result.hooks.length, 1);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test('removes hook with relative path to missing script', () => {
+      const tmpDir = makeTmpDir();
+      try {
+        const relPath = '.claude/hooks/user-prompt-submit.sh';
+        const hookArray = [
+          { hooks: [{ type: 'command', command: relPath }] },
+        ];
+        // The script does not exist under tmpDir
+        const result = pruneStaleFileHooks(hookArray, tmpDir);
+        assert.equal(result.removedPaths.length, 1);
+        assert.equal(result.removedPaths[0], relPath);
+        assert.equal(result.hooks.length, 0);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  // --- pruneStaleHooksInFile ---
+
+  describe('pruneStaleHooksInFile', () => {
+    test('returns unchanged when file does not exist', () => {
+      const result = pruneStaleHooksInFile('/tmp/nonexistent-thumbgate-test.json', '/tmp', false);
+      assert.equal(result.changed, false);
+      assert.deepStrictEqual(result.removedPaths, []);
+    });
+
+    test('removes stale hooks and rewrites the file', () => {
+      const tmpDir = makeTmpDir();
+      try {
+        const settingsPath = path.join(tmpDir, 'settings.json');
+        const missingScript = path.join(tmpDir, '.claude', 'hooks', 'user-prompt-submit.sh');
+
+        const settings = {
+          hooks: {
+            UserPromptSubmit: [
+              { hooks: [{ type: 'command', command: missingScript }] },
+              { hooks: [{ type: 'command', command: 'npx thumbgate capture' }] },
+            ],
+          },
+        };
+        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+
+        const result = pruneStaleHooksInFile(settingsPath, tmpDir, false);
+        assert.equal(result.changed, true);
+        assert.equal(result.removedPaths.length, 1);
+        assert.equal(result.removedPaths[0], missingScript);
+
+        // Verify the file was rewritten without the stale entry
+        const written = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        assert.equal(written.hooks.UserPromptSubmit.length, 1);
+        assert.equal(
+          written.hooks.UserPromptSubmit[0].hooks[0].command,
+          'npx thumbgate capture'
+        );
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test('dry-run does not rewrite the file', () => {
+      const tmpDir = makeTmpDir();
+      try {
+        const settingsPath = path.join(tmpDir, 'settings.json');
+        const missingScript = path.join(tmpDir, '.claude', 'hooks', 'user-prompt-submit.sh');
+
+        const settings = {
+          hooks: {
+            UserPromptSubmit: [
+              { hooks: [{ type: 'command', command: missingScript }] },
+            ],
+          },
+        };
+        const original = JSON.stringify(settings, null, 2);
+        fs.writeFileSync(settingsPath, original);
+
+        const result = pruneStaleHooksInFile(settingsPath, tmpDir, true);
+        assert.equal(result.changed, true);
+        assert.equal(result.removedPaths.length, 1);
+        // File must not have been modified
+        assert.equal(fs.readFileSync(settingsPath, 'utf8'), original);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  // --- wireClaudeHooks + project-level stale cleanup ---
+
+  describe('wireClaudeHooks — project-level stale hook cleanup', () => {
+    test('removes stale hooks from project-level .claude/settings.json during wiring', () => {
+      const tmpDir = makeTmpDir();
+      const userSettingsDir = path.join(tmpDir, 'home', '.claude');
+      const userSettingsPath = path.join(userSettingsDir, 'settings.local.json');
+      const userSharedPath = path.join(userSettingsDir, 'settings.json');
+
+      // Project directory contains a stale .claude/settings.json
+      const projectDir = path.join(tmpDir, 'project');
+      const projectClaudeDir = path.join(projectDir, '.claude');
+      const projectSettingsPath = path.join(projectClaudeDir, 'settings.json');
+
+      fs.mkdirSync(userSettingsDir, { recursive: true });
+      fs.mkdirSync(projectClaudeDir, { recursive: true });
+
+      // Simulate a stale hook: the shell script is referenced but does NOT exist
+      const staleScript = path.join(projectClaudeDir, 'hooks', 'user-prompt-submit.sh');
+      const projectSettings = {
+        hooks: {
+          UserPromptSubmit: [
+            { hooks: [{ type: 'command', command: staleScript }] },
+            { hooks: [{ type: 'command', command: 'npx thumbgate capture' }] },
+          ],
+        },
+      };
+      fs.writeFileSync(projectSettingsPath, JSON.stringify(projectSettings, null, 2));
+
+      try {
+        const result = wireClaudeHooks({
+          settingsPath: userSettingsPath,
+          sharedSettingsPath: userSharedPath,
+          projectSettingsPath,
+          projectDir,
+        });
+
+        // The wiring itself should succeed
+        assert.equal(result.changed, true);
+
+        // Project-level file must have had the stale entry removed
+        const written = JSON.parse(fs.readFileSync(projectSettingsPath, 'utf8'));
+        const submitHooks = written.hooks.UserPromptSubmit;
+        assert.ok(Array.isArray(submitHooks), 'UserPromptSubmit should still be an array');
+        // Only the non-stale entry should remain
+        assert.equal(submitHooks.length, 1);
+        assert.equal(submitHooks[0].hooks[0].command, 'npx thumbgate capture');
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test('removes stale hooks from user-level settings.local.json during wiring', () => {
+      const tmpDir = makeTmpDir();
+      const userSettingsDir = path.join(tmpDir, 'home', '.claude');
+      const userSettingsPath = path.join(userSettingsDir, 'settings.local.json');
+      const userSharedPath = path.join(userSettingsDir, 'settings.json');
+      const projectDir = path.join(tmpDir, 'project');
+
+      fs.mkdirSync(userSettingsDir, { recursive: true });
+      fs.mkdirSync(projectDir, { recursive: true });
+
+      // Stale entry in the user-level settings (script doesn't exist)
+      const staleScript = path.join(projectDir, '.claude', 'hooks', 'user-prompt-submit.sh');
+      const userSettings = {
+        hooks: {
+          UserPromptSubmit: [
+            { hooks: [{ type: 'command', command: staleScript }] },
+          ],
+        },
+      };
+      fs.writeFileSync(userSettingsPath, JSON.stringify(userSettings, null, 2));
+
+      try {
+        wireClaudeHooks({
+          settingsPath: userSettingsPath,
+          sharedSettingsPath: userSharedPath,
+          projectDir,
+        });
+
+        // The stale entry should have been removed before the new hook was added
+        const written = JSON.parse(fs.readFileSync(userSettingsPath, 'utf8'));
+        const submitHooks = written.hooks.UserPromptSubmit;
+        assert.ok(Array.isArray(submitHooks));
+        const staleStillPresent = submitHooks.some((e) =>
+          e.hooks && e.hooks.some((h) => h.command === staleScript)
+        );
+        assert.equal(staleStillPresent, false, 'Stale hook should have been removed');
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test('does not touch project-level file when it has no stale hooks', () => {
+      const tmpDir = makeTmpDir();
+      const userSettingsDir = path.join(tmpDir, 'home', '.claude');
+      const userSettingsPath = path.join(userSettingsDir, 'settings.local.json');
+      const userSharedPath = path.join(userSettingsDir, 'settings.json');
+
+      const projectDir = path.join(tmpDir, 'project');
+      const projectClaudeDir = path.join(projectDir, '.claude');
+      const projectSettingsPath = path.join(projectClaudeDir, 'settings.json');
+
+      fs.mkdirSync(userSettingsDir, { recursive: true });
+      fs.mkdirSync(projectClaudeDir, { recursive: true });
+
+      // All hooks are valid (npx commands, no missing files)
+      const projectSettings = {
+        hooks: {
+          PreToolUse: [
+            { hooks: [{ type: 'command', command: 'npx thumbgate gate-check' }] },
+          ],
+        },
+        someOtherKey: 'preserved',
+      };
+      const originalJson = JSON.stringify(projectSettings, null, 2);
+      fs.writeFileSync(projectSettingsPath, originalJson);
+
+      try {
+        wireClaudeHooks({
+          settingsPath: userSettingsPath,
+          sharedSettingsPath: userSharedPath,
+          projectSettingsPath,
+          projectDir,
+        });
+
+        // Project settings should be unchanged (no stale entries to remove)
+        const written = fs.readFileSync(projectSettingsPath, 'utf8');
+        assert.equal(written, originalJson);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test('claudeProjectSettingsPath returns CWD-relative path by default', () => {
+      const result = claudeProjectSettingsPath('/some/project/dir');
+      assert.equal(result, path.join('/some/project/dir', '.claude', 'settings.json'));
     });
   });
 
