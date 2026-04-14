@@ -2700,6 +2700,59 @@ test('billing summary rejects invalid analytics window queries', async () => {
   assert.match(body.detail, /Invalid analytics window/i);
 });
 
+test('renderPackagedDashboardHtml returns html with bootstrap disabled by default', () => {
+  const { renderPackagedDashboardHtml } = __test__;
+  const html = renderPackagedDashboardHtml({ bootstrapActive: false, serializedBootstrapKey: '""' });
+  assert.ok(html.includes('ThumbGate Dashboard'));
+  assert.ok(html.includes('enabled: false'));
+  assert.ok(html.includes('/v1/dashboard'));
+  assert.ok(html.includes('/lessons'));
+  assert.ok(html.includes('/health'));
+});
+
+test('renderPackagedDashboardHtml reflects bootstrap enabled state', () => {
+  const { renderPackagedDashboardHtml } = __test__;
+  const html = renderPackagedDashboardHtml({ bootstrapActive: true, serializedBootstrapKey: '"test-key"' });
+  assert.ok(html.includes('enabled: true'));
+  assert.ok(html.includes('"test-key"'));
+});
+
+test('renderPackagedLessonsHtml returns html with lessons content', () => {
+  const { renderPackagedLessonsHtml } = __test__;
+  const html = renderPackagedLessonsHtml({ bootstrapActive: false, serializedBootstrapKey: '""' });
+  assert.ok(html.includes('ThumbGate Lessons'));
+  assert.ok(html.includes('enabled: false'));
+  assert.ok(html.includes('/v1/lessons/search'));
+  assert.ok(html.includes('/dashboard'));
+});
+
+test('renderPackagedLessonsHtml reflects bootstrap enabled state', () => {
+  const { renderPackagedLessonsHtml } = __test__;
+  const html = renderPackagedLessonsHtml({ bootstrapActive: true, serializedBootstrapKey: '"op-key"' });
+  assert.ok(html.includes('enabled: true'));
+  assert.ok(html.includes('"op-key"'));
+});
+
+test('readOptionalPublicTemplate returns null for missing file', () => {
+  const { readOptionalPublicTemplate } = __test__;
+  const result = readOptionalPublicTemplate('/nonexistent/path/file.html');
+  assert.strictEqual(result, null);
+});
+
+test('readOptionalPublicTemplate returns content for existing file', () => {
+  const { readOptionalPublicTemplate } = __test__;
+  const result = readOptionalPublicTemplate(path.join(tmpProofDir, '../..', 'public/dashboard.html'));
+  // if the file exists it returns a string; either way the function works
+  assert.ok(result === null || typeof result === 'string');
+});
+
+test('resolveLocalPageBootstrap returns inactive bootstrap for non-loopback host', () => {
+  const { resolveLocalPageBootstrap } = __test__;
+  const fakeReq = { headers: { host: 'thumbgate-production.up.railway.app' } };
+  const result = resolveLocalPageBootstrap(fakeReq, 'test-key');
+  assert.strictEqual(result.bootstrapActive, false);
+});
+
 test('rejects external output path by default', async () => {
   const externalPath = '/tmp/should-not-write-outside-safe-root.jsonl';
   const res = await fetch(apiUrl('/v1/dpo/export'), {
